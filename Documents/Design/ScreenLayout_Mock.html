@@ -153,8 +153,6 @@
       grid-template-columns: repeat(6, 1fr);
       gap: 6px;
       align-content: center;
-      min-width: 0;
-      min-height: 0;
     }
 
     .card,
@@ -280,7 +278,6 @@
 
     .calendar {
       align-content: start;
-      min-width: 0;
     }
 
     .calendar-row {
@@ -354,7 +351,6 @@
       aspect-ratio: 57 / 89;
       align-self: stretch;
       justify-self: center;
-      min-height: 0;
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.16);
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.2));
@@ -488,7 +484,7 @@
       }
 
       .options-buttons {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(4, 1fr);
       }
     }
   </style>
