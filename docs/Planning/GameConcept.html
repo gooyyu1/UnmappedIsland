@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>GameConcept</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">GameConcept</h1>
+</header>
+<h1 id="ゲームコンセプト">ゲームコンセプト</h1>
+<h2 id="概要">概要</h2>
+<p>UnmappedIsland
+は、<strong>無人島に漂着した主人公のサバイバル</strong>をカードゲーム形式で表現する作品です。
+強い影響元は <em>Card Survival: Tropical Island</em>
+ですが、本作では特に <strong>ランダム生成されるマップ</strong> と
+<strong>探索の比重</strong>
+を重視し、毎回異なる生存判断が求められる体験を目指します。</p>
+<h2 id="コアアイデア">コアアイデア</h2>
+<ul>
+<li>マップ上の地区、建築物、洞窟などのロケーションをカードで表現する</li>
+<li>設備、道具、資材、食料など、プレイヤーが扱う要素をカードとして統一的に管理する</li>
+<li>カードの組み合わせによってクラフト、加工、消費、探索などの行動を成立させる</li>
+<li>リアルタイム制ではなく、落ち着いて状況を整理しながら最善手を考えるゲームにする</li>
+</ul>
+<h2 id="ゲーム進行と時間">ゲーム進行と時間</h2>
+<p>ゲーム内時間は <strong>15 分を基本単位</strong>
+とし、各行動はその倍数の時間を消費します。 ただし、設計上は 15
+分未満の行動を完全には排除せず、必要であればより短い行動時間も扱える余地を残します。</p>
+<h2 id="目指すゲーム体験">目指すゲーム体験</h2>
+<p>本作が重視するのは、シンプルなルールの積み重ねから複雑で納得感のある結果が生まれることです。
+プレイヤーは目先の不足を埋めるだけでなく、将来の悪化要因を見越して準備しなければなりません。</p>
+<p>また、探索の楽しさを強めるため、未知の土地を少しずつ切り開き、危険と資源の分布を把握していく過程を重要な体験として位置づけます。</p>
+<h2 id="プレイヤーステータス">プレイヤーステータス</h2>
+<p>プレイヤーキャラクターは、以下のような複数のパラメータを抱えながら生存します。</p>
+<ul>
+<li>飢え</li>
+<li>渇き</li>
+<li>病気</li>
+<li>怪我</li>
+<li>眠気</li>
+<li>幸福度</li>
+<li>傷み</li>
+</ul>
+<p>これらは独立して存在するのではなく、相互に影響し合います。</p>
+<h2 id="遅れて表面化するサバイバル">遅れて表面化するサバイバル</h2>
+<p>プレイヤーの操作は、必ずしも即座に結果へ直結するとは限りません。
+多くの現象は、複数のパラメータの蓄積や経過時間によって、あとから症状として表面化します。</p>
+<p>たとえば怪我を放置すると細菌感染が進み、細菌感染を放置すると発熱や下痢につながり、下痢は脱水を招き、最終的には死に至る可能性があります。
+そのため、問題が目に見えてから症状だけに対処しても根本解決にはならず、原因を見抜いて早めに介入する判断が重要になります。</p>
+<h2 id="現時点での差異化方針">現時点での差異化方針</h2>
+<p>現時点で明確に定まっている差異化ポイントは、主に次の 2 点です。</p>
+<ul>
+<li>マップをランダム生成にすること</li>
+<li><em>Card Survival</em> と比べて探索要素をより強く打ち出すこと</li>
+</ul>
+<p>それ以外の差異化要素は、開発を進めながら検討していきます。</p>
+<h2 id="プロジェクトとしての位置づけ">プロジェクトとしての位置づけ</h2>
+<p>本作は、制作者自身がシミュレーション設計と AI
+利用を学ぶことも兼ねたプロジェクトです。
+一般販売は想定していないため、商業作品として十分な差別化や独自性を先に保証することよりも、興味深いシステムを試作し、学びを深めることを優先します。</p>
+</article>
+</body>
+</html>

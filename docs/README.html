@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">README</h1>
+</header>
+<h1 id="unmappedisland-ドキュメント">UnmappedIsland ドキュメント</h1>
+<p>このディレクトリにはゲーム開発に関するすべてのドキュメントが格納されています。</p>
+<h2 id="ディレクトリ構成">ディレクトリ構成</h2>
+<pre><code>Documents/
+├── Planning/       # ゲーム企画書
+│   ├── GameConcept.md
+│   └── README.md
+├── Specification/  # 仕様書
+│   └── README.md
+└── Design/         # 設計書
+    ├── ScreenLayout.md              # 画面レイアウト検討
+    ├── ScreenLayout_Portrait.html   # 縦型モック (1080×1920)
+    ├── ScreenLayout_Landscape.html  # 横型モック (1920×1080)
+    ├── screenshot_portrait.png      # 縦型スクリーンショット
+    ├── screenshot_landscape.png     # 横型スクリーンショット
+    ├── GameElementDefinition.md
+    └── README.md</code></pre>
+<h2 id="各フォルダの用途">各フォルダの用途</h2>
+<table>
+<colgroup>
+<col style="width: 57%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>フォルダ</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Planning/</code></td>
+<td>ゲームコンセプト、ターゲット、マネタイズ計画など企画段階のドキュメント</td>
+</tr>
+<tr class="even">
+<td><code>Specification/</code></td>
+<td>ゲームルール、機能仕様、UI/UX仕様など詳細な仕様書</td>
+</tr>
+<tr class="odd">
+<td><code>Design/</code></td>
+<td>アーキテクチャ設計、クラス設計、データ設計など技術設計書</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>備考</strong>:
+ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装するため、このフォルダには含まれません。</p>
+</blockquote>
+</article>
+</body>
+</html>

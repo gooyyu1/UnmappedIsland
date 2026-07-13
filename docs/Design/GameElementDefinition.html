@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>GameElementDefinition</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">GameElementDefinition</h1>
+</header>
+<h1 id="ゲーム内要素の定義方式">ゲーム内要素の定義方式</h1>
+<h2 id="概要">概要</h2>
+<p>ゲーム内に登場するほぼすべての概念は <strong>YAML 形式</strong>
+で定義します。
+定義ファイルは複数のファイルに分割して配置できるため、ゲーム本体が提供するデフォルト定義とは別に、ユーザー（MOD
+作成者）がファイルを追加するだけで新しい要素を導入したり、既存の要素を上書き・変更したりすることができます。</p>
+<h2 id="定義できる概念の種別">定義できる概念の種別</h2>
+<h3 id="世界レベルの概念">世界レベルの概念</h3>
+<p>ゲーム内時刻・日付・季節・天候など、世界全体に影響する概念を定義します。</p>
+<ul>
+<li>時刻の刻み方（1 tick あたりの経過時間）</li>
+<li>昼・夜の時刻範囲</li>
+<li>季節の日付範囲</li>
+<li>天候の種類と遷移ルール</li>
+</ul>
+<h3 id="ロケーション">ロケーション</h3>
+<p>プレイヤーが探索できる場所を定義します。</p>
+<ul>
+<li>地区（森、海岸、廃村など）</li>
+<li>建築物・施設</li>
+<li>洞窟や特殊地形</li>
+</ul>
+<h3
+id="プレイヤーキャラクターパラメータ">プレイヤー・キャラクターパラメータ</h3>
+<p>キャラクターが保持すべき数値パラメータを定義します。</p>
+<ul>
+<li>空腹度、喉の乾き、眠気</li>
+<li>体温、血液量</li>
+<li>幸福度、傷みなど</li>
+</ul>
+<h3 id="アイテム">アイテム</h3>
+<p>プレイヤーが入手・使用・製作できる物を定義します。</p>
+<ul>
+<li>設備・道具</li>
+<li>資材・食料</li>
+<li>薬品・素材など</li>
+</ul>
+<h3 id="アイテム属性">アイテム属性</h3>
+<p>アイテムが持つ性質（燃焼性、腐敗速度、重量など）を定義します。
+属性はアイテムに付与する形で参照され、アクションの結果に影響します。</p>
+<h3 id="アイテムアクション">アイテムアクション</h3>
+<p>アイテムに対して実行できる操作（食べる、使う、加工するなど）を定義します。
+アクションは条件・コスト・効果のセットとして記述します。</p>
+<h2 id="統一的な実行エンジン">統一的な実行エンジン</h2>
+<p>可能な限り、すべての概念は共通の枠組みで表現され、単一の汎用エンジンによって実行されます。
+「特定の概念専用のロジック」を増やすことを避け、拡張性と MOD
+互換性を確保します。</p>
+<h3 id="tick-駆動による変化">tick 駆動による変化</h3>
+<p>ゲーム内のあらゆる「時間経過にともなう変化」は tick
+を基本単位とする同一メカニズムで実現します。</p>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>現象</th>
+<th>仕組み</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ゲーム内時刻の進行</td>
+<td>1 tick ごとに「時刻」パラメータを加算</td>
+</tr>
+<tr class="even">
+<td>空腹度の増加</td>
+<td>1 tick ごとに「空腹度」パラメータを加算</td>
+</tr>
+<tr class="odd">
+<td>傷の出血による血液量の減少</td>
+<td>1 tick ごとに「血液量」パラメータを減算</td>
+</tr>
+<tr class="even">
+<td>部屋の快適度によるキャラクターの気分の変動</td>
+<td>1 tick ごとに「幸福度」パラメータを加減算</td>
+</tr>
+</tbody>
+</table>
+<h3 id="範囲による状態の決定">範囲による状態の決定</h3>
+<p>パラメータの値域から状態を決定する仕組みも共通化します。</p>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>現象</th>
+<th>仕組み</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>時刻の範囲で昼夜を決定</td>
+<td>時刻パラメータの値域で「昼」「夜」を割り当て</td>
+</tr>
+<tr class="even">
+<td>日付の範囲で季節を決定</td>
+<td>日付パラメータの値域で「春」「夏」「秋」「冬」を割り当て</td>
+</tr>
+<tr class="odd">
+<td>空腹度の範囲で飢えや満腹の状態を決定</td>
+<td>空腹度パラメータの値域で「満腹」「空腹」「飢え」を割り当て</td>
+</tr>
+</tbody>
+</table>
+<p>このように、単純なパラメータとその値域の定義だけで、世界の挙動もキャラクターの状態も同一の手法で記述できます。</p>
+<h2 id="yaml-定義の分割とロード">YAML 定義の分割とロード</h2>
+<p>YAML
+ファイルは所定のディレクトリ以下に置かれたすべてのファイルが自動的に読み込まれます。
+ゲーム本体の定義は <code>data/</code> などの標準ディレクトリに、MOD
+の定義は別ディレクトリに配置することで、双方を混在させずに管理できます。</p>
+<p>同じ ID
+を持つ定義が複数のファイルに存在する場合のマージ・上書き規則は別途仕様書で定義します。</p>
+<h2 id="設計上の方針">設計上の方針</h2>
+<ul>
+<li>「ハードコードしない」：コードに定数や挙動を埋め込まず、YAML
+定義で制御できるようにする</li>
+<li>「汎用エンジンに任せる」：特定概念向けの例外処理をエンジン側に追加しない</li>
+<li>「ファイル追加だけで拡張できる」：MOD
+作成者がコードに触れることなく新要素を追加できる</li>
+</ul>
+</article>
+</body>
+</html>

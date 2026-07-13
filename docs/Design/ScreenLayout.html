@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ScreenLayout</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">ScreenLayout</h1>
+</header>
+<h1 id="画面レイアウト検討">画面レイアウト検討</h1>
+<p>UnmappedIsland のゲーム画面レイアウトを検討するためのモックです。
+縦型・横型それぞれ実際の解像度（1080×1920 /
+1920×1080）で表示されるスタンドアロン HTML として作成しています。</p>
+<h2 id="レイアウト概要">レイアウト概要</h2>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 15%" />
+<col style="width: 23%" />
+<col style="width: 19%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>向き</th>
+<th>解像度</th>
+<th>メインエリア</th>
+<th>サブエリア</th>
+<th>オプションエリア</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>縦型</td>
+<td>1080 × 1920</td>
+<td>1080 × 1080（上部全幅）</td>
+<td>840 × 840（左下）</td>
+<td>220 × 840（右下）</td>
+</tr>
+<tr class="even">
+<td>横型</td>
+<td>1920 × 1080</td>
+<td>1080 × 1080（左全高）</td>
+<td>840 × 840（右上）</td>
+<td>840 × 220（右下）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="エリア構成">エリア構成</h3>
+<ul>
+<li><strong>Main Area</strong>：カードレーン 3 列（各列 4
+枚想定）を縦に並べたメイン描画領域</li>
+<li><strong>Sub
+Area</strong>：天候カード・日付/時刻・キャラクターカード・ステータスバーを配置</li>
+<li><strong>Options Area</strong>：設定・図鑑・ログ・終了ボタン</li>
+</ul>
+<h2 id="html-モック">HTML モック</h2>
+<ul>
+<li><a href="./ScreenLayout_Portrait.html">縦型 1080×1920
+モック</a></li>
+<li><a href="./ScreenLayout_Landscape.html">横型 1920×1080
+モック</a></li>
+</ul>
+<blockquote>
+<p><strong>表示方法</strong>：スマートフォンブラウザで開くと、ビューポート幅が設定値（縦型
+1080 / 横型 1920）に合わせられ、実際の画面サイズで確認できます。<br />
+デスクトップブラウザでは、ウィンドウを対応解像度にリサイズするか、DevTools
+のデバイスシミュレーターをご利用ください。</p>
+</blockquote>
+<h2 id="スクリーンショット">スクリーンショット</h2>
+<h3 id="縦型-10801920">縦型 1080×1920</h3>
+<figure>
+<img src="./screenshot_portrait.png" alt="縦型スクリーンショット" />
+<figcaption aria-hidden="true">縦型スクリーンショット</figcaption>
+</figure>
+<h3 id="横型-19201080">横型 1920×1080</h3>
+<figure>
+<img src="./screenshot_landscape.png" alt="横型スクリーンショット" />
+<figcaption aria-hidden="true">横型スクリーンショット</figcaption>
+</figure>
+<h2 id="デザインメモ">デザインメモ</h2>
+<ul>
+<li>カラースキーム: ダークテーマ（アクセント
+<code>#89d7c4</code>、ウォーニング <code>#f1d084</code>、デンジャー
+<code>#ee8e8e</code>）</li>
+<li>カードはアスペクト比 1:√2（ISO 216 標準）</li>
+<li>ステータスバーはグラデーション表示（飢え / 渇き / 疲労 / 気分）</li>
+<li>フォント: Hiragino Sans / Yu Gothic / Meiryo 系優先（和文）</li>
+</ul>
+</article>
+</body>
+</html>
