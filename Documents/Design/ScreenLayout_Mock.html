@@ -158,14 +158,14 @@
     .sub-area {
       grid-area: sub;
       display: grid;
-      grid-template-rows: auto minmax(0, auto) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) minmax(0, 2fr);
       gap: 10px;
       overflow: hidden;
     }
 
     .char-status-zone {
       display: grid;
-      grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 10px;
       min-height: 0;
       overflow: hidden;
@@ -173,7 +173,7 @@
 
     .sub-top {
       display: grid;
-      grid-template-columns: minmax(80px, 1fr) auto;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       grid-template-rows: auto 1fr;
       gap: 10px;
       min-height: 0;
@@ -192,8 +192,32 @@
 
     .weather {
       background: linear-gradient(180deg, rgba(241, 208, 132, 0.2), rgba(0, 0, 0, 0.18));
-      grid-template-columns: minmax(0, 70px) minmax(0, 1fr);
-      align-items: center;
+      justify-items: center;
+      align-content: start;
+    }
+
+    .env-zone {
+      background: linear-gradient(180deg, rgba(137, 215, 196, 0.12), rgba(0, 0, 0, 0.18));
+      align-content: start;
+    }
+
+    .env-cards {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .env-card {
+      display: grid;
+      gap: 4px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      min-width: 48px;
     }
 
     .weather-card {
@@ -208,12 +232,6 @@
 
     .weather-card strong {
       font-size: 1.5rem;
-    }
-
-    .weather-copy {
-      display: grid;
-      gap: 6px;
-      align-content: center;
     }
 
     .calendar {
@@ -245,7 +263,7 @@
 
     .character-zone {
       display: grid;
-      grid-template-rows: minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 2fr) minmax(0, 1fr);
       gap: 10px;
       min-height: 0;
       overflow: hidden;
@@ -255,9 +273,10 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
+      min-height: 0;
     }
 
-    .character-card {
+    .portrait-area {
       min-height: 0;
       overflow: hidden;
       align-content: center;
@@ -267,9 +286,10 @@
       grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
-    /* Hide the type label to give more room to the portrait image */
-    .character-card > span {
-      display: none;
+    .condition-area {
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .character-portrait {
@@ -395,19 +415,6 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
     }
-
-    @media (max-width: 600px), (max-height: 500px) {
-      /* On small screens, hide the weather copy text to save space */
-      .weather-copy {
-        display: none;
-      }
-
-      .weather {
-        grid-template-columns: minmax(0, 1fr);
-        justify-items: center;
-        align-content: center;
-      }
-    }
   </style>
 </head>
 <body>
@@ -452,18 +459,22 @@
     <div class="panel sub-area">
       <div class="panel-title"><span>情報エリア</span><span>840 × 840</span></div>
       <div class="sub-top">
-        <div class="lane-header" style="grid-column: 1 / -1"><span>環境エリア</span></div>
+        <div class="lane-header" style="grid-column: 1 / -1"><span>状況エリア</span></div>
         <div class="tile weather">
-          <div class="lane-header" style="grid-column: 1 / -1"><span>天候エリア</span></div>
+          <span>天候エリア</span>
           <div class="weather-card">
             <span>Weather</span>
             <strong>☁</strong>
             <span>曇り</span>
           </div>
-          <div class="weather-copy">
-            <span>天候カード</span>
-            <strong>曇り / 雨の気配</strong>
-            <span class="note">気温・視界・乾燥度の目安をカード内で表示</span>
+        </div>
+        <div class="tile env-zone">
+          <span>環境エリア</span>
+          <div class="env-cards">
+            <div class="env-card"><span>☀️</span><span>日差し</span></div>
+            <div class="env-card"><span>🦟</span><span>虫の多さ</span></div>
+            <div class="env-card"><span>💧</span><span>湿度</span></div>
+            <div class="env-card"><span>🌬️</span><span>風</span></div>
           </div>
         </div>
         <div class="tile calendar">
@@ -488,25 +499,28 @@
       <div class="char-status-zone">
         <div class="lane-header" style="grid-column: 1 / -1"><span>キャラクターエリア</span></div>
         <div class="character-zone">
-          <div class="tile character-card">
-            <span>キャラクターカード</span>
+          <div class="lane-header"><span>キャラクター表示エリア</span></div>
+          <div class="tile portrait-area">
+            <span>ポートレイトエリア</span>
             <div class="character-portrait">Survivor</div>
             <strong>漂着者</strong>
           </div>
-          <div class="lane-header"><span>装備スロット</span></div>
-          <div class="char-sub-cards">
-            <div class="tile side-card-wrap">
-              <span>装備カード</span>
-              <div class="support-card">
-                <strong>🎒</strong>
-                <span>ロープ / 火打石 / 水袋</span>
+          <div class="tile condition-area">
+            <div class="lane-header"><span>装備・状態エリア</span></div>
+            <div class="char-sub-cards">
+              <div class="tile side-card-wrap">
+                <span>装備エリア</span>
+                <div class="support-card">
+                  <strong>🎒</strong>
+                  <span>ロープ / 火打石 / 水袋</span>
+                </div>
               </div>
-            </div>
-            <div class="tile side-card-wrap">
-              <span>怪我カード</span>
-              <div class="support-card injury">
-                <strong>🩹</strong>
-                <span>足首ねんざ / 軽い擦り傷</span>
+              <div class="tile side-card-wrap">
+                <span>怪我エリア</span>
+                <div class="support-card injury">
+                  <strong>🩹</strong>
+                  <span>足首ねんざ / 軽い擦り傷</span>
+                </div>
               </div>
             </div>
           </div>
