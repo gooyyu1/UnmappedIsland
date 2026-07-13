@@ -2,11 +2,333 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=./ScreenLayout_Mock.html">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UnmappedIsland 画面モック – レスポンシブ</title>
+  <meta name="viewport" content="width=1080">
+  <title>UnmappedIsland 画面モック – 縦型 1080×1920</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1720;
+      --panel: #112633;
+      --panel-alt: #18384a;
+      --panel-soft: #214e62;
+      --line: rgba(255, 255, 255, 0.14);
+      --text: #eef7fb;
+      --muted: #b9d0db;
+      --accent: #89d7c4;
+      --accent-soft: rgba(137, 215, 196, 0.18);
+      --warning: #f1d084;
+      --danger: #ee8e8e;
+      --shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      --radius: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family:
+        "Noto Sans JP",
+        "Noto Sans CJK JP",
+        "Hiragino Sans",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        "Meiryo",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(84, 149, 170, 0.2), transparent 35%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    h2, p {
+      margin: 0;
+    }
+
+    .screen {
+      display: grid;
+      gap: 10px;
+      padding: 10px;
+      width: 100%;
+      height: 100%;
+      /* 縦型: 列 840 : 220、行 840 : 1080 (メインは下) */
+      grid-template-columns: 840fr 220fr;
+      grid-template-rows: 840fr 1080fr;
+    }
+
+    .panel {
+      min-width: 0;
+      min-height: 0;
+      padding: 12px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── メインエリア ── */
+    .main-area {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      display: grid;
+      grid-template-rows: auto repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .lane {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .lane-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .lane-cards {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      align-content: center;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .card {
+      width: 100%;
+      aspect-ratio: 57 / 89;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 40%),
+        linear-gradient(160deg, rgba(137, 215, 196, 0.3), rgba(17, 38, 51, 0.9));
+      display: grid;
+      place-items: end center;
+      padding: 10px 8px;
+      color: var(--text);
+      font-size: 0.78rem;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    /* ── サブエリア ── */
+    .sub-area {
+      grid-column: 1;
+      grid-row: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+      grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .sub-area > .panel-title {
+      grid-column: 1 / -1;
+    }
+
+    .tile {
+      min-width: 0;
+      min-height: 0;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .weather {
+      align-content: start;
+      background: linear-gradient(180deg, rgba(241, 208, 132, 0.2), rgba(0, 0, 0, 0.18));
+    }
+
+    .clock {
+      align-content: start;
+    }
+
+    .clock strong,
+    .weather strong {
+      font-size: 1.1rem;
+    }
+
+    .character-card {
+      align-content: center;
+      justify-items: center;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
+    }
+
+    .character-portrait {
+      width: min(100%, 140px);
+      aspect-ratio: 1 / 1.41421356237;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.2));
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+    }
+
+    .status-list {
+      align-content: start;
+      gap: 10px;
+    }
+
+    .status-row {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .status-bar {
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .status-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), #59a6f3);
+    }
+
+    /* ── オプションエリア ── */
+    .options-area {
+      grid-column: 2;
+      grid-row: 1;
+      display: grid;
+      gap: 10px;
+      align-content: center;
+      justify-content: center;
+    }
+
+    .options-area > .panel-title {
+      grid-column: 1 / -1;
+    }
+
+    .option-button {
+      min-width: 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: var(--panel-alt);
+      color: var(--text);
+      text-align: center;
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .note {
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+  </style>
 </head>
 <body>
-  <p><a href="./ScreenLayout_Mock.html">レスポンシブ画面モックを開く</a></p>
+  <div class="screen">
+    <div class="panel main-area">
+      <div class="panel-title"><span>Main Area</span><span>1080 × 1080</span></div>
+      <div class="lane">
+        <div class="lane-header"><span>列 1</span><span>カード 6 枚想定</span></div>
+        <div class="lane-cards">
+          <div class="card">探索</div>
+          <div class="card">海岸</div>
+          <div class="card">道具</div>
+          <div class="card">焚火</div>
+          <div class="card">狩り</div>
+          <div class="card">釣り</div>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="lane-header"><span>列 2</span><span>カード 6 枚想定</span></div>
+        <div class="lane-cards">
+          <div class="card">資材</div>
+          <div class="card">椰子</div>
+          <div class="card">水場</div>
+          <div class="card">調査</div>
+          <div class="card">薬草</div>
+          <div class="card">罠</div>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="lane-header"><span>列 3</span><span>カード 6 枚想定</span></div>
+        <div class="lane-cards">
+          <div class="card">寝床</div>
+          <div class="card">槍</div>
+          <div class="card">採集</div>
+          <div class="card">荷物</div>
+          <div class="card">修繕</div>
+          <div class="card">地図</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel sub-area">
+      <div class="panel-title"><span>Sub Area</span><span>840 × 840</span></div>
+      <div class="tile weather">
+        <span>天候カード</span>
+        <strong>晴れ / 風やや強い</strong>
+        <span class="note">日差し・蒸発量の影響を表示</span>
+      </div>
+      <div class="tile clock">
+        <span>日付 / 時刻</span>
+        <strong>Day 08</strong>
+        <strong>14:35</strong>
+      </div>
+      <div class="tile character-card">
+        <span>キャラクターカード</span>
+        <div class="character-portrait">Survivor</div>
+        <strong>漂着者</strong>
+      </div>
+      <div class="tile status-list">
+        <span>ステータス</span>
+        <div class="status-row"><span>飢え</span><div class="status-bar"><div class="status-fill" style="width: 52%"></div></div></div>
+        <div class="status-row"><span>渇き</span><div class="status-bar"><div class="status-fill" style="width: 66%"></div></div></div>
+        <div class="status-row"><span>疲労</span><div class="status-bar"><div class="status-fill" style="width: 37%"></div></div></div>
+        <div class="status-row"><span>気分</span><div class="status-bar"><div class="status-fill" style="width: 73%"></div></div></div>
+      </div>
+    </div>
+
+    <div class="panel options-area">
+      <div class="panel-title"><span>Options</span><span>220 × 840</span></div>
+      <div class="option-button">設定</div>
+      <div class="option-button">図鑑</div>
+      <div class="option-button">ログ</div>
+      <div class="option-button">終了</div>
+    </div>
+  </div>
 </body>
 </html>
