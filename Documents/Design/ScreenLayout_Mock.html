@@ -291,7 +291,6 @@
       place-items: center;
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.06);
-      padding: 12px;
     }
 
     .character-portrait {
@@ -306,6 +305,7 @@
       color: var(--muted);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
       padding: 12px;
+      margin: 6px;
     }
 
     /* Equipment/Condition Area - Divided 1:1 left/right */
@@ -415,7 +415,7 @@
       align-content: center;
       padding: 0;
       grid-template-columns: 1fr;
-      grid-template-rows: repeat(4, 1fr);
+      grid-auto-rows: max-content;
     }
 
     .option-button {
@@ -454,7 +454,7 @@
 
       .options-buttons {
         grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: 1fr;
+        grid-auto-rows: max-content;
       }
     }
   </style>
