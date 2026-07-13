@@ -26,6 +26,7 @@ jobs:
 
       - name: Prepare docs output directories
         run: |
+          rm -rf docs
           mkdir -p docs/Design docs/Planning docs/Specification
 
       - name: Convert markdown files to HTML
@@ -66,7 +67,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/
+          git add -A docs/
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else

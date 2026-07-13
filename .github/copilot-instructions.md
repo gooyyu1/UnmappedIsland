@@ -2,13 +2,20 @@
 
 ## docs/ フォルダについて
 
-`docs/` フォルダは **`Documents/` から自動生成される**。直接編集してはならない。
+> ⛔ **`docs/` フォルダは絶対に編集・コミットしてはならない。** ⛔
+
+`docs/` フォルダは **`Documents/` から自動生成される**。
 
 - Markdown ファイル (`Documents/**/*.md`) は Pandoc で HTML に変換され `docs/` へ出力される。
 - HTML・画像などの静的ファイル (`Documents/**/*.html`, `*.png` 等) はそのまま `docs/` にコピーされる。
 - 変換・コピーは `.github/workflows/docs.yml` の GitHub Actions ワークフローが `main` ブランチへのプッシュ時に自動実行する。
 
 **ドキュメント類を修正する際は必ず `Documents/` 以下のファイルを編集すること。** `docs/` への変更は次回ワークフロー実行時に上書きされる。
+
+**エージェントへの厳守ルール:**
+- `docs/` 以下のファイルを `create`・`edit`・`git checkout`・`git add` 等の手段でいかなる変更も行ってはならない。
+- `git add docs/` や `git add docs/<file>` を実行してはならない。
+- コミットに `docs/` 以下の変更が含まれていてはならない。これを過去に誤って行った場合は直ちに `git checkout <prev_sha> -- docs/` で元に戻すこと。
 
 ---
 
