@@ -22,8 +22,8 @@
       --radius: 20px;
       --gap: 10px;
       --option-button-size: min(180px, 100%);
-      --calendar-card-width: clamp(34px, 4vw, 46px);
-      --calendar-card-height: clamp(52px, 6vw, 70px);
+      --calendar-card-width: clamp(26px, 3vw, 46px);
+      --calendar-card-height: clamp(38px, 4.5vw, 70px);
     }
 
     * {
@@ -83,6 +83,7 @@
       border-radius: 20px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
       border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
     }
 
     .panel-title {
@@ -157,8 +158,9 @@
     .sub-area {
       grid-area: sub;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, auto) minmax(0, 1fr);
       gap: 10px;
+      overflow: hidden;
     }
 
     .char-status-zone {
@@ -166,11 +168,12 @@
       grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
       gap: 10px;
       min-height: 0;
+      overflow: hidden;
     }
 
     .sub-top {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(80px, 1fr) auto;
       gap: 10px;
       min-height: 0;
     }
@@ -188,12 +191,12 @@
 
     .weather {
       background: linear-gradient(180deg, rgba(241, 208, 132, 0.2), rgba(0, 0, 0, 0.18));
-      grid-template-columns: minmax(0, 110px) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 70px) minmax(0, 1fr);
       align-items: center;
     }
 
     .weather-card {
-      max-width: 110px;
+      max-width: 70px;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
         linear-gradient(160deg, rgba(241, 208, 132, 0.42), rgba(17, 38, 51, 0.92));
@@ -219,7 +222,7 @@
 
     .calendar-row {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: nowrap;
     }
 
@@ -244,6 +247,7 @@
       grid-template-rows: minmax(0, 1fr) auto;
       gap: 10px;
       min-height: 0;
+      overflow: hidden;
     }
 
     .char-sub-cards {
@@ -254,14 +258,21 @@
 
     .character-card {
       min-height: 0;
+      overflow: hidden;
       align-content: center;
       justify-items: center;
       text-align: center;
       background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
+      grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
     .character-portrait {
-      width: min(100%, 150px);
+      grid-row: 2;
+      align-self: stretch;
+      justify-self: center;
+      width: auto;
+      max-width: min(100%, 150px);
+      min-height: 0;
       aspect-ratio: 57 / 89;
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.16);
@@ -307,6 +318,7 @@
     .status-list {
       align-content: start;
       gap: 10px;
+      overflow: hidden;
     }
 
     .status-row {
@@ -375,6 +387,39 @@
 
       .options-buttons {
         grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (orientation: portrait) and (max-width: 600px) {
+      /* On narrow portrait screens, hide the weather copy text to save space */
+      .weather-copy {
+        display: none;
+      }
+
+      .weather {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        align-content: center;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+      /* On short landscape screens, hide the weather copy text to save space */
+      .weather-copy {
+        display: none;
+      }
+
+      .weather {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        align-content: center;
+      }
+    }
+
+    @media (orientation: portrait) {
+      /* Character card: hide the type label to give more room to the portrait image */
+      .character-card > span {
+        display: none;
       }
     }
   </style>
