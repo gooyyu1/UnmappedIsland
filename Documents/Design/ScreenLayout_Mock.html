@@ -77,13 +77,10 @@
     }
 
     .panel {
-      min-width: 0;
-      min-height: 0;
       padding: 12px;
       border-radius: 20px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
       border: 1px solid rgba(255, 255, 255, 0.08);
-      overflow: hidden;
     }
 
     .panel-title {
@@ -127,7 +124,6 @@
       border-radius: 16px;
       background: rgba(0, 0, 0, 0.14);
       border: 1px solid rgba(255, 255, 255, 0.06);
-      overflow: hidden;
     }
 
     .lane-header {
@@ -188,7 +184,6 @@
       display: grid;
       grid-template-rows: minmax(0, 1fr) minmax(0, 2fr);
       gap: 10px;
-      overflow: hidden;
       position: relative;
     }
 
@@ -201,9 +196,8 @@
     .char-status-zone {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
       gap: 10px;
-      min-height: 0;
-      overflow: hidden;
     }
 
     .char-status-zone > .lane-header {
@@ -224,8 +218,6 @@
     }
 
     .tile {
-      min-width: 0;
-      min-height: 0;
       border-radius: 16px;
       background: rgba(0, 0, 0, 0.16);
       border: 1px solid rgba(255, 255, 255, 0.06);
@@ -318,8 +310,6 @@
       display: grid;
       grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
       gap: 10px;
-      min-height: 0;
-      overflow: hidden;
       height: 100%;
     }
 
@@ -331,18 +321,16 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
-      min-height: 0;
       height: 100%;
     }
 
     .portrait-area {
-      min-height: 0;
-      overflow: hidden;
+      display: grid;
+      grid-template-rows: 1fr;
       align-content: center;
       justify-items: center;
       text-align: center;
       background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
-      grid-template-rows: 1fr;
       height: 100%;
     }
 
@@ -352,9 +340,8 @@
     }
 
     .condition-area {
+      display: grid;
       grid-template-rows: 1fr;
-      min-height: 0;
-      overflow: hidden;
       height: 100%;
     }
 
@@ -379,12 +366,12 @@
 
     .side-card-wrap {
       display: grid;
-      gap: 8px;
+      grid-template-rows: 1fr;
+      align-items: center;
       justify-items: center;
       text-align: center;
       color: var(--muted);
       height: 100%;
-      min-height: 0;
     }
 
     .side-card-wrap > span {
@@ -419,9 +406,11 @@
     }
 
     .status-list {
-      align-content: start;
+      display: grid;
+      grid-template-rows: auto auto auto auto auto;
       gap: 10px;
-      overflow: hidden;
+      align-content: start;
+      height: 100%;
     }
 
     .status-list > span {
