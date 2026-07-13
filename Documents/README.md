@@ -6,6 +6,7 @@
 
 ```
 Documents/
+├── index.md         # GitHub Pages ルート
 ├── Planning/       # ゲーム企画書
 │   ├── GameConcept.md
 │   └── README.md
@@ -14,8 +15,6 @@ Documents/
 └── Design/         # 設計書
     ├── ScreenLayout.md              # 画面レイアウト検討
     ├── ScreenLayout_Mock.html       # レスポンシブ画面モック
-    ├── ScreenLayout_Portrait.html   # 互換用リダイレクト
-    ├── ScreenLayout_Landscape.html  # 互換用リダイレクト
     ├── screenshot_portrait.png      # 縦型スクリーンショット
     ├── screenshot_landscape.png     # 横型スクリーンショット
     ├── GameElementDefinition.md
