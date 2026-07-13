@@ -291,6 +291,7 @@
       place-items: center;
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 12px;
     }
 
     .character-portrait {
@@ -413,6 +414,8 @@
       justify-items: center;
       align-content: center;
       padding: 0;
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(4, 1fr);
     }
 
     .option-button {
@@ -451,6 +454,7 @@
 
       .options-buttons {
         grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: 1fr;
       }
     }
   </style>
