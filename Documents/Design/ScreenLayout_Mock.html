@@ -270,8 +270,10 @@
     }
 
     .weather-card {
-      max-width: 180px;
-      max-height: 276px;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 57 / 89;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
         linear-gradient(160deg, rgba(241, 208, 132, 0.42), rgba(17, 38, 51, 0.92));
@@ -356,14 +358,13 @@
     }
 
     .character-portrait {
-      grid-row: 2;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 57 / 89;
       align-self: stretch;
       justify-self: center;
-      width: auto;
-      max-width: min(100%, 243px);
-      max-height: 373px;
       min-height: 0;
-      aspect-ratio: 57 / 89;
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.16);
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.2));
@@ -385,8 +386,10 @@
     }
 
     .support-card {
-      max-width: 121px;
-      max-height: 186px;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 57 / 89;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 40%),
         linear-gradient(160deg, rgba(137, 215, 196, 0.24), rgba(17, 38, 51, 0.88));
