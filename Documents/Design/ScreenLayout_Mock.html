@@ -152,11 +152,33 @@
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
+    /* Base area styling - shared by all content areas */
+    .area {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+      display: grid;
+    }
+
+    /* Base card styling - shared by all cards */
+    .card-base {
+      width: auto;
+      height: 100%;
+      aspect-ratio: 57 / 89;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 10px;
+      display: grid;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
     /* Info Area - Information panel (840x840) */
     .info-area {
       grid-column: 1;
       grid-row: 1;
-      display: grid;
       grid-template-rows: 1fr 2fr;
       gap: var(--gap);
     }
@@ -187,19 +209,10 @@
     }
 
     .weather-card {
-      width: auto;
-      height: 100%;
-      aspect-ratio: 57 / 89;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
         linear-gradient(160deg, rgba(241, 208, 132, 0.42), rgba(17, 38, 51, 0.92));
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 12px 10px;
-      display: grid;
       align-content: space-between;
-      text-align: center;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
     .weather-card strong {
@@ -216,7 +229,6 @@
       background: linear-gradient(180deg, rgba(137, 215, 196, 0.12), rgba(0, 0, 0, 0.18));
       display: grid;
       align-content: start;
-      padding: 12px;
     }
 
     .env-cards {
@@ -243,7 +255,6 @@
       background: linear-gradient(180deg, rgba(137, 215, 196, 0.12), rgba(0, 0, 0, 0.18));
       display: grid;
       align-content: start;
-      padding: 12px;
       gap: 8px;
     }
 
@@ -287,13 +298,15 @@
     /* Portrait Area */
     .portrait-area {
       background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
-      display: grid;
-      place-items: center;
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.06);
+      display: grid;
+      place-items: center;
+      position: relative;
     }
 
     .character-portrait {
+      margin: 6px;
       width: auto;
       height: 100%;
       aspect-ratio: 57 / 89;
@@ -305,7 +318,6 @@
       color: var(--muted);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
       padding: 12px;
-      margin: 6px;
     }
 
     /* Equipment/Condition Area - Divided 1:1 left/right */
@@ -316,38 +328,21 @@
       position: relative;
     }
 
-    /* Equipment Area */
-    .equipment-area {
-      display: grid;
-      place-items: center;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      position: relative;
-    }
-
-    /* Injury Area */
+    /* Equipment Area and Injury Area */
+    .equipment-area,
     .condition-area {
-      display: grid;
-      place-items: center;
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.06);
+      display: grid;
+      place-items: center;
       position: relative;
     }
 
     .support-card {
-      width: auto;
-      height: 100%;
-      aspect-ratio: 57 / 89;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 40%),
         linear-gradient(160deg, rgba(137, 215, 196, 0.24), rgba(17, 38, 51, 0.88));
-      padding: 10px;
-      display: grid;
       align-content: space-between;
-      text-align: center;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
     .support-card.injury {
@@ -405,7 +400,11 @@
       display: grid;
       grid-template-rows: 1fr;
       gap: var(--gap);
-      align-content: stretch;
+      padding: 12px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
     }
 
     .options-buttons {
@@ -413,9 +412,7 @@
       gap: 10px;
       justify-items: center;
       align-content: center;
-      padding: 0;
       grid-template-columns: 1fr;
-      grid-auto-rows: max-content;
     }
 
     .option-button {
@@ -430,7 +427,6 @@
       place-items: center;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
       font-size: clamp(1.8rem, 6vw, 2.8rem);
-      flex-shrink: 0;
     }
 
     /* Landscape orientation */
@@ -448,13 +444,10 @@
       .options-area {
         grid-column: 2;
         grid-row: 2;
-        grid-template-rows: 1fr;
-        grid-template-columns: 1fr;
       }
 
       .options-buttons {
         grid-template-columns: repeat(4, 1fr);
-        grid-auto-rows: max-content;
       }
     }
   </style>
