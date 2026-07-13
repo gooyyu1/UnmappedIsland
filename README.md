@@ -42,7 +42,7 @@ UnmappedIsland/
 │   │   ├── Environment/  # 背景・環境スプライト
 │   │   └── UI/           # UIスプライト
 │   └── Settings/         # Input System, Render Pipeline などの設定アセット
-├── Docs/
+├── Documents/
 │   ├── Planning/         # 企画書
 │   ├── Specification/    # 仕様書
 │   └── Design/           # 設計書
@@ -52,8 +52,8 @@ UnmappedIsland/
 
 ## ドキュメント
 
-開発ドキュメントは [`Docs/`](./Docs/README.md) フォルダで管理します。
-ゲームコンセプトは [`Docs/Planning/GameConcept.md`](./Docs/Planning/GameConcept.md) にまとめています。
+開発ドキュメントは [`Documents/`](./Documents/README.md) フォルダで管理します。
+ゲームコンセプトは [`Documents/Planning/GameConcept.md`](./Documents/Planning/GameConcept.md) にまとめています。
 ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装します。
 
 ## ライセンス

@@ -5,7 +5,7 @@
 ## ディレクトリ構成
 
 ```
-Docs/
+Documents/
 ├── Planning/       # ゲーム企画書
 │   ├── GameConcept.md
 │   └── README.md
