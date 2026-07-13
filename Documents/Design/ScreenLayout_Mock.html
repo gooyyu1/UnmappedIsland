@@ -87,22 +87,36 @@
     }
 
     .panel-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
+      position: absolute;
+      top: 12px;
+      left: 12px;
       font-size: 0.82rem;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      background: rgba(11, 23, 32, 0.85);
+      padding: 4px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .panel-title span:last-child {
+      display: none;
     }
 
     .main-area {
       grid-area: main;
       display: grid;
-      grid-template-rows: auto repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
       gap: 10px;
+      position: relative;
+    }
+
+    .main-area > .panel-title {
+      position: absolute;
+      top: 12px;
+      left: 12px;
     }
 
     .lane {
@@ -117,11 +131,25 @@
     }
 
     .lane-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      left: auto;
       font-size: 0.82rem;
       color: var(--muted);
+      background: rgba(11, 23, 32, 0.85);
+      padding: 4px 8px;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .lane-header span:last-child {
+      display: none;
+    }
+
+    .lane {
+      position: relative;
     }
 
     .lane-cards {
@@ -158,9 +186,16 @@
     .sub-area {
       grid-area: sub;
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr) minmax(0, 2fr);
+      grid-template-rows: minmax(0, 1fr) minmax(0, 2fr);
       gap: 10px;
       overflow: hidden;
+      position: relative;
+    }
+
+    .sub-area > .panel-title {
+      position: absolute;
+      top: 12px;
+      left: 12px;
     }
 
     .char-status-zone {
@@ -171,12 +206,21 @@
       overflow: hidden;
     }
 
+    .char-status-zone > .lane-header {
+      display: none;
+    }
+
     .sub-top {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       grid-template-rows: auto 1fr;
       gap: 10px;
       min-height: 0;
+      position: relative;
+    }
+
+    .sub-top > .lane-header {
+      display: none;
     }
 
     .tile {
@@ -188,6 +232,11 @@
       padding: 12px;
       display: grid;
       gap: 8px;
+      position: relative;
+    }
+
+    .tile > span:first-child {
+      display: none;
     }
 
     .weather {
@@ -269,6 +318,10 @@
       overflow: hidden;
     }
 
+    .character-zone > .lane-header {
+      display: none;
+    }
+
     .char-sub-cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -286,10 +339,19 @@
       grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
+    .portrait-area > span,
+    .portrait-area > strong {
+      display: none;
+    }
+
     .condition-area {
       grid-template-rows: auto 1fr;
       min-height: 0;
       overflow: hidden;
+    }
+
+    .condition-area > .lane-header {
+      display: none;
     }
 
     .character-portrait {
@@ -314,6 +376,10 @@
       justify-items: center;
       text-align: center;
       color: var(--muted);
+    }
+
+    .side-card-wrap > span {
+      display: none;
     }
 
     .support-card {
@@ -347,6 +413,10 @@
       overflow: hidden;
     }
 
+    .status-list > span {
+      display: none;
+    }
+
     .status-row {
       display: grid;
       gap: 6px;
@@ -371,9 +441,16 @@
     .options-area {
       grid-area: options;
       display: grid;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: 1fr;
       gap: 10px;
       align-content: stretch;
+      position: relative;
+    }
+
+    .options-area > .panel-title {
+      position: absolute;
+      top: 12px;
+      left: 12px;
     }
 
     .options-buttons {
