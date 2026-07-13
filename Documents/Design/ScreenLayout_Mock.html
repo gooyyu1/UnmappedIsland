@@ -45,6 +45,17 @@
       background: rgba(255, 255, 255, 0.8);
     }
 
+    .card {
+      aspect-ratio: 58 / 89;
+      border: 1px solid #000;
+      background: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      text-align: center;
+    }
+
     .dashboard-area {
       grid-area: dashboard;
       display: grid;
@@ -119,6 +130,38 @@
     .field-item-lane { background: #d9ffd5; }
     .hand-lane { background: #e1dbff; }
 
+    .lane-cards {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      left: 20px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      align-items: start;
+    }
+
+    .lane-cards .card {
+      width: 100%;
+      height: auto;
+    }
+
+    .single-card-slot {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .single-card-slot .card {
+      width: auto;
+      height: 100%;
+    }
+
     @media (orientation: landscape) {
       .screen {
         grid-template-columns: 840fr 1080fr;
@@ -148,6 +191,9 @@
           <div class="label">状況エリア 840×280</div>
           <div class="area weather-area">
             <div class="label">天候エリア 280×280</div>
+            <div class="single-card-slot">
+              <div class="card">天候カード</div>
+            </div>
           </div>
           <div class="area condition-area">
             <div class="label">条件エリア 280×280</div>
@@ -162,14 +208,23 @@
             <div class="label">キャラクター表示エリア 420×560</div>
             <div class="area portrait-area">
               <div class="label">ポートレイトエリア 420×280</div>
+              <div class="single-card-slot">
+                <div class="card">ポートレイトカード</div>
+              </div>
             </div>
             <div class="area equipment-injury-area">
               <div class="label">装備・怪我エリア 420×280</div>
               <div class="area equipment-area">
                 <div class="label">装備エリア 210×280</div>
+                <div class="single-card-slot">
+                  <div class="card">装備カード</div>
+                </div>
               </div>
               <div class="area injury-area">
                 <div class="label">怪我エリア 210×280</div>
+                <div class="single-card-slot">
+                  <div class="card">怪我カード</div>
+                </div>
               </div>
             </div>
           </div>
@@ -190,12 +245,36 @@
       <div class="label">フィールドエリア 1080×1080</div>
       <div class="lane location-lane">
         <div class="label">ロケーションレーン 1080×360</div>
+        <div class="lane-cards">
+          <div class="card">ロケ1</div>
+          <div class="card">ロケ2</div>
+          <div class="card">ロケ3</div>
+          <div class="card">ロケ4</div>
+          <div class="card">ロケ5</div>
+          <div class="card">ロケ6</div>
+        </div>
       </div>
       <div class="lane field-item-lane">
         <div class="label">フィールドアイテムレーン 1080×360</div>
+        <div class="lane-cards">
+          <div class="card">アイテム1</div>
+          <div class="card">アイテム2</div>
+          <div class="card">アイテム3</div>
+          <div class="card">アイテム4</div>
+          <div class="card">アイテム5</div>
+          <div class="card">アイテム6</div>
+        </div>
       </div>
       <div class="lane hand-lane">
         <div class="label">ハンドレーン 1080×360</div>
+        <div class="lane-cards">
+          <div class="card">ハンド1</div>
+          <div class="card">ハンド2</div>
+          <div class="card">ハンド3</div>
+          <div class="card">ハンド4</div>
+          <div class="card">ハンド5</div>
+          <div class="card">ハンド6</div>
+        </div>
       </div>
     </div>
   </div>
