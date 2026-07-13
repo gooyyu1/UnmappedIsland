@@ -233,6 +233,7 @@
       display: grid;
       gap: 8px;
       position: relative;
+      height: 100%;
     }
 
     .tile > span:first-child {
@@ -242,7 +243,8 @@
     .weather {
       background: linear-gradient(180deg, rgba(241, 208, 132, 0.2), rgba(0, 0, 0, 0.18));
       justify-items: center;
-      align-content: start;
+      align-content: center;
+      grid-template-rows: 1fr;
     }
 
     .env-zone {
@@ -270,9 +272,8 @@
     }
 
     .weather-card {
-      width: 100%;
-      max-width: 100%;
-      height: auto;
+      width: auto;
+      height: 100%;
       aspect-ratio: 57 / 89;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
@@ -319,6 +320,7 @@
       gap: 10px;
       min-height: 0;
       overflow: hidden;
+      height: 100%;
     }
 
     .character-zone > .lane-header {
@@ -330,6 +332,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       min-height: 0;
+      height: 100%;
     }
 
     .portrait-area {
@@ -340,6 +343,7 @@
       text-align: center;
       background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
       grid-template-rows: 1fr;
+      height: 100%;
     }
 
     .portrait-area > span,
@@ -351,6 +355,7 @@
       grid-template-rows: 1fr;
       min-height: 0;
       overflow: hidden;
+      height: 100%;
     }
 
     .condition-area > .lane-header {
@@ -358,9 +363,8 @@
     }
 
     .character-portrait {
-      width: 100%;
-      max-width: 100%;
-      height: auto;
+      width: auto;
+      height: 100%;
       aspect-ratio: 57 / 89;
       align-self: stretch;
       justify-self: center;
@@ -379,6 +383,8 @@
       justify-items: center;
       text-align: center;
       color: var(--muted);
+      height: 100%;
+      min-height: 0;
     }
 
     .side-card-wrap > span {
@@ -386,9 +392,8 @@
     }
 
     .support-card {
-      width: 100%;
-      max-width: 100%;
-      height: auto;
+      width: auto;
+      height: 100%;
       aspect-ratio: 57 / 89;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 40%),
