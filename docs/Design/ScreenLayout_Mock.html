@@ -174,6 +174,7 @@
     .sub-top {
       display: grid;
       grid-template-columns: minmax(80px, 1fr) auto;
+      grid-template-rows: auto 1fr;
       gap: 10px;
       min-height: 0;
     }
@@ -412,9 +413,9 @@
 <body>
   <div class="screen">
     <div class="panel main-area">
-      <div class="panel-title"><span>Main Area</span><span>1080 × 1080</span></div>
+      <div class="panel-title"><span>フィールドエリア</span><span>1080 × 1080</span></div>
       <div class="lane">
-        <div class="lane-header"><span>列 1</span><span>カード 6 枚想定</span></div>
+        <div class="lane-header"><span>ロケーションレーン</span><span>カード 6 枚想定</span></div>
         <div class="lane-cards">
           <div class="card">探索</div>
           <div class="card">海岸</div>
@@ -425,7 +426,7 @@
         </div>
       </div>
       <div class="lane">
-        <div class="lane-header"><span>列 2</span><span>カード 6 枚想定</span></div>
+        <div class="lane-header"><span>フィールドアイテムレーン</span><span>カード 6 枚想定</span></div>
         <div class="lane-cards">
           <div class="card">資材</div>
           <div class="card">椰子</div>
@@ -436,7 +437,7 @@
         </div>
       </div>
       <div class="lane">
-        <div class="lane-header"><span>列 3</span><span>カード 6 枚想定</span></div>
+        <div class="lane-header"><span>ハンドレーン</span><span>カード 6 枚想定</span></div>
         <div class="lane-cards">
           <div class="card">寝床</div>
           <div class="card">槍</div>
@@ -449,9 +450,11 @@
     </div>
 
     <div class="panel sub-area">
-      <div class="panel-title"><span>Sub Area</span><span>840 × 840</span></div>
+      <div class="panel-title"><span>情報エリア</span><span>840 × 840</span></div>
       <div class="sub-top">
+        <div class="lane-header" style="grid-column: 1 / -1"><span>環境エリア</span></div>
         <div class="tile weather">
+          <div class="lane-header" style="grid-column: 1 / -1"><span>天候エリア</span></div>
           <div class="weather-card">
             <span>Weather</span>
             <strong>☁</strong>
@@ -464,7 +467,7 @@
           </div>
         </div>
         <div class="tile calendar">
-          <span>日付 / 時刻カード</span>
+          <span>日時エリア</span>
           <div class="calendar-row" aria-label="DAY097">
             <div class="calendar-card">D</div>
             <div class="calendar-card">A</div>
@@ -483,15 +486,17 @@
         </div>
       </div>
       <div class="char-status-zone">
+        <div class="lane-header" style="grid-column: 1 / -1"><span>キャラクターエリア</span></div>
         <div class="character-zone">
           <div class="tile character-card">
             <span>キャラクターカード</span>
             <div class="character-portrait">Survivor</div>
             <strong>漂着者</strong>
           </div>
+          <div class="lane-header"><span>装備スロット</span></div>
           <div class="char-sub-cards">
             <div class="tile side-card-wrap">
-              <span>持ち物カード</span>
+              <span>装備カード</span>
               <div class="support-card">
                 <strong>🎒</strong>
                 <span>ロープ / 火打石 / 水袋</span>
