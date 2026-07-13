@@ -1,0 +1,75 @@
+name: Generate docs from Documents
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Documents/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pandoc
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y pandoc
+
+      - name: Prepare docs output directories
+        run: |
+          mkdir -p docs/Design docs/Planning docs/Specification
+
+      - name: Convert markdown files to HTML
+        run: |
+          PANDOC_OPTS=(
+            --standalone
+            --metadata charset=utf-8
+            --css=https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css
+            --variable=include-before='<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">'
+            --variable=include-after='</article>'
+          )
+
+          find Documents -name '*.md' | while read md_file; do
+            # Derive output path: Documents/Design/Foo.md -> docs/Design/Foo.html
+            rel="${md_file#Documents/}"          # strip leading "Documents/"
+            out_dir="docs/$(dirname "$rel")"
+            out_file="docs/${rel%.md}.html"
+            mkdir -p "$out_dir"
+            pandoc "${PANDOC_OPTS[@]}" \
+              --metadata title="$(basename "${rel%.md}")" \
+              -o "$out_file" \
+              "$md_file"
+            echo "Generated: $out_file"
+          done
+
+      - name: Copy HTML mocks and assets to docs
+        run: |
+          # Copy standalone HTML mocks and screenshots from Documents to docs
+          find Documents -name '*.html' -o -name '*.png' -o -name '*.jpg' -o -name '*.gif' | while read asset; do
+            rel="${asset#Documents/}"
+            dest="docs/${rel}"
+            mkdir -p "$(dirname "$dest")"
+            cp "$asset" "$dest"
+            echo "Copied: $dest"
+          done
+
+      - name: Commit generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs: auto-generate HTML from Documents markdown [skip ci]"
+            git push
+          fi
