@@ -266,6 +266,11 @@
       grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
+    /* Hide the type label to give more room to the portrait image */
+    .character-card > span {
+      display: none;
+    }
+
     .character-portrait {
       grid-row: 2;
       align-self: stretch;
@@ -390,8 +395,8 @@
       }
     }
 
-    @media (orientation: portrait) and (max-width: 600px) {
-      /* On narrow portrait screens, hide the weather copy text to save space */
+    @media (max-width: 600px), (max-height: 500px) {
+      /* On small screens, hide the weather copy text to save space */
       .weather-copy {
         display: none;
       }
@@ -400,26 +405,6 @@
         grid-template-columns: minmax(0, 1fr);
         justify-items: center;
         align-content: center;
-      }
-    }
-
-    @media (orientation: landscape) and (max-height: 500px) {
-      /* On short landscape screens, hide the weather copy text to save space */
-      .weather-copy {
-        display: none;
-      }
-
-      .weather {
-        grid-template-columns: minmax(0, 1fr);
-        justify-items: center;
-        align-content: center;
-      }
-    }
-
-    @media (orientation: portrait) {
-      /* Character card: hide the type label to give more room to the portrait image */
-      .character-card > span {
-        display: none;
       }
     }
   </style>
