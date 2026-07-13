@@ -19,11 +19,7 @@
       --accent: #89d7c4;
       --warning: #f1d084;
       --danger: #ee8e8e;
-      --radius: 20px;
       --gap: 10px;
-      --option-button-size: min(180px, 100%);
-      --calendar-card-width: clamp(26px, 3vw, 46px);
-      --calendar-card-height: clamp(38px, 4.5vw, 70px);
     }
 
     * {
@@ -63,27 +59,8 @@
       margin: 0;
     }
 
-    .screen {
-      display: grid;
-      gap: var(--gap);
-      padding: var(--gap);
-      width: 100%;
-      height: 100%;
-      grid-template-columns: 840px 220px;
-      grid-template-rows: 840px 1fr;
-      grid-template-areas:
-        "sub options"
-        "main main";
-    }
-
-    .panel {
-      padding: 12px;
-      border-radius: 20px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .panel-title {
+    /* Area name labels - overlaid without affecting layout */
+    .area-label {
       position: absolute;
       top: 12px;
       left: 12px;
@@ -98,22 +75,33 @@
       z-index: 10;
     }
 
-    .panel-title span:last-child {
-      display: none;
+    /* Root screen grid */
+    .screen {
+      display: grid;
+      gap: var(--gap);
+      padding: var(--gap);
+      width: 100%;
+      height: 100%;
+      grid-template-columns: 840px 220px;
+      grid-template-rows: 840px 1fr;
     }
 
-    .main-area {
-      grid-area: main;
-      display: grid;
-      grid-template-rows: repeat(3, 1fr);
-      gap: 10px;
+    /* Panel base styling */
+    .panel {
+      padding: 12px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
+      border: 1px solid rgba(255, 255, 255, 0.08);
       position: relative;
     }
 
-    .main-area > .panel-title {
-      position: absolute;
-      top: 12px;
-      left: 12px;
+    /* Field Area - Main game field with 3 lanes */
+    .field-area {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      display: grid;
+      grid-template-rows: repeat(3, 1fr);
+      gap: var(--gap);
     }
 
     .lane {
@@ -124,13 +112,13 @@
       border-radius: 16px;
       background: rgba(0, 0, 0, 0.14);
       border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
     }
 
-    .lane-header {
+    .lane-label {
       position: absolute;
       top: 10px;
       right: 10px;
-      left: auto;
       font-size: 0.82rem;
       color: var(--muted);
       background: rgba(11, 23, 32, 0.85);
@@ -140,14 +128,6 @@
       z-index: 10;
     }
 
-    .lane-header span:last-child {
-      display: none;
-    }
-
-    .lane {
-      position: relative;
-    }
-
     .lane-cards {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
@@ -155,69 +135,38 @@
       align-content: center;
     }
 
-    .card,
-    .support-card,
-    .weather-card {
+    .card {
       width: 100%;
       aspect-ratio: 57 / 89;
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.15);
-      display: grid;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-    }
-
-    .card {
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 40%),
         linear-gradient(160deg, rgba(137, 215, 196, 0.3), rgba(17, 38, 51, 0.9));
+      display: grid;
       place-items: end center;
       padding: 10px 8px;
       color: var(--text);
       font-size: 0.78rem;
       text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
-    .sub-area {
-      grid-area: sub;
+    /* Info Area - Information panel (840x840) */
+    .info-area {
+      grid-column: 1;
+      grid-row: 1;
       display: grid;
       grid-template-rows: 1fr 2fr;
-      gap: 10px;
-      position: relative;
-      height: 100%;
-      min-height: 0;
+      gap: var(--gap);
     }
 
-    .sub-area > .panel-title {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-    }
-
-    .char-status-zone {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto 1fr;
-      gap: 10px;
-      height: 100%;
-      min-height: 0;
-    }
-
-    .char-status-zone > .lane-header {
-      display: none;
-    }
-
-    .sub-top {
+    /* Environment Area - Weather, Environment, DateTime (top 1/3) */
+    .environment-area {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: 1fr;
-      gap: 10px;
+      gap: var(--gap);
       position: relative;
-      height: 100%;
-      min-height: 0;
-    }
-
-    .sub-top > .lane-header {
-      display: none;
     }
 
     .tile {
@@ -228,23 +177,46 @@
       display: grid;
       gap: 8px;
       position: relative;
-      height: 100%;
     }
 
-    .tile > span:first-child {
-      display: none;
-    }
-
-    .weather {
+    /* Weather Area */
+    .weather-area {
       background: linear-gradient(180deg, rgba(241, 208, 132, 0.2), rgba(0, 0, 0, 0.18));
-      justify-items: center;
-      align-content: center;
-      grid-template-rows: 1fr;
+      display: grid;
+      place-items: center;
     }
 
-    .env-zone {
+    .weather-card {
+      width: auto;
+      height: 100%;
+      aspect-ratio: 57 / 89;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
+        linear-gradient(160deg, rgba(241, 208, 132, 0.42), rgba(17, 38, 51, 0.92));
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 12px 10px;
+      display: grid;
+      align-content: space-between;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    .weather-card strong {
+      font-size: 1.5rem;
+    }
+
+    .weather-card span {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* Environment/Conditions Area */
+    .conditions-area {
       background: linear-gradient(180deg, rgba(137, 215, 196, 0.12), rgba(0, 0, 0, 0.18));
+      display: grid;
       align-content: start;
+      padding: 12px;
     }
 
     .env-cards {
@@ -266,24 +238,13 @@
       min-width: 48px;
     }
 
-    .weather-card {
-      width: auto;
-      height: 100%;
-      aspect-ratio: 57 / 89;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
-        linear-gradient(160deg, rgba(241, 208, 132, 0.42), rgba(17, 38, 51, 0.92));
-      padding: 12px 10px;
-      align-content: space-between;
-      text-align: center;
-    }
-
-    .weather-card strong {
-      font-size: 1.5rem;
-    }
-
-    .calendar {
+    /* DateTime Area */
+    .datetime-area {
+      background: linear-gradient(180deg, rgba(137, 215, 196, 0.12), rgba(0, 0, 0, 0.18));
+      display: grid;
       align-content: start;
+      padding: 12px;
+      gap: 8px;
     }
 
     .calendar-row {
@@ -293,8 +254,8 @@
     }
 
     .calendar-card {
-      width: var(--calendar-card-width);
-      height: var(--calendar-card-height);
+      width: clamp(26px, 3vw, 46px);
+      height: clamp(38px, 4.5vw, 70px);
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.14);
       background:
@@ -308,91 +269,67 @@
       box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.22);
     }
 
-    .character-zone {
-      display: grid;
-      grid-template-rows: 2fr 1fr;
-      gap: 10px;
-      height: 100%;
-      min-height: 0;
-    }
-
-    .character-zone > .lane-header {
-      display: none;
-    }
-
-    .char-sub-cards {
+    /* Character Area - Portrait, Equipment, Injury, Status (bottom 2/3) */
+    .character-area {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr;
-      gap: 10px;
-      height: 100%;
-      min-height: 0;
+      grid-template-rows: 2fr 1fr;
+      gap: var(--gap);
+      position: relative;
     }
 
+    /* Portrait Area */
     .portrait-area {
-      display: grid;
-      grid-template-rows: 1fr;
-      align-content: center;
-      justify-items: center;
-      text-align: center;
+      grid-column: 1;
+      grid-row: 1 / 3;
       background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
-      height: 100%;
-    }
-
-    .portrait-area > span,
-    .portrait-area > strong {
-      display: none;
-    }
-
-    .condition-area {
       display: grid;
-      grid-template-rows: auto 1fr;
-      height: 100%;
-      min-height: 0;
-    }
-
-    .condition-area > .lane-header {
-      display: none;
+      place-items: center;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .character-portrait {
       width: auto;
       height: 100%;
       aspect-ratio: 57 / 89;
-      align-self: stretch;
-      justify-self: center;
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.16);
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.2));
       display: grid;
       place-items: center;
       color: var(--muted);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
-    .side-card-wrap {
+    /* Support Cards Area - Equipment and Injury */
+    .support-cards-area {
+      grid-column: 2;
+      grid-row: 1;
       display: grid;
-      grid-template-rows: 1fr;
-      align-items: center;
-      justify-items: center;
-      text-align: center;
-      color: var(--muted);
-      height: 100%;
-      min-height: 0;
+      grid-template-columns: 1fr;
+      gap: var(--gap);
     }
 
-    .side-card-wrap > span {
-      display: none;
+    .support-card-wrapper {
+      display: grid;
+      place-items: center;
     }
 
     .support-card {
       width: auto;
       height: 100%;
       aspect-ratio: 57 / 89;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 40%),
         linear-gradient(160deg, rgba(137, 215, 196, 0.24), rgba(17, 38, 51, 0.88));
       padding: 10px;
+      display: grid;
       align-content: space-between;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
     .support-card.injury {
@@ -405,22 +342,22 @@
       font-size: 1rem;
     }
 
-    .support-card span,
-    .weather-card span {
+    .support-card span {
       font-size: 0.72rem;
       color: var(--muted);
     }
 
-    .status-list {
+    /* Status Area */
+    .status-area {
+      grid-column: 2;
+      grid-row: 2;
+      background: rgba(0, 0, 0, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 12px;
       display: grid;
-      grid-template-rows: auto auto auto auto auto;
       gap: 10px;
       align-content: start;
-      height: 100%;
-    }
-
-    .status-list > span {
-      display: none;
     }
 
     .status-row {
@@ -433,9 +370,9 @@
     .status-bar {
       height: 14px;
       border-radius: 999px;
-      overflow: hidden;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
     }
 
     .status-fill {
@@ -444,19 +381,14 @@
       background: linear-gradient(90deg, var(--accent), #59a6f3);
     }
 
+    /* Options Area - Control buttons */
     .options-area {
-      grid-area: options;
+      grid-column: 2;
+      grid-row: 1 / 3;
       display: grid;
       grid-template-rows: 1fr;
-      gap: 10px;
+      gap: var(--gap);
       align-content: stretch;
-      position: relative;
-    }
-
-    .options-area > .panel-title {
-      position: absolute;
-      top: 12px;
-      left: 12px;
     }
 
     .options-buttons {
@@ -467,7 +399,7 @@
     }
 
     .option-button {
-      width: var(--option-button-size);
+      width: min(180px, 100%);
       aspect-ratio: 1 / 1;
       padding: 0;
       border-radius: 18px;
@@ -480,18 +412,23 @@
       font-size: clamp(2rem, 8vw, 3.2rem);
     }
 
-    .note {
-      font-size: 0.84rem;
-      color: var(--muted);
-    }
-
+    /* Landscape orientation */
     @media (orientation: landscape) {
       .screen {
         grid-template-columns: 840px 1080px;
         grid-template-rows: 840px 220px;
-        grid-template-areas:
-          "sub main"
-          "options main";
+      }
+
+      .field-area {
+        grid-column: 2;
+        grid-row: 1 / 3;
+      }
+
+      .options-area {
+        grid-column: 2;
+        grid-row: 2;
+        grid-template-rows: 1fr;
+        grid-template-columns: 1fr;
       }
 
       .options-buttons {
@@ -502,57 +439,25 @@
 </head>
 <body>
   <div class="screen">
-    <div class="panel main-area">
-      <div class="panel-title"><span>フィールドエリア</span><span>1080 × 1080</span></div>
-      <div class="lane">
-        <div class="lane-header"><span>ロケーションレーン</span><span>カード 6 枚想定</span></div>
-        <div class="lane-cards">
-          <div class="card">探索</div>
-          <div class="card">海岸</div>
-          <div class="card">道具</div>
-          <div class="card">焚火</div>
-          <div class="card">狩り</div>
-          <div class="card">釣り</div>
-        </div>
-      </div>
-      <div class="lane">
-        <div class="lane-header"><span>フィールドアイテムレーン</span><span>カード 6 枚想定</span></div>
-        <div class="lane-cards">
-          <div class="card">資材</div>
-          <div class="card">椰子</div>
-          <div class="card">水場</div>
-          <div class="card">調査</div>
-          <div class="card">薬草</div>
-          <div class="card">罠</div>
-        </div>
-      </div>
-      <div class="lane">
-        <div class="lane-header"><span>ハンドレーン</span><span>カード 6 枚想定</span></div>
-        <div class="lane-cards">
-          <div class="card">寝床</div>
-          <div class="card">槍</div>
-          <div class="card">採集</div>
-          <div class="card">荷物</div>
-          <div class="card">修繕</div>
-          <div class="card">地図</div>
-        </div>
-      </div>
-    </div>
+    <!-- Info Area -->
+    <div class="panel info-area">
+      <div class="area-label">情報エリア</div>
 
-    <div class="panel sub-area">
-      <div class="panel-title"><span>情報エリア</span><span>840 × 840</span></div>
-      <div class="sub-top">
-        <div class="lane-header" style="grid-column: 1 / -1"><span>状況エリア</span></div>
-        <div class="tile weather">
-          <span>天候エリア</span>
+      <!-- Environment Area -->
+      <div class="environment-area">
+        <!-- Weather Area -->
+        <div class="tile weather-area">
+          <div class="area-label">天候</div>
           <div class="weather-card">
             <span>Weather</span>
             <strong>☁</strong>
             <span>曇り</span>
           </div>
         </div>
-        <div class="tile env-zone">
-          <span>環境エリア</span>
+
+        <!-- Conditions/Environment Area -->
+        <div class="tile conditions-area">
+          <div class="area-label">環境</div>
           <div class="env-cards">
             <div class="env-card"><span>☀️</span><span>日差し</span></div>
             <div class="env-card"><span>🦟</span><span>虫の多さ</span></div>
@@ -560,8 +465,10 @@
             <div class="env-card"><span>🌬️</span><span>風</span></div>
           </div>
         </div>
-        <div class="tile calendar">
-          <span>日時エリア</span>
+
+        <!-- DateTime Area -->
+        <div class="tile datetime-area">
+          <div class="area-label">日時</div>
           <div class="calendar-row" aria-label="DAY097">
             <div class="calendar-card">D</div>
             <div class="calendar-card">A</div>
@@ -579,37 +486,34 @@
           </div>
         </div>
       </div>
-      <div class="char-status-zone">
-        <div class="lane-header" style="grid-column: 1 / -1"><span>キャラクターエリア</span></div>
-        <div class="character-zone">
-          <div class="lane-header"><span>キャラクター表示エリア</span></div>
-          <div class="tile portrait-area">
-            <span>ポートレイトエリア</span>
-            <div class="character-portrait">Survivor</div>
-            <strong>漂着者</strong>
+
+      <!-- Character Area -->
+      <div class="character-area">
+        <div class="area-label">キャラクター</div>
+
+        <!-- Portrait -->
+        <div class="portrait-area">
+          <div class="character-portrait">Survivor</div>
+        </div>
+
+        <!-- Support Cards (Equipment & Injury) -->
+        <div class="support-cards-area">
+          <div class="support-card-wrapper">
+            <div class="support-card">
+              <strong>🎒</strong>
+              <span>ロープ / 火打石 / 水袋</span>
+            </div>
           </div>
-          <div class="tile condition-area">
-            <div class="lane-header"><span>装備・状態エリア</span></div>
-            <div class="char-sub-cards">
-              <div class="tile side-card-wrap">
-                <span>装備エリア</span>
-                <div class="support-card">
-                  <strong>🎒</strong>
-                  <span>ロープ / 火打石 / 水袋</span>
-                </div>
-              </div>
-              <div class="tile side-card-wrap">
-                <span>怪我エリア</span>
-                <div class="support-card injury">
-                  <strong>🩹</strong>
-                  <span>足首ねんざ / 軽い擦り傷</span>
-                </div>
-              </div>
+          <div class="support-card-wrapper">
+            <div class="support-card injury">
+              <strong>🩹</strong>
+              <span>足首ねんざ / 軽い擦り傷</span>
             </div>
           </div>
         </div>
-        <div class="tile status-list">
-          <span>ステータス</span>
+
+        <!-- Status -->
+        <div class="status-area">
           <div class="status-row"><span>飢え</span><div class="status-bar"><div class="status-fill" style="width: 52%"></div></div></div>
           <div class="status-row"><span>渇き</span><div class="status-bar"><div class="status-fill" style="width: 66%"></div></div></div>
           <div class="status-row"><span>疲労</span><div class="status-bar"><div class="status-fill" style="width: 37%"></div></div></div>
@@ -618,13 +522,56 @@
       </div>
     </div>
 
+    <!-- Options Area -->
     <div class="panel options-area">
-      <div class="panel-title"><span>Options</span><span>220 × 840 / 840 × 220</span></div>
+      <div class="area-label">オプション</div>
       <div class="options-buttons">
         <button class="option-button" type="button" aria-label="設定"><span aria-hidden="true">⚙</span></button>
         <button class="option-button" type="button" aria-label="図鑑"><span aria-hidden="true">📘</span></button>
         <button class="option-button" type="button" aria-label="ログ"><span aria-hidden="true">📝</span></button>
         <button class="option-button" type="button" aria-label="終了"><span aria-hidden="true">⏻</span></button>
+      </div>
+    </div>
+
+    <!-- Field Area -->
+    <div class="field-area">
+      <!-- Location Lane -->
+      <div class="lane">
+        <div class="lane-label">ロケーション</div>
+        <div class="lane-cards">
+          <div class="card">探索</div>
+          <div class="card">海岸</div>
+          <div class="card">道具</div>
+          <div class="card">焚火</div>
+          <div class="card">狩り</div>
+          <div class="card">釣り</div>
+        </div>
+      </div>
+
+      <!-- Field Items Lane -->
+      <div class="lane">
+        <div class="lane-label">フィールドアイテム</div>
+        <div class="lane-cards">
+          <div class="card">資材</div>
+          <div class="card">椰子</div>
+          <div class="card">水場</div>
+          <div class="card">調査</div>
+          <div class="card">薬草</div>
+          <div class="card">罠</div>
+        </div>
+      </div>
+
+      <!-- Hand Lane -->
+      <div class="lane">
+        <div class="lane-label">ハンド</div>
+        <div class="lane-cards">
+          <div class="card">寝床</div>
+          <div class="card">槍</div>
+          <div class="card">採集</div>
+          <div class="card">荷物</div>
+          <div class="card">修繕</div>
+          <div class="card">地図</div>
+        </div>
       </div>
     </div>
   </div>
