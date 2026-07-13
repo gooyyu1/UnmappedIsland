@@ -162,6 +162,85 @@
       height: 100%;
     }
 
+    .condition-cards {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .condition-cards .card {
+      height: 100%;
+      width: auto;
+    }
+
+    .datetime-cards {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .datetime-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .datetime-row .card {
+      height: 60px;
+      width: auto;
+    }
+
+    .status-list {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .status-item {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-item .card {
+      height: 100%;
+      width: auto;
+      flex-shrink: 0;
+    }
+
+    .status-bar-container {
+      flex: 1;
+      height: 28px;
+      background: #ddd;
+      border: 1px solid #999;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .status-bar {
+      height: 100%;
+      background: #4caf50;
+    }
+
     @media (orientation: landscape) {
       .screen {
         grid-template-columns: 840fr 1080fr;
@@ -197,9 +276,31 @@
           </div>
           <div class="area condition-area">
             <div class="label">条件エリア 280×280</div>
+            <div class="condition-cards">
+              <div class="card">条件1</div>
+              <div class="card">条件2</div>
+              <div class="card">条件3</div>
+              <div class="card">条件4</div>
+            </div>
           </div>
           <div class="area datetime-area">
             <div class="label">日時エリア 280×280</div>
+            <div class="datetime-cards">
+              <div class="datetime-row">
+                <div class="card">D</div>
+                <div class="card"></div>
+                <div class="card">1</div>
+                <div class="card">1</div>
+                <div class="card">0</div>
+              </div>
+              <div class="datetime-row">
+                <div class="card">1</div>
+                <div class="card">0</div>
+                <div class="card">:</div>
+                <div class="card">1</div>
+                <div class="card">5</div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="area character-area">
@@ -230,6 +331,32 @@
           </div>
           <div class="area status-display-area">
             <div class="label">ステータスエリア 420×560</div>
+            <div class="status-list">
+              <div class="status-item">
+                <div class="card">HP</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">スタ<br>ミナ</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:65%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">水分</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:45%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">食料</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:30%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">体温</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:70%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">精神</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
