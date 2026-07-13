@@ -57,9 +57,9 @@
       padding: 10px;
       width: 100%;
       height: 100%;
-      /* 縦型: 列 840 : 220、行 1080 : 840 */
+      /* 縦型: 列 840 : 220、行 840 : 1080 (メインは下) */
       grid-template-columns: 840fr 220fr;
-      grid-template-rows: 1080fr 840fr;
+      grid-template-rows: 840fr 1080fr;
     }
 
     .panel {
@@ -86,7 +86,7 @@
     /* ── メインエリア ── */
     .main-area {
       grid-column: 1 / -1;
-      grid-row: 1;
+      grid-row: 2;
       display: grid;
       grid-template-rows: auto repeat(3, minmax(0, 1fr));
       gap: 10px;
@@ -112,18 +112,17 @@
     }
 
     .lane-cards {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      align-content: center;
       min-width: 0;
       min-height: 0;
     }
 
     .card {
-      height: 100%;
-      max-height: 100%;
-      aspect-ratio: 1 / 1.41421356237;
+      width: 100%;
+      aspect-ratio: 57 / 89;
       border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.15);
       background:
@@ -141,7 +140,7 @@
     /* ── サブエリア ── */
     .sub-area {
       grid-column: 1;
-      grid-row: 2;
+      grid-row: 1;
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
       grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
@@ -224,7 +223,7 @@
     /* ── オプションエリア ── */
     .options-area {
       grid-column: 2;
-      grid-row: 2;
+      grid-row: 1;
       display: grid;
       gap: 10px;
       align-content: center;
@@ -258,30 +257,36 @@
     <div class="panel main-area">
       <div class="panel-title"><span>Main Area</span><span>1080 × 1080</span></div>
       <div class="lane">
-        <div class="lane-header"><span>列 1</span><span>カード 4 枚想定</span></div>
+        <div class="lane-header"><span>列 1</span><span>カード 6 枚想定</span></div>
         <div class="lane-cards">
           <div class="card">探索</div>
           <div class="card">海岸</div>
           <div class="card">道具</div>
           <div class="card">焚火</div>
+          <div class="card">狩り</div>
+          <div class="card">釣り</div>
         </div>
       </div>
       <div class="lane">
-        <div class="lane-header"><span>列 2</span><span>カード 4 枚想定</span></div>
+        <div class="lane-header"><span>列 2</span><span>カード 6 枚想定</span></div>
         <div class="lane-cards">
           <div class="card">資材</div>
           <div class="card">椰子</div>
           <div class="card">水場</div>
           <div class="card">調査</div>
+          <div class="card">薬草</div>
+          <div class="card">罠</div>
         </div>
       </div>
       <div class="lane">
-        <div class="lane-header"><span>列 3</span><span>カード 4 枚想定</span></div>
+        <div class="lane-header"><span>列 3</span><span>カード 6 枚想定</span></div>
         <div class="lane-cards">
           <div class="card">寝床</div>
           <div class="card">槍</div>
           <div class="card">採集</div>
           <div class="card">荷物</div>
+          <div class="card">修繕</div>
+          <div class="card">地図</div>
         </div>
       </div>
     </div>
