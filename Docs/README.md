@@ -7,6 +7,7 @@
 ```
 Docs/
 ├── Planning/       # ゲーム企画書
+│   ├── GameConcept.md
 │   └── README.md
 ├── Specification/  # 仕様書
 │   └── README.md
