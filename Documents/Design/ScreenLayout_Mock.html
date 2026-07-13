@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>UnmappedIsland 画面モック</title>
   <style>
+    @font-face {
+      font-family: "Noto Sans JP";
+      src: local("Noto Sans CJK JP");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Noto Sans JP";
+      src: local("Noto Sans CJK JP");
+      font-weight: 700;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -76,7 +87,7 @@
     }
 
     .weather-area { background: #ffe3e3; }
-    .condition-area { background: #fff4cf; }
+    .status-location-area { background: #d5ffe8; }
     .datetime-area { background: #f0dcff; }
 
     .character-area {
@@ -91,7 +102,30 @@
       background: #d9f6ff;
     }
 
-    .portrait-area { background: #ffd7ef; }
+    .portrait-status-area {
+      display: grid;
+      grid-template-columns: 105px 210px 105px;
+      background: #ffd7ef;
+    }
+
+    .portrait-side-area { background: #f7c8e8; }
+    .portrait-center-area { background: #ffd7ef; }
+
+    .side-status-cards {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .side-status-cards .card {
+      width: 100%;
+      height: auto;
+    }
 
     .equipment-injury-area {
       display: grid;
@@ -268,21 +302,6 @@
         <div class="label">情報エリア 840×840</div>
         <div class="area status-area">
           <div class="label">状況エリア 840×280</div>
-          <div class="area weather-area">
-            <div class="label">天候エリア 280×280</div>
-            <div class="single-card-slot">
-              <div class="card">天候カード</div>
-            </div>
-          </div>
-          <div class="area condition-area">
-            <div class="label">条件エリア 280×280</div>
-            <div class="condition-cards">
-              <div class="card">条件1</div>
-              <div class="card">条件2</div>
-              <div class="card">条件3</div>
-              <div class="card">条件4</div>
-            </div>
-          </div>
           <div class="area datetime-area">
             <div class="label">日時エリア 280×280</div>
             <div class="datetime-cards">
@@ -302,15 +321,44 @@
               </div>
             </div>
           </div>
+          <div class="area weather-area">
+            <div class="label">天候エリア 280×280</div>
+            <div class="single-card-slot">
+              <div class="card">天候カード</div>
+            </div>
+          </div>
+          <div class="area status-location-area">
+            <div class="label">ロケーションエリア 280×280</div>
+            <div class="single-card-slot">
+              <div class="card">ロケーションカード</div>
+            </div>
+          </div>
         </div>
         <div class="area character-area">
           <div class="label">キャラクターエリア 840×560</div>
           <div class="area character-display-area">
             <div class="label">キャラクター表示エリア 420×560</div>
-            <div class="area portrait-area">
-              <div class="label">ポートレイトエリア 420×280</div>
-              <div class="single-card-slot">
-                <div class="card">ポートレイトカード</div>
+            <div class="area portrait-status-area">
+              <div class="label">ポートレイト・状況エリア 420×280</div>
+              <div class="area portrait-side-area">
+                <div class="label">状況エリア1 105×280</div>
+                <div class="side-status-cards">
+                  <div class="card">状況1</div>
+                  <div class="card">状況2</div>
+                </div>
+              </div>
+              <div class="area portrait-center-area">
+                <div class="label">ポートレイトエリア 210×280</div>
+                <div class="single-card-slot">
+                  <div class="card">ポートレイトカード</div>
+                </div>
+              </div>
+              <div class="area portrait-side-area">
+                <div class="label">状況エリア2 105×280</div>
+                <div class="side-status-cards">
+                  <div class="card">状況3</div>
+                  <div class="card">状況4</div>
+                </div>
               </div>
             </div>
             <div class="area equipment-injury-area">
