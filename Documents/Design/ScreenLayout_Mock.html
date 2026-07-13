@@ -105,7 +105,7 @@
     .main-area {
       grid-area: main;
       display: grid;
-      grid-template-rows: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(3, 1fr);
       gap: 10px;
       position: relative;
     }
@@ -182,7 +182,7 @@
     .sub-area {
       grid-area: sub;
       display: grid;
-      grid-template-rows: minmax(0, 1fr) minmax(0, 2fr);
+      grid-template-rows: 1fr 2fr;
       gap: 10px;
       position: relative;
     }
@@ -195,8 +195,8 @@
 
     .char-status-zone {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto 1fr;
       gap: 10px;
     }
 
@@ -206,10 +206,9 @@
 
     .sub-top {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       grid-template-rows: 1fr;
       gap: 10px;
-      min-height: 0;
       position: relative;
     }
 
@@ -308,7 +307,7 @@
 
     .character-zone {
       display: grid;
-      grid-template-rows: minmax(0, 2fr) minmax(0, 1fr);
+      grid-template-rows: 2fr 1fr;
       gap: 10px;
       height: 100%;
     }
