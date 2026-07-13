@@ -157,8 +157,15 @@
     .sub-area {
       grid-area: sub;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr);
       gap: 10px;
+    }
+
+    .char-status-zone {
+      display: grid;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 8fr);
+      gap: 10px;
+      min-height: 0;
     }
 
     .sub-top {
@@ -234,10 +241,15 @@
 
     .character-zone {
       display: grid;
-      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr) minmax(0, 0.82fr);
+      grid-template-rows: minmax(0, 1fr) auto;
       gap: 10px;
-      align-items: center;
       min-height: 0;
+    }
+
+    .char-sub-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
 
     .character-card {
@@ -440,33 +452,37 @@
           </div>
         </div>
       </div>
-      <div class="character-zone">
-        <div class="tile side-card-wrap">
-          <span>持ち物カード</span>
-          <div class="support-card">
-            <strong>🎒</strong>
-            <span>ロープ / 火打石 / 水袋</span>
+      <div class="char-status-zone">
+        <div class="character-zone">
+          <div class="tile character-card">
+            <span>キャラクターカード</span>
+            <div class="character-portrait">Survivor</div>
+            <strong>漂着者</strong>
+          </div>
+          <div class="char-sub-cards">
+            <div class="tile side-card-wrap">
+              <span>持ち物カード</span>
+              <div class="support-card">
+                <strong>🎒</strong>
+                <span>ロープ / 火打石 / 水袋</span>
+              </div>
+            </div>
+            <div class="tile side-card-wrap">
+              <span>怪我カード</span>
+              <div class="support-card injury">
+                <strong>🩹</strong>
+                <span>足首ねんざ / 軽い擦り傷</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="tile character-card">
-          <span>キャラクターカード</span>
-          <div class="character-portrait">Survivor</div>
-          <strong>漂着者</strong>
+        <div class="tile status-list">
+          <span>ステータス</span>
+          <div class="status-row"><span>飢え</span><div class="status-bar"><div class="status-fill" style="width: 52%"></div></div></div>
+          <div class="status-row"><span>渇き</span><div class="status-bar"><div class="status-fill" style="width: 66%"></div></div></div>
+          <div class="status-row"><span>疲労</span><div class="status-bar"><div class="status-fill" style="width: 37%"></div></div></div>
+          <div class="status-row"><span>気分</span><div class="status-bar"><div class="status-fill" style="width: 73%"></div></div></div>
         </div>
-        <div class="tile side-card-wrap">
-          <span>怪我カード</span>
-          <div class="support-card injury">
-            <strong>🩹</strong>
-            <span>足首ねんざ / 軽い擦り傷</span>
-          </div>
-        </div>
-      </div>
-      <div class="tile status-list">
-        <span>ステータス</span>
-        <div class="status-row"><span>飢え</span><div class="status-bar"><div class="status-fill" style="width: 52%"></div></div></div>
-        <div class="status-row"><span>渇き</span><div class="status-bar"><div class="status-fill" style="width: 66%"></div></div></div>
-        <div class="status-row"><span>疲労</span><div class="status-bar"><div class="status-fill" style="width: 37%"></div></div></div>
-        <div class="status-row"><span>気分</span><div class="status-bar"><div class="status-fill" style="width: 73%"></div></div></div>
       </div>
     </div>
 
