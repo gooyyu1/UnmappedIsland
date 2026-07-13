@@ -3,545 +3,453 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>UnmappedIsland 画面モック – レスポンシブ</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>UnmappedIsland 画面モック</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0b1720;
-      --panel: #112633;
-      --panel-alt: #18384a;
-      --line: rgba(255, 255, 255, 0.14);
-      --text: #eef7fb;
-      --muted: #b9d0db;
-      --accent: #89d7c4;
-      --warning: #f1d084;
-      --danger: #ee8e8e;
-      --radius: 20px;
-      --gap: 10px;
-      --option-button-size: min(180px, 100%);
-      --calendar-card-width: clamp(26px, 3vw, 46px);
-      --calendar-card-height: clamp(38px, 4.5vw, 70px);
+    @font-face {
+      font-family: "Noto Sans JP";
+      src: local("Noto Sans CJK JP");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Noto Sans JP";
+      src: local("Noto Sans CJK JP");
+      font-weight: 700;
     }
 
     * {
       box-sizing: border-box;
     }
 
-    button {
-      font: inherit;
-      line-height: 1;
-      margin: 0;
-    }
-
     html, body {
       margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
-      font-family:
-        "Noto Sans JP",
-        "Noto Sans CJK JP",
-        "Hiragino Sans",
-        "Hiragino Kaku Gothic ProN",
-        "Yu Gothic",
-        "Meiryo",
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background:
-        radial-gradient(circle at top, rgba(84, 149, 170, 0.2), transparent 35%),
-        var(--bg);
-      color: var(--text);
-    }
-
-    h2, p {
-      margin: 0;
+      font-family: "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
     }
 
     .screen {
       display: grid;
-      gap: var(--gap);
-      padding: var(--gap);
       width: 100%;
       height: 100%;
-      grid-template-columns: 840fr 220fr;
+      grid-template-columns: 1080fr;
       grid-template-rows: 840fr 1080fr;
       grid-template-areas:
-        "sub options"
-        "main main";
+        "dashboard"
+        "field";
     }
 
-    .panel {
-      min-width: 0;
-      min-height: 0;
-      padding: 12px;
-      border-radius: 20px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      overflow: hidden;
-    }
-
-    .panel-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .main-area {
-      grid-area: main;
-      display: grid;
-      grid-template-rows: auto repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
+    .area,
     .lane {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 8px;
-      padding: 10px;
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
       overflow: hidden;
+      border: 1px solid #000;
     }
 
-    .lane-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: var(--muted);
-    }
-
-    .lane-cards {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 6px;
-      align-content: center;
-      min-width: 0;
-      min-height: 0;
-    }
-
-    .card,
-    .support-card,
-    .weather-card {
-      width: 100%;
-      aspect-ratio: 57 / 89;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      display: grid;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    .label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      font-size: 14px;
+      line-height: 1.2;
+      color: #000;
+      background: rgba(255, 255, 255, 0.8);
     }
 
     .card {
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 40%),
-        linear-gradient(160deg, rgba(137, 215, 196, 0.3), rgba(17, 38, 51, 0.9));
-      place-items: end center;
-      padding: 10px 8px;
-      color: var(--text);
-      font-size: 0.78rem;
-      text-align: center;
-    }
-
-    .sub-area {
-      grid-area: sub;
-      display: grid;
-      grid-template-rows: auto minmax(0, 1fr) minmax(0, 2fr);
-      gap: 10px;
-      overflow: hidden;
-    }
-
-    .char-status-zone {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 10px;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .sub-top {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      grid-template-rows: auto 1fr;
-      gap: 10px;
-      min-height: 0;
-    }
-
-    .tile {
-      min-width: 0;
-      min-height: 0;
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.16);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      padding: 12px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .weather {
-      background: linear-gradient(180deg, rgba(241, 208, 132, 0.2), rgba(0, 0, 0, 0.18));
-      justify-items: center;
-      align-content: start;
-    }
-
-    .env-zone {
-      background: linear-gradient(180deg, rgba(137, 215, 196, 0.12), rgba(0, 0, 0, 0.18));
-      align-content: start;
-    }
-
-    .env-cards {
+      aspect-ratio: 58 / 89;
+      border: 1px solid #000;
+      background: rgba(255, 255, 255, 0.7);
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .env-card {
-      display: grid;
-      gap: 4px;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--muted);
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      min-width: 48px;
-    }
-
-    .weather-card {
-      max-width: 70px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 42%),
-        linear-gradient(160deg, rgba(241, 208, 132, 0.42), rgba(17, 38, 51, 0.92));
-      padding: 12px 10px;
-      align-content: space-between;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
       text-align: center;
     }
 
-    .weather-card strong {
-      font-size: 1.5rem;
-    }
-
-    .calendar {
-      align-content: start;
-      min-width: 0;
-    }
-
-    .calendar-row {
-      display: flex;
-      gap: 4px;
-      flex-wrap: nowrap;
-    }
-
-    .calendar-card {
-      width: var(--calendar-card-width);
-      height: var(--calendar-card-height);
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.08) 48%, rgba(255, 255, 255, 0.05) 49%, rgba(0, 0, 0, 0.18)),
-        var(--panel-alt);
+    .dashboard-area {
+      grid-area: dashboard;
       display: grid;
-      place-items: center;
-      font-size: clamp(1rem, 2.4vw, 1.35rem);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.22);
+      grid-template-columns: 840fr 240fr;
+      background: #f6f6f6;
     }
 
-    .character-zone {
+    .info-area {
       display: grid;
-      grid-template-rows: auto minmax(0, 2fr) minmax(0, 1fr);
-      gap: 10px;
-      min-height: 0;
-      overflow: hidden;
+      grid-template-rows: 280fr 560fr;
+      background: #dceeff;
     }
 
-    .char-sub-cards {
+    .status-area {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: #d8ffd8;
+    }
+
+    .weather-area { background: #ffe3e3; }
+    .status-location-area { background: #d5ffe8; }
+    .datetime-area { background: #f0dcff; }
+
+    .character-area {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      min-height: 0;
+      background: #ffe5d1;
     }
 
-    .portrait-area {
-      min-height: 0;
-      overflow: hidden;
-      align-content: center;
-      justify-items: center;
-      text-align: center;
-      background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
-      grid-template-rows: auto minmax(0, 1fr) auto;
-    }
-
-    .condition-area {
-      grid-template-rows: auto 1fr;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .character-portrait {
-      grid-row: 2;
-      align-self: stretch;
-      justify-self: center;
-      width: auto;
-      max-width: min(100%, 150px);
-      min-height: 0;
-      aspect-ratio: 57 / 89;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.2));
+    .character-display-area {
       display: grid;
-      place-items: center;
-      color: var(--muted);
+      grid-template-rows: 1fr 1fr;
+      background: #d9f6ff;
     }
 
-    .side-card-wrap {
+    .portrait-status-area {
       display: grid;
+      grid-template-columns: 105px 210px 105px;
+      background: #ffd7ef;
+    }
+
+    .portrait-side-area { background: #f7c8e8; }
+    .portrait-center-area { background: #ffd7ef; }
+
+    .side-status-cards {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
       gap: 8px;
-      justify-items: center;
-      text-align: center;
-      color: var(--muted);
+      align-items: center;
     }
 
-    .support-card {
-      max-width: 120px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 40%),
-        linear-gradient(160deg, rgba(137, 215, 196, 0.24), rgba(17, 38, 51, 0.88));
-      padding: 10px;
-      align-content: space-between;
+    .side-status-cards .card {
+      width: 100%;
+      height: auto;
     }
 
-    .support-card.injury {
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 40%),
-        linear-gradient(160deg, rgba(238, 142, 142, 0.32), rgba(17, 38, 51, 0.9));
-    }
-
-    .support-card strong {
-      font-size: 1rem;
-    }
-
-    .support-card span,
-    .weather-card span {
-      font-size: 0.72rem;
-      color: var(--muted);
-    }
-
-    .status-list {
-      align-content: start;
-      gap: 10px;
-      overflow: hidden;
-    }
-
-    .status-row {
+    .equipment-injury-area {
       display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 0.86rem;
+      grid-template-columns: 1fr 1fr;
+      background: #d8e8ff;
     }
 
-    .status-bar {
-      height: 14px;
-      border-radius: 999px;
-      overflow: hidden;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .status-fill {
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--accent), #59a6f3);
-    }
+    .equipment-area { background: #d6fff0; }
+    .injury-area { background: #ffe0d6; }
+    .status-display-area { background: #e3ffe0; }
 
     .options-area {
-      grid-area: options;
       display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 10px;
-      align-content: stretch;
-    }
-
-    .options-buttons {
-      display: grid;
-      gap: 10px;
-      justify-items: center;
-      align-content: center;
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(4, 1fr);
+      background: #f5e9d5;
     }
 
     .option-button {
-      width: var(--option-button-size);
-      aspect-ratio: 1 / 1;
-      padding: 0;
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: var(--panel-alt);
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-      font-size: clamp(2rem, 8vw, 3.2rem);
+      width: 100%;
+      height: 100%;
+      border: 1px solid #000;
+      background: #fff;
+      font: inherit;
+      font-size: 20px;
     }
 
-    .note {
-      font-size: 0.84rem;
-      color: var(--muted);
+    .field-area {
+      grid-area: field;
+      display: grid;
+      grid-template-rows: repeat(3, 1fr);
+      background: #d6d6ff;
+    }
+
+    .location-lane { background: #ffe1b3; }
+    .field-item-lane { background: #d9ffd5; }
+    .hand-lane { background: #e1dbff; }
+
+    .lane-cards {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      left: 20px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      align-items: start;
+    }
+
+    .lane-cards .card {
+      width: 100%;
+      height: auto;
+    }
+
+    .single-card-slot {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .single-card-slot .card {
+      width: auto;
+      height: 100%;
+    }
+
+    .condition-cards {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 8px;
+      align-items: center;
+      justify-items: center;
+    }
+
+    .condition-cards .card {
+      height: 100%;
+      width: auto;
+    }
+
+    .datetime-cards {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .datetime-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .datetime-row .card {
+      height: 60px;
+      width: auto;
+    }
+
+    .status-list {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .status-item {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-item .card {
+      height: 100%;
+      width: auto;
+      flex-shrink: 0;
+    }
+
+    .status-bar-container {
+      flex: 1;
+      height: 28px;
+      background: #ddd;
+      border: 1px solid #999;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .status-bar {
+      height: 100%;
+      background: #4caf50;
     }
 
     @media (orientation: landscape) {
       .screen {
         grid-template-columns: 840fr 1080fr;
-        grid-template-rows: 840fr 220fr;
-        grid-template-areas:
-          "sub main"
-          "options main";
+        grid-template-rows: 1080fr;
+        grid-template-areas: "dashboard field";
       }
 
-      .options-buttons {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+      .dashboard-area {
+        grid-template-columns: 840fr;
+        grid-template-rows: 840fr 240fr;
+      }
+
+      .options-area {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: 1fr;
       }
     }
   </style>
 </head>
 <body>
   <div class="screen">
-    <div class="panel main-area">
-      <div class="panel-title"><span>フィールドエリア</span><span>1080 × 1080</span></div>
-      <div class="lane">
-        <div class="lane-header"><span>ロケーションレーン</span><span>カード 6 枚想定</span></div>
-        <div class="lane-cards">
-          <div class="card">探索</div>
-          <div class="card">海岸</div>
-          <div class="card">道具</div>
-          <div class="card">焚火</div>
-          <div class="card">狩り</div>
-          <div class="card">釣り</div>
-        </div>
-      </div>
-      <div class="lane">
-        <div class="lane-header"><span>フィールドアイテムレーン</span><span>カード 6 枚想定</span></div>
-        <div class="lane-cards">
-          <div class="card">資材</div>
-          <div class="card">椰子</div>
-          <div class="card">水場</div>
-          <div class="card">調査</div>
-          <div class="card">薬草</div>
-          <div class="card">罠</div>
-        </div>
-      </div>
-      <div class="lane">
-        <div class="lane-header"><span>ハンドレーン</span><span>カード 6 枚想定</span></div>
-        <div class="lane-cards">
-          <div class="card">寝床</div>
-          <div class="card">槍</div>
-          <div class="card">採集</div>
-          <div class="card">荷物</div>
-          <div class="card">修繕</div>
-          <div class="card">地図</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel sub-area">
-      <div class="panel-title"><span>情報エリア</span><span>840 × 840</span></div>
-      <div class="sub-top">
-        <div class="lane-header" style="grid-column: 1 / -1"><span>状況エリア</span></div>
-        <div class="tile weather">
-          <span>天候エリア</span>
-          <div class="weather-card">
-            <span>Weather</span>
-            <strong>☁</strong>
-            <span>曇り</span>
+    <div class="area dashboard-area">
+      <div class="label">ダッシュボードエリア 840×1080</div>
+      <div class="area info-area">
+        <div class="label">情報エリア 840×840</div>
+        <div class="area status-area">
+          <div class="label">状況エリア 840×280</div>
+          <div class="area datetime-area">
+            <div class="label">日時エリア 280×280</div>
+            <div class="datetime-cards">
+              <div class="datetime-row">
+                <div class="card">D</div>
+                <div class="card"></div>
+                <div class="card">1</div>
+                <div class="card">1</div>
+                <div class="card">0</div>
+              </div>
+              <div class="datetime-row">
+                <div class="card">1</div>
+                <div class="card">0</div>
+                <div class="card">:</div>
+                <div class="card">1</div>
+                <div class="card">5</div>
+              </div>
+            </div>
+          </div>
+          <div class="area weather-area">
+            <div class="label">天候エリア 280×280</div>
+            <div class="single-card-slot">
+              <div class="card">天候カード</div>
+            </div>
+          </div>
+          <div class="area status-location-area">
+            <div class="label">ロケーションエリア 280×280</div>
+            <div class="single-card-slot">
+              <div class="card">ロケーションカード</div>
+            </div>
           </div>
         </div>
-        <div class="tile env-zone">
-          <span>環境エリア</span>
-          <div class="env-cards">
-            <div class="env-card"><span>☀️</span><span>日差し</span></div>
-            <div class="env-card"><span>🦟</span><span>虫の多さ</span></div>
-            <div class="env-card"><span>💧</span><span>湿度</span></div>
-            <div class="env-card"><span>🌬️</span><span>風</span></div>
-          </div>
-        </div>
-        <div class="tile calendar">
-          <span>日時エリア</span>
-          <div class="calendar-row" aria-label="DAY097">
-            <div class="calendar-card">D</div>
-            <div class="calendar-card">A</div>
-            <div class="calendar-card">Y</div>
-            <div class="calendar-card">0</div>
-            <div class="calendar-card">9</div>
-            <div class="calendar-card">7</div>
-          </div>
-          <div class="calendar-row" aria-label="10:15">
-            <div class="calendar-card">1</div>
-            <div class="calendar-card">0</div>
-            <div class="calendar-card">:</div>
-            <div class="calendar-card">1</div>
-            <div class="calendar-card">5</div>
-          </div>
-        </div>
-      </div>
-      <div class="char-status-zone">
-        <div class="lane-header" style="grid-column: 1 / -1"><span>キャラクターエリア</span></div>
-        <div class="character-zone">
-          <div class="lane-header"><span>キャラクター表示エリア</span></div>
-          <div class="tile portrait-area">
-            <span>ポートレイトエリア</span>
-            <div class="character-portrait">Survivor</div>
-            <strong>漂着者</strong>
-          </div>
-          <div class="tile condition-area">
-            <div class="lane-header"><span>装備・状態エリア</span></div>
-            <div class="char-sub-cards">
-              <div class="tile side-card-wrap">
-                <span>装備エリア</span>
-                <div class="support-card">
-                  <strong>🎒</strong>
-                  <span>ロープ / 火打石 / 水袋</span>
+        <div class="area character-area">
+          <div class="label">キャラクターエリア 840×560</div>
+          <div class="area character-display-area">
+            <div class="label">キャラクター表示エリア 420×560</div>
+            <div class="area portrait-status-area">
+              <div class="label">ポートレイト・状況エリア 420×280</div>
+              <div class="area portrait-side-area">
+                <div class="label">条件エリア1 105×280</div>
+                <div class="side-status-cards">
+                  <div class="card">条件1</div>
+                  <div class="card">条件2</div>
                 </div>
               </div>
-              <div class="tile side-card-wrap">
-                <span>怪我エリア</span>
-                <div class="support-card injury">
-                  <strong>🩹</strong>
-                  <span>足首ねんざ / 軽い擦り傷</span>
+              <div class="area portrait-center-area">
+                <div class="label">ポートレイトエリア 210×280</div>
+                <div class="single-card-slot">
+                  <div class="card">ポートレイトカード</div>
+                </div>
+              </div>
+              <div class="area portrait-side-area">
+                <div class="label">条件エリア2 105×280</div>
+                <div class="side-status-cards">
+                  <div class="card">条件3</div>
+                  <div class="card">条件4</div>
+                </div>
+              </div>
+            </div>
+            <div class="area equipment-injury-area">
+              <div class="label">装備・怪我エリア 420×280</div>
+              <div class="area equipment-area">
+                <div class="label">装備エリア 210×280</div>
+                <div class="single-card-slot">
+                  <div class="card">装備カード</div>
+                </div>
+              </div>
+              <div class="area injury-area">
+                <div class="label">怪我エリア 210×280</div>
+                <div class="single-card-slot">
+                  <div class="card">怪我カード</div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div class="tile status-list">
-          <span>ステータス</span>
-          <div class="status-row"><span>飢え</span><div class="status-bar"><div class="status-fill" style="width: 52%"></div></div></div>
-          <div class="status-row"><span>渇き</span><div class="status-bar"><div class="status-fill" style="width: 66%"></div></div></div>
-          <div class="status-row"><span>疲労</span><div class="status-bar"><div class="status-fill" style="width: 37%"></div></div></div>
-          <div class="status-row"><span>気分</span><div class="status-bar"><div class="status-fill" style="width: 73%"></div></div></div>
+          <div class="area status-display-area">
+            <div class="label">ステータスエリア 420×560</div>
+            <div class="status-list">
+              <div class="status-item">
+                <div class="card">HP</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">スタ<br>ミナ</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:65%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">水分</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:45%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">食料</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:30%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">体温</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:70%"></div></div>
+              </div>
+              <div class="status-item">
+                <div class="card">精神</div>
+                <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      <div class="area options-area">
+        <div class="label">オプションエリア 840×240</div>
+        <button class="option-button" type="button">ボタン1</button>
+        <button class="option-button" type="button">ボタン2</button>
+        <button class="option-button" type="button">ボタン3</button>
+        <button class="option-button" type="button">ボタン4</button>
+      </div>
     </div>
-
-    <div class="panel options-area">
-      <div class="panel-title"><span>Options</span><span>220 × 840 / 840 × 220</span></div>
-      <div class="options-buttons">
-        <button class="option-button" type="button" aria-label="設定"><span aria-hidden="true">⚙</span></button>
-        <button class="option-button" type="button" aria-label="図鑑"><span aria-hidden="true">📘</span></button>
-        <button class="option-button" type="button" aria-label="ログ"><span aria-hidden="true">📝</span></button>
-        <button class="option-button" type="button" aria-label="終了"><span aria-hidden="true">⏻</span></button>
+    <div class="area field-area">
+      <div class="label">フィールドエリア 1080×1080</div>
+      <div class="lane location-lane">
+        <div class="label">ロケーションレーン 1080×360</div>
+        <div class="lane-cards">
+          <div class="card">ロケ1</div>
+          <div class="card">ロケ2</div>
+          <div class="card">ロケ3</div>
+          <div class="card">ロケ4</div>
+          <div class="card">ロケ5</div>
+          <div class="card">ロケ6</div>
+        </div>
+      </div>
+      <div class="lane field-item-lane">
+        <div class="label">フィールドアイテムレーン 1080×360</div>
+        <div class="lane-cards">
+          <div class="card">アイテム1</div>
+          <div class="card">アイテム2</div>
+          <div class="card">アイテム3</div>
+          <div class="card">アイテム4</div>
+          <div class="card">アイテム5</div>
+          <div class="card">アイテム6</div>
+        </div>
+      </div>
+      <div class="lane hand-lane">
+        <div class="label">ハンドレーン 1080×360</div>
+        <div class="lane-cards">
+          <div class="card">ハンド1</div>
+          <div class="card">ハンド2</div>
+          <div class="card">ハンド3</div>
+          <div class="card">ハンド4</div>
+          <div class="card">ハンド5</div>
+          <div class="card">ハンド6</div>
+        </div>
       </div>
     </div>
   </div>
