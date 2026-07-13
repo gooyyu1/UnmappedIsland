@@ -46,6 +46,7 @@ UnmappedIsland/
 │   ├── Planning/         # 企画書
 │   ├── Specification/    # 仕様書
 │   └── Design/           # 設計書
+├── docs/                 # GitHub Pages 用 HTML（Documents/ から自動生成・直接編集不可）
 ├── Packages/             # Unityパッケージ設定
 └── ProjectSettings/      # Unityプロジェクト設定
 ```
