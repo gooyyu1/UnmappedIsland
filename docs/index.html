@@ -3,40 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UnmappedIsland UI Mock</title>
+  <title>UnmappedIsland – ドキュメント</title>
   <style>
     :root {
       color-scheme: dark;
       --bg: #0b1720;
-      --panel: #112633;
       --panel-alt: #18384a;
-      --panel-soft: #214e62;
       --line: rgba(255, 255, 255, 0.14);
       --text: #eef7fb;
       --muted: #b9d0db;
       --accent: #89d7c4;
-      --accent-soft: rgba(137, 215, 196, 0.18);
-      --warning: #f1d084;
-      --danger: #ee8e8e;
       --shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-      --radius: 20px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       font-family:
-        "Hiragino Sans",
-        "Hiragino Kaku Gothic ProN",
-        "Yu Gothic",
-        "Meiryo",
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+        "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo",
+        -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
         radial-gradient(circle at top, rgba(84, 149, 170, 0.2), transparent 35%),
         var(--bg);
@@ -44,475 +30,129 @@
     }
 
     main {
-      width: min(1280px, 100%);
+      width: min(960px, 100%);
       margin: 0 auto;
-      padding: 24px 16px 40px;
+      padding: 40px 20px 60px;
     }
 
-    h1,
-    h2,
-    p {
-      margin: 0;
-    }
+    h1, h2, p { margin: 0; }
 
     .page-header {
       display: grid;
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 24px;
     }
 
-    .page-header p {
-      color: var(--muted);
-      line-height: 1.6;
-    }
+    .page-header p { color: var(--muted); line-height: 1.6; }
 
-    .frames {
-      display: grid;
-      gap: 24px;
-    }
-
-    .frame-block {
-      display: grid;
-      gap: 12px;
-    }
-
-    .frame-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .chip {
-      padding: 6px 10px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.04);
-    }
-
-    .frame {
-      border: 1px solid var(--line);
-      border-radius: 28px;
-      padding: 14px;
-      background: rgba(255, 255, 255, 0.04);
-      box-shadow: var(--shadow);
-    }
-
-    .screen {
-      display: grid;
-      gap: 10px;
-      width: 100%;
-      border-radius: 20px;
-      overflow: hidden;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .screen.portrait {
-      aspect-ratio: 9 / 16;
-      grid-template-columns: 840fr 220fr;
-      grid-template-rows: 1080fr 840fr;
-    }
-
-    .screen.landscape {
-      aspect-ratio: 16 / 9;
-      grid-template-columns: 1080fr 840fr;
-      grid-template-rows: 840fr 220fr;
-    }
-
-    .panel {
-      min-width: 0;
-      min-height: 0;
-      padding: 12px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.08));
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .panel-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
+    .section-title {
       font-size: 0.82rem;
-      color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 12px;
     }
 
-    .main-area {
+    .card-grid {
       display: grid;
-      grid-template-rows: auto repeat(3, minmax(0, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
     }
 
-    .portrait .main-area {
-      grid-column: 1 / -1;
-      grid-row: 1;
-    }
-
-    .landscape .main-area {
-      grid-column: 1;
-      grid-row: 1 / -1;
-    }
-
-    .lane {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 8px;
-      padding: 10px;
+    .doc-card {
+      display: block;
+      padding: 20px;
       border-radius: 16px;
-      background: rgba(0, 0, 0, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      overflow: hidden;
-    }
-
-    .lane-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: var(--muted);
-    }
-
-    .lane-cards {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-width: 0;
-      min-height: 0;
-    }
-
-    .card {
-      height: 100%;
-      max-height: 100%;
-      aspect-ratio: 1 / 1.41421356237;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 40%),
-        linear-gradient(160deg, rgba(137, 215, 196, 0.3), rgba(17, 38, 51, 0.9));
-      display: grid;
-      place-items: end center;
-      padding: 10px 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
       color: var(--text);
-      font-size: 0.78rem;
-      text-align: center;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
     }
 
-    .sub-area {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-      grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
-      gap: 10px;
+    .doc-card:hover {
+      background: rgba(137, 215, 196, 0.08);
+      border-color: var(--accent);
     }
 
-    .portrait .sub-area {
-      grid-column: 1;
-      grid-row: 2;
-    }
-
-    .landscape .sub-area {
-      grid-column: 2;
-      grid-row: 1;
-    }
-
-    .tile {
-      min-width: 0;
-      min-height: 0;
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.16);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      padding: 12px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .weather {
-      align-content: start;
-      background: linear-gradient(180deg, rgba(241, 208, 132, 0.2), rgba(0, 0, 0, 0.18));
-    }
-
-    .clock {
-      align-content: start;
-    }
-
-    .clock strong,
-    .weather strong {
-      font-size: 1.1rem;
-    }
-
-    .character-card {
-      align-content: center;
-      justify-items: center;
-      text-align: center;
-      background: linear-gradient(180deg, rgba(238, 142, 142, 0.18), rgba(0, 0, 0, 0.18));
-    }
-
-    .character-portrait {
-      width: min(100%, 140px);
-      aspect-ratio: 1 / 1.41421356237;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.2));
-      display: grid;
-      place-items: center;
-      color: var(--muted);
-    }
-
-    .status-list {
-      align-content: start;
-      gap: 10px;
-    }
-
-    .status-row {
-      display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 0.86rem;
-    }
-
-    .status-bar {
-      height: 14px;
-      border-radius: 999px;
-      overflow: hidden;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .status-fill {
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--accent), #59a6f3);
-    }
-
-    .options-area {
-      display: grid;
-      gap: 10px;
-      align-content: center;
-      justify-content: center;
-    }
-
-    .main-area > .panel-title,
-    .sub-area > .panel-title,
-    .options-area > .panel-title {
-      grid-column: 1 / -1;
-    }
-
-    .portrait .options-area {
-      grid-column: 2;
-      grid-row: 2;
-    }
-
-    .landscape .options-area {
-      grid-column: 2;
-      grid-row: 2;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      align-content: stretch;
-    }
-
-    .option-button {
-      min-width: 0;
-      padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      background: var(--panel-alt);
-      color: var(--text);
-      text-align: center;
+    .doc-card-title {
       font-weight: 600;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+      margin-bottom: 6px;
+      color: var(--accent);
     }
 
-    .note {
+    .doc-card-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.74rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(137, 215, 196, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(137, 215, 196, 0.3);
+      margin-bottom: 8px;
+    }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
       font-size: 0.84rem;
       color: var(--muted);
-    }
-
-    @media (max-width: 720px) {
-      main {
-        padding-inline: 10px;
-      }
-
-      .frame {
-        padding: 10px;
-      }
-
-      .panel {
-        padding: 8px;
-      }
-
-      .lane,
-      .tile {
-        padding: 8px;
-      }
     }
   </style>
 </head>
 <body>
   <main>
     <section class="page-header">
-      <h1>UnmappedIsland 画面レイアウト検討モック</h1>
-      <p>GitHub Pages の <code>/docs</code> 公開を想定した単一 HTML モックです。縦型・横型の Full HD レイアウトを並べ、1080×1080 のメイン描画領域、840×840 のサブ領域、最小領域のオプション配置を同じ構成要素で確認できます。</p>
+      <h1>UnmappedIsland ドキュメント</h1>
+      <p>ゲーム開発に関する企画・設計ドキュメント一覧です。</p>
     </section>
 
-    <section class="frames">
-      <article class="frame-block">
-        <h2>縦型 1080 × 1920</h2>
-        <div class="frame-meta">
-          <span class="chip">上部: 1080 × 1080 メイン領域</span>
-          <span class="chip">左下: 840 × 840 サブ領域</span>
-          <span class="chip">右下: 220 × 840 オプション領域</span>
-        </div>
-        <div class="frame">
-          <section class="screen portrait">
-            <div class="panel main-area">
-              <div class="panel-title"><span>Main Area</span><span>1080 × 1080</span></div>
-              <div class="lane">
-                <div class="lane-header"><span>列 1</span><span>カード 4 枚想定</span></div>
-                <div class="lane-cards">
-                  <div class="card">探索</div>
-                  <div class="card">海岸</div>
-                  <div class="card">道具</div>
-                  <div class="card">焚火</div>
-                </div>
-              </div>
-              <div class="lane">
-                <div class="lane-header"><span>列 2</span><span>カード 4 枚想定</span></div>
-                <div class="lane-cards">
-                  <div class="card">資材</div>
-                  <div class="card">椰子</div>
-                  <div class="card">水場</div>
-                  <div class="card">調査</div>
-                </div>
-              </div>
-              <div class="lane">
-                <div class="lane-header"><span>列 3</span><span>カード 4 枚想定</span></div>
-                <div class="lane-cards">
-                  <div class="card">寝床</div>
-                  <div class="card">槍</div>
-                  <div class="card">採集</div>
-                  <div class="card">荷物</div>
-                </div>
-              </div>
-            </div>
+    <p class="section-title">設計書 / Design</p>
+    <div class="card-grid">
+      <a class="doc-card" href="Design/ScreenLayout.html">
+        <span class="badge">Design</span>
+        <div class="doc-card-title">画面レイアウト検討</div>
+        <div class="doc-card-desc">縦型・横型の画面レイアウトモック概要。スクリーンショットと実寸 HTML へのリンクを含みます。</div>
+      </a>
+      <a class="doc-card" href="Design/ScreenLayout_Portrait.html">
+        <span class="badge">Mock</span>
+        <div class="doc-card-title">画面モック – 縦型 1080×1920</div>
+        <div class="doc-card-desc">縦向きスマートフォン実寸表示用スタンドアロン HTML モック。</div>
+      </a>
+      <a class="doc-card" href="Design/ScreenLayout_Landscape.html">
+        <span class="badge">Mock</span>
+        <div class="doc-card-title">画面モック – 横型 1920×1080</div>
+        <div class="doc-card-desc">横向きスマートフォン実寸表示用スタンドアロン HTML モック。</div>
+      </a>
+      <a class="doc-card" href="Design/GameElementDefinition.html">
+        <span class="badge">Design</span>
+        <div class="doc-card-title">ゲーム内要素の定義方式</div>
+        <div class="doc-card-desc">ロケーション・アイテム・キャラクターパラメーター・アクションの定義方式設計。</div>
+      </a>
+    </div>
 
-            <div class="panel sub-area">
-              <div class="panel-title"><span>Sub Area</span><span>840 × 840</span></div>
-              <div class="tile weather">
-                <span>天候カード</span>
-                <strong>晴れ / 風やや強い</strong>
-                <span class="note">日差し・蒸発量の影響を表示</span>
-              </div>
-              <div class="tile clock">
-                <span>日付 / 時刻</span>
-                <strong>Day 08</strong>
-                <strong>14:35</strong>
-              </div>
-              <div class="tile character-card">
-                <span>キャラクターカード</span>
-                <div class="character-portrait">Survivor</div>
-                <strong>漂着者</strong>
-              </div>
-              <div class="tile status-list">
-                <span>ステータス</span>
-                <div class="status-row"><span>飢え</span><div class="status-bar"><div class="status-fill" style="width: 52%"></div></div></div>
-                <div class="status-row"><span>渇き</span><div class="status-bar"><div class="status-fill" style="width: 66%"></div></div></div>
-                <div class="status-row"><span>疲労</span><div class="status-bar"><div class="status-fill" style="width: 37%"></div></div></div>
-                <div class="status-row"><span>気分</span><div class="status-bar"><div class="status-fill" style="width: 73%"></div></div></div>
-              </div>
-            </div>
+    <p class="section-title">企画書 / Planning</p>
+    <div class="card-grid">
+      <a class="doc-card" href="Planning/GameConcept.html">
+        <span class="badge">Planning</span>
+        <div class="doc-card-title">ゲームコンセプト</div>
+        <div class="doc-card-desc">サバイバルカードゲームのコンセプト・ターゲット・ゲームプレイ概要。</div>
+      </a>
+    </div>
 
-            <div class="panel options-area">
-              <div class="panel-title"><span>Options</span><span>220 × 840</span></div>
-              <div class="option-button">設定</div>
-              <div class="option-button">図鑑</div>
-              <div class="option-button">ログ</div>
-              <div class="option-button">終了</div>
-            </div>
-          </section>
-        </div>
-      </article>
-
-      <article class="frame-block">
-        <h2>横型 1920 × 1080</h2>
-        <div class="frame-meta">
-          <span class="chip">左: 1080 × 1080 メイン領域</span>
-          <span class="chip">右上: 840 × 840 サブ領域</span>
-          <span class="chip">右下: 840 × 220 オプション領域</span>
-        </div>
-        <div class="frame">
-          <section class="screen landscape">
-            <div class="panel main-area">
-              <div class="panel-title"><span>Main Area</span><span>1080 × 1080</span></div>
-              <div class="lane">
-                <div class="lane-header"><span>列 1</span><span>カード 4 枚想定</span></div>
-                <div class="lane-cards">
-                  <div class="card">探索</div>
-                  <div class="card">海岸</div>
-                  <div class="card">道具</div>
-                  <div class="card">焚火</div>
-                </div>
-              </div>
-              <div class="lane">
-                <div class="lane-header"><span>列 2</span><span>カード 4 枚想定</span></div>
-                <div class="lane-cards">
-                  <div class="card">資材</div>
-                  <div class="card">椰子</div>
-                  <div class="card">水場</div>
-                  <div class="card">調査</div>
-                </div>
-              </div>
-              <div class="lane">
-                <div class="lane-header"><span>列 3</span><span>カード 4 枚想定</span></div>
-                <div class="lane-cards">
-                  <div class="card">寝床</div>
-                  <div class="card">槍</div>
-                  <div class="card">採集</div>
-                  <div class="card">荷物</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="panel sub-area">
-              <div class="panel-title"><span>Sub Area</span><span>840 × 840</span></div>
-              <div class="tile weather">
-                <span>天候カード</span>
-                <strong>曇り / 雨の気配</strong>
-                <span class="note">気温・視界・乾燥度の目安</span>
-              </div>
-              <div class="tile clock">
-                <span>日付 / 時刻</span>
-                <strong>Day 08</strong>
-                <strong>14:35</strong>
-              </div>
-              <div class="tile character-card">
-                <span>キャラクターカード</span>
-                <div class="character-portrait">Survivor</div>
-                <strong>漂着者</strong>
-              </div>
-              <div class="tile status-list">
-                <span>ステータス</span>
-                <div class="status-row"><span>飢え</span><div class="status-bar"><div class="status-fill" style="width: 52%"></div></div></div>
-                <div class="status-row"><span>渇き</span><div class="status-bar"><div class="status-fill" style="width: 66%"></div></div></div>
-                <div class="status-row"><span>疲労</span><div class="status-bar"><div class="status-fill" style="width: 37%"></div></div></div>
-                <div class="status-row"><span>気分</span><div class="status-bar"><div class="status-fill" style="width: 73%"></div></div></div>
-              </div>
-            </div>
-
-            <div class="panel options-area">
-              <div class="panel-title"><span>Options</span><span>840 × 220</span></div>
-              <div class="option-button">設定</div>
-              <div class="option-button">図鑑</div>
-              <div class="option-button">ログ</div>
-              <div class="option-button">終了</div>
-            </div>
-          </section>
-        </div>
-      </article>
-    </section>
+    <footer>
+      このページは <code>Documents/</code> 内のマークダウンから GitHub Actions により自動生成されます。
+    </footer>
   </main>
 </body>
 </html>

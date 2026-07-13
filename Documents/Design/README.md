@@ -4,6 +4,7 @@
 
 ## 収録ドキュメント
 
+- [画面レイアウト検討](./ScreenLayout.md)
 - [ゲーム内要素の定義方式](./GameElementDefinition.md)
 
 ## 含まれるドキュメント例
