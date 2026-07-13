@@ -161,7 +161,7 @@
       gap: var(--gap);
     }
 
-    /* Environment Area - Weather, Environment, DateTime (top 1/3) */
+    /* Environment Area (Situation Area) - Weather, Conditions, DateTime (top 1/3) */
     .environment-area {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -304,6 +304,7 @@
       place-items: center;
       color: var(--muted);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      padding: 12px;
     }
 
     /* Equipment/Condition Area - Divided 1:1 left/right */
@@ -320,14 +321,16 @@
       place-items: center;
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
     }
 
-    /* Condition Area - For injury card */
+    /* Injury Area */
     .condition-area {
       display: grid;
       place-items: center;
       border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
     }
 
     .support-card {
@@ -409,10 +412,11 @@
       gap: 10px;
       justify-items: center;
       align-content: center;
+      padding: 0;
     }
 
     .option-button {
-      width: min(180px, 100%);
+      width: clamp(60px, 80%, 160px);
       aspect-ratio: 1 / 1;
       padding: 0;
       border-radius: 18px;
@@ -422,7 +426,8 @@
       display: grid;
       place-items: center;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-      font-size: clamp(2rem, 8vw, 3.2rem);
+      font-size: clamp(1.8rem, 6vw, 2.8rem);
+      flex-shrink: 0;
     }
 
     /* Landscape orientation */
@@ -456,8 +461,10 @@
     <div class="panel info-area">
       <div class="area-label">情報エリア</div>
 
-      <!-- Environment Area -->
+      <!-- Environment Area (Situation Area) -->
       <div class="environment-area">
+        <div class="area-label">状況エリア</div>
+        
         <!-- Weather Area -->
         <div class="tile weather-area">
           <div class="area-label">天候</div>
@@ -470,7 +477,7 @@
 
         <!-- Conditions/Environment Area -->
         <div class="tile conditions-area">
-          <div class="area-label">環境</div>
+          <div class="area-label">条件</div>
           <div class="env-cards">
             <div class="env-card"><span>☀️</span><span>日差し</span></div>
             <div class="env-card"><span>🦟</span><span>虫の多さ</span></div>
@@ -513,16 +520,20 @@
 
           <!-- Equipment/Condition Area (bottom 1/3) - 1:1 left/right -->
           <div class="equipment-condition-area">
+            <div class="area-label">装備・怪我</div>
+            
             <!-- Equipment Area (left) -->
             <div class="equipment-area">
+              <div class="area-label">装備</div>
               <div class="support-card">
                 <strong>🎒</strong>
                 <span>ロープ / 火打石 / 水袋</span>
               </div>
             </div>
 
-            <!-- Condition Area (right) -->
+            <!-- Injury Area (right) -->
             <div class="condition-area">
+              <div class="area-label">怪我</div>
               <div class="support-card injury">
                 <strong>🩹</strong>
                 <span>足首ねんざ / 軽い擦り傷</span>
