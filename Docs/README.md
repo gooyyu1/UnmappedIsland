@@ -12,6 +12,7 @@ Docs/
 ├── Specification/  # 仕様書
 │   └── README.md
 └── Design/         # 設計書
+    ├── GameElementDefinition.md
     └── README.md
 ```
 
