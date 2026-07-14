@@ -21,6 +21,70 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
 </head>
@@ -30,13 +94,35 @@
 <h1 class="title">GameElementDefinition</h1>
 </header>
 <h1 id="ゲーム内要素の定義方式">ゲーム内要素の定義方式</h1>
-<h2 id="概要">概要</h2>
+<h2 id="位置づけ">1. 位置づけ</h2>
+<p>本ドキュメントは、ゲーム内要素を YAML で記述するための設計を、以下の
+3 つの観点からの議論を統合して整理したものです。</p>
+<ul>
+<li>全体方針（何を、なぜ YAML で表現するか）</li>
+<li>ファイル全体・型定義まわりの具体的な YAML
+構造（<code>WorldCodex</code> / <code>object_defs</code> /
+<code>traits</code> / <code>props</code>）</li>
+<li>オブジェクト同士の影響関係を表す効果システム（親子スロット、装備の排他制御、<code>effects</code>）</li>
+</ul>
+<p>いずれも粒度の異なる議論の積み重ねであるため、確定した仕様と未決定の論点が混在しています。
+「確定事項」は議論済みの決定として記載しますが、「未決事項」は結論が出ていないため、各節および末尾の
+12 節に <strong>TODO: 未決定</strong>
+として選択肢のみを提示します。本ドキュメントは検討結果であり、確定仕様書ではありません。</p>
+<p>文中に登場する防具・細菌感染・耐久値などの具体例は、記法を説明するためのサンプルであり、
+実際のゲームバランスや病気システムそのものを規定するものではありません。</p>
+<h2 id="設計思想">2. 設計思想</h2>
+<h3 id="yaml定義の全体方針">2.1 YAML定義の全体方針</h3>
 <p>ゲーム内に登場するほぼすべての概念は <strong>YAML 形式</strong>
 で定義します。
-定義ファイルは複数のファイルに分割して配置できるため、ゲーム本体が提供するデフォルト定義とは別に、ユーザー（MOD
+定義ファイルは複数のファイルに分割して配置できるため、ゲーム本体が提供するデフォルト定義とは別に、
+ユーザー（MOD
 作成者）がファイルを追加するだけで新しい要素を導入したり、既存の要素を上書き・変更したりすることができます。</p>
-<h2 id="定義できる概念の種別">定義できる概念の種別</h2>
-<h3 id="世界レベルの概念">世界レベルの概念</h3>
+<p>管理する概念は、型定義（<code>ObjectDef</code>）・実行時インスタンス（<code>ObjectInstance</code>）・全体（<code>WorldCodex</code>）の
+3 つです。 このうち <code>ObjectInstance</code>
+側の詳細フォーマットは未着手であり、本ドキュメントは主に
+<code>ObjectDef</code> 側の構造を扱います。</p>
+<h3 id="定義できる概念の種別">2.2 定義できる概念の種別</h3>
+<p><strong>世界レベルの概念</strong></p>
 <p>ゲーム内時刻・日付・季節・天候など、世界全体に影響する概念を定義します。</p>
 <ul>
 <li>時刻の刻み方（1 tick あたりの経過時間）</li>
@@ -44,39 +130,38 @@
 <li>季節の日付範囲</li>
 <li>天候の種類と遷移ルール</li>
 </ul>
-<h3 id="ロケーション">ロケーション</h3>
+<p><strong>ロケーション</strong></p>
 <p>プレイヤーが探索できる場所を定義します。</p>
 <ul>
 <li>地区（森、海岸、廃村など）</li>
 <li>建築物・施設</li>
 <li>洞窟や特殊地形</li>
 </ul>
-<h3
-id="プレイヤーキャラクターパラメータ">プレイヤー・キャラクターパラメータ</h3>
+<p><strong>プレイヤー・キャラクターパラメータ</strong></p>
 <p>キャラクターが保持すべき数値パラメータを定義します。</p>
 <ul>
 <li>空腹度、喉の乾き、眠気</li>
 <li>体温、血液量</li>
 <li>幸福度、傷みなど</li>
 </ul>
-<h3 id="アイテム">アイテム</h3>
+<p><strong>アイテム</strong></p>
 <p>プレイヤーが入手・使用・製作できる物を定義します。</p>
 <ul>
 <li>設備・道具</li>
 <li>資材・食料</li>
 <li>薬品・素材など</li>
 </ul>
-<h3 id="アイテム属性">アイテム属性</h3>
-<p>アイテムが持つ性質（燃焼性、腐敗速度、重量など）を定義します。
-属性はアイテムに付与する形で参照され、アクションの結果に影響します。</p>
-<h3 id="アイテムアクション">アイテムアクション</h3>
-<p>アイテムに対して実行できる操作（食べる、使う、加工するなど）を定義します。
-アクションは条件・コスト・効果のセットとして記述します。</p>
-<h2 id="統一的な実行エンジン">統一的な実行エンジン</h2>
+<p><strong>アイテム属性</strong></p>
+<p>アイテムが持つ性質（燃焼性、腐敗速度、重量など）を定義します。属性はアイテムに付与する形で参照され、アクションの結果に影響します。</p>
+<p><strong>アイテムアクション</strong></p>
+<p>アイテムに対して実行できる操作（食べる、使う、加工するなど）を定義します。アクションは実行可否を条件として宣言し、
+実行結果は効果（<code>effects</code>）として別途定義します（詳細は 8
+節）。</p>
+<h3 id="統一的な実行エンジン">2.3 統一的な実行エンジン</h3>
 <p>可能な限り、すべての概念は共通の枠組みで表現され、単一の汎用エンジンによって実行されます。
 「特定の概念専用のロジック」を増やすことを避け、拡張性と MOD
 互換性を確保します。</p>
-<h3 id="tick-駆動による変化">tick 駆動による変化</h3>
+<p><strong>tick 駆動による変化</strong></p>
 <p>ゲーム内のあらゆる「時間経過にともなう変化」は tick
 を基本単位とする同一メカニズムで実現します。</p>
 <table>
@@ -109,7 +194,7 @@ id="プレイヤーキャラクターパラメータ">プレイヤー・キャ�
 </tr>
 </tbody>
 </table>
-<h3 id="範囲による状態の決定">範囲による状態の決定</h3>
+<p><strong>範囲による状態の決定</strong></p>
 <p>パラメータの値域から状態を決定する仕組みも共通化します。</p>
 <table>
 <colgroup>
@@ -137,21 +222,544 @@ id="プレイヤーキャラクターパラメータ">プレイヤー・キャ�
 </tr>
 </tbody>
 </table>
-<p>このように、単純なパラメータとその値域の定義だけで、世界の挙動もキャラクターの状態も同一の手法で記述できます。</p>
-<h2 id="yaml-定義の分割とロード">YAML 定義の分割とロード</h2>
-<p>YAML
-ファイルは所定のディレクトリ以下に置かれたすべてのファイルが自動的に読み込まれます。
-ゲーム本体の定義は <code>data/</code> などの標準ディレクトリに、MOD
-の定義は別ディレクトリに配置することで、双方を混在させずに管理できます。</p>
-<p>同じ ID
-を持つ定義が複数のファイルに存在する場合のマージ・上書き規則は別途仕様書で定義します。</p>
-<h2 id="設計上の方針">設計上の方針</h2>
+<p>このように、単純なパラメータとその値域の定義だけで、世界の挙動もキャラクターの状態も同一の手法で記述できます。
+この「値域による状態決定」を型定義レベルで一般化したものが、6.4
+節で述べる <code>stages</code>（段階）です。</p>
+<h3 id="設計上の方針">2.4 設計上の方針</h3>
 <ul>
 <li>「ハードコードしない」：コードに定数や挙動を埋め込まず、YAML
 定義で制御できるようにする</li>
 <li>「汎用エンジンに任せる」：特定概念向けの例外処理をエンジン側に追加しない</li>
 <li>「ファイル追加だけで拡張できる」：MOD
 作成者がコードに触れることなく新要素を追加できる</li>
+</ul>
+<h2 id="ファイル全体構造とロード">3. ファイル全体構造とロード</h2>
+<h3 id="worldcodexとルート構造">3.1 WorldCodexとルート構造</h3>
+<p>ファイル全体が 1 つの <code>WorldCodex</code>
+を表します。<strong>専用のルートキーは置きません</strong>（ファイル自体が
+<code>WorldCodex</code> です）。</p>
+<h3 id="命名規則">3.2 命名規則</h3>
+<ul>
+<li><p>構造キーワード（<code>props</code>、<code>traits</code>、<code>actions</code>
+など）・型名・プロパティ名は、<strong>すべて snake_case</strong>
+で統一します。非プログラマも編集するため、camelCase
+との混在を避けます。</p></li>
+<li><p>id（型名・プロパティ名・トレイト名・アクション名・スロット名に共通）の命名規則は次の正規表現に従います。</p>
+<pre><code>^[a-z][a-z0-9_]*$</code></pre></li>
+</ul>
+<h3 id="パーサ要件重複キーの扱い">3.3 パーサ要件（重複キーの扱い）</h3>
+<p>YAML
+仕様上マッピングキーは一意であるべきですが、多くのパーサ実装（素の
+PyYAML 等）は重複キーをエラーにせず後勝ちで上書きします。 これは MOD
+由来の記述ミスなどを静かに握りつぶす危険があるため、以下の二重の安全策を仕様として明記します。</p>
+<ul>
+<li>ローダーは重複キー検出でエラーを出す<strong>厳格モード</strong>を使用する</li>
+<li>加えて、ロード後に別途<strong>バリデーションステップ</strong>を設ける</li>
+</ul>
+<h3 id="yaml定義の分割とロード">3.4 YAML定義の分割とロード</h3>
+<p>YAML
+ファイルは所定のディレクトリ以下に置かれたすべてのファイルが自動的に読み込まれます。
+ゲーム本体の定義は <code>data/</code> などの標準ディレクトリに、MOD
+の定義は別ディレクトリに配置することで、双方を混在させずに管理できます。</p>
+<p>同じ ID
+を持つ定義が複数のファイルに存在する場合のマージ・上書き規則は別途仕様書で定義します。</p>
+<h2 id="object_defs型定義">4. object_defs（型定義）</h2>
+<p>型定義は <code>object_defs</code>
+の下に、識別子を<strong>キーとして</strong>表現します（値ではありません）。</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stone</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weight</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<h2 id="traitsmixin">5. traits（mixin）</h2>
+<p>記述量削減のため、複数の <code>object_def</code>
+で共有するプロパティ群を <code>traits</code> として定義できます。</p>
+<ul>
+<li><strong>多重継承は禁止</strong>: trait が他の trait
+を参照することはできません（1 階層のみ）。</li>
+<li><strong>プロパティ衝突はエラー</strong>: 複数の trait
+が同名プロパティを宣言していた場合、暗黙の優先順位で解決せずエラーとします（安全側に倒す）。</li>
+<li><strong>値の扱い</strong>:
+<ul>
+<li>trait 側で <code>value</code> を持たないプロパティ = object_def
+側で値を与えることが必須</li>
+<li>trait 側で <code>value</code> を持つプロパティ =
+デフォルト値。object_def 側で省略可、上書きも可</li>
+<li>object_def 側で一部属性（例:
+<code>value</code>）だけを上書きした場合、残りの属性（<code>unit</code>
+など）は trait 側の値を引き継ぐ</li>
+</ul></li>
+</ul>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">perishable</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">shelf_life</span><span class="kw">:</span><span class="co">      # valueなし→継承先で必須</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">unit</span><span class="kw">:</span><span class="at"> days</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">decay_rate</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="kw">}</span><span class="co">   # valueあり→デフォルト値(範囲値は6.2節参照)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">apple</span><span class="kw">:</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">traits</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">perishable</span><span class="kw">]</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">shelf_life</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">7</span></span></code></pre></div>
+<p>アクション・効果も trait 経由でまとめて配布できます（7〜8
+節参照）。例えば <code>eatable</code> trait が <code>eat</code>
+アクションと関連 props
+をセットで提供する、といった使い方を想定します。</p>
+<h2 id="propsプロパティ">6. props（プロパティ）</h2>
+<h3 id="固定値">6.1 固定値</h3>
+<p>最も単純な形は、<code>value</code> に固定値を 1 つ持つだけの形です（4
+節の <code>stone.props.weight</code> を参照）。</p>
+<h3 id="範囲値ランダム再ロール">6.2 範囲値（ランダム再ロール）</h3>
+<p>固定値の代わりに <code>{min, max}</code> の範囲を <code>value</code>
+に持たせ、<strong>毎 tick
+ごとに範囲内でランダムに値を再ロール</strong>できる仕組みを持ちます。
+腐敗速度・天候の持続時間など、複数の用途で共有する汎用プリミティブとして設計します。</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">decay_rate</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="kw">}</span><span class="co">   # 毎tick、この範囲でロールした量を減算する</span></span></code></pre></div>
+<blockquote>
+<p><strong>TODO: 未決定</strong> —
+天候の遷移そのもの（いつ・どの天候に切り替わるか）のランダム性の仕組みは未検討です。
+持続時間を <code>{min, max}</code>
+の範囲値として表現すること自体は本節の仕組みを流用できますが、
+「どの天候に遷移するか」の選択ロジック（重み付き抽選など）は別途検討が必要です。</p>
+</blockquote>
+<h3 id="overflow周回上限のあるプロパティ">6.3
+overflow（周回・上限のあるプロパティ）</h3>
+<p>時刻のように上限に達したら折り返す（あるいは繰り上げる）プロパティのため、<code>range</code>
+と <code>on_overflow</code> を持たせます。 <code>value</code> の
+<code>{min, max}</code>（6.2 節、毎 tick
+再ロールする範囲）とは異なる仕組みである点に注意してください。
+<code>range</code> は値が取りうる上下限、<code>on_overflow</code>
+は上限到達時の挙動を表します。</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minute_of_day</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1439</span><span class="kw">}</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> wrap</span><span class="kw">,</span><span class="at"> </span><span class="fu">carry_to</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span><span class="co">   # 1440でdayに+1して0に戻る</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sequence</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span><span class="co">                   # 上限なし</span></span></code></pre></div>
+<blockquote>
+<p><strong>TODO: 未決定</strong> — <code>day</code>
+は上限なく増え続ける想定か、年単位で wrap し <code>year</code>
+プロパティを別途持つ想定か、未決定です。 - 案A: <code>day</code>
+は無制限に加算され続ける（<code>on_overflow: {mode: none}</code>） -
+案B: <code>day</code> は年単位（例: 360 日）で <code>year</code>
+に繰り上げて wrap
+する（<code>on_overflow: {mode: wrap, carry_to: year}</code>）</p>
+</blockquote>
+<h3 id="stages段階">6.4 stages（段階）</h3>
+<p>数値パラメータ（プロパティ）は <code>stages</code>
+を持つことができ、現在値がどの段階にあるかによって、有効になる
+<code>effects</code>（8 節）が切り替わります。</p>
+<ul>
+<li>段階の区間定義は
+<strong><code>min</code>（下限）のみを指定します</strong>。上限は明示せず、次の段階の
+<code>min</code>
+によって自動的に決まります（半開区間、<code>[min, 次の min より手前]</code>）。この方式により、区間の隙間や重複が構造的に発生しません。</li>
+<li>最下段の段階は
+<code>min: null</code>（または省略）とし、それより下の残り全ての値を拾います。</li>
+<li>現在値に基づいて常に一意に段階を決定します。ヒステリシス（上昇時・下降時で閾値をずらす仕組み）は採用しません。プレイヤーが常に現在の状態から結果を逆算できるようにし、状況分析をしやすくするための設計意図です。</li>
+<li>ステージの <code>effects</code>
+はレベルトリガー（そのステージにいる間ずっと有効）を基本とします。ステージ切替の瞬間だけ発火する仕組み（edge-triggered、例えば
+<code>on_enter</code> 的なもの）は将来検討事項として保留中です。</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">durability</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intact</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> broken</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
+<p>具体的な <code>effects</code> と組み合わせた例は 11.2
+節を参照してください。</p>
+<h3 id="derived導出値必要性は未確定">6.5
+derived（導出値）※必要性は未確定</h3>
+<p>「他の props
+から計算される値」という概念（derived）を検討しましたが、<strong>必要性はまだ十分に納得されていません</strong>。
+本節全体を <strong>TODO: 未決定</strong>
+として扱い、安易に採用せず、検討中の案として軽く触れるに留めます。</p>
+<p>議論の中では、明るさの 3
+段階化（暗い/手元作業可/明るい）について、連続値を tick
+ごとに加算し続けるより、 <code>minute_of_day</code>
+から都度算出する方が非線形な変化（閾値での切り替え）を扱いやすいという意見が出ました。
+この用途に限り、次のような「段階テーブル」形式が候補として挙がっていますが、確定ではありません。</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 検討中の案(未確定)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">light_stage</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">derived_from</span><span class="kw">:</span><span class="at"> minute_of_day</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rule</span><span class="kw">:</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> stage_table</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">until</span><span class="kw">:</span><span class="at"> </span><span class="dv">359</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> dark</span><span class="kw">}</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">until</span><span class="kw">:</span><span class="at"> </span><span class="dv">1079</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> bright</span><span class="kw">}</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">until</span><span class="kw">:</span><span class="at"> </span><span class="dv">1439</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> dim</span><span class="kw">}</span></span></code></pre></div>
+<p>季節についても「暑い寒い」「乾季雨季」のような荒い段階分けが望ましいとされましたが、同様に
+derived を使うかどうかは未確定です。</p>
+<blockquote>
+<p><strong>TODO: 未決定</strong> - 案A: derived
+という概念自体を採用しない（<code>light_stage</code> 等も通常の
+<code>props</code> として tick ごとに直接更新する） - 案B: derived
+を採用し、<code>derived_from</code> +
+<code>rule</code>（<code>stage_table</code> など）で他 props
+からの導出式を宣言する - （案B を採る場合）上記の
+<code>stage_table</code> 案は上限を <code>until</code>
+で指定していますが、6.4 節の
+<code>stages</code>（プロパティ本体の段階）は下限 <code>min</code>
+のみを指定する半開区間です。derived を採用するなら、この 2
+つの段階表現をキー名も含めて統一するかどうかも合わせて検討する必要があります。</p>
+</blockquote>
+<h2 id="オブジェクトの親子関係とスロット">7.
+オブジェクトの親子関係とスロット</h2>
+<h3 id="親子関係とスロットの基本構造">7.1
+親子関係とスロットの基本構造</h3>
+<ul>
+<li>オブジェクト間の所属関係はツリー構造で表現します。1
+つの子オブジェクトは必ず 1
+つの親に属し、複数の親を持つ関係は採用しません。</li>
+<li>親オブジェクトは複数の「スロット」（配列）を持ちます。例:
+<code>inventory</code>（所持品）、<code>equip</code>（装備）、<code>fixtures</code>（部屋の備え付け設備）、<code>injuries</code>（怪我）。</li>
+<li>子オブジェクトは <code>held_in</code>
+のような逆引き用のキャッシュフィールドを持ちますが、正の情報源はあくまで親側のスロット配列です。</li>
+<li>スロット間の移動は <code>move_to_slot</code>
+という単一の汎用操作に集約します。親側スロット配列と子側の逆引きキャッシュの整合性は、この操作の中でのみ保証します。個別の
+YAML 定義側が両者を直接書き換えることは想定しません。</li>
+<li>スロットに「種類タグ（kind）」は設けません。<code>equip</code>
+はそれ自体が唯一の装備用スロットであり、スロット名を直接参照します。スロットの意味をタグで抽象化するよりも、名前をそのまま参照する方が単純で、現時点で複数の装備スロットを区別する必要も生じていないためです。</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">injuries</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<blockquote>
+<p><strong>TODO: 未決定</strong> - slot
+に容量・サイズ制限を設けるか。設けるとして、slot
+単位で持つか、親オブジェクト（character）側で一括管理するか （複数 slot
+が同じ制約（例: 重量上限）を共有するなら親側、slot ごとに独立なら slot
+側、という判断基準が候補に挙がっている） - slot
+に格納可能なオブジェクトの型制約の指定方法 - <code>slots</code> は
+character 専有の概念か、コンテナ全般（宝箱等）で使い回す汎用概念か</p>
+</blockquote>
+<h3 id="装備の排他制御layer-covers">7.2 装備の排他制御（layer /
+covers）</h3>
+<ul>
+<li><code>equip</code>
+スロットには複数のアイテムを同時に格納できます。排他制御はスロットの数ではなく、アイテムが持つ属性によって行います。</li>
+<li>アイテムは <code>covers</code>（覆う部位のタグの配列。例:
+<code>[torso]</code>、<code>[legs, waist]</code>）と
+<code>layer</code>（重ね着の階層。例:
+<code>base</code>、<code>outer</code>）を持ちます。</li>
+<li>競合判定は、同じ <code>(covers要素, layer)</code> の組が、既に
+<code>equip</code>
+スロットに入っている他アイテムと重複する場合に装備不可とします。
+<ul>
+<li>例:
+シャツ（<code>torso, base</code>）とジャケット（<code>torso, outer</code>）は共存可能です（layer
+が異なるため）。</li>
+<li>例:
+シャツ（<code>torso, base</code>）とつなぎ（<code>legs/waist/torso, base</code>）は共存不可です（<code>torso, base</code>
+が競合するため）。</li>
+</ul></li>
+<li>競合解決は「ブロック型」を採用します。競合するアイテムがある場合、プレイヤーが先に既存の装備を外す必要があります（自動退避は採用しません）。装備の入れ替えを明示的な操作として要求することで、プレイヤーが装備状態を把握しないまま暗黙に変更されることを避けるためです。</li>
+</ul>
+<h2 id="アクションと効果actions-effects">8. アクションと効果（actions /
+effects）</h2>
+<h3 id="actions宣言的条件">8.1 actions（宣言的条件）</h3>
+<ul>
+<li>アクション（<code>eat</code>、<code>move</code>
+など）は、能動的に何かを書き換える仕組みではなく、<strong>宣言的な条件リスト</strong>を持つだけの受動的な仕組みとします。実行結果そのものは
+8.2〜8.3 節の <code>effects</code> 側で表現します。</li>
+<li>アクションは <code>object_defs</code> および <code>traits</code>
+の中に配置します（トップレベル独立キーにはしません）。これにより、traits
+経由でアクションもまとめて配布できます。</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eatable</span><span class="kw">:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">satiety_restore</span><span class="kw">:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">eat</span><span class="kw">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> self.satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span></code></pre></div>
+<p>明るさで移動可否を制御する例です。</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">light_stage</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> bright</span><span class="co">   # 6.5節の議論次第でderivedになる可能性あり(未確定)</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">move</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> world.light_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> in</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">bright</span><span class="kw">,</span><span class="at"> dim</span><span class="kw">]}</span></span></code></pre></div>
+<p>条件式は <code>{path, op, value}</code>
+の形を取ります。<code>path</code>
+は参照ルートから始まるドット区切りのパスです。
+現時点で定義されている参照ルートは <code>self</code>（行動主体自身）と
+<code>world</code>（環境シングルトン、9 節参照）の 2 つです。</p>
+<blockquote>
+<p><strong>TODO: 未決定</strong> - 条件式の参照パスのルートとして
+<code>self</code> / <code>world</code>
+以外に、<code>target</code>（対象オブジェクト）が必要か（例:「相手が眠っていたら攻撃できない」）
+- 比較演算子は <code>lt</code> / <code>lte</code> / <code>gt</code> /
+<code>gte</code> / <code>eq</code> / <code>neq</code> / <code>in</code>
+/ <code>not_in</code> で十分か、<code>between</code>
+等の追加が必要か</p>
+</blockquote>
+<h3 id="effectsの基本構造">8.2 effectsの基本構造</h3>
+<p>効果は次の 3
+つのレベルで定義でき、いずれも同一の記法・実行原理を用います。</p>
+<ol type="1">
+<li><strong>オブジェクトレベル</strong>（例:
+防具そのものが持つ複数の恩恵の束）</li>
+<li><strong>プロパティレベル</strong>（例:
+アイテムの重量プロパティが持ち主の負荷に寄与する）</li>
+<li><strong>プロパティのステージレベル</strong>（例:
+耐久値の残量帯によって防御効果が変わる。6.4 節参照）</li>
+</ol>
+<p>記法は「発生条件を外側に、効果本体を <code>effects:</code>
+の中に」という形に統一します。<code>effects:</code> の配列要素の中に
+<code>when</code> を書くのではなく、条件キーの下に <code>effects</code>
+をぶら下げる構造です。</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">when</span><span class="kw">:</span><span class="at"> equip</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">target</span><span class="kw">:</span><span class="at"> parent</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<p>トリガーの種類は以下の 2 つです。</p>
+<ul>
+<li><code>when: &lt;スロット名&gt;</code> …
+そのスロットに入っている間、継続的に有効（レベルトリガー）</li>
+<li><code>on: &lt;アクション名&gt;</code> …
+特定のアクション発生時に一度だけ発火（エッジトリガー）。詳細仕様は別途検討中であり、本ドキュメントでは語彙の存在のみを記載します。詳細は今後追記します。</li>
+<li>条件キーを省略した場合は「常時（無条件）」を意味します。</li>
+</ul>
+<p><code>target</code> は効果の対象を指します。現時点で定義するのは
+<code>self</code>（自分自身）・<code>parent</code>（親）・<code>child</code>（子）の
+3 つです。
+<code>ancestor</code>（先祖）・<code>sibling</code>（兄弟）・<code>descendant</code>（子孫）は、必要性が生じた時点で改めて検討します。</p>
+<h3 id="効果の種別modify-add-lifecycle">8.3 効果の種別（modify / add /
+lifecycle）</h3>
+<p>3
+種類の効果種別を区別します。この区別は「値の可逆性」と「適用頻度」という
+2 軸に基づきます。</p>
+<ul>
+<li><strong><code>modify</code></strong>:
+条件が真である間だけ計算式に寄与する、可逆的な修飾子です。条件が偽になった瞬間に寄与は自動的に消えます。値そのものを書き換えるのではなく、実効値を都度導出するための入力として扱います。
+<ul>
+<li>同一プロパティに対する複数の <code>modify</code>
+は単純加算で合成します。</li>
+<li>合成結果の上限・下限（min/max）はプロパティ（スタット）側の定義に持たせます。</li>
+</ul></li>
+<li><strong><code>add</code></strong>:
+対象プロパティの実体値を直接、不可逆に加減算します。
+<ul>
+<li><code>on</code>（エッジトリガー）配下の <code>add</code>
+は、そのアクション発生時に一度だけ加算します。</li>
+<li><code>when</code>（レベルトリガー）配下の <code>add</code>
+は、条件が真である tick 毎に加算します（例:
+出血中の血液量減少、耐久値の毎 tick 減少）。</li>
+<li>「<code>on</code> なら一回、<code>when</code> なら毎
+tick」という対応は暗黙のルールとして確定した仕様です。</li>
+</ul></li>
+<li><strong><code>lifecycle</code></strong>:
+プロパティの値ではなく、オブジェクトそのものの存在を操作します（例:
+<code>destroy</code>
+でオブジェクトを消滅させる）。<code>modify</code>/<code>add</code>
+が値操作であるのに対し、<code>lifecycle</code>
+は存在操作を担う第三のカテゴリとして区別します。</li>
+</ul>
+<h3 id="actionsとeffectsの関係">8.4 actionsとeffectsの関係</h3>
+<p><code>actions</code>（8.1
+節）はアクションが成立するための条件だけを宣言し、成立した結果として何が起きるかは
+<code>effects</code>（8.2〜8.3 節）の
+<code>on: &lt;アクション名&gt;</code>
+トリガーとして別途定義します。両者は同じ <code>object_def</code> /
+<code>trait</code> の中に並べて記述できます。</p>
+<blockquote>
+<p><strong>TODO: 未決定</strong> —
+本ドキュメントの統合にあたり新たに識別された論点として、アクションに付随する数値（例:
+<code>eatable</code> trait の <code>satiety_restore</code>）を、対応する
+<code>on: eat</code> の <code>effects</code>（例:
+<code>add: {satiety: ...}</code>）からどのように参照させるかは、
+まだ検討されていません。現状のサンプルでは <code>actions</code> と
+<code>effects</code>
+の値連携の記法が定義されていないため、今後の検討課題とします。</p>
+</blockquote>
+<h2 id="singletonオブジェクトworld">9.
+singletonオブジェクト（world）</h2>
+<p>ゲーム動作に必須ないくつかの情報（日時、天候、明るさ等）を持つ、唯一のインスタンスを想定しています。
+「インスタンスが 1
+つだけ存在すべき」という制約は、専用のルートキーを作るのではなく、<code>object_defs</code>
+のエントリに小さなフラグ（<code>singleton: true</code>）を追加することで表現します。</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">sequence</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">day</span><span class="kw">:</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span><span class="co">   # </span><span class="al">TODO</span><span class="co">: 未決定。年単位でのwrapについては6.3節を参照</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">minute_of_day</span><span class="kw">:</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1439</span><span class="kw">}</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> wrap</span><span class="kw">,</span><span class="at"> </span><span class="fu">carry_to</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weather</span><span class="kw">:</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> clear</span></span></code></pre></div>
+<p><code>sequence</code>・<code>day</code>・<code>minute_of_day</code>
+は 1 つの複合値にまとめず、独立した props として持ちます。 6.3 節の
+overflow 機構は prop 単位（<code>range</code> /
+<code>on_overflow</code>）で定義される仕組みであり、複合値の内側の要素それぞれに
+overflow 設定を紐づける手段は存在しないためです。</p>
+<p>日時・天候はオブジェクトから直接参照されるのではなく、<strong>環境がオブジェクトに影響を与える</strong>という位置づけです（例:
+明るさによって行動可否が変わる）。
+直接のプロパティ参照経路（<code>world.xxx</code> のようなパス表記）は
+8.1 節の action 条件式で使う想定です。</p>
+<h2 id="terrain-島生成">10. terrain / 島生成</h2>
+<p>地形は <code>object_defs</code>
+の一種として表現しますが、島の自動生成アルゴリズムが必要とする属性群があります。
+これは新しい構造を作らず、<strong>trait として必須 props
+を宣言する</strong>ことで表現します。</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">terrain_candidate</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">generation_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">   # valueなし→object_def側で必須</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">forest</span><span class="kw">:</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">traits</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">terrain_candidate</span><span class="kw">]</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">generation_weight</span><span class="kw">:</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<p>「value なしプロパティ」は、5 節の trait
+の値継承ルールに従い、空のマッピング（<code>{}</code>）として表現する形に統一しています。</p>
+<h2 id="サンプル集">11. サンプル集</h2>
+<p>以下は、ここまでの記法を組み合わせた説明用のサンプルです。実際のゲームバランスを規定するものではありません。</p>
+<h3 id="防具オブジェクトレベルの効果複数の恩恵の束">11.1
+防具（オブジェクトレベルの効果、複数の恩恵の束）</h3>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">item</span><span class="kw">:</span><span class="at"> armor_leather</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">when</span><span class="kw">:</span><span class="at"> equip</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">target</span><span class="kw">:</span><span class="at"> parent</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<h3 id="耐久値プロパティのステージレベル毎-tick-減少と消滅条件">11.2
+耐久値（プロパティのステージレベル、毎 tick 減少と消滅条件）</h3>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">durability</span><span class="kw">:</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">target</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intact</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> broken</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">target</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span><span class="at"> destroy</span></span></code></pre></div>
+<h3 id="細菌感染オブジェクト化された条件段階に応じた多段の影響">11.3
+細菌感染（オブジェクト化された「条件」、段階に応じた多段の影響）</h3>
+<p>感染度自体をキャラクターの生パラメータにはせず、<code>conditions</code>
+のようなスロットに格納される独立したオブジェクトとして扱います。
+怪我・疲労などの「条件」は複数同時に存在しうるため、条件ごとに独立したオブジェクトとして表現する方が、キャラクター側のパラメータを増やし続けるより見通しが良いためです。</p>
+<p>感染オブジェクトの <code>progress</code> プロパティが
+<code>stages</code>
+を持ち、段階ごとに体温・水分・意識などの他プロパティへ影響します。</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">condition</span><span class="kw">:</span><span class="at"> infection</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">progress</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> none</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mild</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">target</span><span class="kw">:</span><span class="at"> parent</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> feverish</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">target</span><span class="kw">:</span><span class="at"> parent</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.2</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">hydration</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
+<h2 id="今後の検討課題">12. 今後の検討課題</h2>
+<p>以下は、本ドキュメント内で TODO
+として挙げた未決定事項の再掲です。いずれもまだ結論が出ていないため、
+実装時にはここで挙げた選択肢の中から改めて議論・決定してください。</p>
+<ul>
+<li>天候遷移自体（いつ・どの天候に切り替わるか）のランダム性の仕組み（6.2
+節）</li>
+<li><code>day</code> の上限（無制限のまま加算し続けるか、年単位で wrap
+して <code>year</code> プロパティを持つか）（6.3 節）</li>
+<li>ステージ切替の瞬間だけ発火する効果（edge-triggered、<code>on_enter</code>
+的なもの）の要否と記法（6.4 節）</li>
+<li>derived
+の採用可否、および採用する場合の仕様詳細。採用する場合、<code>stages</code>（6.4
+節、<code>min</code> による半開区間）と <code>stage_table</code>（6.5
+節、<code>until</code>
+による区間指定）のキー名・記法を統一するかどうか（6.5 節）</li>
+<li>slot の容量制限の持たせ方（slot 単位 or
+親オブジェクト単位）、および型制約の指定方法（7.1 節）</li>
+<li><code>slots</code> 概念が character 専用か、汎用コンテナ概念か（7.1
+節）</li>
+<li><code>on</code>（アクション起因のイベントトリガー）の詳細仕様（8.2
+節）</li>
+<li>action 条件式の参照パスのルートとして
+<code>target</code>（対象オブジェクト）が必要か（8.1 節）</li>
+<li>action
+条件式の比較演算子セット（<code>lt</code>/<code>lte</code>/<code>gt</code>/<code>gte</code>/<code>eq</code>/<code>neq</code>/<code>in</code>/<code>not_in</code>）の過不足（8.1
+節）</li>
+<li><code>target</code> に <code>ancestor</code> / <code>sibling</code>
+/ <code>descendant</code> を追加するかどうか（8.2 節）</li>
+<li>耐久値の減少要因として、毎 tick
+自動劣化に加えて使用による摩耗（<code>on: use</code>
+起因）を併用するかどうか（8.3 節）</li>
+<li><code>actions</code> の条件成立に伴い発火する
+<code>effects</code>（<code>on: &lt;アクション名&gt;</code>）との間で、数値の受け渡しをどう記法化するか（8.4
+節、本統合で新たに識別）</li>
 </ul>
 </article>
 </body>
