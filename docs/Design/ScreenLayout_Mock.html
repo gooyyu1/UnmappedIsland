@@ -57,15 +57,61 @@
     }
 
     .card {
-      aspect-ratio: 58 / 89;
-      border: 1px solid #000;
-      background: rgba(255, 255, 255, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      text-align: center;
-    }
+        --card-icon: "🃏";
+        aspect-ratio: 58 / 89;
+        border: 1px solid #000;
+        background: rgba(255, 255, 255, 0.7);
+        position: relative;
+        overflow: hidden;
+        color: #111;
+      }
+
+      .card::before {
+        content: var(--card-icon);
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: clamp(20px, 7vw, 120px);
+        line-height: 1;
+        opacity: 0.95;
+        z-index: 0;
+      }
+
+      .card-name {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        right: 3px;
+        z-index: 1;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.1;
+        text-align: left;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+      }
+
+      .card-name-large {
+        font-size: 24px;
+        line-height: 1.05;
+      }
+
+      .weather-area .card { --card-icon: "☀️"; }
+      .status-location-area .card { --card-icon: "🧭"; }
+      .location-lane .card { --card-icon: "🗺️"; }
+      .field-item-lane .card { --card-icon: "🪓"; }
+      .hand-lane .card { --card-icon: "🍲"; }
+      .portrait-center-area .card { --card-icon: "🧍"; }
+      .portrait-side-area .card { --card-icon: "💭"; }
+      .equipment-area .card { --card-icon: "🪑"; }
+      .injury-area .card { --card-icon: "🩹"; }
+      .status-item .card { --card-icon: "📊"; }
+      .datetime-area .card { --card-icon: "🕒"; }
 
     .dashboard-area {
       grid-area: dashboard;
@@ -82,7 +128,7 @@
 
     .status-area {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 2fr 1fr 1fr;
       background: #d8ffd8;
     }
 
@@ -151,6 +197,22 @@
       background: #fff;
       font: inherit;
       font-size: 20px;
+      position: relative;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .option-icon-button {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #000;
+      background: #f8f8f8;
+      font: inherit;
+      font-size: clamp(20px, 7vw, 120px);
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .field-area {
@@ -234,7 +296,7 @@
     }
 
     .datetime-row .card {
-      height: 60px;
+      height: 108px;
       width: auto;
     }
 
@@ -306,31 +368,31 @@
             <div class="label">日時エリア 280×280</div>
             <div class="datetime-cards">
               <div class="datetime-row">
-                <div class="card">D</div>
-                <div class="card"></div>
-                <div class="card">1</div>
-                <div class="card">1</div>
-                <div class="card">0</div>
+                <div class="card"><span class="card-name">D</span></div>
+                <div class="card"><span class="card-name"></span></div>
+                <div class="card"><span class="card-name">1</span></div>
+                <div class="card"><span class="card-name">1</span></div>
+                <div class="card"><span class="card-name">0</span></div>
               </div>
               <div class="datetime-row">
-                <div class="card">1</div>
-                <div class="card">0</div>
-                <div class="card">:</div>
-                <div class="card">1</div>
-                <div class="card">5</div>
+                <div class="card"><span class="card-name">1</span></div>
+                <div class="card"><span class="card-name">0</span></div>
+                <div class="card"><span class="card-name">:</span></div>
+                <div class="card"><span class="card-name">1</span></div>
+                <div class="card"><span class="card-name">5</span></div>
               </div>
             </div>
           </div>
           <div class="area weather-area">
             <div class="label">天候エリア 280×280</div>
             <div class="single-card-slot">
-              <div class="card">天候カード</div>
+              <div class="card"><span class="card-name card-name-large">灼熱の快晴</span></div>
             </div>
           </div>
           <div class="area status-location-area">
             <div class="label">ロケーションエリア 280×280</div>
             <div class="single-card-slot">
-              <div class="card">ロケーションカード</div>
+              <div class="card"><span class="card-name card-name-large">流木だらけの海岸線</span></div>
             </div>
           </div>
         </div>
@@ -343,21 +405,21 @@
               <div class="area portrait-side-area">
                 <div class="label">条件エリア1 105×280</div>
                 <div class="side-status-cards">
-                  <div class="card">条件1</div>
-                  <div class="card">条件2</div>
+                  <div class="card"><span class="card-name">高揚</span></div>
+                  <div class="card"><span class="card-name">寒気</span></div>
                 </div>
               </div>
               <div class="area portrait-center-area">
                 <div class="label">ポートレイトエリア 210×280</div>
                 <div class="single-card-slot">
-                  <div class="card">ポートレイトカード</div>
+                  <div class="card"><span class="card-name">主人公</span></div>
                 </div>
               </div>
               <div class="area portrait-side-area">
                 <div class="label">条件エリア2 105×280</div>
                 <div class="side-status-cards">
-                  <div class="card">条件3</div>
-                  <div class="card">条件4</div>
+                  <div class="card"><span class="card-name">疲労</span></div>
+                  <div class="card"><span class="card-name">空腹</span></div>
                 </div>
               </div>
             </div>
@@ -366,13 +428,13 @@
               <div class="area equipment-area">
                 <div class="label">装備エリア 210×280</div>
                 <div class="single-card-slot">
-                  <div class="card">装備カード</div>
+                  <div class="card"><span class="card-name">折りたたみ椅子</span></div>
                 </div>
               </div>
               <div class="area injury-area">
                 <div class="label">怪我エリア 210×280</div>
                 <div class="single-card-slot">
-                  <div class="card">怪我カード</div>
+                  <div class="card"><span class="card-name">擦り傷</span></div>
                 </div>
               </div>
             </div>
@@ -381,27 +443,27 @@
             <div class="label">ステータスエリア 420×560</div>
             <div class="status-list">
               <div class="status-item">
-                <div class="card">HP</div>
+                <div class="card"><span class="card-name">HP</span></div>
                 <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
               </div>
               <div class="status-item">
-                <div class="card">スタ<br>ミナ</div>
+                <div class="card"><span class="card-name">スタ<br>ミナ</span></div>
                 <div class="status-bar-container"><div class="status-bar" style="width:65%"></div></div>
               </div>
               <div class="status-item">
-                <div class="card">水分</div>
+                <div class="card"><span class="card-name">水分</span></div>
                 <div class="status-bar-container"><div class="status-bar" style="width:45%"></div></div>
               </div>
               <div class="status-item">
-                <div class="card">食料</div>
+                <div class="card"><span class="card-name">食料</span></div>
                 <div class="status-bar-container"><div class="status-bar" style="width:30%"></div></div>
               </div>
               <div class="status-item">
-                <div class="card">体温</div>
+                <div class="card"><span class="card-name">体温</span></div>
                 <div class="status-bar-container"><div class="status-bar" style="width:70%"></div></div>
               </div>
               <div class="status-item">
-                <div class="card">精神</div>
+                <div class="card"><span class="card-name">精神</span></div>
                 <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
               </div>
             </div>
@@ -410,10 +472,10 @@
       </div>
       <div class="area options-area">
         <div class="label">オプションエリア 840×240</div>
-        <button class="option-button" type="button">ボタン1</button>
-        <button class="option-button" type="button">ボタン2</button>
-        <button class="option-button" type="button">ボタン3</button>
-        <button class="option-button" type="button">ボタン4</button>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="設定" title="設定">⚙️</button></div>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button></div>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="日記" title="日記">📓</button></div>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button></div>
       </div>
     </div>
     <div class="area field-area">
@@ -421,34 +483,34 @@
       <div class="lane location-lane">
         <div class="label">ロケーションレーン 1080×360</div>
         <div class="lane-cards">
-          <div class="card">ロケ1</div>
-          <div class="card">ロケ2</div>
-          <div class="card">ロケ3</div>
-          <div class="card">ロケ4</div>
-          <div class="card">ロケ5</div>
-          <div class="card">ロケ6</div>
+          <div class="card"><span class="card-name card-name-large">白砂の浜</span></div>
+          <div class="card"><span class="card-name card-name-large">崩れかけた岩場の洞窟入口</span></div>
+          <div class="card"><span class="card-name card-name-large">浅瀬</span></div>
+          <div class="card"><span class="card-name card-name-large">ヤシ林</span></div>
+          <div class="card"><span class="card-name card-name-large">潮だまり</span></div>
+          <div class="card"><span class="card-name card-name-large">濃霧の湿地帯</span></div>
         </div>
       </div>
       <div class="lane field-item-lane">
         <div class="label">フィールドアイテムレーン 1080×360</div>
         <div class="lane-cards">
-          <div class="card">アイテム1</div>
-          <div class="card">アイテム2</div>
-          <div class="card">アイテム3</div>
-          <div class="card">アイテム4</div>
-          <div class="card">アイテム5</div>
-          <div class="card">アイテム6</div>
+          <div class="card"><span class="card-name card-name-large">石斧</span></div>
+          <div class="card"><span class="card-name card-name-large">未調理のヤギ肉のシチュー</span></div>
+          <div class="card"><span class="card-name card-name-large">火打ち石</span></div>
+          <div class="card"><span class="card-name card-name-large">雨水を集めた竹筒</span></div>
+          <div class="card"><span class="card-name card-name-large">ロープ</span></div>
+          <div class="card"><span class="card-name card-name-large">割れたコンパス</span></div>
         </div>
       </div>
       <div class="lane hand-lane">
         <div class="label">ハンドレーン 1080×360</div>
         <div class="lane-cards">
-          <div class="card">ハンド1</div>
-          <div class="card">ハンド2</div>
-          <div class="card">ハンド3</div>
-          <div class="card">ハンド4</div>
-          <div class="card">ハンド5</div>
-          <div class="card">ハンド6</div>
+          <div class="card"><span class="card-name card-name-large">焼き魚</span></div>
+          <div class="card"><span class="card-name card-name-large">椰子の実スープ</span></div>
+          <div class="card"><span class="card-name card-name-large">干し肉</span></div>
+          <div class="card"><span class="card-name card-name-large">果実串</span></div>
+          <div class="card"><span class="card-name card-name-large">貝の蒸し焼き</span></div>
+          <div class="card"><span class="card-name card-name-large">塩ゆで芋</span></div>
         </div>
       </div>
     </div>
