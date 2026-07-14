@@ -197,6 +197,21 @@
       background: #fff;
       font: inherit;
       font-size: 20px;
+      position: relative;
+      padding: 20px;
+    }
+
+    .option-icon-button {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #000;
+      background: #f8f8f8;
+      font: inherit;
+      font-size: 20px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .field-area {
@@ -456,10 +471,10 @@
       </div>
       <div class="area options-area">
         <div class="label">オプションエリア 840×240</div>
-        <button class="option-button" type="button">ボタン1</button>
-        <button class="option-button" type="button">ボタン2</button>
-        <button class="option-button" type="button">ボタン3</button>
-        <button class="option-button" type="button">ボタン4</button>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="設定" title="設定">⚙️</button></div>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button></div>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="日記" title="日記">📓</button></div>
+        <div class="option-button"><button class="option-icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button></div>
       </div>
     </div>
     <div class="area field-area">
@@ -489,12 +504,12 @@
       <div class="lane hand-lane">
         <div class="label">ハンドレーン 1080×360</div>
         <div class="lane-cards">
-          <div class="card"><span class="card-name">焼き魚</span></div>
-          <div class="card"><span class="card-name">椰子の実スープ</span></div>
-          <div class="card"><span class="card-name">干し肉</span></div>
-          <div class="card"><span class="card-name">果実串</span></div>
-          <div class="card"><span class="card-name">貝の蒸し焼き</span></div>
-          <div class="card"><span class="card-name">塩ゆで芋</span></div>
+          <div class="card"><span class="card-name card-name-large">焼き魚</span></div>
+          <div class="card"><span class="card-name card-name-large">椰子の実スープ</span></div>
+          <div class="card"><span class="card-name card-name-large">干し肉</span></div>
+          <div class="card"><span class="card-name card-name-large">果実串</span></div>
+          <div class="card"><span class="card-name card-name-large">貝の蒸し焼き</span></div>
+          <div class="card"><span class="card-name card-name-large">塩ゆで芋</span></div>
         </div>
       </div>
     </div>
