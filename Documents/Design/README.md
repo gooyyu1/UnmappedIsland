@@ -7,7 +7,7 @@
 - [画面レイアウト検討](./ScreenLayout.md)
 - [ゲーム内要素の定義方式](./GameElementDefinition.md)
 - [効果システム検討](./EffectSystem.md)
-- [世界記述YAML仕様書](./world-yaml-spec.md)
+- [世界記述YAML仕様書](./WorldYamlSpec.md)
 
 ## 含まれるドキュメント例
 
