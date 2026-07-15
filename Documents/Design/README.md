@@ -9,7 +9,7 @@
 - [地形生成システム設計](./TerrainGeneration.md)
 - [気候システム設計](./ClimateSystem.md)
 - [pick: 重み付き確率分岐システム](./PickSystem.md)
-- [カード間の相互作用（actions / combine）](./ActionSystem.md)
+- [カード間の相互作用（actions / combinations）](./ActionSystem.md)
 
 ## 含まれるドキュメント例
 

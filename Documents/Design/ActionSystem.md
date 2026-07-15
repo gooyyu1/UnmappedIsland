@@ -1,4 +1,4 @@
-# カード間の相互作用（actions / combine）
+# カード間の相互作用（actions / combinations）
 
 ## 概要
 
@@ -8,26 +8,30 @@
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節に整理しています。
 
+## 1. 想定するカード操作
+
 - **メニュー型**: カードを選択すると、カードの説明とともに実行可能なアクションがボタンで表示され、クリックすると実行できる（例:「食べる」「攻撃する」）。ロケーションカード限定の「探索」ボタンも、この特殊なケースとして表現できます。
 - **ドラッグ型**: カードを、`actor` ではない別の特定のカードにドラッグ＆ドロップして行う操作（例:「斧を木にドラッグして切る」）。
 
 すべてのアクションには、`actor`（プレイヤーキャラクター、`GameElementDefinition.md` 8.1 節）が暗黙的に参加します。
 そのため「2つの参加者が要るように見える操作」でも、もう一方が常に `actor` であればメニュー型（`actions`）で表現できます。
-`eat`（食べ物 self ＋ actor）だけでなく `attack`（攻撃対象の敵 self ＋ actor）もこれに当たります。ドラッグ型（`combine`）が
+`eat`（食べ物 self ＋ actor）だけでなく `attack`（攻撃対象の敵 self ＋ actor）もこれに当たります。ドラッグ型（`combinations`）が
 必要になるのは、`actor` とは別の、道具や素材など**特定のカードそのものを指定する必要がある**場合（「斧で木を切る」）に限られます。
 
-この2種類は、それぞれ `actions`（`GameElementDefinition.md` 8.1 節）と `combine`（本書 2 節）という別々の仕組みで表現します。
+この2種類は、それぞれ `actions`（`GameElementDefinition.md` 8.1 節）と `combinations`（本書 2 節）という別々の仕組みで表現します。
 
-## 2. combine（ドラッグ型）
+## 2. combinations（ドラッグ型）
 
-`combine` は、**ドロップされた側（受け側）のオブジェクト**に定義します。ドラッグされてきたカードとの組み合わせごとに、
-条件・効果を1つのエントリとしてまとめて記述します。
+`combinations` は、**ドロップされた側（受け側）のオブジェクト**に定義します。`object_defs`/`traits`/`props`/`actions` と
+同様に、識別子を**キーとして**表現する辞書型です（`GameElementDefinition.md` 4 節）。キーには、ドラッグされてきたカードと
+マッチングするための `object_def` の id、または trait の名前のどちらでも指定できます。trait 名を使えば、そのtraitを持つ
+あらゆるカード（将来 MOD で追加されるものも含む）と一致します。
 
 ```yaml
 object_defs:
   wood:
-    combine:
-      - with: axe_tool   # object_defのidでも、traitの名前でも一致可能
+    combinations:
+      axe_tool:   # object_defのidでも、traitの名前でも一致可能
         conditions:
           - { path: dragged.durability, op: gt, value: 0 }
         effects:
@@ -41,30 +45,31 @@ object_defs:
               durability: -1
 ```
 
-- `with` は、ドラッグされてきたカードとのマッチング条件です。特定の `object_def` の id、または trait の名前のどちらでも
-  指定できます。trait 名で指定すれば、そのtraitを持つあらゆるカード（将来 MOD で追加されるものも含む）と一致します。
 - `conditions` は `actions` と同じ `{path, op, value}` 形式です。`self`（受け側自身）・`dragged`（ドラッグされてきたカード）・
   `actor`（このドラッグ操作を行っているプレイヤーキャラクター、`GameElementDefinition.md` 8.1 節）のいずれも参照できます。
 - `effects` も既存の `modify` / `add` / `lifecycle`（`GameElementDefinition.md` 8.3 節）をそのまま使います。実行された瞬間に
   一度だけ適用される点は `actions` の効果と同じです（8.3 節）。
 - `target` には、既存の `self` / `parent` / `child` / `actor` に加えて、**`dragged`（このインタラクションでドラッグされてきたカード）**を
-  新たに追加します。`dragged` は `combine` の中でのみ意味を持つ、専用のターゲット種別です。
+  新たに追加します。`dragged` は `combinations` の中でのみ意味を持つ、専用のターゲット種別です。
+
+辞書型であることの帰結として、**同じ相手（同じキー）に対する組み合わせ定義は1つのオブジェクトにつき1つだけ**になります。
+「wood と axe_tool の組み合わせ」は常に1箇所を見れば分かる、という状態が構造的に保証されます（4 節参照）。
 
 ## 3. 対称的な組み合わせ
 
 「棒とロープを組み合わせて槍を作る」のように、どちらのカードをどちらにドラッグしても成立してほしい、方向が自明でない
-組み合わせは、**両方のカードに `combine` を書く**ことで表現します。
+組み合わせは、**両方のカードに `combinations` を書く**ことで表現します。
 
 ```yaml
 object_defs:
   stick:
-    combine:
-      - with: rope
+    combinations:
+      rope:
         effects: [...]
 
   rope:
-    combine:
-      - with: stick
+    combinations:
+      stick:
         effects: [...]
 ```
 
@@ -82,38 +87,45 @@ object_defs:
 把握するには複数の定義箇所を横断して読む必要があります。これは Wiki 等でゲームの挙動をデータベース化して文書化する上で
 大きな欠点になると判断し、この案は不採用としました。
 
-代わりに、アクション（`actions`）・カードの組み合わせ（`combine`）は、いずれも**条件と効果を1つの定義としてまとめて持つ**
+代わりに、アクション（`actions`）・カードの組み合わせ（`combinations`）は、いずれも**条件と効果を1つの定義としてまとめて持つ**
 形に統一しています。これにより、上記のような「アクションの宣言者でも対象でもない第三者が、他者の行動に横から反応する」
 という表現はできなくなります。この種の要件が将来必要になった場合は、その時点で改めて検討します。
 
+`combinations` を辞書型にして「同じ相手への組み合わせは1つのオブジェクトにつき1つだけ」に制約したのも、同じ理由に
+基づきます。仮に配列のまま複数エントリを許すと、同じ相手（例: `axe_tool`）に対する反応が複数箇所に分散して書けてしまい、
+`on` を廃止した狙いが半分損なわれてしまいます。
+
 ## 5. MOD拡張性
 
-`with` を trait 名で指定できるようにしたことで、多くのケースで拡張性は保たれます。新しい道具（チェーンソー）が既存の
-`axe_tool` trait を持つだけで、`wood` 側の `combine` 定義を変更せずに互換動作します。
+キーを trait 名で指定できるようにしたことで、多くのケースで拡張性は保たれます。新しい道具（チェーンソー）が既存の
+`axe_tool` trait を持つだけで、`wood` 側の `combinations` 定義を変更せずに互換動作します。
 
 一方で、既存のどの trait にも当てはまらない**全く新しい組み合わせ関係**を MOD で追加したい場合は、受け側オブジェクトの
-`combine` リストに新しいエントリを追加する必要があります。これは、同じ id を持つ定義が複数のファイルに存在する場合の
-マージ・上書き規則（`GameElementDefinition.md` 3.4 節、未着手）が、単なる上書きだけでなく**リストへの追記**にも
-対応している必要がある、ということを意味します。
+`combinations` に新しいキーを追加する必要があります。これは、同じ id を持つ定義が複数のファイルに存在する場合の
+マージ・上書き規則（`GameElementDefinition.md` 3.4 節、未着手）が、既存キーの値を上書きするだけでなく**新しいキーの追記**にも
+対応している必要がある、ということを意味します（`object_defs`/`traits`/`props` 全般に共通するマージ規則であり、
+`combinations` に固有の問題ではありません）。
 
 ## 6. 未決事項・今後の検討課題
 
-- `combine`（斧で木を切る、など）を、`actor` の装備スロットを経由したパス参照（例: `actor.equip.tool`）を使う `actions` の
+- `combinations`（斧で木を切る、など）を、`actor` の装備スロットを経由したパス参照（例: `actor.equip.tool`）を使う `actions` の
   条件・効果として書き換えられないか。ドラッグという操作感を残したい場合と、`actor` が今持っている道具で自動的に
   判定したい場合とで、UX上の狙いが異なるため、両方を状況に応じて使い分けるのか、どちらかに統一するのかは未検討
-- `combine` の `with` で、複数の trait / 条件の組み合わせ（AND条件）を指定する必要があるか
+- `combinations` のキーで、複数の trait / 条件の組み合わせ（AND条件）を指定する必要があるか
 - 対称的な組み合わせ（3 節）で両側に同じ内容を書く冗長さを、将来的に軽減する余地を残すか
-- 同一 id の定義がファイル間で重複した場合の、リストへの追記のマージセマンティクス（`GameElementDefinition.md` 3.4 節との関連）
+- 同一 id の定義がファイル間で重複した場合の、新しいキーの追記のマージセマンティクス（`GameElementDefinition.md` 3.4 節との関連）
 - `showMenu`（`GameElementDefinition.md` 8.1 節）の値が `always` 以外に増える場合の具体的な用途・記法
-- ドラッグ中に他のカードをハイライトする際、全カードに対して `combine` の `conditions` を評価するコストをどう抑えるか
-- 素材側が「どの道具で操作されたか」を細かく区別したい場合（斧なら丸太、チェーンソーなら木くず、など）、`with` ごとに
-  別々の `combine` エントリを書き分ける以外の効率的な記法が必要か
+- ドラッグ中に他のカードをハイライトする際、全カードに対して `combinations` の `conditions` を評価するコストをどう抑えるか
+- 素材側が「どの道具で操作されたか」を細かく区別したい場合（斧なら丸太、チェーンソーなら木くず、など）、道具ごとに
+  別々のキーを書き分ける以外の効率的な記法が必要か
 
 ## 7. 参考: 既存プロジェクト方針との整合性
 
-- `combine` の `effects` は `GameElementDefinition.md` 8.2 節・8.3 節の `modify`/`add`/`lifecycle` をそのまま再利用しており、
+- `combinations` は `object_defs`/`traits`/`props`/`actions`（`GameElementDefinition.md` 3 節・4 節）と同じ「識別子をキーとする辞書型」を
+  踏襲しており、これらとは異なる特別な構造（配列＋マッチング条件）を採用していません。
+- `combinations` の `effects` は `GameElementDefinition.md` 8.2 節・8.3 節の `modify`/`add`/`lifecycle` をそのまま再利用しており、
   新しい効果の種別は追加していません。
-- `with` の trait 名によるマッチングは、`TerrainGeneration.md` の `LocationType` が軸ベースでマッチングする考え方や、
+- キーによる trait 名マッチングは、`TerrainGeneration.md` の `LocationType` が軸ベースでマッチングする考え方や、
   `GameElementDefinition.md` 7.2 節の装備の `covers`/`layer` マッチングと同じ「属性で緩やかにマッチさせ、個別に列挙しない」
   という設計原則を踏襲しています。
 - 本書の結論（1つの操作の挙動は1箇所にまとめる）は、`PickSystem.md` で `weight` の補正記法を検討した際に

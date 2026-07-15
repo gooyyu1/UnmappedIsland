@@ -14,13 +14,13 @@
 ## 1. 想定される利用場面
 
 `pick` は、既存の `effects` が付けられる場所（無条件 / `when` / stage 内、GameElementDefinition.md 8.2 節・6.4 節、
-および `actions`/`combine` の効果、`ActionSystem.md`）にそのまま付けられる、新しいトリガー体系を必要としない仕組みとして設計します。
+および `actions`/`combinations` の効果、`ActionSystem.md`）にそのまま付けられる、新しいトリガー体系を必要としない仕組みとして設計します。
 （当初は `on: <アクション名>` というトリガーの中で使う想定でしたが、`on` の仕組みそのものが `ActionSystem.md` の検討により
-廃止されたため、以降のサンプルは `actions`/`combine` の効果として直接書く形に更新しています。）
+廃止されたため、以降のサンプルは `actions`/`combinations` の効果として直接書く形に更新しています。）
 
 - 探索時のアイテム発見（`actions.explore` の効果として、複数アイテムから重み付きで1つを選ぶ）
 - 攻撃の結果（`actions.attack` の効果として、命中/ミス/クリティカルを重み付きで選ぶ。攻撃は「攻撃対象の敵（self）」と
-  「暗黙の行動主体である `actor`」の2者で完結するため、`combine` ではなく `actions` で表現します。`GameElementDefinition.md` 8.1 節参照）
+  「暗黙の行動主体である `actor`」の2者で完結するため、`combinations` ではなく `actions` で表現します。`GameElementDefinition.md` 8.1 節参照）
 - 生水を飲んで腹を下すか（`actions.drink_raw_water` の効果として、発症/無事を重み付きで選ぶ）
 - 天気の急変など、貯水池モデル（`ClimateSystem.md`）だけでは表現しにくい離散的なイベント
 
@@ -122,7 +122,7 @@ props:
 ### 5.1 攻撃（命中/ミス/クリティカル）
 
 攻撃は、攻撃対象の敵カード（`self`）と、暗黙の行動主体である `actor`（プレイヤーキャラクター、`GameElementDefinition.md` 8.1 節）の
-2者で完結するため、`combine` を使わず `actions` で表現します。プレイヤーは敵カードを選択し、「攻撃」ボタンをクリックします。
+2者で完結するため、`combinations` を使わず `actions` で表現します。プレイヤーは敵カードを選択し、「攻撃」ボタンをクリックします。
 
 ```yaml
 props:
@@ -195,7 +195,7 @@ actions:
 
 ## 7. 設計原則のまとめ
 
-- `pick` は新しいトリガー体系を必要としない。既存の `effects` の付け所（無条件 / `when` / stage 内、および `actions`/`combine` の効果）にそのまま乗る
+- `pick` は新しいトリガー体系を必要としない。既存の `effects` の付け所（無条件 / `when` / stage 内、および `actions`/`combinations` の効果）にそのまま乗る
 - ランダムなしのケースは、候補数が1の `pick` として同じ記法で表現できる。専用の「非ランダム」記法は用意しない
 - `weight` はリテラル定数か、既存 `props` へのパス参照のいずれかであり、専用の計算式（base＋条件付き補正）を新設しない
 - 外部からの重みへの干渉は、既存の `modify`/`stages`/`target` の組み合わせのみで表現し、`modify`/`stages` と類似した別概念を作らない
@@ -206,7 +206,7 @@ actions:
 
 - `weight` の参照記法。`{ path: self.accuracy }` という明示形に統一するか、`weight: accuracy` のような裸の名前も許容するか
 - 攻撃の種類（近接/遠隔など）が増えた場合に、命中判定用のプロパティ（`accuracy` 等）を共有するか、種類ごとに分けるか
-- `modify` のターゲットが現状 `self`/`parent`/`child`/`actor`（8.2 節）と `combine` 内限定の `dragged`（`ActionSystem.md`）に
+- `modify` のターゲットが現状 `self`/`parent`/`child`/`actor`（8.2 節）と `combinations` 内限定の `dragged`（`ActionSystem.md`）に
   限定されている点。自分のツリーに属さない対象の重みを外部から書き換えたいケース（例: 「幸運のお守り」が探索の
   宝物発見率を上げる）は、8.2 節の既存 TODO（`target` への `ancestor`/`sibling`/`descendant` 追加）と合わせて
   解決する必要がある
