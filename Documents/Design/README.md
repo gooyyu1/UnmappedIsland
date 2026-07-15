@@ -11,6 +11,7 @@
 - [pick: 重み付き確率分岐システム](./PickSystem.md)
 - [カード間の相互作用（actions / combinations）](./ActionSystem.md)
 - [レシピシステム設計](./RecipeSystem.md)
+- [コンテナの容量と重さ](./ContainerSystem.md)
 
 ## 含まれるドキュメント例
 
