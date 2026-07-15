@@ -12,6 +12,7 @@
 - [カード間の相互作用（actions / combinations）](./ActionSystem.md)
 - [レシピシステム設計](./RecipeSystem.md)
 - [コンテナの容量と重さ](./ContainerSystem.md)
+- [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)）
 
 ## 含まれるドキュメント例
 
