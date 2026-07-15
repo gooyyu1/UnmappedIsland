@@ -36,12 +36,11 @@ object_defs:
         conditions:
           - { path: dragged.durability, op: gt, value: 0 }
         effects:
-          - target: self
+          self:
             lifecycle:
               spawn: { object: logs, into: parent.inventory }
-          - target: self
-            lifecycle: destroy
-          - target: dragged
+              destroy: true
+          dragged:
             add:
               durability: -1
 ```
@@ -51,10 +50,10 @@ object_defs:
 - `with` に trait 名を使えば、そのtraitを持つあらゆるカード（将来 MOD で追加されるものも含む）と一致します。
 - `conditions` は `actions` と同じ `{path, op, value}` 形式です。`self`（受け側自身）・`dragged`（ドラッグされてきたカード）・
   `actor`（このドラッグ操作を行っているプレイヤーキャラクター、`GameElementDefinition.md` 8.1 節）のいずれも参照できます。
-- `effects` も既存の `modify` / `add` / `lifecycle`（`GameElementDefinition.md` 8.3 節）をそのまま使います。実行された瞬間に
-  一度だけ適用される点は `actions` の効果と同じです（8.3 節）。
-- `target` には、既存の `self` / `parent` / `child` / `actor` に加えて、**`dragged`（このインタラクションでドラッグされてきたカード）**を
-  新たに追加します。`dragged` は `combinations` の中でのみ意味を持つ、専用のターゲット種別です。
+- `effects` も既存の対象をキーとする辞書構造・`modify` / `add` / `lifecycle`（`GameElementDefinition.md` 8.2 節・8.3 節）をそのまま使います。
+  実行された瞬間に一度だけ適用される点は `actions` の効果と同じです（8.3 節）。
+- `effects` のキーには、既存の `self` / `parent` / `child` / `actor` に加えて、**`dragged`（このインタラクションでドラッグされてきたカード）**を
+  新たに追加します。`dragged` は `combinations` の中でのみ意味を持つ、専用のキーです。
 
 キーをマッチング対象ではなく名前にしたことで、**同じ `with` を指す複数のキーを書けてしまいます**（例: `wood` に対して
 `chop`（`with: axe_tool`）と `hack`（`with: axe_tool`、別条件）を両方定義する、など）。この場合にどちらが実際に選ばれるかの

@@ -13,8 +13,9 @@
 
 ## 1. 想定される利用場面
 
-`pick` は、既存の `effects` が付けられる場所（無条件 / `when` / stage 内、GameElementDefinition.md 8.2 節・6.4 節、
-および `actions`/`combinations` の効果、`ActionSystem.md`）にそのまま付けられる、新しいトリガー体系を必要としない仕組みとして設計します。
+`pick` は、既存の `effects` が書ける場所（無条件 / `when` / stage 内、GameElementDefinition.md 8.2 節・6.4 節、
+および `actions`/`combinations` の効果、`ActionSystem.md`）であれば、**`effects` の代わりに**そのまま書けます。
+新しいトリガー体系は必要としません。
 （当初は `on: <アクション名>` というトリガーの中で使う想定でしたが、`on` の仕組みそのものが `ActionSystem.md` の検討により
 廃止されたため、以降のサンプルは `actions`/`combinations` の効果として直接書く形に更新しています。）
 
@@ -24,43 +25,55 @@
 - 生水を飲んで腹を下すか（`actions.drink_raw_water` の効果として、発症/無事を重み付きで選ぶ）
 - 天気の急変など、貯水池モデル（`ClimateSystem.md`）だけでは表現しにくい離散的なイベント
 
+さらに、「50% で相手が死に、50% で自分が死ぬ」のように、**分岐した結果ごとに影響を受ける対象（`self`/`parent`/`actor` など）
+自体が異なる**ケースも扱えます（2 節参照）。
+
 なお「stage に入った瞬間だけ 1 回振りたい」（例: 感染ステージに入った瞬間に重症度を決める）というケースは、
 GameElementDefinition.md 6.4 節で保留になっている edge-triggered なステージ切替（`on_enter` 的なもの）が解決しないと実現できません。
 この点は本書の範囲外とし、6.4 節の未決事項に委ねます。
 
 ## 2. 基本構造
 
-`effects` の各エントリに、既存の `modify` / `add` / `lifecycle`（8.3 節）と並ぶ第4の種別として `pick` を追加します。
-`pick` は重み付き候補のリストであり、各候補は既存の効果種別を自由に組み合わせて持てます。
+`pick` は、`effects`（GameElementDefinition.md 8.2 節。対象をキーとする辞書）を書く場所に対して、**`effects` の代わりに**
+書く、重み付き候補のリストです。各候補は `weight` に加えて、**自分自身の `effects`（対象をキーとする辞書）を丸ごと持ちます**。
 
 ```yaml
 actions:
   drink_raw_water:
     showMenu: always
-    effects:
-      - pick:
-          - weight: 10
-            add: {}                    # 何も起きない(無事)
-          - weight: 50
+    pick:
+      - weight: 10
+        effects: {}                              # 何も起きない(無事)
+      - weight: 50
+        effects:
+          self:
             lifecycle:
               spawn: { object: diarrhea, into: self.conditions }   # 発症
 ```
 
+`pick` を `effects` の中に入れ子にする（例: `effects: { self: { pick: [...] } }`）案も検討しましたが、この形だと
+1つの候補が影響を与えられる対象が、外側で選んだ1つのキー（`self` など）に固定されてしまいます。これでは「50% で
+相手（`self`）が死に、50% で自分（`actor`）が死ぬ」のように、**候補ごとに影響先そのものが異なる**ケースを表現できません。
+そのため `pick` は `effects` と同じ場所に立つ代替のキーとし、各候補が独立した `effects` 辞書を持つ形にしました。
+
 **候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。** つまり「ランダム要素なし」は `pick` の要素数が1のときの
 特殊ケースにすぎず、専用の分岐は不要です。既存の防具・耐久値のサンプル（GameElementDefinition.md 11 節）のように重み付けを考える
-必要がないケースは、これまで通り `modify` / `add` / `lifecycle` を `pick` なしで直接書けばよく、既存ドキュメントの書き換えは
-必要ありません。
+必要がないケースは、これまで通り `effects` を `pick` なしで直接書けばよく、既存ドキュメントの書き換えは必要ありません。
 
-## 3. 候補が持てる効果の種類
+各候補の `effects` は、トップレベルの `effects` と全く同じ構造（対象 → `when`/`modify`/`add`/`lifecycle`）です。この入れ子は
+再帰的であり、候補の `effects` の中でさらに別の `pick` が必要になるケースも構造上は排除していません。
+
+## 3. 候補の `effects` が持てる効果の種類
 
 - 別プロパティへの干渉 → 既存の `modify` / `add`（8.3 節）
-- 自身を破壊 → 既存の `lifecycle: destroy`
+- 自身を破壊 → 既存の `lifecycle: { destroy: true }`
 - 別カードを生成 → **新規**。`lifecycle` に `spawn`（新規オブジェクトを生成する）という動詞を追加する
 - 別アクションの実行 → **新規、記法未定**。エフェクトの中から特定のアクションを能動的に発火させる仕組みは今のところない（8 節参照）
 
 `lifecycle: spawn` は、`ClimateSystem.md` で季節切り替えのために提案していた `lifecycle: transition`（自分を破棄し次の季節を生成する）を
 置き換えられる可能性があります。`transition` を専用動詞にせず、「`spawn` で次のインスタンスを生成」＋「`destroy` で自分を消す」という
-2つの効果の組み合わせとして表現し直せば、`lifecycle` の動詞を1つ増やすだけで両方のケースをカバーできます（8 節の未決事項）。
+2つの動詞の組み合わせ（`lifecycle: {spawn: {...}, destroy: true}`）として表現し直せば、`lifecycle` の動詞を1つ増やすだけで
+両方のケースをカバーできます（8 節の未決事項）。
 
 ## 4. weight の表現方法
 
@@ -75,9 +88,11 @@ actions:
 ```yaml
 pick:
   - weight: { path: self.accuracy }
-    add: { hp: -10 }
+    effects:
+      self:
+        add: { hp: -10 }
   - weight: 40
-    add: {}
+    effects: {}
 ```
 
 外部からの干渉（「戦闘スキルが高いほど命中しやすい」「体が強いほど感染しにくい」）は、`weight` 自体に専用の補正記法を用意するのではなく、
@@ -95,12 +110,12 @@ props:
       - name: trained
         min: 10
         effects:
-          - target: self
+          self:
             modify:
               accuracy: 20
 ```
 
-`attack_skill` の stage 効果が `target: self, modify: {accuracy: 20}` という、既存の `modify`/`target`（8.2 節・8.3 節）の
+`attack_skill` の stage 効果が `effects: { self: { modify: {accuracy: 20} } }` という、既存の `modify`（8.2 節・8.3 節）の
 範囲内で `accuracy` を書き換えているだけであり、`pick` や `weight` のために新しい概念を追加していません。
 
 ### 4.2 なぜ base + 条件付き補正という専用記法を採用しなかったか
@@ -134,14 +149,38 @@ object_defs:
     actions:
       attack:
         showMenu: always
-        effects:
-          - pick:
-              - weight: 10
+        pick:
+          - weight: 10
+            effects:
+              self:
                 add: { hp: -20 }               # クリティカル(現時点では固定重み)
-              - weight: { path: actor.accuracy }
+          - weight: { path: actor.accuracy }
+            effects:
+              self:
                 add: { hp: -10 }               # 通常命中
-              - weight: 40
-                add: {}                          # ミス
+          - weight: 40
+            effects: {}                          # ミス
+```
+
+参考までに、「50% で相手が死に、50% で自分が死ぬ」のように、候補ごとに影響先そのものが異なる例です。
+
+```yaml
+object_defs:
+  enemy:
+    actions:
+      attack:
+        showMenu: always
+        pick:
+          - weight: 50
+            effects:
+              self:
+                lifecycle:
+                  destroy: true
+          - weight: 50
+            effects:
+              actor:
+                lifecycle:
+                  destroy: true
 ```
 
 ### 5.2 生水を飲んで腹を下すか
@@ -156,11 +195,12 @@ props:
 actions:
   drink_raw_water:
     showMenu: always
-    effects:
-      - pick:
-          - weight: { path: self.constitution }
-            add: {}                                             # 無事
-          - weight: 30
+    pick:
+      - weight: { path: self.constitution }
+        effects: {}                                              # 無事
+      - weight: 30
+        effects:
+          self:
             lifecycle:
               spawn: { object: diarrhea, into: self.conditions }  # 発症
 ```
@@ -173,14 +213,22 @@ actions:
 actions:
   explore:
     showMenu: always
-    effects:
-      - pick:
-          - weight: 30
-            lifecycle: { spawn: { object: item_coconut, into: parent.inventory } }
-          - weight: 50
-            lifecycle: { spawn: { object: item_rock, into: parent.inventory } }
-          - weight: 1
-            lifecycle: { spawn: { object: item_gem, into: parent.inventory } }
+    pick:
+      - weight: 30
+        effects:
+          self:
+            lifecycle:
+              spawn: { object: item_coconut, into: parent.inventory }
+      - weight: 50
+        effects:
+          self:
+            lifecycle:
+              spawn: { object: item_rock, into: parent.inventory }
+      - weight: 1
+        effects:
+          self:
+            lifecycle:
+              spawn: { object: item_gem, into: parent.inventory }
 ```
 
 外部からの干渉が不要な候補は、このようにリテラルの `weight` だけで簡潔に書けます。MOD で特定の候補（例: `item_gem`）の
@@ -195,10 +243,12 @@ actions:
 
 ## 7. 設計原則のまとめ
 
-- `pick` は新しいトリガー体系を必要としない。既存の `effects` の付け所（無条件 / `when` / stage 内、および `actions`/`combinations` の効果）にそのまま乗る
+- `pick` は、`effects` を書く場所であればどこでも `effects` の代わりに書ける。新しいトリガー体系は必要としない
+- `pick` は `effects` の中に入れ子にする種別ではなく、`effects` と同じ場所に立つ**代替のキー**とする。各候補が
+  自分自身の `effects`（対象をキーとする辞書）を丸ごと持つことで、候補ごとに異なる対象へ効果を及ぼせる
 - ランダムなしのケースは、候補数が1の `pick` として同じ記法で表現できる。専用の「非ランダム」記法は用意しない
 - `weight` はリテラル定数か、既存 `props` へのパス参照のいずれかであり、専用の計算式（base＋条件付き補正）を新設しない
-- 外部からの重みへの干渉は、既存の `modify`/`stages`/`target` の組み合わせのみで表現し、`modify`/`stages` と類似した別概念を作らない
+- 外部からの重みへの干渉は、既存の `modify`/`stages` の組み合わせのみで表現し、`modify`/`stages` と類似した別概念を作らない
 - 候補が持てる新しい効果は `lifecycle: spawn`（新規オブジェクト生成）のみ。`ClimateSystem.md` の `transition` 動詞は、
   `spawn` ＋ `destroy` の組み合わせに置き換えられる可能性がある
 
@@ -206,10 +256,9 @@ actions:
 
 - `weight` の参照記法。`{ path: self.accuracy }` という明示形に統一するか、`weight: accuracy` のような裸の名前も許容するか
 - 攻撃の種類（近接/遠隔など）が増えた場合に、命中判定用のプロパティ（`accuracy` 等）を共有するか、種類ごとに分けるか
-- `modify` のターゲットが現状 `self`/`parent`/`child`/`actor`（8.2 節）と `combinations` 内限定の `dragged`（`ActionSystem.md`）に
+- `effects` のキーが現状 `self`/`parent`/`child`/`actor`（8.2 節）と `combinations` 内限定の `dragged`（`ActionSystem.md`）に
   限定されている点。自分のツリーに属さない対象の重みを外部から書き換えたいケース（例: 「幸運のお守り」が探索の
-  宝物発見率を上げる）は、8.2 節の既存 TODO（`target` への `ancestor`/`sibling`/`descendant` 追加）と合わせて
-  解決する必要がある
+  宝物発見率を上げる）は、8.2 節の既存 TODO（`ancestor`/`sibling`/`descendant` 追加）と合わせて解決する必要がある
 - `pick` の候補から「別アクションを実行する」ための記法。エフェクトからアクションを能動的に発火させる仕組み自体がまだない
 - 重みの合計が0（またはマイナス）になった場合の扱い。フォールバック候補（6 節）を許容するかどうか
 - `lifecycle: spawn` の具体的な記法（生成先スロットの指定方法など）
@@ -224,5 +273,7 @@ actions:
   `ClimateSystem.md` に続いて `derived` が不要であることのもう一つの具体例になっています。
 - `weight` を `props` の参照として扱う設計は、GameElementDefinition.md 8.1 節の条件式（`{path, op, value}`）で確立された
   「パスによる参照」という考え方をそのまま踏襲しています。
-- `lifecycle: spawn` の追加、および `target` の拡張（ancestor/sibling/descendant）という2つの論点は、いずれも
+- `pick` の各候補が独立した `effects` 辞書を持つ設計は、`effects` 自体が対象をキーとする辞書として再帰的に定義されている
+  （GameElementDefinition.md 8.2 節）ことをそのまま利用したものであり、新しいデータ構造を追加していません。
+- `lifecycle: spawn` の追加、および `effects` のキーの拡張（ancestor/sibling/descendant）という2つの論点は、いずれも
   `GameElementDefinition.md` に既にある未決事項と同じ形で解決を要する、という点で一貫しています。
