@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>RecipeSystem</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">RecipeSystem</h1>
+</header>
+<h1 id="レシピシステム設計">レシピシステム設計</h1>
+<h2 id="概要">概要</h2>
+<p>本ドキュメントは、2つ以上のアイテムを組み合わせて新しいアイテムを作成する仕組み（道具の生成・建物の建築の両方に使う）を
+検討した結果をまとめたものです。</p>
+<p>呼称は「ブループリント」と「レシピ」を検討し、<strong>レシピ</strong>を採用しました。<code>blueprint</code>
+は大規模建造物・乗り物など工学的な
+「設計図」を指す語感が強く、道具のような単純なものの生成にまで使うとやや大仰に響きます。<code>recipe</code>
+はクラフト系ゲームで
+「N個の材料→1つの成果物」という組み合わせ全般を指す、より一般化された語彙であり、道具の生成と建物の建築を1つの
+統一されたメカニズムとして扱いたいという狙いに合致します（<code>ActionSystem.md</code>
+の <code>combinations</code> 命名検討時、この用途のために
+<code>recipe</code> という語を温存する判断をしています）。</p>
+<p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
+9 節に整理しています。</p>
+<h2 id="基本構造">1. 基本構造</h2>
+<p>レシピは<strong>完成品（成果物）の <code>object_defs</code>
+に埋め込みます</strong>。<code>actions</code>/<code>combinations</code>
+が「このオブジェクトは何ができるか」
+「このオブジェクトは何と組み合わさるとどうなるか」を、そのオブジェクト自身の定義の中に持つのと同じ理由です。レシピも
+本質的には「このオブジェクトはどうやって作られるか」という、成果物であるオブジェクト自身に紐づく情報だからです。</p>
+<p>1つのアイテムに複数の作り方（材料違いのレシピ）がありうるため、<code>combinations</code>
+と同様、名前をキーとする辞書型にします。</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axe</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">recipes</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">basic</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">icon</span><span class="kw">:</span><span class="at"> axe_wip.png</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">requires</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> wood</span><span class="kw">,</span><span class="at"> </span><span class="fu">quantity</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> stone_knife</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">requires</span><span class="kw">:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> rope</span><span class="kw">,</span><span class="at"> </span><span class="fu">quantity</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<ul>
+<li>レシピは 1
+つ以上の<strong>工程（<code>steps</code>）</strong>からなります。</li>
+<li>各工程は 1
+つ以上の<strong>素材または道具</strong>を要求します（<code>requires</code>）。素材（<code>consume: true</code>）は消費され、道具（<code>consume: false</code>）は
+消耗しますが消費はされません。</li>
+<li>各工程には所要<strong>時間（<code>duration</code>）</strong>が定義されます。</li>
+<li>最後の工程まで完了すると、目的のアイテムが生成されます。</li>
+</ul>
+<h2 id="製作中オブジェクトは完成品とは別オブジェクト">2.
+製作中オブジェクトは、完成品とは別オブジェクト</h2>
+<p>「未完成の斧」を、斧自身の <code>stages</code>（例:
+<code>progress</code>
+プロパティの段階）として表現する案も検討しましたが、採用しませんでした。</p>
+<ul>
+<li>斧に複数のレシピがある場合、「今どのレシピを実行中か」「何工程目か」という情報を、斧自身の型定義に混ぜ込むことになります。</li>
+<li>「0%
+完成の斧」は実質的には材料の集まりに近く、斧という同一性を最初から持たせるのは不自然です。</li>
+</ul>
+<p>代わりに、<strong>製作中の状態専用の、別オブジェクト</strong>として扱います。これは
+<code>infection</code>（<code>GameElementDefinition.md</code> 11.3
+節）や
+季節（<code>ClimateSystem.md</code>）で採用した「独立した条件・プロセスオブジェクト」パターンと同型です。製作中オブジェクトは
+<code>progress</code> プロパティに
+<code>stages</code>（工程に対応する半開区間）を持ち、最終工程の効果として
+<code>lifecycle: {spawn: {object: axe}, destroy: true}</code>（自分を破棄し、完成品を生成する）を発火させます。</p>
+<h3 id="製作中オブジェクトの型は自動生成する">2.1
+製作中オブジェクトの型は自動生成する</h3>
+<p>製作中オブジェクトの型を、レシピごとに人間が手で書く（<code>axe_in_progress</code>
+のような <code>object_defs</code> を個別に用意する）案と、
+全レシピ共通の汎用型を1つ用意する案の両方を検討しましたが、どちらも採用しませんでした。</p>
+<ul>
+<li><strong>手書きの個別型</strong>:
+全ての製作中オブジェクトが同じ挙動をすべきところ、著者ごとに実装がばらつく余地が生まれます。</li>
+<li><strong>単一の汎用型</strong>: 3
+つの問題があり、いずれも「インスタンス生成時にプロパティを個別に注入する仕組みがない」という、
+同じ根本原因に行き着きます。
+<ul>
+<li>特定のプロパティ（目指す完成品は何か、等）が必ず必要という、エンジン側の暗黙の契約が生まれる</li>
+<li>完成品ごとに異なるアイコンなど、インスタンスごとの見た目を変える手段がない</li>
+<li>レシピに応じたパラメータを持たせてインスタンスを生成する仕組みが既存にない</li>
+</ul></li>
+</ul>
+<p>代わりに、<strong>レシピの内容（工程数・各工程の要求・時間）から、決まった変換規則で製作中オブジェクトの型を自動的に導出</strong>します。
+人間も MOD
+作成者も、この型を直接書くことはありません。アイコンなど、完成品ごとに変えたい情報は、レシピ自身のデータの
+一部として著者が指定し（1 節の <code>icon</code>
+参照）、自動生成時にその情報を型へ引き継がせます。これにより、インスタンス生成時の
+パラメータ注入という、まだ手つかずの <code>ObjectInstance</code>
+側の設計（<code>GameElementDefinition.md</code> 2.1
+節）に踏み込まずに済みます。</p>
+<p>この「決まった変換規則で型を導出する」という考え方自体、<code>GameElementDefinition.md</code>
+が掲げる「汎用エンジンに任せる」
+（概念ごとの特別なロジックを増やさない）という方針の、また別の適用例です。特定のアイテム向けのハードコードではなく、
+あらゆるレシピに対して同じ1つの生成規則を適用する、という一般化です。</p>
+<h2 id="進捗-既存の-stages-を流用">3. 進捗: 既存の stages を流用</h2>
+<p>工程の進み具合は、既存の
+<code>stages</code>（<code>GameElementDefinition.md</code> 6.4
+節）にそのまま乗ります。数値プロパティ（<code>progress</code>）と
+半開区間、という組み合わせが「今どの工程か」を表すのに無理なく合致するためです。</p>
+<h2 id="材料道具の要求-新設のスキーマ">4. 材料・道具の要求:
+新設のスキーマ</h2>
+<p>一方、工程ごとの材料・道具の要求（<code>requires</code>）は、既存の
+<code>conditions</code>/<code>effects</code>
+には当てはまりませんでした。</p>
+<ul>
+<li><code>conditions</code>（<code>{path, op, value}</code> の AND
+リスト）には、<strong>工程ごとに異なる要求内容</strong>を表現する仕組みがありません。</li>
+<li><code>effects</code>（<code>modify</code>/<code>add</code>/<code>lifecycle</code>）にも、「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という
+条件チェック＋消費の複合動作を表す語彙がありません。</li>
+</ul>
+<p>これを無理に既存の語彙へ押し込めるより、<code>steps</code>/<code>requires</code>
+という<strong>専用のスキーマ</strong>を新設する方が良いと判断しました。
+これは既存の設計方針（ハードコードしない）への違反ではありません。<code>on_overflow</code>、装備の
+<code>covers</code>/<code>layer</code> マッチング、 地形の
+<code>axis_preferences</code>
+なども、それぞれ専用のスキーマと専用の解釈ロジックを持っています。「ハードコードしない」は
+「特定のアイテムだけの特別扱いをコードに書かない」ことを指しており、あらゆるレシピに対して同じ解釈ロジックを適用する
+専用スキーマを新設すること自体は、この方針に反しません。</p>
+<h2 id="レシピは特殊な-slot箱として表現する">5. レシピは特殊な
+slot（箱）として表現する</h2>
+<p>ゲーム上、レシピは「箱」として扱います。必要な素材・道具を箱に入れてからボタンを押すと、素材が消費されて進捗が進みます。</p>
+<p>この「箱」は、既存の
+<code>slots</code>（<code>GameElementDefinition.md</code> 7.1
+節）の未決事項にちょうど接続します。7.1 節には以前から 「slot
+に容量・サイズ制限を持たせるか」「slot
+に格納可能なオブジェクトの型制約の指定方法」という 2 つの未決事項が
+残っており、レシピの「箱」はこの両方が同時に必要になる、初めての具体的なケースです。そこで、レシピ専用の新しい
+コンテナ概念を作るのではなく、<strong><code>slots</code> に任意の
+<code>accepts</code> フィールドを追加する形で拡張</strong>します。</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">          # 制約なし(既存通り)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">equip</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">              # 制約なし(既存通り)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">materials</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">accepts</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> wood</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> stone_knife</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="at"> </span><span class="kw">}</span></span></code></pre></div>
+<ul>
+<li><code>accepts</code>
+を省略すれば、これまで通り何でも入る無制限のスロットです（<code>inventory</code>/<code>equip</code>/<code>fixtures</code>
+は変更なし）。</li>
+<li><code>accepts</code>
+を書けば、型ごとの上限数を持つスロットになります。レシピの「箱」はこの形の
+<code>slots</code> そのものです。</li>
+</ul>
+<p>普通の箱にも緩やかな制約（家は入らない）はあるはずなので、<code>accepts</code>
+を「特定の型・個数まで」だけでなく「特定の
+trait・サイズまで」のような緩い条件にも使える汎用の仕組みにしておけば、普通の箱とレシピの箱を<strong>同じ機構の厳しさの違い</strong>
+として説明できます。完全に別物ではないが同じでもない、という位置づけです。</p>
+<h2 id="投入操作-accepts-から自動生成される-combinations">6. 投入操作:
+accepts から自動生成される combinations</h2>
+<p>箱へのアイテム投入は、製作中オブジェクト（2.1
+節、自動生成される型）に対して、<code>accepts</code>
+の各エントリから<strong>自動的に <code>combinations</code>
+を生成</strong>する形で実現します。</p>
+<ul>
+<li><code>wood</code> をドラッグ → <code>accepts</code> の
+<code>wood</code> エントリにマッチ → 現在の投入数が <code>max</code>
+未満なら成立 → <code>materials</code> スロットへ移動</li>
+<li><code>stone_knife</code> も同様</li>
+</ul>
+<p>これは新しい実行モデルではなく、既存の
+<code>combinations</code>（<code>ActionSystem.md</code>。受け側が
+<code>with</code> で相手を判定し、条件・効果を持つ）を
+そのまま流用し、人間が書く代わりにエンジンが <code>accepts</code>
+から生成するだけです。製作中オブジェクトの型自体が自動生成である、
+という 2.1 節の結論と一貫しています。</p>
+<h2
+id="消費進捗判定-通常の-actionsただし中身の検査消費ロジックはプログラム側">7.
+消費・進捗判定: 通常の
+actions、ただし中身の検査・消費ロジックはプログラム側</h2>
+<p>「箱に必要なものが揃っているか」を確認し、ボタン（<code>actions.work</code>
+相当）を押すと素材を消費して進捗を進める、という部分は、 通常の
+<code>actions</code> の <code>conditions</code>/<code>effects</code>
+として表現します。</p>
+<p>ただし、<strong>「スロットの中身をまとめて検査し、条件を満たせば該当分だけ消費する」という具体的な処理は、レシピでしか
+使わない概念であるため、YAML
+の汎用語彙としては表現せず、プログラム側の専用ロジックとして実装します。</strong>
+<code>conditions</code> の
+演算子（<code>op</code>）を増やしたり、<code>effects</code>
+に新しい種別を追加したりはしません。これは、レシピの
+<code>steps</code>/<code>requires</code> という データ自体は宣言的・MOD
+拡張可能な YAML
+のまま保ちつつ、それを解釈する具体的な処理コードは、地形生成の軸マッチングや
+装備の <code>covers</code>/<code>layer</code>
+判定などと同様に、レシピ専用の解釈ロジックとして許容する、という判断です。汎用エンジン側の
+語彙（<code>conditions</code>/<code>effects</code>）を、レシピのためだけに複雑化させないことを優先しました。</p>
+<h2 id="設計原則のまとめ">8. 設計原則のまとめ</h2>
+<ul>
+<li>レシピは成果物の <code>object_defs</code>
+に、名前をキーとする辞書として定義する</li>
+<li>製作中の状態は、成果物とは別の、自動生成された専用オブジェクトとして扱う。手書きの個別型にも、単一の汎用型にもしない</li>
+<li>進捗は既存の <code>stages</code>
+を流用する。材料・道具の要求（<code>steps</code>/<code>requires</code>）は新設の専用スキーマとする</li>
+<li>「箱」は既存の <code>slots</code> を <code>accepts</code>
+フィールドで拡張したものとして表現し、レシピ専用の新しいコンテナ概念にはしない</li>
+<li>箱へのアイテム投入は、<code>accepts</code> から自動生成される
+<code>combinations</code> として実現する</li>
+<li>スロットの中身の検査・消費という具体的な処理は、YAML
+の汎用語彙を増やさず、プログラム側の専用ロジックとする</li>
+</ul>
+<h2 id="未決事項今後の検討課題">9. 未決事項・今後の検討課題</h2>
+<ul>
+<li>製作中オブジェクトの型の自動生成が、ゲーム起動時にエンジンがメモリ上で行う処理なのか、ビルド時に実際の
+YAML ファイルとして 書き出す前処理ステップなのか</li>
+<li>素材と道具を同じスロットにまとめるか、別スロットに分けるか</li>
+<li>普通の箱（家具・コンテナ等）が <code>accepts</code>
+をどこまで再利用できるか（型・trait・サイズベースの緩い制約への拡張）</li>
+<li><code>steps.requires</code> の記法の詳細（<code>quantity</code>
+のデフォルト値、trait マッチングの可否など）</li>
+<li><code>accepts</code> から自動生成される <code>combinations</code>
+で、複数の素材が同時にマッチしうる場合の優先順位（<code>ActionSystem.md</code>
+6 節の 既存の未決事項と関連）</li>
+<li>レシピの <code>icon</code>
+以外に、自動生成される型へ引き継ぐべき情報（名前、説明文など）の範囲</li>
+<li><code>slots</code> の容量制限・型制約という 7.1 節の既存 TODO
+は、本書の <code>accepts</code>
+提案によって一部解決されるが、正式な仕様への 反映は別途行う</li>
+</ul>
+<h2 id="参考-既存プロジェクト方針との整合性">10. 参考:
+既存プロジェクト方針との整合性</h2>
+<ul>
+<li>製作中オブジェクトの「独立したプロセスオブジェクト」パターンは、<code>infection</code>（<code>GameElementDefinition.md</code>
+11.3 節）・ 季節（<code>ClimateSystem.md</code>）と同型です。</li>
+<li><code>accepts</code>
+によるスロットの拡張は、<code>GameElementDefinition.md</code> 7.1
+節に残っていた既存の未決事項（slot の容量・型制約）の
+具体的な解決案です。</li>
+<li>投入操作の自動生成は <code>ActionSystem.md</code> の
+<code>combinations</code> 設計をそのまま踏襲しています。</li>
+<li>中身の検査・消費ロジックを汎用化しない判断は、<code>on_overflow</code>
+や地形の軸マッチングなど、既存の「専用スキーマ＋専用ロジック」
+という設計精神と一貫しています。</li>
+</ul>
+</article>
+</body>
+</html>
