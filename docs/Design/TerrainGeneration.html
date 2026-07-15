@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>TerrainGeneration</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">TerrainGeneration</h1>
+</header>
+<h1 id="地形生成システム設計">地形生成システム設計</h1>
+<h2 id="概要">概要</h2>
+<p>本ドキュメントは、島の地形生成システムに関する検討結果をまとめたものです。
+<code>GameElementDefinition.md</code>
+が掲げる「ハードコードしない」「汎用エンジンに任せる」「ファイル追加だけで拡張できる」という
+設計方針（2.4 節）に準拠し、以下を目的とします。</p>
+<ul>
+<li>シード値ありのランダム生成で無人島の地形を生成する</li>
+<li>地形・構造物はすべて YAML でオブジェクト定義し、MOD
+作成者がコードに触れずに拡張できる状態を保つ</li>
+</ul>
+<p>本ドキュメントは検討結果であり、確定仕様書ではありません。実装・詳細スキーマ化は本書を土台に別途進めます。
+「未決事項」は 6 節に選択肢のみを提示する形で明記しています。</p>
+<h2 id="用語定義">1. 用語定義</h2>
+<p>これまでの議論で用語のブレを解消済みです。以降のドキュメント・コードでは以下の呼称に統一します。</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>用語</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Axis（軸）</strong></td>
+<td>標高・湿度など、地点が持つ連続値パラメータの 1
+次元。ジェネレータ（ノイズ/距離場/散布など）によって値が決まる</td>
+</tr>
+<tr class="even">
+<td><strong>Site（地点）</strong></td>
+<td>座標と軸ベクトルのみを持つ、<code>LocationType</code>
+未確定の中間状態のノード</td>
+</tr>
+<tr class="odd">
+<td><strong>環境（Environment）</strong></td>
+<td>軸ベクトルが表す性質そのもの。データ構造として実体化はしない（クラスや
+YAML 定義を持たない）。<code>Site</code>
+同士の軸ベクトルの近さという関係性としてのみ存在する概念</td>
+</tr>
+<tr class="even">
+<td><strong>LocationType</strong></td>
+<td>「草原」「洞窟」など、配置の定義（YAML テンプレート）。旧称
+<code>TerrainType</code>/<code>RoomType</code>
+を統一した語。プレイヤーには見えない設計者側の語彙</td>
+</tr>
+<tr class="odd">
+<td><strong>Location（土地）</strong></td>
+<td>実際に生成・命名された実体。旧称 <code>Land</code>/<code>Room</code>
+を統一した語。「東の草原」のようにゲーム内で識別可能な名前を持つ。パスネットワークのノードでもある</td>
+</tr>
+<tr class="even">
+<td><strong>Structure（構造物）</strong></td>
+<td>内部に子 <code>Location</code> のグラフを持つ、特殊な
+<code>Location</code>。「島の中に埋め込まれた入れ子の島」として扱う</td>
+</tr>
+<tr class="odd">
+<td><strong>Coordinate/Position</strong></td>
+<td>単なる座標値。<code>Location</code>
+が持つプロパティの一つ。<code>Location</code>
+という語自体は「意味を持つ場所の単位」を指し、座標そのものとは区別する</td>
+</tr>
+</tbody>
+</table>
+<h2 id="生成パイプライン全体像">2. 生成パイプライン全体像</h2>
+<pre><code>[Axis定義 (YAML)]
+   ↓ ジェネレータ(ノイズ/距離場/散布/合成)が値をサンプリング
+[Site群] (座標 + 軸ベクトル)
+   ↓ LocationType の axis_preferences と最近傍マッチング
+   ↓ (フォールバック処理 / バランス調整パス)
+[Location群] (LocationType確定・命名済み)
+   ↓ Delaunay三角形分割 → MSTで間引き → 交差なしパス確定
+[Locationネットワーク] (距離・移動難易度つきパスで接続)
+   ↓ StructureType の allowed_structures を参照し、対象Locationに構造物を配置
+   ↓ 構造物内部は同じパイプラインを縮小スケールで再帰的に実行
+[Structure] (内部に子Locationグラフを持つLocation)</code></pre>
+<p><strong>重要な設計方針</strong>:
+島の生成と構造物内部の生成は<strong>同一の生成ロジックを共有します</strong>。両者の違いは「生成スコープ（scale）ごとのパラメータプリセット」の違いとして表現し、ロジックを分岐させません（4.7
+節参照）。</p>
+<h2 id="各ステップの詳細仕様">3. 各ステップの詳細仕様</h2>
+<h3 id="axis定義とジェネレータプリミティブ">3.1
+Axis定義とジェネレータプリミティブ</h3>
+<p>Axis は以下の汎用プリミティブの組み合わせで値を生成します。MOD
+作成者は新しいプリミティブをコードで追加せずとも、既存プリミティブの組み合わせで大半の要件を満たせるようにします。</p>
+<ul>
+<li><code>layered_noise</code>:
+パーリン/シンプレックス等のノイズ。オクターブ・周波数指定可</li>
+<li><code>distance_field</code>:
+島の縁・中心・任意参照点からの距離場</li>
+<li><code>blob_scatter</code>:
+ランダムなエピセンター＋減衰。局所的に濃い領域（例:
+汚染地帯）を作るのに使う</li>
+<li><code>modifiers</code>:
+他の軸との掛け算・反転・クランプなどの合成演算</li>
+</ul>
+<p><strong>設計上の注意</strong>:
+軸の種類・数はハードコードしません。<code>Axis</code> 定義自体が YAML
+で完結し、<code>LocationType</code>
+側は「言及した軸だけ気にする」設計にすることで、軸の増減に対して
+<code>LocationType</code> 定義が壊れないようにします（3.2 節参照）。</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> pollution</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="fl">0.0</span><span class="kw">,</span><span class="at"> </span><span class="fl">1.0</span><span class="kw">]</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">generator</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> blob_scatter</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">sources</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="dv">3</span><span class="kw">],</span><span class="at"> </span><span class="fu">seed_offset</span><span class="kw">:</span><span class="at"> </span><span class="dv">1337</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">falloff</span><span class="kw">:</span><span class="at"> inverse_square</span></span></code></pre></div>
+<h3 id="locationtypeマッチング軸ベース">3.2
+LocationTypeマッチング（軸ベース）</h3>
+<p>各 <code>LocationType</code>
+は、軸空間上の「理想点＋許容範囲」として定義します。</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> inland_jungle</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">applicable_scopes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">island</span><span class="kw">]</span><span class="co">        # 3.7節参照。適用範囲を制限できる</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axis_preferences</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">elevation</span><span class="kw">:</span><span class="at">  </span><span class="kw">{</span><span class="at"> </span><span class="fu">ideal</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span><span class="kw">,</span><span class="at"> </span><span class="fu">tolerance</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.3</span><span class="kw">,</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">humidity</span><span class="kw">:</span><span class="at">   </span><span class="kw">{</span><span class="at"> </span><span class="fu">ideal</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.8</span><span class="kw">,</span><span class="at"> </span><span class="fu">tolerance</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.2</span><span class="kw">,</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.5</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">    # 言及しない軸は自動的に「無関心」= weight 0 として扱う</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hard_limits</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">elevation</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.6</span><span class="at"> </span><span class="kw">}</span><span class="co">          # 絶対的な除外条件</span></span></code></pre></div>
+<ul>
+<li>マッチングは正規化した重み付きユークリッド距離による最近傍探索です。</li>
+<li><code>GameElementDefinition.md</code>
+が定義する「範囲による状態の決定」パターン（2.3
+節。空腹度→満腹/空腹/飢え、等）と同一の仕組みであり、新規の専用エンジンではなく既存の汎用パターンの転用として実装します。</li>
+</ul>
+<h3 id="マッチできない場合の処理フォールバック">3.3
+マッチできない場合の処理（フォールバック）</h3>
+<p>3 段構えで対応します。</p>
+<ol type="1">
+<li><strong>フォールバック LocationType</strong>:
+<code>is_fallback: true</code>、全軸無関心、<code>priority</code>
+最低。候補がない場合はこれが選ばれる</li>
+<li><strong>段階的緩和</strong>: tolerance
+を超える場合、最も合っていない軸から順に無視して再探索</li>
+<li><strong>フォールバックの機能化</strong>: 特定の軸（例:
+汚染度）にのみ強くマッチする専用 <code>LocationType</code> を MOD
+側で追加すれば、フォールバック機構が自動的にその領域へ誘導する。「マッチしない領域」は不具合ではなく「新しい
+<code>LocationType</code>
+を定義すべき場所」というシグナルとして扱う</li>
+</ol>
+<h3 id="出現数について方針転換の記録">3.4
+出現数について（方針転換の記録）</h3>
+<p><strong>個別の <code>LocationType</code>
+ごとの出現数レンジ管理は不要です。</strong>
+軸ベースの最近傍マッチングは各 <code>Site</code>
+が独立に判定されるため、個数の厳密な制御には本質的に向いていません。</p>
+<p>代わりに重視するのは<strong>島全体のバランス</strong>です。例:</p>
+<ul>
+<li>乾燥地帯・湿地が最低 1 つ以上存在する</li>
+<li>山が 1 つ以上存在する</li>
+</ul>
+<p>これは個々の <code>LocationType</code>
+の出現数ではなく、「特定の軸領域が島内に一定以上出現しているか」という<strong>軸空間のカバレッジ</strong>の問題として扱います。具体的な保証アルゴリズム（軸値の分布を事後チェックし、不足していれば
+<code>blob_scatter</code>
+のパラメータを調整して再生成する、など）は未決事項とします（6
+節参照）。</p>
+<h3 id="パスネットワーク生成交差なしグラフ">3.5
+パスネットワーク生成（交差なしグラフ）</h3>
+<ul>
+<li>ノード（<code>Site</code>→<code>Location</code>）配置は Poisson-disk
+sampling 等で島内に散布します。</li>
+<li>全ノードに対して <strong>Delaunay 三角形分割</strong>
+を実施します（数学的に辺の交差が起きない性質を利用）。</li>
+<li>間引きは以下の 2 段階で行います。
+<ol type="1">
+<li>最小全域木（MST）は必ず残す（到達性の保証）</li>
+<li>MST
+以外の辺は距離・軸の近さに応じたスコアで一部復活させ、近道・分岐を作る</li>
+</ol></li>
+<li><strong>「交差する代わりに新しい地区を生成したい」の実装方針</strong>:
+直接つなぎたいが交差してしまう 2 ノードがある場合、交差点付近に新規
+<code>Location</code>（候補: 小規模な <code>waypoint</code>
+用途の地区）を挿入し、局所的に Delaunay
+再分割を行います。これによりグラフは常に平面性を保ちます。</li>
+<li>各エッジには <code>distance</code>（ユークリッド距離）と
+<code>difficulty</code>（両端 <code>LocationType</code>
+の移動コスト平均×距離補正）を持たせます。</li>
+</ul>
+<h3 id="命名処理">3.6 命名処理</h3>
+<ol type="1">
+<li>島の重心を計算する</li>
+<li>各 <code>Location</code> の重心からの方角（8 方位）を算出する</li>
+<li><code>"{方角} + LocationType.display_name"</code>
+で仮称を生成する（例: 「東の草原」）</li>
+<li>重複時は <code>LocationType</code> の <code>name_pool</code>
+から固有名詞を採用、またはフォールバック接尾辞（第一/第二等）で区別する</li>
+<li>印象的な地形（山頂、極端環境ノードなど）は <code>name_pool</code>
+の固有名詞を優先する</li>
+</ol>
+<h3 id="構造物structure生成">3.7 構造物（Structure）生成</h3>
+<ul>
+<li><code>Structure</code> は「内部に子 <code>Location</code>
+グラフを持つ、特殊な <code>Location</code>」として扱います。</li>
+<li>内部生成は 3.1〜3.6
+の同一パイプラインを、<strong>生成スコープ（scope）ごとのパラメータプリセット</strong>を差し替えて再帰的に実行します。</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># generation_scope.yaml (案)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> island</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">site_count_range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">elevation</span><span class="kw">,</span><span class="at"> humidity</span><span class="kw">,</span><span class="at"> coastal_distance</span><span class="kw">,</span><span class="at"> pollution</span><span class="kw">]</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">branch_factor</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">id</span><span class="kw">:</span><span class="at"> structure_interior</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">site_count_range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">7</span><span class="at"> </span><span class="kw">}</span><span class="co">     # 小規模・迷いにくさの要件をここで表現</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">dampness</span><span class="kw">,</span><span class="at"> light_level</span><span class="kw">,</span><span class="at"> decay</span><span class="kw">]</span><span class="co">      # 島とは異なる軸セットでよい</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">branch_factor</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="at"> </span><span class="kw">}</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dead_end_ratio_max</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.3</span></span></code></pre></div>
+<ul>
+<li><code>LocationType</code> 側の <code>applicable_scopes</code>
+タグにより、「洞窟の中に草原は出ない」等の制約を自然に表現できます。</li>
+<li>両方のスコープに効く <code>LocationType</code>（例:
+「地底湖」を島にも構造物内部にも出す）も定義可能です。</li>
+</ul>
+<h2 id="これまでに合意した設計原則のまとめ">4.
+これまでに合意した設計原則のまとめ</h2>
+<ul>
+<li>地形定義（<code>LocationType</code>）と実体（<code>Location</code>）は必ず呼び分けます。裸の名詞＝実体、<code>〜Type</code>
+サフィックス＝定義、という命名規則を全概念で徹底します。</li>
+<li>「似た環境が隣り合う」は、隣接しやすさテーブル（affinity）ではなく、<strong>軸の空間的連続性そのもの</strong>によって自然に実現します（affinity
+方式は不採用）。</li>
+<li>稀な極端環境差は、<code>extreme_weight</code>
+のような人為的パラメータではなく、<strong>高周波の “weirdness
+軸”</strong> や急峻な勾配によって自然発生させることを検討します。</li>
+<li>ハードコーディングを避けるため、Axis
+の生成ロジックは汎用プリミティブ（ノイズ/距離場/散布/合成）の組み合わせに還元します。</li>
+<li>島全体の生成と構造物内部の生成は、<strong>同一の生成ロジック</strong>をスコープ別パラメータで使い分けます。ロジック自体は分岐させません。</li>
+</ul>
+<h2 id="生成パイプラインの前段後段範囲外の確認事項">5.
+生成パイプラインの前段・後段（範囲外の確認事項）</h2>
+<p>本書が扱うのは Axis 定義から <code>Structure</code>
+生成までの地形生成パイプラインそのものです。生成された
+<code>Location</code>/<code>Structure</code> に対する
+アイテム配置・イベント配置・プレイヤーの探索状態管理などは範囲外とし、別途検討します。</p>
+<h2 id="未決事項今後の検討課題">6. 未決事項・今後の検討課題</h2>
+<ul>
+<li><strong>軸空間のカバレッジ保証アルゴリズム</strong>: 「山が 1
+つ以上」「乾燥地帯が 1
+つ以上」等のバランス要件を、具体的にどう保証するか（事後チェック＋再生成
+/ 生成前に軸のヒストグラムを調整 等）</li>
+<li><strong>weirdness 軸の具体設計</strong>:
+稀な異常環境をどの程度の頻度・強度で発生させるか</li>
+<li><strong>Axis の計算コスト</strong>:
+軸の数が増えた際のサンプリングコスト、キャッシュ戦略</li>
+<li><strong>合成演算（modifiers）の YAML 文法</strong>:
+どこまで柔軟な合成を許容するか（単純な四則演算のみか、条件分岐を許すか等）</li>
+<li><strong>構造物内部の部屋の意味論</strong>: <code>Location</code>
+として統一したことで、内部の各部屋にも固有名（「祭壇の間」等）を与える運用ルールの詳細化</li>
+<li><strong>YAML 定義のマージ・上書き規則</strong>: 同一 ID
+が複数ファイルに存在する場合の挙動（<code>GameElementDefinition.md</code>
+3.4 節で「別途仕様書で定義する」とされている未着手事項）</li>
+<li><strong>具体的なスキーマ・サンプル YAML の作成</strong>:
+本書はまだ概念設計の段階であり、実際のフィールド名・型・ディレクトリ配置などのスキーマは未作成</li>
+</ul>
+<h2 id="参考-既存プロジェクト方針との整合性">7. 参考:
+既存プロジェクト方針との整合性</h2>
+<p><code>Documents/Design/GameElementDefinition.md</code>
+に示されている以下の原則と、本設計は整合しています。</p>
+<ul>
+<li>すべての概念を YAML で定義し、複数ファイル分割・MOD
+追加は別ディレクトリへのファイル追加のみで実現する（2.1 節）</li>
+<li>「ロケーション」は既に正式概念（地区・建築物・洞窟等）として文書内に例示されており（2.2
+節）、本書の <code>Location</code>/<code>LocationType</code>
+はこれを具体化したものである</li>
+<li>「範囲（値域）による状態の決定」という汎用パターン（2.3
+節。空腹度→満腹/空腹/飢え、等）が既に採用されており、<code>LocationType</code>
+の軸マッチングはこのパターンの応用として実装すべきである</li>
+</ul>
+<p>なお、<code>GameElementDefinition.md</code> 10 節では地形を
+<code>object_defs</code>
+の一種として表現し、<code>terrain_candidate</code> trait の
+<code>generation_weight</code> を例示していますが、これは「trait で必須
+props を宣言する」という YAML の一般的な仕組みを示すための簡易例であり、
+実際の <code>LocationType</code> 選定アルゴリズムは本書 3.2
+節の軸ベース最近傍マッチングに置き換わります。</p>
+</article>
+</body>
+</html>

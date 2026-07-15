@@ -664,6 +664,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href=
 <span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
 <p>「value なしプロパティ」は、5 節の trait
 の値継承ルールに従い、空のマッピング（<code>{}</code>）として表現する形に統一しています。</p>
+<p>上記はあくまで「trait で必須 props
+を宣言する」という仕組みの一般例であり、実際に地形（<code>LocationType</code>）を
+どう選定するかの具体的なアルゴリズムは <code>TerrainGeneration.md</code>
+で軸ベースの最近傍マッチングとして別途定義しています。</p>
 <h2 id="サンプル集">11. サンプル集</h2>
 <p>以下は、ここまでの記法を組み合わせた説明用のサンプルです。実際のゲームバランスを規定するものではありません。</p>
 <h3 id="防具オブジェクトレベルの効果複数の恩恵の束">11.1
