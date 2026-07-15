@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>SurvivalItems</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">SurvivalItems</h1>
+</header>
+<h1 id="道具武器容器衣類-アイテム案">道具・武器・容器・衣類
+アイテム案</h1>
+<h2 id="概要">概要</h2>
+<p>一人でのサバイバルという前提のもと、実在の原始技術を参考にしつつ、過度に高度な技術（紡績・機織り、製鉄など）は
+除外し、「手が出せる範囲で便利・快適なもの」に絞ったアイテム案です。グレードは各カテゴリ2〜4段階に留め、
+必要な素材の種類が増えすぎないよう、素材を複数のアイテムで使い回しています。</p>
+<p>本ドキュメントは検討結果であり、確定仕様書ではありません。<code>RecipeSystem.md</code>
+で検討したレシピの仕組み
+（工程・素材要求）を前提としていますが、本書では具体的な工程分割やYAMLの記法までは踏み込まず、
+「何を、何から作るか」という内容面の整理に留めています。</p>
+<h2 id="素材一覧">0. 素材一覧</h2>
+<p>このアイテム群全体で使う原材料は、以下の9種類（＋既存の食料資源2種類の流用）に絞っています。</p>
+<table>
+<thead>
+<tr class="header">
+<th>素材</th>
+<th>主な入手方法</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>石</td>
+<td>採取</td>
+<td>刃物・打撃部（無加工〜柄付き）</td>
+</tr>
+<tr class="even">
+<td>木</td>
+<td>採取・伐採</td>
+<td>柄・軸・掘り棒・槍の柄</td>
+</tr>
+<tr class="odd">
+<td>植物繊維</td>
+<td>採取</td>
+<td>紐（柄の固定・縫製）、編み材</td>
+</tr>
+<tr class="even">
+<td>生皮</td>
+<td>狩猟</td>
+<td>衣類・袋（未処理、劣化しやすい）</td>
+</tr>
+<tr class="odd">
+<td>樹皮</td>
+<td>採取</td>
+<td>なめし剤（生皮→なめし革への加工に使用）</td>
+</tr>
+<tr class="even">
+<td>獣骨・角</td>
+<td>狩猟</td>
+<td>掘削具の頭部（シャベル・ピック）</td>
+</tr>
+<tr class="odd">
+<td>銅鉱石</td>
+<td>採掘</td>
+<td>青銅の材料</td>
+</tr>
+<tr class="even">
+<td>錫鉱石</td>
+<td>採掘</td>
+<td>青銅の材料</td>
+</tr>
+<tr class="odd">
+<td>粘土</td>
+<td>採取</td>
+<td>土器</td>
+</tr>
+<tr class="even">
+<td>（ヤシの実）</td>
+<td>既存の食料資源を流用</td>
+<td>容器（無加工）</td>
+</tr>
+<tr class="odd">
+<td>（竹）</td>
+<td>既存の資源を流用と想定</td>
+<td>容器（無加工）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>なめし革</strong>（生皮＋樹皮）と<strong>青銅</strong>（銅鉱石＋錫鉱石）は、それ自体を他のレシピの材料として使う<strong>中間素材</strong>として扱います。</p>
+<h2 id="道具採取加工用">1. 道具（採取・加工用）</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>グレード</th>
+<th>アイテム</th>
+<th>素材（レシピ）</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>ただの石</td>
+<td>石</td>
+<td>加工なし。叩き石として使用</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>大きな石</td>
+<td>石</td>
+<td>数回打ち欠いただけの、柄なしで握って使う石器</td>
+</tr>
+<tr class="odd">
+<td>1</td>
+<td>石の刃物（ナイフ）</td>
+<td>石</td>
+<td>剥片をそのまま使用。柄は不要</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>石の斧</td>
+<td>石 + 木 + 植物繊維</td>
+<td>柄付け技術（紐で固定）が必要</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>石のハンマー</td>
+<td>石 + 木 + 植物繊維</td>
+<td>石の斧と同じ柄付け技術。打撃部の形状違い</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>青銅の斧</td>
+<td>青銅 + 木 + 植物繊維</td>
+<td>石の斧と同じ柄付け技術で頭部を青銅に置き換え</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>青銅のナイフ</td>
+<td>青銅 + 木 + 植物繊維</td>
+<td>柄をつけて強化した上位のナイフ</td>
+</tr>
+</tbody>
+</table>
+<h2 id="掘削具">2. 掘削具</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>グレード</th>
+<th>アイテム</th>
+<th>素材（レシピ）</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>火で硬化させた掘り棒</td>
+<td>木</td>
+<td>先端を尖らせ火で炙って硬化。木の槍と同じ技術</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>獣骨のシャベル</td>
+<td>獣骨・角</td>
+<td>動物の肩甲骨等をそのまま使用。狩猟が前提</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>鹿角のピック</td>
+<td>獣骨・角</td>
+<td>硬い地面を崩す用途。シャベルと役割が異なる</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td>青銅のシャベル</td>
+<td>青銅 + 木 + 植物繊維</td>
+<td>道具と同じ柄付け技術で頭部を青銅に</td>
+</tr>
+</tbody>
+</table>
+<h2 id="武器">3. 武器</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>グレード</th>
+<th>アイテム</th>
+<th>素材（レシピ）</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>木の槍</td>
+<td>木</td>
+<td>先端を尖らせ火で炙って硬化。掘り棒と同じ技術</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>石鏃の槍</td>
+<td>木 + 石 + 植物繊維</td>
+<td>石の刃物を柄付け技術で穂先として固定</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>青銅の穂先の槍</td>
+<td>木 + 青銅 + 植物繊維</td>
+<td>同じ柄付け技術で穂先を青銅に</td>
+</tr>
+</tbody>
+</table>
+<p>石のハンマーは打撃武器（棍棒相当）としても兼用できるため、武器専用の棍棒は別途用意していません。</p>
+<h2 id="容器">4. 容器</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>グレード</th>
+<th>アイテム</th>
+<th>素材（レシピ）</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>ヤシの実の器</td>
+<td>ヤシの実</td>
+<td>半分に割るだけ。多少の防水性あり</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>竹筒</td>
+<td>竹</td>
+<td>節の間を切り出すだけ。水を運ぶのに優秀</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>皮袋</td>
+<td>生皮 + 植物繊維（縫製）</td>
+<td>生皮のままなら劣化・腐敗しやすい</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>皮袋（なめし革）</td>
+<td>なめし革 + 植物繊維（縫製）</td>
+<td>同じ形状だが長持ち。なめし革を使った上位互換</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>土器（本焼き）</td>
+<td>粘土</td>
+<td>高温での焼成が必要。真に長持ちし水も保持できる</td>
+</tr>
+</tbody>
+</table>
+<p><strong>天日干しの素焼き粘土は水には向きません</strong>（濡れると崩れる）。土器を作るなら本焼きまで行う前提とし、
+素焼きの中間アイテムは別途用意していません。かご（編み物）は固形物の運搬・保管に使えますが、防水加工は
+本書のスコープでは扱わず（7節参照）、水を保持する容器としては数えていません。</p>
+<p>容器自体が耐火性を持たなくても、焼け石を投入する「石焼き調理」で煮炊きは可能という想定です（詳細な調理系の
+仕組みは別途検討）。</p>
+<h2 id="衣類">5. 衣類</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>グレード</th>
+<th>アイテム</th>
+<th>素材（レシピ）</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>束ねた葉の衣類</td>
+<td>植物繊維</td>
+<td>加工ほぼゼロ</td>
+</tr>
+<tr class="even">
+<td>1</td>
+<td>生皮の衣類</td>
+<td>生皮</td>
+<td>縫製なしでそのまま身につける想定。劣化しやすい</td>
+</tr>
+<tr class="odd">
+<td>2</td>
+<td>編んだ葉の衣類</td>
+<td>植物繊維</td>
+<td>編み技術が必要</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>なめし革の衣類</td>
+<td>なめし革 + 植物繊維（縫製）</td>
+<td>長持ちし、快適性も高い</td>
+</tr>
+</tbody>
+</table>
+<p>布（紡績＋機織り）は対象外としています（7節参照）。</p>
+<h2 id="素材の再利用状況">6. 素材の再利用状況</h2>
+<p>各素材が何種類のアイテムに使われているかの一覧です。</p>
+<table>
+<thead>
+<tr class="header">
+<th>素材</th>
+<th>使用アイテム数（概算）</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>石</td>
+<td>4（無柄3種＋石の斧の材料）</td>
+</tr>
+<tr class="even">
+<td>木</td>
+<td>6（柄付き道具・武器・掘り棒・槍）</td>
+</tr>
+<tr class="odd">
+<td>植物繊維</td>
+<td>8（柄の固定・縫製・編み物・衣類の大半）</td>
+</tr>
+<tr class="even">
+<td>生皮</td>
+<td>2（皮袋・衣類。なめし革の元にもなる）</td>
+</tr>
+<tr class="odd">
+<td>樹皮</td>
+<td>1（なめし革への加工にのみ使用）</td>
+</tr>
+<tr class="even">
+<td>獣骨・角</td>
+<td>2（シャベル・ピック）</td>
+</tr>
+<tr class="odd">
+<td>銅鉱石／錫鉱石</td>
+<td>4（青銅の斧・ナイフ・シャベル・槍の材料）</td>
+</tr>
+<tr class="even">
+<td>粘土</td>
+<td>1（土器）</td>
+</tr>
+<tr class="odd">
+<td>ヤシの実／竹</td>
+<td>各1（既存資源の流用）</td>
+</tr>
+</tbody>
+</table>
+<p>木・植物繊維・石が多くのアイテムで共有される中心素材となり、専用素材（樹皮・粘土）は最小限に抑えられています。</p>
+<h2 id="除外保留にした要素">7. 除外・保留にした要素</h2>
+<p>以下は、今回のトリミング方針（一人でのサバイバル・素材種類の抑制）に基づき、本書のスコープから意図的に外した
+要素です。将来的に拡張したくなった場合の候補として記録しておきます。</p>
+<ul>
+<li><strong>布（紡績＋機織り）</strong>:
+紡ぐ・織るという専用の技術・道具（紡錘、織機）一式が必要で、なめし革までで十分快適性を
+確保できるため、今回は対象外としました。</li>
+<li><strong>鉄</strong>:
+精錬に必要な高温・炉の技術が、一人のサバイバルでは非現実的と判断し、青銅を上限としました。</li>
+<li><strong>柄付け・容器の防水における樹脂（松脂等）の使用</strong>:
+実在の技法では紐に加えて樹脂も使われますが、紐（植物繊維）
+だけでも柄付けは成立するため、素材の種類を減らす目的で樹脂は使わない前提にしました。これに伴い、防水加工した
+かご（編みかごへの樹脂塗布）も本書のアイテム一覧からは外しています。</li>
+<li><strong>ひょうたん（gourd）容器</strong>:
+ゲーム内の植生に含めるかどうかが未確定なため、今回は保留としました。</li>
+<li><strong>自然銅の冷間鍛造品</strong>:
+精錬前の自然銅を叩いて加工する、銅よりさらに手前の段階も実在しますが、グレード数を
+抑えるため、銅そのものを個別アイテム化せず、青銅の材料（銅鉱石）としてのみ扱っています。</li>
+</ul>
+<h2 id="未決事項">8. 未決事項</h2>
+<ul>
+<li>各アイテムの具体的な効果値（防御力・耐久値・重さ・サイズなど）は未定義。<code>GameElementDefinition.md</code>
+11節・ <code>ContainerSystem.md</code>
+のサンプルに準じて別途定義する</li>
+<li><code>RecipeSystem.md</code> の
+<code>steps</code>（工程分割）・<code>duration</code>（所要時間）を、本書のどのアイテムにどう割り当てるか</li>
+<li>なめし革・青銅という中間素材が、<code>RecipeSystem.md</code>
+の「成果物の <code>object_defs</code> にレシピを埋め込む」設計上、
+それ自体を1つの完成品（<code>object_defs</code>）として扱ってよいか（中間素材も「レシピで作られるアイテムの一種」として
+扱えば、既存の設計をそのまま流用できるはずだが未確認）</li>
+</ul>
+</article>
+</body>
+</html>
