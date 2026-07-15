@@ -154,9 +154,9 @@
 <p><strong>アイテム属性</strong></p>
 <p>アイテムが持つ性質（燃焼性、腐敗速度、重量など）を定義します。属性はアイテムに付与する形で参照され、アクションの結果に影響します。</p>
 <p><strong>アイテムアクション</strong></p>
-<p>アイテムに対して実行できる操作（食べる、使う、加工するなど）を定義します。アクションは実行可否を条件として宣言し、
-実行結果は効果（<code>effects</code>）として別途定義します（詳細は 8
-節）。</p>
+<p>アイテムに対して実行できる操作（食べる、使う、加工するなど）を定義します。アクションは実行可否の条件と、実行結果（<code>effects</code>）を
+1つの定義としてまとめて持ちます（詳細は 8
+節、<code>ActionSystem.md</code>）。</p>
 <h3 id="統一的な実行エンジン">2.3 統一的な実行エンジン</h3>
 <p>可能な限り、すべての概念は共通の枠組みで表現され、単一の汎用エンジンによって実行されます。
 「特定の概念専用のロジック」を増やすことを避け、拡張性と MOD
@@ -480,25 +480,40 @@ covers）</h3>
 </ul>
 <h2 id="アクションと効果actions-effects">8. アクションと効果（actions /
 effects）</h2>
-<h3 id="actions宣言的条件">8.1 actions（宣言的条件）</h3>
+<h3 id="actionsメニュー型の宣言的操作">8.1
+actions（メニュー型の宣言的操作）</h3>
 <ul>
 <li>アクション（<code>eat</code>、<code>move</code>
-など）は、能動的に何かを書き換える仕組みではなく、<strong>宣言的な条件リスト</strong>を持つだけの受動的な仕組みとします。実行結果そのものは
-8.2〜8.3 節の <code>effects</code> 側で表現します。</li>
+など）は、条件（<code>conditions</code>）と実行結果（<code>effects</code>）を<strong>1つの定義としてまとめて持ちます</strong>。かつては
+「条件だけを持つ受動的な宣言」と「<code>on: &lt;アクション名&gt;</code>
+で別途発火する効果」を分離していましたが、1つの操作の挙動が複数箇所に
+分散して読みにくくなるため、この分離は廃止しました（詳細な経緯・カード間の相互作用（ドラッグ操作）は
+<code>ActionSystem.md</code> を参照）。</li>
 <li>アクションは <code>object_defs</code> および <code>traits</code>
 の中に配置します（トップレベル独立キーにはしません）。これにより、traits
 経由でアクションもまとめて配布できます。</li>
+<li><code>showMenu</code> でメニューへの表示方法を制御します（現時点では
+<code>always</code>
+のみ。将来的にボタン以外の起動方法が増えた場合に備え、列挙可能な形にしています。詳細は
+<code>ActionSystem.md</code>）。</li>
+<li><code>effects</code> は、このアクションが実行された瞬間に 1
+回だけ適用されます（8.3 節の <code>add</code>
+の適用頻度ルール参照）。</li>
 </ul>
 <div class="sourceCode" id="cb9"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eatable</span><span class="kw">:</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">satiety_restore</span><span class="kw">:</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">eat</span><span class="kw">:</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> self.satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span></code></pre></div>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">eat</span><span class="kw">:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">target</span><span class="kw">:</span><span class="at"> actor</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">target</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span><span class="at"> destroy</span></span></code></pre></div>
 <p>明るさで移動可否を制御する例です。</p>
 <div class="sourceCode" id="cb10"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
@@ -514,21 +529,39 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href=
 <span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
 <span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">move</span><span class="kw">:</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> world.light_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> in</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">bright</span><span class="kw">,</span><span class="at"> dim</span><span class="kw">]}</span></span></code></pre></div>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> world.light_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> in</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">bright</span><span class="kw">,</span><span class="at"> dim</span><span class="kw">]}</span></span></code></pre></div>
 <p>条件式は <code>{path, op, value}</code>
 の形を取ります。<code>path</code>
 は参照ルートから始まるドット区切りのパスです。
-現時点で定義されている参照ルートは <code>self</code>（行動主体自身）と
-<code>world</code>（環境シングルトン、9 節参照）の 2 つです。</p>
+現時点で定義されている参照ルートは
+<code>self</code>（このアクションを宣言したオブジェクト自身）・<code>parent</code>（その親）・
+<code>actor</code>（このアクションを実行しているプレイヤーキャラクター）・<code>world</code>（環境シングルトン、9
+節参照）の 4 つです。
+<code>self</code>/<code>parent</code>/<code>actor</code> は 8.2 節の
+<code>target</code> と同じ意味で使います。</p>
+<p><strong><code>actor</code>
+はすべてのアクションに暗黙的に存在し、常にプレイヤーキャラクターを指します。</strong>
+<code>eat</code> の例のように、
+アクションを持つオブジェクト（食べ物）自身は消費される側（<code>self</code>）であり、実際に効果を受け取るのは食べ物を保持している
+容器（<code>parent</code>）ではなく、行動主体である <code>actor</code>
+です。<code>parent</code>
+はあくまで木構造上の直接の格納先を指すものであり、 <code>actor</code>
+とは独立した参照です（例えば地面に置かれた食べ物を直接食べる場合、<code>parent</code>
+はキャラクターではなく地面のロケーションになりますが、
+<code>actor</code> は変わらずプレイヤーキャラクターを指します）。</p>
+<p>カードを別のカードにドラッグする操作（例:「斧で木を切る」）は、<code>actions</code>
+ではなく <code>combinations</code> という別の仕組みで表現します。
+一方、攻撃のように、行動主体（<code>actor</code>）以外に登場する参加者が「メニューを開いたカードそのもの」（例:
+攻撃対象の敵カード） だけで済む場合は、ドラッグ操作を使わず
+<code>actions</code>（メニュー型）で表現します（詳細は
+<code>ActionSystem.md</code>）。</p>
 <blockquote>
-<p><strong>TODO: 未決定</strong> - 条件式の参照パスのルートとして
-<code>self</code> / <code>world</code>
-以外に、<code>target</code>（対象オブジェクト）が必要か（例:「相手が眠っていたら攻撃できない」）
-- 比較演算子は <code>lt</code> / <code>lte</code> / <code>gt</code> /
-<code>gte</code> / <code>eq</code> / <code>neq</code> / <code>in</code>
-/ <code>not_in</code> で十分か、<code>between</code>
-等の追加が必要か</p>
+<p><strong>TODO: 未決定</strong> - 比較演算子は <code>lt</code> /
+<code>lte</code> / <code>gt</code> / <code>gte</code> / <code>eq</code>
+/ <code>neq</code> / <code>in</code> / <code>not_in</code>
+で十分か、<code>between</code> 等の追加が必要か</p>
 </blockquote>
 <h3 id="effectsの基本構造">8.2 effectsの基本構造</h3>
 <p>効果は次の 3
@@ -553,17 +586,22 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href=
 <span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
-<p>トリガーの種類は以下の 2 つです。</p>
+<p>トリガーの種類は以下の通りです。</p>
 <ul>
 <li><code>when: &lt;スロット名&gt;</code> …
 そのスロットに入っている間、継続的に有効（レベルトリガー）</li>
-<li><code>on: &lt;アクション名&gt;</code> …
-特定のアクション発生時に一度だけ発火（エッジトリガー）。詳細仕様は別途検討中であり、本ドキュメントでは語彙の存在のみを記載します。詳細は今後追記します。</li>
 <li>条件キーを省略した場合は「常時（無条件）」を意味します。</li>
 </ul>
+<p>特定のアクションが実行された瞬間にだけ発火する効果は、<code>on: &lt;アクション名&gt;</code>
+のような独立したトリガーとしては表現しません。 アクション自身の
+<code>effects</code>（8.1 節）、またはカード間の組み合わせを表す
+<code>combinations</code> の
+<code>effects</code>（<code>ActionSystem.md</code>）として、
+アクションの定義そのものに直接書きます。</p>
 <p><code>target</code> は効果の対象を指します。現時点で定義するのは
-<code>self</code>（自分自身）・<code>parent</code>（親）・<code>child</code>（子）の
-3 つです。
+<code>self</code>（自分自身）・<code>parent</code>（親）・<code>child</code>（子）・
+<code>actor</code>（このアクションを実行しているプレイヤーキャラクター、8.1
+節参照）の 4 つです。
 <code>ancestor</code>（先祖）・<code>sibling</code>（兄弟）・<code>descendant</code>（子孫）は、必要性が生じた時点で改めて検討します。</p>
 <h3 id="効果の種別modify-add-lifecycle">8.3 効果の種別（modify / add /
 lifecycle）</h3>
@@ -581,13 +619,15 @@ lifecycle）</h3>
 <li><strong><code>add</code></strong>:
 対象プロパティの実体値を直接、不可逆に加減算します。
 <ul>
-<li><code>on</code>（エッジトリガー）配下の <code>add</code>
-は、そのアクション発生時に一度だけ加算します。</li>
-<li><code>when</code>（レベルトリガー）配下の <code>add</code>
-は、条件が真である tick 毎に加算します（例:
+<li><code>actions</code>/<code>combinations</code>（8.1
+節、<code>ActionSystem.md</code>）の <code>effects</code> に書かれた
+<code>add</code> は、そのアクション（またはカードの組み合わせ）が
+実行された瞬間に一度だけ加算します。</li>
+<li><code>when</code>（レベルトリガー）配下、および無条件（常時）の
+<code>add</code> は、条件が真である tick 毎に加算します（例:
 出血中の血液量減少、耐久値の毎 tick 減少）。</li>
-<li>「<code>on</code> なら一回、<code>when</code> なら毎
-tick」という対応は暗黙のルールとして確定した仕様です。</li>
+<li>「アクション実行に伴う効果なら一回、<code>when</code>/常時なら毎
+tick」という対応は確定した仕様です。</li>
 </ul></li>
 <li><strong><code>lifecycle</code></strong>:
 プロパティの値ではなく、オブジェクトそのものの存在を操作します（例:
@@ -596,23 +636,36 @@ tick」という対応は暗黙のルールとして確定した仕様です。<
 が値操作であるのに対し、<code>lifecycle</code>
 は存在操作を担う第三のカテゴリとして区別します。</li>
 </ul>
-<h3 id="actionsとeffectsの関係">8.4 actionsとeffectsの関係</h3>
-<p><code>actions</code>（8.1
-節）はアクションが成立するための条件だけを宣言し、成立した結果として何が起きるかは
-<code>effects</code>（8.2〜8.3 節）の
-<code>on: &lt;アクション名&gt;</code>
-トリガーとして別途定義します。両者は同じ <code>object_def</code> /
-<code>trait</code> の中に並べて記述できます。</p>
-<blockquote>
-<p><strong>TODO: 未決定</strong> —
-本ドキュメントの統合にあたり新たに識別された論点として、アクションに付随する数値（例:
-<code>eatable</code> trait の <code>satiety_restore</code>）を、対応する
-<code>on: eat</code> の <code>effects</code>（例:
-<code>add: {satiety: ...}</code>）からどのように参照させるかは、
-まだ検討されていません。現状のサンプルでは <code>actions</code> と
-<code>effects</code>
-の値連携の記法が定義されていないため、今後の検討課題とします。</p>
-</blockquote>
+<h3 id="カード間の相互作用menu-combinations">8.4
+カード間の相互作用（menu / combinations）</h3>
+<p>プレイヤーがカードに対して行う操作は、大きく2種類に分かれます。</p>
+<ul>
+<li><strong>メニュー型</strong>: 1枚のカードだけで完結する操作。8.1 節の
+<code>actions</code>
+として、条件と効果をまとめて宣言します。すべてのアクションには
+<code>actor</code>（プレイヤーキャラクター）が暗黙的に参加できるため、<code>eat</code>（食べ物
+self ＋ actor）だけでなく、<code>attack</code>（攻撃対象の敵 self ＋
+actor）
+のように、一見「2つの参加者が要る」ように見える操作も、もう一方が常に
+<code>actor</code> であればメニュー型で表現できます。</li>
+<li><strong>ドラッグ型</strong>: あるカードを、<code>actor</code>
+ではない別の特定のカードにドラッグ＆ドロップして行う操作（「斧で木を切る」など、
+道具や素材そのものを指定する必要がある場合）。ドロップされた側（受け側）の
+<code>combinations</code> として宣言します。</li>
+</ul>
+<p>ドラッグ型の詳細な記法（<code>combinations</code>
+の構造、ドラッグされてきたカードを指す <code>dragged</code>
+という参照、MOD 拡張性、 対称的な組み合わせの扱いなど）は
+<code>ActionSystem.md</code> に切り出しています。</p>
+<p>以前は、アクションが成立する条件と、成立した結果として起きる効果を、<code>on: &lt;アクション名&gt;</code>
+という独立したトリガーを介して
+別々に記述する案を検討していました。これは「アクションを宣言していない第三者も、そのアクション名を共有トリガーとして
+listen
+できる」という拡張性を狙ったものでしたが、1つの操作の挙動が複数のオブジェクトに分散して記述されることになり、
+挙動を把握しにくくなる（Wiki
+等での文書化がしづらい）という欠点が大きいと判断し、採用しませんでした。
+この判断の詳細な経緯は <code>ActionSystem.md</code>
+に記載しています。</p>
 <h2 id="singletonオブジェクトworld">9.
 singletonオブジェクト（world）</h2>
 <p>ゲーム動作に必須ないくつかの情報（日時、天候、明るさ等）を持つ、唯一のインスタンスを想定しています。
@@ -749,21 +802,16 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href=
 親オブジェクト単位）、および型制約の指定方法（7.1 節）</li>
 <li><code>slots</code> 概念が character 専用か、汎用コンテナ概念か（7.1
 節）</li>
-<li><code>on</code>（アクション起因のイベントトリガー）の詳細仕様（8.2
-節）</li>
-<li>action 条件式の参照パスのルートとして
-<code>target</code>（対象オブジェクト）が必要か（8.1 節）</li>
 <li>action
 条件式の比較演算子セット（<code>lt</code>/<code>lte</code>/<code>gt</code>/<code>gte</code>/<code>eq</code>/<code>neq</code>/<code>in</code>/<code>not_in</code>）の過不足（8.1
 節）</li>
 <li><code>target</code> に <code>ancestor</code> / <code>sibling</code>
 / <code>descendant</code> を追加するかどうか（8.2 節）</li>
 <li>耐久値の減少要因として、毎 tick
-自動劣化に加えて使用による摩耗（<code>on: use</code>
-起因）を併用するかどうか（8.3 節）</li>
-<li><code>actions</code> の条件成立に伴い発火する
-<code>effects</code>（<code>on: &lt;アクション名&gt;</code>）との間で、数値の受け渡しをどう記法化するか（8.4
-節、本統合で新たに識別）</li>
+自動劣化に加えて使用によるアクション実行（<code>actions.use</code>
+等）に伴う摩耗を併用するかどうか（8.3 節）</li>
+<li>カード間の相互作用（<code>combinations</code>）に関する未決事項一式（<code>ActionSystem.md</code>
+に整理）</li>
 </ul>
 </article>
 </body>
