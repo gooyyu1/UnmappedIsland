@@ -10,6 +10,7 @@
 - [気候システム設計](./ClimateSystem.md)
 - [pick: 重み付き確率分岐システム](./PickSystem.md)
 - [カード間の相互作用（actions / combinations）](./ActionSystem.md)
+- [レシピシステム設計](./RecipeSystem.md)
 
 ## 含まれるドキュメント例
 
