@@ -6,7 +6,6 @@
 
 ```
 Documents/
-├── index.md         # GitHub Pages ルート
 ├── Planning/       # ゲーム企画書
 │   ├── GameConcept.md
 │   └── README.md
