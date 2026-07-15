@@ -8,6 +8,7 @@
 - [ゲーム内要素の定義方式](./GameElementDefinition.md)
 - [地形生成システム設計](./TerrainGeneration.md)
 - [気候システム設計](./ClimateSystem.md)
+- [pick: 重み付き確率分岐システム](./PickSystem.md)
 
 ## 含まれるドキュメント例
 
