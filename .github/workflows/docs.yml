@@ -52,6 +52,18 @@ jobs:
             echo "Generated: $out_file"
           done
 
+      - name: Rewrite internal .md links to .html
+        run: |
+          # Pandoc does not rewrite links between converted documents, so a link that
+          # pointed at another Markdown file (e.g. href="./Design/README.md") is left
+          # untouched even though only Design/README.html exists in the output. Rewrite
+          # every such relative href (anything without a ":" is treated as relative,
+          # so http(s):// and mailto: links are left alone) from .md to .html.
+          find docs -name '*.html' | while read -r html_file; do
+            sed -i -E 's/href="([^":]+)\.md(#[^"]*)?"/href="\1.html\2"/g' "$html_file"
+          done
+          echo "Rewrote internal .md links to .html across docs/"
+
       - name: Copy HTML mocks and assets to docs
         run: |
           # Copy standalone HTML mocks and screenshots from Documents to docs
