@@ -297,7 +297,9 @@ object_defs:
 > - slot に格納可能なオブジェクトの型制約の指定方法
 > - `slots` は character 専有の概念か、コンテナ全般（宝箱等）で使い回す汎用概念か
 >
-> 上記2点について、`RecipeSystem.md` で `slots` に任意の `accepts`（型・数量制約）フィールドを追加する具体案を検討しています。
+> 上記2点について、`RecipeSystem.md` で `slots` に任意の `accepts`（型・数量制約）フィールドを追加する具体案を、
+> `ContainerSystem.md` で `capacity`（合計サイズの制約）・`weight_rate`（重さの伝播率）フィールドを追加する具体案を、
+> それぞれ検討しています。
 
 ### 7.2 装備の排他制御（layer / covers）
 
@@ -582,7 +584,7 @@ properties:
 - ステージ切替の瞬間だけ発火する効果（edge-triggered、`on_enter` 的なもの）の要否と記法（6.4 節）
 - derived の採用可否、および採用する場合の仕様詳細。採用する場合、`stages`（6.4 節、`min` による半開区間）と
   `stage_table`（6.5 節、`until` による区間指定）のキー名・記法を統一するかどうか（6.5 節）
-- slot の容量制限の持たせ方（slot 単位 or 親オブジェクト単位）、および型制約の指定方法（7.1 節。`RecipeSystem.md` に `accepts` という具体案あり）
+- slot の容量制限の持たせ方（slot 単位 or 親オブジェクト単位）、および型制約の指定方法（7.1 節。`RecipeSystem.md` に `accepts`、`ContainerSystem.md` に `capacity`/`weight_rate` という具体案あり）
 - `slots` 概念が character 専用か、汎用コンテナ概念か（7.1 節）
 - action 条件式の比較演算子セット（`lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`）の過不足（8.1 節）
 - `target` に `ancestor` / `sibling` / `descendant` を追加するかどうか（8.2 節）
@@ -590,3 +592,4 @@ properties:
 - カード間の相互作用（`combinations`）に関する未決事項一式（`ActionSystem.md` に整理）
 - 重み付き確率分岐（`pick`）に関する未決事項一式（`PickSystem.md` に整理）
 - レシピシステム（`recipes`/製作中オブジェクトの自動生成/`accepts`）に関する未決事項一式（`RecipeSystem.md` に整理）
+- コンテナの容量・重さ（`capacity`/`weight_rate`）に関する未決事項一式（`ContainerSystem.md` に整理）
