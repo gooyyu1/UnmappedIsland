@@ -326,11 +326,12 @@ traits:
         conditions:
           - {path: actor.satiety, op: lt, value: max}
         effects:
-          - target: actor
+          actor:
             add:
               satiety: 10
-          - target: self
-            lifecycle: destroy
+          self:
+            lifecycle:
+              destroy: true
 ```
 
 明るさで移動可否を制御する例です。
@@ -357,7 +358,7 @@ object_defs:
 条件式は `{path, op, value}` の形を取ります。`path` は参照ルートから始まるドット区切りのパスです。
 現時点で定義されている参照ルートは `self`（このアクションを宣言したオブジェクト自身）・`parent`（その親）・
 `actor`（このアクションを実行しているプレイヤーキャラクター）・`world`（環境シングルトン、9 節参照）の 4 つです。
-`self`/`parent`/`actor` は 8.2 節の `target` と同じ意味で使います。
+`self`/`parent`/`actor` は 8.2 節の `effects` のキーと同じ語彙・同じ意味で使います。
 
 **`actor` はすべてのアクションに暗黙的に存在し、常にプレイヤーキャラクターを指します。** `eat` の例のように、
 アクションを持つオブジェクト（食べ物）自身は消費される側（`self`）であり、実際に効果を受け取るのは食べ物を保持している
@@ -380,30 +381,31 @@ object_defs:
 2. **プロパティレベル**（例: アイテムの重量プロパティが持ち主の負荷に寄与する）
 3. **プロパティのステージレベル**（例: 耐久値の残量帯によって防御効果が変わる。6.4 節参照）
 
-記法は「発生条件を外側に、効果本体を `effects:` の中に」という形に統一します。`effects:` の配列要素の中に `when` を書くのではなく、条件キーの下に `effects` をぶら下げる構造です。
+`effects` は、**効果の対象（`self`/`parent`/`child`/`actor`）を識別子とするキー**として表現する辞書型です。
+現時点で定義するのは `self`（自分自身）・`parent`（親）・`child`（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、8.1 節参照）の 4 つです。
+`ancestor`（先祖）・`sibling`（兄弟）・`descendant`（子孫）は、必要性が生じた時点で改めて検討します。
 
 ```yaml
 effects:
-  - when: equip
-    target: parent
+  parent:
+    when: equip
     modify:
       defense: 5
       speed: 3
       accuracy: 2
 ```
 
-トリガーの種類は以下の通りです。
-
 - `when: <スロット名>` … そのスロットに入っている間、継続的に有効（レベルトリガー）
-- 条件キーを省略した場合は「常時（無条件）」を意味します。
+- `when` を省略した場合は「常時（無条件）」を意味します。
+
+`when` は各対象（`self`/`parent` など）のキーの中に書きます。1 つの `effects` の中で、対象ごとに異なる `when` を
+持たせることもできます（例: `parent` は `when: equip` の間だけ、`self` は常時、など）。トリガーを `effects` 全体の
+兄弟キーに引き上げる案も検討しましたが、同じオブジェクトが複数の異なるトリガーを将来持つ可能性を残すため、
+対象ごとに `when` を持たせる現在の形を採用しています。
 
 特定のアクションが実行された瞬間にだけ発火する効果は、`on: <アクション名>` のような独立したトリガーとしては表現しません。
 アクション自身の `effects`（8.1 節）、またはカード間の組み合わせを表す `combinations` の `effects`（`ActionSystem.md`）として、
 アクションの定義そのものに直接書きます。
-
-`target` は効果の対象を指します。現時点で定義するのは `self`（自分自身）・`parent`（親）・`child`（子）・
-`actor`（このアクションを実行しているプレイヤーキャラクター、8.1 節参照）の 4 つです。
-`ancestor`（先祖）・`sibling`（兄弟）・`descendant`（子孫）は、必要性が生じた時点で改めて検討します。
 
 ### 8.3 効果の種別（modify / add / lifecycle）
 
@@ -417,7 +419,13 @@ effects:
     実行された瞬間に一度だけ加算します。
   - `when`（レベルトリガー）配下、および無条件（常時）の `add` は、条件が真である tick 毎に加算します（例: 出血中の血液量減少、耐久値の毎 tick 減少）。
   - 「アクション実行に伴う効果なら一回、`when`/常時なら毎 tick」という対応は確定した仕様です。
-- **`lifecycle`**: プロパティの値ではなく、オブジェクトそのものの存在を操作します（例: `destroy` でオブジェクトを消滅させる）。`modify`/`add` が値操作であるのに対し、`lifecycle` は存在操作を担う第三のカテゴリとして区別します。
+- **`lifecycle`**: プロパティの値ではなく、オブジェクトそのものの存在を操作します（例: `destroy` でオブジェクトを消滅させる、`spawn` で新規オブジェクトを生成する）。`modify`/`add` が値操作であるのに対し、`lifecycle` は存在操作を担う第三のカテゴリとして区別します。
+  - `lifecycle` は `modify`/`add` と同様に、複数の動詞を同時に持てる辞書形式です（例: `{spawn: {...}, destroy: true}`）。同じ対象に対して「新しいオブジェクトを生成しつつ、自分自身は消滅させる」という組み合わせを1つのエントリで表現できます。
+
+`modify`/`add`/`lifecycle` はいずれも、対象（`self`/`parent` など）ひとつに対して「何が起きるか」を確定的に記述するものです。
+複数の結果から重み付き確率で1つを選ぶ必要がある場合は、`effects` を書く代わりに `pick` を使います。`pick` は
+`effects` と同じ場所に書く**代替の**キーであり、各候補が自分自身の `effects`（対象ごとの辞書）を丸ごと持てます。
+これにより「確率で分岐した結果、候補ごとに異なる対象へ効果が及ぶ」ケースも表現できます。詳細は `PickSystem.md` を参照してください。
 
 ### 8.4 カード間の相互作用（menu / combinations）
 
@@ -504,8 +512,8 @@ item: armor_leather
 covers: [torso]
 layer: base
 effects:
-  - when: equip
-    target: parent
+  parent:
+    when: equip
     modify:
       defense: 5
       speed: 3
@@ -519,7 +527,7 @@ properties:
   durability:
     value: 100
     effects:
-      - target: self
+      self:
         add:
           durability: -1
     stages:
@@ -528,8 +536,9 @@ properties:
       - name: broken
         min: null
         effects:
-          - target: self
-            lifecycle: destroy
+          self:
+            lifecycle:
+              destroy: true
 ```
 
 ### 11.3 細菌感染（オブジェクト化された「条件」、段階に応じた多段の影響）
@@ -549,13 +558,13 @@ properties:
       - name: mild
         min: 20
         effects:
-          - target: parent
+          parent:
             add:
               temperature: 0.1
       - name: feverish
         min: 50
         effects:
-          - target: parent
+          parent:
             add:
               temperature: 0.2
               hydration: -1
@@ -577,3 +586,4 @@ properties:
 - `target` に `ancestor` / `sibling` / `descendant` を追加するかどうか（8.2 節）
 - 耐久値の減少要因として、毎 tick 自動劣化に加えて使用によるアクション実行（`actions.use` 等）に伴う摩耗を併用するかどうか（8.3 節）
 - カード間の相互作用（`combinations`）に関する未決事項一式（`ActionSystem.md` に整理）
+- 重み付き確率分岐（`pick`）に関する未決事項一式（`PickSystem.md` に整理）
