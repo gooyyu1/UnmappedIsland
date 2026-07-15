@@ -52,6 +52,18 @@ jobs:
             echo "Generated: $out_file"
           done
 
+      - name: Rewrite internal .md links to .html
+        run: |
+          # Pandoc does not rewrite links between converted documents, so a link that
+          # pointed at another Markdown file (e.g. href="./Design/README.md") is left
+          # untouched even though only Design/README.html exists in the output. Rewrite
+          # every such relative href (anything without a ":" is treated as relative,
+          # so http(s):// and mailto: links are left alone) from .md to .html.
+          find docs -name '*.html' | while read -r html_file; do
+            sed -i -E 's/href="([^":]+)\.md(#[^"]*)?"/href="\1.html\2"/g' "$html_file"
+          done
+          echo "Rewrote internal .md links to .html across docs/"
+
       - name: Copy HTML mocks and assets to docs
         run: |
           # Copy standalone HTML mocks and screenshots from Documents to docs
@@ -61,6 +73,54 @@ jobs:
             mkdir -p "$(dirname "$dest")"
             cp "$asset" "$dest"
             echo "Copied: $dest"
+          done
+
+      - name: Generate folder index.html files
+        run: |
+          # Markdown links to a folder (e.g. GitHub's own directory browser) have no
+          # equivalent once converted to static HTML, so every folder under docs/
+          # (including its root) gets its own auto-generated index.html listing that
+          # folder's immediate contents. This prevents 404s when a bare folder URL
+          # is requested from the published site.
+          generate_index() {
+            local dir="$1"
+            local rel="${dir#docs}"
+            rel="${rel#/}"
+            local title="${rel:-Documents}"
+
+            {
+              echo '<!DOCTYPE html>'
+              echo '<html lang="ja"><head><meta charset="utf-8" />'
+              echo "<title>${title}</title>"
+              echo '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />'
+              echo '</head><body>'
+              echo '<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">'
+              echo "<h1>${title}</h1>"
+              echo '<ul>'
+
+              if [ "$dir" != "docs" ]; then
+                echo '<li><a href="../">.. (親フォルダ)</a></li>'
+              fi
+
+              find "$dir" -mindepth 1 -maxdepth 1 -type d | sort | while read -r sub; do
+                name="$(basename "$sub")"
+                echo "<li><a href=\"${name}/\">${name}/</a></li>"
+              done
+
+              find "$dir" -mindepth 1 -maxdepth 1 -type f ! -name 'index.html' | sort | while read -r f; do
+                name="$(basename "$f")"
+                echo "<li><a href=\"${name}\">${name}</a></li>"
+              done
+
+              echo '</ul>'
+              echo '</article>'
+              echo '</body></html>'
+            } > "$dir/index.html"
+            echo "Generated: $dir/index.html"
+          }
+
+          find docs -type d | sort | while read -r d; do
+            generate_index "$d"
           done
 
       - name: Commit generated files
