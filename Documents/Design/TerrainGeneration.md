@@ -58,12 +58,13 @@ Axis は以下の汎用プリミティブの組み合わせで値を生成しま
 **設計上の注意**: 軸の種類・数はハードコードしません。`Axis` 定義自体が YAML で完結し、`LocationType` 側は「言及した軸だけ気にする」設計にすることで、軸の増減に対して `LocationType` 定義が壊れないようにします（3.2 節参照）。
 
 ```yaml
-- id: pollution
-  range: [0.0, 1.0]
-  generator:
-    type: blob_scatter
-    sources: { count: [1, 3], seed_offset: 1337 }
-    falloff: inverse_square
+axes:
+  pollution:
+    range: [0.0, 1.0]
+    generator:
+      type: blob_scatter
+      sources: { count: [1, 3], seed_offset: 1337 }
+      falloff: inverse_square
 ```
 
 ### 3.2 LocationTypeマッチング（軸ベース）
@@ -71,14 +72,15 @@ Axis は以下の汎用プリミティブの組み合わせで値を生成しま
 各 `LocationType` は、軸空間上の「理想点＋許容範囲」として定義します。
 
 ```yaml
-- id: inland_jungle
-  applicable_scopes: [island]        # 3.7節参照。適用範囲を制限できる
-  axis_preferences:
-    elevation:  { ideal: 0.1, tolerance: 0.3, weight: 1.0 }
-    humidity:   { ideal: 0.8, tolerance: 0.2, weight: 1.5 }
-    # 言及しない軸は自動的に「無関心」= weight 0 として扱う
-  hard_limits:
-    elevation: { max: 0.6 }          # 絶対的な除外条件
+location_types:
+  inland_jungle:
+    applicable_scopes: [island]        # 3.7節参照。適用範囲を制限できる
+    axis_preferences:
+      elevation:  { ideal: 0.1, tolerance: 0.3, weight: 1.0 }
+      humidity:   { ideal: 0.8, tolerance: 0.2, weight: 1.5 }
+      # 言及しない軸は自動的に「無関心」= weight 0 として扱う
+    hard_limits:
+      elevation: { max: 0.6 }          # 絶対的な除外条件
 ```
 
 - マッチングは正規化した重み付きユークリッド距離による最近傍探索です。
@@ -127,17 +129,17 @@ Axis は以下の汎用プリミティブの組み合わせで値を生成しま
 - 内部生成は 3.1〜3.6 の同一パイプラインを、**生成スコープ（scope）ごとのパラメータプリセット**を差し替えて再帰的に実行します。
 
 ```yaml
-# generation_scope.yaml (案)
-- id: island
-  site_count_range: { min: 40, max: 80 }
-  axes: [elevation, humidity, coastal_distance, pollution]
-  branch_factor: { min: 1, max: 3 }
+generation_scopes:
+  island:
+    site_count_range: { min: 40, max: 80 }
+    axes: [elevation, humidity, coastal_distance, pollution]
+    branch_factor: { min: 1, max: 3 }
 
-- id: structure_interior
-  site_count_range: { min: 3, max: 7 }     # 小規模・迷いにくさの要件をここで表現
-  axes: [dampness, light_level, decay]      # 島とは異なる軸セットでよい
-  branch_factor: { min: 0, max: 1 }
-  dead_end_ratio_max: 0.3
+  structure_interior:
+    site_count_range: { min: 3, max: 7 }     # 小規模・迷いにくさの要件をここで表現
+    axes: [dampness, light_level, decay]      # 島とは異なる軸セットでよい
+    branch_factor: { min: 0, max: 1 }
+    dead_end_ratio_max: 0.3
 ```
 
 - `LocationType` 側の `applicable_scopes` タグにより、「洞窟の中に草原は出ない」等の制約を自然に表現できます。

@@ -512,16 +512,17 @@ object_defs:
 ### 11.1 防具（オブジェクトレベルの効果、複数の恩恵の束）
 
 ```yaml
-item: armor_leather
-covers: [torso]
-layer: base
-effects:
-  parent:
-    when: equip
-    modify:
-      defense: 5
-      speed: 3
-      accuracy: 2
+object_defs:
+  armor_leather:
+    covers: [torso]
+    layer: base
+    effects:
+      parent:
+        when: equip
+        modify:
+          defense: 5
+          speed: 3
+          accuracy: 2
 ```
 
 ### 11.2 耐久値（プロパティのステージレベル、毎 tick 減少と消滅条件）
