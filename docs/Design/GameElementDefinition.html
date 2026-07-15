@@ -457,7 +457,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="
 character 専有の概念か、コンテナ全般（宝箱等）で使い回す汎用概念か</p>
 <p>上記2点について、<code>RecipeSystem.md</code> で <code>slots</code>
 に任意の
-<code>accepts</code>（型・数量制約）フィールドを追加する具体案を検討しています。</p>
+<code>accepts</code>（型・数量制約）フィールドを追加する具体案を、
+<code>ContainerSystem.md</code> で
+<code>capacity</code>（合計サイズの制約）・<code>weight_rate</code>（重さの伝播率）フィールドを追加する具体案を、
+それぞれ検討しています。</p>
 </blockquote>
 <h3 id="装備の排他制御layer-covers">7.2 装備の排他制御（layer /
 covers）</h3>
@@ -825,8 +828,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href=
 による区間指定）のキー名・記法を統一するかどうか（6.5 節）</li>
 <li>slot の容量制限の持たせ方（slot 単位 or
 親オブジェクト単位）、および型制約の指定方法（7.1
-節。<code>RecipeSystem.md</code> に <code>accepts</code>
-という具体案あり）</li>
+節。<code>RecipeSystem.md</code> に
+<code>accepts</code>、<code>ContainerSystem.md</code> に
+<code>capacity</code>/<code>weight_rate</code> という具体案あり）</li>
 <li><code>slots</code> 概念が character 専用か、汎用コンテナ概念か（7.1
 節）</li>
 <li>action
@@ -842,6 +846,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href=
 <li>重み付き確率分岐（<code>pick</code>）に関する未決事項一式（<code>PickSystem.md</code>
 に整理）</li>
 <li>レシピシステム（<code>recipes</code>/製作中オブジェクトの自動生成/<code>accepts</code>）に関する未決事項一式（<code>RecipeSystem.md</code>
+に整理）</li>
+<li>コンテナの容量・重さ（<code>capacity</code>/<code>weight_rate</code>）に関する未決事項一式（<code>ContainerSystem.md</code>
 に整理）</li>
 </ul>
 </article>

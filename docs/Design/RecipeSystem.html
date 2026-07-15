@@ -297,7 +297,9 @@ actions、ただし中身の検査・消費ロジックはプログラム側</h2
 YAML ファイルとして 書き出す前処理ステップなのか</li>
 <li>素材と道具を同じスロットにまとめるか、別スロットに分けるか</li>
 <li>普通の箱（家具・コンテナ等）が <code>accepts</code>
-をどこまで再利用できるか（型・trait・サイズベースの緩い制約への拡張）</li>
+をどこまで再利用できるか（型・trait・サイズベースの緩い制約への拡張。
+普通のコンテナの合計サイズ制限・重さについては
+<code>ContainerSystem.md</code> で別途検討している）</li>
 <li><code>steps.requires</code> の記法の詳細（<code>quantity</code>
 のデフォルト値、trait マッチングの可否など）</li>
 <li><code>accepts</code> から自動生成される <code>combinations</code>
