@@ -19,8 +19,8 @@
 廃止されたため、以降のサンプルは `actions`/`combine` の効果として直接書く形に更新しています。）
 
 - 探索時のアイテム発見（`actions.explore` の効果として、複数アイテムから重み付きで1つを選ぶ）
-- 攻撃の結果（`combine` の効果として、命中/ミス/クリティカルを重み付きで選ぶ。攻撃は攻撃者・対象という2枚のカードが
-  関わるため `actions` ではなく `combine` で表現します）
+- 攻撃の結果（`actions.attack` の効果として、命中/ミス/クリティカルを重み付きで選ぶ。攻撃は「攻撃対象の敵（self）」と
+  「暗黙の行動主体である `actor`」の2者で完結するため、`combine` ではなく `actions` で表現します。`GameElementDefinition.md` 8.1 節参照）
 - 生水を飲んで腹を下すか（`actions.drink_raw_water` の効果として、発症/無事を重み付きで選ぶ）
 - 天気の急変など、貯水池モデル（`ClimateSystem.md`）だけでは表現しにくい離散的なイベント
 
@@ -121,8 +121,8 @@ props:
 
 ### 5.1 攻撃（命中/ミス/クリティカル）
 
-攻撃は攻撃者・対象という2枚のカードが関わるドラッグ型の相互作用なので、`ActionSystem.md` の `combine` として、
-対象（enemy）側に定義します。`self` は enemy 自身、`dragged` はドラッグされてきた攻撃者（キャラクター）です。
+攻撃は、攻撃対象の敵カード（`self`）と、暗黙の行動主体である `actor`（プレイヤーキャラクター、`GameElementDefinition.md` 8.1 節）の
+2者で完結するため、`combine` を使わず `actions` で表現します。プレイヤーは敵カードを選択し、「攻撃」ボタンをクリックします。
 
 ```yaml
 props:
@@ -131,13 +131,14 @@ props:
 
 object_defs:
   enemy:
-    combine:
-      - with: character
+    actions:
+      attack:
+        showMenu: always
         effects:
           - pick:
               - weight: 10
                 add: { hp: -20 }               # クリティカル(現時点では固定重み)
-              - weight: { path: dragged.accuracy }
+              - weight: { path: actor.accuracy }
                 add: { hp: -10 }               # 通常命中
               - weight: 40
                 add: {}                          # ミス
@@ -205,7 +206,7 @@ actions:
 
 - `weight` の参照記法。`{ path: self.accuracy }` という明示形に統一するか、`weight: accuracy` のような裸の名前も許容するか
 - 攻撃の種類（近接/遠隔など）が増えた場合に、命中判定用のプロパティ（`accuracy` 等）を共有するか、種類ごとに分けるか
-- `modify` のターゲットが現状 `self`/`parent`/`child`（8.2 節）と `combine` 内限定の `dragged`（`ActionSystem.md`）に
+- `modify` のターゲットが現状 `self`/`parent`/`child`/`actor`（8.2 節）と `combine` 内限定の `dragged`（`ActionSystem.md`）に
   限定されている点。自分のツリーに属さない対象の重みを外部から書き換えたいケース（例: 「幸運のお守り」が探索の
   宝物発見率を上げる）は、8.2 節の既存 TODO（`target` への `ancestor`/`sibling`/`descendant` 追加）と合わせて
   解決する必要がある
