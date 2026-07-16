@@ -5,7 +5,7 @@
 本ドキュメントは、天気の急変・探索時のアイテム発見・攻撃の命中判定・生水を飲んでの体調不良など、
 「重み付き確率によって複数の結果から1つが選ばれる」という現象に共通して使えるメカニズムを検討した結果をまとめたものです。
 
-`GameElementDefinition.md` が既に定義している `props` / `stages` / `passive` / `active`（modify / accumulate / add / lifecycle）に対して、
+`GameElementDefinition.md` が既に定義している `props` / `stages` / `passive` / `active`（modify / accumulate / add / destroy / spawn）に対して、
 できる限り新しい概念を追加せず、既存の語彙の組み合わせで表現することを目指しました。ランダム要素がない場合（候補が1つしかない場合）も、
 専用の分岐を用意せず同じ記法で表現できることを重視しています。
 
@@ -50,8 +50,7 @@ actions:
       - weight: 50
         active:
           self:
-            lifecycle:
-              spawn: { object: diarrhea, into: self.conditions }   # 発症
+            spawn: { object: diarrhea, into: self.conditions }   # 発症
 ```
 
 `pick` を `active` の中に入れ子にする（例: `active: { self: { pick: [...] } }`）案も検討しましたが、この形だと
@@ -64,7 +63,7 @@ actions:
 ように重み付けを考える必要がないケースは、これまで通り `pick` なしで直接書けばよく、既存ドキュメントの書き換えは必要ありません。
 
 各候補の `active` は、トップレベルの `active` と同じ対象キー（`self`/`parent`/`child`/`actor`）を持ちますが、
-中身は一時的な命令（`add`/`lifecycle`）に限られます。`modify`/`accumulate` は関係とゲートに基づいて登録され、
+中身は一時的な命令（`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate` は関係とゲートに基づいて登録され、
 その関係が続く限り評価され続けることに意味がある仕組みなので、1回選ばれて終わりの `pick` の候補に書く意味がなく、
 `when` も同様に不要です（`GameElementDefinition.md` 8.3 節参照）。この入れ子は再帰的であり、候補の `active` の中で
 さらに別の `pick` が必要になるケースも構造上は排除していません。
@@ -72,14 +71,13 @@ actions:
 ## 3. 候補の `active` が持てる効果の種類
 
 - 別プロパティへの干渉 → 既存の `add`（8.3 節。`modify`/`accumulate` は候補に書けない、上記参照）
-- 自身を破壊 → 既存の `lifecycle: { destroy: true }`
-- 別カードを生成 → **新規**。`lifecycle` に `spawn`（新規オブジェクトを生成する）という動詞を追加する
+- 自身を破壊 → 既存の `destroy: true`（8.3 節）
+- 別カードを生成 → 既存の `spawn`（8.3 節）
 - 別アクションの実行 → **新規、記法未定**。エフェクトの中から特定のアクションを能動的に発火させる仕組みは今のところない（8 節参照）
 
-`lifecycle: spawn` は、`ClimateSystem.md` で季節切り替えのために提案していた `lifecycle: transition`（自分を破棄し次の季節を生成する）を
-置き換えられる可能性があります。`transition` を専用動詞にせず、「`spawn` で次のインスタンスを生成」＋「`destroy` で自分を消す」という
-2つの動詞の組み合わせ（`lifecycle: {spawn: {...}, destroy: true}`）として表現し直せば、`lifecycle` の動詞を1つ増やすだけで
-両方のケースをカバーできます（8 節の未決事項）。
+`destroy`/`spawn` はいずれも `GameElementDefinition.md` 8.3 節で既に確立された、`add` と対等な兄弟キーです。専用の
+入れ子（`lifecycle`）は廃止済みのため、`pick` の候補でもそのまま同じ形で書けます。`ClimateSystem.md` の季節切り替えも、
+専用の `transition` 動詞を新設せず、この `spawn`＋`destroy` の組み合わせで表現しています（`ClimateSystem.md` 3.2 節）。
 
 ## 4. weight の表現方法
 
@@ -180,13 +178,11 @@ object_defs:
           - weight: 50
             active:
               self:
-                lifecycle:
-                  destroy: true
+                destroy: true
           - weight: 50
             active:
               actor:
-                lifecycle:
-                  destroy: true
+                destroy: true
 ```
 
 ### 5.2 生水を飲んで腹を下すか
@@ -207,8 +203,7 @@ actions:
       - weight: 30
         active:
           self:
-            lifecycle:
-              spawn: { object: diarrhea, into: self.conditions }  # 発症
+            spawn: { object: diarrhea, into: self.conditions }  # 発症
 ```
 
 ### 5.3 探索時のアイテム発見（多数候補、外部干渉なし）
@@ -223,18 +218,15 @@ actions:
       - weight: 30
         active:
           self:
-            lifecycle:
-              spawn: { object: item_coconut, into: parent.inventory }
+            spawn: { object: item_coconut, into: parent.inventory }
       - weight: 50
         active:
           self:
-            lifecycle:
-              spawn: { object: item_rock, into: parent.inventory }
+            spawn: { object: item_rock, into: parent.inventory }
       - weight: 1
         active:
           self:
-            lifecycle:
-              spawn: { object: item_gem, into: parent.inventory }
+            spawn: { object: item_gem, into: parent.inventory }
 ```
 
 外部からの干渉が不要な候補は、このようにリテラルの `weight` だけで簡潔に書けます。MOD で特定の候補（例: `item_gem`）の
@@ -256,8 +248,7 @@ actions:
 - ランダムなしのケースは、候補数が1の `pick` として同じ記法で表現できる。専用の「非ランダム」記法は用意しない
 - `weight` はリテラル定数か、既存 `props` へのパス参照のいずれかであり、専用の計算式（base＋条件付き補正）を新設しない
 - 外部からの重みへの干渉は、既存の `modify`/`stages` の組み合わせのみで表現し、`modify`/`stages` と類似した別概念を作らない
-- 候補が持てる新しい効果は `lifecycle: spawn`（新規オブジェクト生成）のみ。`ClimateSystem.md` の `transition` 動詞は、
-  `spawn` ＋ `destroy` の組み合わせに置き換えられる可能性がある
+- 候補は `add`/`destroy`/`spawn`（8.3 節）をそのまま利用でき、`pick` のために新しい効果の種類は追加していない
 
 ## 8. 未決事項・今後の検討課題
 
@@ -268,8 +259,7 @@ actions:
   宝物発見率を上げる）は、8.2 節の既存 TODO（`ancestor`/`sibling`/`descendant` 追加）と合わせて解決する必要がある
 - `pick` の候補から「別アクションを実行する」ための記法。エフェクトからアクションを能動的に発火させる仕組み自体がまだない
 - 重みの合計が0（またはマイナス）になった場合の扱い。フォールバック候補（6 節）を許容するかどうか
-- `lifecycle: spawn` の具体的な記法（生成先スロットの指定方法など）
-- `lifecycle: spawn` の導入に伴い、`ClimateSystem.md` の `lifecycle: transition` を `spawn` ＋ `destroy` に置き換えるべきか
+- `spawn` の具体的な記法（生成先スロットの指定方法など、`GameElementDefinition.md` 8 節の未決事項と共通）
 - 乱数のシード管理方針（`TerrainGeneration.md` は地形生成のシード値を明言しているが、戦闘・探索・気候などゲームプレイ全般の
   乱数と同じ系列にするか、別系列にするか）
 
@@ -282,5 +272,5 @@ actions:
   「パスによる参照」という考え方をそのまま踏襲しています。
 - `pick` の各候補が独立した `active` 辞書を持つ設計は、`active` 自体が対象をキーとする辞書として再帰的に定義されている
   （GameElementDefinition.md 8.2 節）ことをそのまま利用したものであり、新しいデータ構造を追加していません。
-- `lifecycle: spawn` の追加、および対象キーの拡張（ancestor/sibling/descendant）という2つの論点は、いずれも
-  `GameElementDefinition.md` に既にある未決事項と同じ形で解決を要する、という点で一貫しています。
+- 対象キーの拡張（ancestor/sibling/descendant）という論点は、`GameElementDefinition.md` に既にある未決事項と
+  同じ形で解決を要する、という点で一貫しています。

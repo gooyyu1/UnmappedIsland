@@ -37,9 +37,8 @@ object_defs:
           - { path: dragged.durability, op: gt, value: 0 }
         active:
           self:
-            lifecycle:
-              spawn: { object: logs, into: parent.inventory }
-              destroy: true
+            spawn: { object: logs, into: parent.inventory }
+            destroy: true
           dragged:
             add:
               durability: -1
@@ -50,7 +49,7 @@ object_defs:
 - `with` に trait 名を使えば、そのtraitを持つあらゆるカード（将来 MOD で追加されるものも含む）と一致します。
 - `conditions` は `actions` と同じ `{path, op, value}` 形式です。`self`（受け側自身）・`dragged`（ドラッグされてきたカード）・
   `actor`（このドラッグ操作を行っているプレイヤーキャラクター、`GameElementDefinition.md` 8.1 節）のいずれも参照できます。
-- `active` も既存の対象をキーとする辞書構造・`add` / `lifecycle`（`GameElementDefinition.md` 8.2 節・8.3 節）をそのまま使います。
+- `active` も既存の対象をキーとする辞書構造・`add` / `destroy` / `spawn`（`GameElementDefinition.md` 8.2 節・8.3 節）をそのまま使います。
   実行された瞬間に一度だけ適用される点は `actions` の効果と同じです（8.3 節）。持続する条件を表す `modify`/`accumulate` は
   `active` には書けません（`GameElementDefinition.md` 8.3 節参照）。
 - `active` のキーには、既存の `self` / `parent` / `child` / `actor` に加えて、**`dragged`（このインタラクションでドラッグされてきたカード）**を
@@ -139,7 +138,7 @@ object_defs:
 - `combinations` は `object_defs`/`traits`/`props`/`actions`（`GameElementDefinition.md` 3 節・4 節）と同じ「識別子をキーとする辞書型」を
   踏襲しています。ただし `combinations` は本質的に2つのオブジェクト（受け側とドラッグされてきたカード）が関わるため、
   `actions` にはない `with`（マッチング対象の指定）というフィールドを追加で持ちます。
-- `combinations` の `active` は `GameElementDefinition.md` 8.2 節・8.3 節の `add`/`lifecycle` をそのまま再利用しており、
+- `combinations` の `active` は `GameElementDefinition.md` 8.2 節・8.3 節の `add`/`destroy`/`spawn` をそのまま再利用しており、
   新しい効果の種別は追加していません。
 - `with` による trait 名マッチングは、`TerrainGeneration.md` の `LocationType` が軸ベースでマッチングする考え方や、
   `GameElementDefinition.md` 7.2 節の装備の `covers`/`layer` マッチングと同じ「属性で緩やかにマッチさせ、個別に列挙しない」

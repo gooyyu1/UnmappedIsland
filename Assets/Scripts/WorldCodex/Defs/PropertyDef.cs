@@ -83,9 +83,8 @@ namespace UnmappedIsland.Codex.Defs
         public IReadOnlyList<PropertyStage> Stages { get; }
 
         /// <summary>
-        /// on_zero（新設）を持つか。正の値から0以下へ跨いだ瞬間を検出する対象にするかどうかのフラグ。
-        /// 実際に何を発火するか（lifecycle等）はここでは持たず、WorldObject.Tick が検出だけを行う
-        /// （8.3節: lifecycleはactive専用に戻し、耐久値のような「0になったら破棄」はon_zero経由で表現する）。
+        /// on_zero（6.6節）を持つか。値が0以下である間、毎tick実行されるactive効果を持つかどうかのフラグ。
+        /// 実際に何を発火するか（destroy/spawn等）はここでは持たず、WorldObject.Tick が対象かどうかの判定だけを行う。
         /// </summary>
         public bool HasOnZero { get; }
 

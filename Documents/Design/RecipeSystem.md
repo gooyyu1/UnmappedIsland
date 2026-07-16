@@ -53,7 +53,7 @@ object_defs:
 代わりに、**製作中の状態専用の、別オブジェクト**として扱います。これは `infection`（`GameElementDefinition.md` 11.3 節）や
 季節（`ClimateSystem.md`）で採用した「独立した条件・プロセスオブジェクト」パターンと同型です。製作中オブジェクトは
 `progress` プロパティに `stages`（工程に対応する半開区間）を持ち、最終工程の効果として
-`lifecycle: {spawn: {object: axe}, destroy: true}`（自分を破棄し、完成品を生成する）を発火させます。
+`spawn: {object: axe}` と `destroy: true`（自分を破棄し、完成品を生成する）を発火させます。
 
 ### 2.1 製作中オブジェクトの型は自動生成する
 
@@ -86,7 +86,7 @@ object_defs:
 一方、工程ごとの材料・道具の要求（`requires`）は、既存の `conditions`/`passive`/`active` には当てはまりませんでした。
 
 - `conditions`（`{path, op, value}` の AND リスト）には、**工程ごとに異なる要求内容**を表現する仕組みがありません。
-- `passive`/`active`（`modify`/`accumulate`/`add`/`lifecycle`）にも、「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という
+- `passive`/`active`（`modify`/`accumulate`/`add`/`destroy`/`spawn`）にも、「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という
   条件チェック＋消費の複合動作を表す語彙がありません。
 
 これを無理に既存の語彙へ押し込めるより、`steps`/`requires` という**専用のスキーマ**を新設する方が良いと判断しました。

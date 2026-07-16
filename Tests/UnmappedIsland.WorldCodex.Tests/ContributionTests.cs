@@ -443,7 +443,7 @@ namespace UnmappedIsland.Codex.Tests
         // ------------------------------------------------------------------
         // on_zero: 「プロパティが0以下である間、毎回実行されるactive内容」という前提を置いたため、
         // WorldObject側は履歴(前tickは正だったか等)を一切持たない。HasOnZeroは静的なフラグとして
-        // ObjectDefBuilderを通って正しくPropertyDefへ伝わることだけを確認する（実際の発火・lifecycle実行は
+        // ObjectDefBuilderを通って正しくPropertyDefへ伝わることだけを確認する（実際の発火・destroy/spawn実行は
         // まだ実装されていない将来のアクション実行系の役割）。
         // ------------------------------------------------------------------
 
