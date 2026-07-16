@@ -441,69 +441,27 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         // ------------------------------------------------------------------
-        // on_zero: 正の値から0以下へ跨いだ瞬間を検出する（lifecycle自体の実行はまだ実装されていない）。
+        // on_zero: 「プロパティが0以下である間、毎回実行されるactive内容」という前提を置いたため、
+        // WorldObject側は履歴(前tickは正だったか等)を一切持たない。HasOnZeroは静的なフラグとして
+        // ObjectDefBuilderを通って正しくPropertyDefへ伝わることだけを確認する（実際の発火・lifecycle実行は
+        // まだ実装されていない将来のアクション実行系の役割）。
         // ------------------------------------------------------------------
 
         [Test]
-        public void OnZero_FiresOnlyOnTheTickItCrossesZero()
+        public void HasOnZero_IsCarriedThroughToPropertyDef()
         {
             var candle = new ObjectDefBlueprint { Name = "candle" };
-            candle.Properties.Add(Prop("wax", 2, hasOnZero: true));
-            candle.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "wax", -1));
+            candle.Properties.Add(Prop("wax", 100, hasOnZero: true));
+            candle.Properties.Add(Prop("wick_length", 5)); // hasOnZero: false (既定)
 
             var codex = WorldCodexBuilder.Build(new[] { candle });
-            int waxId = codex.PropertyNames.GetId("wax");
+            ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("candle"));
 
-            WorldObject instance = Spawn(codex, "candle");
+            int waxLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wax"));
+            int wickLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wick_length"));
 
-            instance.Tick(); // wax: 2 -> 1
-            Assert.That(instance.PropertiesCrossedZeroThisTick, Is.Empty, "まだ正の値なので発火しない");
-
-            instance.Tick(); // wax: 1 -> 0
-            Assert.That(instance.PropertiesCrossedZeroThisTick, Is.EqualTo(new[] { waxId }), "正から0以下へ跨いだtickで発火する");
-
-            instance.Tick(); // wax: 0 -> -1
-            Assert.That(instance.PropertiesCrossedZeroThisTick, Is.Empty, "跨いだ次のtickでは再発火しない");
-        }
-
-        [Test]
-        public void OnZero_DoesNotFireForPropertiesWithoutTheFlag()
-        {
-            var candle = new ObjectDefBlueprint { Name = "candle" };
-            candle.Properties.Add(Prop("wax", 1)); // hasOnZero: false (既定)
-            candle.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "wax", -1));
-
-            var codex = WorldCodexBuilder.Build(new[] { candle });
-
-            WorldObject instance = Spawn(codex, "candle");
-
-            instance.Tick(); // wax: 1 -> 0
-
-            Assert.That(instance.PropertiesCrossedZeroThisTick, Is.Empty, "on_zeroを持たないプロパティは検出対象外");
-        }
-
-        [Test]
-        public void OnZero_FiresAgainOnEachNewCrossing()
-        {
-            var battery = new ObjectDefBlueprint { Name = "battery" };
-            battery.Properties.Add(Prop("charge", 1, hasOnZero: true));
-
-            var codex = WorldCodexBuilder.Build(new[] { battery });
-            int chargeId = codex.PropertyNames.GetId("charge");
-
-            WorldObject instance = Spawn(codex, "battery");
-
-            instance.SetProperty(chargeId, PropertyValue.FromNumber(0));
-            instance.Tick();
-            Assert.That(instance.PropertiesCrossedZeroThisTick, Is.EqualTo(new[] { chargeId }), "1回目の到達で発火する");
-
-            instance.SetProperty(chargeId, PropertyValue.FromNumber(5)); // 外部要因で回復(充電)
-            instance.Tick();
-            Assert.That(instance.PropertiesCrossedZeroThisTick, Is.Empty, "正へ回復したtickでは発火しない");
-
-            instance.SetProperty(chargeId, PropertyValue.FromNumber(0));
-            instance.Tick();
-            Assert.That(instance.PropertiesCrossedZeroThisTick, Is.EqualTo(new[] { chargeId }), "再度0に達すれば再び発火する");
+            Assert.That(def.PropertyDefs[waxLocal].HasOnZero, Is.True);
+            Assert.That(def.PropertyDefs[wickLocal].HasOnZero, Is.False);
         }
     }
 }

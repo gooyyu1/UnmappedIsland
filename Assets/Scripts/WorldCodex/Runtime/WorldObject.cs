@@ -25,10 +25,6 @@ namespace UnmappedIsland.Codex.Runtime
         // （遅延生成、Containment経由でのみ変更）。
         private readonly List<ActiveContribution>[] incoming;
 
-        // on_zero検出用。前回Tickを見た時点でこのプロパティが正だったか（HasOnZeroなプロパティのみ意味を持つ）。
-        private readonly bool[] wasPositive;
-        private List<int> crossedZeroThisTick;
-
         /// <summary>所属先（7.1節）。子は必ず1つの親に属する。ルート（未格納）なら null。</summary>
         public WorldObject Parent { get; private set; }
 
@@ -56,10 +52,6 @@ namespace UnmappedIsland.Codex.Runtime
                 if (local == LocalIndexMap.Missing) continue;
                 RegisterContribution(local, new ActiveContribution(declarer: this, slotBearer: this, def: c));
             }
-
-            wasPositive = new bool[def.PropertyDefs.Count];
-            for (int i = 0; i < wasPositive.Length; i++)
-                wasPositive[i] = properties[i].Number > 0;
         }
 
         public bool TryGetProperty(int globalPropertyId, out PropertyValue value)
@@ -157,44 +149,30 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算し、on_zero（正の値から0以下へ跨いだ瞬間、新設）を
-        /// 検出する（8.3節、いずれも不可逆）。ゲームループから1tickにつき1回、生存している全WorldObjectに
-        /// 対して呼ばれる想定。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.3節、不可逆）。ゲームループから
+        /// 1tickにつき1回、生存している全WorldObjectに対して呼ばれる想定。
+        ///
+        /// on_zero（6.6節）はここでは検出しない。「プロパティが0以下である間、毎回実行されるactive内容」という
+        /// 前提を置いたことで、履歴（前tickは正だったか）を持つ必要がなくなった。`Def.PropertyDefs[local].HasOnZero`
+        /// と現在値（0以下か）を都度チェックするだけで済み、将来のアクション実行系がこの2つの既存情報だけを見て
+        /// 判定できる（destroyは繰り返し実行されても安全であり、spawnは通常同じ本体内のdestroyとの組み合わせで
+        /// 自己終端するため、履歴管理なしでも安全に運用できる）。
         /// </summary>
         public void Tick()
         {
-            crossedZeroThisTick?.Clear();
-
             for (int local = 0; local < incoming.Length; local++)
             {
                 var contributions = incoming[local];
-                if (contributions != null)
-                {
-                    foreach (var c in contributions)
-                    {
-                        if (c.Def.Kind != ContributionKind.Accumulate) continue;
-                        if (!IsGateActive(c)) continue;
-                        properties[local] = PropertyValue.FromNumber(properties[local].Number + c.Def.Amount);
-                    }
-                }
+                if (contributions == null) continue;
 
-                if (Def.PropertyDefs[local].HasOnZero)
+                foreach (var c in contributions)
                 {
-                    bool isPositiveNow = properties[local].Number > 0;
-                    if (wasPositive[local] && !isPositiveNow)
-                        (crossedZeroThisTick ??= new List<int>()).Add(Def.PropertyDefs[local].GlobalId);
-                    wasPositive[local] = isPositiveNow;
+                    if (c.Def.Kind != ContributionKind.Accumulate) continue;
+                    if (!IsGateActive(c)) continue;
+                    properties[local] = PropertyValue.FromNumber(properties[local].Number + c.Def.Amount);
                 }
             }
         }
-
-        /// <summary>
-        /// 直近のTick()で、正の値から0以下へ跨いだことが検出されたプロパティのグローバルID一覧
-        /// （on_zero、新設）。`lifecycle`の実行自体はこのプロジェクトにまだ実装がなく、将来のアクション実行系が
-        /// この一覧を読んで発火させる想定。1回のTickで検出された分だけを保持し、次のTickで入れ替わる。
-        /// </summary>
-        public IReadOnlyList<int> PropertiesCrossedZeroThisTick =>
-            (IReadOnlyList<int>)crossedZeroThisTick ?? Array.Empty<int>();
 
         /// <summary>
         /// 現在このプロパティに登録されている全寄与（modify/accumulate両方）を列挙する。
