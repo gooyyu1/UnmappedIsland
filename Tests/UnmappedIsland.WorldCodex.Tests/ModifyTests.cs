@@ -99,7 +99,7 @@ namespace UnmappedIsland.Codex.Tests
 
             WorldObject instance = Spawn(codex, "torch");
 
-            Assert.AreEqual(3, instance.GetEffectiveValue(brightnessId));
+            Assert.That(instance.GetEffectiveValue(brightnessId), Is.EqualTo(3));
         }
 
         [Test]
@@ -122,13 +122,13 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject armorInstance = Spawn(codex, "armor");
 
-            Assert.AreEqual(10, characterInstance.GetEffectiveValue(defenseId), "装備前はボーナスなし");
+            Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(10), "装備前はボーナスなし");
 
-            Assert.IsTrue(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _));
-            Assert.AreEqual(15, characterInstance.GetEffectiveValue(defenseId), "equipに入っている間はボーナスが乗る");
+            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(15), "equipに入っている間はボーナスが乗る");
 
-            Assert.IsTrue(containment.TryMoveToSlot(armorInstance, characterInstance, inventorySlotId, out _));
-            Assert.AreEqual(10, characterInstance.GetEffectiveValue(defenseId), "同じ親のままequip以外へ移すとボーナスが外れる");
+            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, inventorySlotId, out _), Is.True);
+            Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(10), "同じ親のままequip以外へ移すとボーナスが外れる");
         }
 
         [Test]
@@ -154,11 +154,11 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject chestInstance = Spawn(codex, "chest");
             WorldObject armorInstance = Spawn(codex, "armor");
 
-            Assert.IsTrue(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _));
-            Assert.AreEqual(15, characterInstance.GetEffectiveValue(defenseId));
+            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(15));
 
-            Assert.IsTrue(containment.TryMoveToSlot(armorInstance, chestInstance, storageSlotId, out _));
-            Assert.AreEqual(10, characterInstance.GetEffectiveValue(defenseId), "別の親へ移動したら元の親からの登録は消える");
+            Assert.That(containment.TryMoveToSlot(armorInstance, chestInstance, storageSlotId, out _), Is.True);
+            Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(10), "別の親へ移動したら元の親からの登録は消える");
         }
 
         [Test]
@@ -179,10 +179,10 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject containerInstance = Spawn(codex, "preserving_container");
             WorldObject foodInstance = Spawn(codex, "food");
 
-            Assert.AreEqual(3, foodInstance.GetEffectiveValue(decayRateId), "格納前は影響なし");
+            Assert.That(foodInstance.GetEffectiveValue(decayRateId), Is.EqualTo(3), "格納前は影響なし");
 
-            Assert.IsTrue(containment.TryMoveToSlot(foodInstance, containerInstance, storageSlotId, out _));
-            Assert.AreEqual(2, foodInstance.GetEffectiveValue(decayRateId), "storageに入っている間は腐敗速度が下がる");
+            Assert.That(containment.TryMoveToSlot(foodInstance, containerInstance, storageSlotId, out _), Is.True);
+            Assert.That(foodInstance.GetEffectiveValue(decayRateId), Is.EqualTo(2), "storageに入っている間は腐敗速度が下がる");
         }
 
         [Test]
@@ -202,11 +202,11 @@ namespace UnmappedIsland.Codex.Tests
 
             WorldObject instance = Spawn(codex, "battery");
 
-            Assert.AreEqual(15, instance.GetEffectiveValue(outputId), "chargeが満タンなのでfullステージのボーナスが乗る");
+            Assert.That(instance.GetEffectiveValue(outputId), Is.EqualTo(15), "chargeが満タンなのでfullステージのボーナスが乗る");
 
             instance.SetProperty(chargeId, PropertyValue.FromNumber(10));
 
-            Assert.AreEqual(5, instance.GetEffectiveValue(outputId), "chargeがlowステージへ落ちたのでボーナスが消える（再登録なし）");
+            Assert.That(instance.GetEffectiveValue(outputId), Is.EqualTo(5), "chargeがlowステージへ落ちたのでボーナスが消える（再登録なし）");
         }
 
         [Test]
@@ -231,10 +231,10 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject helmetInstance = Spawn(codex, "helmet");
             WorldObject armorInstance = Spawn(codex, "armor");
 
-            Assert.IsTrue(containment.TryMoveToSlot(helmetInstance, characterInstance, equipSlotId, out _));
-            Assert.IsTrue(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _));
+            Assert.That(containment.TryMoveToSlot(helmetInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
 
-            Assert.AreEqual(18, characterInstance.GetEffectiveValue(defenseId));
+            Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(18));
         }
 
         [Test]
@@ -255,9 +255,9 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject armorInstance = Spawn(codex, "armor");
 
-            Assert.IsTrue(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _));
+            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
 
-            Assert.AreEqual(100, characterInstance.GetEffectiveValue(defenseId));
+            Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(100));
         }
 
         [Test]
@@ -274,7 +274,7 @@ namespace UnmappedIsland.Codex.Tests
 
             WorldObject rockInstance = Spawn(codex, "rock");
 
-            Assert.AreEqual(0, rockInstance.GetEffectiveValue(sizeId));
+            Assert.That(rockInstance.GetEffectiveValue(sizeId), Is.EqualTo(0));
         }
     }
 }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Assets/Scripts/WorldCodex 配下のコードはUnityEngineに依存しない純粋なC#であるため、
+    Unityエディタなしでもビルド・テストできるよう、実体のソースをそのまま参照する
+    スタンドアロンのクラスライブラリとして定義する（ファイルの複製はしない）。
+    LangVersionはUnity 2022.3のRoslynが受け付ける範囲に揃えてある。
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/WorldCodex/**/*.cs" />
+  </ItemGroup>
+
+</Project>
