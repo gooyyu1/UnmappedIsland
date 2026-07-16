@@ -104,3 +104,9 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Tests/ はUnityに依存しないdotnetテストプロジェクト。*.csprojは上のUnity向けルールで
+# 無視される対象だが、ここだけは手書きのcsprojをコミット対象に戻し、ビルド成果物のみ無視する。
+Tests/**/bin/
+Tests/**/obj/
+!Tests/**/*.csproj

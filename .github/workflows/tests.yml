@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Assets/Scripts/WorldCodex/**'
+      - 'Tests/**'
+  pull_request:
+    paths:
+      - 'Assets/Scripts/WorldCodex/**'
+      - 'Tests/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: dotnet test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run tests
+        run: dotnet test Tests/UnmappedIsland.WorldCodex.Tests/UnmappedIsland.WorldCodex.Tests.csproj --configuration Release
