@@ -25,6 +25,10 @@ namespace UnmappedIsland.Codex.Runtime
         // （遅延生成、Containment経由でのみ変更）。
         private readonly List<ActiveContribution>[] incoming;
 
+        // on_zero検出用。前回Tickを見た時点でこのプロパティが正だったか（HasOnZeroなプロパティのみ意味を持つ）。
+        private readonly bool[] wasPositive;
+        private List<int> crossedZeroThisTick;
+
         /// <summary>所属先（7.1節）。子は必ず1つの親に属する。ルート（未格納）なら null。</summary>
         public WorldObject Parent { get; private set; }
 
@@ -52,6 +56,10 @@ namespace UnmappedIsland.Codex.Runtime
                 if (local == LocalIndexMap.Missing) continue;
                 RegisterContribution(local, new ActiveContribution(declarer: this, slotBearer: this, def: c));
             }
+
+            wasPositive = new bool[def.PropertyDefs.Count];
+            for (int i = 0; i < wasPositive.Length; i++)
+                wasPositive[i] = properties[i].Number > 0;
         }
 
         public bool TryGetProperty(int globalPropertyId, out PropertyValue value)
@@ -149,24 +157,44 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.3節、不可逆）。ゲームループから
-        /// 1tickにつき1回、生存している全WorldObjectに対して呼ばれる想定。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算し、on_zero（正の値から0以下へ跨いだ瞬間、新設）を
+        /// 検出する（8.3節、いずれも不可逆）。ゲームループから1tickにつき1回、生存している全WorldObjectに
+        /// 対して呼ばれる想定。
         /// </summary>
         public void Tick()
         {
+            crossedZeroThisTick?.Clear();
+
             for (int local = 0; local < incoming.Length; local++)
             {
                 var contributions = incoming[local];
-                if (contributions == null) continue;
-
-                foreach (var c in contributions)
+                if (contributions != null)
                 {
-                    if (c.Def.Kind != ContributionKind.Accumulate) continue;
-                    if (!IsGateActive(c)) continue;
-                    properties[local] = PropertyValue.FromNumber(properties[local].Number + c.Def.Amount);
+                    foreach (var c in contributions)
+                    {
+                        if (c.Def.Kind != ContributionKind.Accumulate) continue;
+                        if (!IsGateActive(c)) continue;
+                        properties[local] = PropertyValue.FromNumber(properties[local].Number + c.Def.Amount);
+                    }
+                }
+
+                if (Def.PropertyDefs[local].HasOnZero)
+                {
+                    bool isPositiveNow = properties[local].Number > 0;
+                    if (wasPositive[local] && !isPositiveNow)
+                        (crossedZeroThisTick ??= new List<int>()).Add(Def.PropertyDefs[local].GlobalId);
+                    wasPositive[local] = isPositiveNow;
                 }
             }
         }
+
+        /// <summary>
+        /// 直近のTick()で、正の値から0以下へ跨いだことが検出されたプロパティのグローバルID一覧
+        /// （on_zero、新設）。`lifecycle`の実行自体はこのプロジェクトにまだ実装がなく、将来のアクション実行系が
+        /// この一覧を読んで発火させる想定。1回のTickで検出された分だけを保持し、次のTickで入れ替わる。
+        /// </summary>
+        public IReadOnlyList<int> PropertiesCrossedZeroThisTick =>
+            (IReadOnlyList<int>)crossedZeroThisTick ?? Array.Empty<int>();
 
         /// <summary>
         /// 現在このプロパティに登録されている全寄与（modify/accumulate両方）を列挙する。

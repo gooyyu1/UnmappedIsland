@@ -45,6 +45,9 @@ namespace UnmappedIsland.Codex.Defs
         public string OverflowCarryToName;
 
         public readonly List<StageBlueprint> Stages = new List<StageBlueprint>();
+
+        /// <summary>on_zero（正の値から0以下へ跨いだ瞬間の検出）を持つか。</summary>
+        public bool HasOnZero;
     }
 
     public struct StageBlueprint
@@ -142,7 +145,7 @@ namespace UnmappedIsland.Codex.Defs
                 var stages = p.Stages.Select(s => new PropertyStage(s.Name, s.Min)).ToList();
 
                 propertyDefs[local] = new PropertyDef(
-                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, overflow, stages);
+                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, overflow, stages, p.HasOnZero);
             }
 
             var slotGlobalIds = bp.Slots.Select(s => slotNames.GetId(s.Name)).ToList();

@@ -82,6 +82,13 @@ namespace UnmappedIsland.Codex.Defs
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
 
+        /// <summary>
+        /// on_zero（新設）を持つか。正の値から0以下へ跨いだ瞬間を検出する対象にするかどうかのフラグ。
+        /// 実際に何を発火するか（lifecycle等）はここでは持たず、WorldObject.Tick が検出だけを行う
+        /// （8.3節: lifecycleはactive専用に戻し、耐久値のような「0になったら破棄」はon_zero経由で表現する）。
+        /// </summary>
+        public bool HasOnZero { get; }
+
         public PropertyDef(
             int globalId,
             string name,
@@ -89,7 +96,8 @@ namespace UnmappedIsland.Codex.Defs
             PropertyRange? rerollRange,
             PropertyRange? range,
             OverflowRule overflow,
-            IReadOnlyList<PropertyStage> stages)
+            IReadOnlyList<PropertyStage> stages,
+            bool hasOnZero = false)
         {
             GlobalId = globalId;
             Name = name;
@@ -98,6 +106,7 @@ namespace UnmappedIsland.Codex.Defs
             Range = range;
             Overflow = overflow ?? OverflowRule.None;
             Stages = stages ?? Array.Empty<PropertyStage>();
+            HasOnZero = hasOnZero;
         }
 
         /// <summary>
