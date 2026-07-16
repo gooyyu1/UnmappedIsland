@@ -76,7 +76,7 @@
     },
 
     "stage_def": {
-      "description": "props の段階（6.4節）。区間は min のみを指定する半開区間。ヒステリシスは採用しない。",
+      "description": "props の段階（6.4節）。区間は min のみを指定する半開区間。ヒステリシスは採用しない。ステージのpassiveはレベルトリガーのみであり、一時的な命令の瞬間を持たないためpickは書けない（PickSystem.md 1節）。",
       "type": "object",
       "properties": {
         "name": { "$ref": "#/$defs/identifier" },
@@ -84,12 +84,10 @@
           "description": "この段階の下限。最下段は null（省略可）で、それより下の残り全ての値を拾う。",
           "type": ["number", "null"]
         },
-        "effects": { "$ref": "#/$defs/effects_map" },
-        "pick": { "$ref": "#/$defs/pick_list" }
+        "passive": { "$ref": "#/$defs/passive_map" }
       },
       "required": ["name", "min"],
-      "additionalProperties": false,
-      "not": { "required": ["effects", "pick"] }
+      "additionalProperties": false
     },
 
     "prop_def": {
@@ -110,11 +108,13 @@
           "type": "array",
           "items": { "$ref": "#/$defs/stage_def" }
         },
-        "effects": { "$ref": "#/$defs/effects_map" },
-        "pick": { "$ref": "#/$defs/pick_list" }
+        "passive": { "$ref": "#/$defs/passive_map" },
+        "on_zero": {
+          "$ref": "#/$defs/active_map",
+          "description": "値が0以下である間、毎tick実行されるactive内容（6.6節）。activeと同じ対象キーの辞書を直接持ち、専用のラップは挟まない。"
+        }
       },
-      "additionalProperties": false,
-      "not": { "required": ["effects", "pick"] }
+      "additionalProperties": false
     },
 
     "condition_op": {
@@ -139,30 +139,8 @@
       "items": { "$ref": "#/$defs/condition_expr" }
     },
 
-    "lifecycle_body": {
-      "description": "オブジェクトの存在を操作する効果（8.3節）。modify/addと同様、複数の動詞を同時に持てる。",
-      "type": "object",
-      "properties": {
-        "destroy": { "const": true },
-        "spawn": {
-          "type": "object",
-          "properties": {
-            "object": { "$ref": "#/$defs/identifier" },
-            "into": {
-              "type": "string",
-              "description": "生成先スロットへのパス（例: parent.inventory）。"
-            }
-          },
-          "required": ["object", "into"],
-          "additionalProperties": false
-        }
-      },
-      "minProperties": 1,
-      "additionalProperties": false
-    },
-
-    "effect_body": {
-      "description": "effects の各対象キーが持つ効果本体（8.2節・8.3節）。when を省略すると常時（無条件）を意味する。",
+    "passive_body": {
+      "description": "passive の各対象キーが持つ、持続する影響（8.2節・8.3節）。関係とゲート（常時／when／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。when を省略すると常時（無条件）を意味する。",
       "type": "object",
       "properties": {
         "when": {
@@ -175,27 +153,70 @@
           "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "number" } },
           "additionalProperties": false
         },
-        "add": {
-          "description": "不可逆な加減算。actions/combinationsのeffectsなら1回限り、when/常時なら毎tick。",
+        "accumulate": {
+          "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する。",
           "type": "object",
           "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "number" } },
           "additionalProperties": false
-        },
-        "lifecycle": { "$ref": "#/$defs/lifecycle_body" }
+        }
       },
       "additionalProperties": false
     },
 
-    "effects_map": {
-      "description": "効果の対象（self/parent/child/actor、combinations内はdraggedも）をキーとする辞書（8.2節）。ancestor/sibling/descendantの追加は未決定。",
+    "passive_map": {
+      "description": "passiveの対象（self/parent/child/actor）をキーとする辞書（8.2節）。ancestor/sibling/descendantの追加は未決定。combinations内の dragged はactiveのみで意味を持ち、passiveには現れない。",
       "type": "object",
       "properties": {
-        "self": { "$ref": "#/$defs/effect_body" },
-        "parent": { "$ref": "#/$defs/effect_body" },
-        "child": { "$ref": "#/$defs/effect_body" },
-        "actor": { "$ref": "#/$defs/effect_body" },
+        "self": { "$ref": "#/$defs/passive_body" },
+        "parent": { "$ref": "#/$defs/passive_body" },
+        "child": { "$ref": "#/$defs/passive_body" },
+        "actor": { "$ref": "#/$defs/passive_body" }
+      },
+      "additionalProperties": false
+    },
+
+    "active_body": {
+      "description": "active の各対象キーが持つ、一時的な命令（8.3節）。when/ゲートは持たず、登録の仕組みにも乗らない。add/destroy/spawnは対等な兄弟キーとして共存できる。",
+      "type": "object",
+      "properties": {
+        "add": {
+          "description": "対象プロパティの実体値へ、その場で一度だけ不可逆に加減算する。",
+          "type": "object",
+          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "number" } },
+          "additionalProperties": false
+        },
+        "destroy": {
+          "const": true,
+          "description": "対象オブジェクトを消滅させる。"
+        },
+        "spawn": {
+          "type": "object",
+          "properties": {
+            "object": { "$ref": "#/$defs/identifier" },
+            "into": {
+              "type": "string",
+              "description": "生成先スロットへのパス（例: parent.inventory）。"
+            }
+          },
+          "required": ["object", "into"],
+          "additionalProperties": false,
+          "description": "新規オブジェクトを生成し、指定したスロットへ配置する。destroyと同じ対象キーの中で同時に指定できる。"
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
+    },
+
+    "active_map": {
+      "description": "activeの対象（self/parent/child/actor、combinations内はdraggedも）をキーとする辞書（8.2節・8.3節）。on_zero（6.6節）もこの形をそのまま流用する。",
+      "type": "object",
+      "properties": {
+        "self": { "$ref": "#/$defs/active_body" },
+        "parent": { "$ref": "#/$defs/active_body" },
+        "child": { "$ref": "#/$defs/active_body" },
+        "actor": { "$ref": "#/$defs/active_body" },
         "dragged": {
-          "$ref": "#/$defs/effect_body",
+          "$ref": "#/$defs/active_body",
           "description": "combinations の中でのみ意味を持つ、ドラッグされてきたカードを指すキー（ActionSystem.md 2節）。"
         }
       },
@@ -216,25 +237,27 @@
     },
 
     "pick_candidate": {
-      "description": "pickの1候補。候補ごとに独立したeffects（対象ごとの辞書）を丸ごと持てる（PickSystem.md 2節）。",
+      "description": "pickの1候補。候補ごとに独立したactive（対象ごとの辞書）を丸ごと持てる（PickSystem.md 2節）。候補自身がさらにpickを持つ再帰も構造上排除しない。",
       "type": "object",
       "properties": {
         "weight": { "$ref": "#/$defs/weight_spec" },
-        "effects": { "$ref": "#/$defs/effects_map" }
+        "active": { "$ref": "#/$defs/active_map" },
+        "pick": { "$ref": "#/$defs/pick_list" }
       },
       "required": ["weight"],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "not": { "required": ["active", "pick"] }
     },
 
     "pick_list": {
-      "description": "重み付き確率分岐（PickSystem.md）。effectsを書く場所であれば、effectsの代わりに書ける。候補が1つなら重みに関わらず必ず選ばれる。",
+      "description": "重み付き確率分岐（PickSystem.md）。activeを書く場所であれば、activeの代わりに書ける。候補が1つなら重みに関わらず必ず選ばれる。",
       "type": "array",
       "items": { "$ref": "#/$defs/pick_candidate" },
       "minItems": 1
     },
 
     "action_def": {
-      "description": "メニュー型の宣言的操作（8.1節）。conditionsと実行結果(effects/pick)を1つの定義としてまとめて持つ。",
+      "description": "メニュー型の宣言的操作（8.1節）。conditionsと実行結果(active/pick)を1つの定義としてまとめて持つ。",
       "type": "object",
       "properties": {
         "showMenu": {
@@ -242,11 +265,11 @@
           "enum": ["always"]
         },
         "conditions": { "$ref": "#/$defs/conditions_list" },
-        "effects": { "$ref": "#/$defs/effects_map" },
+        "active": { "$ref": "#/$defs/active_map" },
         "pick": { "$ref": "#/$defs/pick_list" }
       },
       "additionalProperties": false,
-      "not": { "required": ["effects", "pick"] }
+      "not": { "required": ["active", "pick"] }
     },
 
     "combination_def": {
@@ -258,12 +281,12 @@
           "description": "ドラッグされてきたカードとのマッチング条件。object_defのid、またはtraitの名前。"
         },
         "conditions": { "$ref": "#/$defs/conditions_list" },
-        "effects": { "$ref": "#/$defs/effects_map" },
+        "active": { "$ref": "#/$defs/active_map" },
         "pick": { "$ref": "#/$defs/pick_list" }
       },
       "required": ["with"],
       "additionalProperties": false,
-      "not": { "required": ["effects", "pick"] }
+      "not": { "required": ["active", "pick"] }
     },
 
     "recipe_step_requirement": {
@@ -409,11 +432,9 @@
         "combinations": { "$ref": "#/$defs/combinations_map" },
         "recipes": { "$ref": "#/$defs/recipes_map" },
         "slots": { "$ref": "#/$defs/slots_map" },
-        "effects": { "$ref": "#/$defs/effects_map" },
-        "pick": { "$ref": "#/$defs/pick_list" }
+        "passive": { "$ref": "#/$defs/passive_map" }
       },
-      "additionalProperties": false,
-      "not": { "required": ["effects", "pick"] }
+      "additionalProperties": false
     },
 
     "object_def_entry": {
@@ -443,11 +464,9 @@
         "combinations": { "$ref": "#/$defs/combinations_map" },
         "recipes": { "$ref": "#/$defs/recipes_map" },
         "slots": { "$ref": "#/$defs/slots_map" },
-        "effects": { "$ref": "#/$defs/effects_map" },
-        "pick": { "$ref": "#/$defs/pick_list" }
+        "passive": { "$ref": "#/$defs/passive_map" }
       },
-      "additionalProperties": false,
-      "not": { "required": ["effects", "pick"] }
+      "additionalProperties": false
     }
   }
 }

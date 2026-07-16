@@ -53,7 +53,7 @@ namespace UnmappedIsland.Codex.Defs
             Min = min;
         }
 
-        // 段階ごとの effects（8節）はこの検討の対象外。フィールドを足すだけで済み、
+        // 段階ごとの passive/active（8節）はこの検討の対象外。フィールドを足すだけで済み、
         // Property配列のレイアウト（ObjectDef.PropertyDefs / WorldObjectのproperties配列）には影響しない。
     }
 
@@ -82,6 +82,12 @@ namespace UnmappedIsland.Codex.Defs
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
 
+        /// <summary>
+        /// on_zero（6.6節）を持つか。値が0以下である間、毎tick実行されるactive効果を持つかどうかのフラグ。
+        /// 実際に何を発火するか（destroy/spawn等）はここでは持たず、WorldObject.Tick が対象かどうかの判定だけを行う。
+        /// </summary>
+        public bool HasOnZero { get; }
+
         public PropertyDef(
             int globalId,
             string name,
@@ -89,7 +95,8 @@ namespace UnmappedIsland.Codex.Defs
             PropertyRange? rerollRange,
             PropertyRange? range,
             OverflowRule overflow,
-            IReadOnlyList<PropertyStage> stages)
+            IReadOnlyList<PropertyStage> stages,
+            bool hasOnZero = false)
         {
             GlobalId = globalId;
             Name = name;
@@ -98,6 +105,7 @@ namespace UnmappedIsland.Codex.Defs
             Range = range;
             Overflow = overflow ?? OverflowRule.None;
             Stages = stages ?? Array.Empty<PropertyStage>();
+            HasOnZero = hasOnZero;
         }
 
         /// <summary>

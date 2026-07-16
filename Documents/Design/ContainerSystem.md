@@ -96,7 +96,8 @@ actions:
       - { path: actor.encumbrance_stage, op: neq, value: immobile }
 ```
 
-移動時間の延長・疲労の増加も、それぞれの段階の `effects` で `modify`/`add` すればよく、新しい仕組みは不要です。
+移動時間の延長は各段階の `passive` の `modify`、疲労の増加は毎 tick 蓄積する `accumulate`（`GameElementDefinition.md` 8.3 節）
+で表現すればよく、新しい仕組みは不要です。
 上限を設けない、という要件も、`stages` の最下段・最上段が `min` のみを指定する半開区間である以上、自然に満たされます。
 
 ## 5. なぜプレイヤーが持っている場合にのみ影響するか

@@ -14,15 +14,16 @@ namespace UnmappedIsland.Codex.Defs
         public bool IsSingleton;
         public readonly List<PropertyBlueprint> Properties = new List<PropertyBlueprint>();
         public readonly List<SlotBlueprint> Slots = new List<SlotBlueprint>();
-        public readonly List<ModifyContributionBlueprint> ModifyContributions = new List<ModifyContributionBlueprint>();
+        public readonly List<ContributionBlueprint> Contributions = new List<ContributionBlueprint>();
     }
 
-    public sealed class ModifyContributionBlueprint
+    public sealed class ContributionBlueprint
     {
-        public ModifyTarget Target;
+        public ContributionTarget Target;
+        public ContributionKind Kind;
         public string TargetPropertyName;
         public double Amount;
-        public ModifyGateKind GateKind;
+        public ContributionGateKind GateKind;
 
         /// <summary>GateKind.WhenSlot用。スロット名（グローバル語彙。将来どの親に付くか分からないため名前のまま持つ）。</summary>
         public string GateSlotName;
@@ -44,6 +45,9 @@ namespace UnmappedIsland.Codex.Defs
         public string OverflowCarryToName;
 
         public readonly List<StageBlueprint> Stages = new List<StageBlueprint>();
+
+        /// <summary>on_zero（正の値から0以下へ跨いだ瞬間の検出）を持つか。</summary>
+        public bool HasOnZero;
     }
 
     public struct StageBlueprint
@@ -108,11 +112,11 @@ namespace UnmappedIsland.Codex.Defs
                 objectNames.Intern(bp.Name);
                 foreach (var p in bp.Properties) propertyNames.Intern(p.Name);
                 foreach (var s in bp.Slots) slotNames.Intern(s.Name);
-                foreach (var m in bp.ModifyContributions)
+                foreach (var c in bp.Contributions)
                 {
-                    propertyNames.Intern(m.TargetPropertyName);
-                    if (m.GateKind == ModifyGateKind.WhenSlot) slotNames.Intern(m.GateSlotName);
-                    if (m.GateKind == ModifyGateKind.WhenOwnStage) propertyNames.Intern(m.GateStagePropertyName);
+                    propertyNames.Intern(c.TargetPropertyName);
+                    if (c.GateKind == ContributionGateKind.WhenSlot) slotNames.Intern(c.GateSlotName);
+                    if (c.GateKind == ContributionGateKind.WhenOwnStage) propertyNames.Intern(c.GateStagePropertyName);
                 }
             }
         }
@@ -141,7 +145,7 @@ namespace UnmappedIsland.Codex.Defs
                 var stages = p.Stages.Select(s => new PropertyStage(s.Name, s.Min)).ToList();
 
                 propertyDefs[local] = new PropertyDef(
-                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, overflow, stages);
+                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, overflow, stages, p.HasOnZero);
             }
 
             var slotGlobalIds = bp.Slots.Select(s => slotNames.GetId(s.Name)).ToList();
@@ -157,49 +161,53 @@ namespace UnmappedIsland.Codex.Defs
                 slotDefs[local] = new SlotDef(slotGlobalIds[local], s.Name, accepts, s.Capacity, s.WeightRate);
             }
 
-            var modifyContributions = bp.ModifyContributions
-                .Select(m => BuildModifyContribution(m, propertyLayout, propertyDefs, propertyNames, slotNames))
+            var contributions = bp.Contributions
+                .Select(c => BuildContribution(c, propertyLayout, propertyDefs, propertyNames, slotNames))
                 .ToList();
 
             return new ObjectDef(
                 objectNames.GetId(bp.Name), bp.Name, bp.IsSingleton,
-                propertyLayout, propertyDefs, slotLayout, slotDefs, modifyContributions);
+                propertyLayout, propertyDefs, slotLayout, slotDefs, contributions);
         }
 
-        private static ModifyContributionDef BuildModifyContribution(
-            ModifyContributionBlueprint m,
+        private static ContributionDef BuildContribution(
+            ContributionBlueprint c,
             LocalIndexMap ownPropertyLayout,
             PropertyDef[] ownPropertyDefs,
             NameRegistry propertyNames,
             NameRegistry slotNames)
         {
-            int targetPropertyGlobalId = propertyNames.GetId(m.TargetPropertyName);
+            int targetPropertyGlobalId = propertyNames.GetId(c.TargetPropertyName);
 
-            ModifyGate gate;
-            switch (m.GateKind)
+            ContributionGate gate;
+            switch (c.GateKind)
             {
-                case ModifyGateKind.WhenSlot:
-                    gate = new ModifyGate { Kind = ModifyGateKind.WhenSlot, SlotGlobalId = slotNames.GetId(m.GateSlotName) };
+                case ContributionGateKind.WhenSlot:
+                    gate = new ContributionGate
+                    {
+                        Kind = ContributionGateKind.WhenSlot,
+                        SlotGlobalId = slotNames.GetId(c.GateSlotName),
+                    };
                     break;
 
-                case ModifyGateKind.WhenOwnStage:
-                    int stagePropertyLocalId = ownPropertyLayout.ToLocal(propertyNames.GetId(m.GateStagePropertyName));
+                case ContributionGateKind.WhenOwnStage:
+                    int stagePropertyLocalId = ownPropertyLayout.ToLocal(propertyNames.GetId(c.GateStagePropertyName));
                     PropertyDef stagePropertyDef = ownPropertyDefs[stagePropertyLocalId];
-                    PropertyStage stage = stagePropertyDef.Stages.First(s => s.Name == m.GateStageName);
-                    gate = new ModifyGate
+                    PropertyStage stage = stagePropertyDef.Stages.First(s => s.Name == c.GateStageName);
+                    gate = new ContributionGate
                     {
-                        Kind = ModifyGateKind.WhenOwnStage,
+                        Kind = ContributionGateKind.WhenOwnStage,
                         PropertyLocalId = stagePropertyLocalId,
                         Stage = stage,
                     };
                     break;
 
                 default:
-                    gate = ModifyGate.Always;
+                    gate = ContributionGate.Always;
                     break;
             }
 
-            return new ModifyContributionDef(m.Target, targetPropertyGlobalId, m.Amount, gate);
+            return new ContributionDef(c.Target, c.Kind, targetPropertyGlobalId, c.Amount, gate);
         }
     }
 }

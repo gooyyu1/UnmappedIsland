@@ -27,8 +27,9 @@ namespace UnmappedIsland.Codex.Defs
         /// <summary>ローカルindexで並ぶ密配列。SlotLayout と対になる。</summary>
         public IReadOnlyList<SlotDef> SlotDefs { get; }
 
-        /// <summary>このObjectDefが宣言するmodify効果（8.2〜8.3節）。target(self/parent/child)を問わず1つのリストで持つ。</summary>
-        public IReadOnlyList<ModifyContributionDef> ModifyContributions { get; }
+        /// <summary>このObjectDefが宣言する効果（8.2〜8.3節）。target(self/parent/child)・kind(modify/accumulate)を
+        /// 問わず1つのリストで持つ。</summary>
+        public IReadOnlyList<ContributionDef> Contributions { get; }
 
         public ObjectDef(
             int globalId,
@@ -38,7 +39,7 @@ namespace UnmappedIsland.Codex.Defs
             IReadOnlyList<PropertyDef> propertyDefs,
             LocalIndexMap slotLayout,
             IReadOnlyList<SlotDef> slotDefs,
-            IReadOnlyList<ModifyContributionDef> modifyContributions)
+            IReadOnlyList<ContributionDef> contributions)
         {
             GlobalId = globalId;
             Name = name;
@@ -47,7 +48,7 @@ namespace UnmappedIsland.Codex.Defs
             PropertyDefs = propertyDefs;
             SlotLayout = slotLayout;
             SlotDefs = slotDefs;
-            ModifyContributions = modifyContributions ?? System.Array.Empty<ModifyContributionDef>();
+            Contributions = contributions ?? System.Array.Empty<ContributionDef>();
         }
     }
 

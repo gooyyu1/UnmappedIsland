@@ -10,6 +10,10 @@
 本ドキュメントは検討結果であり、確定仕様書ではありません。スキーマ自体も、各ドキュメントに残る未決事項がそのまま
 反映された、現時点のスナップショットです。
 
+`passive`/`active`/`on_zero`（`destroy`/`spawn` を束ねていた `lifecycle` 入れ子の廃止を含む）への刷新後の
+`GameElementDefinition.md`・`ActionSystem.md`・`ClimateSystem.md`・`PickSystem.md`・`RecipeSystem.md` に合わせて
+本スキーマも追随済みです。
+
 ## 1. 検証方法
 
 `WorldCodex.schema.json` は以下の観点で検証済みです。
@@ -17,11 +21,13 @@
 - **スキーマ自体の妥当性**: `jsonschema` ライブラリの `Draft202012Validator.check_schema` により、Draft 2020-12として
   構文的に正しいスキーマであることを確認
 - **既存サンプルの受理**: 各ドキュメントに掲載されている実際のYAMLサンプル（`eat`/`move` アクション、`world` シングルトン、
-  防具・耐久値・細菌感染、`traits`、`combinations` の `chop`、`pick` を使った攻撃・生水・探索、レシピ、`slots` の
-  `accepts`/`capacity`/`weight_rate`）を抽出し、すべてスキーマを満たすことを確認
-- **不正な記述の拒否**: `effects` と `pick` を同時に指定する、identifier の命名規則に反するキーを使う、未定義の
-  比較演算子を使う、`effects` に未定義の対象キー（`sibling` など）を使う、`combinations` に `with` を書き忘れる、
-  `lifecycle` に動詞を1つも指定しない、trait が他の trait を参照する、といった誤った記述が、想定通り拒否されることを確認
+  防具・耐久値（`passive`の`accumulate`＋`on_zero`の`destroy`）・細菌感染、`traits`、`combinations` の `chop`
+  （`active` の `spawn`＋`destroy`）、`pick` を使った攻撃・生水・探索、レシピ、`slots` の `accepts`/`capacity`/`weight_rate`）を
+  抽出し、すべてスキーマを満たすことを確認
+- **不正な記述の拒否**: `active` と `pick` を同時に指定する、identifier の命名規則に反するキーを使う、未定義の
+  比較演算子を使う、`passive`/`active` に未定義の対象キー（`sibling` など）を使う、`combinations` に `with` を書き忘れる、
+  `active` の対象キーに `add`/`destroy`/`spawn` を1つも指定しない、廃止済みの `lifecycle` 入れ子を使う、pick候補が
+  `active` と `pick` を同時に持つ、といった誤った記述が、想定通り拒否されることを確認
 
 ## 2. スキーマの範囲
 
@@ -29,11 +35,12 @@
 
 - ルート構造（`object_defs`/`traits`、専用ルートキーなし）
 - `object_defs`/`traits`（3〜5節）
-- `props`（固定値・範囲値・overflow・stages、6節）
-- `effects`（対象をキーとする辞書、`when`、`modify`/`add`/`lifecycle`、8.2〜8.3節）
-- `pick`（重み付き確率分岐、`effects` の代替キー、`PickSystem.md`）
-- `actions`（`showMenu`・`conditions`・`effects`/`pick`、8.1節）
-- `combinations`（`with`・`conditions`・`effects`/`pick`、`ActionSystem.md`）
+- `props`（固定値・範囲値・overflow・stages・`on_zero`、6節）
+- `passive`（対象をキーとする辞書、`when`、`modify`/`accumulate`、8.2〜8.3節）
+- `active`（対象をキーとする辞書、`add`/`destroy`/`spawn`、8.2〜8.3節）
+- `pick`（重み付き確率分岐、`active` の代替キー、`PickSystem.md`）
+- `actions`（`showMenu`・`conditions`・`active`/`pick`、8.1節）
+- `combinations`（`with`・`conditions`・`active`/`pick`、`ActionSystem.md`）
 - `recipes`（`steps`/`requires`/`duration`、`RecipeSystem.md`）
 - `slots`（`accepts`/`capacity`/`weight_rate`、7.1節・`RecipeSystem.md`・`ContainerSystem.md`）
 - `singleton`・`covers`/`layer`（9節・7.2節）
