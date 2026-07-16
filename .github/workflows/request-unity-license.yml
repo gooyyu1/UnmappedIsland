@@ -1,0 +1,29 @@
+name: Request Unity License Activation File
+
+# 手動実行専用（1回だけ使う想定）。tests.yml (game-ci/unity-test-runner) を動かすには
+# UNITY_LICENSE シークレットが必要で、そのためにまずライセンスの手動アクティベーションが要る。
+# 手順:
+#   1. Actions タブからこのワークフローを手動実行する
+#   2. 生成された成果物(*.alf)をダウンロードする
+#   3. https://license.unity.com/manual にその .alf をアップロードし、ライセンスファイル(.ulf)を取得する
+#   4. .ulf の中身をリポジトリの Secrets に `UNITY_LICENSE` として登録する
+#      (Personalライセンス以外を使う場合は UNITY_EMAIL / UNITY_PASSWORD も合わせて登録する)
+on:
+  workflow_dispatch:
+
+jobs:
+  request-activation-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Request activation file
+        id: request
+        uses: game-ci/unity-request-activation-file@v2
+
+      - name: Upload activation file
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-activation-file
+          path: ${{ steps.request.outputs.filePath }}
