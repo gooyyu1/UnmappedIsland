@@ -53,7 +53,7 @@ namespace UnmappedIsland.Codex.Defs
             Min = min;
         }
 
-        // 段階ごとの effects（8節）はこの検討の対象外。フィールドを足すだけで済み、
+        // 段階ごとの passive/active（8節）はこの検討の対象外。フィールドを足すだけで済み、
         // Property配列のレイアウト（ObjectDef.PropertyDefs / WorldObjectのproperties配列）には影響しない。
     }
 

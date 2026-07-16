@@ -72,7 +72,7 @@ namespace UnmappedIsland.Codex.Runtime
 
         /// <summary>
         /// 親子関係が結ばれた瞬間に、双方の効果（modify/accumulate、8.2〜8.3節）を相手側へ登録する。
-        /// target=Parent（子の効果が親へ及ぶ、例: 防具の`effects.parent`）は親側へ、
+        /// target=Parent（子の効果が親へ及ぶ、例: 防具の`passive.parent`）は親側へ、
         /// target=Child（親の効果が子へ及ぶ）は子側へ登録する。target=Selfは各WorldObjectの
         /// コンストラクタで既に登録済みのため、ここでは扱わない。kind(modify/accumulate)は登録先を
         /// 選ぶ判断に一切影響しない（評価側でのみ区別される）。

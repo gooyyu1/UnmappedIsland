@@ -35,7 +35,7 @@ object_defs:
         with: axe_tool   # object_defのidでも、traitの名前でも一致可能
         conditions:
           - { path: dragged.durability, op: gt, value: 0 }
-        effects:
+        active:
           self:
             lifecycle:
               spawn: { object: logs, into: parent.inventory }
@@ -50,9 +50,10 @@ object_defs:
 - `with` に trait 名を使えば、そのtraitを持つあらゆるカード（将来 MOD で追加されるものも含む）と一致します。
 - `conditions` は `actions` と同じ `{path, op, value}` 形式です。`self`（受け側自身）・`dragged`（ドラッグされてきたカード）・
   `actor`（このドラッグ操作を行っているプレイヤーキャラクター、`GameElementDefinition.md` 8.1 節）のいずれも参照できます。
-- `effects` も既存の対象をキーとする辞書構造・`modify` / `add` / `lifecycle`（`GameElementDefinition.md` 8.2 節・8.3 節）をそのまま使います。
-  実行された瞬間に一度だけ適用される点は `actions` の効果と同じです（8.3 節）。
-- `effects` のキーには、既存の `self` / `parent` / `child` / `actor` に加えて、**`dragged`（このインタラクションでドラッグされてきたカード）**を
+- `active` も既存の対象をキーとする辞書構造・`add` / `lifecycle`（`GameElementDefinition.md` 8.2 節・8.3 節）をそのまま使います。
+  実行された瞬間に一度だけ適用される点は `actions` の効果と同じです（8.3 節）。持続する条件を表す `modify`/`accumulate` は
+  `active` には書けません（`GameElementDefinition.md` 8.3 節参照）。
+- `active` のキーには、既存の `self` / `parent` / `child` / `actor` に加えて、**`dragged`（このインタラクションでドラッグされてきたカード）**を
   新たに追加します。`dragged` は `combinations` の中でのみ意味を持つ、専用のキーです。
 
 キーをマッチング対象ではなく名前にしたことで、**同じ `with` を指す複数のキーを書けてしまいます**（例: `wood` に対して
@@ -71,13 +72,13 @@ object_defs:
     combinations:
       craft_spear:
         with: rope
-        effects: [...]
+        active: [...]
 
   rope:
     combinations:
       craft_spear:
         with: stick
-        effects: [...]
+        active: [...]
 ```
 
 両側で同じキー名（`craft_spear`）を使う必要はありませんが、同じ結果を指すインタラクションであることが分かりやすいよう、
@@ -88,7 +89,7 @@ object_defs:
 
 ## 4. なぜ on: によるクロスカッティングな仕組みを採用しなかったか
 
-検討の初期段階では、`actions` を条件だけの宣言にとどめ、実行結果は `effects` 側で `on: <アクション名>` という
+検討の初期段階では、`actions` を条件だけの宣言にとどめ、実行結果は `active` 側で `on: <アクション名>` という
 独立したトリガーとして紐づける案も検討していました。この案には、アクションを宣言していない第三者（例えば装備品）が、
 特定のアクション名をイベントとして listen して独自に反応できる、という利点がありました（例:「呪われた首輪を装備している間、
 何を食べても体力が減る」）。
@@ -138,7 +139,7 @@ object_defs:
 - `combinations` は `object_defs`/`traits`/`props`/`actions`（`GameElementDefinition.md` 3 節・4 節）と同じ「識別子をキーとする辞書型」を
   踏襲しています。ただし `combinations` は本質的に2つのオブジェクト（受け側とドラッグされてきたカード）が関わるため、
   `actions` にはない `with`（マッチング対象の指定）というフィールドを追加で持ちます。
-- `combinations` の `effects` は `GameElementDefinition.md` 8.2 節・8.3 節の `modify`/`add`/`lifecycle` をそのまま再利用しており、
+- `combinations` の `active` は `GameElementDefinition.md` 8.2 節・8.3 節の `add`/`lifecycle` をそのまま再利用しており、
   新しい効果の種別は追加していません。
 - `with` による trait 名マッチングは、`TerrainGeneration.md` の `LocationType` が軸ベースでマッチングする考え方や、
   `GameElementDefinition.md` 7.2 節の装備の `covers`/`layer` マッチングと同じ「属性で緩やかにマッチさせ、個別に列挙しない」
