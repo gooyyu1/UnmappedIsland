@@ -39,6 +39,10 @@ href="https://json-schema.org/">JSON Schema</a> Draft
 まとめたものです。</p>
 <p>本ドキュメントは検討結果であり、確定仕様書ではありません。スキーマ自体も、各ドキュメントに残る未決事項がそのまま
 反映された、現時点のスナップショットです。</p>
+<p><code>passive</code>/<code>active</code>/<code>on_zero</code>（<code>destroy</code>/<code>spawn</code>
+を束ねていた <code>lifecycle</code> 入れ子の廃止を含む）への刷新後の
+<code>GameElementDefinition.md</code>・<code>ActionSystem.md</code>・<code>ClimateSystem.md</code>・<code>PickSystem.md</code>・<code>RecipeSystem.md</code>
+に合わせて 本スキーマも追随済みです。</p>
 <h2 id="検証方法">1. 検証方法</h2>
 <p><code>WorldCodex.schema.json</code> は以下の観点で検証済みです。</p>
 <ul>
@@ -48,31 +52,36 @@ href="https://json-schema.org/">JSON Schema</a> Draft
 <li><strong>既存サンプルの受理</strong>:
 各ドキュメントに掲載されている実際のYAMLサンプル（<code>eat</code>/<code>move</code>
 アクション、<code>world</code> シングルトン、
-防具・耐久値・細菌感染、<code>traits</code>、<code>combinations</code>
-の <code>chop</code>、<code>pick</code>
+防具・耐久値（<code>passive</code>の<code>accumulate</code>＋<code>on_zero</code>の<code>destroy</code>）・細菌感染、<code>traits</code>、<code>combinations</code>
+の <code>chop</code> （<code>active</code> の
+<code>spawn</code>＋<code>destroy</code>）、<code>pick</code>
 を使った攻撃・生水・探索、レシピ、<code>slots</code> の
-<code>accepts</code>/<code>capacity</code>/<code>weight_rate</code>）を抽出し、すべてスキーマを満たすことを確認</li>
-<li><strong>不正な記述の拒否</strong>: <code>effects</code> と
+<code>accepts</code>/<code>capacity</code>/<code>weight_rate</code>）を
+抽出し、すべてスキーマを満たすことを確認</li>
+<li><strong>不正な記述の拒否</strong>: <code>active</code> と
 <code>pick</code> を同時に指定する、identifier
 の命名規則に反するキーを使う、未定義の
-比較演算子を使う、<code>effects</code>
+比較演算子を使う、<code>passive</code>/<code>active</code>
 に未定義の対象キー（<code>sibling</code>
 など）を使う、<code>combinations</code> に <code>with</code>
-を書き忘れる、 <code>lifecycle</code> に動詞を1つも指定しない、trait
-が他の trait
-を参照する、といった誤った記述が、想定通り拒否されることを確認</li>
+を書き忘れる、 <code>active</code> の対象キーに
+<code>add</code>/<code>destroy</code>/<code>spawn</code>
+を1つも指定しない、廃止済みの <code>lifecycle</code>
+入れ子を使う、pick候補が <code>active</code> と <code>pick</code>
+を同時に持つ、といった誤った記述が、想定通り拒否されることを確認</li>
 </ul>
 <h2 id="スキーマの範囲">2. スキーマの範囲</h2>
 <h3 id="含めたもの">2.1 含めたもの</h3>
 <ul>
 <li>ルート構造（<code>object_defs</code>/<code>traits</code>、専用ルートキーなし）</li>
 <li><code>object_defs</code>/<code>traits</code>（3〜5節）</li>
-<li><code>props</code>（固定値・範囲値・overflow・stages、6節）</li>
-<li><code>effects</code>（対象をキーとする辞書、<code>when</code>、<code>modify</code>/<code>add</code>/<code>lifecycle</code>、8.2〜8.3節）</li>
-<li><code>pick</code>（重み付き確率分岐、<code>effects</code>
+<li><code>props</code>（固定値・範囲値・overflow・stages・<code>on_zero</code>、6節）</li>
+<li><code>passive</code>（対象をキーとする辞書、<code>when</code>、<code>modify</code>/<code>accumulate</code>、8.2〜8.3節）</li>
+<li><code>active</code>（対象をキーとする辞書、<code>add</code>/<code>destroy</code>/<code>spawn</code>、8.2〜8.3節）</li>
+<li><code>pick</code>（重み付き確率分岐、<code>active</code>
 の代替キー、<code>PickSystem.md</code>）</li>
-<li><code>actions</code>（<code>showMenu</code>・<code>conditions</code>・<code>effects</code>/<code>pick</code>、8.1節）</li>
-<li><code>combinations</code>（<code>with</code>・<code>conditions</code>・<code>effects</code>/<code>pick</code>、<code>ActionSystem.md</code>）</li>
+<li><code>actions</code>（<code>showMenu</code>・<code>conditions</code>・<code>active</code>/<code>pick</code>、8.1節）</li>
+<li><code>combinations</code>（<code>with</code>・<code>conditions</code>・<code>active</code>/<code>pick</code>、<code>ActionSystem.md</code>）</li>
 <li><code>recipes</code>（<code>steps</code>/<code>requires</code>/<code>duration</code>、<code>RecipeSystem.md</code>）</li>
 <li><code>slots</code>（<code>accepts</code>/<code>capacity</code>/<code>weight_rate</code>、7.1節・<code>RecipeSystem.md</code>・<code>ContainerSystem.md</code>）</li>
 <li><code>singleton</code>・<code>covers</code>/<code>layer</code>（9節・7.2節）</li>

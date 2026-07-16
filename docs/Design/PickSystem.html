@@ -99,26 +99,33 @@
 <p>本ドキュメントは、天気の急変・探索時のアイテム発見・攻撃の命中判定・生水を飲んでの体調不良など、
 「重み付き確率によって複数の結果から1つが選ばれる」という現象に共通して使えるメカニズムを検討した結果をまとめたものです。</p>
 <p><code>GameElementDefinition.md</code> が既に定義している
-<code>props</code> / <code>stages</code> / <code>effects</code>（modify
-/ add / lifecycle）に対して、
+<code>props</code> / <code>stages</code> / <code>passive</code> /
+<code>active</code>（modify / accumulate / add / destroy /
+spawn）に対して、
 できる限り新しい概念を追加せず、既存の語彙の組み合わせで表現することを目指しました。ランダム要素がない場合（候補が1つしかない場合）も、
 専用の分岐を用意せず同じ記法で表現できることを重視しています。</p>
 <p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
 8 節に整理しています。</p>
 <h2 id="想定される利用場面">1. 想定される利用場面</h2>
-<p><code>pick</code> は、既存の <code>effects</code>
-が書ける場所（無条件 / <code>when</code> / stage
-内、GameElementDefinition.md 8.2 節・6.4 節、 および
-<code>actions</code>/<code>combinations</code>
-の効果、<code>ActionSystem.md</code>）であれば、<strong><code>effects</code>
-の代わりに</strong>そのまま書けます。
-新しいトリガー体系は必要としません。 （当初は
-<code>on: &lt;アクション名&gt;</code>
+<p><code>pick</code> は、既存の <code>active</code>
+が書ける場所（<code>actions</code>/<code>combinations</code>
+の効果、<code>ActionSystem.md</code>。および <code>pick</code>
+の候補内で 再帰的に）であれば、<strong><code>active</code>
+の代わりに</strong>そのまま書けます。新しいトリガー体系は必要としません。
+（当初は <code>on: &lt;アクション名&gt;</code>
 というトリガーの中で使う想定でしたが、<code>on</code> の仕組みそのものが
 <code>ActionSystem.md</code> の検討により
 廃止されたため、以降のサンプルは
 <code>actions</code>/<code>combinations</code>
 の効果として直接書く形に更新しています。）</p>
+<p><code>pick</code>
+は「無条件で確率を振り続ける」ものではなく、アクション・組み合わせの実行という<strong>離散的な瞬間に一度だけ</strong>振られる
+ものです。そのため
+<code>passive</code>（無条件／<code>when</code>／stage
+内、GameElementDefinition.md 8.2 節・6.4
+節）には書けません。<code>passive</code>
+はそもそも「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです（<code>GameElementDefinition.md</code>
+8.3 節参照）。</p>
 <ul>
 <li>探索時のアイテム発見（<code>actions.explore</code>
 の効果として、複数アイテムから重み付きで1つを選ぶ）</li>
@@ -142,65 +149,69 @@ GameElementDefinition.md 6.4 節で保留になっている edge-triggered
 的なもの）が解決しないと実現できません。 この点は本書の範囲外とし、6.4
 節の未決事項に委ねます。</p>
 <h2 id="基本構造">2. 基本構造</h2>
-<p><code>pick</code> は、<code>effects</code>（GameElementDefinition.md
+<p><code>pick</code> は、<code>active</code>（GameElementDefinition.md
 8.2
-節。対象をキーとする辞書）を書く場所に対して、<strong><code>effects</code>
+節。対象をキーとする辞書）を書く場所に対して、<strong><code>active</code>
 の代わりに</strong> 書く、重み付き候補のリストです。各候補は
 <code>weight</code> に加えて、<strong>自分自身の
-<code>effects</code>（対象をキーとする辞書）を丸ごと持ちます</strong>。</p>
+<code>active</code>（対象をキーとする辞書）を丸ごと持ちます</strong>。</p>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">drink_raw_water</span><span class="kw">:</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">                              # 何も起きない(無事)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">                               # 何も起きない(無事)</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> diarrhea</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> self.conditions </span><span class="kw">}</span><span class="co">   # 発症</span></span></code></pre></div>
-<p><code>pick</code> を <code>effects</code> の中に入れ子にする（例:
-<code>effects: { self: { pick: [...] } }</code>）案も検討しましたが、この形だと
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> diarrhea</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> self.conditions </span><span class="kw">}</span><span class="co">   # 発症</span></span></code></pre></div>
+<p><code>pick</code> を <code>active</code> の中に入れ子にする（例:
+<code>active: { self: { pick: [...] } }</code>）案も検討しましたが、この形だと
 1つの候補が影響を与えられる対象が、外側で選んだ1つのキー（<code>self</code>
 など）に固定されてしまいます。これでは「50% で
 相手（<code>self</code>）が死に、50%
 で自分（<code>actor</code>）が死ぬ」のように、<strong>候補ごとに影響先そのものが異なる</strong>ケースを表現できません。
-そのため <code>pick</code> は <code>effects</code>
-と同じ場所に立つ代替のキーとし、各候補が独立した <code>effects</code>
+そのため <code>pick</code> は <code>active</code>
+と同じ場所に立つ代替のキーとし、各候補が独立した <code>active</code>
 辞書を持つ形にしました。</p>
 <p><strong>候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。</strong>
 つまり「ランダム要素なし」は <code>pick</code> の要素数が1のときの
 特殊ケースにすぎず、専用の分岐は不要です。既存の防具・耐久値のサンプル（GameElementDefinition.md
-11 節）のように重み付けを考える 必要がないケースは、これまで通り
-<code>effects</code> を <code>pick</code>
+11 節、いずれも <code>passive</code>）の
+ように重み付けを考える必要がないケースは、これまで通り <code>pick</code>
 なしで直接書けばよく、既存ドキュメントの書き換えは必要ありません。</p>
-<p>各候補の <code>effects</code> は、トップレベルの <code>effects</code>
-と全く同じ構造（対象 →
-<code>when</code>/<code>modify</code>/<code>add</code>/<code>lifecycle</code>）です。この入れ子は
-再帰的であり、候補の <code>effects</code> の中でさらに別の
-<code>pick</code> が必要になるケースも構造上は排除していません。</p>
-<h2 id="候補の-effects-が持てる効果の種類">3. 候補の
-<code>effects</code> が持てる効果の種類</h2>
+<p>各候補の <code>active</code> は、トップレベルの <code>active</code>
+と同じ対象キー（<code>self</code>/<code>parent</code>/<code>child</code>/<code>actor</code>）を持ちますが、
+中身は一時的な命令（<code>add</code>/<code>destroy</code>/<code>spawn</code>）に限られます。<code>modify</code>/<code>accumulate</code>
+は関係とゲートに基づいて登録され、
+その関係が続く限り評価され続けることに意味がある仕組みなので、1回選ばれて終わりの
+<code>pick</code> の候補に書く意味がなく、 <code>when</code>
+も同様に不要です（<code>GameElementDefinition.md</code> 8.3
+節参照）。この入れ子は再帰的であり、候補の <code>active</code> の中で
+さらに別の <code>pick</code>
+が必要になるケースも構造上は排除していません。</p>
+<h2 id="候補の-active-が持てる効果の種類">3. 候補の <code>active</code>
+が持てる効果の種類</h2>
 <ul>
-<li>別プロパティへの干渉 → 既存の <code>modify</code> /
-<code>add</code>（8.3 節）</li>
-<li>自身を破壊 → 既存の <code>lifecycle: { destroy: true }</code></li>
-<li>別カードを生成 → <strong>新規</strong>。<code>lifecycle</code> に
-<code>spawn</code>（新規オブジェクトを生成する）という動詞を追加する</li>
+<li>別プロパティへの干渉 → 既存の <code>add</code>（8.3
+節。<code>modify</code>/<code>accumulate</code>
+は候補に書けない、上記参照）</li>
+<li>自身を破壊 → 既存の <code>destroy: true</code>（8.3 節）</li>
+<li>別カードを生成 → 既存の <code>spawn</code>（8.3 節）</li>
 <li>別アクションの実行 →
 <strong>新規、記法未定</strong>。エフェクトの中から特定のアクションを能動的に発火させる仕組みは今のところない（8
 節参照）</li>
 </ul>
-<p><code>lifecycle: spawn</code> は、<code>ClimateSystem.md</code>
-で季節切り替えのために提案していた
-<code>lifecycle: transition</code>（自分を破棄し次の季節を生成する）を
-置き換えられる可能性があります。<code>transition</code>
-を専用動詞にせず、「<code>spawn</code>
-で次のインスタンスを生成」＋「<code>destroy</code> で自分を消す」という
-2つの動詞の組み合わせ（<code>lifecycle: {spawn: {...}, destroy: true}</code>）として表現し直せば、<code>lifecycle</code>
-の動詞を1つ増やすだけで 両方のケースをカバーできます（8
-節の未決事項）。</p>
+<p><code>destroy</code>/<code>spawn</code> はいずれも
+<code>GameElementDefinition.md</code> 8.3
+節で既に確立された、<code>add</code> と対等な兄弟キーです。専用の
+入れ子（<code>lifecycle</code>）は廃止済みのため、<code>pick</code>
+の候補でもそのまま同じ形で書けます。<code>ClimateSystem.md</code>
+の季節切り替えも、 専用の <code>transition</code> 動詞を新設せず、この
+<code>spawn</code>＋<code>destroy</code>
+の組み合わせで表現しています（<code>ClimateSystem.md</code> 3.2
+節）。</p>
 <h2 id="weight-の表現方法">4. weight の表現方法</h2>
 <h3 id="基本方針-weight-は新しい概念を持たない">4.1 基本方針: weight
 は新しい概念を持たない</h3>
@@ -216,11 +227,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="
 <div class="sourceCode" id="cb2"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> self.accuracy </span><span class="kw">}</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">hp</span><span class="kw">:</span><span class="at"> </span><span class="dv">-10</span><span class="at"> </span><span class="kw">}</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effects</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
 <p>外部からの干渉（「戦闘スキルが高いほど命中しやすい」「体が強いほど感染しにくい」）は、<code>weight</code>
 自体に専用の補正記法を用意するのではなく、
 <strong>参照先のプロパティに対する既存の <code>modify</code>
@@ -237,12 +248,12 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> trained</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passive</span><span class="kw">:</span></span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">modify</span><span class="kw">:</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span></code></pre></div>
 <p><code>attack_skill</code> の stage 効果が
-<code>effects: { self: { modify: {accuracy: 20} } }</code>
+<code>passive: { self: { modify: {accuracy: 20} } }</code>
 という、既存の <code>modify</code>（8.2 節・8.3 節）の 範囲内で
 <code>accuracy</code> を書き換えているだけであり、<code>pick</code> や
 <code>weight</code> のために新しい概念を追加していません。</p>
@@ -284,15 +295,15 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">hp</span><span class="kw">:</span><span class="at"> </span><span class="dv">-20</span><span class="at"> </span><span class="kw">}</span><span class="co">               # クリティカル(現時点では固定重み)</span></span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.accuracy </span><span class="kw">}</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">hp</span><span class="kw">:</span><span class="at"> </span><span class="dv">-10</span><span class="at"> </span><span class="kw">}</span><span class="co">               # 通常命中</span></span>
 <span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">effects</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">                          # ミス</span></span></code></pre></div>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">                           # ミス</span></span></code></pre></div>
 <p>参考までに、「50% で相手が死に、50%
 で自分が死ぬ」のように、候補ごとに影響先そのものが異なる例です。</p>
 <div class="sourceCode" id="cb5"><pre
@@ -303,15 +314,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">actor</span><span class="kw">:</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">active</span><span class="kw">:</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">actor</span><span class="kw">:</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
 <h3 id="生水を飲んで腹を下すか">5.2 生水を飲んで腹を下すか</h3>
 <p>これは1枚のカード（キャラクター自身、あるいは水源カード）だけで完結するメニュー型の操作なので、<code>actions</code>
 として定義します。</p>
@@ -325,12 +334,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> self.constitution </span><span class="kw">}</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">                                              # 無事</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">                                                # 無事</span></span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> diarrhea</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> self.conditions </span><span class="kw">}</span><span class="co">  # 発症</span></span></code></pre></div>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> diarrhea</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> self.conditions </span><span class="kw">}</span><span class="co">  # 発症</span></span></code></pre></div>
 <h3 id="探索時のアイテム発見多数候補外部干渉なし">5.3
 探索時のアイテム発見（多数候補、外部干渉なし）</h3>
 <p>これもロケーションカード1枚だけで完結するメニュー型の操作です。</p>
@@ -340,20 +348,17 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_coconut</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_rock</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_gem</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span></code></pre></div>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_coconut</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_rock</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_gem</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span></code></pre></div>
 <p>外部からの干渉が不要な候補は、このようにリテラルの
 <code>weight</code> だけで簡潔に書けます。MOD で特定の候補（例:
 <code>item_gem</code>）の
@@ -371,13 +376,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="
 節参照）。</p>
 <h2 id="設計原則のまとめ">7. 設計原則のまとめ</h2>
 <ul>
-<li><code>pick</code> は、<code>effects</code>
-を書く場所であればどこでも <code>effects</code>
-の代わりに書ける。新しいトリガー体系は必要としない</li>
-<li><code>pick</code> は <code>effects</code>
-の中に入れ子にする種別ではなく、<code>effects</code>
+<li><code>pick</code> は、<code>active</code> を書く場所であればどこでも
+<code>active</code> の代わりに書ける（<code>passive</code>
+には書けない、1 節参照）。 新しいトリガー体系は必要としない</li>
+<li><code>pick</code> は <code>active</code>
+の中に入れ子にする種別ではなく、<code>active</code>
 と同じ場所に立つ<strong>代替のキー</strong>とする。各候補が 自分自身の
-<code>effects</code>（対象をキーとする辞書）を丸ごと持つことで、候補ごとに異なる対象へ効果を及ぼせる</li>
+<code>active</code>（対象をキーとする辞書）を丸ごと持つことで、候補ごとに異なる対象へ効果を及ぼせる</li>
 <li>ランダムなしのケースは、候補数が1の <code>pick</code>
 として同じ記法で表現できる。専用の「非ランダム」記法は用意しない</li>
 <li><code>weight</code> はリテラル定数か、既存 <code>props</code>
@@ -386,10 +391,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="
 <code>modify</code>/<code>stages</code>
 の組み合わせのみで表現し、<code>modify</code>/<code>stages</code>
 と類似した別概念を作らない</li>
-<li>候補が持てる新しい効果は
-<code>lifecycle: spawn</code>（新規オブジェクト生成）のみ。<code>ClimateSystem.md</code>
-の <code>transition</code> 動詞は、 <code>spawn</code> ＋
-<code>destroy</code> の組み合わせに置き換えられる可能性がある</li>
+<li>候補は <code>add</code>/<code>destroy</code>/<code>spawn</code>（8.3
+節）をそのまま利用でき、<code>pick</code>
+のために新しい効果の種類は追加していない</li>
 </ul>
 <h2 id="未決事項今後の検討課題">8. 未決事項・今後の検討課題</h2>
 <ul>
@@ -398,7 +402,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="
 のような裸の名前も許容するか</li>
 <li>攻撃の種類（近接/遠隔など）が増えた場合に、命中判定用のプロパティ（<code>accuracy</code>
 等）を共有するか、種類ごとに分けるか</li>
-<li><code>effects</code> のキーが現状
+<li>対象キーが現状
 <code>self</code>/<code>parent</code>/<code>child</code>/<code>actor</code>（8.2
 節）と <code>combinations</code> 内限定の
 <code>dragged</code>（<code>ActionSystem.md</code>）に
@@ -410,12 +414,9 @@ TODO（<code>ancestor</code>/<code>sibling</code>/<code>descendant</code>
 の候補から「別アクションを実行する」ための記法。エフェクトからアクションを能動的に発火させる仕組み自体がまだない</li>
 <li>重みの合計が0（またはマイナス）になった場合の扱い。フォールバック候補（6
 節）を許容するかどうか</li>
-<li><code>lifecycle: spawn</code>
-の具体的な記法（生成先スロットの指定方法など）</li>
-<li><code>lifecycle: spawn</code>
-の導入に伴い、<code>ClimateSystem.md</code> の
-<code>lifecycle: transition</code> を <code>spawn</code> ＋
-<code>destroy</code> に置き換えるべきか</li>
+<li><code>spawn</code>
+の具体的な記法（生成先スロットの指定方法など、<code>GameElementDefinition.md</code>
+8 節の未決事項と共通）</li>
 <li>乱数のシード管理方針（<code>TerrainGeneration.md</code>
 は地形生成のシード値を明言しているが、戦闘・探索・気候などゲームプレイ全般の
 乱数と同じ系列にするか、別系列にするか）</li>
@@ -434,15 +435,14 @@ TODO（<code>ancestor</code>/<code>sibling</code>/<code>descendant</code>
 の参照として扱う設計は、GameElementDefinition.md 8.1
 節の条件式（<code>{path, op, value}</code>）で確立された
 「パスによる参照」という考え方をそのまま踏襲しています。</li>
-<li><code>pick</code> の各候補が独立した <code>effects</code>
-辞書を持つ設計は、<code>effects</code>
+<li><code>pick</code> の各候補が独立した <code>active</code>
+辞書を持つ設計は、<code>active</code>
 自体が対象をキーとする辞書として再帰的に定義されている
 （GameElementDefinition.md 8.2
 節）ことをそのまま利用したものであり、新しいデータ構造を追加していません。</li>
-<li><code>lifecycle: spawn</code> の追加、および <code>effects</code>
-のキーの拡張（ancestor/sibling/descendant）という2つの論点は、いずれも
-<code>GameElementDefinition.md</code>
-に既にある未決事項と同じ形で解決を要する、という点で一貫しています。</li>
+<li>対象キーの拡張（ancestor/sibling/descendant）という論点は、<code>GameElementDefinition.md</code>
+に既にある未決事項と
+同じ形で解決を要する、という点で一貫しています。</li>
 </ul>
 </article>
 </body>

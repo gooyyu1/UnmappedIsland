@@ -144,14 +144,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> axe_tool</span><span class="co">   # object_defのidでも、traitの名前でも一致可能</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> dragged.durability</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> gt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="at"> </span><span class="kw">}</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> logs</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">dragged</span><span class="kw">:</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> logs</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">dragged</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
 <ul>
 <li>キー（<code>chop</code>）は、UI
 がドラッグ中に表示するラベル（「切る」など）に使える、人間が読むための名前です。<code>actions</code>
@@ -164,12 +163,16 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="
 形式です。<code>self</code>（受け側自身）・<code>dragged</code>（ドラッグされてきたカード）・
 <code>actor</code>（このドラッグ操作を行っているプレイヤーキャラクター、<code>GameElementDefinition.md</code>
 8.1 節）のいずれも参照できます。</li>
-<li><code>effects</code>
-も既存の対象をキーとする辞書構造・<code>modify</code> / <code>add</code>
-/ <code>lifecycle</code>（<code>GameElementDefinition.md</code> 8.2
-節・8.3 節）をそのまま使います。 実行された瞬間に一度だけ適用される点は
-<code>actions</code> の効果と同じです（8.3 節）。</li>
-<li><code>effects</code> のキーには、既存の <code>self</code> /
+<li><code>active</code>
+も既存の対象をキーとする辞書構造・<code>add</code> /
+<code>destroy</code> /
+<code>spawn</code>（<code>GameElementDefinition.md</code> 8.2 節・8.3
+節）をそのまま使います。 実行された瞬間に一度だけ適用される点は
+<code>actions</code> の効果と同じです（8.3 節）。持続する条件を表す
+<code>modify</code>/<code>accumulate</code> は <code>active</code>
+には書けません（<code>GameElementDefinition.md</code> 8.3
+節参照）。</li>
+<li><code>active</code> のキーには、既存の <code>self</code> /
 <code>parent</code> / <code>child</code> / <code>actor</code>
 に加えて、<strong><code>dragged</code>（このインタラクションでドラッグされてきたカード）</strong>を
 新たに追加します。<code>dragged</code> は <code>combinations</code>
@@ -195,13 +198,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> rope</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">...</span><span class="kw">]</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">...</span><span class="kw">]</span></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rope</span><span class="kw">:</span></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> stick</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">...</span><span class="kw">]</span></span></code></pre></div>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">...</span><span class="kw">]</span></span></code></pre></div>
 <p>両側で同じキー名（<code>craft_spear</code>）を使う必要はありませんが、同じ結果を指すインタラクションであることが分かりやすいよう、
 揃えておくことを推奨します。</p>
 <p>片方にしか書かなければ、そちら向きにドラッグしたときしか成立しません。専用の「双方向」記法は用意せず、
@@ -209,7 +212,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <h2 id="なぜ-on-によるクロスカッティングな仕組みを採用しなかったか">4.
 なぜ on: によるクロスカッティングな仕組みを採用しなかったか</h2>
 <p>検討の初期段階では、<code>actions</code>
-を条件だけの宣言にとどめ、実行結果は <code>effects</code> 側で
+を条件だけの宣言にとどめ、実行結果は <code>active</code> 側で
 <code>on: &lt;アクション名&gt;</code> という
 独立したトリガーとして紐づける案も検討していました。この案には、アクションを宣言していない第三者（例えば装備品）が、
 特定のアクション名をイベントとして listen
@@ -283,9 +286,9 @@ UI ラベルとしては使いにくくなります （2
 は本質的に2つのオブジェクト（受け側とドラッグされてきたカード）が関わるため、
 <code>actions</code> にはない
 <code>with</code>（マッチング対象の指定）というフィールドを追加で持ちます。</li>
-<li><code>combinations</code> の <code>effects</code> は
+<li><code>combinations</code> の <code>active</code> は
 <code>GameElementDefinition.md</code> 8.2 節・8.3 節の
-<code>modify</code>/<code>add</code>/<code>lifecycle</code>
+<code>add</code>/<code>destroy</code>/<code>spawn</code>
 をそのまま再利用しており、 新しい効果の種別は追加していません。</li>
 <li><code>with</code> による trait
 名マッチングは、<code>TerrainGeneration.md</code> の

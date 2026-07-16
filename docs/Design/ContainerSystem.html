@@ -194,9 +194,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">move</span><span class="kw">:</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">conditions</span><span class="kw">:</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.encumbrance_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> neq</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> immobile </span><span class="kw">}</span></span></code></pre></div>
-<p>移動時間の延長・疲労の増加も、それぞれの段階の <code>effects</code>
-で <code>modify</code>/<code>add</code>
-すればよく、新しい仕組みは不要です。
+<p>移動時間の延長は各段階の <code>passive</code> の
+<code>modify</code>、疲労の増加は毎 tick 蓄積する
+<code>accumulate</code>（<code>GameElementDefinition.md</code> 8.3 節）
+で表現すればよく、新しい仕組みは不要です。
 上限を設けない、という要件も、<code>stages</code> の最下段・最上段が
 <code>min</code>
 のみを指定する半開区間である以上、自然に満たされます。</p>

@@ -102,7 +102,7 @@
 <li>ファイル全体・型定義まわりの具体的な YAML
 構造（<code>WorldCodex</code> / <code>object_defs</code> /
 <code>traits</code> / <code>props</code>）</li>
-<li>オブジェクト同士の影響関係を表す効果システム（親子スロット、装備の排他制御、<code>effects</code>）</li>
+<li>オブジェクト同士の影響関係を表す効果システム（親子スロット、装備の排他制御、<code>passive</code>/<code>active</code>）</li>
 </ul>
 <p>いずれも粒度の異なる議論の積み重ねであるため、確定した仕様と未決定の論点が混在しています。
 「確定事項」は議論済みの決定として記載しますが、「未決事項」は結論が出ていないため、各節および末尾の
@@ -154,7 +154,7 @@
 <p><strong>アイテム属性</strong></p>
 <p>アイテムが持つ性質（燃焼性、腐敗速度、重量など）を定義します。属性はアイテムに付与する形で参照され、アクションの結果に影響します。</p>
 <p><strong>アイテムアクション</strong></p>
-<p>アイテムに対して実行できる操作（食べる、使う、加工するなど）を定義します。アクションは実行可否の条件と、実行結果（<code>effects</code>）を
+<p>アイテムに対して実行できる操作（食べる、使う、加工するなど）を定義します。アクションは実行可否の条件と、実行結果（<code>active</code>）を
 1つの定義としてまとめて持ちます（詳細は 8
 節、<code>ActionSystem.md</code>）。</p>
 <h3 id="統一的な実行エンジン">2.3 統一的な実行エンジン</h3>
@@ -359,7 +359,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="
 <h3 id="stages段階">6.4 stages（段階）</h3>
 <p>数値パラメータ（プロパティ）は <code>stages</code>
 を持つことができ、現在値がどの段階にあるかによって、有効になる
-<code>effects</code>（8 節）が切り替わります。</p>
+<code>passive</code>（8 節）が切り替わります。</p>
 <ul>
 <li>段階の区間定義は
 <strong><code>min</code>（下限）のみを指定します</strong>。上限は明示せず、次の段階の
@@ -368,9 +368,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="
 <li>最下段の段階は
 <code>min: null</code>（または省略）とし、それより下の残り全ての値を拾います。</li>
 <li>現在値に基づいて常に一意に段階を決定します。ヒステリシス（上昇時・下降時で閾値をずらす仕組み）は採用しません。プレイヤーが常に現在の状態から結果を逆算できるようにし、状況分析をしやすくするための設計意図です。</li>
-<li>ステージの <code>effects</code>
-はレベルトリガー（そのステージにいる間ずっと有効）を基本とします。ステージ切替の瞬間だけ発火する仕組み（edge-triggered、例えば
-<code>on_enter</code> 的なもの）は将来検討事項として保留中です。</li>
+<li>ステージの <code>passive</code>
+はレベルトリガー（そのステージにいる間ずっと有効）を基本とします。ステージ切替の瞬間だけ発火する汎用的な仕組み（edge-triggered、例えば
+<code>on_enter</code>
+的なもの）は導入していません。「値が0になった瞬間に何かを起こす」という、実際に必要とされる唯一のケースは、汎用的なステージ出入りイベントではなく専用の
+<code>on_zero</code>（6.6 節）で表現します。</li>
 </ul>
 <div class="sourceCode" id="cb6"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
@@ -381,7 +383,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> broken</span></span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
-<p>具体的な <code>effects</code> と組み合わせた例は 11.2
+<p>具体的な <code>passive</code> と組み合わせた例は 11.2
 節を参照してください。</p>
 <h3 id="derived導出値必要性は未確定">6.5
 derived（導出値）※必要性は未確定</h3>
@@ -419,6 +421,63 @@ derived を使うかどうかは未確定です。</p>
 のみを指定する半開区間です。derived を採用するなら、この 2
 つの段階表現をキー名も含めて統一するかどうかも合わせて検討する必要があります。</p>
 </blockquote>
+<h3 id="on_zero0以下である間毎tick実行される内容">6.6
+on_zero（0以下である間、毎tick実行される内容）</h3>
+<p>実際に必要になる場面を洗い出すと、その大半は「値が0以下の間、何かを起こしたい」（耐久値が尽きたら破棄する、
+季節の残り tick
+が尽きたら次の季節へ切り替える、等）という、ゼロという1点に限定された単純なケースでした。
+汎用的な「ステージへの出入り」イベント（edge-triggered、<code>on_enter</code>/<code>on_exit</code>
+的なもの）を用意する代わりに、
+この限定的だが実際に必要なケースだけを扱う <code>on_zero</code>
+を導入します。命名は <code>on_overflow</code>（6.3 節、上限側の
+折り返し）と対になる、下限側の1点条件という位置づけです。</p>
+<ul>
+<li><strong><code>on_zero</code> は、プロパティが0以下である間、毎 tick
+実行される <code>active</code> 内容です。</strong> <code>passive</code>
+の <code>modify</code>/<code>accumulate</code>
+と同じレベルトリガーの考え方を、<code>add</code>/<code>destroy</code>/<code>spawn</code>（一時的な命令、8.3
+節）の内容に適用したものだと考えると
+分かりやすいです。「跨いだ瞬間だけ」を検出する仕組み（前 tick
+との比較といった履歴）は持ちません。0以下かどうかは
+現在値を見るだけで判定できるため、履歴を持たない分だけ実装は単純になります。</li>
+<li>毎 tick
+実行されても安全なのは、典型的な用途が自己終端するためです。<code>destroy</code>
+は既に破棄済みのオブジェクトに
+対して繰り返し実行しても安全（冪等）です。<code>spawn</code>
+を伴う場合も、同じ <code>on_zero</code> 内で <code>destroy</code>
+と組み合わせるのが
+基本形であり（次の季節を生成すると同時に自分自身を破棄する、等）、破棄後はそのオブジェクト自体が
+tick の対象で
+なくなるため、2回目以降の実行は起こりません。<code>destroy</code>
+を伴わずに <code>spawn</code> だけを書くと、0以下である間 tick 毎に
+生成し続けてしまう点には注意してください。</li>
+<li><code>on_zero</code> の中身は <code>active</code>（8.2〜8.3
+節）と同じ対象キーの辞書を直接持ちます。<code>conditions</code>
+のような兄弟 フィールドが今のところ不要なため、<code>passive</code>
+がオブジェクトレベルで対象キー辞書を直接持つのと同様、
+余分なラップを挟みません。</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">durability</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span><span class="kw">}</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_zero</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p><code>on_zero</code>
+の導入により、<code>destroy</code>/<code>spawn</code> は
+<code>active</code> 専用に戻せます（8.3
+節参照）。耐久値が0になったら破棄する、
+というこの用途こそが、これまで存在操作をステージの <code>passive</code>
+に書かせてしまっていた唯一の実例だったためです。 一般的な
+<code>on_enter</code>/<code>on_exit</code>
+を用意するかどうかは、まだ議論の余地があります（12
+節参照）。今のところ実例が <code>on_zero</code>
+で説明できるケースしかないため、必要性が生じるまでは導入しません。</p>
 <h2 id="オブジェクトの親子関係とスロット">7.
 オブジェクトの親子関係とスロット</h2>
 <h3 id="親子関係とスロットの基本構造">7.1
@@ -437,16 +496,16 @@ YAML 定義側が両者を直接書き換えることは想定しません。</l
 <li>スロットに「種類タグ（kind）」は設けません。<code>equip</code>
 はそれ自体が唯一の装備用スロットであり、スロット名を直接参照します。スロットの意味をタグで抽象化するよりも、名前をそのまま参照する方が単純で、現時点で複数の装備スロットを区別する必要も生じていないためです。</li>
 </ul>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">injuries</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">injuries</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
 <blockquote>
 <p><strong>TODO: 未決定</strong> - slot
 に容量・サイズ制限を設けるか。設けるとして、slot
@@ -484,13 +543,13 @@ covers）</h3>
 </ul></li>
 <li>競合解決は「ブロック型」を採用します。競合するアイテムがある場合、プレイヤーが先に既存の装備を外す必要があります（自動退避は採用しません）。装備の入れ替えを明示的な操作として要求することで、プレイヤーが装備状態を把握しないまま暗黙に変更されることを避けるためです。</li>
 </ul>
-<h2 id="アクションと効果actions-effects">8. アクションと効果（actions /
-effects）</h2>
+<h2 id="アクションと効果actions-passive-active">8.
+アクションと効果（actions / passive / active）</h2>
 <h3 id="actionsメニュー型の宣言的操作">8.1
 actions（メニュー型の宣言的操作）</h3>
 <ul>
 <li>アクション（<code>eat</code>、<code>move</code>
-など）は、条件（<code>conditions</code>）と実行結果（<code>effects</code>）を<strong>1つの定義としてまとめて持ちます</strong>。かつては
+など）は、条件（<code>conditions</code>）と実行結果（<code>active</code>）を<strong>1つの定義としてまとめて持ちます</strong>。かつては
 「条件だけを持つ受動的な宣言」と「<code>on: &lt;アクション名&gt;</code>
 で別途発火する効果」を分離していましたが、1つの操作の挙動が複数箇所に
 分散して読みにくくなるため、この分離は廃止しました（詳細な経緯・カード間の相互作用（ドラッグ操作）は
@@ -502,43 +561,41 @@ actions（メニュー型の宣言的操作）</h3>
 <code>always</code>
 のみ。将来的にボタン以外の起動方法が増えた場合に備え、列挙可能な形にしています。詳細は
 <code>ActionSystem.md</code>）。</li>
-<li><code>effects</code> は、このアクションが実行された瞬間に 1
-回だけ適用されます（8.3 節の <code>add</code>
-の適用頻度ルール参照）。</li>
+<li><code>active</code> は、このアクションが実行された瞬間に 1
+回だけ適用されます（8.3 節参照）。</li>
 </ul>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eatable</span><span class="kw">:</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">eat</span><span class="kw">:</span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">actor</span><span class="kw">:</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
-<p>明るさで移動可否を制御する例です。</p>
 <div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">light_stage</span><span class="kw">:</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> bright</span><span class="co">   # 6.5節の議論次第でderivedになる可能性あり(未確定)</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">move</span><span class="kw">:</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> world.light_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> in</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">bright</span><span class="kw">,</span><span class="at"> dim</span><span class="kw">]}</span></span></code></pre></div>
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eatable</span><span class="kw">:</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">eat</span><span class="kw">:</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">actor</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p>明るさで移動可否を制御する例です。</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">light_stage</span><span class="kw">:</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> bright</span><span class="co">   # 6.5節の議論次第でderivedになる可能性あり(未確定)</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">move</span><span class="kw">:</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> world.light_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> in</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">bright</span><span class="kw">,</span><span class="at"> dim</span><span class="kw">]}</span></span></code></pre></div>
 <p>条件式は <code>{path, op, value}</code>
 の形を取ります。<code>path</code>
 は参照ルートから始まるドット区切りのパスです。
@@ -546,8 +603,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href=
 <code>self</code>（このアクションを宣言したオブジェクト自身）・<code>parent</code>（その親）・
 <code>actor</code>（このアクションを実行しているプレイヤーキャラクター）・<code>world</code>（環境シングルトン、9
 節参照）の 4 つです。
-<code>self</code>/<code>parent</code>/<code>actor</code> は 8.2 節の
-<code>effects</code> のキーと同じ語彙・同じ意味で使います。</p>
+<code>self</code>/<code>parent</code>/<code>actor</code> は 8.2
+節の対象キーと同じ語彙・同じ意味で使います。</p>
 <p><strong><code>actor</code>
 はすべてのアクションに暗黙的に存在し、常にプレイヤーキャラクターを指します。</strong>
 <code>eat</code> の例のように、
@@ -570,8 +627,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href=
 / <code>neq</code> / <code>in</code> / <code>not_in</code>
 で十分か、<code>between</code> 等の追加が必要か</p>
 </blockquote>
-<h3 id="effectsの基本構造">8.2 effectsの基本構造</h3>
-<p>効果は次の 3
+<h3 id="passiveの基本構造">8.2 passiveの基本構造</h3>
+<p><code>passive</code> は次の 3
 つのレベルで定義でき、いずれも同一の記法・実行原理を用います。</p>
 <ol type="1">
 <li><strong>オブジェクトレベル</strong>（例:
@@ -581,20 +638,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href=
 <li><strong>プロパティのステージレベル</strong>（例:
 耐久値の残量帯によって防御効果が変わる。6.4 節参照）</li>
 </ol>
-<p><code>effects</code>
+<p><code>passive</code>
 は、<strong>効果の対象（<code>self</code>/<code>parent</code>/<code>child</code>/<code>actor</code>）を識別子とするキー</strong>として表現する辞書型です。
 現時点で定義するのは
 <code>self</code>（自分自身）・<code>parent</code>（親）・<code>child</code>（子）・<code>actor</code>（このアクションを実行しているプレイヤーキャラクター、8.1
 節参照）の 4 つです。
 <code>ancestor</code>（先祖）・<code>sibling</code>（兄弟）・<code>descendant</code>（子孫）は、必要性が生じた時点で改めて検討します。</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">when</span><span class="kw">:</span><span class="at"> equip</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">passive</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">when</span><span class="kw">:</span><span class="at"> equip</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
 <ul>
 <li><code>when: &lt;スロット名&gt;</code> …
 そのスロットに入っている間、継続的に有効（レベルトリガー）</li>
@@ -602,24 +659,37 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href=
 を省略した場合は「常時（無条件）」を意味します。</li>
 </ul>
 <p><code>when</code> は各対象（<code>self</code>/<code>parent</code>
-など）のキーの中に書きます。1 つの <code>effects</code>
+など）のキーの中に書きます。1 つの <code>passive</code>
 の中で、対象ごとに異なる <code>when</code> を
 持たせることもできます（例: <code>parent</code> は
 <code>when: equip</code> の間だけ、<code>self</code>
-は常時、など）。トリガーを <code>effects</code> 全体の
+は常時、など）。トリガーを <code>passive</code> 全体の
 兄弟キーに引き上げる案も検討しましたが、同じオブジェクトが複数の異なるトリガーを将来持つ可能性を残すため、
 対象ごとに <code>when</code> を持たせる現在の形を採用しています。</p>
+<p><code>active</code>（8.1 節・8.3 節）も
+<code>self</code>/<code>parent</code>/<code>child</code>/<code>actor</code>
+という同じ対象キーの辞書型を使いますが、<code>when</code> は持ちません。
+<code>active</code>
+は持続する条件を表す必要がなく、アクション・組み合わせ・確率分岐の結果が確定した瞬間に無条件で1回だけ
+適用されるためです。</p>
 <p>特定のアクションが実行された瞬間にだけ発火する効果は、<code>on: &lt;アクション名&gt;</code>
 のような独立したトリガーとしては表現しません。 アクション自身の
-<code>effects</code>（8.1 節）、またはカード間の組み合わせを表す
+<code>active</code>（8.1 節）、またはカード間の組み合わせを表す
 <code>combinations</code> の
-<code>effects</code>（<code>ActionSystem.md</code>）として、
+<code>active</code>（<code>ActionSystem.md</code>）として、
 アクションの定義そのものに直接書きます。</p>
-<h3 id="効果の種別modify-add-lifecycle">8.3 効果の種別（modify / add /
-lifecycle）</h3>
-<p>3
-種類の効果種別を区別します。この区別は「値の可逆性」と「適用頻度」という
-2 軸に基づきます。</p>
+<h3 id="効果の種別modify-accumulate-add-destroy-spawn">8.3
+効果の種別（modify / accumulate / add / destroy / spawn）</h3>
+<p>効果は「持続する影響（<code>passive</code>
+に書く）」と「一時的な命令（<code>active</code>
+に書く）」という性質で大きく2つに分かれ、
+値を操作する動詞・存在を操作する動詞のいずれも、どちらか一方の性質にのみ属します。</p>
+<p><strong>持続する影響（<code>modify</code>/<code>accumulate</code>、<code>passive</code>
+にのみ書く）</strong>:
+<code>self</code>/<code>parent</code>/<code>child</code>
+の関係とゲート（常時／
+<code>when: &lt;スロット名&gt;</code>／プロパティの
+stage）に紐づいて登録され、その関係が続く限り評価され続けます。違いは値の可逆性だけです。</p>
 <ul>
 <li><strong><code>modify</code></strong>:
 条件が真である間だけ計算式に寄与する、可逆的な修飾子です。条件が偽になった瞬間に寄与は自動的に消えます。値そのものを書き換えるのではなく、実効値を都度導出するための入力として扱います。
@@ -628,41 +698,93 @@ lifecycle）</h3>
 は単純加算で合成します。</li>
 <li>合成結果の上限・下限（min/max）はプロパティ（スタット）側の定義に持たせます。</li>
 </ul></li>
-<li><strong><code>add</code></strong>:
-対象プロパティの実体値を直接、不可逆に加減算します。
-<ul>
-<li><code>actions</code>/<code>combinations</code>（8.1
-節、<code>ActionSystem.md</code>）の <code>effects</code> に書かれた
-<code>add</code> は、そのアクション（またはカードの組み合わせ）が
-実行された瞬間に一度だけ加算します。</li>
-<li><code>when</code>（レベルトリガー）配下、および無条件（常時）の
-<code>add</code> は、条件が真である tick 毎に加算します（例:
+<li><strong><code>accumulate</code></strong>: 条件が真である tick
+毎に、対象プロパティの実体値へ直接、不可逆に加減算します（例:
 出血中の血液量減少、耐久値の毎 tick 減少）。</li>
-<li>「アクション実行に伴う効果なら一回、<code>when</code>/常時なら毎
-tick」という対応は確定した仕様です。</li>
-</ul></li>
-<li><strong><code>lifecycle</code></strong>:
-プロパティの値ではなく、オブジェクトそのものの存在を操作します（例:
-<code>destroy</code> でオブジェクトを消滅させる、<code>spawn</code>
-で新規オブジェクトを生成する）。<code>modify</code>/<code>add</code>
-が値操作であるのに対し、<code>lifecycle</code>
-は存在操作を担う第三のカテゴリとして区別します。
+</ul>
+<p><strong>一時的な命令（<code>add</code>/<code>destroy</code>/<code>spawn</code>、<code>active</code>/<code>on_zero</code>
+にのみ書く）</strong>:
+<code>actions</code>/<code>combinations</code>（8.1
+節、<code>ActionSystem.md</code>）や
+<code>pick</code>（<code>PickSystem.md</code>）の <code>active</code>
+として書かれた場合は、それぞれの結果が確定した瞬間に一度だけ実行されます。
+<code>on_zero</code>（6.6
+節）として書かれた場合は、プロパティが0以下である間、毎 tick
+実行されます（<code>passive</code> と同じレベル
+トリガーの考え方を一時的な命令の内容に適用したものです）。いずれの置き場所も、持続する条件を表す
+<code>when</code>/ゲートは
+最初から不要で、<code>modify</code>/<code>accumulate</code>
+のような登録の仕組みにも乗りません。3つとも対象キー（<code>self</code>/<code>parent</code>
+など）の
+直下に並ぶ<strong>対等な兄弟キー</strong>であり、<code>modify</code>/<code>accumulate</code>/<code>add</code>
+が兄弟キーとして共存できるのと同じ扱いです。値を
+操作するか（<code>add</code>）オブジェクトの存在を操作するか（<code>destroy</code>/<code>spawn</code>）という区別のために、専用の入れ子（旧<code>lifecycle</code>）
+を設ける必要はありません。</p>
 <ul>
-<li><code>lifecycle</code> は <code>modify</code>/<code>add</code>
-と同様に、複数の動詞を同時に持てる辞書形式です（例:
-<code>{spawn: {...}, destroy: true}</code>）。同じ対象に対して「新しいオブジェクトを生成しつつ、自分自身は消滅させる」という組み合わせを1つのエントリで表現できます。</li>
+<li><strong><code>add</code></strong>:
+対象プロパティの実体値へ、その場で一度だけ不可逆に加減算します。<code>when</code>/常時の継続的な加算は
+<code>accumulate</code> が 担うため、<code>add</code>
+は一時的な命令専用に意味を絞り込んでいます（後述）。</li>
+<li><strong><code>destroy</code></strong>: <code>true</code>
+を指定すると、対象オブジェクトを消滅させます。プロパティの値ではなく、オブジェクトそのものの存在を操作する点で
+<code>add</code> とは異なります。</li>
+<li><strong><code>spawn</code></strong>: <code>{object, into}</code>
+を指定すると、新規オブジェクトを生成し、指定したスロットへ配置します。<code>destroy</code>
+と同じ対象キーの中で同時に指定でき（例:
+<code>{spawn: {...}, destroy: true}</code>）、「新しいオブジェクトを生成しつつ、自分自身は消滅させる」という組み合わせを1つのエントリで表現できます。
+<ul>
+<li><code>destroy</code>/<code>spawn</code>
+は一時的な命令専用であり、<code>passive</code>
+には書けません。「値が0になったら破棄する」（11.2
+節の耐久値サンプル等）という、これまで唯一これらをステージの
+<code>passive</code>
+に書かせていた用途は、汎用的なステージ出入りイベントではなく専用の
+<code>on_zero</code>（6.6 節）で表現します。</li>
 </ul></li>
 </ul>
-<p><code>modify</code>/<code>add</code>/<code>lifecycle</code>
+<p>以前は <code>add</code>
+という1つのキーワードで「アクション実行に伴う効果なら一回、<code>when</code>/常時なら毎
+tick」という2つの適用頻度を
+書く場所だけで使い分ける設計でしたが、実装を検討した結果、この2つは仕組みが大きく異なることが分かりました。<code>when</code>/常時の
+継続的な加算は、<code>modify</code>
+と全く同じ「関係とゲートに基づく登録」の仕組みを流用でき（違いは可逆か不可逆かだけ）、一方
+アクション実行時の加算は登録もゲート判定も不要な、その場限りの直接呼び出しで済みます。この実装上の違いをキーワード自体が
+表すよう、継続的な加算には初期検討にあった <code>accumulate</code>
+を割り当て、<code>add</code> はアクション/combination/pick/on_zero専用の
+一時的な命令として意味を絞り込みました。同じ理由から、この2つを書く場所（コンテナ）自体も
+<code>effects</code> という1つの
+キーワードで共用するのをやめ、<code>passive</code>（<code>modify</code>/<code>accumulate</code>）と
+<code>active</code>（<code>add</code>/<code>destroy</code>/<code>spawn</code>）に分けています。
+この2つが同じ場所に混在することは構造上ないため（<code>object_defs</code>/<code>props</code>/<code>stages</code>
+直下は常に <code>passive</code>、<code>actions</code>/
+<code>combinations</code>/<code>pick</code>/<code>on_zero</code> は常に
+<code>active</code>）、コンテナ名を分けても表現力は失われません。</p>
+<p>同じ理由で、<code>destroy</code>/<code>spawn</code> を束ねていた
+<code>lifecycle</code>
+という入れ子も廃止しました。「値操作か存在操作か」という
+区別は、<code>add</code>/<code>modify</code>/<code>accumulate</code>
+が専用の入れ子なしに対象キー直下の兄弟キーとして共存しているのと同じやり方で、
+<code>destroy</code>/<code>spawn</code>
+にもそのまま当てはめれば十分であり、区別のためだけに追加の入れ子を導入する理由がありませんでした。</p>
+<p><code>modify</code>/<code>accumulate</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>
 はいずれも、対象（<code>self</code>/<code>parent</code>
 など）ひとつに対して「何が起きるか」を確定的に記述するものです。
-複数の結果から重み付き確率で1つを選ぶ必要がある場合は、<code>effects</code>
+複数の結果から重み付き確率で1つを選ぶ必要がある場合は、<code>active</code>
 を書く代わりに <code>pick</code> を使います。<code>pick</code> は
-<code>effects</code>
+<code>active</code>
 と同じ場所に書く<strong>代替の</strong>キーであり、各候補が自分自身の
-<code>effects</code>（対象ごとの辞書）を丸ごと持てます。
+<code>active</code>（対象ごとの辞書）を丸ごと持てます。
 これにより「確率で分岐した結果、候補ごとに異なる対象へ効果が及ぶ」ケースも表現できます。詳細は
-<code>PickSystem.md</code> を参照してください。</p>
+<code>PickSystem.md</code> を参照してください。 なお <code>pick</code>
+はアクション/combinationの解決と同じ「一時的な命令」の瞬間に一度だけ発生するものなので、候補の
+<code>active</code> に
+書く意味があるのは一時的な命令（<code>add</code>/<code>destroy</code>/<code>spawn</code>）だけです。<code>modify</code>/<code>accumulate</code>
+は関係とゲートに基づいて登録され、
+その関係が続く限り評価され続けることに意味がある仕組みのため、1回限りで消える
+<code>pick</code> の候補に書いても、条件が
+再評価されない値になってしまい、<code>add</code>
+と区別がつかなくなります。この点も含め、<code>pick</code>
+の位置づけ自体は今後の 検討課題です（12節参照）。</p>
 <h3 id="カード間の相互作用menu-combinations">8.4
 カード間の相互作用（menu / combinations）</h3>
 <p>プレイヤーがカードに対して行う操作は、大きく2種類に分かれます。</p>
@@ -699,23 +821,23 @@ singletonオブジェクト（world）</h2>
 「インスタンスが 1
 つだけ存在すべき」という制約は、専用のルートキーを作るのではなく、<code>object_defs</code>
 のエントリに小さなフラグ（<code>singleton: true</code>）を追加することで表現します。</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">sequence</span><span class="kw">:</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">day</span><span class="kw">:</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span><span class="co">   # </span><span class="al">TODO</span><span class="co">: 未決定。年単位でのwrapについては6.3節を参照</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">minute_of_day</span><span class="kw">:</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1439</span><span class="kw">}</span></span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> wrap</span><span class="kw">,</span><span class="at"> </span><span class="fu">carry_to</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weather</span><span class="kw">:</span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> clear</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">sequence</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">day</span><span class="kw">:</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span><span class="co">   # </span><span class="al">TODO</span><span class="co">: 未決定。年単位でのwrapについては6.3節を参照</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">minute_of_day</span><span class="kw">:</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1439</span><span class="kw">}</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> wrap</span><span class="kw">,</span><span class="at"> </span><span class="fu">carry_to</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weather</span><span class="kw">:</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> clear</span></span></code></pre></div>
 <p><code>sequence</code>・<code>day</code>・<code>minute_of_day</code>
 は 1 つの複合値にまとめず、独立した props として持ちます。 6.3 節の
 overflow 機構は prop 単位（<code>range</code> /
@@ -730,18 +852,18 @@ overflow 設定を紐づける手段は存在しないためです。</p>
 の一種として表現しますが、島の自動生成アルゴリズムが必要とする属性群があります。
 これは新しい構造を作らず、<strong>trait として必須 props
 を宣言する</strong>ことで表現します。</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">terrain_candidate</span><span class="kw">:</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">generation_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">   # valueなし→object_def側で必須</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">forest</span><span class="kw">:</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">traits</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">terrain_candidate</span><span class="kw">]</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">generation_weight</span><span class="kw">:</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">terrain_candidate</span><span class="kw">:</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">generation_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">   # valueなし→object_def側で必須</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">forest</span><span class="kw">:</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">traits</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">terrain_candidate</span><span class="kw">]</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">generation_weight</span><span class="kw">:</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
 <p>「value なしプロパティ」は、5 節の trait
 の値継承ルールに従い、空のマッピング（<code>{}</code>）として表現する形に統一しています。</p>
 <p>上記はあくまで「trait で必須 props
@@ -752,37 +874,43 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href=
 <p>以下は、ここまでの記法を組み合わせた説明用のサンプルです。実際のゲームバランスを規定するものではありません。</p>
 <h3 id="防具オブジェクトレベルの効果複数の恩恵の束">11.1
 防具（オブジェクトレベルの効果、複数の恩恵の束）</h3>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">armor_leather</span><span class="kw">:</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">when</span><span class="kw">:</span><span class="at"> equip</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
-<h3 id="耐久値プロパティのステージレベル毎-tick-減少と消滅条件">11.2
-耐久値（プロパティのステージレベル、毎 tick 減少と消滅条件）</h3>
 <div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">durability</span><span class="kw">:</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intact</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> broken</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">armor_leather</span><span class="kw">:</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passive</span><span class="kw">:</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">when</span><span class="kw">:</span><span class="at"> equip</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<h3 id="耐久値毎-tick-減少on_zero-による消滅ステージによる状態表現">11.2
+耐久値（毎 tick 減少、on_zero による消滅、ステージによる状態表現）</h3>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">durability</span><span class="kw">:</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span><span class="kw">}</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passive</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_zero</span><span class="kw">:</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intact</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> broken</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
+<p>耐久値が尽きたときの破棄は、ステージではなく
+<code>on_zero</code>（6.6 節）で表現します。<code>stages</code> は「今
+<code>intact</code>/<code>broken</code> のどちらか」という状態表現（UI
+表示や、将来 <code>broken</code> の間だけ防御力を下げるような
+<code>passive</code> の <code>modify</code> を
+追加する際の土台）として引き続き独立に持たせます。</p>
 <h3 id="細菌感染オブジェクト化された条件段階に応じた多段の影響">11.3
 細菌感染（オブジェクト化された「条件」、段階に応じた多段の影響）</h3>
 <p>感染度自体をキャラクターの生パラメータにはせず、<code>conditions</code>
@@ -791,26 +919,26 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href=
 <p>感染オブジェクトの <code>progress</code> プロパティが
 <code>stages</code>
 を持ち、段階ごとに体温・水分・意識などの他プロパティへ影響します。</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">condition</span><span class="kw">:</span><span class="at"> infection</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">progress</span><span class="kw">:</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> none</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mild</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> feverish</span></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">effects</span><span class="kw">:</span></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.2</span></span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">hydration</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">condition</span><span class="kw">:</span><span class="at"> infection</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">progress</span><span class="kw">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> none</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mild</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passive</span><span class="kw">:</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> feverish</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passive</span><span class="kw">:</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.2</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">hydration</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
 <h2 id="今後の検討課題">12. 今後の検討課題</h2>
 <p>以下は、本ドキュメント内で TODO
 として挙げた未決定事項の再掲です。いずれもまだ結論が出ていないため、
@@ -820,8 +948,12 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href=
 節）</li>
 <li><code>day</code> の上限（無制限のまま加算し続けるか、年単位で wrap
 して <code>year</code> プロパティを持つか）（6.3 節）</li>
-<li>ステージ切替の瞬間だけ発火する効果（edge-triggered、<code>on_enter</code>
-的なもの）の要否と記法（6.4 節）</li>
+<li>ステージ切替の瞬間だけ発火する汎用的な仕組み（edge-triggered、<code>on_enter</code>/<code>on_exit</code>
+的なもの）の要否と記法。 「0になった瞬間」という実際に必要なケースは
+<code>on_zero</code>（6.6 節）で解決済みだが、それ以外のステージ境界を
+跨いだ瞬間に発火したいケースが今後生じた場合、<code>on_zero</code>
+を一般化するか、別の専用イベントを個別に追加するかは未検討（6.4 節・6.6
+節）</li>
 <li>derived
 の採用可否、および採用する場合の仕様詳細。採用する場合、<code>stages</code>（6.4
 節、<code>min</code> による半開区間）と <code>stage_table</code>（6.5
@@ -842,6 +974,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href=
 <li>耐久値の減少要因として、毎 tick
 自動劣化に加えて使用によるアクション実行（<code>actions.use</code>
 等）に伴う摩耗を併用するかどうか（8.3 節）</li>
+<li><code>pick</code> の位置づけ（<code>active</code> との関係、候補に
+<code>modify</code>/<code>accumulate</code> を書けないことの扱い）（8.3
+節、<code>PickSystem.md</code>）</li>
 <li>カード間の相互作用（<code>combinations</code>）に関する未決事項一式（<code>ActionSystem.md</code>
 に整理）</li>
 <li>重み付き確率分岐（<code>pick</code>）に関する未決事項一式（<code>PickSystem.md</code>
