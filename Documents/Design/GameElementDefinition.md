@@ -23,8 +23,8 @@
 定義ファイルは複数のファイルに分割して配置できるため、ゲーム本体が提供するデフォルト定義とは別に、
 ユーザー（MOD 作成者）がファイルを追加するだけで新しい要素を導入したり、既存の要素を上書き・変更したりすることができます。
 
-管理する概念は、型定義（`ObjectDef`）・実行時インスタンス（`ObjectInstance`）・全体（`WorldCodex`）の 3 つです。
-このうち `ObjectInstance` 側の詳細フォーマットは未着手であり、本ドキュメントは主に `ObjectDef` 側の構造を扱います。
+管理する概念は、型定義（`ObjectDef`）・実行時インスタンス（`WorldObject`）・全体（`WorldCodex`）の 3 つです。
+このうち `WorldObject` 側の詳細フォーマットは未着手であり、本ドキュメントは主に `ObjectDef` 側の構造を扱います。
 
 ### 2.2 定義できる概念の種別
 
@@ -512,16 +512,17 @@ object_defs:
 ### 11.1 防具（オブジェクトレベルの効果、複数の恩恵の束）
 
 ```yaml
-item: armor_leather
-covers: [torso]
-layer: base
-effects:
-  parent:
-    when: equip
-    modify:
-      defense: 5
-      speed: 3
-      accuracy: 2
+object_defs:
+  armor_leather:
+    covers: [torso]
+    layer: base
+    effects:
+      parent:
+        when: equip
+        modify:
+          defense: 5
+          speed: 3
+          accuracy: 2
 ```
 
 ### 11.2 耐久値（プロパティのステージレベル、毎 tick 減少と消滅条件）
