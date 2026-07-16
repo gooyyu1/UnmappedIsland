@@ -1,4 +1,4 @@
-namespace UnmappedIsland.WorldCodex.Defs
+namespace UnmappedIsland.Codex.Defs
 {
     /// <summary>
     /// props の値の種別。数値（重量・耐久値など、6.1〜6.3節）と、"clear"/"bright" のような

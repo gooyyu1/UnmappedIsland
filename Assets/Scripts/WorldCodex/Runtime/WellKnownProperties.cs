@@ -1,6 +1,6 @@
-using UnmappedIsland.WorldCodex.Registry;
+using UnmappedIsland.Codex.Registry;
 
-namespace UnmappedIsland.WorldCodex.Runtime
+namespace UnmappedIsland.Codex.Runtime
 {
     /// <summary>
     /// エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。

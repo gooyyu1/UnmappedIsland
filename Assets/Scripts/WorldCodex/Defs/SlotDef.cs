@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnmappedIsland.WorldCodex.Defs
+namespace UnmappedIsland.Codex.Defs
 {
     /// <summary>RecipeSystem.md 5節の accepts の1エントリ（型・個数の制約）。</summary>
     public sealed class SlotAcceptRule

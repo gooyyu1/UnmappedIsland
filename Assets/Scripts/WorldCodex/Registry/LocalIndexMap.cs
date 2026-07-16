@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace UnmappedIsland.WorldCodex.Registry
+namespace UnmappedIsland.Codex.Registry
 {
     /// <summary>
     /// 特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、

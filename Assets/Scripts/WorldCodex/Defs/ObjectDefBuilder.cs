@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnmappedIsland.WorldCodex.Registry;
+using UnmappedIsland.Codex.Registry;
 
-namespace UnmappedIsland.WorldCodex.Defs
+namespace UnmappedIsland.Codex.Defs
 {
     /// <summary>
     /// YAMLパーサ（別途）が出力する中間データ。実際の YAML デシリアライズはこのクラスの外側で行う。

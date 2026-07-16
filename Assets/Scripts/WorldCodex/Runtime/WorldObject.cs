@@ -1,8 +1,8 @@
 using System;
-using UnmappedIsland.WorldCodex.Defs;
-using UnmappedIsland.WorldCodex.Registry;
+using UnmappedIsland.Codex.Defs;
+using UnmappedIsland.Codex.Registry;
 
-namespace UnmappedIsland.WorldCodex.Runtime
+namespace UnmappedIsland.Codex.Runtime
 {
     /// <summary>
     /// 実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、

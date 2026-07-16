@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using UnmappedIsland.WorldCodex.Registry;
+using UnmappedIsland.Codex.Registry;
 
-namespace UnmappedIsland.WorldCodex.Defs
+namespace UnmappedIsland.Codex.Defs
 {
     public readonly struct PropertyRange
     {
