@@ -7,7 +7,7 @@ using UnmappedIsland.Codex.Runtime;
 namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
-    /// modify/accumulate（GameElementDefinition.md 8.2〜8.3節）の実行時集計（WorldObject.GetEffectiveValue/
+    /// modify/accumulate（GameElementDefinition.md 8節）の実行時集計（WorldObject.GetEffectiveValue/
     /// Tick、Containment.TryMoveToSlot での登録）に対する自動テスト。YAMLパーサは対象外で、
     /// ObjectDefBlueprint を直接組み立てて検証する。
     /// </summary>

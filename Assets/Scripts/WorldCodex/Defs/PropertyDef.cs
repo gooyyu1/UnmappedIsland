@@ -83,7 +83,7 @@ namespace UnmappedIsland.Codex.Defs
         public IReadOnlyList<PropertyStage> Stages { get; }
 
         /// <summary>
-        /// on_zero（6.6節）を持つか。値が0以下である間、毎tick実行されるactive効果を持つかどうかのフラグ。
+        /// on_zero（6.5節）を持つか。値が0以下である間、毎tick実行されるactive効果を持つかどうかのフラグ。
         /// 実際に何を発火するか（destroy/spawn等）はここでは持たず、WorldObject.Tick が対象かどうかの判定だけを行う。
         /// </summary>
         public bool HasOnZero { get; }

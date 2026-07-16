@@ -2,17 +2,15 @@
 
 ## 概要
 
-本ドキュメントは、これまでの設計議論（`GameElementDefinition.md`・`TerrainGeneration.md`・`ClimateSystem.md`・
-`PickSystem.md`・`ActionSystem.md`・`RecipeSystem.md`・`ContainerSystem.md`）をもとに、`WorldCodex` の YAML ファイルの
-形式的なスキーマ定義（[JSON Schema](https://json-schema.org/) Draft 2020-12、`WorldCodex.schema.json`）を作成した結果を
-まとめたものです。
+本ドキュメントは、YAML文法の唯一のリファレンスである `GameElementDefinition.md`（`traits`/`object_defs`/`props`/
+`slots`/`passive`/`active`/`pick`/`actions`/`combinations`/`recipes` 等の文法をすべて集約したもの）をもとに、
+`WorldCodex` の YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-schema.org/) Draft 2020-12、
+`WorldCodex.schema.json`）を作成した結果をまとめたものです。個別の世界描写（`ClimateSystem.md`・`RecipeSystem.md`・
+`ContainerSystem.md`・`ActionSystem.md`・`TerrainGeneration.md`）の内容そのものはスキーマの対象外で、それらが使う
+文法の妥当性のみを検証します。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。スキーマ自体も、各ドキュメントに残る未決事項がそのまま
-反映された、現時点のスナップショットです。
-
-`passive`/`active`/`on_zero`（`destroy`/`spawn` を束ねていた `lifecycle` 入れ子の廃止を含む）への刷新後の
-`GameElementDefinition.md`・`ActionSystem.md`・`ClimateSystem.md`・`PickSystem.md`・`RecipeSystem.md` に合わせて
-本スキーマも追随済みです。
+本ドキュメントは検討結果であり、確定仕様書ではありません。スキーマ自体も、`GameElementDefinition.md` に残る
+未決事項がそのまま反映された、現時点のスナップショットです。
 
 ## 1. 検証方法
 
@@ -36,14 +34,14 @@
 - ルート構造（`object_defs`/`traits`、専用ルートキーなし）
 - `object_defs`/`traits`（3〜5節）
 - `props`（固定値・範囲値・overflow・stages・`on_zero`、6節）
-- `passive`（対象をキーとする辞書、`when`、`modify`/`accumulate`、8.2〜8.3節）
-- `active`（対象をキーとする辞書、`add`/`destroy`/`spawn`、8.2〜8.3節）
-- `pick`（重み付き確率分岐、`active` の代替キー、`PickSystem.md`）
-- `actions`（`showMenu`・`conditions`・`active`/`pick`、8.1節）
-- `combinations`（`with`・`conditions`・`active`/`pick`、`ActionSystem.md`）
-- `recipes`（`steps`/`requires`/`duration`、`RecipeSystem.md`）
-- `slots`（`accepts`/`capacity`/`weight_rate`、7.1節・`RecipeSystem.md`・`ContainerSystem.md`）
-- `singleton`・`covers`/`layer`（9節・7.2節）
+- `passive`（対象をキーとする辞書、`when`、`modify`/`accumulate`、8節）
+- `active`（対象をキーとする辞書、`add`/`destroy`/`spawn`、9節）
+- `pick`（重み付き確率分岐、`active` の代替キー、10節）
+- `actions`（`showMenu`・`conditions`・`active`/`pick`、11節）
+- `combinations`（`with`・`conditions`・`active`/`pick`、12節。使い分け方針は`ActionSystem.md`）
+- `recipes`（`steps`/`requires`/`duration`、13節。内部設計は`RecipeSystem.md`）
+- `slots`（`accepts`/`capacity`/`weight_rate`、7節。内部設計は`RecipeSystem.md`・`ContainerSystem.md`）
+- `singleton`・`covers`/`layer`（15節・7.5節）
 
 ### 2.2 意図的に対象外としたもの
 
@@ -52,18 +50,18 @@
   `TerrainGeneration.md` 自体が「実装・詳細スキーマ化は本書を土台に別途進める」と明記している検討中の段階であり、
   フィールド名・型・軸空間マッチングの詳細などがまだ確定していません。この状態で無理にスキーマ化すると、他の部分
   より不確かな内容に過剰な確からしさを与えてしまうため、今回は対象外としました。
-- **`derived`（導出値、6.5節）**: 採否そのものが未決定のため含めていません。
-- **`ancestor`/`sibling`/`descendant`（`target`拡張、8.2節）**: 必要性が生じた時点で改めて検討するとされているため
-  含めていません。
-- **ステージのedge-triggered効果（`on_enter`的なもの、6.4節）**: 将来検討事項として保留中のため含めていません。
-- **YAML定義のマージ・上書き規則（3.4節）**: 「別途仕様書で定義する」とされている未着手事項のため、複数ファイルに
+- **`derived`（導出値、16節・17節）**: 採否そのものが未決定のため含めていません。
+- **`ancestor`/`sibling`/`descendant`（対象キーの拡張、8.1節・9.1節・17節）**: 必要性が生じた時点で改めて検討する
+  とされているため含めていません。
+- **ステージのedge-triggered効果（`on_enter`的なもの、6.4節・17節）**: 将来検討事項として保留中のため含めていません。
+- **YAML定義のマージ・上書き規則（3.3節）**: 「別途仕様書で定義する」とされている未着手事項のため、複数ファイルに
   またがる結合の挙動はスキーマの対象外です（本スキーマは単一ファイルの構造のみを検証します）。
 
 ## 3. スキーマ化にあたって見つけた既存ドキュメントとの矛盾・気づき（修正済み）
 
 スキーマ化の過程で以下の2点の矛盾が見つかり、いずれもドキュメント側を修正して解消済みです。
 
-- **防具サンプルの `item:` フィールド**: `GameElementDefinition.md` 11.1節の防具サンプルには、`object_defs` のキーとは
+- **防具サンプルの `item:` フィールド**: `GameElementDefinition.md` 8.1節の防具サンプルには、`object_defs` のキーとは
   別に `item: armor_leather` というフィールドが残っていました。これは 4節で確定している「識別子は `object_defs` の
   キーとして表現する（値ではない）」という規約より前の記法の名残でした。サンプルを `object_defs: { armor_leather: {...} }`
   という形に修正し、規約と一致させました。
@@ -78,12 +76,12 @@
 実装時に見直してください。
 
 - `recipes.*.steps[].requires[].consume` と `slots.*.accepts[].consume` は、既存サンプルが常に明示している（省略例が
-  ない）ため、必須項目としました。`quantity` の省略時デフォルト（`RecipeSystem.md` 9節で未決定）はスキーマ上も
+  ない）ため、必須項目としました。`quantity` の省略時デフォルト（`RecipeSystem.md` 5節で未決定）はスキーマ上も
   任意項目のままにしています。
 - `slots.*.accepts[].max` は、既存サンプルが常に明示しているため必須項目としました。
 - `actions.*.showMenu` の値は、現時点で確認されている `always` のみを列挙型にしています。将来値が増える場合は
-  スキーマの拡張が必要です（8.1節の想定通り）。
-- `weight_rate` の上限は設けていません（`ContainerSystem.md` 6節で「1.0を超えるケースを想定するか」が未決定のため）。
+  スキーマの拡張が必要です（`GameElementDefinition.md` 11.1節の想定通り）。
+- `weight_rate` の上限は設けていません（`ContainerSystem.md` 4節で「1.0を超えるケースを想定するか」が未決定のため）。
 
 ## 5. 使い方
 
@@ -98,5 +96,5 @@
 - 本スキーマは単一ファイル内の構造のみを検証するため、「参照している `object` や `trait` の id が実在するか」
   といった、ファイル横断的な整合性チェックは対象外（別途のバリデーションステップ、3.3節で言及されている
   ロード後の検証に相当）
-- `GameElementDefinition.md`・`ActionSystem.md`・`PickSystem.md`・`RecipeSystem.md`・`ContainerSystem.md` 側の未決事項
+- `GameElementDefinition.md`・`ActionSystem.md`・`RecipeSystem.md`・`ContainerSystem.md` 側の未決事項
   （各ドキュメントの該当節を参照）が確定するたびに、本スキーマも追随して更新する必要がある

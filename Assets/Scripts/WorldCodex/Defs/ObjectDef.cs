@@ -27,7 +27,7 @@ namespace UnmappedIsland.Codex.Defs
         /// <summary>ローカルindexで並ぶ密配列。SlotLayout と対になる。</summary>
         public IReadOnlyList<SlotDef> SlotDefs { get; }
 
-        /// <summary>このObjectDefが宣言する効果（8.2〜8.3節）。target(self/parent/child)・kind(modify/accumulate)を
+        /// <summary>このObjectDefが宣言する効果（8節）。target(self/parent/child)・kind(modify/accumulate)を
         /// 問わず1つのリストで持つ。</summary>
         public IReadOnlyList<ContributionDef> Contributions { get; }
 

@@ -1,7 +1,7 @@
 namespace UnmappedIsland.Codex.Defs
 {
     /// <summary>
-    /// 効果の対象（8.2節の self/parent/child）。値そのものは登録時にしか使わず、
+    /// 効果の対象（8.1節の self/parent/child）。値そのものは登録時にしか使わず、
     /// 読み取り側（WorldObject.GetEffectiveValue/Tick）はこの区別を一切見ない。
     /// </summary>
     public enum ContributionTarget
@@ -12,7 +12,7 @@ namespace UnmappedIsland.Codex.Defs
     }
 
     /// <summary>
-    /// 効果の性質。どちらも self/parent/child・ゲートによる登録の仕組み（8.2節）を共有するが、
+    /// 効果の性質。どちらも self/parent/child・ゲートによる登録の仕組み（8節）を共有するが、
     /// 実体値への反映のされ方が異なる。
     ///
     /// - Modify: 条件が真の間だけ、都度導出される実効値に寄与する（可逆、WorldObject.GetEffectiveValue）
@@ -59,7 +59,7 @@ namespace UnmappedIsland.Codex.Defs
     }
 
     /// <summary>
-    /// 1つの ObjectDef が宣言する、1つの効果（8.2〜8.3節）。ObjectDef.Contributions の要素。
+    /// 1つの ObjectDef が宣言する、1つの効果（8節）。ObjectDef.Contributions の要素。
     /// Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumulate のどちらであっても構造は同じで、
     /// 違いは登録時にどこへ・誰の状態と紐付けて置くか（Target）と、どちらの評価経路が読むか（Kind）だけに閉じる
     /// （Runtime.WorldObject.GetEffectiveValue / Tick 参照）。

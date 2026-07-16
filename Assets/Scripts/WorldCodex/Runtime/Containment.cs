@@ -9,9 +9,9 @@ namespace UnmappedIsland.Codex.Runtime
     /// 以下3つの不変条件をここでまとめて保証する。個別のYAML定義側がスロット配列や
     /// 逆引きキャッシュ（WorldObject.Parent）を直接書き換えることは想定しない。
     ///
-    /// - accepts（型・個数の制約、RecipeSystem.md 5節）
-    /// - capacity（合計サイズの制約、ContainerSystem.md 1節）
-    /// - weight の伝播（ContainerSystem.md 2〜3節。derived を使わず、出入りの度に加減算する）
+    /// - accepts（型・個数の制約、GameElementDefinition.md 7.2節）
+    /// - capacity（合計サイズの制約、GameElementDefinition.md 7.3節）
+    /// - weight の伝播（GameElementDefinition.md 7.4節、内部設計はContainerSystem.md 1〜2節。derived を使わず、出入りの度に加減算する）
     /// </summary>
     public sealed class Containment
     {
@@ -71,7 +71,7 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// 親子関係が結ばれた瞬間に、双方の効果（modify/accumulate、8.2〜8.3節）を相手側へ登録する。
+        /// 親子関係が結ばれた瞬間に、双方の効果（modify/accumulate、8節）を相手側へ登録する。
         /// target=Parent（子の効果が親へ及ぶ、例: 防具の`passive.parent`）は親側へ、
         /// target=Child（親の効果が子へ及ぶ）は子側へ登録する。target=Selfは各WorldObjectの
         /// コンストラクタで既に登録済みのため、ここでは扱わない。kind(modify/accumulate)は登録先を
@@ -141,7 +141,7 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// ContainerSystem.md 2〜3節: 重さは derived ではなく move_to_slot の副作用として、
+        /// ContainerSystem.md 1〜2節: 重さは derived ではなく move_to_slot の副作用として、
         /// 出入りのたびに weight プロパティへ加減算する。祖先を遡りながら各階層の weight_rate を
         /// 掛け合わせていくことで、入れ子（アイテム→バッグ→バックパック→装備）が自然にカスケードする。
         /// </summary>
