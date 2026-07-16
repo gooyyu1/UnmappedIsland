@@ -71,24 +71,25 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// 親子関係が結ばれた瞬間に、双方のmodify寄与を相手側へ登録する（8.2〜8.3節）。
+        /// 親子関係が結ばれた瞬間に、双方の効果（modify/accumulate、8.2〜8.3節）を相手側へ登録する。
         /// target=Parent（子の効果が親へ及ぶ、例: 防具の`effects.parent`）は親側へ、
         /// target=Child（親の効果が子へ及ぶ）は子側へ登録する。target=Selfは各WorldObjectの
-        /// コンストラクタで既に登録済みのため、ここでは扱わない。
+        /// コンストラクタで既に登録済みのため、ここでは扱わない。kind(modify/accumulate)は登録先を
+        /// 選ぶ判断に一切影響しない（評価側でのみ区別される）。
         /// </summary>
         private static void RegisterEdge(WorldObject parent, WorldObject child)
         {
-            foreach (var c in child.Def.ModifyContributions)
+            foreach (var c in child.Def.Contributions)
             {
-                if (c.Target != ModifyTarget.Parent) continue;
+                if (c.Target != ContributionTarget.Parent) continue;
                 int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 parent.RegisterContribution(local, new ActiveContribution(declarer: child, slotBearer: child, def: c));
             }
 
-            foreach (var c in parent.Def.ModifyContributions)
+            foreach (var c in parent.Def.Contributions)
             {
-                if (c.Target != ModifyTarget.Child) continue;
+                if (c.Target != ContributionTarget.Child) continue;
                 int local = child.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 child.RegisterContribution(local, new ActiveContribution(declarer: parent, slotBearer: child, def: c));
@@ -97,17 +98,17 @@ namespace UnmappedIsland.Codex.Runtime
 
         private static void UnregisterEdge(WorldObject parent, WorldObject child)
         {
-            foreach (var c in child.Def.ModifyContributions)
+            foreach (var c in child.Def.Contributions)
             {
-                if (c.Target != ModifyTarget.Parent) continue;
+                if (c.Target != ContributionTarget.Parent) continue;
                 int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 parent.UnregisterContributionsFrom(child, local);
             }
 
-            foreach (var c in parent.Def.ModifyContributions)
+            foreach (var c in parent.Def.Contributions)
             {
-                if (c.Target != ModifyTarget.Child) continue;
+                if (c.Target != ContributionTarget.Child) continue;
                 int local = child.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 child.UnregisterContributionsFrom(parent, local);

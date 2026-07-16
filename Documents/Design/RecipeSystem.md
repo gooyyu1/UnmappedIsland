@@ -86,7 +86,7 @@ object_defs:
 一方、工程ごとの材料・道具の要求（`requires`）は、既存の `conditions`/`effects` には当てはまりませんでした。
 
 - `conditions`（`{path, op, value}` の AND リスト）には、**工程ごとに異なる要求内容**を表現する仕組みがありません。
-- `effects`（`modify`/`add`/`lifecycle`）にも、「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という
+- `effects`（`modify`/`accumulate`/`add`/`lifecycle`）にも、「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という
   条件チェック＋消費の複合動作を表す語彙がありません。
 
 これを無理に既存の語彙へ押し込めるより、`steps`/`requires` という**専用のスキーマ**を新設する方が良いと判断しました。
