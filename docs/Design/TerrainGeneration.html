@@ -221,7 +221,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <ul>
 <li>マッチングは正規化した重み付きユークリッド距離による最近傍探索です。</li>
 <li><code>GameElementDefinition.md</code>
-が定義する「範囲による状態の決定」パターン（2.3
+が定義する「範囲による状態の決定」パターン（2
 節。空腹度→満腹/空腹/飢え、等）と同一の仕組みであり、新規の専用エンジンではなく既存の汎用パターンの転用として実装します。</li>
 </ul>
 <h3 id="マッチできない場合の処理フォールバック">3.3
@@ -349,7 +349,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 として統一したことで、内部の各部屋にも固有名（「祭壇の間」等）を与える運用ルールの詳細化</li>
 <li><strong>YAML 定義のマージ・上書き規則</strong>: 同一 ID
 が複数ファイルに存在する場合の挙動（<code>GameElementDefinition.md</code>
-3.4 節で「別途仕様書で定義する」とされている未着手事項）</li>
+3.3 節で「別途仕様書で定義する」とされている未着手事項）</li>
 <li><strong>具体的なスキーマ・サンプル YAML の作成</strong>:
 本書はまだ概念設計の段階であり、実際のフィールド名・型・ディレクトリ配置などのスキーマは未作成</li>
 </ul>
@@ -359,20 +359,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 に示されている以下の原則と、本設計は整合しています。</p>
 <ul>
 <li>すべての概念を YAML で定義し、複数ファイル分割・MOD
-追加は別ディレクトリへのファイル追加のみで実現する（2.1 節）</li>
-<li>「ロケーション」は既に正式概念（地区・建築物・洞窟等）として文書内に例示されており（2.2
-節）、本書の <code>Location</code>/<code>LocationType</code>
-はこれを具体化したものである</li>
-<li>「範囲（値域）による状態の決定」という汎用パターン（2.3
+追加は別ディレクトリへのファイル追加のみで実現する（3.3 節）</li>
+<li>本書の <code>Location</code>/<code>LocationType</code>
+も、他のあらゆる要素と同じ <code>object_defs</code>
+として表現される</li>
+<li>「範囲（値域）による状態の決定」という汎用パターン（2
 節。空腹度→満腹/空腹/飢え、等）が既に採用されており、<code>LocationType</code>
 の軸マッチングはこのパターンの応用として実装すべきである</li>
 </ul>
-<p>なお、<code>GameElementDefinition.md</code> 10 節では地形を
-<code>object_defs</code>
-の一種として表現し、<code>terrain_candidate</code> trait の
-<code>generation_weight</code> を例示していますが、これは「trait で必須
-props を宣言する」という YAML の一般的な仕組みを示すための簡易例であり、
-実際の <code>LocationType</code> 選定アルゴリズムは本書 3.2
+<p>なお、地形も <code>object_defs</code>
+の一種として表現でき、<code>terrain_candidate</code> のような trait に
+<code>generation_weight</code> （value
+なし＝継承先で必須、<code>GameElementDefinition.md</code> 5
+節）を持たせる形で表現できますが、実際の <code>LocationType</code>
+選定アルゴリズムは本書 3.2
 節の軸ベース最近傍マッチングに置き換わります。</p>
 </article>
 </body>

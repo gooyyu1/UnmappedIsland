@@ -95,161 +95,98 @@
 </header>
 <h1 id="コンテナの容量と重さ">コンテナの容量と重さ</h1>
 <h2 id="概要">概要</h2>
-<p>本ドキュメントは、<code>GameElementDefinition.md</code>
-7.1節に残っていた「slot
-に容量・サイズ制限を持たせるか」という未決事項について、
-サイズによる容量制限と、重さの伝播・行動力への影響という2つの観点から検討した結果をまとめたものです。</p>
-<p><code>RecipeSystem.md</code> の
-<code>accepts</code>（型・個数の制約）とは独立した、<strong>合計サイズによる制約</strong>、および<strong>重さ</strong>という
-別の観点を扱います。</p>
+<p>本ドキュメントは、<code>slots</code> の
+<code>weight_rate</code>（<code>GameElementDefinition.md</code> 7.4
+節）を使って、重さの伝播・行動力への
+影響をどう成立させるかをまとめたものです。<code>capacity</code>（合計サイズの制約、同
+7.3 節）は <code>move_to_slot</code> が検証するだけの
+単純な仕組みで、文法以上の設計判断を要しないため、本書では重さの伝播にのみ焦点を当てます。<code>capacity</code>/<code>weight_rate</code>
+自体の文法、および <code>RecipeSystem.md</code> の
+<code>accepts</code>（型・個数の制約）との関係は
+<code>GameElementDefinition.md</code> を参照して ください。</p>
 <p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
-6 節に整理しています。</p>
-<h2 id="サイズ容量">1. サイズ・容量</h2>
-<p>各コンテナ（スロット）は独自の容量を持ち、すべてのアイテムはサイズを持ちます。サイズの合計が容量を超えない範囲でのみ
-格納できます。</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">inventory</span><span class="kw">:</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">size</span><span class="kw">:</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
-<p><code>move_to_slot</code>（7.1節の唯一の汎用操作）が、「現在の中身のサイズ合計＋新しいアイテムのサイズ
-≤ capacity」を検証し、 超える場合は移動を拒否します。</p>
-<p><code>accepts</code>（<code>RecipeSystem.md</code>
-5節、型・個数の制約）とは独立した仕組みであり、1つの slot
-が両方を同時に持つことも 妨げません（例:
-型を制限しつつ合計サイズも制限する、特殊な収納）。</p>
-<h2 id="重さの伝播-derivedではなくmove_to_slotの副作用として扱う">2.
-重さの伝播:
-<code>derived</code>ではなく<code>move_to_slot</code>の副作用として扱う</h2>
-<p>サイズとは別に、アイテムは重さの概念を持ちます。コンテナ自体の重さは、中に入っているアイテムの重さの影響を受けます
-（バックパックの中身が増えれば、バックパック自体が重くなる）。</p>
-<p>一見すると計算式（<code>derived</code>、<code>GameElementDefinition.md</code>
-6.5節で採否未確定としているもの）が必要に思えますが、 これは既存の
-<code>move_to_slot</code>
-の性質を使い、計算式なしで実現できます。<code>move_to_slot</code>
-は既にスロット配列と逆引きキャッシュの
-整合性を保証する唯一の場所として定義されています。ここに、<strong>「アイテムがスロットに出入りするたびに、そのアイテムの
-現在の実効重量を、スロットの持ち主の <code>weight</code>
-プロパティへ加算・減算する」という、もう1つの不変条件</strong>を持たせます。</p>
-<ul>
-<li>カートに石を入れる → <code>move_to_slot</code>
-が、石の重量をカートの <code>weight</code> へ加算する</li>
-<li>石をカートから出す → 同じ量を減算する</li>
-</ul>
+4 節に整理しています。</p>
+<h2 id="重さの伝播は-move_to_slot-の副作用として扱う">1. 重さの伝播は
+move_to_slot の副作用として扱う</h2>
+<p>コンテナ自体の重さは、中に入っているアイテムの重さの影響を受けます（バックパックの中身が増えれば、バックパック
+自体が重くなる）。これは計算式（<code>derived</code>）ではなく、既存の
+<code>move_to_slot</code>（唯一の汎用操作）に「アイテムが
+スロットに出入りするたびに、そのアイテムの実効重量をスロットの持ち主の
+<code>weight</code> へ加減算する」という不変条件を
+1つ持たせるだけで実現します。</p>
 <p>これは温度・湿度（<code>ClimateSystem.md</code>）で採用した「毎 tick
-加減算する」方式とは異なり、<strong>スロット移動という離散イベントの
-度に1回だけ加減算する</strong>方式です。新しいトリガー体系を追加するのではなく、既存の
-<code>move_to_slot</code> という唯一の操作が持つ
+加減算する」方式とは異なり、<strong>スロット移動という離散
+イベントの度に1回だけ加減算する</strong>方式です。新しいトリガー体系を追加するのではなく、既存の
+<code>move_to_slot</code> の
 不変条件を1つ増やすだけであり、「値は独立変数への加減算によって駆動される」という数値積分の哲学から外れていません。</p>
-<p>入れ子（アイテム→バッグ→バックパック→装備）も、この仕組みが再帰的に働くことで自然にカスケードします。バッグ自身の
-<code>weight</code>
-は、バッグの中身の出入りに応じて常に最新化されているため、バッグをバックパックに入れる瞬間は「バッグの現在の
-<code>weight</code>」を1回伝播させるだけで済み、中身を毎回覗き直す必要はありません。</p>
+<p>入れ子（アイテム→バッグ→バックパック→装備）も、この仕組みが再帰的に働くことで自然にカスケードします。バッグ
+自身の <code>weight</code>
+は、バッグの中身の出入りに応じて常に最新化されているため、バッグをバックパックに入れる瞬間は
+「バッグの現在の
+<code>weight</code>」を1回伝播させるだけで済みます。</p>
 <h2
-id="伝播率weight_rate-身につけると軽いとコンテナ自体の軽減能力を1つの仕組みに統一">3.
-伝播率（<code>weight_rate</code>）:
-「身につけると軽い」と「コンテナ自体の軽減能力」を1つの仕組みに統一</h2>
-<p>「ほとんどのアイテムは手荷物より身につける方が軽い」という現象と、「台車は中身が増えても重さが増えにくい」という現象は、
-同じ仕組みで説明できます。<strong>スロットごとに「伝播率（<code>weight_rate</code>）」を持たせます</strong>。</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.5</span><span class="co">    # 身につけると重さが半分に感じる</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0</span><span class="co">    # 手荷物はそのまま</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cart</span><span class="kw">:</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weight</span><span class="kw">:</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span><span class="co">           # 台車自体の重さ</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span><span class="co">    # 中身の重さの10%しか伝播しない</span></span></code></pre></div>
-<ul>
-<li>「身につけると軽い」→ <code>character.equip</code> の
-<code>weight_rate</code> を <code>inventory</code> より低くする</li>
-<li>「台車は中身が増えても重くなりにくい」→ <code>cart.storage</code> の
-<code>weight_rate</code> を低くする</li>
-</ul>
-<p>どちらも「スロット側が持つ、伝播時の割引率」という同一の概念であり、コンテナごとに専用の「軽減能力」という別概念を
-作る必要はありません。バックパックを背負うと軽く感じる、という現象も、<code>character.equip</code>
-と <code>backpack.storage</code> 両方の <code>weight_rate</code>
-が効いた結果として自然に説明できます。</p>
-<h2 id="行動力への影響">4. 行動力への影響</h2>
+id="weight_rate-は身につけると軽いも軽減能力の高い箱も同じ仕組みで説明する">2.
+weight_rate
+は「身につけると軽い」も「軽減能力の高い箱」も同じ仕組みで説明する</h2>
+<p>「ほとんどのアイテムは手荷物より身につける方が軽い」という現象と、「台車は中身が増えても重さが増えにくい」と
+いう現象は、どちらも
+<code>weight_rate</code>（スロットごとの伝播率）で説明できます。</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.5</span><span class="co">    # 身につけると重さが半分に感じる</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0</span><span class="co">    # 手荷物はそのまま</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cart</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weight</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span><span class="co">    # 中身の重さの10%しか伝播しない</span></span></code></pre></div>
+<p>バックパックを背負うと軽く感じる、という現象も、<code>character.equip</code>
+と <code>backpack.storage</code> 両方の <code>weight_rate</code> が
+効いた結果として説明できます。コンテナごとに専用の「軽減能力」という別概念は作りません。</p>
+<h2 id="行動力への影響">3. 行動力への影響</h2>
 <p>キャラクターの合計重量（各スロットからの伝播の総和）を
 <code>weight</code> のようなプロパティとして持たせ、既存の
-<code>stages</code> （<code>GameElementDefinition.md</code>
-6.4節）で「軽い/やや重い/かなり重い/動けない」のような段階に分けます。あとは
-<code>GameElementDefinition.md</code> 8.1節の <code>move</code>
-アクションの例（<code>world.light_stage</code>
-で移動可否を制御した例）と同じパターンで、 <code>actor</code>
-の重量段階を条件・効果に使えます。</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">move</span><span class="kw">:</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.encumbrance_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> neq</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> immobile </span><span class="kw">}</span></span></code></pre></div>
+<code>stages</code> （<code>GameElementDefinition.md</code> 6.4
+節）で「軽い/やや重い/かなり重い/動けない」のような段階に分けます。あとは
+<code>move</code>
+アクションの条件・効果として、重量段階を通常通り参照するだけです。</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">move</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.encumbrance_stage</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> neq</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> immobile</span><span class="kw">}</span></span></code></pre></div>
 <p>移動時間の延長は各段階の <code>passive</code> の
 <code>modify</code>、疲労の増加は毎 tick 蓄積する
-<code>accumulate</code>（<code>GameElementDefinition.md</code> 8.3 節）
-で表現すればよく、新しい仕組みは不要です。
-上限を設けない、という要件も、<code>stages</code> の最下段・最上段が
-<code>min</code>
-のみを指定する半開区間である以上、自然に満たされます。</p>
-<h2 id="なぜプレイヤーが持っている場合にのみ影響するか">5.
-なぜプレイヤーが持っている場合にのみ影響するか</h2>
-<p>重さの伝播自体は、どのオブジェクトの <code>slots</code>
-でも同じように起きます。特別扱いは必要ありません。「行動力に影響する」のは
-キャラクター自身の <code>weight</code> を読む
+<code>accumulate</code> で表現すればよく、
+新しい仕組みは不要です。重さの伝播自体は、どのオブジェクトの
+<code>slots</code> でも同じように起きます。「行動力に影響する」
+のはキャラクター自身の <code>weight</code> を読む
 <code>stages</code>/<code>actions</code>
-だけなので、地面に置かれた宝箱の重さが誰の行動力にも影響しないのは
-自然な帰結です。</p>
-<h2 id="未決事項今後の検討課題">6. 未決事項・今後の検討課題</h2>
+だけなので、地面に置かれた宝箱の重さが誰の行動力にも
+影響しないのは自然な帰結です。</p>
+<h2 id="未決事項今後の検討課題">4. 未決事項・今後の検討課題</h2>
 <ul>
 <li>既に中に入っているアイテムの重さが後から変化した場合（例:
-松明の燃料が減って軽くなる）、<code>move_to_slot</code> は出入りの
-瞬間にしか発火しないため、入れっぱなしのまま重さが変わってもコンテナ側の
-<code>weight</code> は自動的に追従しない。これを
-許容する仕様上の割り切りとするか、何らかの再伝播の仕組みを別途用意するか</li>
+松明の燃料が減って軽くなる）、<code>move_to_slot</code> は
+出入りの瞬間にしか発火しないため、入れっぱなしのまま重さが変わってもコンテナ側の
+<code>weight</code> は自動的に追従
+しない。これを許容する仕様上の割り切りとするか、何らかの再伝播の仕組みを別途用意するか</li>
 <li><code>size</code>/<code>capacity</code>
 が単純なスカラー数値で十分か、それとも将来的に形状（テトリス型インベントリ等）を考慮したいか</li>
 <li><code>weight_rate</code> が 1.0
 を超える（かえって重く感じる）ケースを想定する必要があるか</li>
 <li><code>size</code>/<code>capacity</code>/<code>weight_rate</code>
 の具体的な数値・単位（本書のサンプルはあくまで説明用）</li>
-<li>重さの伝播（2節）と <code>RecipeSystem.md</code> の
+<li>重さの伝播（1 節）と <code>RecipeSystem.md</code> の
 <code>accepts</code> から自動生成される
 <code>combinations</code>（材料投入）が、同じ <code>move_to_slot</code>
 イベントに対してどちらも副作用として発火する場合の実行順序</li>
-</ul>
-<h2 id="参考-既存プロジェクト方針との整合性">7. 参考:
-既存プロジェクト方針との整合性</h2>
-<ul>
-<li><code>capacity</code>（本書）と
-<code>accepts</code>（<code>RecipeSystem.md</code> 5節）は、いずれも
-<code>slots</code>
-への独立した拡張であり、<code>GameElementDefinition.md</code>
-7.1節に残る「slot
-の容量・型制約」という同じ未決事項の、異なる側面への回答です。</li>
-<li>重さの伝播を <code>move_to_slot</code>
-の不変条件として扱う設計は、7.1節が既に「スロット間の移動は
-<code>move_to_slot</code> という単一の
-汎用操作に集約する」と定めていることの延長であり、新しいトリガー体系を追加していません。</li>
-<li>重さの伝播に <code>derived</code>
-を使わなかった判断は、<code>ClimateSystem.md</code>・<code>PickSystem.md</code>
-に続く、独立変数への加減算のみで
-現象を表現するという方針の一貫した適用です。ただし本書の重さは、温度・湿度のような「時間経過にともなう蓄積」ではなく
-「現在の中身の構成」を反映する値であり、加減算のタイミングが tick
-単位ではなくスロット移動イベント単位である点が異なります。</li>
-<li>行動力への影響（4節）は、<code>GameElementDefinition.md</code>
-8.1節の <code>light_stage</code>/<code>move</code>
-の例と同じ、<code>stages</code> による状態決定パターンの
-再利用です。</li>
 </ul>
 </article>
 </body>

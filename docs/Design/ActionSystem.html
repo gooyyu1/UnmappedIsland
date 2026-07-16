@@ -21,70 +21,6 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
-    /* CSS for syntax highlighting */
-    pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { line-height: 1.25; }
-    pre > code.sourceCode > span:empty { height: 1.2em; }
-    .sourceCode { overflow: visible; }
-    code.sourceCode > span { color: inherit; text-decoration: inherit; }
-    div.sourceCode { margin: 1em 0; }
-    pre.sourceCode { margin: 0; }
-    @media screen {
-    div.sourceCode { overflow: auto; }
-    }
-    @media print {
-    pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-    }
-    pre.numberSource code
-      { counter-reset: source-line 0; }
-    pre.numberSource code > span
-      { position: relative; left: -4em; counter-increment: source-line; }
-    pre.numberSource code > span > a:first-child::before
-      { content: counter(source-line);
-        position: relative; left: -1em; text-align: right; vertical-align: baseline;
-        border: none; display: inline-block;
-        -webkit-touch-callout: none; -webkit-user-select: none;
-        -khtml-user-select: none; -moz-user-select: none;
-        -ms-user-select: none; user-select: none;
-        padding: 0 4px; width: 4em;
-        color: #aaaaaa;
-      }
-    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-    div.sourceCode
-      {   }
-    @media screen {
-    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-    }
-    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-    code span.at { color: #7d9029; } /* Attribute */
-    code span.bn { color: #40a070; } /* BaseN */
-    code span.bu { color: #008000; } /* BuiltIn */
-    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-    code span.ch { color: #4070a0; } /* Char */
-    code span.cn { color: #880000; } /* Constant */
-    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-    code span.dt { color: #902000; } /* DataType */
-    code span.dv { color: #40a070; } /* DecVal */
-    code span.er { color: #ff0000; font-weight: bold; } /* Error */
-    code span.ex { } /* Extension */
-    code span.fl { color: #40a070; } /* Float */
-    code span.fu { color: #06287e; } /* Function */
-    code span.im { color: #008000; font-weight: bold; } /* Import */
-    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-    code span.op { color: #666666; } /* Operator */
-    code span.ot { color: #007020; } /* Other */
-    code span.pp { color: #bc7a00; } /* Preprocessor */
-    code span.sc { color: #4070a0; } /* SpecialChar */
-    code span.ss { color: #bb6688; } /* SpecialString */
-    code span.st { color: #4070a0; } /* String */
-    code span.va { color: #19177c; } /* Variable */
-    code span.vs { color: #4070a0; } /* VerbatimString */
-    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
 </head>
@@ -94,214 +30,74 @@
 <h1 class="title">ActionSystem</h1>
 </header>
 <h1
-id="カード間の相互作用actions-combinations">カード間の相互作用（actions
-/ combinations）</h1>
+id="カード間の相互作用actions-combinations-の使い分け">カード間の相互作用（actions
+/ combinations の使い分け）</h1>
 <h2 id="概要">概要</h2>
-<p>本ドキュメントは、プレイヤーがカードに対して行う操作（メニューからの選択、カードのドラッグ＆ドロップ）をどう
-YAML で
-定義するかを検討した結果をまとめたものです。<code>GameElementDefinition.md</code>
-8 節（アクションと効果）の一部として検討していた内容ですが、
-検討が深まったため独立したドキュメントに切り出しました。</p>
+<p>本ドキュメントは、プレイヤーがカードに対して行う操作を、<code>actions</code>（メニュー型）と
+<code>combinations</code>（ドラッグ型）の
+どちらで表現すべきかの判断指針をまとめたものです。両者の文法自体は
+<code>GameElementDefinition.md</code> 11 節・12 節を
+参照してください。</p>
 <p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
-6 節に整理しています。</p>
-<h2 id="想定するカード操作">1. 想定するカード操作</h2>
-<ul>
-<li><strong>メニュー型</strong>:
-カードを選択すると、カードの説明とともに実行可能なアクションがボタンで表示され、クリックすると実行できる（例:「食べる」「攻撃する」）。ロケーションカード限定の「探索」ボタンも、この特殊なケースとして表現できます。</li>
-<li><strong>ドラッグ型</strong>: カードを、<code>actor</code>
-ではない別の特定のカードにドラッグ＆ドロップして行う操作（例:「斧を木にドラッグして切る」）。</li>
-</ul>
-<p>すべてのアクションには、<code>actor</code>（プレイヤーキャラクター、<code>GameElementDefinition.md</code>
-8.1 節）が暗黙的に参加します。
-そのため「2つの参加者が要るように見える操作」でも、もう一方が常に
-<code>actor</code>
-であればメニュー型（<code>actions</code>）で表現できます。
+4 節に整理しています。</p>
+<h2 id="使い分けの基準">1. 使い分けの基準</h2>
+<p>すべてのアクション・組み合わせには、<code>actor</code>（プレイヤーキャラクター）が暗黙的に参加します。そのため
+「2つの参加者が要るように見える操作」でも、もう一方が常に
+<code>actor</code> であれば
+<code>actions</code>（メニュー型）で表現できます。
 <code>eat</code>（食べ物 self ＋ actor）だけでなく
 <code>attack</code>（攻撃対象の敵 self ＋
-actor）もこれに当たります。ドラッグ型（<code>combinations</code>）が
-必要になるのは、<code>actor</code>
-とは別の、道具や素材など<strong>特定のカードそのものを指定する必要がある</strong>場合（「斧で木を切る」）に限られます。</p>
-<p>この2種類は、それぞれ
-<code>actions</code>（<code>GameElementDefinition.md</code> 8.1 節）と
-<code>combinations</code>（本書 2
-節）という別々の仕組みで表現します。</p>
-<h2 id="combinationsドラッグ型">2. combinations（ドラッグ型）</h2>
-<p><code>combinations</code>
-は、<strong>ドロップされた側（受け側）のオブジェクト</strong>に定義します。<code>object_defs</code>/<code>traits</code>/<code>props</code>/<code>actions</code>
-と
-同様に、識別子を<strong>キーとして</strong>表現する辞書型です（<code>GameElementDefinition.md</code>
-4 節）。ただし <code>actions</code> のキーがアクション名
-そのものであるのと同じように、<strong><code>combinations</code>
-のキーはマッチング対象ではなく、このドラッグ操作自体に付ける名前</strong>です。
-マッチング対象は <code>with</code>（ドラッグされてきたカードの
-<code>object_def</code> の id、または trait
-の名前）で別途指定します。</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">wood</span><span class="kw">:</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">chop</span><span class="kw">:</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> axe_tool</span><span class="co">   # object_defのidでも、traitの名前でも一致可能</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> dragged.durability</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> gt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="at"> </span><span class="kw">}</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">object</span><span class="kw">:</span><span class="at"> logs</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> parent.inventory </span><span class="kw">}</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">dragged</span><span class="kw">:</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
+actor）もこれに当たります。</p>
+<p><code>combinations</code>（ドラッグ型）が必要になるのは、<code>actor</code>
+とは別の、道具や素材など<strong>特定のカードそのものを指定する
+必要がある</strong>場合（「斧で木を切る」）に限られます。</p>
 <ul>
-<li>キー（<code>chop</code>）は、UI
-がドラッグ中に表示するラベル（「切る」など）に使える、人間が読むための名前です。<code>actions</code>
-のキーと 同じ位置づけです。</li>
-<li><code>with</code> に trait
-名を使えば、そのtraitを持つあらゆるカード（将来 MOD
-で追加されるものも含む）と一致します。</li>
-<li><code>conditions</code> は <code>actions</code> と同じ
-<code>{path, op, value}</code>
-形式です。<code>self</code>（受け側自身）・<code>dragged</code>（ドラッグされてきたカード）・
-<code>actor</code>（このドラッグ操作を行っているプレイヤーキャラクター、<code>GameElementDefinition.md</code>
-8.1 節）のいずれも参照できます。</li>
-<li><code>active</code>
-も既存の対象をキーとする辞書構造・<code>add</code> /
-<code>destroy</code> /
-<code>spawn</code>（<code>GameElementDefinition.md</code> 8.2 節・8.3
-節）をそのまま使います。 実行された瞬間に一度だけ適用される点は
-<code>actions</code> の効果と同じです（8.3 節）。持続する条件を表す
-<code>modify</code>/<code>accumulate</code> は <code>active</code>
-には書けません（<code>GameElementDefinition.md</code> 8.3
-節参照）。</li>
-<li><code>active</code> のキーには、既存の <code>self</code> /
-<code>parent</code> / <code>child</code> / <code>actor</code>
-に加えて、<strong><code>dragged</code>（このインタラクションでドラッグされてきたカード）</strong>を
-新たに追加します。<code>dragged</code> は <code>combinations</code>
-の中でのみ意味を持つ、専用のキーです。</li>
+<li><strong>メニュー型（<code>actions</code>）</strong>:
+1枚のカードだけで完結する操作。カードを選択すると実行可能なアクションがボタンで
+表示され、クリックすると実行できます。ロケーションカード限定の「探索」ボタンも、この特殊なケースです。</li>
+<li><strong>ドラッグ型（<code>combinations</code>）</strong>:
+カードを、<code>actor</code>
+ではない別の特定のカードにドラッグ＆ドロップして行う操作。</li>
 </ul>
-<p>キーをマッチング対象ではなく名前にしたことで、<strong>同じ
-<code>with</code> を指す複数のキーを書けてしまいます</strong>（例:
-<code>wood</code> に対して
-<code>chop</code>（<code>with: axe_tool</code>）と
-<code>hack</code>（<code>with: axe_tool</code>、別条件）を両方定義する、など）。この場合にどちらが実際に選ばれるかの
-解決規則は未決定です（6
-節参照）。ただし、この曖昧さが起きても定義自体は同じオブジェクトの
-<code>combinations</code> の中に 留まるため、<code>on</code>
-を廃止した際に避けたかった「複数のオブジェクトに分散して記述される」という状態にはなりません（4
-節参照）。</p>
+<h2 id="combinations-のキー設計">2. combinations のキー設計</h2>
+<p><code>combinations</code> は
+<code>object_defs</code>/<code>traits</code>/<code>props</code>/<code>actions</code>
+と同様、識別子をキーとする辞書型ですが、
+<strong>キーはマッチング対象ではなく、このドラッグ操作自体に付ける名前</strong>です。マッチング対象は
+<code>with</code> で別途指定します
+（<code>GameElementDefinition.md</code> 12.1
+節）。キーを名前として自由にした結果、同じ <code>with</code>
+を指す複数のキーを書けてしまう 余地が残ります（例: <code>wood</code>
+に対して <code>with: axe_tool</code> の <code>chop</code> と
+<code>hack</code> を両方定義する）。この場合にどちらが実際に
+選ばれるかの解決規則は未決定です（4 節）。</p>
 <h2 id="対称的な組み合わせ">3. 対称的な組み合わせ</h2>
-<p>「棒とロープを組み合わせて槍を作る」のように、どちらのカードをどちらにドラッグしても成立してほしい、方向が自明でない
-組み合わせは、<strong>両方のカードに <code>combinations</code>
-を書く</strong>ことで表現します。</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stick</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> rope</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">...</span><span class="kw">]</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rope</span><span class="kw">:</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> stick</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">...</span><span class="kw">]</span></span></code></pre></div>
-<p>両側で同じキー名（<code>craft_spear</code>）を使う必要はありませんが、同じ結果を指すインタラクションであることが分かりやすいよう、
-揃えておくことを推奨します。</p>
-<p>片方にしか書かなければ、そちら向きにドラッグしたときしか成立しません。専用の「双方向」記法は用意せず、
-必要なら両側に書く、という方針です。</p>
-<h2 id="なぜ-on-によるクロスカッティングな仕組みを採用しなかったか">4.
-なぜ on: によるクロスカッティングな仕組みを採用しなかったか</h2>
-<p>検討の初期段階では、<code>actions</code>
-を条件だけの宣言にとどめ、実行結果は <code>active</code> 側で
-<code>on: &lt;アクション名&gt;</code> という
-独立したトリガーとして紐づける案も検討していました。この案には、アクションを宣言していない第三者（例えば装備品）が、
-特定のアクション名をイベントとして listen
-して独自に反応できる、という利点がありました（例:「呪われた首輪を装備している間、
-何を食べても体力が減る」）。</p>
-<p>しかし、この案は<strong>1つの操作の挙動が複数のオブジェクトに分散して記述される</strong>ことを意味し、その操作が何をするのかを
-把握するには複数の定義箇所を横断して読む必要があります。これは Wiki
-等でゲームの挙動をデータベース化して文書化する上で
-大きな欠点になると判断し、この案は不採用としました。</p>
-<p>代わりに、アクション（<code>actions</code>）・カードの組み合わせ（<code>combinations</code>）は、いずれも<strong>条件と効果を1つの定義としてまとめて持つ</strong>
-形に統一しています。これにより、上記のような「アクションの宣言者でも対象でもない第三者が、他者の行動に横から反応する」
-という表現はできなくなります。この種の要件が将来必要になった場合は、その時点で改めて検討します。</p>
-<p><code>combinations</code>
-を辞書型にしたのも同じ理由に基づきます。キーに <code>with</code>
-と同じ値を強制すれば「同じ相手への組み合わせは
-1つのオブジェクトにつき1つだけ」という構造的な保証を得られますが、それだとキーが
-UI ラベルとしては使いにくくなります （2
-節参照）。キーを名前として自由にした結果、同じ <code>with</code>
-を指す複数のキーを書けてしまう余地は残りますが、それでも 定義自体は
-<code>wood</code> という同じオブジェクトの <code>combinations</code>
-の中に閉じているため、<code>on</code> の分散問題（複数のオブジェクトに
-またがって記述される）ほど深刻ではないと判断しています。</p>
-<h2 id="mod拡張性">5. MOD拡張性</h2>
-<p><code>with</code> を trait
-名で指定できるようにしたことで、多くのケースで拡張性は保たれます。新しい道具（チェーンソー）が既存の
-<code>axe_tool</code> trait を持つだけで、<code>wood</code> 側の
-<code>combinations</code> 定義を変更せずに互換動作します。</p>
-<p>一方で、既存のどの trait
-にも当てはまらない<strong>全く新しい組み合わせ関係</strong>を MOD
-で追加したい場合は、受け側オブジェクトの <code>combinations</code>
-に新しいキー（名前）を追加する必要があります。これは、同じ id
-を持つ定義が複数のファイルに存在する場合の
-マージ・上書き規則（<code>GameElementDefinition.md</code> 3.4
-節、未着手）が、既存キーの値を上書きするだけでなく<strong>新しいキーの追記</strong>にも
-対応している必要がある、ということを意味します（<code>object_defs</code>/<code>traits</code>/<code>props</code>
-全般に共通するマージ規則であり、 <code>combinations</code>
-に固有の問題ではありません）。</p>
-<h2 id="未決事項今後の検討課題">6. 未決事項・今後の検討課題</h2>
+<p>「棒とロープを組み合わせて槍を作る」のように、どちらのカードをどちらにドラッグしても成立してほしい、方向が
+自明でない組み合わせは、両方のカードに <code>combinations</code>
+を書きます（<code>GameElementDefinition.md</code> 12.3 節）。
+片方にしか書かなければ、その向きにドラッグしたときしか成立しません。</p>
+<h2 id="未決事項今後の検討課題">4. 未決事項・今後の検討課題</h2>
 <ul>
-<li><code>combinations</code>（斧で木を切る、など）を、<code>actor</code>
-の装備スロットを経由したパス参照（例:
-<code>actor.equip.tool</code>）を使う <code>actions</code> の
-条件・効果として書き換えられないか。ドラッグという操作感を残したい場合と、<code>actor</code>
-が今持っている道具で自動的に
-判定したい場合とで、UX上の狙いが異なるため、両方を状況に応じて使い分けるのか、どちらかに統一するのかは未検討</li>
 <li>同じオブジェクト内で、複数のキーが同じ <code>with</code>
-にマッチしてしまった場合の解決規則（優先順位、条件の排他性を著者の
-責任に委ねるだけで良いか、など。2 節参照）</li>
+にマッチしてしまった場合の解決規則（優先順位、条件の排他性を
+著者の責任に委ねるだけで良いか、など。2 節参照）</li>
+<li><code>combinations</code>（斧で木を切る、など）を、<code>actor</code>
+の装備スロットを経由したパス参照（例: <code>actor.equip.tool</code>）を
+使う <code>actions</code> の条件・効果として書き換えられないか</li>
 <li><code>with</code> で、複数の trait /
 条件の組み合わせ（AND条件）を指定する必要があるか</li>
 <li>対称的な組み合わせ（3
 節）で両側に同じ内容を書く冗長さを、将来的に軽減する余地を残すか</li>
 <li>同一 id
-の定義がファイル間で重複した場合の、新しいキーの追記のマージセマンティクス（<code>GameElementDefinition.md</code>
-3.4 節との関連）</li>
-<li><code>showMenu</code>（<code>GameElementDefinition.md</code> 8.1
-節）の値が <code>always</code> 以外に増える場合の具体的な用途・記法</li>
+の定義がファイル間で重複した場合の、新しいキーの追記のマージセマンティクス
+（<code>GameElementDefinition.md</code> 3.3 節との関連）</li>
+<li><code>showMenu</code> の値が <code>always</code>
+以外に増える場合の具体的な用途・記法</li>
 <li>ドラッグ中に他のカードをハイライトする際、全カードに対して
-<code>combinations</code> の <code>conditions</code>
-を評価するコストをどう抑えるか</li>
-<li>素材側が「どの道具で操作されたか」を細かく区別したい場合（斧なら丸太、チェーンソーなら木くず、など）、道具ごとに
-別々のキーを書き分ける以外の効率的な記法が必要か</li>
-</ul>
-<h2 id="参考-既存プロジェクト方針との整合性">7. 参考:
-既存プロジェクト方針との整合性</h2>
-<ul>
-<li><code>combinations</code> は
-<code>object_defs</code>/<code>traits</code>/<code>props</code>/<code>actions</code>（<code>GameElementDefinition.md</code>
-3 節・4 節）と同じ「識別子をキーとする辞書型」を 踏襲しています。ただし
-<code>combinations</code>
-は本質的に2つのオブジェクト（受け側とドラッグされてきたカード）が関わるため、
-<code>actions</code> にはない
-<code>with</code>（マッチング対象の指定）というフィールドを追加で持ちます。</li>
-<li><code>combinations</code> の <code>active</code> は
-<code>GameElementDefinition.md</code> 8.2 節・8.3 節の
-<code>add</code>/<code>destroy</code>/<code>spawn</code>
-をそのまま再利用しており、 新しい効果の種別は追加していません。</li>
-<li><code>with</code> による trait
-名マッチングは、<code>TerrainGeneration.md</code> の
-<code>LocationType</code> が軸ベースでマッチングする考え方や、
-<code>GameElementDefinition.md</code> 7.2 節の装備の
-<code>covers</code>/<code>layer</code>
-マッチングと同じ「属性で緩やかにマッチさせ、個別に列挙しない」
-という設計原則を踏襲しています。</li>
-<li>本書の結論（1つの操作の挙動は1箇所にまとめる）は、<code>PickSystem.md</code>
-で <code>weight</code> の補正記法を検討した際に
-「base＋条件付き補正」という専用記法を避け、既存の
-<code>modify</code>/<code>stages</code>
-に一本化した判断と同じ方向性です。</li>
+<code>combinations</code> の <code>conditions</code> を評価するコストを
+どう抑えるか</li>
+<li>素材側が「どの道具で操作されたか」を細かく区別したい場合、道具ごとに別々のキーを書き分ける以外の効率的な記法が
+必要か</li>
 </ul>
 </article>
 </body>

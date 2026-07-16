@@ -32,18 +32,31 @@
 <h1 id="設計書">設計書</h1>
 <p>ゲームの技術的な設計に関するドキュメントを格納します。</p>
 <h2 id="収録ドキュメント">収録ドキュメント</h2>
+<h3
+id="yaml文法worldcodexの書き方そのもの">YAML文法（WorldCodexの書き方そのもの）</h3>
 <ul>
-<li><a href="./ScreenLayout.html">画面レイアウト検討</a></li>
-<li><a href="./GameElementDefinition.html">ゲーム内要素の定義方式</a></li>
-<li><a href="./TerrainGeneration.html">地形生成システム設計</a></li>
+<li><a href="./GameElementDefinition.html">WorldCodex YAML
+文法リファレンス</a> —
+<code>traits</code>/<code>object_defs</code>/<code>props</code>/<code>stages</code>/<code>slots</code>/
+<code>passive</code>/<code>active</code>/<code>modify</code>/<code>accumulate</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>pick</code>/<code>actions</code>/<code>combinations</code>/<code>recipes</code>
+等、 文法をここに集約</li>
+<li><a href="./WorldCodexSchema.html">WorldCodex YAMLスキーマ定義</a>（<a
+href="./WorldCodex.schema.json">JSON Schema本体</a>） — 上記文法の
+機械的な検証</li>
+</ul>
+<h3
+id="世界の記述文法を使って具体的なゲーム内容をどう表現するか">世界の記述（文法を使って具体的なゲーム内容をどう表現するか）</h3>
+<ul>
 <li><a href="./ClimateSystem.html">気候システム設計</a></li>
-<li><a href="./PickSystem.html">pick: 重み付き確率分岐システム</a></li>
-<li><a href="./ActionSystem.html">カード間の相互作用（actions /
-combinations）</a></li>
 <li><a href="./RecipeSystem.html">レシピシステム設計</a></li>
 <li><a href="./ContainerSystem.html">コンテナの容量と重さ</a></li>
-<li><a href="./WorldCodexSchema.html">WorldCodex YAMLスキーマ定義</a>（<a
-href="./WorldCodex.schema.json">JSON Schema本体</a>）</li>
+<li><a href="./ActionSystem.html">カード間の相互作用（actions /
+combinations の使い分け）</a></li>
+<li><a href="./TerrainGeneration.html">地形生成システム設計</a></li>
+</ul>
+<h3 id="その他">その他</h3>
+<ul>
+<li><a href="./ScreenLayout.html">画面レイアウト検討</a></li>
 </ul>
 <h2 id="含まれるドキュメント例">含まれるドキュメント例</h2>
 <ul>

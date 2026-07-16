@@ -34,7 +34,7 @@
 <p>本ドキュメントは、ゲーム内の気候（季節・天候）に関する設計を検討した結果をまとめたものです。
 <code>GameElementDefinition.md</code> が掲げる、tick
 駆動・値域による状態決定・「ハードコードしない」「汎用エンジンに任せる」という
-設計方針（2.3 節、2.4 節）に準拠します。</p>
+設計方針（2 節）に準拠します。</p>
 <p>本ドキュメントは検討結果であり、確定仕様書ではありません。具体的なレート・閾値などの数値、YAML
 のフィールド名は 本書ではまだ確定させず、6
 節に未決事項として整理しています。</p>
@@ -49,7 +49,7 @@
 <p>いずれも、個別の現象を条件分岐やイベントとして作り込むのではなく、<strong>独立したパラメータ同士が
 tick ごとに加算・減算し合う
 「数値積分」によって駆動します</strong>。<code>derived</code>（導出値。GameElementDefinition.md
-6.5 節、採否未確定）のような計算式は使いません。 この方針は
+16 節・17 節、採否未確定）のような計算式は使いません。 この方針は
 <code>GameConcept.md</code>
 の「遅れて表面化するサバイバル」節で述べている設計思想そのものであり、本書はその具体的な適用例です。</p>
 <h2 id="天気層-大気水分量の貯水池モデル">2. 天気層:
@@ -70,7 +70,7 @@ tick ごとに加算・減算し合う
 の <code>stages</code> のうち「小雨」「大雨」段階自身が持つ
 <code>passive</code> の <code>accumulate</code> として、毎 tick
 自分自身を減算する（耐久値・感染度のステージ効果と同じパターン。GameElementDefinition.md
-11.2 節、11.3 節参照）</li>
+6.4 節、6.5 節参照）</li>
 </ol></li>
 <li><code>atmospheric_moisture</code> の <code>stages</code>
 は、既存の「<code>min</code>
@@ -94,8 +94,8 @@ tick ごとに加算・減算し合う
 乾季/雨季サイクルの副産物として表現します。</p>
 <h3 id="季節オブジェクトとランダム滞在時間">3.2
 季節オブジェクトとランダム滞在時間</h3>
-<p>季節は、感染度（GameElementDefinition.md 11.3
-節）と同じ「条件オブジェクト」のパターンで表現します。</p>
+<p>季節は、感染度（GameElementDefinition.md 6.4 節の <code>stages</code>
+サンプル）と同じ「条件オブジェクト」のパターンで表現します。</p>
 <ul>
 <li><code>world</code> が現在の季節インスタンスを 1
 つ保持する（<code>conditions</code>
@@ -108,8 +108,8 @@ tick ごとに加算・減算し合う
 <code>duration: {min, max}</code>（例: 乾季なら 20〜40
 日）から乱数で決める。</li>
 <li><code>remaining</code> は毎 tick <code>-1</code>
-され、<code>on_zero</code>（<code>GameElementDefinition.md</code> 6.6
-節）で <code>spawn</code>＋<code>destroy</code>（8.3 節）を同時に
+され、<code>on_zero</code>（<code>GameElementDefinition.md</code> 6.5
+節）で <code>spawn</code>＋<code>destroy</code>（9 節）を同時に
 発火し、自分自身を破棄すると同時に、対になる季節（<code>dry</code>⇔<code>wet</code>、2
 状態しかないので単純な反転でよい）の新しい
 インスタンスを生成してスロットに差し替える。 <code>on_zero</code> は
@@ -117,11 +117,8 @@ tick ごとに加算・減算し合う
 実行されますが、この本体は <code>destroy</code>
 を伴うため、実行された瞬間に この季節インスタンス自体が消滅し、以後 tick
 の対象でなくなります。そのため次の季節を生成し続けてしまう心配は
-ありません（<code>GameElementDefinition.md</code> 8.3 節・6.6
-節参照。以前はステージの <code>passive</code>
-に書く案を検討していましたが、 <code>destroy</code> を伴わずに
-<code>spawn</code> だけを評価し続けてしまう構造だったため
-<code>on_zero</code> に置き換えました）。</li>
+ありません（<code>GameElementDefinition.md</code> 9 節・6.5
+節参照）。</li>
 </ul>
 <p>このパターンにより、「季節が日付で完全には決まらない」という要件を、既存の状態オブジェクトの仕組みに載せて満たせます。ただし、以下の
 1 点は 既存のエンジン語彙にない新しい概念であり、拡張が必要です。</p>
@@ -191,14 +188,15 @@ tick、じわじわ冷える）</li>
 <ul>
 <li>天気層（2 節）は、既存の <code>stages</code>/<code>passive</code>
 の仕組みだけで実現でき、新しいエンジン機能を必要としません。これは
-GameElementDefinition.md 6.2 節に残っている
+GameElementDefinition.md 17 節に残っている
 「天候遷移自体のランダム性の仕組みは未検討」という未決事項に対する、具体的な解決案になっています。</li>
 <li>季節層（3 節）で必要になる拡張（生成時 1
 回だけのレンジ値）は、既存の語彙（<code>props</code>）を拡張するものであり、新しい
 専用システムを追加するものではありません。季節の切り替え自体は、専用の動詞を新設せず、既存の
 <code>on_zero</code>・<code>spawn</code>・ <code>destroy</code>
 の組み合わせだけで表現できています。</li>
-<li>本書全体を通じて <code>derived</code>（GameElementDefinition.md 6.5
+<li>本書全体を通じて <code>derived</code>（GameElementDefinition.md 16
+節・17
 節）を一切使用していません。気温という、一見「季節から計算で求めたくなる値」の代表例が
 独立変数の加減算だけで表現できることを示しており、<code>derived</code>
 の必要性を検討する上での具体的な反例になっています。</li>
