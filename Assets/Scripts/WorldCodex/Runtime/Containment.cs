@@ -58,14 +58,60 @@ namespace UnmappedIsland.Codex.Runtime
             {
                 oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(obj);
                 PropagateWeight(oldParent, oldParentSlotLocalId, -obj.GetNumber(wellKnown.WeightId));
+                UnregisterEdge(oldParent, obj);
             }
 
             targetSlot.AddInternal(obj);
             obj.SetParent(newParent, localSlot);
             PropagateWeight(newParent, localSlot, obj.GetNumber(wellKnown.WeightId));
+            RegisterEdge(newParent, obj);
 
             error = null;
             return true;
+        }
+
+        /// <summary>
+        /// 親子関係が結ばれた瞬間に、双方のmodify寄与を相手側へ登録する（8.2〜8.3節）。
+        /// target=Parent（子の効果が親へ及ぶ、例: 防具の`effects.parent`）は親側へ、
+        /// target=Child（親の効果が子へ及ぶ）は子側へ登録する。target=Selfは各WorldObjectの
+        /// コンストラクタで既に登録済みのため、ここでは扱わない。
+        /// </summary>
+        private static void RegisterEdge(WorldObject parent, WorldObject child)
+        {
+            foreach (var c in child.Def.ModifyContributions)
+            {
+                if (c.Target != ModifyTarget.Parent) continue;
+                int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                parent.RegisterContribution(local, new ActiveContribution(declarer: child, slotBearer: child, def: c));
+            }
+
+            foreach (var c in parent.Def.ModifyContributions)
+            {
+                if (c.Target != ModifyTarget.Child) continue;
+                int local = child.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                child.RegisterContribution(local, new ActiveContribution(declarer: parent, slotBearer: child, def: c));
+            }
+        }
+
+        private static void UnregisterEdge(WorldObject parent, WorldObject child)
+        {
+            foreach (var c in child.Def.ModifyContributions)
+            {
+                if (c.Target != ModifyTarget.Parent) continue;
+                int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                parent.UnregisterContributionsFrom(child, local);
+            }
+
+            foreach (var c in parent.Def.ModifyContributions)
+            {
+                if (c.Target != ModifyTarget.Child) continue;
+                int local = child.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                child.UnregisterContributionsFrom(parent, local);
+            }
         }
 
         private bool Accepts(SlotInstance slot, WorldObject candidate)

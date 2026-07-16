@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnmappedIsland.Codex.Defs;
 using UnmappedIsland.Codex.Registry;
 
@@ -20,6 +21,9 @@ namespace UnmappedIsland.Codex.Runtime
         private readonly PropertyValue[] properties;
         private readonly SlotInstance[] slots;
 
+        // ローカルプロパティindexごとの、外部から登録されたmodify寄与のリスト（遅延生成、Containment経由でのみ変更）。
+        private readonly List<ActiveContribution>[] incoming;
+
         /// <summary>所属先（7.1節）。子は必ず1つの親に属する。ルート（未格納）なら null。</summary>
         public WorldObject Parent { get; private set; }
 
@@ -38,6 +42,15 @@ namespace UnmappedIsland.Codex.Runtime
             slots = new SlotInstance[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
                 slots[i] = new SlotInstance(def.SlotDefs[i]);
+
+            incoming = new List<ActiveContribution>[def.PropertyDefs.Count];
+            foreach (var c in def.ModifyContributions)
+            {
+                if (c.Target != ModifyTarget.Self) continue;
+                int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                RegisterContribution(local, new ActiveContribution(declarer: this, slotBearer: this, def: c));
+            }
         }
 
         public bool TryGetProperty(int globalPropertyId, out PropertyValue value)
@@ -96,6 +109,72 @@ namespace UnmappedIsland.Codex.Runtime
         {
             Parent = parent;
             ParentSlotLocalId = parentSlotLocalId;
+        }
+
+        /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、8.3節）。</summary>
+        internal double GetNumberByLocalId(int localId) => properties[localId].Number;
+
+        internal void RegisterContribution(int localPropertyId, ActiveContribution contribution)
+        {
+            (incoming[localPropertyId] ??= new List<ActiveContribution>()).Add(contribution);
+        }
+
+        internal void UnregisterContributionsFrom(WorldObject declarer, int localPropertyId)
+        {
+            incoming[localPropertyId]?.RemoveAll(c => c.Declarer == declarer);
+        }
+
+        /// <summary>
+        /// modifyを加味した実効値（8.2〜8.3節）。target(self/parent/child)の違いはRegisterContribution呼び出し側
+        /// （WorldObjectコンストラクタ・Containment）にのみ存在し、ここでは一切区別しない。
+        /// </summary>
+        public double GetEffectiveValue(int propertyGlobalId)
+        {
+            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
+            if (local == LocalIndexMap.Missing) return 0;
+
+            double sum = properties[local].Number;
+
+            var contributions = incoming[local];
+            if (contributions != null)
+            {
+                foreach (var c in contributions)
+                    if (IsGateActive(c))
+                        sum += c.Def.Amount;
+            }
+
+            return ClampToRange(sum, Def.PropertyDefs[local].Range);
+        }
+
+        private static bool IsGateActive(ActiveContribution c)
+        {
+            switch (c.Def.Gate.Kind)
+            {
+                case ModifyGateKind.Always:
+                    return true;
+
+                case ModifyGateKind.WhenSlot:
+                    WorldObject parent = c.SlotBearer.Parent;
+                    if (parent == null) return false;
+                    int slotLocal = parent.Def.SlotLayout.ToLocal(c.Def.Gate.SlotGlobalId);
+                    return slotLocal != LocalIndexMap.Missing && c.SlotBearer.ParentSlotLocalId == slotLocal;
+
+                case ModifyGateKind.WhenOwnStage:
+                    double value = c.Declarer.GetNumberByLocalId(c.Def.Gate.PropertyLocalId);
+                    var stage = c.Declarer.Def.PropertyDefs[c.Def.Gate.PropertyLocalId].ResolveStage(value);
+                    return ReferenceEquals(stage, c.Def.Gate.Stage);
+
+                default:
+                    return false;
+            }
+        }
+
+        private static double ClampToRange(double value, PropertyRange? range)
+        {
+            if (!range.HasValue) return value;
+            if (value < range.Value.Min) return range.Value.Min;
+            if (value > range.Value.Max) return range.Value.Max;
+            return value;
         }
     }
 }
