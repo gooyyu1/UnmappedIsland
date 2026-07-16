@@ -124,8 +124,8 @@
 
 ## 8. 未決事項
 
-- 各アイテムの具体的な効果値（防御力・耐久値・重さ・サイズなど）は未定義。`GameElementDefinition.md` 11節・
-  `ContainerSystem.md` のサンプルに準じて別途定義する
+- 各アイテムの具体的な効果値（防御力・耐久値・重さ・サイズなど）は未定義。`GameElementDefinition.md` の
+  `props`/`passive`（6節・8節）・`ContainerSystem.md` のサンプルに準じて別途定義する
 - `RecipeSystem.md` の `steps`（工程分割）・`duration`（所要時間）を、本書のどのアイテムにどう割り当てるか
 - なめし革・青銅という中間素材が、`RecipeSystem.md` の「成果物の `object_defs` にレシピを埋め込む」設計上、
   それ自体を1つの完成品（`object_defs`）として扱ってよいか（中間素材も「レシピで作られるアイテムの一種」として

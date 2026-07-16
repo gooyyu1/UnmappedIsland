@@ -82,7 +82,7 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// 数値プロパティへの不可逆な加減算（8.3節の `add`、ContainerSystem.md の重さ伝播で使用）。
+        /// 数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の `add`、ContainerSystem.md の重さ伝播で使用）。
         /// このオブジェクトが対象プロパティを持たない場合は何もしない（例: 重さを気にしない置物）。
         /// </summary>
         public void AddNumber(int globalPropertyId, double delta)
@@ -112,7 +112,7 @@ namespace UnmappedIsland.Codex.Runtime
             ParentSlotLocalId = parentSlotLocalId;
         }
 
-        /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、8.3節）。</summary>
+        /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、6.4節・8節）。</summary>
         internal double GetNumberByLocalId(int localId) => properties[localId].Number;
 
         internal void RegisterContribution(int localPropertyId, ActiveContribution contribution)
@@ -126,7 +126,7 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// modify（Kind.Modify）のみを加味した実効値（8.2〜8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
+        /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
         /// target(self/parent/child)の違いはRegisterContribution呼び出し側（WorldObjectコンストラクタ・
         /// Containment）にのみ存在し、ここでは一切区別しない。Kind.Accumulateの寄与はTick参照。
         /// </summary>
@@ -149,10 +149,10 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.3節、不可逆）。ゲームループから
+        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。ゲームループから
         /// 1tickにつき1回、生存している全WorldObjectに対して呼ばれる想定。
         ///
-        /// on_zero（6.6節）はここでは検出しない。「プロパティが0以下である間、毎回実行されるactive内容」という
+        /// on_zero（6.5節）はここでは検出しない。「プロパティが0以下である間、毎回実行されるactive内容」という
         /// 前提を置いたことで、履歴（前tickは正だったか）を持つ必要がなくなった。`Def.PropertyDefs[local].HasOnZero`
         /// と現在値（0以下か）を都度チェックするだけで済み、将来のアクション実行系がこの2つの既存情報だけを見て
         /// 判定できる（destroyは繰り返し実行されても安全であり、spawnは通常同じ本体内のdestroyとの組み合わせで

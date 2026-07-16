@@ -4,15 +4,25 @@
 
 ## 収録ドキュメント
 
-- [画面レイアウト検討](./ScreenLayout.md)
-- [ゲーム内要素の定義方式](./GameElementDefinition.md)
-- [地形生成システム設計](./TerrainGeneration.md)
+### YAML文法（WorldCodexの書き方そのもの）
+
+- [WorldCodex YAML 文法リファレンス](./GameElementDefinition.md) — `traits`/`object_defs`/`props`/`stages`/`slots`/
+  `passive`/`active`/`modify`/`accumulate`/`add`/`destroy`/`spawn`/`pick`/`actions`/`combinations`/`recipes` 等、
+  文法をここに集約
+- [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)） — 上記文法の
+  機械的な検証
+
+### 世界の記述（文法を使って具体的なゲーム内容をどう表現するか）
+
 - [気候システム設計](./ClimateSystem.md)
-- [pick: 重み付き確率分岐システム](./PickSystem.md)
-- [カード間の相互作用（actions / combinations）](./ActionSystem.md)
 - [レシピシステム設計](./RecipeSystem.md)
 - [コンテナの容量と重さ](./ContainerSystem.md)
-- [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)）
+- [カード間の相互作用（actions / combinations の使い分け）](./ActionSystem.md)
+- [地形生成システム設計](./TerrainGeneration.md)
+
+### その他
+
+- [画面レイアウト検討](./ScreenLayout.md)
 
 ## 含まれるドキュメント例
 

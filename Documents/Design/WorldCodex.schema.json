@@ -76,7 +76,7 @@
     },
 
     "stage_def": {
-      "description": "props の段階（6.4節）。区間は min のみを指定する半開区間。ヒステリシスは採用しない。ステージのpassiveはレベルトリガーのみであり、一時的な命令の瞬間を持たないためpickは書けない（PickSystem.md 1節）。",
+      "description": "props の段階（6.4節）。区間は min のみを指定する半開区間。ヒステリシスは採用しない。ステージのpassiveはレベルトリガーのみであり、一時的な命令の瞬間を持たないためpickは書けない（10節参照）。",
       "type": "object",
       "properties": {
         "name": { "$ref": "#/$defs/identifier" },
@@ -111,19 +111,19 @@
         "passive": { "$ref": "#/$defs/passive_map" },
         "on_zero": {
           "$ref": "#/$defs/active_map",
-          "description": "値が0以下である間、毎tick実行されるactive内容（6.6節）。activeと同じ対象キーの辞書を直接持ち、専用のラップは挟まない。"
+          "description": "値が0以下である間、毎tick実行されるactive内容（6.5節）。activeと同じ対象キーの辞書を直接持ち、専用のラップは挟まない。"
         }
       },
       "additionalProperties": false
     },
 
     "condition_op": {
-      "description": "action/combinations の conditions で使う比較演算子（8.1節）。'between' 等の追加は未決定（GameElementDefinition.md 12節）。",
+      "description": "action/combinations の conditions で使う比較演算子（14.2節）。'between' 等の追加は未決定（17節）。",
       "enum": ["lt", "lte", "gt", "gte", "eq", "neq", "in", "not_in"]
     },
 
     "condition_expr": {
-      "description": "{path, op, value} 形式の条件式（8.1節）。path は self/parent/actor/world（combinations内ではdraggedも）から始まるドット区切りのパス。",
+      "description": "{path, op, value} 形式の条件式（14.1節）。path は self/parent/actor/world（combinations内ではdraggedも）から始まるドット区切りのパス。",
       "type": "object",
       "properties": {
         "path": { "type": "string" },
@@ -140,7 +140,7 @@
     },
 
     "passive_body": {
-      "description": "passive の各対象キーが持つ、持続する影響（8.2節・8.3節）。関係とゲート（常時／when／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。when を省略すると常時（無条件）を意味する。",
+      "description": "passive の各対象キーが持つ、持続する影響（8節）。関係とゲート（常時／when／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。when を省略すると常時（無条件）を意味する。",
       "type": "object",
       "properties": {
         "when": {
@@ -164,7 +164,7 @@
     },
 
     "passive_map": {
-      "description": "passiveの対象（self/parent/child/actor）をキーとする辞書（8.2節）。ancestor/sibling/descendantの追加は未決定。combinations内の dragged はactiveのみで意味を持ち、passiveには現れない。",
+      "description": "passiveの対象（self/parent/child/actor）をキーとする辞書（8.1節）。ancestor/sibling/descendantの追加は未決定。combinations内の dragged はactiveのみで意味を持ち、passiveには現れない。",
       "type": "object",
       "properties": {
         "self": { "$ref": "#/$defs/passive_body" },
@@ -176,7 +176,7 @@
     },
 
     "active_body": {
-      "description": "active の各対象キーが持つ、一時的な命令（8.3節）。when/ゲートは持たず、登録の仕組みにも乗らない。add/destroy/spawnは対等な兄弟キーとして共存できる。",
+      "description": "active の各対象キーが持つ、一時的な命令（9節）。when/ゲートは持たず、登録の仕組みにも乗らない。add/destroy/spawnは対等な兄弟キーとして共存できる。",
       "type": "object",
       "properties": {
         "add": {
@@ -208,7 +208,7 @@
     },
 
     "active_map": {
-      "description": "activeの対象（self/parent/child/actor、combinations内はdraggedも）をキーとする辞書（8.2節・8.3節）。on_zero（6.6節）もこの形をそのまま流用する。",
+      "description": "activeの対象（self/parent/child/actor、combinations内はdraggedも）をキーとする辞書（9.1節）。on_zero（6.5節）もこの形をそのまま流用する。",
       "type": "object",
       "properties": {
         "self": { "$ref": "#/$defs/active_body" },
@@ -217,14 +217,14 @@
         "actor": { "$ref": "#/$defs/active_body" },
         "dragged": {
           "$ref": "#/$defs/active_body",
-          "description": "combinations の中でのみ意味を持つ、ドラッグされてきたカードを指すキー（ActionSystem.md 2節）。"
+          "description": "combinations の中でのみ意味を持つ、ドラッグされてきたカードを指すキー（GameElementDefinition.md 12.2節）。"
         }
       },
       "additionalProperties": false
     },
 
     "weight_spec": {
-      "description": "pick候補のweight。リテラル定数、または既存propsへのパス参照（PickSystem.md 4節）。",
+      "description": "pick候補のweight。リテラル定数、または既存propsへのパス参照（GameElementDefinition.md 10.2節）。",
       "oneOf": [
         { "type": "number" },
         {
@@ -237,7 +237,7 @@
     },
 
     "pick_candidate": {
-      "description": "pickの1候補。候補ごとに独立したactive（対象ごとの辞書）を丸ごと持てる（PickSystem.md 2節）。候補自身がさらにpickを持つ再帰も構造上排除しない。",
+      "description": "pickの1候補。候補ごとに独立したactive（対象ごとの辞書）を丸ごと持てる（GameElementDefinition.md 10.1節）。候補自身がさらにpickを持つ再帰も構造上排除しない。",
       "type": "object",
       "properties": {
         "weight": { "$ref": "#/$defs/weight_spec" },
@@ -250,18 +250,18 @@
     },
 
     "pick_list": {
-      "description": "重み付き確率分岐（PickSystem.md）。activeを書く場所であれば、activeの代わりに書ける。候補が1つなら重みに関わらず必ず選ばれる。",
+      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。activeを書く場所であれば、activeの代わりに書ける。候補が1つなら重みに関わらず必ず選ばれる。",
       "type": "array",
       "items": { "$ref": "#/$defs/pick_candidate" },
       "minItems": 1
     },
 
     "action_def": {
-      "description": "メニュー型の宣言的操作（8.1節）。conditionsと実行結果(active/pick)を1つの定義としてまとめて持つ。",
+      "description": "メニュー型の宣言的操作（11節）。conditionsと実行結果(active/pick)を1つの定義としてまとめて持つ。",
       "type": "object",
       "properties": {
         "showMenu": {
-          "description": "メニューへの表示方法。現時点ではalwaysのみ（8.1節、ActionSystem.md 6節の未決事項）。",
+          "description": "メニューへの表示方法。現時点ではalwaysのみ（11.1節、ActionSystem.md 4節の未決事項）。",
           "enum": ["always"]
         },
         "conditions": { "$ref": "#/$defs/conditions_list" },
@@ -273,7 +273,7 @@
     },
 
     "combination_def": {
-      "description": "ドラッグ型のカード間相互作用（ActionSystem.md 2節）。キーはUIラベル用の名前であり、マッチング対象はwithで別途指定する。",
+      "description": "ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。キーはUIラベル用の名前であり、マッチング対象はwithで別途指定する。",
       "type": "object",
       "properties": {
         "with": {
@@ -290,14 +290,14 @@
     },
 
     "recipe_step_requirement": {
-      "description": "工程ごとの素材・道具の要求（RecipeSystem.md 1節）。",
+      "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。",
       "type": "object",
       "properties": {
         "object": { "$ref": "#/$defs/identifier" },
         "quantity": {
           "type": "integer",
           "minimum": 1,
-          "description": "省略時のデフォルト値は未決定（RecipeSystem.md 9節）。"
+          "description": "省略時のデフォルト値は未決定（RecipeSystem.md 5節）。"
         },
         "consume": {
           "type": "boolean",
@@ -326,12 +326,12 @@
     },
 
     "recipe_def": {
-      "description": "レシピ（RecipeSystem.md 1節）。成果物のobject_defsに、名前をキーとする辞書として埋め込む。",
+      "description": "レシピ（GameElementDefinition.md 13節）。成果物のobject_defsに、名前をキーとする辞書として埋め込む。",
       "type": "object",
       "properties": {
         "icon": {
           "type": "string",
-          "description": "自動生成される製作中オブジェクトの型へ引き継がれる、完成品ごとのアイコン指定（RecipeSystem.md 2.1節）。"
+          "description": "自動生成される製作中オブジェクトの型へ引き継がれる、完成品ごとのアイコン指定（GameElementDefinition.md 13.2節、内部設計はRecipeSystem.md 1節）。"
         },
         "steps": {
           "type": "array",
@@ -344,7 +344,7 @@
     },
 
     "slot_accept_entry": {
-      "description": "slotのaccepts（型・数量の制約、RecipeSystem.md 5節）の1エントリ。",
+      "description": "slotのaccepts（型・数量の制約、GameElementDefinition.md 7.2節）の1エントリ。",
       "type": "object",
       "properties": {
         "object": { "$ref": "#/$defs/identifier" },
@@ -363,17 +363,17 @@
       "type": "object",
       "properties": {
         "accepts": {
-          "description": "型・数量の制約（RecipeSystem.md 5節）。capacityとは独立した仕組みで、両方同時に持てる。",
+          "description": "型・数量の制約（GameElementDefinition.md 7.2節）。capacityとは独立した仕組みで、両方同時に持てる。",
           "type": "array",
           "items": { "$ref": "#/$defs/slot_accept_entry" }
         },
         "capacity": {
-          "description": "合計サイズの上限（ContainerSystem.md 1節）。",
+          "description": "合計サイズの上限（GameElementDefinition.md 7.3節）。",
           "type": "number",
           "exclusiveMinimum": 0
         },
         "weight_rate": {
-          "description": "重さの伝播率（ContainerSystem.md 3節）。1.0を超えるケースを許容するかは未決定。",
+          "description": "重さの伝播率（GameElementDefinition.md 7.4節。内部設計はContainerSystem.md 2節）。1.0を超えるケースを許容するかは未決定。",
           "type": "number",
           "minimum": 0
         }
@@ -447,16 +447,16 @@
           "items": { "$ref": "#/$defs/identifier" }
         },
         "singleton": {
-          "description": "唯一のインスタンスとして存在すべきオブジェクト（9節。例: world）。",
+          "description": "唯一のインスタンスとして存在すべきオブジェクト（15節。例: world）。",
           "type": "boolean"
         },
         "covers": {
-          "description": "装備の排他制御に使う、覆う部位のタグ（7.2節）。",
+          "description": "装備の排他制御に使う、覆う部位のタグ（7.5節）。",
           "type": "array",
           "items": { "type": "string" }
         },
         "layer": {
-          "description": "装備の排他制御に使う、重ね着の階層（7.2節）。",
+          "description": "装備の排他制御に使う、重ね着の階層（7.5節）。",
           "type": "string"
         },
         "props": { "$ref": "#/$defs/object_defs_map" },
