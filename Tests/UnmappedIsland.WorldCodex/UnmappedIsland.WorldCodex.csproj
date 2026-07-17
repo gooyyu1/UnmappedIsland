@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Assets/Scripts/WorldCodex 配下のコードはUnityEngineに依存しない純粋なC#であるため、
-    Unityエディタなしでもビルド・テストできるよう、実体のソースをそのまま参照する
-    スタンドアロンのクラスライブラリとして定義する（ファイルの複製はしない）。
-    LangVersionはUnity 2022.3のRoslynが受け付ける範囲に揃えてある。
+    Assets/Scripts/Codex（ロードされた定義: UnmappedIsland.Codex名前空間）と
+    Assets/Scripts/Runtime（可変な実行時状態: UnmappedIsland.Runtime名前空間）配下のコードは
+    UnityEngineに依存しない純粋なC#であるため、Unityエディタなしでもビルド・テストできるよう、
+    実体のソースをそのまま参照するスタンドアロンのクラスライブラリとして定義する
+    （ファイルの複製はしない）。LangVersionはUnity 2022.3のRoslynが受け付ける範囲に揃えてある。
   -->
 
   <PropertyGroup>
@@ -16,7 +17,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../Assets/Scripts/WorldCodex/**/*.cs" />
+    <Compile Include="../../Assets/Scripts/Codex/**/*.cs" />
+    <Compile Include="../../Assets/Scripts/Runtime/**/*.cs" />
   </ItemGroup>
 
 </Project>

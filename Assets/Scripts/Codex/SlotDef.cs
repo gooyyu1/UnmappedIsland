@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace UnmappedIsland.Codex.Defs
+namespace UnmappedIsland.Codex
 {
     /// <summary>GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。</summary>
     public sealed class SlotAcceptRule

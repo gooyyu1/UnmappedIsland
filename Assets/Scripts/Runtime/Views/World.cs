@@ -1,7 +1,7 @@
-using UnmappedIsland.Codex.Registry;
-using UnmappedIsland.Codex.Runtime;
+using UnmappedIsland.Codex;
+using UnmappedIsland.Runtime;
 
-namespace UnmappedIsland.Codex.Views
+namespace UnmappedIsland.Runtime.Views
 {
     /// <summary>
     /// world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの

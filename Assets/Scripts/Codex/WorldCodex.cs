@@ -1,6 +1,4 @@
-using UnmappedIsland.Codex.Defs;
-using UnmappedIsland.Codex.Registry;
-using UnmappedIsland.Codex.Runtime;
+using UnmappedIsland.Runtime;
 
 namespace UnmappedIsland.Codex
 {
@@ -13,7 +11,8 @@ namespace UnmappedIsland.Codex
     /// ロード完了後は不変として扱う（Intern は WorldCodexBuilder の中でしか呼ばれない）。
     ///
     /// 実行中に生成される WorldObject（可変な実行時状態）はここには含まれない。WorldCodex はあくまで
-    /// 「定義」の集合であり、生成されたインスタンスの管理は別の場所（ゲームセッション側）が担う想定。
+    /// 「定義」の集合であり、生成されたインスタンスの管理は別の場所（実行時側、UnmappedIsland.Runtime）が
+    /// 担う想定。
     /// </summary>
     public sealed class WorldCodex
     {

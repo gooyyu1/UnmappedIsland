@@ -1,8 +1,7 @@
 using NUnit.Framework;
 using UnmappedIsland.Codex;
-using UnmappedIsland.Codex.Defs;
-using UnmappedIsland.Codex.Runtime;
-using UnmappedIsland.Codex.Views;
+using UnmappedIsland.Runtime;
+using UnmappedIsland.Runtime.Views;
 
 namespace UnmappedIsland.Codex.Tests
 {

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using UnmappedIsland.Codex.Registry;
 
-namespace UnmappedIsland.Codex.Defs
+namespace UnmappedIsland.Codex
 {
     /// <summary>
     /// 型定義（`object_defs` の1エントリ、4節）。ロード完了後は不変として扱う。

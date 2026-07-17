@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using UnmappedIsland.Codex.Defs;
-using UnmappedIsland.Codex.Registry;
+using UnmappedIsland.Codex;
 
-namespace UnmappedIsland.Codex.Runtime
+namespace UnmappedIsland.Runtime
 {
     /// <summary>
     /// スロット移動を行う唯一の汎用操作（GameElementDefinition.md 7.1節の `move_to_slot`）。

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnmappedIsland.Codex.Defs;
+using UnmappedIsland.Codex;
 
-namespace UnmappedIsland.Codex.Runtime
+namespace UnmappedIsland.Runtime
 {
     /// <summary>
     /// 1つの WorldObject が持つ、1つのスロットの実行時状態。中に入っている WorldObject の一覧を保持する。

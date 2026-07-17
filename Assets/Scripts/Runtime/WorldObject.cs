@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnmappedIsland.Codex.Defs;
-using UnmappedIsland.Codex.Registry;
+using UnmappedIsland.Codex;
 
-namespace UnmappedIsland.Codex.Runtime
+namespace UnmappedIsland.Runtime
 {
     /// <summary>
     /// 実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、

@@ -1,7 +1,4 @@
 using System.Collections.Generic;
-using UnmappedIsland.Codex.Defs;
-using UnmappedIsland.Codex.Registry;
-using UnmappedIsland.Codex.Runtime;
 
 namespace UnmappedIsland.Codex
 {
