@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnmappedIsland.Codex.Defs;
 
@@ -32,7 +31,7 @@ namespace UnmappedIsland.Codex.Runtime
         public int Number { get; private set; }
         public int Symbol { get; private set; }
 
-        private List<ActiveContribution> incoming;
+        private readonly List<ActiveContribution> incoming = new List<ActiveContribution>();
 
         private PropertyValue(PropertyValueKind kind, int number, int symbol)
         {
@@ -62,19 +61,12 @@ namespace UnmappedIsland.Codex.Runtime
 
         internal void Add(int delta) => Number += delta;
 
-        internal void RegisterContribution(ActiveContribution contribution)
-        {
-            (incoming ??= new List<ActiveContribution>()).Add(contribution);
-        }
+        internal void RegisterContribution(ActiveContribution contribution) => incoming.Add(contribution);
 
-        internal void UnregisterContributionsFrom(WorldObject declarer)
-        {
-            incoming?.RemoveAll(c => c.Declarer == declarer);
-        }
+        internal void UnregisterContributionsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
 
         /// <summary>現在登録されている全寄与（modify/accumulate両方）。UIで「何が影響しているか」を表示する用途。</summary>
-        internal IReadOnlyList<ActiveContribution> Incoming =>
-            (IReadOnlyList<ActiveContribution>)incoming ?? Array.Empty<ActiveContribution>();
+        internal IReadOnlyList<ActiveContribution> Incoming => incoming;
 
         /// <summary>
         /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
@@ -83,10 +75,9 @@ namespace UnmappedIsland.Codex.Runtime
         {
             int sum = AsNumber();
 
-            if (incoming != null)
-                foreach (var c in incoming)
-                    if (c.Def.Kind == ContributionKind.Modify && c.IsActive())
-                        sum += c.Def.Amount;
+            foreach (var c in incoming)
+                if (c.Def.Kind == ContributionKind.Modify && c.IsActive())
+                    sum += c.Def.Amount;
 
             return range.HasValue ? range.Value.Clamp(sum) : sum;
         }
@@ -97,8 +88,6 @@ namespace UnmappedIsland.Codex.Runtime
         /// </summary>
         internal void Tick()
         {
-            if (incoming == null) return;
-
             foreach (var c in incoming)
             {
                 if (c.Def.Kind != ContributionKind.Accumulate) continue;

@@ -48,7 +48,7 @@ namespace UnmappedIsland.Codex.Defs
             PropertyDefs = propertyDefs;
             SlotLayout = slotLayout;
             SlotDefs = slotDefs;
-            Contributions = contributions ?? System.Array.Empty<ContributionDef>();
+            Contributions = contributions;
         }
     }
 

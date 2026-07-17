@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnmappedIsland.Codex.Registry;
 using UnmappedIsland.Codex.Runtime;
@@ -112,8 +111,8 @@ namespace UnmappedIsland.Codex.Defs
             DefaultValue = defaultValue;
             RerollRange = rerollRange;
             Range = range;
-            Overflow = overflow ?? OverflowRule.None;
-            Stages = stages ?? Array.Empty<PropertyStage>();
+            Overflow = overflow;
+            Stages = stages;
             HasOnZero = hasOnZero;
         }
 

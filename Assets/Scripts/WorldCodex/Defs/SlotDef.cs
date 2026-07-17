@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace UnmappedIsland.Codex.Defs
@@ -41,7 +40,7 @@ namespace UnmappedIsland.Codex.Defs
         {
             GlobalId = globalId;
             Name = name;
-            Accepts = accepts ?? Array.Empty<SlotAcceptRule>();
+            Accepts = accepts;
             Capacity = capacity;
             WeightRate = weightRate;
         }
