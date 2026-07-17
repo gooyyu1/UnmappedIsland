@@ -78,6 +78,11 @@ actor）もこれに当たります。</p>
 片方にしか書かなければ、その向きにドラッグしたときしか成立しません。</p>
 <h2 id="未決事項今後の検討課題">4. 未決事項・今後の検討課題</h2>
 <ul>
+<li>実行エンジン（<code>Assets/Scripts/Runtime/InteractionExecutor.cs</code>）は、<code>with</code>
+に一致する <code>combinations</code> を 宣言順にすべて列挙する
+<code>FindMatchingCombinations</code>
+を提供するのみで、複数が一致した場合にどれを実際に
+実行するかは呼び出し側（UI層）に委ねている。以下の「解決規則」自体は未解決のまま。</li>
 <li>同じオブジェクト内で、複数のキーが同じ <code>with</code>
 にマッチしてしまった場合の解決規則（優先順位、条件の排他性を
 著者の責任に委ねるだけで良いか、など。2 節参照）</li>
