@@ -101,16 +101,17 @@ namespace UnmappedIsland.Codex.Runtime
         /// あっても、その中身の相対順序・スタック自体には影響しない。
         /// </summary>
         internal bool TryMakeRoomAndSeed(int newObjectDefGlobalId, int selfIndex) =>
-            TryMakeRoomAndSeed(newObjectDefGlobalId, selfIndex + 1, step: 1) ||
-            TryMakeRoomAndSeed(newObjectDefGlobalId, selfIndex - 1, step: -1);
+            TryMakeRoomAndSeed(newObjectDefGlobalId, selfIndex, step: 1) ||
+            TryMakeRoomAndSeed(newObjectDefGlobalId, selfIndex, step: -1);
 
         /// <summary>
-        /// targetIndexからstep刻みで走査し、最初に見つかった空き番号(emptyAt)との間にいる型を
-        /// stepの分だけ押し出してから、targetIndexへ新しい型を割り当てる。step=+1が右方向
+        /// selfIndex+stepからstep刻みで走査し、最初に見つかった空き番号(emptyAt)との間にいる型を
+        /// stepの分だけ押し出してから、selfIndex+stepへ新しい型を割り当てる。step=+1が右方向
         /// （TryMakeRoomAndSeed参照）、step=-1が左方向で、走査方向が違うだけの鏡像なので1つに統合している。
         /// </summary>
-        private bool TryMakeRoomAndSeed(int newObjectDefGlobalId, int targetIndex, int step)
+        private bool TryMakeRoomAndSeed(int newObjectDefGlobalId, int selfIndex, int step)
         {
+            int targetIndex = selfIndex + step;
             int capacity = Def.UnitCapacity.GetValueOrDefault();
             if (targetIndex < 0 || targetIndex >= capacity) return false;
 
