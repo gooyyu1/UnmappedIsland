@@ -12,14 +12,24 @@ object_defs:
   world:
     singleton: true
     props:
-      # 累積tick数。ゲーム開始からの経過tickをそのまま数え続ける（上限なし）。
+      # 累積tick数。ゲーム開始からの経過tickをそのまま数え続ける（上限なし）。毎tick自分自身を+1する
+      # （プロパティレベルのpassive、8節）。
       tick:
         value: 0
-      # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow）。
+        passive:
+          self:
+            accumulate:
+              tick: 1
+      # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow）。1tick=ゲーム内
+      # 時間15分、という対応づけのため、毎tick自分自身を+15する。
       minute:
         value: 0
         range: {min: 0, max: 59}
         on_overflow: {mode: wrap, carry_to: hour}
+        passive:
+          self:
+            accumulate:
+              minute: 15
       # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
       hour:
         value: 0
@@ -31,12 +41,6 @@ object_defs:
       # 現在の気温。具体的な変動の仕組み（季節・天候由来のレート等）はClimateSystem.mdで別途検討する。
       temperature:
         value: 20
-    passive:
-      # 1tick = ゲーム内時間15分、という対応づけ。tickは+1、minuteは+15を毎tick加算する。
-      self:
-        accumulate:
-          tick: 1
-          minute: 15
     slots:
       locations:
         # locationトレイトを持つobject_defのみを受け入れる（種類数の上限は設けない想定のため、
