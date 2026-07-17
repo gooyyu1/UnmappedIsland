@@ -13,7 +13,7 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class ViewsTests
     {
-        private static PropertyBlueprint Prop(string name, double defaultValue)
+        private static PropertyBlueprint Prop(string name, int defaultValue)
         {
             return new PropertyBlueprint { Name = name, DefaultValue = PropertyValue.FromNumber(defaultValue) };
         }

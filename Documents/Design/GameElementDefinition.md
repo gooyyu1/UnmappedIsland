@@ -100,6 +100,9 @@ object_defs:
 
 ## 6. props（プロパティ）
 
+数値プロパティの値は **32bit 整数**として扱います。小数を必要とする属性は登場しない前提であり、`value`/`range`/
+`modify`/`accumulate`/`add` など、数値を扱うすべての場所で整数のみを想定します。
+
 ### 6.1 固定値
 
 最も単純な形は、`value` に固定値を 1 つ持つだけの形です（4 節の `stone.props.weight` を参照）。
@@ -157,13 +160,13 @@ props:
         passive:
           parent:
             accumulate:
-              temperature: 0.1
+              temperature: 1
       - name: feverish
         min: 50
         passive:
           parent:
             accumulate:
-              temperature: 0.2
+              temperature: 2
               hydration: -1
 ```
 

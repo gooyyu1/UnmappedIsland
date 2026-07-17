@@ -27,7 +27,7 @@ namespace UnmappedIsland.Codex.Views
             minuteOfDayId = propertyNames.GetId("minute_of_day");
         }
 
-        public double Day => Instance.GetEffectiveValue(dayId);
-        public double MinuteOfDay => Instance.GetEffectiveValue(minuteOfDayId);
+        public int Day => Instance.GetEffectiveValue(dayId);
+        public int MinuteOfDay => Instance.GetEffectiveValue(minuteOfDayId);
     }
 }

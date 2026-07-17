@@ -6,10 +6,10 @@ namespace UnmappedIsland.Codex.Defs
 {
     public readonly struct PropertyRange
     {
-        public readonly double Min;
-        public readonly double Max;
+        public readonly int Min;
+        public readonly int Max;
 
-        public PropertyRange(double min, double max)
+        public PropertyRange(int min, int max)
         {
             Min = min;
             Max = max;
@@ -45,9 +45,9 @@ namespace UnmappedIsland.Codex.Defs
         public string Name { get; }
 
         /// <summary>下限。null は最下段（それより下の残り全ての値を拾う、6.4節）。</summary>
-        public double? Min { get; }
+        public int? Min { get; }
 
-        public PropertyStage(string name, double? min)
+        public PropertyStage(string name, int? min)
         {
             Name = name;
             Min = min;
@@ -112,7 +112,7 @@ namespace UnmappedIsland.Codex.Defs
         /// 現在値が該当する段階を返す。min:null の段階は「他のどの段階にも該当しない場合」のフォールバックであり、
         /// リスト中の位置には依存しない（11.2節のサンプルでは broken(min:null) が intact(min:1) より後に書かれている）。
         /// </summary>
-        public PropertyStage ResolveStage(double currentValue)
+        public PropertyStage ResolveStage(int currentValue)
         {
             PropertyStage fallback = null;
             PropertyStage best = null;

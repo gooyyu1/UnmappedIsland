@@ -23,7 +23,7 @@ namespace UnmappedIsland.Codex.Views
             satietyId = propertyNames.GetId("satiety");
         }
 
-        public double Hp => Instance.GetEffectiveValue(hpId);
-        public double Satiety => Instance.GetEffectiveValue(satietyId);
+        public int Hp => Instance.GetEffectiveValue(hpId);
+        public int Satiety => Instance.GetEffectiveValue(satietyId);
     }
 }
