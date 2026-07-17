@@ -5,9 +5,10 @@ using UnmappedIsland.Runtime;
 namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
-    /// on_overflow（GameElementDefinition.md 6.3節: rangeの上限を超えたプロパティについて、on_zeroと同じ
-    /// 「target-key(self)→body」という文法でaccumulateを一度だけ適用する）に対する自動テスト。
-    /// YAMLパーサ経由のテストはYamlLoaderTests.csを参照。
+    /// on_overflow（GameElementDefinition.md 6.3節: rangeの上限を超えたプロパティについて、on_zeroと全く
+    /// 同じActiveEffect・ApplyActiveEffectの経路で、著者が指定したaccumulateを一度だけ適用する）に対する
+    /// 自動テスト。ループ・多重走査は行わないため、1tickでの解決範囲はaccumulateの通常の反映と同じ
+    /// （宣言順に1回ずつ）。YAMLパーサ経由のテストはYamlLoaderTests.csを参照。
     /// </summary>
     [TestFixture]
     public class OverflowTests
@@ -20,9 +21,10 @@ namespace UnmappedIsland.Codex.Tests
                 Name = name,
                 DefaultValue = PropertyValue.FromNumber(defaultValue),
                 Range = new PropertyRange(min, max),
+                OnOverflow = new ActiveEffectBlueprint(),
             };
             foreach (var (property, amount) in onOverflow)
-                bp.OnOverflow.Add(new AddBlueprint { PropertyName = property, Amount = amount });
+                bp.OnOverflow.Adds.Add(new AddBlueprint { PropertyName = property, Amount = amount });
             return bp;
         }
 
@@ -84,14 +86,13 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void Tick_ReappliesOnOverflowDelta_WhenAccumulationExceedsRangeBySeveralSpans()
+        public void Tick_AppliesOnOverflowOnlyOnce_SoSeveralSpansTakeSeveralTicksToFullyResolve()
         {
-            // on_overflowは著者が指定した固定量（この例では-10/+1）を、溢れが無くなるまで繰り返し適用する
-            // （範囲の自動計算はしない。1回のtickで複数span分飛び越えても正しく解決できることを確認する）。
+            // on_overflowはループしない。1tickでrangeの幅を複数回分飛び越えた場合、1回の適用では
+            // 完全には解決されず、次のtick以降に持ち越されることを確認する。
             var clock = new ObjectDefBlueprint { Name = "clock3" };
-            clock.Properties.Add(WrappingProp("minute", 0, min: 0, max: 9, ("minute", -10), ("hour", 1))); // 範囲10分刻み
+            clock.Properties.Add(WrappingProp("minute", 35, min: 0, max: 9, ("minute", -10), ("hour", 1))); // 範囲10分刻み、既に35(3span+5超過)
             clock.Properties.Add(PlainProp("hour", 0));
-            clock.Contributions.Add(SelfAccumulate("minute", 35)); // 10ずつ3回分繰り上がり、残り5
 
             var codex = WorldCodexBuilder.Build(new[] { clock });
             int minuteId = codex.PropertyNames.GetId("minute");
@@ -101,22 +102,33 @@ namespace UnmappedIsland.Codex.Tests
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock3")));
 
             instance.Tick(session);
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(25), "1回のtickでは-10適用1回分だけ解決される");
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(1));
 
-            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5));
+            instance.Tick(session);
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(15));
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(2));
+
+            instance.Tick(session);
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5), "3回目のtickでようやく範囲内に収まる");
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(3));
+
+            instance.Tick(session);
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5), "範囲内に収まった後は何もしない");
             Assert.That(instance.GetNumber(hourId), Is.EqualTo(3));
         }
 
         [Test]
-        public void Tick_CascadesOverflowAcrossMultipleProperties_RegardlessOfDeclarationOrder()
+        public void Tick_CascadesToLaterDeclaredPropertyWithinTheSameTick()
         {
-            // hour->dayへの繰り上げだが、あえてhourをminuteより先に宣言する（properties配列の走査順を
-            // 繰り上げの向きと逆にする）。1回の走査だけで連鎖を解決しようとすると、minuteの繰り上げで
-            // hourが溢れても見逃してしまうはずなので、複数回の再走査で正しく解決できることを確認する。
+            // minuteがhourより先に宣言されていれば、minute.Tickが先に走り繰り上げを適用した直後に
+            // hour.Tickが走るため、hour自身の溢れも同じtick内で連鎖して解決する
+            // （ループは無いが、宣言順どおりに1回ずつ処理が進むだけで足りる）。
             var clock = new ObjectDefBlueprint { Name = "clock4" };
+            clock.Properties.Add(WrappingProp("minute", 50, min: 0, max: 59, ("minute", -60), ("hour", 1)));
             clock.Properties.Add(WrappingProp("hour", 23, min: 0, max: 23, ("hour", -24), ("day", 1)));
             clock.Properties.Add(PlainProp("day", 1));
-            clock.Properties.Add(WrappingProp("minute", 50, min: 0, max: 59, ("minute", -60), ("hour", 1)));
-            clock.Contributions.Add(SelfAccumulate("minute", 15)); // 50+15=65 -> minute=5, hour+1(23->24)
+            clock.Contributions.Add(SelfAccumulate("minute", 15)); // 50+15=65 -> minute=5, hour+1(23->24, さらに折り返す)
 
             var codex = WorldCodexBuilder.Build(new[] { clock });
             int minuteId = codex.PropertyNames.GetId("minute");
@@ -129,8 +141,40 @@ namespace UnmappedIsland.Codex.Tests
             instance.Tick(session);
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5));
-            Assert.That(instance.GetNumber(hourId), Is.EqualTo(0), "23+1=24は範囲(0-23)を超えるため、hour自身も折り返す");
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(0), "23+1=24は範囲(0-23)を超えるため、同じtick内でhour自身も折り返す");
             Assert.That(instance.GetNumber(dayId), Is.EqualTo(2), "hourの繰り上げでdayも+1される");
+        }
+
+        [Test]
+        public void Tick_DoesNotCascadeToEarlierDeclaredProperty_UntilNextTick()
+        {
+            // hourがminuteより先に宣言されている場合、hour.Tickは(この回では)minuteの繰り上げより前に
+            // 走ってしまうため、同じtick内では連鎖せず、次のtickで初めて解決されることを確認する
+            // （ループを廃止したことで生じる、宣言順への依存を明示するテスト）。
+            var clock = new ObjectDefBlueprint { Name = "clock5" };
+            clock.Properties.Add(WrappingProp("hour", 23, min: 0, max: 23, ("hour", -24), ("day", 1)));
+            clock.Properties.Add(PlainProp("day", 1));
+            clock.Properties.Add(WrappingProp("minute", 50, min: 0, max: 59, ("minute", -60), ("hour", 1)));
+            clock.Contributions.Add(SelfAccumulate("minute", 15)); // 50+15=65 -> minute=5, hour+1(23->24)
+
+            var codex = WorldCodexBuilder.Build(new[] { clock });
+            int minuteId = codex.PropertyNames.GetId("minute");
+            int hourId = codex.PropertyNames.GetId("hour");
+            int dayId = codex.PropertyNames.GetId("day");
+            var session = new WorldSession(codex);
+
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock5")));
+
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5));
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(24), "hourのTickがminuteより先に走るため、この時点ではまだ折り返らない");
+            Assert.That(instance.GetNumber(dayId), Is.EqualTo(1), "hourの溢れが未解決のため、dayもまだ変わらない");
+
+            instance.Tick(session); // 2回目のTickでhour自身の溢れが解決される
+
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(dayId), Is.EqualTo(2));
         }
 
         [Test]

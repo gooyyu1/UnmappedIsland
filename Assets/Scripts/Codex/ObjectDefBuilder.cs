@@ -103,9 +103,9 @@ namespace UnmappedIsland.Codex
         public PropertyRange? RerollRange;
         public PropertyRange? Range;
 
-        /// <summary>on_overflow（6.3節）: Range.Maxを超えた際にselfへ一度だけ適用するaccumulate内容
-        /// （on_zeroのadd/AddBlueprintと同じ形をそのまま流用する）。空ならon_overflowを持たない。</summary>
-        public readonly List<AddBlueprint> OnOverflow = new List<AddBlueprint>();
+        /// <summary>on_overflow（6.3節）: Range.Maxを超えた際にselfへ一度だけ適用するactive内容
+        /// （on_zeroのActiveEffectBlueprintと全く同じ型をそのまま流用する）。null ならon_overflowを持たない。</summary>
+        public ActiveEffectBlueprint OnOverflow;
 
         public readonly List<StageBlueprint> Stages = new List<StageBlueprint>();
 
@@ -203,7 +203,13 @@ namespace UnmappedIsland.Codex
                 foreach (var p in bp.Properties)
                 {
                     propertyNames.Intern(p.Name);
-                    foreach (var delta in p.OnOverflow) propertyNames.Intern(delta.PropertyName);
+
+                    if (p.OnOverflow != null)
+                    {
+                        foreach (var add in p.OnOverflow.Adds) propertyNames.Intern(add.PropertyName);
+                        if (p.OnOverflow.Spawn != null) objectNames.Intern(p.OnOverflow.Spawn.ObjectName);
+                    }
+
                     if (p.OnZero == null) continue;
                     foreach (var add in p.OnZero.Adds) propertyNames.Intern(add.PropertyName);
                     if (p.OnZero.Spawn != null) objectNames.Intern(p.OnZero.Spawn.ObjectName);
@@ -273,29 +279,10 @@ namespace UnmappedIsland.Codex
             {
                 var p = bp.Properties[local];
 
-                var onOverflow = p.OnOverflow
-                    .Select(delta => new PropertyDelta(propertyNames.GetId(delta.PropertyName), delta.Amount))
-                    .ToList();
+                ActiveEffect onOverflow = p.OnOverflow != null ? BuildActiveEffect(p.OnOverflow, propertyNames, objectNames) : null;
+                ActiveEffect onZero = p.OnZero != null ? BuildActiveEffect(p.OnZero, propertyNames, objectNames) : null;
 
                 var stages = p.Stages.Select(s => new PropertyStage(s.Name, s.Min)).ToList();
-
-                ActiveEffect onZero = null;
-                if (p.OnZero != null)
-                {
-                    var adds = p.OnZero.Adds
-                        .Select(a => new PropertyDelta(propertyNames.GetId(a.PropertyName), a.Amount))
-                        .ToList();
-
-                    SpawnEffect spawn = null;
-                    if (p.OnZero.Spawn != null)
-                    {
-                        spawn = new SpawnEffect(
-                            objectNames.GetId(p.OnZero.Spawn.ObjectName),
-                            p.OnZero.Spawn.Into);
-                    }
-
-                    onZero = new ActiveEffect(adds, p.OnZero.Destroy, spawn);
-                }
 
                 propertyDefs[local] = new PropertyDef(
                     propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, onOverflow, stages, onZero);

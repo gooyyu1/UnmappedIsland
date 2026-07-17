@@ -90,7 +90,7 @@ namespace UnmappedIsland.Loader
                 if (bp.Range == null)
                     throw new YamlLoadException($"{context}: on_overflowを使うには'range'が必須です。");
 
-                bp.OnOverflow.AddRange(ParseOnOverflow(context, onOverflowNode));
+                bp.OnOverflow = ParseOnOverflow(context, onOverflowNode);
             }
 
             YamlSequenceNode stages = node.TryGetSequence("stages", context);
@@ -129,29 +129,30 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// on_overflow（6.3節）を読む。on_zeroと同じ「target-key（selfのみ対応）→body」という文法を流用するが、
-        /// bodyの中身はadd/destroy/spawnではなく、accumulateのみ（一度きりの折り返し量・繰り上げ量の指定）。
+        /// on_overflow（6.3節）を読む。on_zeroと全く同じ「target-key（selfのみ対応）→body」という文法・型
+        /// （ActiveEffectBlueprint）をそのまま流用するが、bodyの中身はadd/destroy/spawnではなく、
+        /// accumulateのみ（一度きりの折り返し量・繰り上げ量の指定）。
         /// </summary>
-        private static List<AddBlueprint> ParseOnOverflow(string context, YamlMappingNode onOverflowMap)
+        private static ActiveEffectBlueprint ParseOnOverflow(string context, YamlMappingNode onOverflowMap)
         {
             var unsupportedTargets = onOverflowMap.EntriesInOrder().Select(e => e.Key).Where(k => k != "self").ToList();
             if (unsupportedTargets.Count > 0)
                 throw new YamlLoadException(
                     $"{context}: on_overflowは現時点でselfのみ対応しています（未対応: {string.Join(", ", unsupportedTargets)}）。");
 
-            var result = new List<AddBlueprint>();
+            var bp = new ActiveEffectBlueprint();
 
             YamlMappingNode selfNode = onOverflowMap.TryGetMapping("self", context);
-            if (selfNode == null) return result;
+            if (selfNode == null) return bp;
 
             YamlMappingNode accumulate = selfNode.TryGetMapping("accumulate", context);
             if (accumulate == null)
                 throw new YamlLoadException($"{context}: on_overflow.selfには'accumulate'が必要です。");
 
             foreach (var (propName, amountNode) in accumulate.EntriesInOrder())
-                result.Add(new AddBlueprint { PropertyName = propName, Amount = int.Parse(((YamlScalarNode)amountNode).Value) });
+                bp.Adds.Add(new AddBlueprint { PropertyName = propName, Amount = int.Parse(((YamlScalarNode)amountNode).Value) });
 
-            return result;
+            return bp;
         }
 
         private static ActiveEffectBlueprint ParseOnZero(string context, YamlMappingNode onZeroMap)

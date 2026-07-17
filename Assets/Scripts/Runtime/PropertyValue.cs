@@ -101,22 +101,21 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_zeroの自己判定。値変更の原因を問わず
-        /// （Tickのaccumulateでも、他プロパティのon_overflowから繰り上げを受け取った場合でも）同じ
-        /// 経路をたどる（WorldObject.ApplyOverflowDelta参照）。WorldObjectはグローバル→ローカルの
-        /// プロパティ解決とeffect適用の実行役を提供するだけで、いつ発火するかの判断はここに閉じる。
+        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_zeroの自己判定。いずれもWorldObject.
+        /// ApplyActiveEffect（on_zero・actions/combinationsと全く同じ適用経路）をそのまま呼ぶだけで、
+        /// overflow専用の適用ロジックは一切持たない。
         ///
-        /// on_overflowは、rangeの上限を超えていれば、著者が指定した量（自分自身への折り返し・他の
-        /// プロパティへの繰り上げの両方を1つのaccumulateとして書く）を1回適用する。適用した量の中に
-        /// 自分自身への変化が含まれていれば、ApplyOverflowDelta経由でこのメソッドへ再帰的に戻ってきて
-        /// 続きを判定する。1tickで複数span分溢れる場合も、繰り上げ先自身がさらに溢れる場合（分→時→日の
-        /// 連鎖）も、この自己判定の連鎖だけで解決する（WorldObject側でのループ・多重走査は一切不要）。
+        /// on_overflowは、rangeの上限を超えていれば、著者が指定した内容（自分自身への折り返し・他の
+        /// プロパティへの繰り上げの両方を1つのaccumulateとして書く）を1回だけ適用する。ループはしない
+        /// ため、1tickで複数span分溢れた場合や、繰り上げ先自身がさらに溢れる場合（分→時→日の連鎖）は、
+        /// このプロパティ・繰り上げ先プロパティが宣言順に「後で」Tickされる限り同じtick内で連鎖するが、
+        /// そうでなければ次tick以降に持ち越される（accumulateの通常の反映と同じく、宣言順どおりに
+        /// 1回ずつ処理が進む）。
         /// </summary>
         internal void CheckOverflowAndZero(PropertyDef def, WorldObject owner, WorldSession session)
         {
-            if (def.OnOverflow.Count > 0 && def.Range.HasValue && AsNumber() > def.Range.Value.Max)
-                foreach (var delta in def.OnOverflow)
-                    owner.ApplyOverflowDelta(delta.PropertyGlobalId, delta.Amount, session);
+            if (def.OnOverflow != null && def.Range.HasValue && AsNumber() > def.Range.Value.Max)
+                owner.ApplyActiveEffect(def.OnOverflow, session, actor: null);
 
             if (def.OnZero != null && AsNumber() <= 0)
                 owner.ApplyActiveEffect(def.OnZero, session, actor: null);

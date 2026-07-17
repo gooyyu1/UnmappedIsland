@@ -707,7 +707,7 @@ object_defs:
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
-            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Count, Is.EqualTo(2));
+            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Adds.Count, Is.EqualTo(2));
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, clock);

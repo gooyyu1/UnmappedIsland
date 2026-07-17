@@ -62,11 +62,13 @@ namespace UnmappedIsland.Codex
         public PropertyRange? Range { get; }
 
         /// <summary>
-        /// on_overflow（6.3節）: 値がRange.Maxを超えた際に、selfへ一度だけ適用するaccumulate内容
-        /// （on_zeroと同じ、target-key→bodyという文法を流用している）。空ならon_overflowを持たない。
-        /// 対象プロパティは自分自身（折り返し）でも、他のプロパティ（繰り上げ先）でも構わない。
+        /// on_overflow（6.3節）: 値がRange.Maxを超えた際に、selfへ一度だけ適用するactive内容。on_zero
+        /// と全く同じ型（ActiveEffect）をそのまま流用し、適用もWorldObject.ApplyActiveEffectをそのまま
+        /// 呼ぶだけで済ませる（オーバーフロー専用の適用ロジックはWorldObject側に一切持たない）。
+        /// null ならon_overflowを持たない。対象プロパティ（Adds）は自分自身（折り返し）でも、
+        /// 他のプロパティ（繰り上げ先）でも構わない。
         /// </summary>
-        public IReadOnlyList<PropertyDelta> OnOverflow { get; }
+        public ActiveEffect OnOverflow { get; }
 
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
@@ -82,7 +84,7 @@ namespace UnmappedIsland.Codex
             PropertyValue defaultValue,
             PropertyRange? rerollRange,
             PropertyRange? range,
-            IReadOnlyList<PropertyDelta> onOverflow,
+            ActiveEffect onOverflow,
             IReadOnlyList<PropertyStage> stages,
             ActiveEffect onZero = null)
         {
