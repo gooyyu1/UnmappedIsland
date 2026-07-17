@@ -27,19 +27,27 @@ namespace UnmappedIsland.Codex.Tests
             return new WorldObject(nextInstanceId++, def);
         }
 
-        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, ActiveEffectBlueprint onMin = null)
+        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, ActiveEffectBlueprint onMin = null, ActiveEffectBlueprint onMax = null)
         {
             // on_minはRange.Minとの比較になったため、rangeが未指定なら旧on_zero相当(下限0)を暗黙に補う。
             return new PropertyBlueprint
             {
                 Name = name,
                 DefaultValue = PropertyValue.FromNumber(defaultValue),
-                Range = range ?? (onMin != null ? new PropertyRange(0, int.MaxValue) : (PropertyRange?)null),
+                Range = range ?? (onMin != null || onMax != null ? new PropertyRange(0, int.MaxValue) : (PropertyRange?)null),
                 OnMin = onMin,
+                OnMax = onMax,
             };
         }
 
         private static ActiveEffectBlueprint OnMinDestroy()
+        {
+            var bp = new ActiveEffectBlueprint();
+            bp.Destroy.Add(ReferenceRoot.Self);
+            return bp;
+        }
+
+        private static ActiveEffectBlueprint OnMaxDestroy()
         {
             var bp = new ActiveEffectBlueprint();
             bp.Destroy.Add(ReferenceRoot.Self);
@@ -516,6 +524,74 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(def.PropertyDefs[waxLocal].OnMin, Is.Not.Null);
             Assert.That(def.PropertyDefs[waxLocal].OnMin.Destroy, Contains.Item(ReferenceRoot.Self));
             Assert.That(def.PropertyDefs[wickLocal].OnMin, Is.Null);
+        }
+
+        // ------------------------------------------------------------------
+        // on_max: on_minの上限側の鏡像。値がRange.Max以上である間、毎tick実行されるactive内容。
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void OnMax_IsCarriedThroughToPropertyDef()
+        {
+            var obj = new ObjectDefBlueprint { Name = "tank" };
+            obj.Properties.Add(Prop("pressure", 0, onMax: OnMaxDestroy()));
+            obj.Properties.Add(Prop("temperature", 20)); // onMax: null (既定)
+
+            var codex = WorldCodexBuilder.Build(new[] { obj });
+            ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("tank"));
+
+            int pressureLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("pressure"));
+            int tempLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("temperature"));
+
+            Assert.That(def.PropertyDefs[pressureLocal].OnMax, Is.Not.Null);
+            Assert.That(def.PropertyDefs[pressureLocal].OnMax.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(def.PropertyDefs[tempLocal].OnMax, Is.Null);
+        }
+
+        [Test]
+        public void Tick_DestroysSelfWhenOnMaxFires()
+        {
+            var container = new ObjectDefBlueprint { Name = "holder" };
+            container.Slots.Add(Slot("items"));
+
+            var bomb = new ObjectDefBlueprint { Name = "bomb" };
+            bomb.Properties.Add(Prop("pressure", 100, range: new PropertyRange(0, 100), onMax: OnMaxDestroy()));
+
+            var codex = WorldCodexBuilder.Build(new[] { container, bomb });
+            int itemsSlotId = codex.SlotNames.GetId("items");
+
+            var session = new WorldSession(codex);
+            WorldObject containerInstance = Spawn(codex, "holder");
+            WorldObject bombInstance = Spawn(codex, "bomb");
+            Assert.That(session.Containment.TryMoveToSlot(bombInstance, containerInstance, itemsSlotId, out _), Is.True);
+
+            containerInstance.Tick(session);
+
+            Assert.That(bombInstance.Parent, Is.Null);
+            containerInstance.TryGetSlot(itemsSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Tick_DoesNotFireOnMaxWhenValueBelowMax()
+        {
+            var container = new ObjectDefBlueprint { Name = "holder" };
+            container.Slots.Add(Slot("items"));
+
+            var tank = new ObjectDefBlueprint { Name = "tank" };
+            tank.Properties.Add(Prop("pressure", 50, range: new PropertyRange(0, 100), onMax: OnMaxDestroy()));
+
+            var codex = WorldCodexBuilder.Build(new[] { container, tank });
+            int itemsSlotId = codex.SlotNames.GetId("items");
+
+            var session = new WorldSession(codex);
+            WorldObject containerInstance = Spawn(codex, "holder");
+            WorldObject tankInstance = Spawn(codex, "tank");
+            Assert.That(session.Containment.TryMoveToSlot(tankInstance, containerInstance, itemsSlotId, out _), Is.True);
+
+            containerInstance.Tick(session);
+
+            Assert.That(tankInstance.Parent, Is.Not.Null, "on_maxは上限未満では発火しない");
         }
 
         [Test]

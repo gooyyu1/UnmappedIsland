@@ -116,6 +116,9 @@ namespace UnmappedIsland.Codex
 
         /// <summary>on_min（6.5節、旧on_zero）。null なら持たない。既定の自動生成はしない。</summary>
         public ActiveEffectBlueprint OnMin;
+
+        /// <summary>on_max（6.6節）。null なら持たない。既定の自動生成はしない。on_minの上限側の鏡像。</summary>
+        public ActiveEffectBlueprint OnMax;
     }
 
     /// <summary>
@@ -225,6 +228,7 @@ namespace UnmappedIsland.Codex
                     InternActiveEffect(p.OnOverflow, propertyNames, objectNames);
                     InternActiveEffect(p.OnShortfall, propertyNames, objectNames);
                     InternActiveEffect(p.OnMin, propertyNames, objectNames);
+                    InternActiveEffect(p.OnMax, propertyNames, objectNames);
                 }
                 if (bp.StackOrder != null) propertyNames.Intern(bp.StackOrder.PropertyName);
                 foreach (var s in bp.Slots) slotNames.Intern(s.Name);
@@ -299,12 +303,13 @@ namespace UnmappedIsland.Codex
                 ActiveEffect onShortfall = BuildOverflowSideEffect(
                     p.OnShortfall, p.Range, propertyGlobalIds[local], isMax: false, propertyNames, objectNames);
                 ActiveEffect onMin = p.OnMin != null ? BuildActiveEffect(p.OnMin, propertyNames, objectNames) : null;
+                ActiveEffect onMax = p.OnMax != null ? BuildActiveEffect(p.OnMax, propertyNames, objectNames) : null;
 
                 var stages = p.Stages.Select(s => new PropertyStage(s.Name, s.Min)).ToList();
 
                 propertyDefs[local] = new PropertyDef(
                     propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, onOverflow, stages,
-                    onMin, onShortfall);
+                    onMin, onShortfall, onMax);
             }
 
             var slotGlobalIds = bp.Slots.Select(s => slotNames.GetId(s.Name)).ToList();

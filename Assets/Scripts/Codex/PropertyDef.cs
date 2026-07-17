@@ -58,7 +58,7 @@ namespace UnmappedIsland.Codex
         /// <summary>value: {min, max} による毎tick再ロール（6.2節）。使わない場合は null。</summary>
         public PropertyRange? RerollRange { get; }
 
-        /// <summary>取りうる値域（6.3節）。on_overflow/on_shortfall/on_minを使う場合は必須。使わない場合は null。</summary>
+        /// <summary>取りうる値域（6.3節）。on_overflow/on_shortfall/on_min/on_maxを使う場合は必須。使わない場合は null。</summary>
         public PropertyRange? Range { get; }
 
         /// <summary>
@@ -93,6 +93,13 @@ namespace UnmappedIsland.Codex
         /// </summary>
         public ActiveEffect OnMin { get; }
 
+        /// <summary>
+        /// on_max（6.6節）。値がRange.Max以上である間、毎tick実行されるactive内容。on_minの上限側の鏡像。
+        /// on_overflow/on_shortfallとは異なり、著者が明示的に書かない限り既定の自動生成は行わない
+        /// （null なら on_max を持たない）。Rangeが必須。
+        /// </summary>
+        public ActiveEffect OnMax { get; }
+
         public PropertyDef(
             int globalId,
             string name,
@@ -102,7 +109,8 @@ namespace UnmappedIsland.Codex
             ActiveEffect onOverflow,
             IReadOnlyList<PropertyStage> stages,
             ActiveEffect onMin = null,
-            ActiveEffect onShortfall = null)
+            ActiveEffect onShortfall = null,
+            ActiveEffect onMax = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -113,6 +121,7 @@ namespace UnmappedIsland.Codex
             Stages = stages;
             OnMin = onMin;
             OnShortfall = onShortfall;
+            OnMax = onMax;
         }
 
         /// <summary>

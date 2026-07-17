@@ -33,7 +33,7 @@
 
 - ルート構造（`object_defs`/`traits`、専用ルートキーなし）
 - `object_defs`/`traits`（3〜5節）
-- `props`（固定値・範囲値・overflow/shortfall・stages・`on_min`、6節）
+- `props`（固定値・範囲値・overflow/shortfall・stages・`on_min`・`on_max`、6節）
 - `passive`（対象をキーとする辞書、`when`、`modify`/`accumulate`、8節）
 - `active`（対象をキーとする辞書、`add`/`destroy`/`spawn`、9節）
 - `pick`（重み付き確率分岐、`active` の代替キー、10節）
