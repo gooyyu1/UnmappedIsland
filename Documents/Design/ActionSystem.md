@@ -37,6 +37,9 @@
 
 ## 4. 未決事項・今後の検討課題
 
+- 実行エンジン（`Assets/Scripts/Runtime/InteractionExecutor.cs`）は、`with` に一致する `combinations` を
+  宣言順にすべて列挙する `FindMatchingCombinations` を提供するのみで、複数が一致した場合にどれを実際に
+  実行するかは呼び出し側（UI層）に委ねている。以下の「解決規則」自体は未解決のまま。
 - 同じオブジェクト内で、複数のキーが同じ `with` にマッチしてしまった場合の解決規則（優先順位、条件の排他性を
   著者の責任に委ねるだけで良いか、など。2 節参照）
 - `combinations`（斧で木を切る、など）を、`actor` の装備スロットを経由したパス参照（例: `actor.equip.tool`）を

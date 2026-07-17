@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace UnmappedIsland.Codex
@@ -13,6 +14,10 @@ namespace UnmappedIsland.Codex
 
         /// <summary>唯一のインスタンスしか存在しない想定（9節、例: world）。</summary>
         public bool IsSingleton { get; }
+
+        /// <summary>この object_def が参照した trait 名の一覧（5節）。トレイト自体は合成後に消えるため、
+        /// combinations の `with`（12.1節）がtrait名でマッチングできるよう、メタ情報として保持する。</summary>
+        public IReadOnlyList<string> Traits { get; }
 
         /// <summary>グローバルなプロパティID → このObjectDefにおけるローカルindex。</summary>
         public LocalIndexMap PropertyLayout { get; }
@@ -34,6 +39,12 @@ namespace UnmappedIsland.Codex
         /// 追加される（新規インスタンス同士の相対順序＝挿入順）。</summary>
         public StackOrderDef StackOrder { get; }
 
+        /// <summary>このObjectDefが持つメニュー型操作（11節）。</summary>
+        public IReadOnlyList<ActionDef> Actions { get; }
+
+        /// <summary>このObjectDefが（受け側として）持つドラッグ型操作（12節）。</summary>
+        public IReadOnlyList<CombinationDef> Combinations { get; }
+
         public ObjectDef(
             int globalId,
             string name,
@@ -43,7 +54,10 @@ namespace UnmappedIsland.Codex
             LocalIndexMap slotLayout,
             IReadOnlyList<SlotDef> slotDefs,
             IReadOnlyList<ContributionDef> contributions,
-            StackOrderDef stackOrder = null)
+            StackOrderDef stackOrder = null,
+            IReadOnlyList<string> traits = null,
+            IReadOnlyList<ActionDef> actions = null,
+            IReadOnlyList<CombinationDef> combinations = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -54,6 +68,9 @@ namespace UnmappedIsland.Codex
             SlotDefs = slotDefs;
             Contributions = contributions;
             StackOrder = stackOrder;
+            Traits = traits ?? Array.Empty<string>();
+            Actions = actions ?? Array.Empty<ActionDef>();
+            Combinations = combinations ?? Array.Empty<CombinationDef>();
         }
     }
 

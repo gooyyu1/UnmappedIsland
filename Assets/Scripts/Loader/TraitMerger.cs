@@ -28,6 +28,8 @@ namespace UnmappedIsland.Loader
             public YamlMappingNode Slots;
             public YamlMappingNode Passive;
             public YamlMappingNode StackOrder;
+            public YamlMappingNode Actions;
+            public YamlMappingNode Combinations;
         }
 
         public sealed class RawTrait
@@ -37,6 +39,8 @@ namespace UnmappedIsland.Loader
             public YamlMappingNode Slots;
             public YamlMappingNode Passive;
             public YamlMappingNode StackOrder;
+            public YamlMappingNode Actions;
+            public YamlMappingNode Combinations;
         }
 
         public static RawObjectDef ParseObjectDefEntry(string name, YamlMappingNode node)
@@ -51,6 +55,8 @@ namespace UnmappedIsland.Loader
                 Slots = node.TryGetMapping("slots", context),
                 Passive = node.TryGetMapping("passive", context),
                 StackOrder = node.TryGetMapping("stack_order", context),
+                Actions = node.TryGetMapping("actions", context),
+                Combinations = node.TryGetMapping("combinations", context),
             };
 
             YamlSequenceNode traits = node.TryGetSequence("traits", context);
@@ -72,17 +78,24 @@ namespace UnmappedIsland.Loader
                 Slots = node.TryGetMapping("slots", context),
                 Passive = node.TryGetMapping("passive", context),
                 StackOrder = node.TryGetMapping("stack_order", context),
+                Actions = node.TryGetMapping("actions", context),
+                Combinations = node.TryGetMapping("combinations", context),
             };
         }
 
-        /// <summary>object_defが参照するtraitを合成し、最終的なprops/slots/passive/stack_orderノードを返す。
-        /// passiveは合成済みの単一ノードではなく、trait分→自分自身の順で並んだノードの列として返す
-        /// （呼び出し側でParsePassiveMapIntoを順番に適用する。合成に識別子のキー衝突検証が不要なため）。</summary>
-        public static (YamlMappingNode Props, YamlMappingNode Slots, IReadOnlyList<YamlMappingNode> PassiveNodes, YamlMappingNode StackOrder)
+        /// <summary>object_defが参照するtraitを合成し、最終的なprops/slots/passive/stack_order/actions/
+        /// combinationsノードを返す。passiveは合成済みの単一ノードではなく、trait分→自分自身の順で並んだ
+        /// ノードの列として返す（呼び出し側でParsePassiveMapIntoを順番に適用する。合成に識別子のキー衝突
+        /// 検証が不要なため）。</summary>
+        public static (
+            YamlMappingNode Props, YamlMappingNode Slots, IReadOnlyList<YamlMappingNode> PassiveNodes,
+            YamlMappingNode StackOrder, YamlMappingNode Actions, YamlMappingNode Combinations)
             Resolve(RawObjectDef entry, IReadOnlyDictionary<string, RawTrait> traitsByName)
         {
             var traitProps = new List<(string TraitName, YamlMappingNode Map)>();
             var traitSlots = new List<(string TraitName, YamlMappingNode Map)>();
+            var traitActions = new List<(string TraitName, YamlMappingNode Map)>();
+            var traitCombinations = new List<(string TraitName, YamlMappingNode Map)>();
             var passiveNodes = new List<YamlMappingNode>();
             var stackOrderCandidates = new List<(string TraitName, YamlMappingNode Node)>();
 
@@ -93,12 +106,17 @@ namespace UnmappedIsland.Loader
 
                 traitProps.Add((traitName, trait.Props));
                 traitSlots.Add((traitName, trait.Slots));
+                traitActions.Add((traitName, trait.Actions));
+                traitCombinations.Add((traitName, trait.Combinations));
                 if (trait.Passive != null) passiveNodes.Add(trait.Passive);
                 if (trait.StackOrder != null) stackOrderCandidates.Add((traitName, trait.StackOrder));
             }
 
             YamlMappingNode mergedProps = MergeIdentifierMaps(traitProps, entry.Props, $"'{entry.Name}'のprops");
             YamlMappingNode mergedSlots = MergeIdentifierMaps(traitSlots, entry.Slots, $"'{entry.Name}'のslots");
+            YamlMappingNode mergedActions = MergeIdentifierMaps(traitActions, entry.Actions, $"'{entry.Name}'のactions");
+            YamlMappingNode mergedCombinations =
+                MergeIdentifierMaps(traitCombinations, entry.Combinations, $"'{entry.Name}'のcombinations");
 
             if (entry.Passive != null) passiveNodes.Add(entry.Passive);
 
@@ -112,7 +130,7 @@ namespace UnmappedIsland.Loader
                 if (stackOrderCandidates.Count == 1) stackOrder = stackOrderCandidates[0].Node;
             }
 
-            return (mergedProps, mergedSlots, passiveNodes, stackOrder);
+            return (mergedProps, mergedSlots, passiveNodes, stackOrder, mergedActions, mergedCombinations);
         }
 
         private static YamlMappingNode MergeIdentifierMaps(

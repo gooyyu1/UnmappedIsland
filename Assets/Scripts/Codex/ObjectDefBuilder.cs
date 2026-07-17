@@ -18,6 +18,59 @@ namespace UnmappedIsland.Codex
 
         /// <summary>スタック内での並び順（表示専用）。null なら未定義（常にスタック末尾へ追加）。</summary>
         public StackOrderBlueprint StackOrder;
+
+        /// <summary>参照したtrait名の一覧。combinationsの`with`のtraitマッチング用のメタ情報として、
+        /// そのままObjectDef.Traitsへ引き継がれる（merge自体はローダー側で完了済み）。</summary>
+        public readonly List<string> TraitNames = new List<string>();
+
+        public readonly List<ActionBlueprint> Actions = new List<ActionBlueprint>();
+        public readonly List<CombinationBlueprint> Combinations = new List<CombinationBlueprint>();
+    }
+
+    /// <summary>{path, op, value}のブループリント版。pathのpropertyはまだグローバルIDへ解決されていない。</summary>
+    public sealed class ConditionBlueprint
+    {
+        public ReferenceRoot Root;
+        public string PropertyName;
+        public ConditionOp Op;
+        public readonly List<PropertyValue> Values = new List<PropertyValue>();
+    }
+
+    /// <summary>pick候補のweightのブループリント版。</summary>
+    public struct WeightBlueprint
+    {
+        public bool IsPathRef;
+        public double Literal;
+        public ReferenceRoot PathRoot;
+        public string PathPropertyName;
+    }
+
+    /// <summary>pickの1候補のブループリント版。ActiveかPickのどちらか一方のみを埋める。</summary>
+    public sealed class PickCandidateBlueprint
+    {
+        public WeightBlueprint Weight;
+        public Dictionary<ReferenceRoot, ActiveEffectBlueprint> Active;
+        public List<PickCandidateBlueprint> Pick;
+    }
+
+    /// <summary>メニュー型操作（11節）のブループリント版。ActiveかPickのどちらか一方のみを埋める。</summary>
+    public sealed class ActionBlueprint
+    {
+        public string Name;
+        public ShowMenuMode ShowMenu = ShowMenuMode.Always;
+        public readonly List<ConditionBlueprint> Conditions = new List<ConditionBlueprint>();
+        public Dictionary<ReferenceRoot, ActiveEffectBlueprint> Active;
+        public List<PickCandidateBlueprint> Pick;
+    }
+
+    /// <summary>ドラッグ型操作（12節）のブループリント版。ActiveかPickのどちらか一方のみを埋める。</summary>
+    public sealed class CombinationBlueprint
+    {
+        public string Name;
+        public string With;
+        public readonly List<ConditionBlueprint> Conditions = new List<ConditionBlueprint>();
+        public Dictionary<ReferenceRoot, ActiveEffectBlueprint> Active;
+        public List<PickCandidateBlueprint> Pick;
     }
 
     /// <summary>StackOrderDefのブループリント版。プロパティ名はまだグローバルIDへ解決されていない。</summary>
@@ -162,6 +215,46 @@ namespace UnmappedIsland.Codex
                     if (c.GateKind == ContributionGateKind.WhenSlot) slotNames.Intern(c.GateSlotName);
                     if (c.GateKind == ContributionGateKind.WhenOwnStage) propertyNames.Intern(c.GateStagePropertyName);
                 }
+                foreach (var a in bp.Actions)
+                {
+                    InternConditions(a.Conditions, propertyNames);
+                    InternActiveMap(a.Active, propertyNames, objectNames);
+                    InternPickList(a.Pick, propertyNames, objectNames);
+                }
+                foreach (var c in bp.Combinations)
+                {
+                    InternConditions(c.Conditions, propertyNames);
+                    InternActiveMap(c.Active, propertyNames, objectNames);
+                    InternPickList(c.Pick, propertyNames, objectNames);
+                }
+            }
+        }
+
+        private static void InternConditions(IReadOnlyList<ConditionBlueprint> conditions, NameRegistry propertyNames)
+        {
+            foreach (var c in conditions) propertyNames.Intern(c.PropertyName);
+        }
+
+        private static void InternActiveMap(
+            Dictionary<ReferenceRoot, ActiveEffectBlueprint> map, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            if (map == null) return;
+            foreach (var body in map.Values)
+            {
+                foreach (var add in body.Adds) propertyNames.Intern(add.PropertyName);
+                if (body.Spawn != null) objectNames.Intern(body.Spawn.ObjectName);
+            }
+        }
+
+        private static void InternPickList(
+            List<PickCandidateBlueprint> pick, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            if (pick == null) return;
+            foreach (var candidate in pick)
+            {
+                if (candidate.Weight.IsPathRef) propertyNames.Intern(candidate.Weight.PathPropertyName);
+                InternActiveMap(candidate.Active, propertyNames, objectNames);
+                InternPickList(candidate.Pick, propertyNames, objectNames);
             }
         }
 
@@ -233,9 +326,78 @@ namespace UnmappedIsland.Codex
                 ? new StackOrderDef(propertyNames.GetId(bp.StackOrder.PropertyName), bp.StackOrder.Ascending)
                 : null;
 
+            var actions = bp.Actions.Select(a => BuildAction(a, propertyNames, objectNames)).ToList();
+            var combinations = bp.Combinations.Select(c => BuildCombination(c, propertyNames, objectNames)).ToList();
+
             return new ObjectDef(
                 objectNames.GetId(bp.Name), bp.Name, bp.IsSingleton,
-                propertyLayout, propertyDefs, slotLayout, slotDefs, contributions, stackOrder);
+                propertyLayout, propertyDefs, slotLayout, slotDefs, contributions, stackOrder,
+                bp.TraitNames, actions, combinations);
+        }
+
+        private static ActionDef BuildAction(ActionBlueprint a, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            var conditions = a.Conditions.Select(c => BuildCondition(c, propertyNames)).ToList();
+            var active = BuildActiveMap(a.Active, propertyNames, objectNames);
+            var pick = BuildPickList(a.Pick, propertyNames, objectNames);
+            return new ActionDef(a.Name, a.ShowMenu, conditions, active, pick);
+        }
+
+        private static CombinationDef BuildCombination(CombinationBlueprint c, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            var conditions = c.Conditions.Select(cc => BuildCondition(cc, propertyNames)).ToList();
+            var active = BuildActiveMap(c.Active, propertyNames, objectNames);
+            var pick = BuildPickList(c.Pick, propertyNames, objectNames);
+            return new CombinationDef(c.Name, c.With, conditions, active, pick);
+        }
+
+        private static ConditionDef BuildCondition(ConditionBlueprint c, NameRegistry propertyNames)
+        {
+            int propertyGlobalId = propertyNames.GetId(c.PropertyName);
+            return new ConditionDef(new PropertyPath(c.Root, propertyGlobalId), c.Op, c.Values);
+        }
+
+        private static IReadOnlyDictionary<ReferenceRoot, ActiveEffect> BuildActiveMap(
+            Dictionary<ReferenceRoot, ActiveEffectBlueprint> map, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            if (map == null) return null;
+
+            var result = new Dictionary<ReferenceRoot, ActiveEffect>();
+            foreach (var kv in map)
+                result[kv.Key] = BuildActiveEffect(kv.Value, propertyNames, objectNames);
+            return result;
+        }
+
+        private static ActiveEffect BuildActiveEffect(ActiveEffectBlueprint body, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            var adds = body.Adds
+                .Select(a => new PropertyDelta(propertyNames.GetId(a.PropertyName), a.Amount))
+                .ToList();
+
+            SpawnEffect spawn = body.Spawn != null
+                ? new SpawnEffect(objectNames.GetId(body.Spawn.ObjectName), body.Spawn.Into)
+                : null;
+
+            return new ActiveEffect(adds, body.Destroy, spawn);
+        }
+
+        private static IReadOnlyList<PickCandidateDef> BuildPickList(
+            List<PickCandidateBlueprint> pick, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            if (pick == null) return null;
+            return pick.Select(p => BuildPickCandidate(p, propertyNames, objectNames)).ToList();
+        }
+
+        private static PickCandidateDef BuildPickCandidate(
+            PickCandidateBlueprint p, NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            WeightSpec weight = p.Weight.IsPathRef
+                ? WeightSpec.FromPath(new PropertyPath(p.Weight.PathRoot, propertyNames.GetId(p.Weight.PathPropertyName)))
+                : WeightSpec.FromLiteral(p.Weight.Literal);
+
+            var active = BuildActiveMap(p.Active, propertyNames, objectNames);
+            var pick = BuildPickList(p.Pick, propertyNames, objectNames);
+            return new PickCandidateDef(weight, active, pick);
         }
 
         private static ContributionDef BuildContribution(

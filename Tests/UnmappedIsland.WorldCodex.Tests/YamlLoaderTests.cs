@@ -358,5 +358,251 @@ object_defs:
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>());
         }
+
+        // ------------------------------------------------------------------
+        // actions / combinations
+        // ------------------------------------------------------------------
+
+        private static ActionDef ActionOf(ObjectDef def, string name) => def.Actions.Single(a => a.Name == name);
+        private static CombinationDef CombinationOf(ObjectDef def, string name) => def.Combinations.Single(c => c.Name == name);
+
+        [Test]
+        public void LoadFromGroups_ParsesActionWithConditionsAndActive()
+        {
+            const string yaml = @"
+object_defs:
+  apple:
+    props:
+      freshness:
+        value: 5
+    actions:
+      eat:
+        showMenu: always
+        conditions:
+          - {path: actor.satiety, op: lt, value: 100}
+        active:
+          actor:
+            add:
+              satiety: 10
+          self:
+            destroy: true
+  player: {}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
+            ActionDef eat = ActionOf(apple, "eat");
+
+            Assert.That(eat.ShowMenu, Is.EqualTo(ShowMenuMode.Always));
+            Assert.That(eat.Conditions.Count, Is.EqualTo(1));
+            Assert.That(eat.Conditions[0].Path.Root, Is.EqualTo(ReferenceRoot.Actor));
+            Assert.That(eat.Conditions[0].Op, Is.EqualTo(ConditionOp.Lt));
+            Assert.That(eat.Active, Is.Not.Null);
+            Assert.That(eat.Active.ContainsKey(ReferenceRoot.Actor), Is.True);
+            Assert.That(eat.Active[ReferenceRoot.Self].Destroy, Is.True);
+        }
+
+        [Test]
+        public void LoadFromGroups_ParsesActionPick()
+        {
+            const string yaml = @"
+object_defs:
+  weapon:
+    actions:
+      attack:
+        pick:
+          - weight: 50
+            active:
+              self:
+                destroy: true
+          - weight: 50
+            active:
+              actor:
+                destroy: true
+  target: {}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef weapon = codex.Objects.Get(codex.ObjectNames.GetId("weapon"));
+            ActionDef attack = ActionOf(weapon, "attack");
+
+            Assert.That(attack.Active, Is.Null);
+            Assert.That(attack.Pick.Count, Is.EqualTo(2));
+            Assert.That(attack.Pick[0].Weight.IsPathRef, Is.False);
+            Assert.That(attack.Pick[0].Weight.Literal, Is.EqualTo(50));
+        }
+
+        [Test]
+        public void LoadFromGroups_ParsesCombinationWithAndDraggedTarget()
+        {
+            const string yaml = @"
+object_defs:
+  wood:
+    combinations:
+      chop:
+        with: axe_tool
+        conditions:
+          - {path: dragged.durability, op: gt, value: 0}
+        active:
+          self:
+            spawn: {object: logs}
+            destroy: true
+          dragged:
+            add:
+              durability: -1
+  logs: {}
+  axe_tool:
+    props:
+      durability:
+        value: 10
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
+            CombinationDef chop = CombinationOf(wood, "chop");
+
+            Assert.That(chop.With, Is.EqualTo("axe_tool"));
+            Assert.That(chop.Conditions[0].Path.Root, Is.EqualTo(ReferenceRoot.Dragged));
+            Assert.That(chop.Active.ContainsKey(ReferenceRoot.Dragged), Is.True);
+            Assert.That(codex.ObjectNames.GetName(chop.Active[ReferenceRoot.Self].Spawn.ObjectGlobalId), Is.EqualTo("logs"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ActionsAndCombinationsDistributedByTrait()
+        {
+            const string yaml = @"
+traits:
+  eatable:
+    actions:
+      eat:
+        active:
+          self:
+            destroy: true
+object_defs:
+  berry:
+    traits: [eatable]
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
+            Assert.That(ActionOf(berry, "eat").Active[ReferenceRoot.Self].Destroy, Is.True);
+        }
+
+        [Test]
+        public void LoadFromGroups_TwoTraitsWithCollidingActionName_Throws()
+        {
+            const string yaml = @"
+traits:
+  trait_a:
+    actions:
+      use:
+        active: {self: {destroy: true}}
+  trait_b:
+    actions:
+      use:
+        active: {self: {destroy: true}}
+object_defs:
+  thing:
+    traits: [trait_a, trait_b]
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("use"));
+        }
+
+        [Test]
+        public void LoadFromGroups_DraggedTargetInActions_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        active:
+          dragged:
+            destroy: true
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("dragged"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ChildTargetInActive_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        active:
+          child:
+            destroy: true
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("child"));
+        }
+
+        [Test]
+        public void LoadFromGroups_UnsupportedShowMenuValue_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        showMenu: sometimes
+        active: {self: {destroy: true}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("showMenu"));
+        }
+
+        [Test]
+        public void LoadFromGroups_WorldPathRoot_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        conditions:
+          - {path: world.day, op: gt, value: 0}
+        active: {self: {destroy: true}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("world"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionValueMax_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        conditions:
+          - {path: actor.satiety, op: lt, value: max}
+        active: {self: {destroy: true}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("max"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ActiveAndPickBothSpecified_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        active: {self: {destroy: true}}
+        pick:
+          - weight: 1
+            active: {self: {destroy: true}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("active"));
+        }
     }
 }

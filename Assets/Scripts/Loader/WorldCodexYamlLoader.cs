@@ -97,8 +97,9 @@ namespace UnmappedIsland.Loader
             foreach (var kv in globalObjectDefs)
             {
                 TraitMerger.RawObjectDef raw = TraitMerger.ParseObjectDefEntry(kv.Key, kv.Value.Node);
-                var (props, slots, passiveNodes, stackOrder) = TraitMerger.Resolve(raw, traitsByName);
-                blueprints.Add(ObjectDefYamlConverter.Build(kv.Key, raw.IsSingleton, props, slots, passiveNodes, stackOrder, symbols));
+                var (props, slots, passiveNodes, stackOrder, actions, combinations) = TraitMerger.Resolve(raw, traitsByName);
+                blueprints.Add(ObjectDefYamlConverter.Build(
+                    kv.Key, raw.IsSingleton, raw.TraitNames, props, slots, passiveNodes, stackOrder, actions, combinations, symbols));
             }
 
             return WorldCodexBuilder.Build(blueprints, symbols);
