@@ -191,57 +191,60 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// spawn（9.4節）を実行する。Intoへの配置に失敗した場合のみFallbackを試み、Fallbackは
-        /// accepts/capacityを無視して必ず成功する。Fallbackが無くIntoが失敗した場合、生成した
-        /// オブジェクトはどこにも配置されないまま消える（worldツリーに繋がらないため存在しないのと同じ）。
+        /// spawn（9.4節）を実行する。fallbackはYAML側に存在せず、Intoへの配置に失敗した場合は必ず
+        /// 起点自身の親へ伝播し、accepts/capacityを無視して強制的に配置する（Place参照）。伝播先の
+        /// 親も無い場合、生成したオブジェクトはどこにも配置されないまま消える（worldツリーに繋がらない
+        /// ため存在しないのと同じ）。
         /// </summary>
         private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor)
         {
             WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
-
-            if (TryPlace(spawned, effect.Into, session, actor, force: false)) return;
-            if (effect.Fallback == null) return;
-            TryPlace(spawned, effect.Fallback, session, actor, force: true);
+            Place(spawned, effect.Into, session, actor);
         }
 
         /// <summary>
-        /// spawnした側は配置先のスロット名を書かない。root が null（into省略）なら、自分が今いる、
-        /// まさにその場所（親と、自分が現在占めているのと同じスロット）へそのまま配置する。root が
-        /// 指定されていれば、解決できた対象オブジェクトが持つスロットを宣言順（Def.SlotDefsの並び）に
-        /// 走査し、最初に配置できたスロットへ入れる。force=true（fallback専用）はaccepts/capacityの
-        /// 検証を飛ばすため、最初のスロットへ必ず配置できる。
+        /// spawnした側は配置先のスロット名を書かない。SameSlotなら、自分が今いる、まさにその場所
+        /// （親と、自分が現在占めているのと同じスロット）へそのまま配置する（一意に決まるため走査は
+        /// 行わない）。Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順
+        /// （Def.SlotDefsの並び）に走査し、最初に配置できたスロットへ入れる。
+        ///
+        /// 配置に失敗した場合は、必ずその起点自身の親へ伝播し、accepts/capacityを無視して
+        /// 強制的に配置する（先頭のスロットへ必ず入る）。伝播先の親も無ければ何もしない。
         /// </summary>
-        private bool TryPlace(WorldObject spawned, SpawnTargetRoot? root, WorldSession session, WorldObject actor, bool force)
+        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor)
         {
-            if (root == null)
+            WorldObject primaryTarget;
+            bool placed;
+
+            if (into == SpawnTargetRoot.SameSlot)
             {
-                if (Parent == null) return false;
+                if (Parent == null) return;
+                primaryTarget = Parent;
                 int slotGlobalId = Parent.Def.SlotDefs[ParentSlotLocalId].GlobalId;
-                return session.Containment.TryMoveToSlot(spawned, Parent, slotGlobalId, out _, force);
+                placed = session.Containment.TryMoveToSlot(spawned, Parent, slotGlobalId, out _, force: false);
+            }
+            else
+            {
+                primaryTarget = into == SpawnTargetRoot.Self ? this : actor;
+                if (primaryTarget == null) return;
+                placed = TryFirstAcceptingSlot(spawned, primaryTarget, session, force: false);
             }
 
-            WorldObject target = ResolveRoot(root.Value, actor);
-            if (target == null) return false;
+            if (placed) return;
+            if (primaryTarget.Parent == null) return;
 
+            TryFirstAcceptingSlot(spawned, primaryTarget.Parent, session, force: true);
+        }
+
+        /// <summary>targetが持つスロットを宣言順に走査し、最初に配置できたスロットへ入れる。
+        /// force=trueはaccepts/capacityの検証を飛ばすため、スロットが1つでもあれば必ず成功する。</summary>
+        private static bool TryFirstAcceptingSlot(WorldObject spawned, WorldObject target, WorldSession session, bool force)
+        {
             foreach (var slotDef in target.Def.SlotDefs)
                 if (session.Containment.TryMoveToSlot(spawned, target, slotDef.GlobalId, out _, force))
                     return true;
 
             return false;
-        }
-
-        /// <summary>root を、実際の対象WorldObjectへ解決する。解決できない場合（Parentが無い、actorが
-        /// 与えられていない等）はnullを返す。</summary>
-        private WorldObject ResolveRoot(SpawnTargetRoot root, WorldObject actor)
-        {
-            switch (root)
-            {
-                case SpawnTargetRoot.Self: return this;
-                case SpawnTargetRoot.Parent: return Parent;
-                case SpawnTargetRoot.Actor: return actor;
-                case SpawnTargetRoot.ActorParent: return actor?.Parent;
-                default: return null;
-            }
         }
 
         /// <summary>

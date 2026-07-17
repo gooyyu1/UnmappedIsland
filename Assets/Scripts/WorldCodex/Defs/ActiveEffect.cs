@@ -45,46 +45,47 @@ namespace UnmappedIsland.Codex.Defs
     /// スロットを宣言順に走査し、最初に配置できたスロットへ入れる（型ごとに用意されたスロットへ
     /// 自然に振り分けられるため、著者がスロット名を知っている必要がない）。
     ///
-    /// Actor / ActorParent はアクション実行文脈でのみ解決できる（実行者=actorが存在するため）。
-    /// on_zeroにはactorが存在しないため、on_zeroのspawnではこの2つは解決されない
-    /// （fallbackが無ければ何も起きない）。
+    /// fallback はYAML上に存在しない。配置に失敗した場合は必ず、解決した起点自身の親へ伝播する
+    /// （WorldObject.Place参照）。旧設計にあった `actor_parent`（actorがいる場所）・`parent`
+    /// （selfの親）は、この自動伝播によって置き換えられたため、明示的な起点としては存在しない。
+    /// Actor はアクション実行文脈でのみ解決できる。on_zeroにはactorが存在しないため、
+    /// on_zeroのspawnでintoにActorを指定しても何も起きない。
     /// </summary>
     public enum SpawnTargetRoot
     {
+        /// <summary>
+        /// into を省略した場合の既定値でもある。この spawn を宣言したオブジェクト（self）が今いる、
+        /// まさにその場所（親と、self が現在占めているのと同じスロット）へ配置する。クラフト・腐敗など
+        /// 「同じ場所で別の物に置き換わる」場合に使う。一意に決まる1つのスロットのため、走査は行わない。
+        /// </summary>
+        SameSlot,
+
+        /// <summary>self が持つスロットを宣言順に走査する。</summary>
         Self,
-        Parent,
+
+        /// <summary>actor が持つスロットを宣言順に走査する。</summary>
         Actor,
-        ActorParent,
     }
 
     /// <summary>
-    /// spawn（9.4節）の内容。Into への配置に失敗した場合（対象の全スロットがaccepts/capacityで拒否した
-    /// 場合）にのみ Fallback を試みる。Fallback は accepts/capacity を無視して必ず配置に成功する
-    /// （すべてのオブジェクトは必ずどこかの親に属さなければならないため）。
+    /// spawn（9.4節）の内容。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は
+    /// 一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、
+    /// accepts/capacity を無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ
+    /// ならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。
     ///
-    /// Into が null（YAML上 into を省略した場合）は、このspawnを宣言したオブジェクト（self）が今いる、
-    /// まさにその場所（親と、selfが現在占めているのと同じスロット）へ配置する。クラフト・腐敗など
-    /// 「同じ場所で別の物に置き換わる」場合に使う既定動作であり、スロットを走査する必要がないため
-    /// SpawnTargetRoot とは別に null で表す。
-    ///
-    /// Fallback が無く Into が失敗した場合、spawn したオブジェクトはどこにも配置されないまま消える
-    /// （何も起きなかったのと同じ扱い）。
+    /// 伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない
+    /// まま消える（何も起きなかったのと同じ扱い）。
     /// </summary>
     public sealed class SpawnEffect
     {
         public int ObjectGlobalId { get; }
 
-        /// <summary>null なら「selfが今いる、まさにその場所」（省略時の既定動作）。</summary>
-        public SpawnTargetRoot? Into { get; }
+        public SpawnTargetRoot Into { get; }
 
-        /// <summary>null なら fallback なし。</summary>
-        public SpawnTargetRoot? Fallback { get; }
-
-        public SpawnEffect(int objectGlobalId, SpawnTargetRoot? into, SpawnTargetRoot? fallback)
+        public SpawnEffect(int objectGlobalId, SpawnTargetRoot into)
         {
             ObjectGlobalId = objectGlobalId;
             Into = into;
-            Fallback = fallback;
         }
     }
 }

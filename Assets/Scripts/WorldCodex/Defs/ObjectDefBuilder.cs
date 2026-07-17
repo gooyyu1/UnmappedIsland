@@ -71,11 +71,8 @@ namespace UnmappedIsland.Codex.Defs
     {
         public string ObjectName;
 
-        /// <summary>null なら「selfが今いる、まさにその場所」（into省略時の既定動作）。</summary>
-        public SpawnTargetRoot? Into;
-
-        /// <summary>null なら fallback なし。</summary>
-        public SpawnTargetRoot? Fallback;
+        /// <summary>省略時（既定値）は SameSlot 、つまり「selfが今いる、まさにその場所」。</summary>
+        public SpawnTargetRoot Into;
     }
 
     public struct StageBlueprint
@@ -190,8 +187,7 @@ namespace UnmappedIsland.Codex.Defs
                     {
                         spawn = new SpawnEffect(
                             objectNames.GetId(p.OnZero.Spawn.ObjectName),
-                            p.OnZero.Spawn.Into,
-                            p.OnZero.Spawn.Fallback);
+                            p.OnZero.Spawn.Into);
                     }
 
                     onZero = new ActiveEffect(adds, p.OnZero.Destroy, spawn);
