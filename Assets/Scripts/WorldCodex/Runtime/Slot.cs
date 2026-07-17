@@ -101,48 +101,33 @@ namespace UnmappedIsland.Codex.Runtime
         /// あっても、その中身の相対順序・スタック自体には影響しない。
         /// </summary>
         internal bool TryMakeRoomAndSeed(int newObjectDefGlobalId, int selfIndex) =>
-            TryMakeRoomRightwardAndSeed(newObjectDefGlobalId, selfIndex + 1) ||
-            TryMakeRoomLeftwardAndSeed(newObjectDefGlobalId, selfIndex - 1);
+            TryMakeRoomAndSeed(newObjectDefGlobalId, selfIndex + 1, step: 1) ||
+            TryMakeRoomAndSeed(newObjectDefGlobalId, selfIndex - 1, step: -1);
 
-        private bool TryMakeRoomRightwardAndSeed(int newObjectDefGlobalId, int targetIndex)
+        /// <summary>
+        /// targetIndexからstep刻みで走査し、最初に見つかった空き番号(emptyAt)との間にいる型を
+        /// stepの分だけ押し出してから、targetIndexへ新しい型を割り当てる。step=+1が右方向
+        /// （TryMakeRoomAndSeed参照）、step=-1が左方向で、走査方向が違うだけの鏡像なので1つに統合している。
+        /// </summary>
+        private bool TryMakeRoomAndSeed(int newObjectDefGlobalId, int targetIndex, int step)
         {
             int capacity = Def.UnitCapacity.GetValueOrDefault();
             if (targetIndex < 0 || targetIndex >= capacity) return false;
 
             var occupied = new HashSet<int>(gridIndexByType.Values);
             int emptyAt = -1;
-            for (int i = targetIndex; i < capacity; i++)
+            for (int i = targetIndex; i >= 0 && i < capacity; i += step)
             {
                 if (!occupied.Contains(i)) { emptyAt = i; break; }
             }
             if (emptyAt == -1) return false;
 
+            int lo = Math.Min(targetIndex, emptyAt);
+            int hi = Math.Max(targetIndex, emptyAt);
             foreach (int typeId in gridIndexByType.Keys.ToList())
             {
                 int index = gridIndexByType[typeId];
-                if (index >= targetIndex && index < emptyAt) gridIndexByType[typeId] = index + 1;
-            }
-
-            gridIndexByType[newObjectDefGlobalId] = targetIndex;
-            return true;
-        }
-
-        private bool TryMakeRoomLeftwardAndSeed(int newObjectDefGlobalId, int targetIndex)
-        {
-            if (targetIndex < 0 || targetIndex >= Def.UnitCapacity.GetValueOrDefault()) return false;
-
-            var occupied = new HashSet<int>(gridIndexByType.Values);
-            int emptyAt = -1;
-            for (int i = targetIndex; i >= 0; i--)
-            {
-                if (!occupied.Contains(i)) { emptyAt = i; break; }
-            }
-            if (emptyAt == -1) return false;
-
-            foreach (int typeId in gridIndexByType.Keys.ToList())
-            {
-                int index = gridIndexByType[typeId];
-                if (index > emptyAt && index <= targetIndex) gridIndexByType[typeId] = index - 1;
+                if (index >= lo && index <= hi) gridIndexByType[typeId] = index + step;
             }
 
             gridIndexByType[newObjectDefGlobalId] = targetIndex;
