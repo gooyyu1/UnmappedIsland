@@ -175,19 +175,50 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// on_zeroのadd/destroy/spawnを実行する。spawnをdestroyより先に行うのは、spawnのintoが
-        /// parentや「省略時の既定動作（自分の現在の所属先）」を参照できる必要があり、destroy後は
-        /// 自分のParentがnullになってしまうため。on_zeroにはactorが存在しないため、spawnの実行は
-        /// actor無し（Actor/ActorParentを対象にしたものは解決できない）で行う。
+        /// on_zeroのadd/destroy/spawnを実行する。destroyをspawnより先に行う（9.3節・9.4節）。カード
+        /// スタックのUIでは、種類が変わるアイテムがはみ出さないよう、置き換え後のオブジェクトが
+        /// 「破棄されるオブジェクトが占めていた位置」を引き継ぐ必要があるため、destroyで実際に位置が
+        /// 空いてから通常の（force無しの）配置を行う。位置情報はdestroyで失われる前に捕捉しておく
+        /// （CaptureSameSlotAnchor参照）。on_zeroにはactorが存在しないため、spawnの実行はactor無し
+        /// （Actorを対象にしたものは解決できない）で行う。
         /// </summary>
         private void ExecuteOnZeroEffect(ActiveEffect effect, WorldSession session)
         {
             foreach (var delta in effect.Adds)
                 AddNumber(delta.PropertyGlobalId, delta.Amount);
 
-            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor: null);
+            SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
+                ? CaptureSameSlotAnchor(effect.Destroy)
+                : null;
 
             if (effect.Destroy) session.Containment.Destroy(this);
+
+            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor: null, anchor);
+        }
+
+        /// <summary>
+        /// same_slotの置き換え（型が変わりうる）に必要な位置情報を、destroyで失われる前に捕捉する。
+        ///
+        /// destroyを伴う場合、自分は取り除かれるため、新しいオブジェクトは自分の元の位置（index）へ
+        /// そのまま入る。destroyを伴わない場合（自分は生き残ったまま増やす場合）、自分はまだそこに
+        /// 居続けるため、新しいオブジェクトは自分の「1つ後ろ」（index+1）へ入れる必要がある。
+        /// 両者は区別が必要で、同じindexを使い回すと後者で自分の前に割り込んでしまう。
+        ///
+        /// FixedPositionsスロットの固定番号引き継ぎも同様に、destroyによって自分が同種の最後の1個
+        /// （=その固定番号が空になる）の場合に限り行う（他に同種が残る場合・destroyしない場合は、
+        /// 新しい型は別の固定番号を新規に割り当てられる）。
+        /// </summary>
+        private SameSlotAnchor? CaptureSameSlotAnchor(bool willDestroySelf)
+        {
+            if (Parent == null) return null;
+
+            Slot slot = Parent.GetSlotByLocalId(ParentSlotLocalId);
+            int listIndex = slot.IndexOf(this) + (willDestroySelf ? 0 : 1);
+            int? inheritedGridIndex = willDestroySelf && slot.Def.FixedPositions && slot.CountOfType(Def.GlobalId) == 1
+                ? slot.GetGridIndex(Def.GlobalId)
+                : null;
+
+            return new SameSlotAnchor(Parent, ParentSlotLocalId, listIndex, inheritedGridIndex);
         }
 
         /// <summary>
@@ -196,32 +227,46 @@ namespace UnmappedIsland.Codex.Runtime
         /// 親も無い場合、生成したオブジェクトはどこにも配置されないまま消える（worldツリーに繋がらない
         /// ため存在しないのと同じ）。
         /// </summary>
-        private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor)
+        private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor, SameSlotAnchor? anchor)
         {
             WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
-            Place(spawned, effect.Into, session, actor);
+            Place(spawned, effect.Into, session, actor, anchor);
         }
 
         /// <summary>
-        /// spawnした側は配置先のスロット名を書かない。SameSlotなら、自分が今いる、まさにその場所
-        /// （親と、自分が現在占めているのと同じスロット）へそのまま配置する（一意に決まるため走査は
-        /// 行わない）。Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順
-        /// （Def.SlotDefsの並び）に走査し、最初に配置できたスロットへ入れる。
+        /// spawnした側は配置先のスロット名を書かない。SameSlotなら、捕捉しておいた位置（親・スロット・
+        /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。FixedPositionsスロットで
+        /// 固定番号を引き継げる場合は、通常のAddInternal（同種のrunへソート挿入）へ先に番号を
+        /// 引き継がせてから配置する。それ以外の一般スロットでは、捕捉しておいたリストindexへ直接
+        /// 挿入する（同じ場所の後ろにいた他のオブジェクトの位置がずれないようにするため）。
+        ///
+        /// Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順（Def.SlotDefsの並び）に
+        /// 走査し、最初に配置できたスロットへ入れる。
         ///
         /// 配置に失敗した場合は、必ずその起点自身の親へ伝播し、accepts/capacityを無視して
         /// 強制的に配置する（先頭のスロットへ必ず入る）。伝播先の親も無ければ何もしない。
         /// </summary>
-        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor)
+        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor, SameSlotAnchor? anchor)
         {
             WorldObject primaryTarget;
             bool placed;
 
             if (into == SpawnTargetRoot.SameSlot)
             {
-                if (Parent == null) return;
-                primaryTarget = Parent;
-                int slotGlobalId = Parent.Def.SlotDefs[ParentSlotLocalId].GlobalId;
-                placed = session.Containment.TryMoveToSlot(spawned, Parent, slotGlobalId, out _, force: false);
+                if (anchor == null) return;
+                SameSlotAnchor a = anchor.Value;
+                primaryTarget = a.Parent;
+                Slot slot = a.Parent.GetSlotByLocalId(a.ParentSlotLocalId);
+
+                if (slot.Def.FixedPositions)
+                {
+                    if (a.InheritedGridIndex.HasValue) slot.SeedGridIndex(spawned.Def.GlobalId, a.InheritedGridIndex.Value);
+                    placed = session.Containment.TryMoveToSlot(spawned, a.Parent, slot.Def.GlobalId, out _, force: false);
+                }
+                else
+                {
+                    placed = session.Containment.TryInsertAtIndex(spawned, a.Parent, slot.Def.GlobalId, a.ListIndex, out _, force: false);
+                }
             }
             else
             {
@@ -234,6 +279,23 @@ namespace UnmappedIsland.Codex.Runtime
             if (primaryTarget.Parent == null) return;
 
             TryFirstAcceptingSlot(spawned, primaryTarget.Parent, session, force: true);
+        }
+
+        /// <summary>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット。</summary>
+        private readonly struct SameSlotAnchor
+        {
+            public readonly WorldObject Parent;
+            public readonly int ParentSlotLocalId;
+            public readonly int ListIndex;
+            public readonly int? InheritedGridIndex;
+
+            public SameSlotAnchor(WorldObject parent, int parentSlotLocalId, int listIndex, int? inheritedGridIndex)
+            {
+                Parent = parent;
+                ParentSlotLocalId = parentSlotLocalId;
+                ListIndex = listIndex;
+                InheritedGridIndex = inheritedGridIndex;
+            }
         }
 
         /// <summary>targetが持つスロットを宣言順に走査し、最初に配置できたスロットへ入れる。

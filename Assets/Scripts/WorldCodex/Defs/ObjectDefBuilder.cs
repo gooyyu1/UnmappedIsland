@@ -16,6 +16,16 @@ namespace UnmappedIsland.Codex.Defs
         public readonly List<PropertyBlueprint> Properties = new List<PropertyBlueprint>();
         public readonly List<SlotBlueprint> Slots = new List<SlotBlueprint>();
         public readonly List<ContributionBlueprint> Contributions = new List<ContributionBlueprint>();
+
+        /// <summary>スタック内での並び順（表示専用）。null なら未定義（常にスタック末尾へ追加）。</summary>
+        public StackOrderBlueprint StackOrder;
+    }
+
+    /// <summary>StackOrderDefのブループリント版。プロパティ名はまだグローバルIDへ解決されていない。</summary>
+    public sealed class StackOrderBlueprint
+    {
+        public string PropertyName;
+        public bool Ascending;
     }
 
     public sealed class ContributionBlueprint
@@ -87,6 +97,9 @@ namespace UnmappedIsland.Codex.Defs
         public readonly List<AcceptBlueprint> Accepts = new List<AcceptBlueprint>();
         public double? Capacity;
         public double WeightRate = 1.0;
+        public bool Stackable = true;
+        public int? UnitCapacity;
+        public bool FixedPositions;
     }
 
     public struct AcceptBlueprint
@@ -142,6 +155,7 @@ namespace UnmappedIsland.Codex.Defs
                     foreach (var add in p.OnZero.Adds) propertyNames.Intern(add.PropertyName);
                     if (p.OnZero.Spawn != null) objectNames.Intern(p.OnZero.Spawn.ObjectName);
                 }
+                if (bp.StackOrder != null) propertyNames.Intern(bp.StackOrder.PropertyName);
                 foreach (var s in bp.Slots) slotNames.Intern(s.Name);
                 foreach (var c in bp.Contributions)
                 {
@@ -207,16 +221,22 @@ namespace UnmappedIsland.Codex.Defs
                 var accepts = s.Accepts
                     .Select(a => new SlotAcceptRule(objectNames.GetId(a.ObjectName), a.Max, a.Consume))
                     .ToList();
-                slotDefs[local] = new SlotDef(slotGlobalIds[local], s.Name, accepts, s.Capacity, s.WeightRate);
+                slotDefs[local] = new SlotDef(
+                    slotGlobalIds[local], s.Name, accepts, s.Capacity, s.WeightRate,
+                    s.Stackable, s.UnitCapacity, s.FixedPositions);
             }
 
             var contributions = bp.Contributions
                 .Select(c => BuildContribution(c, propertyLayout, propertyDefs, propertyNames, slotNames))
                 .ToList();
 
+            StackOrderDef stackOrder = bp.StackOrder != null
+                ? new StackOrderDef(propertyNames.GetId(bp.StackOrder.PropertyName), bp.StackOrder.Ascending)
+                : null;
+
             return new ObjectDef(
                 objectNames.GetId(bp.Name), bp.Name, bp.IsSingleton,
-                propertyLayout, propertyDefs, slotLayout, slotDefs, contributions);
+                propertyLayout, propertyDefs, slotLayout, slotDefs, contributions, stackOrder);
         }
 
         private static ContributionDef BuildContribution(

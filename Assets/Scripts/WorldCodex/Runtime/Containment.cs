@@ -24,12 +24,23 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// force=true の場合、accepts/capacityの検証を飛ばして必ず配置を成功させる（spawnのfallback、
-        /// GameElementDefinition.md 9.4節専用。すべてのオブジェクトは必ずどこかの親に属さなければ
-        /// ならないという前提を、退避先で保証するために使う）。スロット自体が存在しない場合は
+        /// force=true の場合、accepts/capacity/UnitCapacityの検証を飛ばして必ず配置を成功させる（spawnの
+        /// フォールバック、GameElementDefinition.md 9.4節専用。すべてのオブジェクトは必ずどこかの親に
+        /// 属さなければならないという前提を、退避先で保証するために使う）。スロット自体が存在しない場合は
         /// forceでも失敗する（存在しない配列indexへは置けないため）。
         /// </summary>
-        public bool TryMoveToSlot(WorldObject obj, WorldObject newParent, int slotGlobalId, out string error, bool force = false)
+        public bool TryMoveToSlot(WorldObject obj, WorldObject newParent, int slotGlobalId, out string error, bool force = false) =>
+            TryPlace(obj, newParent, slotGlobalId, insertAtIndex: null, out error, force);
+
+        /// <summary>
+        /// same_slot専用。通常の（同種のrunへソート挿入する）配置ロジックを使わず、指定した位置へ
+        /// そのまま挿入する。破棄されたオブジェクトの位置を、新しく生成されたオブジェクトへ引き継がせるために使う
+        /// （WorldObject.Place参照）。
+        /// </summary>
+        internal bool TryInsertAtIndex(WorldObject obj, WorldObject newParent, int slotGlobalId, int index, out string error, bool force = false) =>
+            TryPlace(obj, newParent, slotGlobalId, index, out error, force);
+
+        private bool TryPlace(WorldObject obj, WorldObject newParent, int slotGlobalId, int? insertAtIndex, out string error, bool force)
         {
             int localSlot = newParent.Def.SlotLayout.ToLocal(slotGlobalId);
             if (localSlot == LocalIndexMap.Missing)
@@ -58,9 +69,19 @@ namespace UnmappedIsland.Codex.Runtime
                 }
             }
 
+            if (!force && slotDef.UnitCapacity.HasValue && !targetSlot.HasCapacityFor(obj.Def.GlobalId))
+            {
+                error = $"'{newParent.Def.Name}.{slotDef.Name}' の上限（{slotDef.UnitCapacity}）を超えます。";
+                return false;
+            }
+
             DetachFromParent(obj);
 
-            targetSlot.AddInternal(obj);
+            if (insertAtIndex.HasValue)
+                targetSlot.InsertAtCapturedPosition(obj, insertAtIndex.Value);
+            else
+                targetSlot.AddInternal(obj);
+
             obj.SetParent(newParent, localSlot);
             PropagateWeight(newParent, localSlot, obj.GetNumber(wellKnown.WeightId));
             RegisterEdge(newParent, obj);
