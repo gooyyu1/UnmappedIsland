@@ -83,7 +83,7 @@ namespace UnmappedIsland.Codex.Defs
             Kind = kind;
             TargetPropertyGlobalId = targetPropertyGlobalId;
             Amount = amount;
-            Gate = gate ?? ContributionGate.Always;
+            Gate = gate;
         }
     }
 }
