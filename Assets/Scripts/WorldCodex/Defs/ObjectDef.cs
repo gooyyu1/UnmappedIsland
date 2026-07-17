@@ -31,6 +31,10 @@ namespace UnmappedIsland.Codex.Defs
         /// 問わず1つのリストで持つ。</summary>
         public IReadOnlyList<ContributionDef> Contributions { get; }
 
+        /// <summary>スタック内での並び順（表示専用）。null なら並び順は未定義で、常にスタックの末尾へ
+        /// 追加される（新規インスタンス同士の相対順序＝挿入順）。</summary>
+        public StackOrderDef StackOrder { get; }
+
         public ObjectDef(
             int globalId,
             string name,
@@ -39,7 +43,8 @@ namespace UnmappedIsland.Codex.Defs
             IReadOnlyList<PropertyDef> propertyDefs,
             LocalIndexMap slotLayout,
             IReadOnlyList<SlotDef> slotDefs,
-            IReadOnlyList<ContributionDef> contributions)
+            IReadOnlyList<ContributionDef> contributions,
+            StackOrderDef stackOrder = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -49,6 +54,7 @@ namespace UnmappedIsland.Codex.Defs
             SlotLayout = slotLayout;
             SlotDefs = slotDefs;
             Contributions = contributions;
+            StackOrder = stackOrder;
         }
     }
 

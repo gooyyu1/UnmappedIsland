@@ -175,19 +175,56 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// on_zeroのadd/destroy/spawnを実行する。spawnをdestroyより先に行うのは、spawnのintoが
-        /// parentや「省略時の既定動作（自分の現在の所属先）」を参照できる必要があり、destroy後は
-        /// 自分のParentがnullになってしまうため。on_zeroにはactorが存在しないため、spawnの実行は
-        /// actor無し（Actor/ActorParentを対象にしたものは解決できない）で行う。
+        /// on_zeroのadd/destroy/spawnを実行する。destroyをspawnより先に行う（9.3節・9.4節）。カード
+        /// スタックのUIでは、種類が変わるアイテムがはみ出さないよう、置き換え後のオブジェクトが
+        /// 「破棄されるオブジェクトが占めていた位置」を引き継ぐ必要があるため、destroyで実際に位置が
+        /// 空いてから通常の（force無しの）配置を行う。位置情報はdestroyで失われる前に捕捉しておく
+        /// （CaptureSameSlotAnchor参照）。on_zeroにはactorが存在しないため、spawnの実行はactor無し
+        /// （Actorを対象にしたものは解決できない）で行う。
         /// </summary>
         private void ExecuteOnZeroEffect(ActiveEffect effect, WorldSession session)
         {
             foreach (var delta in effect.Adds)
                 AddNumber(delta.PropertyGlobalId, delta.Amount);
 
-            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor: null);
+            SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
+                ? CaptureSameSlotAnchor(effect.Destroy)
+                : null;
 
             if (effect.Destroy) session.Containment.Destroy(this);
+
+            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor: null, anchor);
+        }
+
+        /// <summary>
+        /// same_slotの置き換え（型が変わりうる）に必要な位置情報を、destroyで失われる前に捕捉する。
+        ///
+        /// destroyを伴う場合、自分は取り除かれるため、新しいオブジェクトは自分の元の位置（index）へ
+        /// そのまま入る。destroyを伴わない場合（自分は生き残ったまま増やす場合）、自分はまだそこに
+        /// 居続けるため、新しいオブジェクトは自分の「1つ後ろ」（index+1）へ入れる必要がある。
+        /// 両者は区別が必要で、同じindexを使い回すと後者で自分の前に割り込んでしまう。
+        ///
+        /// FixedPositionsスロットの固定番号も同じ考え方で、destroyによって自分が同種の最後の1個
+        /// （=その固定番号が空になる）の場合に限り、その番号をそのまま再利用できる（CanReuseGridCell）。
+        /// それ以外（destroyしない・destroyしても同種が残る）は自分の番号+1を起点に、隙間を探して
+        /// 割り込ませる必要がある（Place参照）。
+        /// </summary>
+        private SameSlotAnchor? CaptureSameSlotAnchor(bool willDestroySelf)
+        {
+            if (Parent == null) return null;
+
+            Slot slot = Parent.GetSlotByLocalId(ParentSlotLocalId);
+            int listIndex = slot.IndexOf(this) + (willDestroySelf ? 0 : 1);
+
+            int? gridCellIndex = null;
+            bool canReuseGridCell = false;
+            if (slot.Def.FixedPositions)
+            {
+                gridCellIndex = slot.GetGridIndex(Def.GlobalId);
+                canReuseGridCell = willDestroySelf && slot.CountOfType(Def.GlobalId) == 1;
+            }
+
+            return new SameSlotAnchor(Parent, ParentSlotLocalId, listIndex, gridCellIndex, canReuseGridCell);
         }
 
         /// <summary>
@@ -196,32 +233,69 @@ namespace UnmappedIsland.Codex.Runtime
         /// 親も無い場合、生成したオブジェクトはどこにも配置されないまま消える（worldツリーに繋がらない
         /// ため存在しないのと同じ）。
         /// </summary>
-        private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor)
+        private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor, SameSlotAnchor? anchor)
         {
             WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
-            Place(spawned, effect.Into, session, actor);
+            Place(spawned, effect.Into, session, actor, anchor);
         }
 
         /// <summary>
-        /// spawnした側は配置先のスロット名を書かない。SameSlotなら、自分が今いる、まさにその場所
-        /// （親と、自分が現在占めているのと同じスロット）へそのまま配置する（一意に決まるため走査は
-        /// 行わない）。Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順
-        /// （Def.SlotDefsの並び）に走査し、最初に配置できたスロットへ入れる。
+        /// spawnした側は配置先のスロット名を書かない。SameSlotなら、捕捉しておいた位置（親・スロット・
+        /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。
+        ///
+        /// FixedPositionsスロットでは、新しい型が既に同じスロットに存在する（同種スタックへの合流）
+        /// 場合はそのまま通常配置し、そうでなければ、自分の固定番号をそのまま再利用できる場合
+        /// （CanReuseGridCell、自分がdestroyされ同種の最後の1個だった場合）はその番号へ、できない場合
+        /// （destroyしない・destroyしても同種が残る場合）は自分の番号の右側（+1以降）で最初に見つかる
+        /// 隙間へ、他の型を押し出しながら割り込ませる。右側に隙間が無ければ、左側（-1以前）で同様に
+        /// 割り込ませる（「右が空いている限り右に、そうでなければ左に生まれる」、Slot.TryMakeRoomAndSeed
+        /// 参照）。どちらの方向にも隙間が見つからなければ配置失敗として扱い、後述のfallbackへ委ねる。
+        ///
+        /// それ以外の一般スロットでは、捕捉しておいたリストindexへ直接挿入する（同じ場所の後ろに
+        /// いた他のオブジェクトの位置がずれないようにするため）。
+        ///
+        /// Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順（Def.SlotDefsの並び）に
+        /// 走査し、最初に配置できたスロットへ入れる。
         ///
         /// 配置に失敗した場合は、必ずその起点自身の親へ伝播し、accepts/capacityを無視して
         /// 強制的に配置する（先頭のスロットへ必ず入る）。伝播先の親も無ければ何もしない。
         /// </summary>
-        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor)
+        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor, SameSlotAnchor? anchor)
         {
             WorldObject primaryTarget;
             bool placed;
 
             if (into == SpawnTargetRoot.SameSlot)
             {
-                if (Parent == null) return;
-                primaryTarget = Parent;
-                int slotGlobalId = Parent.Def.SlotDefs[ParentSlotLocalId].GlobalId;
-                placed = session.Containment.TryMoveToSlot(spawned, Parent, slotGlobalId, out _, force: false);
+                if (anchor == null) return;
+                SameSlotAnchor a = anchor.Value;
+                primaryTarget = a.Parent;
+                Slot slot = a.Parent.GetSlotByLocalId(a.ParentSlotLocalId);
+
+                if (slot.Def.FixedPositions && !slot.GetGridIndex(spawned.Def.GlobalId).HasValue)
+                {
+                    if (a.CanReuseGridCell)
+                    {
+                        slot.SeedGridIndex(spawned.Def.GlobalId, a.GridCellIndex.Value);
+                        placed = true;
+                    }
+                    else
+                    {
+                        placed = slot.TryMakeRoomAndSeed(spawned.Def.GlobalId, a.GridCellIndex.Value);
+                    }
+
+                    if (placed)
+                        placed = session.Containment.TryMoveToSlot(spawned, a.Parent, slot.Def.GlobalId, out _, force: false);
+                }
+                else if (slot.Def.FixedPositions)
+                {
+                    // 新しい型が既にこのスロットに存在する（同種スタックへの合流）。番号操作は不要。
+                    placed = session.Containment.TryMoveToSlot(spawned, a.Parent, slot.Def.GlobalId, out _, force: false);
+                }
+                else
+                {
+                    placed = session.Containment.TryInsertAtIndex(spawned, a.Parent, slot.Def.GlobalId, a.ListIndex, out _, force: false);
+                }
             }
             else
             {
@@ -234,6 +308,30 @@ namespace UnmappedIsland.Codex.Runtime
             if (primaryTarget.Parent == null) return;
 
             TryFirstAcceptingSlot(spawned, primaryTarget.Parent, session, force: true);
+        }
+
+        /// <summary>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット。</summary>
+        private readonly struct SameSlotAnchor
+        {
+            public readonly WorldObject Parent;
+            public readonly int ParentSlotLocalId;
+            public readonly int ListIndex;
+
+            /// <summary>FixedPositionsスロットでのみ使う、自分自身の固定番号（該当スロットでなければnull）。</summary>
+            public readonly int? GridCellIndex;
+
+            /// <summary>自分の固定番号を新しいオブジェクトがそのまま再利用できるか
+            /// （destroyされ、かつ自分が同種の最後の1個だった場合のみtrue）。</summary>
+            public readonly bool CanReuseGridCell;
+
+            public SameSlotAnchor(WorldObject parent, int parentSlotLocalId, int listIndex, int? gridCellIndex, bool canReuseGridCell)
+            {
+                Parent = parent;
+                ParentSlotLocalId = parentSlotLocalId;
+                ListIndex = listIndex;
+                GridCellIndex = gridCellIndex;
+                CanReuseGridCell = canReuseGridCell;
+            }
         }
 
         /// <summary>targetが持つスロットを宣言順に走査し、最初に配置できたスロットへ入れる。

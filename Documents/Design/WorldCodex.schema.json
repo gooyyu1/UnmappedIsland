@@ -376,8 +376,32 @@
           "description": "重さの伝播率（GameElementDefinition.md 7.4節。内部設計はContainerSystem.md 2節）。1.0を超えるケースを許容するかは未決定。",
           "type": "number",
           "minimum": 0
+        },
+        "stackable": {
+          "description": "同種オブジェクトを1つの単位としてまとめるか（GameElementDefinition.md 7.6節）。既定true。falseなら同種でも個体ごとに別単位として数える（例: かまどの投入口）。",
+          "type": "boolean"
+        },
+        "unit_capacity": {
+          "description": "このスロットに同時に存在できる「単位」の上限（GameElementDefinition.md 7.6節）。単位の意味はstackableに従う（trueなら型の種類数、falseなら個体数）。capacity（サイズ合計）とは独立した別軸の制約。",
+          "type": "integer",
+          "minimum": 1
+        },
+        "fixed_positions": {
+          "description": "前詰めしないか（GameElementDefinition.md 7.6節）。既定false。trueの場合、型ごとに固定番号（0始まり、unit_capacity個まで）が割り当てられ、空いた番号を保持したまま詰めない（例: プレイヤー手持ちの6枠）。",
+          "type": "boolean"
         }
       },
+      "additionalProperties": false
+    },
+
+    "stack_order": {
+      "description": "スタック内での並び順（GameElementDefinition.md 7.6節）。「手前に重ねたいものほどリストの末尾に並ぶ」規約のもとで、ascending: falseは値が小さいものほど末尾、ascending: trueは値が大きいものほど末尾。",
+      "type": "object",
+      "properties": {
+        "property": { "$ref": "#/$defs/identifier" },
+        "ascending": { "type": "boolean" }
+      },
+      "required": ["property", "ascending"],
       "additionalProperties": false
     },
 
@@ -432,7 +456,8 @@
         "combinations": { "$ref": "#/$defs/combinations_map" },
         "recipes": { "$ref": "#/$defs/recipes_map" },
         "slots": { "$ref": "#/$defs/slots_map" },
-        "passive": { "$ref": "#/$defs/passive_map" }
+        "passive": { "$ref": "#/$defs/passive_map" },
+        "stack_order": { "$ref": "#/$defs/stack_order" }
       },
       "additionalProperties": false
     },
@@ -464,7 +489,8 @@
         "combinations": { "$ref": "#/$defs/combinations_map" },
         "recipes": { "$ref": "#/$defs/recipes_map" },
         "slots": { "$ref": "#/$defs/slots_map" },
-        "passive": { "$ref": "#/$defs/passive_map" }
+        "passive": { "$ref": "#/$defs/passive_map" },
+        "stack_order": { "$ref": "#/$defs/stack_order" }
       },
       "additionalProperties": false
     }
