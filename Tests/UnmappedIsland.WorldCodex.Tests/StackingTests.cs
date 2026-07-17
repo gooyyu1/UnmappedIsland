@@ -436,5 +436,120 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(hand5.GetGridIndex(rottenId), Is.Not.EqualTo(potatoGridIndex),
                 "同種が残っている場合、新しい型は別の固定番号を新規に割り当てられる");
         }
+
+        [Test]
+        public void FixedPositions_SameSlotWithoutDestroy_InsertsAfterSelfShiftingLaterCellsAsNeeded()
+        {
+            // 「A _ B _」→ Aから(destroyなしで)Cが生まれる → 「A C B _」
+            //           → Aから(destroyなしで)Dが生まれる → 「A D C B」（CとBがそれぞれ+1される）
+            //           → Aから(destroyなしで)Eが生まれる → 入る場所が無いのでfallback
+            var hand = new ObjectDefBlueprint { Name = "hand_owner6" };
+            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 4, fixedPositions: true));
+
+            var location = new ObjectDefBlueprint { Name = "loc_fallback" };
+            location.Slots.Add(Slot("ground"));
+
+            var b = new ObjectDefBlueprint { Name = "type_b3" };
+            var c = new ObjectDefBlueprint { Name = "type_c3" };
+            var d = new ObjectDefBlueprint { Name = "type_d3" };
+            var e = new ObjectDefBlueprint { Name = "type_e3" };
+
+            var a = new ObjectDefBlueprint { Name = "type_a3" };
+            a.Properties.Add(Prop("spawn_c", 1, onZero: OnZeroSpawn("type_c3", destroy: false)));
+            a.Properties.Add(Prop("spawn_d", 1, onZero: OnZeroSpawn("type_d3", destroy: false)));
+            a.Properties.Add(Prop("spawn_e", 1, onZero: OnZeroSpawn("type_e3", destroy: false)));
+
+            var codex = WorldCodexBuilder.Build(new[] { hand, location, a, b, c, d, e });
+            int handSlotId = codex.SlotNames.GetId("hand");
+            int groundSlotId = codex.SlotNames.GetId("ground");
+            int spawnCId = codex.PropertyNames.GetId("spawn_c");
+            int spawnDId = codex.PropertyNames.GetId("spawn_d");
+            int spawnEId = codex.PropertyNames.GetId("spawn_e");
+            int aTypeId = codex.ObjectNames.GetId("type_a3");
+            int bTypeId = codex.ObjectNames.GetId("type_b3");
+            int cTypeId = codex.ObjectNames.GetId("type_c3");
+            int dTypeId = codex.ObjectNames.GetId("type_d3");
+
+            var session = new WorldSession(codex);
+            WorldObject locationInstance = Spawn(codex, "loc_fallback");
+            WorldObject handInstance = Spawn(codex, "hand_owner6");
+            session.Containment.TryMoveToSlot(handInstance, locationInstance, groundSlotId, out _);
+
+            WorldObject aInstance = Spawn(codex, "type_a3");
+            WorldObject bInstance = Spawn(codex, "type_b3");
+            session.Containment.TryMoveToSlot(aInstance, handInstance, handSlotId, out _); // grid 0
+            session.Containment.TryMoveToSlot(bInstance, handInstance, handSlotId, out _); // grid 1
+
+            handInstance.TryGetSlot(handSlotId, out Slot hand6);
+            Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
+            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(1), "前提: A(0) _ B(1)... ではなくA(0) B(1)の状態からBを2番へ動かす");
+
+            // 前提を「A _ B _」（A=0, B=2）に合わせるため、Bを手動で2番へ動かす。
+            Assert.That(hand6.TrySetManualPosition(bTypeId, 2), Is.True);
+            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(2));
+
+            // --- Cが生まれる: 期待 A(0) C(1) B(2) _(3) ---
+            aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(0));
+            handInstance.PostTick(session);
+            aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(1)); // 再発火を防ぐ
+
+            Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
+            Assert.That(hand6.GetGridIndex(cTypeId), Is.EqualTo(1), "空いている1番へそのまま入る（ずれ無し）");
+            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(2), "Bの番号は変わらない");
+
+            // --- Dが生まれる: 期待 A(0) D(1) C(2) B(3) ---
+            aInstance.SetProperty(spawnDId, PropertyValue.FromNumber(0));
+            handInstance.PostTick(session);
+            aInstance.SetProperty(spawnDId, PropertyValue.FromNumber(1));
+
+            Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
+            Assert.That(hand6.GetGridIndex(dTypeId), Is.EqualTo(1), "Dは1番に割り込む");
+            Assert.That(hand6.GetGridIndex(cTypeId), Is.EqualTo(2), "Cは押し出されて2番になる");
+            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(3), "Bも押し出されて3番になる");
+
+            handInstance.TryGetSlot(handSlotId, out Slot handAfterD);
+            Assert.That(handAfterD.Contents.Select(o => o.Def.Name),
+                Is.EqualTo(new[] { "type_a3", "type_d3", "type_c3", "type_b3" }),
+                "Contentsの並び順もA D C Bになっている");
+
+            // --- Eが生まれる: 4枠すべて埋まっており入る場所が無いのでfallback ---
+            aInstance.SetProperty(spawnEId, PropertyValue.FromNumber(0));
+            handInstance.PostTick(session);
+
+            Assert.That(hand6.Contents.Any(o => o.Def.Name == "type_e3"), Is.False, "handには入らない");
+            locationInstance.TryGetSlot(groundSlotId, out Slot ground);
+            Assert.That(ground.Contents.Any(o => o.Def.Name == "type_e3"), Is.True,
+                "handの親(location)へforceで強制的に伝播している");
+        }
+
+        [Test]
+        public void FixedPositions_SameSlotWithoutDestroy_StackableSameTypeJoinsExistingCellWithoutOverflow()
+        {
+            var hand = new ObjectDefBlueprint { Name = "hand_owner7" };
+            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 1, fixedPositions: true));
+
+            var a = new ObjectDefBlueprint { Name = "type_a4" };
+            a.Properties.Add(Prop("spawn_a", 0, onZero: OnZeroSpawn("type_a4", destroy: false)));
+
+            var codex = WorldCodexBuilder.Build(new[] { hand, a });
+            int handSlotId = codex.SlotNames.GetId("hand");
+            int aTypeId = codex.ObjectNames.GetId("type_a4");
+
+            var session = new WorldSession(codex);
+            WorldObject handInstance = Spawn(codex, "hand_owner7");
+            WorldObject aInstance = Spawn(codex, "type_a4");
+            session.Containment.TryMoveToSlot(aInstance, handInstance, handSlotId, out _);
+
+            handInstance.TryGetSlot(handSlotId, out Slot hand7);
+            Assert.That(hand7.GetGridIndex(aTypeId), Is.EqualTo(0));
+
+            // unit_capacity=1なので、別の型なら絶対に入らないが、同種のスタックへの合流は
+            // 新しい固定番号を消費しないため、あふれずに成功するはず。
+            handInstance.PostTick(session);
+
+            Assert.That(hand7.Contents.Count(o => o.Def.Name == "type_a4"), Is.EqualTo(2),
+                "同種はunit_capacity(1)を超えず、既存のグリッドへ合流する");
+            Assert.That(hand7.GetGridIndex(aTypeId), Is.EqualTo(0), "固定番号は変わらない");
+        }
     }
 }

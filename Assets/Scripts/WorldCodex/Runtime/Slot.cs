@@ -91,6 +91,36 @@ namespace UnmappedIsland.Codex.Runtime
         internal void SeedGridIndex(int objectDefGlobalId, int gridIndex) => gridIndexByType[objectDefGlobalId] = gridIndex;
 
         /// <summary>
+        /// same_slotで新しい型がtargetIndexへ割り込む必要がある場合（自分の固定番号をそのまま
+        /// 再利用できない場合）に使う。targetIndex以降で最初に空いている番号を探し、[targetIndex,
+        /// 見つかった空き番号)の範囲にいる型をすべて+1して押し出してから、targetIndexへ新しい型を
+        /// 割り当てる。前詰めはせず、既存の型同士の相対順序も変えない（+1されるだけ）。
+        /// 空きが見つからなければfalseを返す（呼び出し側でfallbackへ委ねる）。
+        /// </summary>
+        internal bool TryMakeRoomAndSeed(int newObjectDefGlobalId, int targetIndex)
+        {
+            int capacity = Def.UnitCapacity.GetValueOrDefault();
+            if (targetIndex < 0 || targetIndex >= capacity) return false;
+
+            var occupied = new HashSet<int>(gridIndexByType.Values);
+            int emptyAt = -1;
+            for (int i = targetIndex; i < capacity; i++)
+            {
+                if (!occupied.Contains(i)) { emptyAt = i; break; }
+            }
+            if (emptyAt == -1) return false;
+
+            foreach (int typeId in gridIndexByType.Keys.ToList())
+            {
+                int index = gridIndexByType[typeId];
+                if (index >= targetIndex && index < emptyAt) gridIndexByType[typeId] = index + 1;
+            }
+
+            gridIndexByType[newObjectDefGlobalId] = targetIndex;
+            return true;
+        }
+
+        /// <summary>
         /// プレイヤーによる手動並び替え。対象の型が既に存在する番号と入れ替える（無ければ何もしない）。
         /// 前詰めしない前提のため、単純な2者間のswapとして表現する。
         /// </summary>

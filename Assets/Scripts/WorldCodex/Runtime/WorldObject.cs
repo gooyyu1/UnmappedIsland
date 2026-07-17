@@ -204,9 +204,10 @@ namespace UnmappedIsland.Codex.Runtime
         /// 居続けるため、新しいオブジェクトは自分の「1つ後ろ」（index+1）へ入れる必要がある。
         /// 両者は区別が必要で、同じindexを使い回すと後者で自分の前に割り込んでしまう。
         ///
-        /// FixedPositionsスロットの固定番号引き継ぎも同様に、destroyによって自分が同種の最後の1個
-        /// （=その固定番号が空になる）の場合に限り行う（他に同種が残る場合・destroyしない場合は、
-        /// 新しい型は別の固定番号を新規に割り当てられる）。
+        /// FixedPositionsスロットの固定番号も同じ考え方で、destroyによって自分が同種の最後の1個
+        /// （=その固定番号が空になる）の場合に限り、その番号をそのまま再利用できる（CanReuseGridCell）。
+        /// それ以外（destroyしない・destroyしても同種が残る）は自分の番号+1を起点に、隙間を探して
+        /// 割り込ませる必要がある（Place参照）。
         /// </summary>
         private SameSlotAnchor? CaptureSameSlotAnchor(bool willDestroySelf)
         {
@@ -214,11 +215,16 @@ namespace UnmappedIsland.Codex.Runtime
 
             Slot slot = Parent.GetSlotByLocalId(ParentSlotLocalId);
             int listIndex = slot.IndexOf(this) + (willDestroySelf ? 0 : 1);
-            int? inheritedGridIndex = willDestroySelf && slot.Def.FixedPositions && slot.CountOfType(Def.GlobalId) == 1
-                ? slot.GetGridIndex(Def.GlobalId)
-                : null;
 
-            return new SameSlotAnchor(Parent, ParentSlotLocalId, listIndex, inheritedGridIndex);
+            int? gridCellIndex = null;
+            bool canReuseGridCell = false;
+            if (slot.Def.FixedPositions)
+            {
+                gridCellIndex = slot.GetGridIndex(Def.GlobalId);
+                canReuseGridCell = willDestroySelf && slot.CountOfType(Def.GlobalId) == 1;
+            }
+
+            return new SameSlotAnchor(Parent, ParentSlotLocalId, listIndex, gridCellIndex, canReuseGridCell);
         }
 
         /// <summary>
@@ -235,10 +241,17 @@ namespace UnmappedIsland.Codex.Runtime
 
         /// <summary>
         /// spawnした側は配置先のスロット名を書かない。SameSlotなら、捕捉しておいた位置（親・スロット・
-        /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。FixedPositionsスロットで
-        /// 固定番号を引き継げる場合は、通常のAddInternal（同種のrunへソート挿入）へ先に番号を
-        /// 引き継がせてから配置する。それ以外の一般スロットでは、捕捉しておいたリストindexへ直接
-        /// 挿入する（同じ場所の後ろにいた他のオブジェクトの位置がずれないようにするため）。
+        /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。
+        ///
+        /// FixedPositionsスロットでは、新しい型が既に同じスロットに存在する（同種スタックへの合流）
+        /// 場合はそのまま通常配置し、そうでなければ、自分の固定番号をそのまま再利用できる場合
+        /// （CanReuseGridCell、自分がdestroyされ同種の最後の1個だった場合）はその番号へ、できない場合
+        /// （destroyしない・destroyしても同種が残る場合）は自分の番号+1を起点に、隙間を探して他の型を
+        /// 押し出しながら割り込ませる（Slot.TryMakeRoomAndSeed参照）。隙間が見つからなければ配置失敗
+        /// として扱い、後述のfallbackへ委ねる。
+        ///
+        /// それ以外の一般スロットでは、捕捉しておいたリストindexへ直接挿入する（同じ場所の後ろに
+        /// いた他のオブジェクトの位置がずれないようにするため）。
         ///
         /// Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順（Def.SlotDefsの並び）に
         /// 走査し、最初に配置できたスロットへ入れる。
@@ -258,9 +271,24 @@ namespace UnmappedIsland.Codex.Runtime
                 primaryTarget = a.Parent;
                 Slot slot = a.Parent.GetSlotByLocalId(a.ParentSlotLocalId);
 
-                if (slot.Def.FixedPositions)
+                if (slot.Def.FixedPositions && !slot.GetGridIndex(spawned.Def.GlobalId).HasValue)
                 {
-                    if (a.InheritedGridIndex.HasValue) slot.SeedGridIndex(spawned.Def.GlobalId, a.InheritedGridIndex.Value);
+                    if (a.CanReuseGridCell)
+                    {
+                        slot.SeedGridIndex(spawned.Def.GlobalId, a.GridCellIndex.Value);
+                        placed = true;
+                    }
+                    else
+                    {
+                        placed = slot.TryMakeRoomAndSeed(spawned.Def.GlobalId, a.GridCellIndex.Value + 1);
+                    }
+
+                    if (placed)
+                        placed = session.Containment.TryMoveToSlot(spawned, a.Parent, slot.Def.GlobalId, out _, force: false);
+                }
+                else if (slot.Def.FixedPositions)
+                {
+                    // 新しい型が既にこのスロットに存在する（同種スタックへの合流）。番号操作は不要。
                     placed = session.Containment.TryMoveToSlot(spawned, a.Parent, slot.Def.GlobalId, out _, force: false);
                 }
                 else
@@ -287,14 +315,21 @@ namespace UnmappedIsland.Codex.Runtime
             public readonly WorldObject Parent;
             public readonly int ParentSlotLocalId;
             public readonly int ListIndex;
-            public readonly int? InheritedGridIndex;
 
-            public SameSlotAnchor(WorldObject parent, int parentSlotLocalId, int listIndex, int? inheritedGridIndex)
+            /// <summary>FixedPositionsスロットでのみ使う、自分自身の固定番号（該当スロットでなければnull）。</summary>
+            public readonly int? GridCellIndex;
+
+            /// <summary>自分の固定番号を新しいオブジェクトがそのまま再利用できるか
+            /// （destroyされ、かつ自分が同種の最後の1個だった場合のみtrue）。</summary>
+            public readonly bool CanReuseGridCell;
+
+            public SameSlotAnchor(WorldObject parent, int parentSlotLocalId, int listIndex, int? gridCellIndex, bool canReuseGridCell)
             {
                 Parent = parent;
                 ParentSlotLocalId = parentSlotLocalId;
                 ListIndex = listIndex;
-                InheritedGridIndex = inheritedGridIndex;
+                GridCellIndex = gridCellIndex;
+                CanReuseGridCell = canReuseGridCell;
             }
         }
 
