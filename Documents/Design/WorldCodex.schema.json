@@ -41,20 +41,20 @@
     },
 
     "range_value": {
-      "description": "min/max のみを持つ範囲。props の value（毎tick再ロール、6.2節）と range（overflowの上下限、6.3節）の両方で使う共通の形。",
+      "description": "min/max のみを持つ範囲。props の value（毎tick再ロール、6.2節）と range（overflowの上下限、6.3節）の両方で使う共通の形。数値プロパティは32bit整数のみを扱うため、min/maxも整数（6節）。",
       "type": "object",
       "properties": {
-        "min": { "type": "number" },
-        "max": { "type": "number" }
+        "min": { "type": "integer" },
+        "max": { "type": "integer" }
       },
       "required": ["min", "max"],
       "additionalProperties": false
     },
 
     "prop_value": {
-      "description": "props の value。固定値（数値・文字列・真偽値）、または {min, max} の範囲値（6.2節、毎tickランダム再ロール）のいずれか。",
+      "description": "props の value。固定値（整数・文字列・真偽値）、または {min, max} の範囲値（6.2節、毎tickランダム再ロール）のいずれか。数値は32bit整数のみを扱う（6節）。",
       "oneOf": [
-        { "type": ["number", "string", "boolean"] },
+        { "type": ["integer", "string", "boolean"] },
         { "$ref": "#/$defs/range_value" }
       ]
     },
@@ -82,7 +82,7 @@
         "name": { "$ref": "#/$defs/identifier" },
         "min": {
           "description": "この段階の下限。最下段は null（省略可）で、それより下の残り全ての値を拾う。",
-          "type": ["number", "null"]
+          "type": ["integer", "null"]
         },
         "passive": { "$ref": "#/$defs/passive_map" }
       },
@@ -148,15 +148,15 @@
           "description": "レベルトリガーとなるスロット名（例: equip）。対象ごとに異なるwhenを持てる。"
         },
         "modify": {
-          "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
+          "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。数値プロパティは32bit整数のみを扱う（6節）。",
           "type": "object",
-          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "number" } },
+          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
           "additionalProperties": false
         },
         "accumulate": {
-          "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する。",
+          "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する。数値プロパティは32bit整数のみを扱う（6節）。",
           "type": "object",
-          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "number" } },
+          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
           "additionalProperties": false
         }
       },
@@ -180,9 +180,9 @@
       "type": "object",
       "properties": {
         "add": {
-          "description": "対象プロパティの実体値へ、その場で一度だけ不可逆に加減算する。",
+          "description": "対象プロパティの実体値へ、その場で一度だけ不可逆に加減算する。数値プロパティは32bit整数のみを扱う（6節）。",
           "type": "object",
-          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "number" } },
+          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
           "additionalProperties": false
         },
         "destroy": {

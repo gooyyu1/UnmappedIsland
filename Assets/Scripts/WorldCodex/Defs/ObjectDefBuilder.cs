@@ -22,7 +22,7 @@ namespace UnmappedIsland.Codex.Defs
         public ContributionTarget Target;
         public ContributionKind Kind;
         public string TargetPropertyName;
-        public double Amount;
+        public int Amount;
         public ContributionGateKind GateKind;
 
         /// <summary>GateKind.WhenSlot用。スロット名（グローバル語彙。将来どの親に付くか分からないため名前のまま持つ）。</summary>
@@ -53,7 +53,7 @@ namespace UnmappedIsland.Codex.Defs
     public struct StageBlueprint
     {
         public string Name;
-        public double? Min;
+        public int? Min;
     }
 
     public sealed class SlotBlueprint

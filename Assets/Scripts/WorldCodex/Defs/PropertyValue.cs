@@ -18,17 +18,17 @@ namespace UnmappedIsland.Codex.Defs
     public readonly struct PropertyValue
     {
         public readonly PropertyValueKind Kind;
-        public readonly double Number;
+        public readonly int Number;
         public readonly int Symbol;
 
-        private PropertyValue(PropertyValueKind kind, double number, int symbol)
+        private PropertyValue(PropertyValueKind kind, int number, int symbol)
         {
             Kind = kind;
             Number = number;
             Symbol = symbol;
         }
 
-        public static PropertyValue FromNumber(double value) => new PropertyValue(PropertyValueKind.Number, value, 0);
+        public static PropertyValue FromNumber(int value) => new PropertyValue(PropertyValueKind.Number, value, 0);
 
         /// <summary>symbolGlobalId はシンボル専用 NameRegistry（"clear"/"rain"等の語彙）上のグローバルID。</summary>
         public static PropertyValue FromSymbol(int symbolGlobalId) => new PropertyValue(PropertyValueKind.Symbol, 0, symbolGlobalId);

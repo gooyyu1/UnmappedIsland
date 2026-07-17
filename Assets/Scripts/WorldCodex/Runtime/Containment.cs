@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnmappedIsland.Codex.Defs;
 using UnmappedIsland.Codex.Registry;
@@ -42,8 +43,8 @@ namespace UnmappedIsland.Codex.Runtime
 
             if (slotDef.Capacity.HasValue)
             {
-                double currentSize = SumSize(targetSlot.Contents);
-                double addedSize = obj.GetNumber(wellKnown.SizeId);
+                int currentSize = SumSize(targetSlot.Contents);
+                int addedSize = obj.GetNumber(wellKnown.SizeId);
                 if (currentSize + addedSize > slotDef.Capacity.Value)
                 {
                     error = $"'{newParent.Def.Name}.{slotDef.Name}' の容量（{slotDef.Capacity}）を超えます。";
@@ -133,9 +134,9 @@ namespace UnmappedIsland.Codex.Runtime
             return false;
         }
 
-        private double SumSize(IReadOnlyList<WorldObject> objects)
+        private int SumSize(IReadOnlyList<WorldObject> objects)
         {
-            double total = 0;
+            int total = 0;
             foreach (var o in objects) total += o.GetNumber(wellKnown.SizeId);
             return total;
         }
@@ -144,6 +145,8 @@ namespace UnmappedIsland.Codex.Runtime
         /// ContainerSystem.md 1〜2節: 重さは derived ではなく move_to_slot の副作用として、
         /// 出入りのたびに weight プロパティへ加減算する。祖先を遡りながら各階層の weight_rate を
         /// 掛け合わせていくことで、入れ子（アイテム→バッグ→バックパック→装備）が自然にカスケードする。
+        /// weight_rate は端数を持つ倍率（例: 0.5）だが weight プロパティ自体は整数のため、
+        /// 各階層へ加算する直前にだけ丸める（伝播中の途中値は端数のまま次の階層の倍率と掛け合わせる）。
         /// </summary>
         private void PropagateWeight(WorldObject startAt, int occupiedSlotLocalId, double delta)
         {
@@ -154,7 +157,7 @@ namespace UnmappedIsland.Codex.Runtime
             {
                 SlotDef slotDef = current.Def.SlotDefs[slotLocalId];
                 delta *= slotDef.WeightRate;
-                current.AddNumber(wellKnown.WeightId, delta);
+                current.AddNumber(wellKnown.WeightId, (int)Math.Round(delta));
 
                 if (current.Parent == null) break;
                 slotLocalId = current.ParentSlotLocalId;

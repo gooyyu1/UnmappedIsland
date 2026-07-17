@@ -69,14 +69,14 @@ namespace UnmappedIsland.Codex.Defs
         public ContributionTarget Target { get; }
         public ContributionKind Kind { get; }
         public int TargetPropertyGlobalId { get; }
-        public double Amount { get; }
+        public int Amount { get; }
         public ContributionGate Gate { get; }
 
         public ContributionDef(
             ContributionTarget target,
             ContributionKind kind,
             int targetPropertyGlobalId,
-            double amount,
+            int amount,
             ContributionGate gate)
         {
             Target = target;

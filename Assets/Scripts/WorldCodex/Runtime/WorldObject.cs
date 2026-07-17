@@ -74,7 +74,7 @@ namespace UnmappedIsland.Codex.Runtime
             properties[local] = value;
         }
 
-        public double GetNumber(int globalPropertyId, double fallback = 0)
+        public int GetNumber(int globalPropertyId, int fallback = 0)
         {
             return TryGetProperty(globalPropertyId, out var v) && v.Kind == PropertyValueKind.Number
                 ? v.Number
@@ -85,7 +85,7 @@ namespace UnmappedIsland.Codex.Runtime
         /// 数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の `add`、ContainerSystem.md の重さ伝播で使用）。
         /// このオブジェクトが対象プロパティを持たない場合は何もしない（例: 重さを気にしない置物）。
         /// </summary>
-        public void AddNumber(int globalPropertyId, double delta)
+        public void AddNumber(int globalPropertyId, int delta)
         {
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing) return;
@@ -113,7 +113,7 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、6.4節・8節）。</summary>
-        internal double GetNumberByLocalId(int localId) => properties[localId].Number;
+        internal int GetNumberByLocalId(int localId) => properties[localId].Number;
 
         internal void RegisterContribution(int localPropertyId, ActiveContribution contribution)
         {
@@ -130,12 +130,12 @@ namespace UnmappedIsland.Codex.Runtime
         /// target(self/parent/child)の違いはRegisterContribution呼び出し側（WorldObjectコンストラクタ・
         /// Containment）にのみ存在し、ここでは一切区別しない。Kind.Accumulateの寄与はTick参照。
         /// </summary>
-        public double GetEffectiveValue(int propertyGlobalId)
+        public int GetEffectiveValue(int propertyGlobalId)
         {
             int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
             if (local == LocalIndexMap.Missing) return 0;
 
-            double sum = properties[local].Number;
+            int sum = properties[local].Number;
 
             var contributions = incoming[local];
             if (contributions != null)
@@ -200,7 +200,7 @@ namespace UnmappedIsland.Codex.Runtime
                     return slotLocal != LocalIndexMap.Missing && c.SlotBearer.ParentSlotLocalId == slotLocal;
 
                 case ContributionGateKind.WhenOwnStage:
-                    double value = c.Declarer.GetNumberByLocalId(c.Def.Gate.PropertyLocalId);
+                    int value = c.Declarer.GetNumberByLocalId(c.Def.Gate.PropertyLocalId);
                     var stage = c.Declarer.Def.PropertyDefs[c.Def.Gate.PropertyLocalId].ResolveStage(value);
                     return ReferenceEquals(stage, c.Def.Gate.Stage);
 
@@ -209,7 +209,7 @@ namespace UnmappedIsland.Codex.Runtime
             }
         }
 
-        private static double ClampToRange(double value, PropertyRange? range)
+        private static int ClampToRange(int value, PropertyRange? range)
         {
             if (!range.HasValue) return value;
             if (value < range.Value.Min) return range.Value.Min;

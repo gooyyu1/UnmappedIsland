@@ -28,7 +28,7 @@ namespace UnmappedIsland.Codex.Tests
             return new WorldObject(nextInstanceId++, def);
         }
 
-        private static PropertyBlueprint Prop(string name, double defaultValue, PropertyRange? range = null, bool hasOnZero = false)
+        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, bool hasOnZero = false)
         {
             return new PropertyBlueprint
             {
@@ -45,7 +45,7 @@ namespace UnmappedIsland.Codex.Tests
             ContributionTarget target,
             ContributionKind kind,
             string targetProperty,
-            double amount,
+            int amount,
             ContributionGateKind gateKind = ContributionGateKind.Always,
             string gateSlotName = null,
             string gateStageProperty = null,
@@ -338,7 +338,7 @@ namespace UnmappedIsland.Codex.Tests
         public void Accumulate_Parent_WhenOwnStage_TracksDeclarersStage()
         {
             var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("temperature", 36.5));
+            character.Properties.Add(Prop("temperature", 36));
             character.Slots.Add(Slot("conditions"));
 
             var infection = new ObjectDefBlueprint { Name = "infection" };
@@ -347,7 +347,7 @@ namespace UnmappedIsland.Codex.Tests
             progress.Stages.Add(new StageBlueprint { Name = "mild", Min = 20 });
             infection.Properties.Add(progress);
             infection.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Accumulate, "temperature", 0.2,
+                ContributionTarget.Parent, ContributionKind.Accumulate, "temperature", 1,
                 ContributionGateKind.WhenOwnStage, gateStageProperty: "progress", gateStageName: "mild"));
 
             var codex = WorldCodexBuilder.Build(new[] { character, infection });
@@ -362,11 +362,11 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(containment.TryMoveToSlot(infectionInstance, characterInstance, conditionsSlotId, out _), Is.True);
 
             characterInstance.Tick();
-            Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(36.5).Within(1e-9), "progressがnoneの間は上がらない");
+            Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(36), "progressがnoneの間は上がらない");
 
             infectionInstance.SetProperty(progressId, PropertyValue.FromNumber(30));
             characterInstance.Tick();
-            Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(36.7).Within(1e-9), "mildへ遷移した後は毎Tick上がる（再登録なし）");
+            Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(37), "mildへ遷移した後は毎Tick上がる（再登録なし）");
         }
 
         [Test]
