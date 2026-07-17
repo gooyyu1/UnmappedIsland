@@ -108,19 +108,19 @@ tick ごとに加算・減算し合う
 <code>duration: {min, max}</code>（例: 乾季なら 20〜40
 日）から乱数で決める。</li>
 <li><code>remaining</code> は毎 tick <code>-1</code>
-され、<code>on_zero</code>（<code>GameElementDefinition.md</code> 6.5
+され、<code>on_min</code>（<code>GameElementDefinition.md</code> 6.5
 節）で <code>spawn</code>＋<code>destroy</code>（9.4 節・9.3 節）を
 同時に発火し、自分自身を破棄すると同時に、対になる季節（<code>dry</code>⇔<code>wet</code>、2
 状態しかないので単純な反転でよい）の新しい
 インスタンスを、自分がいたのと同じスロット（<code>spawn</code> の
 <code>into</code> を省略した場合の既定動作、9.4
-節）へ生成して差し替える。 <code>on_zero</code> は
-<code>remaining</code> が0以下である間、毎 tick
-実行されますが、この本体は <code>destroy</code>
-を伴うため、実行された瞬間に この季節インスタンス自体が消滅し、以後 tick
-の対象でなくなります。そのため次の季節を生成し続けてしまう心配は
-ありません（<code>GameElementDefinition.md</code> 9 節・6.5
-節参照）。</li>
+節）へ生成して差し替える。 <code>on_min</code> は <code>remaining</code>
+が下限（<code>range: {min: 0, ...}</code> を持たせて 0）以下である間、毎
+tick 実行されますが、この本体は <code>destroy</code>
+を伴うため、実行された瞬間にこの季節インスタンス自体が消滅し、以後 tick
+の対象でなくなります。そのため
+次の季節を生成し続けてしまう心配はありません（<code>GameElementDefinition.md</code>
+9 節・6.5 節参照）。</li>
 </ul>
 <p>このパターンにより、「季節が日付で完全には決まらない」という要件を、既存の状態オブジェクトの仕組みに載せて満たせます。ただし、以下の
 1 点は 既存のエンジン語彙にない新しい概念であり、拡張が必要です。</p>
@@ -195,7 +195,7 @@ GameElementDefinition.md 17 節に残っている
 <li>季節層（3 節）で必要になる拡張（生成時 1
 回だけのレンジ値）は、既存の語彙（<code>props</code>）を拡張するものであり、新しい
 専用システムを追加するものではありません。季節の切り替え自体は、専用の動詞を新設せず、既存の
-<code>on_zero</code>・<code>spawn</code>・ <code>destroy</code>
+<code>on_min</code>・<code>spawn</code>・ <code>destroy</code>
 の組み合わせだけで表現できています。</li>
 <li>本書全体を通じて <code>derived</code>（GameElementDefinition.md 16
 節・17

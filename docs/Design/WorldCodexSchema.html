@@ -51,7 +51,7 @@ Schema</a> Draft 2020-12、
 <li><strong>既存サンプルの受理</strong>:
 各ドキュメントに掲載されている実際のYAMLサンプル（<code>eat</code>/<code>move</code>
 アクション、<code>world</code> シングルトン、
-防具・耐久値（<code>passive</code>の<code>accumulate</code>＋<code>on_zero</code>の<code>destroy</code>）・細菌感染、<code>traits</code>、<code>combinations</code>
+防具・耐久値（<code>passive</code>の<code>accumulate</code>＋<code>on_min</code>の<code>destroy</code>）・細菌感染、<code>traits</code>、<code>combinations</code>
 の <code>chop</code> （<code>active</code> の
 <code>spawn</code>＋<code>destroy</code>）、<code>pick</code>
 を使った攻撃・生水・探索、レシピ、<code>slots</code> の
@@ -74,7 +74,7 @@ Schema</a> Draft 2020-12、
 <ul>
 <li>ルート構造（<code>object_defs</code>/<code>traits</code>、専用ルートキーなし）</li>
 <li><code>object_defs</code>/<code>traits</code>（3〜5節）</li>
-<li><code>props</code>（固定値・範囲値・overflow・stages・<code>on_zero</code>、6節）</li>
+<li><code>props</code>（固定値・範囲値・overflow/shortfall・stages・<code>on_min</code>、6節）</li>
 <li><code>passive</code>（対象をキーとする辞書、<code>when</code>、<code>modify</code>/<code>accumulate</code>、8節）</li>
 <li><code>active</code>（対象をキーとする辞書、<code>add</code>/<code>destroy</code>/<code>spawn</code>、9節）</li>
 <li><code>pick</code>（重み付き確率分岐、<code>active</code>

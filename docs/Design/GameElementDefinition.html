@@ -231,25 +231,98 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">decay_rate</span><span class="kw">:</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="kw">}</span><span class="co">   # 毎tick、この範囲でロールした量を減算する</span></span></code></pre></div>
-<h3 id="range-on_overflow周回上限">6.3 range /
-on_overflow（周回・上限）</h3>
-<p>上限に達したら折り返す（あるいは繰り上げる）プロパティは、<code>range</code>（取りうる上下限）と
-<code>on_overflow</code>（上限到達時の挙動）を
-持たせます。<code>value</code> の <code>{min, max}</code>（6.2 節、毎
-tick 再ロールする範囲）とは別の仕組みです。</p>
+<h3 id="range-on_overflow-on_shortfall周回上下限">6.3 range /
+on_overflow / on_shortfall（周回・上下限）</h3>
+<p>上限・下限に達したら折り返す（あるいは繰り上げる）プロパティは、<code>range</code>（取りうる上下限）と、<code>on_overflow</code>
+（上限超過時の挙動）・<code>on_shortfall</code>（下限未満時の挙動、<code>on_overflow</code>
+の下限側の鏡像）を持たせます。<code>value</code> の
+<code>{min, max}</code>（6.2 節、毎 tick
+再ロールする範囲）とは別の仕組みです。</p>
+<p><code>on_overflow</code>/<code>on_shortfall</code> は
+<code>on_min</code>（6.5 節）と全く同じ型の <code>active</code>（9
+節）内容をそのまま流用しますが、 対象は現時点で <code>self</code>
+のみに限定されます（未対応:
+<code>parent</code>/<code>actor</code>/<code>dragged</code>、ロード時にエラー）。</p>
+<ul>
+<li><code>on_overflow</code> は、値が <code>range</code>
+の上限を超えた瞬間に、著者が指定した内容を一度だけ適用します。</li>
+<li><code>on_shortfall</code> は、値が <code>range</code>
+の下限を下回った瞬間に、著者が指定した内容を一度だけ適用します。</li>
+<li>どちらも <code>range</code>
+が定義されていて著者が明示的に書かなかった場合、<strong>自分自身を境界値（<code>on_overflow</code>
+なら <code>range.max</code>、<code>on_shortfall</code> なら
+<code>range.min</code>）へ <code>set</code>
+する</strong>という既定の内容が自動的に補われます。これにより、 著者は
+<code>range</code>
+を書くだけで、レンジ型プロパティの上限・下限のクランプを実装できます（<code>on_overflow</code>/
+<code>on_shortfall</code>
+を明示するのは、繰り上げ・繰り下げのような特別な挙動が要る場合だけで構いません）。</li>
+</ul>
 <div class="sourceCode" id="cb5"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minute_of_day</span><span class="kw">:</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1439</span><span class="kw">}</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> wrap</span><span class="kw">,</span><span class="at"> </span><span class="fu">carry_to</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span><span class="co">   # 1440でdayに+1して0に戻る</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sequence</span><span class="kw">:</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span><span class="co">                   # 上限なし</span></span></code></pre></div>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">minute_of_day</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1440</span><span class="co">   # 1440溢れたら自分を1440引いて0に戻す</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">day</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">                 # 同時にdayへ+1する</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">  # on_shortfallを省略しているため、下限(0)を下回った場合は既定の</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">  # `set: {self: {minute_of_day: 0}}` が自動的に適用される（単純なクランプ）。</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hp</span><span class="kw">:</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span><span class="kw">}</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">    # on_overflow/on_shortfallをどちらも省略しているため、単純に[0, 100]へクランプされるだけの</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co">    # プロパティになる（毎tick再計算するmodify/accumulateの結果が範囲をはみ出した場合の後始末）。</span></span></code></pre></div>
 <ul>
-<li><code>mode: wrap</code> は <code>carry_to</code> へ繰り上げて 0
-に戻ります（<code>carry_to</code> が必須になります）。</li>
-<li><code>mode: none</code> は上限なしです。</li>
+<li><code>range</code> は
+<code>on_overflow</code>/<code>on_shortfall</code>
+を使う場合に必須です。<code>range</code>
+自体を省略すると（<code>day</code> のように上限・
+下限なくaccumulateし続けたい場合）、<code>on_overflow</code>/<code>on_shortfall</code>
+の仕組み自体を持ちません。</li>
+<li><code>add</code>
+に書けるプロパティは、自分自身（折り返し）に限らず、同じ object_def
+内の他のプロパティ
+（繰り上げ・繰り下げ先）も指定できます。存在しないプロパティ名を書いた場合は
+<code>on_min</code>/<code>add</code> と同様に 黙って無視されます。</li>
+<li>自分自身の折り返し・繰り下げには、絶対値を代入する
+<code>set</code>（9.2 節）ではなく <code>add</code>
+を使ってください。後述の 通り
+<code>on_overflow</code>/<code>on_shortfall</code> はループしないため、1
+tick で <code>range</code> の幅を複数回分飛び越えることがあります。
+<code>set</code>
+で固定値へ代入するとその超過分を失いますが、<code>add</code>
+なら差分を保ったまま反映されるため、こちらのほうが
+堅牢です（<code>set</code>
+は、超過分を気にせず絶対値へ揃えたい別の用途向けの機能で、既定のクランプ動作自体もこの
+<code>set</code> を使っています）。</li>
+<li><code>on_overflow</code>/<code>on_shortfall</code>
+はループしません。1 tick につき、条件を満たしたプロパティ 1 つあたり最大
+1 回 だけ適用されます（<code>accumulate</code>
+の通常の反映・<code>on_min</code> と同じ扱いです）。そのため:
+<ul>
+<li>1 tick で <code>range</code> の幅を複数回分飛び越えた場合、1
+回の適用では収まりきらず、残りは次回以降の tick に 持ち越されます（例:
+通常より大きい <code>add</code> が1回だけ発生した場合）。</li>
+<li>繰り上げ・繰り下げ先自身がさらに範囲外へ出る場合（分→時→日のように連鎖する場合）、同じ
+tick 内で解決 されるかどうかは <code>props</code>
+の宣言順に依存します。あるプロパティの
+<code>on_overflow</code>/<code>on_shortfall</code> が加算する
+繰り上げ・繰り下げ先が、それより後に宣言されていれば、そのプロパティも同じ
+tick 内で正しく折り返されます。 先に宣言されている場合は、次の tick
+まで持ち越されます。そのため、繰り上げ・繰り下げの連鎖がある
+<code>props</code> は、繰り上げ・繰り下げ元→先の順（例:
+<code>minute</code>→<code>hour</code>→<code>day</code>）で宣言することを推奨します。</li>
+</ul></li>
+<li>1 回の判定内での適用順は <code>on_overflow</code> →
+<code>on_shortfall</code> → <code>on_min</code>（6.5
+節）です。境界を越えた値を
+<code>on_overflow</code>/<code>on_shortfall</code>
+が先に補正してから、補正後の値で <code>on_min</code>
+の「下限以下か」を判定します。</li>
 </ul>
 <h3 id="stages段階">6.4 stages（段階）</h3>
 <p>数値プロパティは <code>stages</code>
@@ -266,8 +339,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="
 <li>ステージの <code>passive</code>
 はレベルトリガー（そのステージにいる間ずっと有効）のみです。ステージ切替の瞬間だけ発火する
 edge-triggered な仕組み（<code>on_enter</code>/<code>on_exit</code>
-的なもの）は導入していません。「値が 0 になった瞬間」という実際に
-必要なケースは、専用の <code>on_zero</code>（6.5 節）で表現します。</li>
+的なもの）は導入していません。「下限に達した瞬間」という実際に
+必要なケースは、専用の <code>on_min</code>（6.5 節）で表現します。</li>
 </ul>
 <div class="sourceCode" id="cb6"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
@@ -278,37 +351,50 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mild</span></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passive</span><span class="kw">:</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">parent</span><span class="kw">:</span></span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> feverish</span></span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passive</span><span class="kw">:</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">parent</span><span class="kw">:</span></span>
 <span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
 <span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">hydration</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
-<h3 id="on_zero0以下である間毎tick実行される内容">6.5
-on_zero（0以下である間、毎tick実行される内容）</h3>
-<p><code>on_zero</code> は、プロパティが<strong>0以下である間、毎 tick
-実行される <code>active</code>（9
-節）内容</strong>です。<code>passive</code> の <code>modify</code>/
-<code>accumulate</code>
-と同じレベルトリガーの考え方を、<code>add</code>/<code>destroy</code>/<code>spawn</code>（一時的な命令）に適用したものです。「跨いだ
-瞬間だけ」を検出する仕組み（前 tick
-との比較）は持たず、現在値だけで判定します。</p>
+<h3 id="on_min下限以下である間毎tick実行される内容">6.5
+on_min（下限以下である間、毎tick実行される内容）</h3>
+<p><code>on_min</code> は、プロパティが<strong><code>range</code>
+の下限以下である間、毎 tick 実行される <code>active</code>（9
+節）内容</strong>です（旧称 <code>on_zero</code>。比較対象を固定の 0
+ではなく <code>range.min</code> へ一般化し、0
+以外の下限を持つプロパティにも「底を突いた」
+判定を使えるようにしたものです）。<code>passive</code> の
+<code>modify</code>/<code>accumulate</code>
+と同じレベルトリガーの考え方を、
+<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>（一時的な命令）に適用したものです。「跨いだ瞬間だけ」を検出する仕組み（前
+tick との比較）は持たず、現在値だけで判定します。</p>
 <ul>
 <li>毎 tick
 実行されても安全なのは、典型的な用途が自己終端するためです。<code>destroy</code>
 は既に破棄済みのオブジェクトに
 対して繰り返し実行しても安全（冪等）です。<code>spawn</code>
-を伴う場合は、同じ <code>on_zero</code> 内で <code>destroy</code>
+を伴う場合は、同じ <code>on_min</code> 内で <code>destroy</code>
 と組み合わせるのが 基本形であり、破棄後はそのオブジェクト自体が tick
 の対象でなくなるため、2回目以降の実行は起こりません。<code>destroy</code>
-を伴わずに <code>spawn</code> だけを書くと、0以下である間 tick
+を伴わずに <code>spawn</code> だけを書くと、下限以下である間 tick
 毎に生成し続けてしまう点に注意してください。</li>
-<li><code>on_zero</code> の中身は <code>active</code>
-と同じ対象キーの辞書を直接持ちます。専用のラップは挟みません。</li>
+<li><code>on_min</code> の中身は <code>active</code>（9
+節）と全く同じ型をそのまま持ちますが、対象は現時点で <code>self</code>
+のみに限定されます （未対応:
+<code>parent</code>/<code>actor</code>/<code>dragged</code>、ロード時にエラー）。<code>range.min</code>
+を参照するため、<code>range</code> は <code>on_min</code> を
+使う場合に必須です（<code>on_overflow</code>/<code>on_shortfall</code>
+と同じ制約）。</li>
+<li><code>on_overflow</code>/<code>on_shortfall</code>（6.3
+節）とは異なり、<code>on_min</code>
+は著者が明示的に書かない限り既定の自動生成は
+行われません。「底を突いたら破棄する」のような挙動は用途ごとに大きく異なるため、単純なクランプを前提にした
+既定値がなじまないからです。</li>
 </ul>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
@@ -316,17 +402,16 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span><span class="kw">}</span></span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passive</span><span class="kw">:</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_zero</span><span class="kw">:</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intact</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> broken</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_min</span><span class="kw">:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intact</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> broken</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
 <h2 id="slots親子関係とコンテナ">7. slots（親子関係とコンテナ）</h2>
 <h3 id="基本構造">7.1 基本構造</h3>
 <ul>
@@ -373,6 +458,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="
 は道具として存在確認のみ行うことを表します。</li>
 <li><code>capacity</code>（7.3 節）とは独立した仕組みで、1
 つのスロットが両方を同時に持てます。</li>
+<li><code>object</code> には、<code>object_defs</code> の id だけでなく
+trait 名（5 節）も指定できます（<code>combinations</code> の
+<code>with</code>、12.1 節と 同じ考え方）。trait
+名を使えば、そのtraitを参照するあらゆる型（MOD
+追加分も含む）をまとめて受け入れられます （例:
+<code>{object: location, max: 9999}</code> で、<code>location</code>
+trait を参照するあらゆる場所オブジェクトを受け入れる）。</li>
 </ul>
 <h3 id="capacity合計サイズの制約">7.3 capacity（合計サイズの制約）</h3>
 <p><code>capacity</code>
@@ -545,11 +637,12 @@ stage）に紐づいて
 アイテムの重量プロパティが持ち主の負荷に寄与する）</li>
 <li><strong>プロパティのステージレベル</strong>（6.4 節）</li>
 </ol>
-<h3 id="対象キー">8.1 対象キー</h3>
+<h3 id="文法-操作が上位対象が下位">8.1 文法: 操作が上位、対象が下位</h3>
 <p><code>passive</code>
-は、効果の対象を識別子とするキーの辞書型です。定義するのは
-<code>self</code>（自分自身）・<code>parent</code>（親）・
-<code>child</code>（子）・<code>actor</code>（このアクションを実行しているプレイヤーキャラクター、11
+は、操作（<code>when</code>/<code>modify</code>/<code>accumulate</code>）をキーとする辞書型です。各操作の中に、効果の対象を識別子と
+する対象キーの辞書がぶら下がります。対象キーとして定義するのは
+<code>self</code>（自分自身）・<code>parent</code>（親）・<code>child</code>
+（子）・<code>actor</code>（このアクションを実行しているプレイヤーキャラクター、11
 節参照）の 4 つです。</p>
 <div class="sourceCode" id="cb15"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
@@ -557,19 +650,22 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href=
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passive</span><span class="kw">:</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">when</span><span class="kw">:</span><span class="at"> equip</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">when</span><span class="kw">:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">parent</span><span class="kw">:</span><span class="at"> equip</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
 <h3 id="whenゲート">8.2 when（ゲート）</h3>
 <ul>
-<li><code>when: &lt;スロット名&gt;</code> …
-そのスロットに入っている間、継続的に有効（レベルトリガー）</li>
-<li>省略した場合は「常時（無条件）」を意味します。</li>
-<li><code>when</code> は対象ごとのキーの中に書きます。1 つの
-<code>passive</code> の中で、対象ごとに異なる <code>when</code>
+<li><code>when</code>
+は対象キーをキーとする辞書で、<code>when: {&lt;対象&gt;: &lt;スロット名&gt;}</code>
+の形を取ります。そのスロットに入っている
+間、継続的に有効（レベルトリガー）です。</li>
+<li>ある対象について <code>when</code>
+を書かなければ「常時（無条件）」を意味します。1 つの
+<code>passive</code> の中で、対象ごとに 異なる <code>when</code>
 を持たせられます。</li>
 </ul>
 <h3 id="modify">8.3 modify</h3>
@@ -592,43 +688,55 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href=
 持続する条件を表す
 <code>when</code>/ゲートは持たず、<code>modify</code>/<code>accumulate</code>
 のような登録の仕組みにも乗りません。</p>
-<h3 id="対象キー-1">9.1 対象キー</h3>
-<p><code>active</code> も
-<code>self</code>/<code>parent</code>/<code>child</code>/<code>actor</code>
-という同じ対象キーの辞書型を使います。<code>combinations</code>（12
-節）の中では、 これに加えて
-<strong><code>dragged</code></strong>（ドラッグされてきたカード）も使えます。</p>
+<h3 id="文法-操作が上位対象が下位-1">9.1 文法:
+操作が上位、対象が下位</h3>
+<p><code>active</code> は
+<code>set</code>・<code>add</code>・<code>destroy</code>・<code>spawn</code>
+という操作をキーとする辞書型です。<code>set</code>/<code>add</code>
+の中には、 <code>self</code>/<code>parent</code>/<code>actor</code>
+を対象キーとする辞書がぶら下がります（<code>combinations</code>（12
+節）の中では、これに加えて
+<strong><code>dragged</code></strong>（ドラッグされてきたカード）も使えます）。</p>
 <div class="sourceCode" id="cb16"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eat</span><span class="kw">:</span></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">actor</span><span class="kw">:</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">actor</span><span class="kw">:</span></span>
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
-<p><code>add</code>・<code>destroy</code>・<code>spawn</code>
-は、対象キー（<code>self</code>/<code>parent</code>
-など）の直下に並ぶ<strong>対等な兄弟キー</strong>です。値を操作するか
-（<code>add</code>）オブジェクトの存在を操作するか（<code>destroy</code>/<code>spawn</code>）という区別のための専用の入れ子はありません。</p>
-<h3 id="add">9.2 add</h3>
-<p>対象プロパティの実体値へ、その場で一度だけ不可逆に加減算します。<code>when</code>/常時の継続的な加算は
-<code>accumulate</code> （8.4 節）が担うため、<code>add</code>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
+<h3 id="set-add">9.2 set / add</h3>
+<p>どちらも対象プロパティの実体値へ、その場で一度だけ不可逆に反映します。</p>
+<ul>
+<li><code>set</code>
+は指定した<strong>絶対値</strong>をそのまま代入します。</li>
+<li><code>add</code>
+は指定した量を既存の値へ<strong>加減算</strong>します。</li>
+</ul>
+<p><code>when</code>/常時の継続的な加算は <code>accumulate</code>（8.4
+節）が担うため、<code>set</code>/<code>add</code>
 は一時的な命令専用です。</p>
 <h3 id="destroy">9.3 destroy</h3>
-<p><code>true</code>
-を指定すると、対象オブジェクトを消滅させます。すべてのオブジェクトは必ずworldを根とするツリーに
+<p>削除したい対象を直接指定します。単一の対象なら
+<code>destroy: self</code>
+のようにスカラーで、複数の対象を同時に削除する なら
+<code>destroy: [self, dragged]</code>
+のようにリストで書きます。すべてのオブジェクトは必ずworldを根とするツリーに
 所属するため（7.1 節）、<code>destroy</code>
 は「現在の親スロットから切り離す」こととして表現できます。繰り返し実行しても
-安全（冪等）です。<code>spawn</code>と同じ対象キーの中で同時に指定した場合、<code>destroy</code>は<code>spawn</code>より先に実行されます
-（9.4節参照）。</p>
+安全（冪等）です。<code>spawn</code>
+と同時に指定した場合、<code>destroy</code> は <code>spawn</code>
+より先に実行されます（9.4節参照）。</p>
 <h3 id="spawn">9.4 spawn</h3>
 <p><code>{object, into}</code>
-を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。<code>destroy</code>
-と同じ対象キーの
-中で同時に指定でき（<code>{spawn: {...}, destroy: true}</code>）、「新しいオブジェクトを生成しつつ、自分自身は消滅させる」と
-いう組み合わせを1つのエントリで表現できます。この場合、<code>destroy</code>が先に実行されます。破棄によって実際に位置が
-空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが素直に実現できるためです。</p>
+を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。<code>spawn</code>
+は常に <strong><code>self</code> （この <code>active</code>
+を宣言したオブジェクト自身）が実行するもの</strong>とみなすため、<code>set</code>/<code>add</code>/<code>destroy</code>
+のような対象 キーのラップを挟みません。<code>destroy</code>
+と同時に指定でき（<code>{spawn: {...}, destroy: self}</code>）、「新しいオブジェクトを
+生成しつつ、自分自身は消滅させる」という組み合わせを1つのエントリで表現できます。この場合、<code>destroy</code>が先に
+実行されます。破棄によって実際に位置が空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが
+素直に実現できるためです。</p>
 <p>挿入先の<strong>スロット名を書く必要はありません</strong>。生成物を受け取るオブジェクト（後述の<code>into</code>が指す起点）が持つ
 スロットを<strong>宣言順に走査し、最初に配置できたスロットへ入れます</strong>。型ごとに用意されたスロット（アイテム用・
 設備用など）へ自然に振り分けられるため、著者はスロット名を知る必要がありません。</p>
@@ -636,24 +744,23 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href=
 は、以下のいずれかです。</p>
 <ul>
 <li><strong>省略、または<code>same_slot</code></strong>:
-この<code>active</code>/<code>on_zero</code>を宣言したオブジェクト（<code>self</code>）が今いる、まさにその場所
-（親と、<code>self</code>が現在占めているのと同じスロット）へそのまま配置します。クラフト・腐敗など、「同じ場所で
-別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません（<code>self</code>の現在の所属先が一意に決まる
-ため）。<code>same_slot</code>は省略時と全く同じ意味を持つ、明示したい場合のためのキーワードです。</li>
+この<code>active</code>/<code>on_min</code>/<code>on_overflow</code>/<code>on_shortfall</code>を宣言したオブジェクト
+（<code>self</code>）が今いる、まさにその場所（親と、<code>self</code>が現在占めているのと同じスロット）へそのまま配置します。
+クラフト・腐敗など、「同じ場所で別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません
+（<code>self</code>の現在の所属先が一意に決まるため）。<code>same_slot</code>は省略時と全く同じ意味を持つ、明示したい場合の
+ためのキーワードです。</li>
 <li><strong><code>self</code>/<code>actor</code></strong>:
 このいずれかを起点に、その対象が持つスロットを宣言順に走査します。<code>actor</code>
-（アクション実行者）は、アクション実行文脈でのみ解決できます。<code>on_zero</code>には<code>actor</code>が存在しないため使えません
-（配置は行われません）。</li>
+（アクション実行者）は、アクション実行文脈でのみ解決できます。<code>on_min</code>/<code>on_overflow</code>/<code>on_shortfall</code>には
+<code>actor</code>が存在しないため使えません（配置は行われません）。</li>
 </ul>
 <div class="sourceCode" id="cb17"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> rotten_wood</span><span class="kw">}</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> rotten_wood</span><span class="kw">}</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
 <div class="sourceCode" id="cb18"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_coconut</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">}</span></span></code></pre></div>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_coconut</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">}</span></span></code></pre></div>
 <p><code>into</code>が指す起点のどのスロットにも<code>accepts</code>/<code>capacity</code>が合わず配置できなかった場合、<strong><code>fallback</code>はYAML上に
 存在せず</strong>、必ずその起点自身の親へ伝播します。伝播先では<code>accepts</code>/<code>capacity</code>を無視し、先頭のスロットへ強制的に
 配置します（すべてのオブジェクトは必ずどこかの親に属さなければならないため）。スロットの指定が不要になった
@@ -673,7 +780,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href=
 <li><code>actions</code>/<code>combinations</code> の実行結果（11 節・12
 節）</li>
 <li><code>pick</code> の各候補（10 節）</li>
-<li><code>props</code> の <code>on_zero</code>（6.5 節）</li>
+<li><code>props</code> の <code>on_min</code>（6.5
+節）・<code>on_overflow</code>/<code>on_shortfall</code>（6.3 節）</li>
 </ul>
 <h2 id="pick重み付き確率分岐">10. pick（重み付き確率分岐）</h2>
 <p><code>pick</code> は、<code>active</code>
@@ -684,7 +792,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href=
 瞬間を持たない、関係とゲートに基づく継続的な評価だからです。</p>
 <h3 id="基本構造-1">10.1 基本構造</h3>
 <p>各候補は <code>weight</code> に加えて、自分自身の
-<code>active</code>（対象をキーとする辞書）を丸ごと持ちます。候補が1つしかない場合は、
+<code>active</code>（9
+節の文法そのまま）を丸ごと持ちます。候補が1つしかない場合は、
 重みの値に関わらず必ずそれが選ばれます。</p>
 <div class="sourceCode" id="cb19"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
@@ -693,21 +802,18 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href=
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">actor</span><span class="kw">:</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> actor</span></span></code></pre></div>
 <p>候補ごとに影響を受ける対象（<code>self</code>/<code>actor</code>
 など）そのものが異なるケースも、このように表現できます。<code>pick</code>
 の 入れ子は再帰的であり、候補の <code>active</code> の代わりにさらに別の
 <code>pick</code> を書くこともできます。</p>
 <p>各候補の <code>active</code>
-に書ける内容は、一時的な命令（<code>add</code>/<code>destroy</code>/<code>spawn</code>）に限られます。<code>modify</code>/<code>accumulate</code>
-は
-関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて終わる
-<code>pick</code> の候補に書く意味がありません。</p>
+に書ける内容は、一時的な命令（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>）に限られます。<code>modify</code>/<code>accumulate</code>
+は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
+終わる <code>pick</code> の候補に書く意味がありません。</p>
 <h3 id="weight">10.2 weight</h3>
 <p><code>weight</code>
 は、専用の計算式（base値＋条件付き補正）を新設せず、以下のいずれかとして表現します。</p>
@@ -722,8 +828,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href=
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> self.accuracy</span><span class="kw">}</span></span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">hp</span><span class="kw">:</span><span class="at"> </span><span class="dv">-10</span><span class="kw">}</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">hp</span><span class="kw">:</span><span class="at"> </span><span class="dv">-10</span><span class="kw">}</span></span>
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">active</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
 <p>外部からの干渉（「戦闘スキルが高いほど命中しやすい」等）は、<code>weight</code>
@@ -744,11 +850,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href=
 <span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
 <span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> actor.satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span>
 <span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">actor</span><span class="kw">:</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">actor</span><span class="kw">:</span></span>
 <span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
 <h3 id="showmenu">11.1 showMenu</h3>
 <p>メニューへの表示方法を制御します。現時点では <code>always</code>
 のみです。</p>
@@ -776,12 +881,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href=
 <span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
 <span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">path</span><span class="kw">:</span><span class="at"> dragged.durability</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> gt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
 <span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">active</span><span class="kw">:</span></span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> logs</span><span class="kw">}</span></span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">dragged</span><span class="kw">:</span></span>
-<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> logs</span><span class="kw">}</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">dragged</span><span class="kw">:</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
 <h3 id="with">12.1 with</h3>
 <p>マッチング対象を、<code>object_defs</code> の id または trait
 名で指定します。trait 名を使えば、そのtraitを持つあらゆるカード （MOD
@@ -870,11 +974,22 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href=
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">day</span><span class="kw">:</span></span>
 <span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> none</span><span class="kw">}</span></span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">minute_of_day</span><span class="kw">:</span></span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1439</span><span class="kw">}</span></span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">mode</span><span class="kw">:</span><span class="at"> wrap</span><span class="kw">,</span><span class="at"> </span><span class="fu">carry_to</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span></code></pre></div>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hour</span><span class="kw">:</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">23</span><span class="kw">}</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">hour</span><span class="kw">:</span><span class="at"> </span><span class="dv">-24</span><span class="kw">,</span><span class="at"> </span><span class="fu">day</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">minute</span><span class="kw">:</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">59</span><span class="kw">}</span></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">minute</span><span class="kw">:</span><span class="at"> </span><span class="dv">-60</span><span class="kw">,</span><span class="at"> </span><span class="fu">hour</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span></code></pre></div>
+<p>（実際の定義は
+<code>Assets/StreamingAssets/WorldCodex/core.yaml</code>
+参照。<code>day</code>/<code>hour</code>/<code>minute</code>
+に加え、累積 tick 数を表す <code>tick</code> も持つ。）</p>
 <p>日時・天候はオブジェクトから直接参照されるのではなく、<strong>環境がオブジェクトに影響を与える</strong>という位置づけです
 （例:
 明るさによって行動可否が変わる）。直接のプロパティ参照経路（<code>world.xxx</code>）は
@@ -896,9 +1011,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href=
 節、<code>min</code> による半開区間）とキー名・記法を統一するか</li>
 <li>ステージ切替の瞬間だけ発火する edge-triggered
 な仕組み（<code>on_enter</code>/<code>on_exit</code>
-的なもの）の要否と記法。「0になった 瞬間」は <code>on_zero</code>（6.5
-節）で解決済みだが、それ以外のステージ境界を跨いだ瞬間に発火したいケースが今後生じた
-場合の対応は未検討</li>
+的なもの）の要否と記法。「下限に 達した瞬間」は <code>on_min</code>（6.5
+節）で解決済みだが、それ以外のステージ境界を跨いだ瞬間に発火したいケースが今後
+生じた場合の対応は未検討</li>
 <li><code>day</code> の上限（無制限のまま加算し続けるか、年単位で wrap
 して <code>year</code> プロパティを持つか）</li>
 <li>天候遷移自体（いつ・どの天候に切り替わるか）のランダム性の仕組み（6.2
