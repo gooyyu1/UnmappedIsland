@@ -109,10 +109,12 @@ tick ごとに加算・減算し合う
 日）から乱数で決める。</li>
 <li><code>remaining</code> は毎 tick <code>-1</code>
 され、<code>on_zero</code>（<code>GameElementDefinition.md</code> 6.5
-節）で <code>spawn</code>＋<code>destroy</code>（9 節）を同時に
-発火し、自分自身を破棄すると同時に、対になる季節（<code>dry</code>⇔<code>wet</code>、2
+節）で <code>spawn</code>＋<code>destroy</code>（9.4 節・9.3 節）を
+同時に発火し、自分自身を破棄すると同時に、対になる季節（<code>dry</code>⇔<code>wet</code>、2
 状態しかないので単純な反転でよい）の新しい
-インスタンスを生成してスロットに差し替える。 <code>on_zero</code> は
+インスタンスを、自分がいたのと同じスロット（<code>spawn</code> の
+<code>into</code> を省略した場合の既定動作、9.4
+節）へ生成して差し替える。 <code>on_zero</code> は
 <code>remaining</code> が0以下である間、毎 tick
 実行されますが、この本体は <code>destroy</code>
 を伴うため、実行された瞬間に この季節インスタンス自体が消滅し、以後 tick
