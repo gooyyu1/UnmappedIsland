@@ -165,7 +165,8 @@ namespace UnmappedIsland.Runtime
             for (int local = 0; local < properties.Length; local++)
             {
                 ActiveEffect effect = properties[local].PostTick(Def.PropertyDefs[local].OnZero);
-                if (effect != null) ExecuteOnZeroEffect(effect, session);
+                // on_zeroにはactorが存在しないため、actor無し（Actorを対象にしたspawnは解決できない）で適用する。
+                if (effect != null) ApplyActiveEffect(effect, session, actor: null);
             }
 
             foreach (var slot in slots)
@@ -174,14 +175,20 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// on_zeroのadd/destroy/spawnを実行する。destroyをspawnより先に行う（9.3節・9.4節）。カード
-        /// スタックのUIでは、種類が変わるアイテムがはみ出さないよう、置き換え後のオブジェクトが
-        /// 「破棄されるオブジェクトが占めていた位置」を引き継ぐ必要があるため、destroyで実際に位置が
-        /// 空いてから通常の（force無しの）配置を行う。位置情報はdestroyで失われる前に捕捉しておく
-        /// （CaptureSameSlotAnchor参照）。on_zeroにはactorが存在しないため、spawnの実行はactor無し
-        /// （Actorを対象にしたものは解決できない）で行う。
+        /// このオブジェクト自身を対象としたadd/destroy/spawnを実行する（9.2〜9.4節）。on_zero（6.5節）と、
+        /// actions/combinations（11節・12節）のactive/pickが解決した結果の両方から、対象ごとに解決された
+        /// このオブジェクトのインスタンスに対して呼ばれる（呼び出し側がself/parent/actor/dragged等の
+        /// 対象解決を担い、ここでは常に「このインスタンス自身」への適用として振る舞う）。
+        ///
+        /// destroyをspawnより先に行う（9.3節・9.4節）。カードスタックのUIでは、種類が変わるアイテムが
+        /// はみ出さないよう、置き換え後のオブジェクトが「破棄されるオブジェクトが占めていた位置」を
+        /// 引き継ぐ必要があるため、destroyで実際に位置が空いてから通常の（force無しの）配置を行う。
+        /// 位置情報はdestroyで失われる前に捕捉しておく（CaptureSameSlotAnchor参照）。
+        ///
+        /// actorは、spawnのinto:actorの解決や、アクション実行文脈のためにそのまま伝搬する（on_zero経由の
+        /// 場合はactorが存在しないためnull）。
         /// </summary>
-        private void ExecuteOnZeroEffect(ActiveEffect effect, WorldSession session)
+        internal void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor)
         {
             foreach (var delta in effect.Adds)
                 AddNumber(delta.PropertyGlobalId, delta.Amount);
@@ -192,7 +199,7 @@ namespace UnmappedIsland.Runtime
 
             if (effect.Destroy) session.Containment.Destroy(this);
 
-            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor: null, anchor);
+            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
         }
 
         /// <summary>

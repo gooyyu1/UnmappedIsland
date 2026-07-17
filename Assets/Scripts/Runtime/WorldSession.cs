@@ -1,3 +1,4 @@
+using System;
 using UnmappedIsland.Codex;
 
 namespace UnmappedIsland.Runtime
@@ -13,12 +14,17 @@ namespace UnmappedIsland.Runtime
         public WorldCodex Codex { get; }
         public Containment Containment { get; }
 
+        /// <summary>pick（10節）の重み付き抽選に使う乱数源。テストで決定的に振る舞わせたい場合は、
+        /// シード固定の Random を渡せるようにコンストラクタで差し替え可能にしている。</summary>
+        public Random Rng { get; }
+
         private int nextInstanceId = 1;
 
-        public WorldSession(WorldCodex codex)
+        public WorldSession(WorldCodex codex, Random rng = null)
         {
             Codex = codex;
             Containment = codex.CreateContainment();
+            Rng = rng ?? new Random();
         }
 
         /// <summary>
