@@ -10,7 +10,9 @@ namespace UnmappedIsland.Codex.Runtime
     /// "Object"（言語組み込みの System.Object 等と衝突する）や汎用OOP用語の "Instance" を避けて命名している。
     ///
     /// プロパティの現在値・スロットの中身は、いずれも Def 側のローカルIDをそのままindexとする
-    /// 密配列として保持する（グローバルIDでの辞書引きは行わない）。
+    /// 密配列として保持する（グローバルIDでの辞書引きは行わない）。プロパティへ登録された効果
+    /// （modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため
+    /// PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。
     /// </summary>
     public sealed class WorldObject
     {
@@ -20,10 +22,6 @@ namespace UnmappedIsland.Codex.Runtime
         // ローカルindexで並ぶ密配列。それぞれ Def.PropertyDefs / Def.SlotDefs と対になる。
         private readonly PropertyValue[] properties;
         private readonly Slot[] slots;
-
-        // ローカルプロパティindexごとの、外部から登録された効果(modify/accumulate)のリスト
-        // （遅延生成、Containment経由でのみ変更）。
-        private readonly List<ActiveContribution>[] incoming;
 
         /// <summary>所属先（7.1節）。子は必ず1つの親に属する。ルート（未格納）なら null。</summary>
         public WorldObject Parent { get; private set; }
@@ -38,13 +36,12 @@ namespace UnmappedIsland.Codex.Runtime
 
             properties = new PropertyValue[def.PropertyDefs.Count];
             for (int i = 0; i < properties.Length; i++)
-                properties[i] = def.PropertyDefs[i].DefaultValue;
+                properties[i] = def.PropertyDefs[i].DefaultValue.Clone();
 
             slots = new Slot[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
                 slots[i] = new Slot(def.SlotDefs[i]);
 
-            incoming = new List<ActiveContribution>[def.PropertyDefs.Count];
             foreach (var c in def.Contributions)
             {
                 if (c.Target != ContributionTarget.Self) continue;
@@ -59,19 +56,20 @@ namespace UnmappedIsland.Codex.Runtime
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing)
             {
-                value = default;
+                value = null;
                 return false;
             }
             value = properties[local];
             return true;
         }
 
+        /// <summary>登録済みのIncoming（modify/accumulate）はそのまま、値の中身だけを差し替える。</summary>
         public void SetProperty(int globalPropertyId, PropertyValue value)
         {
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing)
                 throw new InvalidOperationException($"'{Def.Name}' はプロパティ(id={globalPropertyId})を持ちません。");
-            properties[local] = value;
+            properties[local].CopyValueFrom(value);
         }
 
         public int GetNumber(int globalPropertyId, int fallback = 0)
@@ -87,7 +85,7 @@ namespace UnmappedIsland.Codex.Runtime
         {
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing) return;
-            properties[local] = properties[local].Add(delta);
+            properties[local].Add(delta);
         }
 
         public bool TryGetSlot(int globalSlotId, out Slot slot)
@@ -115,12 +113,12 @@ namespace UnmappedIsland.Codex.Runtime
 
         internal void RegisterContribution(int localPropertyId, ActiveContribution contribution)
         {
-            (incoming[localPropertyId] ??= new List<ActiveContribution>()).Add(contribution);
+            properties[localPropertyId].RegisterContribution(contribution);
         }
 
         internal void UnregisterContributionsFrom(WorldObject declarer, int localPropertyId)
         {
-            incoming[localPropertyId]?.RemoveAll(c => c.Declarer == declarer);
+            properties[localPropertyId].UnregisterContributionsFrom(declarer);
         }
 
         /// <summary>
@@ -132,19 +130,7 @@ namespace UnmappedIsland.Codex.Runtime
         {
             int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
             if (local == LocalIndexMap.Missing) return 0;
-
-            int sum = properties[local].AsNumber();
-
-            var contributions = incoming[local];
-            if (contributions != null)
-            {
-                foreach (var c in contributions)
-                    if (c.Def.Kind == ContributionKind.Modify && IsGateActive(c))
-                        sum += c.Def.Amount;
-            }
-
-            PropertyRange? range = Def.PropertyDefs[local].Range;
-            return range.HasValue ? range.Value.Clamp(sum) : sum;
+            return properties[local].GetEffectiveValue(Def.PropertyDefs[local].Range);
         }
 
         /// <summary>
@@ -159,53 +145,20 @@ namespace UnmappedIsland.Codex.Runtime
         /// </summary>
         public void Tick()
         {
-            for (int local = 0; local < incoming.Length; local++)
-            {
-                var contributions = incoming[local];
-                if (contributions == null) continue;
-
-                foreach (var c in contributions)
-                {
-                    if (c.Def.Kind != ContributionKind.Accumulate) continue;
-                    if (!IsGateActive(c)) continue;
-                    properties[local] = properties[local].Add(c.Def.Amount);
-                }
-            }
+            foreach (var p in properties) p.Tick();
         }
 
         /// <summary>
         /// 現在このプロパティに登録されている全寄与（modify/accumulate両方）を列挙する。
         /// 「このプロパティに何が影響しているか」をUIで表示したい場合に使う。ゲートが現在有効かどうかは
-        /// 呼び出し側でIsGateActive相当の判定をしたい場合、Kind別にGetEffectiveValue/Tickの結果と突き合わせる。
+        /// 呼び出し側で ActiveContribution.IsActive() 相当の判定をしたい場合、Kind別にGetEffectiveValue/Tickの
+        /// 結果と突き合わせる。
         /// </summary>
         public IReadOnlyList<ActiveContribution> GetIncomingContributions(int propertyGlobalId)
         {
             int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
             if (local == LocalIndexMap.Missing) return Array.Empty<ActiveContribution>();
-            return (IReadOnlyList<ActiveContribution>)incoming[local] ?? Array.Empty<ActiveContribution>();
-        }
-
-        private static bool IsGateActive(ActiveContribution c)
-        {
-            switch (c.Def.Gate.Kind)
-            {
-                case ContributionGateKind.Always:
-                    return true;
-
-                case ContributionGateKind.WhenSlot:
-                    WorldObject parent = c.SlotBearer.Parent;
-                    if (parent == null) return false;
-                    int slotLocal = parent.Def.SlotLayout.ToLocal(c.Def.Gate.SlotGlobalId);
-                    return slotLocal != LocalIndexMap.Missing && c.SlotBearer.ParentSlotLocalId == slotLocal;
-
-                case ContributionGateKind.WhenOwnStage:
-                    int value = c.Declarer.GetNumberByLocalId(c.Def.Gate.PropertyLocalId);
-                    var stage = c.Declarer.Def.PropertyDefs[c.Def.Gate.PropertyLocalId].ResolveStage(value);
-                    return ReferenceEquals(stage, c.Def.Gate.Stage);
-
-                default:
-                    return false;
-            }
+            return properties[local].Incoming;
         }
     }
 }

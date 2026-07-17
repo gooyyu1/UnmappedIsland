@@ -84,6 +84,29 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
+        public void Spawn_MultipleInstancesOfSameObjectDef_HaveIndependentPropertyState()
+        {
+            // PropertyDef.DefaultValueは全WorldObjectで共有される1つのテンプレートであり、
+            // WorldObjectのコンストラクタがClone()し忘れると、片方への加算・効果登録がもう片方にも
+            // 漏れてしまう。同じ"torch"から2体spawnし、互いに影響しないことを確認する。
+            var torch = new ObjectDefBlueprint { Name = "torch" };
+            torch.Properties.Add(Prop("brightness", 1));
+            torch.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "brightness", 5));
+
+            var codex = WorldCodexBuilder.Build(new[] { torch });
+            int brightnessId = codex.PropertyNames.GetId("brightness");
+
+            WorldObject first = Spawn(codex, "torch");
+            WorldObject second = Spawn(codex, "torch");
+
+            first.AddNumber(brightnessId, 10);
+            first.Tick();
+
+            Assert.That(first.GetNumber(brightnessId), Is.EqualTo(16), "1体目: 1(初期値) + 10(add) + 5(accumulate)");
+            Assert.That(second.GetNumber(brightnessId), Is.EqualTo(1), "2体目は未タッチのまま初期値のはず");
+        }
+
+        [Test]
         public void Modify_Parent_WhenSlot_AppliesOnlyWhileInThatSlot()
         {
             var character = new ObjectDefBlueprint { Name = "character" };
