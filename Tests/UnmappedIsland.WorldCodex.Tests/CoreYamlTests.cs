@@ -70,7 +70,7 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void World_TickAndMinute_AccumulateOncePerTick()
+        public void World_TickAndMinute_AccumulatePerTick()
         {
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int tickId = codex.PropertyNames.GetId("tick");
@@ -81,8 +81,8 @@ namespace UnmappedIsland.Codex.Tests
             worldInstance.Tick();
             worldInstance.Tick();
 
-            Assert.That(worldInstance.GetNumber(tickId), Is.EqualTo(3));
-            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(3));
+            Assert.That(worldInstance.GetNumber(tickId), Is.EqualTo(3), "tickは毎tick+1される");
+            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(45), "minuteは毎tick+15される(1tick=ゲーム内15分)");
         }
 
         [Test]

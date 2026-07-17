@@ -32,11 +32,11 @@ object_defs:
       temperature:
         value: 20
     passive:
-      # 1tick = ゲーム内時間1分、という対応づけ。tick・minuteの両方を毎tick+1する。
+      # 1tick = ゲーム内時間15分、という対応づけ。tickは+1、minuteは+15を毎tick加算する。
       self:
         accumulate:
           tick: 1
-          minute: 1
+          minute: 15
     slots:
       locations:
         # locationトレイトを持つobject_defのみを受け入れる（種類数の上限は設けない想定のため、
