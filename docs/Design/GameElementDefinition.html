@@ -146,14 +146,26 @@ Schema</a>）は <code>WorldCodex.schema.json</code>（メタ情報は
 <ul>
 <li>YAML
 ファイルは所定のディレクトリ以下のすべてのファイルが自動的に読み込まれます。ゲーム本体の定義と
-MOD の定義は 別ディレクトリに配置し、双方を混在させずに管理します。</li>
+MOD の定義は 別ディレクトリに配置し、双方を混在させずに管理します（例:
+ゲーム本体は
+<code>core</code>/<code>terrains</code>/<code>foods</code>/<code>tools</code>
+など
+複数ファイルに分割し、ユーザー定義は別途の外部ディレクトリに置く）。</li>
 <li>マッピングキーの重複は、ローダーの<strong>厳格モード</strong>でエラーにします（多くの
 YAML パーサはデフォルトで重複キーを
 後勝ちで黙って上書きするため、明示的な安全策として必要です）。</li>
 <li>ロード後に別途<strong>バリデーションステップ</strong>を設けます。</li>
 <li>同じ ID
-を持つ定義が複数のファイルに存在する場合のマージ・上書き規則は未定です（17
-節）。</li>
+を持つ定義が複数のファイルに存在する場合のマージ・上書き規則:
+<ul>
+<li><strong>同一ディレクトリ内</strong>（同一の情報源、例: ゲーム本体の
+<code>core.yaml</code> と
+<code>foods.yaml</code>）での重複はエラーとします。</li>
+<li><strong>異なるディレクトリ間</strong>（例:
+ゲーム本体のディレクトリと MOD のディレクトリ）では、後から読み込んだ
+ディレクトリの定義が同名の定義を上書きします。MOD
+がゲーム本体の定義を差し替えられるようにするためです。</li>
+</ul></li>
 </ul>
 <h2 id="object_defs型定義">4. object_defs（型定義）</h2>
 <p>型定義は <code>object_defs</code>
@@ -877,15 +889,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href=
 <li><strong><code>derived</code>（導出値）</strong>: 「他の props
 から計算される値」という概念自体、採否がまだ決まっていません（17
 節）。</li>
-<li><strong>YAML 定義のマージ・上書き規則</strong>（3.3 節）:
-別途仕様書で定義します。</li>
 </ul>
 <h2 id="今後の検討課題">17. 今後の検討課題</h2>
 <ul>
 <li><code>derived</code>（導出値）の採否。採用する場合、<code>stages</code>（6.4
 節、<code>min</code> による半開区間）とキー名・記法を統一するか</li>
-<li>同一 ID の定義が複数ファイルに存在する場合のマージ・上書き規則（3.3
-節）</li>
 <li>ステージ切替の瞬間だけ発火する edge-triggered
 な仕組み（<code>on_enter</code>/<code>on_exit</code>
 的なもの）の要否と記法。「0になった 瞬間」は <code>on_zero</code>（6.5
