@@ -134,80 +134,42 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。自分自身のプロパティに
-        /// 適用した後、子（すべてのスロットの中身）へ再帰する。すべてのオブジェクトは必ずworldの下に
-        /// ぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は持たない」という前提）、
-        /// worldに対して1回 Tick を呼ぶだけでツリー全体のaccumulateが実行される。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、on_overflow（6.3節）・
+        /// on_zero（6.5節）の判定・実行までを、プロパティごとに自分自身で完結させる（PropertyValue.Tick
+        /// 参照。WorldObjectはグローバル→ローカルの解決とeffect適用の実行役を提供するだけで、いつ・どの
+        /// プロパティが溢れた／0になったかの判断はここには一切無い）。自分自身の処理の後、子
+        /// （すべてのスロットの中身）へ再帰する。すべてのオブジェクトは必ずworldの下にぶら下がるため
+        /// （「別途『世界に存在するすべてのオブジェクト』一覧は持たない」という前提）、worldに対して
+        /// 1回 Tick を呼ぶだけでツリー全体が処理される。
         ///
-        /// destroy/spawnはここでは行わない（PostTick参照）。Tick中はツリー構造を変更しないため、
-        /// 子の列挙にスナップショットは不要。
+        /// on_zeroのdestroy/spawnは、この処理の最中に自分自身や兄弟をツリーから切り離しうる。
+        /// 各スロットの中身は列挙前にスナップショットを取ることで、列挙中に自分自身や兄弟がdestroyされても
+        /// 安全なようにしている。
         /// </summary>
-        public void Tick()
-        {
-            foreach (var p in properties) p.Tick();
-            ApplyOverflow();
-
-            foreach (var slot in slots)
-                foreach (var child in slot.Contents)
-                    child.Tick();
-        }
-
-        /// <summary>
-        /// on_overflow（6.3節）: rangeの上限を超えたプロパティについて、著者がon_overflow.self.accumulateへ
-        /// 書いた量をそのまま一度だけ適用する（on_zeroと同じ「一度きりの命令」という文法・性質をそのまま
-        /// 流用している。何を折り返し量・繰り上げ量にするかはCodex側では一切解釈せず、著者の指定通りに
-        /// AddNumberするだけ）。全プロパティのaccumulateが確定した後、まとめて1つの解決パスとして処理する。
-        ///
-        /// 繰り上げは連鎖しうる（例: minuteの繰り上げでhourが増え、そのhour自身も溢れてdayへ繰り上がる）上、
-        /// 1tickで複数回分溢れる場合もありうる（例: 通常より大きいaccumulateが1回だけ発生した場合）。
-        /// properties配列の走査順（宣言順）に依存せず、また複数回分の溢れも正しく解決できるよう、
-        /// 「溢れが1件も無くなるまで」プロパティ数を上限に再走査する。
-        /// </summary>
-        private void ApplyOverflow()
-        {
-            for (int pass = 0; pass <= properties.Length; pass++)
-            {
-                bool anyOverflowed = false;
-
-                for (int local = 0; local < properties.Length; local++)
-                {
-                    PropertyDef def = Def.PropertyDefs[local];
-                    if (def.OnOverflow.Count == 0) continue;
-
-                    PropertyRange range = def.Range.Value; // on_overflowはrangeを必須とする（ロード時に保証済み）
-                    if (properties[local].AsNumber() <= range.Max) continue;
-
-                    foreach (var delta in def.OnOverflow)
-                        AddNumber(delta.PropertyGlobalId, delta.Amount);
-
-                    anyOverflowed = true;
-                }
-
-                if (!anyOverflowed) return;
-            }
-        }
-
-        /// <summary>
-        /// on_zero（6.5節）が発火条件を満たすプロパティがあれば、そのadd/destroy/spawnを実行する。
-        /// Tickとは別の、時間経過後の「値によるイベント処理」のパスとして分離しており（PropertyValue.PostTick
-        /// 参照）、accumulateの結果がすべて確定してから存在操作を行う。自分自身の判定・実行の後、子へ
-        /// 再帰する。
-        ///
-        /// destroy/spawnはこの再帰中にツリー構造（スロットの中身）を変更しうるため、各スロットの中身は
-        /// 列挙前にスナップショットを取る（列挙中に自分自身や兄弟がdestroyされても安全なようにするため）。
-        /// </summary>
-        public void PostTick(WorldSession session)
+        public void Tick(WorldSession session)
         {
             for (int local = 0; local < properties.Length; local++)
-            {
-                ActiveEffect effect = properties[local].PostTick(Def.PropertyDefs[local].OnZero);
-                // on_zeroにはactorが存在しないため、actor無し（Actorを対象にしたspawnは解決できない）で適用する。
-                if (effect != null) ApplyActiveEffect(effect, session, actor: null);
-            }
+                properties[local].Tick(Def.PropertyDefs[local], this, session);
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())
-                    child.PostTick(session);
+                    child.Tick(session);
+        }
+
+        /// <summary>
+        /// on_overflow（6.3節）の繰り上げ用。グローバルIDをこのオブジェクト内のローカルIDへ解決し、
+        /// 加減算した上で、そのプロパティ自身のCheckOverflowAndZeroへそのまま戻す（値が変わった
+        /// タイミングでそのプロパティ自身に判定させる、という原則を繰り上げ先についても徹底するため）。
+        /// これにより、繰り上げ先自身がさらに溢れる場合（分→時→日の連鎖）も、宣言順に関係なく
+        /// 自然に連鎖する。このオブジェクトが対象プロパティを持たない場合は何もしない（AddNumberと同じ規約）。
+        /// </summary>
+        internal void ApplyOverflowDelta(int globalPropertyId, int amount, WorldSession session)
+        {
+            int local = Def.PropertyLayout.ToLocal(globalPropertyId);
+            if (local == LocalIndexMap.Missing) return;
+
+            properties[local].Add(amount);
+            properties[local].CheckOverflowAndZero(Def.PropertyDefs[local], this, session);
         }
 
         /// <summary>

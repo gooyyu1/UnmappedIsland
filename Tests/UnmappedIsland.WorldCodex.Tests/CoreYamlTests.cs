@@ -76,10 +76,11 @@ namespace UnmappedIsland.Codex.Tests
             int tickId = codex.PropertyNames.GetId("tick");
             int minuteId = codex.PropertyNames.GetId("minute");
 
+            var session = new WorldSession(codex);
             var worldInstance = new WorldObject(1, world);
-            worldInstance.Tick();
-            worldInstance.Tick();
-            worldInstance.Tick();
+            worldInstance.Tick(session);
+            worldInstance.Tick(session);
+            worldInstance.Tick(session);
 
             Assert.That(worldInstance.GetNumber(tickId), Is.EqualTo(3), "tickは毎tick+1される");
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(45), "minuteは毎tick+15される(1tick=ゲーム内15分)");
@@ -93,14 +94,15 @@ namespace UnmappedIsland.Codex.Tests
             int hourId = codex.PropertyNames.GetId("hour");
             int dayId = codex.PropertyNames.GetId("day");
 
+            var session = new WorldSession(codex);
             var worldInstance = new WorldObject(1, world);
 
-            for (int i = 0; i < 4; i++) worldInstance.Tick(); // 15*4=60分 -> minuteが折り返し、hourへ+1
+            for (int i = 0; i < 4; i++) worldInstance.Tick(session); // 15*4=60分 -> minuteが折り返し、hourへ+1
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(1));
 
-            for (int i = 0; i < 4 * 24 - 4; i++) worldInstance.Tick(); // 残り23時間分進め、hourもdayへ折り返させる
+            for (int i = 0; i < 4 * 24 - 4; i++) worldInstance.Tick(session); // 残り23時間分進め、hourもdayへ折り返させる
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(0));

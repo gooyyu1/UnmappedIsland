@@ -709,9 +709,10 @@ object_defs:
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
             Assert.That(PropOf(codex, clock, "minute").OnOverflow.Count, Is.EqualTo(2));
 
+            var session = new WorldSession(codex);
             var instance = new WorldObject(1, clock);
             instance.SetProperty(codex.PropertyNames.GetId("minute"), PropertyValue.FromNumber(60)); // 手動で溢れさせる
-            instance.Tick(); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
+            instance.Tick(session); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
 
             Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(0));
             Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hour")), Is.EqualTo(1));

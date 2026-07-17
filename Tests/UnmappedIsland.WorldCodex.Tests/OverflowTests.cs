@@ -52,10 +52,11 @@ namespace UnmappedIsland.Codex.Tests
             var codex = WorldCodexBuilder.Build(new[] { clock });
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
+            var session = new WorldSession(codex);
 
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock")));
 
-            instance.Tick(); // 45 + 15 = 60 > 59 なので折り返す
+            instance.Tick(session); // 45 + 15 = 60 > 59 なので折り返す
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(instance.GetNumber(hourId), Is.EqualTo(1));
@@ -72,10 +73,11 @@ namespace UnmappedIsland.Codex.Tests
             var codex = WorldCodexBuilder.Build(new[] { clock });
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
+            var session = new WorldSession(codex);
 
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock2")));
 
-            instance.Tick(); // 10 + 15 = 25、59以下なので折り返さない
+            instance.Tick(session); // 10 + 15 = 25、59以下なので折り返さない
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(25));
             Assert.That(instance.GetNumber(hourId), Is.EqualTo(0));
@@ -94,10 +96,11 @@ namespace UnmappedIsland.Codex.Tests
             var codex = WorldCodexBuilder.Build(new[] { clock });
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
+            var session = new WorldSession(codex);
 
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock3")));
 
-            instance.Tick();
+            instance.Tick(session);
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5));
             Assert.That(instance.GetNumber(hourId), Is.EqualTo(3));
@@ -119,10 +122,11 @@ namespace UnmappedIsland.Codex.Tests
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             int dayId = codex.PropertyNames.GetId("day");
+            var session = new WorldSession(codex);
 
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock4")));
 
-            instance.Tick();
+            instance.Tick(session);
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5));
             Assert.That(instance.GetNumber(hourId), Is.EqualTo(0), "23+1=24は範囲(0-23)を超えるため、hour自身も折り返す");
@@ -144,10 +148,11 @@ namespace UnmappedIsland.Codex.Tests
 
             var codex = WorldCodexBuilder.Build(new[] { a, b });
             int minuteId = codex.PropertyNames.GetId("minute");
+            var session = new WorldSession(codex);
 
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("a_clock2")));
 
-            instance.Tick(); // 例外を投げればテスト自体が失敗する
+            instance.Tick(session); // 例外を投げればテスト自体が失敗する
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(0));
         }

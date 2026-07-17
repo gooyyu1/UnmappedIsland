@@ -83,10 +83,12 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。ゲームループから
-        /// 1tickにつき1回、WorldObject.Tick経由で全プロパティに対して呼ばれる想定。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、その結果自分の値が変わった
+        /// タイミングで、on_overflow（6.3節）・on_zero（6.5節）を自分自身で判定・実行する
+        /// （CheckOverflowAndZero参照）。ゲームループから1tickにつき1回、WorldObject.Tick経由で
+        /// 全プロパティに対して呼ばれる想定。
         /// </summary>
-        internal void Tick()
+        internal void Tick(PropertyDef def, WorldObject owner, WorldSession session)
         {
             foreach (var c in incoming)
             {
@@ -94,14 +96,31 @@ namespace UnmappedIsland.Runtime
                 if (!c.IsActive()) continue;
                 Number += c.Def.Amount;
             }
+
+            CheckOverflowAndZero(def, owner, session);
         }
 
         /// <summary>
-        /// on_zero（6.5節）の判定。armed（onZero != null）かつ現在値が0以下なら、発火すべき効果を返す。
-        /// 実際にdestroy/spawn等を実行するにはWorldObject/Containmentの協力が要るため、ここでは
-        /// 「発火すべきか」の判定だけを自分自身の責務として持つ。
+        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_zeroの自己判定。値変更の原因を問わず
+        /// （Tickのaccumulateでも、他プロパティのon_overflowから繰り上げを受け取った場合でも）同じ
+        /// 経路をたどる（WorldObject.ApplyOverflowDelta参照）。WorldObjectはグローバル→ローカルの
+        /// プロパティ解決とeffect適用の実行役を提供するだけで、いつ発火するかの判断はここに閉じる。
+        ///
+        /// on_overflowは、rangeの上限を超えていれば、著者が指定した量（自分自身への折り返し・他の
+        /// プロパティへの繰り上げの両方を1つのaccumulateとして書く）を1回適用する。適用した量の中に
+        /// 自分自身への変化が含まれていれば、ApplyOverflowDelta経由でこのメソッドへ再帰的に戻ってきて
+        /// 続きを判定する。1tickで複数span分溢れる場合も、繰り上げ先自身がさらに溢れる場合（分→時→日の
+        /// 連鎖）も、この自己判定の連鎖だけで解決する（WorldObject側でのループ・多重走査は一切不要）。
         /// </summary>
-        internal ActiveEffect PostTick(ActiveEffect onZero) => onZero != null && AsNumber() <= 0 ? onZero : null;
+        internal void CheckOverflowAndZero(PropertyDef def, WorldObject owner, WorldSession session)
+        {
+            if (def.OnOverflow.Count > 0 && def.Range.HasValue && AsNumber() > def.Range.Value.Max)
+                foreach (var delta in def.OnOverflow)
+                    owner.ApplyOverflowDelta(delta.PropertyGlobalId, delta.Amount, session);
+
+            if (def.OnZero != null && AsNumber() <= 0)
+                owner.ApplyActiveEffect(def.OnZero, session, actor: null);
+        }
 
         public override string ToString() => Kind == PropertyValueKind.Number ? Number.ToString() : $"symbol:{Symbol}";
     }

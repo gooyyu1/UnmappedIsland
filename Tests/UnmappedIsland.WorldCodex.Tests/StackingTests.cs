@@ -153,7 +153,7 @@ namespace UnmappedIsland.Codex.Tests
             session.Containment.TryMoveToSlot(bInstance, locInstance, pileSlotId, out _);
             session.Containment.TryMoveToSlot(cInstance, locInstance, pileSlotId, out _);
 
-            locInstance.PostTick(session);
+            locInstance.Tick(session);
 
             locInstance.TryGetSlot(pileSlotId, out Slot pile);
             Assert.That(pile.Contents.Select(o => o.Def.Name), Is.EqualTo(new[] { "a_item", "d_item", "c_item" }),
@@ -192,7 +192,7 @@ namespace UnmappedIsland.Codex.Tests
             // bInstance1 は on_zero が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
             bInstance1.SetProperty(lifeId, PropertyValue.FromNumber(5));
 
-            locInstance.PostTick(session);
+            locInstance.Tick(session);
 
             locInstance.TryGetSlot(pileSlotId, out Slot pile);
             Assert.That(pile.Contents.Select(o => o.Def.Name),
@@ -226,7 +226,7 @@ namespace UnmappedIsland.Codex.Tests
             session.Containment.TryMoveToSlot(bInstance, locInstance, pileSlotId, out _);
             session.Containment.TryMoveToSlot(cInstance, locInstance, pileSlotId, out _);
 
-            locInstance.PostTick(session);
+            locInstance.Tick(session);
 
             locInstance.TryGetSlot(pileSlotId, out Slot pile);
             Assert.That(pile.Contents.Select(o => o.Def.Name), Is.EqualTo(new[] { "a_item3", "b_item3", "d_item3", "c_item3" }),
@@ -393,7 +393,7 @@ namespace UnmappedIsland.Codex.Tests
             int potatoGridIndex = hand4.GetGridIndex(codex.ObjectNames.GetId("potato")).Value;
             Assert.That(potatoGridIndex, Is.EqualTo(1), "前提: potatoは1番のまま（0番が空いても前詰めされない）");
 
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
 
             Assert.That(hand4.GetGridIndex(rottenId), Is.EqualTo(potatoGridIndex),
                 "唯一のインスタンスが置き換わる場合、固定番号(1番)はそのまま新しい型へ引き継がれる" +
@@ -429,7 +429,7 @@ namespace UnmappedIsland.Codex.Tests
             handInstance.TryGetSlot(handSlotId, out Slot hand5);
             int potatoGridIndex = hand5.GetGridIndex(potatoId).Value;
 
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
 
             Assert.That(hand5.GetGridIndex(potatoId), Is.EqualTo(potatoGridIndex), "残ったpotatoの番号は変わらない");
             Assert.That(hand5.GetGridIndex(rottenId), Is.Not.EqualTo(potatoGridIndex),
@@ -489,7 +489,7 @@ namespace UnmappedIsland.Codex.Tests
 
             // --- Cが生まれる: 期待 A(0) C(1) B(2) _(3) ---
             aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(0));
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
             aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(1)); // 再発火を防ぐ
 
             Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
@@ -498,7 +498,7 @@ namespace UnmappedIsland.Codex.Tests
 
             // --- Dが生まれる: 期待 A(0) D(1) C(2) B(3) ---
             aInstance.SetProperty(spawnDId, PropertyValue.FromNumber(0));
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
             aInstance.SetProperty(spawnDId, PropertyValue.FromNumber(1));
 
             Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
@@ -513,7 +513,7 @@ namespace UnmappedIsland.Codex.Tests
 
             // --- Eが生まれる: 4枠すべて埋まっており入る場所が無いのでfallback ---
             aInstance.SetProperty(spawnEId, PropertyValue.FromNumber(0));
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
 
             Assert.That(hand6.Contents.Any(o => o.Def.Name == "type_e3"), Is.False, "handには入らない");
             locationInstance.TryGetSlot(groundSlotId, out Slot ground);
@@ -544,7 +544,7 @@ namespace UnmappedIsland.Codex.Tests
 
             // unit_capacity=1なので、別の型なら絶対に入らないが、同種のスタックへの合流は
             // 新しい固定番号を消費しないため、あふれずに成功するはず。
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
 
             Assert.That(hand7.Contents.Count(o => o.Def.Name == "type_a4"), Is.EqualTo(2),
                 "同種はunit_capacity(1)を超えず、既存のグリッドへ合流する");
@@ -592,7 +592,7 @@ namespace UnmappedIsland.Codex.Tests
 
             // --- Cが生まれる: 期待 _ C A B ---
             aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(0));
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
             aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(1));
 
             Assert.That(hand8.GetGridIndex(cTypeId), Is.EqualTo(1), "右(3番)はBで埋まっているため、左の空き(1番)へ入る");
@@ -601,7 +601,7 @@ namespace UnmappedIsland.Codex.Tests
 
             // --- Dが生まれる: 期待 C A D B ---
             bInstance.SetProperty(spawnDId, PropertyValue.FromNumber(0));
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
 
             Assert.That(hand8.GetGridIndex(cTypeId), Is.EqualTo(0), "Cはさらに左へ押し出される");
             Assert.That(hand8.GetGridIndex(aTypeId), Is.EqualTo(1), "Aも左へ押し出される");
@@ -658,7 +658,7 @@ namespace UnmappedIsland.Codex.Tests
             // Bから(destroyなしで)Dが生まれる: 右(4番)は存在せず、左は「A(2)」で埋まっているため、
             // さらに左の空き(0番)まで探し、C・Aをそれぞれ1つずつ左へ押し出してDが2番に割り込む。
             bInstance.SetProperty(spawnDId, PropertyValue.FromNumber(0));
-            handInstance.PostTick(session);
+            handInstance.Tick(session);
 
             Assert.That(hand9.GetGridIndex(cTypeId), Is.EqualTo(0), "Cのスタックごと左へ押し出される");
             Assert.That(hand9.GetGridIndex(aTypeId), Is.EqualTo(1), "Aも左へ押し出される");
