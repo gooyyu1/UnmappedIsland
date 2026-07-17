@@ -19,7 +19,7 @@ namespace UnmappedIsland.Codex.Runtime
 
         // ローカルindexで並ぶ密配列。それぞれ Def.PropertyDefs / Def.SlotDefs と対になる。
         private readonly PropertyValue[] properties;
-        private readonly SlotInstance[] slots;
+        private readonly Slot[] slots;
 
         // ローカルプロパティindexごとの、外部から登録された効果(modify/accumulate)のリスト
         // （遅延生成、Containment経由でのみ変更）。
@@ -40,9 +40,9 @@ namespace UnmappedIsland.Codex.Runtime
             for (int i = 0; i < properties.Length; i++)
                 properties[i] = def.PropertyDefs[i].DefaultValue;
 
-            slots = new SlotInstance[def.SlotDefs.Count];
+            slots = new Slot[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
-                slots[i] = new SlotInstance(def.SlotDefs[i]);
+                slots[i] = new Slot(def.SlotDefs[i]);
 
             incoming = new List<ActiveContribution>[def.PropertyDefs.Count];
             foreach (var c in def.Contributions)
@@ -76,9 +76,7 @@ namespace UnmappedIsland.Codex.Runtime
 
         public int GetNumber(int globalPropertyId, int fallback = 0)
         {
-            return TryGetProperty(globalPropertyId, out var v) && v.Kind == PropertyValueKind.Number
-                ? v.Number
-                : fallback;
+            return TryGetProperty(globalPropertyId, out var v) ? v.AsNumber(fallback) : fallback;
         }
 
         /// <summary>
@@ -89,10 +87,10 @@ namespace UnmappedIsland.Codex.Runtime
         {
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing) return;
-            properties[local] = PropertyValue.FromNumber(properties[local].Number + delta);
+            properties[local] = properties[local].Add(delta);
         }
 
-        public bool TryGetSlot(int globalSlotId, out SlotInstance slot)
+        public bool TryGetSlot(int globalSlotId, out Slot slot)
         {
             int local = Def.SlotLayout.ToLocal(globalSlotId);
             if (local == LocalIndexMap.Missing)
@@ -104,7 +102,7 @@ namespace UnmappedIsland.Codex.Runtime
             return true;
         }
 
-        internal SlotInstance GetSlotByLocalId(int localId) => slots[localId];
+        internal Slot GetSlotByLocalId(int localId) => slots[localId];
 
         internal void SetParent(WorldObject parent, int parentSlotLocalId)
         {
@@ -113,7 +111,7 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、6.4節・8節）。</summary>
-        internal int GetNumberByLocalId(int localId) => properties[localId].Number;
+        internal int GetNumberByLocalId(int localId) => properties[localId].AsNumber();
 
         internal void RegisterContribution(int localPropertyId, ActiveContribution contribution)
         {
@@ -135,7 +133,7 @@ namespace UnmappedIsland.Codex.Runtime
             int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
             if (local == LocalIndexMap.Missing) return 0;
 
-            int sum = properties[local].Number;
+            int sum = properties[local].AsNumber();
 
             var contributions = incoming[local];
             if (contributions != null)
@@ -145,7 +143,8 @@ namespace UnmappedIsland.Codex.Runtime
                         sum += c.Def.Amount;
             }
 
-            return ClampToRange(sum, Def.PropertyDefs[local].Range);
+            PropertyRange? range = Def.PropertyDefs[local].Range;
+            return range.HasValue ? range.Value.Clamp(sum) : sum;
         }
 
         /// <summary>
@@ -169,7 +168,7 @@ namespace UnmappedIsland.Codex.Runtime
                 {
                     if (c.Def.Kind != ContributionKind.Accumulate) continue;
                     if (!IsGateActive(c)) continue;
-                    properties[local] = PropertyValue.FromNumber(properties[local].Number + c.Def.Amount);
+                    properties[local] = properties[local].Add(c.Def.Amount);
                 }
             }
         }
@@ -207,14 +206,6 @@ namespace UnmappedIsland.Codex.Runtime
                 default:
                     return false;
             }
-        }
-
-        private static int ClampToRange(int value, PropertyRange? range)
-        {
-            if (!range.HasValue) return value;
-            if (value < range.Value.Min) return range.Value.Min;
-            if (value > range.Value.Max) return range.Value.Max;
-            return value;
         }
     }
 }

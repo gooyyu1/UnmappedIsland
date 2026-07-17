@@ -32,7 +32,7 @@ namespace UnmappedIsland.Codex.Runtime
                 return false;
             }
 
-            SlotInstance targetSlot = newParent.GetSlotByLocalId(localSlot);
+            Slot targetSlot = newParent.GetSlotByLocalId(localSlot);
             SlotDef slotDef = targetSlot.Def;
 
             if (!Accepts(targetSlot, obj))
@@ -116,7 +116,7 @@ namespace UnmappedIsland.Codex.Runtime
             }
         }
 
-        private bool Accepts(SlotInstance slot, WorldObject candidate)
+        private bool Accepts(Slot slot, WorldObject candidate)
         {
             IReadOnlyList<SlotAcceptRule> rules = slot.Def.Accepts;
             if (rules.Count == 0) return true; // accepts省略 = 無制限スロット（7.1節）

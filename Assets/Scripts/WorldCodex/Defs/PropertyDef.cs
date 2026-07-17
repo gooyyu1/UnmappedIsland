@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnmappedIsland.Codex.Registry;
+using UnmappedIsland.Codex.Runtime;
 
 namespace UnmappedIsland.Codex.Defs
 {
@@ -13,6 +14,14 @@ namespace UnmappedIsland.Codex.Defs
         {
             Min = min;
             Max = max;
+        }
+
+        /// <summary>値をこの範囲内に収める（GameElementDefinition.md 6.3節）。</summary>
+        public int Clamp(int value)
+        {
+            if (value < Min) return Min;
+            if (value > Max) return Max;
+            return value;
         }
     }
 
