@@ -88,6 +88,18 @@ namespace UnmappedIsland.Runtime
             properties[local].Add(delta);
         }
 
+        /// <summary>
+        /// 数値プロパティへの不可逆な絶対値代入（GameElementDefinition.md 9.2節の`set`）。addとは異なり、
+        /// 既存の値を無視して指定した値でそのまま置き換える。このオブジェクトが対象プロパティを
+        /// 持たない場合は何もしない（AddNumberと同じ規約）。
+        /// </summary>
+        public void SetNumber(int globalPropertyId, int value)
+        {
+            int local = Def.PropertyLayout.ToLocal(globalPropertyId);
+            if (local == LocalIndexMap.Missing) return;
+            properties[local].SetNumber(value);
+        }
+
         public bool TryGetSlot(int globalSlotId, out Slot slot)
         {
             int local = Def.SlotLayout.ToLocal(globalSlotId);
@@ -157,32 +169,75 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// このオブジェクト自身を対象としたadd/destroy/spawnを実行する（9.2〜9.4節）。on_zero（6.5節）と、
-        /// actions/combinations（11節・12節）のactive/pickが解決した結果の両方から、対象ごとに解決された
-        /// このオブジェクトのインスタンスに対して呼ばれる（呼び出し側がself/parent/actor/dragged等の
-        /// 対象解決を担い、ここでは常に「このインスタンス自身」への適用として振る舞う）。
+        /// このオブジェクトをself(このインスタンス自身)として、set/add/destroy/spawnを実行する（9.2〜9.4節）。
+        /// on_zero・on_overflow（6節）と、actions/combinations（11節・12節）のactive/pickが解決した結果の
+        /// 両方から呼ばれる（on_zero/on_overflow経由の場合、actor/draggedは存在しないためnull）。
+        ///
+        /// selfは常にこのインスタンス自身、parentはthis.Parent、actor/draggedは呼び出し側から渡された
+        /// ものとして解決する（対象ごとのWorldObject解決はこのメソッドに閉じる）。対象が解決できない
+        /// 場合（parentが無い、actor/draggedがこの実行文脈に無い）は、その対象への適用のみ無視する。
         ///
         /// destroyをspawnより先に行う（9.3節・9.4節）。カードスタックのUIでは、種類が変わるアイテムが
         /// はみ出さないよう、置き換え後のオブジェクトが「破棄されるオブジェクトが占めていた位置」を
         /// 引き継ぐ必要があるため、destroyで実際に位置が空いてから通常の（force無しの）配置を行う。
-        /// 位置情報はdestroyで失われる前に捕捉しておく（CaptureSameSlotAnchor参照）。
-        ///
-        /// actorは、spawnのinto:actorの解決や、アクション実行文脈のためにそのまま伝搬する（on_zero経由の
-        /// 場合はactorが存在しないためnull）。
+        /// 位置情報はdestroyで失われる前に捕捉しておく（CaptureSameSlotAnchor参照）。spawnは常にself
+        /// （このインスタンス自身）が実行するものとみなすため、同じ場所への配置(SameSlot)はself自身の
+        /// destroy有無だけを見ればよい。
         /// </summary>
-        internal void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor)
+        internal void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
         {
-            foreach (var delta in effect.Adds)
-                AddNumber(delta.PropertyGlobalId, delta.Amount);
+            foreach (ReferenceRoot key in OrderedTargets)
+            {
+                if (!effect.Sets.TryGetValue(key, out var assigns)) continue;
+                WorldObject target = ResolveEffectTarget(key, actor, dragged);
+                if (target == null) continue;
+                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, assign.Value);
+            }
 
+            foreach (ReferenceRoot key in OrderedTargets)
+            {
+                if (!effect.Adds.TryGetValue(key, out var deltas)) continue;
+                WorldObject target = ResolveEffectTarget(key, actor, dragged);
+                if (target == null) continue;
+                foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount);
+            }
+
+            bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
             SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
-                ? CaptureSameSlotAnchor(effect.Destroy)
+                ? CaptureSameSlotAnchor(willDestroySelf)
                 : null;
 
-            if (effect.Destroy) session.Containment.Destroy(this);
+            foreach (ReferenceRoot key in OrderedTargets)
+            {
+                if (!effect.Destroy.Contains(key)) continue;
+                WorldObject target = ResolveEffectTarget(key, actor, dragged);
+                if (target == null) continue;
+                session.Containment.Destroy(target);
+            }
 
             if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
         }
+
+        /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged)を解決する。selfは常にこの
+        /// インスタンス自身、parentはthis.Parent（無ければnull）。</summary>
+        private WorldObject ResolveEffectTarget(ReferenceRoot root, WorldObject actor, WorldObject dragged)
+        {
+            switch (root)
+            {
+                case ReferenceRoot.Self: return this;
+                case ReferenceRoot.Parent: return Parent;
+                case ReferenceRoot.Actor: return actor;
+                case ReferenceRoot.Dragged: return dragged;
+                default: return null;
+            }
+        }
+
+        /// <summary>set/add/destroyを解決する際の固定順（self→parent→actor→dragged）。YAML側で対象間の
+        /// 適用順序は規定されていないため、決定的な順序を1つ選んで固定する。</summary>
+        private static readonly ReferenceRoot[] OrderedTargets =
+        {
+            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor, ReferenceRoot.Dragged,
+        };
 
         /// <summary>
         /// same_slotの置き換え（型が変わりうる）に必要な位置情報を、destroyで失われる前に捕捉する。

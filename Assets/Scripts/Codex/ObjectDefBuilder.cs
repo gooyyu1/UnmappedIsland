@@ -49,7 +49,7 @@ namespace UnmappedIsland.Codex
     public sealed class PickCandidateBlueprint
     {
         public WeightBlueprint Weight;
-        public Dictionary<ReferenceRoot, ActiveEffectBlueprint> Active;
+        public ActiveEffectBlueprint Active;
         public List<PickCandidateBlueprint> Pick;
     }
 
@@ -59,7 +59,7 @@ namespace UnmappedIsland.Codex
         public string Name;
         public ShowMenuMode ShowMenu = ShowMenuMode.Always;
         public readonly List<ConditionBlueprint> Conditions = new List<ConditionBlueprint>();
-        public Dictionary<ReferenceRoot, ActiveEffectBlueprint> Active;
+        public ActiveEffectBlueprint Active;
         public List<PickCandidateBlueprint> Pick;
     }
 
@@ -69,7 +69,7 @@ namespace UnmappedIsland.Codex
         public string Name;
         public string With;
         public readonly List<ConditionBlueprint> Conditions = new List<ConditionBlueprint>();
-        public Dictionary<ReferenceRoot, ActiveEffectBlueprint> Active;
+        public ActiveEffectBlueprint Active;
         public List<PickCandidateBlueprint> Pick;
     }
 
@@ -113,16 +113,30 @@ namespace UnmappedIsland.Codex
         public ActiveEffectBlueprint OnZero;
     }
 
-    /// <summary>on_zero（6.5節）の内容。`add`/`destroy`/`spawn`のうち使うものだけを埋める。</summary>
+    /// <summary>
+    /// active内容（`set`/`add`/`destroy`/`spawn`、9節）のブループリント版。on_zero・on_overflow（6節）と
+    /// actions/combinations/pickのactive（11・12・10節）のすべてがこの1つの型を共用する。
+    /// 文法は「操作(set/add)が上位、対象(self/parent/actor/dragged)が下位」。destroyは削除対象を
+    /// 直接列挙するリスト、spawnは常にselfが実行するため対象キーを持たない。
+    /// </summary>
     public sealed class ActiveEffectBlueprint
     {
-        public readonly List<AddBlueprint> Adds = new List<AddBlueprint>();
-        public bool Destroy;
+        public readonly Dictionary<ReferenceRoot, List<AssignBlueprint>> Sets = new Dictionary<ReferenceRoot, List<AssignBlueprint>>();
+        public readonly Dictionary<ReferenceRoot, List<AddBlueprint>> Adds = new Dictionary<ReferenceRoot, List<AddBlueprint>>();
+        public readonly List<ReferenceRoot> Destroy = new List<ReferenceRoot>();
 
         /// <summary>null なら spawn なし。</summary>
         public SpawnBlueprint Spawn;
     }
 
+    /// <summary>set の1エントリ。</summary>
+    public struct AssignBlueprint
+    {
+        public string PropertyName;
+        public int Value;
+    }
+
+    /// <summary>add の1エントリ。</summary>
     public struct AddBlueprint
     {
         public string PropertyName;
@@ -203,16 +217,8 @@ namespace UnmappedIsland.Codex
                 foreach (var p in bp.Properties)
                 {
                     propertyNames.Intern(p.Name);
-
-                    if (p.OnOverflow != null)
-                    {
-                        foreach (var add in p.OnOverflow.Adds) propertyNames.Intern(add.PropertyName);
-                        if (p.OnOverflow.Spawn != null) objectNames.Intern(p.OnOverflow.Spawn.ObjectName);
-                    }
-
-                    if (p.OnZero == null) continue;
-                    foreach (var add in p.OnZero.Adds) propertyNames.Intern(add.PropertyName);
-                    if (p.OnZero.Spawn != null) objectNames.Intern(p.OnZero.Spawn.ObjectName);
+                    InternActiveEffect(p.OnOverflow, propertyNames, objectNames);
+                    InternActiveEffect(p.OnZero, propertyNames, objectNames);
                 }
                 if (bp.StackOrder != null) propertyNames.Intern(bp.StackOrder.PropertyName);
                 foreach (var s in bp.Slots) slotNames.Intern(s.Name);
@@ -225,13 +231,13 @@ namespace UnmappedIsland.Codex
                 foreach (var a in bp.Actions)
                 {
                     InternConditions(a.Conditions, propertyNames);
-                    InternActiveMap(a.Active, propertyNames, objectNames);
+                    InternActiveEffect(a.Active, propertyNames, objectNames);
                     InternPickList(a.Pick, propertyNames, objectNames);
                 }
                 foreach (var c in bp.Combinations)
                 {
                     InternConditions(c.Conditions, propertyNames);
-                    InternActiveMap(c.Active, propertyNames, objectNames);
+                    InternActiveEffect(c.Active, propertyNames, objectNames);
                     InternPickList(c.Pick, propertyNames, objectNames);
                 }
             }
@@ -242,15 +248,18 @@ namespace UnmappedIsland.Codex
             foreach (var c in conditions) propertyNames.Intern(c.PropertyName);
         }
 
-        private static void InternActiveMap(
-            Dictionary<ReferenceRoot, ActiveEffectBlueprint> map, NameRegistry propertyNames, NameRegistry objectNames)
+        private static void InternActiveEffect(
+            ActiveEffectBlueprint body, NameRegistry propertyNames, NameRegistry objectNames)
         {
-            if (map == null) return;
-            foreach (var body in map.Values)
-            {
-                foreach (var add in body.Adds) propertyNames.Intern(add.PropertyName);
-                if (body.Spawn != null) objectNames.Intern(body.Spawn.ObjectName);
-            }
+            if (body == null) return;
+
+            foreach (var list in body.Sets.Values)
+                foreach (var assign in list) propertyNames.Intern(assign.PropertyName);
+
+            foreach (var list in body.Adds.Values)
+                foreach (var add in list) propertyNames.Intern(add.PropertyName);
+
+            if (body.Spawn != null) objectNames.Intern(body.Spawn.ObjectName);
         }
 
         private static void InternPickList(
@@ -260,7 +269,7 @@ namespace UnmappedIsland.Codex
             foreach (var candidate in pick)
             {
                 if (candidate.Weight.IsPathRef) propertyNames.Intern(candidate.Weight.PathPropertyName);
-                InternActiveMap(candidate.Active, propertyNames, objectNames);
+                InternActiveEffect(candidate.Active, propertyNames, objectNames);
                 InternPickList(candidate.Pick, propertyNames, objectNames);
             }
         }
@@ -323,7 +332,7 @@ namespace UnmappedIsland.Codex
         private static ActionDef BuildAction(ActionBlueprint a, NameRegistry propertyNames, NameRegistry objectNames)
         {
             var conditions = a.Conditions.Select(c => BuildCondition(c, propertyNames)).ToList();
-            var active = BuildActiveMap(a.Active, propertyNames, objectNames);
+            var active = BuildActiveEffect(a.Active, propertyNames, objectNames);
             var pick = BuildPickList(a.Pick, propertyNames, objectNames);
             return new ActionDef(a.Name, a.ShowMenu, conditions, active, pick);
         }
@@ -331,7 +340,7 @@ namespace UnmappedIsland.Codex
         private static CombinationDef BuildCombination(CombinationBlueprint c, NameRegistry propertyNames, NameRegistry objectNames)
         {
             var conditions = c.Conditions.Select(cc => BuildCondition(cc, propertyNames)).ToList();
-            var active = BuildActiveMap(c.Active, propertyNames, objectNames);
+            var active = BuildActiveEffect(c.Active, propertyNames, objectNames);
             var pick = BuildPickList(c.Pick, propertyNames, objectNames);
             return new CombinationDef(c.Name, c.With, conditions, active, pick);
         }
@@ -342,28 +351,27 @@ namespace UnmappedIsland.Codex
             return new ConditionDef(new PropertyPath(c.Root, propertyGlobalId), c.Op, c.Values);
         }
 
-        private static IReadOnlyDictionary<ReferenceRoot, ActiveEffect> BuildActiveMap(
-            Dictionary<ReferenceRoot, ActiveEffectBlueprint> map, NameRegistry propertyNames, NameRegistry objectNames)
-        {
-            if (map == null) return null;
-
-            var result = new Dictionary<ReferenceRoot, ActiveEffect>();
-            foreach (var kv in map)
-                result[kv.Key] = BuildActiveEffect(kv.Value, propertyNames, objectNames);
-            return result;
-        }
-
         private static ActiveEffect BuildActiveEffect(ActiveEffectBlueprint body, NameRegistry propertyNames, NameRegistry objectNames)
         {
-            var adds = body.Adds
-                .Select(a => new PropertyDelta(propertyNames.GetId(a.PropertyName), a.Amount))
-                .ToList();
+            if (body == null) return null;
+
+            var sets = body.Sets.ToDictionary(
+                kv => kv.Key,
+                kv => (IReadOnlyList<PropertyAssignment>)kv.Value
+                    .Select(a => new PropertyAssignment(propertyNames.GetId(a.PropertyName), a.Value))
+                    .ToList());
+
+            var adds = body.Adds.ToDictionary(
+                kv => kv.Key,
+                kv => (IReadOnlyList<PropertyDelta>)kv.Value
+                    .Select(a => new PropertyDelta(propertyNames.GetId(a.PropertyName), a.Amount))
+                    .ToList());
 
             SpawnEffect spawn = body.Spawn != null
                 ? new SpawnEffect(objectNames.GetId(body.Spawn.ObjectName), body.Spawn.Into)
                 : null;
 
-            return new ActiveEffect(adds, body.Destroy, spawn);
+            return new ActiveEffect(sets, adds, body.Destroy, spawn);
         }
 
         private static IReadOnlyList<PickCandidateDef> BuildPickList(
@@ -380,7 +388,7 @@ namespace UnmappedIsland.Codex
                 ? WeightSpec.FromPath(new PropertyPath(p.Weight.PathRoot, propertyNames.GetId(p.Weight.PathPropertyName)))
                 : WeightSpec.FromLiteral(p.Weight.Literal);
 
-            var active = BuildActiveMap(p.Active, propertyNames, objectNames);
+            var active = BuildActiveEffect(p.Active, propertyNames, objectNames);
             var pick = BuildPickList(p.Pick, propertyNames, objectNames);
             return new PickCandidateDef(weight, active, pick);
         }

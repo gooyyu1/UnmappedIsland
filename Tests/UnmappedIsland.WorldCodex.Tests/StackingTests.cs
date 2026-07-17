@@ -44,11 +44,9 @@ namespace UnmappedIsland.Codex.Tests
         private static ActiveEffectBlueprint OnZeroSpawn(
             string spawnObjectName, bool destroy, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
         {
-            return new ActiveEffectBlueprint
-            {
-                Destroy = destroy,
-                Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into },
-            };
+            var bp = new ActiveEffectBlueprint { Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into } };
+            if (destroy) bp.Destroy.Add(ReferenceRoot.Self);
+            return bp;
         }
 
         // ------------------------------------------------------------------

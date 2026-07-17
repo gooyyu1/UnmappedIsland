@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
 using UnmappedIsland.Runtime;
@@ -23,13 +24,32 @@ namespace UnmappedIsland.Codex.Tests
                 Range = new PropertyRange(min, max),
                 OnOverflow = new ActiveEffectBlueprint(),
             };
+            var adds = new List<AddBlueprint>();
             foreach (var (property, amount) in onOverflow)
-                bp.OnOverflow.Adds.Add(new AddBlueprint { PropertyName = property, Amount = amount });
+                adds.Add(new AddBlueprint { PropertyName = property, Amount = amount });
+            bp.OnOverflow.Adds[ReferenceRoot.Self] = adds;
             return bp;
         }
 
         private static PropertyBlueprint PlainProp(string name, int defaultValue) =>
             new PropertyBlueprint { Name = name, DefaultValue = PropertyValue.FromNumber(defaultValue) };
+
+        /// <summary>on_overflowをset(自分を絶対値へ戻す)+add(繰り上げ先への加算)で表現する版。
+        /// core.yamlが実際に使っている文法（accumulateの"-60"のような差分ではなく、setで0へ戻す）を検証する。</summary>
+        private static PropertyBlueprint SetAndAddWrappingProp(
+            string name, int defaultValue, int min, int max, int resetTo, string carryProperty, int carryAmount)
+        {
+            var bp = new PropertyBlueprint
+            {
+                Name = name,
+                DefaultValue = PropertyValue.FromNumber(defaultValue),
+                Range = new PropertyRange(min, max),
+                OnOverflow = new ActiveEffectBlueprint(),
+            };
+            bp.OnOverflow.Sets[ReferenceRoot.Self] = new List<AssignBlueprint> { new AssignBlueprint { PropertyName = name, Value = resetTo } };
+            bp.OnOverflow.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = carryProperty, Amount = carryAmount } };
+            return bp;
+        }
 
         private static ContributionBlueprint SelfAccumulate(string propertyName, int amount)
         {
@@ -61,6 +81,29 @@ namespace UnmappedIsland.Codex.Tests
             instance.Tick(session); // 45 + 15 = 60 > 59 なので折り返す
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Tick_SetResetsSelfAndAddCarriesToTarget_WhenExceedingRangeMax()
+        {
+            // set: {self: {minute: 0}} + add: {self: {hour: 1}} という、core.yamlが実際に使っている文法
+            // （accumulateの"-60"のような差分指定ではなく、setで絶対値へ戻す）を検証する。
+            var clock = new ObjectDefBlueprint { Name = "clock_set" };
+            clock.Properties.Add(SetAndAddWrappingProp("minute", 45, min: 0, max: 59, resetTo: 0, carryProperty: "hour", carryAmount: 1));
+            clock.Properties.Add(PlainProp("hour", 0));
+            clock.Contributions.Add(SelfAccumulate("minute", 15));
+
+            var codex = WorldCodexBuilder.Build(new[] { clock });
+            int minuteId = codex.PropertyNames.GetId("minute");
+            int hourId = codex.PropertyNames.GetId("hour");
+            var session = new WorldSession(codex);
+
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_set")));
+
+            instance.Tick(session); // 45 + 15 = 60 > 59 なので折り返す
+
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(0), "setにより絶対値0へ戻る（差分ではなく代入）");
             Assert.That(instance.GetNumber(hourId), Is.EqualTo(1));
         }
 

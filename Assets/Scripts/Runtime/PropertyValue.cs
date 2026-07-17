@@ -61,6 +61,13 @@ namespace UnmappedIsland.Runtime
 
         internal void Add(int delta) => Number += delta;
 
+        /// <summary>set（絶対値代入）。Kindを強制的にNumberへ切り替える。</summary>
+        internal void SetNumber(int value)
+        {
+            Kind = PropertyValueKind.Number;
+            Number = value;
+        }
+
         internal void RegisterContribution(ActiveContribution contribution) => incoming.Add(contribution);
 
         internal void UnregisterContributionsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
@@ -115,10 +122,10 @@ namespace UnmappedIsland.Runtime
         internal void CheckOverflowAndZero(PropertyDef def, WorldObject owner, WorldSession session)
         {
             if (def.OnOverflow != null && def.Range.HasValue && AsNumber() > def.Range.Value.Max)
-                owner.ApplyActiveEffect(def.OnOverflow, session, actor: null);
+                owner.ApplyActiveEffect(def.OnOverflow, session, actor: null, dragged: null);
 
             if (def.OnZero != null && AsNumber() <= 0)
-                owner.ApplyActiveEffect(def.OnZero, session, actor: null);
+                owner.ApplyActiveEffect(def.OnZero, session, actor: null, dragged: null);
         }
 
         public override string ToString() => Kind == PropertyValueKind.Number ? Number.ToString() : $"symbol:{Symbol}";

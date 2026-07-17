@@ -38,16 +38,19 @@ namespace UnmappedIsland.Codex.Tests
             };
         }
 
-        private static ActiveEffectBlueprint OnZeroDestroy() => new ActiveEffectBlueprint { Destroy = true };
+        private static ActiveEffectBlueprint OnZeroDestroy()
+        {
+            var bp = new ActiveEffectBlueprint();
+            bp.Destroy.Add(ReferenceRoot.Self);
+            return bp;
+        }
 
         private static ActiveEffectBlueprint OnZeroSpawnAndDestroy(
             string spawnObjectName, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
         {
-            return new ActiveEffectBlueprint
-            {
-                Destroy = true,
-                Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into },
-            };
+            var bp = new ActiveEffectBlueprint { Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into } };
+            bp.Destroy.Add(ReferenceRoot.Self);
+            return bp;
         }
 
         private static ActiveEffectBlueprint OnZeroSpawn(
@@ -510,7 +513,7 @@ namespace UnmappedIsland.Codex.Tests
             int wickLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wick_length"));
 
             Assert.That(def.PropertyDefs[waxLocal].OnZero, Is.Not.Null);
-            Assert.That(def.PropertyDefs[waxLocal].OnZero.Destroy, Is.True);
+            Assert.That(def.PropertyDefs[waxLocal].OnZero.Destroy, Contains.Item(ReferenceRoot.Self));
             Assert.That(def.PropertyDefs[wickLocal].OnZero, Is.Null);
         }
 

@@ -6,10 +6,10 @@ namespace UnmappedIsland.Runtime
 {
     /// <summary>
     /// actions（GameElementDefinition.md 11節）・combinations（12節）の実行エンジン。conditionsの評価、
-    /// pick（10節）の重み付き抽選、解決したactiveの対象ごとの適用までをここで担う。
+    /// pick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ適用するところまでをここで担う。
     ///
-    /// self/parent/actor/dragged の対象解決はすべてここに閉じており、WorldObject.ApplyActiveEffect
-    /// （解決済みの1つのWorldObjectに対してadd/destroy/spawnを適用するだけの処理）を呼び出す側。
+    /// set/add/destroyの対象(self/parent/actor/dragged)ごとの解決はWorldObject.ApplyActiveEffectに
+    /// 集約されている。ここに残るResolveTargetはconditions/weightのpath解決専用。
     /// </summary>
     public static class InteractionExecutor
     {
@@ -23,8 +23,8 @@ namespace UnmappedIsland.Runtime
             if (action == null) return false;
             if (!EvaluateConditions(action.Conditions, self, actor, dragged: null)) return false;
 
-            var effects = ResolveEffects(action.Active, action.Pick, self, actor, dragged: null, session);
-            ApplyActiveEffects(effects, self, actor, dragged: null, session);
+            ActiveEffect effect = ResolveEffect(action.Active, action.Pick, self, actor, dragged: null, session);
+            if (effect != null) self.ApplyActiveEffect(effect, session, actor, dragged: null);
             return true;
         }
 
@@ -40,8 +40,8 @@ namespace UnmappedIsland.Runtime
             if (!combination.Matches(dragged.Def)) return false;
             if (!EvaluateConditions(combination.Conditions, self, actor, dragged)) return false;
 
-            var effects = ResolveEffects(combination.Active, combination.Pick, self, actor, dragged, session);
-            ApplyActiveEffects(effects, self, actor, dragged, session);
+            ActiveEffect effect = ResolveEffect(combination.Active, combination.Pick, self, actor, dragged, session);
+            if (effect != null) self.ApplyActiveEffect(effect, session, actor, dragged);
             return true;
         }
 
@@ -94,8 +94,8 @@ namespace UnmappedIsland.Runtime
         /// activeが直接指定されていればそれをそのまま使い、pickが指定されていれば重み付き抽選で1候補を
         /// 選び（再帰的に）解決する。両方nullの場合はnullを返す（何も起きない）。
         /// </summary>
-        private static IReadOnlyDictionary<ReferenceRoot, ActiveEffect> ResolveEffects(
-            IReadOnlyDictionary<ReferenceRoot, ActiveEffect> active,
+        private static ActiveEffect ResolveEffect(
+            ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick,
             WorldObject self, WorldObject actor, WorldObject dragged,
             WorldSession session)
@@ -104,7 +104,7 @@ namespace UnmappedIsland.Runtime
             if (pick == null || pick.Count == 0) return null;
 
             PickCandidateDef chosen = SelectWeighted(pick, self, actor, dragged, session);
-            return ResolveEffects(chosen.Active, chosen.Pick, self, actor, dragged, session);
+            return ResolveEffect(chosen.Active, chosen.Pick, self, actor, dragged, session);
         }
 
         /// <summary>
@@ -140,33 +140,8 @@ namespace UnmappedIsland.Runtime
             return target != null ? target.GetEffectiveValue(weight.Path.PropertyGlobalId) : 0;
         }
 
-        /// <summary>
-        /// 解決したactiveの対象キー(self/parent/actor/dragged)ごとに、対応するWorldObjectへ適用する。
-        /// 対象が解決できない場合（parentが無い、actor/draggedがこの実行文脈に無い）は何もしない。
-        /// 複数の対象キー間の適用順序はYAML側で規定されていないため、self→parent→actor→draggedの
-        /// 固定順で決定的に処理する。
-        /// </summary>
-        private static void ApplyActiveEffects(
-            IReadOnlyDictionary<ReferenceRoot, ActiveEffect> effects,
-            WorldObject self, WorldObject actor, WorldObject dragged,
-            WorldSession session)
-        {
-            if (effects == null) return;
-
-            foreach (ReferenceRoot key in OrderedTargets)
-            {
-                if (!effects.TryGetValue(key, out ActiveEffect effect)) continue;
-                WorldObject target = ResolveTarget(key, self, actor, dragged);
-                if (target == null) continue;
-                target.ApplyActiveEffect(effect, session, actor);
-            }
-        }
-
-        private static readonly ReferenceRoot[] OrderedTargets =
-        {
-            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor, ReferenceRoot.Dragged,
-        };
-
+        /// <summary>条件式・weightのpath解決専用。set/add/destroyの対象解決はWorldObject.ApplyActiveEffect
+        /// に閉じている（こちらはActiveEffectを持たない、単なる{root}→WorldObjectの解決）。</summary>
         private static WorldObject ResolveTarget(ReferenceRoot root, WorldObject self, WorldObject actor, WorldObject dragged)
         {
             switch (root)

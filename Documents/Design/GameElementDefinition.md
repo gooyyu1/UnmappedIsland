@@ -126,9 +126,10 @@ props:
 上限に達したら折り返す（あるいは繰り上げる）プロパティは、`range`（取りうる上下限）と `on_overflow`（上限到達時の挙動）を
 持たせます。`value` の `{min, max}`（6.2 節、毎 tick 再ロールする範囲）とは別の仕組みです。
 
-`on_overflow` は `on_zero`（6.5 節）と同じ **target-key（`self` のみ対応）→ body** という文法をそのまま流用します。
-本体は `accumulate` のみを持ち、値が `range` の上限を超えた瞬間に、そこへ書いた量をそのまま一度だけ適用します
-（折り返し量・繰り上げ量が何かをエンジン側では一切解釈せず、著者が書いた通りに加減算するだけです）。
+`on_overflow` は `on_zero`（6.5 節）と全く同じ型の `active`（9 節）内容をそのまま流用しますが、対象は現時点で
+`self` のみに限定されます（未対応: `parent`/`actor`/`dragged`、ロード時にエラー）。値が `range` の上限を超えた瞬間に、
+そこへ書いた内容を一度だけ適用します。`set`（絶対値への代入）で自分自身を折り返し、`add`（加減算）で繰り上げ先へ
+加算する、という組み合わせが基本形です。
 
 ```yaml
 props:
@@ -136,15 +137,17 @@ props:
     value: 0
     range: {min: 0, max: 1439}
     on_overflow:
-      self:
-        accumulate:
-          minute_of_day: -1440   # 1440溢れたら自分を1440引いて0に戻す
-          day: 1                 # 同時にdayへ+1する
+      set:
+        self:
+          minute_of_day: 0   # 1440溢れたら自分を0に戻す
+      add:
+        self:
+          day: 1             # 同時にdayへ+1する
 ```
 
 - `range` は `on_overflow` を使う場合に必須です。
 - `on_overflow` を省略すると（`sequence` のように上限なくaccumulateし続けたい場合）、上限なしを意味します。
-- `self.accumulate` に書けるプロパティは、自分自身（折り返し）に限らず、同じ object_def 内の他のプロパティ
+- `add` に書けるプロパティは、自分自身（折り返し）に限らず、同じ object_def 内の他のプロパティ
   （繰り上げ先）も指定できます。存在しないプロパティ名を書いた場合は `on_zero`/`add` と同様に黙って無視されます。
 - `on_overflow` はループしません。1 tick につき、条件を満たしたプロパティ 1 つあたり最大 1 回だけ適用されます
   （`accumulate` の通常の反映・`on_zero` と同じ扱いです）。そのため:
@@ -178,14 +181,14 @@ props:
       - name: mild
         min: 20
         passive:
-          parent:
-            accumulate:
+          accumulate:
+            parent:
               temperature: 1
       - name: feverish
         min: 50
         passive:
-          parent:
-            accumulate:
+          accumulate:
+            parent:
               temperature: 2
               hydration: -1
 ```
@@ -200,7 +203,8 @@ props:
   対して繰り返し実行しても安全（冪等）です。`spawn` を伴う場合は、同じ `on_zero` 内で `destroy` と組み合わせるのが
   基本形であり、破棄後はそのオブジェクト自体が tick の対象でなくなるため、2回目以降の実行は起こりません。`destroy`
   を伴わずに `spawn` だけを書くと、0以下である間 tick 毎に生成し続けてしまう点に注意してください。
-- `on_zero` の中身は `active` と同じ対象キーの辞書を直接持ちます。専用のラップは挟みません。
+- `on_zero` の中身は `active`（9 節）と全く同じ型をそのまま持ちますが、対象は現時点で `self` のみに限定されます
+  （未対応: `parent`/`actor`/`dragged`、ロード時にエラー）。
 
 ```yaml
 props:
@@ -208,12 +212,11 @@ props:
     value: 100
     range: {min: 0, max: 100}
     passive:
-      self:
-        accumulate:
+      accumulate:
+        self:
           durability: -1
     on_zero:
-      self:
-        destroy: true
+      destroy: self
     stages:
       - name: intact
         min: 1
@@ -425,10 +428,11 @@ object_defs:
 2. **プロパティレベル**（例: アイテムの重量プロパティが持ち主の負荷に寄与する）
 3. **プロパティのステージレベル**（6.4 節）
 
-### 8.1 対象キー
+### 8.1 文法: 操作が上位、対象が下位
 
-`passive` は、効果の対象を識別子とするキーの辞書型です。定義するのは `self`（自分自身）・`parent`（親）・
-`child`（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、11 節参照）の 4 つです。
+`passive` は、操作（`when`/`modify`/`accumulate`）をキーとする辞書型です。各操作の中に、効果の対象を識別子と
+する対象キーの辞書がぶら下がります。対象キーとして定義するのは `self`（自分自身）・`parent`（親）・`child`
+（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、11 節参照）の 4 つです。
 
 ```yaml
 object_defs:
@@ -436,9 +440,10 @@ object_defs:
     covers: [torso]
     layer: base
     passive:
-      parent:
-        when: equip
-        modify:
+      when:
+        parent: equip
+      modify:
+        parent:
           defense: 5
           speed: 3
           accuracy: 2
@@ -446,9 +451,10 @@ object_defs:
 
 ### 8.2 when（ゲート）
 
-- `when: <スロット名>` … そのスロットに入っている間、継続的に有効（レベルトリガー）
-- 省略した場合は「常時（無条件）」を意味します。
-- `when` は対象ごとのキーの中に書きます。1 つの `passive` の中で、対象ごとに異なる `when` を持たせられます。
+- `when` は対象キーをキーとする辞書で、`when: {<対象>: <スロット名>}` の形を取ります。そのスロットに入っている
+  間、継続的に有効（レベルトリガー）です。
+- ある対象について `when` を書かなければ「常時（無条件）」を意味します。1 つの `passive` の中で、対象ごとに
+  異なる `when` を持たせられます。
 
 ### 8.3 modify
 
@@ -468,43 +474,46 @@ object_defs:
 `active` は、アクション・組み合わせ・確率分岐の結果が確定した瞬間に、**無条件で1回だけ**適用される命令です。
 持続する条件を表す `when`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
 
-### 9.1 対象キー
+### 9.1 文法: 操作が上位、対象が下位
 
-`active` も `self`/`parent`/`child`/`actor` という同じ対象キーの辞書型を使います。`combinations`（12 節）の中では、
-これに加えて **`dragged`**（ドラッグされてきたカード）も使えます。
+`active` は `set`・`add`・`destroy`・`spawn` という操作をキーとする辞書型です。`set`/`add` の中には、
+`self`/`parent`/`actor` を対象キーとする辞書がぶら下がります（`combinations`（12 節）の中では、これに加えて
+**`dragged`**（ドラッグされてきたカード）も使えます）。
 
 ```yaml
 actions:
   eat:
     active:
-      actor:
-        add:
+      add:
+        actor:
           satiety: 10
-      self:
-        destroy: true
+      destroy: self
 ```
 
-`add`・`destroy`・`spawn` は、対象キー（`self`/`parent` など）の直下に並ぶ**対等な兄弟キー**です。値を操作するか
-（`add`）オブジェクトの存在を操作するか（`destroy`/`spawn`）という区別のための専用の入れ子はありません。
+### 9.2 set / add
 
-### 9.2 add
+どちらも対象プロパティの実体値へ、その場で一度だけ不可逆に反映します。
 
-対象プロパティの実体値へ、その場で一度だけ不可逆に加減算します。`when`/常時の継続的な加算は `accumulate`
-（8.4 節）が担うため、`add` は一時的な命令専用です。
+- `set` は指定した**絶対値**をそのまま代入します。
+- `add` は指定した量を既存の値へ**加減算**します。
+
+`when`/常時の継続的な加算は `accumulate`（8.4 節）が担うため、`set`/`add` は一時的な命令専用です。
 
 ### 9.3 destroy
 
-`true` を指定すると、対象オブジェクトを消滅させます。すべてのオブジェクトは必ずworldを根とするツリーに
+削除したい対象を直接指定します。単一の対象なら `destroy: self` のようにスカラーで、複数の対象を同時に削除する
+なら `destroy: [self, dragged]` のようにリストで書きます。すべてのオブジェクトは必ずworldを根とするツリーに
 所属するため（7.1 節）、`destroy` は「現在の親スロットから切り離す」こととして表現できます。繰り返し実行しても
-安全（冪等）です。`spawn`と同じ対象キーの中で同時に指定した場合、`destroy`は`spawn`より先に実行されます
-（9.4節参照）。
+安全（冪等）です。`spawn` と同時に指定した場合、`destroy` は `spawn` より先に実行されます（9.4節参照）。
 
 ### 9.4 spawn
 
-`{object, into}` を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。`destroy` と同じ対象キーの
-中で同時に指定でき（`{spawn: {...}, destroy: true}`）、「新しいオブジェクトを生成しつつ、自分自身は消滅させる」と
-いう組み合わせを1つのエントリで表現できます。この場合、`destroy`が先に実行されます。破棄によって実際に位置が
-空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが素直に実現できるためです。
+`{object, into}` を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。`spawn` は常に **`self`
+（この `active` を宣言したオブジェクト自身）が実行するもの**とみなすため、`set`/`add`/`destroy` のような対象
+キーのラップを挟みません。`destroy` と同時に指定でき（`{spawn: {...}, destroy: self}`）、「新しいオブジェクトを
+生成しつつ、自分自身は消滅させる」という組み合わせを1つのエントリで表現できます。この場合、`destroy`が先に
+実行されます。破棄によって実際に位置が空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが
+素直に実現できるためです。
 
 挿入先の**スロット名を書く必要はありません**。生成物を受け取るオブジェクト（後述の`into`が指す起点）が持つ
 スロットを**宣言順に走査し、最初に配置できたスロットへ入れます**。型ごとに用意されたスロット（アイテム用・
@@ -522,15 +531,13 @@ actions:
 
 ```yaml
 active:
-  self:
-    spawn: {object: rotten_wood}
-    destroy: true
+  spawn: {object: rotten_wood}
+  destroy: self
 ```
 
 ```yaml
 active:
-  self:
-    spawn: {object: item_coconut, into: actor}
+  spawn: {object: item_coconut, into: actor}
 ```
 
 `into`が指す起点のどのスロットにも`accepts`/`capacity`が合わず配置できなかった場合、**`fallback`はYAML上に
@@ -562,7 +569,7 @@ active:
 
 ### 10.1 基本構造
 
-各候補は `weight` に加えて、自分自身の `active`（対象をキーとする辞書）を丸ごと持ちます。候補が1つしかない場合は、
+各候補は `weight` に加えて、自分自身の `active`（9 節の文法そのまま）を丸ごと持ちます。候補が1つしかない場合は、
 重みの値に関わらず必ずそれが選ばれます。
 
 ```yaml
@@ -572,20 +579,18 @@ actions:
     pick:
       - weight: 50
         active:
-          self:
-            destroy: true
+          destroy: self
       - weight: 50
         active:
-          actor:
-            destroy: true
+          destroy: actor
 ```
 
 候補ごとに影響を受ける対象（`self`/`actor` など）そのものが異なるケースも、このように表現できます。`pick` の
 入れ子は再帰的であり、候補の `active` の代わりにさらに別の `pick` を書くこともできます。
 
-各候補の `active` に書ける内容は、一時的な命令（`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate` は
-関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて終わる
-`pick` の候補に書く意味がありません。
+各候補の `active` に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate`
+は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
+終わる `pick` の候補に書く意味がありません。
 
 ### 10.2 weight
 
@@ -599,8 +604,8 @@ actions:
 pick:
   - weight: {path: self.accuracy}
     active:
-      self:
-        add: {hp: -10}
+      add:
+        self: {hp: -10}
   - weight: 40
     active: {}
 ```
@@ -622,11 +627,10 @@ traits:
         conditions:
           - {path: actor.satiety, op: lt, value: max}
         active:
-          actor:
-            add:
+          add:
+            actor:
               satiety: 10
-          self:
-            destroy: true
+          destroy: self
 ```
 
 ### 11.1 showMenu
@@ -659,11 +663,10 @@ object_defs:
         conditions:
           - {path: dragged.durability, op: gt, value: 0}
         active:
-          self:
-            spawn: {object: logs}
-            destroy: true
-          dragged:
-            add:
+          spawn: {object: logs}
+          destroy: self
+          add:
+            dragged:
               durability: -1
 ```
 

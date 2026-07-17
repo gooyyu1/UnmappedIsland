@@ -18,14 +18,14 @@ namespace UnmappedIsland.Codex
         public IReadOnlyList<ConditionDef> Conditions { get; }
 
         /// <summary>ActiveかPickのどちらか一方のみが非null。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, ActiveEffect> Active { get; }
+        public ActiveEffect Active { get; }
         public IReadOnlyList<PickCandidateDef> Pick { get; }
 
         public CombinationDef(
             string name,
             string with,
             IReadOnlyList<ConditionDef> conditions,
-            IReadOnlyDictionary<ReferenceRoot, ActiveEffect> active,
+            ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick)
         {
             Name = name;

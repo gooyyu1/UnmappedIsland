@@ -280,8 +280,8 @@ object_defs:
           - name: lit
             min: 1
             passive:
-              child:
-                modify:
+              modify:
+                child:
                   warmth: 5
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -303,8 +303,7 @@ object_defs:
       life:
         value: 0
         on_zero:
-          parent:
-            destroy: true
+          destroy: parent
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_zero"));
@@ -320,11 +319,10 @@ object_defs:
       life:
         value: 0
         on_zero:
-          self:
-            destroy: true
-            spawn:
-              object: ash
-              into: same_slot
+          destroy: self
+          spawn:
+            object: ash
+            into: same_slot
   ash: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -333,7 +331,7 @@ object_defs:
             ActiveEffect onZero = PropOf(codex, log, "life").OnZero;
 
             Assert.That(onZero, Is.Not.Null);
-            Assert.That(onZero.Destroy, Is.True);
+            Assert.That(onZero.Destroy, Contains.Item(ReferenceRoot.Self));
             Assert.That(onZero.Spawn, Is.Not.Null);
             Assert.That(onZero.Spawn.Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
             Assert.That(codex.ObjectNames.GetName(onZero.Spawn.ObjectGlobalId), Is.EqualTo("ash"));
@@ -381,11 +379,10 @@ object_defs:
         conditions:
           - {path: actor.satiety, op: lt, value: 100}
         active:
-          actor:
-            add:
+          add:
+            actor:
               satiety: 10
-          self:
-            destroy: true
+          destroy: self
   player: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -398,8 +395,8 @@ object_defs:
             Assert.That(eat.Conditions[0].Path.Root, Is.EqualTo(ReferenceRoot.Actor));
             Assert.That(eat.Conditions[0].Op, Is.EqualTo(ConditionOp.Lt));
             Assert.That(eat.Active, Is.Not.Null);
-            Assert.That(eat.Active.ContainsKey(ReferenceRoot.Actor), Is.True);
-            Assert.That(eat.Active[ReferenceRoot.Self].Destroy, Is.True);
+            Assert.That(eat.Active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
+            Assert.That(eat.Active.Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
@@ -413,12 +410,10 @@ object_defs:
         pick:
           - weight: 50
             active:
-              self:
-                destroy: true
+              destroy: self
           - weight: 50
             active:
-              actor:
-                destroy: true
+              destroy: actor
   target: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -444,11 +439,10 @@ object_defs:
         conditions:
           - {path: dragged.durability, op: gt, value: 0}
         active:
-          self:
-            spawn: {object: logs}
-            destroy: true
-          dragged:
-            add:
+          spawn: {object: logs}
+          destroy: self
+          add:
+            dragged:
               durability: -1
   logs: {}
   axe_tool:
@@ -463,8 +457,8 @@ object_defs:
 
             Assert.That(chop.With, Is.EqualTo("axe_tool"));
             Assert.That(chop.Conditions[0].Path.Root, Is.EqualTo(ReferenceRoot.Dragged));
-            Assert.That(chop.Active.ContainsKey(ReferenceRoot.Dragged), Is.True);
-            Assert.That(codex.ObjectNames.GetName(chop.Active[ReferenceRoot.Self].Spawn.ObjectGlobalId), Is.EqualTo("logs"));
+            Assert.That(chop.Active.Adds.ContainsKey(ReferenceRoot.Dragged), Is.True);
+            Assert.That(codex.ObjectNames.GetName(chop.Active.Spawn.ObjectGlobalId), Is.EqualTo("logs"));
         }
 
         [Test]
@@ -476,8 +470,7 @@ traits:
     actions:
       eat:
         active:
-          self:
-            destroy: true
+          destroy: self
 object_defs:
   berry:
     traits: [eatable]
@@ -485,7 +478,7 @@ object_defs:
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
-            Assert.That(ActionOf(berry, "eat").Active[ReferenceRoot.Self].Destroy, Is.True);
+            Assert.That(ActionOf(berry, "eat").Active.Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
@@ -496,11 +489,11 @@ traits:
   trait_a:
     actions:
       use:
-        active: {self: {destroy: true}}
+        active: {destroy: self}
   trait_b:
     actions:
       use:
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 object_defs:
   thing:
     traits: [trait_a, trait_b]
@@ -518,8 +511,7 @@ object_defs:
     actions:
       use:
         active:
-          dragged:
-            destroy: true
+          destroy: dragged
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("dragged"));
@@ -534,8 +526,7 @@ object_defs:
     actions:
       use:
         active:
-          child:
-            destroy: true
+          destroy: child
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("child"));
@@ -550,7 +541,7 @@ object_defs:
     actions:
       use:
         showMenu: sometimes
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("showMenu"));
@@ -566,7 +557,7 @@ object_defs:
       use:
         conditions:
           - {path: world.day, op: gt, value: 0}
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("world"));
@@ -582,7 +573,7 @@ object_defs:
       use:
         conditions:
           - {path: actor.satiety, op: lt, value: max}
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("max"));
@@ -596,10 +587,10 @@ object_defs:
   thing:
     actions:
       use:
-        active: {self: {destroy: true}}
+        active: {destroy: self}
         pick:
           - weight: 1
-            active: {self: {destroy: true}}
+            active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("active"));
@@ -659,7 +650,7 @@ object_defs:
     combinations:
       chop:
         with: does_not_exist2
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist2"));
@@ -679,8 +670,8 @@ object_defs:
       minute:
         value: 0
         on_overflow:
-          self:
-            accumulate: {minute: -60, hour: 1}
+          set: {self: {minute: 0}}
+          add: {self: {hour: 1}}
       hour:
         value: 0
 ";
@@ -699,15 +690,16 @@ object_defs:
         value: 45
         range: {min: 0, max: 59}
         on_overflow:
-          self:
-            accumulate: {minute: -60, hour: 1}
+          set: {self: {minute: 0}}
+          add: {self: {hour: 1}}
       hour:
         value: 0
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
-            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Adds.Count, Is.EqualTo(2));
+            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Sets[ReferenceRoot.Self].Count, Is.EqualTo(1));
+            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Adds[ReferenceRoot.Self].Count, Is.EqualTo(1));
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, clock);
@@ -729,8 +721,7 @@ object_defs:
         value: 0
         range: {min: 0, max: 59}
         on_overflow:
-          parent:
-            accumulate: {minute: -60}
+          add: {parent: {minute: -60}}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_overflow"));

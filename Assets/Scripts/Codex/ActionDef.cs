@@ -20,14 +20,14 @@ namespace UnmappedIsland.Codex
 
         /// <summary>ActiveかPickのどちらか一方のみが非null（どちらも指定しなければ、条件成立時に何も
         /// 起きないアクションになる）。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, ActiveEffect> Active { get; }
+        public ActiveEffect Active { get; }
         public IReadOnlyList<PickCandidateDef> Pick { get; }
 
         public ActionDef(
             string name,
             ShowMenuMode showMenu,
             IReadOnlyList<ConditionDef> conditions,
-            IReadOnlyDictionary<ReferenceRoot, ActiveEffect> active,
+            ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick)
         {
             Name = name;
