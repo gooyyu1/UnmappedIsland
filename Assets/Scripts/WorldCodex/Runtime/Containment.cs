@@ -23,7 +23,13 @@ namespace UnmappedIsland.Codex.Runtime
             this.wellKnown = wellKnown;
         }
 
-        public bool TryMoveToSlot(WorldObject obj, WorldObject newParent, int slotGlobalId, out string error)
+        /// <summary>
+        /// force=true の場合、accepts/capacityの検証を飛ばして必ず配置を成功させる（spawnのfallback、
+        /// GameElementDefinition.md 9.4節専用。すべてのオブジェクトは必ずどこかの親に属さなければ
+        /// ならないという前提を、退避先で保証するために使う）。スロット自体が存在しない場合は
+        /// forceでも失敗する（存在しない配列indexへは置けないため）。
+        /// </summary>
+        public bool TryMoveToSlot(WorldObject obj, WorldObject newParent, int slotGlobalId, out string error, bool force = false)
         {
             int localSlot = newParent.Def.SlotLayout.ToLocal(slotGlobalId);
             if (localSlot == LocalIndexMap.Missing)
@@ -35,13 +41,13 @@ namespace UnmappedIsland.Codex.Runtime
             Slot targetSlot = newParent.GetSlotByLocalId(localSlot);
             SlotDef slotDef = targetSlot.Def;
 
-            if (!Accepts(targetSlot, obj))
+            if (!force && !Accepts(targetSlot, obj))
             {
                 error = $"'{newParent.Def.Name}.{slotDef.Name}' は '{obj.Def.Name}' を受け入れられません（accepts制約）。";
                 return false;
             }
 
-            if (slotDef.Capacity.HasValue)
+            if (!force && slotDef.Capacity.HasValue)
             {
                 int currentSize = SumSize(targetSlot.Contents);
                 int addedSize = obj.GetNumber(wellKnown.SizeId);

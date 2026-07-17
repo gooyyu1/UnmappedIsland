@@ -70,8 +70,17 @@ namespace UnmappedIsland.Codex.Defs
     public sealed class SpawnBlueprint
     {
         public string ObjectName;
-        public SpawnIntoRoot IntoRoot;
-        public string IntoSlotName;
+        public SpawnTargetBlueprint Into;
+
+        /// <summary>null なら fallback なし。</summary>
+        public SpawnTargetBlueprint Fallback;
+    }
+
+    /// <summary>spawn の配置先1件（9.4節）。Root が SameAsSelf の場合、SlotName は使わない。</summary>
+    public sealed class SpawnTargetBlueprint
+    {
+        public SpawnTargetRoot Root;
+        public string SlotName;
     }
 
     public struct StageBlueprint
@@ -142,7 +151,8 @@ namespace UnmappedIsland.Codex.Defs
                     if (p.OnZero.Spawn != null)
                     {
                         objectNames.Intern(p.OnZero.Spawn.ObjectName);
-                        slotNames.Intern(p.OnZero.Spawn.IntoSlotName);
+                        InternSpawnTarget(p.OnZero.Spawn.Into, slotNames);
+                        if (p.OnZero.Spawn.Fallback != null) InternSpawnTarget(p.OnZero.Spawn.Fallback, slotNames);
                     }
                 }
                 foreach (var s in bp.Slots) slotNames.Intern(s.Name);
@@ -153,6 +163,11 @@ namespace UnmappedIsland.Codex.Defs
                     if (c.GateKind == ContributionGateKind.WhenOwnStage) propertyNames.Intern(c.GateStagePropertyName);
                 }
             }
+        }
+
+        private static void InternSpawnTarget(SpawnTargetBlueprint target, NameRegistry slotNames)
+        {
+            if (target.Root != SpawnTargetRoot.SameAsSelf) slotNames.Intern(target.SlotName);
         }
 
         private static ObjectDef BuildOne(
@@ -190,8 +205,8 @@ namespace UnmappedIsland.Codex.Defs
                     {
                         spawn = new SpawnEffect(
                             objectNames.GetId(p.OnZero.Spawn.ObjectName),
-                            p.OnZero.Spawn.IntoRoot,
-                            slotNames.GetId(p.OnZero.Spawn.IntoSlotName));
+                            BuildSpawnTarget(p.OnZero.Spawn.Into, slotNames),
+                            p.OnZero.Spawn.Fallback != null ? BuildSpawnTarget(p.OnZero.Spawn.Fallback, slotNames) : null);
                     }
 
                     onZero = new ActiveEffect(adds, p.OnZero.Destroy, spawn);
@@ -221,6 +236,12 @@ namespace UnmappedIsland.Codex.Defs
             return new ObjectDef(
                 objectNames.GetId(bp.Name), bp.Name, bp.IsSingleton,
                 propertyLayout, propertyDefs, slotLayout, slotDefs, contributions);
+        }
+
+        private static SpawnTarget BuildSpawnTarget(SpawnTargetBlueprint bp, NameRegistry slotNames)
+        {
+            int? slotGlobalId = bp.Root == SpawnTargetRoot.SameAsSelf ? (int?)null : slotNames.GetId(bp.SlotName);
+            return new SpawnTarget(bp.Root, slotGlobalId);
         }
 
         private static ContributionDef BuildContribution(

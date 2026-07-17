@@ -41,12 +41,16 @@ namespace UnmappedIsland.Codex.Tests
 
         private static ActiveEffectBlueprint OnZeroDestroy() => new ActiveEffectBlueprint { Destroy = true };
 
-        private static ActiveEffectBlueprint OnZeroSpawnAndDestroy(string spawnObjectName, SpawnIntoRoot into, string intoSlotName)
+        private static SpawnTargetBlueprint Target(SpawnTargetRoot root, string slotName = null) =>
+            new SpawnTargetBlueprint { Root = root, SlotName = slotName };
+
+        private static ActiveEffectBlueprint OnZeroSpawnAndDestroy(
+            string spawnObjectName, SpawnTargetBlueprint into, SpawnTargetBlueprint fallback = null)
         {
             return new ActiveEffectBlueprint
             {
                 Destroy = true,
-                Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, IntoRoot = into, IntoSlotName = intoSlotName },
+                Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into, Fallback = fallback },
             };
         }
 
@@ -555,7 +559,7 @@ namespace UnmappedIsland.Codex.Tests
 
             var dry = new ObjectDefBlueprint { Name = "dry_season" };
             dry.Properties.Add(Prop("remaining", 0,
-                onZero: OnZeroSpawnAndDestroy("wet_season", SpawnIntoRoot.Parent, "weather")));
+                onZero: OnZeroSpawnAndDestroy("wet_season", Target(SpawnTargetRoot.Parent, "weather"))));
 
             var wet = new ObjectDefBlueprint { Name = "wet_season" };
             wet.Properties.Add(Prop("remaining", 30));
@@ -574,6 +578,161 @@ namespace UnmappedIsland.Codex.Tests
             worldInstance.TryGetSlot(weatherSlotId, out Slot slot);
             Assert.That(slot.Contents.Count, Is.EqualTo(1));
             Assert.That(slot.Contents[0].Def.Name, Is.EqualTo("wet_season"));
+        }
+
+        [Test]
+        public void PostTick_SpawnsIntoSameSlotAsSelfForCraftingOrDecay()
+        {
+            var location = new ObjectDefBlueprint { Name = "clearing2" };
+            location.Slots.Add(Slot("ground"));
+
+            var wetLog = new ObjectDefBlueprint { Name = "wet_log" };
+            wetLog.Properties.Add(Prop("freshness", 0,
+                onZero: OnZeroSpawnAndDestroy("rotten_log", Target(SpawnTargetRoot.SameAsSelf))));
+
+            var rottenLog = new ObjectDefBlueprint { Name = "rotten_log" };
+
+            var codex = WorldCodexBuilder.Build(new[] { location, wetLog, rottenLog });
+            int groundSlotId = codex.SlotNames.GetId("ground");
+
+            var session = new WorldSession(codex);
+            WorldObject locationInstance = Spawn(codex, "clearing2");
+            WorldObject wetLogInstance = Spawn(codex, "wet_log");
+            Assert.That(session.Containment.TryMoveToSlot(wetLogInstance, locationInstance, groundSlotId, out _), Is.True);
+
+            locationInstance.PostTick(session);
+
+            Assert.That(wetLogInstance.Parent, Is.Null, "wet_log自身は破棄される");
+            locationInstance.TryGetSlot(groundSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(1));
+            Assert.That(slot.Contents[0].Def.Name, Is.EqualTo("rotten_log"), "自分がいたのと同じslotにrotten_logが入る");
+        }
+
+        [Test]
+        public void PostTick_SpawnFallsBackWhenPrimaryCapacityIsExceeded()
+        {
+            var box = new ObjectDefBlueprint { Name = "small_box" };
+            box.Slots.Add(new SlotBlueprint { Name = "contents", Capacity = 5 });
+            box.Slots.Add(Slot("overflow"));
+
+            var boulder = new ObjectDefBlueprint { Name = "boulder" };
+            boulder.Properties.Add(Prop("size", 10));
+
+            var geode = new ObjectDefBlueprint { Name = "geode" };
+            geode.Properties.Add(Prop("ripeness", 0,
+                onZero: OnZeroSpawnAndDestroy("boulder",
+                    into: Target(SpawnTargetRoot.Parent, "contents"),
+                    fallback: Target(SpawnTargetRoot.Parent, "overflow"))));
+
+            var codex = WorldCodexBuilder.Build(new[] { box, boulder, geode });
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+            int overflowSlotId = codex.SlotNames.GetId("overflow");
+
+            var session = new WorldSession(codex);
+            WorldObject boxInstance = Spawn(codex, "small_box");
+            WorldObject geodeInstance = Spawn(codex, "geode");
+            Assert.That(session.Containment.TryMoveToSlot(geodeInstance, boxInstance, contentsSlotId, out _), Is.True);
+
+            boxInstance.PostTick(session);
+
+            boxInstance.TryGetSlot(contentsSlotId, out Slot contentsSlot);
+            boxInstance.TryGetSlot(overflowSlotId, out Slot overflowSlot);
+
+            Assert.That(contentsSlot.Contents.Count, Is.EqualTo(0), "geodeは自壊して消え、boulderはcapacity超過でcontentsに入れない");
+            Assert.That(overflowSlot.Contents.Count, Is.EqualTo(1), "boulderはoverflowへ退避される（capacityは無視される）");
+            Assert.That(overflowSlot.Contents[0].Def.Name, Is.EqualTo("boulder"));
+        }
+
+        [Test]
+        public void PostTick_SpawnFallsBackWhenPrimaryRejectsDueToAcceptsRestriction()
+        {
+            var chest = new ObjectDefBlueprint { Name = "food_chest" };
+            var foodOnly = new SlotBlueprint { Name = "food_only" };
+            foodOnly.Accepts.Add(new AcceptBlueprint { ObjectName = "apple", Max = 10, Consume = false });
+            chest.Slots.Add(foodOnly);
+            chest.Slots.Add(Slot("misc"));
+
+            var apple = new ObjectDefBlueprint { Name = "apple" };
+            var pebble = new ObjectDefBlueprint { Name = "pebble" };
+
+            var vein = new ObjectDefBlueprint { Name = "vein" };
+            vein.Properties.Add(Prop("yield", 0,
+                onZero: OnZeroSpawnAndDestroy("pebble",
+                    into: Target(SpawnTargetRoot.Parent, "food_only"),
+                    fallback: Target(SpawnTargetRoot.Parent, "misc"))));
+
+            var codex = WorldCodexBuilder.Build(new[] { chest, apple, pebble, vein });
+            int foodOnlySlotId = codex.SlotNames.GetId("food_only");
+            int miscSlotId = codex.SlotNames.GetId("misc");
+
+            var session = new WorldSession(codex);
+            WorldObject chestInstance = Spawn(codex, "food_chest");
+            WorldObject veinInstance = Spawn(codex, "vein");
+            Assert.That(session.Containment.TryMoveToSlot(veinInstance, chestInstance, miscSlotId, out _), Is.True);
+
+            chestInstance.PostTick(session);
+
+            chestInstance.TryGetSlot(foodOnlySlotId, out Slot foodOnlySlot);
+            chestInstance.TryGetSlot(miscSlotId, out Slot miscSlot);
+
+            Assert.That(foodOnlySlot.Contents.Count, Is.EqualTo(0), "pebbleはaccepts制約でfood_onlyに入れない");
+            Assert.That(miscSlot.Contents.Count, Is.EqualTo(1), "pebbleはmiscへ退避される（veinは自壊して消えている）");
+            Assert.That(miscSlot.Contents[0].Def.Name, Is.EqualTo("pebble"));
+        }
+
+        [Test]
+        public void PostTick_SpawnDoesNothingWhenPrimaryFailsAndNoFallbackGiven()
+        {
+            var box = new ObjectDefBlueprint { Name = "tiny_box" };
+            box.Slots.Add(new SlotBlueprint { Name = "contents", Capacity = 1 });
+
+            var pebble = new ObjectDefBlueprint { Name = "pebble2" };
+            pebble.Properties.Add(Prop("size", 10));
+
+            var vein = new ObjectDefBlueprint { Name = "vein2" };
+            vein.Properties.Add(Prop("yield", 0,
+                onZero: OnZeroSpawnAndDestroy("pebble2", Target(SpawnTargetRoot.Parent, "contents"))));
+
+            var codex = WorldCodexBuilder.Build(new[] { box, pebble, vein });
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            var session = new WorldSession(codex);
+            WorldObject boxInstance = Spawn(codex, "tiny_box");
+            WorldObject veinInstance = Spawn(codex, "vein2");
+            Assert.That(session.Containment.TryMoveToSlot(veinInstance, boxInstance, contentsSlotId, out _), Is.True);
+
+            boxInstance.PostTick(session);
+
+            boxInstance.TryGetSlot(contentsSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(0),
+                "veinは自壊して消え、pebble2はcapacity超過で入れず、fallbackも無いので何も残らない");
+        }
+
+        [Test]
+        public void PostTick_SpawnWithActorRootDoesNothingBecauseOnZeroHasNoActor()
+        {
+            var location = new ObjectDefBlueprint { Name = "clearing3" };
+            location.Slots.Add(Slot("ground"));
+
+            var berry = new ObjectDefBlueprint { Name = "berry" };
+
+            var bush = new ObjectDefBlueprint { Name = "bush" };
+            bush.Properties.Add(Prop("ripeness", 0,
+                onZero: OnZeroSpawnAndDestroy("berry", Target(SpawnTargetRoot.Actor, "inventory"))));
+
+            var codex = WorldCodexBuilder.Build(new[] { location, berry, bush });
+            int groundSlotId = codex.SlotNames.GetId("ground");
+
+            var session = new WorldSession(codex);
+            WorldObject locationInstance = Spawn(codex, "clearing3");
+            WorldObject bushInstance = Spawn(codex, "bush");
+            Assert.That(session.Containment.TryMoveToSlot(bushInstance, locationInstance, groundSlotId, out _), Is.True);
+
+            locationInstance.PostTick(session);
+
+            Assert.That(bushInstance.Parent, Is.Null, "bush自身は破棄される");
+            locationInstance.TryGetSlot(groundSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(0), "actorルートはon_zero文脈では解決できないため、berryはどこにも配置されない");
         }
 
         [Test]

@@ -195,12 +195,18 @@
             "object": { "$ref": "#/$defs/identifier" },
             "into": {
               "type": "string",
-              "description": "生成先スロットへのパス（例: parent.inventory）。"
+              "pattern": "^(same_slot|(self|parent|actor|actor_parent)\\.[a-z][a-z0-9_]*)$",
+              "description": "配置先（9.4節）。'same_slot' はselfが今いる場所（親+スロット）へ動的に配置する。それ以外は '<root>.<slot>' 形式（root は self/parent/actor/actor_parent）。actor/actor_parentはアクション実行文脈でのみ解決できる。"
+            },
+            "fallback": {
+              "type": "string",
+              "pattern": "^(self|parent|actor|actor_parent)\\.[a-z][a-z0-9_]*$",
+              "description": "intoへの配置が失敗した場合にのみ使う退避先（9.4節）。same_slotは使えず、必ず'<root>.<slot>'形式。accepts/capacityを無視して必ず配置に成功する。省略時、intoが失敗するとオブジェクトはどこにも配置されない。"
             }
           },
           "required": ["object", "into"],
           "additionalProperties": false,
-          "description": "新規オブジェクトを生成し、指定したスロットへ配置する。destroyと同じ対象キーの中で同時に指定できる。"
+          "description": "新規オブジェクトを生成し、指定した場所へ配置する。destroyと同じ対象キーの中で同時に指定できる。"
         }
       },
       "minProperties": 1,
