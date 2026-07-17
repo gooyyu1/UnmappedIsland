@@ -84,22 +84,13 @@ namespace UnmappedIsland.Loader
             if (rangeSpec != null)
                 bp.Range = new PropertyRange(rangeSpec.RequireInt("min", context), rangeSpec.RequireInt("max", context));
 
-            YamlMappingNode overflow = node.TryGetMapping("on_overflow", context);
-            if (overflow != null)
+            YamlMappingNode onOverflowNode = node.TryGetMapping("on_overflow", context);
+            if (onOverflowNode != null)
             {
-                string mode = overflow.RequireScalar("mode", context);
-                if (mode == "wrap")
-                {
-                    if (bp.Range == null)
-                        throw new YamlLoadException($"{context}: on_overflow.mode: wrapを使うには'range'が必須です。");
+                if (bp.Range == null)
+                    throw new YamlLoadException($"{context}: on_overflowを使うには'range'が必須です。");
 
-                    bp.OverflowMode = OverflowMode.Wrap;
-                    bp.OverflowCarryToName = overflow.RequireScalar("carry_to", context);
-                }
-                else if (mode != "none")
-                {
-                    throw new YamlLoadException($"{context}: on_overflow.modeは'wrap'または'none'である必要があります（値: '{mode}'）。");
-                }
+                bp.OnOverflow.AddRange(ParseOnOverflow(context, onOverflowNode));
             }
 
             YamlSequenceNode stages = node.TryGetSequence("stages", context);
@@ -135,6 +126,32 @@ namespace UnmappedIsland.Loader
             if (int.TryParse(raw, out int number)) return PropertyValue.FromNumber(number);
             if (bool.TryParse(raw, out bool boolValue)) return PropertyValue.FromNumber(boolValue ? 1 : 0);
             return PropertyValue.FromSymbol(symbols.Intern(raw));
+        }
+
+        /// <summary>
+        /// on_overflow（6.3節）を読む。on_zeroと同じ「target-key（selfのみ対応）→body」という文法を流用するが、
+        /// bodyの中身はadd/destroy/spawnではなく、accumulateのみ（一度きりの折り返し量・繰り上げ量の指定）。
+        /// </summary>
+        private static List<AddBlueprint> ParseOnOverflow(string context, YamlMappingNode onOverflowMap)
+        {
+            var unsupportedTargets = onOverflowMap.EntriesInOrder().Select(e => e.Key).Where(k => k != "self").ToList();
+            if (unsupportedTargets.Count > 0)
+                throw new YamlLoadException(
+                    $"{context}: on_overflowは現時点でselfのみ対応しています（未対応: {string.Join(", ", unsupportedTargets)}）。");
+
+            var result = new List<AddBlueprint>();
+
+            YamlMappingNode selfNode = onOverflowMap.TryGetMapping("self", context);
+            if (selfNode == null) return result;
+
+            YamlMappingNode accumulate = selfNode.TryGetMapping("accumulate", context);
+            if (accumulate == null)
+                throw new YamlLoadException($"{context}: on_overflow.selfには'accumulate'が必要です。");
+
+            foreach (var (propName, amountNode) in accumulate.EntriesInOrder())
+                result.Add(new AddBlueprint { PropertyName = propName, Amount = int.Parse(((YamlScalarNode)amountNode).Value) });
+
+            return result;
         }
 
         private static ActiveEffectBlueprint ParseOnZero(string context, YamlMappingNode onZeroMap)

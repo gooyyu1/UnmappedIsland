@@ -60,19 +60,25 @@
     },
 
     "on_overflow": {
-      "description": "overflow時の挙動（6.3節）。",
+      "description": "rangeの上限を超えた瞬間の挙動（6.3節）。on_zero（9節のactive_map）と同じ target-key（self のみ対応）→body という文法を流用するが、bodyはaccumulateのみを持つ。溢れた瞬間に、そこへ書いた量をそのまま一度だけ適用する（折り返し量・繰り上げ量が何かをエンジン側では解釈しない）。省略時は上限なし。",
       "type": "object",
       "properties": {
-        "mode": {
-          "enum": ["wrap", "none"],
-          "description": "'wrap' は carry_to へ繰り上げて0に戻る。'none' は上限なし。"
-        },
-        "carry_to": { "$ref": "#/$defs/identifier" }
+        "self": {
+          "type": "object",
+          "properties": {
+            "accumulate": {
+              "description": "溢れた瞬間に一度だけ適用する加減算。対象は自分自身（折り返し）に限らず、同じobject_def内の他のプロパティ（繰り上げ先）も指定できる。数値プロパティは32bit整数のみを扱う（6節）。",
+              "type": "object",
+              "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
+              "additionalProperties": false
+            }
+          },
+          "required": ["accumulate"],
+          "additionalProperties": false
+        }
       },
-      "required": ["mode"],
-      "additionalProperties": false,
-      "if": { "properties": { "mode": { "const": "wrap" } } },
-      "then": { "required": ["mode", "carry_to"] }
+      "required": ["self"],
+      "additionalProperties": false
     },
 
     "stage_def": {

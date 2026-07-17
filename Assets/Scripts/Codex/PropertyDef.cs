@@ -23,29 +23,6 @@ namespace UnmappedIsland.Codex
         }
     }
 
-    public enum OverflowMode
-    {
-        None,
-        Wrap,
-    }
-
-    /// <summary>6.3節の on_overflow。carry_to は同一 ObjectDef 内の別プロパティを指す。</summary>
-    public sealed class OverflowRule
-    {
-        public OverflowMode Mode { get; }
-
-        /// <summary>Mode.Wrap のときの繰り上げ先プロパティのローカルID（同一ObjectDef内）。Mode.None なら未使用。</summary>
-        public int CarryToLocalId { get; }
-
-        public static readonly OverflowRule None = new OverflowRule(OverflowMode.None, LocalIndexMap.Missing);
-
-        public OverflowRule(OverflowMode mode, int carryToLocalId)
-        {
-            Mode = mode;
-            CarryToLocalId = carryToLocalId;
-        }
-    }
-
     /// <summary>6.4節の stages の1段。区間は下限のみで表す半開区間。</summary>
     public sealed class PropertyStage
     {
@@ -81,10 +58,15 @@ namespace UnmappedIsland.Codex
         /// <summary>value: {min, max} による毎tick再ロール（6.2節）。使わない場合は null。</summary>
         public PropertyRange? RerollRange { get; }
 
-        /// <summary>取りうる値域（6.3節）。使わない場合は null。</summary>
+        /// <summary>取りうる値域（6.3節）。on_overflowを使う場合は必須。使わない場合は null。</summary>
         public PropertyRange? Range { get; }
 
-        public OverflowRule Overflow { get; }
+        /// <summary>
+        /// on_overflow（6.3節）: 値がRange.Maxを超えた際に、selfへ一度だけ適用するaccumulate内容
+        /// （on_zeroと同じ、target-key→bodyという文法を流用している）。空ならon_overflowを持たない。
+        /// 対象プロパティは自分自身（折り返し）でも、他のプロパティ（繰り上げ先）でも構わない。
+        /// </summary>
+        public IReadOnlyList<PropertyDelta> OnOverflow { get; }
 
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
@@ -100,7 +82,7 @@ namespace UnmappedIsland.Codex
             PropertyValue defaultValue,
             PropertyRange? rerollRange,
             PropertyRange? range,
-            OverflowRule overflow,
+            IReadOnlyList<PropertyDelta> onOverflow,
             IReadOnlyList<PropertyStage> stages,
             ActiveEffect onZero = null)
         {
@@ -109,7 +91,7 @@ namespace UnmappedIsland.Codex
             DefaultValue = defaultValue;
             RerollRange = rerollRange;
             Range = range;
-            Overflow = overflow;
+            OnOverflow = onOverflow;
             Stages = stages;
             OnZero = onZero;
         }

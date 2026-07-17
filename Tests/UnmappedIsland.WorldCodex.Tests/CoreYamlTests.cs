@@ -62,11 +62,11 @@ namespace UnmappedIsland.Codex.Tests
 
             PropertyDef minute = PropOf(world, "minute");
             Assert.That(minute.Range.Value.Max, Is.EqualTo(59));
-            Assert.That(minute.Overflow.Mode, Is.EqualTo(OverflowMode.Wrap));
+            Assert.That(minute.OnOverflow.Count, Is.GreaterThan(0));
 
             PropertyDef hour = PropOf(world, "hour");
             Assert.That(hour.Range.Value.Max, Is.EqualTo(23));
-            Assert.That(hour.Overflow.Mode, Is.EqualTo(OverflowMode.Wrap));
+            Assert.That(hour.OnOverflow.Count, Is.GreaterThan(0));
         }
 
         [Test]

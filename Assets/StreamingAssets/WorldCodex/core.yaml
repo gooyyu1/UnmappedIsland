@@ -20,12 +20,17 @@ object_defs:
           self:
             accumulate:
               tick: 1
-      # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow）。1tick=ゲーム内
-      # 時間15分、という対応づけのため、毎tick自分自身を+15する。
+      # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow。on_zeroと同じ
+      # target-key(self)→bodyという文法で、折り返し量・繰り上げ量をそのままaccumulateとして書く）。
+      # 1tick=ゲーム内時間15分、という対応づけのため、毎tick自分自身を+15する。
       minute:
         value: 0
         range: {min: 0, max: 59}
-        on_overflow: {mode: wrap, carry_to: hour}
+        on_overflow:
+          self:
+            accumulate:
+              minute: -60
+              hour: 1
         passive:
           self:
             accumulate:
@@ -34,7 +39,11 @@ object_defs:
       hour:
         value: 0
         range: {min: 0, max: 23}
-        on_overflow: {mode: wrap, carry_to: day}
+        on_overflow:
+          self:
+            accumulate:
+              hour: -24
+              day: 1
       # 現在の日（1始まり）。上限は未定のため無制限に加算し続ける（GameElementDefinition.md 17節）。
       day:
         value: 1

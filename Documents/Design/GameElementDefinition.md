@@ -126,19 +126,28 @@ props:
 上限に達したら折り返す（あるいは繰り上げる）プロパティは、`range`（取りうる上下限）と `on_overflow`（上限到達時の挙動）を
 持たせます。`value` の `{min, max}`（6.2 節、毎 tick 再ロールする範囲）とは別の仕組みです。
 
+`on_overflow` は `on_zero`（6.5 節）と同じ **target-key（`self` のみ対応）→ body** という文法をそのまま流用します。
+本体は `accumulate` のみを持ち、値が `range` の上限を超えた瞬間に、そこへ書いた量をそのまま一度だけ適用します
+（折り返し量・繰り上げ量が何かをエンジン側では一切解釈せず、著者が書いた通りに加減算するだけです）。
+
 ```yaml
 props:
   minute_of_day:
     value: 0
     range: {min: 0, max: 1439}
-    on_overflow: {mode: wrap, carry_to: day}   # 1440でdayに+1して0に戻る
-  sequence:
-    value: 0
-    on_overflow: {mode: none}                   # 上限なし
+    on_overflow:
+      self:
+        accumulate:
+          minute_of_day: -1440   # 1440溢れたら自分を1440引いて0に戻す
+          day: 1                 # 同時にdayへ+1する
 ```
 
-- `mode: wrap` は `carry_to` へ繰り上げて 0 に戻ります（`carry_to` が必須になります）。
-- `mode: none` は上限なしです。
+- `range` は `on_overflow` を使う場合に必須です。
+- `on_overflow` を省略すると（`sequence` のように上限なくaccumulateし続けたい場合）、上限なしを意味します。
+- `self.accumulate` に書けるプロパティは、自分自身（折り返し）に限らず、同じ object_def 内の他のプロパティ
+  （繰り上げ先）も指定できます。存在しないプロパティ名を書いた場合は `on_zero`/`add` と同様に黙って無視されます。
+- 1 tick で `range` の幅を複数回分飛び越えた場合や、繰り上げ先自身がさらに溢れる場合（分→時→日のように連鎖する
+  場合）も、溢れが無くなるまで指定した量を繰り返し適用することで解決します。
 
 ### 6.4 stages（段階）
 
@@ -751,11 +760,15 @@ object_defs:
       hour:
         value: 0
         range: {min: 0, max: 23}
-        on_overflow: {mode: wrap, carry_to: day}
+        on_overflow:
+          self:
+            accumulate: {hour: -24, day: 1}
       minute:
         value: 0
         range: {min: 0, max: 59}
-        on_overflow: {mode: wrap, carry_to: hour}
+        on_overflow:
+          self:
+            accumulate: {minute: -60, hour: 1}
 ```
 
 （実際の定義は `Assets/StreamingAssets/WorldCodex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す

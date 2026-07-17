@@ -153,14 +153,15 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// on_overflow（6.3節）: rangeの上限を超えたプロパティを折り返し、carry_to へ繰り上げる。全プロパティの
-        /// accumulateが確定した後、まとめて1つの解決パスとして処理する。
+        /// on_overflow（6.3節）: rangeの上限を超えたプロパティについて、著者がon_overflow.self.accumulateへ
+        /// 書いた量をそのまま一度だけ適用する（on_zeroと同じ「一度きりの命令」という文法・性質をそのまま
+        /// 流用している。何を折り返し量・繰り上げ量にするかはCodex側では一切解釈せず、著者の指定通りに
+        /// AddNumberするだけ）。全プロパティのaccumulateが確定した後、まとめて1つの解決パスとして処理する。
         ///
-        /// 繰り上げは連鎖しうる（例: minuteの繰り上げでhourが増え、そのhour自身も溢れてdayへ繰り上がる）。
-        /// properties配列の走査順は宣言順（YAMLの上から順）であり、繰り上げ元が繰り上げ先より後ろに
-        /// 宣言されている場合（例: hourをminuteより先に書いた場合）、1回の走査だけでは繰り上げ先の
-        /// 溢れを見逃す。そのため「溢れが1件も無くなるまで」プロパティ数を上限に再走査し、宣言順に
-        /// 依存せず正しく連鎖を解決する。
+        /// 繰り上げは連鎖しうる（例: minuteの繰り上げでhourが増え、そのhour自身も溢れてdayへ繰り上がる）上、
+        /// 1tickで複数回分溢れる場合もありうる（例: 通常より大きいaccumulateが1回だけ発生した場合）。
+        /// properties配列の走査順（宣言順）に依存せず、また複数回分の溢れも正しく解決できるよう、
+        /// 「溢れが1件も無くなるまで」プロパティ数を上限に再走査する。
         /// </summary>
         private void ApplyOverflow()
         {
@@ -170,19 +171,15 @@ namespace UnmappedIsland.Runtime
 
                 for (int local = 0; local < properties.Length; local++)
                 {
-                    OverflowRule overflow = Def.PropertyDefs[local].Overflow;
-                    if (overflow.Mode != OverflowMode.Wrap) continue;
+                    PropertyDef def = Def.PropertyDefs[local];
+                    if (def.OnOverflow.Count == 0) continue;
 
-                    PropertyRange range = Def.PropertyDefs[local].Range.Value; // wrapはrangeを必須とする（ロード時に保証済み）
-                    int value = properties[local].AsNumber();
-                    if (value <= range.Max) continue;
+                    PropertyRange range = def.Range.Value; // on_overflowはrangeを必須とする（ロード時に保証済み）
+                    if (properties[local].AsNumber() <= range.Max) continue;
 
-                    int span = range.Max - range.Min + 1;
-                    int excess = value - range.Min;
-                    int carries = excess / span;
+                    foreach (var delta in def.OnOverflow)
+                        AddNumber(delta.PropertyGlobalId, delta.Amount);
 
-                    properties[local].Add(-(excess - excess % span));
-                    properties[overflow.CarryToLocalId].Add(carries);
                     anyOverflowed = true;
                 }
 

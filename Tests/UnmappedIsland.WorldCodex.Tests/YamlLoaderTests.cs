@@ -670,7 +670,7 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_OnOverflowWrapWithoutRange_Throws()
+        public void LoadFromGroups_OnOverflowWithoutRange_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -678,12 +678,61 @@ object_defs:
     props:
       minute:
         value: 0
-        on_overflow: {mode: wrap, carry_to: hour}
+        on_overflow:
+          self:
+            accumulate: {minute: -60, hour: 1}
       hour:
         value: 0
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ParsesOnOverflowAndAppliesItAtRuntime()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          self:
+            accumulate: {minute: -60, hour: 1}
+      hour:
+        value: 0
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
+
+            ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
+            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Count, Is.EqualTo(2));
+
+            var instance = new WorldObject(1, clock);
+            instance.SetProperty(codex.PropertyNames.GetId("minute"), PropertyValue.FromNumber(60)); // 手動で溢れさせる
+            instance.Tick(); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hour")), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnOverflowWithNonSelfTarget_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        range: {min: 0, max: 59}
+        on_overflow:
+          parent:
+            accumulate: {minute: -60}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_overflow"));
         }
     }
 }
