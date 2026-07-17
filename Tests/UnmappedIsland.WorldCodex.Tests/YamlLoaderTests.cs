@@ -604,5 +604,65 @@ object_defs:
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("active"));
         }
+
+        // ------------------------------------------------------------------
+        // accepts.object / combinations.with のトレイト参照・バリデーション
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_SlotAcceptsMatchesTraitName()
+        {
+            const string yaml = @"
+traits:
+  location: {}
+object_defs:
+  world:
+    slots:
+      locations:
+        accepts:
+          - {object: location, max: 10}
+  forest:
+    traits: [location]
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
+            SlotDef locations = SlotOf(codex, world, "locations");
+
+            Assert.That(locations.Accepts[0].With, Is.EqualTo("location"));
+
+            ObjectDef forest = codex.Objects.Get(codex.ObjectNames.GetId("forest"));
+            Assert.That(locations.Accepts[0].Matches(forest), Is.True);
+        }
+
+        [Test]
+        public void LoadFromGroups_SlotAcceptsUnknownName_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  world:
+    slots:
+      locations:
+        accepts:
+          - {object: does_not_exist, max: 10}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist"));
+        }
+
+        [Test]
+        public void LoadFromGroups_CombinationWithUnknownName_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  wood:
+    combinations:
+      chop:
+        with: does_not_exist2
+        active: {self: {destroy: true}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist2"));
+        }
     }
 }

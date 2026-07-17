@@ -247,6 +247,9 @@ slots:
 
 - `consume: true` は素材として消費される、`consume: false` は道具として存在確認のみ行うことを表します。
 - `capacity`（7.3 節）とは独立した仕組みで、1 つのスロットが両方を同時に持てます。
+- `object` には、`object_defs` の id だけでなく trait 名（5 節）も指定できます（`combinations` の `with`、12.1 節と
+  同じ考え方）。trait 名を使えば、そのtraitを参照するあらゆる型（MOD 追加分も含む）をまとめて受け入れられます
+  （例: `{object: location, max: 9999}` で、`location` trait を参照するあらゆる場所オブジェクトを受け入れる）。
 
 ### 7.3 capacity（合計サイズの制約）
 
@@ -745,12 +748,18 @@ object_defs:
     props:
       day:
         value: 1
-        on_overflow: {mode: none}
-      minute_of_day:
+      hour:
         value: 0
-        range: {min: 0, max: 1439}
+        range: {min: 0, max: 23}
         on_overflow: {mode: wrap, carry_to: day}
+      minute:
+        value: 0
+        range: {min: 0, max: 59}
+        on_overflow: {mode: wrap, carry_to: hour}
 ```
+
+（実際の定義は `Assets/StreamingAssets/WorldCodex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す
+`tick` も持つ。）
 
 日時・天候はオブジェクトから直接参照されるのではなく、**環境がオブジェクトに影響を与える**という位置づけです
 （例: 明るさによって行動可否が変わる）。直接のプロパティ参照経路（`world.xxx`）は 14 節の `path` で使います。

@@ -311,7 +311,7 @@ namespace UnmappedIsland.Codex
             {
                 var s = bp.Slots[local];
                 var accepts = s.Accepts
-                    .Select(a => new SlotAcceptRule(objectNames.GetId(a.ObjectName), a.Max, a.Consume))
+                    .Select(a => new SlotAcceptRule(a.ObjectName, a.Max, a.Consume))
                     .ToList();
                 slotDefs[local] = new SlotDef(
                     slotGlobalIds[local], s.Name, accepts, s.Capacity, s.WeightRate,

@@ -161,11 +161,11 @@ namespace UnmappedIsland.Runtime
 
             foreach (var rule in rules)
             {
-                if (rule.ObjectGlobalId != candidate.Def.GlobalId) continue;
+                if (!rule.Matches(candidate.Def)) continue;
 
                 int countOfSameType = 0;
                 foreach (var existing in slot.Contents)
-                    if (existing.Def.GlobalId == rule.ObjectGlobalId) countOfSameType++;
+                    if (rule.Matches(existing.Def)) countOfSameType++;
 
                 if (countOfSameType < rule.Max) return true;
             }

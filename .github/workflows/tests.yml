@@ -8,12 +8,14 @@ on:
       - 'Assets/Scripts/Codex/**'
       - 'Assets/Scripts/Runtime/**'
       - 'Assets/Scripts/Loader/**'
+      - 'Assets/StreamingAssets/WorldCodex/**'
       - 'Tests/**'
   pull_request:
     paths:
       - 'Assets/Scripts/Codex/**'
       - 'Assets/Scripts/Runtime/**'
       - 'Assets/Scripts/Loader/**'
+      - 'Assets/StreamingAssets/WorldCodex/**'
       - 'Tests/**'
   workflow_dispatch:
 

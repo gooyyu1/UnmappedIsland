@@ -1,21 +1,29 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnmappedIsland.Codex
 {
-    /// <summary>GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。</summary>
+    /// <summary>
+    /// GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。Withは、combinationsの
+    /// with（12.1節）と同じ考え方で、object_defのidかtrait名のいずれか（Matches参照）。traitはmixin合成後に
+    /// 消えるため、グローバルIDへは解決せず文字列のまま保持する。
+    /// </summary>
     public sealed class SlotAcceptRule
     {
-        /// <summary>受け入れ対象 ObjectDef のグローバルID。</summary>
-        public int ObjectGlobalId { get; }
+        public string With { get; }
         public int Max { get; }
         public bool Consume { get; }
 
-        public SlotAcceptRule(int objectGlobalId, int max, bool consume)
+        public SlotAcceptRule(string with, int max, bool consume)
         {
-            ObjectGlobalId = objectGlobalId;
+            With = with;
             Max = max;
             Consume = consume;
         }
+
+        /// <summary>candidateDefがこのルールのWithにマッチするか。object_defのidそのもの、またはcandidateDefが
+        /// 合成時に参照していたtrait名のいずれかとして一致すれば真（CombinationDef.Matchesと同じ規約）。</summary>
+        public bool Matches(ObjectDef candidateDef) => candidateDef.Name == With || candidateDef.Traits.Contains(With);
     }
 
     /// <summary>

@@ -347,7 +347,10 @@
       "description": "slotのaccepts（型・数量の制約、GameElementDefinition.md 7.2節）の1エントリ。",
       "type": "object",
       "properties": {
-        "object": { "$ref": "#/$defs/identifier" },
+        "object": {
+          "$ref": "#/$defs/identifier",
+          "description": "object_defのidかtrait名のいずれか（combinationsのwith、12.1節と同じ考え方）。"
+        },
         "max": {
           "type": "integer",
           "minimum": 1
