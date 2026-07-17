@@ -246,9 +246,10 @@ namespace UnmappedIsland.Codex.Runtime
         /// FixedPositionsスロットでは、新しい型が既に同じスロットに存在する（同種スタックへの合流）
         /// 場合はそのまま通常配置し、そうでなければ、自分の固定番号をそのまま再利用できる場合
         /// （CanReuseGridCell、自分がdestroyされ同種の最後の1個だった場合）はその番号へ、できない場合
-        /// （destroyしない・destroyしても同種が残る場合）は自分の番号+1を起点に、隙間を探して他の型を
-        /// 押し出しながら割り込ませる（Slot.TryMakeRoomAndSeed参照）。隙間が見つからなければ配置失敗
-        /// として扱い、後述のfallbackへ委ねる。
+        /// （destroyしない・destroyしても同種が残る場合）は自分の番号の右側（+1以降）で最初に見つかる
+        /// 隙間へ、他の型を押し出しながら割り込ませる。右側に隙間が無ければ、左側（-1以前）で同様に
+        /// 割り込ませる（「右が空いている限り右に、そうでなければ左に生まれる」、Slot.TryMakeRoomAndSeed
+        /// 参照）。どちらの方向にも隙間が見つからなければ配置失敗として扱い、後述のfallbackへ委ねる。
         ///
         /// それ以外の一般スロットでは、捕捉しておいたリストindexへ直接挿入する（同じ場所の後ろに
         /// いた他のオブジェクトの位置がずれないようにするため）。
@@ -280,7 +281,7 @@ namespace UnmappedIsland.Codex.Runtime
                     }
                     else
                     {
-                        placed = slot.TryMakeRoomAndSeed(spawned.Def.GlobalId, a.GridCellIndex.Value + 1);
+                        placed = slot.TryMakeRoomAndSeed(spawned.Def.GlobalId, a.GridCellIndex.Value);
                     }
 
                     if (placed)
