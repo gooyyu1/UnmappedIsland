@@ -18,16 +18,19 @@ namespace UnmappedIsland.Runtime.Views
         public WorldObject Instance { get; }
 
         private readonly int dayId;
-        private readonly int minuteOfDayId;
+        private readonly int hourId;
+        private readonly int minuteId;
 
         public World(WorldObject instance, NameRegistry propertyNames)
         {
             Instance = instance;
             dayId = propertyNames.GetId("day");
-            minuteOfDayId = propertyNames.GetId("minute_of_day");
+            hourId = propertyNames.GetId("hour");
+            minuteId = propertyNames.GetId("minute");
         }
 
         public int Day => Instance.GetEffectiveValue(dayId);
-        public int MinuteOfDay => Instance.GetEffectiveValue(minuteOfDayId);
+        public int Hour => Instance.GetEffectiveValue(hourId);
+        public int Minute => Instance.GetEffectiveValue(minuteId);
     }
 }

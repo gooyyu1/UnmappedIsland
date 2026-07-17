@@ -38,14 +38,21 @@ namespace UnmappedIsland.Codex.Tests
             return c;
         }
 
-        private static ActiveEffectBlueprint Add(string propertyName, int amount)
+        private static ActiveEffectBlueprint ActiveEffect(
+            (ReferenceRoot Target, string Property, int Amount)[] adds = null,
+            ReferenceRoot[] destroy = null)
         {
-            var body = new ActiveEffectBlueprint();
-            body.Adds.Add(new AddBlueprint { PropertyName = propertyName, Amount = amount });
-            return body;
+            var bp = new ActiveEffectBlueprint();
+            if (adds != null)
+                foreach (var (target, property, amount) in adds)
+                {
+                    if (!bp.Adds.TryGetValue(target, out var list))
+                        bp.Adds[target] = list = new List<AddBlueprint>();
+                    list.Add(new AddBlueprint { PropertyName = property, Amount = amount });
+                }
+            if (destroy != null) bp.Destroy.AddRange(destroy);
+            return bp;
         }
-
-        private static ActiveEffectBlueprint Destroy() => new ActiveEffectBlueprint { Destroy = true };
 
         // ------------------------------------------------------------------
         // actions: conditions / active（self・actor）
@@ -59,11 +66,7 @@ namespace UnmappedIsland.Codex.Tests
 
             var food = new ObjectDefBlueprint { Name = "apple" };
             var eat = new ActionBlueprint { Name = "eat" };
-            eat.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint>
-            {
-                [ReferenceRoot.Actor] = Add("satiety", 10),
-                [ReferenceRoot.Self] = Destroy(),
-            };
+            eat.Active = ActiveEffect(adds: new[] { (ReferenceRoot.Actor, "satiety", 10) }, destroy: new[] { ReferenceRoot.Self });
             food.Actions.Add(eat);
 
             var codex = WorldCodexBuilder.Build(new[] { actorDef, food });
@@ -89,7 +92,7 @@ namespace UnmappedIsland.Codex.Tests
             var food = new ObjectDefBlueprint { Name = "apple2" };
             var eat = new ActionBlueprint { Name = "eat" };
             eat.Conditions.Add(Condition(ReferenceRoot.Actor, "satiety", ConditionOp.Lt, 100));
-            eat.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Actor] = Add("satiety", 10) };
+            eat.Active = ActiveEffect(adds: new[] { (ReferenceRoot.Actor, "satiety", 10) });
             food.Actions.Add(eat);
 
             var codex = WorldCodexBuilder.Build(new[] { actorDef, food });
@@ -126,7 +129,7 @@ namespace UnmappedIsland.Codex.Tests
 
             var item = new ObjectDefBlueprint { Name = "rock_item" };
             var use = new ActionBlueprint { Name = "use" };
-            use.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Parent] = Add("weight_budget", -1) };
+            use.Active = ActiveEffect(adds: new[] { (ReferenceRoot.Parent, "weight_budget", -1) });
             item.Actions.Add(use);
 
             var codex = WorldCodexBuilder.Build(new[] { container, item });
@@ -149,7 +152,7 @@ namespace UnmappedIsland.Codex.Tests
         {
             var item = new ObjectDefBlueprint { Name = "rock_item2" };
             var use = new ActionBlueprint { Name = "use" };
-            use.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Parent] = Destroy() };
+            use.Active = ActiveEffect(destroy: new[] { ReferenceRoot.Parent });
             item.Actions.Add(use);
 
             var codex = WorldCodexBuilder.Build(new[] { item });
@@ -178,12 +181,12 @@ namespace UnmappedIsland.Codex.Tests
                 new PickCandidateBlueprint
                 {
                     Weight = new WeightBlueprint { IsPathRef = false, Literal = 100 },
-                    Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Actor] = Add("hp", -10) },
+                    Active = ActiveEffect(adds: new[] { (ReferenceRoot.Actor, "hp", -10) }),
                 },
                 new PickCandidateBlueprint
                 {
                     Weight = new WeightBlueprint { IsPathRef = false, Literal = 0 },
-                    Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Actor] = Add("hp", -9999) },
+                    Active = ActiveEffect(adds: new[] { (ReferenceRoot.Actor, "hp", -9999) }),
                 },
             };
             weapon.Actions.Add(attack);
@@ -218,12 +221,12 @@ namespace UnmappedIsland.Codex.Tests
                 new PickCandidateBlueprint
                 {
                     Weight = new WeightBlueprint { IsPathRef = true, PathRoot = ReferenceRoot.Actor, PathPropertyName = "luck" },
-                    Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Actor] = Add("hp", 1) },
+                    Active = ActiveEffect(adds: new[] { (ReferenceRoot.Actor, "hp", 1) }),
                 },
                 new PickCandidateBlueprint
                 {
                     Weight = new WeightBlueprint { IsPathRef = false, Literal = 0 },
-                    Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Actor] = Add("hp", -1) },
+                    Active = ActiveEffect(adds: new[] { (ReferenceRoot.Actor, "hp", -1) }),
                 },
             };
             weapon.Actions.Add(attack);
@@ -251,11 +254,7 @@ namespace UnmappedIsland.Codex.Tests
         {
             var wood = new ObjectDefBlueprint { Name = "wood" };
             var chop = new CombinationBlueprint { Name = "chop", With = "axe_tool" };
-            chop.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint>
-            {
-                [ReferenceRoot.Self] = Destroy(),
-                [ReferenceRoot.Dragged] = Add("durability", -1),
-            };
+            chop.Active = ActiveEffect(adds: new[] { (ReferenceRoot.Dragged, "durability", -1) }, destroy: new[] { ReferenceRoot.Self });
             wood.Combinations.Add(chop);
 
             var axe = new ObjectDefBlueprint { Name = "axe_tool" };
@@ -280,7 +279,7 @@ namespace UnmappedIsland.Codex.Tests
         {
             var wood = new ObjectDefBlueprint { Name = "wood2" };
             var chop = new CombinationBlueprint { Name = "chop", With = "axe_tool2" };
-            chop.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Self] = Destroy() };
+            chop.Active = ActiveEffect(destroy: new[] { ReferenceRoot.Self });
             wood.Combinations.Add(chop);
 
             var pebble = new ObjectDefBlueprint { Name = "pebble3" };
@@ -300,7 +299,7 @@ namespace UnmappedIsland.Codex.Tests
         {
             var wood = new ObjectDefBlueprint { Name = "wood3" };
             var chop = new CombinationBlueprint { Name = "chop", With = "sharp_tool" };
-            chop.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Self] = Destroy() };
+            chop.Active = ActiveEffect(destroy: new[] { ReferenceRoot.Self });
             wood.Combinations.Add(chop);
 
             var axe = new ObjectDefBlueprint { Name = "axe_tool3" };
@@ -343,7 +342,7 @@ namespace UnmappedIsland.Codex.Tests
             var wood = new ObjectDefBlueprint { Name = "wood5" };
             var chop = new CombinationBlueprint { Name = "chop", With = "axe_tool5" };
             chop.Conditions.Add(Condition(ReferenceRoot.Dragged, "durability", ConditionOp.Gt, 0));
-            chop.Active = new Dictionary<ReferenceRoot, ActiveEffectBlueprint> { [ReferenceRoot.Self] = Destroy() };
+            chop.Active = ActiveEffect(destroy: new[] { ReferenceRoot.Self });
             wood.Combinations.Add(chop);
 
             var axe = new ObjectDefBlueprint { Name = "axe_tool5" };

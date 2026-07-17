@@ -59,22 +59,6 @@
       ]
     },
 
-    "on_overflow": {
-      "description": "overflow時の挙動（6.3節）。",
-      "type": "object",
-      "properties": {
-        "mode": {
-          "enum": ["wrap", "none"],
-          "description": "'wrap' は carry_to へ繰り上げて0に戻る。'none' は上限なし。"
-        },
-        "carry_to": { "$ref": "#/$defs/identifier" }
-      },
-      "required": ["mode"],
-      "additionalProperties": false,
-      "if": { "properties": { "mode": { "const": "wrap" } } },
-      "then": { "required": ["mode", "carry_to"] }
-    },
-
     "stage_def": {
       "description": "props の段階（6.4節）。区間は min のみを指定する半開区間。ヒステリシスは採用しない。ステージのpassiveはレベルトリガーのみであり、一時的な命令の瞬間を持たないためpickは書けない（10節参照）。",
       "type": "object",
@@ -84,7 +68,7 @@
           "description": "この段階の下限。最下段は null（省略可）で、それより下の残り全ての値を拾う。",
           "type": ["integer", "null"]
         },
-        "passive": { "$ref": "#/$defs/passive_map" }
+        "passive": { "$ref": "#/$defs/passive_def" }
       },
       "required": ["name", "min"],
       "additionalProperties": false
@@ -103,15 +87,22 @@
           "$ref": "#/$defs/range_value",
           "description": "overflow機構における値の上下限（6.3節）。value の {min,max}（毎tick再ロール）とは別の仕組み。"
         },
-        "on_overflow": { "$ref": "#/$defs/on_overflow" },
+        "on_overflow": {
+          "$ref": "#/$defs/active_def",
+          "description": "rangeの上限を超えた瞬間の挙動（6.3節）。on_minと全く同じactive_defを流用する（対象は現時点でselfのみ対応、それ以外はロード時エラー）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。rangeを使う場合は必須。"
+        },
+        "on_shortfall": {
+          "$ref": "#/$defs/active_def",
+          "description": "on_overflowの下限側の鏡像（6.3節）。rangeの下限を下回った瞬間の挙動。省略した場合、'自分自身をrange.minへset'という既定の挙動が自動的に補われる（単純な下限クランプ）。rangeを使う場合は必須。"
+        },
         "stages": {
           "type": "array",
           "items": { "$ref": "#/$defs/stage_def" }
         },
-        "passive": { "$ref": "#/$defs/passive_map" },
-        "on_zero": {
-          "$ref": "#/$defs/active_map",
-          "description": "値が0以下である間、毎tick実行されるactive内容（6.5節）。activeと同じ対象キーの辞書を直接持ち、専用のラップは挟まない。"
+        "passive": { "$ref": "#/$defs/passive_def" },
+        "on_min": {
+          "$ref": "#/$defs/active_def",
+          "description": "値がrangeの下限以下である間、毎tick実行されるactive内容（6.5節、旧on_zero）。activeと全く同じactive_defを直接持つ（対象は現時点でselfのみ対応）。on_overflow/on_shortfallとは異なり、既定の自動生成は行われない。rangeを使う場合は必須。"
         }
       },
       "additionalProperties": false
@@ -139,55 +130,90 @@
       "items": { "$ref": "#/$defs/condition_expr" }
     },
 
-    "passive_body": {
-      "description": "passive の各対象キーが持つ、持続する影響（8節）。関係とゲート（常時／when／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。when を省略すると常時（無条件）を意味する。",
+    "target_amount_map": {
+      "description": "1つの対象に対する、プロパティ名→数値の割り当て（passiveのmodify/accumulate、activeのset/add全てで共通の形）。数値プロパティは32bit整数のみを扱う（6節）。",
+      "type": "object",
+      "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
+      "additionalProperties": false
+    },
+
+    "passive_operation_map": {
+      "description": "passiveの1操作(modify/accumulate)が持つ、対象（self/parent/child/actor）をキーとする辞書。ancestor/sibling/descendantの追加は未決定。combinations内の dragged はactiveのみで意味を持ち、passiveには現れない。",
+      "type": "object",
+      "properties": {
+        "self": { "$ref": "#/$defs/target_amount_map" },
+        "parent": { "$ref": "#/$defs/target_amount_map" },
+        "child": { "$ref": "#/$defs/target_amount_map" },
+        "actor": { "$ref": "#/$defs/target_amount_map" }
+      },
+      "additionalProperties": false
+    },
+
+    "passive_def": {
+      "description": "持続する影響（8節）。文法は「操作(when/modify/accumulate)が上位、対象(self/parent/child/actor)が下位」。関係とゲート（常時／when／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。ある対象についてwhenを書かなければ常時（無条件）を意味する。",
       "type": "object",
       "properties": {
         "when": {
-          "type": "string",
-          "description": "レベルトリガーとなるスロット名（例: equip）。対象ごとに異なるwhenを持てる。"
+          "description": "対象ごとのレベルトリガーとなるスロット名（例: {parent: equip}）。対象ごとに異なるwhenを持てる。",
+          "type": "object",
+          "properties": {
+            "self": { "type": "string" },
+            "parent": { "type": "string" },
+            "child": { "type": "string" },
+            "actor": { "type": "string" }
+          },
+          "additionalProperties": false
         },
         "modify": {
-          "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。数値プロパティは32bit整数のみを扱う（6節）。",
-          "type": "object",
-          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
-          "additionalProperties": false
+          "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
+          "$ref": "#/$defs/passive_operation_map"
         },
         "accumulate": {
-          "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する。数値プロパティは32bit整数のみを扱う（6節）。",
-          "type": "object",
-          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
-          "additionalProperties": false
+          "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する。",
+          "$ref": "#/$defs/passive_operation_map"
         }
       },
       "additionalProperties": false
     },
 
-    "passive_map": {
-      "description": "passiveの対象（self/parent/child/actor）をキーとする辞書（8.1節）。ancestor/sibling/descendantの追加は未決定。combinations内の dragged はactiveのみで意味を持ち、passiveには現れない。",
+    "active_operation_map": {
+      "description": "activeの1操作(set/add)が持つ、対象（self/parent/child/actor、combinations内はdraggedも）をキーとする辞書。",
       "type": "object",
       "properties": {
-        "self": { "$ref": "#/$defs/passive_body" },
-        "parent": { "$ref": "#/$defs/passive_body" },
-        "child": { "$ref": "#/$defs/passive_body" },
-        "actor": { "$ref": "#/$defs/passive_body" }
+        "self": { "$ref": "#/$defs/target_amount_map" },
+        "parent": { "$ref": "#/$defs/target_amount_map" },
+        "child": { "$ref": "#/$defs/target_amount_map" },
+        "actor": { "$ref": "#/$defs/target_amount_map" },
+        "dragged": {
+          "$ref": "#/$defs/target_amount_map",
+          "description": "combinations の中でのみ意味を持つ、ドラッグされてきたカードを指すキー（GameElementDefinition.md 12.2節）。"
+        }
       },
       "additionalProperties": false
     },
 
-    "active_body": {
-      "description": "active の各対象キーが持つ、一時的な命令（9節）。when/ゲートは持たず、登録の仕組みにも乗らない。add/destroy/spawnは対等な兄弟キーとして共存できる。",
+    "active_target_name": {
+      "enum": ["self", "parent", "child", "actor", "dragged"]
+    },
+
+    "active_def": {
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_min（6.5節）・on_overflow/on_shortfall（6.3節）もこの形をそのまま流用する。",
       "type": "object",
       "properties": {
+        "set": {
+          "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
+          "$ref": "#/$defs/active_operation_map"
+        },
         "add": {
-          "description": "対象プロパティの実体値へ、その場で一度だけ不可逆に加減算する。数値プロパティは32bit整数のみを扱う（6節）。",
-          "type": "object",
-          "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
-          "additionalProperties": false
+          "description": "対象プロパティの実体値へ、その場で一度だけ不可逆に加減算する。",
+          "$ref": "#/$defs/active_operation_map"
         },
         "destroy": {
-          "const": true,
-          "description": "対象オブジェクトを消滅させる。"
+          "description": "削除する対象を直接指定する。単一の対象名(`destroy: self`)か、対象名のリスト(`destroy: [self, dragged]`)のいずれか。",
+          "oneOf": [
+            { "$ref": "#/$defs/active_target_name" },
+            { "type": "array", "items": { "$ref": "#/$defs/active_target_name" }, "minItems": 1 }
+          ]
         },
         "spawn": {
           "type": "object",
@@ -200,26 +226,10 @@
           },
           "required": ["object"],
           "additionalProperties": false,
-          "description": "新規オブジェクトを生成し、指定した場所へ配置する。destroyと同じ対象キーの中で同時に指定できる。"
+          "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
         }
       },
       "minProperties": 1,
-      "additionalProperties": false
-    },
-
-    "active_map": {
-      "description": "activeの対象（self/parent/child/actor、combinations内はdraggedも）をキーとする辞書（9.1節）。on_zero（6.5節）もこの形をそのまま流用する。",
-      "type": "object",
-      "properties": {
-        "self": { "$ref": "#/$defs/active_body" },
-        "parent": { "$ref": "#/$defs/active_body" },
-        "child": { "$ref": "#/$defs/active_body" },
-        "actor": { "$ref": "#/$defs/active_body" },
-        "dragged": {
-          "$ref": "#/$defs/active_body",
-          "description": "combinations の中でのみ意味を持つ、ドラッグされてきたカードを指すキー（GameElementDefinition.md 12.2節）。"
-        }
-      },
       "additionalProperties": false
     },
 
@@ -241,7 +251,7 @@
       "type": "object",
       "properties": {
         "weight": { "$ref": "#/$defs/weight_spec" },
-        "active": { "$ref": "#/$defs/active_map" },
+        "active": { "$ref": "#/$defs/active_def" },
         "pick": { "$ref": "#/$defs/pick_list" }
       },
       "required": ["weight"],
@@ -265,7 +275,7 @@
           "enum": ["always"]
         },
         "conditions": { "$ref": "#/$defs/conditions_list" },
-        "active": { "$ref": "#/$defs/active_map" },
+        "active": { "$ref": "#/$defs/active_def" },
         "pick": { "$ref": "#/$defs/pick_list" }
       },
       "additionalProperties": false,
@@ -281,7 +291,7 @@
           "description": "ドラッグされてきたカードとのマッチング条件。object_defのid、またはtraitの名前。"
         },
         "conditions": { "$ref": "#/$defs/conditions_list" },
-        "active": { "$ref": "#/$defs/active_map" },
+        "active": { "$ref": "#/$defs/active_def" },
         "pick": { "$ref": "#/$defs/pick_list" }
       },
       "required": ["with"],
@@ -347,7 +357,10 @@
       "description": "slotのaccepts（型・数量の制約、GameElementDefinition.md 7.2節）の1エントリ。",
       "type": "object",
       "properties": {
-        "object": { "$ref": "#/$defs/identifier" },
+        "object": {
+          "$ref": "#/$defs/identifier",
+          "description": "object_defのidかtrait名のいずれか（combinationsのwith、12.1節と同じ考え方）。"
+        },
         "max": {
           "type": "integer",
           "minimum": 1
@@ -456,7 +469,7 @@
         "combinations": { "$ref": "#/$defs/combinations_map" },
         "recipes": { "$ref": "#/$defs/recipes_map" },
         "slots": { "$ref": "#/$defs/slots_map" },
-        "passive": { "$ref": "#/$defs/passive_map" },
+        "passive": { "$ref": "#/$defs/passive_def" },
         "stack_order": { "$ref": "#/$defs/stack_order" }
       },
       "additionalProperties": false
@@ -489,7 +502,7 @@
         "combinations": { "$ref": "#/$defs/combinations_map" },
         "recipes": { "$ref": "#/$defs/recipes_map" },
         "slots": { "$ref": "#/$defs/slots_map" },
-        "passive": { "$ref": "#/$defs/passive_map" },
+        "passive": { "$ref": "#/$defs/passive_def" },
         "stack_order": { "$ref": "#/$defs/stack_order" }
       },
       "additionalProperties": false

@@ -3,27 +3,54 @@ using System.Collections.Generic;
 namespace UnmappedIsland.Codex
 {
     /// <summary>
-    /// 一時的な命令の内容（`add`/`destroy`/`spawn`、9節）。on_zero（6.5節）専用の型にはせず、
-    /// 将来 actions/combinations/pick を実装する際にも同じ形をそのまま再利用できる汎用的な名前にしている。
+    /// 一時的な命令の内容（`set`/`add`/`destroy`/`spawn`、9節）。on_min・on_overflow・on_shortfall（6節）、
+    /// actions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。
     ///
-    /// 現時点では self のみを対象に持てる（on_zero の既存サンプルはすべて self のみが対象であるため。
-    /// parent/child を対象にする用途は必要になった時点で改めて拡張する）。
+    /// 文法は「操作が上位、対象(self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。
+    /// set/addは複数の対象へ同時に書けるため、対象ごとの一覧を辞書として持つ。destroyは削除対象を
+    /// 直接指すリスト（`destroy: self`は要素1つのリストとして表す）。spawnは常にselfが実行するものと
+    /// みなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、
+    /// 実行者＝selfとは別の概念）。
+    ///
+    /// on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。
     /// </summary>
     public sealed class ActiveEffect
     {
-        /// <summary>add。空なら add なし。</summary>
-        public IReadOnlyList<PropertyDelta> Adds { get; }
+        /// <summary>対象ごとのset(絶対値代入)。空なら該当対象へのsetなし。</summary>
+        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> Sets { get; }
 
-        public bool Destroy { get; }
+        /// <summary>対象ごとのadd(加減算)。空なら該当対象へのaddなし。</summary>
+        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> Adds { get; }
 
-        /// <summary>spawn。null なら spawn なし。</summary>
+        /// <summary>削除する対象。空なら destroy なし。</summary>
+        public IReadOnlyList<ReferenceRoot> Destroy { get; }
+
+        /// <summary>spawn。null なら spawn なし。常にselfが実行する。</summary>
         public SpawnEffect Spawn { get; }
 
-        public ActiveEffect(IReadOnlyList<PropertyDelta> adds, bool destroy, SpawnEffect spawn)
+        public ActiveEffect(
+            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> sets,
+            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> adds,
+            IReadOnlyList<ReferenceRoot> destroy,
+            SpawnEffect spawn)
         {
+            Sets = sets;
             Adds = adds;
             Destroy = destroy;
             Spawn = spawn;
+        }
+    }
+
+    /// <summary>set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。</summary>
+    public readonly struct PropertyAssignment
+    {
+        public readonly int PropertyGlobalId;
+        public readonly int Value;
+
+        public PropertyAssignment(int propertyGlobalId, int value)
+        {
+            PropertyGlobalId = propertyGlobalId;
+            Value = value;
         }
     }
 
@@ -46,10 +73,8 @@ namespace UnmappedIsland.Codex
     /// 自然に振り分けられるため、著者がスロット名を知っている必要がない）。
     ///
     /// fallback はYAML上に存在しない。配置に失敗した場合は必ず、解決した起点自身の親へ伝播する
-    /// （WorldObject.Place参照）。旧設計にあった `actor_parent`（actorがいる場所）・`parent`
-    /// （selfの親）は、この自動伝播によって置き換えられたため、明示的な起点としては存在しない。
-    /// Actor はアクション実行文脈でのみ解決できる。on_zeroにはactorが存在しないため、
-    /// on_zeroのspawnでintoにActorを指定しても何も起きない。
+    /// （WorldObject.Place参照）。Actor はアクション実行文脈でのみ解決できる。on_min/on_overflow/
+    /// on_shortfallにはactorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。
     /// </summary>
     public enum SpawnTargetRoot
     {
@@ -70,7 +95,7 @@ namespace UnmappedIsland.Codex
     /// <summary>
     /// spawn（9.4節）の内容。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は
     /// 一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、
-    /// accepts/capacity を無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ
+    /// accepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ
     /// ならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。
     ///
     /// 伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない

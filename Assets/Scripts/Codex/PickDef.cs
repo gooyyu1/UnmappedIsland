@@ -29,11 +29,11 @@ namespace UnmappedIsland.Codex
         public WeightSpec Weight { get; }
 
         /// <summary>ActiveかPickのどちらか一方のみが非null。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, ActiveEffect> Active { get; }
+        public ActiveEffect Active { get; }
         public IReadOnlyList<PickCandidateDef> Pick { get; }
 
         public PickCandidateDef(
-            WeightSpec weight, IReadOnlyDictionary<ReferenceRoot, ActiveEffect> active, IReadOnlyList<PickCandidateDef> pick)
+            WeightSpec weight, ActiveEffect active, IReadOnlyList<PickCandidateDef> pick)
         {
             Weight = weight;
             Active = active;

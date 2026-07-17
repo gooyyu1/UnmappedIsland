@@ -18,11 +18,12 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void World_ExposesDayAndMinuteOfDay()
+        public void World_ExposesDayHourAndMinute()
         {
             var worldDef = new ObjectDefBlueprint { Name = "world", IsSingleton = true };
             worldDef.Properties.Add(Prop("day", 3));
-            worldDef.Properties.Add(Prop("minute_of_day", 480));
+            worldDef.Properties.Add(Prop("hour", 8));
+            worldDef.Properties.Add(Prop("minute", 30));
 
             var codex = WorldCodexBuilder.Build(new[] { worldDef });
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
@@ -30,7 +31,8 @@ namespace UnmappedIsland.Codex.Tests
             var world = new World(instance, codex.PropertyNames);
 
             Assert.That(world.Day, Is.EqualTo(3));
-            Assert.That(world.MinuteOfDay, Is.EqualTo(480));
+            Assert.That(world.Hour, Is.EqualTo(8));
+            Assert.That(world.Minute, Is.EqualTo(30));
             Assert.That(world.Instance, Is.SameAs(instance));
         }
 
@@ -39,12 +41,13 @@ namespace UnmappedIsland.Codex.Tests
         {
             var worldDef = new ObjectDefBlueprint { Name = "world", IsSingleton = true };
             worldDef.Properties.Add(Prop("day", 3));
-            worldDef.Properties.Add(Prop("minute_of_day", 480));
+            worldDef.Properties.Add(Prop("hour", 8));
+            worldDef.Properties.Add(Prop("minute", 30));
             worldDef.Contributions.Add(new ContributionBlueprint
             {
                 Target = ContributionTarget.Self,
                 Kind = ContributionKind.Modify,
-                TargetPropertyName = "minute_of_day",
+                TargetPropertyName = "minute",
                 Amount = 10,
                 GateKind = ContributionGateKind.Always,
             });
@@ -54,7 +57,7 @@ namespace UnmappedIsland.Codex.Tests
 
             var world = new World(instance, codex.PropertyNames);
 
-            Assert.That(world.MinuteOfDay, Is.EqualTo(490));
+            Assert.That(world.Minute, Is.EqualTo(40));
         }
 
         [Test]

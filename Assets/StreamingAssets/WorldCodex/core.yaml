@@ -1,0 +1,59 @@
+# ゲーム全体の最も基本的な定義（Documents/Design/GameElementDefinition.md参照）。
+# 唯一のシングルトンであるworldと、それが束ねるlocationsスロット・locationトレイトのみを含む。
+# 個々のlocation種別（forest/beachなど地形の具体的な種類）はTerrainGeneration.mdの検討が済み次第、
+# 別ファイル（terrains.yaml等）で追加する。
+
+traits:
+  # worldのlocationsスロットの受け入れ判定専用のタグ（7.2節のaccepts参照）。中身を持たず、
+  # これを参照するobject_defを「場所」として識別するためだけに存在する。
+  location: {}
+
+object_defs:
+  world:
+    singleton: true
+    props:
+      # 累積tick数。ゲーム開始からの経過tickをそのまま数え続ける（上限なし）。毎tick自分自身を+1する
+      # （プロパティレベルのpassive、8節）。
+      tick:
+        value: 0
+        passive:
+          accumulate:
+            self:
+              tick: 1
+      # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow）。setで絶対値0へ
+      # 戻すのではなく、addで折り返し量・繰り上げ量を一度に加減算する（1tickで複数span分溢れた場合でも
+      # 超過分を保持できるため、こちらのほうが堅牢）。1tick=ゲーム内時間15分、という対応づけのため、
+      # 毎tick自分自身を+15する。
+      minute:
+        value: 0
+        range: {min: 0, max: 59}
+        on_overflow:
+          add:
+            self:
+              minute: -60
+              hour: 1
+        passive:
+          accumulate:
+            self:
+              minute: 15
+      # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
+      hour:
+        value: 0
+        range: {min: 0, max: 23}
+        on_overflow:
+          add:
+            self:
+              hour: -24
+              day: 1
+      # 現在の日（1始まり）。上限は未定のため無制限に加算し続ける（GameElementDefinition.md 17節）。
+      day:
+        value: 1
+      # 現在の気温。具体的な変動の仕組み（季節・天候由来のレート等）はClimateSystem.mdで別途検討する。
+      temperature:
+        value: 20
+    slots:
+      locations:
+        # locationトレイトを持つobject_defのみを受け入れる（種類数の上限は設けない想定のため、
+        # 実質無制限を意味する十分に大きな値をmaxに置く。accepts自体は必須フィールドのため省略できない）。
+        accepts:
+          - {object: location, max: 9999}

@@ -27,30 +27,34 @@ namespace UnmappedIsland.Codex.Tests
             return new WorldObject(nextInstanceId++, def);
         }
 
-        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, ActiveEffectBlueprint onZero = null)
+        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, ActiveEffectBlueprint onMin = null)
         {
+            // on_minはRange.Minとの比較になったため、rangeが未指定なら旧on_zero相当(下限0)を暗黙に補う。
             return new PropertyBlueprint
             {
                 Name = name,
                 DefaultValue = PropertyValue.FromNumber(defaultValue),
-                Range = range,
-                OnZero = onZero,
+                Range = range ?? (onMin != null ? new PropertyRange(0, int.MaxValue) : (PropertyRange?)null),
+                OnMin = onMin,
             };
         }
 
-        private static ActiveEffectBlueprint OnZeroDestroy() => new ActiveEffectBlueprint { Destroy = true };
+        private static ActiveEffectBlueprint OnMinDestroy()
+        {
+            var bp = new ActiveEffectBlueprint();
+            bp.Destroy.Add(ReferenceRoot.Self);
+            return bp;
+        }
 
-        private static ActiveEffectBlueprint OnZeroSpawnAndDestroy(
+        private static ActiveEffectBlueprint OnMinSpawnAndDestroy(
             string spawnObjectName, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
         {
-            return new ActiveEffectBlueprint
-            {
-                Destroy = true,
-                Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into },
-            };
+            var bp = new ActiveEffectBlueprint { Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into } };
+            bp.Destroy.Add(ReferenceRoot.Self);
+            return bp;
         }
 
-        private static ActiveEffectBlueprint OnZeroSpawn(
+        private static ActiveEffectBlueprint OnMinSpawn(
             string spawnObjectName, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
         {
             return new ActiveEffectBlueprint
@@ -115,12 +119,13 @@ namespace UnmappedIsland.Codex.Tests
 
             var codex = WorldCodexBuilder.Build(new[] { torch });
             int brightnessId = codex.PropertyNames.GetId("brightness");
+            var session = new WorldSession(codex);
 
             WorldObject first = Spawn(codex, "torch");
             WorldObject second = Spawn(codex, "torch");
 
             first.AddNumber(brightnessId, 10);
-            first.Tick();
+            first.Tick(session);
 
             Assert.That(first.GetNumber(brightnessId), Is.EqualTo(16), "1体目: 1(初期値) + 10(add) + 5(accumulate)");
             Assert.That(second.GetNumber(brightnessId), Is.EqualTo(1), "2体目は未タッチのまま初期値のはず");
@@ -328,15 +333,16 @@ namespace UnmappedIsland.Codex.Tests
 
             var codex = WorldCodexBuilder.Build(new[] { candle });
             int waxId = codex.PropertyNames.GetId("wax");
+            var session = new WorldSession(codex);
 
             WorldObject instance = Spawn(codex, "candle");
 
             Assert.That(instance.GetEffectiveValue(waxId), Is.EqualTo(100), "Tick前は変化しない");
 
-            instance.Tick();
+            instance.Tick(session);
             Assert.That(instance.GetEffectiveValue(waxId), Is.EqualTo(99), "Tick1回で実体値が減る");
 
-            instance.Tick();
+            instance.Tick(session);
             Assert.That(instance.GetEffectiveValue(waxId), Is.EqualTo(98), "Tick毎に加算され続ける");
         }
 
@@ -360,20 +366,21 @@ namespace UnmappedIsland.Codex.Tests
             int conditionsSlotId = codex.SlotNames.GetId("conditions");
             int storageSlotId = codex.SlotNames.GetId("storage");
 
-            Containment containment = codex.CreateContainment();
+            var session = new WorldSession(codex);
+            Containment containment = session.Containment;
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject trashInstance = Spawn(codex, "trash");
             WorldObject bleedingInstance = Spawn(codex, "bleeding");
 
-            characterInstance.Tick();
+            characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(hydrationId), Is.EqualTo(100), "装着前はTickしても変化なし");
 
             Assert.That(containment.TryMoveToSlot(bleedingInstance, characterInstance, conditionsSlotId, out _), Is.True);
-            characterInstance.Tick();
+            characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(hydrationId), Is.EqualTo(95), "conditionsに入っている間はTick毎に減る");
 
             Assert.That(containment.TryMoveToSlot(bleedingInstance, trashInstance, storageSlotId, out _), Is.True);
-            characterInstance.Tick();
+            characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(hydrationId), Is.EqualTo(95), "取り除いた後はTickしても変化しない");
         }
 
@@ -398,17 +405,18 @@ namespace UnmappedIsland.Codex.Tests
             int progressId = codex.PropertyNames.GetId("progress");
             int conditionsSlotId = codex.SlotNames.GetId("conditions");
 
-            Containment containment = codex.CreateContainment();
+            var session = new WorldSession(codex);
+            Containment containment = session.Containment;
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject infectionInstance = Spawn(codex, "infection");
 
             Assert.That(containment.TryMoveToSlot(infectionInstance, characterInstance, conditionsSlotId, out _), Is.True);
 
-            characterInstance.Tick();
+            characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(36), "progressがnoneの間は上がらない");
 
             infectionInstance.SetProperty(progressId, PropertyValue.FromNumber(30));
-            characterInstance.Tick();
+            characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(37), "mildへ遷移した後は毎Tick上がる（再登録なし）");
         }
 
@@ -433,7 +441,8 @@ namespace UnmappedIsland.Codex.Tests
             int staminaId = codex.PropertyNames.GetId("stamina");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
-            Containment containment = codex.CreateContainment();
+            var session = new WorldSession(codex);
+            Containment containment = session.Containment;
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject bootsInstance = Spawn(codex, "boots");
             WorldObject exhaustionInstance = Spawn(codex, "exhaustion");
@@ -443,7 +452,7 @@ namespace UnmappedIsland.Codex.Tests
 
             Assert.That(characterInstance.GetEffectiveValue(staminaId), Is.EqualTo(60), "modifyだけが都度加味される（実体値は50のまま）");
 
-            characterInstance.Tick();
+            characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(staminaId), Is.EqualTo(59), "Tickでaccumulateだけが実体値へ入る(50-1+10=59)");
         }
 
@@ -484,18 +493,19 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         // ------------------------------------------------------------------
-        // on_zero / destroy / spawn: 「プロパティが0以下である間、毎回実行されるactive内容」を
-        // PostTick（Tickとは別の、値によるイベント処理のパス）が実行する。すべてのオブジェクトは
+        // on_min / destroy / spawn: 「プロパティが0以下である間、毎回実行されるactive内容」を、
+        // 値が変わった直後にプロパティ自身がTickの中で判定・実行する（PropertyValue.CheckOverflowAndZero
+        // 参照。以前はTickとは別のPostTickパスだったが、現在はTickに統合されている）。すべてのオブジェクトは
         // 必ずworldの下にぶら下がるため、別途「世界に存在するすべてのオブジェクト」一覧は持たず、
         // destroyは親スロットからの切り離し、spawnは生成+move_to_slotとして表現する。
         // ------------------------------------------------------------------
 
         [Test]
-        public void OnZero_IsCarriedThroughToPropertyDef()
+        public void OnMin_IsCarriedThroughToPropertyDef()
         {
             var candle = new ObjectDefBlueprint { Name = "candle" };
-            candle.Properties.Add(Prop("wax", 100, onZero: OnZeroDestroy()));
-            candle.Properties.Add(Prop("wick_length", 5)); // onZero: null (既定)
+            candle.Properties.Add(Prop("wax", 100, onMin: OnMinDestroy()));
+            candle.Properties.Add(Prop("wick_length", 5)); // onMin: null (既定)
 
             var codex = WorldCodexBuilder.Build(new[] { candle });
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("candle"));
@@ -503,9 +513,9 @@ namespace UnmappedIsland.Codex.Tests
             int waxLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wax"));
             int wickLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wick_length"));
 
-            Assert.That(def.PropertyDefs[waxLocal].OnZero, Is.Not.Null);
-            Assert.That(def.PropertyDefs[waxLocal].OnZero.Destroy, Is.True);
-            Assert.That(def.PropertyDefs[wickLocal].OnZero, Is.Null);
+            Assert.That(def.PropertyDefs[waxLocal].OnMin, Is.Not.Null);
+            Assert.That(def.PropertyDefs[waxLocal].OnMin.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(def.PropertyDefs[wickLocal].OnMin, Is.Null);
         }
 
         [Test]
@@ -527,19 +537,19 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject batteryInstance = Spawn(codex, "power_cell");
             Assert.That(session.Containment.TryMoveToSlot(batteryInstance, containerInstance, itemsSlotId, out _), Is.True);
 
-            containerInstance.Tick();
+            containerInstance.Tick(session);
 
             Assert.That(batteryInstance.GetEffectiveValue(chargeId), Is.EqualTo(9));
         }
 
         [Test]
-        public void PostTick_DestroysSelfWhenOnZeroFires()
+        public void Tick_DestroysSelfWhenOnMinFires()
         {
             var container = new ObjectDefBlueprint { Name = "lantern_holder" };
             container.Slots.Add(Slot("items"));
 
             var torch = new ObjectDefBlueprint { Name = "torch" };
-            torch.Properties.Add(Prop("durability", 0, onZero: OnZeroDestroy()));
+            torch.Properties.Add(Prop("durability", 0, onMin: OnMinDestroy()));
 
             var codex = WorldCodexBuilder.Build(new[] { container, torch });
             int itemsSlotId = codex.SlotNames.GetId("items");
@@ -549,7 +559,7 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject torchInstance = Spawn(codex, "torch");
             Assert.That(session.Containment.TryMoveToSlot(torchInstance, containerInstance, itemsSlotId, out _), Is.True);
 
-            containerInstance.PostTick(session);
+            containerInstance.Tick(session);
 
             Assert.That(torchInstance.Parent, Is.Null);
             containerInstance.TryGetSlot(itemsSlotId, out Slot slot);
@@ -557,12 +567,12 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void PostTick_SpawnsIntoOwnSlotWhenIntoIsSelf()
+        public void Tick_SpawnsIntoOwnSlotWhenIntoIsSelf()
         {
             var bush = new ObjectDefBlueprint { Name = "bush" };
             bush.Slots.Add(Slot("ground"));
             bush.Properties.Add(Prop("ripeness", 0,
-                onZero: OnZeroSpawn("berry", into: SpawnTargetRoot.Self)));
+                onMin: OnMinSpawn("berry", into: SpawnTargetRoot.Self)));
 
             var berry = new ObjectDefBlueprint { Name = "berry" };
 
@@ -572,7 +582,7 @@ namespace UnmappedIsland.Codex.Tests
             var session = new WorldSession(codex);
             WorldObject bushInstance = Spawn(codex, "bush");
 
-            bushInstance.PostTick(session);
+            bushInstance.Tick(session);
 
             bushInstance.TryGetSlot(groundSlotId, out Slot slot);
             Assert.That(slot.Contents.Count, Is.EqualTo(1));
@@ -580,14 +590,14 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void PostTick_SpawnsIntoSameSlotAsSelfForCraftingOrDecay()
+        public void Tick_SpawnsIntoSameSlotAsSelfForCraftingOrDecay()
         {
             var location = new ObjectDefBlueprint { Name = "clearing2" };
             location.Slots.Add(Slot("ground"));
 
             var wetLog = new ObjectDefBlueprint { Name = "wet_log" };
             wetLog.Properties.Add(Prop("freshness", 0,
-                onZero: OnZeroSpawnAndDestroy("rotten_log"))); // intoを省略（既定値SameSlot）
+                onMin: OnMinSpawnAndDestroy("rotten_log"))); // intoを省略（既定値SameSlot）
 
             var rottenLog = new ObjectDefBlueprint { Name = "rotten_log" };
 
@@ -599,7 +609,7 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject wetLogInstance = Spawn(codex, "wet_log");
             Assert.That(session.Containment.TryMoveToSlot(wetLogInstance, locationInstance, groundSlotId, out _), Is.True);
 
-            locationInstance.PostTick(session);
+            locationInstance.Tick(session);
 
             Assert.That(wetLogInstance.Parent, Is.Null, "wet_log自身は破棄される");
             locationInstance.TryGetSlot(groundSlotId, out Slot slot);
@@ -608,7 +618,7 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void PostTick_SpawnEscalatesToParentWhenPrimaryCapacityIsExceeded()
+        public void Tick_SpawnEscalatesToParentWhenPrimaryCapacityIsExceeded()
         {
             // fallbackはYAML側で選べず、常に起点自身の親へ強制的に伝播する。ここでは起点(Self=geode)が
             // 持つ唯一のスロットがcapacity超過で拒否するため、geodeの親(box)の先頭スロットへ
@@ -622,7 +632,7 @@ namespace UnmappedIsland.Codex.Tests
             var geode = new ObjectDefBlueprint { Name = "geode" };
             geode.Slots.Add(new SlotBlueprint { Name = "cavity", Capacity = 5 });
             geode.Properties.Add(Prop("ripeness", 0,
-                onZero: OnZeroSpawn("boulder", into: SpawnTargetRoot.Self)));
+                onMin: OnMinSpawn("boulder", into: SpawnTargetRoot.Self)));
 
             var codex = WorldCodexBuilder.Build(new[] { box, boulder, geode });
             int shelfSlotId = codex.SlotNames.GetId("shelf");
@@ -633,7 +643,7 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject geodeInstance = Spawn(codex, "geode");
             Assert.That(session.Containment.TryMoveToSlot(geodeInstance, boxInstance, shelfSlotId, out _), Is.True);
 
-            boxInstance.PostTick(session);
+            boxInstance.Tick(session);
 
             geodeInstance.TryGetSlot(cavitySlotId, out Slot cavitySlot);
             boxInstance.TryGetSlot(shelfSlotId, out Slot shelfSlot);
@@ -644,7 +654,7 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void PostTick_SpawnEscalatesToParentWhenPrimaryRejectsDueToAcceptsRestriction()
+        public void Tick_SpawnEscalatesToParentWhenPrimaryRejectsDueToAcceptsRestriction()
         {
             var cave = new ObjectDefBlueprint { Name = "cave" };
             cave.Slots.Add(Slot("floor"));
@@ -657,7 +667,7 @@ namespace UnmappedIsland.Codex.Tests
             orePocket.Accepts.Add(new AcceptBlueprint { ObjectName = "gold_nugget", Max = 10, Consume = false });
             vein.Slots.Add(orePocket);
             vein.Properties.Add(Prop("yield", 0,
-                onZero: OnZeroSpawn("pebble", into: SpawnTargetRoot.Self)));
+                onMin: OnMinSpawn("pebble", into: SpawnTargetRoot.Self)));
 
             var codex = WorldCodexBuilder.Build(new[] { cave, pebble, goldNugget, vein });
             int floorSlotId = codex.SlotNames.GetId("floor");
@@ -668,7 +678,7 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject veinInstance = Spawn(codex, "vein");
             Assert.That(session.Containment.TryMoveToSlot(veinInstance, caveInstance, floorSlotId, out _), Is.True);
 
-            caveInstance.PostTick(session);
+            caveInstance.Tick(session);
 
             veinInstance.TryGetSlot(orePocketSlotId, out Slot orePocketSlot);
             caveInstance.TryGetSlot(floorSlotId, out Slot floorSlot);
@@ -679,7 +689,7 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void PostTick_SpawnDoesNothingWhenPrimaryFailsAndNoParentToEscalateTo()
+        public void Tick_SpawnDoesNothingWhenPrimaryFailsAndNoParentToEscalateTo()
         {
             var pebble = new ObjectDefBlueprint { Name = "pebble2" };
             pebble.Properties.Add(Prop("size", 10));
@@ -687,7 +697,7 @@ namespace UnmappedIsland.Codex.Tests
             var vein = new ObjectDefBlueprint { Name = "vein2" };
             vein.Slots.Add(new SlotBlueprint { Name = "contents", Capacity = 1 });
             vein.Properties.Add(Prop("yield", 0,
-                onZero: OnZeroSpawn("pebble2", into: SpawnTargetRoot.Self)));
+                onMin: OnMinSpawn("pebble2", into: SpawnTargetRoot.Self)));
 
             var codex = WorldCodexBuilder.Build(new[] { pebble, vein });
             int contentsSlotId = codex.SlotNames.GetId("contents");
@@ -695,7 +705,7 @@ namespace UnmappedIsland.Codex.Tests
             var session = new WorldSession(codex);
             WorldObject veinInstance = Spawn(codex, "vein2"); // 親を持たない(どこにも格納されていない)
 
-            veinInstance.PostTick(session);
+            veinInstance.Tick(session);
 
             veinInstance.TryGetSlot(contentsSlotId, out Slot slot);
             Assert.That(slot.Contents.Count, Is.EqualTo(0),
@@ -703,7 +713,7 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void PostTick_SpawnWithActorRootDoesNothingBecauseOnZeroHasNoActor()
+        public void Tick_SpawnWithActorRootDoesNothingBecauseOnMinHasNoActor()
         {
             var location = new ObjectDefBlueprint { Name = "clearing3" };
             location.Slots.Add(Slot("ground"));
@@ -712,7 +722,7 @@ namespace UnmappedIsland.Codex.Tests
 
             var bush = new ObjectDefBlueprint { Name = "bush" };
             bush.Properties.Add(Prop("ripeness", 0,
-                onZero: OnZeroSpawnAndDestroy("berry", into: SpawnTargetRoot.Actor)));
+                onMin: OnMinSpawnAndDestroy("berry", into: SpawnTargetRoot.Actor)));
 
             var codex = WorldCodexBuilder.Build(new[] { location, berry, bush });
             int groundSlotId = codex.SlotNames.GetId("ground");
@@ -722,21 +732,21 @@ namespace UnmappedIsland.Codex.Tests
             WorldObject bushInstance = Spawn(codex, "bush");
             Assert.That(session.Containment.TryMoveToSlot(bushInstance, locationInstance, groundSlotId, out _), Is.True);
 
-            locationInstance.PostTick(session);
+            locationInstance.Tick(session);
 
             Assert.That(bushInstance.Parent, Is.Null, "bush自身は破棄される");
             locationInstance.TryGetSlot(groundSlotId, out Slot slot);
-            Assert.That(slot.Contents.Count, Is.EqualTo(0), "actorルートはon_zero文脈では解決できないため、berryはどこにも配置されない");
+            Assert.That(slot.Contents.Count, Is.EqualTo(0), "actorルートはon_min文脈では解決できないため、berryはどこにも配置されない");
         }
 
         [Test]
-        public void PostTick_SurvivesMultipleChildrenDestroyingThemselvesInSamePass()
+        public void Tick_SurvivesMultipleChildrenDestroyingThemselvesInSamePass()
         {
             var container = new ObjectDefBlueprint { Name = "trashcan" };
             container.Slots.Add(Slot("contents"));
 
             var junk = new ObjectDefBlueprint { Name = "junk" };
-            junk.Properties.Add(Prop("integrity", 0, onZero: OnZeroDestroy()));
+            junk.Properties.Add(Prop("integrity", 0, onMin: OnMinDestroy()));
 
             var codex = WorldCodexBuilder.Build(new[] { container, junk });
             int contentsSlotId = codex.SlotNames.GetId("contents");
@@ -751,7 +761,7 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(session.Containment.TryMoveToSlot(junk2, containerInstance, contentsSlotId, out _), Is.True);
             Assert.That(session.Containment.TryMoveToSlot(junk3, containerInstance, contentsSlotId, out _), Is.True);
 
-            containerInstance.PostTick(session); // 例外を投げればテスト自体が失敗する
+            containerInstance.Tick(session); // 例外を投げればテスト自体が失敗する
 
             containerInstance.TryGetSlot(contentsSlotId, out Slot slot);
             Assert.That(slot.Contents.Count, Is.EqualTo(0));
@@ -781,6 +791,42 @@ namespace UnmappedIsland.Codex.Tests
 
             containment.Destroy(itemInstance); // 例外を投げればテスト自体が失敗する
             Assert.That(itemInstance.Parent, Is.Null);
+        }
+
+        [Test]
+        public void Tick_StillTicksChildrenOfAnObjectThatDestroysItselfInTheSamePass()
+        {
+            // innerBoxは自分自身のon_minによって、outerBox.Tick()の実行中に破棄される。それでも
+            // innerBoxがまだ持っている子(battery)は、同じTickの中で問題なくaccumulateされることを確認する
+            // （WorldObjectはTick内で自分や子がdestroyされる可能性に備える必要がある、という要件）。
+            var outerBox = new ObjectDefBlueprint { Name = "outer_box" };
+            outerBox.Slots.Add(Slot("items"));
+
+            var innerBox = new ObjectDefBlueprint { Name = "inner_box" };
+            innerBox.Slots.Add(Slot("items"));
+            innerBox.Properties.Add(Prop("integrity", 0, onMin: OnMinDestroy()));
+
+            var battery = new ObjectDefBlueprint { Name = "cell" };
+            battery.Properties.Add(Prop("charge", 10));
+            battery.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "charge", -1));
+
+            var codex = WorldCodexBuilder.Build(new[] { outerBox, innerBox, battery });
+            int itemsSlotId = codex.SlotNames.GetId("items");
+            int chargeId = codex.PropertyNames.GetId("charge");
+
+            var session = new WorldSession(codex);
+            WorldObject outerInstance = Spawn(codex, "outer_box");
+            WorldObject innerInstance = Spawn(codex, "inner_box");
+            WorldObject batteryInstance = Spawn(codex, "cell");
+
+            Assert.That(session.Containment.TryMoveToSlot(innerInstance, outerInstance, itemsSlotId, out _), Is.True);
+            Assert.That(session.Containment.TryMoveToSlot(batteryInstance, innerInstance, itemsSlotId, out _), Is.True);
+
+            outerInstance.Tick(session);
+
+            Assert.That(innerInstance.Parent, Is.Null, "inner_boxは自分自身のon_minにより破棄される");
+            Assert.That(batteryInstance.GetEffectiveValue(chargeId), Is.EqualTo(9),
+                "親(inner_box)が同じTick内で破棄されても、子(battery)は問題なくTickされる");
         }
     }
 }

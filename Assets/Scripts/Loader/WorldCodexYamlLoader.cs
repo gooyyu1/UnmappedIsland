@@ -102,7 +102,36 @@ namespace UnmappedIsland.Loader
                     kv.Key, raw.IsSingleton, raw.TraitNames, props, slots, passiveNodes, stackOrder, actions, combinations, symbols));
             }
 
+            ValidateWithReferences(blueprints, globalObjectDefs.Keys, traitsByName.Keys);
+
             return WorldCodexBuilder.Build(blueprints, symbols);
+        }
+
+        /// <summary>
+        /// slots.accepts の 'object' と combinations の 'with' は、object_def の id か trait 名の
+        /// どちらかを指す（GameElementDefinition.md 7.2節・12.1節）。traitはmixin合成後に消えてしまい
+        /// グローバルIDへは解決されないため、ここでロード後のバリデーションとして、実在する名前を
+        /// 指しているかどうかをまとめて検証する（3.3節: 「ロード後に別途バリデーションステップを設ける」）。
+        /// </summary>
+        private static void ValidateWithReferences(
+            IReadOnlyList<ObjectDefBlueprint> blueprints, IEnumerable<string> objectDefNames, IEnumerable<string> traitNames)
+        {
+            var knownNames = new HashSet<string>(objectDefNames);
+            knownNames.UnionWith(traitNames);
+
+            foreach (var bp in blueprints)
+            {
+                foreach (var slot in bp.Slots)
+                    foreach (var accept in slot.Accepts)
+                        if (!knownNames.Contains(accept.ObjectName))
+                            throw new YamlLoadException(
+                                $"'{bp.Name}'.slots.'{slot.Name}'.accepts: '{accept.ObjectName}' という名前のobject_defまたはtraitが見つかりません。");
+
+                foreach (var combination in bp.Combinations)
+                    if (!knownNames.Contains(combination.With))
+                        throw new YamlLoadException(
+                            $"'{bp.Name}'.combinations.'{combination.Name}'.with: '{combination.With}' という名前のobject_defまたはtraitが見つかりません。");
+            }
         }
 
         private static void ParseFileInto(

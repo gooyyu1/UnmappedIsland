@@ -88,6 +88,18 @@ namespace UnmappedIsland.Runtime
             properties[local].Add(delta);
         }
 
+        /// <summary>
+        /// 数値プロパティへの不可逆な絶対値代入（GameElementDefinition.md 9.2節の`set`）。addとは異なり、
+        /// 既存の値を無視して指定した値でそのまま置き換える。このオブジェクトが対象プロパティを
+        /// 持たない場合は何もしない（AddNumberと同じ規約）。
+        /// </summary>
+        public void SetNumber(int globalPropertyId, int value)
+        {
+            int local = Def.PropertyLayout.ToLocal(globalPropertyId);
+            if (local == LocalIndexMap.Missing) return;
+            properties[local].SetNumber(value);
+        }
+
         public bool TryGetSlot(int globalSlotId, out Slot slot)
         {
             int local = Def.SlotLayout.ToLocal(globalSlotId);
@@ -134,73 +146,99 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。自分自身のプロパティに
-        /// 適用した後、子（すべてのスロットの中身）へ再帰する。すべてのオブジェクトは必ずworldの下に
-        /// ぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は持たない」という前提）、
-        /// worldに対して1回 Tick を呼ぶだけでツリー全体のaccumulateが実行される。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、on_overflow・on_shortfall
+        /// （6.3節）・on_min（6.5節）の判定・実行までを、プロパティごとに自分自身で完結させる
+        /// （PropertyValue.Tick参照。いつ・どのプロパティが範囲外になったかの判断はすべてそちらにあり、
+        /// WorldObjectは既存のApplyActiveEffect（すべて同じ適用経路）を提供するだけで、overflow専用の
+        /// 処理は一切持たない）。自分自身の処理の後、子（すべてのスロットの中身）へ再帰する。すべての
+        /// オブジェクトは必ずworldの下にぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は
+        /// 持たない」という前提）、worldに対して1回 Tick を呼ぶだけでツリー全体が処理される。
         ///
-        /// destroy/spawnはここでは行わない（PostTick参照）。Tick中はツリー構造を変更しないため、
-        /// 子の列挙にスナップショットは不要。
+        /// on_min/on_overflow/on_shortfallのdestroy/spawnは、この処理の最中に自分自身や兄弟をツリーから
+        /// 切り離しうる。各スロットの中身は列挙前にスナップショットを取ることで、列挙中に自分自身や兄弟が
+        /// destroyされても安全なようにしている。
         /// </summary>
-        public void Tick()
-        {
-            foreach (var p in properties) p.Tick();
-
-            foreach (var slot in slots)
-                foreach (var child in slot.Contents)
-                    child.Tick();
-        }
-
-        /// <summary>
-        /// on_zero（6.5節）が発火条件を満たすプロパティがあれば、そのadd/destroy/spawnを実行する。
-        /// Tickとは別の、時間経過後の「値によるイベント処理」のパスとして分離しており（PropertyValue.PostTick
-        /// 参照）、accumulateの結果がすべて確定してから存在操作を行う。自分自身の判定・実行の後、子へ
-        /// 再帰する。
-        ///
-        /// destroy/spawnはこの再帰中にツリー構造（スロットの中身）を変更しうるため、各スロットの中身は
-        /// 列挙前にスナップショットを取る（列挙中に自分自身や兄弟がdestroyされても安全なようにするため）。
-        /// </summary>
-        public void PostTick(WorldSession session)
+        public void Tick(WorldSession session)
         {
             for (int local = 0; local < properties.Length; local++)
-            {
-                ActiveEffect effect = properties[local].PostTick(Def.PropertyDefs[local].OnZero);
-                // on_zeroにはactorが存在しないため、actor無し（Actorを対象にしたspawnは解決できない）で適用する。
-                if (effect != null) ApplyActiveEffect(effect, session, actor: null);
-            }
+                properties[local].Tick(Def.PropertyDefs[local], this, session);
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())
-                    child.PostTick(session);
+                    child.Tick(session);
         }
 
         /// <summary>
-        /// このオブジェクト自身を対象としたadd/destroy/spawnを実行する（9.2〜9.4節）。on_zero（6.5節）と、
-        /// actions/combinations（11節・12節）のactive/pickが解決した結果の両方から、対象ごとに解決された
-        /// このオブジェクトのインスタンスに対して呼ばれる（呼び出し側がself/parent/actor/dragged等の
-        /// 対象解決を担い、ここでは常に「このインスタンス自身」への適用として振る舞う）。
+        /// このオブジェクトをself(このインスタンス自身)として、set/add/destroy/spawnを実行する（9.2〜9.4節）。
+        /// on_min・on_overflow・on_shortfall（6節）と、actions/combinations（11節・12節）のactive/pickが
+        /// 解決した結果の両方から呼ばれる（on_min/on_overflow/on_shortfall経由の場合、actor/draggedは
+        /// 存在しないためnull）。
+        ///
+        /// selfは常にこのインスタンス自身、parentはthis.Parent、actor/draggedは呼び出し側から渡された
+        /// ものとして解決する（対象ごとのWorldObject解決はこのメソッドに閉じる）。対象が解決できない
+        /// 場合（parentが無い、actor/draggedがこの実行文脈に無い）は、その対象への適用のみ無視する。
         ///
         /// destroyをspawnより先に行う（9.3節・9.4節）。カードスタックのUIでは、種類が変わるアイテムが
         /// はみ出さないよう、置き換え後のオブジェクトが「破棄されるオブジェクトが占めていた位置」を
         /// 引き継ぐ必要があるため、destroyで実際に位置が空いてから通常の（force無しの）配置を行う。
-        /// 位置情報はdestroyで失われる前に捕捉しておく（CaptureSameSlotAnchor参照）。
-        ///
-        /// actorは、spawnのinto:actorの解決や、アクション実行文脈のためにそのまま伝搬する（on_zero経由の
-        /// 場合はactorが存在しないためnull）。
+        /// 位置情報はdestroyで失われる前に捕捉しておく（CaptureSameSlotAnchor参照）。spawnは常にself
+        /// （このインスタンス自身）が実行するものとみなすため、同じ場所への配置(SameSlot)はself自身の
+        /// destroy有無だけを見ればよい。
         /// </summary>
-        internal void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor)
+        internal void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
         {
-            foreach (var delta in effect.Adds)
-                AddNumber(delta.PropertyGlobalId, delta.Amount);
+            foreach (ReferenceRoot key in OrderedTargets)
+            {
+                if (!effect.Sets.TryGetValue(key, out var assigns)) continue;
+                WorldObject target = ResolveEffectTarget(key, actor, dragged);
+                if (target == null) continue;
+                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, assign.Value);
+            }
 
+            foreach (ReferenceRoot key in OrderedTargets)
+            {
+                if (!effect.Adds.TryGetValue(key, out var deltas)) continue;
+                WorldObject target = ResolveEffectTarget(key, actor, dragged);
+                if (target == null) continue;
+                foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount);
+            }
+
+            bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
             SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
-                ? CaptureSameSlotAnchor(effect.Destroy)
+                ? CaptureSameSlotAnchor(willDestroySelf)
                 : null;
 
-            if (effect.Destroy) session.Containment.Destroy(this);
+            foreach (ReferenceRoot key in OrderedTargets)
+            {
+                if (!effect.Destroy.Contains(key)) continue;
+                WorldObject target = ResolveEffectTarget(key, actor, dragged);
+                if (target == null) continue;
+                session.Containment.Destroy(target);
+            }
 
             if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
         }
+
+        /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged)を解決する。selfは常にこの
+        /// インスタンス自身、parentはthis.Parent（無ければnull）。</summary>
+        private WorldObject ResolveEffectTarget(ReferenceRoot root, WorldObject actor, WorldObject dragged)
+        {
+            switch (root)
+            {
+                case ReferenceRoot.Self: return this;
+                case ReferenceRoot.Parent: return Parent;
+                case ReferenceRoot.Actor: return actor;
+                case ReferenceRoot.Dragged: return dragged;
+                default: return null;
+            }
+        }
+
+        /// <summary>set/add/destroyを解決する際の固定順（self→parent→actor→dragged）。YAML側で対象間の
+        /// 適用順序は規定されていないため、決定的な順序を1つ選んで固定する。</summary>
+        private static readonly ReferenceRoot[] OrderedTargets =
+        {
+            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor, ReferenceRoot.Dragged,
+        };
 
         /// <summary>
         /// same_slotの置き換え（型が変わりうる）に必要な位置情報を、destroyで失われる前に捕捉する。

@@ -11,7 +11,8 @@ namespace UnmappedIsland.Loader
     /// ObjectDefBlueprintを組み立てる。GameElementDefinition.md 6〜7節・7.6節に対応する。
     ///
     /// 未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）:
-    /// traits/actions/combinations/recipes/covers/layer、passiveのactor対象、on_zeroのself以外の対象。
+    /// traits/actions/combinations/recipes/covers/layer、passiveのactor対象、on_min/on_overflow/on_shortfall
+    /// のself以外の対象。
     /// </summary>
     internal static class ObjectDefYamlConverter
     {
@@ -84,19 +85,22 @@ namespace UnmappedIsland.Loader
             if (rangeSpec != null)
                 bp.Range = new PropertyRange(rangeSpec.RequireInt("min", context), rangeSpec.RequireInt("max", context));
 
-            YamlMappingNode overflow = node.TryGetMapping("on_overflow", context);
-            if (overflow != null)
+            YamlMappingNode onOverflowNode = node.TryGetMapping("on_overflow", context);
+            if (onOverflowNode != null)
             {
-                string mode = overflow.RequireScalar("mode", context);
-                if (mode == "wrap")
-                {
-                    bp.OverflowMode = OverflowMode.Wrap;
-                    bp.OverflowCarryToName = overflow.RequireScalar("carry_to", context);
-                }
-                else if (mode != "none")
-                {
-                    throw new YamlLoadException($"{context}: on_overflow.modeは'wrap'または'none'である必要があります（値: '{mode}'）。");
-                }
+                if (bp.Range == null)
+                    throw new YamlLoadException($"{context}: on_overflowを使うには'range'が必須です。");
+
+                bp.OnOverflow = ParseActiveEffectBody($"{context}.on_overflow", onOverflowNode, allowDragged: false, selfOnly: true);
+            }
+
+            YamlMappingNode onShortfallNode = node.TryGetMapping("on_shortfall", context);
+            if (onShortfallNode != null)
+            {
+                if (bp.Range == null)
+                    throw new YamlLoadException($"{context}: on_shortfallを使うには'range'が必須です。");
+
+                bp.OnShortfall = ParseActiveEffectBody($"{context}.on_shortfall", onShortfallNode, allowDragged: false, selfOnly: true);
             }
 
             YamlSequenceNode stages = node.TryGetSequence("stages", context);
@@ -120,9 +124,14 @@ namespace UnmappedIsland.Loader
             if (propPassive != null)
                 ParsePassiveMapInto(owner.Contributions, objectDefName, propPassive, forcedGate: null, forcedStageProperty: null, forcedStageName: null);
 
-            YamlMappingNode onZero = node.TryGetMapping("on_zero", context);
-            if (onZero != null)
-                bp.OnZero = ParseOnZero(context, onZero);
+            YamlMappingNode onMin = node.TryGetMapping("on_min", context);
+            if (onMin != null)
+            {
+                if (bp.Range == null)
+                    throw new YamlLoadException($"{context}: on_minを使うには'range'が必須です。");
+
+                bp.OnMin = ParseActiveEffectBody($"{context}.on_min", onMin, allowDragged: false, selfOnly: true);
+            }
 
             return bp;
         }
@@ -134,29 +143,45 @@ namespace UnmappedIsland.Loader
             return PropertyValue.FromSymbol(symbols.Intern(raw));
         }
 
-        private static ActiveEffectBlueprint ParseOnZero(string context, YamlMappingNode onZeroMap)
-        {
-            var unsupportedTargets = onZeroMap.EntriesInOrder().Select(e => e.Key).Where(k => k != "self").ToList();
-            if (unsupportedTargets.Count > 0)
-                throw new YamlLoadException(
-                    $"{context}: on_zeroは現時点でselfのみ対応しています（未対応: {string.Join(", ", unsupportedTargets)}）。");
-
-            var selfNode = onZeroMap.TryGetMapping("self", context);
-            return selfNode == null ? null : ParseActiveBody($"{context}.self", selfNode);
-        }
-
-        /// <summary>active_body（9節: add/destroy/spawn）を読む。on_zeroのself、actions/combinationsの
-        /// active/pickの各対象キーの中身の両方から共通で使う。</summary>
-        private static ActiveEffectBlueprint ParseActiveBody(string context, YamlMappingNode bodyNode)
+        /// <summary>
+        /// active内容（9節: set/add/destroy/spawn）を読む。文法は「操作(set/add)が上位、対象
+        /// (self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。on_min・on_overflow・
+        /// on_shortfall（6節、selfOnly: true）、actions/combinations/pickのactive（selfOnly: false）の
+        /// すべてから共通で使う。
+        ///
+        /// destroyは削除対象を直接指す（`destroy: self`、または複数対象なら`destroy: [self, dragged]`）。
+        /// spawnは常にselfが実行するものとみなすため対象キーを持たない（対象別のラップを挟まない）。
+        /// </summary>
+        private static ActiveEffectBlueprint ParseActiveEffectBody(
+            string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly)
         {
             var bp = new ActiveEffectBlueprint();
 
-            YamlMappingNode add = bodyNode.TryGetMapping("add", context);
-            if (add != null)
-                foreach (var (propName, amountNode) in add.EntriesInOrder())
-                    bp.Adds.Add(new AddBlueprint { PropertyName = propName, Amount = int.Parse(((YamlScalarNode)amountNode).Value) });
+            YamlMappingNode setMap = bodyNode.TryGetMapping("set", context);
+            if (setMap != null)
+                foreach (var (targetName, targetBody) in setMap.EntriesInOrder())
+                {
+                    ReferenceRoot target = ParseActiveTargetKey($"{context}.set", targetName, allowDragged, selfOnly);
+                    var assigns = new List<AssignBlueprint>();
+                    foreach (var (propName, valueNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
+                        assigns.Add(new AssignBlueprint { PropertyName = propName, Value = int.Parse(((YamlScalarNode)valueNode).Value) });
+                    bp.Sets[target] = assigns;
+                }
 
-            bp.Destroy = bodyNode.TryGetBool("destroy", context, fallback: false);
+            YamlMappingNode addMap = bodyNode.TryGetMapping("add", context);
+            if (addMap != null)
+                foreach (var (targetName, targetBody) in addMap.EntriesInOrder())
+                {
+                    ReferenceRoot target = ParseActiveTargetKey($"{context}.add", targetName, allowDragged, selfOnly);
+                    var adds = new List<AddBlueprint>();
+                    foreach (var (propName, amountNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
+                        adds.Add(new AddBlueprint { PropertyName = propName, Amount = int.Parse(((YamlScalarNode)amountNode).Value) });
+                    bp.Adds[target] = adds;
+                }
+
+            YamlNode destroyNode = bodyNode.TryGet("destroy");
+            if (destroyNode != null)
+                bp.Destroy.AddRange(ParseDestroyTargets($"{context}.destroy", destroyNode, allowDragged, selfOnly));
 
             YamlMappingNode spawn = bodyNode.TryGetMapping("spawn", context);
             if (spawn != null)
@@ -169,43 +194,53 @@ namespace UnmappedIsland.Loader
                 };
             }
 
+            var unknownKeys = bodyNode.EntriesInOrder().Select(e => e.Key)
+                .Where(k => k != "set" && k != "add" && k != "destroy" && k != "spawn").ToList();
+            if (unknownKeys.Count > 0)
+                throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
             return bp;
         }
 
         /// <summary>
-        /// active_map（9.1節: self/parent/actor、combinations内はdraggedも）を読む。childは、一度きりの
-        /// 命令に対して「どの子か」の意味がまだ確定していないため未対応（passiveのchild寄与とは異なり、
-        /// activeのchildには関係とゲートに基づく登録の仕組みが無いため、対象を一意に絞る規約が無い）。
+        /// set/add/destroyの対象キー（self/parent/actor、combinations内はdraggedも）を解決する。childは、
+        /// 一度きりの命令に対して「どの子か」の意味がまだ確定していないため未対応（passiveのchild寄与とは
+        /// 異なり、activeのchildには関係とゲートに基づく登録の仕組みが無いため、対象を一意に絞る規約が無い）。
+        /// selfOnlyの場合（on_min・on_overflow・on_shortfall）はself以外を一律エラーにする。
         /// </summary>
-        private static Dictionary<ReferenceRoot, ActiveEffectBlueprint> ParseActiveMap(
-            string context, YamlMappingNode activeMapNode, bool allowDragged)
+        private static ReferenceRoot ParseActiveTargetKey(string context, string key, bool allowDragged, bool selfOnly)
         {
-            var result = new Dictionary<ReferenceRoot, ActiveEffectBlueprint>();
+            if (selfOnly && key != "self")
+                throw new YamlLoadException($"{context}: 現時点でselfのみ対応しています（未対応: '{key}'）。");
 
-            foreach (var (key, bodyNode) in activeMapNode.EntriesInOrder())
+            switch (key)
             {
-                ReferenceRoot target;
-                switch (key)
-                {
-                    case "self": target = ReferenceRoot.Self; break;
-                    case "parent": target = ReferenceRoot.Parent; break;
-                    case "actor": target = ReferenceRoot.Actor; break;
-                    case "dragged":
-                        if (!allowDragged)
-                            throw new YamlLoadException($"{context}: 'dragged'はcombinationsの中でのみ使えます。");
-                        target = ReferenceRoot.Dragged;
-                        break;
-                    case "child":
-                        throw new YamlLoadException(
-                            $"{context}: activeの対象'child'は未対応です（一度きりの命令に対して『どの子か』の意味が確定していないため）。");
-                    default:
-                        throw new YamlLoadException($"{context}: 未知の対象キー '{key}' です。");
-                }
-
-                result[target] = ParseActiveBody($"{context}.{key}", (YamlMappingNode)bodyNode);
+                case "self": return ReferenceRoot.Self;
+                case "parent": return ReferenceRoot.Parent;
+                case "actor": return ReferenceRoot.Actor;
+                case "dragged":
+                    if (!allowDragged)
+                        throw new YamlLoadException($"{context}: 'dragged'はcombinationsの中でのみ使えます。");
+                    return ReferenceRoot.Dragged;
+                case "child":
+                    throw new YamlLoadException(
+                        $"{context}: activeの対象'child'は未対応です（一度きりの命令に対して『どの子か』の意味が確定していないため）。");
+                default:
+                    throw new YamlLoadException($"{context}: 未知の対象キー '{key}' です。");
             }
+        }
 
-            return result;
+        /// <summary>destroy（削除対象の直接指定）を読む。単一の対象名(`destroy: self`)か、
+        /// 対象名のリスト(`destroy: [self, dragged]`)のいずれかを許容する。</summary>
+        private static List<ReferenceRoot> ParseDestroyTargets(string context, YamlNode node, bool allowDragged, bool selfOnly)
+        {
+            if (node is YamlScalarNode scalar)
+                return new List<ReferenceRoot> { ParseActiveTargetKey(context, scalar.Value, allowDragged, selfOnly) };
+
+            if (node is YamlSequenceNode seq)
+                return seq.Select(n => ParseActiveTargetKey(context, ((YamlScalarNode)n).Value, allowDragged, selfOnly)).ToList();
+
+            throw new YamlLoadException($"{context}: destroyは対象名か、対象名のリストのいずれかである必要があります。");
         }
 
         /// <summary>pathを"root.property"の1階層に限定して解釈する（14.1節・10.2節）。worldは唯一の
@@ -344,7 +379,7 @@ namespace UnmappedIsland.Loader
                 if (activeMap == null && nestedPick == null)
                     throw new YamlLoadException($"{candidateContext}: 'active'または'pick'のいずれかが必要です。");
 
-                if (activeMap != null) candidate.Active = ParseActiveMap(candidateContext, activeMap, allowDragged);
+                if (activeMap != null) candidate.Active = ParseActiveEffectBody(candidateContext, activeMap, allowDragged, selfOnly: false);
                 if (nestedPick != null) candidate.Pick = ParsePickList(candidateContext, nestedPick, allowDragged, symbols);
 
                 result.Add(candidate);
@@ -377,7 +412,7 @@ namespace UnmappedIsland.Loader
                 if (activeMap != null && pickList != null)
                     throw new YamlLoadException($"{context}: 'active'と'pick'は同時に指定できません。");
 
-                if (activeMap != null) action.Active = ParseActiveMap(context, activeMap, allowDragged: false);
+                if (activeMap != null) action.Active = ParseActiveEffectBody(context, activeMap, allowDragged: false, selfOnly: false);
                 if (pickList != null) action.Pick = ParsePickList(context, pickList, allowDragged: false, symbols);
 
                 result.Add(action);
@@ -407,7 +442,7 @@ namespace UnmappedIsland.Loader
                 if (activeMap != null && pickList != null)
                     throw new YamlLoadException($"{context}: 'active'と'pick'は同時に指定できません。");
 
-                if (activeMap != null) combination.Active = ParseActiveMap(context, activeMap, allowDragged: true);
+                if (activeMap != null) combination.Active = ParseActiveEffectBody(context, activeMap, allowDragged: true, selfOnly: false);
                 if (pickList != null) combination.Pick = ParsePickList(context, pickList, allowDragged: true, symbols);
 
                 result.Add(combination);
@@ -468,7 +503,41 @@ namespace UnmappedIsland.Loader
         {
             string context = $"'{objectDefName}'.passive";
 
-            foreach (var (targetName, bodyNode) in passiveMap.EntriesInOrder())
+            var whenByTarget = new Dictionary<string, string>();
+            YamlMappingNode whenMap = passiveMap.TryGetMapping("when", context);
+            if (whenMap != null)
+                foreach (var (targetName, slotNode) in whenMap.EntriesInOrder())
+                    whenByTarget[targetName] = ((YamlScalarNode)slotNode).Value;
+
+            ParsePassiveOperationInto(
+                output, context, passiveMap, "modify", ContributionKind.Modify,
+                whenByTarget, forcedGate, forcedStageProperty, forcedStageName);
+            ParsePassiveOperationInto(
+                output, context, passiveMap, "accumulate", ContributionKind.Accumulate,
+                whenByTarget, forcedGate, forcedStageProperty, forcedStageName);
+
+            var unknownKeys = passiveMap.EntriesInOrder().Select(e => e.Key)
+                .Where(k => k != "when" && k != "modify" && k != "accumulate").ToList();
+            if (unknownKeys.Count > 0)
+                throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+        }
+
+        /// <summary>
+        /// passiveの1操作(modify/accumulate)を読み、対象(self/parent/child、actorは未対応のため
+        /// スキップ)ごとにContributionBlueprintへ変換してoutputへ追加する。ゲートは、同じpassiveブロック内
+        /// の"when"（対象ごとの辞書）から対応する対象のスロット名を引く。forcedGateがWhenOwnStageの場合、
+        /// "when"は無視し（1つのContributionは単一のゲート種別しか表現できないため）、常にそのステージの
+        /// ゲートを使う。
+        /// </summary>
+        private static void ParsePassiveOperationInto(
+            List<ContributionBlueprint> output, string context, YamlMappingNode passiveMap,
+            string operationKey, ContributionKind kind, Dictionary<string, string> whenByTarget,
+            ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName)
+        {
+            YamlMappingNode operationMap = passiveMap.TryGetMapping(operationKey, context);
+            if (operationMap == null) return;
+
+            foreach (var (targetName, bodyNode) in operationMap.EntriesInOrder())
             {
                 if (targetName == "actor") continue; // 未対応（ContributionTargetにActorが無いため）
 
@@ -479,10 +548,8 @@ namespace UnmappedIsland.Loader
                     case "parent": target = ContributionTarget.Parent; break;
                     case "child": target = ContributionTarget.Child; break;
                     default:
-                        throw new YamlLoadException($"{context}: 未知の対象キー '{targetName}' です。");
+                        throw new YamlLoadException($"{context}.{operationKey}: 未知の対象キー '{targetName}' です。");
                 }
-
-                var body = (YamlMappingNode)bodyNode;
 
                 ContributionGateKind gateKind;
                 string gateSlotName = null;
@@ -495,49 +562,29 @@ namespace UnmappedIsland.Loader
                     gateStageProperty = forcedStageProperty;
                     gateStageName = forcedStageName;
                 }
+                else if (whenByTarget.TryGetValue(targetName, out string slotName))
+                {
+                    gateKind = ContributionGateKind.WhenSlot;
+                    gateSlotName = slotName;
+                }
                 else
                 {
-                    string when = body.TryGetScalar("when", context);
-                    if (when != null)
-                    {
-                        gateKind = ContributionGateKind.WhenSlot;
-                        gateSlotName = when;
-                    }
-                    else
-                    {
-                        gateKind = ContributionGateKind.Always;
-                    }
+                    gateKind = ContributionGateKind.Always;
                 }
 
-                YamlMappingNode modify = body.TryGetMapping("modify", context);
-                if (modify != null)
-                    foreach (var (propName, amountNode) in modify.EntriesInOrder())
-                        output.Add(new ContributionBlueprint
-                        {
-                            Target = target,
-                            Kind = ContributionKind.Modify,
-                            TargetPropertyName = propName,
-                            Amount = int.Parse(((YamlScalarNode)amountNode).Value),
-                            GateKind = gateKind,
-                            GateSlotName = gateSlotName,
-                            GateStagePropertyName = gateStageProperty,
-                            GateStageName = gateStageName,
-                        });
-
-                YamlMappingNode accumulate = body.TryGetMapping("accumulate", context);
-                if (accumulate != null)
-                    foreach (var (propName, amountNode) in accumulate.EntriesInOrder())
-                        output.Add(new ContributionBlueprint
-                        {
-                            Target = target,
-                            Kind = ContributionKind.Accumulate,
-                            TargetPropertyName = propName,
-                            Amount = int.Parse(((YamlScalarNode)amountNode).Value),
-                            GateKind = gateKind,
-                            GateSlotName = gateSlotName,
-                            GateStagePropertyName = gateStageProperty,
-                            GateStageName = gateStageName,
-                        });
+                var body = (YamlMappingNode)bodyNode;
+                foreach (var (propName, amountNode) in body.EntriesInOrder())
+                    output.Add(new ContributionBlueprint
+                    {
+                        Target = target,
+                        Kind = kind,
+                        TargetPropertyName = propName,
+                        Amount = int.Parse(((YamlScalarNode)amountNode).Value),
+                        GateKind = gateKind,
+                        GateSlotName = gateSlotName,
+                        GateStagePropertyName = gateStageProperty,
+                        GateStageName = gateStageName,
+                    });
             }
         }
     }

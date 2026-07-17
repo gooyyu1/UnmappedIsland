@@ -121,24 +121,63 @@ props:
     value: {min: 1, max: 3}   # 毎tick、この範囲でロールした量を減算する
 ```
 
-### 6.3 range / on_overflow（周回・上限）
+### 6.3 range / on_overflow / on_shortfall（周回・上下限）
 
-上限に達したら折り返す（あるいは繰り上げる）プロパティは、`range`（取りうる上下限）と `on_overflow`（上限到達時の挙動）を
-持たせます。`value` の `{min, max}`（6.2 節、毎 tick 再ロールする範囲）とは別の仕組みです。
+上限・下限に達したら折り返す（あるいは繰り上げる）プロパティは、`range`（取りうる上下限）と、`on_overflow`
+（上限超過時の挙動）・`on_shortfall`（下限未満時の挙動、`on_overflow` の下限側の鏡像）を持たせます。`value` の
+`{min, max}`（6.2 節、毎 tick 再ロールする範囲）とは別の仕組みです。
+
+`on_overflow`/`on_shortfall` は `on_min`（6.5 節）と全く同じ型の `active`（9 節）内容をそのまま流用しますが、
+対象は現時点で `self` のみに限定されます（未対応: `parent`/`actor`/`dragged`、ロード時にエラー）。
+
+- `on_overflow` は、値が `range` の上限を超えた瞬間に、著者が指定した内容を一度だけ適用します。
+- `on_shortfall` は、値が `range` の下限を下回った瞬間に、著者が指定した内容を一度だけ適用します。
+- どちらも `range` が定義されていて著者が明示的に書かなかった場合、**自分自身を境界値（`on_overflow` なら
+  `range.max`、`on_shortfall` なら `range.min`）へ `set` する**という既定の内容が自動的に補われます。これにより、
+  著者は `range` を書くだけで、レンジ型プロパティの上限・下限のクランプを実装できます（`on_overflow`/
+  `on_shortfall` を明示するのは、繰り上げ・繰り下げのような特別な挙動が要る場合だけで構いません）。
 
 ```yaml
 props:
   minute_of_day:
     value: 0
     range: {min: 0, max: 1439}
-    on_overflow: {mode: wrap, carry_to: day}   # 1440でdayに+1して0に戻る
-  sequence:
-    value: 0
-    on_overflow: {mode: none}                   # 上限なし
+    on_overflow:
+      add:
+        self:
+          minute_of_day: -1440   # 1440溢れたら自分を1440引いて0に戻す
+          day: 1                 # 同時にdayへ+1する
+  # on_shortfallを省略しているため、下限(0)を下回った場合は既定の
+  # `set: {self: {minute_of_day: 0}}` が自動的に適用される（単純なクランプ）。
+
+  hp:
+    value: 100
+    range: {min: 0, max: 100}
+    # on_overflow/on_shortfallをどちらも省略しているため、単純に[0, 100]へクランプされるだけの
+    # プロパティになる（毎tick再計算するmodify/accumulateの結果が範囲をはみ出した場合の後始末）。
 ```
 
-- `mode: wrap` は `carry_to` へ繰り上げて 0 に戻ります（`carry_to` が必須になります）。
-- `mode: none` は上限なしです。
+- `range` は `on_overflow`/`on_shortfall` を使う場合に必須です。`range` 自体を省略すると（`day` のように上限・
+  下限なくaccumulateし続けたい場合）、`on_overflow`/`on_shortfall` の仕組み自体を持ちません。
+- `add` に書けるプロパティは、自分自身（折り返し）に限らず、同じ object_def 内の他のプロパティ
+  （繰り上げ・繰り下げ先）も指定できます。存在しないプロパティ名を書いた場合は `on_min`/`add` と同様に
+  黙って無視されます。
+- 自分自身の折り返し・繰り下げには、絶対値を代入する `set`（9.2 節）ではなく `add` を使ってください。後述の
+  通り `on_overflow`/`on_shortfall` はループしないため、1 tick で `range` の幅を複数回分飛び越えることがあります。
+  `set` で固定値へ代入するとその超過分を失いますが、`add` なら差分を保ったまま反映されるため、こちらのほうが
+  堅牢です（`set` は、超過分を気にせず絶対値へ揃えたい別の用途向けの機能で、既定のクランプ動作自体もこの
+  `set` を使っています）。
+- `on_overflow`/`on_shortfall` はループしません。1 tick につき、条件を満たしたプロパティ 1 つあたり最大 1 回
+  だけ適用されます（`accumulate` の通常の反映・`on_min` と同じ扱いです）。そのため:
+  - 1 tick で `range` の幅を複数回分飛び越えた場合、1 回の適用では収まりきらず、残りは次回以降の tick に
+    持ち越されます（例: 通常より大きい `add` が1回だけ発生した場合）。
+  - 繰り上げ・繰り下げ先自身がさらに範囲外へ出る場合（分→時→日のように連鎖する場合）、同じ tick 内で解決
+    されるかどうかは `props` の宣言順に依存します。あるプロパティの `on_overflow`/`on_shortfall` が加算する
+    繰り上げ・繰り下げ先が、それより後に宣言されていれば、そのプロパティも同じ tick 内で正しく折り返されます。
+    先に宣言されている場合は、次の tick まで持ち越されます。そのため、繰り上げ・繰り下げの連鎖がある `props`
+    は、繰り上げ・繰り下げ元→先の順（例: `minute`→`hour`→`day`）で宣言することを推奨します。
+- 1 回の判定内での適用順は `on_overflow` → `on_shortfall` → `on_min`（6.5 節）です。境界を越えた値を
+  `on_overflow`/`on_shortfall` が先に補正してから、補正後の値で `on_min` の「下限以下か」を判定します。
 
 ### 6.4 stages（段階）
 
@@ -150,8 +189,8 @@ props:
 - 最下段の段階は `min: null`（または省略）とし、それより下の残り全ての値を拾います。
 - 現在値に基づいて常に一意に段階を決定します。ヒステリシス（上昇時・下降時で閾値をずらす仕組み）は採用しません。
 - ステージの `passive` はレベルトリガー（そのステージにいる間ずっと有効）のみです。ステージ切替の瞬間だけ発火する
-  edge-triggered な仕組み（`on_enter`/`on_exit` 的なもの）は導入していません。「値が 0 になった瞬間」という実際に
-  必要なケースは、専用の `on_zero`（6.5 節）で表現します。
+  edge-triggered な仕組み（`on_enter`/`on_exit` 的なもの）は導入していません。「下限に達した瞬間」という実際に
+  必要なケースは、専用の `on_min`（6.5 節）で表現します。
 
 ```yaml
 props:
@@ -162,29 +201,36 @@ props:
       - name: mild
         min: 20
         passive:
-          parent:
-            accumulate:
+          accumulate:
+            parent:
               temperature: 1
       - name: feverish
         min: 50
         passive:
-          parent:
-            accumulate:
+          accumulate:
+            parent:
               temperature: 2
               hydration: -1
 ```
 
-### 6.5 on_zero（0以下である間、毎tick実行される内容）
+### 6.5 on_min（下限以下である間、毎tick実行される内容）
 
-`on_zero` は、プロパティが**0以下である間、毎 tick 実行される `active`（9 節）内容**です。`passive` の `modify`/
-`accumulate` と同じレベルトリガーの考え方を、`add`/`destroy`/`spawn`（一時的な命令）に適用したものです。「跨いだ
-瞬間だけ」を検出する仕組み（前 tick との比較）は持たず、現在値だけで判定します。
+`on_min` は、プロパティが**`range` の下限以下である間、毎 tick 実行される `active`（9 節）内容**です（旧称
+`on_zero`。比較対象を固定の 0 ではなく `range.min` へ一般化し、0 以外の下限を持つプロパティにも「底を突いた」
+判定を使えるようにしたものです）。`passive` の `modify`/`accumulate` と同じレベルトリガーの考え方を、
+`set`/`add`/`destroy`/`spawn`（一時的な命令）に適用したものです。「跨いだ瞬間だけ」を検出する仕組み（前 tick
+との比較）は持たず、現在値だけで判定します。
 
 - 毎 tick 実行されても安全なのは、典型的な用途が自己終端するためです。`destroy` は既に破棄済みのオブジェクトに
-  対して繰り返し実行しても安全（冪等）です。`spawn` を伴う場合は、同じ `on_zero` 内で `destroy` と組み合わせるのが
+  対して繰り返し実行しても安全（冪等）です。`spawn` を伴う場合は、同じ `on_min` 内で `destroy` と組み合わせるのが
   基本形であり、破棄後はそのオブジェクト自体が tick の対象でなくなるため、2回目以降の実行は起こりません。`destroy`
-  を伴わずに `spawn` だけを書くと、0以下である間 tick 毎に生成し続けてしまう点に注意してください。
-- `on_zero` の中身は `active` と同じ対象キーの辞書を直接持ちます。専用のラップは挟みません。
+  を伴わずに `spawn` だけを書くと、下限以下である間 tick 毎に生成し続けてしまう点に注意してください。
+- `on_min` の中身は `active`（9 節）と全く同じ型をそのまま持ちますが、対象は現時点で `self` のみに限定されます
+  （未対応: `parent`/`actor`/`dragged`、ロード時にエラー）。`range.min` を参照するため、`range` は `on_min` を
+  使う場合に必須です（`on_overflow`/`on_shortfall` と同じ制約）。
+- `on_overflow`/`on_shortfall`（6.3 節）とは異なり、`on_min` は著者が明示的に書かない限り既定の自動生成は
+  行われません。「底を突いたら破棄する」のような挙動は用途ごとに大きく異なるため、単純なクランプを前提にした
+  既定値がなじまないからです。
 
 ```yaml
 props:
@@ -192,12 +238,11 @@ props:
     value: 100
     range: {min: 0, max: 100}
     passive:
-      self:
-        accumulate:
+      accumulate:
+        self:
           durability: -1
-    on_zero:
-      self:
-        destroy: true
+    on_min:
+      destroy: self
     stages:
       - name: intact
         min: 1
@@ -247,6 +292,9 @@ slots:
 
 - `consume: true` は素材として消費される、`consume: false` は道具として存在確認のみ行うことを表します。
 - `capacity`（7.3 節）とは独立した仕組みで、1 つのスロットが両方を同時に持てます。
+- `object` には、`object_defs` の id だけでなく trait 名（5 節）も指定できます（`combinations` の `with`、12.1 節と
+  同じ考え方）。trait 名を使えば、そのtraitを参照するあらゆる型（MOD 追加分も含む）をまとめて受け入れられます
+  （例: `{object: location, max: 9999}` で、`location` trait を参照するあらゆる場所オブジェクトを受け入れる）。
 
 ### 7.3 capacity（合計サイズの制約）
 
@@ -406,10 +454,11 @@ object_defs:
 2. **プロパティレベル**（例: アイテムの重量プロパティが持ち主の負荷に寄与する）
 3. **プロパティのステージレベル**（6.4 節）
 
-### 8.1 対象キー
+### 8.1 文法: 操作が上位、対象が下位
 
-`passive` は、効果の対象を識別子とするキーの辞書型です。定義するのは `self`（自分自身）・`parent`（親）・
-`child`（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、11 節参照）の 4 つです。
+`passive` は、操作（`when`/`modify`/`accumulate`）をキーとする辞書型です。各操作の中に、効果の対象を識別子と
+する対象キーの辞書がぶら下がります。対象キーとして定義するのは `self`（自分自身）・`parent`（親）・`child`
+（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、11 節参照）の 4 つです。
 
 ```yaml
 object_defs:
@@ -417,9 +466,10 @@ object_defs:
     covers: [torso]
     layer: base
     passive:
-      parent:
-        when: equip
-        modify:
+      when:
+        parent: equip
+      modify:
+        parent:
           defense: 5
           speed: 3
           accuracy: 2
@@ -427,9 +477,10 @@ object_defs:
 
 ### 8.2 when（ゲート）
 
-- `when: <スロット名>` … そのスロットに入っている間、継続的に有効（レベルトリガー）
-- 省略した場合は「常時（無条件）」を意味します。
-- `when` は対象ごとのキーの中に書きます。1 つの `passive` の中で、対象ごとに異なる `when` を持たせられます。
+- `when` は対象キーをキーとする辞書で、`when: {<対象>: <スロット名>}` の形を取ります。そのスロットに入っている
+  間、継続的に有効（レベルトリガー）です。
+- ある対象について `when` を書かなければ「常時（無条件）」を意味します。1 つの `passive` の中で、対象ごとに
+  異なる `when` を持たせられます。
 
 ### 8.3 modify
 
@@ -449,43 +500,46 @@ object_defs:
 `active` は、アクション・組み合わせ・確率分岐の結果が確定した瞬間に、**無条件で1回だけ**適用される命令です。
 持続する条件を表す `when`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
 
-### 9.1 対象キー
+### 9.1 文法: 操作が上位、対象が下位
 
-`active` も `self`/`parent`/`child`/`actor` という同じ対象キーの辞書型を使います。`combinations`（12 節）の中では、
-これに加えて **`dragged`**（ドラッグされてきたカード）も使えます。
+`active` は `set`・`add`・`destroy`・`spawn` という操作をキーとする辞書型です。`set`/`add` の中には、
+`self`/`parent`/`actor` を対象キーとする辞書がぶら下がります（`combinations`（12 節）の中では、これに加えて
+**`dragged`**（ドラッグされてきたカード）も使えます）。
 
 ```yaml
 actions:
   eat:
     active:
-      actor:
-        add:
+      add:
+        actor:
           satiety: 10
-      self:
-        destroy: true
+      destroy: self
 ```
 
-`add`・`destroy`・`spawn` は、対象キー（`self`/`parent` など）の直下に並ぶ**対等な兄弟キー**です。値を操作するか
-（`add`）オブジェクトの存在を操作するか（`destroy`/`spawn`）という区別のための専用の入れ子はありません。
+### 9.2 set / add
 
-### 9.2 add
+どちらも対象プロパティの実体値へ、その場で一度だけ不可逆に反映します。
 
-対象プロパティの実体値へ、その場で一度だけ不可逆に加減算します。`when`/常時の継続的な加算は `accumulate`
-（8.4 節）が担うため、`add` は一時的な命令専用です。
+- `set` は指定した**絶対値**をそのまま代入します。
+- `add` は指定した量を既存の値へ**加減算**します。
+
+`when`/常時の継続的な加算は `accumulate`（8.4 節）が担うため、`set`/`add` は一時的な命令専用です。
 
 ### 9.3 destroy
 
-`true` を指定すると、対象オブジェクトを消滅させます。すべてのオブジェクトは必ずworldを根とするツリーに
+削除したい対象を直接指定します。単一の対象なら `destroy: self` のようにスカラーで、複数の対象を同時に削除する
+なら `destroy: [self, dragged]` のようにリストで書きます。すべてのオブジェクトは必ずworldを根とするツリーに
 所属するため（7.1 節）、`destroy` は「現在の親スロットから切り離す」こととして表現できます。繰り返し実行しても
-安全（冪等）です。`spawn`と同じ対象キーの中で同時に指定した場合、`destroy`は`spawn`より先に実行されます
-（9.4節参照）。
+安全（冪等）です。`spawn` と同時に指定した場合、`destroy` は `spawn` より先に実行されます（9.4節参照）。
 
 ### 9.4 spawn
 
-`{object, into}` を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。`destroy` と同じ対象キーの
-中で同時に指定でき（`{spawn: {...}, destroy: true}`）、「新しいオブジェクトを生成しつつ、自分自身は消滅させる」と
-いう組み合わせを1つのエントリで表現できます。この場合、`destroy`が先に実行されます。破棄によって実際に位置が
-空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが素直に実現できるためです。
+`{object, into}` を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。`spawn` は常に **`self`
+（この `active` を宣言したオブジェクト自身）が実行するもの**とみなすため、`set`/`add`/`destroy` のような対象
+キーのラップを挟みません。`destroy` と同時に指定でき（`{spawn: {...}, destroy: self}`）、「新しいオブジェクトを
+生成しつつ、自分自身は消滅させる」という組み合わせを1つのエントリで表現できます。この場合、`destroy`が先に
+実行されます。破棄によって実際に位置が空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが
+素直に実現できるためです。
 
 挿入先の**スロット名を書く必要はありません**。生成物を受け取るオブジェクト（後述の`into`が指す起点）が持つ
 スロットを**宣言順に走査し、最初に配置できたスロットへ入れます**。型ごとに用意されたスロット（アイテム用・
@@ -493,25 +547,24 @@ actions:
 
 **`into`（配置先の起点）** は、以下のいずれかです。
 
-- **省略、または`same_slot`**: この`active`/`on_zero`を宣言したオブジェクト（`self`）が今いる、まさにその場所
-  （親と、`self`が現在占めているのと同じスロット）へそのまま配置します。クラフト・腐敗など、「同じ場所で
-  別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません（`self`の現在の所属先が一意に決まる
-  ため）。`same_slot`は省略時と全く同じ意味を持つ、明示したい場合のためのキーワードです。
+- **省略、または`same_slot`**: この`active`/`on_min`/`on_overflow`/`on_shortfall`を宣言したオブジェクト
+  （`self`）が今いる、まさにその場所（親と、`self`が現在占めているのと同じスロット）へそのまま配置します。
+  クラフト・腐敗など、「同じ場所で別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません
+  （`self`の現在の所属先が一意に決まるため）。`same_slot`は省略時と全く同じ意味を持つ、明示したい場合の
+  ためのキーワードです。
 - **`self`/`actor`**: このいずれかを起点に、その対象が持つスロットを宣言順に走査します。`actor`
-  （アクション実行者）は、アクション実行文脈でのみ解決できます。`on_zero`には`actor`が存在しないため使えません
-  （配置は行われません）。
+  （アクション実行者）は、アクション実行文脈でのみ解決できます。`on_min`/`on_overflow`/`on_shortfall`には
+  `actor`が存在しないため使えません（配置は行われません）。
 
 ```yaml
 active:
-  self:
-    spawn: {object: rotten_wood}
-    destroy: true
+  spawn: {object: rotten_wood}
+  destroy: self
 ```
 
 ```yaml
 active:
-  self:
-    spawn: {object: item_coconut, into: actor}
+  spawn: {object: item_coconut, into: actor}
 ```
 
 `into`が指す起点のどのスロットにも`accepts`/`capacity`が合わず配置できなかった場合、**`fallback`はYAML上に
@@ -533,7 +586,7 @@ active:
 
 - `actions`/`combinations` の実行結果（11 節・12 節）
 - `pick` の各候補（10 節）
-- `props` の `on_zero`（6.5 節）
+- `props` の `on_min`（6.5 節）・`on_overflow`/`on_shortfall`（6.3 節）
 
 ## 10. pick（重み付き確率分岐）
 
@@ -543,7 +596,7 @@ active:
 
 ### 10.1 基本構造
 
-各候補は `weight` に加えて、自分自身の `active`（対象をキーとする辞書）を丸ごと持ちます。候補が1つしかない場合は、
+各候補は `weight` に加えて、自分自身の `active`（9 節の文法そのまま）を丸ごと持ちます。候補が1つしかない場合は、
 重みの値に関わらず必ずそれが選ばれます。
 
 ```yaml
@@ -553,20 +606,18 @@ actions:
     pick:
       - weight: 50
         active:
-          self:
-            destroy: true
+          destroy: self
       - weight: 50
         active:
-          actor:
-            destroy: true
+          destroy: actor
 ```
 
 候補ごとに影響を受ける対象（`self`/`actor` など）そのものが異なるケースも、このように表現できます。`pick` の
 入れ子は再帰的であり、候補の `active` の代わりにさらに別の `pick` を書くこともできます。
 
-各候補の `active` に書ける内容は、一時的な命令（`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate` は
-関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて終わる
-`pick` の候補に書く意味がありません。
+各候補の `active` に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate`
+は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
+終わる `pick` の候補に書く意味がありません。
 
 ### 10.2 weight
 
@@ -580,8 +631,8 @@ actions:
 pick:
   - weight: {path: self.accuracy}
     active:
-      self:
-        add: {hp: -10}
+      add:
+        self: {hp: -10}
   - weight: 40
     active: {}
 ```
@@ -603,11 +654,10 @@ traits:
         conditions:
           - {path: actor.satiety, op: lt, value: max}
         active:
-          actor:
-            add:
+          add:
+            actor:
               satiety: 10
-          self:
-            destroy: true
+          destroy: self
 ```
 
 ### 11.1 showMenu
@@ -640,11 +690,10 @@ object_defs:
         conditions:
           - {path: dragged.durability, op: gt, value: 0}
         active:
-          self:
-            spawn: {object: logs}
-            destroy: true
-          dragged:
-            add:
+          spawn: {object: logs}
+          destroy: self
+          add:
+            dragged:
               durability: -1
 ```
 
@@ -745,12 +794,22 @@ object_defs:
     props:
       day:
         value: 1
-        on_overflow: {mode: none}
-      minute_of_day:
+      hour:
         value: 0
-        range: {min: 0, max: 1439}
-        on_overflow: {mode: wrap, carry_to: day}
+        range: {min: 0, max: 23}
+        on_overflow:
+          self:
+            accumulate: {hour: -24, day: 1}
+      minute:
+        value: 0
+        range: {min: 0, max: 59}
+        on_overflow:
+          self:
+            accumulate: {minute: -60, hour: 1}
 ```
+
+（実際の定義は `Assets/StreamingAssets/WorldCodex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す
+`tick` も持つ。）
 
 日時・天候はオブジェクトから直接参照されるのではなく、**環境がオブジェクトに影響を与える**という位置づけです
 （例: 明るさによって行動可否が変わる）。直接のプロパティ参照経路（`world.xxx`）は 14 節の `path` で使います。
@@ -765,9 +824,9 @@ object_defs:
 ## 17. 今後の検討課題
 
 - `derived`（導出値）の採否。採用する場合、`stages`（6.4 節、`min` による半開区間）とキー名・記法を統一するか
-- ステージ切替の瞬間だけ発火する edge-triggered な仕組み（`on_enter`/`on_exit` 的なもの）の要否と記法。「0になった
-  瞬間」は `on_zero`（6.5 節）で解決済みだが、それ以外のステージ境界を跨いだ瞬間に発火したいケースが今後生じた
-  場合の対応は未検討
+- ステージ切替の瞬間だけ発火する edge-triggered な仕組み（`on_enter`/`on_exit` 的なもの）の要否と記法。「下限に
+  達した瞬間」は `on_min`（6.5 節）で解決済みだが、それ以外のステージ境界を跨いだ瞬間に発火したいケースが今後
+  生じた場合の対応は未検討
 - `day` の上限（無制限のまま加算し続けるか、年単位で wrap して `year` プロパティを持つか）
 - 天候遷移自体（いつ・どの天候に切り替わるか）のランダム性の仕組み（6.2 節）
 - `passive`/`active` の対象キーに `ancestor`/`sibling`/`descendant` を追加するかどうか

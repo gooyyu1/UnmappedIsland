@@ -264,7 +264,7 @@ object_defs:
         }
 
         // ------------------------------------------------------------------
-        // passive / stage / on_zero
+        // passive / stage / on_min
         // ------------------------------------------------------------------
 
         [Test]
@@ -280,8 +280,8 @@ object_defs:
           - name: lit
             min: 1
             passive:
-              child:
-                modify:
+              modify:
+                child:
                   warmth: 5
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -294,7 +294,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_OnZeroWithNonSelfTarget_Throws()
+        public void LoadFromGroups_OnMinWithoutRange_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -302,16 +302,15 @@ object_defs:
     props:
       life:
         value: 0
-        on_zero:
-          parent:
-            destroy: true
+        on_min:
+          destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_zero"));
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
         }
 
         [Test]
-        public void LoadFromGroups_OnZeroSelf_ParsesDestroyAndSpawn()
+        public void LoadFromGroups_OnMinWithNonSelfTarget_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -319,24 +318,41 @@ object_defs:
     props:
       life:
         value: 0
-        on_zero:
-          self:
-            destroy: true
-            spawn:
-              object: ash
-              into: same_slot
+        range: {min: 0, max: 100}
+        on_min:
+          destroy: parent
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_min"));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnMinSelf_ParsesDestroyAndSpawn()
+        {
+            const string yaml = @"
+object_defs:
+  log:
+    props:
+      life:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
+          destroy: self
+          spawn:
+            object: ash
+            into: same_slot
   ash: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
-            ActiveEffect onZero = PropOf(codex, log, "life").OnZero;
+            ActiveEffect onMin = PropOf(codex, log, "life").OnMin;
 
-            Assert.That(onZero, Is.Not.Null);
-            Assert.That(onZero.Destroy, Is.True);
-            Assert.That(onZero.Spawn, Is.Not.Null);
-            Assert.That(onZero.Spawn.Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
-            Assert.That(codex.ObjectNames.GetName(onZero.Spawn.ObjectGlobalId), Is.EqualTo("ash"));
+            Assert.That(onMin, Is.Not.Null);
+            Assert.That(onMin.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(onMin.Spawn, Is.Not.Null);
+            Assert.That(onMin.Spawn.Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
+            Assert.That(codex.ObjectNames.GetName(onMin.Spawn.ObjectGlobalId), Is.EqualTo("ash"));
         }
 
         // ------------------------------------------------------------------
@@ -381,11 +397,10 @@ object_defs:
         conditions:
           - {path: actor.satiety, op: lt, value: 100}
         active:
-          actor:
-            add:
+          add:
+            actor:
               satiety: 10
-          self:
-            destroy: true
+          destroy: self
   player: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -398,8 +413,8 @@ object_defs:
             Assert.That(eat.Conditions[0].Path.Root, Is.EqualTo(ReferenceRoot.Actor));
             Assert.That(eat.Conditions[0].Op, Is.EqualTo(ConditionOp.Lt));
             Assert.That(eat.Active, Is.Not.Null);
-            Assert.That(eat.Active.ContainsKey(ReferenceRoot.Actor), Is.True);
-            Assert.That(eat.Active[ReferenceRoot.Self].Destroy, Is.True);
+            Assert.That(eat.Active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
+            Assert.That(eat.Active.Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
@@ -413,12 +428,10 @@ object_defs:
         pick:
           - weight: 50
             active:
-              self:
-                destroy: true
+              destroy: self
           - weight: 50
             active:
-              actor:
-                destroy: true
+              destroy: actor
   target: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -444,11 +457,10 @@ object_defs:
         conditions:
           - {path: dragged.durability, op: gt, value: 0}
         active:
-          self:
-            spawn: {object: logs}
-            destroy: true
-          dragged:
-            add:
+          spawn: {object: logs}
+          destroy: self
+          add:
+            dragged:
               durability: -1
   logs: {}
   axe_tool:
@@ -463,8 +475,8 @@ object_defs:
 
             Assert.That(chop.With, Is.EqualTo("axe_tool"));
             Assert.That(chop.Conditions[0].Path.Root, Is.EqualTo(ReferenceRoot.Dragged));
-            Assert.That(chop.Active.ContainsKey(ReferenceRoot.Dragged), Is.True);
-            Assert.That(codex.ObjectNames.GetName(chop.Active[ReferenceRoot.Self].Spawn.ObjectGlobalId), Is.EqualTo("logs"));
+            Assert.That(chop.Active.Adds.ContainsKey(ReferenceRoot.Dragged), Is.True);
+            Assert.That(codex.ObjectNames.GetName(chop.Active.Spawn.ObjectGlobalId), Is.EqualTo("logs"));
         }
 
         [Test]
@@ -476,8 +488,7 @@ traits:
     actions:
       eat:
         active:
-          self:
-            destroy: true
+          destroy: self
 object_defs:
   berry:
     traits: [eatable]
@@ -485,7 +496,7 @@ object_defs:
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
-            Assert.That(ActionOf(berry, "eat").Active[ReferenceRoot.Self].Destroy, Is.True);
+            Assert.That(ActionOf(berry, "eat").Active.Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
@@ -496,11 +507,11 @@ traits:
   trait_a:
     actions:
       use:
-        active: {self: {destroy: true}}
+        active: {destroy: self}
   trait_b:
     actions:
       use:
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 object_defs:
   thing:
     traits: [trait_a, trait_b]
@@ -518,8 +529,7 @@ object_defs:
     actions:
       use:
         active:
-          dragged:
-            destroy: true
+          destroy: dragged
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("dragged"));
@@ -534,8 +544,7 @@ object_defs:
     actions:
       use:
         active:
-          child:
-            destroy: true
+          destroy: child
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("child"));
@@ -550,7 +559,7 @@ object_defs:
     actions:
       use:
         showMenu: sometimes
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("showMenu"));
@@ -566,7 +575,7 @@ object_defs:
       use:
         conditions:
           - {path: world.day, op: gt, value: 0}
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("world"));
@@ -582,7 +591,7 @@ object_defs:
       use:
         conditions:
           - {path: actor.satiety, op: lt, value: max}
-        active: {self: {destroy: true}}
+        active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("max"));
@@ -596,13 +605,262 @@ object_defs:
   thing:
     actions:
       use:
-        active: {self: {destroy: true}}
+        active: {destroy: self}
         pick:
           - weight: 1
-            active: {self: {destroy: true}}
+            active: {destroy: self}
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("active"));
+        }
+
+        // ------------------------------------------------------------------
+        // accepts.object / combinations.with のトレイト参照・バリデーション
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_SlotAcceptsMatchesTraitName()
+        {
+            const string yaml = @"
+traits:
+  location: {}
+object_defs:
+  world:
+    slots:
+      locations:
+        accepts:
+          - {object: location, max: 10}
+  forest:
+    traits: [location]
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
+            SlotDef locations = SlotOf(codex, world, "locations");
+
+            Assert.That(locations.Accepts[0].With, Is.EqualTo("location"));
+
+            ObjectDef forest = codex.Objects.Get(codex.ObjectNames.GetId("forest"));
+            Assert.That(locations.Accepts[0].Matches(forest), Is.True);
+        }
+
+        [Test]
+        public void LoadFromGroups_SlotAcceptsUnknownName_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  world:
+    slots:
+      locations:
+        accepts:
+          - {object: does_not_exist, max: 10}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist"));
+        }
+
+        [Test]
+        public void LoadFromGroups_CombinationWithUnknownName_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  wood:
+    combinations:
+      chop:
+        with: does_not_exist2
+        active: {destroy: self}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist2"));
+        }
+
+        // ------------------------------------------------------------------
+        // on_overflow
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_OnOverflowWithoutRange_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        on_overflow:
+          set: {self: {minute: 0}}
+          add: {self: {hour: 1}}
+      hour:
+        value: 0
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ParsesOnOverflowAndAppliesItAtRuntime()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          set: {self: {minute: 0}}
+          add: {self: {hour: 1}}
+      hour:
+        value: 0
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
+
+            ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
+            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Sets[ReferenceRoot.Self].Count, Is.EqualTo(1));
+            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Adds[ReferenceRoot.Self].Count, Is.EqualTo(1));
+
+            var session = new WorldSession(codex);
+            var instance = new WorldObject(1, clock);
+            instance.SetProperty(codex.PropertyNames.GetId("minute"), PropertyValue.FromNumber(60)); // 手動で溢れさせる
+            instance.Tick(session); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hour")), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnOverflowWithNonSelfTarget_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {parent: {minute: -60}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_overflow"));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnOverflowOmitted_DefaultsToClampingSelfToMax()
+        {
+            // rangeだけ定義してon_overflowを省略すると、「自分自身をRange.Maxへsetする」既定の
+            // ActiveEffectが自動生成され、上限クランプとして機能する。
+            const string yaml = @"
+object_defs:
+  gauge:
+    props:
+      value:
+        value: 90
+        range: {min: 0, max: 100}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
+            Assert.That(PropOf(codex, gauge, "value").OnOverflow, Is.Not.Null);
+
+            var session = new WorldSession(codex);
+            var instance = new WorldObject(1, gauge);
+            instance.SetProperty(codex.PropertyNames.GetId("value"), PropertyValue.FromNumber(150));
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("value")), Is.EqualTo(100), "既定のon_overflowにより100へクランプされる");
+        }
+
+        // ------------------------------------------------------------------
+        // on_shortfall（on_overflowの下限側の鏡像）
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_OnShortfallWithoutRange_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        on_shortfall:
+          set: {self: {minute: 0}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnShortfallWithNonSelfTarget_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        range: {min: 0, max: 59}
+        on_shortfall:
+          add: {parent: {minute: 60}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_shortfall"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ParsesOnShortfallAndAppliesItAtRuntime()
+        {
+            // on_overflowの下限側の鏡像。addで折り返し量・繰り下げ量を一度に加減算する（on_overflowと
+            // 同じく、setより堅牢）。
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 5
+        range: {min: 0, max: 59}
+        on_shortfall:
+          add: {self: {minute: 60, hour: -1}}
+      hour:
+        value: 1
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
+
+            ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
+            Assert.That(PropOf(codex, clock, "minute").OnShortfall.Adds[ReferenceRoot.Self].Count, Is.EqualTo(2));
+
+            var session = new WorldSession(codex);
+            var instance = new WorldObject(1, clock);
+            instance.SetProperty(codex.PropertyNames.GetId("minute"), PropertyValue.FromNumber(-10)); // 手動で下回らせる
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(50));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hour")), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnShortfallOmitted_DefaultsToClampingSelfToMin()
+        {
+            const string yaml = @"
+object_defs:
+  gauge:
+    props:
+      value:
+        value: 10
+        range: {min: 0, max: 100}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
+            Assert.That(PropOf(codex, gauge, "value").OnShortfall, Is.Not.Null);
+
+            var session = new WorldSession(codex);
+            var instance = new WorldObject(1, gauge);
+            instance.SetProperty(codex.PropertyNames.GetId("value"), PropertyValue.FromNumber(-50));
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("value")), Is.EqualTo(0), "既定のon_shortfallにより0へクランプされる");
         }
     }
 }
