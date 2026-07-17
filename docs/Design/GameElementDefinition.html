@@ -204,6 +204,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 を持たないプロパティは、5
 節のルール通り空のマッピング（<code>{}</code>）として表現します。</p>
 <h2 id="propsプロパティ">6. props（プロパティ）</h2>
+<p>数値プロパティの値は <strong>32bit
+整数</strong>として扱います。小数を必要とする属性は登場しない前提であり、<code>value</code>/<code>range</code>/
+<code>modify</code>/<code>accumulate</code>/<code>add</code>
+など、数値を扱うすべての場所で整数のみを想定します。</p>
 <h3 id="固定値">6.1 固定値</h3>
 <p>最も単純な形は、<code>value</code> に固定値を 1 つ持つだけの形です（4
 節の <code>stone.props.weight</code> を参照）。</p>
@@ -264,13 +268,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="
 <span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passive</span><span class="kw">:</span></span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
 <span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> feverish</span></span>
 <span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passive</span><span class="kw">:</span></span>
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
 <span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.2</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
 <span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">hydration</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span></code></pre></div>
 <h3 id="on_zero0以下である間毎tick実行される内容">6.5
 on_zero（0以下である間、毎tick実行される内容）</h3>
