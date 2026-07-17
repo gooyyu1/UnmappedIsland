@@ -26,8 +26,15 @@ namespace UnmappedIsland.Codex.Tests
             return new WorldObject(nextInstanceId++, def);
         }
 
-        private static PropertyBlueprint Prop(string name, int defaultValue, ActiveEffectBlueprint onZero = null) =>
-            new PropertyBlueprint { Name = name, DefaultValue = PropertyValue.FromNumber(defaultValue), OnZero = onZero };
+        // on_minはRange.Minとの比較になったため、rangeが未指定なら旧on_zero相当(下限0)を暗黙に補う。
+        private static PropertyBlueprint Prop(string name, int defaultValue, ActiveEffectBlueprint onMin = null) =>
+            new PropertyBlueprint
+            {
+                Name = name,
+                DefaultValue = PropertyValue.FromNumber(defaultValue),
+                Range = onMin != null ? new PropertyRange(0, int.MaxValue) : (PropertyRange?)null,
+                OnMin = onMin,
+            };
 
         private static SlotBlueprint Slot(
             string name, bool stackable = true, int? unitCapacity = null, bool fixedPositions = false)
@@ -41,7 +48,7 @@ namespace UnmappedIsland.Codex.Tests
             };
         }
 
-        private static ActiveEffectBlueprint OnZeroSpawn(
+        private static ActiveEffectBlueprint OnMinSpawn(
             string spawnObjectName, bool destroy, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
         {
             var bp = new ActiveEffectBlueprint { Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into } };
@@ -136,7 +143,7 @@ namespace UnmappedIsland.Codex.Tests
             var d = new ObjectDefBlueprint { Name = "d_item" };
 
             var b = new ObjectDefBlueprint { Name = "b_item" };
-            b.Properties.Add(Prop("life", 0, onZero: OnZeroSpawn("d_item", destroy: true)));
+            b.Properties.Add(Prop("life", 0, onMin: OnMinSpawn("d_item", destroy: true)));
 
             var codex = WorldCodexBuilder.Build(new[] { location, a, b, c, d });
             int pileSlotId = codex.SlotNames.GetId("pile");
@@ -169,7 +176,7 @@ namespace UnmappedIsland.Codex.Tests
             var d = new ObjectDefBlueprint { Name = "d_item2" };
 
             var b = new ObjectDefBlueprint { Name = "b_item2" };
-            b.Properties.Add(Prop("life", 0, onZero: OnZeroSpawn("d_item2", destroy: true)));
+            b.Properties.Add(Prop("life", 0, onMin: OnMinSpawn("d_item2", destroy: true)));
 
             var codex = WorldCodexBuilder.Build(new[] { location, a, b, c, d });
             int pileSlotId = codex.SlotNames.GetId("pile");
@@ -187,7 +194,7 @@ namespace UnmappedIsland.Codex.Tests
             session.Containment.TryMoveToSlot(bInstance2, locInstance, pileSlotId, out _);
             session.Containment.TryMoveToSlot(cInstance, locInstance, pileSlotId, out _);
 
-            // bInstance1 は on_zero が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
+            // bInstance1 は on_min が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
             bInstance1.SetProperty(lifeId, PropertyValue.FromNumber(5));
 
             locInstance.Tick(session);
@@ -209,7 +216,7 @@ namespace UnmappedIsland.Codex.Tests
             var d = new ObjectDefBlueprint { Name = "d_item3" };
 
             var b = new ObjectDefBlueprint { Name = "b_item3" };
-            b.Properties.Add(Prop("life", 0, onZero: OnZeroSpawn("d_item3", destroy: false)));
+            b.Properties.Add(Prop("life", 0, onMin: OnMinSpawn("d_item3", destroy: false)));
 
             var codex = WorldCodexBuilder.Build(new[] { location, a, b, c, d });
             int pileSlotId = codex.SlotNames.GetId("pile");
@@ -372,7 +379,7 @@ namespace UnmappedIsland.Codex.Tests
             var rottenPotato = new ObjectDefBlueprint { Name = "rotten_potato" };
 
             var potato = new ObjectDefBlueprint { Name = "potato" };
-            potato.Properties.Add(Prop("freshness", 0, onZero: OnZeroSpawn("rotten_potato", destroy: true)));
+            potato.Properties.Add(Prop("freshness", 0, onMin: OnMinSpawn("rotten_potato", destroy: true)));
 
             var codex = WorldCodexBuilder.Build(new[] { hand, filler, potato, rottenPotato });
             int handSlotId = codex.SlotNames.GetId("hand");
@@ -407,7 +414,7 @@ namespace UnmappedIsland.Codex.Tests
             var rottenPotato = new ObjectDefBlueprint { Name = "rotten_potato2" };
 
             var potato = new ObjectDefBlueprint { Name = "potato2" };
-            potato.Properties.Add(Prop("freshness", 0, onZero: OnZeroSpawn("rotten_potato2", destroy: true)));
+            potato.Properties.Add(Prop("freshness", 0, onMin: OnMinSpawn("rotten_potato2", destroy: true)));
 
             var codex = WorldCodexBuilder.Build(new[] { hand, potato, rottenPotato });
             int handSlotId = codex.SlotNames.GetId("hand");
@@ -452,9 +459,9 @@ namespace UnmappedIsland.Codex.Tests
             var e = new ObjectDefBlueprint { Name = "type_e3" };
 
             var a = new ObjectDefBlueprint { Name = "type_a3" };
-            a.Properties.Add(Prop("spawn_c", 1, onZero: OnZeroSpawn("type_c3", destroy: false)));
-            a.Properties.Add(Prop("spawn_d", 1, onZero: OnZeroSpawn("type_d3", destroy: false)));
-            a.Properties.Add(Prop("spawn_e", 1, onZero: OnZeroSpawn("type_e3", destroy: false)));
+            a.Properties.Add(Prop("spawn_c", 1, onMin: OnMinSpawn("type_c3", destroy: false)));
+            a.Properties.Add(Prop("spawn_d", 1, onMin: OnMinSpawn("type_d3", destroy: false)));
+            a.Properties.Add(Prop("spawn_e", 1, onMin: OnMinSpawn("type_e3", destroy: false)));
 
             var codex = WorldCodexBuilder.Build(new[] { hand, location, a, b, c, d, e });
             int handSlotId = codex.SlotNames.GetId("hand");
@@ -526,7 +533,7 @@ namespace UnmappedIsland.Codex.Tests
             hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 1, fixedPositions: true));
 
             var a = new ObjectDefBlueprint { Name = "type_a4" };
-            a.Properties.Add(Prop("spawn_a", 0, onZero: OnZeroSpawn("type_a4", destroy: false)));
+            a.Properties.Add(Prop("spawn_a", 0, onMin: OnMinSpawn("type_a4", destroy: false)));
 
             var codex = WorldCodexBuilder.Build(new[] { hand, a });
             int handSlotId = codex.SlotNames.GetId("hand");
@@ -562,10 +569,10 @@ namespace UnmappedIsland.Codex.Tests
             var d = new ObjectDefBlueprint { Name = "type_d4" };
 
             var a = new ObjectDefBlueprint { Name = "type_a5" };
-            a.Properties.Add(Prop("spawn_c", 1, onZero: OnZeroSpawn("type_c4", destroy: false)));
+            a.Properties.Add(Prop("spawn_c", 1, onMin: OnMinSpawn("type_c4", destroy: false)));
 
             var b = new ObjectDefBlueprint { Name = "type_b5" };
-            b.Properties.Add(Prop("spawn_d", 1, onZero: OnZeroSpawn("type_d4", destroy: false)));
+            b.Properties.Add(Prop("spawn_d", 1, onMin: OnMinSpawn("type_d4", destroy: false)));
 
             var codex = WorldCodexBuilder.Build(new[] { hand, a, b, c, d });
             int handSlotId = codex.SlotNames.GetId("hand");
@@ -624,7 +631,7 @@ namespace UnmappedIsland.Codex.Tests
             var a = new ObjectDefBlueprint { Name = "type_a6" };
 
             var b = new ObjectDefBlueprint { Name = "type_b6" };
-            b.Properties.Add(Prop("spawn_d", 1, onZero: OnZeroSpawn("type_d5", destroy: false)));
+            b.Properties.Add(Prop("spawn_d", 1, onMin: OnMinSpawn("type_d5", destroy: false)));
 
             var codex = WorldCodexBuilder.Build(new[] { hand, a, b, c, d });
             int handSlotId = codex.SlotNames.GetId("hand");

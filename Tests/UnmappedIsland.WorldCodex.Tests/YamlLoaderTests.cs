@@ -264,7 +264,7 @@ object_defs:
         }
 
         // ------------------------------------------------------------------
-        // passive / stage / on_zero
+        // passive / stage / on_min
         // ------------------------------------------------------------------
 
         [Test]
@@ -294,7 +294,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_OnZeroWithNonSelfTarget_Throws()
+        public void LoadFromGroups_OnMinWithoutRange_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -302,15 +302,15 @@ object_defs:
     props:
       life:
         value: 0
-        on_zero:
-          destroy: parent
+        on_min:
+          destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_zero"));
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
         }
 
         [Test]
-        public void LoadFromGroups_OnZeroSelf_ParsesDestroyAndSpawn()
+        public void LoadFromGroups_OnMinWithNonSelfTarget_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -318,7 +318,25 @@ object_defs:
     props:
       life:
         value: 0
-        on_zero:
+        range: {min: 0, max: 100}
+        on_min:
+          destroy: parent
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_min"));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnMinSelf_ParsesDestroyAndSpawn()
+        {
+            const string yaml = @"
+object_defs:
+  log:
+    props:
+      life:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
           destroy: self
           spawn:
             object: ash
@@ -328,13 +346,13 @@ object_defs:
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
-            ActiveEffect onZero = PropOf(codex, log, "life").OnZero;
+            ActiveEffect onMin = PropOf(codex, log, "life").OnMin;
 
-            Assert.That(onZero, Is.Not.Null);
-            Assert.That(onZero.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(onZero.Spawn, Is.Not.Null);
-            Assert.That(onZero.Spawn.Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
-            Assert.That(codex.ObjectNames.GetName(onZero.Spawn.ObjectGlobalId), Is.EqualTo("ash"));
+            Assert.That(onMin, Is.Not.Null);
+            Assert.That(onMin.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(onMin.Spawn, Is.Not.Null);
+            Assert.That(onMin.Spawn.Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
+            Assert.That(codex.ObjectNames.GetName(onMin.Spawn.ObjectGlobalId), Is.EqualTo("ash"));
         }
 
         // ------------------------------------------------------------------
@@ -725,6 +743,124 @@ object_defs:
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_overflow"));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnOverflowOmitted_DefaultsToClampingSelfToMax()
+        {
+            // rangeだけ定義してon_overflowを省略すると、「自分自身をRange.Maxへsetする」既定の
+            // ActiveEffectが自動生成され、上限クランプとして機能する。
+            const string yaml = @"
+object_defs:
+  gauge:
+    props:
+      value:
+        value: 90
+        range: {min: 0, max: 100}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
+            Assert.That(PropOf(codex, gauge, "value").OnOverflow, Is.Not.Null);
+
+            var session = new WorldSession(codex);
+            var instance = new WorldObject(1, gauge);
+            instance.SetProperty(codex.PropertyNames.GetId("value"), PropertyValue.FromNumber(150));
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("value")), Is.EqualTo(100), "既定のon_overflowにより100へクランプされる");
+        }
+
+        // ------------------------------------------------------------------
+        // on_shortfall（on_overflowの下限側の鏡像）
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_OnShortfallWithoutRange_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        on_shortfall:
+          set: {self: {minute: 0}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnShortfallWithNonSelfTarget_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        range: {min: 0, max: 59}
+        on_shortfall:
+          add: {parent: {minute: 60}}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_shortfall"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ParsesOnShortfallAndAppliesItAtRuntime()
+        {
+            // on_overflowの下限側の鏡像。addで折り返し量・繰り下げ量を一度に加減算する（on_overflowと
+            // 同じく、setより堅牢）。
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 5
+        range: {min: 0, max: 59}
+        on_shortfall:
+          add: {self: {minute: 60, hour: -1}}
+      hour:
+        value: 1
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
+
+            ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
+            Assert.That(PropOf(codex, clock, "minute").OnShortfall.Adds[ReferenceRoot.Self].Count, Is.EqualTo(2));
+
+            var session = new WorldSession(codex);
+            var instance = new WorldObject(1, clock);
+            instance.SetProperty(codex.PropertyNames.GetId("minute"), PropertyValue.FromNumber(-10)); // 手動で下回らせる
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(50));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hour")), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnShortfallOmitted_DefaultsToClampingSelfToMin()
+        {
+            const string yaml = @"
+object_defs:
+  gauge:
+    props:
+      value:
+        value: 10
+        range: {min: 0, max: 100}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
+            Assert.That(PropOf(codex, gauge, "value").OnShortfall, Is.Not.Null);
+
+            var session = new WorldSession(codex);
+            var instance = new WorldObject(1, gauge);
+            instance.SetProperty(codex.PropertyNames.GetId("value"), PropertyValue.FromNumber(-50));
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("value")), Is.EqualTo(0), "既定のon_shortfallにより0へクランプされる");
         }
     }
 }

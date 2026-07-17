@@ -6,8 +6,8 @@ using UnmappedIsland.Runtime;
 namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
-    /// on_overflow（GameElementDefinition.md 6.3節: rangeの上限を超えたプロパティについて、on_zeroと全く
-    /// 同じActiveEffect・ApplyActiveEffectの経路で、著者が指定したaccumulateを一度だけ適用する）に対する
+    /// on_overflow（GameElementDefinition.md 6.3節: rangeの上限を超えたプロパティについて、on_minと全く
+    /// 同じActiveEffect・ApplyActiveEffectの経路で、著者が指定したadd/setを一度だけ適用する）に対する
     /// 自動テスト。ループ・多重走査は行わないため、1tickでの解決範囲はaccumulateの通常の反映と同じ
     /// （宣言順に1回ずつ）。YAMLパーサ経由のテストはYamlLoaderTests.csを参照。
     /// </summary>
@@ -223,7 +223,7 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_SilentlyIgnoresOverflowDeltaForPropertyNotOwnedByThisObjectDef()
         {
-            // on_zeroのadd（WorldObject.AddNumber）と同じ規約: このobject_defが持たないプロパティへの
+            // on_minのadd（WorldObject.AddNumber）と同じ規約: このobject_defが持たないプロパティへの
             // 加算は、たとえ同名のプロパティを別のobject_defが持っていて名前自体は登録されていても、
             // 黙って無視される（エラーにしない）。
             var a = new ObjectDefBlueprint { Name = "a_clock2" };

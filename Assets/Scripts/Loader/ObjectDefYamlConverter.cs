@@ -11,7 +11,8 @@ namespace UnmappedIsland.Loader
     /// ObjectDefBlueprintを組み立てる。GameElementDefinition.md 6〜7節・7.6節に対応する。
     ///
     /// 未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）:
-    /// traits/actions/combinations/recipes/covers/layer、passiveのactor対象、on_zeroのself以外の対象。
+    /// traits/actions/combinations/recipes/covers/layer、passiveのactor対象、on_min/on_overflow/on_shortfall
+    /// のself以外の対象。
     /// </summary>
     internal static class ObjectDefYamlConverter
     {
@@ -93,6 +94,15 @@ namespace UnmappedIsland.Loader
                 bp.OnOverflow = ParseActiveEffectBody($"{context}.on_overflow", onOverflowNode, allowDragged: false, selfOnly: true);
             }
 
+            YamlMappingNode onShortfallNode = node.TryGetMapping("on_shortfall", context);
+            if (onShortfallNode != null)
+            {
+                if (bp.Range == null)
+                    throw new YamlLoadException($"{context}: on_shortfallを使うには'range'が必須です。");
+
+                bp.OnShortfall = ParseActiveEffectBody($"{context}.on_shortfall", onShortfallNode, allowDragged: false, selfOnly: true);
+            }
+
             YamlSequenceNode stages = node.TryGetSequence("stages", context);
             if (stages != null)
             {
@@ -114,9 +124,14 @@ namespace UnmappedIsland.Loader
             if (propPassive != null)
                 ParsePassiveMapInto(owner.Contributions, objectDefName, propPassive, forcedGate: null, forcedStageProperty: null, forcedStageName: null);
 
-            YamlMappingNode onZero = node.TryGetMapping("on_zero", context);
-            if (onZero != null)
-                bp.OnZero = ParseActiveEffectBody($"{context}.on_zero", onZero, allowDragged: false, selfOnly: true);
+            YamlMappingNode onMin = node.TryGetMapping("on_min", context);
+            if (onMin != null)
+            {
+                if (bp.Range == null)
+                    throw new YamlLoadException($"{context}: on_minを使うには'range'が必須です。");
+
+                bp.OnMin = ParseActiveEffectBody($"{context}.on_min", onMin, allowDragged: false, selfOnly: true);
+            }
 
             return bp;
         }
@@ -130,9 +145,9 @@ namespace UnmappedIsland.Loader
 
         /// <summary>
         /// active内容（9節: set/add/destroy/spawn）を読む。文法は「操作(set/add)が上位、対象
-        /// (self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。on_zero・on_overflow
-        /// （6節、selfOnly: true）、actions/combinations/pickのactive（selfOnly: false）のすべてから
-        /// 共通で使う。
+        /// (self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。on_min・on_overflow・
+        /// on_shortfall（6節、selfOnly: true）、actions/combinations/pickのactive（selfOnly: false）の
+        /// すべてから共通で使う。
         ///
         /// destroyは削除対象を直接指す（`destroy: self`、または複数対象なら`destroy: [self, dragged]`）。
         /// spawnは常にselfが実行するものとみなすため対象キーを持たない（対象別のラップを挟まない）。
@@ -191,7 +206,7 @@ namespace UnmappedIsland.Loader
         /// set/add/destroyの対象キー（self/parent/actor、combinations内はdraggedも）を解決する。childは、
         /// 一度きりの命令に対して「どの子か」の意味がまだ確定していないため未対応（passiveのchild寄与とは
         /// 異なり、activeのchildには関係とゲートに基づく登録の仕組みが無いため、対象を一意に絞る規約が無い）。
-        /// selfOnlyの場合（on_zero・on_overflow）はself以外を一律エラーにする。
+        /// selfOnlyの場合（on_min・on_overflow・on_shortfall）はself以外を一律エラーにする。
         /// </summary>
         private static ReferenceRoot ParseActiveTargetKey(string context, string key, bool allowDragged, bool selfOnly)
         {

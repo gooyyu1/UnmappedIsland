@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace UnmappedIsland.Codex
 {
     /// <summary>
-    /// 一時的な命令の内容（`set`/`add`/`destroy`/`spawn`、9節）。on_zero・on_overflow（6節）、
+    /// 一時的な命令の内容（`set`/`add`/`destroy`/`spawn`、9節）。on_min・on_overflow・on_shortfall（6節）、
     /// actions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。
     ///
     /// 文法は「操作が上位、対象(self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。
@@ -12,7 +12,7 @@ namespace UnmappedIsland.Codex
     /// みなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、
     /// 実行者＝selfとは別の概念）。
     ///
-    /// on_zero/on_overflowはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。
+    /// on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。
     /// </summary>
     public sealed class ActiveEffect
     {
@@ -73,8 +73,8 @@ namespace UnmappedIsland.Codex
     /// 自然に振り分けられるため、著者がスロット名を知っている必要がない）。
     ///
     /// fallback はYAML上に存在しない。配置に失敗した場合は必ず、解決した起点自身の親へ伝播する
-    /// （WorldObject.Place参照）。Actor はアクション実行文脈でのみ解決できる。on_zero/on_overflowには
-    /// actorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。
+    /// （WorldObject.Place参照）。Actor はアクション実行文脈でのみ解決できる。on_min/on_overflow/
+    /// on_shortfallにはactorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。
     /// </summary>
     public enum SpawnTargetRoot
     {

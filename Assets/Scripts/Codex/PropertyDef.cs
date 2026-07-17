@@ -58,25 +58,40 @@ namespace UnmappedIsland.Codex
         /// <summary>value: {min, max} による毎tick再ロール（6.2節）。使わない場合は null。</summary>
         public PropertyRange? RerollRange { get; }
 
-        /// <summary>取りうる値域（6.3節）。on_overflowを使う場合は必須。使わない場合は null。</summary>
+        /// <summary>取りうる値域（6.3節）。on_overflow/on_shortfall/on_minを使う場合は必須。使わない場合は null。</summary>
         public PropertyRange? Range { get; }
 
         /// <summary>
-        /// on_overflow（6.3節）: 値がRange.Maxを超えた際に、selfへ一度だけ適用するactive内容。on_zero
-        /// と全く同じ型（ActiveEffect）をそのまま流用し、適用もWorldObject.ApplyActiveEffectをそのまま
-        /// 呼ぶだけで済ませる（オーバーフロー専用の適用ロジックはWorldObject側に一切持たない）。
-        /// null ならon_overflowを持たない。対象プロパティ（Adds）は自分自身（折り返し）でも、
-        /// 他のプロパティ（繰り上げ先）でも構わない。
+        /// on_overflow（6.3節）: 値がRange.Maxを超えた際に、selfへ一度だけ適用するactive内容。ActiveEffectを
+        /// そのまま流用し、適用もWorldObject.ApplyActiveEffectをそのまま呼ぶだけで済ませる（オーバーフロー
+        /// 専用の適用ロジックはWorldObject側に一切持たない）。対象プロパティ（Adds/Sets）は自分自身
+        /// （折り返し）でも、他のプロパティ（繰り上げ先）でも構わない。
+        ///
+        /// Rangeが定義されていて著者が明示的にon_overflowを書かなかった場合、ここには「自分自身をRange.Max
+        /// へsetする」という既定のActiveEffectがビルド時に自動生成されて入る（ObjectDefBuilder参照）。
+        /// これにより、著者はレンジ型プロパティの上限クランプを、on_overflowを書かずに`range`を書くだけで
+        /// 実現できる。Range自体が未定義の場合のみnull（上限の仕組み自体を持たない）。
         /// </summary>
         public ActiveEffect OnOverflow { get; }
+
+        /// <summary>
+        /// on_shortfall（6.3節）: on_overflowの下限側の鏡像。値がRange.Minを下回った際に、selfへ一度だけ
+        /// 適用するactive内容。Rangeが定義されていて著者が明示的にon_shortfallを書かなかった場合、
+        /// 「自分自身をRange.Minへsetする」という既定のActiveEffectがビルド時に自動生成される
+        /// （ObjectDefBuilder参照）。Range自体が未定義の場合のみnull。
+        /// </summary>
+        public ActiveEffect OnShortfall { get; }
 
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
 
         /// <summary>
-        /// on_zero（6.5節）。値が0以下である間、毎tick実行されるactive内容。null なら on_zero を持たない。
+        /// on_min（6.5節、旧on_zero）。値がRange.Min以下である間、毎tick実行されるactive内容。0ではなく
+        /// Range.Minとの比較に一般化したもの（destroyのような「底を突いた」判定を、0以外の下限を持つ
+        /// プロパティにも使えるようにする）。on_overflow/on_shortfallとは異なり、著者が明示的に書かない
+        /// 限り既定の自動生成は行わない（null なら on_min を持たない）。Rangeが必須。
         /// </summary>
-        public ActiveEffect OnZero { get; }
+        public ActiveEffect OnMin { get; }
 
         public PropertyDef(
             int globalId,
@@ -86,7 +101,8 @@ namespace UnmappedIsland.Codex
             PropertyRange? range,
             ActiveEffect onOverflow,
             IReadOnlyList<PropertyStage> stages,
-            ActiveEffect onZero = null)
+            ActiveEffect onMin = null,
+            ActiveEffect onShortfall = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -95,7 +111,8 @@ namespace UnmappedIsland.Codex
             Range = range;
             OnOverflow = onOverflow;
             Stages = stages;
-            OnZero = onZero;
+            OnMin = onMin;
+            OnShortfall = onShortfall;
         }
 
         /// <summary>

@@ -91,8 +91,8 @@ namespace UnmappedIsland.Runtime
 
         /// <summary>
         /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、その結果自分の値が変わった
-        /// タイミングで、on_overflow（6.3節）・on_zero（6.5節）を自分自身で判定・実行する
-        /// （CheckOverflowAndZero参照）。ゲームループから1tickにつき1回、WorldObject.Tick経由で
+        /// タイミングで、on_overflow・on_shortfall・on_min（6.3節・6.5節）を自分自身で判定・実行する
+        /// （CheckRangeEvents参照）。ゲームループから1tickにつき1回、WorldObject.Tick経由で
         /// 全プロパティに対して呼ばれる想定。
         /// </summary>
         internal void Tick(PropertyDef def, WorldObject owner, WorldSession session)
@@ -104,28 +104,39 @@ namespace UnmappedIsland.Runtime
                 Number += c.Def.Amount;
             }
 
-            CheckOverflowAndZero(def, owner, session);
+            CheckRangeEvents(def, owner, session);
         }
 
         /// <summary>
-        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_zeroの自己判定。いずれもWorldObject.
-        /// ApplyActiveEffect（on_zero・actions/combinationsと全く同じ適用経路）をそのまま呼ぶだけで、
-        /// overflow専用の適用ロジックは一切持たない。
+        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_shortfall・on_minの自己判定。いずれもWorldObject.
+        /// ApplyActiveEffect（actions/combinationsと全く同じ適用経路）をそのまま呼ぶだけで、専用の適用
+        /// ロジックは一切持たない。
         ///
-        /// on_overflowは、rangeの上限を超えていれば、著者が指定した内容（自分自身への折り返し・他の
-        /// プロパティへの繰り上げの両方を1つのaccumulateとして書く）を1回だけ適用する。ループはしない
-        /// ため、1tickで複数span分溢れた場合や、繰り上げ先自身がさらに溢れる場合（分→時→日の連鎖）は、
-        /// このプロパティ・繰り上げ先プロパティが宣言順に「後で」Tickされる限り同じtick内で連鎖するが、
-        /// そうでなければ次tick以降に持ち越される（accumulateの通常の反映と同じく、宣言順どおりに
-        /// 1回ずつ処理が進む）。
+        /// 判定順はon_overflow→on_shortfall→on_min。on_overflow/on_shortfallでrangeの境界へ値を戻して
+        /// から、その戻した後の値でon_minの「下限以下か」を判定するため、この順序が必要（例えば
+        /// on_shortfallが自分をRange.Minへ戻した場合、続くon_minの判定はその戻り値に対して行われる）。
+        ///
+        /// on_overflow/on_shortfallは、rangeの外側にはみ出していれば、著者が指定した内容（未指定なら
+        /// ビルド時に合成された既定のset、ObjectDefBuilder.BuildOverflowSideEffect参照）を1回だけ適用する。
+        /// ループはしないため、1tickで複数span分はみ出した場合や、繰り上げ先自身がさらにはみ出す場合
+        /// （分→時→日の連鎖）は、このプロパティ・繰り上げ先プロパティが宣言順に「後で」Tickされる限り
+        /// 同じtick内で連鎖するが、そうでなければ次tick以降に持ち越される（accumulateの通常の反映と
+        /// 同じく、宣言順どおりに1回ずつ処理が進む）。
+        ///
+        /// on_minは、値がrangeの下限以下である間、毎tick著者が指定した内容を実行する（destroyのような
+        /// 「底を突いた」判定に使う）。on_overflow/on_shortfallとは異なり既定の自動生成は行われない
+        /// （nullなら何もしない）。
         /// </summary>
-        internal void CheckOverflowAndZero(PropertyDef def, WorldObject owner, WorldSession session)
+        internal void CheckRangeEvents(PropertyDef def, WorldObject owner, WorldSession session)
         {
             if (def.OnOverflow != null && def.Range.HasValue && AsNumber() > def.Range.Value.Max)
                 owner.ApplyActiveEffect(def.OnOverflow, session, actor: null, dragged: null);
 
-            if (def.OnZero != null && AsNumber() <= 0)
-                owner.ApplyActiveEffect(def.OnZero, session, actor: null, dragged: null);
+            if (def.OnShortfall != null && def.Range.HasValue && AsNumber() < def.Range.Value.Min)
+                owner.ApplyActiveEffect(def.OnShortfall, session, actor: null, dragged: null);
+
+            if (def.OnMin != null && def.Range.HasValue && AsNumber() <= def.Range.Value.Min)
+                owner.ApplyActiveEffect(def.OnMin, session, actor: null, dragged: null);
         }
 
         public override string ToString() => Kind == PropertyValueKind.Number ? Number.ToString() : $"symbol:{Symbol}";

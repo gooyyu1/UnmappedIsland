@@ -19,7 +19,7 @@
 - **スキーマ自体の妥当性**: `jsonschema` ライブラリの `Draft202012Validator.check_schema` により、Draft 2020-12として
   構文的に正しいスキーマであることを確認
 - **既存サンプルの受理**: 各ドキュメントに掲載されている実際のYAMLサンプル（`eat`/`move` アクション、`world` シングルトン、
-  防具・耐久値（`passive`の`accumulate`＋`on_zero`の`destroy`）・細菌感染、`traits`、`combinations` の `chop`
+  防具・耐久値（`passive`の`accumulate`＋`on_min`の`destroy`）・細菌感染、`traits`、`combinations` の `chop`
   （`active` の `spawn`＋`destroy`）、`pick` を使った攻撃・生水・探索、レシピ、`slots` の `accepts`/`capacity`/`weight_rate`）を
   抽出し、すべてスキーマを満たすことを確認
 - **不正な記述の拒否**: `active` と `pick` を同時に指定する、identifier の命名規則に反するキーを使う、未定義の
@@ -33,7 +33,7 @@
 
 - ルート構造（`object_defs`/`traits`、専用ルートキーなし）
 - `object_defs`/`traits`（3〜5節）
-- `props`（固定値・範囲値・overflow・stages・`on_zero`、6節）
+- `props`（固定値・範囲値・overflow/shortfall・stages・`on_min`、6節）
 - `passive`（対象をキーとする辞書、`when`、`modify`/`accumulate`、8節）
 - `active`（対象をキーとする辞書、`add`/`destroy`/`spawn`、9節）
 - `pick`（重み付き確率分岐、`active` の代替キー、10節）

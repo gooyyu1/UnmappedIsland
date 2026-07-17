@@ -103,19 +103,24 @@ namespace UnmappedIsland.Codex
         public PropertyRange? RerollRange;
         public PropertyRange? Range;
 
-        /// <summary>on_overflow（6.3節）: Range.Maxを超えた際にselfへ一度だけ適用するactive内容
-        /// （on_zeroのActiveEffectBlueprintと全く同じ型をそのまま流用する）。null ならon_overflowを持たない。</summary>
+        /// <summary>on_overflow（6.3節）: Range.Maxを超えた際にselfへ一度だけ適用するactive内容。著者が
+        /// 明示的に書かなかった場合、nullのままにしておく（Rangeがあれば、ビルド時にBuildOverflowSideEffect
+        /// が既定のset効果を合成する）。</summary>
         public ActiveEffectBlueprint OnOverflow;
+
+        /// <summary>on_shortfall（6.3節）: on_overflowの下限側の鏡像。Range.Minを下回った際にselfへ
+        /// 一度だけ適用するactive内容。OnOverflowと同じ既定合成の扱いを受ける。</summary>
+        public ActiveEffectBlueprint OnShortfall;
 
         public readonly List<StageBlueprint> Stages = new List<StageBlueprint>();
 
-        /// <summary>on_zero（6.5節）。null なら持たない。</summary>
-        public ActiveEffectBlueprint OnZero;
+        /// <summary>on_min（6.5節、旧on_zero）。null なら持たない。既定の自動生成はしない。</summary>
+        public ActiveEffectBlueprint OnMin;
     }
 
     /// <summary>
-    /// active内容（`set`/`add`/`destroy`/`spawn`、9節）のブループリント版。on_zero・on_overflow（6節）と
-    /// actions/combinations/pickのactive（11・12・10節）のすべてがこの1つの型を共用する。
+    /// active内容（`set`/`add`/`destroy`/`spawn`、9節）のブループリント版。on_min・on_overflow・
+    /// on_shortfall（6節）とactions/combinations/pickのactive（11・12・10節）のすべてがこの1つの型を共用する。
     /// 文法は「操作(set/add)が上位、対象(self/parent/actor/dragged)が下位」。destroyは削除対象を
     /// 直接列挙するリスト、spawnは常にselfが実行するため対象キーを持たない。
     /// </summary>
@@ -218,7 +223,8 @@ namespace UnmappedIsland.Codex
                 {
                     propertyNames.Intern(p.Name);
                     InternActiveEffect(p.OnOverflow, propertyNames, objectNames);
-                    InternActiveEffect(p.OnZero, propertyNames, objectNames);
+                    InternActiveEffect(p.OnShortfall, propertyNames, objectNames);
+                    InternActiveEffect(p.OnMin, propertyNames, objectNames);
                 }
                 if (bp.StackOrder != null) propertyNames.Intern(bp.StackOrder.PropertyName);
                 foreach (var s in bp.Slots) slotNames.Intern(s.Name);
@@ -288,13 +294,17 @@ namespace UnmappedIsland.Codex
             {
                 var p = bp.Properties[local];
 
-                ActiveEffect onOverflow = p.OnOverflow != null ? BuildActiveEffect(p.OnOverflow, propertyNames, objectNames) : null;
-                ActiveEffect onZero = p.OnZero != null ? BuildActiveEffect(p.OnZero, propertyNames, objectNames) : null;
+                ActiveEffect onOverflow = BuildOverflowSideEffect(
+                    p.OnOverflow, p.Range, propertyGlobalIds[local], isMax: true, propertyNames, objectNames);
+                ActiveEffect onShortfall = BuildOverflowSideEffect(
+                    p.OnShortfall, p.Range, propertyGlobalIds[local], isMax: false, propertyNames, objectNames);
+                ActiveEffect onMin = p.OnMin != null ? BuildActiveEffect(p.OnMin, propertyNames, objectNames) : null;
 
                 var stages = p.Stages.Select(s => new PropertyStage(s.Name, s.Min)).ToList();
 
                 propertyDefs[local] = new PropertyDef(
-                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, onOverflow, stages, onZero);
+                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, onOverflow, stages,
+                    onMin, onShortfall);
             }
 
             var slotGlobalIds = bp.Slots.Select(s => slotNames.GetId(s.Name)).ToList();
@@ -372,6 +382,32 @@ namespace UnmappedIsland.Codex
                 : null;
 
             return new ActiveEffect(sets, adds, body.Destroy, spawn);
+        }
+
+        /// <summary>
+        /// on_overflow/on_shortfallを組み立てる。著者が明示的に書いていればそれをそのまま使う。書いて
+        /// おらず、かつRangeが定義されている場合は、「自分自身をRangeの境界（isMax指定側）へsetする」という
+        /// 既定のActiveEffectを合成する。これにより、著者はレンジ型プロパティのクランプを`range`を書くだけで
+        /// 実現でき、繰り上げ等の特別な挙動が要る場合だけon_overflow/on_shortfallを明示すればよい。
+        /// Rangeが未定義ならnull（上限/下限の仕組み自体を持たない）。
+        /// </summary>
+        private static ActiveEffect BuildOverflowSideEffect(
+            ActiveEffectBlueprint body, PropertyRange? range, int propertyGlobalId, bool isMax,
+            NameRegistry propertyNames, NameRegistry objectNames)
+        {
+            if (body != null) return BuildActiveEffect(body, propertyNames, objectNames);
+            if (!range.HasValue) return null;
+
+            var sets = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>
+            {
+                [ReferenceRoot.Self] = new List<PropertyAssignment>
+                {
+                    new PropertyAssignment(propertyGlobalId, isMax ? range.Value.Max : range.Value.Min),
+                },
+            };
+            var adds = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
+
+            return new ActiveEffect(sets, adds, System.Array.Empty<ReferenceRoot>(), spawn: null);
         }
 
         private static IReadOnlyList<PickCandidateDef> BuildPickList(

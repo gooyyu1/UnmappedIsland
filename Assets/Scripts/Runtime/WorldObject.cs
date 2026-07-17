@@ -146,17 +146,17 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、on_overflow（6.3節）・
-        /// on_zero（6.5節）の判定・実行までを、プロパティごとに自分自身で完結させる（PropertyValue.Tick
-        /// 参照。いつ・どのプロパティが溢れた／0になったかの判断はすべてそちらにあり、WorldObjectは
-        /// 既存のApplyActiveEffect（on_zeroと全く同じ適用経路）を提供するだけで、overflow専用の処理は
-        /// 一切持たない）。自分自身の処理の後、子（すべてのスロットの中身）へ再帰する。すべてのオブジェクトは
-        /// 必ずworldの下にぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は持たない」という
-        /// 前提）、worldに対して1回 Tick を呼ぶだけでツリー全体が処理される。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、on_overflow・on_shortfall
+        /// （6.3節）・on_min（6.5節）の判定・実行までを、プロパティごとに自分自身で完結させる
+        /// （PropertyValue.Tick参照。いつ・どのプロパティが範囲外になったかの判断はすべてそちらにあり、
+        /// WorldObjectは既存のApplyActiveEffect（すべて同じ適用経路）を提供するだけで、overflow専用の
+        /// 処理は一切持たない）。自分自身の処理の後、子（すべてのスロットの中身）へ再帰する。すべての
+        /// オブジェクトは必ずworldの下にぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は
+        /// 持たない」という前提）、worldに対して1回 Tick を呼ぶだけでツリー全体が処理される。
         ///
-        /// on_zero/on_overflowのdestroy/spawnは、この処理の最中に自分自身や兄弟をツリーから切り離しうる。
-        /// 各スロットの中身は列挙前にスナップショットを取ることで、列挙中に自分自身や兄弟がdestroyされても
-        /// 安全なようにしている。
+        /// on_min/on_overflow/on_shortfallのdestroy/spawnは、この処理の最中に自分自身や兄弟をツリーから
+        /// 切り離しうる。各スロットの中身は列挙前にスナップショットを取ることで、列挙中に自分自身や兄弟が
+        /// destroyされても安全なようにしている。
         /// </summary>
         public void Tick(WorldSession session)
         {
@@ -170,8 +170,9 @@ namespace UnmappedIsland.Runtime
 
         /// <summary>
         /// このオブジェクトをself(このインスタンス自身)として、set/add/destroy/spawnを実行する（9.2〜9.4節）。
-        /// on_zero・on_overflow（6節）と、actions/combinations（11節・12節）のactive/pickが解決した結果の
-        /// 両方から呼ばれる（on_zero/on_overflow経由の場合、actor/draggedは存在しないためnull）。
+        /// on_min・on_overflow・on_shortfall（6節）と、actions/combinations（11節・12節）のactive/pickが
+        /// 解決した結果の両方から呼ばれる（on_min/on_overflow/on_shortfall経由の場合、actor/draggedは
+        /// 存在しないためnull）。
         ///
         /// selfは常にこのインスタンス自身、parentはthis.Parent、actor/draggedは呼び出し側から渡された
         /// ものとして解決する（対象ごとのWorldObject解決はこのメソッドに閉じる）。対象が解決できない
