@@ -52,15 +52,7 @@ namespace UnmappedIsland.Codex.Runtime
                 }
             }
 
-            WorldObject oldParent = obj.Parent;
-            int oldParentSlotLocalId = obj.ParentSlotLocalId;
-
-            if (oldParent != null)
-            {
-                oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(obj);
-                PropagateWeight(oldParent, oldParentSlotLocalId, -obj.GetNumber(wellKnown.WeightId));
-                UnregisterEdge(oldParent, obj);
-            }
+            DetachFromParent(obj);
 
             targetSlot.AddInternal(obj);
             obj.SetParent(newParent, localSlot);
@@ -69,6 +61,26 @@ namespace UnmappedIsland.Codex.Runtime
 
             error = null;
             return true;
+        }
+
+        /// <summary>
+        /// 対象オブジェクトを、現在の親から切り離す（destroy、9.3節）。切り離された時点で
+        /// worldツリーから到達不能になり、Tick/PostTickの対象からも自然に外れる（世界に存在する＝
+        /// worldの下にぶら下がっている、という前提のため、別途「存在するオブジェクト一覧」は持たない）。
+        /// 既に親を持たない場合は何もしない（destroyは繰り返し実行しても安全、6.5節）。
+        /// </summary>
+        public void Destroy(WorldObject obj) => DetachFromParent(obj);
+
+        private void DetachFromParent(WorldObject obj)
+        {
+            WorldObject oldParent = obj.Parent;
+            if (oldParent == null) return;
+
+            int oldParentSlotLocalId = obj.ParentSlotLocalId;
+            oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(obj);
+            PropagateWeight(oldParent, oldParentSlotLocalId, -obj.GetNumber(wellKnown.WeightId));
+            UnregisterEdge(oldParent, obj);
+            obj.SetParent(null, LocalIndexMap.Missing);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnmappedIsland.Codex.Defs;
 using UnmappedIsland.Codex.Registry;
 
@@ -134,18 +135,65 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。ゲームループから
-        /// 1tickにつき1回、生存している全WorldObjectに対して呼ばれる想定。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。自分自身のプロパティに
+        /// 適用した後、子（すべてのスロットの中身）へ再帰する。すべてのオブジェクトは必ずworldの下に
+        /// ぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は持たない」という前提）、
+        /// worldに対して1回 Tick を呼ぶだけでツリー全体のaccumulateが実行される。
         ///
-        /// on_zero（6.5節）はここでは検出しない。「プロパティが0以下である間、毎回実行されるactive内容」という
-        /// 前提を置いたことで、履歴（前tickは正だったか）を持つ必要がなくなった。`Def.PropertyDefs[local].HasOnZero`
-        /// と現在値（0以下か）を都度チェックするだけで済み、将来のアクション実行系がこの2つの既存情報だけを見て
-        /// 判定できる（destroyは繰り返し実行されても安全であり、spawnは通常同じ本体内のdestroyとの組み合わせで
-        /// 自己終端するため、履歴管理なしでも安全に運用できる）。
+        /// destroy/spawnはここでは行わない（PostTick参照）。Tick中はツリー構造を変更しないため、
+        /// 子の列挙にスナップショットは不要。
         /// </summary>
         public void Tick()
         {
             foreach (var p in properties) p.Tick();
+
+            foreach (var slot in slots)
+                foreach (var child in slot.Contents)
+                    child.Tick();
+        }
+
+        /// <summary>
+        /// on_zero（6.5節）が発火条件を満たすプロパティがあれば、そのadd/destroy/spawnを実行する。
+        /// Tickとは別の、時間経過後の「値によるイベント処理」のパスとして分離しており（PropertyValue.PostTick
+        /// 参照）、accumulateの結果がすべて確定してから存在操作を行う。自分自身の判定・実行の後、子へ
+        /// 再帰する。
+        ///
+        /// destroy/spawnはこの再帰中にツリー構造（スロットの中身）を変更しうるため、各スロットの中身は
+        /// 列挙前にスナップショットを取る（列挙中に自分自身や兄弟がdestroyされても安全なようにするため）。
+        /// </summary>
+        public void PostTick(WorldSession session)
+        {
+            for (int local = 0; local < properties.Length; local++)
+            {
+                ActiveEffect effect = properties[local].PostTick(Def.PropertyDefs[local].OnZero);
+                if (effect != null) ExecuteOnZeroEffect(effect, session);
+            }
+
+            foreach (var slot in slots)
+                foreach (var child in slot.Contents.ToArray())
+                    child.PostTick(session);
+        }
+
+        /// <summary>
+        /// on_zeroのadd/destroy/spawnを実行する。spawnをdestroyより先に行うのは、spawnのintoが
+        /// parentを参照できる必要があり、destroy後は自分のParentがnullになってしまうため。
+        /// </summary>
+        private void ExecuteOnZeroEffect(ActiveEffect effect, WorldSession session)
+        {
+            foreach (var delta in effect.Adds)
+                AddNumber(delta.PropertyGlobalId, delta.Amount);
+
+            if (effect.Spawn != null)
+            {
+                WorldObject into = effect.Spawn.IntoRoot == SpawnIntoRoot.Self ? this : Parent;
+                if (into != null)
+                {
+                    WorldObject spawned = session.Spawn(effect.Spawn.ObjectGlobalId);
+                    session.Containment.TryMoveToSlot(spawned, into, effect.Spawn.IntoSlotGlobalId, out _);
+                }
+            }
+
+            if (effect.Destroy) session.Containment.Destroy(this);
         }
 
         /// <summary>

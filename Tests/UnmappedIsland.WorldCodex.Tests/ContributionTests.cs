@@ -28,14 +28,25 @@ namespace UnmappedIsland.Codex.Tests
             return new WorldObject(nextInstanceId++, def);
         }
 
-        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, bool hasOnZero = false)
+        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, ActiveEffectBlueprint onZero = null)
         {
             return new PropertyBlueprint
             {
                 Name = name,
                 DefaultValue = PropertyValue.FromNumber(defaultValue),
                 Range = range,
-                HasOnZero = hasOnZero,
+                OnZero = onZero,
+            };
+        }
+
+        private static ActiveEffectBlueprint OnZeroDestroy() => new ActiveEffectBlueprint { Destroy = true };
+
+        private static ActiveEffectBlueprint OnZeroSpawnAndDestroy(string spawnObjectName, SpawnIntoRoot into, string intoSlotName)
+        {
+            return new ActiveEffectBlueprint
+            {
+                Destroy = true,
+                Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, IntoRoot = into, IntoSlotName = intoSlotName },
             };
         }
 
@@ -464,18 +475,18 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         // ------------------------------------------------------------------
-        // on_zero: 「プロパティが0以下である間、毎回実行されるactive内容」という前提を置いたため、
-        // WorldObject側は履歴(前tickは正だったか等)を一切持たない。HasOnZeroは静的なフラグとして
-        // ObjectDefBuilderを通って正しくPropertyDefへ伝わることだけを確認する（実際の発火・destroy/spawn実行は
-        // まだ実装されていない将来のアクション実行系の役割）。
+        // on_zero / destroy / spawn: 「プロパティが0以下である間、毎回実行されるactive内容」を
+        // PostTick（Tickとは別の、値によるイベント処理のパス）が実行する。すべてのオブジェクトは
+        // 必ずworldの下にぶら下がるため、別途「世界に存在するすべてのオブジェクト」一覧は持たず、
+        // destroyは親スロットからの切り離し、spawnは生成+move_to_slotとして表現する。
         // ------------------------------------------------------------------
 
         [Test]
-        public void HasOnZero_IsCarriedThroughToPropertyDef()
+        public void OnZero_IsCarriedThroughToPropertyDef()
         {
             var candle = new ObjectDefBlueprint { Name = "candle" };
-            candle.Properties.Add(Prop("wax", 100, hasOnZero: true));
-            candle.Properties.Add(Prop("wick_length", 5)); // hasOnZero: false (既定)
+            candle.Properties.Add(Prop("wax", 100, onZero: OnZeroDestroy()));
+            candle.Properties.Add(Prop("wick_length", 5)); // onZero: null (既定)
 
             var codex = WorldCodexBuilder.Build(new[] { candle });
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("candle"));
@@ -483,8 +494,140 @@ namespace UnmappedIsland.Codex.Tests
             int waxLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wax"));
             int wickLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wick_length"));
 
-            Assert.That(def.PropertyDefs[waxLocal].HasOnZero, Is.True);
-            Assert.That(def.PropertyDefs[wickLocal].HasOnZero, Is.False);
+            Assert.That(def.PropertyDefs[waxLocal].OnZero, Is.Not.Null);
+            Assert.That(def.PropertyDefs[waxLocal].OnZero.Destroy, Is.True);
+            Assert.That(def.PropertyDefs[wickLocal].OnZero, Is.Null);
+        }
+
+        [Test]
+        public void Tick_RecursesIntoChildrenWithoutCallingChildTickDirectly()
+        {
+            var container = new ObjectDefBlueprint { Name = "backpack" };
+            container.Slots.Add(Slot("items"));
+
+            var battery = new ObjectDefBlueprint { Name = "power_cell" };
+            battery.Properties.Add(Prop("charge", 10));
+            battery.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "charge", -1));
+
+            var codex = WorldCodexBuilder.Build(new[] { container, battery });
+            int itemsSlotId = codex.SlotNames.GetId("items");
+            int chargeId = codex.PropertyNames.GetId("charge");
+
+            var session = new WorldSession(codex);
+            WorldObject containerInstance = Spawn(codex, "backpack");
+            WorldObject batteryInstance = Spawn(codex, "power_cell");
+            Assert.That(session.Containment.TryMoveToSlot(batteryInstance, containerInstance, itemsSlotId, out _), Is.True);
+
+            containerInstance.Tick();
+
+            Assert.That(batteryInstance.GetEffectiveValue(chargeId), Is.EqualTo(9));
+        }
+
+        [Test]
+        public void PostTick_DestroysSelfWhenOnZeroFires()
+        {
+            var container = new ObjectDefBlueprint { Name = "lantern_holder" };
+            container.Slots.Add(Slot("items"));
+
+            var torch = new ObjectDefBlueprint { Name = "torch" };
+            torch.Properties.Add(Prop("durability", 0, onZero: OnZeroDestroy()));
+
+            var codex = WorldCodexBuilder.Build(new[] { container, torch });
+            int itemsSlotId = codex.SlotNames.GetId("items");
+
+            var session = new WorldSession(codex);
+            WorldObject containerInstance = Spawn(codex, "lantern_holder");
+            WorldObject torchInstance = Spawn(codex, "torch");
+            Assert.That(session.Containment.TryMoveToSlot(torchInstance, containerInstance, itemsSlotId, out _), Is.True);
+
+            containerInstance.PostTick(session);
+
+            Assert.That(torchInstance.Parent, Is.Null);
+            containerInstance.TryGetSlot(itemsSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void PostTick_SpawnsReplacementIntoParentAndDestroysSelf()
+        {
+            var worldDef = new ObjectDefBlueprint { Name = "world_root" };
+            worldDef.Slots.Add(Slot("weather"));
+
+            var dry = new ObjectDefBlueprint { Name = "dry_season" };
+            dry.Properties.Add(Prop("remaining", 0,
+                onZero: OnZeroSpawnAndDestroy("wet_season", SpawnIntoRoot.Parent, "weather")));
+
+            var wet = new ObjectDefBlueprint { Name = "wet_season" };
+            wet.Properties.Add(Prop("remaining", 30));
+
+            var codex = WorldCodexBuilder.Build(new[] { worldDef, dry, wet });
+            int weatherSlotId = codex.SlotNames.GetId("weather");
+
+            var session = new WorldSession(codex);
+            WorldObject worldInstance = Spawn(codex, "world_root");
+            WorldObject dryInstance = Spawn(codex, "dry_season");
+            Assert.That(session.Containment.TryMoveToSlot(dryInstance, worldInstance, weatherSlotId, out _), Is.True);
+
+            worldInstance.PostTick(session);
+
+            Assert.That(dryInstance.Parent, Is.Null, "自分自身は破棄される");
+            worldInstance.TryGetSlot(weatherSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(1));
+            Assert.That(slot.Contents[0].Def.Name, Is.EqualTo("wet_season"));
+        }
+
+        [Test]
+        public void PostTick_SurvivesMultipleChildrenDestroyingThemselvesInSamePass()
+        {
+            var container = new ObjectDefBlueprint { Name = "trashcan" };
+            container.Slots.Add(Slot("contents"));
+
+            var junk = new ObjectDefBlueprint { Name = "junk" };
+            junk.Properties.Add(Prop("integrity", 0, onZero: OnZeroDestroy()));
+
+            var codex = WorldCodexBuilder.Build(new[] { container, junk });
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            var session = new WorldSession(codex);
+            WorldObject containerInstance = Spawn(codex, "trashcan");
+            WorldObject junk1 = Spawn(codex, "junk");
+            WorldObject junk2 = Spawn(codex, "junk");
+            WorldObject junk3 = Spawn(codex, "junk");
+
+            Assert.That(session.Containment.TryMoveToSlot(junk1, containerInstance, contentsSlotId, out _), Is.True);
+            Assert.That(session.Containment.TryMoveToSlot(junk2, containerInstance, contentsSlotId, out _), Is.True);
+            Assert.That(session.Containment.TryMoveToSlot(junk3, containerInstance, contentsSlotId, out _), Is.True);
+
+            containerInstance.PostTick(session); // 例外を投げればテスト自体が失敗する
+
+            containerInstance.TryGetSlot(contentsSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(0));
+            Assert.That(junk1.Parent, Is.Null);
+            Assert.That(junk2.Parent, Is.Null);
+            Assert.That(junk3.Parent, Is.Null);
+        }
+
+        [Test]
+        public void Destroy_IsIdempotent()
+        {
+            var box = new ObjectDefBlueprint { Name = "box" };
+            box.Slots.Add(Slot("contents"));
+
+            var item = new ObjectDefBlueprint { Name = "trinket" };
+
+            var codex = WorldCodexBuilder.Build(new[] { box, item });
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            Containment containment = codex.CreateContainment();
+            WorldObject boxInstance = Spawn(codex, "box");
+            WorldObject itemInstance = Spawn(codex, "trinket");
+            Assert.That(containment.TryMoveToSlot(itemInstance, boxInstance, contentsSlotId, out _), Is.True);
+
+            containment.Destroy(itemInstance);
+            Assert.That(itemInstance.Parent, Is.Null);
+
+            containment.Destroy(itemInstance); // 例外を投げればテスト自体が失敗する
+            Assert.That(itemInstance.Parent, Is.Null);
         }
     }
 }

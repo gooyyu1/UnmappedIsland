@@ -47,8 +47,31 @@ namespace UnmappedIsland.Codex.Defs
 
         public readonly List<StageBlueprint> Stages = new List<StageBlueprint>();
 
-        /// <summary>on_zero（正の値から0以下へ跨いだ瞬間の検出）を持つか。</summary>
-        public bool HasOnZero;
+        /// <summary>on_zero（6.5節）。null なら持たない。</summary>
+        public ActiveEffectBlueprint OnZero;
+    }
+
+    /// <summary>on_zero（6.5節）の内容。`add`/`destroy`/`spawn`のうち使うものだけを埋める。</summary>
+    public sealed class ActiveEffectBlueprint
+    {
+        public readonly List<AddBlueprint> Adds = new List<AddBlueprint>();
+        public bool Destroy;
+
+        /// <summary>null なら spawn なし。</summary>
+        public SpawnBlueprint Spawn;
+    }
+
+    public struct AddBlueprint
+    {
+        public string PropertyName;
+        public int Amount;
+    }
+
+    public sealed class SpawnBlueprint
+    {
+        public string ObjectName;
+        public SpawnIntoRoot IntoRoot;
+        public string IntoSlotName;
     }
 
     public struct StageBlueprint
@@ -111,7 +134,17 @@ namespace UnmappedIsland.Codex.Defs
             foreach (var bp in blueprints)
             {
                 objectNames.Intern(bp.Name);
-                foreach (var p in bp.Properties) propertyNames.Intern(p.Name);
+                foreach (var p in bp.Properties)
+                {
+                    propertyNames.Intern(p.Name);
+                    if (p.OnZero == null) continue;
+                    foreach (var add in p.OnZero.Adds) propertyNames.Intern(add.PropertyName);
+                    if (p.OnZero.Spawn != null)
+                    {
+                        objectNames.Intern(p.OnZero.Spawn.ObjectName);
+                        slotNames.Intern(p.OnZero.Spawn.IntoSlotName);
+                    }
+                }
                 foreach (var s in bp.Slots) slotNames.Intern(s.Name);
                 foreach (var c in bp.Contributions)
                 {
@@ -145,8 +178,27 @@ namespace UnmappedIsland.Codex.Defs
 
                 var stages = p.Stages.Select(s => new PropertyStage(s.Name, s.Min)).ToList();
 
+                ActiveEffect onZero = null;
+                if (p.OnZero != null)
+                {
+                    var adds = p.OnZero.Adds
+                        .Select(a => new PropertyDelta(propertyNames.GetId(a.PropertyName), a.Amount))
+                        .ToList();
+
+                    SpawnEffect spawn = null;
+                    if (p.OnZero.Spawn != null)
+                    {
+                        spawn = new SpawnEffect(
+                            objectNames.GetId(p.OnZero.Spawn.ObjectName),
+                            p.OnZero.Spawn.IntoRoot,
+                            slotNames.GetId(p.OnZero.Spawn.IntoSlotName));
+                    }
+
+                    onZero = new ActiveEffect(adds, p.OnZero.Destroy, spawn);
+                }
+
                 propertyDefs[local] = new PropertyDef(
-                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, overflow, stages, p.HasOnZero);
+                    propertyGlobalIds[local], p.Name, p.DefaultValue, p.RerollRange, p.Range, overflow, stages, onZero);
             }
 
             var slotGlobalIds = bp.Slots.Select(s => slotNames.GetId(s.Name)).ToList();
