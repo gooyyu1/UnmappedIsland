@@ -176,9 +176,9 @@ namespace UnmappedIsland.Codex.Runtime
 
         /// <summary>
         /// on_zeroのadd/destroy/spawnを実行する。spawnをdestroyより先に行うのは、spawnのintoが
-        /// parentやSameAsSelf（自分の現在の所属先）を参照できる必要があり、destroy後は自分のParentが
-        /// nullになってしまうため。on_zeroにはactorが存在しないため、spawnの実行はactor無し
-        /// （Actor/ActorParentを対象にしたものは解決できない）で行う。
+        /// parentや「省略時の既定動作（自分の現在の所属先）」を参照できる必要があり、destroy後は
+        /// 自分のParentがnullになってしまうため。on_zeroにはactorが存在しないため、spawnの実行は
+        /// actor無し（Actor/ActorParentを対象にしたものは解決できない）で行う。
         /// </summary>
         private void ExecuteOnZeroEffect(ActiveEffect effect, WorldSession session)
         {
@@ -191,55 +191,56 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// spawn（9.4節）を実行する。Primaryへの配置に失敗した場合のみFallbackを試み、Fallbackは
-        /// accepts/capacityを無視して必ず成功する。Fallbackが無くPrimaryが失敗した場合、生成した
+        /// spawn（9.4節）を実行する。Intoへの配置に失敗した場合のみFallbackを試み、Fallbackは
+        /// accepts/capacityを無視して必ず成功する。Fallbackが無くIntoが失敗した場合、生成した
         /// オブジェクトはどこにも配置されないまま消える（worldツリーに繋がらないため存在しないのと同じ）。
         /// </summary>
         private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor)
         {
             WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
 
-            var primary = ResolveSpawnTarget(effect.Primary, actor);
-            if (primary.HasValue &&
-                session.Containment.TryMoveToSlot(spawned, primary.Value.Target, primary.Value.SlotGlobalId, out _))
-                return;
-
+            if (TryPlace(spawned, effect.Into, session, actor, force: false)) return;
             if (effect.Fallback == null) return;
-
-            var fallback = ResolveSpawnTarget(effect.Fallback, actor);
-            if (fallback.HasValue)
-                session.Containment.TryMoveToSlot(spawned, fallback.Value.Target, fallback.Value.SlotGlobalId, out _, force: true);
+            TryPlace(spawned, effect.Fallback, session, actor, force: true);
         }
 
         /// <summary>
-        /// SpawnTargetを、実際の配置先（対象WorldObject・グローバルスロットID）へ解決する。解決できない
-        /// 場合（Parentが無い、actorが与えられていない等）はnullを返す。
+        /// spawnした側は配置先のスロット名を書かない。root が null（into省略）なら、自分が今いる、
+        /// まさにその場所（親と、自分が現在占めているのと同じスロット）へそのまま配置する。root が
+        /// 指定されていれば、解決できた対象オブジェクトが持つスロットを宣言順（Def.SlotDefsの並び）に
+        /// 走査し、最初に配置できたスロットへ入れる。force=true（fallback専用）はaccepts/capacityの
+        /// 検証を飛ばすため、最初のスロットへ必ず配置できる。
         /// </summary>
-        private (WorldObject Target, int SlotGlobalId)? ResolveSpawnTarget(SpawnTarget target, WorldObject actor)
+        private bool TryPlace(WorldObject spawned, SpawnTargetRoot? root, WorldSession session, WorldObject actor, bool force)
         {
-            switch (target.Root)
+            if (root == null)
             {
-                case SpawnTargetRoot.SameAsSelf:
-                    if (Parent == null) return null;
-                    return (Parent, Parent.Def.SlotDefs[ParentSlotLocalId].GlobalId);
+                if (Parent == null) return false;
+                int slotGlobalId = Parent.Def.SlotDefs[ParentSlotLocalId].GlobalId;
+                return session.Containment.TryMoveToSlot(spawned, Parent, slotGlobalId, out _, force);
+            }
 
-                case SpawnTargetRoot.Self:
-                    return (this, target.SlotGlobalId.Value);
+            WorldObject target = ResolveRoot(root.Value, actor);
+            if (target == null) return false;
 
-                case SpawnTargetRoot.Parent:
-                    if (Parent == null) return null;
-                    return (Parent, target.SlotGlobalId.Value);
+            foreach (var slotDef in target.Def.SlotDefs)
+                if (session.Containment.TryMoveToSlot(spawned, target, slotDef.GlobalId, out _, force))
+                    return true;
 
-                case SpawnTargetRoot.Actor:
-                    if (actor == null) return null;
-                    return (actor, target.SlotGlobalId.Value);
+            return false;
+        }
 
-                case SpawnTargetRoot.ActorParent:
-                    if (actor == null || actor.Parent == null) return null;
-                    return (actor.Parent, target.SlotGlobalId.Value);
-
-                default:
-                    return null;
+        /// <summary>root を、実際の対象WorldObjectへ解決する。解決できない場合（Parentが無い、actorが
+        /// 与えられていない等）はnullを返す。</summary>
+        private WorldObject ResolveRoot(SpawnTargetRoot root, WorldObject actor)
+        {
+            switch (root)
+            {
+                case SpawnTargetRoot.Self: return this;
+                case SpawnTargetRoot.Parent: return Parent;
+                case SpawnTargetRoot.Actor: return actor;
+                case SpawnTargetRoot.ActorParent: return actor?.Parent;
+                default: return null;
             }
         }
 

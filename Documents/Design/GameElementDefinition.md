@@ -393,32 +393,41 @@ actions:
 中で同時に指定でき（`{spawn: {...}, destroy: true}`）、「新しいオブジェクトを生成しつつ、自分自身は消滅させる」と
 いう組み合わせを1つのエントリで表現できます。
 
-**`into`（配置先）** は、以下のいずれかです。
+挿入先の**スロット名を書く必要はありません**。生成物を受け取るオブジェクト（後述の`into`が指す起点）が持つ
+スロットを**宣言順に走査し、最初に配置できたスロットへ入れます**。型ごとに用意されたスロット（アイテム用・
+設備用など）へ自然に振り分けられるため、著者はスロット名を知る必要がありません。
 
-- **`same_slot`**: この`active`/`on_zero`を宣言したオブジェクト（`self`）が今いる、まさにその場所（親とスロット）
-  へ配置します。クラフト・腐敗など、「同じ場所で別の物に置き換わる」場合に使います。スロット名を書く必要は
-  ありません（`self`の現在の所属先から動的に決まるため）。
-- **`<root>.<slot>`**: `self`/`parent`/`actor`/`actor_parent`のいずれかを起点に、指定したスロットへ配置します。
+**`into`（配置先の起点）** は、以下のいずれかです。
+
+- **省略（`into`キー自体を書かない）**: この`active`/`on_zero`を宣言したオブジェクト（`self`）が今いる、
+  まさにその場所（親と、`self`が現在占めているのと同じスロット）へそのまま配置します。クラフト・腐敗など、
+  「同じ場所で別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません（`self`の現在の所属先が
+  一意に決まるため）。
+- **`self`/`parent`/`actor`/`actor_parent`**: このいずれかを起点に、その対象が持つスロットを宣言順に走査します。
   `actor`（アクション実行者）・`actor_parent`（actorが現在いる場所）は、アクション実行文脈でのみ解決できます。
   `on_zero`には`actor`が存在しないため使えません（後述の`fallback`が無ければ何も起きません）。
 
 ```yaml
 active:
   self:
-    spawn: {object: rotten_wood, into: same_slot}
+    spawn: {object: rotten_wood}
     destroy: true
 ```
 
-配置先の`accepts`/`capacity`に合わず配置できない場合に備え、**`fallback`**を指定できます。`fallback`は`into`と
-異なり`same_slot`は使えず、必ず`<root>.<slot>`形式で指定します。`into`への配置に失敗した場合にのみ`fallback`が
-試みられ、`fallback`は`accepts`/`capacity`を無視して必ず配置に成功します（すべてのオブジェクトは必ずどこかの
-親に属さなければならないため）。
+起点が持つどのスロットにも`accepts`/`capacity`が合わず配置できない場合に備え、**`fallback`**を指定できます。
+`fallback`も`into`と同じく`self`/`parent`/`actor`/`actor_parent`のいずれかで、スロット名は書きません。`into`への
+配置に失敗した場合にのみ`fallback`が試みられ、`fallback`は起点が持つ最初のスロットへ、`accepts`/`capacity`を
+無視して必ず配置に成功します（すべてのオブジェクトは必ずどこかの親に属さなければならないため）。
 
 ```yaml
 active:
   self:
-    spawn: {object: item_coconut, into: actor.inventory, fallback: actor_parent.ground_items}
+    spawn: {object: item_coconut, into: actor, fallback: actor_parent}
 ```
+
+上の例は、収穫したアイテムをまずプレイヤーの手持ち（`actor`）へ入れようとし、手持ちのスロットがすべて
+（`accepts`/`capacity`で）埋まっていれば、actorが今いる場所（`actor_parent`）へ必ず配置する、という
+「取得アイテムの置き場所」パターンを表します。
 
 `fallback`を指定していない場合、`into`への配置に失敗すると、そのオブジェクトはどこにも配置されないまま消えます
 （生成自体はされますが、worldツリーに繋がらないため、存在しなかったのと同じ扱いになります。7.1 節参照）。
@@ -538,7 +547,7 @@ object_defs:
           - {path: dragged.durability, op: gt, value: 0}
         active:
           self:
-            spawn: {object: logs, into: parent.inventory}
+            spawn: {object: logs, into: parent}
             destroy: true
           dragged:
             add:

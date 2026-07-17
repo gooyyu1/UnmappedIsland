@@ -41,58 +41,49 @@ namespace UnmappedIsland.Codex.Defs
     }
 
     /// <summary>
-    /// spawn の配置先（9.4節）が起点にする参照ルート。
+    /// spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定しない。対象オブジェクトが持つ
+    /// スロットを宣言順に走査し、最初に配置できたスロットへ入れる（型ごとに用意されたスロットへ
+    /// 自然に振り分けられるため、著者がスロット名を知っている必要がない）。
     ///
-    /// - SameAsSelf: このspawnを宣言したオブジェクト（self）が今いる、まさにその場所（親+スロット）。
-    ///   クラフト・腐敗など「同じ場所で別の物に置き換わる」場合に使う。スロット名の指定は不要（selfの
-    ///   現在の所属先から動的に決まるため）。
-    /// - Self / Parent: 対象スロットを明示的に指定する必要がある。
-    /// - Actor / ActorParent: アクション実行文脈でのみ解決できる（実行者=actorが存在するため）。
-    ///   on_zeroにはactorが存在しないため、on_zeroのspawnではこの2つは解決されない
-    ///   （fallbackが無ければ何も起きない）。
+    /// Actor / ActorParent はアクション実行文脈でのみ解決できる（実行者=actorが存在するため）。
+    /// on_zeroにはactorが存在しないため、on_zeroのspawnではこの2つは解決されない
+    /// （fallbackが無ければ何も起きない）。
     /// </summary>
     public enum SpawnTargetRoot
     {
-        SameAsSelf,
         Self,
         Parent,
         Actor,
         ActorParent,
     }
 
-    /// <summary>spawn の配置先1件（9.4節）。</summary>
-    public sealed class SpawnTarget
-    {
-        public SpawnTargetRoot Root { get; }
-
-        /// <summary>Root が SameAsSelf の場合は使わない（null）。それ以外は対象スロットのグローバルID。</summary>
-        public int? SlotGlobalId { get; }
-
-        public SpawnTarget(SpawnTargetRoot root, int? slotGlobalId)
-        {
-            Root = root;
-            SlotGlobalId = slotGlobalId;
-        }
-    }
-
     /// <summary>
-    /// spawn（9.4節）の内容。Primary への配置に失敗した場合（accepts/capacityで拒否された場合）にのみ
-    /// Fallback を試みる。Fallback は accepts/capacity を無視して必ず配置に成功する（すべてのオブジェクトは
-    /// 必ずどこかの親に属さなければならないため）。Fallback が無く Primary が失敗した場合、spawn した
-    /// オブジェクトはどこにも配置されないまま消える（何も起きなかったのと同じ扱い）。
+    /// spawn（9.4節）の内容。Into への配置に失敗した場合（対象の全スロットがaccepts/capacityで拒否した
+    /// 場合）にのみ Fallback を試みる。Fallback は accepts/capacity を無視して必ず配置に成功する
+    /// （すべてのオブジェクトは必ずどこかの親に属さなければならないため）。
+    ///
+    /// Into が null（YAML上 into を省略した場合）は、このspawnを宣言したオブジェクト（self）が今いる、
+    /// まさにその場所（親と、selfが現在占めているのと同じスロット）へ配置する。クラフト・腐敗など
+    /// 「同じ場所で別の物に置き換わる」場合に使う既定動作であり、スロットを走査する必要がないため
+    /// SpawnTargetRoot とは別に null で表す。
+    ///
+    /// Fallback が無く Into が失敗した場合、spawn したオブジェクトはどこにも配置されないまま消える
+    /// （何も起きなかったのと同じ扱い）。
     /// </summary>
     public sealed class SpawnEffect
     {
         public int ObjectGlobalId { get; }
-        public SpawnTarget Primary { get; }
+
+        /// <summary>null なら「selfが今いる、まさにその場所」（省略時の既定動作）。</summary>
+        public SpawnTargetRoot? Into { get; }
 
         /// <summary>null なら fallback なし。</summary>
-        public SpawnTarget Fallback { get; }
+        public SpawnTargetRoot? Fallback { get; }
 
-        public SpawnEffect(int objectGlobalId, SpawnTarget primary, SpawnTarget fallback)
+        public SpawnEffect(int objectGlobalId, SpawnTargetRoot? into, SpawnTargetRoot? fallback)
         {
             ObjectGlobalId = objectGlobalId;
-            Primary = primary;
+            Into = into;
             Fallback = fallback;
         }
     }
