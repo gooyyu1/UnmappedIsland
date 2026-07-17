@@ -1,4 +1,4 @@
-namespace UnmappedIsland.Codex.Defs
+namespace UnmappedIsland.Codex
 {
     /// <summary>
     /// 効果の対象（8.1節の self/parent/child）。値そのものは登録時にしか使わず、

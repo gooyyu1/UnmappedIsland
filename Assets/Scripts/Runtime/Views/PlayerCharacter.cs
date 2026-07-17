@@ -1,7 +1,7 @@
-using UnmappedIsland.Codex.Registry;
-using UnmappedIsland.Codex.Runtime;
+using UnmappedIsland.Codex;
+using UnmappedIsland.Runtime;
 
-namespace UnmappedIsland.Codex.Views
+namespace UnmappedIsland.Runtime.Views
 {
     /// <summary>
     /// actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック

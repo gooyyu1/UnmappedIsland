@@ -1,8 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
-using UnmappedIsland.Codex.Defs;
-using UnmappedIsland.Codex.Runtime;
+using UnmappedIsland.Runtime;
 
 namespace UnmappedIsland.Codex.Tests
 {

@@ -1,4 +1,4 @@
-namespace UnmappedIsland.Codex.Defs
+namespace UnmappedIsland.Codex
 {
     /// <summary>
     /// 同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（例: 劣化アイテムは寿命が短いものほど、

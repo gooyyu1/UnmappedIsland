@@ -1,6 +1,6 @@
-using UnmappedIsland.Codex.Runtime;
+using UnmappedIsland.Runtime;
 
-namespace UnmappedIsland.Codex.Views
+namespace UnmappedIsland.Runtime.Views
 {
     /// <summary>
     /// ロケーションに対する、UI/ゲームロジック向けの型付きビュー。World/PlayerCharacter と同じ理由で

@@ -5,11 +5,13 @@ on:
     branches:
       - main
     paths:
-      - 'Assets/Scripts/WorldCodex/**'
+      - 'Assets/Scripts/Codex/**'
+      - 'Assets/Scripts/Runtime/**'
       - 'Tests/**'
   pull_request:
     paths:
-      - 'Assets/Scripts/WorldCodex/**'
+      - 'Assets/Scripts/Codex/**'
+      - 'Assets/Scripts/Runtime/**'
       - 'Tests/**'
   workflow_dispatch:
 

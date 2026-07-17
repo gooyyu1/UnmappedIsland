@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace UnmappedIsland.Codex.Registry
+namespace UnmappedIsland.Codex
 {
     /// <summary>
     /// YAML上の識別子（ObjectDef名・プロパティ名・スロット名など）と、実行時に扱うグローバルなintを

@@ -1,7 +1,6 @@
-using UnmappedIsland.Codex.Defs;
-using UnmappedIsland.Codex.Registry;
+using UnmappedIsland.Codex;
 
-namespace UnmappedIsland.Codex.Runtime
+namespace UnmappedIsland.Runtime
 {
     /// <summary>
     /// 登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。
