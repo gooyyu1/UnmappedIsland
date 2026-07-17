@@ -1,0 +1,362 @@
+using System;
+using System.Linq;
+using NUnit.Framework;
+using UnmappedIsland.Codex;
+using UnmappedIsland.Loader;
+using UnmappedIsland.Runtime;
+
+namespace UnmappedIsland.Codex.Tests
+{
+    /// <summary>
+    /// YAMLローダー（複数ファイル・複数ディレクトリからのWorldCodex構築、GameElementDefinition.md 3・5節）
+    /// に対する自動テスト。
+    /// </summary>
+    [TestFixture]
+    public class YamlLoaderTests
+    {
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
+        {
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
+        }
+
+        private static PropertyDef PropOf(WorldCodex codex, ObjectDef def, string propertyName)
+        {
+            int local = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId(propertyName));
+            return def.PropertyDefs[local];
+        }
+
+        private static SlotDef SlotOf(WorldCodex codex, ObjectDef def, string slotName)
+        {
+            int local = def.SlotLayout.ToLocal(codex.SlotNames.GetId(slotName));
+            return def.SlotDefs[local];
+        }
+
+        // ------------------------------------------------------------------
+        // 基本: 1ファイル内のobject_defs
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_ParsesPropsSlotsAndStackOrder()
+        {
+            const string yaml = @"
+object_defs:
+  log:
+    props:
+      life:
+        value: 10
+    slots:
+      inside:
+        capacity: 5
+    stack_order:
+      property: life
+      ascending: false
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
+
+            Assert.That(PropOf(codex, log, "life").DefaultValue.AsNumber(), Is.EqualTo(10));
+            Assert.That(SlotOf(codex, log, "inside").Capacity, Is.EqualTo(5.0));
+
+            Assert.That(log.StackOrder, Is.Not.Null);
+            Assert.That(log.StackOrder.PropertyGlobalId, Is.EqualTo(codex.PropertyNames.GetId("life")));
+            Assert.That(log.StackOrder.Ascending, Is.False);
+        }
+
+        [Test]
+        public void LoadFromGroups_StringPropertyValue_InternsIntoSharedSymbolRegistry()
+        {
+            const string yaml = @"
+object_defs:
+  sky:
+    props:
+      weather:
+        value: clear
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky"));
+            PropertyValue value = PropOf(codex, sky, "weather").DefaultValue;
+
+            Assert.That(value.Kind, Is.EqualTo(PropertyValueKind.Symbol));
+            Assert.That(codex.Symbols.GetName(value.Symbol), Is.EqualTo("clear"));
+        }
+
+        // ------------------------------------------------------------------
+        // 複数ファイル（同一グループ内）: 分割してもまとめて読める
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_MergesObjectDefsAcrossMultipleFilesInSameGroup()
+        {
+            const string core = @"
+object_defs:
+  ground:
+    slots:
+      pile: {}
+";
+            const string foods = @"
+object_defs:
+  apple:
+    props:
+      freshness:
+        value: 5
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[]
+            {
+                Group("base", ("core.yaml", core), ("foods.yaml", foods)),
+            });
+
+            Assert.That(codex.ObjectNames.TryGetId("ground", out _), Is.True);
+            Assert.That(codex.ObjectNames.TryGetId("apple", out _), Is.True);
+        }
+
+        [Test]
+        public void LoadFromGroups_DuplicateObjectDefWithinSameGroup_Throws()
+        {
+            const string a = @"
+object_defs:
+  rock: {}
+";
+            const string b = @"
+object_defs:
+  rock: {}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("base", ("a.yaml", a), ("b.yaml", b)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("rock"));
+        }
+
+        // ------------------------------------------------------------------
+        // 複数グループ（ディレクトリ相当）: 後勝ちで上書き
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_LaterGroupOverridesSameNameFromEarlierGroup()
+        {
+            const string baseYaml = @"
+object_defs:
+  torch:
+    props:
+      fuel:
+        value: 10
+";
+            const string modYaml = @"
+object_defs:
+  torch:
+    props:
+      fuel:
+        value: 999
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[]
+            {
+                Group("base", ("base.yaml", baseYaml)),
+                Group("mod", ("mod.yaml", modYaml)),
+            });
+
+            ObjectDef torch = codex.Objects.Get(codex.ObjectNames.GetId("torch"));
+            Assert.That(PropOf(codex, torch, "fuel").DefaultValue.AsNumber(), Is.EqualTo(999),
+                "後から渡したグループ(mod)の定義が、先のグループ(base)の同名定義を上書きする");
+        }
+
+        [Test]
+        public void LoadFromGroups_SameNameAcrossDifferentGroups_DoesNotThrow()
+        {
+            const string baseYaml = @"
+object_defs:
+  torch: {}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[]
+            {
+                Group("base", ("base.yaml", baseYaml)),
+                Group("mod", ("mod.yaml", baseYaml)),
+            })), Throws.Nothing);
+        }
+
+        // ------------------------------------------------------------------
+        // traits（mixin）
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_ObjectDefInheritsPropsAndSlotsFromTrait()
+        {
+            const string yaml = @"
+traits:
+  flammable:
+    props:
+      burning:
+        value: 0
+    slots:
+      fire_pit: {}
+object_defs:
+  log:
+    traits: [flammable]
+    props:
+      life:
+        value: 10
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
+            Assert.That(PropOf(codex, log, "burning").DefaultValue.AsNumber(), Is.EqualTo(0));
+            Assert.That(SlotOf(codex, log, "fire_pit"), Is.Not.Null);
+        }
+
+        [Test]
+        public void LoadFromGroups_ObjectDefOverridesOnlySomeTraitFieldsOnMatchingProperty()
+        {
+            const string yaml = @"
+traits:
+  has_temp:
+    props:
+      temperature:
+        value: 0
+        range: {min: 0, max: 100}
+object_defs:
+  ember:
+    traits: [has_temp]
+    props:
+      temperature:
+        value: 50
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef ember = codex.Objects.Get(codex.ObjectNames.GetId("ember"));
+            PropertyDef temp = PropOf(codex, ember, "temperature");
+
+            Assert.That(temp.DefaultValue.AsNumber(), Is.EqualTo(50), "object_def側のvalueで上書きされる");
+            Assert.That(temp.Range, Is.Not.Null, "object_defが指定していないrangeはtrait側から引き継がれる");
+            Assert.That(temp.Range.Value.Min, Is.EqualTo(0));
+            Assert.That(temp.Range.Value.Max, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void LoadFromGroups_TwoTraitsWithColidingPropertyName_Throws()
+        {
+            const string yaml = @"
+traits:
+  trait_a:
+    props:
+      shared:
+        value: 1
+  trait_b:
+    props:
+      shared:
+        value: 2
+object_defs:
+  thing:
+    traits: [trait_a, trait_b]
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("shared"));
+        }
+
+        [Test]
+        public void LoadFromGroups_UnknownTraitReference_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    traits: [does_not_exist]
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist"));
+        }
+
+        // ------------------------------------------------------------------
+        // passive / stage / on_zero
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_StagePassive_UsesWhenOwnStageGate()
+        {
+            const string yaml = @"
+object_defs:
+  campfire:
+    props:
+      heat:
+        value: 0
+        stages:
+          - name: lit
+            min: 1
+            passive:
+              child:
+                modify:
+                  warmth: 5
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef campfire = codex.Objects.Get(codex.ObjectNames.GetId("campfire"));
+            ContributionDef contribution = campfire.Contributions.Single();
+
+            Assert.That(contribution.Target, Is.EqualTo(ContributionTarget.Child));
+            Assert.That(contribution.Gate.Kind, Is.EqualTo(ContributionGateKind.WhenOwnStage));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnZeroWithNonSelfTarget_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  log:
+    props:
+      life:
+        value: 0
+        on_zero:
+          parent:
+            destroy: true
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_zero"));
+        }
+
+        [Test]
+        public void LoadFromGroups_OnZeroSelf_ParsesDestroyAndSpawn()
+        {
+            const string yaml = @"
+object_defs:
+  log:
+    props:
+      life:
+        value: 0
+        on_zero:
+          self:
+            destroy: true
+            spawn:
+              object: ash
+              into: same_slot
+  ash: {}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
+            ActiveEffect onZero = PropOf(codex, log, "life").OnZero;
+
+            Assert.That(onZero, Is.Not.Null);
+            Assert.That(onZero.Destroy, Is.True);
+            Assert.That(onZero.Spawn, Is.Not.Null);
+            Assert.That(onZero.Spawn.Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
+            Assert.That(codex.ObjectNames.GetName(onZero.Spawn.ObjectGlobalId), Is.EqualTo("ash"));
+        }
+
+        // ------------------------------------------------------------------
+        // 構文エラー
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_DuplicateKeyWithinOneYamlMapping_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  log:
+    props:
+      life:
+        value: 1
+      life:
+        value: 2
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>());
+        }
+    }
+}

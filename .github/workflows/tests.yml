@@ -7,11 +7,13 @@ on:
     paths:
       - 'Assets/Scripts/Codex/**'
       - 'Assets/Scripts/Runtime/**'
+      - 'Assets/Scripts/Loader/**'
       - 'Tests/**'
   pull_request:
     paths:
       - 'Assets/Scripts/Codex/**'
       - 'Assets/Scripts/Runtime/**'
+      - 'Assets/Scripts/Loader/**'
       - 'Tests/**'
   workflow_dispatch:
 
