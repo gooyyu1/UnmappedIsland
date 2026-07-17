@@ -90,6 +90,9 @@ namespace UnmappedIsland.Loader
                 string mode = overflow.RequireScalar("mode", context);
                 if (mode == "wrap")
                 {
+                    if (bp.Range == null)
+                        throw new YamlLoadException($"{context}: on_overflow.mode: wrapを使うには'range'が必須です。");
+
                     bp.OverflowMode = OverflowMode.Wrap;
                     bp.OverflowCarryToName = overflow.RequireScalar("carry_to", context);
                 }

@@ -664,5 +664,26 @@ object_defs:
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist2"));
         }
+
+        // ------------------------------------------------------------------
+        // on_overflow
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void LoadFromGroups_OnOverflowWrapWithoutRange_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 0
+        on_overflow: {mode: wrap, carry_to: hour}
+      hour:
+        value: 0
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
+        }
     }
 }

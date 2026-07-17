@@ -145,10 +145,49 @@ namespace UnmappedIsland.Runtime
         public void Tick()
         {
             foreach (var p in properties) p.Tick();
+            ApplyOverflow();
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents)
                     child.Tick();
+        }
+
+        /// <summary>
+        /// on_overflow（6.3節）: rangeの上限を超えたプロパティを折り返し、carry_to へ繰り上げる。全プロパティの
+        /// accumulateが確定した後、まとめて1つの解決パスとして処理する。
+        ///
+        /// 繰り上げは連鎖しうる（例: minuteの繰り上げでhourが増え、そのhour自身も溢れてdayへ繰り上がる）。
+        /// properties配列の走査順は宣言順（YAMLの上から順）であり、繰り上げ元が繰り上げ先より後ろに
+        /// 宣言されている場合（例: hourをminuteより先に書いた場合）、1回の走査だけでは繰り上げ先の
+        /// 溢れを見逃す。そのため「溢れが1件も無くなるまで」プロパティ数を上限に再走査し、宣言順に
+        /// 依存せず正しく連鎖を解決する。
+        /// </summary>
+        private void ApplyOverflow()
+        {
+            for (int pass = 0; pass <= properties.Length; pass++)
+            {
+                bool anyOverflowed = false;
+
+                for (int local = 0; local < properties.Length; local++)
+                {
+                    OverflowRule overflow = Def.PropertyDefs[local].Overflow;
+                    if (overflow.Mode != OverflowMode.Wrap) continue;
+
+                    PropertyRange range = Def.PropertyDefs[local].Range.Value; // wrapはrangeを必須とする（ロード時に保証済み）
+                    int value = properties[local].AsNumber();
+                    if (value <= range.Max) continue;
+
+                    int span = range.Max - range.Min + 1;
+                    int excess = value - range.Min;
+                    int carries = excess / span;
+
+                    properties[local].Add(-(excess - excess % span));
+                    properties[overflow.CarryToLocalId].Add(carries);
+                    anyOverflowed = true;
+                }
+
+                if (!anyOverflowed) return;
+            }
         }
 
         /// <summary>

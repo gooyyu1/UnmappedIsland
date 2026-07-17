@@ -276,7 +276,13 @@ namespace UnmappedIsland.Codex
                 if (p.OverflowMode == OverflowMode.Wrap)
                 {
                     int carryToGlobal = propertyNames.GetId(p.OverflowCarryToName);
-                    overflow = new OverflowRule(OverflowMode.Wrap, propertyLayout.ToLocal(carryToGlobal));
+                    int carryToLocal = propertyLayout.ToLocal(carryToGlobal);
+                    if (carryToLocal == LocalIndexMap.Missing)
+                        throw new System.InvalidOperationException(
+                            $"'{bp.Name}'.props.'{p.Name}'.on_overflow.carry_to: " +
+                            $"繰り上げ先 '{p.OverflowCarryToName}' は同じobject_def内のプロパティである必要があります。");
+
+                    overflow = new OverflowRule(OverflowMode.Wrap, carryToLocal);
                 }
 
                 var stages = p.Stages.Select(s => new PropertyStage(s.Name, s.Min)).ToList();
