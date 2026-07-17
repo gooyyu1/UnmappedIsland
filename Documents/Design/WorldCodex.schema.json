@@ -194,13 +194,13 @@
           "properties": {
             "object": { "$ref": "#/$defs/identifier" },
             "into": {
-              "type": "string",
-              "description": "生成先スロットへのパス（例: parent.inventory）。"
+              "enum": ["same_slot", "self", "actor"],
+              "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。self/actorは、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ解決できる。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、accepts/capacityを無視して強制的に伝播する。"
             }
           },
-          "required": ["object", "into"],
+          "required": ["object"],
           "additionalProperties": false,
-          "description": "新規オブジェクトを生成し、指定したスロットへ配置する。destroyと同じ対象キーの中で同時に指定できる。"
+          "description": "新規オブジェクトを生成し、指定した場所へ配置する。destroyと同じ対象キーの中で同時に指定できる。"
         }
       },
       "minProperties": 1,

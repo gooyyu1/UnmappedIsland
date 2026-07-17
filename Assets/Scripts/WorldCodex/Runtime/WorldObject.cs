@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnmappedIsland.Codex.Defs;
 using UnmappedIsland.Codex.Registry;
 
@@ -134,18 +135,116 @@ namespace UnmappedIsland.Codex.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。ゲームループから
-        /// 1tickにつき1回、生存している全WorldObjectに対して呼ばれる想定。
+        /// accumulate（Kind.Accumulate）を実体値へ加減算する（8.4節、不可逆）。自分自身のプロパティに
+        /// 適用した後、子（すべてのスロットの中身）へ再帰する。すべてのオブジェクトは必ずworldの下に
+        /// ぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は持たない」という前提）、
+        /// worldに対して1回 Tick を呼ぶだけでツリー全体のaccumulateが実行される。
         ///
-        /// on_zero（6.5節）はここでは検出しない。「プロパティが0以下である間、毎回実行されるactive内容」という
-        /// 前提を置いたことで、履歴（前tickは正だったか）を持つ必要がなくなった。`Def.PropertyDefs[local].HasOnZero`
-        /// と現在値（0以下か）を都度チェックするだけで済み、将来のアクション実行系がこの2つの既存情報だけを見て
-        /// 判定できる（destroyは繰り返し実行されても安全であり、spawnは通常同じ本体内のdestroyとの組み合わせで
-        /// 自己終端するため、履歴管理なしでも安全に運用できる）。
+        /// destroy/spawnはここでは行わない（PostTick参照）。Tick中はツリー構造を変更しないため、
+        /// 子の列挙にスナップショットは不要。
         /// </summary>
         public void Tick()
         {
             foreach (var p in properties) p.Tick();
+
+            foreach (var slot in slots)
+                foreach (var child in slot.Contents)
+                    child.Tick();
+        }
+
+        /// <summary>
+        /// on_zero（6.5節）が発火条件を満たすプロパティがあれば、そのadd/destroy/spawnを実行する。
+        /// Tickとは別の、時間経過後の「値によるイベント処理」のパスとして分離しており（PropertyValue.PostTick
+        /// 参照）、accumulateの結果がすべて確定してから存在操作を行う。自分自身の判定・実行の後、子へ
+        /// 再帰する。
+        ///
+        /// destroy/spawnはこの再帰中にツリー構造（スロットの中身）を変更しうるため、各スロットの中身は
+        /// 列挙前にスナップショットを取る（列挙中に自分自身や兄弟がdestroyされても安全なようにするため）。
+        /// </summary>
+        public void PostTick(WorldSession session)
+        {
+            for (int local = 0; local < properties.Length; local++)
+            {
+                ActiveEffect effect = properties[local].PostTick(Def.PropertyDefs[local].OnZero);
+                if (effect != null) ExecuteOnZeroEffect(effect, session);
+            }
+
+            foreach (var slot in slots)
+                foreach (var child in slot.Contents.ToArray())
+                    child.PostTick(session);
+        }
+
+        /// <summary>
+        /// on_zeroのadd/destroy/spawnを実行する。spawnをdestroyより先に行うのは、spawnのintoが
+        /// parentや「省略時の既定動作（自分の現在の所属先）」を参照できる必要があり、destroy後は
+        /// 自分のParentがnullになってしまうため。on_zeroにはactorが存在しないため、spawnの実行は
+        /// actor無し（Actor/ActorParentを対象にしたものは解決できない）で行う。
+        /// </summary>
+        private void ExecuteOnZeroEffect(ActiveEffect effect, WorldSession session)
+        {
+            foreach (var delta in effect.Adds)
+                AddNumber(delta.PropertyGlobalId, delta.Amount);
+
+            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor: null);
+
+            if (effect.Destroy) session.Containment.Destroy(this);
+        }
+
+        /// <summary>
+        /// spawn（9.4節）を実行する。fallbackはYAML側に存在せず、Intoへの配置に失敗した場合は必ず
+        /// 起点自身の親へ伝播し、accepts/capacityを無視して強制的に配置する（Place参照）。伝播先の
+        /// 親も無い場合、生成したオブジェクトはどこにも配置されないまま消える（worldツリーに繋がらない
+        /// ため存在しないのと同じ）。
+        /// </summary>
+        private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor)
+        {
+            WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
+            Place(spawned, effect.Into, session, actor);
+        }
+
+        /// <summary>
+        /// spawnした側は配置先のスロット名を書かない。SameSlotなら、自分が今いる、まさにその場所
+        /// （親と、自分が現在占めているのと同じスロット）へそのまま配置する（一意に決まるため走査は
+        /// 行わない）。Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順
+        /// （Def.SlotDefsの並び）に走査し、最初に配置できたスロットへ入れる。
+        ///
+        /// 配置に失敗した場合は、必ずその起点自身の親へ伝播し、accepts/capacityを無視して
+        /// 強制的に配置する（先頭のスロットへ必ず入る）。伝播先の親も無ければ何もしない。
+        /// </summary>
+        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor)
+        {
+            WorldObject primaryTarget;
+            bool placed;
+
+            if (into == SpawnTargetRoot.SameSlot)
+            {
+                if (Parent == null) return;
+                primaryTarget = Parent;
+                int slotGlobalId = Parent.Def.SlotDefs[ParentSlotLocalId].GlobalId;
+                placed = session.Containment.TryMoveToSlot(spawned, Parent, slotGlobalId, out _, force: false);
+            }
+            else
+            {
+                primaryTarget = into == SpawnTargetRoot.Self ? this : actor;
+                if (primaryTarget == null) return;
+                placed = TryFirstAcceptingSlot(spawned, primaryTarget, session, force: false);
+            }
+
+            if (placed) return;
+            if (primaryTarget.Parent == null) return;
+
+            TryFirstAcceptingSlot(spawned, primaryTarget.Parent, session, force: true);
+        }
+
+        /// <summary>targetが持つスロットを宣言順に走査し、最初に配置できたスロットへ入れる。
+        /// force=trueはaccepts/capacityの検証を飛ばすため、スロットが1つでもあれば必ず成功する。</summary>
+        private static bool TryFirstAcceptingSlot(WorldObject spawned, WorldObject target, WorldSession session, bool force)
+        {
+            foreach (var slotDef in target.Def.SlotDefs)
+                if (session.Containment.TryMoveToSlot(spawned, target, slotDef.GlobalId, out _, force))
+                    return true;
+
+            return false;
         }
 
         /// <summary>

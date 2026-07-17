@@ -96,6 +96,13 @@ namespace UnmappedIsland.Codex.Runtime
             }
         }
 
+        /// <summary>
+        /// on_zero（6.5節）の判定。armed（onZero != null）かつ現在値が0以下なら、発火すべき効果を返す。
+        /// 実際にdestroy/spawn等を実行するにはWorldObject/Containmentの協力が要るため、ここでは
+        /// 「発火すべきか」の判定だけを自分自身の責務として持つ。
+        /// </summary>
+        internal ActiveEffect PostTick(ActiveEffect onZero) => onZero != null && AsNumber() <= 0 ? onZero : null;
+
         public override string ToString() => Kind == PropertyValueKind.Number ? Number.ToString() : $"symbol:{Symbol}";
     }
 }

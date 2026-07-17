@@ -91,10 +91,9 @@ namespace UnmappedIsland.Codex.Defs
         public IReadOnlyList<PropertyStage> Stages { get; }
 
         /// <summary>
-        /// on_zero（6.5節）を持つか。値が0以下である間、毎tick実行されるactive効果を持つかどうかのフラグ。
-        /// 実際に何を発火するか（destroy/spawn等）はここでは持たず、WorldObject.Tick が対象かどうかの判定だけを行う。
+        /// on_zero（6.5節）。値が0以下である間、毎tick実行されるactive内容。null なら on_zero を持たない。
         /// </summary>
-        public bool HasOnZero { get; }
+        public ActiveEffect OnZero { get; }
 
         public PropertyDef(
             int globalId,
@@ -104,7 +103,7 @@ namespace UnmappedIsland.Codex.Defs
             PropertyRange? range,
             OverflowRule overflow,
             IReadOnlyList<PropertyStage> stages,
-            bool hasOnZero = false)
+            ActiveEffect onZero = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -113,7 +112,7 @@ namespace UnmappedIsland.Codex.Defs
             Range = range;
             Overflow = overflow;
             Stages = stages;
-            HasOnZero = hasOnZero;
+            OnZero = onZero;
         }
 
         /// <summary>

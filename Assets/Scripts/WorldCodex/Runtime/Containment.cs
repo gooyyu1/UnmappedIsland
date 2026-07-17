@@ -23,7 +23,13 @@ namespace UnmappedIsland.Codex.Runtime
             this.wellKnown = wellKnown;
         }
 
-        public bool TryMoveToSlot(WorldObject obj, WorldObject newParent, int slotGlobalId, out string error)
+        /// <summary>
+        /// force=true の場合、accepts/capacityの検証を飛ばして必ず配置を成功させる（spawnのfallback、
+        /// GameElementDefinition.md 9.4節専用。すべてのオブジェクトは必ずどこかの親に属さなければ
+        /// ならないという前提を、退避先で保証するために使う）。スロット自体が存在しない場合は
+        /// forceでも失敗する（存在しない配列indexへは置けないため）。
+        /// </summary>
+        public bool TryMoveToSlot(WorldObject obj, WorldObject newParent, int slotGlobalId, out string error, bool force = false)
         {
             int localSlot = newParent.Def.SlotLayout.ToLocal(slotGlobalId);
             if (localSlot == LocalIndexMap.Missing)
@@ -35,13 +41,13 @@ namespace UnmappedIsland.Codex.Runtime
             Slot targetSlot = newParent.GetSlotByLocalId(localSlot);
             SlotDef slotDef = targetSlot.Def;
 
-            if (!Accepts(targetSlot, obj))
+            if (!force && !Accepts(targetSlot, obj))
             {
                 error = $"'{newParent.Def.Name}.{slotDef.Name}' は '{obj.Def.Name}' を受け入れられません（accepts制約）。";
                 return false;
             }
 
-            if (slotDef.Capacity.HasValue)
+            if (!force && slotDef.Capacity.HasValue)
             {
                 int currentSize = SumSize(targetSlot.Contents);
                 int addedSize = obj.GetNumber(wellKnown.SizeId);
@@ -52,15 +58,7 @@ namespace UnmappedIsland.Codex.Runtime
                 }
             }
 
-            WorldObject oldParent = obj.Parent;
-            int oldParentSlotLocalId = obj.ParentSlotLocalId;
-
-            if (oldParent != null)
-            {
-                oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(obj);
-                PropagateWeight(oldParent, oldParentSlotLocalId, -obj.GetNumber(wellKnown.WeightId));
-                UnregisterEdge(oldParent, obj);
-            }
+            DetachFromParent(obj);
 
             targetSlot.AddInternal(obj);
             obj.SetParent(newParent, localSlot);
@@ -69,6 +67,26 @@ namespace UnmappedIsland.Codex.Runtime
 
             error = null;
             return true;
+        }
+
+        /// <summary>
+        /// 対象オブジェクトを、現在の親から切り離す（destroy、9.3節）。切り離された時点で
+        /// worldツリーから到達不能になり、Tick/PostTickの対象からも自然に外れる（世界に存在する＝
+        /// worldの下にぶら下がっている、という前提のため、別途「存在するオブジェクト一覧」は持たない）。
+        /// 既に親を持たない場合は何もしない（destroyは繰り返し実行しても安全、6.5節）。
+        /// </summary>
+        public void Destroy(WorldObject obj) => DetachFromParent(obj);
+
+        private void DetachFromParent(WorldObject obj)
+        {
+            WorldObject oldParent = obj.Parent;
+            if (oldParent == null) return;
+
+            int oldParentSlotLocalId = obj.ParentSlotLocalId;
+            oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(obj);
+            PropagateWeight(oldParent, oldParentSlotLocalId, -obj.GetNumber(wellKnown.WeightId));
+            UnregisterEdge(oldParent, obj);
+            obj.SetParent(null, LocalIndexMap.Missing);
         }
 
         /// <summary>
