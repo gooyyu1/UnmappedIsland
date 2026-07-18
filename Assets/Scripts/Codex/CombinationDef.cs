@@ -5,15 +5,14 @@ namespace UnmappedIsland.Codex
 {
     /// <summary>
     /// ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の
-    /// object_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（object_defのidか、
-    /// trait名のいずれか、12.1節）。
+    /// object_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。
     /// </summary>
     public sealed class CombinationDef
     {
         public string Name { get; }
 
-        /// <summary>マッチング対象。object_defのidかtrait名のどちらか（Matches参照）。</summary>
-        public string With { get; }
+        /// <summary>マッチング対象のタグ（Matches参照）。</summary>
+        public int With { get; }
 
         /// <summary>nullなら常に真（conditions省略）。</summary>
         public ConditionNode Conditions { get; }
@@ -24,7 +23,7 @@ namespace UnmappedIsland.Codex
 
         public CombinationDef(
             string name,
-            string with,
+            int with,
             ConditionNode conditions,
             ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick)
@@ -36,10 +35,7 @@ namespace UnmappedIsland.Codex
             Pick = pick;
         }
 
-        /// <summary>
-        /// draggedDefがこのcombinationのWithにマッチするか。object_defのidそのもの、またはdraggedDefが
-        /// 合成時に参照していたtrait名のいずれかとして一致すれば真（12.1節）。
-        /// </summary>
-        public bool Matches(ObjectDef draggedDef) => draggedDef.Name == With || draggedDef.Traits.Contains(With);
+        /// <summary>draggedDefがこのcombinationのWithタグを持っていれば真（12.1節）。</summary>
+        public bool Matches(ObjectDef draggedDef) => draggedDef.Tags.Contains(With);
     }
 }

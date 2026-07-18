@@ -4,7 +4,7 @@ namespace UnmappedIsland.Codex
     /// ロードされたYAMLファイル全体（GameElementDefinition.md 3.1節: 「ファイル全体が1つの WorldCodex を
     /// 表します」）を表す、唯一の集約オブジェクト。名前空間ではなくこのクラスが「WorldCodex」そのもの。
     ///
-    /// 中身は本体データ（ObjectDefTable）と、それを読むために必要な3種の名前空間（object/property/slot）
+    /// 中身は本体データ（ObjectDefTable）と、それを読むために必要な4種の名前空間（object/property/slot/tag）
     /// の NameRegistry、および汎用エンジンが規約として直接参照する WellKnownProperties。
     /// ロード完了後は不変として扱う（Intern は Loader.WorldCodexYamlLoader の中でしか呼ばれない）。
     ///
@@ -17,6 +17,7 @@ namespace UnmappedIsland.Codex
         public NameRegistry ObjectNames { get; }
         public NameRegistry PropertyNames { get; }
         public NameRegistry SlotNames { get; }
+        public NameRegistry TagNames { get; }
 
         public ObjectDefTable Objects { get; }
         public WellKnownProperties WellKnown { get; }
@@ -25,12 +26,14 @@ namespace UnmappedIsland.Codex
             NameRegistry objectNames,
             NameRegistry propertyNames,
             NameRegistry slotNames,
+            NameRegistry tagNames,
             ObjectDefTable objects,
             WellKnownProperties wellKnown)
         {
             ObjectNames = objectNames;
             PropertyNames = propertyNames;
             SlotNames = slotNames;
+            TagNames = tagNames;
             Objects = objects;
             WellKnown = wellKnown;
         }

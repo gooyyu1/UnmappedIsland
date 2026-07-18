@@ -94,19 +94,18 @@ namespace UnmappedIsland.Loader
             var objectNames = new NameRegistry();
             var propertyNames = new NameRegistry();
             var slotNames = new NameRegistry();
+            var tagNames = new NameRegistry();
             var objectDefsByGlobalId = new Dictionary<int, ObjectDef>();
 
             foreach (var kv in globalObjectDefs)
             {
                 TraitMerger.RawObjectDef raw = TraitMerger.ParseObjectDefEntry(kv.Key, kv.Value.Node);
-                var (props, slots, passiveNodes, stackOrder, actions, combinations) = TraitMerger.Resolve(raw, traitsByName);
+                var (props, slots, passiveNodes, stackOrder, actions, combinations, tags) = TraitMerger.Resolve(raw, traitsByName);
                 ObjectDef def = ObjectDefYamlConverter.Build(
-                    kv.Key, raw.IsSingleton, raw.TraitNames, props, slots, passiveNodes, stackOrder, actions, combinations,
-                    objectNames, propertyNames, slotNames);
+                    kv.Key, raw.IsSingleton, tags, props, slots, passiveNodes, stackOrder, actions, combinations,
+                    objectNames, propertyNames, slotNames, tagNames);
                 objectDefsByGlobalId[def.GlobalId] = def;
             }
-
-            ValidateWithReferences(objectDefsByGlobalId.Values, globalObjectDefs.Keys, traitsByName.Keys);
 
             // ここで初めて全object_defを走査し終えるため、objectNames.Countが最終値として確定する
             // （個々のObjectDef自体はInternの都度、その時点までの登録状況だけを見て組み立てられている）。
@@ -114,34 +113,7 @@ namespace UnmappedIsland.Loader
             foreach (var kv in objectDefsByGlobalId) defsByGlobalId[kv.Key] = kv.Value;
 
             var wellKnown = new WellKnownProperties(propertyNames);
-            return new WorldCodex(objectNames, propertyNames, slotNames, new ObjectDefTable(defsByGlobalId), wellKnown);
-        }
-
-        /// <summary>
-        /// slots.accepts の 'object' と combinations の 'with' は、object_def の id か trait 名の
-        /// どちらかを指す（GameElementDefinition.md 7.2節・12.1節）。traitはmixin合成後に消えてしまい
-        /// グローバルIDへは解決されないため、ここでロード後のバリデーションとして、実在する名前を
-        /// 指しているかどうかをまとめて検証する（3.3節: 「ロード後に別途バリデーションステップを設ける」）。
-        /// </summary>
-        private static void ValidateWithReferences(
-            IEnumerable<ObjectDef> objectDefs, IEnumerable<string> objectDefNames, IEnumerable<string> traitNames)
-        {
-            var knownNames = new HashSet<string>(objectDefNames);
-            knownNames.UnionWith(traitNames);
-
-            foreach (var def in objectDefs)
-            {
-                foreach (var slot in def.SlotDefs)
-                    foreach (var accept in slot.Accepts)
-                        if (!knownNames.Contains(accept.With))
-                            throw new YamlLoadException(
-                                $"'{def.Name}'.slots.'{slot.Name}'.accepts: '{accept.With}' という名前のobject_defまたはtraitが見つかりません。");
-
-                foreach (var combination in def.Combinations)
-                    if (!knownNames.Contains(combination.With))
-                        throw new YamlLoadException(
-                            $"'{def.Name}'.combinations.'{combination.Name}'.with: '{combination.With}' という名前のobject_defまたはtraitが見つかりません。");
-            }
+            return new WorldCodex(objectNames, propertyNames, slotNames, tagNames, new ObjectDefTable(defsByGlobalId), wellKnown);
         }
 
         private static void ParseFileInto(

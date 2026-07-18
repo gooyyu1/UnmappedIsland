@@ -15,9 +15,10 @@ namespace UnmappedIsland.Codex
         /// <summary>唯一のインスタンスしか存在しない想定（9節、例: world）。</summary>
         public bool IsSingleton { get; }
 
-        /// <summary>この object_def が参照した trait 名の一覧（5節）。トレイト自体は合成後に消えるため、
-        /// combinations の `with`（12.1節）がtrait名でマッチングできるよう、メタ情報として保持する。</summary>
-        public IReadOnlyList<string> Traits { get; }
+        /// <summary>この object_def が持つタグのグローバルIDの一覧（4節）。自分自身が直接宣言したタグと、
+        /// 参照した trait（5節）が宣言していたタグの両方を合成済みで持つ（trait自体は合成後に消えるため、
+        /// slots.accepts（7.2節）・combinations.with（12.1節）はこのタグ集合だけを見てマッチングする）。</summary>
+        public IReadOnlyList<int> Tags { get; }
 
         /// <summary>グローバルなプロパティID → このObjectDefにおけるローカルindex。</summary>
         public LocalIndexMap PropertyLayout { get; }
@@ -55,7 +56,7 @@ namespace UnmappedIsland.Codex
             IReadOnlyList<SlotDef> slotDefs,
             IReadOnlyList<PassiveEffect> passives,
             StackOrderDef stackOrder = null,
-            IReadOnlyList<string> traits = null,
+            IReadOnlyList<int> tags = null,
             IReadOnlyList<ActionDef> actions = null,
             IReadOnlyList<CombinationDef> combinations = null)
         {
@@ -68,7 +69,7 @@ namespace UnmappedIsland.Codex
             SlotDefs = slotDefs;
             Passives = passives;
             StackOrder = stackOrder;
-            Traits = traits ?? Array.Empty<string>();
+            Tags = tags ?? Array.Empty<int>();
             Actions = actions ?? Array.Empty<ActionDef>();
             Combinations = combinations ?? Array.Empty<CombinationDef>();
         }

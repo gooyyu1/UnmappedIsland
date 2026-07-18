@@ -251,11 +251,11 @@ object_defs:
         }
 
         // ------------------------------------------------------------------
-        // combinations: with（objectのidまたはtrait名）・dragged対象
+        // combinations: with（タグ）・dragged対象
         // ------------------------------------------------------------------
 
         [Test]
-        public void TryExecuteCombination_WithMatchesObjectId_AppliesSelfAndDraggedEffects()
+        public void TryExecuteCombination_WithMatchesTag_AppliesSelfAndDraggedEffects()
         {
             const string yaml = @"
 object_defs:
@@ -268,6 +268,7 @@ object_defs:
             durability: -1
         destroy: self
   axe_tool:
+    tags: [axe_tool]
     props:
       durability:
         value: 10
@@ -287,9 +288,8 @@ object_defs:
         }
 
         [Test]
-        public void TryExecuteCombination_WithMismatchedObject_ReturnsFalse()
+        public void TryExecuteCombination_WithMismatchedTag_ReturnsFalse()
         {
-            // axe_tool2はテスト対象のwith参照先としてのみ存在し、実際にはdragされない(検証のため名前だけ実在させる)。
             const string yaml = @"
 object_defs:
   wood2:
@@ -297,7 +297,6 @@ object_defs:
       chop:
         with: axe_tool2
         destroy: self
-  axe_tool2: {}
   pebble3: {}
 ";
             var codex = Load(yaml);
@@ -307,15 +306,15 @@ object_defs:
 
             bool executed = InteractionExecutor.TryExecuteCombination(woodInstance, pebbleInstance, actor: null, "chop", session);
 
-            Assert.That(executed, Is.False, "draggedがwithにマッチしないため実行されない");
+            Assert.That(executed, Is.False, "draggedがwithのタグを持たないため実行されない");
         }
 
         [Test]
-        public void TryExecuteCombination_WithMatchesTraitName_AppliesEffects()
+        public void TryExecuteCombination_WithMatchesTagGrantedViaTrait_AppliesEffects()
         {
             const string yaml = @"
 traits:
-  sharp_tool: {}
+  sharp_tool: {tags: [sharp_tool]}
 object_defs:
   wood3:
     combinations:
@@ -332,13 +331,12 @@ object_defs:
 
             bool executed = InteractionExecutor.TryExecuteCombination(woodInstance, axeInstance, actor: null, "chop", session);
 
-            Assert.That(executed, Is.True, "object idではなく、参照していたtrait名'sharp_tool'でマッチする");
+            Assert.That(executed, Is.True, "object_def自身のidではなく、参照したtrait経由で得た'sharp_tool'タグでマッチする");
         }
 
         [Test]
         public void FindMatchingCombinations_ReturnsOnlyCombinationsMatchingDragged()
         {
-            // sandpaperはsandのwith参照先としてのみ存在し、実際にはdragされない(検証のため名前だけ実在させる)。
             const string yaml = @"
 object_defs:
   wood4:
@@ -347,8 +345,8 @@ object_defs:
         with: axe_tool4
       sand:
         with: sandpaper
-  axe_tool4: {}
-  sandpaper: {}
+  axe_tool4:
+    tags: [axe_tool4]
 ";
             var codex = Load(yaml);
             var session = new WorldSession(codex);
@@ -373,6 +371,7 @@ object_defs:
           - {object: dragged, prop: durability, op: gt, value: 0}
         destroy: self
   axe_tool5:
+    tags: [axe_tool5]
     props:
       durability:
         value: 0

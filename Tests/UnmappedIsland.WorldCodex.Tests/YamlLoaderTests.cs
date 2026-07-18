@@ -525,7 +525,7 @@ object_defs:
             ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
             CombinationDef chop = CombinationOf(wood, "chop");
 
-            Assert.That(chop.With, Is.EqualTo("axe_tool"));
+            Assert.That(chop.With, Is.EqualTo(codex.TagNames.GetId("axe_tool")));
             Assert.That(chop.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Dragged));
             Assert.That(chop.Active.Adds.ContainsKey(ReferenceRoot.Dragged), Is.True);
             Assert.That(codex.ObjectNames.GetName(chop.Active.Spawn.ObjectGlobalId), Is.EqualTo("logs"));
@@ -802,21 +802,21 @@ object_defs:
         }
 
         // ------------------------------------------------------------------
-        // accepts.object / combinations.with のトレイト参照・バリデーション
+        // tags（4節）: accepts.tag / combinations.with のマッチング
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_SlotAcceptsMatchesTraitName()
+        public void LoadFromGroups_SlotAcceptsMatchesTagGrantedViaTrait()
         {
             const string yaml = @"
 traits:
-  location: {}
+  location: {tags: [location]}
 object_defs:
   world:
     slots:
       locations:
         accepts:
-          - {object: location, max: 10}
+          - {tag: location, max: 10}
   forest:
     traits: [location]
 ";
@@ -825,40 +825,42 @@ object_defs:
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             SlotDef locations = SlotOf(codex, world, "locations");
 
-            Assert.That(locations.Accepts[0].With, Is.EqualTo("location"));
+            Assert.That(locations.Accepts[0].With, Is.EqualTo(codex.TagNames.GetId("location")));
 
             ObjectDef forest = codex.Objects.Get(codex.ObjectNames.GetId("forest"));
             Assert.That(locations.Accepts[0].Matches(forest), Is.True);
         }
 
         [Test]
-        public void LoadFromGroups_SlotAcceptsUnknownName_Throws()
+        public void LoadFromGroups_SlotAcceptsMatchesTagDeclaredDirectly_EvenWithoutSharedTrait()
         {
+            // beachはforestと同じtraitを一切参照しないが、tagsで直接同じタグを宣言する。同一traitでなくても
+            // 同じように受け入れたい、というtags導入の意図そのものを検証する。
             const string yaml = @"
+traits:
+  location: {tags: [location]}
 object_defs:
   world:
     slots:
       locations:
         accepts:
-          - {object: does_not_exist, max: 10}
+          - {tag: location, max: 10}
+  forest:
+    traits: [location]
+  beach:
+    tags: [location]
+  rock: {}
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist"));
-        }
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
-        [Test]
-        public void LoadFromGroups_CombinationWithUnknownName_Throws()
-        {
-            const string yaml = @"
-object_defs:
-  wood:
-    combinations:
-      chop:
-        with: does_not_exist2
-        destroy: self
-";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist2"));
+            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
+            SlotDef locations = SlotOf(codex, world, "locations");
+
+            ObjectDef beach = codex.Objects.Get(codex.ObjectNames.GetId("beach"));
+            ObjectDef rock = codex.Objects.Get(codex.ObjectNames.GetId("rock"));
+
+            Assert.That(locations.Accepts[0].Matches(beach), Is.True, "traitを介さず直接tagsで宣言したタグでもマッチする");
+            Assert.That(locations.Accepts[0].Matches(rock), Is.False, "タグを持たないobject_defはマッチしない");
         }
 
         // ------------------------------------------------------------------
