@@ -113,10 +113,11 @@ namespace UnmappedIsland.Loader
                     int? min = stageMap.TryGetInt("min", context);
                     bp.Stages.Add(new StageBlueprint { Name = stageName, Min = min });
 
-                    YamlMappingNode stagePassive = stageMap.TryGetMapping("passive", context);
-                    if (stagePassive != null)
-                        ParsePassiveMapInto(owner.Contributions, objectDefName, stagePassive,
-                            forcedGate: ContributionGateKind.WhenOwnStage, forcedStageProperty: propName, forcedStageName: stageName);
+                    // stageは専用の"passive"ラップを挟まず、when/modify/accumulateをname/minと対等な
+                    // 兄弟キーとして直接持つ。何も無いstage(name/minのみ)でも安全にno-opする。
+                    ParsePassiveMapInto(owner.Contributions, objectDefName, stageMap,
+                        forcedGate: ContributionGateKind.WhenOwnStage, forcedStageProperty: propName, forcedStageName: stageName,
+                        reservedKeys: StageReservedKeys);
                 }
             }
 
@@ -152,17 +153,28 @@ namespace UnmappedIsland.Loader
             return PropertyValue.FromSymbol(symbols.Intern(raw));
         }
 
+        /// <summary>activeの内容(set/add/destroy/spawn)を1つも持たないキー集合。actions/combinations/pickの
+        /// 各エントリは、専用の"active"キーを介さずshowMenu/conditions/with/weight/pickと対等な兄弟キーとして
+        /// set/add/destroy/spawnを直接持つため、「activeとして何か書かれているか」をこの4キーの有無で判定する。</summary>
+        private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn" };
+
+        private static bool HasActiveContent(YamlMappingNode map) =>
+            ActiveVerbKeys.Any(key => map.TryGet(key) != null);
+
         /// <summary>
         /// active内容（9節: set/add/destroy/spawn）を読む。文法は「操作(set/add)が上位、対象
         /// (self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。on_min・on_max・on_overflow・
-        /// on_shortfall（6節、selfOnly: true）、actions/combinations/pickのactive（selfOnly: false）の
-        /// すべてから共通で使う。
+        /// on_shortfall（6節、selfOnly: true）は専用キー配下でこの形をそのまま持つ。actions/combinations/pick
+        /// （selfOnly: false）は"active"というラップを挟まず、showMenu/conditions/with/weight/pickと対等な
+        /// 兄弟キーとしてこの形を直接持つため、bodyNodeにはそれら他のキーも同居する。reservedKeysには、
+        /// そうした「activeとは無関係な、呼び出し側がすでに読み終えている兄弟キー」を渡し、未知キー判定から除外する。
         ///
         /// destroyは削除対象を直接指す（`destroy: self`、または複数対象なら`destroy: [self, dragged]`）。
         /// spawnは常にselfが実行するものとみなすため対象キーを持たない（対象別のラップを挟まない）。
         /// </summary>
         private static ActiveEffectBlueprint ParseActiveEffectBody(
-            string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly)
+            string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly,
+            IReadOnlyCollection<string> reservedKeys = null)
         {
             var bp = new ActiveEffectBlueprint();
 
@@ -203,8 +215,11 @@ namespace UnmappedIsland.Loader
                 };
             }
 
+            var knownKeys = new HashSet<string>(ActiveVerbKeys);
+            if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
+
             var unknownKeys = bodyNode.EntriesInOrder().Select(e => e.Key)
-                .Where(k => k != "set" && k != "add" && k != "destroy" && k != "spawn").ToList();
+                .Where(k => !knownKeys.Contains(k)).ToList();
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
@@ -365,6 +380,9 @@ namespace UnmappedIsland.Loader
             throw new YamlLoadException($"{context}: weightはリテラル数値か{{path: ...}}のいずれかである必要があります。");
         }
 
+        /// <summary>pick候補が持つ、weight/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
+        private static readonly string[] PickCandidateReservedKeys = { "weight", "pick" };
+
         private static List<PickCandidateBlueprint> ParsePickList(
             string context, YamlSequenceNode pickNode, bool allowDragged, NameRegistry symbols)
         {
@@ -380,15 +398,16 @@ namespace UnmappedIsland.Loader
 
                 var candidate = new PickCandidateBlueprint { Weight = ParseWeight(candidateContext, weightNode) };
 
-                YamlMappingNode activeMap = map.TryGetMapping("active", candidateContext);
+                bool hasActive = HasActiveContent(map);
                 YamlSequenceNode nestedPick = map.TryGetSequence("pick", candidateContext);
 
-                if (activeMap != null && nestedPick != null)
-                    throw new YamlLoadException($"{candidateContext}: 'active'と'pick'は同時に指定できません。");
-                if (activeMap == null && nestedPick == null)
-                    throw new YamlLoadException($"{candidateContext}: 'active'または'pick'のいずれかが必要です。");
+                if (hasActive && nestedPick != null)
+                    throw new YamlLoadException($"{candidateContext}: set/add/destroy/spawnとpickは同時に指定できません。");
+                if (!hasActive && nestedPick == null)
+                    throw new YamlLoadException($"{candidateContext}: set/add/destroy/spawnのいずれか、またはpickが必要です。");
 
-                if (activeMap != null) candidate.Active = ParseActiveEffectBody(candidateContext, activeMap, allowDragged, selfOnly: false);
+                if (hasActive)
+                    candidate.Active = ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly: false, PickCandidateReservedKeys);
                 if (nestedPick != null) candidate.Pick = ParsePickList(candidateContext, nestedPick, allowDragged, symbols);
 
                 result.Add(candidate);
@@ -396,6 +415,12 @@ namespace UnmappedIsland.Loader
 
             return result;
         }
+
+        /// <summary>actionエントリが持つ、showMenu/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
+        private static readonly string[] ActionReservedKeys = { "showMenu", "conditions", "pick" };
+
+        /// <summary>combinationエントリが持つ、with/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
+        private static readonly string[] CombinationReservedKeys = { "with", "conditions", "pick" };
 
         /// <summary>actions_map（11節）を読む。dragged対象はメニュー型操作では意味を持たないため不可。</summary>
         public static List<ActionBlueprint> ParseActions(string objectDefName, YamlMappingNode actionsNode, NameRegistry symbols)
@@ -416,12 +441,12 @@ namespace UnmappedIsland.Loader
 
                 action.Conditions.AddRange(ParseConditions(context, map.TryGetSequence("conditions", context), symbols));
 
-                YamlMappingNode activeMap = map.TryGetMapping("active", context);
+                bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
-                if (activeMap != null && pickList != null)
-                    throw new YamlLoadException($"{context}: 'active'と'pick'は同時に指定できません。");
+                if (hasActive && pickList != null)
+                    throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
 
-                if (activeMap != null) action.Active = ParseActiveEffectBody(context, activeMap, allowDragged: false, selfOnly: false);
+                if (hasActive) action.Active = ParseActiveEffectBody(context, map, allowDragged: false, selfOnly: false, ActionReservedKeys);
                 if (pickList != null) action.Pick = ParsePickList(context, pickList, allowDragged: false, symbols);
 
                 result.Add(action);
@@ -446,12 +471,12 @@ namespace UnmappedIsland.Loader
 
                 combination.Conditions.AddRange(ParseConditions(context, map.TryGetSequence("conditions", context), symbols));
 
-                YamlMappingNode activeMap = map.TryGetMapping("active", context);
+                bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
-                if (activeMap != null && pickList != null)
-                    throw new YamlLoadException($"{context}: 'active'と'pick'は同時に指定できません。");
+                if (hasActive && pickList != null)
+                    throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
 
-                if (activeMap != null) combination.Active = ParseActiveEffectBody(context, activeMap, allowDragged: true, selfOnly: false);
+                if (hasActive) combination.Active = ParseActiveEffectBody(context, map, allowDragged: true, selfOnly: false, CombinationReservedKeys);
                 if (pickList != null) combination.Pick = ParsePickList(context, pickList, allowDragged: true, symbols);
 
                 result.Add(combination);
@@ -501,14 +526,22 @@ namespace UnmappedIsland.Loader
             return bp;
         }
 
+        /// <summary>stageエントリが持つ、when/modify/accumulate以外の兄弟キー（name/min）。</summary>
+        private static readonly string[] StageReservedKeys = { "name", "min" };
+
         /// <summary>
         /// passive_map（self/parent/child、actorは未対応のためスキップ）を読み、ContributionBlueprintへ
         /// 変換してoutputへ追加する。forcedGateがWhenOwnStageの場合、各対象の"when"は無視し
         /// （1つのContributionは単一のゲート種別しか表現できないため）、常にそのステージのゲートを使う。
+        ///
+        /// stage内では専用の"passive"ラップを挟まず、passiveMapとしてstageエントリ自身（name/minを
+        /// 含む）が渡されるため、reservedKeysでそれらを未知キー判定から除外する。オブジェクトレベル・
+        /// プロパティレベルの"passive:"はこれまで通り専用ラップを持つため、reservedKeysは不要（null）。
         /// </summary>
         private static void ParsePassiveMapInto(
             List<ContributionBlueprint> output, string objectDefName, YamlMappingNode passiveMap,
-            ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName)
+            ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName,
+            IReadOnlyCollection<string> reservedKeys = null)
         {
             string context = $"'{objectDefName}'.passive";
 
@@ -525,8 +558,11 @@ namespace UnmappedIsland.Loader
                 output, context, passiveMap, "accumulate", ContributionKind.Accumulate,
                 whenByTarget, forcedGate, forcedStageProperty, forcedStageName);
 
+            var knownKeys = new HashSet<string> { "when", "modify", "accumulate" };
+            if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
+
             var unknownKeys = passiveMap.EntriesInOrder().Select(e => e.Key)
-                .Where(k => k != "when" && k != "modify" && k != "accumulate").ToList();
+                .Where(k => !knownKeys.Contains(k)).ToList();
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
         }

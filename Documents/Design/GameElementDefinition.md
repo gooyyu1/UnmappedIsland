@@ -199,6 +199,9 @@ props:
 - ステージの `passive` はレベルトリガー（そのステージにいる間ずっと有効）のみです。ステージ切替の瞬間だけ発火する
   edge-triggered な仕組み（`on_enter`/`on_exit` 的なもの）は導入していません。「下限に達した瞬間」という実際に
   必要なケースは、専用の `on_min`（6.5 節）で表現します。
+- ステージは専用の `passive:` ラップを挟まず、`when`/`modify`/`accumulate`（8 節）を `name`/`min` と対等な
+  兄弟キーとして直接持ちます。`passive` という語自体は、オブジェクトレベル・プロパティレベルの `passive:`
+  （8 節）では引き続き使いますが、ステージの中では書きません。
 
 ```yaml
 props:
@@ -208,17 +211,15 @@ props:
         min: 0
       - name: mild
         min: 20
-        passive:
-          accumulate:
-            parent:
-              temperature: 1
+        accumulate:
+          parent:
+            temperature: 1
       - name: feverish
         min: 50
-        passive:
-          accumulate:
-            parent:
-              temperature: 2
-              hydration: -1
+        accumulate:
+          parent:
+            temperature: 2
+            hydration: -1
 ```
 
 ### 6.5 on_min（下限以下である間、毎tick実行される内容）
@@ -533,23 +534,29 @@ object_defs:
 
 ## 9. active（一時的な命令）
 
-`active` は、アクション・組み合わせ・確率分岐の結果が確定した瞬間に、**無条件で1回だけ**適用される命令です。
-持続する条件を表す `when`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
+`active` は、アクション・組み合わせ・確率分岐の結果が確定した瞬間に、**無条件で1回だけ**適用される命令を指す
+概念です。持続する条件を表す `when`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
+
+`active` という語自体は、YAML 上の専用キーとしては書きません。この節で説明する `set`・`add`・`destroy`・
+`spawn` を、それが書ける場所（9.5 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
+`on_min`/`on_overflow`/`on_shortfall`/`on_max`）の中に、`showMenu`/`conditions`/`with`/`weight`/`pick` と
+対等な兄弟キーとして直接書きます。専用のラップを挟まないことで、動詞（`set`/`add`/`destroy`/`spawn`）が
+`pick` と並列に並び、「実行結果は直接書くか、`pick` で確率分岐するかのどちらか」という構造がそのまま
+YAML の見た目に表れます。
 
 ### 9.1 文法: 操作が上位、対象が下位
 
-`active` は `set`・`add`・`destroy`・`spawn` という操作をキーとする辞書型です。`set`/`add` の中には、
-`self`/`parent`/`actor` を対象キーとする辞書がぶら下がります（`combinations`（12 節）の中では、これに加えて
-**`dragged`**（ドラッグされてきたカード）も使えます）。
+`set`・`add`・`destroy`・`spawn` という操作をキーとして直接書きます。`set`/`add` の中には、`self`/`parent`/
+`actor` を対象キーとする辞書がぶら下がります（`combinations`（12 節）の中では、これに加えて **`dragged`**
+（ドラッグされてきたカード）も使えます）。
 
 ```yaml
 actions:
   eat:
-    active:
-      add:
-        actor:
-          satiety: 10
-      destroy: self
+    add:
+      actor:
+        satiety: 10
+    destroy: self
 ```
 
 ### 9.2 set / add
@@ -583,24 +590,21 @@ actions:
 
 **`into`（配置先の起点）** は、以下のいずれかです。
 
-- **省略、または`same_slot`**: この`active`/`on_min`/`on_overflow`/`on_shortfall`を宣言したオブジェクト
-  （`self`）が今いる、まさにその場所（親と、`self`が現在占めているのと同じスロット）へそのまま配置します。
-  クラフト・腐敗など、「同じ場所で別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません
-  （`self`の現在の所属先が一意に決まるため）。`same_slot`は省略時と全く同じ意味を持つ、明示したい場合の
-  ためのキーワードです。
+- **省略、または`same_slot`**: この`set`/`add`/`destroy`/`spawn`を宣言したオブジェクト（`self`）が今いる、
+  まさにその場所（親と、`self`が現在占めているのと同じスロット）へそのまま配置します。クラフト・腐敗など、
+  「同じ場所で別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません（`self`の現在の所属先が
+  一意に決まるため）。`same_slot`は省略時と全く同じ意味を持つ、明示したい場合のためのキーワードです。
 - **`self`/`actor`**: このいずれかを起点に、その対象が持つスロットを宣言順に走査します。`actor`
-  （アクション実行者）は、アクション実行文脈でのみ解決できます。`on_min`/`on_overflow`/`on_shortfall`には
-  `actor`が存在しないため使えません（配置は行われません）。
+  （アクション実行者）は、アクション実行文脈でのみ解決できます。`on_min`/`on_overflow`/`on_shortfall`/`on_max`
+  には`actor`が存在しないため使えません（配置は行われません）。
 
 ```yaml
-active:
-  spawn: {object: rotten_wood}
-  destroy: self
+spawn: {object: rotten_wood}
+destroy: self
 ```
 
 ```yaml
-active:
-  spawn: {object: item_coconut, into: actor}
+spawn: {object: item_coconut, into: actor}
 ```
 
 `into`が指す起点のどのスロットにも`accepts`/`capacity`が合わず配置できなかった場合、**`fallback`はYAML上に
@@ -615,25 +619,27 @@ active:
 配置されないまま消えます（生成自体はされますが、worldツリーに繋がらないため、存在しなかったのと同じ扱いに
 なります。7.1 節参照）。
 
-### 9.5 active が書ける場所
+### 9.5 set/add/destroy/spawn が書ける場所
 
-`active` は次のいずれかの位置に直接書きます。持続する条件を表す `when`/ゲートを持つ `passive` とは、書ける場所が
-構造上重ならないため、両者を混同する余地はありません。
+この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `when`/ゲートを持つ
+`passive` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
 
-- `actions`/`combinations` の実行結果（11 節・12 節）
-- `pick` の各候補（10 節）
-- `props` の `on_min`（6.5 節）・`on_overflow`/`on_shortfall`（6.3 節）
+- `actions`/`combinations` の各エントリ（11 節・12 節）— `showMenu`/`conditions`/`with`/`pick` と対等な
+  兄弟キー
+- `pick` の各候補（10 節）— `weight`/`pick` と対等な兄弟キー
+- `props` の `on_min`（6.5 節）・`on_overflow`/`on_shortfall`（6.3 節）・`on_max`（6.6 節）— これらは専用の
+  キーの直下にそのまま書きます（元々ラップを挟んでいなかったため変更なし）
 
 ## 10. pick（重み付き確率分岐）
 
-`pick` は、`active` を書く場所であればどこでも、**`active` の代わりに**書ける、重み付き候補のリストです。新しい
-トリガー体系は必要とせず、`passive`（無条件／`when`／stage 内）には書けません。`passive` は「いつ振るか」という
-瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
+`pick` は、`set`/`add`/`destroy`/`spawn`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
+重み付き候補のリストです。新しいトリガー体系は必要とせず、`passive`（無条件／`when`／stage 内）には書けません。
+`passive` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
 
 ### 10.1 基本構造
 
-各候補は `weight` に加えて、自分自身の `active`（9 節の文法そのまま）を丸ごと持ちます。候補が1つしかない場合は、
-重みの値に関わらず必ずそれが選ばれます。
+各候補は `weight` に加えて、`set`/`add`/`destroy`/`spawn`（9 節の文法そのまま）を `weight`/`pick` と対等な
+兄弟キーとして直接持ちます。候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。
 
 ```yaml
 actions:
@@ -641,17 +647,15 @@ actions:
     showMenu: always
     pick:
       - weight: 50
-        active:
-          destroy: self
+        destroy: self
       - weight: 50
-        active:
-          destroy: actor
+        destroy: actor
 ```
 
 候補ごとに影響を受ける対象（`self`/`actor` など）そのものが異なるケースも、このように表現できます。`pick` の
-入れ子は再帰的であり、候補の `active` の代わりにさらに別の `pick` を書くこともできます。
+入れ子は再帰的であり、候補の `set`/`add`/`destroy`/`spawn` の代わりにさらに別の `pick` を書くこともできます。
 
-各候補の `active` に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate`
+各候補に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate`
 は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
 終わる `pick` の候補に書く意味がありません。
 
@@ -666,11 +670,10 @@ actions:
 ```yaml
 pick:
   - weight: {path: self.accuracy}
-    active:
-      add:
-        self: {hp: -10}
-  - weight: 40
-    active: {}
+    add:
+      self: {hp: -10}
+  - weight: {path: self.evasion}
+    destroy: dragged
 ```
 
 外部からの干渉（「戦闘スキルが高いほど命中しやすい」等）は、`weight` 自体に専用の補正記法を用意するのではなく、
@@ -678,8 +681,9 @@ pick:
 
 ## 11. actions（メニュー型操作）
 
-アクション（`eat`、`move` など）は、条件（`conditions`）と実行結果（`active`/`pick`）を**1つの定義としてまとめて
-持ちます**。`object_defs`/`traits` の中に配置します（トップレベル独立キーにはしません）。
+アクション（`eat`、`move` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`、または
+`pick`）を**1つの定義としてまとめて持ちます**。`object_defs`/`traits` の中に配置します（トップレベル独立キーには
+しません）。
 
 ```yaml
 traits:
@@ -689,11 +693,10 @@ traits:
         showMenu: always
         conditions:
           - {path: actor.satiety, op: lt, value: max}
-        active:
-          add:
-            actor:
-              satiety: 10
-          destroy: self
+        add:
+          actor:
+            satiety: 10
+        destroy: self
 ```
 
 ### 11.1 showMenu
@@ -704,10 +707,11 @@ traits:
 
 `{path, op, value}` の AND リストです（14 節）。
 
-### 11.3 active / pick
+### 11.3 set/add/destroy/spawn（active） / pick
 
-このアクションが実行された瞬間に、`active`（9 節）が1回だけ適用されるか、`pick`（10 節）で候補が1つ選ばれて
-適用されます。
+このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`（9 節、`active` の実体）が1回だけ適用される
+か、`pick`（10 節）で候補が1つ選ばれて適用されます。`showMenu`/`conditions`と対等な兄弟キーとして直接書き、
+専用の `active:` ラップは挟みません。どちらも指定しなければ、条件成立時に何も起きないアクションになります。
 
 **`actor` はすべてのアクションに暗黙的に存在し、常にプレイヤーキャラクターを指します。** `parent`（木構造上の直接の
 格納先）とは独立した参照です。
@@ -725,12 +729,11 @@ object_defs:
         with: axe_tool
         conditions:
           - {path: dragged.durability, op: gt, value: 0}
-        active:
-          spawn: {object: logs}
-          destroy: self
-          add:
-            dragged:
-              durability: -1
+        spawn: {object: logs}
+        destroy: self
+        add:
+          dragged:
+            durability: -1
 ```
 
 ### 12.1 with
@@ -740,8 +743,9 @@ object_defs:
 
 ### 12.2 dragged
 
-`active`/`pick`（9 節・10 節）の対象キーに、`self`/`parent`/`child`/`actor` に加えて **`dragged`**（このインタラク
-ションでドラッグされてきたカード）を使えます。`combinations` の中でのみ意味を持つ、専用のキーです。
+`set`/`add`/`destroy`（9 節）の対象キー、および `weight` の `path`（10.2 節）に、`self`/`parent`/`child`/`actor`
+に加えて **`dragged`**（このインタラクションでドラッグされてきたカード）を使えます。`combinations` の中でのみ
+意味を持つ、専用のキーです。
 
 ### 12.3 対称的な組み合わせ
 
@@ -754,12 +758,14 @@ object_defs:
     combinations:
       craft_spear:
         with: rope
-        active: {...}
+        destroy: [self, dragged]
+        spawn: {object: spear}
   rope:
     combinations:
       craft_spear:
         with: stick
-        active: {...}
+        destroy: [self, dragged]
+        spawn: {object: spear}
 ```
 
 `combinations` の使い分け方針（メニュー型との比較、キーの衝突の扱いなど）は `ActionSystem.md` を参照してください。

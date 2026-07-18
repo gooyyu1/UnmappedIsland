@@ -279,10 +279,9 @@ object_defs:
         stages:
           - name: lit
             min: 1
-            passive:
-              modify:
-                child:
-                  warmth: 5
+            modify:
+              child:
+                warmth: 5
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
@@ -396,11 +395,10 @@ object_defs:
         showMenu: always
         conditions:
           - {path: actor.satiety, op: lt, value: 100}
-        active:
-          add:
-            actor:
-              satiety: 10
-          destroy: self
+        add:
+          actor:
+            satiety: 10
+        destroy: self
   player: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -427,11 +425,9 @@ object_defs:
       attack:
         pick:
           - weight: 50
-            active:
-              destroy: self
+            destroy: self
           - weight: 50
-            active:
-              destroy: actor
+            destroy: actor
   target: {}
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -456,12 +452,11 @@ object_defs:
         with: axe_tool
         conditions:
           - {path: dragged.durability, op: gt, value: 0}
-        active:
-          spawn: {object: logs}
-          destroy: self
-          add:
-            dragged:
-              durability: -1
+        spawn: {object: logs}
+        destroy: self
+        add:
+          dragged:
+            durability: -1
   logs: {}
   axe_tool:
     props:
@@ -487,8 +482,7 @@ traits:
   eatable:
     actions:
       eat:
-        active:
-          destroy: self
+        destroy: self
 object_defs:
   berry:
     traits: [eatable]
@@ -507,11 +501,11 @@ traits:
   trait_a:
     actions:
       use:
-        active: {destroy: self}
+        destroy: self
   trait_b:
     actions:
       use:
-        active: {destroy: self}
+        destroy: self
 object_defs:
   thing:
     traits: [trait_a, trait_b]
@@ -528,8 +522,7 @@ object_defs:
   thing:
     actions:
       use:
-        active:
-          destroy: dragged
+        destroy: dragged
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("dragged"));
@@ -543,8 +536,7 @@ object_defs:
   thing:
     actions:
       use:
-        active:
-          destroy: child
+        destroy: child
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("child"));
@@ -559,7 +551,7 @@ object_defs:
     actions:
       use:
         showMenu: sometimes
-        active: {destroy: self}
+        destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("showMenu"));
@@ -575,7 +567,7 @@ object_defs:
       use:
         conditions:
           - {path: world.day, op: gt, value: 0}
-        active: {destroy: self}
+        destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("world"));
@@ -591,7 +583,7 @@ object_defs:
       use:
         conditions:
           - {path: actor.satiety, op: lt, value: max}
-        active: {destroy: self}
+        destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("max"));
@@ -605,13 +597,13 @@ object_defs:
   thing:
     actions:
       use:
-        active: {destroy: self}
+        destroy: self
         pick:
           - weight: 1
-            active: {destroy: self}
+            destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("active"));
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("pick"));
         }
 
         // ------------------------------------------------------------------
@@ -668,7 +660,7 @@ object_defs:
     combinations:
       chop:
         with: does_not_exist2
-        active: {destroy: self}
+        destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist2"));

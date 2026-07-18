@@ -20,12 +20,12 @@
   構文的に正しいスキーマであることを確認
 - **既存サンプルの受理**: 各ドキュメントに掲載されている実際のYAMLサンプル（`eat`/`move` アクション、`world` シングルトン、
   防具・耐久値（`passive`の`accumulate`＋`on_min`の`destroy`）・細菌感染、`traits`、`combinations` の `chop`
-  （`active` の `spawn`＋`destroy`）、`pick` を使った攻撃・生水・探索、レシピ、`slots` の `accepts`/`capacity`/`weight_rate`）を
+  （`spawn`＋`destroy`）、`pick` を使った攻撃・生水・探索、レシピ、`slots` の `accepts`/`capacity`/`weight_rate`）を
   抽出し、すべてスキーマを満たすことを確認
-- **不正な記述の拒否**: `active` と `pick` を同時に指定する、identifier の命名規則に反するキーを使う、未定義の
-  比較演算子を使う、`passive`/`active` に未定義の対象キー（`sibling` など）を使う、`combinations` に `with` を書き忘れる、
-  `active` の対象キーに `add`/`destroy`/`spawn` を1つも指定しない、廃止済みの `lifecycle` 入れ子を使う、pick候補が
-  `active` と `pick` を同時に持つ、といった誤った記述が、想定通り拒否されることを確認
+- **不正な記述の拒否**: `set`/`add`/`destroy`/`spawn` と `pick` を同時に指定する、identifier の命名規則に反する
+  キーを使う、未定義の比較演算子を使う、`passive`/`set`/`add` に未定義の対象キー（`sibling` など）を使う、
+  `combinations` に `with` を書き忘れる、廃止済みの `active:`/`lifecycle` 入れ子を使う、pick候補が
+  `set`/`add`/`destroy`/`spawn` と `pick` を同時に持つ、といった誤った記述が、想定通り拒否されることを確認
 
 ## 2. スキーマの範囲
 
@@ -34,11 +34,13 @@
 - ルート構造（`object_defs`/`traits`、専用ルートキーなし）
 - `object_defs`/`traits`（3〜5節）
 - `props`（固定値・範囲値・overflow/shortfall・stages・`on_min`・`on_max`、6節）
-- `passive`（対象をキーとする辞書、`when`、`modify`/`accumulate`、8節）
-- `active`（対象をキーとする辞書、`add`/`destroy`/`spawn`、9節）
-- `pick`（重み付き確率分岐、`active` の代替キー、10節）
-- `actions`（`showMenu`・`conditions`・`active`/`pick`、11節）
-- `combinations`（`with`・`conditions`・`active`/`pick`、12節。使い分け方針は`ActionSystem.md`）
+- `passive`（`when`/`modify`/`accumulate`を上位、対象を下位に持つ辞書、8節。オブジェクトレベル・プロパティ
+  レベルの`passive:`キー。stage内は専用ラップを挟まず`name`/`min`と対等な兄弟キーとして直接持つ、6.4節）
+- `active`（`set`/`add`/`destroy`/`spawn`を上位、対象を下位に持つ辞書、9節。専用のYAMLキーは持たず、
+  actions/combinations/pickの各エントリへ他の兄弟キーと対等に直接展開する）
+- `pick`（重み付き確率分岐、`set`/`add`/`destroy`/`spawn`の代替キー、10節）
+- `actions`（`showMenu`・`conditions`・`set`/`add`/`destroy`/`spawn`・`pick`、11節）
+- `combinations`（`with`・`conditions`・`set`/`add`/`destroy`/`spawn`・`pick`、12節。使い分け方針は`ActionSystem.md`）
 - `recipes`（`steps`/`requires`/`duration`、13節。内部設計は`RecipeSystem.md`）
 - `slots`（`accepts`/`capacity`/`weight_rate`、7節。内部設計は`RecipeSystem.md`・`ContainerSystem.md`）
 - `singleton`・`covers`/`layer`（15節・7.5節）
