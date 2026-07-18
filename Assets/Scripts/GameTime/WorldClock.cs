@@ -13,8 +13,11 @@ namespace UnmappedIsland.GameTime
     /// 1tickあたりの分数（15）自体もC#側の定数ではなくcore.yamlの`world.minutes_per_tick`が持つ値であり、
     /// このクラスは実行時にそれを読むだけで、具体的な数字への依存はcore.yaml側に寄せている。minute自身は
     /// tick駆動のaccumulateを持たない（YAML側の自動加算とこのクラスの加算が二重にならないようにするため）。
-    /// minuteへの加算は、常にminutes_per_tick以下の小さな量を1回ずつ行う（大きな値を一度に加算すると、
-    /// on_overflowが1回の補正しか行わないため、途中経過を経ずに正しく折り返せる保証がなくなる）。
+    ///
+    /// AddMinutesにはsessionを渡すため、minuteのon_overflow（60分でhourへ繰り上げ）はWorldObject.AddNumberの
+    /// 中でその場すぐに判定・実行される（Tickを待って範囲外の値が外部から見える瞬間は生じない）。
+    /// それでもtick境界ごとにTick()を分けて呼ぶのは、rangeの安全性のためではなく、`tick`プロパティ自身や
+    /// 他のTick駆動の効果（accumulate等）を「1tick進むたびに1回」正しく発火させるためである。
     /// </summary>
     public static class WorldClock
     {
@@ -35,20 +38,20 @@ namespace UnmappedIsland.GameTime
 
             if (ticksToRun == 0)
             {
-                world.AddMinutes(amount);
+                world.AddMinutes(amount, session);
                 return;
             }
 
-            world.AddMinutes(minutesPerTick - minuteOfTick); // 最初のtick境界まで
+            world.AddMinutes(minutesPerTick - minuteOfTick, session); // 最初のtick境界まで
             world.Instance.Tick(session);
 
             for (int i = 1; i < ticksToRun; i++)
             {
-                world.AddMinutes(minutesPerTick); // 以降は1tick分ずつ
+                world.AddMinutes(minutesPerTick, session); // 以降は1tick分ずつ
                 world.Instance.Tick(session);
             }
 
-            world.AddMinutes(total % minutesPerTick); // 最後に端数（0以上、minutes_per_tick未満）を加算
+            world.AddMinutes(total % minutesPerTick, session); // 最後に端数（0以上、minutes_per_tick未満）を加算
         }
     }
 }

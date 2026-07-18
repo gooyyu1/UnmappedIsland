@@ -80,24 +80,43 @@ namespace UnmappedIsland.Runtime
         /// <summary>
         /// 数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の `add`、ContainerSystem.md の重さ伝播で使用）。
         /// このオブジェクトが対象プロパティを持たない場合は何もしない（例: 重さを気にしない置物）。
+        ///
+        /// on_overflow・on_shortfall・on_min・on_max（6.3節・6.5節・6.6節）は、値が変わった直後にこの中で
+        /// 判定・実行する（Tickの中だけで判定すると、Tickが呼ばれるまでの間、値がrangeの外側に出た状態で
+        /// 外部から見えてしまうため）。sessionを渡さない呼び出しは、この場では判定を行わない
+        /// （既存の「後で明示的にTick()を呼んで判定させる」呼び出し方との後方互換のため）。
+        ///
+        /// delta が 0 の場合は何もしない。これは、on_overflow等の既定の補正（値をrangeの境界へsetする）が
+        /// ちょうど境界に着地した後にも自分自身を再度setし直すことで、CheckRangeEvents→ApplyActiveEffect→
+        /// SetNumber→AddNumberという呼び出しが無限に連鎖するのを防ぐガードを兼ねる。
         /// </summary>
-        public void AddNumber(int globalPropertyId, int delta)
+        public void AddNumber(int globalPropertyId, int delta, WorldSession session = null)
         {
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing) return;
+            if (delta == 0) return;
+
             properties[local].Add(delta);
+            if (session != null)
+                properties[local].CheckRangeEvents(Def.PropertyDefs[local], this, session);
         }
 
         /// <summary>
         /// 数値プロパティへの不可逆な絶対値代入（GameElementDefinition.md 9.2節の`set`）。addとは異なり、
         /// 既存の値を無視して指定した値でそのまま置き換える。このオブジェクトが対象プロパティを
         /// 持たない場合は何もしない（AddNumberと同じ規約）。
+        ///
+        /// 実体はAddNumberへの委譲（差分=value-現在値を加算する）。Kindがsymbolだった場合でも差分計算が
+        /// そのまま機能するよう、値には触れずKindだけを先にNumberへ強制する。
         /// </summary>
-        public void SetNumber(int globalPropertyId, int value)
+        public void SetNumber(int globalPropertyId, int value, WorldSession session = null)
         {
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing) return;
-            properties[local].SetNumber(value);
+
+            int delta = value - properties[local].Number;
+            properties[local].CoerceToNumberKind();
+            AddNumber(globalPropertyId, delta, session);
         }
 
         public bool TryGetSlot(int globalSlotId, out Slot slot)
@@ -192,7 +211,7 @@ namespace UnmappedIsland.Runtime
                 if (!effect.Sets.TryGetValue(key, out var assigns)) continue;
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
-                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, assign.Value);
+                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, assign.Value, session);
             }
 
             foreach (ReferenceRoot key in OrderedTargets)
@@ -200,7 +219,7 @@ namespace UnmappedIsland.Runtime
                 if (!effect.Adds.TryGetValue(key, out var deltas)) continue;
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
-                foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount);
+                foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
             }
 
             bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);

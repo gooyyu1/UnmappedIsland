@@ -7,9 +7,11 @@ namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
     /// on_overflow（GameElementDefinition.md 6.3節: rangeの上限を超えたプロパティについて、on_minと全く
-    /// 同じActiveEffect・ApplyActiveEffectの経路で、著者が指定したadd/setを一度だけ適用する）に対する
-    /// 自動テスト。ループ・多重走査は行わないため、1tickでの解決範囲はaccumulateの通常の反映と同じ
-    /// （宣言順に1回ずつ）。YAMLパーサ経由のテストはYamlLoaderTests.csを参照。
+    /// 同じActiveEffect・ApplyActiveEffectの経路で、著者が指定したadd/setを適用する）に対する自動テスト。
+    /// WorldObject.AddNumber/SetNumberは値が変わった直後にsession経由でCheckRangeEventsを再評価するため、
+    /// on_overflowの補正自体が別のプロパティ（またはrangeが残っている自分自身）を書き換えた場合、
+    /// 同じTick()呼び出しの中で連鎖的に解決される（宣言順やTickの回数に依存しない）。
+    /// YAMLパーサ経由のテストはYamlLoaderTests.csを参照。
     /// </summary>
     [TestFixture]
     public class OverflowTests
@@ -60,6 +62,81 @@ namespace UnmappedIsland.Codex.Tests
                 TargetPropertyName = propertyName,
                 Amount = amount,
             };
+        }
+
+        [Test]
+        public void AddNumber_WithSession_CorrectsOverflowImmediately_WithoutWaitingForTick()
+        {
+            // Tick()を待たず、AddNumberにsessionを渡した瞬間にon_overflowが判定・適用されることを確認する。
+            // これにより、値がrangeの外側（この例では60）にある状態が外部から観測される瞬間は生じない。
+            var clock = new ObjectDefBlueprint { Name = "clock_immediate" };
+            clock.Properties.Add(WrappingProp("minute", 45, min: 0, max: 59, ("minute", -60), ("hour", 1)));
+            clock.Properties.Add(PlainProp("hour", 0));
+
+            var codex = WorldCodexBuilder.Build(new[] { clock });
+            int minuteId = codex.PropertyNames.GetId("minute");
+            int hourId = codex.PropertyNames.GetId("hour");
+            var session = new WorldSession(codex);
+
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_immediate")));
+
+            instance.AddNumber(minuteId, 15, session); // 45+15=60 > 59。Tick()は一度も呼んでいない
+
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(0), "Tick()を呼んでいなくても、その場で折り返る");
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddNumber_WithoutSession_DoesNotCheckOverflow_UntilExplicitTick()
+        {
+            // sessionを渡さない呼び出し（既存の呼び出し方との後方互換）は、値がrangeの外側のままでも
+            // 即座には補正されず、明示的にTick()を呼ぶまで持ち越されることを確認する。
+            var clock = new ObjectDefBlueprint { Name = "clock_deferred" };
+            clock.Properties.Add(WrappingProp("minute", 45, min: 0, max: 59, ("minute", -60), ("hour", 1)));
+            clock.Properties.Add(PlainProp("hour", 0));
+
+            var codex = WorldCodexBuilder.Build(new[] { clock });
+            int minuteId = codex.PropertyNames.GetId("minute");
+            int hourId = codex.PropertyNames.GetId("hour");
+            var session = new WorldSession(codex);
+
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_deferred")));
+
+            instance.AddNumber(minuteId, 15); // sessionを渡さない
+
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(60), "sessionを渡さない間はrange外のまま");
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(0));
+
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(0), "明示的にTick()を呼ぶと折り返る");
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void AddNumber_DefaultOnOverflowSettingSelfToSameValue_DoesNotRecurseInfinitely()
+        {
+            // on_overflowを省略した場合の既定合成（「自分自身をrange.maxへset」）は、値がちょうど境界に
+            // 着地した後は同じ値への再setになる（差分0）。AddNumberが差分0を何もしないことで、
+            // CheckRangeEvents→ApplyActiveEffect→SetNumber→AddNumberという無限再帰を防いでいることを確認する。
+            var tank = new ObjectDefBlueprint { Name = "tank_immediate" };
+            tank.Properties.Add(new PropertyBlueprint
+            {
+                Name = "pressure",
+                DefaultValue = PropertyValue.FromNumber(5),
+                Range = new PropertyRange(0, 10),
+                // OnOverflowを指定しない: ObjectDefBuilderが「自分自身をrange.maxへset」を既定合成する
+            });
+
+            var codex = WorldCodexBuilder.Build(new[] { tank });
+            int pressureId = codex.PropertyNames.GetId("pressure");
+            var session = new WorldSession(codex);
+
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank_immediate")));
+
+            instance.AddNumber(pressureId, 5, session); // 5+5=10 >= max(10)。例外・スタックオーバーフローを起こさなければ成功
+
+            Assert.That(instance.GetNumber(pressureId), Is.EqualTo(10));
         }
 
         [Test]
@@ -128,10 +205,11 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void Tick_AppliesOnOverflowOnlyOnce_SoSeveralSpansTakeSeveralTicksToFullyResolve()
+        public void Tick_OnOverflowCascadesImmediately_SoSeveralSpansResolveInASingleTick()
         {
-            // on_overflowはループしない。1tickでrangeの幅を複数回分飛び越えた場合、1回の適用では
-            // 完全には解決されず、次のtick以降に持ち越されることを確認する。
+            // on_overflowの補正自体(add: {self: {minute: -10}}})がAddNumberを通るため、その場でもう一度
+            // CheckRangeEventsが評価される。1tickでrangeの幅を複数回分飛び越えていても、この連鎖により
+            // 1回のTick()呼び出しの中だけで完全に解決される。
             var clock = new ObjectDefBlueprint { Name = "clock3" };
             clock.Properties.Add(WrappingProp("minute", 35, min: 0, max: 9, ("minute", -10), ("hour", 1))); // 範囲10分刻み、既に35(3span+5超過)
             clock.Properties.Add(PlainProp("hour", 0));
@@ -144,15 +222,7 @@ namespace UnmappedIsland.Codex.Tests
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock3")));
 
             instance.Tick(session);
-            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(25), "1回のtickでは-10適用1回分だけ解決される");
-            Assert.That(instance.GetNumber(hourId), Is.EqualTo(1));
-
-            instance.Tick(session);
-            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(15));
-            Assert.That(instance.GetNumber(hourId), Is.EqualTo(2));
-
-            instance.Tick(session);
-            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5), "3回目のtickでようやく範囲内に収まる");
+            Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5), "3span分の補正が1回のTick()の中で連鎖的に解決される");
             Assert.That(instance.GetNumber(hourId), Is.EqualTo(3));
 
             instance.Tick(session);
@@ -188,11 +258,11 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void Tick_DoesNotCascadeToEarlierDeclaredProperty_UntilNextTick()
+        public void Tick_CascadesToEarlierDeclaredProperty_RegardlessOfDeclarationOrder()
         {
-            // hourがminuteより先に宣言されている場合、hour.Tickは(この回では)minuteの繰り上げより前に
-            // 走ってしまうため、同じtick内では連鎖せず、次のtickで初めて解決されることを確認する
-            // （ループを廃止したことで生じる、宣言順への依存を明示するテスト）。
+            // hourがminuteより先に宣言されていても、minuteのon_overflowが行うadd: {self: {hour: 1}}}が
+            // AddNumberを通るため、その場でhour自身のCheckRangeEventsも即座に評価される。宣言順に関わらず
+            // 同じTick()呼び出しの中で連鎖的に解決される。
             var clock = new ObjectDefBlueprint { Name = "clock5" };
             clock.Properties.Add(WrappingProp("hour", 23, min: 0, max: 23, ("hour", -24), ("day", 1)));
             clock.Properties.Add(PlainProp("day", 1));
@@ -210,13 +280,8 @@ namespace UnmappedIsland.Codex.Tests
             instance.Tick(session);
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5));
-            Assert.That(instance.GetNumber(hourId), Is.EqualTo(24), "hourのTickがminuteより先に走るため、この時点ではまだ折り返らない");
-            Assert.That(instance.GetNumber(dayId), Is.EqualTo(1), "hourの溢れが未解決のため、dayもまだ変わらない");
-
-            instance.Tick(session); // 2回目のTickでhour自身の溢れが解決される
-
-            Assert.That(instance.GetNumber(hourId), Is.EqualTo(0));
-            Assert.That(instance.GetNumber(dayId), Is.EqualTo(2));
+            Assert.That(instance.GetNumber(hourId), Is.EqualTo(0), "hourがminuteより先に宣言されていても、即座に連鎖して折り返る");
+            Assert.That(instance.GetNumber(dayId), Is.EqualTo(2), "hourの繰り上げでdayも同じTick()内で+1される");
         }
 
         [Test]

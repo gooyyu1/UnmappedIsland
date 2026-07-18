@@ -68,6 +68,11 @@ namespace UnmappedIsland.Runtime
             Number = value;
         }
 
+        /// <summary>Kindのみを強制的にNumberへ切り替える（Numberの値自体には触れない）。
+        /// WorldObject.SetNumberがAddNumberへ差分(value-Number)を委譲する前に、Symbol値からの遷移でも
+        /// 差分計算がそのまま正しく機能するよう、値より先にKindだけ揃えておくために使う。</summary>
+        internal void CoerceToNumberKind() => Kind = PropertyValueKind.Number;
+
         internal void RegisterContribution(ActiveContribution contribution) => incoming.Add(contribution);
 
         internal void UnregisterContributionsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
