@@ -1139,5 +1139,72 @@ object_defs:
 
             Assert.That(instance.GetNumber(codex.PropertyNames.GetId("value")), Is.EqualTo(0), "既定のon_shortfallにより0へクランプされる");
         }
+
+        [Test]
+        public void LoadFromGroups_ConditionAncestorRoot_SkipsNonDefiningAncestorToFindNearestDefiner()
+        {
+            const string yaml = @"
+object_defs:
+  room:
+    props:
+      weather:
+        value: 1
+    slots:
+      contents: {}
+  character:
+    slots:
+      pocket: {}
+  food:
+    actions:
+      check:
+        conditions:
+          - {object: ancestor, prop: weather, op: eq, value: 1}
+        destroy: self
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+            int pocketSlotId = codex.SlotNames.GetId("pocket");
+
+            var session = new WorldSession(codex);
+            var roomInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("room")));
+            var characterInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("character")));
+            var foodInstance = new WorldObject(3, codex.Objects.Get(codex.ObjectNames.GetId("food")));
+
+            Assert.That(characterInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(foodInstance.MoveToSlot(characterInstance, pocketSlotId, codex.WellKnown, out _), Is.True);
+
+            Assert.That(InteractionExecutor.TryExecuteAction(foodInstance, actor: null, "check", session), Is.True,
+                "characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる");
+        }
+
+        [Test]
+        public void LoadFromGroups_DestroyTargetAncestor_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        destroy: ancestor
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("ancestor"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionSlotWithAncestorObject_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        conditions:
+          - {object: ancestor, slot: somewhere}
+        destroy: self
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("ancestor"));
+        }
     }
 }

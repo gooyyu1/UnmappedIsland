@@ -102,6 +102,16 @@ namespace UnmappedIsland.Codex
         /// </summary>
         public ActiveEffect OnMax { get; }
 
+        /// <summary>
+        /// inherit: 自分の直接の親から遡り、この名前のプロパティを定義している最初の祖先（Runtime.
+        /// WorldObject.FindAncestorWithProperty参照）の実効値を、自分の実効値に加算するか
+        /// （GetEffectiveValue、PropertyValue参照）。該当する祖先が見つからない場合、寄与は0
+        /// （既存の「見つからなければ0」規約と同じ）。parent固定ではなくancestor固定なのは、直接の親が
+        /// このプロパティを持たない場合に備えるため（例: アイテムの直接の親はプレイヤーだが、
+        /// temperatureは部屋が持つ）。
+        /// </summary>
+        public bool Inherit { get; }
+
         public PropertyDef(
             int globalId,
             string name,
@@ -112,7 +122,8 @@ namespace UnmappedIsland.Codex
             IReadOnlyList<PropertyStage> stages,
             ActiveEffect onMin = null,
             ActiveEffect onShortfall = null,
-            ActiveEffect onMax = null)
+            ActiveEffect onMax = null,
+            bool inherit = false)
         {
             GlobalId = globalId;
             Name = name;
@@ -124,6 +135,7 @@ namespace UnmappedIsland.Codex
             OnMin = onMin;
             OnShortfall = onShortfall;
             OnMax = onMax;
+            Inherit = inherit;
         }
 
         /// <summary>

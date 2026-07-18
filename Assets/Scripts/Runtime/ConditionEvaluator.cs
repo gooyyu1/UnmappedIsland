@@ -37,10 +37,16 @@ namespace UnmappedIsland.Runtime
         /// 他のconditionsから参照できる。比較対象のnode.Values側はYAML上のリテラル値（PropertyValue.FromNumber
         /// 生成、defを持たない）なので、そちらは引き続きAsNumberで読む（GetEffectiveValueはdef.Rangeを
         /// 参照するため、defを持たないリテラル側では呼べない）。
+        ///
+        /// Root=Ancestorは「どのプロパティを探すか」が決まらないと解決できない（他のrootと違い、1つの
+        /// WorldObjectに一意に定まらない）ため、resolveRootデリゲートには乗せず、ここでselfを起点に
+        /// WorldObject.FindAncestorWithPropertyを直接呼ぶ。
         /// </summary>
         private static bool EvaluateProperty(ConditionNode node, ConditionRootResolver resolveRoot)
         {
-            WorldObject target = resolveRoot(node.Root);
+            WorldObject target = node.Root == ReferenceRoot.Ancestor
+                ? resolveRoot(ReferenceRoot.Self)?.FindAncestorWithProperty(node.PropertyGlobalId)
+                : resolveRoot(node.Root);
             if (target == null) return false;
             if (!target.TryGetProperty(node.PropertyGlobalId, out PropertyValue current)) return false;
 
