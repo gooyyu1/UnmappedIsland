@@ -15,6 +15,7 @@
 ### 世界の記述（文法を使って具体的なゲーム内容をどう表現するか）
 
 - [気候システム設計](./ClimateSystem.md)
+- [耐久値システム設計](./DurabilitySystem.md)
 - [レシピシステム設計](./RecipeSystem.md)
 - [コンテナの容量と重さ](./ContainerSystem.md)
 - [カード間の相互作用（actions / combinations の使い分け）](./ActionSystem.md)
