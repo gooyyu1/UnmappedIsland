@@ -12,13 +12,13 @@ namespace UnmappedIsland.Runtime
     /// child対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、
     /// 読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。
     /// </summary>
-    public sealed class ActiveContribution
+    public sealed class RegisteredPassiveEffect
     {
         public WorldObject Declarer { get; }
         public WorldObject SlotBearer { get; }
-        public ContributionDef Def { get; }
+        public PassiveEffect Def { get; }
 
-        public ActiveContribution(WorldObject declarer, WorldObject slotBearer, ContributionDef def)
+        public RegisteredPassiveEffect(WorldObject declarer, WorldObject slotBearer, PassiveEffect def)
         {
             Declarer = declarer;
             SlotBearer = slotBearer;
@@ -30,13 +30,13 @@ namespace UnmappedIsland.Runtime
         {
             switch (Def.Gate.Kind)
             {
-                case ContributionGateKind.Always:
+                case PassiveEffectGateKind.Always:
                     return true;
 
-                case ContributionGateKind.Conditions:
+                case PassiveEffectGateKind.Conditions:
                     return ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot);
 
-                case ContributionGateKind.WhenOwnStage:
+                case PassiveEffectGateKind.WhenOwnStage:
                     int value = Declarer.GetNumberByLocalId(Def.Gate.PropertyLocalId);
                     var stage = Declarer.Def.PropertyDefs[Def.Gate.PropertyLocalId].ResolveStage(value);
                     return ReferenceEquals(stage, Def.Gate.Stage);

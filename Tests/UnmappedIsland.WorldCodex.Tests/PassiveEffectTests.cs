@@ -13,7 +13,7 @@ namespace UnmappedIsland.Codex.Tests
     /// 検証する（YamlLoaderTests.csと同じ方針）。
     /// </summary>
     [TestFixture]
-    public class ContributionTests
+    public class PassiveEffectTests
     {
         private int nextInstanceId;
 
@@ -236,7 +236,7 @@ object_defs:
         }
 
         [Test]
-        public void Modify_MultipleContributions_Sum()
+        public void Modify_MultiplePassives_Sum()
         {
             const string yaml = @"
 object_defs:
@@ -495,7 +495,7 @@ object_defs:
         }
 
         [Test]
-        public void GetIncomingContributions_ListsAllRegardlessOfKind()
+        public void GetIncomingPassiveEffects_ListsAllRegardlessOfKind()
         {
             const string yaml = @"
 object_defs:
@@ -531,11 +531,11 @@ object_defs:
             Assert.That(bootsInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(exhaustionInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
 
-            var incoming = characterInstance.GetIncomingContributions(staminaId);
+            var incoming = characterInstance.GetIncomingPassiveEffects(staminaId);
 
             Assert.That(incoming.Count, Is.EqualTo(2));
-            Assert.That(incoming.Any(c => c.Def.Kind == ContributionKind.Modify), Is.True);
-            Assert.That(incoming.Any(c => c.Def.Kind == ContributionKind.Accumulate), Is.True);
+            Assert.That(incoming.Any(c => c.Def.Kind == PassiveEffectKind.Modify), Is.True);
+            Assert.That(incoming.Any(c => c.Def.Kind == PassiveEffectKind.Accumulate), Is.True);
         }
 
         // ------------------------------------------------------------------

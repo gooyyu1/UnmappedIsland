@@ -5,7 +5,7 @@ namespace UnmappedIsland.Runtime
 {
     /// <summary>
     /// props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値、および
-    /// FromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。Contributionの影響先は
+    /// FromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。PassiveEffectの影響先は
     /// 「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、
     /// いずれもWorldObjectではなくこの値自身が持つ。
     ///
@@ -24,7 +24,7 @@ namespace UnmappedIsland.Runtime
         private readonly PropertyDef def;
         private readonly WorldObject owner;
 
-        private readonly List<ActiveContribution> incoming = new List<ActiveContribution>();
+        private readonly List<RegisteredPassiveEffect> incoming = new List<RegisteredPassiveEffect>();
 
         private PropertyValue(int number)
         {
@@ -82,12 +82,12 @@ namespace UnmappedIsland.Runtime
             Add(value - Number, session);
         }
 
-        internal void RegisterContribution(ActiveContribution contribution) => incoming.Add(contribution);
+        internal void RegisterPassiveEffect(RegisteredPassiveEffect effect) => incoming.Add(effect);
 
-        internal void UnregisterContributionsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
+        internal void UnregisterPassiveEffectsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
 
         /// <summary>現在登録されている全寄与（modify/accumulate両方）。UIで「何が影響しているか」を表示する用途。</summary>
-        internal IReadOnlyList<ActiveContribution> Incoming => incoming;
+        internal IReadOnlyList<RegisteredPassiveEffect> Incoming => incoming;
 
         /// <summary>
         /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
@@ -97,7 +97,7 @@ namespace UnmappedIsland.Runtime
             int sum = Number;
 
             foreach (var c in incoming)
-                if (c.Def.Kind == ContributionKind.Modify && c.IsActive())
+                if (c.Def.Kind == PassiveEffectKind.Modify && c.IsActive())
                     sum += c.Def.Amount;
 
             return def.Range.HasValue ? def.Range.Value.Clamp(sum) : sum;
@@ -113,7 +113,7 @@ namespace UnmappedIsland.Runtime
         {
             foreach (var c in incoming)
             {
-                if (c.Def.Kind != ContributionKind.Accumulate) continue;
+                if (c.Def.Kind != PassiveEffectKind.Accumulate) continue;
                 if (!c.IsActive()) continue;
                 Number += c.Def.Amount;
             }

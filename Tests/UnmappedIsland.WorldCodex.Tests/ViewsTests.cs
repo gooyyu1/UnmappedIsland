@@ -49,7 +49,7 @@ object_defs:
         }
 
         [Test]
-        public void World_ReflectsModifyContributions_NotJustRawValue()
+        public void World_ReflectsModifyPassives_NotJustRawValue()
         {
             const string yaml = @"
 object_defs:

@@ -42,12 +42,12 @@ namespace UnmappedIsland.Runtime
             for (int i = 0; i < slots.Length; i++)
                 slots[i] = new Slot(def.SlotDefs[i]);
 
-            foreach (var c in def.Contributions)
+            foreach (var c in def.Passives)
             {
-                if (c.Target != ContributionTarget.Self) continue;
+                if (c.Target != PassiveEffectTarget.Self) continue;
                 int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
-                RegisterContribution(local, new ActiveContribution(declarer: this, slotBearer: this, def: c));
+                RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
             }
         }
 
@@ -128,7 +128,7 @@ namespace UnmappedIsland.Runtime
         /// スロット移動を行う唯一の汎用操作（GameElementDefinition.md 7.1節の `move_to_slot`）。
         /// accepts/capacity/UnitCapacityの検証は新しい親の対象Slot自身（Slot.CanAccept）に委ね、
         /// このメソッドは「自分の所属先を差し替える」こと自体（旧親からの離脱・新親への合流・
-        /// weightの伝播・contribution edgeの登録）にのみ専念する（自分のことは自分でする、CLAUDE.md参照）。
+        /// weightの伝播・passive effect edgeの登録）にのみ専念する（自分のことは自分でする、CLAUDE.md参照）。
         ///
         /// force=true の場合、accepts/capacity/UnitCapacityの検証を飛ばして必ず配置を成功させる（spawnの
         /// フォールバック、9.4節専用。すべてのオブジェクトは必ずどこかの親に属さなければならないという
@@ -231,58 +231,58 @@ namespace UnmappedIsland.Runtime
         /// </summary>
         private void RegisterEdgeWith(WorldObject parent)
         {
-            foreach (var c in Def.Contributions)
+            foreach (var c in Def.Passives)
             {
-                if (c.Target != ContributionTarget.Parent) continue;
+                if (c.Target != PassiveEffectTarget.Parent) continue;
                 int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
-                parent.RegisterContribution(local, new ActiveContribution(declarer: this, slotBearer: this, def: c));
+                parent.RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
             }
 
-            foreach (var c in parent.Def.Contributions)
+            foreach (var c in parent.Def.Passives)
             {
-                if (c.Target != ContributionTarget.Child) continue;
+                if (c.Target != PassiveEffectTarget.Child) continue;
                 int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
-                RegisterContribution(local, new ActiveContribution(declarer: parent, slotBearer: this, def: c));
+                RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: parent, slotBearer: this, def: c));
             }
         }
 
         private void UnregisterEdgeWith(WorldObject parent)
         {
-            foreach (var c in Def.Contributions)
+            foreach (var c in Def.Passives)
             {
-                if (c.Target != ContributionTarget.Parent) continue;
+                if (c.Target != PassiveEffectTarget.Parent) continue;
                 int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
-                parent.UnregisterContributionsFrom(this, local);
+                parent.UnregisterPassiveEffectsFrom(this, local);
             }
 
-            foreach (var c in parent.Def.Contributions)
+            foreach (var c in parent.Def.Passives)
             {
-                if (c.Target != ContributionTarget.Child) continue;
+                if (c.Target != PassiveEffectTarget.Child) continue;
                 int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
-                UnregisterContributionsFrom(parent, local);
+                UnregisterPassiveEffectsFrom(parent, local);
             }
         }
 
         /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、6.4節・8節）。</summary>
         internal int GetNumberByLocalId(int localId) => properties[localId].AsNumber();
 
-        internal void RegisterContribution(int localPropertyId, ActiveContribution contribution)
+        internal void RegisterPassiveEffect(int localPropertyId, RegisteredPassiveEffect effect)
         {
-            properties[localPropertyId].RegisterContribution(contribution);
+            properties[localPropertyId].RegisterPassiveEffect(effect);
         }
 
-        internal void UnregisterContributionsFrom(WorldObject declarer, int localPropertyId)
+        internal void UnregisterPassiveEffectsFrom(WorldObject declarer, int localPropertyId)
         {
-            properties[localPropertyId].UnregisterContributionsFrom(declarer);
+            properties[localPropertyId].UnregisterPassiveEffectsFrom(declarer);
         }
 
         /// <summary>
         /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
-        /// target(self/parent/child)の違いはRegisterContribution呼び出し側（WorldObjectコンストラクタ・
+        /// target(self/parent/child)の違いはRegisterPassiveEffect呼び出し側（WorldObjectコンストラクタ・
         /// RegisterEdgeWith）にのみ存在し、ここでは一切区別しない。Kind.Accumulateの寄与はTick参照。
         /// </summary>
         public int GetEffectiveValue(int propertyGlobalId)
@@ -537,13 +537,13 @@ namespace UnmappedIsland.Runtime
         /// <summary>
         /// 現在このプロパティに登録されている全寄与（modify/accumulate両方）を列挙する。
         /// 「このプロパティに何が影響しているか」をUIで表示したい場合に使う。ゲートが現在有効かどうかは
-        /// 呼び出し側で ActiveContribution.IsActive() 相当の判定をしたい場合、Kind別にGetEffectiveValue/Tickの
+        /// 呼び出し側で RegisteredPassiveEffect.IsActive() 相当の判定をしたい場合、Kind別にGetEffectiveValue/Tickの
         /// 結果と突き合わせる。
         /// </summary>
-        public IReadOnlyList<ActiveContribution> GetIncomingContributions(int propertyGlobalId)
+        public IReadOnlyList<RegisteredPassiveEffect> GetIncomingPassiveEffects(int propertyGlobalId)
         {
             int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
-            if (local == LocalIndexMap.Missing) return Array.Empty<ActiveContribution>();
+            if (local == LocalIndexMap.Missing) return Array.Empty<RegisteredPassiveEffect>();
             return properties[local].Incoming;
         }
     }

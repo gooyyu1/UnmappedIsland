@@ -33,7 +33,7 @@ namespace UnmappedIsland.Codex
 
         /// <summary>このObjectDefが宣言する効果（8節）。target(self/parent/child)・kind(modify/accumulate)を
         /// 問わず1つのリストで持つ。</summary>
-        public IReadOnlyList<ContributionDef> Contributions { get; }
+        public IReadOnlyList<PassiveEffect> Passives { get; }
 
         /// <summary>スタック内での並び順（表示専用）。null なら並び順は未定義で、常にスタックの末尾へ
         /// 追加される（新規インスタンス同士の相対順序＝挿入順）。</summary>
@@ -53,7 +53,7 @@ namespace UnmappedIsland.Codex
             IReadOnlyList<PropertyDef> propertyDefs,
             LocalIndexMap slotLayout,
             IReadOnlyList<SlotDef> slotDefs,
-            IReadOnlyList<ContributionDef> contributions,
+            IReadOnlyList<PassiveEffect> passives,
             StackOrderDef stackOrder = null,
             IReadOnlyList<string> traits = null,
             IReadOnlyList<ActionDef> actions = null,
@@ -66,7 +66,7 @@ namespace UnmappedIsland.Codex
             PropertyDefs = propertyDefs;
             SlotLayout = slotLayout;
             SlotDefs = slotDefs;
-            Contributions = contributions;
+            Passives = passives;
             StackOrder = stackOrder;
             Traits = traits ?? Array.Empty<string>();
             Actions = actions ?? Array.Empty<ActionDef>();
