@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>DurabilitySystem</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">
+<header id="title-block-header">
+<h1 class="title">DurabilitySystem</h1>
+</header>
+<h1 id="耐久値システム設計">耐久値システム設計</h1>
+<h2 id="概要">概要</h2>
+<p>本ドキュメントは、単一の <code>durability</code>
+プロパティを、素材の屋外劣化（天候）と食料の腐敗（保存温度）の両方の表現に
+共用する場合の、具体的な減少量（<code>accumulate</code>
+の量）の目安をまとめたものです。両者は同じ <code>durability</code>
+を減らす 独立した <code>accumulate</code>
+として扱い、対象条件が同時に満たされれば加算的に重なります（<code>GameElementDefinition.md</code>
+8.4 節）。<code>tick</code> = 15分、1日 = 96 tick
+というこのゲーム固有の対応づけ（<code>core.yaml</code>）を前提とします。</p>
+<p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
+5 節に整理しています。</p>
+<h2 id="スケールの規約">1. スケールの規約</h2>
+<p><code>durability</code> の最大値は、素材・アイテムの種類によらず
+<strong>960,000</strong> に統一します。この値は、後から比率をさらに
+細かく調整したくなった場合の余裕を持たせるため、当初案の 96,000
+から桁を1つ足したものです（int32 の範囲には
+遠く及ばないため、オーバーフローは考慮不要）。</p>
+<p>この規約のもとでは、次の式で「寿命 L 日」を実現する tick
+あたりの減少量が決まります。</p>
+<pre><code>tick あたりの減少量 = 10,000 ÷ L（寿命の日数）</code></pre>
+<p>（<code>960,000 ÷ 96 tick/日 = 10,000</code>
+が、この規約における「1日あたりの基準単位」）</p>
+<h2 id="素材の屋外劣化速度天候">2. 素材の屋外劣化速度（天候）</h2>
+<p>セルは「寿命（tickあたりの減少量）」の形式です。</p>
+<table>
+<thead>
+<tr class="header">
+<th>分類</th>
+<th>晴れ</th>
+<th>雨</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>長持ちする素材（木材など）</td>
+<td>100日(-100)</td>
+<td>20日(-500)</td>
+</tr>
+<tr class="even">
+<td>短命な素材（葉っぱなど）</td>
+<td>10日(-1000)</td>
+<td>5日(-2000)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="食料の腐敗速度保存温度屋外放置">3.
+食料の腐敗速度（保存温度・屋外放置）</h2>
+<p>食料の屋外劣化速度は、すべて「短命な素材（葉っぱなど）」と同じ（晴れ-1000/tick）を前提とします。「屋外（晴れ）+
+通常温度」の列は、腐敗（保存温度由来）と屋外劣化の両方の
+<code>accumulate</code> が同時に対象となり加算的に重なった場合
+（8.4節）の複合寿命です。屋内保管（通常温度・保冷）よりも必ず短くなり、「屋外に置きっぱなしにすると腐敗が早まる」
+という直感と整合します。セルの形式は2節と同じです。</p>
+<table>
+<thead>
+<tr class="header">
+<th>分類</th>
+<th>通常温度</th>
+<th>保冷</th>
+<th>屋外（晴れ）+通常温度</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>調理済み料理・生魚など</td>
+<td>2.5日(-4000)</td>
+<td>5日(-2000)</td>
+<td>2日(-5000)</td>
+</tr>
+<tr class="even">
+<td>野菜など</td>
+<td>5日(-2000)</td>
+<td>10日(-1000)</td>
+<td>3.3日(-3000)</td>
+</tr>
+<tr class="odd">
+<td>芋など</td>
+<td>20日(-500)</td>
+<td>40日(-250)</td>
+<td>6.7日(-1500)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="所感">4. 所感</h2>
+<p>1プレイ100〜200日という前提に対し、芋（保冷40日・屋外複合6.7日）のように「保冷すれば長持ちするが、屋外放置には
+弱い」という現実の芋の性質（常温でも数週間単位で持つが、直射日光や湿気には弱い）とも大きくは矛盾しません。調理済み
+料理・生魚が最も足が早い（屋外複合2.0日）のも妥当で、種類間の相対的な序列（芋
+&gt; 野菜 &gt; 調理済み料理・生魚）が
+一貫しているため、ゲームとしての違和感は感じませんでした。</p>
+<h2 id="未決事項今後の検討課題">5. 未決事項・今後の検討課題</h2>
+<ul>
+<li>雨天かつ保冷なし（屋外・雨・通常温度）の3条件が重なった場合の数値は未検討（3節は「屋外・晴れ・通常温度」のみ）</li>
+<li>木材・葉っぱ以外の素材（石材・金属等）の屋外劣化速度は未定</li>
+<li>素材の種類が少ない想定のため、今回は
+trait化せず数値のみを確定した。対象素材が増えた場合、<code>decay_slow</code>/
+<code>decay_fast</code>
+のような再利用可能なtraitへ切り出すかどうかは別途判断する（前段の会話参照）</li>
+</ul>
+</article>
+</body>
+</html>
