@@ -27,13 +27,34 @@ namespace UnmappedIsland.Codex
         public readonly List<CombinationBlueprint> Combinations = new List<CombinationBlueprint>();
     }
 
-    /// <summary>{path, op, value}のブループリント版。pathのpropertyはまだグローバルIDへ解決されていない。</summary>
-    public sealed class ConditionBlueprint
+    public enum ConditionNodeBlueprintKind
     {
+        Property,
+        Slot,
+        All,
+        Any,
+        Not,
+    }
+
+    /// <summary>conditions（14節）の1ノードのブループリント版。ConditionNode参照。prop/slotの名前は
+    /// まだグローバルIDへ解決されていない。</summary>
+    public sealed class ConditionNodeBlueprint
+    {
+        public ConditionNodeBlueprintKind Kind;
+
+        /// <summary>Property/Slot葉のみ有効。省略時はSelf（呼び出し側が解決）。</summary>
         public ReferenceRoot Root;
+
+        /// <summary>Property葉のみ有効。</summary>
         public string PropertyName;
         public ConditionOp Op;
         public readonly List<PropertyValue> Values = new List<PropertyValue>();
+
+        /// <summary>Slot葉のみ有効。</summary>
+        public string SlotName;
+
+        /// <summary>All/Any/Notのみ有効。Notは常に1要素。</summary>
+        public List<ConditionNodeBlueprint> Children;
     }
 
     /// <summary>pick候補のweightのブループリント版。</summary>
@@ -58,7 +79,9 @@ namespace UnmappedIsland.Codex
     {
         public string Name;
         public ShowMenuMode ShowMenu = ShowMenuMode.Always;
-        public readonly List<ConditionBlueprint> Conditions = new List<ConditionBlueprint>();
+
+        /// <summary>nullなら省略（常に真）。</summary>
+        public ConditionNodeBlueprint Conditions;
         public ActiveEffectBlueprint Active;
         public List<PickCandidateBlueprint> Pick;
     }
@@ -68,7 +91,9 @@ namespace UnmappedIsland.Codex
     {
         public string Name;
         public string With;
-        public readonly List<ConditionBlueprint> Conditions = new List<ConditionBlueprint>();
+
+        /// <summary>nullなら省略（常に真）。</summary>
+        public ConditionNodeBlueprint Conditions;
         public ActiveEffectBlueprint Active;
         public List<PickCandidateBlueprint> Pick;
     }
@@ -86,12 +111,14 @@ namespace UnmappedIsland.Codex
         public ContributionKind Kind;
         public string TargetPropertyName;
         public int Amount;
-        public ContributionGateKind GateKind;
 
-        /// <summary>GateKind.WhenSlot用。スロット名（グローバル語彙。将来どの親に付くか分からないため名前のまま持つ）。</summary>
-        public string GateSlotName;
+        /// <summary>conditions（旧when）の条件木。nullかつIsWhenOwnStageもfalseなら常時有効。
+        /// IsWhenOwnStageがtrueの場合は無視される（1つのContributionは単一のゲート種別しか
+        /// 表現できないため、stage強制ゲートが優先される。GameElementDefinition.md 17節）。</summary>
+        public ConditionNodeBlueprint Conditions;
 
-        /// <summary>GateKind.WhenOwnStage用。同一object_def内のプロパティ名とstage名。</summary>
+        /// <summary>stage（6.4節）から強制されるゲートか。trueの場合、GateStagePropertyName/GateStageNameを使う。</summary>
+        public bool IsWhenOwnStage;
         public string GateStagePropertyName;
         public string GateStageName;
     }
@@ -235,27 +262,40 @@ namespace UnmappedIsland.Codex
                 foreach (var c in bp.Contributions)
                 {
                     propertyNames.Intern(c.TargetPropertyName);
-                    if (c.GateKind == ContributionGateKind.WhenSlot) slotNames.Intern(c.GateSlotName);
-                    if (c.GateKind == ContributionGateKind.WhenOwnStage) propertyNames.Intern(c.GateStagePropertyName);
+                    if (c.IsWhenOwnStage) propertyNames.Intern(c.GateStagePropertyName);
+                    else InternConditionNode(c.Conditions, propertyNames, slotNames);
                 }
                 foreach (var a in bp.Actions)
                 {
-                    InternConditions(a.Conditions, propertyNames);
+                    InternConditionNode(a.Conditions, propertyNames, slotNames);
                     InternActiveEffect(a.Active, propertyNames, objectNames);
                     InternPickList(a.Pick, propertyNames, objectNames);
                 }
                 foreach (var c in bp.Combinations)
                 {
-                    InternConditions(c.Conditions, propertyNames);
+                    InternConditionNode(c.Conditions, propertyNames, slotNames);
                     InternActiveEffect(c.Active, propertyNames, objectNames);
                     InternPickList(c.Pick, propertyNames, objectNames);
                 }
             }
         }
 
-        private static void InternConditions(IReadOnlyList<ConditionBlueprint> conditions, NameRegistry propertyNames)
+        private static void InternConditionNode(ConditionNodeBlueprint node, NameRegistry propertyNames, NameRegistry slotNames)
         {
-            foreach (var c in conditions) propertyNames.Intern(c.PropertyName);
+            if (node == null) return;
+
+            switch (node.Kind)
+            {
+                case ConditionNodeBlueprintKind.Property:
+                    propertyNames.Intern(node.PropertyName);
+                    break;
+                case ConditionNodeBlueprintKind.Slot:
+                    slotNames.Intern(node.SlotName);
+                    break;
+                default:
+                    foreach (var child in node.Children) InternConditionNode(child, propertyNames, slotNames);
+                    break;
+            }
         }
 
         private static void InternActiveEffect(
@@ -335,8 +375,8 @@ namespace UnmappedIsland.Codex
                 ? new StackOrderDef(propertyNames.GetId(bp.StackOrder.PropertyName), bp.StackOrder.Ascending)
                 : null;
 
-            var actions = bp.Actions.Select(a => BuildAction(a, propertyNames, objectNames)).ToList();
-            var combinations = bp.Combinations.Select(c => BuildCombination(c, propertyNames, objectNames)).ToList();
+            var actions = bp.Actions.Select(a => BuildAction(a, propertyNames, slotNames, objectNames)).ToList();
+            var combinations = bp.Combinations.Select(c => BuildCombination(c, propertyNames, slotNames, objectNames)).ToList();
 
             return new ObjectDef(
                 objectNames.GetId(bp.Name), bp.Name, bp.IsSingleton,
@@ -344,26 +384,42 @@ namespace UnmappedIsland.Codex
                 bp.TraitNames, actions, combinations);
         }
 
-        private static ActionDef BuildAction(ActionBlueprint a, NameRegistry propertyNames, NameRegistry objectNames)
+        private static ActionDef BuildAction(ActionBlueprint a, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames)
         {
-            var conditions = a.Conditions.Select(c => BuildCondition(c, propertyNames)).ToList();
+            var conditions = BuildConditionNode(a.Conditions, propertyNames, slotNames);
             var active = BuildActiveEffect(a.Active, propertyNames, objectNames);
             var pick = BuildPickList(a.Pick, propertyNames, objectNames);
             return new ActionDef(a.Name, a.ShowMenu, conditions, active, pick);
         }
 
-        private static CombinationDef BuildCombination(CombinationBlueprint c, NameRegistry propertyNames, NameRegistry objectNames)
+        private static CombinationDef BuildCombination(CombinationBlueprint c, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames)
         {
-            var conditions = c.Conditions.Select(cc => BuildCondition(cc, propertyNames)).ToList();
+            var conditions = BuildConditionNode(c.Conditions, propertyNames, slotNames);
             var active = BuildActiveEffect(c.Active, propertyNames, objectNames);
             var pick = BuildPickList(c.Pick, propertyNames, objectNames);
             return new CombinationDef(c.Name, c.With, conditions, active, pick);
         }
 
-        private static ConditionDef BuildCondition(ConditionBlueprint c, NameRegistry propertyNames)
+        /// <summary>conditions（14節）の条件木を再帰的に組み立てる。nullなら省略（常に真）。</summary>
+        private static ConditionNode BuildConditionNode(ConditionNodeBlueprint bp, NameRegistry propertyNames, NameRegistry slotNames)
         {
-            int propertyGlobalId = propertyNames.GetId(c.PropertyName);
-            return new ConditionDef(new PropertyPath(c.Root, propertyGlobalId), c.Op, c.Values);
+            if (bp == null) return null;
+
+            switch (bp.Kind)
+            {
+                case ConditionNodeBlueprintKind.Property:
+                    return ConditionNode.Property(bp.Root, propertyNames.GetId(bp.PropertyName), bp.Op, bp.Values);
+                case ConditionNodeBlueprintKind.Slot:
+                    return ConditionNode.Slot(bp.Root, slotNames.GetId(bp.SlotName));
+                case ConditionNodeBlueprintKind.All:
+                    return ConditionNode.All(bp.Children.Select(c => BuildConditionNode(c, propertyNames, slotNames)).ToList());
+                case ConditionNodeBlueprintKind.Any:
+                    return ConditionNode.Any(bp.Children.Select(c => BuildConditionNode(c, propertyNames, slotNames)).ToList());
+                case ConditionNodeBlueprintKind.Not:
+                    return ConditionNode.Not(BuildConditionNode(bp.Children[0], propertyNames, slotNames));
+                default:
+                    return null;
+            }
         }
 
         private static ActiveEffect BuildActiveEffect(ActiveEffectBlueprint body, NameRegistry propertyNames, NameRegistry objectNames)
@@ -444,31 +500,29 @@ namespace UnmappedIsland.Codex
             int targetPropertyGlobalId = propertyNames.GetId(c.TargetPropertyName);
 
             ContributionGate gate;
-            switch (c.GateKind)
+            if (c.IsWhenOwnStage)
             {
-                case ContributionGateKind.WhenSlot:
-                    gate = new ContributionGate
-                    {
-                        Kind = ContributionGateKind.WhenSlot,
-                        SlotGlobalId = slotNames.GetId(c.GateSlotName),
-                    };
-                    break;
-
-                case ContributionGateKind.WhenOwnStage:
-                    int stagePropertyLocalId = ownPropertyLayout.ToLocal(propertyNames.GetId(c.GateStagePropertyName));
-                    PropertyDef stagePropertyDef = ownPropertyDefs[stagePropertyLocalId];
-                    PropertyStage stage = stagePropertyDef.Stages.First(s => s.Name == c.GateStageName);
-                    gate = new ContributionGate
-                    {
-                        Kind = ContributionGateKind.WhenOwnStage,
-                        PropertyLocalId = stagePropertyLocalId,
-                        Stage = stage,
-                    };
-                    break;
-
-                default:
-                    gate = ContributionGate.Always;
-                    break;
+                int stagePropertyLocalId = ownPropertyLayout.ToLocal(propertyNames.GetId(c.GateStagePropertyName));
+                PropertyDef stagePropertyDef = ownPropertyDefs[stagePropertyLocalId];
+                PropertyStage stage = stagePropertyDef.Stages.First(s => s.Name == c.GateStageName);
+                gate = new ContributionGate
+                {
+                    Kind = ContributionGateKind.WhenOwnStage,
+                    PropertyLocalId = stagePropertyLocalId,
+                    Stage = stage,
+                };
+            }
+            else if (c.Conditions != null)
+            {
+                gate = new ContributionGate
+                {
+                    Kind = ContributionGateKind.Conditions,
+                    Conditions = BuildConditionNode(c.Conditions, propertyNames, slotNames),
+                };
+            }
+            else
+            {
+                gate = ContributionGate.Always;
             }
 
             return new ContributionDef(c.Target, c.Kind, targetPropertyGlobalId, c.Amount, gate);

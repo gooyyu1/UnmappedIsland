@@ -78,8 +78,7 @@ namespace UnmappedIsland.Codex.Tests
             ContributionKind kind,
             string targetProperty,
             int amount,
-            ContributionGateKind gateKind = ContributionGateKind.Always,
-            string gateSlotName = null,
+            ConditionNodeBlueprint conditions = null,
             string gateStageProperty = null,
             string gateStageName = null)
         {
@@ -89,12 +88,17 @@ namespace UnmappedIsland.Codex.Tests
                 Kind = kind,
                 TargetPropertyName = targetProperty,
                 Amount = amount,
-                GateKind = gateKind,
-                GateSlotName = gateSlotName,
+                Conditions = conditions,
+                IsWhenOwnStage = gateStageProperty != null,
                 GateStagePropertyName = gateStageProperty,
                 GateStageName = gateStageName,
             };
         }
+
+        /// <summary>「自分自身(SlotBearer)が特定のスロットに入っている間だけ有効」というゲートのブループリント版
+        /// （8.2節、旧when）。conditions: [{slot: <スロット名>}] のYAML相当。</summary>
+        private static ConditionNodeBlueprint SlotGate(string slotName) =>
+            new ConditionNodeBlueprint { Kind = ConditionNodeBlueprintKind.Slot, Root = ReferenceRoot.Self, SlotName = slotName };
 
         // ------------------------------------------------------------------
         // modify: 都度導出（GetEffectiveValue）。実体値そのものは書き換えない。
@@ -150,7 +154,7 @@ namespace UnmappedIsland.Codex.Tests
             var armor = new ObjectDefBlueprint { Name = "armor" };
             armor.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Modify, "defense", 5,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var codex = WorldCodexBuilder.Build(new[] { character, armor });
             int defenseId = codex.PropertyNames.GetId("defense");
@@ -183,7 +187,7 @@ namespace UnmappedIsland.Codex.Tests
             var armor = new ObjectDefBlueprint { Name = "armor" };
             armor.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Modify, "defense", 5,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var codex = WorldCodexBuilder.Build(new[] { character, chest, armor });
             int defenseId = codex.PropertyNames.GetId("defense");
@@ -209,7 +213,7 @@ namespace UnmappedIsland.Codex.Tests
             container.Slots.Add(Slot("storage"));
             container.Contributions.Add(Contribution(
                 ContributionTarget.Child, ContributionKind.Modify, "decay_rate", -1,
-                ContributionGateKind.WhenSlot, gateSlotName: "storage"));
+                SlotGate("storage")));
 
             var food = new ObjectDefBlueprint { Name = "food" };
             food.Properties.Add(Prop("decay_rate", 3));
@@ -239,7 +243,7 @@ namespace UnmappedIsland.Codex.Tests
             battery.Properties.Add(Prop("output", 5));
             battery.Contributions.Add(Contribution(
                 ContributionTarget.Self, ContributionKind.Modify, "output", 10,
-                ContributionGateKind.WhenOwnStage, gateStageProperty: "charge", gateStageName: "full"));
+                gateStageProperty: "charge", gateStageName: "full"));
 
             var codex = WorldCodexBuilder.Build(new[] { battery });
             int chargeId = codex.PropertyNames.GetId("charge");
@@ -264,12 +268,12 @@ namespace UnmappedIsland.Codex.Tests
             var helmet = new ObjectDefBlueprint { Name = "helmet" };
             helmet.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Modify, "defense", 3,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var armor = new ObjectDefBlueprint { Name = "armor" };
             armor.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Modify, "defense", 5,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var codex = WorldCodexBuilder.Build(new[] { character, helmet, armor });
             int defenseId = codex.PropertyNames.GetId("defense");
@@ -296,7 +300,7 @@ namespace UnmappedIsland.Codex.Tests
             var armor = new ObjectDefBlueprint { Name = "armor" };
             armor.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Modify, "defense", 20,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var codex = WorldCodexBuilder.Build(new[] { character, armor });
             int defenseId = codex.PropertyNames.GetId("defense");
@@ -367,7 +371,7 @@ namespace UnmappedIsland.Codex.Tests
             var bleeding = new ObjectDefBlueprint { Name = "bleeding" };
             bleeding.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Accumulate, "hydration", -5,
-                ContributionGateKind.WhenSlot, gateSlotName: "conditions"));
+                SlotGate("conditions")));
 
             var codex = WorldCodexBuilder.Build(new[] { character, trash, bleeding });
             int hydrationId = codex.PropertyNames.GetId("hydration");
@@ -406,7 +410,7 @@ namespace UnmappedIsland.Codex.Tests
             infection.Properties.Add(progress);
             infection.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Accumulate, "temperature", 1,
-                ContributionGateKind.WhenOwnStage, gateStageProperty: "progress", gateStageName: "mild"));
+                gateStageProperty: "progress", gateStageName: "mild"));
 
             var codex = WorldCodexBuilder.Build(new[] { character, infection });
             int temperatureId = codex.PropertyNames.GetId("temperature");
@@ -438,12 +442,12 @@ namespace UnmappedIsland.Codex.Tests
             var boots = new ObjectDefBlueprint { Name = "boots" };
             boots.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Modify, "stamina", 10,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var exhaustion = new ObjectDefBlueprint { Name = "exhaustion" };
             exhaustion.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Accumulate, "stamina", -1,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var codex = WorldCodexBuilder.Build(new[] { character, boots, exhaustion });
             int staminaId = codex.PropertyNames.GetId("stamina");
@@ -474,12 +478,12 @@ namespace UnmappedIsland.Codex.Tests
             var boots = new ObjectDefBlueprint { Name = "boots" };
             boots.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Modify, "stamina", 10,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var exhaustion = new ObjectDefBlueprint { Name = "exhaustion" };
             exhaustion.Contributions.Add(Contribution(
                 ContributionTarget.Parent, ContributionKind.Accumulate, "stamina", -1,
-                ContributionGateKind.WhenSlot, gateSlotName: "equip"));
+                SlotGate("equip")));
 
             var codex = WorldCodexBuilder.Build(new[] { character, boots, exhaustion });
             int staminaId = codex.PropertyNames.GetId("stamina");

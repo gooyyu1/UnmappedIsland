@@ -49,7 +49,6 @@ namespace UnmappedIsland.Codex.Tests
                 Kind = ContributionKind.Modify,
                 TargetPropertyName = "minute",
                 Amount = 10,
-                GateKind = ContributionGateKind.Always,
             });
 
             var codex = WorldCodexBuilder.Build(new[] { worldDef });

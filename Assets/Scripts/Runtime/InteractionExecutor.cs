@@ -45,6 +45,10 @@ namespace UnmappedIsland.Runtime
             return true;
         }
 
+        /// <summary>{object, prop, op, value}の条件木（14節、all/any/notを含む）を満たすか。nullは常に真。</summary>
+        public static bool EvaluateConditions(ConditionNode conditions, WorldObject self, WorldObject actor, WorldObject dragged) =>
+            ConditionEvaluator.Evaluate(conditions, root => ResolveTarget(root, self, actor, dragged));
+
         /// <summary>
         /// selfにdraggedをドロップしようとした際に成立しうるcombinationsを、宣言順にすべて列挙する
         /// （conditionsは評価しない。ドラッグ中のハイライト等、UIが候補を把握するための問い合わせ用途）。
@@ -52,42 +56,6 @@ namespace UnmappedIsland.Runtime
         public static IEnumerable<CombinationDef> FindMatchingCombinations(WorldObject self, WorldObject dragged)
         {
             return self.Def.Combinations.Where(c => c.Matches(dragged.Def));
-        }
-
-        /// <summary>{path, op, value}のANDリストをすべて満たすか（14節）。空リストは常に真。</summary>
-        public static bool EvaluateConditions(
-            IReadOnlyList<ConditionDef> conditions, WorldObject self, WorldObject actor, WorldObject dragged)
-        {
-            foreach (var condition in conditions)
-                if (!EvaluateCondition(condition, self, actor, dragged))
-                    return false;
-            return true;
-        }
-
-        private static bool EvaluateCondition(ConditionDef condition, WorldObject self, WorldObject actor, WorldObject dragged)
-        {
-            WorldObject target = ResolveTarget(condition.Path.Root, self, actor, dragged);
-            if (target == null) return false;
-            if (!target.TryGetProperty(condition.Path.PropertyGlobalId, out PropertyValue current)) return false;
-
-            switch (condition.Op)
-            {
-                case ConditionOp.Lt: return current.AsNumber() < condition.Values[0].AsNumber();
-                case ConditionOp.Lte: return current.AsNumber() <= condition.Values[0].AsNumber();
-                case ConditionOp.Gt: return current.AsNumber() > condition.Values[0].AsNumber();
-                case ConditionOp.Gte: return current.AsNumber() >= condition.Values[0].AsNumber();
-                case ConditionOp.Eq: return ValueEquals(current, condition.Values[0]);
-                case ConditionOp.Neq: return !ValueEquals(current, condition.Values[0]);
-                case ConditionOp.In: return condition.Values.Any(v => ValueEquals(current, v));
-                case ConditionOp.NotIn: return !condition.Values.Any(v => ValueEquals(current, v));
-                default: return false;
-            }
-        }
-
-        private static bool ValueEquals(PropertyValue a, PropertyValue b)
-        {
-            if (a.Kind != b.Kind) return false;
-            return a.Kind == PropertyValueKind.Number ? a.Number == b.Number : a.Symbol == b.Symbol;
         }
 
         /// <summary>

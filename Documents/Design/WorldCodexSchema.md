@@ -25,8 +25,9 @@
 - **不正な記述の拒否**: `set`/`add`/`destroy`/`spawn` と `pick` を同時に指定する、identifier の命名規則に反する
   キーを使う、未定義の比較演算子を使う、`passives`/`set`/`add` に未定義の対象キー（`sibling` など）を使う、
   `combinations` に `with` を書き忘れる、廃止済みの `active:`/`lifecycle` 入れ子を使う、`passives` を配列でなく
-  単一マッピングで書く、pick候補が `set`/`add`/`destroy`/`spawn` と `pick` を同時に持つ、といった誤った記述が、
-  想定通り拒否されることを確認
+  単一マッピングで書く、`conditions` の葉に `slot` と `prop` を同時指定する、廃止済みの `path:`/`when:` 記法を
+  使う、pick候補が `set`/`add`/`destroy`/`spawn` と `pick` を同時に持つ、といった誤った記述が、想定通り
+  拒否されることを確認
 
 ## 2. スキーマの範囲
 
@@ -35,9 +36,12 @@
 - ルート構造（`object_defs`/`traits`、専用ルートキーなし）
 - `object_defs`/`traits`（3〜5節）
 - `props`（固定値・範囲値・overflow/shortfall・stages・`on_min`・`on_max`、6節）
-- `passives`（`when`/`modify`/`accumulate`を上位、対象を下位に持つ辞書の配列、8節。常に配列で単一マッピングでの
-  省略記法はなし。オブジェクトレベル・プロパティレベルの`passives:`キー。stage内も`name`/`min`と並ぶ兄弟キーとして
-  同じ`passives:`（配列）を持つ、6.4節）
+- `passives`（`conditions`/`modify`/`accumulate`を上位、対象を下位に持つ辞書の配列、8節。常に配列で単一マッピング
+  での省略記法はなし。オブジェクトレベル・プロパティレベルの`passives:`キー。stage内も`name`/`min`と並ぶ兄弟キー
+  として同じ`passives:`（配列）を持つ、6.4節）
+- `conditions`（`{object, prop, op, value}`のプロパティ比較か`{object, slot}`のスロット判定を葉に持ち、
+  `all`/`any`/`not`で入れ子にできる条件木、14節。トップレベルは常に配列で暗黙のall。actions/combinationsの
+  一度きりの判定とpassivesの持続的なゲートの両方がこの同じ形を共用する）
 - `active`（`set`/`add`/`destroy`/`spawn`を上位、対象を下位に持つ辞書、9節。専用のYAMLキーは持たず、
   actions/combinations/pickの各エントリへ他の兄弟キーと対等に直接展開する）
 - `pick`（重み付き確率分岐、`set`/`add`/`destroy`/`spawn`の代替キー、10節）

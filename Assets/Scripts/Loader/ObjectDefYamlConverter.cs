@@ -40,7 +40,7 @@ namespace UnmappedIsland.Loader
                     bp.Slots.Add(ParseSlot(name, slotName, (YamlMappingNode)slotValueNode));
 
             foreach (YamlMappingNode passiveNode in passiveNodes)
-                ParsePassiveMapInto(bp.Contributions, name, passiveNode, forcedGate: null, forcedStageProperty: null, forcedStageName: null);
+                ParsePassiveMapInto(bp.Contributions, name, passiveNode, forcedGate: null, forcedStageProperty: null, forcedStageName: null, symbols);
 
             if (stackOrderNode != null)
             {
@@ -119,7 +119,7 @@ namespace UnmappedIsland.Loader
                     if (stagePassives != null)
                         foreach (YamlNode passiveNode in stagePassives)
                             ParsePassiveMapInto(owner.Contributions, objectDefName, (YamlMappingNode)passiveNode,
-                                forcedGate: ContributionGateKind.WhenOwnStage, forcedStageProperty: propName, forcedStageName: stageName);
+                                forcedGate: ContributionGateKind.WhenOwnStage, forcedStageProperty: propName, forcedStageName: stageName, symbols);
                 }
             }
 
@@ -127,7 +127,7 @@ namespace UnmappedIsland.Loader
             if (propPassives != null)
                 foreach (YamlNode passiveNode in propPassives)
                     ParsePassiveMapInto(owner.Contributions, objectDefName, (YamlMappingNode)passiveNode,
-                        forcedGate: null, forcedStageProperty: null, forcedStageName: null);
+                        forcedGate: null, forcedStageProperty: null, forcedStageName: null, symbols);
 
             YamlMappingNode onMin = node.TryGetMapping("on_min", context);
             if (onMin != null)
@@ -271,16 +271,12 @@ namespace UnmappedIsland.Loader
             throw new YamlLoadException($"{context}: destroyは対象名か、対象名のリストのいずれかである必要があります。");
         }
 
-        /// <summary>pathを"root.property"の1階層に限定して解釈する（14.1節・10.2節）。worldは唯一の
-        /// シングルトンインスタンスを実行時に追跡する仕組みがまだ無いため未対応。</summary>
-        private static (ReferenceRoot Root, string PropertyName) ParsePath(string context, string path)
+        /// <summary>conditions（14節）・passivesのゲート（旧when、8節）が共通で使うobject参照キー。
+        /// worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため未対応。</summary>
+        private static ReferenceRoot ParseConditionObject(string context, string raw, IReadOnlyCollection<ReferenceRoot> allowedRoots)
         {
-            string[] parts = path.Split('.');
-            if (parts.Length != 2)
-                throw new YamlLoadException($"{context}: path '{path}' は '<root>.<property>' の1階層のみ対応しています。");
-
             ReferenceRoot root;
-            switch (parts[0])
+            switch (raw)
             {
                 case "self": root = ReferenceRoot.Self; break;
                 case "parent": root = ReferenceRoot.Parent; break;
@@ -288,39 +284,136 @@ namespace UnmappedIsland.Loader
                 case "dragged": root = ReferenceRoot.Dragged; break;
                 case "world":
                     throw new YamlLoadException(
-                        $"{context}: path root 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。");
+                        $"{context}: object 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。");
                 default:
-                    throw new YamlLoadException($"{context}: 未知のpath root '{parts[0]}' です。");
+                    throw new YamlLoadException($"{context}: 未知のobject '{raw}' です。");
             }
 
-            return (root, parts[1]);
+            if (!allowedRoots.Contains(root))
+                throw new YamlLoadException($"{context}: この文脈でobject '{raw}' は使えません。");
+
+            return root;
         }
 
-        private static List<ConditionBlueprint> ParseConditions(string context, YamlSequenceNode conditionsNode, NameRegistry symbols)
+        private static readonly HashSet<ReferenceRoot> ActionConditionRoots =
+            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor };
+
+        private static readonly HashSet<ReferenceRoot> CombinationConditionRoots =
+            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor, ReferenceRoot.Dragged };
+
+        /// <summary>passivesのゲート（旧when）で使えるobject。selfはSlotBearer（8節の効果を宣言した側の
+        /// スロット位置）、parentはその1つ上（Runtime.ActiveContribution参照）。actor/draggedは持続的な
+        /// 関係に紐づかないため未対応。</summary>
+        private static readonly HashSet<ReferenceRoot> PassiveConditionRoots =
+            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent };
+
+        /// <summary>
+        /// conditions（14節）の値。常にYAML配列（暗黙のall）。要素は葉（{object, prop, op, value}か
+        /// {object, slot}）か、入れ子のall/any/notのいずれか。conditionsNodeがnullなら省略（常に真）。
+        /// </summary>
+        private static ConditionNodeBlueprint ParseConditionsField(
+            string context, YamlSequenceNode conditionsNode, IReadOnlyCollection<ReferenceRoot> allowedRoots, NameRegistry symbols)
         {
-            var result = new List<ConditionBlueprint>();
-            if (conditionsNode == null) return result;
+            if (conditionsNode == null) return null;
 
+            var children = new List<ConditionNodeBlueprint>();
             foreach (YamlNode node in conditionsNode)
+                children.Add(ParseConditionNode($"{context}.conditions[{children.Count}]", node, allowedRoots, symbols));
+
+            return new ConditionNodeBlueprint { Kind = ConditionNodeBlueprintKind.All, Children = children };
+        }
+
+        /// <summary>条件木の1ノードを読む。all/any/notのいずれかのキーを持てば複合ノード、それ以外は
+        /// 葉（プロパティ比較かスロット判定のいずれか）として読む。</summary>
+        private static ConditionNodeBlueprint ParseConditionNode(
+            string context, YamlNode node, IReadOnlyCollection<ReferenceRoot> allowedRoots, NameRegistry symbols)
+        {
+            var map = (YamlMappingNode)node;
+
+            YamlSequenceNode allNode = map.TryGetSequence("all", context);
+            YamlSequenceNode anyNode = map.TryGetSequence("any", context);
+            YamlNode notNode = map.TryGet("not");
+
+            int combinatorCount = (allNode != null ? 1 : 0) + (anyNode != null ? 1 : 0) + (notNode != null ? 1 : 0);
+            if (combinatorCount > 1)
+                throw new YamlLoadException($"{context}: all/any/notは同時に指定できません。");
+
+            if (allNode != null) return ParseCombinator(context, "all", allNode, ConditionNodeBlueprintKind.All, allowedRoots, symbols);
+            if (anyNode != null) return ParseCombinator(context, "any", anyNode, ConditionNodeBlueprintKind.Any, allowedRoots, symbols);
+
+            if (notNode != null)
             {
-                var map = (YamlMappingNode)node;
-                string conditionContext = $"{context}.conditions[{result.Count}]";
+                var unknown = map.EntriesInOrder().Select(e => e.Key).Where(k => k != "not").ToList();
+                if (unknown.Count > 0)
+                    throw new YamlLoadException($"{context}: 'not'は他のキーと同居できません（値: '{string.Join(", ", unknown)}'）。");
 
-                string path = map.RequireScalar("path", conditionContext);
-                ConditionOp op = ParseConditionOp(conditionContext, map.RequireScalar("op", conditionContext));
-
-                YamlNode valueNode = map.TryGet("value");
-                if (valueNode == null)
-                    throw new YamlLoadException($"{conditionContext}: 必須フィールド 'value' がありません。");
-
-                var (root, propertyName) = ParsePath(conditionContext, path);
-
-                var condition = new ConditionBlueprint { Root = root, PropertyName = propertyName, Op = op };
-                condition.Values.AddRange(ParseConditionValues(conditionContext, op, valueNode, symbols));
-                result.Add(condition);
+                var inner = ParseConditionNode($"{context}.not", notNode, allowedRoots, symbols);
+                return new ConditionNodeBlueprint
+                {
+                    Kind = ConditionNodeBlueprintKind.Not,
+                    Children = new List<ConditionNodeBlueprint> { inner },
+                };
             }
 
-            return result;
+            return ParseConditionLeaf(context, map, allowedRoots, symbols);
+        }
+
+        private static ConditionNodeBlueprint ParseCombinator(
+            string context, string key, YamlSequenceNode seq, ConditionNodeBlueprintKind kind,
+            IReadOnlyCollection<ReferenceRoot> allowedRoots, NameRegistry symbols)
+        {
+            var children = new List<ConditionNodeBlueprint>();
+            foreach (YamlNode node in seq)
+                children.Add(ParseConditionNode($"{context}.{key}[{children.Count}]", node, allowedRoots, symbols));
+            return new ConditionNodeBlueprint { Kind = kind, Children = children };
+        }
+
+        /// <summary>
+        /// 条件木の葉。objectは省略時self。{object, prop, op(省略時eq), value}のプロパティ比較か、
+        /// {object, slot}のスロット判定（常に等価判定。opは持たない）のいずれかで、同時には指定できない。
+        /// </summary>
+        private static ConditionNodeBlueprint ParseConditionLeaf(
+            string context, YamlMappingNode map, IReadOnlyCollection<ReferenceRoot> allowedRoots, NameRegistry symbols)
+        {
+            string objectName = map.TryGetScalar("object", context);
+            ReferenceRoot root = objectName != null ? ParseConditionObject(context, objectName, allowedRoots) : ReferenceRoot.Self;
+
+            string slotName = map.TryGetScalar("slot", context);
+            string propName = map.TryGetScalar("prop", context);
+
+            if (slotName != null && propName != null)
+                throw new YamlLoadException($"{context}: 'slot'と'prop'は同時に指定できません。");
+
+            if (slotName != null)
+            {
+                var unknownSlotKeys = map.EntriesInOrder().Select(e => e.Key)
+                    .Where(k => k != "object" && k != "slot").ToList();
+                if (unknownSlotKeys.Count > 0)
+                    throw new YamlLoadException(
+                        $"{context}: 未知のキー '{string.Join(", ", unknownSlotKeys)}' です（slot判定はobject/slotのみ持てます）。");
+
+                return new ConditionNodeBlueprint { Kind = ConditionNodeBlueprintKind.Slot, Root = root, SlotName = slotName };
+            }
+
+            if (propName == null)
+                throw new YamlLoadException($"{context}: 'prop'または'slot'のいずれかが必要です。");
+
+            ConditionOp op = ConditionOp.Eq;
+            string rawOp = map.TryGetScalar("op", context);
+            if (rawOp != null) op = ParseConditionOp(context, rawOp);
+
+            YamlNode valueNode = map.TryGet("value");
+            if (valueNode == null)
+                throw new YamlLoadException($"{context}: 必須フィールド 'value' がありません。");
+
+            var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
+                .Where(k => k != "object" && k != "prop" && k != "op" && k != "value").ToList();
+            if (unknownKeys.Count > 0)
+                throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
+            var leaf = new ConditionNodeBlueprint { Kind = ConditionNodeBlueprintKind.Property, Root = root, PropertyName = propName, Op = op };
+            leaf.Values.AddRange(ParseConditionValues(context, op, valueNode, symbols));
+            return leaf;
         }
 
         private static ConditionOp ParseConditionOp(string context, string raw)
@@ -365,7 +458,7 @@ namespace UnmappedIsland.Loader
             return ParseScalarPropertyValue(raw, symbols);
         }
 
-        private static WeightBlueprint ParseWeight(string context, YamlNode node)
+        private static WeightBlueprint ParseWeight(string context, YamlNode node, bool allowDragged)
         {
             if (node is YamlScalarNode scalar)
             {
@@ -376,12 +469,20 @@ namespace UnmappedIsland.Loader
 
             if (node is YamlMappingNode map)
             {
-                string path = map.RequireScalar("path", context);
-                var (root, propertyName) = ParsePath(context, path);
-                return new WeightBlueprint { IsPathRef = true, PathRoot = root, PathPropertyName = propertyName };
+                var allowedRoots = allowDragged ? CombinationConditionRoots : ActionConditionRoots;
+                string objectName = map.TryGetScalar("object", context);
+                ReferenceRoot root = objectName != null ? ParseConditionObject(context, objectName, allowedRoots) : ReferenceRoot.Self;
+                string propName = map.RequireScalar("prop", context);
+
+                var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
+                    .Where(k => k != "object" && k != "prop").ToList();
+                if (unknownKeys.Count > 0)
+                    throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
+                return new WeightBlueprint { IsPathRef = true, PathRoot = root, PathPropertyName = propName };
             }
 
-            throw new YamlLoadException($"{context}: weightはリテラル数値か{{path: ...}}のいずれかである必要があります。");
+            throw new YamlLoadException($"{context}: weightはリテラル数値か{{object, prop}}のいずれかである必要があります。");
         }
 
         /// <summary>pick候補が持つ、weight/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
@@ -400,7 +501,7 @@ namespace UnmappedIsland.Loader
                 YamlNode weightNode = map.TryGet("weight");
                 if (weightNode == null) throw new YamlLoadException($"{candidateContext}: 'weight'は必須です。");
 
-                var candidate = new PickCandidateBlueprint { Weight = ParseWeight(candidateContext, weightNode) };
+                var candidate = new PickCandidateBlueprint { Weight = ParseWeight(candidateContext, weightNode, allowDragged) };
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode nestedPick = map.TryGetSequence("pick", candidateContext);
@@ -443,7 +544,7 @@ namespace UnmappedIsland.Loader
                 if (showMenu != null && showMenu != "always")
                     throw new YamlLoadException($"{context}: showMenuは現時点で'always'のみ対応しています（値: '{showMenu}'）。");
 
-                action.Conditions.AddRange(ParseConditions(context, map.TryGetSequence("conditions", context), symbols));
+                action.Conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots, symbols);
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
@@ -473,7 +574,7 @@ namespace UnmappedIsland.Loader
 
                 var combination = new CombinationBlueprint { Name = name, With = map.RequireScalar("with", context) };
 
-                combination.Conditions.AddRange(ParseConditions(context, map.TryGetSequence("conditions", context), symbols));
+                combination.Conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots, symbols);
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
@@ -532,33 +633,41 @@ namespace UnmappedIsland.Loader
 
         /// <summary>
         /// passivesの1ブロック（self/parent/child、actorは未対応のためスキップ）を読み、ContributionBlueprint
-        /// へ変換してoutputへ追加する。forcedGateがWhenOwnStageの場合、各対象の"when"は無視し
-        /// （1つのContributionは単一のゲート種別しか表現できないため）、常にそのステージのゲートを使う。
+        /// へ変換してoutputへ追加する。forcedGateがWhenOwnStageの場合、このブロックの"conditions"は
+        /// stage内では併用できない（1つのContributionは単一のゲート種別しか表現できないため。
+        /// ステージ自体の条件との組み合わせはGameElementDefinition.md 17節で未解決のまま）。
         ///
         /// オブジェクトレベル・プロパティレベル・stage内のいずれも、"passives:"は常に配列であり、
-        /// この関数はその配列の1要素（when/modify/accumulateのみを持つ、他のキーとは同居しない独立した
-        /// マッピング）に対して呼ばれる。
+        /// この関数はその配列の1要素（conditions/modify/accumulateのみを持つ、他のキーとは同居しない
+        /// 独立したマッピング）に対して呼ばれる。conditionsはブロック全体で1つ（対象ごとには持たない。
+        /// self対象・parent対象は常に同じSlotBearerを指すため、対象ごとに持たせても意味が重複するだけ。
+        /// Runtime.ActiveContribution参照）。
         /// </summary>
         private static void ParsePassiveMapInto(
             List<ContributionBlueprint> output, string objectDefName, YamlMappingNode passiveMap,
-            ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName)
+            ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName, NameRegistry symbols)
         {
             string context = $"'{objectDefName}'.passives";
+            bool isStageForced = forcedGate == ContributionGateKind.WhenOwnStage;
 
-            var whenByTarget = new Dictionary<string, string>();
-            YamlMappingNode whenMap = passiveMap.TryGetMapping("when", context);
-            if (whenMap != null)
-                foreach (var (targetName, slotNode) in whenMap.EntriesInOrder())
-                    whenByTarget[targetName] = ((YamlScalarNode)slotNode).Value;
+            YamlSequenceNode conditionsNode = passiveMap.TryGetSequence("conditions", context);
+            if (isStageForced && conditionsNode != null)
+                throw new YamlLoadException(
+                    $"{context}: stage内のpassivesでは'conditions'を併用できません" +
+                    "（ステージ自体の条件との組み合わせは未対応。GameElementDefinition.md 17節）。");
+
+            ConditionNodeBlueprint conditions = isStageForced
+                ? null
+                : ParseConditionsField(context, conditionsNode, PassiveConditionRoots, symbols);
 
             ParsePassiveOperationInto(
                 output, context, passiveMap, "modify", ContributionKind.Modify,
-                whenByTarget, forcedGate, forcedStageProperty, forcedStageName);
+                conditions, forcedGate, forcedStageProperty, forcedStageName);
             ParsePassiveOperationInto(
                 output, context, passiveMap, "accumulate", ContributionKind.Accumulate,
-                whenByTarget, forcedGate, forcedStageProperty, forcedStageName);
+                conditions, forcedGate, forcedStageProperty, forcedStageName);
 
-            var knownKeys = new HashSet<string> { "when", "modify", "accumulate" };
+            var knownKeys = new HashSet<string> { "conditions", "modify", "accumulate" };
 
             var unknownKeys = passiveMap.EntriesInOrder().Select(e => e.Key)
                 .Where(k => !knownKeys.Contains(k)).ToList();
@@ -569,17 +678,18 @@ namespace UnmappedIsland.Loader
         /// <summary>
         /// passiveの1操作(modify/accumulate)を読み、対象(self/parent/child、actorは未対応のため
         /// スキップ)ごとにContributionBlueprintへ変換してoutputへ追加する。ゲートは、同じpassiveブロック内
-        /// の"when"（対象ごとの辞書）から対応する対象のスロット名を引く。forcedGateがWhenOwnStageの場合、
-        /// "when"は無視し（1つのContributionは単一のゲート種別しか表現できないため）、常にそのステージの
-        /// ゲートを使う。
+        /// の"conditions"（ブロック全体で1つ）をそのまま使う。forcedGateがWhenOwnStageの場合、常に
+        /// そのステージのゲートを使う（conditionsはnullであることが呼び出し側で保証されている）。
         /// </summary>
         private static void ParsePassiveOperationInto(
             List<ContributionBlueprint> output, string context, YamlMappingNode passiveMap,
-            string operationKey, ContributionKind kind, Dictionary<string, string> whenByTarget,
+            string operationKey, ContributionKind kind, ConditionNodeBlueprint conditions,
             ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName)
         {
             YamlMappingNode operationMap = passiveMap.TryGetMapping(operationKey, context);
             if (operationMap == null) return;
+
+            bool isWhenOwnStage = forcedGate == ContributionGateKind.WhenOwnStage;
 
             foreach (var (targetName, bodyNode) in operationMap.EntriesInOrder())
             {
@@ -595,27 +705,6 @@ namespace UnmappedIsland.Loader
                         throw new YamlLoadException($"{context}.{operationKey}: 未知の対象キー '{targetName}' です。");
                 }
 
-                ContributionGateKind gateKind;
-                string gateSlotName = null;
-                string gateStageProperty = null;
-                string gateStageName = null;
-
-                if (forcedGate == ContributionGateKind.WhenOwnStage)
-                {
-                    gateKind = ContributionGateKind.WhenOwnStage;
-                    gateStageProperty = forcedStageProperty;
-                    gateStageName = forcedStageName;
-                }
-                else if (whenByTarget.TryGetValue(targetName, out string slotName))
-                {
-                    gateKind = ContributionGateKind.WhenSlot;
-                    gateSlotName = slotName;
-                }
-                else
-                {
-                    gateKind = ContributionGateKind.Always;
-                }
-
                 var body = (YamlMappingNode)bodyNode;
                 foreach (var (propName, amountNode) in body.EntriesInOrder())
                     output.Add(new ContributionBlueprint
@@ -624,10 +713,10 @@ namespace UnmappedIsland.Loader
                         Kind = kind,
                         TargetPropertyName = propName,
                         Amount = int.Parse(((YamlScalarNode)amountNode).Value),
-                        GateKind = gateKind,
-                        GateSlotName = gateSlotName,
-                        GateStagePropertyName = gateStageProperty,
-                        GateStageName = gateStageName,
+                        Conditions = conditions,
+                        IsWhenOwnStage = isWhenOwnStage,
+                        GateStagePropertyName = forcedStageProperty,
+                        GateStageName = forcedStageName,
                     });
             }
         }

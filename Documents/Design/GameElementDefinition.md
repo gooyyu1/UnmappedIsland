@@ -202,9 +202,9 @@ props:
 - ステージは `name`/`min` という固有の属性を持つため、ステージ自体を配列の要素にはできません。そのため
   `passives:` は `name`/`min` と対等な兄弟キーとして、専用にネストしたキーのまま持ちます（オブジェクトレベル・
   プロパティレベルの `passives:` と同じく常に配列です、8 節）。
-- ステージの `passives` に書いた `when` は無視されます。ステージの発動条件は「現在値がこの段階の区間内にある
-  こと」自体であり、ゲートは常にそれ（`WhenOwnStage`）に固定されるためです（スロット等との組み合わせ条件は
-  現状未対応、17 節）。
+- ステージの `passives` ブロックに `conditions` を書くことはできません（ロード時エラー）。ステージの発動条件は
+  「現在値がこの段階の区間内にあること」自体であり、ゲートは常にそれ（`WhenOwnStage`）に固定されるためです
+  （スロット等との組み合わせ条件は現状未対応、17 節）。
 
 ```yaml
 props:
@@ -488,7 +488,7 @@ object_defs:
 
 ## 8. passives（持続する影響）
 
-`passives` は、`self`/`parent`/`child` の関係とゲート（常時／`when: <スロット名>`／プロパティの stage）に紐づいて
+`passives` は、`self`/`parent`/`child` の関係とゲート（常時／`conditions`／プロパティの stage）に紐づいて
 登録され、**その関係が続く限り評価され続ける**、持続する影響を表します。次の 3 つのレベルで定義でき、いずれも
 同一の記法・実行原理を用います。
 
@@ -497,14 +497,14 @@ object_defs:
 3. **プロパティのステージレベル**（6.4 節）
 
 `passives` は常に配列です（`conditions`/`stages`/`accepts`/`pick` と同じ規約で、要素が1つの場合も配列で書きます）。
-配列の各要素が独立した1つのブロック（`when`/`modify`/`accumulate`）で、複数のブロックを並べることで、`when`
-条件ごとに異なる効果を与えられます（8.5 節）。
+配列の各要素が独立した1つのブロック（`conditions`/`modify`/`accumulate`）で、複数のブロックを並べることで、
+`conditions` ごとに異なる効果を与えられます（8.5 節）。
 
 ### 8.1 文法: 操作が上位、対象が下位
 
-`passives` の各要素は、操作（`when`/`modify`/`accumulate`）をキーとする辞書型です。各操作の中に、効果の対象を
-識別子とする対象キーの辞書がぶら下がります。対象キーとして定義するのは `self`（自分自身）・`parent`（親）・
-`child`（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、11 節参照）の 4 つです。
+`passives` の各要素は、操作（`conditions`/`modify`/`accumulate`）をキーとする辞書型です。`modify`/`accumulate`
+の中には、効果の対象を識別子とする対象キーの辞書がぶら下がります。対象キーとして定義するのは `self`（自分自身）・
+`parent`（親）・`child`（子）の 3 つです（`actor` は持続的な関係に紐づかないため未対応）。
 
 ```yaml
 object_defs:
@@ -512,8 +512,8 @@ object_defs:
     covers: [torso]
     layer: base
     passives:
-      - when:
-          parent: equip
+      - conditions:
+          - {slot: equip}
         modify:
           parent:
             defense: 5
@@ -521,12 +521,16 @@ object_defs:
             accuracy: 2
 ```
 
-### 8.2 when（ゲート）
+### 8.2 conditions（ゲート）
 
-- `when` は対象キーをキーとする辞書で、`when: {<対象>: <スロット名>}` の形を取ります。そのスロットに入っている
-  間、継続的に有効（レベルトリガー）です。
-- ある対象について `when` を書かなければ「常時（無条件）」を意味します。1 つのブロック（`passives` の1要素）
-  の中で、対象ごとに異なる `when` を持たせられます。
+- `conditions`（14 節と同じ文法・木構造）が真である間、継続的に有効（レベルトリガー）です。1 つのブロック全体
+  （`modify`/`accumulate` に含まれるすべての対象）に対して、共通の `conditions` を 1 つだけ持ちます。
+- `conditions` を省略すれば「常時（無条件）」を意味します。
+- `self`/`parent` 対象の効果は、両方とも「このブロックを宣言したオブジェクト自身が今どのスロットに入っている
+  か」という同じ物理的な実体を指すため、`conditions` の `object` を省略（既定値 `self`）して書くのが自然です
+  （例: `{slot: equip}` は「自分自身が親の `equip` スロットに入っている間」を意味します）。`child` 対象の効果
+  （親がdeclareし、子がゲート対象になるケース）では、`object: child` を使って子自身のスロット位置やプロパティを
+  参照できます。
 
 ### 8.3 modify
 
@@ -541,7 +545,7 @@ object_defs:
 条件が真である tick 毎に、対象プロパティの実体値へ直接・**不可逆**に加減算します（例: 出血中の血液量減少、耐久値の
 毎 tick 減少）。`modify` と全く同じ登録・ゲートの仕組みを使い、違いは可逆か不可逆かだけです。
 
-### 8.5 複数ブロック（when の使い分け）
+### 8.5 複数ブロック（conditions の使い分け）
 
 同じ対象（例: `parent`）に対して、状況によって異なる効果を与えたい場合は、`passives` に複数のブロックを並べます。
 典型例は、装備するスロットによってボーナス量を変えたい武器です。
@@ -550,27 +554,27 @@ object_defs:
 object_defs:
   sword:
     passives:
-      - when:
-          parent: main_hand
+      - conditions:
+          - {slot: main_hand}
         modify:
           parent:
             attack: 5
-      - when:
-          parent: off_hand
+      - conditions:
+          - {slot: off_hand}
         modify:
           parent:
             attack: 2
 ```
 
 各ブロックは独立して登録・評価されます。同じ対象・同じプロパティに対して複数のブロックが同時に有効になった
-場合（例えば `when` を持たない=常時有効なブロックと、`when` 条件付きのブロックが両方成立する場合）、`modify`
-は 8.3 節の通り単純加算で合成されます。`accumulate` も同様に、有効な全ブロックの量がそれぞれ tick 毎に反映
-されます。
+場合（例えば `conditions` を持たない=常時有効なブロックと、`conditions` 付きのブロックが両方成立する場合）、
+`modify` は 8.3 節の通り単純加算で合成されます。`accumulate` も同様に、有効な全ブロックの量がそれぞれ tick 毎に
+反映されます。
 
 ## 9. active（一時的な命令）
 
 `active` は、アクション・組み合わせ・確率分岐の結果が確定した瞬間に、**無条件で1回だけ**適用される命令を指す
-概念です。持続する条件を表す `when`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
+概念です。持続する条件を表す `conditions`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
 
 `active` という語自体は、YAML 上の専用キーとしては書きません。この節で説明する `set`・`add`・`destroy`・
 `spawn` を、それが書ける場所（9.5 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
@@ -601,7 +605,7 @@ actions:
 - `set` は指定した**絶対値**をそのまま代入します。
 - `add` は指定した量を既存の値へ**加減算**します。
 
-`when`/常時の継続的な加算は `accumulate`（8.4 節）が担うため、`set`/`add` は一時的な命令専用です。
+`conditions`/常時の継続的な加算は `accumulate`（8.4 節）が担うため、`set`/`add` は一時的な命令専用です。
 
 ### 9.3 destroy
 
@@ -656,8 +660,8 @@ spawn: {object: item_coconut, into: actor}
 
 ### 9.5 set/add/destroy/spawn が書ける場所
 
-この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `when`/ゲートを持つ
-`passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
+この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `conditions`/ゲートを
+持つ `passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
 
 - `actions`/`combinations` の各エントリ（11 節・12 節）— `showMenu`/`conditions`/`with`/`pick` と対等な
   兄弟キー
@@ -668,8 +672,8 @@ spawn: {object: item_coconut, into: actor}
 ## 10. pick（重み付き確率分岐）
 
 `pick` は、`set`/`add`/`destroy`/`spawn`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
-重み付き候補のリストです。新しいトリガー体系は必要とせず、`passives`（無条件／`when`／stage 内）には書けません。
-`passives` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
+重み付き候補のリストです。新しいトリガー体系は必要とせず、`passives`（無条件／`conditions`／stage 内）には
+書けません。`passives` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
 
 ### 10.1 基本構造
 
@@ -699,15 +703,15 @@ actions:
 `weight` は、専用の計算式（base値＋条件付き補正）を新設せず、以下のいずれかとして表現します。
 
 - **リテラル定数**: 外部からの干渉を想定しない候補向け。
-- **既存プロパティへの参照**（`{path: <プロパティのパス>}`）: 外部から干渉させたい候補向け。参照先は、通常の
-  `props` として定義された値です。
+- **既存プロパティへの参照**（`{object, prop}`、14 節の条件式の葉と同じ `object`/`prop` の書き方。`object`は
+  省略可で既定値は`self`）: 外部から干渉させたい候補向け。参照先は、通常の `props` として定義された値です。
 
 ```yaml
 pick:
-  - weight: {path: self.accuracy}
+  - weight: {prop: accuracy}
     add:
       self: {hp: -10}
-  - weight: {path: self.evasion}
+  - weight: {prop: evasion}
     destroy: dragged
 ```
 
@@ -727,7 +731,7 @@ traits:
       eat:
         showMenu: always
         conditions:
-          - {path: actor.satiety, op: lt, value: max}
+          - {object: actor, prop: satiety, op: lt, value: max}
         add:
           actor:
             satiety: 10
@@ -740,7 +744,8 @@ traits:
 
 ### 11.2 conditions
 
-`{path, op, value}` の AND リストです（14 節）。
+`{object, prop, op, value}` の葉と `all`/`any`/`not` の複合ノードからなる条件木です（14 節）。トップレベルは
+常に配列で、暗黙の `all`（AND）として扱われます。
 
 ### 11.3 set/add/destroy/spawn（active） / pick
 
@@ -763,7 +768,7 @@ object_defs:
       chop:
         with: axe_tool
         conditions:
-          - {path: dragged.durability, op: gt, value: 0}
+          - {object: dragged, prop: durability, op: gt, value: 0}
         spawn: {object: logs}
         destroy: self
         add:
@@ -778,9 +783,9 @@ object_defs:
 
 ### 12.2 dragged
 
-`set`/`add`/`destroy`（9 節）の対象キー、および `weight` の `path`（10.2 節）に、`self`/`parent`/`child`/`actor`
-に加えて **`dragged`**（このインタラクションでドラッグされてきたカード）を使えます。`combinations` の中でのみ
-意味を持つ、専用のキーです。
+`set`/`add`/`destroy`（9 節）の対象キー、および `conditions`/`weight` の `object`（14 節・10.2 節）に、
+`self`/`parent`/`child`/`actor` に加えて **`dragged`**（このインタラクションでドラッグされてきたカード）を
+使えます。`combinations` の中でのみ意味を持つ、専用のキーです。
 
 ### 12.3 対称的な組み合わせ
 
@@ -842,22 +847,57 @@ object_defs:
 
 ## 14. conditions（条件式）
 
-`{path, op, value}` の形を取ります。
+条件は、プロパティ比較かスロット位置判定のいずれかを表す「葉」と、複数の条件を論理積・論理和・否定で束ねる
+「複合ノード」からなる木構造です。トップレベルの `conditions:` は常に配列で、暗黙の `all`（論理積）として
+扱われます（`passives`/`stages`/`accepts`/`pick` と同じ、複数形キーは常に配列という規約、8 節）。
+
+### 14.1 葉: プロパティ比較
 
 ```yaml
 conditions:
-  - {path: actor.satiety, op: lt, value: max}
+  - {object: actor, prop: satiety, op: lt, value: max}
 ```
 
-### 14.1 path
+- **`object`**（省略可、既定値 `self`）: 参照ルート。`self`（宣言したオブジェクト自身）・`parent`（その親）・
+  `actor`（実行しているプレイヤーキャラクター。actions/combinations のみ）・`dragged`（`combinations` 内のみ、
+  12.2 節）のいずれか。`world`（9 節のシングルトン）は実行時追跡の仕組みがまだ無いため未対応（ロード時エラー）。
+- **`prop`**: 参照するプロパティ名。
+- **`op`**（省略可、既定値 `eq`）: 比較演算子。`lt` / `lte` / `gt` / `gte` / `eq` / `neq` / `in` / `not_in`。
+- **`value`**: 比較対象の値。
 
-参照ルートから始まるドット区切りのパスです。定義されている参照ルートは `self`（宣言したオブジェクト自身）・
-`parent`（その親）・`actor`（実行しているプレイヤーキャラクター）・`world`（9 節のシングルトン）・`dragged`
-（`combinations` 内のみ、12.2 節）です。
+`object`/`prop` を、他の場所（`modify`/`set`/`add` 等）と同じ「対象がキー、内容が値」という規約に合わせず
+あえてフラットな2フィールドにしているのは、対象1つ・プロパティ1つの単純な参照であり、ネストする必要が無い
+ためです。
 
-### 14.2 op（比較演算子）
+### 14.2 葉: スロット位置判定
 
-`lt` / `lte` / `gt` / `gte` / `eq` / `neq` / `in` / `not_in` を定義しています。
+`object` が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します。常に等価判定で、`op`
+は持ちません（否定したい場合は 14.3 節の `not` で包みます）。
+
+```yaml
+conditions:
+  - {object: self, slot: equip}
+```
+
+`slot` は `prop` とは独立したフィールドで、同時には指定できません。あえて `prop` の仮想的な特殊値にしていない
+のは、(a) スロット判定には `lt`/`gt` 等の比較演算子が意味を持たないため、`op` を伴う `prop` と同じ形にすると
+無意味な組み合わせを許してしまうこと、(b) プロパティ名とスロット名は本来別の名前空間であり、同じ識別子が
+偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は文字列が一致しても
+衝突しません。
+
+### 14.3 複合ノード: all / any / not
+
+複数の条件を組み合わせたい場合、`all`（論理積）・`any`（論理和）・`not`（否定）で入れ子にできます。
+
+```yaml
+conditions:
+  - any:
+      - {slot: main_hand}
+      - {slot: off_hand}
+```
+
+トップレベルの配列自体が暗黙の `all` であるため、単純な AND 条件（従来通り）は複合ノードを使わず、葉を並べる
+だけで書けます。
 
 ## 15. singleton（唯一のインスタンス）
 
@@ -889,7 +929,7 @@ object_defs:
 `tick` も持つ。）
 
 日時・天候はオブジェクトから直接参照されるのではなく、**環境がオブジェクトに影響を与える**という位置づけです
-（例: 明るさによって行動可否が変わる）。直接のプロパティ参照経路（`world.xxx`）は 14 節の `path` で使います。
+（例: 明るさによって行動可否が変わる）。直接のプロパティ参照は 14 節の `conditions`（`object: world`）で使います。
 
 ## 16. 本書の対象外
 
@@ -907,17 +947,17 @@ object_defs:
 - `day` の上限（無制限のまま加算し続けるか、年単位で wrap して `year` プロパティを持つか）
 - 天候遷移自体（いつ・どの天候に切り替わるか）のランダム性の仕組み（6.2 節）
 - `passives`/`active` の対象キーに `ancestor`/`sibling`/`descendant` を追加するかどうか
-- ステージの `passives` ブロックで `when`（スロット条件）とステージ自体の条件を組み合わせられるようにするか
-  （例: 「装備している間、かつ耐久値がintactステージの間だけ」のような AND 条件）。現状 `ContributionGate` は
-  単一の種別（`Always`/`WhenSlot`/`WhenOwnStage`）しか持てないため、対応するには複数条件を同時に保持できる
+- ステージの `passives` ブロックで `conditions`（スロット条件等）とステージ自体の条件を組み合わせられるように
+  するか（例: 「装備している間、かつ耐久値がintactステージの間だけ」のような AND 条件）。現状 `ContributionGate`
+  は単一の種別（`Always`/`Conditions`/`WhenOwnStage`）しか持てないため、対応するには複数条件を同時に保持できる
   形へ拡張する必要がある
 - `pick` の位置づけ（候補に `modify`/`accumulate` を書けないことの扱い）
-- `weight`（10.2 節）の参照記法。`{path: ...}` への統一か、`weight: accuracy` のような裸の名前も許容するか
 - `pick` の候補から「別のアクションを実行する」ための記法（エフェクトから能動的にアクションを発火する仕組み自体が
   まだない）
-- action / combinations の比較演算子セット（14.2 節）の過不足、`between` 等の追加要否
-- `path`（14.1 節・10.2 節）の実装範囲: 現状の実装は `<root>.<property>` の1階層のみに対応し、`world` を
-  root にした参照（world シングルトンインスタンスの実行時追跡が未実装）は未対応（ロード時エラー）
+- action / combinations の比較演算子セット（14.1 節）の過不足、`between` 等の追加要否
+- `object`（14.1 節・10.2 節）の参照範囲: 現状の実装は `object` が指すオブジェクト自身が直接持つ
+  プロパティ・スロットのみに対応し、そこから更に辿るネストした参照（例: 親の親）は未対応。`world` を `object`
+  にした参照（world シングルトンインスタンスの実行時追跡が未実装）も未対応（ロード時エラー）
 - `active`（9 節）の対象キー `child`: 一度きりの命令に対して「どの子か」の意味が確定していないため未対応
   （ロード時エラー）。passives の child 寄与（8 節、関係とゲートに基づく持続的な登録）とは性質が異なる
 - `conditions`/`weight` の `value: max`/`value: min`（参照先プロパティの range の上限・下限を指す想定と思われる

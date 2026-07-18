@@ -59,7 +59,6 @@ namespace UnmappedIsland.Codex.Tests
                 Kind = ContributionKind.Accumulate,
                 TargetPropertyName = propertyName,
                 Amount = amount,
-                GateKind = ContributionGateKind.Always,
             };
         }
 
