@@ -243,5 +243,74 @@ namespace UnmappedIsland.Codex.Tests
 
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(0));
         }
+
+        // ------------------------------------------------------------------
+        // on_max/on_minとon_overflow/on_shortfallの評価順: 循環する(自身をラップして戻す)
+        // カスタムon_overflow/on_shortfallを持つプロパティが、1tickでrangeをいきなり飛び越えた場合でも、
+        // on_max/on_minのレベルトリガーが「その瞬間、境界に達していたこと」を見逃さないことを確認する。
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void Tick_OnMaxStillFiresWhenACustomOnOverflowWrapsPastMaxInTheSameTick()
+        {
+            // gaugeは0-100を循環するプロパティ(on_overflowが自分自身を-100して折り返す、時計のminuteと同じ
+            // パターン)。1tickでの加算(+150)がrangeの幅(100)を超えるため、on_overflow適用後のgaugeは
+            // 50(range内)に収まってしまい、on_maxの判定(>=100)をon_overflowの後に行うと見逃してしまう。
+            var tank = new ObjectDefBlueprint { Name = "tank2" };
+            var gauge = WrappingProp("gauge", 0, min: 0, max: 100, ("gauge", -100));
+            gauge.OnMax = new ActiveEffectBlueprint();
+            gauge.OnMax.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = "alarm_count", Amount = 1 } };
+            tank.Properties.Add(gauge);
+            tank.Properties.Add(PlainProp("alarm_count", 0));
+            tank.Contributions.Add(SelfAccumulate("gauge", 150));
+
+            var codex = WorldCodexBuilder.Build(new[] { tank });
+            int gaugeId = codex.PropertyNames.GetId("gauge");
+            int alarmId = codex.PropertyNames.GetId("alarm_count");
+            var session = new WorldSession(codex);
+
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank2")));
+
+            instance.Tick(session); // 0 + 150 = 150 > 100 なので折り返す
+
+            Assert.That(instance.GetNumber(gaugeId), Is.EqualTo(50), "on_overflowにより50へ折り返される");
+            Assert.That(instance.GetNumber(alarmId), Is.EqualTo(1),
+                "on_overflowで折り返される前に、gaugeが確かにmax(100)以上に達していたことをon_maxが検知できているはず");
+        }
+
+        [Test]
+        public void Tick_OnMinStillFiresWhenACustomOnShortfallWrapsPastMinInTheSameTick()
+        {
+            // on_maxのテストの下限側の鏡像。gaugeが1tickでrangeの下限をいきなり下回った場合でも、
+            // on_shortfallによる折り返しの前に、on_minのレベルトリガーがその瞬間を検知できることを確認する。
+            var tank = new ObjectDefBlueprint { Name = "tank3" };
+            var gauge = new PropertyBlueprint
+            {
+                Name = "gauge",
+                DefaultValue = PropertyValue.FromNumber(50),
+                Range = new PropertyRange(0, 100),
+                OnShortfall = new ActiveEffectBlueprint(),
+                OnMin = new ActiveEffectBlueprint(),
+            };
+            gauge.OnShortfall.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = "gauge", Amount = 150 } };
+            gauge.OnMin.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = "alarm_count", Amount = 1 } };
+            tank.Properties.Add(gauge);
+            tank.Properties.Add(PlainProp("alarm_count", 0));
+            tank.Contributions.Add(SelfAccumulate("gauge", -150));
+
+            var codex = WorldCodexBuilder.Build(new[] { tank });
+            int gaugeId = codex.PropertyNames.GetId("gauge");
+            int alarmId = codex.PropertyNames.GetId("alarm_count");
+            var session = new WorldSession(codex);
+
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank3")));
+
+            instance.Tick(session); // 50 - 150 = -100 < 0 なので折り返す。折り返し量(+150)はmin(0)ちょうどには
+            // 着地させない(50に着地させる)ことで、「折り返し後の値がたまたま境界と一致する」ケースと区別する。
+
+            Assert.That(instance.GetNumber(gaugeId), Is.EqualTo(50), "on_shortfallにより50へ折り返される(0ちょうどには着地しない)");
+            Assert.That(instance.GetNumber(alarmId), Is.EqualTo(1),
+                "on_shortfallで折り返される前に、gaugeが確かにmin(0)以下に達していたことをon_minが検知できているはず");
+        }
     }
 }
