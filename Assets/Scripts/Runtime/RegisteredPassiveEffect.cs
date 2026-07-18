@@ -37,13 +37,22 @@ namespace UnmappedIsland.Runtime
                     return ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot);
 
                 case PassiveEffectGateKind.WhenOwnStage:
-                    int value = Declarer.GetNumberByLocalId(Def.Gate.PropertyLocalId);
-                    var stage = Declarer.Def.PropertyDefs[Def.Gate.PropertyLocalId].ResolveStage(value);
-                    return ReferenceEquals(stage, Def.Gate.Stage);
+                    return IsOwnStageActive();
+
+                case PassiveEffectGateKind.WhenOwnStageAndConditions:
+                    return IsOwnStageActive() && ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot);
 
                 default:
                     return false;
             }
+        }
+
+        /// <summary>Declarer自身の該当プロパティが、ゲートが指すstageに今まさに該当しているか。</summary>
+        private bool IsOwnStageActive()
+        {
+            int value = Declarer.GetNumberByLocalId(Def.Gate.PropertyLocalId);
+            var stage = Declarer.Def.PropertyDefs[Def.Gate.PropertyLocalId].ResolveStage(value);
+            return ReferenceEquals(stage, Def.Gate.Stage);
         }
 
         /// <summary>conditions（旧when）内のself/parentを解決する。selfはSlotBearer（self/parent対象の

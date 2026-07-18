@@ -762,8 +762,10 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_StageForcedGateWithConditions_Throws()
+        public void LoadFromGroups_StageForcedGateWithConditions_CombinesStageAndConditionsWithAnd()
         {
+            // ステージ強制ゲート(WhenOwnStage)とconditionsは併用でき、両方を満たす間だけ有効になる
+            // （WhenOwnStageAndConditions、GameElementDefinition.md 8.2節）。
             const string yaml = @"
 object_defs:
   campfire:
@@ -771,6 +773,7 @@ object_defs:
       heat:
         value: 0
         stages:
+          - name: unlit
           - name: lit
             min: 1
             passives:
@@ -779,9 +782,35 @@ object_defs:
                 modify:
                   child:
                     warmth: 5
+    slots:
+      fuel_slot: {}
+      storage: {}
+  log:
+    props:
+      warmth:
+        value: 0
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("conditions"));
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            int heatId = codex.PropertyNames.GetId("heat");
+            int warmthId = codex.PropertyNames.GetId("warmth");
+            int fuelSlotId = codex.SlotNames.GetId("fuel_slot");
+            int storageSlotId = codex.SlotNames.GetId("storage");
+
+            var session = new WorldSession(codex);
+            var campfireInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("campfire")));
+            var logInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("log")));
+
+            Assert.That(logInstance.MoveToSlot(campfireInstance, fuelSlotId, session.Codex.WellKnown, out _), Is.True);
+            Assert.That(logInstance.GetEffectiveValue(warmthId), Is.EqualTo(0),
+                "fuel_slotには入っているが、heatがunlitステージのためボーナスなし");
+
+            campfireInstance.SetProperty(heatId, PropertyValue.FromNumber(1));
+            Assert.That(logInstance.GetEffectiveValue(warmthId), Is.EqualTo(5),
+                "litステージかつfuel_slot条件の両方を満たすのでボーナスが乗る");
+
+            Assert.That(logInstance.MoveToSlot(campfireInstance, storageSlotId, session.Codex.WellKnown, out _), Is.True);
+            Assert.That(logInstance.GetEffectiveValue(warmthId), Is.EqualTo(0),
+                "litステージのままでもfuel_slotから外れるとボーナスが消える");
         }
 
         [Test]

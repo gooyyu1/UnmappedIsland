@@ -38,10 +38,15 @@ namespace UnmappedIsland.Codex
 
         /// <summary>Declarer 自身の特定プロパティが特定stageにある間だけ有効。</summary>
         WhenOwnStage,
+
+        /// <summary>WhenOwnStageとConditionsの両方（AND）。stage自身の条件に加えて、スロット条件等の
+        /// 追加条件も同時に満たす間だけ有効（例:「装備している間、かつ耐久値がintactステージの間だけ」）。</summary>
+        WhenOwnStageAndConditions,
     }
 
     /// <summary>
-    /// 効果の発動条件。Kind に応じて使うフィールドが変わる。
+    /// 効果の発動条件。Kind に応じて使うフィールドが変わる（WhenOwnStageAndConditionsの場合、
+    /// PropertyLocalId/StageとConditionsの両方が使われ、どちらも満たす間だけ有効）。
     ///
     /// Conditionsの条件木はグローバルIDのまま持つ（self/parentの解決先は「今の親のスロット構成」に対して
     /// 都度ローカル化する必要がある。効果を宣言した側のObjectDefは、将来どんな親に取り付けられるか
