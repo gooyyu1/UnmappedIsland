@@ -291,7 +291,108 @@ function buildDatabase(objectDefsRaw, traitsRaw) {
   Object.keys(objectDefsRaw).forEach(function (name) {
     objectDefs[name] = resolveObjectDef(objectDefsRaw[name], traitsRaw);
   });
-  return { objectDefs: objectDefs, traits: traitsRaw };
+  return { objectDefs: objectDefs, traits: traitsRaw, influenceIndex: buildInfluenceIndex(objectDefs) };
+}
+
+// ------------------------------------------------------------------
+// 逆引き索引: 「このプロパティに影響を与えうるのはどこか」（プロパティ詳細ページの
+// 「この値に影響を与える可能性があるもの」セクション用）。
+//
+// passives（object/property/stageの3レベルすべて）のmodify/accumulateを対象キー(self/parent/child)
+// ごとに全object_def分スキャンし、対象プロパティ名をキーとした索引を1つ作る。target=selfは
+// 「宣言したオブジェクト自身の（宣言元とは別の）プロパティ」を指しうる（例: core.yamlのsunlightの
+// stageがself.temperatureを書き換える）ため、宣言元と同名の対象プロパティも含めて有効な情報になる。
+// object_def名の文字列一致だけを見る簡略版であり（このファイル全体の方針と同じ）、実行時にどの
+// 具体的なインスタンスが親/子になるかまでは追跡しない。
+// ------------------------------------------------------------------
+
+function collectPassiveContexts(o) {
+  var contexts = [];
+  (o.passives || []).forEach(function (block) {
+    contexts.push({ block: block, sourceProperty: null, stageName: null });
+  });
+  Object.keys(o.props).forEach(function (propName) {
+    var p = o.props[propName];
+    (p.passives || []).forEach(function (block) {
+      contexts.push({ block: block, sourceProperty: propName, stageName: null });
+    });
+    (p.stages || []).forEach(function (stage) {
+      (stage.passives || []).forEach(function (block) {
+        contexts.push({ block: block, sourceProperty: propName, stageName: stage.name });
+      });
+    });
+  });
+  return contexts;
+}
+
+// on_min/on_max/on_overflow/on_shortfall（6節）は、現状selfのみ対応のActiveEffect（GameElementDefinition.md
+// 155行目付近）で、値の境界を跨いだ瞬間に発火する。targetは常にselfだが、書き換え先は宣言元とは別の
+// プロパティであることが多い（例: hourのon_overflowがself.dayを+1する）ため、passivesと同様に
+// 逆引き索引へ含める。
+function collectActiveEffectContexts(o) {
+  var contexts = [];
+  Object.keys(o.props).forEach(function (propName) {
+    var p = o.props[propName];
+    ["on_overflow", "on_shortfall", "on_min", "on_max"].forEach(function (eventName) {
+      if (p[eventName]) contexts.push({ node: p[eventName], sourceProperty: propName, eventName: eventName });
+    });
+  });
+  return contexts;
+}
+
+function buildInfluenceIndex(objectDefs) {
+  var index = {};
+  Object.keys(objectDefs).forEach(function (objName) {
+    collectPassiveContexts(objectDefs[objName]).forEach(function (ctx) {
+      ["modify", "accumulate"].forEach(function (kind) {
+        var targetsMap = ctx.block[kind];
+        if (!targetsMap) return;
+        Object.keys(targetsMap).forEach(function (target) {
+          Object.keys(targetsMap[target] || {}).forEach(function (propName) {
+            if (!index[propName]) index[propName] = [];
+            index[propName].push({
+              fromObject: objName,
+              viaTarget: target,
+              kind: kind,
+              amount: targetsMap[target][propName],
+              sourceProperty: ctx.sourceProperty,
+              stageName: ctx.stageName,
+              eventName: null,
+              conditions: ctx.block.conditions || null,
+            });
+          });
+        });
+      });
+    });
+    collectActiveEffectContexts(objectDefs[objName]).forEach(function (ctx) {
+      ["set", "add"].forEach(function (kind) {
+        var targetsMap = ctx.node[kind];
+        if (!targetsMap) return;
+        Object.keys(targetsMap).forEach(function (target) {
+          Object.keys(targetsMap[target] || {}).forEach(function (propName) {
+            if (!index[propName]) index[propName] = [];
+            index[propName].push({
+              fromObject: objName,
+              viaTarget: target,
+              kind: kind,
+              amount: targetsMap[target][propName],
+              sourceProperty: ctx.sourceProperty,
+              stageName: null,
+              eventName: ctx.eventName,
+              conditions: null,
+            });
+          });
+        });
+      });
+    });
+  });
+  return index;
+}
+
+function findObjectsWithProperty(propName) {
+  return Object.keys(DB.objectDefs).filter(function (n) {
+    return Object.prototype.hasOwnProperty.call(DB.objectDefs[n].props, propName);
+  }).sort();
 }
 
 // ------------------------------------------------------------------
@@ -300,55 +401,83 @@ function buildDatabase(objectDefsRaw, traitsRaw) {
 
 var OP_SYMBOLS = { lt: "<", lte: "<=", gt: ">", gte: ">=", eq: "==", neq: "!=", in: "in", not_in: "not in" };
 
-function renderCondition(node) {
+// target(self/parent/child/actor/dragged).propの参照を、プロパティ詳細ページへのリンクにする。
+// selfは常にselfObjectName（このpassives/conditions/activeを宣言したobject_def自身）に確定するので
+// そのまま直接リンクできるが、それ以外は実行時にならないと相手オブジェクトが定まらないため、
+// 同名のプロパティを持つobject_defを名前だけで検索し、1件ならそのままリンク、複数なら候補一覧を出す。
+function renderPropRef(targetKind, propName, selfObjectName) {
+  var label = esc(targetKind) + "." + esc(propName);
+  if (targetKind === "self") {
+    return "<a href=\"#/property/" + encodeURIComponent(selfObjectName) + "/" + encodeURIComponent(propName) + "\">" + label + "</a>";
+  }
+  var candidates = findObjectsWithProperty(propName);
+  if (candidates.length === 0) return label; // どのobject_defも持たないプロパティ: リンクしようがない
+  if (candidates.length === 1) {
+    return "<a href=\"#/property/" + encodeURIComponent(candidates[0]) + "/" + encodeURIComponent(propName) + "\">" + label +
+      "</a><span class=\"muted\">（→" + esc(candidates[0]) + "）</span>";
+  }
+  var links = candidates.map(function (c) {
+    return "<a href=\"#/property/" + encodeURIComponent(c) + "/" + encodeURIComponent(propName) + "\">" + esc(c) + "</a>";
+  }).join("、");
+  return label + "<span class=\"muted\">（候補: " + links + "）</span>";
+}
+
+function renderObjectRef(objectName) {
+  if (DB.objectDefs[objectName]) {
+    return "<a href=\"#/object/" + encodeURIComponent(objectName) + "\">" + esc(objectName) + "</a>";
+  }
+  return esc(objectName);
+}
+
+function renderCondition(node, selfObjectName) {
   if (node == null) return "(常時)";
-  if (node.all) return "(" + node.all.map(renderCondition).join(" かつ ") + ")";
-  if (node.any) return "(" + node.any.map(renderCondition).join(" または ") + ")";
-  if (node.not !== undefined) return "not " + renderCondition(node.not);
+  if (node.all) return "(" + node.all.map(function (n) { return renderCondition(n, selfObjectName); }).join(" かつ ") + ")";
+  if (node.any) return "(" + node.any.map(function (n) { return renderCondition(n, selfObjectName); }).join(" または ") + ")";
+  if (node.not !== undefined) return "not " + renderCondition(node.not, selfObjectName);
   if (node.slot !== undefined) {
     var slotObj = node.object || "self";
-    return slotObj + "が" + node.slot + "スロットに入っている";
+    return esc(slotObj) + "が" + esc(node.slot) + "スロットに入っている";
   }
   if (node.prop !== undefined) {
     var propObj = node.object || "self";
     var op = OP_SYMBOLS[node.op || "eq"] || (node.op || "eq");
-    var val = Array.isArray(node.value) ? "[" + node.value.join(", ") + "]" : node.value;
-    return propObj + "." + node.prop + " " + op + " " + val;
+    var val = Array.isArray(node.value) ? "[" + node.value.map(function (v) { return esc(v); }).join(", ") + "]" : esc(node.value);
+    return renderPropRef(propObj, node.prop, selfObjectName) + " " + esc(op) + " " + val;
   }
-  return JSON.stringify(node);
+  return esc(JSON.stringify(node));
 }
 
-function renderConditionsList(list) {
+function renderConditionsList(list, selfObjectName) {
   if (!list) return "(常時)";
-  return renderCondition({ all: list });
+  return renderCondition({ all: list }, selfObjectName);
 }
 
-function renderKindTargets(targetsMap, kindLabel, gate) {
+function renderKindTargets(targetsMap, kindLabel, gate, selfObjectName) {
   var out = [];
   Object.keys(targetsMap || {}).forEach(function (target) {
     Object.keys(targetsMap[target] || {}).forEach(function (prop) {
       var amount = targetsMap[target][prop];
       var sign = typeof amount === "number" && amount >= 0 ? "+" : "";
-      out.push("[" + gate + "] " + target + "." + prop + " を" + kindLabel + " " + sign + amount);
+      out.push("[" + gate + "] " + renderPropRef(target, prop, selfObjectName) + " を" + kindLabel + " " + sign + esc(amount));
     });
   });
   return out;
 }
 
-function renderPassiveBlock(block, gateOverride) {
-  var gate = gateOverride || renderConditionsList(block.conditions);
+function renderPassiveBlock(block, gateOverride, selfObjectName) {
+  var gate = gateOverride || renderConditionsList(block.conditions, selfObjectName);
   var out = [];
-  if (block.modify) out = out.concat(renderKindTargets(block.modify, "modify(実効値)", gate));
-  if (block.accumulate) out = out.concat(renderKindTargets(block.accumulate, "accumulate(実体値)", gate));
+  if (block.modify) out = out.concat(renderKindTargets(block.modify, "modify(実効値)", gate, selfObjectName));
+  if (block.accumulate) out = out.concat(renderKindTargets(block.accumulate, "accumulate(実体値)", gate, selfObjectName));
   return out;
 }
 
-function renderActive(node) {
+function renderActive(node, selfObjectName) {
   var out = [];
   if (node.set) {
     Object.keys(node.set).forEach(function (target) {
       Object.keys(node.set[target]).forEach(function (prop) {
-        out.push(target + "." + prop + " := " + node.set[target][prop]);
+        out.push(renderPropRef(target, prop, selfObjectName) + " := " + esc(node.set[target][prop]));
       });
     });
   }
@@ -357,52 +486,83 @@ function renderActive(node) {
       Object.keys(node.add[target]).forEach(function (prop) {
         var amount = node.add[target][prop];
         var sign = typeof amount === "number" && amount >= 0 ? "+" : "";
-        out.push(target + "." + prop + " " + sign + "= " + amount);
+        out.push(renderPropRef(target, prop, selfObjectName) + " " + sign + "= " + esc(amount));
       });
     });
   }
   if (node.destroy) {
     var list = Array.isArray(node.destroy) ? node.destroy : [node.destroy];
-    out.push("destroy: " + list.join(", "));
+    out.push("destroy: " + list.map(function (v) { return esc(v); }).join(", "));
   }
   if (node.spawn) {
-    out.push("spawn: " + node.spawn.object + " → " + (node.spawn.into || "same_slot"));
+    out.push("spawn: " + renderObjectRef(node.spawn.object) + " → " + esc(node.spawn.into || "same_slot"));
   }
   return out;
 }
 
-function renderWeight(weight) {
+function renderWeight(weight, selfObjectName) {
   if (weight && typeof weight === "object") {
-    return "path(" + (weight.object || "self") + "." + weight.prop + ")";
+    return "path(" + renderPropRef(weight.object || "self", weight.prop, selfObjectName) + ")";
   }
-  return String(weight);
+  return esc(String(weight));
 }
 
-function renderPick(list, indent) {
+function renderPick(list, indent, selfObjectName) {
   indent = indent || "";
   var out = [];
   list.forEach(function (candidate) {
-    out.push(indent + "weight=" + renderWeight(candidate.weight));
+    out.push(indent + "weight=" + renderWeight(candidate.weight, selfObjectName));
     if (candidate.pick) {
-      out = out.concat(renderPick(candidate.pick, indent + "  "));
+      out = out.concat(renderPick(candidate.pick, indent + "  ", selfObjectName));
     } else {
-      renderActive(candidate).forEach(function (line) { out.push(indent + "  " + line); });
+      renderActive(candidate, selfObjectName).forEach(function (line) { out.push(indent + "  " + line); });
     }
   });
   return out;
 }
 
-function renderActionOrCombination(node) {
+function renderActionOrCombination(node, selfObjectName) {
   var lines = [];
-  if (node.showMenu) lines.push("showMenu: " + node.showMenu);
-  if (node.with !== undefined) lines.push("with(tag): " + node.with);
-  if (node.conditions) lines.push("conditions: " + renderConditionsList(node.conditions));
-  lines = lines.concat(renderActive(node));
+  if (node.showMenu) lines.push("showMenu: " + esc(node.showMenu));
+  if (node.with !== undefined) lines.push("with(tag): " + esc(node.with));
+  if (node.conditions) lines.push("conditions: " + renderConditionsList(node.conditions, selfObjectName));
+  lines = lines.concat(renderActive(node, selfObjectName));
   if (node.pick) {
     lines.push("pick:");
-    lines = lines.concat(renderPick(node.pick, "  "));
+    lines = lines.concat(renderPick(node.pick, "  ", selfObjectName));
   }
   return lines;
+}
+
+// passives/conditions/activeの各行はすでにescを内部で適用済みの信頼済みHTMLなので、
+// <li>へ組み込む際に二重エスケープしない（esc()を再度掛けるとリンクのタグ自体が文字列表示されてしまう）。
+function linesToListItems(lines, emptyMessage) {
+  return lines.map(function (l) { return "<li>" + l + "</li>"; }).join("") ||
+    "<li class=\"muted\">" + emptyMessage + "</li>";
+}
+
+var INFLUENCE_KIND_LABELS = {
+  modify: "modify(実効値)",
+  accumulate: "accumulate(実体値)",
+  set: "set(:=)",
+  add: "add(+=)",
+};
+
+function renderInfluenceEntry(entry) {
+  var sourceLabel;
+  if (entry.sourceProperty) {
+    sourceLabel = "<a href=\"#/property/" + encodeURIComponent(entry.fromObject) + "/" + encodeURIComponent(entry.sourceProperty) + "\">" +
+      esc(entry.fromObject) + "." + esc(entry.sourceProperty) + "</a>";
+    if (entry.stageName) sourceLabel += "（stage: " + esc(entry.stageName) + "）";
+    if (entry.eventName) sourceLabel += "（" + esc(entry.eventName) + "）";
+  } else {
+    sourceLabel = renderObjectRef(entry.fromObject) + "（オブジェクトレベル）";
+  }
+  var kindLabel = INFLUENCE_KIND_LABELS[entry.kind] || esc(entry.kind);
+  var sign = typeof entry.amount === "number" && entry.amount >= 0 ? "+" : "";
+  var gate = entry.conditions ? renderConditionsList(entry.conditions, entry.fromObject) : "(常時)";
+  return sourceLabel + " が [" + esc(entry.viaTarget) + "] を" + kindLabel + " " + sign + esc(entry.amount) +
+    "（条件: " + gate + "）";
 }
 
 function renderAccepts(list) {
@@ -476,22 +636,22 @@ function renderObjectDetailPage(name) {
 
   var passivesList = [];
   o.passives.forEach(function (block) {
-    passivesList = passivesList.concat(renderPassiveBlock(block));
+    passivesList = passivesList.concat(renderPassiveBlock(block, undefined, o.name));
   });
 
   var actionNames = Object.keys(o.actions).sort();
   var actionsHtml = actionNames.map(function (aname) {
-    var lines = renderActionOrCombination(o.actions[aname]);
+    var lines = renderActionOrCombination(o.actions[aname], o.name);
     return "<div class=\"card\"><h4>" + esc(aname) + "</h4><ul class=\"plain\">" +
-      (lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(内容なし)</li>") +
+      linesToListItems(lines, "(内容なし)") +
       "</ul></div>";
   }).join("");
 
   var comboNames = Object.keys(o.combinations).sort();
   var combosHtml = comboNames.map(function (cname) {
-    var lines = renderActionOrCombination(o.combinations[cname]);
+    var lines = renderActionOrCombination(o.combinations[cname], o.name);
     return "<div class=\"card\"><h4>" + esc(cname) + "</h4><ul class=\"plain\">" +
-      (lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(内容なし)</li>") +
+      linesToListItems(lines, "(内容なし)") +
       "</ul></div>";
   }).join("");
 
@@ -511,7 +671,7 @@ function renderObjectDetailPage(name) {
     "<tbody>" + (slotsRows || "<tr><td colspan=\"7\">(なし)</td></tr>") + "</tbody></table>" +
 
     "<h2>passives（オブジェクトレベル）</h2>" +
-    "<ul class=\"plain\">" + (passivesList.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(なし)</li>") + "</ul>" +
+    "<ul class=\"plain\">" + linesToListItems(passivesList, "(なし)") + "</ul>" +
 
     "<h2>actions</h2>" + (actionsHtml || "<p class=\"muted\">(なし)</p>") +
 
@@ -537,35 +697,46 @@ function renderPropertyDetailPage(objName, propName) {
       }
       return "<p><strong>" + label + "</strong>: <span class=\"muted\">(なし)</span></p>";
     }
-    var lines = renderActive(node);
-    return "<p><strong>" + label + "</strong>:</p><ul class=\"plain\">" +
-      lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>";
+    var lines = renderActive(node, o.name);
+    return "<p><strong>" + label + "</strong>:</p><ul class=\"plain\">" + linesToListItems(lines, "(なし)") + "</ul>";
   }
 
   function renderOptionalEffect(label, node) {
     if (node === undefined) return "<p><strong>" + label + "</strong>: <span class=\"muted\">(なし)</span></p>";
-    var lines = renderActive(node);
-    return "<p><strong>" + label + "</strong>:</p><ul class=\"plain\">" +
-      lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>";
+    var lines = renderActive(node, o.name);
+    return "<p><strong>" + label + "</strong>:</p><ul class=\"plain\">" + linesToListItems(lines, "(なし)") + "</ul>";
   }
 
   var stagesHtml = (p.stages || []).map(function (s) {
-    var stageGate = "stage=" + s.name;
+    var stageGate = "stage=" + esc(s.name);
     var lines = [];
     (s.passives || []).forEach(function (block) {
-      lines = lines.concat(renderPassiveBlock(block, stageGate));
+      lines = lines.concat(renderPassiveBlock(block, stageGate, o.name));
     });
     return "<div class=\"card\"><h4>" + esc(s.name) + " " +
       (s.min !== undefined ? "(min: " + esc(s.min) + ")" : "(フォールバック: 他のどの段階にも該当しない場合)") +
-      "</h4><ul class=\"plain\">" +
-      (lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(passiveなし)</li>") +
-      "</ul></div>";
+      "</h4><ul class=\"plain\">" + linesToListItems(lines, "(passiveなし)") + "</ul></div>";
   }).join("");
 
   var ownPassives = [];
   (p.passives || []).forEach(function (block) {
-    ownPassives = ownPassives.concat(renderPassiveBlock(block));
+    ownPassives = ownPassives.concat(renderPassiveBlock(block, undefined, o.name));
   });
+
+  var allInfluencers = (DB.influenceIndex && DB.influenceIndex[propName]) || [];
+  var influencers = allInfluencers.filter(function (e) {
+    // target=selfは「宣言したオブジェクト自身」しか書き換えないため、このプロパティの持ち主
+    // (o.name)自身が宣言した場合だけ意味を持つ（他のobject_defのselfは無関係）。
+    if (e.viaTarget === "self" && e.fromObject !== o.name) return false;
+    // 同じプロパティ自身の下に書かれているpassives/stagesは、このページの上のセクションに
+    // すでに表示済みのため重複を避ける。
+    if (e.fromObject === o.name && e.sourceProperty === propName) return false;
+    return true;
+  }).sort(function (a, b) {
+    if (a.fromObject !== b.fromObject) return a.fromObject < b.fromObject ? -1 : 1;
+    return (a.sourceProperty || "") < (b.sourceProperty || "") ? -1 : 1;
+  });
+  var influencersHtml = influencers.map(function (e) { return "<li>" + renderInfluenceEntry(e) + "</li>"; }).join("");
 
   return "<p class=\"breadcrumb\"><a href=\"#/object/" + encodeURIComponent(o.name) + "\">← " + esc(o.name) + "</a></p>" +
     "<h1>" + esc(o.name) + "<span class=\"muted\">.</span>" + esc(propName) + "</h1>" +
@@ -580,7 +751,10 @@ function renderPropertyDetailPage(objName, propName) {
     "<h2>stages</h2>" + (stagesHtml || "<p class=\"muted\">(なし)</p>") +
 
     "<h2>passives（プロパティレベル）</h2>" +
-    "<ul class=\"plain\">" + (ownPassives.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(なし)</li>") + "</ul>";
+    "<ul class=\"plain\">" + linesToListItems(ownPassives, "(なし)") + "</ul>" +
+
+    "<h2>この値に影響を与える可能性があるもの</h2>" +
+    "<ul class=\"plain\">" + (influencersHtml || "<li class=\"muted\">(なし)</li>") + "</ul>";
 }
 
 // ------------------------------------------------------------------
