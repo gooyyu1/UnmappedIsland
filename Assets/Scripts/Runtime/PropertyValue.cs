@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnmappedIsland.Codex;
 
@@ -25,6 +26,13 @@ namespace UnmappedIsland.Runtime
         private readonly WorldObject owner;
 
         private readonly List<RegisteredPassiveEffect> incoming = new List<RegisteredPassiveEffect>();
+
+        /// <summary>GetEffectiveValue計算中かどうか（再入検出用）。conditions（14節）がGetEffectiveValueを
+        /// 読むようになったことで、あるプロパティのmodifyのゲートが（直接・間接を問わず）自分自身の実効値に
+        /// 依存してしまう循環参照が起こりうる。生の値と異なり実効値は計算結果そのものに依存しうるため、
+        /// この保証は自動では成立しない。放置するとStackOverflowException（catch不能、プロセスごと落ちる）
+        /// になるため、再入を検出した時点でGetEffectiveValue自身が分かりやすい例外を投げる。</summary>
+        private bool isComputingEffectiveValue;
 
         private PropertyValue(int number)
         {
@@ -91,16 +99,33 @@ namespace UnmappedIsland.Runtime
 
         /// <summary>
         /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
+        ///
+        /// conditions（14節）はこの実効値を読む（ConditionEvaluator参照）ため、他のmodifyのゲート判定から
+        /// 再入する可能性がある。isComputingEffectiveValueで、この呼び出し自身への再入（＝循環参照）を検出し、
+        /// スタックオーバーフローになる前に分かりやすい例外を投げる。
         /// </summary>
         internal int GetEffectiveValue()
         {
-            int sum = Number;
+            if (isComputingEffectiveValue)
+                throw new InvalidOperationException(
+                    $"プロパティ'{def?.Name}'の実効値計算中に循環参照を検出しました" +
+                    "（modifyのconditionsが、直接・間接を問わず自分自身の実効値に依存しています）。");
 
-            foreach (var c in incoming)
-                if (c.Def.Kind == PassiveEffectKind.Modify && c.IsActive())
-                    sum += c.Def.Amount;
+            isComputingEffectiveValue = true;
+            try
+            {
+                int sum = Number;
 
-            return def.Range.HasValue ? def.Range.Value.Clamp(sum) : sum;
+                foreach (var c in incoming)
+                    if (c.Def.Kind == PassiveEffectKind.Modify && c.IsActive())
+                        sum += c.Def.Amount;
+
+                return def.Range.HasValue ? def.Range.Value.Clamp(sum) : sum;
+            }
+            finally
+            {
+                isComputingEffectiveValue = false;
+            }
         }
 
         /// <summary>
