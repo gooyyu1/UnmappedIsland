@@ -3,8 +3,10 @@ using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
+using UnmappedIsland.GameTime;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
+using UnmappedIsland.Runtime.Views;
 
 namespace UnmappedIsland.Codex.Tests
 {
@@ -42,17 +44,24 @@ namespace UnmappedIsland.Codex.Tests
             throw new FileNotFoundException($"'{relativePath}' が祖先ディレクトリの中に見つかりませんでした。");
         }
 
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
+        {
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
+        }
+
         [Test]
         public void World_IsSingletonWithExpectedDefaultProperties()
         {
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             Assert.That(world.IsSingleton, Is.True);
 
-            Assert.That(PropOf(world, "tick").DefaultValue.AsNumber(), Is.EqualTo(0));
-            Assert.That(PropOf(world, "minute").DefaultValue.AsNumber(), Is.EqualTo(0));
-            Assert.That(PropOf(world, "hour").DefaultValue.AsNumber(), Is.EqualTo(0));
-            Assert.That(PropOf(world, "day").DefaultValue.AsNumber(), Is.EqualTo(1));
-            Assert.That(PropOf(world, "temperature").DefaultValue.AsNumber(), Is.EqualTo(20));
+            Assert.That(PropOf(world, "tick").DefaultNumber, Is.EqualTo(0));
+            Assert.That(PropOf(world, "minutes_per_tick").DefaultNumber, Is.EqualTo(15));
+            Assert.That(PropOf(world, "minute").DefaultNumber, Is.EqualTo(0));
+            Assert.That(PropOf(world, "hour").DefaultNumber, Is.EqualTo(0));
+            Assert.That(PropOf(world, "day").DefaultNumber, Is.EqualTo(1));
+            Assert.That(PropOf(world, "temperature").DefaultNumber, Is.EqualTo(20));
         }
 
         [Test]
@@ -72,8 +81,11 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void World_TickAndMinute_AccumulatePerTick()
+        public void World_Tick_AccumulatesPerTick_MinuteDoesNot()
         {
+            // minuteはtick駆動のpassivesを持たない。「1tick進める」たびにminutes_per_tick分だけ加算する
+            // 処理自体をWorldClock（ゲーム側）が担うため（GameTime.WorldClockTests参照）、core.yaml単体で
+            // Tick()を直接呼んでもminuteは変化しないことをここで確認する。
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int tickId = codex.PropertyNames.GetId("tick");
             int minuteId = codex.PropertyNames.GetId("minute");
@@ -85,7 +97,7 @@ namespace UnmappedIsland.Codex.Tests
             worldInstance.Tick(session);
 
             Assert.That(worldInstance.GetNumber(tickId), Is.EqualTo(3), "tickは毎tick+1される");
-            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(45), "minuteは毎tick+15される(1tick=ゲーム内15分)");
+            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0), "minuteはtick駆動では変化しない(WorldClock経由でのみ進む)");
         }
 
         [Test]
@@ -98,13 +110,14 @@ namespace UnmappedIsland.Codex.Tests
 
             var session = new WorldSession(codex);
             var worldInstance = new WorldObject(1, world);
+            var worldView = new World(worldInstance, codex.PropertyNames);
 
-            for (int i = 0; i < 4; i++) worldInstance.Tick(session); // 15*4=60分 -> minuteが折り返し、hourへ+1
+            WorldClock.Advance(worldView, session, 60); // 60分 -> minuteが折り返し、hourへ+1
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(1));
 
-            for (int i = 0; i < 4 * 24 - 4; i++) worldInstance.Tick(session); // 残り23時間分進め、hourもdayへ折り返させる
+            WorldClock.Advance(worldView, session, 60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(0));
@@ -121,16 +134,20 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(locations.Accepts[0].With, Is.EqualTo("location"));
 
             // locationトレイトを参照するダミーのobject_defと、参照しないobject_defをそれぞれ組み立てて検証する。
-            var forest = new ObjectDefBlueprint { Name = "test_forest" };
-            forest.TraitNames.Add("location");
-            var rock = new ObjectDefBlueprint { Name = "test_rock" };
-
-            var testCodex = WorldCodexBuilder.Build(new[]
-            {
-                new ObjectDefBlueprint { Name = "test_world", Slots = { new SlotBlueprint { Name = "locations", Accepts = { new AcceptBlueprint { ObjectName = "location", Max = 9999 } } } } },
-                forest,
-                rock,
-            });
+            const string yaml = @"
+traits:
+  location: {}
+object_defs:
+  test_world:
+    slots:
+      locations:
+        accepts:
+          - {object: location, max: 9999}
+  test_forest:
+    traits: [location]
+  test_rock: {}
+";
+            var testCodex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             int locationsSlotId = testCodex.SlotNames.GetId("locations");
             var session = new WorldSession(testCodex);

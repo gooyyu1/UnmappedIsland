@@ -56,7 +56,7 @@ object_defs:
 
             ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
 
-            Assert.That(PropOf(codex, log, "life").DefaultValue.AsNumber(), Is.EqualTo(10));
+            Assert.That(PropOf(codex, log, "life").DefaultNumber, Is.EqualTo(10));
             Assert.That(SlotOf(codex, log, "inside").Capacity, Is.EqualTo(5.0));
 
             Assert.That(log.StackOrder, Is.Not.Null);
@@ -65,7 +65,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_StringPropertyValue_InternsIntoSharedSymbolRegistry()
+        public void LoadFromGroups_StringPropertyValue_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -74,13 +74,8 @@ object_defs:
       weather:
         value: clear
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
-
-            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky"));
-            PropertyValue value = PropOf(codex, sky, "weather").DefaultValue;
-
-            Assert.That(value.Kind, Is.EqualTo(PropertyValueKind.Symbol));
-            Assert.That(codex.Symbols.GetName(value.Symbol), Is.EqualTo("clear"));
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("整数または真偽値"));
         }
 
         // ------------------------------------------------------------------
@@ -155,7 +150,7 @@ object_defs:
             });
 
             ObjectDef torch = codex.Objects.Get(codex.ObjectNames.GetId("torch"));
-            Assert.That(PropOf(codex, torch, "fuel").DefaultValue.AsNumber(), Is.EqualTo(999),
+            Assert.That(PropOf(codex, torch, "fuel").DefaultNumber, Is.EqualTo(999),
                 "後から渡したグループ(mod)の定義が、先のグループ(base)の同名定義を上書きする");
         }
 
@@ -198,7 +193,7 @@ object_defs:
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
-            Assert.That(PropOf(codex, log, "burning").DefaultValue.AsNumber(), Is.EqualTo(0));
+            Assert.That(PropOf(codex, log, "burning").DefaultNumber, Is.EqualTo(0));
             Assert.That(SlotOf(codex, log, "fire_pit"), Is.Not.Null);
         }
 
@@ -224,7 +219,7 @@ object_defs:
             ObjectDef ember = codex.Objects.Get(codex.ObjectNames.GetId("ember"));
             PropertyDef temp = PropOf(codex, ember, "temperature");
 
-            Assert.That(temp.DefaultValue.AsNumber(), Is.EqualTo(50), "object_def側のvalueで上書きされる");
+            Assert.That(temp.DefaultNumber, Is.EqualTo(50), "object_def側のvalueで上書きされる");
             Assert.That(temp.Range, Is.Not.Null, "object_defが指定していないrangeはtrait側から引き継がれる");
             Assert.That(temp.Range.Value.Min, Is.EqualTo(0));
             Assert.That(temp.Range.Value.Max, Is.EqualTo(100));

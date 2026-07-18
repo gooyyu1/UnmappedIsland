@@ -2,7 +2,9 @@
 
   <!--
     Assets/Scripts/Codex（ロードされた定義: UnmappedIsland.Codex名前空間）と
-    Assets/Scripts/Runtime（可変な実行時状態: UnmappedIsland.Runtime名前空間）配下のコードは
+    Assets/Scripts/Runtime（可変な実行時状態: UnmappedIsland.Runtime名前空間）、
+    Assets/Scripts/GameTime（tick=15分等、core.yamlの内容に依存するこのゲーム固有のロジック。
+    汎用エンジンであるCodex/Runtime/Loaderとは区別するが、UnityEngineには依存しない）配下のコードは
     UnityEngineに依存しない純粋なC#であるため、Unityエディタなしでもビルド・テストできるよう、
     実体のソースをそのまま参照するスタンドアロンのクラスライブラリとして定義する
     （ファイルの複製はしない）。LangVersionはUnity 2022.3のRoslynが受け付ける範囲に揃えてある。
@@ -20,6 +22,7 @@
     <Compile Include="../../Assets/Scripts/Codex/**/*.cs" />
     <Compile Include="../../Assets/Scripts/Runtime/**/*.cs" />
     <Compile Include="../../Assets/Scripts/Loader/**/*.cs" />
+    <Compile Include="../../Assets/Scripts/GameTime/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>

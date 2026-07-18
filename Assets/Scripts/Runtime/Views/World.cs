@@ -20,6 +20,7 @@ namespace UnmappedIsland.Runtime.Views
         private readonly int dayId;
         private readonly int hourId;
         private readonly int minuteId;
+        private readonly int minutesPerTickId;
 
         public World(WorldObject instance, NameRegistry propertyNames)
         {
@@ -27,10 +28,18 @@ namespace UnmappedIsland.Runtime.Views
             dayId = propertyNames.GetId("day");
             hourId = propertyNames.GetId("hour");
             minuteId = propertyNames.GetId("minute");
+            minutesPerTickId = propertyNames.GetId("minutes_per_tick");
         }
 
         public int Day => Instance.GetEffectiveValue(dayId);
         public int Hour => Instance.GetEffectiveValue(hourId);
         public int Minute => Instance.GetEffectiveValue(minuteId);
+
+        /// <summary>1tickに相当するゲーム内時間（分）。実体値をそのまま返す（GameTime.WorldClock参照）。</summary>
+        public int MinutesPerTick => Instance.GetNumber(minutesPerTickId);
+
+        /// <summary>minuteへamountを加減算する（GameTime.WorldClock専用。負の値も許容する）。sessionを
+        /// 渡すことで、on_overflow等がTickを待たずその場で判定・実行される（WorldObject.AddNumber参照）。</summary>
+        public void AddMinutes(int amount, WorldSession session) => Instance.AddNumber(minuteId, amount, session);
     }
 }

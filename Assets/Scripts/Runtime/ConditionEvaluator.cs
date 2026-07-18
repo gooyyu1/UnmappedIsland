@@ -62,10 +62,6 @@ namespace UnmappedIsland.Runtime
             return slotLocal != LocalIndexMap.Missing && target.ParentSlotLocalId == slotLocal;
         }
 
-        private static bool ValueEquals(PropertyValue a, PropertyValue b)
-        {
-            if (a.Kind != b.Kind) return false;
-            return a.Kind == PropertyValueKind.Number ? a.Number == b.Number : a.Symbol == b.Symbol;
-        }
+        private static bool ValueEquals(PropertyValue a, PropertyValue b) => a.Number == b.Number;
     }
 }

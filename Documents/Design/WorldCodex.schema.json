@@ -52,9 +52,9 @@
     },
 
     "prop_value": {
-      "description": "props の value。固定値（整数・文字列・真偽値）、または {min, max} の範囲値（6.2節、毎tickランダム再ロール）のいずれか。数値は32bit整数のみを扱う（6節）。",
+      "description": "props の value。固定値（整数・真偽値）、または {min, max} の範囲値（6.2節、毎tickランダム再ロール）のいずれか。数値は32bit整数のみを扱う（6節）。",
       "oneOf": [
-        { "type": ["integer", "string", "boolean"] },
+        { "type": ["integer", "boolean"] },
         { "$ref": "#/$defs/range_value" }
       ]
     },

@@ -20,10 +20,17 @@ object_defs:
           - accumulate:
               self:
                 tick: 1
+      # 1tickに相当するゲーム内時間（分）。この数字自体をここに持たせることで、「1tick=何分か」という
+      # 具体的な対応づけへの依存をcore.yaml側に寄せ、ゲーム側（UnmappedIsland.GameTime.WorldClock）は
+      # 実行時にこの値を読むだけにする。
+      minutes_per_tick:
+        value: 15
       # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow）。setで絶対値0へ
       # 戻すのではなく、addで折り返し量・繰り上げ量を一度に加減算する（1tickで複数span分溢れた場合でも
-      # 超過分を保持できるため、こちらのほうが堅牢）。1tick=ゲーム内時間15分、という対応づけのため、
-      # 毎tick自分自身を+15する。
+      # 超過分を保持できるため、こちらのほうが堅牢）。tick駆動のpassivesは持たない。「1tick進める」たびに
+      # minutes_per_tick分だけ加算する処理そのものをゲーム側（WorldClock）が担う
+      # （毎tick自動でminutes_per_tick分を加算する側と、tick未満の端数を加算する側の両方をYAMLとゲーム側に
+      # 分けて持つと、Tickを呼ぶたびに二重に加算されてしまうため。WorldClock参照）。
       minute:
         value: 0
         range: {min: 0, max: 59}
@@ -32,10 +39,6 @@ object_defs:
             self:
               minute: -60
               hour: 1
-        passives:
-          - accumulate:
-              self:
-                minute: 15
       # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
       hour:
         value: 0

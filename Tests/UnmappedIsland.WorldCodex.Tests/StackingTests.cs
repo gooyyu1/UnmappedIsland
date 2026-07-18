@@ -1,13 +1,15 @@
 using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
+using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 
 namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
     /// アイテムのスタック表示（Slot.Contentsの並び順・SlotDefのStackable/UnitCapacity/FixedPositions・
-    /// ObjectDef.StackOrder・same_slotとの相互作用）に対する自動テスト。
+    /// ObjectDef.StackOrder・same_slotとの相互作用）に対する自動テスト。YAMLパーサ経由でWorldCodexを
+    /// 組み立てて検証する（YamlLoaderTests.csと同じ方針）。
     /// </summary>
     [TestFixture]
     public class StackingTests
@@ -20,40 +22,19 @@ namespace UnmappedIsland.Codex.Tests
             nextInstanceId = 1;
         }
 
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
+        {
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
+        }
+
+        private static WorldCodex Load(string yaml) =>
+            WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
         private WorldObject Spawn(WorldCodex codex, string objectName)
         {
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId(objectName));
             return new WorldObject(nextInstanceId++, def);
-        }
-
-        // on_minはRange.Minとの比較になったため、rangeが未指定なら旧on_zero相当(下限0)を暗黙に補う。
-        private static PropertyBlueprint Prop(string name, int defaultValue, ActiveEffectBlueprint onMin = null) =>
-            new PropertyBlueprint
-            {
-                Name = name,
-                DefaultValue = PropertyValue.FromNumber(defaultValue),
-                Range = onMin != null ? new PropertyRange(0, int.MaxValue) : (PropertyRange?)null,
-                OnMin = onMin,
-            };
-
-        private static SlotBlueprint Slot(
-            string name, bool stackable = true, int? unitCapacity = null, bool fixedPositions = false)
-        {
-            return new SlotBlueprint
-            {
-                Name = name,
-                Stackable = stackable,
-                UnitCapacity = unitCapacity,
-                FixedPositions = fixedPositions,
-            };
-        }
-
-        private static ActiveEffectBlueprint OnMinSpawn(
-            string spawnObjectName, bool destroy, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
-        {
-            var bp = new ActiveEffectBlueprint { Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into } };
-            if (destroy) bp.Destroy.Add(ReferenceRoot.Self);
-            return bp;
         }
 
         // ------------------------------------------------------------------
@@ -63,15 +44,21 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void AddInternal_SortsWithinRunSoThatMostUrgentEndsLast()
         {
-            var ground = new ObjectDefBlueprint { Name = "ground" };
-            ground.Slots.Add(Slot("pile"));
-
-            var log = new ObjectDefBlueprint { Name = "log" };
-            log.Properties.Add(Prop("life", 0));
-            // 寿命(life)が短いものほど末尾(=手前に重なる)にしたいので Ascending=false
-            log.StackOrder = new StackOrderBlueprint { PropertyName = "life", Ascending = false };
-
-            var codex = WorldCodexBuilder.Build(new[] { ground, log });
+            const string yaml = @"
+object_defs:
+  ground:
+    slots:
+      pile: {}
+  log:
+    props:
+      life:
+        value: 0
+    # 寿命(life)が短いものほど末尾(=手前に重なる)にしたいので ascending: false
+    stack_order:
+      property: life
+      ascending: false
+";
+            var codex = Load(yaml);
             int lifeId = codex.PropertyNames.GetId("life");
             int pileSlotId = codex.SlotNames.GetId("pile");
 
@@ -99,13 +86,15 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void GetStacks_GroupsContiguousSameTypeRuns()
         {
-            var ground = new ObjectDefBlueprint { Name = "ground2" };
-            ground.Slots.Add(Slot("pile"));
-
-            var wood = new ObjectDefBlueprint { Name = "wood" };
-            var rock = new ObjectDefBlueprint { Name = "rock" };
-
-            var codex = WorldCodexBuilder.Build(new[] { ground, wood, rock });
+            const string yaml = @"
+object_defs:
+  ground2:
+    slots:
+      pile: {}
+  wood: {}
+  rock: {}
+";
+            var codex = Load(yaml);
             int pileSlotId = codex.SlotNames.GetId("pile");
 
             Containment containment = codex.CreateContainment();
@@ -135,17 +124,26 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void SameSlot_WithDestroy_ReplacesExactPositionAmongDifferentTypes()
         {
-            var location = new ObjectDefBlueprint { Name = "loc_abc" };
-            location.Slots.Add(Slot("pile"));
-
-            var a = new ObjectDefBlueprint { Name = "a_item" };
-            var c = new ObjectDefBlueprint { Name = "c_item" };
-            var d = new ObjectDefBlueprint { Name = "d_item" };
-
-            var b = new ObjectDefBlueprint { Name = "b_item" };
-            b.Properties.Add(Prop("life", 0, onMin: OnMinSpawn("d_item", destroy: true)));
-
-            var codex = WorldCodexBuilder.Build(new[] { location, a, b, c, d });
+            const string yaml = @"
+object_defs:
+  loc_abc:
+    slots:
+      pile: {}
+  a_item: {}
+  c_item: {}
+  d_item: {}
+  b_item:
+    props:
+      life:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+          spawn:
+            object: d_item
+            into: same_slot
+";
+            var codex = Load(yaml);
             int pileSlotId = codex.SlotNames.GetId("pile");
 
             var session = new WorldSession(codex);
@@ -168,17 +166,26 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void SameSlot_WithDestroy_ReplacesExactPositionWithinStack()
         {
-            var location = new ObjectDefBlueprint { Name = "loc_abbc" };
-            location.Slots.Add(Slot("pile"));
-
-            var a = new ObjectDefBlueprint { Name = "a_item2" };
-            var c = new ObjectDefBlueprint { Name = "c_item2" };
-            var d = new ObjectDefBlueprint { Name = "d_item2" };
-
-            var b = new ObjectDefBlueprint { Name = "b_item2" };
-            b.Properties.Add(Prop("life", 0, onMin: OnMinSpawn("d_item2", destroy: true)));
-
-            var codex = WorldCodexBuilder.Build(new[] { location, a, b, c, d });
+            const string yaml = @"
+object_defs:
+  loc_abbc:
+    slots:
+      pile: {}
+  a_item2: {}
+  c_item2: {}
+  d_item2: {}
+  b_item2:
+    props:
+      life:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+          spawn:
+            object: d_item2
+            into: same_slot
+";
+            var codex = Load(yaml);
             int pileSlotId = codex.SlotNames.GetId("pile");
             int lifeId = codex.PropertyNames.GetId("life");
 
@@ -208,17 +215,25 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void SameSlot_WithoutDestroy_InsertsImmediatelyAfterSelf()
         {
-            var location = new ObjectDefBlueprint { Name = "loc_grow" };
-            location.Slots.Add(Slot("pile"));
-
-            var a = new ObjectDefBlueprint { Name = "a_item3" };
-            var c = new ObjectDefBlueprint { Name = "c_item3" };
-            var d = new ObjectDefBlueprint { Name = "d_item3" };
-
-            var b = new ObjectDefBlueprint { Name = "b_item3" };
-            b.Properties.Add(Prop("life", 0, onMin: OnMinSpawn("d_item3", destroy: false)));
-
-            var codex = WorldCodexBuilder.Build(new[] { location, a, b, c, d });
+            const string yaml = @"
+object_defs:
+  loc_grow:
+    slots:
+      pile: {}
+  a_item3: {}
+  c_item3: {}
+  d_item3: {}
+  b_item3:
+    props:
+      life:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: d_item3
+            into: same_slot
+";
+            var codex = Load(yaml);
             int pileSlotId = codex.SlotNames.GetId("pile");
 
             var session = new WorldSession(codex);
@@ -246,14 +261,18 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void UnitCapacity_Stackable_LimitsDistinctTypesNotTotalCount()
         {
-            var hand = new ObjectDefBlueprint { Name = "hand_owner" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 2));
-
-            var apple = new ObjectDefBlueprint { Name = "apple_h" };
-            var pebble = new ObjectDefBlueprint { Name = "pebble_h" };
-            var twig = new ObjectDefBlueprint { Name = "twig_h" };
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, apple, pebble, twig });
+            const string yaml = @"
+object_defs:
+  hand_owner:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 2
+  apple_h: {}
+  pebble_h: {}
+  twig_h: {}
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
 
             Containment containment = codex.CreateContainment();
@@ -275,12 +294,16 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void UnitCapacity_NonStackable_LimitsIndividualCountEvenForSameType()
         {
-            var furnace = new ObjectDefBlueprint { Name = "furnace" };
-            furnace.Slots.Add(Slot("intake", stackable: false, unitCapacity: 2));
-
-            var fuel = new ObjectDefBlueprint { Name = "fuel" };
-
-            var codex = WorldCodexBuilder.Build(new[] { furnace, fuel });
+            const string yaml = @"
+object_defs:
+  furnace:
+    slots:
+      intake:
+        stackable: false
+        unit_capacity: 2
+  fuel: {}
+";
+            var codex = Load(yaml);
             int intakeSlotId = codex.SlotNames.GetId("intake");
 
             Containment containment = codex.CreateContainment();
@@ -303,14 +326,19 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void FixedPositions_AssignsLowestFreeIndexAndPreservesGapsOnRemoval()
         {
-            var hand = new ObjectDefBlueprint { Name = "hand_owner2" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 3, fixedPositions: true));
-
-            var typeA = new ObjectDefBlueprint { Name = "type_a" };
-            var typeB = new ObjectDefBlueprint { Name = "type_b" };
-            var typeC = new ObjectDefBlueprint { Name = "type_c" };
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, typeA, typeB, typeC });
+            const string yaml = @"
+object_defs:
+  hand_owner2:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 3
+        fixed_positions: true
+  type_a: {}
+  type_b: {}
+  type_c: {}
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int typeAId = codex.ObjectNames.GetId("type_a");
             int typeBId = codex.ObjectNames.GetId("type_b");
@@ -340,13 +368,18 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void FixedPositions_TrySetManualPositionSwapsTwoTypes()
         {
-            var hand = new ObjectDefBlueprint { Name = "hand_owner3" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 3, fixedPositions: true));
-
-            var typeA = new ObjectDefBlueprint { Name = "type_a2" };
-            var typeB = new ObjectDefBlueprint { Name = "type_b2" };
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, typeA, typeB });
+            const string yaml = @"
+object_defs:
+  hand_owner3:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 3
+        fixed_positions: true
+  type_a2: {}
+  type_b2: {}
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int typeAId = codex.ObjectNames.GetId("type_a2");
             int typeBId = codex.ObjectNames.GetId("type_b2");
@@ -372,16 +405,28 @@ namespace UnmappedIsland.Codex.Tests
             // potatoを「0番以外」（1番）に置き、置き換えの瞬間に0番が別途空いている状態を作る。
             // これにより、「元々の空き最小番号(0)」と「引き継いだ番号(1)」が異なる値になり、
             // 引き継ぎが実際に機能しているかどうかを区別できる（両方0番なら偶然の一致で検証にならない）。
-            var hand = new ObjectDefBlueprint { Name = "hand_owner4" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 3, fixedPositions: true));
-
-            var filler = new ObjectDefBlueprint { Name = "filler_item" };
-            var rottenPotato = new ObjectDefBlueprint { Name = "rotten_potato" };
-
-            var potato = new ObjectDefBlueprint { Name = "potato" };
-            potato.Properties.Add(Prop("freshness", 0, onMin: OnMinSpawn("rotten_potato", destroy: true)));
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, filler, potato, rottenPotato });
+            const string yaml = @"
+object_defs:
+  hand_owner4:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 3
+        fixed_positions: true
+  filler_item: {}
+  rotten_potato: {}
+  potato:
+    props:
+      freshness:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+          spawn:
+            object: rotten_potato
+            into: same_slot
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int rottenId = codex.ObjectNames.GetId("rotten_potato");
 
@@ -408,15 +453,27 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void FixedPositions_SameSlotDoesNotInheritGridIndex_WhenOtherInstancesRemain()
         {
-            var hand = new ObjectDefBlueprint { Name = "hand_owner5" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 3, fixedPositions: true));
-
-            var rottenPotato = new ObjectDefBlueprint { Name = "rotten_potato2" };
-
-            var potato = new ObjectDefBlueprint { Name = "potato2" };
-            potato.Properties.Add(Prop("freshness", 0, onMin: OnMinSpawn("rotten_potato2", destroy: true)));
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, potato, rottenPotato });
+            const string yaml = @"
+object_defs:
+  hand_owner5:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 3
+        fixed_positions: true
+  rotten_potato2: {}
+  potato2:
+    props:
+      freshness:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+          spawn:
+            object: rotten_potato2
+            into: same_slot
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int potatoId = codex.ObjectNames.GetId("potato2");
             int rottenId = codex.ObjectNames.GetId("rotten_potato2");
@@ -447,23 +504,46 @@ namespace UnmappedIsland.Codex.Tests
             // 「A _ B _」→ Aから(destroyなしで)Cが生まれる → 「A C B _」
             //           → Aから(destroyなしで)Dが生まれる → 「A D C B」（CとBがそれぞれ+1される）
             //           → Aから(destroyなしで)Eが生まれる → 入る場所が無いのでfallback
-            var hand = new ObjectDefBlueprint { Name = "hand_owner6" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 4, fixedPositions: true));
-
-            var location = new ObjectDefBlueprint { Name = "loc_fallback" };
-            location.Slots.Add(Slot("ground"));
-
-            var b = new ObjectDefBlueprint { Name = "type_b3" };
-            var c = new ObjectDefBlueprint { Name = "type_c3" };
-            var d = new ObjectDefBlueprint { Name = "type_d3" };
-            var e = new ObjectDefBlueprint { Name = "type_e3" };
-
-            var a = new ObjectDefBlueprint { Name = "type_a3" };
-            a.Properties.Add(Prop("spawn_c", 1, onMin: OnMinSpawn("type_c3", destroy: false)));
-            a.Properties.Add(Prop("spawn_d", 1, onMin: OnMinSpawn("type_d3", destroy: false)));
-            a.Properties.Add(Prop("spawn_e", 1, onMin: OnMinSpawn("type_e3", destroy: false)));
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, location, a, b, c, d, e });
+            const string yaml = @"
+object_defs:
+  hand_owner6:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 4
+        fixed_positions: true
+  loc_fallback:
+    slots:
+      ground: {}
+  type_b3: {}
+  type_c3: {}
+  type_d3: {}
+  type_e3: {}
+  type_a3:
+    props:
+      spawn_c:
+        value: 1
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_c3
+            into: same_slot
+      spawn_d:
+        value: 1
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_d3
+            into: same_slot
+      spawn_e:
+        value: 1
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_e3
+            into: same_slot
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int groundSlotId = codex.SlotNames.GetId("ground");
             int spawnCId = codex.PropertyNames.GetId("spawn_c");
@@ -529,13 +609,25 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void FixedPositions_SameSlotWithoutDestroy_StackableSameTypeJoinsExistingCellWithoutOverflow()
         {
-            var hand = new ObjectDefBlueprint { Name = "hand_owner7" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 1, fixedPositions: true));
-
-            var a = new ObjectDefBlueprint { Name = "type_a4" };
-            a.Properties.Add(Prop("spawn_a", 0, onMin: OnMinSpawn("type_a4", destroy: false)));
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, a });
+            const string yaml = @"
+object_defs:
+  hand_owner7:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 1
+        fixed_positions: true
+  type_a4:
+    props:
+      spawn_a:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_a4
+            into: same_slot
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int aTypeId = codex.ObjectNames.GetId("type_a4");
 
@@ -562,19 +654,36 @@ namespace UnmappedIsland.Codex.Tests
             // 「_ _ A B」→ Aから(destroyなしで)Cが生まれる → 「_ C A B」（右に空きが無いので左へ）
             //           → Bから(destroyなしで)Dが生まれる → 「C A D B」（Cのさらに左は無いのでCとAを
             //              1つずつ左へ押し出して割り込ませる）
-            var hand = new ObjectDefBlueprint { Name = "hand_owner8" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 4, fixedPositions: true));
-
-            var c = new ObjectDefBlueprint { Name = "type_c4" };
-            var d = new ObjectDefBlueprint { Name = "type_d4" };
-
-            var a = new ObjectDefBlueprint { Name = "type_a5" };
-            a.Properties.Add(Prop("spawn_c", 1, onMin: OnMinSpawn("type_c4", destroy: false)));
-
-            var b = new ObjectDefBlueprint { Name = "type_b5" };
-            b.Properties.Add(Prop("spawn_d", 1, onMin: OnMinSpawn("type_d4", destroy: false)));
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, a, b, c, d });
+            const string yaml = @"
+object_defs:
+  hand_owner8:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 4
+        fixed_positions: true
+  type_c4: {}
+  type_d4: {}
+  type_a5:
+    props:
+      spawn_c:
+        value: 1
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_c4
+            into: same_slot
+  type_b5:
+    props:
+      spawn_d:
+        value: 1
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_d4
+            into: same_slot
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int spawnCId = codex.PropertyNames.GetId("spawn_c");
             int spawnDId = codex.PropertyNames.GetId("spawn_d");
@@ -623,17 +732,28 @@ namespace UnmappedIsland.Codex.Tests
         {
             // 押し出される型がスタック（同種複数個）であっても、その中身がバラけたり
             // 個数が変化したりしないことを確認する。
-            var hand = new ObjectDefBlueprint { Name = "hand_owner9" };
-            hand.Slots.Add(Slot("hand", stackable: true, unitCapacity: 4, fixedPositions: true));
-
-            var c = new ObjectDefBlueprint { Name = "type_c5" };
-            var d = new ObjectDefBlueprint { Name = "type_d5" };
-            var a = new ObjectDefBlueprint { Name = "type_a6" };
-
-            var b = new ObjectDefBlueprint { Name = "type_b6" };
-            b.Properties.Add(Prop("spawn_d", 1, onMin: OnMinSpawn("type_d5", destroy: false)));
-
-            var codex = WorldCodexBuilder.Build(new[] { hand, a, b, c, d });
+            const string yaml = @"
+object_defs:
+  hand_owner9:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 4
+        fixed_positions: true
+  type_c5: {}
+  type_d5: {}
+  type_a6: {}
+  type_b6:
+    props:
+      spawn_d:
+        value: 1
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: type_d5
+            into: same_slot
+";
+            var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
             int spawnDId = codex.PropertyNames.GetId("spawn_d");
             int aTypeId = codex.ObjectNames.GetId("type_a6");
