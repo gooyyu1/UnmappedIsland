@@ -40,7 +40,7 @@
 ### 3.2 命名規則
 
 - 構造キーワード（`props`、`traits`、`actions` など）・型名・プロパティ名は、すべて **snake_case** で統一します。
-- 識別子（型名・プロパティ名・トレイト名・アクション名・スロット名に共通）は次の正規表現に従います。
+- 識別子（型名・プロパティ名・トレイト名・アクション名・スロット名・タグ名に共通）は次の正規表現に従います。
 
   ```
   ^[a-z][a-z0-9_]*$
@@ -71,6 +71,30 @@ object_defs:
         value: 10
 ```
 
+### 4.1 tags
+
+`tags` に文字列の配列を書くと、その `object_def` にタグを付けられます。`traits`（5節）も同じ `tags` フィールドを
+持て、その trait を参照するあらゆる `object_def` へタグが合成されます（tags 自体は `props`/`slots` のような
+識別子をキーとする構造ではなく単純な集合なので、複数の trait 間・trait と object_def 自身の間で同じタグが
+重複しても衝突エラーにはなりません）。
+
+```yaml
+traits:
+  location:
+    tags: [location]
+object_defs:
+  forest:
+    traits: [location]   # traitのtagsが合成され、locationタグを持つ
+  beach:
+    tags: [location]     # locationトレイトを一切参照しなくても、直接同じタグを宣言できる
+```
+
+タグは、`slots.accepts`（7.2節）・`combinations.with`（12.1節）が型・グループを指定する唯一の手段です。
+`object_defs` の id や trait 名では直接マッチングしません（trait は合成後に消えてしまう存在であり、外部から
+参照すべきではないため）。同一の trait を参照していない `object_def` 同士でも、同じタグさえ共有していれば
+同じように受け入れられます（`beach` の例のように、`location` trait を経由しなくても `tags: [location]` を
+直接書けば `forest` と同じ扱いを受けられます）。
+
 ## 5. traits（mixin）
 
 複数の `object_def` で共有するプロパティ・アクション等を `traits` として定義します。
@@ -99,8 +123,8 @@ object_defs:
         value: 7
 ```
 
-`props`（6 節）以外にも、`actions`・`combinations`・`recipes`・`slots`・`passives` を trait 経由でまとめて配布できます。
-`value` を持たないプロパティは、5 節のルール通り空のマッピング（`{}`）として表現します。
+`props`（6 節）以外にも、`actions`・`combinations`・`recipes`・`slots`・`passives`・`tags`（4.1 節）を trait 経由で
+まとめて配布できます。`value` を持たないプロパティは、5 節のルール通り空のマッピング（`{}`）として表現します。
 
 ## 6. props（プロパティ）
 
@@ -324,19 +348,26 @@ object_defs:
 `accepts` を書くと、スロットに格納できるオブジェクトの型と上限数を制約できます。省略時は無制限です。
 
 ```yaml
-slots:
-  inventory: {}          # 制約なし
-  materials:
-    accepts:
-      - {object: wood, max: 2, consume: true}
-      - {object: stone_knife, max: 1, consume: false}
+object_defs:
+  wood:
+    tags: [wood_material]
+  stone_knife:
+    tags: [stone_knife_material]
+  character:
+    slots:
+      inventory: {}          # 制約なし
+      materials:
+        accepts:
+          - {tag: wood_material, max: 2, consume: true}
+          - {tag: stone_knife_material, max: 1, consume: false}
 ```
 
 - `consume: true` は素材として消費される、`consume: false` は道具として存在確認のみ行うことを表します。
 - `capacity`（7.3 節）とは独立した仕組みで、1 つのスロットが両方を同時に持てます。
-- `object` には、`object_defs` の id だけでなく trait 名（5 節）も指定できます（`combinations` の `with`、12.1 節と
-  同じ考え方）。trait 名を使えば、そのtraitを参照するあらゆる型（MOD 追加分も含む）をまとめて受け入れられます
-  （例: `{object: location, max: 9999}` で、`location` trait を参照するあらゆる場所オブジェクトを受け入れる）。
+- `tag` には、`tags`（4.1 節）で宣言したタグ名を指定します。`object_defs` の id や trait 名（5 節）では直接
+  マッチングしません。1 つの `object_def` にタグを直接書けば、そのタグを持つあらゆる型（MOD 追加分も含む）を
+  まとめて受け入れられます（例: `{tag: location, max: 9999}` で、`location` タグを持つあらゆる場所オブジェクトを
+  受け入れる。`location` タグは trait 経由で配っても、object_def 自身に直接書いてもよい）。
 
 ### 7.3 capacity（合計サイズの制約）
 
@@ -758,8 +789,8 @@ traits:
 
 ## 12. combinations（ドラッグ型操作）
 
-`combinations` は、**ドロップされた側（受け側）のオブジェクト**に定義します。`with`（ドラッグされてきたカードの
-`object_def` の id、または trait の名前）でマッチング対象を指定します。
+`combinations` は、**ドロップされた側（受け側）のオブジェクト**に定義します。`with`（ドラッグされてきたカードが
+持つタグ、4.1 節）でマッチング対象を指定します。
 
 ```yaml
 object_defs:
@@ -774,12 +805,19 @@ object_defs:
         add:
           dragged:
             durability: -1
+  logs: {}
+  axe_tool:
+    tags: [axe_tool]
+    props:
+      durability:
+        value: 10
 ```
 
 ### 12.1 with
 
-マッチング対象を、`object_defs` の id または trait 名で指定します。trait 名を使えば、そのtraitを持つあらゆるカード
-（MOD 追加分も含む）と一致します。
+マッチング対象を、タグ（4.1 節）で指定します。`object_defs` の id や trait 名では直接マッチングしません
+（trait は合成後に消えてしまう存在であり、外部から参照すべきではないため）。そのタグを持つあらゆるカード
+（MOD 追加分・trait を介さず直接タグを宣言したカードも含む）と一致します。
 
 ### 12.2 dragged
 

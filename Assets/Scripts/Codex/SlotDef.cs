@@ -5,25 +5,25 @@ namespace UnmappedIsland.Codex
 {
     /// <summary>
     /// GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。Withは、combinationsの
-    /// with（12.1節）と同じ考え方で、object_defのidかtrait名のいずれか（Matches参照）。traitはmixin合成後に
-    /// 消えるため、グローバルIDへは解決せず文字列のまま保持する。
+    /// with（12.1節）と同じ考え方で、タグのグローバルID（Matches参照）。object_defのidやtrait名では
+    /// マッチングしない: traitはmixin合成後に消えてしまう外部から参照すべきでない存在であり、また
+    /// 同一traitを参照していなくても同じように受け入れたい要求（tags、4節）にも対応するため。
     /// </summary>
     public sealed class SlotAcceptRule
     {
-        public string With { get; }
+        public int With { get; }
         public int Max { get; }
         public bool Consume { get; }
 
-        public SlotAcceptRule(string with, int max, bool consume)
+        public SlotAcceptRule(int with, int max, bool consume)
         {
             With = with;
             Max = max;
             Consume = consume;
         }
 
-        /// <summary>candidateDefがこのルールのWithにマッチするか。object_defのidそのもの、またはcandidateDefが
-        /// 合成時に参照していたtrait名のいずれかとして一致すれば真（CombinationDef.Matchesと同じ規約）。</summary>
-        public bool Matches(ObjectDef candidateDef) => candidateDef.Name == With || candidateDef.Traits.Contains(With);
+        /// <summary>candidateDefがこのルールのタグを持っていれば真（CombinationDef.Matchesと同じ規約）。</summary>
+        public bool Matches(ObjectDef candidateDef) => candidateDef.Tags.Contains(With);
     }
 
     /// <summary>

@@ -125,26 +125,29 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void World_LocationsSlot_AcceptsOnlyObjectsWithLocationTrait()
+        public void World_LocationsSlot_AcceptsOnlyObjectsWithLocationTag()
         {
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             SlotDef locations = SlotOf(world, "locations");
 
             Assert.That(locations.Accepts.Count, Is.EqualTo(1));
-            Assert.That(locations.Accepts[0].With, Is.EqualTo("location"));
 
-            // locationトレイトを参照するダミーのobject_defと、参照しないobject_defをそれぞれ組み立てて検証する。
+            // locationタグを、traitを経由して持つobject_defと、traitを介さず直接tagsで持つobject_def、
+            // どちらも同じように受け入れられることを確認する（同一traitでなくても同じタグを共有していれば
+            // 受け入れたい、という設計意図。CLAUDE.md参照ではなく本タスクの意図そのもの）。
             const string yaml = @"
 traits:
-  location: {}
+  location: {tags: [location]}
 object_defs:
   test_world:
     slots:
       locations:
         accepts:
-          - {object: location, max: 9999}
+          - {tag: location, max: 9999}
   test_forest:
     traits: [location]
+  test_beach:
+    tags: [location]
   test_rock: {}
 ";
             var testCodex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
@@ -153,12 +156,15 @@ object_defs:
             var session = new WorldSession(testCodex);
             WorldObject worldInstance = new WorldObject(1, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_world")));
             WorldObject forestInstance = new WorldObject(2, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_forest")));
-            WorldObject rockInstance = new WorldObject(3, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_rock")));
+            WorldObject beachInstance = new WorldObject(3, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_beach")));
+            WorldObject rockInstance = new WorldObject(4, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_rock")));
 
             Assert.That(forestInstance.MoveToSlot(worldInstance, locationsSlotId, session.Codex.WellKnown, out _), Is.True,
-                "locationトレイトを持つオブジェクトは受け入れられる");
+                "traitを経由してlocationタグを持つオブジェクトは受け入れられる");
+            Assert.That(beachInstance.MoveToSlot(worldInstance, locationsSlotId, session.Codex.WellKnown, out _), Is.True,
+                "traitを介さず直接tagsでlocationタグを持つオブジェクトも、同一traitでなくても受け入れられる");
             Assert.That(rockInstance.MoveToSlot(worldInstance, locationsSlotId, session.Codex.WellKnown, out _), Is.False,
-                "locationトレイトを持たないオブジェクトは拒否される");
+                "locationタグを持たないオブジェクトは拒否される");
         }
 
         private PropertyDef PropOf(ObjectDef def, string propertyName)

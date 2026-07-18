@@ -56,7 +56,7 @@ namespace UnmappedIsland.Loader
         public static ObjectDef Build(
             string name,
             bool isSingleton,
-            IReadOnlyList<string> traitNames,
+            IReadOnlyList<string> tags,
             YamlMappingNode propsNode,
             YamlMappingNode slotsNode,
             IReadOnlyList<YamlMappingNode> passiveNodes,
@@ -65,7 +65,8 @@ namespace UnmappedIsland.Loader
             YamlMappingNode combinationsNode,
             NameRegistry objectNames,
             NameRegistry propertyNames,
-            NameRegistry slotNames)
+            NameRegistry slotNames,
+            NameRegistry tagNames)
         {
             int objectGlobalId = objectNames.Intern(name);
             var rawPassiveEffects = new List<RawPassiveEffect>();
@@ -80,7 +81,7 @@ namespace UnmappedIsland.Loader
             var slotDefs = new List<SlotDef>();
             if (slotsNode != null)
                 foreach (var (slotName, slotValueNode) in slotsNode.EntriesInOrder())
-                    slotDefs.Add(ParseSlot(name, slotName, (YamlMappingNode)slotValueNode, slotNames));
+                    slotDefs.Add(ParseSlot(name, slotName, (YamlMappingNode)slotValueNode, slotNames, tagNames));
             var slotLayout = new LocalIndexMap(slotNames.Count, slotDefs.Select(s => s.GlobalId).ToList());
 
             foreach (YamlMappingNode passiveNode in passiveNodes)
@@ -102,11 +103,12 @@ namespace UnmappedIsland.Loader
             }
 
             var actions = ParseActions(name, actionsNode, propertyNames, slotNames, objectNames);
-            var combinations = ParseCombinations(name, combinationsNode, propertyNames, slotNames, objectNames);
+            var combinations = ParseCombinations(name, combinationsNode, propertyNames, slotNames, objectNames, tagNames);
+            var tagIds = tags.Select(tagNames.Intern).Distinct().ToList();
 
             return new ObjectDef(
                 objectGlobalId, name, isSingleton, propertyLayout, propertyDefs, slotLayout, slotDefs,
-                passives, stackOrder, traitNames, actions, combinations);
+                passives, stackOrder, tagIds, actions, combinations);
         }
 
         private static PropertyDef ParseProperty(
@@ -645,7 +647,8 @@ namespace UnmappedIsland.Loader
 
         /// <summary>combinations_map（12節）を読む。dragged対象を使える。</summary>
         private static List<CombinationDef> ParseCombinations(
-            string objectDefName, YamlMappingNode combinationsNode, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames)
+            string objectDefName, YamlMappingNode combinationsNode, NameRegistry propertyNames, NameRegistry slotNames,
+            NameRegistry objectNames, NameRegistry tagNames)
         {
             var result = new List<CombinationDef>();
             if (combinationsNode == null) return result;
@@ -655,7 +658,7 @@ namespace UnmappedIsland.Loader
                 string context = $"'{objectDefName}'.combinations.'{name}'";
                 var map = (YamlMappingNode)node;
 
-                string with = map.RequireScalar("with", context);
+                int with = tagNames.Intern(map.RequireScalar("with", context));
                 ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots, propertyNames, slotNames);
 
                 bool hasActive = HasActiveContent(map);
@@ -685,7 +688,7 @@ namespace UnmappedIsland.Loader
             }
         }
 
-        private static SlotDef ParseSlot(string objectDefName, string slotName, YamlMappingNode node, NameRegistry slotNames)
+        private static SlotDef ParseSlot(string objectDefName, string slotName, YamlMappingNode node, NameRegistry slotNames, NameRegistry tagNames)
         {
             string context = $"'{objectDefName}'.slots.'{slotName}'";
             int slotGlobalId = slotNames.Intern(slotName);
@@ -697,7 +700,7 @@ namespace UnmappedIsland.Loader
                 {
                     var acceptMap = (YamlMappingNode)acceptNode;
                     accepts.Add(new SlotAcceptRule(
-                        acceptMap.RequireScalar("object", context),
+                        tagNames.Intern(acceptMap.RequireScalar("tag", context)),
                         acceptMap.RequireInt("max", context),
                         acceptMap.TryGetBool("consume", context, fallback: false)));
                 }

@@ -846,12 +846,13 @@ object_defs:
     slots:
       floor: {}
   pebble: {}
-  gold_nugget: {}
+  gold_nugget:
+    tags: [gold_nugget]
   vein:
     slots:
       ore_pocket:
         accepts:
-          - {object: gold_nugget, max: 10, consume: false}
+          - {tag: gold_nugget, max: 10, consume: false}
     props:
       yield:
         value: 0
