@@ -6,6 +6,7 @@ using UnmappedIsland.Codex;
 using UnmappedIsland.GameTime;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
+using UnmappedIsland.Runtime.Views;
 
 namespace UnmappedIsland.Codex.Tests
 {
@@ -104,13 +105,14 @@ namespace UnmappedIsland.Codex.Tests
 
             var session = new WorldSession(codex);
             var worldInstance = new WorldObject(1, world);
+            var worldView = new World(worldInstance, codex.PropertyNames);
 
-            WorldClock.Advance(codex, worldInstance, session, 60); // 60分 -> minuteが折り返し、hourへ+1
+            WorldClock.Advance(worldView, session, 60); // 60分 -> minuteが折り返し、hourへ+1
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(1));
 
-            WorldClock.Advance(codex, worldInstance, session, 60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
+            WorldClock.Advance(worldView, session, 60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(0));

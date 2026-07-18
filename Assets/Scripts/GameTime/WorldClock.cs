@@ -1,5 +1,5 @@
-using UnmappedIsland.Codex;
 using UnmappedIsland.Runtime;
+using UnmappedIsland.Runtime.Views;
 
 namespace UnmappedIsland.GameTime
 {
@@ -14,6 +14,9 @@ namespace UnmappedIsland.GameTime
     /// このクラスは実行時にそれを読むだけで、具体的な数字への依存はcore.yaml側に寄せている。
     /// `world.minute_of_tick`（tick内で経過した分）も、セーブ・ロードの対象にするため単なるこのクラスの
     /// 内部変数ではなくworldのプロパティとして持つ。それ以外はこのクラスの外に状態を持たない。
+    ///
+    /// プロパティ名（"minute"等）へのアクセスはRuntime.Views.Worldに閉じ込め、ここでは一切
+    /// ハードコーディングしない（Views.World参照）。
     /// </summary>
     public static class WorldClock
     {
@@ -28,21 +31,16 @@ namespace UnmappedIsland.GameTime
         /// minute/hour/dayへの繰り上げは通常のTick()の繰り返し呼び出しだけで正しく連鎖する
         /// （個別に補正ループを書く必要はない）。
         /// </summary>
-        public static void Advance(WorldCodex codex, WorldObject world, WorldSession session, int amount)
+        public static void Advance(World world, WorldSession session, int amount)
         {
-            int minuteId = codex.PropertyNames.GetId("minute");
-            int minuteOfTickId = codex.PropertyNames.GetId("minute_of_tick");
-            int minutesPerTickId = codex.PropertyNames.GetId("minutes_per_tick");
+            world.AddMinutes(amount);
 
-            world.AddNumber(minuteId, amount);
-
-            int minutesPerTick = world.GetNumber(minutesPerTickId);
-            int total = world.GetNumber(minuteOfTickId) + amount;
-            int ticksToRun = total / minutesPerTick;
-            world.SetNumber(minuteOfTickId, total % minutesPerTick);
+            int total = world.MinuteOfTick + amount;
+            int ticksToRun = total / world.MinutesPerTick;
+            world.SetMinuteOfTick(total % world.MinutesPerTick);
 
             for (int i = 0; i < ticksToRun; i++)
-                world.Tick(session);
+                world.Instance.Tick(session);
         }
     }
 }
