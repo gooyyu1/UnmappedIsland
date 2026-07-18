@@ -45,7 +45,7 @@ object_defs:
       # sunlightへの「時間帯による最低限の寄与」をstages（6.4節）+passives（8節、modify）で表現する。
       # sunlightのもう一方の寄与（晴れているほど追加で明るくなる分）はweather側のpassiveが担う
       # （weather参照）。両者はどちらもmodifyのため、加算的に重なってsunlightの実効値が決まる。
-      # temperature自体はhourを直接見ず、このsunlightの実効値をconditionsで見て補正する（temperature参照）。
+      # temperature自体はhourを直接見ず、このsunlight自身のstages経由で補正する（sunlight参照）。
       # 寄与は夜が0（passiveなし）、朝・夕方が最低限、昼がより強い、という3段階。夜は0時をまたぐため、
       # 最初の段階（min省略のフォールバック、22-23時と0-5時の両方に該当）と最後の段階の2つのYAMLエントリで
       # 表現するが、内容は同じで、概念上は1つの「夜」段階として扱う。時間帯の区切り（6/10/18/22時）・
@@ -118,29 +118,32 @@ object_defs:
                 sunlight: 1
       # 太陽光の強さ。hour（時間帯による最低限の寄与）とweather（晴れているほど追加で明るくなる寄与）、
       # 両方のmodifyが加算的に重なって決まる、都度導出される実効値（8.3節）。base自体は0で、寄与を
-      # 一切受けない時間帯（夜）は0のままになる。temperature側がこの実効値をconditionsで見て補正する
-      # （temperature参照）。
+      # 一切受けない時間帯（夜）は0のままになる。
+      #
+      # temperatureへの補正は、conditionsではなくこのsunlight自身のstages（6.4節）+WhenOwnStageゲート
+      # （8.2節）で行う: conditionsはあくまで補助的な追加条件のためのものであり、メインの分岐はstagesが
+      # 担うという方針のため。dark（sunlight=0、夜）はやや涼しく、bright（7以上、晴れた昼・晴れた朝夕・
+      # 曇りの昼など）はやや暑く、中間のdim（1-6）は補正なし。しきい値・補正量はいずれも仮の値。
       sunlight:
         value: 0
-      # 現在の気温。hourを直接見るのではなく、sunlightの実効値（modifyだけで決まる派生プロパティ）を
-      # conditions（14節、実効値を見る）経由で見て補正する。日光が全く無い（0、夜）ときはやや涼しく、
-      # 十分に強い（7以上、晴れた昼・晴れた朝夕・曇りの昼）ときはやや暑い。中間は補正なし。
-      # sunlightは自分自身をゲートに使わないため、この依存（temperature→sunlight→weather/hour）は
-      # 循環しない（PropertyValue.GetEffectiveValue参照）。季節由来のレート等、具体的な変動の仕組みは
-      # 別途ClimateSystem.mdで検討する。数値・しきい値はいずれも仮の値。
+        stages:
+          - name: dark    # sunlight=0（フォールバック）: やや涼しい
+            passives:
+              - modify:
+                  self:
+                    temperature: -3
+          - name: dim     # sunlight 1-6: 補正なし
+            min: 1
+          - name: bright  # sunlight 7以上: やや暑い
+            min: 7
+            passives:
+              - modify:
+                  self:
+                    temperature: 3
+      # 現在の気温。具体的な変動の仕組み（季節由来のレート等）はClimateSystem.mdで別途検討する。
+      # 日照による補正はsunlight参照。
       temperature:
         value: 20
-        passives:
-          - conditions:
-              - {prop: sunlight, op: eq, value: 0}
-            modify:
-              self:
-                temperature: -3
-          - conditions:
-              - {prop: sunlight, op: gte, value: 7}
-            modify:
-              self:
-                temperature: 3
     slots:
       locations:
         # locationタグを持つobject_defのみを受け入れる（種類数の上限は設けない想定のため、
