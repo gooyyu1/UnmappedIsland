@@ -3,27 +3,44 @@ using System.Linq;
 
 namespace UnmappedIsland.Codex
 {
+    /// <summary>1つのSlotAcceptRuleが何を基準にマッチングするか。</summary>
+    public enum SlotAcceptTargetKind
+    {
+        /// <summary>WithはタグのグローバルID（4節）。candidateDefがそのタグを持っていれば真。</summary>
+        Tag,
+
+        /// <summary>Withはobject_defそのもののグローバルID。candidateDefがまさにその型そのものであれば真
+        /// （レシピ制作中オブジェクトが特定の素材の型だけを受け入れたい場合など、そのためだけの単発タグを
+        /// 新設するまでもないケース向け）。</summary>
+        Object,
+    }
+
     /// <summary>
-    /// GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。Withは、combinationsの
-    /// with（12.1節）と同じ考え方で、タグのグローバルID（Matches参照）。object_defのidやtrait名では
-    /// マッチングしない: traitはmixin合成後に消えてしまう外部から参照すべきでない存在であり、また
-    /// 同一traitを参照していなくても同じように受け入れたい要求（tags、4節）にも対応するため。
+    /// GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、
+    /// Withをタグ（4節）のグローバルIDか、object_defそのもののグローバルIDのどちらかとして解釈する
+    /// （Matches参照）。trait名では直接マッチングしない: traitはmixin合成後に消えてしまう外部から
+    /// 参照すべきでない存在であり、trait経由でタグ付けしたければtags（4節）を使う。
     /// </summary>
     public sealed class SlotAcceptRule
     {
+        public SlotAcceptTargetKind TargetKind { get; }
         public int With { get; }
         public int Max { get; }
         public bool Consume { get; }
 
-        public SlotAcceptRule(int with, int max, bool consume)
+        public SlotAcceptRule(SlotAcceptTargetKind targetKind, int with, int max, bool consume)
         {
+            TargetKind = targetKind;
             With = with;
             Max = max;
             Consume = consume;
         }
 
-        /// <summary>candidateDefがこのルールのタグを持っていれば真（CombinationDef.Matchesと同じ規約）。</summary>
-        public bool Matches(ObjectDef candidateDef) => candidateDef.Tags.Contains(With);
+        /// <summary>TargetKind.Tagならcandidateがそのタグを持っていれば真、TargetKind.Objectならcandidate
+        /// がまさにそのobject_defそのものであれば真（CombinationDef.Matchesとはタグ側のみ同じ規約）。</summary>
+        public bool Matches(ObjectDef candidateDef) => TargetKind == SlotAcceptTargetKind.Tag
+            ? candidateDef.Tags.Contains(With)
+            : candidateDef.GlobalId == With;
     }
 
     /// <summary>

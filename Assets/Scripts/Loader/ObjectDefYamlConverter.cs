@@ -81,7 +81,7 @@ namespace UnmappedIsland.Loader
             var slotDefs = new List<SlotDef>();
             if (slotsNode != null)
                 foreach (var (slotName, slotValueNode) in slotsNode.EntriesInOrder())
-                    slotDefs.Add(ParseSlot(name, slotName, (YamlMappingNode)slotValueNode, slotNames, tagNames));
+                    slotDefs.Add(ParseSlot(name, slotName, (YamlMappingNode)slotValueNode, slotNames, tagNames, objectNames));
             var slotLayout = new LocalIndexMap(slotNames.Count, slotDefs.Select(s => s.GlobalId).ToList());
 
             foreach (YamlMappingNode passiveNode in passiveNodes)
@@ -688,7 +688,9 @@ namespace UnmappedIsland.Loader
             }
         }
 
-        private static SlotDef ParseSlot(string objectDefName, string slotName, YamlMappingNode node, NameRegistry slotNames, NameRegistry tagNames)
+        private static SlotDef ParseSlot(
+            string objectDefName, string slotName, YamlMappingNode node,
+            NameRegistry slotNames, NameRegistry tagNames, NameRegistry objectNames)
         {
             string context = $"'{objectDefName}'.slots.'{slotName}'";
             int slotGlobalId = slotNames.Intern(slotName);
@@ -699,8 +701,20 @@ namespace UnmappedIsland.Loader
                 foreach (YamlNode acceptNode in acceptsNode)
                 {
                     var acceptMap = (YamlMappingNode)acceptNode;
+                    string acceptContext = $"{context}.accepts";
+                    string tagName = acceptMap.TryGetScalar("tag", acceptContext);
+                    string objectName = acceptMap.TryGetScalar("object", acceptContext);
+
+                    if (tagName != null && objectName != null)
+                        throw new YamlLoadException($"{acceptContext}: 'tag'と'object'は同時に指定できません。");
+                    if (tagName == null && objectName == null)
+                        throw new YamlLoadException($"{acceptContext}: 'tag'または'object'のいずれかが必要です。");
+
+                    SlotAcceptTargetKind targetKind = tagName != null ? SlotAcceptTargetKind.Tag : SlotAcceptTargetKind.Object;
+                    int with = tagName != null ? tagNames.Intern(tagName) : objectNames.Intern(objectName);
+
                     accepts.Add(new SlotAcceptRule(
-                        tagNames.Intern(acceptMap.RequireScalar("tag", context)),
+                        targetKind, with,
                         acceptMap.RequireInt("max", context),
                         acceptMap.TryGetBool("consume", context, fallback: false)));
                 }

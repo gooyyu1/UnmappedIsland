@@ -863,6 +863,64 @@ object_defs:
             Assert.That(locations.Accepts[0].Matches(rock), Is.False, "タグを持たないobject_defはマッチしない");
         }
 
+        [Test]
+        public void LoadFromGroups_SlotAcceptsObject_MatchesOnlyThatExactObjectDef()
+        {
+            const string yaml = @"
+object_defs:
+  cauldron:
+    slots:
+      ingredients:
+        accepts:
+          - {object: raw_meat, max: 1}
+  raw_meat: {}
+  raw_fish: {}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef cauldron = codex.Objects.Get(codex.ObjectNames.GetId("cauldron"));
+            SlotDef ingredients = SlotOf(codex, cauldron, "ingredients");
+
+            Assert.That(ingredients.Accepts[0].TargetKind, Is.EqualTo(SlotAcceptTargetKind.Object));
+            Assert.That(ingredients.Accepts[0].With, Is.EqualTo(codex.ObjectNames.GetId("raw_meat")));
+
+            ObjectDef rawMeat = codex.Objects.Get(codex.ObjectNames.GetId("raw_meat"));
+            ObjectDef rawFish = codex.Objects.Get(codex.ObjectNames.GetId("raw_fish"));
+            Assert.That(ingredients.Accepts[0].Matches(rawMeat), Is.True);
+            Assert.That(ingredients.Accepts[0].Matches(rawFish), Is.False, "objectは対象の型そのものにしかマッチしない");
+        }
+
+        [Test]
+        public void LoadFromGroups_SlotAcceptsBothTagAndObject_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  cauldron2:
+    slots:
+      ingredients:
+        accepts:
+          - {tag: spice, object: raw_meat, max: 1}
+  raw_meat: {}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("同時に指定できません"));
+        }
+
+        [Test]
+        public void LoadFromGroups_SlotAcceptsNeitherTagNorObject_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  cauldron3:
+    slots:
+      ingredients:
+        accepts:
+          - {max: 1}
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("いずれかが必要です"));
+        }
+
         // ------------------------------------------------------------------
         // on_overflow
         // ------------------------------------------------------------------

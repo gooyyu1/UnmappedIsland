@@ -882,6 +882,40 @@ object_defs:
         }
 
         [Test]
+        public void MoveToSlot_AcceptsObject_MatchesOnlyThatExactObjectDef()
+        {
+            // レシピ制作中オブジェクトが特定の素材の型だけを受け入れたい場合など、そのためだけの単発タグを
+            // 新設するまでもないケース向けにaccepts.objectを使う（タグとの混在も許容される）。
+            const string yaml = @"
+object_defs:
+  stew_in_progress:
+    slots:
+      ingredients:
+        accepts:
+          - {object: raw_meat, max: 1}
+          - {tag: spice, max: 4}
+  raw_meat: {}
+  raw_fish: {}
+  salt:
+    tags: [spice]
+";
+            var codex = Load(yaml);
+            int ingredientsSlotId = codex.SlotNames.GetId("ingredients");
+
+            WorldObject stewInstance = Spawn(codex, "stew_in_progress");
+            WorldObject meatInstance = Spawn(codex, "raw_meat");
+            WorldObject fishInstance = Spawn(codex, "raw_fish");
+            WorldObject saltInstance = Spawn(codex, "salt");
+
+            Assert.That(meatInstance.MoveToSlot(stewInstance, ingredientsSlotId, codex.WellKnown, out _), Is.True,
+                "objectで指定した'raw_meat'そのものは受け入れられる");
+            Assert.That(fishInstance.MoveToSlot(stewInstance, ingredientsSlotId, codex.WellKnown, out _), Is.False,
+                "'raw_meat'とは異なる型であり、tagも持たないため拒否される");
+            Assert.That(saltInstance.MoveToSlot(stewInstance, ingredientsSlotId, codex.WellKnown, out _), Is.True,
+                "objectとは別に、tagのルールも同じaccepts内で併用できる");
+        }
+
+        [Test]
         public void Tick_SpawnDoesNothingWhenPrimaryFailsAndNoParentToEscalateTo()
         {
             const string yaml = @"

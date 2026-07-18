@@ -364,10 +364,28 @@ object_defs:
 
 - `consume: true` は素材として消費される、`consume: false` は道具として存在確認のみ行うことを表します。
 - `capacity`（7.3 節）とは独立した仕組みで、1 つのスロットが両方を同時に持てます。
-- `tag` には、`tags`（4.1 節）で宣言したタグ名を指定します。`object_defs` の id や trait 名（5 節）では直接
-  マッチングしません。1 つの `object_def` にタグを直接書けば、そのタグを持つあらゆる型（MOD 追加分も含む）を
-  まとめて受け入れられます（例: `{tag: location, max: 9999}` で、`location` タグを持つあらゆる場所オブジェクトを
-  受け入れる。`location` タグは trait 経由で配っても、object_def 自身に直接書いてもよい）。
+- `accepts` の各エントリは、`tag` か `object` のどちらか一方を指定します（両方または どちらもなしはエラー）。
+  - `tag`: `tags`（4.1 節）で宣言したタグ名を指定します。そのタグを持つあらゆる型（MOD 追加分も含む）を
+    まとめて受け入れられます（例: `{tag: location, max: 9999}` で、`location` タグを持つあらゆる場所オブジェクトを
+    受け入れる。`location` タグは trait 経由で配っても、object_def 自身に直接書いてもよい）。
+  - `object`: `object_defs` の id そのものを指定します。まさにその型だけを受け入れたい場合（例: レシピ制作中
+    オブジェクトが特定の素材の型だけを受け入れたい場合）に、そのためだけの単発タグを新設せずに書けます。
+    trait 名では直接マッチングしません（trait は合成後に消えてしまう存在であり、外部から参照すべきではないため。
+    trait 経由でタグ付けしたい場合は `tags` を使います）。
+  - 1 つの `slots.accepts` の中で `tag` と `object` のエントリを混在させられます。
+
+  ```yaml
+  object_defs:
+    stew_in_progress:
+      slots:
+        ingredients:
+          accepts:
+            - {object: raw_meat, max: 1}
+            - {tag: spice, max: 4}
+    raw_meat: {}
+    salt:
+      tags: [spice]
+  ```
 
 ### 7.3 capacity（合計サイズの制約）
 
