@@ -25,25 +25,26 @@ namespace UnmappedIsland.Runtime
             Def = def;
         }
 
-        /// <summary>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。</summary>
+        /// <summary>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。
+        /// StageとConditionsは独立したフィールドで、それぞれ非nullの場合だけそのチェックを行う（両方非nullなら
+        /// AND、両方nullなら常時有効）。</summary>
         public bool IsActive()
         {
-            switch (Def.Gate.Kind)
-            {
-                case PassiveEffectGateKind.Always:
-                    return true;
+            if (Def.Gate.Stage != null && !IsOwnStageActive())
+                return false;
 
-                case PassiveEffectGateKind.Conditions:
-                    return ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot);
+            if (Def.Gate.Conditions != null && !ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot))
+                return false;
 
-                case PassiveEffectGateKind.WhenOwnStage:
-                    int value = Declarer.GetNumberByLocalId(Def.Gate.PropertyLocalId);
-                    var stage = Declarer.Def.PropertyDefs[Def.Gate.PropertyLocalId].ResolveStage(value);
-                    return ReferenceEquals(stage, Def.Gate.Stage);
+            return true;
+        }
 
-                default:
-                    return false;
-            }
+        /// <summary>Declarer自身の該当プロパティが、ゲートが指すstageに今まさに該当しているか。</summary>
+        private bool IsOwnStageActive()
+        {
+            int value = Declarer.GetNumberByLocalId(Def.Gate.PropertyLocalId);
+            var stage = Declarer.Def.PropertyDefs[Def.Gate.PropertyLocalId].ResolveStage(value);
+            return ReferenceEquals(stage, Def.Gate.Stage);
         }
 
         /// <summary>conditions（旧when）内のself/parentを解決する。selfはSlotBearer（self/parent対象の
