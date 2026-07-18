@@ -56,12 +56,12 @@ namespace UnmappedIsland.Codex.Tests
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             Assert.That(world.IsSingleton, Is.True);
 
-            Assert.That(PropOf(world, "tick").DefaultValue.AsNumber(), Is.EqualTo(0));
-            Assert.That(PropOf(world, "minutes_per_tick").DefaultValue.AsNumber(), Is.EqualTo(15));
-            Assert.That(PropOf(world, "minute").DefaultValue.AsNumber(), Is.EqualTo(0));
-            Assert.That(PropOf(world, "hour").DefaultValue.AsNumber(), Is.EqualTo(0));
-            Assert.That(PropOf(world, "day").DefaultValue.AsNumber(), Is.EqualTo(1));
-            Assert.That(PropOf(world, "temperature").DefaultValue.AsNumber(), Is.EqualTo(20));
+            Assert.That(PropOf(world, "tick").DefaultNumber, Is.EqualTo(0));
+            Assert.That(PropOf(world, "minutes_per_tick").DefaultNumber, Is.EqualTo(15));
+            Assert.That(PropOf(world, "minute").DefaultNumber, Is.EqualTo(0));
+            Assert.That(PropOf(world, "hour").DefaultNumber, Is.EqualTo(0));
+            Assert.That(PropOf(world, "day").DefaultNumber, Is.EqualTo(1));
+            Assert.That(PropOf(world, "temperature").DefaultNumber, Is.EqualTo(20));
         }
 
         [Test]

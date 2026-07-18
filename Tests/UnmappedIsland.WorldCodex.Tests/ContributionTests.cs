@@ -1,14 +1,16 @@
 using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
+using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 
 namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
     /// modify/accumulate（GameElementDefinition.md 8節）の実行時集計（WorldObject.GetEffectiveValue/
-    /// Tick、Containment.TryMoveToSlot での登録）に対する自動テスト。YAMLパーサは対象外で、
-    /// ObjectDefBlueprint を直接組み立てて検証する。
+    /// Tick、Containment.TryMoveToSlot での登録）と、on_min/on_max（6節、値がRange境界に達している間
+    /// 毎回実行されるactive内容）に対する自動テスト。YAML文字列をWorldCodexYamlLoader経由でパースして
+    /// 検証する（YamlLoaderTests.csと同じ方針）。
     /// </summary>
     [TestFixture]
     public class ContributionTests
@@ -21,84 +23,20 @@ namespace UnmappedIsland.Codex.Tests
             nextInstanceId = 1;
         }
 
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
+        {
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
+        }
+
+        private static WorldCodex Load(string yaml) =>
+            WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
         private WorldObject Spawn(WorldCodex codex, string objectName)
         {
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId(objectName));
             return new WorldObject(nextInstanceId++, def);
         }
-
-        private static PropertyBlueprint Prop(string name, int defaultValue, PropertyRange? range = null, ActiveEffectBlueprint onMin = null, ActiveEffectBlueprint onMax = null)
-        {
-            // on_minはRange.Minとの比較になったため、rangeが未指定なら旧on_zero相当(下限0)を暗黙に補う。
-            return new PropertyBlueprint
-            {
-                Name = name,
-                DefaultValue = PropertyValue.FromNumber(defaultValue),
-                Range = range ?? (onMin != null || onMax != null ? new PropertyRange(0, int.MaxValue) : (PropertyRange?)null),
-                OnMin = onMin,
-                OnMax = onMax,
-            };
-        }
-
-        private static ActiveEffectBlueprint OnMinDestroy()
-        {
-            var bp = new ActiveEffectBlueprint();
-            bp.Destroy.Add(ReferenceRoot.Self);
-            return bp;
-        }
-
-        private static ActiveEffectBlueprint OnMaxDestroy()
-        {
-            var bp = new ActiveEffectBlueprint();
-            bp.Destroy.Add(ReferenceRoot.Self);
-            return bp;
-        }
-
-        private static ActiveEffectBlueprint OnMinSpawnAndDestroy(
-            string spawnObjectName, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
-        {
-            var bp = new ActiveEffectBlueprint { Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into } };
-            bp.Destroy.Add(ReferenceRoot.Self);
-            return bp;
-        }
-
-        private static ActiveEffectBlueprint OnMinSpawn(
-            string spawnObjectName, SpawnTargetRoot into = SpawnTargetRoot.SameSlot)
-        {
-            return new ActiveEffectBlueprint
-            {
-                Spawn = new SpawnBlueprint { ObjectName = spawnObjectName, Into = into },
-            };
-        }
-
-        private static SlotBlueprint Slot(string name) => new SlotBlueprint { Name = name };
-
-        private static ContributionBlueprint Contribution(
-            ContributionTarget target,
-            ContributionKind kind,
-            string targetProperty,
-            int amount,
-            ConditionNodeBlueprint conditions = null,
-            string gateStageProperty = null,
-            string gateStageName = null)
-        {
-            return new ContributionBlueprint
-            {
-                Target = target,
-                Kind = kind,
-                TargetPropertyName = targetProperty,
-                Amount = amount,
-                Conditions = conditions,
-                IsWhenOwnStage = gateStageProperty != null,
-                GateStagePropertyName = gateStageProperty,
-                GateStageName = gateStageName,
-            };
-        }
-
-        /// <summary>「自分自身(SlotBearer)が特定のスロットに入っている間だけ有効」というゲートのブループリント版
-        /// （8.2節、旧when）。conditions: [{slot: <スロット名>}] のYAML相当。</summary>
-        private static ConditionNodeBlueprint SlotGate(string slotName) =>
-            new ConditionNodeBlueprint { Kind = ConditionNodeBlueprintKind.Slot, Root = ReferenceRoot.Self, SlotName = slotName };
 
         // ------------------------------------------------------------------
         // modify: 都度導出（GetEffectiveValue）。実体値そのものは書き換えない。
@@ -107,11 +45,18 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_Self_Always_AppliesFromSpawn()
         {
-            var torch = new ObjectDefBlueprint { Name = "torch" };
-            torch.Properties.Add(Prop("brightness", 1));
-            torch.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Modify, "brightness", 2));
-
-            var codex = WorldCodexBuilder.Build(new[] { torch });
+            const string yaml = @"
+object_defs:
+  torch:
+    props:
+      brightness:
+        value: 1
+    passives:
+      - modify:
+          self:
+            brightness: 2
+";
+            var codex = Load(yaml);
             int brightnessId = codex.PropertyNames.GetId("brightness");
 
             WorldObject instance = Spawn(codex, "torch");
@@ -125,11 +70,18 @@ namespace UnmappedIsland.Codex.Tests
             // PropertyDef.DefaultValueは全WorldObjectで共有される1つのテンプレートであり、
             // WorldObjectのコンストラクタがClone()し忘れると、片方への加算・効果登録がもう片方にも
             // 漏れてしまう。同じ"torch"から2体spawnし、互いに影響しないことを確認する。
-            var torch = new ObjectDefBlueprint { Name = "torch" };
-            torch.Properties.Add(Prop("brightness", 1));
-            torch.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "brightness", 5));
-
-            var codex = WorldCodexBuilder.Build(new[] { torch });
+            const string yaml = @"
+object_defs:
+  torch:
+    props:
+      brightness:
+        value: 1
+    passives:
+      - accumulate:
+          self:
+            brightness: 5
+";
+            var codex = Load(yaml);
             int brightnessId = codex.PropertyNames.GetId("brightness");
             var session = new WorldSession(codex);
 
@@ -146,17 +98,24 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_Parent_WhenSlot_AppliesOnlyWhileInThatSlot()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("defense", 10));
-            character.Slots.Add(Slot("equip"));
-            character.Slots.Add(Slot("inventory"));
-
-            var armor = new ObjectDefBlueprint { Name = "armor" };
-            armor.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Modify, "defense", 5,
-                SlotGate("equip")));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, armor });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      defense:
+        value: 10
+    slots:
+      equip: {}
+      inventory: {}
+  armor:
+    passives:
+      - conditions:
+          - {slot: equip}
+        modify:
+          parent:
+            defense: 5
+";
+            var codex = Load(yaml);
             int defenseId = codex.PropertyNames.GetId("defense");
             int equipSlotId = codex.SlotNames.GetId("equip");
             int inventorySlotId = codex.SlotNames.GetId("inventory");
@@ -177,19 +136,26 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_Parent_WhenSlot_ClearsWhenMovedToDifferentParent()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("defense", 10));
-            character.Slots.Add(Slot("equip"));
-
-            var chest = new ObjectDefBlueprint { Name = "chest" };
-            chest.Slots.Add(Slot("storage"));
-
-            var armor = new ObjectDefBlueprint { Name = "armor" };
-            armor.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Modify, "defense", 5,
-                SlotGate("equip")));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, chest, armor });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      defense:
+        value: 10
+    slots:
+      equip: {}
+  chest:
+    slots:
+      storage: {}
+  armor:
+    passives:
+      - conditions:
+          - {slot: equip}
+        modify:
+          parent:
+            defense: 5
+";
+            var codex = Load(yaml);
             int defenseId = codex.PropertyNames.GetId("defense");
             int equipSlotId = codex.SlotNames.GetId("equip");
             int storageSlotId = codex.SlotNames.GetId("storage");
@@ -209,16 +175,23 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_Child_WhenSlot_UsesChildAsSlotBearer()
         {
-            var container = new ObjectDefBlueprint { Name = "preserving_container" };
-            container.Slots.Add(Slot("storage"));
-            container.Contributions.Add(Contribution(
-                ContributionTarget.Child, ContributionKind.Modify, "decay_rate", -1,
-                SlotGate("storage")));
-
-            var food = new ObjectDefBlueprint { Name = "food" };
-            food.Properties.Add(Prop("decay_rate", 3));
-
-            var codex = WorldCodexBuilder.Build(new[] { container, food });
+            const string yaml = @"
+object_defs:
+  preserving_container:
+    slots:
+      storage: {}
+    passives:
+      - conditions:
+          - {slot: storage}
+        modify:
+          child:
+            decay_rate: -1
+  food:
+    props:
+      decay_rate:
+        value: 3
+";
+            var codex = Load(yaml);
             int decayRateId = codex.PropertyNames.GetId("decay_rate");
             int storageSlotId = codex.SlotNames.GetId("storage");
 
@@ -235,17 +208,24 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_Self_WhenOwnStage_TracksStageWithoutReregistration()
         {
-            var battery = new ObjectDefBlueprint { Name = "battery" };
-            PropertyBlueprint charge = Prop("charge", 100);
-            charge.Stages.Add(new StageBlueprint { Name = "full", Min = 50 });
-            charge.Stages.Add(new StageBlueprint { Name = "low", Min = null });
-            battery.Properties.Add(charge);
-            battery.Properties.Add(Prop("output", 5));
-            battery.Contributions.Add(Contribution(
-                ContributionTarget.Self, ContributionKind.Modify, "output", 10,
-                gateStageProperty: "charge", gateStageName: "full"));
-
-            var codex = WorldCodexBuilder.Build(new[] { battery });
+            const string yaml = @"
+object_defs:
+  battery:
+    props:
+      charge:
+        value: 100
+        stages:
+          - name: full
+            min: 50
+            passives:
+              - modify:
+                  self:
+                    output: 10
+          - name: low
+      output:
+        value: 5
+";
+            var codex = Load(yaml);
             int chargeId = codex.PropertyNames.GetId("charge");
             int outputId = codex.PropertyNames.GetId("output");
 
@@ -261,21 +241,30 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_MultipleContributions_Sum()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("defense", 10));
-            character.Slots.Add(Slot("equip"));
-
-            var helmet = new ObjectDefBlueprint { Name = "helmet" };
-            helmet.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Modify, "defense", 3,
-                SlotGate("equip")));
-
-            var armor = new ObjectDefBlueprint { Name = "armor" };
-            armor.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Modify, "defense", 5,
-                SlotGate("equip")));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, helmet, armor });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      defense:
+        value: 10
+    slots:
+      equip: {}
+  helmet:
+    passives:
+      - conditions:
+          - {slot: equip}
+        modify:
+          parent:
+            defense: 3
+  armor:
+    passives:
+      - conditions:
+          - {slot: equip}
+        modify:
+          parent:
+            defense: 5
+";
+            var codex = Load(yaml);
             int defenseId = codex.PropertyNames.GetId("defense");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
@@ -293,16 +282,24 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_EffectiveValue_IsClampedToRange()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("defense", 95, new PropertyRange(0, 100)));
-            character.Slots.Add(Slot("equip"));
-
-            var armor = new ObjectDefBlueprint { Name = "armor" };
-            armor.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Modify, "defense", 20,
-                SlotGate("equip")));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, armor });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      defense:
+        value: 95
+        range: {min: 0, max: 100}
+    slots:
+      equip: {}
+  armor:
+    passives:
+      - conditions:
+          - {slot: equip}
+        modify:
+          parent:
+            defense: 20
+";
+            var codex = Load(yaml);
             int defenseId = codex.PropertyNames.GetId("defense");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
@@ -318,13 +315,18 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_GetEffectiveValue_OnMissingProperty_ReturnsZero()
         {
-            var rock = new ObjectDefBlueprint { Name = "rock" };
-            rock.Properties.Add(Prop("weight", 5));
-
-            var other = new ObjectDefBlueprint { Name = "other_with_size" };
-            other.Properties.Add(Prop("size", 1));
-
-            var codex = WorldCodexBuilder.Build(new[] { rock, other });
+            const string yaml = @"
+object_defs:
+  rock:
+    props:
+      weight:
+        value: 5
+  other_with_size:
+    props:
+      size:
+        value: 1
+";
+            var codex = Load(yaml);
             int sizeId = codex.PropertyNames.GetId("size");
 
             WorldObject rockInstance = Spawn(codex, "rock");
@@ -339,11 +341,18 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Accumulate_Self_Always_AccumulatesOnTickOnly()
         {
-            var candle = new ObjectDefBlueprint { Name = "candle" };
-            candle.Properties.Add(Prop("wax", 100));
-            candle.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "wax", -1));
-
-            var codex = WorldCodexBuilder.Build(new[] { candle });
+            const string yaml = @"
+object_defs:
+  candle:
+    props:
+      wax:
+        value: 100
+    passives:
+      - accumulate:
+          self:
+            wax: -1
+";
+            var codex = Load(yaml);
             int waxId = codex.PropertyNames.GetId("wax");
             var session = new WorldSession(codex);
 
@@ -361,19 +370,26 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Accumulate_Parent_WhenSlot_OnlyWhileAttached()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("hydration", 100));
-            character.Slots.Add(Slot("conditions"));
-
-            var trash = new ObjectDefBlueprint { Name = "trash" };
-            trash.Slots.Add(Slot("storage"));
-
-            var bleeding = new ObjectDefBlueprint { Name = "bleeding" };
-            bleeding.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Accumulate, "hydration", -5,
-                SlotGate("conditions")));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, trash, bleeding });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      hydration:
+        value: 100
+    slots:
+      conditions: {}
+  trash:
+    slots:
+      storage: {}
+  bleeding:
+    passives:
+      - conditions:
+          - {slot: conditions}
+        accumulate:
+          parent:
+            hydration: -5
+";
+            var codex = Load(yaml);
             int hydrationId = codex.PropertyNames.GetId("hydration");
             int conditionsSlotId = codex.SlotNames.GetId("conditions");
             int storageSlotId = codex.SlotNames.GetId("storage");
@@ -399,20 +415,29 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Accumulate_Parent_WhenOwnStage_TracksDeclarersStage()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("temperature", 36));
-            character.Slots.Add(Slot("conditions"));
-
-            var infection = new ObjectDefBlueprint { Name = "infection" };
-            PropertyBlueprint progress = Prop("progress", 0);
-            progress.Stages.Add(new StageBlueprint { Name = "none", Min = 0 });
-            progress.Stages.Add(new StageBlueprint { Name = "mild", Min = 20 });
-            infection.Properties.Add(progress);
-            infection.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Accumulate, "temperature", 1,
-                gateStageProperty: "progress", gateStageName: "mild"));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, infection });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      temperature:
+        value: 36
+    slots:
+      conditions: {}
+  infection:
+    props:
+      progress:
+        value: 0
+        stages:
+          - name: none
+            min: 0
+          - name: mild
+            min: 20
+            passives:
+              - accumulate:
+                  parent:
+                    temperature: 1
+";
+            var codex = Load(yaml);
             int temperatureId = codex.PropertyNames.GetId("temperature");
             int progressId = codex.PropertyNames.GetId("progress");
             int conditionsSlotId = codex.SlotNames.GetId("conditions");
@@ -435,21 +460,30 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Modify_And_Accumulate_DoNotLeakBetweenEvaluationPaths()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("stamina", 50));
-            character.Slots.Add(Slot("equip"));
-
-            var boots = new ObjectDefBlueprint { Name = "boots" };
-            boots.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Modify, "stamina", 10,
-                SlotGate("equip")));
-
-            var exhaustion = new ObjectDefBlueprint { Name = "exhaustion" };
-            exhaustion.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Accumulate, "stamina", -1,
-                SlotGate("equip")));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, boots, exhaustion });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      stamina:
+        value: 50
+    slots:
+      equip: {}
+  boots:
+    passives:
+      - conditions:
+          - {slot: equip}
+        modify:
+          parent:
+            stamina: 10
+  exhaustion:
+    passives:
+      - conditions:
+          - {slot: equip}
+        accumulate:
+          parent:
+            stamina: -1
+";
+            var codex = Load(yaml);
             int staminaId = codex.PropertyNames.GetId("stamina");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
@@ -471,21 +505,30 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void GetIncomingContributions_ListsAllRegardlessOfKind()
         {
-            var character = new ObjectDefBlueprint { Name = "character" };
-            character.Properties.Add(Prop("stamina", 50));
-            character.Slots.Add(Slot("equip"));
-
-            var boots = new ObjectDefBlueprint { Name = "boots" };
-            boots.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Modify, "stamina", 10,
-                SlotGate("equip")));
-
-            var exhaustion = new ObjectDefBlueprint { Name = "exhaustion" };
-            exhaustion.Contributions.Add(Contribution(
-                ContributionTarget.Parent, ContributionKind.Accumulate, "stamina", -1,
-                SlotGate("equip")));
-
-            var codex = WorldCodexBuilder.Build(new[] { character, boots, exhaustion });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      stamina:
+        value: 50
+    slots:
+      equip: {}
+  boots:
+    passives:
+      - conditions:
+          - {slot: equip}
+        modify:
+          parent:
+            stamina: 10
+  exhaustion:
+    passives:
+      - conditions:
+          - {slot: equip}
+        accumulate:
+          parent:
+            stamina: -1
+";
+            var codex = Load(yaml);
             int staminaId = codex.PropertyNames.GetId("stamina");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
@@ -515,11 +558,19 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void OnMin_IsCarriedThroughToPropertyDef()
         {
-            var candle = new ObjectDefBlueprint { Name = "candle" };
-            candle.Properties.Add(Prop("wax", 100, onMin: OnMinDestroy()));
-            candle.Properties.Add(Prop("wick_length", 5)); // onMin: null (既定)
-
-            var codex = WorldCodexBuilder.Build(new[] { candle });
+            const string yaml = @"
+object_defs:
+  candle:
+    props:
+      wax:
+        value: 100
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+      wick_length:
+        value: 5
+";
+            var codex = Load(yaml);
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("candle"));
 
             int waxLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wax"));
@@ -537,11 +588,19 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void OnMax_IsCarriedThroughToPropertyDef()
         {
-            var obj = new ObjectDefBlueprint { Name = "tank" };
-            obj.Properties.Add(Prop("pressure", 0, onMax: OnMaxDestroy()));
-            obj.Properties.Add(Prop("temperature", 20)); // onMax: null (既定)
-
-            var codex = WorldCodexBuilder.Build(new[] { obj });
+            const string yaml = @"
+object_defs:
+  tank:
+    props:
+      pressure:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_max:
+          destroy: self
+      temperature:
+        value: 20
+";
+            var codex = Load(yaml);
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("tank"));
 
             int pressureLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("pressure"));
@@ -555,13 +614,20 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_DestroysSelfWhenOnMaxFires()
         {
-            var container = new ObjectDefBlueprint { Name = "holder" };
-            container.Slots.Add(Slot("items"));
-
-            var bomb = new ObjectDefBlueprint { Name = "bomb" };
-            bomb.Properties.Add(Prop("pressure", 100, range: new PropertyRange(0, 100), onMax: OnMaxDestroy()));
-
-            var codex = WorldCodexBuilder.Build(new[] { container, bomb });
+            const string yaml = @"
+object_defs:
+  holder:
+    slots:
+      items: {}
+  bomb:
+    props:
+      pressure:
+        value: 100
+        range: {min: 0, max: 100}
+        on_max:
+          destroy: self
+";
+            var codex = Load(yaml);
             int itemsSlotId = codex.SlotNames.GetId("items");
 
             var session = new WorldSession(codex);
@@ -579,13 +645,20 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_DoesNotFireOnMaxWhenValueBelowMax()
         {
-            var container = new ObjectDefBlueprint { Name = "holder" };
-            container.Slots.Add(Slot("items"));
-
-            var tank = new ObjectDefBlueprint { Name = "tank" };
-            tank.Properties.Add(Prop("pressure", 50, range: new PropertyRange(0, 100), onMax: OnMaxDestroy()));
-
-            var codex = WorldCodexBuilder.Build(new[] { container, tank });
+            const string yaml = @"
+object_defs:
+  holder:
+    slots:
+      items: {}
+  tank:
+    props:
+      pressure:
+        value: 50
+        range: {min: 0, max: 100}
+        on_max:
+          destroy: self
+";
+            var codex = Load(yaml);
             int itemsSlotId = codex.SlotNames.GetId("items");
 
             var session = new WorldSession(codex);
@@ -601,14 +674,21 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_RecursesIntoChildrenWithoutCallingChildTickDirectly()
         {
-            var container = new ObjectDefBlueprint { Name = "backpack" };
-            container.Slots.Add(Slot("items"));
-
-            var battery = new ObjectDefBlueprint { Name = "power_cell" };
-            battery.Properties.Add(Prop("charge", 10));
-            battery.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "charge", -1));
-
-            var codex = WorldCodexBuilder.Build(new[] { container, battery });
+            const string yaml = @"
+object_defs:
+  backpack:
+    slots:
+      items: {}
+  power_cell:
+    props:
+      charge:
+        value: 10
+    passives:
+      - accumulate:
+          self:
+            charge: -1
+";
+            var codex = Load(yaml);
             int itemsSlotId = codex.SlotNames.GetId("items");
             int chargeId = codex.PropertyNames.GetId("charge");
 
@@ -625,13 +705,20 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_DestroysSelfWhenOnMinFires()
         {
-            var container = new ObjectDefBlueprint { Name = "lantern_holder" };
-            container.Slots.Add(Slot("items"));
-
-            var torch = new ObjectDefBlueprint { Name = "torch" };
-            torch.Properties.Add(Prop("durability", 0, onMin: OnMinDestroy()));
-
-            var codex = WorldCodexBuilder.Build(new[] { container, torch });
+            const string yaml = @"
+object_defs:
+  lantern_holder:
+    slots:
+      items: {}
+  torch:
+    props:
+      durability:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+";
+            var codex = Load(yaml);
             int itemsSlotId = codex.SlotNames.GetId("items");
 
             var session = new WorldSession(codex);
@@ -649,14 +736,22 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_SpawnsIntoOwnSlotWhenIntoIsSelf()
         {
-            var bush = new ObjectDefBlueprint { Name = "bush" };
-            bush.Slots.Add(Slot("ground"));
-            bush.Properties.Add(Prop("ripeness", 0,
-                onMin: OnMinSpawn("berry", into: SpawnTargetRoot.Self)));
-
-            var berry = new ObjectDefBlueprint { Name = "berry" };
-
-            var codex = WorldCodexBuilder.Build(new[] { bush, berry });
+            const string yaml = @"
+object_defs:
+  bush:
+    slots:
+      ground: {}
+    props:
+      ripeness:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: berry
+            into: self
+  berry: {}
+";
+            var codex = Load(yaml);
             int groundSlotId = codex.SlotNames.GetId("ground");
 
             var session = new WorldSession(codex);
@@ -672,16 +767,23 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_SpawnsIntoSameSlotAsSelfForCraftingOrDecay()
         {
-            var location = new ObjectDefBlueprint { Name = "clearing2" };
-            location.Slots.Add(Slot("ground"));
-
-            var wetLog = new ObjectDefBlueprint { Name = "wet_log" };
-            wetLog.Properties.Add(Prop("freshness", 0,
-                onMin: OnMinSpawnAndDestroy("rotten_log"))); // intoを省略（既定値SameSlot）
-
-            var rottenLog = new ObjectDefBlueprint { Name = "rotten_log" };
-
-            var codex = WorldCodexBuilder.Build(new[] { location, wetLog, rottenLog });
+            const string yaml = @"
+object_defs:
+  clearing2:
+    slots:
+      ground: {}
+  wet_log:
+    props:
+      freshness:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+          spawn:
+            object: rotten_log
+  rotten_log: {}
+";
+            var codex = Load(yaml);
             int groundSlotId = codex.SlotNames.GetId("ground");
 
             var session = new WorldSession(codex);
@@ -703,18 +805,29 @@ namespace UnmappedIsland.Codex.Tests
             // fallbackはYAML側で選べず、常に起点自身の親へ強制的に伝播する。ここでは起点(Self=geode)が
             // 持つ唯一のスロットがcapacity超過で拒否するため、geodeの親(box)の先頭スロットへ
             // accepts/capacityを無視して伝播することを確認する。
-            var box = new ObjectDefBlueprint { Name = "small_box" };
-            box.Slots.Add(Slot("shelf"));
-
-            var boulder = new ObjectDefBlueprint { Name = "boulder" };
-            boulder.Properties.Add(Prop("size", 10));
-
-            var geode = new ObjectDefBlueprint { Name = "geode" };
-            geode.Slots.Add(new SlotBlueprint { Name = "cavity", Capacity = 5 });
-            geode.Properties.Add(Prop("ripeness", 0,
-                onMin: OnMinSpawn("boulder", into: SpawnTargetRoot.Self)));
-
-            var codex = WorldCodexBuilder.Build(new[] { box, boulder, geode });
+            const string yaml = @"
+object_defs:
+  small_box:
+    slots:
+      shelf: {}
+  boulder:
+    props:
+      size:
+        value: 10
+  geode:
+    slots:
+      cavity:
+        capacity: 5
+    props:
+      ripeness:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: boulder
+            into: self
+";
+            var codex = Load(yaml);
             int shelfSlotId = codex.SlotNames.GetId("shelf");
             int cavitySlotId = codex.SlotNames.GetId("cavity");
 
@@ -736,20 +849,28 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_SpawnEscalatesToParentWhenPrimaryRejectsDueToAcceptsRestriction()
         {
-            var cave = new ObjectDefBlueprint { Name = "cave" };
-            cave.Slots.Add(Slot("floor"));
-
-            var pebble = new ObjectDefBlueprint { Name = "pebble" };
-            var goldNugget = new ObjectDefBlueprint { Name = "gold_nugget" };
-
-            var vein = new ObjectDefBlueprint { Name = "vein" };
-            var orePocket = new SlotBlueprint { Name = "ore_pocket" };
-            orePocket.Accepts.Add(new AcceptBlueprint { ObjectName = "gold_nugget", Max = 10, Consume = false });
-            vein.Slots.Add(orePocket);
-            vein.Properties.Add(Prop("yield", 0,
-                onMin: OnMinSpawn("pebble", into: SpawnTargetRoot.Self)));
-
-            var codex = WorldCodexBuilder.Build(new[] { cave, pebble, goldNugget, vein });
+            const string yaml = @"
+object_defs:
+  cave:
+    slots:
+      floor: {}
+  pebble: {}
+  gold_nugget: {}
+  vein:
+    slots:
+      ore_pocket:
+        accepts:
+          - {object: gold_nugget, max: 10, consume: false}
+    props:
+      yield:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: pebble
+            into: self
+";
+            var codex = Load(yaml);
             int floorSlotId = codex.SlotNames.GetId("floor");
             int orePocketSlotId = codex.SlotNames.GetId("ore_pocket");
 
@@ -771,15 +892,26 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_SpawnDoesNothingWhenPrimaryFailsAndNoParentToEscalateTo()
         {
-            var pebble = new ObjectDefBlueprint { Name = "pebble2" };
-            pebble.Properties.Add(Prop("size", 10));
-
-            var vein = new ObjectDefBlueprint { Name = "vein2" };
-            vein.Slots.Add(new SlotBlueprint { Name = "contents", Capacity = 1 });
-            vein.Properties.Add(Prop("yield", 0,
-                onMin: OnMinSpawn("pebble2", into: SpawnTargetRoot.Self)));
-
-            var codex = WorldCodexBuilder.Build(new[] { pebble, vein });
+            const string yaml = @"
+object_defs:
+  pebble2:
+    props:
+      size:
+        value: 10
+  vein2:
+    slots:
+      contents:
+        capacity: 1
+    props:
+      yield:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            object: pebble2
+            into: self
+";
+            var codex = Load(yaml);
             int contentsSlotId = codex.SlotNames.GetId("contents");
 
             var session = new WorldSession(codex);
@@ -795,16 +927,24 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_SpawnWithActorRootDoesNothingBecauseOnMinHasNoActor()
         {
-            var location = new ObjectDefBlueprint { Name = "clearing3" };
-            location.Slots.Add(Slot("ground"));
-
-            var berry = new ObjectDefBlueprint { Name = "berry" };
-
-            var bush = new ObjectDefBlueprint { Name = "bush" };
-            bush.Properties.Add(Prop("ripeness", 0,
-                onMin: OnMinSpawnAndDestroy("berry", into: SpawnTargetRoot.Actor)));
-
-            var codex = WorldCodexBuilder.Build(new[] { location, berry, bush });
+            const string yaml = @"
+object_defs:
+  clearing3:
+    slots:
+      ground: {}
+  berry: {}
+  bush:
+    props:
+      ripeness:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+          spawn:
+            object: berry
+            into: actor
+";
+            var codex = Load(yaml);
             int groundSlotId = codex.SlotNames.GetId("ground");
 
             var session = new WorldSession(codex);
@@ -822,13 +962,20 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_SurvivesMultipleChildrenDestroyingThemselvesInSamePass()
         {
-            var container = new ObjectDefBlueprint { Name = "trashcan" };
-            container.Slots.Add(Slot("contents"));
-
-            var junk = new ObjectDefBlueprint { Name = "junk" };
-            junk.Properties.Add(Prop("integrity", 0, onMin: OnMinDestroy()));
-
-            var codex = WorldCodexBuilder.Build(new[] { container, junk });
+            const string yaml = @"
+object_defs:
+  trashcan:
+    slots:
+      contents: {}
+  junk:
+    props:
+      integrity:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+";
+            var codex = Load(yaml);
             int contentsSlotId = codex.SlotNames.GetId("contents");
 
             var session = new WorldSession(codex);
@@ -853,12 +1000,14 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Destroy_IsIdempotent()
         {
-            var box = new ObjectDefBlueprint { Name = "box" };
-            box.Slots.Add(Slot("contents"));
-
-            var item = new ObjectDefBlueprint { Name = "trinket" };
-
-            var codex = WorldCodexBuilder.Build(new[] { box, item });
+            const string yaml = @"
+object_defs:
+  box:
+    slots:
+      contents: {}
+  trinket: {}
+";
+            var codex = Load(yaml);
             int contentsSlotId = codex.SlotNames.GetId("contents");
 
             Containment containment = codex.CreateContainment();
@@ -879,18 +1028,30 @@ namespace UnmappedIsland.Codex.Tests
             // innerBoxは自分自身のon_minによって、outerBox.Tick()の実行中に破棄される。それでも
             // innerBoxがまだ持っている子(battery)は、同じTickの中で問題なくaccumulateされることを確認する
             // （WorldObjectはTick内で自分や子がdestroyされる可能性に備える必要がある、という要件）。
-            var outerBox = new ObjectDefBlueprint { Name = "outer_box" };
-            outerBox.Slots.Add(Slot("items"));
-
-            var innerBox = new ObjectDefBlueprint { Name = "inner_box" };
-            innerBox.Slots.Add(Slot("items"));
-            innerBox.Properties.Add(Prop("integrity", 0, onMin: OnMinDestroy()));
-
-            var battery = new ObjectDefBlueprint { Name = "cell" };
-            battery.Properties.Add(Prop("charge", 10));
-            battery.Contributions.Add(Contribution(ContributionTarget.Self, ContributionKind.Accumulate, "charge", -1));
-
-            var codex = WorldCodexBuilder.Build(new[] { outerBox, innerBox, battery });
+            const string yaml = @"
+object_defs:
+  outer_box:
+    slots:
+      items: {}
+  inner_box:
+    slots:
+      items: {}
+    props:
+      integrity:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          destroy: self
+  cell:
+    props:
+      charge:
+        value: 10
+    passives:
+      - accumulate:
+          self:
+            charge: -1
+";
+            var codex = Load(yaml);
             int itemsSlotId = codex.SlotNames.GetId("items");
             int chargeId = codex.PropertyNames.GetId("charge");
 
