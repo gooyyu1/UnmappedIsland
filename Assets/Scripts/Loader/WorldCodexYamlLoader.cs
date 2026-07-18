@@ -91,7 +91,6 @@ namespace UnmappedIsland.Loader
 
             var traitsByName = globalTraits.ToDictionary(kv => kv.Key, kv => TraitMerger.ParseTraitEntry(kv.Key, kv.Value.Node));
 
-            var symbols = new NameRegistry();
             var blueprints = new List<ObjectDefBlueprint>();
 
             foreach (var kv in globalObjectDefs)
@@ -99,12 +98,12 @@ namespace UnmappedIsland.Loader
                 TraitMerger.RawObjectDef raw = TraitMerger.ParseObjectDefEntry(kv.Key, kv.Value.Node);
                 var (props, slots, passiveNodes, stackOrder, actions, combinations) = TraitMerger.Resolve(raw, traitsByName);
                 blueprints.Add(ObjectDefYamlConverter.Build(
-                    kv.Key, raw.IsSingleton, raw.TraitNames, props, slots, passiveNodes, stackOrder, actions, combinations, symbols));
+                    kv.Key, raw.IsSingleton, raw.TraitNames, props, slots, passiveNodes, stackOrder, actions, combinations));
             }
 
             ValidateWithReferences(blueprints, globalObjectDefs.Keys, traitsByName.Keys);
 
-            return WorldCodexBuilder.Build(blueprints, symbols);
+            return WorldCodexBuilder.Build(blueprints);
         }
 
         /// <summary>

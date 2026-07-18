@@ -65,7 +65,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_StringPropertyValue_InternsIntoSharedSymbolRegistry()
+        public void LoadFromGroups_StringPropertyValue_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -74,13 +74,8 @@ object_defs:
       weather:
         value: clear
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
-
-            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky"));
-            PropertyValue value = PropOf(codex, sky, "weather").DefaultValue;
-
-            Assert.That(value.Kind, Is.EqualTo(PropertyValueKind.Symbol));
-            Assert.That(codex.Symbols.GetName(value.Symbol), Is.EqualTo("clear"));
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("整数または真偽値"));
         }
 
         // ------------------------------------------------------------------
