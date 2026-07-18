@@ -389,10 +389,13 @@ edge-triggered な仕組み（<code>on_enter</code>/<code>on_exit</code>
 と対等な兄弟キーとして、専用にネストしたキーのまま持ちます（オブジェクトレベル・
 プロパティレベルの <code>passives:</code> と同じく常に配列です、8
 節）。</li>
-<li>ステージの <code>passives</code> ブロックに <code>conditions</code>
-を書くことはできません（ロード時エラー）。ステージの発動条件は
-「現在値がこの段階の区間内にあること」自体であり、ゲートは常にそれ（<code>WhenOwnStage</code>）に固定されるためです
-（スロット等との組み合わせ条件は現状未対応、17 節）。</li>
+<li>ステージの <code>passives</code> ブロックには
+<code>conditions</code>
+も併記できます。この場合、「現在値がこの段階の区間内に
+あること」（<code>WhenOwnStage</code>）と <code>conditions</code>
+の両方を満たす間だけ有効になります（AND、8.2 節）。例えば
+「装備している間、かつ耐久値が intact
+ステージの間だけ」のような組み合わせ条件を表現できます。</li>
 </ul>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
@@ -1264,13 +1267,6 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href=
 <li><code>passives</code>/<code>active</code> の対象キーに
 <code>ancestor</code>/<code>sibling</code>/<code>descendant</code>
 を追加するかどうか</li>
-<li>ステージの <code>passives</code> ブロックで
-<code>conditions</code>（スロット条件等）とステージ自体の条件を組み合わせられるように
-するか（例:
-「装備している間、かつ耐久値がintactステージの間だけ」のような AND
-条件）。現状 <code>PassiveEffectGate</code>
-は単一の種別（<code>Always</code>/<code>Conditions</code>/<code>WhenOwnStage</code>）しか持てないため、対応するには複数条件を同時に保持できる
-形へ拡張する必要がある</li>
 <li><code>pick</code> の位置づけ（候補に
 <code>modify</code>/<code>accumulate</code> を書けないことの扱い）</li>
 <li><code>pick</code>
