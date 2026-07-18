@@ -36,7 +36,7 @@ namespace UnmappedIsland.Runtime
 
             properties = new PropertyValue[def.PropertyDefs.Count];
             for (int i = 0; i < properties.Length; i++)
-                properties[i] = def.PropertyDefs[i].DefaultValue.Clone();
+                properties[i] = def.PropertyDefs[i].DefaultValue.Clone(def.PropertyDefs[i]);
 
             slots = new Slot[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
@@ -81,29 +81,27 @@ namespace UnmappedIsland.Runtime
         /// 数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の `add`、ContainerSystem.md の重さ伝播で使用）。
         /// このオブジェクトが対象プロパティを持たない場合は何もしない（例: 重さを気にしない置物）。
         ///
-        /// ローカルID解決だけがこのメソッドの責務で、値の変更・range判定（on_overflow等）はすべて
+        /// プロパティ解決だけがこのメソッドの責務で、値の変更・range判定（on_overflow等）はすべて
         /// PropertyValue.Add自身に委ねる（自分のことは自分でする、CLAUDE.md参照）。sessionを渡さない
         /// 呼び出しは、その場では判定を行わない（既存の「後で明示的にTick()を呼んで判定させる」
         /// 呼び出し方との後方互換のため）。
         /// </summary>
         public void AddNumber(int globalPropertyId, int delta, WorldSession session = null)
         {
-            int local = Def.PropertyLayout.ToLocal(globalPropertyId);
-            if (local == LocalIndexMap.Missing) return;
-            properties[local].Add(delta, Def.PropertyDefs[local], this, session);
+            if (!TryGetProperty(globalPropertyId, out var value)) return;
+            value.Add(delta, this, session);
         }
 
         /// <summary>
         /// 数値プロパティへの不可逆な絶対値代入（GameElementDefinition.md 9.2節の`set`）。addとは異なり、
         /// 既存の値を無視して指定した値でそのまま置き換える。このオブジェクトが対象プロパティを
-        /// 持たない場合は何もしない（AddNumberと同じ規約）。ローカルID解決だけがこのメソッドの責務で、
+        /// 持たない場合は何もしない（AddNumberと同じ規約）。プロパティ解決だけがこのメソッドの責務で、
         /// 差分計算・range判定はすべてPropertyValue.SetNumber自身に委ねる。
         /// </summary>
         public void SetNumber(int globalPropertyId, int value, WorldSession session = null)
         {
-            int local = Def.PropertyLayout.ToLocal(globalPropertyId);
-            if (local == LocalIndexMap.Missing) return;
-            properties[local].SetNumber(value, Def.PropertyDefs[local], this, session);
+            if (!TryGetProperty(globalPropertyId, out var property)) return;
+            property.SetNumber(value, this, session);
         }
 
         public bool TryGetSlot(int globalSlotId, out Slot slot)
@@ -146,9 +144,7 @@ namespace UnmappedIsland.Runtime
         /// </summary>
         public int GetEffectiveValue(int propertyGlobalId)
         {
-            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
-            if (local == LocalIndexMap.Missing) return 0;
-            return properties[local].GetEffectiveValue(Def.PropertyDefs[local].Range);
+            return TryGetProperty(propertyGlobalId, out var value) ? value.GetEffectiveValue() : 0;
         }
 
         /// <summary>
@@ -167,7 +163,7 @@ namespace UnmappedIsland.Runtime
         public void Tick(WorldSession session)
         {
             for (int local = 0; local < properties.Length; local++)
-                properties[local].Tick(Def.PropertyDefs[local], this, session);
+                properties[local].Tick(this, session);
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())

@@ -11,15 +11,20 @@ namespace UnmappedIsland.Runtime
     ///
     /// 値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。
     /// WorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない
-    /// （自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。
+    /// （自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef
+    /// （range・on_overflow等）はこのインスタンス自身が保持し（Clone時に紐付ける）、呼び出しのたびに
+    /// 引数で受け取り直すことはしない。
     ///
     /// PropertyDef.DefaultValue は全 WorldObject で共有される1つのテンプレートなので、
     /// WorldObject 構築時は必ず Clone() で複製したものを使う（直接共有すると、ある WorldObject への
-    /// 加減算・効果登録が他の WorldObject にも及んでしまう）。
+    /// 加減算・効果登録が他の WorldObject にも及んでしまう）。テンプレート自身はどのPropertyDefにも
+    /// 紐付かない（Add/SetNumber等はClone後のインスタンスに対してしか呼ばれないため）。
     /// </summary>
     public sealed class PropertyValue
     {
         public int Number { get; private set; }
+
+        private PropertyDef def;
 
         private readonly List<ActiveContribution> incoming = new List<ActiveContribution>();
 
@@ -32,8 +37,9 @@ namespace UnmappedIsland.Runtime
 
         public int AsNumber() => Number;
 
-        /// <summary>このテンプレートから、1つの WorldObject 専用の新しいインスタンスを作る（Incomingは空で始まる）。</summary>
-        internal PropertyValue Clone() => new PropertyValue(Number);
+        /// <summary>このテンプレートから、1つの WorldObject 専用の新しいインスタンスを作る（Incomingは空で始まる）。
+        /// defは、このプロパティが実際に属することになるPropertyDef（range・on_overflow等）を紐付ける。</summary>
+        internal PropertyValue Clone(PropertyDef def) => new PropertyValue(Number) { def = def };
 
         /// <summary>SetProperty用。登録済みのIncomingはそのまま、値の中身だけを差し替える。</summary>
         internal void CopyValueFrom(PropertyValue other)
@@ -43,10 +49,8 @@ namespace UnmappedIsland.Runtime
 
         /// <summary>
         /// 数値を加減算し（不可逆）、値が変わった直後にon_overflow・on_shortfall・on_min・on_max
-        /// （6.3節・6.5節・6.6節）を自分自身で判定・実行する（CheckRangeEvents参照）。判定・適用にどの
-        /// PropertyDef/WorldObject/WorldSessionを使うかを、呼び出し側（WorldObject）ではなくこの
-        /// メソッド自身が要求することで、「値を変えたら何を判定すべきか」という責務をPropertyValue自身に
-        /// 閉じ込める。
+        /// （6.3節・6.5節・6.6節）を自分自身で判定・実行する（CheckRangeEvents参照）。判定に使うPropertyDefは
+        /// 自分自身が保持するものを使うため、呼び出し側（WorldObject）から渡してもらう必要はない。
         ///
         /// sessionがnullの場合は判定を行わない（呼び出し側が明示的に後でTick()を呼んで判定させたい場合の
         /// 後方互換。WorldObject.AddNumber参照）。
@@ -55,20 +59,20 @@ namespace UnmappedIsland.Runtime
         /// ちょうど境界に着地した後にも自分自身を再度setし直すことで、Add→CheckRangeEvents→
         /// ApplyActiveEffect→SetNumber→Addという呼び出しが無限に連鎖するのを防ぐガードを兼ねる。
         /// </summary>
-        internal void Add(int delta, PropertyDef def, WorldObject owner, WorldSession session)
+        internal void Add(int delta, WorldObject owner, WorldSession session)
         {
             if (delta == 0) return;
 
             Number += delta;
             if (session != null)
-                CheckRangeEvents(def, owner, session);
+                CheckRangeEvents(owner, session);
         }
 
         /// <summary>絶対値代入（set）。実体はAddへの委譲（差分=value-現在値を加算する）ため、range判定は
         /// Add側に一本化される。</summary>
-        internal void SetNumber(int value, PropertyDef def, WorldObject owner, WorldSession session)
+        internal void SetNumber(int value, WorldObject owner, WorldSession session)
         {
-            Add(value - Number, def, owner, session);
+            Add(value - Number, owner, session);
         }
 
         internal void RegisterContribution(ActiveContribution contribution) => incoming.Add(contribution);
@@ -81,7 +85,7 @@ namespace UnmappedIsland.Runtime
         /// <summary>
         /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
         /// </summary>
-        internal int GetEffectiveValue(PropertyRange? range)
+        internal int GetEffectiveValue()
         {
             int sum = Number;
 
@@ -89,7 +93,7 @@ namespace UnmappedIsland.Runtime
                 if (c.Def.Kind == ContributionKind.Modify && c.IsActive())
                     sum += c.Def.Amount;
 
-            return range.HasValue ? range.Value.Clamp(sum) : sum;
+            return def.Range.HasValue ? def.Range.Value.Clamp(sum) : sum;
         }
 
         /// <summary>
@@ -98,7 +102,7 @@ namespace UnmappedIsland.Runtime
         /// （CheckRangeEvents参照）。ゲームループから1tickにつき1回、WorldObject.Tick経由で
         /// 全プロパティに対して呼ばれる想定。
         /// </summary>
-        internal void Tick(PropertyDef def, WorldObject owner, WorldSession session)
+        internal void Tick(WorldObject owner, WorldSession session)
         {
             foreach (var c in incoming)
             {
@@ -107,7 +111,7 @@ namespace UnmappedIsland.Runtime
                 Number += c.Def.Amount;
             }
 
-            CheckRangeEvents(def, owner, session);
+            CheckRangeEvents(owner, session);
         }
 
         /// <summary>
@@ -139,7 +143,7 @@ namespace UnmappedIsland.Runtime
         /// （on_minの上限側の鏡像）。on_overflow/on_shortfallとは異なり既定の自動生成は行われない
         /// （nullなら何もしない）。
         /// </summary>
-        internal void CheckRangeEvents(PropertyDef def, WorldObject owner, WorldSession session)
+        internal void CheckRangeEvents(WorldObject owner, WorldSession session)
         {
             if (def.OnMax != null && def.Range.HasValue && Number >= def.Range.Value.Max)
                 owner.ApplyActiveEffect(def.OnMax, session, actor: null, dragged: null);
