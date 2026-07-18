@@ -41,6 +41,13 @@ object_defs:
               minute: -60
               hour: 1
       # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
+      #
+      # 曇りの日を想定した、時間帯によるtemperatureの補正をstages（6.4節）+passives（8節、modify）で表現する。
+      # 日光による影響（晴天時の日中の底上げ等）は別途ClimateSystem.mdで検討するため、ここでは含めない。
+      # 補正は3段階のみ（朝・夕方は補正なし、夜はやや涼しい、昼はやや暑い）。夜は0時をまたぐため、
+      # 最初の段階（min省略のフォールバック、22-23時と0-5時の両方に該当）と最後の段階の2つのYAMLエントリで
+      # 表現するが、内容（−3）は同じで、概念上は1つの「夜」段階として扱う。時間帯の区切り（6/10/18/22時）・
+      # 補正量（±3）はいずれも仮の値であり、バランス調整により変わりうる。
       hour:
         value: 0
         range: {min: 0, max: 23}
@@ -49,6 +56,28 @@ object_defs:
             self:
               hour: -24
               day: 1
+        stages:
+          - name: night          # 0-5時（フォールバック）・22-23時（night_late）
+            passives:
+              - modify:
+                  self:
+                    temperature: -3
+          - name: morning        # 6-9時: 補正なし
+            min: 6
+          - name: day            # 10-17時: やや暑い
+            min: 10
+            passives:
+              - modify:
+                  self:
+                    temperature: 3
+          - name: evening        # 18-21時: 補正なし
+            min: 18
+          - name: night_late     # 22-23時: 夜と同じ補正
+            min: 22
+            passives:
+              - modify:
+                  self:
+                    temperature: -3
       # 現在の日（1始まり）。上限は未定のため無制限に加算し続ける（GameElementDefinition.md 17節）。
       day:
         value: 1

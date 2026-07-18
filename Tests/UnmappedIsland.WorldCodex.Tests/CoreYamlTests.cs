@@ -125,6 +125,33 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
+        public void World_HourStage_ModifiesTemperatureByTimeOfDay()
+        {
+            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
+            int hourId = codex.PropertyNames.GetId("hour");
+            int temperatureId = codex.PropertyNames.GetId("temperature");
+
+            var worldInstance = new WorldObject(1, world);
+
+            void AssertTemperatureAt(int hour, int expectedEffective, string because)
+            {
+                worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
+                Assert.That(worldInstance.GetEffectiveValue(temperatureId), Is.EqualTo(expectedEffective), because);
+            }
+
+            AssertTemperatureAt(0, 17, "深夜(フォールバックのnight)はやや涼しい");
+            AssertTemperatureAt(5, 17, "night(0-5時)の最後の時間もやや涼しいまま");
+            AssertTemperatureAt(6, 20, "morning(6-9時)は補正なし");
+            AssertTemperatureAt(9, 20, "morning(6-9時)の最後の時間も補正なしのまま");
+            AssertTemperatureAt(10, 23, "day(10-17時)はやや暑い");
+            AssertTemperatureAt(17, 23, "day(10-17時)の最後の時間もやや暑いまま");
+            AssertTemperatureAt(18, 20, "evening(18-21時)は補正なし");
+            AssertTemperatureAt(21, 20, "evening(18-21時)の最後の時間も補正なしのまま");
+            AssertTemperatureAt(22, 17, "night_late(22-23時)はnightと同じくやや涼しい");
+            AssertTemperatureAt(23, 17, "night_late(22-23時)の最後の時間もやや涼しいまま");
+        }
+
+        [Test]
         public void World_LocationsSlot_AcceptsOnlyObjectsWithLocationTag()
         {
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
