@@ -1,5 +1,3 @@
-using UnmappedIsland.Runtime;
-
 namespace UnmappedIsland.Codex
 {
     /// <summary>
@@ -36,8 +34,5 @@ namespace UnmappedIsland.Codex
             Objects = objects;
             WellKnown = wellKnown;
         }
-
-        /// <summary>この WorldCodex に対する move_to_slot（Containment）を1つ作る。</summary>
-        public Containment CreateContainment() => new Containment(WellKnown);
     }
 }

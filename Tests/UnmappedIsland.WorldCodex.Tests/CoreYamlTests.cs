@@ -155,9 +155,9 @@ object_defs:
             WorldObject forestInstance = new WorldObject(2, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_forest")));
             WorldObject rockInstance = new WorldObject(3, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_rock")));
 
-            Assert.That(session.Containment.TryMoveToSlot(forestInstance, worldInstance, locationsSlotId, out _), Is.True,
+            Assert.That(forestInstance.MoveToSlot(worldInstance, locationsSlotId, session.Codex.WellKnown, out _), Is.True,
                 "locationトレイトを持つオブジェクトは受け入れられる");
-            Assert.That(session.Containment.TryMoveToSlot(rockInstance, worldInstance, locationsSlotId, out _), Is.False,
+            Assert.That(rockInstance.MoveToSlot(worldInstance, locationsSlotId, session.Codex.WellKnown, out _), Is.False,
                 "locationトレイトを持たないオブジェクトは拒否される");
         }
 

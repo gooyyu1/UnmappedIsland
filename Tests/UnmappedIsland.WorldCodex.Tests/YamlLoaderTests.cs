@@ -342,10 +342,10 @@ object_defs:
             var characterInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")));
             var swordInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("sword")));
 
-            Assert.That(session.Containment.TryMoveToSlot(swordInstance, characterInstance, mainHandId, out _), Is.True);
+            Assert.That(swordInstance.MoveToSlot(characterInstance, mainHandId, session.Codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(attackId), Is.EqualTo(15), "main_handでは+5");
 
-            Assert.That(session.Containment.TryMoveToSlot(swordInstance, characterInstance, offHandId, out _), Is.True);
+            Assert.That(swordInstance.MoveToSlot(characterInstance, offHandId, session.Codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(attackId), Is.EqualTo(12), "off_handへ持ち替えると+2に切り替わる");
         }
 
