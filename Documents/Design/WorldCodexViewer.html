@@ -452,23 +452,26 @@ function renderConditionsList(list, selfObjectName) {
   return renderCondition({ all: list }, selfObjectName);
 }
 
-function renderKindTargets(targetsMap, kindLabel, gate, selfObjectName) {
+function renderKindTargets(targetsMap, kindLabel, conditionsText, selfObjectName) {
   var out = [];
   Object.keys(targetsMap || {}).forEach(function (target) {
     Object.keys(targetsMap[target] || {}).forEach(function (prop) {
       var amount = targetsMap[target][prop];
       var sign = typeof amount === "number" && amount >= 0 ? "+" : "";
-      out.push("[" + gate + "] " + renderPropRef(target, prop, selfObjectName) + " を" + kindLabel + " " + sign + esc(amount));
+      var prefix = conditionsText ? conditionsText + " " : "";
+      out.push(prefix + kindLabel + " " + renderPropRef(target, prop, selfObjectName) + " " + sign + esc(amount));
     });
   });
   return out;
 }
 
-function renderPassiveBlock(block, gateOverride, selfObjectName) {
-  var gate = gateOverride || renderConditionsList(block.conditions, selfObjectName);
+// stageの中のpassivesは、呼び出し側（stagesHtml）がすでに見出しでstage名を示しているため、ここでは
+// stage自体のゲート表記を持たない（冗長なため）。本当のconditions（スロット条件等）だけを表示する。
+function renderPassiveBlock(block, selfObjectName) {
+  var conditionsText = block.conditions ? renderConditionsList(block.conditions, selfObjectName) : null;
   var out = [];
-  if (block.modify) out = out.concat(renderKindTargets(block.modify, "modify(実効値)", gate, selfObjectName));
-  if (block.accumulate) out = out.concat(renderKindTargets(block.accumulate, "accumulate(実体値)", gate, selfObjectName));
+  if (block.modify) out = out.concat(renderKindTargets(block.modify, "modify", conditionsText, selfObjectName));
+  if (block.accumulate) out = out.concat(renderKindTargets(block.accumulate, "accumulate", conditionsText, selfObjectName));
   return out;
 }
 
@@ -541,28 +544,25 @@ function linesToListItems(lines, emptyMessage) {
     "<li class=\"muted\">" + emptyMessage + "</li>";
 }
 
-var INFLUENCE_KIND_LABELS = {
-  modify: "modify(実効値)",
-  accumulate: "accumulate(実体値)",
-  set: "set(:=)",
-  add: "add(+=)",
-};
-
+// stage/eventはsourceLabelに直接続けて書き（例: "world.hour stage:night"）、viaTargetはself（同じ
+// オブジェクト内の話であることが呼び出し側のフィルタからすでに保証されている）以外の場合だけ示す。
+// conditionsが無ければ何も付け足さない（常時であることをわざわざ書かない）。
 function renderInfluenceEntry(entry) {
   var sourceLabel;
   if (entry.sourceProperty) {
     sourceLabel = "<a href=\"#/property/" + encodeURIComponent(entry.fromObject) + "/" + encodeURIComponent(entry.sourceProperty) + "\">" +
       esc(entry.fromObject) + "." + esc(entry.sourceProperty) + "</a>";
-    if (entry.stageName) sourceLabel += "（stage: " + esc(entry.stageName) + "）";
-    if (entry.eventName) sourceLabel += "（" + esc(entry.eventName) + "）";
+    if (entry.stageName) sourceLabel += " stage:" + esc(entry.stageName);
+    if (entry.eventName) sourceLabel += " " + esc(entry.eventName);
   } else {
-    sourceLabel = renderObjectRef(entry.fromObject) + "（オブジェクトレベル）";
+    sourceLabel = renderObjectRef(entry.fromObject);
   }
-  var kindLabel = INFLUENCE_KIND_LABELS[entry.kind] || esc(entry.kind);
+
   var sign = typeof entry.amount === "number" && entry.amount >= 0 ? "+" : "";
-  var gate = entry.conditions ? renderConditionsList(entry.conditions, entry.fromObject) : "(常時)";
-  return sourceLabel + " が [" + esc(entry.viaTarget) + "] を" + kindLabel + " " + sign + esc(entry.amount) +
-    "（条件: " + gate + "）";
+  var viaPrefix = entry.viaTarget !== "self" ? "[" + esc(entry.viaTarget) + "] " : "";
+  var conditionsSuffix = entry.conditions ? " " + renderConditionsList(entry.conditions, entry.fromObject) : "";
+
+  return sourceLabel + " " + viaPrefix + esc(entry.kind) + " " + sign + esc(entry.amount) + conditionsSuffix;
 }
 
 function renderAccepts(list) {
@@ -636,7 +636,7 @@ function renderObjectDetailPage(name) {
 
   var passivesList = [];
   o.passives.forEach(function (block) {
-    passivesList = passivesList.concat(renderPassiveBlock(block, undefined, o.name));
+    passivesList = passivesList.concat(renderPassiveBlock(block, o.name));
   });
 
   var actionNames = Object.keys(o.actions).sort();
@@ -708,10 +708,9 @@ function renderPropertyDetailPage(objName, propName) {
   }
 
   var stagesHtml = (p.stages || []).map(function (s) {
-    var stageGate = "stage=" + esc(s.name);
     var lines = [];
     (s.passives || []).forEach(function (block) {
-      lines = lines.concat(renderPassiveBlock(block, stageGate, o.name));
+      lines = lines.concat(renderPassiveBlock(block, o.name));
     });
     return "<div class=\"card\"><h4>" + esc(s.name) + " " +
       (s.min !== undefined ? "(min: " + esc(s.min) + ")" : "(フォールバック: 他のどの段階にも該当しない場合)") +
@@ -720,7 +719,7 @@ function renderPropertyDetailPage(objName, propName) {
 
   var ownPassives = [];
   (p.passives || []).forEach(function (block) {
-    ownPassives = ownPassives.concat(renderPassiveBlock(block, undefined, o.name));
+    ownPassives = ownPassives.concat(renderPassiveBlock(block, o.name));
   });
 
   var allInfluencers = (DB.influenceIndex && DB.influenceIndex[propName]) || [];
