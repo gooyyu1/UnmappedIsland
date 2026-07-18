@@ -103,6 +103,10 @@
         "on_min": {
           "$ref": "#/$defs/active_def",
           "description": "値がrangeの下限以下である間、毎tick実行されるactive内容（6.5節、旧on_zero）。activeと全く同じactive_defを直接持つ（対象は現時点でselfのみ対応）。on_overflow/on_shortfallとは異なり、既定の自動生成は行われない。rangeを使う場合は必須。"
+        },
+        "on_max": {
+          "$ref": "#/$defs/active_def",
+          "description": "値がrangeの上限以上である間、毎tick実行されるactive内容（6.6節）。on_minの上限側の鏡像。activeと全く同じactive_defを直接持つ（対象は現時点でselfのみ対応）。on_overflow/on_shortfallとは異なり、既定の自動生成は行われない。rangeを使う場合は必須。"
         }
       },
       "additionalProperties": false
@@ -197,7 +201,7 @@
     },
 
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_min（6.5節）・on_overflow/on_shortfall（6.3節）もこの形をそのまま流用する。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_min（6.5節）・on_max（6.6節）・on_overflow/on_shortfall（6.3節）もこの形をそのまま流用する。",
       "type": "object",
       "properties": {
         "set": {

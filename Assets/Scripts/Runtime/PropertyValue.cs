@@ -91,7 +91,7 @@ namespace UnmappedIsland.Runtime
 
         /// <summary>
         /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、その結果自分の値が変わった
-        /// タイミングで、on_overflow・on_shortfall・on_min（6.3節・6.5節）を自分自身で判定・実行する
+        /// タイミングで、on_overflow・on_shortfall・on_min・on_max（6.3節・6.5節・6.6節）を自分自身で判定・実行する
         /// （CheckRangeEvents参照）。ゲームループから1tickにつき1回、WorldObject.Tick経由で
         /// 全プロパティに対して呼ばれる想定。
         /// </summary>
@@ -108,12 +108,12 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_shortfall・on_minの自己判定。いずれもWorldObject.
+        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_shortfall・on_min・on_maxの自己判定。いずれもWorldObject.
         /// ApplyActiveEffect（actions/combinationsと全く同じ適用経路）をそのまま呼ぶだけで、専用の適用
         /// ロジックは一切持たない。
         ///
-        /// 判定順はon_overflow→on_shortfall→on_min。on_overflow/on_shortfallでrangeの境界へ値を戻して
-        /// から、その戻した後の値でon_minの「下限以下か」を判定するため、この順序が必要（例えば
+        /// 判定順はon_overflow→on_shortfall→on_min→on_max。on_overflow/on_shortfallでrangeの境界へ値を戻して
+        /// から、その戻した後の値でon_min/on_maxの「境界以下/以上か」を判定するため、この順序が必要（例えば
         /// on_shortfallが自分をRange.Minへ戻した場合、続くon_minの判定はその戻り値に対して行われる）。
         ///
         /// on_overflow/on_shortfallは、rangeの外側にはみ出していれば、著者が指定した内容（未指定なら
@@ -124,7 +124,8 @@ namespace UnmappedIsland.Runtime
         /// 同じく、宣言順どおりに1回ずつ処理が進む）。
         ///
         /// on_minは、値がrangeの下限以下である間、毎tick著者が指定した内容を実行する（destroyのような
-        /// 「底を突いた」判定に使う）。on_overflow/on_shortfallとは異なり既定の自動生成は行われない
+        /// 「底を突いた」判定に使う）。on_maxは、値がrangeの上限以上である間、毎tick著者が指定した内容を実行する
+        /// （on_minの上限側の鏡像）。on_overflow/on_shortfallとは異なり既定の自動生成は行われない
         /// （nullなら何もしない）。
         /// </summary>
         internal void CheckRangeEvents(PropertyDef def, WorldObject owner, WorldSession session)
@@ -137,6 +138,9 @@ namespace UnmappedIsland.Runtime
 
             if (def.OnMin != null && def.Range.HasValue && AsNumber() <= def.Range.Value.Min)
                 owner.ApplyActiveEffect(def.OnMin, session, actor: null, dragged: null);
+
+            if (def.OnMax != null && def.Range.HasValue && AsNumber() >= def.Range.Value.Max)
+                owner.ApplyActiveEffect(def.OnMax, session, actor: null, dragged: null);
         }
 
         public override string ToString() => Kind == PropertyValueKind.Number ? Number.ToString() : $"symbol:{Symbol}";

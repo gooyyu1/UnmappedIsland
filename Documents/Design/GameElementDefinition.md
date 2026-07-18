@@ -250,6 +250,34 @@ props:
         min: null
 ```
 
+### 6.6 on_max（上限以上である間、毎tick実行される内容）
+
+`on_max` は、プロパティが**`range` の上限以上である間、毎 tick 実行される `active`（9 節）内容**です。`on_min`
+（6.5 節）の上限側の鏡像です。「跨いだ瞬間だけ」を検出する仕組み（前 tick との比較）は持たず、現在値だけで
+判定します。
+
+- `on_min` と同様に、毎 tick 実行されても安全な用途（自己終端する `destroy` や `spawn`＋`destroy` の組み合わせ）
+  が基本形です。`destroy` を伴わずに `spawn` だけを書くと、上限以上である間 tick 毎に生成し続けてしまう点に
+  注意してください。
+- `on_max` の中身は `active`（9 節）と全く同じ型をそのまま持ちますが、対象は現時点で `self` のみに限定されます
+  （未対応: `parent`/`actor`/`dragged`、ロード時にエラー）。`range.max` を参照するため、`range` は `on_max` を
+  使う場合に必須です（`on_overflow`/`on_shortfall`/`on_min` と同じ制約）。
+- `on_overflow`/`on_shortfall`（6.3 節）とは異なり、`on_max` は著者が明示的に書かない限り既定の自動生成は
+  行われません。
+
+```yaml
+props:
+  pressure:
+    value: 0
+    range: {min: 0, max: 100}
+    passive:
+      accumulate:
+        self:
+          pressure: 1
+    on_max:
+      destroy: self
+```
+
 ## 7. slots（親子関係とコンテナ）
 
 ### 7.1 基本構造
