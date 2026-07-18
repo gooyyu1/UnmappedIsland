@@ -13,13 +13,13 @@ object_defs:
     singleton: true
     props:
       # 累積tick数。ゲーム開始からの経過tickをそのまま数え続ける（上限なし）。毎tick自分自身を+1する
-      # （プロパティレベルのpassive、8節）。
+      # （プロパティレベルのpassives、8節。常に配列）。
       tick:
         value: 0
-        passive:
-          accumulate:
-            self:
-              tick: 1
+        passives:
+          - accumulate:
+              self:
+                tick: 1
       # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow）。setで絶対値0へ
       # 戻すのではなく、addで折り返し量・繰り上げ量を一度に加減算する（1tickで複数span分溢れた場合でも
       # 超過分を保持できるため、こちらのほうが堅牢）。1tick=ゲーム内時間15分、という対応づけのため、
@@ -32,10 +32,10 @@ object_defs:
             self:
               minute: -60
               hour: 1
-        passive:
-          accumulate:
-            self:
-              minute: 15
+        passives:
+          - accumulate:
+              self:
+                minute: 15
       # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
       hour:
         value: 0

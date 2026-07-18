@@ -3,7 +3,7 @@
 ## 1. 位置づけ
 
 本ドキュメントは、`WorldCodex`（ゲーム内のあらゆる要素を定義する YAML）の**文法そのもの**を体系的にまとめた、唯一の
-リファレンスです。`traits`・`object_defs`・`props`・`stages`・`slots`・`combinations`・`recipes`・`passive`・`active`・
+リファレンスです。`traits`・`object_defs`・`props`・`stages`・`slots`・`combinations`・`recipes`・`passives`・`active`・
 `modify`・`accumulate`・`add`・`destroy`・`spawn`・`pick`・`actions`・`conditions` など、YAML 上のキーワードの意味と
 書き方はすべてここに集約します。
 
@@ -99,7 +99,7 @@ object_defs:
         value: 7
 ```
 
-`props`（6 節）以外にも、`actions`・`combinations`・`recipes`・`slots`・`passive` を trait 経由でまとめて配布できます。
+`props`（6 節）以外にも、`actions`・`combinations`・`recipes`・`slots`・`passives` を trait 経由でまとめて配布できます。
 `value` を持たないプロパティは、5 節のルール通り空のマッピング（`{}`）として表現します。
 
 ## 6. props（プロパティ）
@@ -189,19 +189,22 @@ props:
 
 ### 6.4 stages（段階）
 
-数値プロパティは `stages` を持つことができ、現在値がどの段階にあるかによって、有効になる `passive`（8 節）が
+数値プロパティは `stages` を持つことができ、現在値がどの段階にあるかによって、有効になる `passives`（8 節）が
 切り替わります。
 
 - 段階の区間定義は **`min`（下限）のみ**を指定します。上限は次の段階の `min` によって自動的に決まります
   （半開区間、`[min, 次のminより手前]`）。この方式により、区間の隙間や重複が構造的に発生しません。
 - 最下段の段階は `min: null`（または省略）とし、それより下の残り全ての値を拾います。
 - 現在値に基づいて常に一意に段階を決定します。ヒステリシス（上昇時・下降時で閾値をずらす仕組み）は採用しません。
-- ステージの `passive` はレベルトリガー（そのステージにいる間ずっと有効）のみです。ステージ切替の瞬間だけ発火する
+- ステージの `passives` はレベルトリガー（そのステージにいる間ずっと有効）のみです。ステージ切替の瞬間だけ発火する
   edge-triggered な仕組み（`on_enter`/`on_exit` 的なもの）は導入していません。「下限に達した瞬間」という実際に
   必要なケースは、専用の `on_min`（6.5 節）で表現します。
-- ステージは専用の `passive:` ラップを挟まず、`when`/`modify`/`accumulate`（8 節）を `name`/`min` と対等な
-  兄弟キーとして直接持ちます。`passive` という語自体は、オブジェクトレベル・プロパティレベルの `passive:`
-  （8 節）では引き続き使いますが、ステージの中では書きません。
+- ステージは `name`/`min` という固有の属性を持つため、ステージ自体を配列の要素にはできません。そのため
+  `passives:` は `name`/`min` と対等な兄弟キーとして、専用にネストしたキーのまま持ちます（オブジェクトレベル・
+  プロパティレベルの `passives:` と同じく常に配列です、8 節）。
+- ステージの `passives` に書いた `when` は無視されます。ステージの発動条件は「現在値がこの段階の区間内にある
+  こと」自体であり、ゲートは常にそれ（`WhenOwnStage`）に固定されるためです（スロット等との組み合わせ条件は
+  現状未対応、17 節）。
 
 ```yaml
 props:
@@ -211,22 +214,24 @@ props:
         min: 0
       - name: mild
         min: 20
-        accumulate:
-          parent:
-            temperature: 1
+        passives:
+          - accumulate:
+              parent:
+                temperature: 1
       - name: feverish
         min: 50
-        accumulate:
-          parent:
-            temperature: 2
-            hydration: -1
+        passives:
+          - accumulate:
+              parent:
+                temperature: 2
+                hydration: -1
 ```
 
 ### 6.5 on_min（下限以下である間、毎tick実行される内容）
 
 `on_min` は、プロパティが**`range` の下限以下である間、毎 tick 実行される `active`（9 節）内容**です（旧称
 `on_zero`。比較対象を固定の 0 ではなく `range.min` へ一般化し、0 以外の下限を持つプロパティにも「底を突いた」
-判定を使えるようにしたものです）。`passive` の `modify`/`accumulate` と同じレベルトリガーの考え方を、
+判定を使えるようにしたものです）。`passives` の `modify`/`accumulate` と同じレベルトリガーの考え方を、
 `set`/`add`/`destroy`/`spawn`（一時的な命令）に適用したものです。「跨いだ瞬間だけ」を検出する仕組み（前 tick
 との比較）は持たず、現在値だけで判定します。
 
@@ -246,10 +251,10 @@ props:
   durability:
     value: 100
     range: {min: 0, max: 100}
-    passive:
-      accumulate:
-        self:
-          durability: -1
+    passives:
+      - accumulate:
+          self:
+            durability: -1
     on_min:
       destroy: self
     stages:
@@ -279,10 +284,10 @@ props:
   pressure:
     value: 0
     range: {min: 0, max: 100}
-    passive:
-      accumulate:
-        self:
-          pressure: 1
+    passives:
+      - accumulate:
+          self:
+            pressure: 1
     on_max:
       destroy: self
 ```
@@ -481,9 +486,9 @@ object_defs:
 ため1番以前を探し、空いている0番までの間（`C`・`A`）を-1して押し出し、`C A D B` になります
 （`C`と`A`の相対順序は変わりません）。
 
-## 8. passive（持続する影響）
+## 8. passives（持続する影響）
 
-`passive` は、`self`/`parent`/`child` の関係とゲート（常時／`when: <スロット名>`／プロパティの stage）に紐づいて
+`passives` は、`self`/`parent`/`child` の関係とゲート（常時／`when: <スロット名>`／プロパティの stage）に紐づいて
 登録され、**その関係が続く限り評価され続ける**、持続する影響を表します。次の 3 つのレベルで定義でき、いずれも
 同一の記法・実行原理を用います。
 
@@ -491,33 +496,37 @@ object_defs:
 2. **プロパティレベル**（例: アイテムの重量プロパティが持ち主の負荷に寄与する）
 3. **プロパティのステージレベル**（6.4 節）
 
+`passives` は常に配列です（`conditions`/`stages`/`accepts`/`pick` と同じ規約で、要素が1つの場合も配列で書きます）。
+配列の各要素が独立した1つのブロック（`when`/`modify`/`accumulate`）で、複数のブロックを並べることで、`when`
+条件ごとに異なる効果を与えられます（8.5 節）。
+
 ### 8.1 文法: 操作が上位、対象が下位
 
-`passive` は、操作（`when`/`modify`/`accumulate`）をキーとする辞書型です。各操作の中に、効果の対象を識別子と
-する対象キーの辞書がぶら下がります。対象キーとして定義するのは `self`（自分自身）・`parent`（親）・`child`
-（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、11 節参照）の 4 つです。
+`passives` の各要素は、操作（`when`/`modify`/`accumulate`）をキーとする辞書型です。各操作の中に、効果の対象を
+識別子とする対象キーの辞書がぶら下がります。対象キーとして定義するのは `self`（自分自身）・`parent`（親）・
+`child`（子）・`actor`（このアクションを実行しているプレイヤーキャラクター、11 節参照）の 4 つです。
 
 ```yaml
 object_defs:
   armor_leather:
     covers: [torso]
     layer: base
-    passive:
-      when:
-        parent: equip
-      modify:
-        parent:
-          defense: 5
-          speed: 3
-          accuracy: 2
+    passives:
+      - when:
+          parent: equip
+        modify:
+          parent:
+            defense: 5
+            speed: 3
+            accuracy: 2
 ```
 
 ### 8.2 when（ゲート）
 
 - `when` は対象キーをキーとする辞書で、`when: {<対象>: <スロット名>}` の形を取ります。そのスロットに入っている
   間、継続的に有効（レベルトリガー）です。
-- ある対象について `when` を書かなければ「常時（無条件）」を意味します。1 つの `passive` の中で、対象ごとに
-  異なる `when` を持たせられます。
+- ある対象について `when` を書かなければ「常時（無条件）」を意味します。1 つのブロック（`passives` の1要素）
+  の中で、対象ごとに異なる `when` を持たせられます。
 
 ### 8.3 modify
 
@@ -531,6 +540,32 @@ object_defs:
 
 条件が真である tick 毎に、対象プロパティの実体値へ直接・**不可逆**に加減算します（例: 出血中の血液量減少、耐久値の
 毎 tick 減少）。`modify` と全く同じ登録・ゲートの仕組みを使い、違いは可逆か不可逆かだけです。
+
+### 8.5 複数ブロック（when の使い分け）
+
+同じ対象（例: `parent`）に対して、状況によって異なる効果を与えたい場合は、`passives` に複数のブロックを並べます。
+典型例は、装備するスロットによってボーナス量を変えたい武器です。
+
+```yaml
+object_defs:
+  sword:
+    passives:
+      - when:
+          parent: main_hand
+        modify:
+          parent:
+            attack: 5
+      - when:
+          parent: off_hand
+        modify:
+          parent:
+            attack: 2
+```
+
+各ブロックは独立して登録・評価されます。同じ対象・同じプロパティに対して複数のブロックが同時に有効になった
+場合（例えば `when` を持たない=常時有効なブロックと、`when` 条件付きのブロックが両方成立する場合）、`modify`
+は 8.3 節の通り単純加算で合成されます。`accumulate` も同様に、有効な全ブロックの量がそれぞれ tick 毎に反映
+されます。
 
 ## 9. active（一時的な命令）
 
@@ -622,7 +657,7 @@ spawn: {object: item_coconut, into: actor}
 ### 9.5 set/add/destroy/spawn が書ける場所
 
 この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `when`/ゲートを持つ
-`passive` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
+`passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
 
 - `actions`/`combinations` の各エントリ（11 節・12 節）— `showMenu`/`conditions`/`with`/`pick` と対等な
   兄弟キー
@@ -633,8 +668,8 @@ spawn: {object: item_coconut, into: actor}
 ## 10. pick（重み付き確率分岐）
 
 `pick` は、`set`/`add`/`destroy`/`spawn`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
-重み付き候補のリストです。新しいトリガー体系は必要とせず、`passive`（無条件／`when`／stage 内）には書けません。
-`passive` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
+重み付き候補のリストです。新しいトリガー体系は必要とせず、`passives`（無条件／`when`／stage 内）には書けません。
+`passives` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
 
 ### 10.1 基本構造
 
@@ -871,7 +906,11 @@ object_defs:
   生じた場合の対応は未検討
 - `day` の上限（無制限のまま加算し続けるか、年単位で wrap して `year` プロパティを持つか）
 - 天候遷移自体（いつ・どの天候に切り替わるか）のランダム性の仕組み（6.2 節）
-- `passive`/`active` の対象キーに `ancestor`/`sibling`/`descendant` を追加するかどうか
+- `passives`/`active` の対象キーに `ancestor`/`sibling`/`descendant` を追加するかどうか
+- ステージの `passives` ブロックで `when`（スロット条件）とステージ自体の条件を組み合わせられるようにするか
+  （例: 「装備している間、かつ耐久値がintactステージの間だけ」のような AND 条件）。現状 `ContributionGate` は
+  単一の種別（`Always`/`WhenSlot`/`WhenOwnStage`）しか持てないため、対応するには複数条件を同時に保持できる
+  形へ拡張する必要がある
 - `pick` の位置づけ（候補に `modify`/`accumulate` を書けないことの扱い）
 - `weight`（10.2 節）の参照記法。`{path: ...}` への統一か、`weight: accuracy` のような裸の名前も許容するか
 - `pick` の候補から「別のアクションを実行する」ための記法（エフェクトから能動的にアクションを発火する仕組み自体が
@@ -880,7 +919,7 @@ object_defs:
 - `path`（14.1 節・10.2 節）の実装範囲: 現状の実装は `<root>.<property>` の1階層のみに対応し、`world` を
   root にした参照（world シングルトンインスタンスの実行時追跡が未実装）は未対応（ロード時エラー）
 - `active`（9 節）の対象キー `child`: 一度きりの命令に対して「どの子か」の意味が確定していないため未対応
-  （ロード時エラー）。passive の child 寄与（8 節、関係とゲートに基づく持続的な登録）とは性質が異なる
+  （ロード時エラー）。passives の child 寄与（8 節、関係とゲートに基づく持続的な登録）とは性質が異なる
 - `conditions`/`weight` の `value: max`/`value: min`（参照先プロパティの range の上限・下限を指す想定と思われる
   記法）は、規約が本書上どこにも明文化されていないため未対応（ロード時エラー）
 - `weight` の合計が0（またはマイナス）になった場合のフォールバック候補の扱いは、宣言順で先頭の候補を選ぶ、と

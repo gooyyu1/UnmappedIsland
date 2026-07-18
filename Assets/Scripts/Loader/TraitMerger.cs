@@ -5,14 +5,15 @@ namespace UnmappedIsland.Loader
 {
     /// <summary>
     /// traits（GameElementDefinition.md 5節、mixin）の解決。1つのobject_defが参照する0個以上のtraitを、
-    /// 自分自身のprops/slots/passive/stack_orderへ合成する。多重継承は禁止（traitは他のtraitを参照できない）
+    /// 自分自身のprops/slots/passives/stack_orderへ合成する。多重継承は禁止（traitは他のtraitを参照できない）
     /// なので、この合成は常に1階層で完結する。
     ///
     /// 合成規則:
     /// - props/slots は識別子をキーとする辞書のため、同名エントリが複数のtraitに存在する場合はエラー
     ///   （5節: 「プロパティ衝突はエラー」）。object_def自身が同名エントリを持つ場合は、フィールド単位で
     ///   上書きする（object_def側で指定した属性だけが上書きされ、残りはtrait側の値を引き継ぐ）。
-    /// - passive は識別子を持たない（対象キーの束）ため、単純に連結する（trait由来→object_def自身の順）。
+    /// - passives は識別子を持たない（when/modify/accumulateブロックの配列）ため、単純に連結する
+    ///   （trait由来→object_def自身の順、各traitの配列要素もそのままフラットに展開する）。
     /// - stack_order は単一の値なので、object_def自身の指定があればそれを優先し、無ければ参照traitのうち
     ///   ちょうど1つが指定している必要がある（複数のtraitが指定していればエラー）。
     /// 未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）: actions/combinations/recipes。
@@ -26,7 +27,7 @@ namespace UnmappedIsland.Loader
             public List<string> TraitNames = new List<string>();
             public YamlMappingNode Props;
             public YamlMappingNode Slots;
-            public YamlMappingNode Passive;
+            public YamlSequenceNode Passives;
             public YamlMappingNode StackOrder;
             public YamlMappingNode Actions;
             public YamlMappingNode Combinations;
@@ -37,7 +38,7 @@ namespace UnmappedIsland.Loader
             public string Name;
             public YamlMappingNode Props;
             public YamlMappingNode Slots;
-            public YamlMappingNode Passive;
+            public YamlSequenceNode Passives;
             public YamlMappingNode StackOrder;
             public YamlMappingNode Actions;
             public YamlMappingNode Combinations;
@@ -53,7 +54,7 @@ namespace UnmappedIsland.Loader
                 IsSingleton = node.TryGetBool("singleton", context, fallback: false),
                 Props = node.TryGetMapping("props", context),
                 Slots = node.TryGetMapping("slots", context),
-                Passive = node.TryGetMapping("passive", context),
+                Passives = node.TryGetSequence("passives", context),
                 StackOrder = node.TryGetMapping("stack_order", context),
                 Actions = node.TryGetMapping("actions", context),
                 Combinations = node.TryGetMapping("combinations", context),
@@ -76,16 +77,17 @@ namespace UnmappedIsland.Loader
                 Name = name,
                 Props = node.TryGetMapping("props", context),
                 Slots = node.TryGetMapping("slots", context),
-                Passive = node.TryGetMapping("passive", context),
+                Passives = node.TryGetSequence("passives", context),
                 StackOrder = node.TryGetMapping("stack_order", context),
                 Actions = node.TryGetMapping("actions", context),
                 Combinations = node.TryGetMapping("combinations", context),
             };
         }
 
-        /// <summary>object_defが参照するtraitを合成し、最終的なprops/slots/passive/stack_order/actions/
-        /// combinationsノードを返す。passiveは合成済みの単一ノードではなく、trait分→自分自身の順で並んだ
-        /// ノードの列として返す（呼び出し側でParsePassiveMapIntoを順番に適用する。合成に識別子のキー衝突
+        /// <summary>object_defが参照するtraitを合成し、最終的なprops/slots/passives/stack_order/actions/
+        /// combinationsノードを返す。passivesは合成済みの単一配列ではなく、trait分→自分自身の順で並んだ
+        /// ブロック（各traitの"passives:"配列の要素、および自分自身の"passives:"配列の要素）の列として
+        /// 返す（呼び出し側でParsePassiveMapIntoを1ブロックずつ順番に適用する。合成に識別子のキー衝突
         /// 検証が不要なため）。</summary>
         public static (
             YamlMappingNode Props, YamlMappingNode Slots, IReadOnlyList<YamlMappingNode> PassiveNodes,
@@ -108,7 +110,9 @@ namespace UnmappedIsland.Loader
                 traitSlots.Add((traitName, trait.Slots));
                 traitActions.Add((traitName, trait.Actions));
                 traitCombinations.Add((traitName, trait.Combinations));
-                if (trait.Passive != null) passiveNodes.Add(trait.Passive);
+                if (trait.Passives != null)
+                    foreach (YamlNode passiveNode in trait.Passives)
+                        passiveNodes.Add((YamlMappingNode)passiveNode);
                 if (trait.StackOrder != null) stackOrderCandidates.Add((traitName, trait.StackOrder));
             }
 
@@ -118,7 +122,9 @@ namespace UnmappedIsland.Loader
             YamlMappingNode mergedCombinations =
                 MergeIdentifierMaps(traitCombinations, entry.Combinations, $"'{entry.Name}'のcombinations");
 
-            if (entry.Passive != null) passiveNodes.Add(entry.Passive);
+            if (entry.Passives != null)
+                foreach (YamlNode passiveNode in entry.Passives)
+                    passiveNodes.Add((YamlMappingNode)passiveNode);
 
             YamlMappingNode stackOrder = entry.StackOrder;
             if (stackOrder == null)

@@ -3,7 +3,7 @@
 ## 概要
 
 本ドキュメントは、YAML文法の唯一のリファレンスである `GameElementDefinition.md`（`traits`/`object_defs`/`props`/
-`slots`/`passive`/`active`/`pick`/`actions`/`combinations`/`recipes` 等の文法をすべて集約したもの）をもとに、
+`slots`/`passives`/`active`/`pick`/`actions`/`combinations`/`recipes` 等の文法をすべて集約したもの）をもとに、
 `WorldCodex` の YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-schema.org/) Draft 2020-12、
 `WorldCodex.schema.json`）を作成した結果をまとめたものです。個別の世界描写（`ClimateSystem.md`・`RecipeSystem.md`・
 `ContainerSystem.md`・`ActionSystem.md`・`TerrainGeneration.md`）の内容そのものはスキーマの対象外で、それらが使う
@@ -19,13 +19,14 @@
 - **スキーマ自体の妥当性**: `jsonschema` ライブラリの `Draft202012Validator.check_schema` により、Draft 2020-12として
   構文的に正しいスキーマであることを確認
 - **既存サンプルの受理**: 各ドキュメントに掲載されている実際のYAMLサンプル（`eat`/`move` アクション、`world` シングルトン、
-  防具・耐久値（`passive`の`accumulate`＋`on_min`の`destroy`）・細菌感染、`traits`、`combinations` の `chop`
+  防具・耐久値（`passives`の`accumulate`＋`on_min`の`destroy`）・細菌感染、`traits`、`combinations` の `chop`
   （`spawn`＋`destroy`）、`pick` を使った攻撃・生水・探索、レシピ、`slots` の `accepts`/`capacity`/`weight_rate`）を
   抽出し、すべてスキーマを満たすことを確認
 - **不正な記述の拒否**: `set`/`add`/`destroy`/`spawn` と `pick` を同時に指定する、identifier の命名規則に反する
-  キーを使う、未定義の比較演算子を使う、`passive`/`set`/`add` に未定義の対象キー（`sibling` など）を使う、
-  `combinations` に `with` を書き忘れる、廃止済みの `active:`/`lifecycle` 入れ子を使う、pick候補が
-  `set`/`add`/`destroy`/`spawn` と `pick` を同時に持つ、といった誤った記述が、想定通り拒否されることを確認
+  キーを使う、未定義の比較演算子を使う、`passives`/`set`/`add` に未定義の対象キー（`sibling` など）を使う、
+  `combinations` に `with` を書き忘れる、廃止済みの `active:`/`lifecycle` 入れ子を使う、`passives` を配列でなく
+  単一マッピングで書く、pick候補が `set`/`add`/`destroy`/`spawn` と `pick` を同時に持つ、といった誤った記述が、
+  想定通り拒否されることを確認
 
 ## 2. スキーマの範囲
 
@@ -34,8 +35,9 @@
 - ルート構造（`object_defs`/`traits`、専用ルートキーなし）
 - `object_defs`/`traits`（3〜5節）
 - `props`（固定値・範囲値・overflow/shortfall・stages・`on_min`・`on_max`、6節）
-- `passive`（`when`/`modify`/`accumulate`を上位、対象を下位に持つ辞書、8節。オブジェクトレベル・プロパティ
-  レベルの`passive:`キー。stage内は専用ラップを挟まず`name`/`min`と対等な兄弟キーとして直接持つ、6.4節）
+- `passives`（`when`/`modify`/`accumulate`を上位、対象を下位に持つ辞書の配列、8節。常に配列で単一マッピングでの
+  省略記法はなし。オブジェクトレベル・プロパティレベルの`passives:`キー。stage内も`name`/`min`と並ぶ兄弟キーとして
+  同じ`passives:`（配列）を持つ、6.4節）
 - `active`（`set`/`add`/`destroy`/`spawn`を上位、対象を下位に持つ辞書、9節。専用のYAMLキーは持たず、
   actions/combinations/pickの各エントリへ他の兄弟キーと対等に直接展開する）
 - `pick`（重み付き確率分岐、`set`/`add`/`destroy`/`spawn`の代替キー、10節）

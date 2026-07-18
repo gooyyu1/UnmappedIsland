@@ -7,11 +7,11 @@ using YamlDotNet.RepresentationModel;
 namespace UnmappedIsland.Loader
 {
     /// <summary>
-    /// 既にtrait解決済み（TraitMerger参照）の props/slots/passive/stack_order ノードから、
+    /// 既にtrait解決済み（TraitMerger参照）の props/slots/passives/stack_order ノードから、
     /// ObjectDefBlueprintを組み立てる。GameElementDefinition.md 6〜7節・7.6節に対応する。
     ///
     /// 未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）:
-    /// traits/actions/combinations/recipes/covers/layer、passiveのactor対象、on_min/on_max/on_overflow/on_shortfall
+    /// traits/actions/combinations/recipes/covers/layer、passivesのactor対象、on_min/on_max/on_overflow/on_shortfall
     /// のself以外の対象。
     /// </summary>
     internal static class ObjectDefYamlConverter
@@ -113,17 +113,21 @@ namespace UnmappedIsland.Loader
                     int? min = stageMap.TryGetInt("min", context);
                     bp.Stages.Add(new StageBlueprint { Name = stageName, Min = min });
 
-                    // stageは専用の"passive"ラップを挟まず、when/modify/accumulateをname/minと対等な
-                    // 兄弟キーとして直接持つ。何も無いstage(name/minのみ)でも安全にno-opする。
-                    ParsePassiveMapInto(owner.Contributions, objectDefName, stageMap,
-                        forcedGate: ContributionGateKind.WhenOwnStage, forcedStageProperty: propName, forcedStageName: stageName,
-                        reservedKeys: StageReservedKeys);
+                    // stage自身がname/minという固有の属性を持つため配列にできず、passivesは専用の
+                    // ネストしたキーのまま持つ（when違いの複数ブロックを書けるようにするため常に配列）。
+                    YamlSequenceNode stagePassives = stageMap.TryGetSequence("passives", context);
+                    if (stagePassives != null)
+                        foreach (YamlNode passiveNode in stagePassives)
+                            ParsePassiveMapInto(owner.Contributions, objectDefName, (YamlMappingNode)passiveNode,
+                                forcedGate: ContributionGateKind.WhenOwnStage, forcedStageProperty: propName, forcedStageName: stageName);
                 }
             }
 
-            YamlMappingNode propPassive = node.TryGetMapping("passive", context);
-            if (propPassive != null)
-                ParsePassiveMapInto(owner.Contributions, objectDefName, propPassive, forcedGate: null, forcedStageProperty: null, forcedStageName: null);
+            YamlSequenceNode propPassives = node.TryGetSequence("passives", context);
+            if (propPassives != null)
+                foreach (YamlNode passiveNode in propPassives)
+                    ParsePassiveMapInto(owner.Contributions, objectDefName, (YamlMappingNode)passiveNode,
+                        forcedGate: null, forcedStageProperty: null, forcedStageName: null);
 
             YamlMappingNode onMin = node.TryGetMapping("on_min", context);
             if (onMin != null)
@@ -526,24 +530,20 @@ namespace UnmappedIsland.Loader
             return bp;
         }
 
-        /// <summary>stageエントリが持つ、when/modify/accumulate以外の兄弟キー（name/min）。</summary>
-        private static readonly string[] StageReservedKeys = { "name", "min" };
-
         /// <summary>
-        /// passive_map（self/parent/child、actorは未対応のためスキップ）を読み、ContributionBlueprintへ
-        /// 変換してoutputへ追加する。forcedGateがWhenOwnStageの場合、各対象の"when"は無視し
+        /// passivesの1ブロック（self/parent/child、actorは未対応のためスキップ）を読み、ContributionBlueprint
+        /// へ変換してoutputへ追加する。forcedGateがWhenOwnStageの場合、各対象の"when"は無視し
         /// （1つのContributionは単一のゲート種別しか表現できないため）、常にそのステージのゲートを使う。
         ///
-        /// stage内では専用の"passive"ラップを挟まず、passiveMapとしてstageエントリ自身（name/minを
-        /// 含む）が渡されるため、reservedKeysでそれらを未知キー判定から除外する。オブジェクトレベル・
-        /// プロパティレベルの"passive:"はこれまで通り専用ラップを持つため、reservedKeysは不要（null）。
+        /// オブジェクトレベル・プロパティレベル・stage内のいずれも、"passives:"は常に配列であり、
+        /// この関数はその配列の1要素（when/modify/accumulateのみを持つ、他のキーとは同居しない独立した
+        /// マッピング）に対して呼ばれる。
         /// </summary>
         private static void ParsePassiveMapInto(
             List<ContributionBlueprint> output, string objectDefName, YamlMappingNode passiveMap,
-            ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName,
-            IReadOnlyCollection<string> reservedKeys = null)
+            ContributionGateKind? forcedGate, string forcedStageProperty, string forcedStageName)
         {
-            string context = $"'{objectDefName}'.passive";
+            string context = $"'{objectDefName}'.passives";
 
             var whenByTarget = new Dictionary<string, string>();
             YamlMappingNode whenMap = passiveMap.TryGetMapping("when", context);
@@ -559,7 +559,6 @@ namespace UnmappedIsland.Loader
                 whenByTarget, forcedGate, forcedStageProperty, forcedStageName);
 
             var knownKeys = new HashSet<string> { "when", "modify", "accumulate" };
-            if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
 
             var unknownKeys = passiveMap.EntriesInOrder().Select(e => e.Key)
                 .Where(k => !knownKeys.Contains(k)).ToList();

@@ -279,9 +279,10 @@ object_defs:
         stages:
           - name: lit
             min: 1
-            modify:
-              child:
-                warmth: 5
+            passives:
+              - modify:
+                  child:
+                    warmth: 5
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
@@ -290,6 +291,65 @@ object_defs:
 
             Assert.That(contribution.Target, Is.EqualTo(ContributionTarget.Child));
             Assert.That(contribution.Gate.Kind, Is.EqualTo(ContributionGateKind.WhenOwnStage));
+        }
+
+        [Test]
+        public void LoadFromGroups_PassivesIsAlwaysAnArray_RejectsMappingForm()
+        {
+            const string yaml = @"
+object_defs:
+  torch:
+    props:
+      fuel:
+        value: 10
+        passives:
+          accumulate:
+            self:
+              fuel: -1
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("配列"));
+        }
+
+        [Test]
+        public void LoadFromGroups_MultiplePassivesBlocks_EachWithDifferentWhen_YieldDifferentGatedContributions()
+        {
+            // passivesを配列にした動機そのもの: 同じ対象(parent)に対して、装備するスロットごとに
+            // 異なるmodify量を与えたい場合、when違いの複数ブロックが必要になる。
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      attack:
+        value: 10
+    slots:
+      main_hand: {}
+      off_hand: {}
+  sword:
+    passives:
+      - when: {parent: main_hand}
+        modify:
+          parent:
+            attack: 5
+      - when: {parent: off_hand}
+        modify:
+          parent:
+            attack: 2
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            int attackId = codex.PropertyNames.GetId("attack");
+            int mainHandId = codex.SlotNames.GetId("main_hand");
+            int offHandId = codex.SlotNames.GetId("off_hand");
+
+            var session = new WorldSession(codex);
+            var characterInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")));
+            var swordInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("sword")));
+
+            Assert.That(session.Containment.TryMoveToSlot(swordInstance, characterInstance, mainHandId, out _), Is.True);
+            Assert.That(characterInstance.GetEffectiveValue(attackId), Is.EqualTo(15), "main_handでは+5");
+
+            Assert.That(session.Containment.TryMoveToSlot(swordInstance, characterInstance, offHandId, out _), Is.True);
+            Assert.That(characterInstance.GetEffectiveValue(attackId), Is.EqualTo(12), "off_handへ持ち替えると+2に切り替わる");
         }
 
         [Test]
