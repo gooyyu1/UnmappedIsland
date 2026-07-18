@@ -42,12 +42,15 @@ object_defs:
               hour: 1
       # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
       #
-      # 曇りの日を想定した、時間帯によるtemperatureの補正をstages（6.4節）+passives（8節、modify）で表現する。
-      # 日光による影響（晴天時の日中の底上げ等）は別途ClimateSystem.mdで検討するため、ここでは含めない。
-      # 補正は3段階のみ（朝・夕方は補正なし、夜はやや涼しい、昼はやや暑い）。夜は0時をまたぐため、
+      # 曇りの日を想定した、時間帯によるtemperatureの補正と、sunlightへの「時間帯による最低限の寄与」を
+      # stages（6.4節）+passives（8節、modify）で表現する。sunlightのもう一方の寄与（晴れているほど
+      # 追加で明るくなる分）はweather側のpassiveが担う（weather参照）。両者はどちらもmodifyのため、
+      # 加算的に重なってsunlightの実効値が決まる。
+      # 気温の補正は3段階のみ（朝・夕方は補正なし、夜はやや涼しい、昼はやや暑い）。sunlightへの寄与は
+      # 夜が0（passiveなし）、朝・夕方が最低限、昼がより強い、という3段階。夜は0時をまたぐため、
       # 最初の段階（min省略のフォールバック、22-23時と0-5時の両方に該当）と最後の段階の2つのYAMLエントリで
-      # 表現するが、内容（−3）は同じで、概念上は1つの「夜」段階として扱う。時間帯の区切り（6/10/18/22時）・
-      # 補正量（±3）はいずれも仮の値であり、バランス調整により変わりうる。
+      # 表現するが、内容は同じで、概念上は1つの「夜」段階として扱う。時間帯の区切り（6/10/18/22時）・
+      # 各補正量はいずれも仮の値であり、バランス調整により変わりうる。
       hour:
         value: 0
         range: {min: 0, max: 23}
@@ -57,22 +60,33 @@ object_defs:
               hour: -24
               day: 1
         stages:
-          - name: night          # 0-5時（フォールバック）・22-23時（night_late）
+          - name: night          # 0-5時（フォールバック）・22-23時（night_late）: sunlightへの寄与なし
             passives:
               - modify:
                   self:
                     temperature: -3
-          - name: morning        # 6-9時: 補正なし
+          - name: morning        # 6-9時: 気温は補正なし。sunlightへ最低限の寄与
             min: 6
-          - name: day            # 10-17時: やや暑い
+            passives:
+              - modify:
+                  self:
+                    sunlight: 2
+          - name: day            # 10-17時: やや暑い。sunlightへより強い寄与
             min: 10
             passives:
               - modify:
                   self:
                     temperature: 3
-          - name: evening        # 18-21時: 補正なし
+              - modify:
+                  self:
+                    sunlight: 5
+          - name: evening        # 18-21時: 気温は補正なし。朝と同じsunlightへの寄与
             min: 18
-          - name: night_late     # 22-23時: 夜と同じ補正
+            passives:
+              - modify:
+                  self:
+                    sunlight: 2
+          - name: night_late     # 22-23時: 夜と同じ（気温補正のみ、sunlightへの寄与なし）
             min: 22
             passives:
               - modify:
@@ -83,101 +97,42 @@ object_defs:
         value: 1
       # 現在の天気（0=晴れ, 1=曇り, 2=小雨, 3=大雨）。晴れ→曇り→雨という遷移の仕組み自体は
       # ClimateSystem.mdで別途検討するため、ここでは値を保持するだけ（初期値は晴れ）。
+      #
+      # sunlightへ「晴れているほど追加で明るくなる」寄与をmodifyで与える（もう一方、hourの「時間帯による
+      # 最低限の寄与」はhour参照）。この寄与は昼夜を問わず一律ではなく、夜（hourが0-5時・22-23時）である
+      # 間はconditions（14節）で無効化する: 晴れていても夜であれば日差しは強くないため、weatherの寄与を
+      # ゼロにし、その時間はhour側の最低限の寄与（0）だけがsunlightに残る。大雨（3）はconditionsを持たず、
+      # 常に寄与なし（晴れの追加ボーナスが無いだけで、hour側の最低限の寄与は昼夜通してそのまま残る）。
+      # 数値はいずれも仮の値。
       weather:
-        value: 0
-      # 太陽光の強さ。weatherとhourの組み合わせで決まる、都度導出される実効値（modify、8.3節）。
-      # 夜（0-5時・22-23時）はweatherによらず常に0（passiveを持たない=baseのvalue:0のまま）。
-      # 朝・夕方（6-9時・18-21時）・昼（10-17時）はそれぞれ、晴れているほど・昼に近いほど大きくなるよう
-      # weather・hour両方の条件（conditions、14節、暗黙のall）で細かく分岐する。hourの`stages`
-      # （WhenOwnStageゲート）は1つの軸(hour自身)にしか使えずweatherと同時に判定できないため、
-      # ここではstagesではなくconditionsでhourの生値を直接比較する。数値・区切りはいずれも仮の値。
-      sunlight:
         value: 0
         passives:
           - conditions:
               - {prop: weather, op: eq, value: 0}
-              - {prop: hour, op: gte, value: 10}
-              - {prop: hour, op: lt, value: 18}
-            modify:
-              self:
-                sunlight: 10
-          - conditions:
-              - {prop: weather, op: eq, value: 1}
-              - {prop: hour, op: gte, value: 10}
-              - {prop: hour, op: lt, value: 18}
-            modify:
-              self:
-                sunlight: 6
-          - conditions:
-              - {prop: weather, op: eq, value: 2}
-              - {prop: hour, op: gte, value: 10}
-              - {prop: hour, op: lt, value: 18}
-            modify:
-              self:
-                sunlight: 3
-          - conditions:
-              - {prop: weather, op: eq, value: 3}
-              - {prop: hour, op: gte, value: 10}
-              - {prop: hour, op: lt, value: 18}
-            modify:
-              self:
-                sunlight: 1
-          - conditions:
-              - {prop: weather, op: eq, value: 0}
               - {prop: hour, op: gte, value: 6}
-              - {prop: hour, op: lt, value: 10}
-            modify:
-              self:
-                sunlight: 5
-          - conditions:
-              - {prop: weather, op: eq, value: 1}
-              - {prop: hour, op: gte, value: 6}
-              - {prop: hour, op: lt, value: 10}
-            modify:
-              self:
-                sunlight: 3
-          - conditions:
-              - {prop: weather, op: eq, value: 2}
-              - {prop: hour, op: gte, value: 6}
-              - {prop: hour, op: lt, value: 10}
-            modify:
-              self:
-                sunlight: 1
-          - conditions:
-              - {prop: weather, op: eq, value: 3}
-              - {prop: hour, op: gte, value: 6}
-              - {prop: hour, op: lt, value: 10}
-            modify:
-              self:
-                sunlight: 0
-          - conditions:
-              - {prop: weather, op: eq, value: 0}
-              - {prop: hour, op: gte, value: 18}
               - {prop: hour, op: lt, value: 22}
             modify:
               self:
                 sunlight: 5
           - conditions:
               - {prop: weather, op: eq, value: 1}
-              - {prop: hour, op: gte, value: 18}
+              - {prop: hour, op: gte, value: 6}
               - {prop: hour, op: lt, value: 22}
             modify:
               self:
-                sunlight: 3
+                sunlight: 2
           - conditions:
               - {prop: weather, op: eq, value: 2}
-              - {prop: hour, op: gte, value: 18}
+              - {prop: hour, op: gte, value: 6}
               - {prop: hour, op: lt, value: 22}
             modify:
               self:
                 sunlight: 1
-          - conditions:
-              - {prop: weather, op: eq, value: 3}
-              - {prop: hour, op: gte, value: 18}
-              - {prop: hour, op: lt, value: 22}
-            modify:
-              self:
-                sunlight: 0
+      # 太陽光の強さ。hour（時間帯による最低限の寄与）とweather（晴れているほど追加で明るくなる寄与）、
+      # 両方のmodifyが加算的に重なって決まる、都度導出される実効値（8.3節）。base自体は0で、寄与を
+      # 一切受けない時間帯（夜）は0のままになる。
+      sunlight:
+        value: 0
       # 現在の気温。具体的な変動の仕組み（季節・天候由来のレート等）はClimateSystem.mdで別途検討する。
       temperature:
         value: 20

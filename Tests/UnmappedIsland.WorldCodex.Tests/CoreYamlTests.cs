@@ -168,20 +168,23 @@ namespace UnmappedIsland.Codex.Tests
                 Assert.That(worldInstance.GetEffectiveValue(sunlightId), Is.EqualTo(expectedEffective), because);
             }
 
-            // 夜はweatherによらず常に0
+            // 夜: hour側の最低限の寄与が0であり、weather側の追加ボーナスもconditionsで無効化されるため、
+            // weatherによらず常に0（晴れていても夜であれば日差しは強くない、という設計意図）
             AssertSunlightAt(weather: 0, hour: 2, expectedEffective: 0, "晴れの深夜でも0");
             AssertSunlightAt(weather: 3, hour: 23, expectedEffective: 0, "大雨の夜は0");
 
-            // 昼(10-17時): 晴れているほど強い
-            AssertSunlightAt(weather: 0, hour: 12, expectedEffective: 10, "晴れた昼が最大");
-            AssertSunlightAt(weather: 1, hour: 12, expectedEffective: 6, "曇りの昼");
-            AssertSunlightAt(weather: 2, hour: 12, expectedEffective: 3, "小雨の昼");
-            AssertSunlightAt(weather: 3, hour: 12, expectedEffective: 1, "大雨の昼でもわずかに残る");
+            // 昼(10-17時): hour側の最低限の寄与(5)に、weather側の追加ボーナスが加算される
+            AssertSunlightAt(weather: 0, hour: 12, expectedEffective: 10, "晴れた昼はhour(5)+weather(5)で最大");
+            AssertSunlightAt(weather: 1, hour: 12, expectedEffective: 7, "曇りの昼はhour(5)+weather(2)");
+            AssertSunlightAt(weather: 2, hour: 12, expectedEffective: 6, "小雨の昼はhour(5)+weather(1)");
+            AssertSunlightAt(weather: 3, hour: 12, expectedEffective: 5,
+                "大雨の昼はweatherの追加ボーナスがなくhour(5)の最低限の寄与のみ");
 
-            // 朝(6-9時)・夕方(18-21時)は昼より弱いが同じ強さ
-            AssertSunlightAt(weather: 0, hour: 7, expectedEffective: 5, "晴れの朝は昼より弱い");
-            AssertSunlightAt(weather: 0, hour: 20, expectedEffective: 5, "晴れの夕方は朝と同じ強さ");
-            AssertSunlightAt(weather: 3, hour: 8, expectedEffective: 0, "大雨の朝は0");
+            // 朝(6-9時)・夕方(18-21時): hour側の最低限の寄与(2)は昼より弱いが、weather側のボーナスは昼と同じ
+            AssertSunlightAt(weather: 0, hour: 7, expectedEffective: 7, "晴れの朝はhour(2)+weather(5)");
+            AssertSunlightAt(weather: 0, hour: 20, expectedEffective: 7, "晴れの夕方は朝と同じ強さ");
+            AssertSunlightAt(weather: 3, hour: 8, expectedEffective: 2,
+                "大雨の朝でもhour側の最低限の寄与(2)は残る（雨でも昼は夜より明るいはず、という設計意図）");
         }
 
         [Test]
