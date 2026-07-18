@@ -52,7 +52,6 @@ namespace UnmappedIsland.Codex.Tests
 
             Assert.That(PropOf(world, "tick").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "minutes_per_tick").DefaultValue.AsNumber(), Is.EqualTo(15));
-            Assert.That(PropOf(world, "minute_of_tick").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "minute").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "hour").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "day").DefaultValue.AsNumber(), Is.EqualTo(1));
@@ -76,11 +75,11 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void World_TickAndMinute_AdvanceViaWorldClock()
+        public void World_Tick_AccumulatesPerTick_MinuteDoesNot()
         {
-            // minuteはtick駆動のpassivesを持たず、WorldClock（ゲーム側）がminute_of_tickと合わせて
-            // 直接進める（GameTime.WorldClockTests参照）。core.yaml単体では、Tick()を直接呼んでも
-            // minuteは変化しないことだけをここで確認する。
+            // minuteはtick駆動のpassivesを持たない。「1tick進める」たびにminutes_per_tick分だけ加算する
+            // 処理自体をWorldClock（ゲーム側）が担うため（GameTime.WorldClockTests参照）、core.yaml単体で
+            // Tick()を直接呼んでもminuteは変化しないことをここで確認する。
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int tickId = codex.PropertyNames.GetId("tick");
             int minuteId = codex.PropertyNames.GetId("minute");

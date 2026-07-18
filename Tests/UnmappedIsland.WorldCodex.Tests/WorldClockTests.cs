@@ -11,6 +11,9 @@ namespace UnmappedIsland.Codex.Tests
     /// 自動テスト。YAMLパーサは対象外で、ObjectDefBlueprintを直接組み立てて検証する
     /// （ContributionTests.csと同じ方針）。プロパティ名の解決はRuntime.Views.Worldに委ね、WorldClock自体は
     /// 文字列のプロパティ名を一切知らない（テスト側の確認もWorld越しに行う）。
+    ///
+    /// minuteはtick駆動のaccumulateを持たない（YAML側の自動加算とWorldClockの加算が二重にならないように
+    /// するため）。minuteへの加算はすべてWorldClockが、常にminutes_per_tick以下の小さな量ずつ行う。
     /// </summary>
     [TestFixture]
     public class WorldClockTests
@@ -20,7 +23,6 @@ namespace UnmappedIsland.Codex.Tests
             var world = new ObjectDefBlueprint { Name = "world", IsSingleton = true };
             world.Properties.Add(new PropertyBlueprint { Name = "tick", DefaultValue = PropertyValue.FromNumber(0) });
             world.Properties.Add(new PropertyBlueprint { Name = "minutes_per_tick", DefaultValue = PropertyValue.FromNumber(minutesPerTick) });
-            world.Properties.Add(new PropertyBlueprint { Name = "minute_of_tick", DefaultValue = PropertyValue.FromNumber(0) });
             world.Properties.Add(new PropertyBlueprint
             {
                 Name = "minute",
@@ -57,23 +59,23 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void Advance_WithinSameTick_OnlyUpdatesMinuteAndMinuteOfTick()
+        public void Advance_WithinSameTick_OnlyAddsAmountWithoutFiringTick()
         {
             var (codex, world) = BuildWorld();
             var session = new WorldSession(codex);
+            int tickId = codex.PropertyNames.GetId("tick");
 
             WorldClock.Advance(world, session, 5);
 
-            Assert.That(world.Minute, Is.EqualTo(5));
-            Assert.That(world.MinuteOfTick, Is.EqualTo(5));
-            Assert.That(world.Instance.GetNumber(codex.PropertyNames.GetId("tick")), Is.EqualTo(0), "15分未満はまだtickを跨がない");
+            Assert.That(world.Minute, Is.EqualTo(5), "15分未満はTickを跨がず、そのまま加算される");
+            Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(0));
         }
 
         [Test]
-        public void Advance_CrossingTickBoundary_FiresExactlyOneTickAndWrapsMinuteOfTick()
+        public void Advance_CrossingTickBoundary_FiresExactlyOneTickAndEndsAtCorrectMinute()
         {
-            // ユーザー提示の具体例: minute_of_tickが5の状態で20分進めると、Tickが1回実行され、
-            // minute_of_tickは10になる。
+            // ユーザー提示の具体例: tick内経過分(minute % minutes_per_tick)が5の状態で20分進めると、
+            // Tickが1回実行され、tick内経過分は10になる。
             var (codex, world) = BuildWorld();
             var session = new WorldSession(codex);
             int tickId = codex.PropertyNames.GetId("tick");
@@ -81,9 +83,26 @@ namespace UnmappedIsland.Codex.Tests
             WorldClock.Advance(world, session, 5);
             WorldClock.Advance(world, session, 20);
 
-            Assert.That(world.MinuteOfTick, Is.EqualTo(10));
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1), "5+20=25分 -> 15分境界を1回だけ跨ぐ");
             Assert.That(world.Minute, Is.EqualTo(25), "minuteはtickの回数によらずamountの合計をそのまま反映する");
+            Assert.That(world.Minute % world.MinutesPerTick, Is.EqualTo(10), "tick内経過分は10になる");
+        }
+
+        [Test]
+        public void Advance_AccumulatesAcrossCallsEvenWhenEachAmountIsSmallerThanOneTick()
+        {
+            // 1回あたりの呼び出しがminutes_per_tick未満でも、複数回の呼び出しの累積で境界を跨いだことを
+            // 正しく検知できる（tick内経過分をminuteから毎回読み直しているため）。
+            var (codex, world) = BuildWorld();
+            var session = new WorldSession(codex);
+            int tickId = codex.PropertyNames.GetId("tick");
+
+            WorldClock.Advance(world, session, 10); // tick内経過分は10、まだ境界に届かない
+            WorldClock.Advance(world, session, 10); // 10+10=20分 -> 15を1回跨ぐ
+
+            Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1));
+            Assert.That(world.Minute, Is.EqualTo(20));
+            Assert.That(world.Minute % world.MinutesPerTick, Is.EqualTo(5));
         }
 
         [Test]
@@ -101,7 +120,6 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(world.Minute, Is.EqualTo(0));
             Assert.That(world.Hour, Is.EqualTo(1));
             Assert.That(world.Instance.GetNumber(dayId), Is.EqualTo(2));
-            Assert.That(world.MinuteOfTick, Is.EqualTo(0));
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(60 * 25 / minutesPerTick));
         }
 
@@ -117,7 +135,7 @@ namespace UnmappedIsland.Codex.Tests
             WorldClock.Advance(world, session, 25);
 
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1), "minutes_per_tickが20なら25分で1tick跨ぐ");
-            Assert.That(world.MinuteOfTick, Is.EqualTo(5));
+            Assert.That(world.Minute % world.MinutesPerTick, Is.EqualTo(5));
         }
     }
 }

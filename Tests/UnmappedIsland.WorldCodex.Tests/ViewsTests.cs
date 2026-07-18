@@ -24,7 +24,6 @@ namespace UnmappedIsland.Codex.Tests
             worldDef.Properties.Add(Prop("day", 3));
             worldDef.Properties.Add(Prop("hour", 8));
             worldDef.Properties.Add(Prop("minute", 30));
-            worldDef.Properties.Add(Prop("minute_of_tick", 0));
             worldDef.Properties.Add(Prop("minutes_per_tick", 15));
 
             var codex = WorldCodexBuilder.Build(new[] { worldDef });
@@ -45,7 +44,6 @@ namespace UnmappedIsland.Codex.Tests
             worldDef.Properties.Add(Prop("day", 3));
             worldDef.Properties.Add(Prop("hour", 8));
             worldDef.Properties.Add(Prop("minute", 30));
-            worldDef.Properties.Add(Prop("minute_of_tick", 0));
             worldDef.Properties.Add(Prop("minutes_per_tick", 15));
             worldDef.Contributions.Add(new ContributionBlueprint
             {
