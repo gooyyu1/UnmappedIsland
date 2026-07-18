@@ -23,6 +23,12 @@ namespace UnmappedIsland.Runtime
         private readonly PropertyValue[] properties;
         private readonly Slot[] slots;
 
+        /// <summary>Target=AncestorのpassiveごとにDeclarer(=this)が現在どの祖先へ登録済みかを憶える
+        /// （再解決時、古い登録先が分からないと解除できないため。RefreshOwnAncestorTargetedPassives参照）。
+        /// キーは常にDef.Passivesの要素そのもの（ObjectDefごとに共有される同一インスタンス）。値は
+        /// 見つからなかった場合null。</summary>
+        private readonly Dictionary<PassiveEffect, WorldObject> ancestorRegistrations = new Dictionary<PassiveEffect, WorldObject>();
+
         /// <summary>所属先（7.1節）。子は必ず1つの親に属する。ルート（未格納）なら null。</summary>
         public WorldObject Parent { get; private set; }
 
@@ -170,6 +176,7 @@ namespace UnmappedIsland.Runtime
             SetParent(newParent, localSlot);
             newParent.PropagateWeightChange(localSlot, GetNumber(wellKnown.WeightId), wellKnown);
             RegisterEdgeWith(newParent);
+            RefreshAncestorTargetedPassivesRecursively();
 
             error = null;
             return true;
@@ -193,6 +200,7 @@ namespace UnmappedIsland.Runtime
             oldParent.PropagateWeightChange(oldParentSlotLocalId, -GetNumber(wellKnown.WeightId), wellKnown);
             UnregisterEdgeWith(oldParent);
             SetParent(null, LocalIndexMap.Missing);
+            RefreshAncestorTargetedPassivesRecursively();
         }
 
         /// <summary>
@@ -265,6 +273,68 @@ namespace UnmappedIsland.Runtime
                 if (local == LocalIndexMap.Missing) continue;
                 UnregisterPassiveEffectsFrom(parent, local);
             }
+        }
+
+        /// <summary>
+        /// 自分の直接の親から遡り、指定したグローバルプロパティIDを定義している最初の祖先を探す
+        /// （inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、唯一の祖先探索ロジック）。
+        /// 見つからなければnull。すべてのオブジェクトは必ずworldを根とするツリーに属し、循環はしないため、
+        /// このループは木の深さに収まる（GameElementDefinition.md 7.1節）。
+        /// </summary>
+        internal WorldObject FindAncestorWithProperty(int propertyGlobalId)
+        {
+            WorldObject current = Parent;
+            while (current != null)
+            {
+                if (current.Def.PropertyLayout.ToLocal(propertyGlobalId) != LocalIndexMap.Missing)
+                    return current;
+                current = current.Parent;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Target=Ancestorのpassivesを、自分自身についてのみ再解決・再登録する。既存の登録先
+        /// （ancestorRegistrationsに憶えている、前回FindAncestorWithPropertyが返した祖先）から
+        /// まず解除し、現在の親チェーンで改めて探索し直して登録する。祖先が見つからない場合は
+        /// 登録なし（この効果は何もしない）。
+        /// </summary>
+        private void RefreshOwnAncestorTargetedPassives()
+        {
+            foreach (var c in Def.Passives)
+            {
+                if (c.Target != PassiveEffectTarget.Ancestor) continue;
+
+                if (ancestorRegistrations.TryGetValue(c, out WorldObject previous) && previous != null)
+                {
+                    int prevLocal = previous.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                    if (prevLocal != LocalIndexMap.Missing)
+                        previous.UnregisterPassiveEffectsFrom(this, prevLocal);
+                }
+
+                WorldObject ancestor = FindAncestorWithProperty(c.TargetPropertyGlobalId);
+                if (ancestor != null)
+                {
+                    int local = ancestor.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                    ancestor.RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
+                }
+
+                ancestorRegistrations[c] = ancestor;
+            }
+        }
+
+        /// <summary>
+        /// 自分自身の直接の親が変わった（MoveToSlot/Destroy）際に呼ぶ。自分の祖先チェーンが変わるのは
+        /// 自分自身だけでなく、自分の子孫全員にとっても同じである（子孫からのAncestor探索は自分を
+        /// 通過してさらに上へ続きうるため）。そのため、自分自身と、すべての子孫について、Target=Ancestor
+        /// のpassivesを再解決・再登録する。
+        /// </summary>
+        private void RefreshAncestorTargetedPassivesRecursively()
+        {
+            RefreshOwnAncestorTargetedPassives();
+            foreach (var slot in slots)
+                foreach (var child in slot.Contents.ToArray())
+                    child.RefreshAncestorTargetedPassivesRecursively();
         }
 
         /// <summary>
@@ -341,6 +411,14 @@ namespace UnmappedIsland.Runtime
             foreach (ReferenceRoot key in OrderedTargets)
             {
                 if (!effect.Sets.TryGetValue(key, out var assigns)) continue;
+
+                if (key == ReferenceRoot.Ancestor)
+                {
+                    foreach (var assign in assigns)
+                        FindAncestorWithProperty(assign.PropertyGlobalId)?.SetNumber(assign.PropertyGlobalId, assign.Value, session);
+                    continue;
+                }
+
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
                 foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, assign.Value, session);
@@ -349,6 +427,14 @@ namespace UnmappedIsland.Runtime
             foreach (ReferenceRoot key in OrderedTargets)
             {
                 if (!effect.Adds.TryGetValue(key, out var deltas)) continue;
+
+                if (key == ReferenceRoot.Ancestor)
+                {
+                    foreach (var delta in deltas)
+                        FindAncestorWithProperty(delta.PropertyGlobalId)?.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
+                    continue;
+                }
+
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
                 foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
@@ -371,7 +457,9 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged)を解決する。selfは常にこの
-        /// インスタンス自身、parentはthis.Parent（無ければnull）。</summary>
+        /// インスタンス自身、parentはthis.Parent（無ければnull）。Ancestorはプロパティごとに解決先が
+        /// 変わりうる（FindAncestorWithProperty）ため、ここでは扱わない（ApplyActiveEffectのSets/Adds
+        /// ループがkey==Ancestorを直接特別扱いする）。</summary>
         private WorldObject ResolveEffectTarget(ReferenceRoot root, WorldObject actor, WorldObject dragged)
         {
             switch (root)
@@ -384,11 +472,11 @@ namespace UnmappedIsland.Runtime
             }
         }
 
-        /// <summary>set/add/destroyを解決する際の固定順（self→parent→actor→dragged）。YAML側で対象間の
-        /// 適用順序は規定されていないため、決定的な順序を1つ選んで固定する。</summary>
+        /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged）。YAML側で
+        /// 対象間の適用順序は規定されていないため、決定的な順序を1つ選んで固定する。</summary>
         private static readonly ReferenceRoot[] OrderedTargets =
         {
-            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor, ReferenceRoot.Dragged,
+            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged,
         };
 
         /// <summary>

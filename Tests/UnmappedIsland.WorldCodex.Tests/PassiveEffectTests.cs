@@ -1163,5 +1163,235 @@ object_defs:
             Assert.That((Func<int>)(() => instance.GetEffectiveValue(aId)),
                 Throws.TypeOf<InvalidOperationException>().With.Message.Contain("循環参照"));
         }
+
+        // ------------------------------------------------------------------
+        // inherit: 自分の直接の親から遡り、同名プロパティを定義している最初の祖先の実効値を加算する。
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void Inherit_AddsNearestAncestorDefiningSameProperty_SkippingNonDefiningIntermediate()
+        {
+            const string yaml = @"
+object_defs:
+  room:
+    props:
+      temperature:
+        value: 20
+    slots:
+      contents: {}
+  character:
+    slots:
+      inventory: {}
+  food:
+    props:
+      temperature:
+        value: -2
+        inherit: true
+";
+            var codex = Load(yaml);
+            int temperatureId = codex.PropertyNames.GetId("temperature");
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+            int inventorySlotId = codex.SlotNames.GetId("inventory");
+
+            WorldObject roomInstance = Spawn(codex, "room");
+            WorldObject characterInstance = Spawn(codex, "character");
+            WorldObject foodInstance = Spawn(codex, "food");
+
+            Assert.That(foodInstance.GetEffectiveValue(temperatureId), Is.EqualTo(-2), "未接続の間は祖先が見つからず寄与0");
+
+            Assert.That(characterInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(foodInstance.MoveToSlot(characterInstance, inventorySlotId, codex.WellKnown, out _), Is.True);
+
+            Assert.That(foodInstance.GetEffectiveValue(temperatureId), Is.EqualTo(18),
+                "characterはtemperatureを持たないため素通りし、roomの実効値(20)に自分のオフセット(-2)を加算する");
+        }
+
+        [Test]
+        public void Inherit_StopsAtNearestAncestorThatDefinesTheProperty()
+        {
+            const string yaml = @"
+object_defs:
+  room:
+    props:
+      temperature:
+        value: 20
+    slots:
+      contents: {}
+  tent:
+    props:
+      temperature:
+        value: 5
+    slots:
+      contents: {}
+  food:
+    props:
+      temperature:
+        value: 0
+        inherit: true
+";
+            var codex = Load(yaml);
+            int temperatureId = codex.PropertyNames.GetId("temperature");
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            WorldObject roomInstance = Spawn(codex, "room");
+            WorldObject tentInstance = Spawn(codex, "tent");
+            WorldObject foodInstance = Spawn(codex, "food");
+
+            Assert.That(tentInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(foodInstance.MoveToSlot(tentInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+
+            Assert.That(foodInstance.GetEffectiveValue(temperatureId), Is.EqualTo(5),
+                "tent自身がtemperatureを定義しているため、そこで探索が止まりroom(20)までは遡らない");
+        }
+
+        // ------------------------------------------------------------------
+        // modify/accumulateのancestorターゲット: 自分の直接の親から遡り、対象プロパティを定義している
+        // 最初の祖先へ効果を及ぼす。
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void Modify_Ancestor_AffectsNearestAncestorDefiningProperty()
+        {
+            const string yaml = @"
+object_defs:
+  room:
+    props:
+      temperature:
+        value: 20
+    slots:
+      contents: {}
+  fireplace:
+    passives:
+      - modify:
+          ancestor:
+            temperature: 5
+";
+            var codex = Load(yaml);
+            int temperatureId = codex.PropertyNames.GetId("temperature");
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            WorldObject roomInstance = Spawn(codex, "room");
+            WorldObject fireplaceInstance = Spawn(codex, "fireplace");
+
+            Assert.That(roomInstance.GetEffectiveValue(temperatureId), Is.EqualTo(20), "暖炉を置く前は補正なし");
+
+            Assert.That(fireplaceInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(roomInstance.GetEffectiveValue(temperatureId), Is.EqualTo(25), "暖炉を置くと部屋の気温が+5される");
+
+            fireplaceInstance.Destroy(codex.WellKnown);
+            Assert.That(roomInstance.GetEffectiveValue(temperatureId), Is.EqualTo(20), "暖炉が無くなれば補正も消える");
+        }
+
+        [Test]
+        public void Modify_Ancestor_SkipsNonDefiningIntermediateContainer()
+        {
+            const string yaml = @"
+object_defs:
+  room:
+    props:
+      temperature:
+        value: 20
+    slots:
+      contents: {}
+  cart:
+    slots:
+      contents: {}
+  fireplace:
+    passives:
+      - modify:
+          ancestor:
+            temperature: 5
+";
+            var codex = Load(yaml);
+            int temperatureId = codex.PropertyNames.GetId("temperature");
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            WorldObject roomInstance = Spawn(codex, "room");
+            WorldObject cartInstance = Spawn(codex, "cart");
+            WorldObject fireplaceInstance = Spawn(codex, "fireplace");
+
+            Assert.That(cartInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(fireplaceInstance.MoveToSlot(cartInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+
+            Assert.That(roomInstance.GetEffectiveValue(temperatureId), Is.EqualTo(25),
+                "cartはtemperatureを持たないため素通りし、roomへ直接効果が及ぶ");
+        }
+
+        [Test]
+        public void Modify_Ancestor_RefreshesRecursivelyWhenAnAncestorItselfMoves()
+        {
+            const string yaml = @"
+object_defs:
+  room:
+    props:
+      temperature:
+        value: 20
+    slots:
+      contents: {}
+  cart:
+    slots:
+      contents: {}
+  fireplace:
+    passives:
+      - modify:
+          ancestor:
+            temperature: 5
+";
+            var codex = Load(yaml);
+            int temperatureId = codex.PropertyNames.GetId("temperature");
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            WorldObject room1Instance = Spawn(codex, "room");
+            WorldObject room2Instance = Spawn(codex, "room");
+            WorldObject cartInstance = Spawn(codex, "cart");
+            WorldObject fireplaceInstance = Spawn(codex, "fireplace");
+
+            Assert.That(cartInstance.MoveToSlot(room1Instance, contentsSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(fireplaceInstance.MoveToSlot(cartInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+
+            Assert.That(room1Instance.GetEffectiveValue(temperatureId), Is.EqualTo(25), "room1に置かれたcartの中の暖炉がroom1を温める");
+            Assert.That(room2Instance.GetEffectiveValue(temperatureId), Is.EqualTo(20), "room2にはまだ何も影響していない");
+
+            // 暖炉自身ではなく、暖炉を運ぶcart(祖先)がroom2へ移動する。
+            Assert.That(cartInstance.MoveToSlot(room2Instance, contentsSlotId, codex.WellKnown, out _), Is.True);
+
+            Assert.That(room1Instance.GetEffectiveValue(temperatureId), Is.EqualTo(20),
+                "cartが立ち去ったのでroom1への補正は消える（再帰的な再解決が効いている証拠）");
+            Assert.That(room2Instance.GetEffectiveValue(temperatureId), Is.EqualTo(25),
+                "cartの中の暖炉は、暖炉自身は動いていないのに新しいroom2を正しく温める");
+        }
+
+        [Test]
+        public void Accumulate_Ancestor_AccumulatesIntoNearestAncestorDefiningProperty()
+        {
+            const string yaml = @"
+object_defs:
+  room:
+    props:
+      soot:
+        value: 0
+    slots:
+      contents: {}
+  fireplace:
+    passives:
+      - accumulate:
+          ancestor:
+            soot: 1
+";
+            var codex = Load(yaml);
+            int sootId = codex.PropertyNames.GetId("soot");
+            int contentsSlotId = codex.SlotNames.GetId("contents");
+
+            var session = new WorldSession(codex);
+            WorldObject roomInstance = Spawn(codex, "room");
+            WorldObject fireplaceInstance = Spawn(codex, "fireplace");
+
+            Assert.That(fireplaceInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
+
+            roomInstance.Tick(session);
+            roomInstance.Tick(session);
+
+            Assert.That(roomInstance.GetNumber(sootId), Is.EqualTo(2), "accumulateのancestorターゲットもtick毎に部屋のsootへ積み上がる");
+        }
     }
 }

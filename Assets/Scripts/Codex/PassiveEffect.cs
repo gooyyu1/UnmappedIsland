@@ -9,6 +9,10 @@ namespace UnmappedIsland.Codex
         Self,
         Parent,
         Child,
+
+        /// <summary>Declarer自身の直接の親から遡り、このプロパティを定義している最初の祖先（Runtime.
+        /// WorldObject.FindAncestorWithProperty参照）。祖先が見つからない場合、この効果は登録されない。</summary>
+        Ancestor,
     }
 
     /// <summary>

@@ -104,7 +104,9 @@ namespace UnmappedIsland.Runtime
         {
             if (!weight.IsPathRef) return weight.Literal;
 
-            WorldObject target = ResolveTarget(weight.Path.Root, self, actor, dragged);
+            WorldObject target = weight.Path.Root == ReferenceRoot.Ancestor
+                ? self.FindAncestorWithProperty(weight.Path.PropertyGlobalId)
+                : ResolveTarget(weight.Path.Root, self, actor, dragged);
             return target != null ? target.GetEffectiveValue(weight.Path.PropertyGlobalId) : 0;
         }
 

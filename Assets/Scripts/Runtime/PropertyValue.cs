@@ -98,11 +98,14 @@ namespace UnmappedIsland.Runtime
         internal IReadOnlyList<RegisteredPassiveEffect> Incoming => incoming;
 
         /// <summary>
-        /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
+        /// modify（Kind.Modify）とinherit（自分の直接の親から遡った祖先からの継承）を加味した実効値
+        /// （8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
         ///
-        /// conditions（14節）はこの実効値を読む（ConditionEvaluator参照）ため、他のmodifyのゲート判定から
-        /// 再入する可能性がある。isComputingEffectiveValueで、この呼び出し自身への再入（＝循環参照）を検出し、
-        /// スタックオーバーフローになる前に分かりやすい例外を投げる。
+        /// conditions（14節）はこの実効値を読む（ConditionEvaluator参照）ため、他のmodifyのゲート判定・
+        /// inheritの祖先探索から再入する可能性がある。isComputingEffectiveValueで、この呼び出し自身への
+        /// 再入（＝循環参照）を検出し、スタックオーバーフローになる前に分かりやすい例外を投げる
+        /// （inherit自体は木構造が循環しない前提のため無限再帰にはならないが、他のmodifyのゲート経由の
+        /// 循環参照は依然としてこのガードが必要）。
         /// </summary>
         internal int GetEffectiveValue()
         {
@@ -119,6 +122,13 @@ namespace UnmappedIsland.Runtime
                 foreach (var c in incoming)
                     if (c.Def.Kind == PassiveEffectKind.Modify && c.IsActive())
                         sum += c.Def.Amount;
+
+                if (def.Inherit)
+                {
+                    WorldObject ancestor = owner.FindAncestorWithProperty(def.GlobalId);
+                    if (ancestor != null)
+                        sum += ancestor.GetEffectiveValue(def.GlobalId);
+                }
 
                 return def.Range.HasValue ? def.Range.Value.Clamp(sum) : sum;
             }

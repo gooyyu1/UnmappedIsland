@@ -213,7 +213,9 @@ namespace UnmappedIsland.Loader
                 onMax = ParseActiveEffectBody($"{context}.on_max", onMaxNode, allowDragged: false, selfOnly: true, propertyNames, objectNames);
             }
 
-            return new PropertyDef(propertyGlobalId, propName, defaultNumber, rerollRange, range, onOverflow, stages, onMin, onShortfall, onMax);
+            bool inherit = node.TryGetBool("inherit", context, fallback: false);
+
+            return new PropertyDef(propertyGlobalId, propName, defaultNumber, rerollRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
         }
 
         private static int ParseScalarNumber(string context, string raw)
@@ -317,10 +319,10 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// set/add/destroyの対象キー（self/parent/actor、combinations内はdraggedも）を解決する。childは、
-        /// 一度きりの命令に対して「どの子か」の意味がまだ確定していないため未対応（passiveのchild寄与とは
-        /// 異なり、activeのchildには関係とゲートに基づく登録の仕組みが無いため、対象を一意に絞る規約が無い）。
-        /// selfOnlyの場合（on_min・on_max・on_overflow・on_shortfall）はself以外を一律エラーにする。
+        /// set/add/destroyの対象キー（self/parent/ancestor/actor、combinations内はdraggedも）を解決する。
+        /// childは、一度きりの命令に対して「どの子か」の意味がまだ確定していないため未対応（passiveのchild
+        /// 寄与とは異なり、activeのchildには関係とゲートに基づく登録の仕組みが無いため、対象を一意に絞る
+        /// 規約が無い）。selfOnlyの場合（on_min・on_max・on_overflow・on_shortfall）はself以外を一律エラーにする。
         /// </summary>
         private static ReferenceRoot ParseActiveTargetKey(string context, string key, bool allowDragged, bool selfOnly)
         {
@@ -331,6 +333,7 @@ namespace UnmappedIsland.Loader
             {
                 case "self": return ReferenceRoot.Self;
                 case "parent": return ReferenceRoot.Parent;
+                case "ancestor": return ReferenceRoot.Ancestor;
                 case "actor": return ReferenceRoot.Actor;
                 case "dragged":
                     if (!allowDragged)
@@ -345,20 +348,33 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>destroy（削除対象の直接指定）を読む。単一の対象名(`destroy: self`)か、
-        /// 対象名のリスト(`destroy: [self, dragged]`)のいずれかを許容する。</summary>
+        /// 対象名のリスト(`destroy: [self, dragged]`)のいずれかを許容する。ancestorは「どのプロパティを
+        /// 探すか」が無ければ解決しようがなく、destroyはオブジェクトそのものを指すためプロパティを
+        /// 持たない。よってdestroyの対象としては未対応。</summary>
         private static List<ReferenceRoot> ParseDestroyTargets(string context, YamlNode node, bool allowDragged, bool selfOnly)
         {
             if (node is YamlScalarNode scalar)
-                return new List<ReferenceRoot> { ParseActiveTargetKey(context, scalar.Value, allowDragged, selfOnly) };
+                return new List<ReferenceRoot> { ParseDestroyTargetKey(context, scalar.Value, allowDragged, selfOnly) };
 
             if (node is YamlSequenceNode seq)
-                return seq.Select(n => ParseActiveTargetKey(context, ((YamlScalarNode)n).Value, allowDragged, selfOnly)).ToList();
+                return seq.Select(n => ParseDestroyTargetKey(context, ((YamlScalarNode)n).Value, allowDragged, selfOnly)).ToList();
 
             throw new YamlLoadException($"{context}: destroyは対象名か、対象名のリストのいずれかである必要があります。");
         }
 
+        private static ReferenceRoot ParseDestroyTargetKey(string context, string key, bool allowDragged, bool selfOnly)
+        {
+            ReferenceRoot root = ParseActiveTargetKey(context, key, allowDragged, selfOnly);
+            if (root == ReferenceRoot.Ancestor)
+                throw new YamlLoadException(
+                    $"{context}: destroyの対象'ancestor'は未対応です（destroyはプロパティではなくオブジェクトそのものを指すため）。");
+            return root;
+        }
+
         /// <summary>conditions（14節）・passivesのゲート（旧when、8節）が共通で使うobject参照キー。
-        /// worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため未対応。</summary>
+        /// worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため未対応
+        /// （ancestorが「見つからなければworldまで遡る」ことを自然に含むため、世界固有の概念を
+        /// 参照したい場合はancestorで代替できる）。</summary>
         private static ReferenceRoot ParseConditionObject(string context, string raw, IReadOnlyCollection<ReferenceRoot> allowedRoots)
         {
             ReferenceRoot root;
@@ -366,6 +382,7 @@ namespace UnmappedIsland.Loader
             {
                 case "self": root = ReferenceRoot.Self; break;
                 case "parent": root = ReferenceRoot.Parent; break;
+                case "ancestor": root = ReferenceRoot.Ancestor; break;
                 case "actor": root = ReferenceRoot.Actor; break;
                 case "dragged": root = ReferenceRoot.Dragged; break;
                 case "world":
@@ -382,16 +399,17 @@ namespace UnmappedIsland.Loader
         }
 
         private static readonly HashSet<ReferenceRoot> ActionConditionRoots =
-            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor };
+            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor };
 
         private static readonly HashSet<ReferenceRoot> CombinationConditionRoots =
-            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Actor, ReferenceRoot.Dragged };
+            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged };
 
         /// <summary>passivesのゲート（旧when）で使えるobject。selfはSlotBearer（8節の効果を宣言した側の
-        /// スロット位置）、parentはその1つ上（Runtime.RegisteredPassiveEffect参照）。actor/draggedは持続的な
-        /// 関係に紐づかないため未対応。</summary>
+        /// スロット位置）、parentはその1つ上（Runtime.RegisteredPassiveEffect参照）。ancestorはselfの
+        /// 直接の親から遡った祖先探索（Runtime.WorldObject.FindAncestorWithProperty参照）。actor/draggedは
+        /// 持続的な関係に紐づかないため未対応。</summary>
         private static readonly HashSet<ReferenceRoot> PassiveConditionRoots =
-            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent };
+            new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor };
 
         /// <summary>
         /// conditions（14節）の値。常にYAML配列（暗黙のall）。要素は葉（{object, prop, op, value}か
@@ -470,6 +488,10 @@ namespace UnmappedIsland.Loader
 
             if (slotName != null)
             {
+                if (root == ReferenceRoot.Ancestor)
+                    throw new YamlLoadException(
+                        $"{context}: slot判定でobject 'ancestor'は未対応です（ancestorはプロパティ名で祖先を探すため、探すプロパティを持たないslot判定とは噛み合いません）。");
+
                 var unknownSlotKeys = map.EntriesInOrder().Select(e => e.Key)
                     .Where(k => k != "object" && k != "slot").ToList();
                 if (unknownSlotKeys.Count > 0)
@@ -729,7 +751,7 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// passivesの1ブロック（self/parent/child、actorは未対応のためスキップ）を読み、RawPassiveEffect
+        /// passivesの1ブロック（self/parent/child/ancestor、actorは未対応のためスキップ）を読み、RawPassiveEffect
         /// へ変換してoutputへ追加する。forcedStageProperty（非nullならstage内、nullならオブジェクト/
         /// プロパティレベル）と、このブロックの"conditions"は独立に併用できる（例:「装備している間、かつ
         /// 耐久値がintactステージの間だけ」）。RawPassiveEffectは両方を独立したフィールドとしてそのまま
@@ -767,7 +789,7 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// passiveの1操作(modify/accumulate)を読み、対象(self/parent/child、actorは未対応のため
+        /// passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
         /// スキップ)ごとにRawPassiveEffectへ変換してoutputへ追加する。ゲートは、同じpassiveブロック内
         /// の"conditions"（ブロック全体で1つ）とforcedStageProperty（非nullならstage自身のゲート）の
         /// 両方をRawPassiveEffectへそのまま渡す。両方が指定されていれば、BuildPassiveEffectが
@@ -793,6 +815,7 @@ namespace UnmappedIsland.Loader
                     case "self": target = PassiveEffectTarget.Self; break;
                     case "parent": target = PassiveEffectTarget.Parent; break;
                     case "child": target = PassiveEffectTarget.Child; break;
+                    case "ancestor": target = PassiveEffectTarget.Ancestor; break;
                     default:
                         throw new YamlLoadException($"{context}.{operationKey}: 未知の対象キー '{targetName}' です。");
                 }

@@ -7,7 +7,8 @@ namespace UnmappedIsland.Codex
     /// conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）が共通で参照する
     /// 起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層のパスは現状の用例に
     /// 存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため、
-    /// 起点としては未対応（14.1節参照。ロード時にエラーとする）。
+    /// 起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが「見つからなければ
+    /// worldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。
     /// </summary>
     public enum ReferenceRoot
     {
@@ -17,6 +18,12 @@ namespace UnmappedIsland.Codex
 
         /// <summary>combinations内でのみ意味を持つ、ドラッグされてきたカード（12.2節）。</summary>
         Dragged,
+
+        /// <summary>selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（Runtime.
+        /// WorldObject.FindAncestorWithProperty参照）。「どのオブジェクトが定義しているか」に依存しない、
+        /// 木構造上の実効的な参照のための起点。Slot判定（{slot: ...}）では意味を持たないため未対応
+        /// （ロード時エラー）。</summary>
+        Ancestor,
     }
 
     /// <summary>{object, prop}が指す、1階層のプロパティ参照。weightのpath参照（10.2節）で使う。</summary>
