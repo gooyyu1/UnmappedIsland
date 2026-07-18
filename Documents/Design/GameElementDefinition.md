@@ -948,7 +948,7 @@ object_defs:
 - 天候遷移自体（いつ・どの天候に切り替わるか）のランダム性の仕組み（6.2 節）
 - `passives`/`active` の対象キーに `ancestor`/`sibling`/`descendant` を追加するかどうか
 - ステージの `passives` ブロックで `conditions`（スロット条件等）とステージ自体の条件を組み合わせられるように
-  するか（例: 「装備している間、かつ耐久値がintactステージの間だけ」のような AND 条件）。現状 `ContributionGate`
+  するか（例: 「装備している間、かつ耐久値がintactステージの間だけ」のような AND 条件）。現状 `PassiveEffectGate`
   は単一の種別（`Always`/`Conditions`/`WhenOwnStage`）しか持てないため、対応するには複数条件を同時に保持できる
   形へ拡張する必要がある
 - `pick` の位置づけ（候補に `modify`/`accumulate` を書けないことの扱い）

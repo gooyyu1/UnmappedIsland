@@ -282,10 +282,10 @@ object_defs:
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             ObjectDef campfire = codex.Objects.Get(codex.ObjectNames.GetId("campfire"));
-            ContributionDef contribution = campfire.Contributions.Single();
+            PassiveEffect effect = campfire.Passives.Single();
 
-            Assert.That(contribution.Target, Is.EqualTo(ContributionTarget.Child));
-            Assert.That(contribution.Gate.Kind, Is.EqualTo(ContributionGateKind.WhenOwnStage));
+            Assert.That(effect.Target, Is.EqualTo(PassiveEffectTarget.Child));
+            Assert.That(effect.Gate.Kind, Is.EqualTo(PassiveEffectGateKind.WhenOwnStage));
         }
 
         [Test]
@@ -307,7 +307,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_MultiplePassivesBlocks_EachWithDifferentConditions_YieldDifferentGatedContributions()
+        public void LoadFromGroups_MultiplePassivesBlocks_EachWithDifferentConditions_YieldDifferentGatedPassives()
         {
             // passivesを配列にした動機そのもの: 同じ対象(parent)に対して、装備するスロットごとに
             // 異なるmodify量を与えたい場合、conditions違いの複数ブロックが必要になる。

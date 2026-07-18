@@ -10,7 +10,7 @@ namespace UnmappedIsland.Runtime
 
     /// <summary>
     /// conditions（GameElementDefinition.md 14節）の条件木を評価する。actions/combinationsの一度きりの
-    /// 判定（InteractionExecutor）と、passivesの持続的なゲート（ActiveContribution.IsActive）の両方が
+    /// 判定（InteractionExecutor）と、passivesの持続的なゲート（RegisteredPassiveEffect.IsActive）の両方が
     /// この同じ評価器を共用する。両者の違いはrootの解決方法（resolveRoot）だけに閉じる。
     /// </summary>
     public static class ConditionEvaluator

@@ -70,7 +70,7 @@ namespace UnmappedIsland.Codex
     /// Runtime.ConditionEvaluator参照）。
     ///
     /// 葉はPropertyとSlotの2種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて使うフィールドが変わる
-    /// （ContributionGate等、本コードベースの既存の「単一クラス+Kind enum」の慣習に合わせる）。
+    /// （PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の慣習に合わせる）。
     /// </summary>
     public sealed class ConditionNode
     {
