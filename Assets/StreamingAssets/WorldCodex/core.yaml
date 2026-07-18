@@ -81,6 +81,103 @@ object_defs:
       # 現在の日（1始まり）。上限は未定のため無制限に加算し続ける（GameElementDefinition.md 17節）。
       day:
         value: 1
+      # 現在の天気（0=晴れ, 1=曇り, 2=小雨, 3=大雨）。晴れ→曇り→雨という遷移の仕組み自体は
+      # ClimateSystem.mdで別途検討するため、ここでは値を保持するだけ（初期値は晴れ）。
+      weather:
+        value: 0
+      # 太陽光の強さ。weatherとhourの組み合わせで決まる、都度導出される実効値（modify、8.3節）。
+      # 夜（0-5時・22-23時）はweatherによらず常に0（passiveを持たない=baseのvalue:0のまま）。
+      # 朝・夕方（6-9時・18-21時）・昼（10-17時）はそれぞれ、晴れているほど・昼に近いほど大きくなるよう
+      # weather・hour両方の条件（conditions、14節、暗黙のall）で細かく分岐する。hourの`stages`
+      # （WhenOwnStageゲート）は1つの軸(hour自身)にしか使えずweatherと同時に判定できないため、
+      # ここではstagesではなくconditionsでhourの生値を直接比較する。数値・区切りはいずれも仮の値。
+      sunlight:
+        value: 0
+        passives:
+          - conditions:
+              - {prop: weather, op: eq, value: 0}
+              - {prop: hour, op: gte, value: 10}
+              - {prop: hour, op: lt, value: 18}
+            modify:
+              self:
+                sunlight: 10
+          - conditions:
+              - {prop: weather, op: eq, value: 1}
+              - {prop: hour, op: gte, value: 10}
+              - {prop: hour, op: lt, value: 18}
+            modify:
+              self:
+                sunlight: 6
+          - conditions:
+              - {prop: weather, op: eq, value: 2}
+              - {prop: hour, op: gte, value: 10}
+              - {prop: hour, op: lt, value: 18}
+            modify:
+              self:
+                sunlight: 3
+          - conditions:
+              - {prop: weather, op: eq, value: 3}
+              - {prop: hour, op: gte, value: 10}
+              - {prop: hour, op: lt, value: 18}
+            modify:
+              self:
+                sunlight: 1
+          - conditions:
+              - {prop: weather, op: eq, value: 0}
+              - {prop: hour, op: gte, value: 6}
+              - {prop: hour, op: lt, value: 10}
+            modify:
+              self:
+                sunlight: 5
+          - conditions:
+              - {prop: weather, op: eq, value: 1}
+              - {prop: hour, op: gte, value: 6}
+              - {prop: hour, op: lt, value: 10}
+            modify:
+              self:
+                sunlight: 3
+          - conditions:
+              - {prop: weather, op: eq, value: 2}
+              - {prop: hour, op: gte, value: 6}
+              - {prop: hour, op: lt, value: 10}
+            modify:
+              self:
+                sunlight: 1
+          - conditions:
+              - {prop: weather, op: eq, value: 3}
+              - {prop: hour, op: gte, value: 6}
+              - {prop: hour, op: lt, value: 10}
+            modify:
+              self:
+                sunlight: 0
+          - conditions:
+              - {prop: weather, op: eq, value: 0}
+              - {prop: hour, op: gte, value: 18}
+              - {prop: hour, op: lt, value: 22}
+            modify:
+              self:
+                sunlight: 5
+          - conditions:
+              - {prop: weather, op: eq, value: 1}
+              - {prop: hour, op: gte, value: 18}
+              - {prop: hour, op: lt, value: 22}
+            modify:
+              self:
+                sunlight: 3
+          - conditions:
+              - {prop: weather, op: eq, value: 2}
+              - {prop: hour, op: gte, value: 18}
+              - {prop: hour, op: lt, value: 22}
+            modify:
+              self:
+                sunlight: 1
+          - conditions:
+              - {prop: weather, op: eq, value: 3}
+              - {prop: hour, op: gte, value: 18}
+              - {prop: hour, op: lt, value: 22}
+            modify:
+              self:
+                sunlight: 0
       # 現在の気温。具体的な変動の仕組み（季節・天候由来のレート等）はClimateSystem.mdで別途検討する。
       temperature:
         value: 20

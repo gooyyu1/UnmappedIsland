@@ -152,6 +152,39 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
+        public void World_WeatherAndHour_ModifySunlight()
+        {
+            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
+            int hourId = codex.PropertyNames.GetId("hour");
+            int weatherId = codex.PropertyNames.GetId("weather");
+            int sunlightId = codex.PropertyNames.GetId("sunlight");
+
+            var worldInstance = new WorldObject(1, world);
+
+            void AssertSunlightAt(int weather, int hour, int expectedEffective, string because)
+            {
+                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(weather));
+                worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
+                Assert.That(worldInstance.GetEffectiveValue(sunlightId), Is.EqualTo(expectedEffective), because);
+            }
+
+            // 夜はweatherによらず常に0
+            AssertSunlightAt(weather: 0, hour: 2, expectedEffective: 0, "晴れの深夜でも0");
+            AssertSunlightAt(weather: 3, hour: 23, expectedEffective: 0, "大雨の夜は0");
+
+            // 昼(10-17時): 晴れているほど強い
+            AssertSunlightAt(weather: 0, hour: 12, expectedEffective: 10, "晴れた昼が最大");
+            AssertSunlightAt(weather: 1, hour: 12, expectedEffective: 6, "曇りの昼");
+            AssertSunlightAt(weather: 2, hour: 12, expectedEffective: 3, "小雨の昼");
+            AssertSunlightAt(weather: 3, hour: 12, expectedEffective: 1, "大雨の昼でもわずかに残る");
+
+            // 朝(6-9時)・夕方(18-21時)は昼より弱いが同じ強さ
+            AssertSunlightAt(weather: 0, hour: 7, expectedEffective: 5, "晴れの朝は昼より弱い");
+            AssertSunlightAt(weather: 0, hour: 20, expectedEffective: 5, "晴れの夕方は朝と同じ強さ");
+            AssertSunlightAt(weather: 3, hour: 8, expectedEffective: 0, "大雨の朝は0");
+        }
+
+        [Test]
         public void World_LocationsSlot_AcceptsOnlyObjectsWithLocationTag()
         {
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
