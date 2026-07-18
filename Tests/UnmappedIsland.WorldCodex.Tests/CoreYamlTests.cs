@@ -125,6 +125,73 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
+        public void World_Sunlight_ModifiesTemperature()
+        {
+            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
+            int hourId = codex.PropertyNames.GetId("hour");
+            int weatherId = codex.PropertyNames.GetId("weather");
+            int temperatureId = codex.PropertyNames.GetId("temperature");
+
+            var worldInstance = new WorldObject(1, world);
+
+            void AssertTemperatureAt(int weather, int hour, int expectedEffective, string because)
+            {
+                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(weather));
+                worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
+                Assert.That(worldInstance.GetEffectiveValue(temperatureId), Is.EqualTo(expectedEffective), because);
+            }
+
+            // 夜はweatherによらずsunlight=0のため、常にやや涼しい（hourを直接見ず、sunlight経由で補正）
+            AssertTemperatureAt(weather: 0, hour: 2, expectedEffective: 17, "晴れの深夜でもsunlightは0なのでやや涼しい");
+            AssertTemperatureAt(weather: 3, hour: 23, expectedEffective: 17, "大雨の夜もやや涼しい");
+
+            // sunlightが中間(1-6)の時間帯は補正なし
+            AssertTemperatureAt(weather: 1, hour: 6, expectedEffective: 20, "曇りの朝(sunlight=2+2=4)は補正なし");
+            AssertTemperatureAt(weather: 3, hour: 12, expectedEffective: 20, "大雨の昼(sunlight=5+0=5)も補正なし");
+
+            // sunlightが7以上ならやや暑い
+            AssertTemperatureAt(weather: 0, hour: 12, expectedEffective: 23, "晴れた昼(sunlight=5+5=10)はやや暑い");
+            AssertTemperatureAt(weather: 0, hour: 6, expectedEffective: 23, "晴れの朝(sunlight=2+5=7)もやや暑い");
+            AssertTemperatureAt(weather: 1, hour: 12, expectedEffective: 23, "曇りの昼(sunlight=5+2=7)もやや暑い");
+        }
+
+        [Test]
+        public void World_WeatherAndHour_ModifySunlight()
+        {
+            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
+            int hourId = codex.PropertyNames.GetId("hour");
+            int weatherId = codex.PropertyNames.GetId("weather");
+            int sunlightId = codex.PropertyNames.GetId("sunlight");
+
+            var worldInstance = new WorldObject(1, world);
+
+            void AssertSunlightAt(int weather, int hour, int expectedEffective, string because)
+            {
+                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(weather));
+                worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
+                Assert.That(worldInstance.GetEffectiveValue(sunlightId), Is.EqualTo(expectedEffective), because);
+            }
+
+            // 夜: hour側の最低限の寄与が0であり、weather側の追加ボーナスもconditionsで無効化されるため、
+            // weatherによらず常に0（晴れていても夜であれば日差しは強くない、という設計意図）
+            AssertSunlightAt(weather: 0, hour: 2, expectedEffective: 0, "晴れの深夜でも0");
+            AssertSunlightAt(weather: 3, hour: 23, expectedEffective: 0, "大雨の夜は0");
+
+            // 昼(10-17時): hour側の最低限の寄与(5)に、weather側の追加ボーナスが加算される
+            AssertSunlightAt(weather: 0, hour: 12, expectedEffective: 10, "晴れた昼はhour(5)+weather(5)で最大");
+            AssertSunlightAt(weather: 1, hour: 12, expectedEffective: 7, "曇りの昼はhour(5)+weather(2)");
+            AssertSunlightAt(weather: 2, hour: 12, expectedEffective: 6, "小雨の昼はhour(5)+weather(1)");
+            AssertSunlightAt(weather: 3, hour: 12, expectedEffective: 5,
+                "大雨の昼はweatherの追加ボーナスがなくhour(5)の最低限の寄与のみ");
+
+            // 朝(6-9時)・夕方(18-21時): hour側の最低限の寄与(2)は昼より弱いが、weather側のボーナスは昼と同じ
+            AssertSunlightAt(weather: 0, hour: 7, expectedEffective: 7, "晴れの朝はhour(2)+weather(5)");
+            AssertSunlightAt(weather: 0, hour: 20, expectedEffective: 7, "晴れの夕方は朝と同じ強さ");
+            AssertSunlightAt(weather: 3, hour: 8, expectedEffective: 2,
+                "大雨の朝でもhour側の最低限の寄与(2)は残る（雨でも昼は夜より明るいはず、という設計意図）");
+        }
+
+        [Test]
         public void World_LocationsSlot_AcceptsOnlyObjectsWithLocationTag()
         {
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));

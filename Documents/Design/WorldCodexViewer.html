@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WorldCodex データベース</title>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #57606a;
+    --border: #d0d7de;
+    --card-bg: #f6f8fa;
+    --chip-bg: #ddf4ff;
+    --chip-fg: #0969da;
+    --trait-chip-bg: #fff8c5;
+    --trait-chip-fg: #9a6700;
+    --link: #0969da;
+    --code-bg: #eff1f3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --fg: #e6edf3;
+      --muted: #8d96a0;
+      --border: #30363d;
+      --card-bg: #161b22;
+      --chip-bg: #0d419d;
+      --chip-fg: #cae8ff;
+      --trait-chip-bg: #4d3800;
+      --trait-chip-fg: #f2cc60;
+      --link: #4493f8;
+      --code-bg: #161b22;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+    line-height: 1.6;
+  }
+  header {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0.8rem 1.5rem;
+    z-index: 10;
+  }
+  header a {
+    color: var(--fg);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  header .status {
+    float: right;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  a { color: var(--link); }
+  h1 { font-size: 1.6rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+  h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  h3 { font-size: 1.05rem; }
+  h4 { margin: 0 0 0.5rem 0; font-size: 1rem; }
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1rem; }
+  th, td { border: 1px solid var(--border); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+  th { background: var(--card-bg); }
+  tr:hover td { background: var(--card-bg); }
+  .chip {
+    display: inline-block;
+    background: var(--chip-bg);
+    color: var(--chip-fg);
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    font-size: 0.8rem;
+    margin: 0.1rem 0.2rem 0.1rem 0;
+  }
+  .chip.trait { background: var(--trait-chip-bg); color: var(--trait-chip-fg); }
+  .badge {
+    display: inline-block;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.05rem 0.5rem;
+    font-size: 0.75rem;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+  }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.8rem;
+    background: var(--card-bg);
+  }
+  ul.plain { list-style: none; padding-left: 0; margin: 0.3rem 0; }
+  ul.plain li { padding: 0.15rem 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9rem; }
+  ul.pick-tree { margin: 0.2rem 0; padding-left: 1.2rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9rem; }
+  code { background: var(--code-bg); border-radius: 4px; padding: 0.05rem 0.35rem; font-size: 0.9em; }
+  .muted { color: var(--muted); }
+  .error {
+    border: 1px solid #cf222e;
+    background: #ffebe9;
+    color: #82071e;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .error { background: #3d1418; color: #ffdcd7; border-color: #7d1a1f; }
+  }
+  .breadcrumb { color: var(--muted); margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+<header>
+  <a href="#/">WorldCodex データベース</a>
+  <span class="status" id="status"></span>
+</header>
+<main id="app">読み込み中…</main>
+
+<script>
+"use strict";
+
+/*
+ * WorldCodex YAML（Assets/StreamingAssets/WorldCodex/*.yaml）を、ページ表示のたびにGitHubから
+ * 直接取得・解釈して表示する、人間用のデータベースビューア。ビルド・生成ステップを持たず、
+ * このHTMLファイル1つで完結する（Documents/以下に置くと、既存のdocs.yml（.github/workflows/）が
+ * docs/へ自動コピーするため、GitHub Pages公開のために追加の作業は不要）。
+ *
+ * 3段構成: オブジェクト一覧(#/) → オブジェクト詳細(#/object/<name>) →
+ * プロパティ詳細(#/property/<objectName>/<propertyName>)。
+ * プロパティはobject_defごとに個別の定義を持てる（同名でも定義が異なりうる、
+ * GameElementDefinition.md 6節）ため、プロパティ詳細はオブジェクト名とセットでのみ一意に定まる。
+ *
+ * traitのprops/slots/actions/combinations/tagsの合成規則は、Loader.TraitMerger（C#実装）と
+ * 同じルールをこのファイル内で再実装している（識別子キーの衝突はエラーにせず、表示上は
+ * 先勝ちとして扱う簡略版。あくまで閲覧用であり、ロード時バリデーションの代替ではない）。
+ */
+
+var OWNER = "gooyyu1";
+var REPO = "UnmappedIsland";
+var BRANCH = "main";
+var YAML_DIR = "Assets/StreamingAssets/WorldCodex";
+
+var DB = null; // { objectDefs: {name: ResolvedObjectDef}, traits: {name: RawTrait} }
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+function setStatus(text) {
+  document.getElementById("status").textContent = text;
+}
+
+// ------------------------------------------------------------------
+// 取得・解析
+// ------------------------------------------------------------------
+
+function discoverYamlFiles() {
+  var apiUrl = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/" + YAML_DIR + "?ref=" + BRANCH;
+  return fetch(apiUrl).then(function (res) {
+    if (!res.ok) throw new Error("GitHub APIの取得に失敗しました（status " + res.status + "）。レート制限の可能性があります。");
+    return res.json();
+  }).then(function (list) {
+    return list.filter(function (f) {
+      return f.type === "file" && /\.ya?ml$/i.test(f.name);
+    });
+  });
+}
+
+function fetchAllYaml(files) {
+  return Promise.all(files.map(function (f) {
+    return fetch(f.download_url).then(function (res) {
+      if (!res.ok) throw new Error("'" + f.name + "'の取得に失敗しました（status " + res.status + "）。");
+      return res.text();
+    });
+  }));
+}
+
+function parseAllYaml(texts, files) {
+  var objectDefsRaw = {};
+  var traitsRaw = {};
+  texts.forEach(function (text, i) {
+    var doc;
+    try {
+      doc = jsyaml.load(text);
+    } catch (e) {
+      console.error("YAML構文エラー(" + files[i].name + "):", e);
+      return;
+    }
+    if (!doc) return;
+    if (doc.object_defs) {
+      Object.keys(doc.object_defs).forEach(function (name) {
+        var node = doc.object_defs[name] || {};
+        objectDefsRaw[name] = Object.assign({}, node, { name: name, _source: files[i].name });
+      });
+    }
+    if (doc.traits) {
+      Object.keys(doc.traits).forEach(function (name) {
+        var node = doc.traits[name] || {};
+        traitsRaw[name] = Object.assign({}, node, { name: name });
+      });
+    }
+  });
+  return { objectDefsRaw: objectDefsRaw, traitsRaw: traitsRaw };
+}
+
+// ------------------------------------------------------------------
+// trait合成（Loader.TraitMerger.Resolveの再実装、閲覧用の簡略版）
+// ------------------------------------------------------------------
+
+function mergeIdentifierMaps(traitMaps, ownMap) {
+  var order = [];
+  var byKey = {};
+  var owned = {};
+  traitMaps.forEach(function (entry) {
+    if (!entry.map) return;
+    Object.keys(entry.map).forEach(function (key) {
+      if (owned[key] !== undefined) return; // 衝突: 閲覧用途のため先勝ちとし、無視する
+      owned[key] = entry.traitName;
+      order.push(key);
+      byKey[key] = entry.map[key];
+    });
+  });
+  if (ownMap) {
+    Object.keys(ownMap).forEach(function (key) {
+      if (byKey[key] !== undefined) {
+        byKey[key] = Object.assign({}, byKey[key], ownMap[key]); // object_def側が一部属性を上書き
+      } else {
+        order.push(key);
+        byKey[key] = ownMap[key];
+      }
+    });
+  }
+  var result = {};
+  order.forEach(function (key) { result[key] = byKey[key]; });
+  return result;
+}
+
+function resolveObjectDef(raw, traitsByName) {
+  var traitNames = raw.traits || [];
+  var traitProps = [], traitSlots = [], traitActions = [], traitCombinations = [];
+  var passives = [];
+  var tags = [];
+  var stackOrderCandidate = null;
+
+  traitNames.forEach(function (traitName) {
+    var trait = traitsByName[traitName];
+    if (!trait) return; // 参照先traitが見つからない: 閲覧用途のため無視する
+    traitProps.push({ traitName: traitName, map: trait.props });
+    traitSlots.push({ traitName: traitName, map: trait.slots });
+    traitActions.push({ traitName: traitName, map: trait.actions });
+    traitCombinations.push({ traitName: traitName, map: trait.combinations });
+    if (trait.passives) passives = passives.concat(trait.passives);
+    if (trait.tags) tags = tags.concat(trait.tags);
+    if (trait.stack_order && !stackOrderCandidate) stackOrderCandidate = trait.stack_order;
+  });
+
+  if (raw.passives) passives = passives.concat(raw.passives);
+  if (raw.tags) tags = tags.concat(raw.tags);
+
+  return {
+    name: raw.name,
+    source: raw._source,
+    singleton: !!raw.singleton,
+    traitNames: traitNames,
+    tags: tags.filter(function (t, i) { return tags.indexOf(t) === i; }),
+    props: mergeIdentifierMaps(traitProps, raw.props),
+    slots: mergeIdentifierMaps(traitSlots, raw.slots),
+    actions: mergeIdentifierMaps(traitActions, raw.actions),
+    combinations: mergeIdentifierMaps(traitCombinations, raw.combinations),
+    passives: passives,
+    stackOrder: raw.stack_order || stackOrderCandidate,
+  };
+}
+
+function buildDatabase(objectDefsRaw, traitsRaw) {
+  var objectDefs = {};
+  Object.keys(objectDefsRaw).forEach(function (name) {
+    objectDefs[name] = resolveObjectDef(objectDefsRaw[name], traitsRaw);
+  });
+  return { objectDefs: objectDefs, traits: traitsRaw };
+}
+
+// ------------------------------------------------------------------
+// 表示用レンダリング（conditions/passives/active/pickをそれぞれ読みやすい文字列に変換する）
+// ------------------------------------------------------------------
+
+var OP_SYMBOLS = { lt: "<", lte: "<=", gt: ">", gte: ">=", eq: "==", neq: "!=", in: "in", not_in: "not in" };
+
+function renderCondition(node) {
+  if (node == null) return "(常時)";
+  if (node.all) return "(" + node.all.map(renderCondition).join(" かつ ") + ")";
+  if (node.any) return "(" + node.any.map(renderCondition).join(" または ") + ")";
+  if (node.not !== undefined) return "not " + renderCondition(node.not);
+  if (node.slot !== undefined) {
+    var slotObj = node.object || "self";
+    return slotObj + "が" + node.slot + "スロットに入っている";
+  }
+  if (node.prop !== undefined) {
+    var propObj = node.object || "self";
+    var op = OP_SYMBOLS[node.op || "eq"] || (node.op || "eq");
+    var val = Array.isArray(node.value) ? "[" + node.value.join(", ") + "]" : node.value;
+    return propObj + "." + node.prop + " " + op + " " + val;
+  }
+  return JSON.stringify(node);
+}
+
+function renderConditionsList(list) {
+  if (!list) return "(常時)";
+  return renderCondition({ all: list });
+}
+
+function renderKindTargets(targetsMap, kindLabel, gate) {
+  var out = [];
+  Object.keys(targetsMap || {}).forEach(function (target) {
+    Object.keys(targetsMap[target] || {}).forEach(function (prop) {
+      var amount = targetsMap[target][prop];
+      var sign = typeof amount === "number" && amount >= 0 ? "+" : "";
+      out.push("[" + gate + "] " + target + "." + prop + " を" + kindLabel + " " + sign + amount);
+    });
+  });
+  return out;
+}
+
+function renderPassiveBlock(block, gateOverride) {
+  var gate = gateOverride || renderConditionsList(block.conditions);
+  var out = [];
+  if (block.modify) out = out.concat(renderKindTargets(block.modify, "modify(実効値)", gate));
+  if (block.accumulate) out = out.concat(renderKindTargets(block.accumulate, "accumulate(実体値)", gate));
+  return out;
+}
+
+function renderActive(node) {
+  var out = [];
+  if (node.set) {
+    Object.keys(node.set).forEach(function (target) {
+      Object.keys(node.set[target]).forEach(function (prop) {
+        out.push(target + "." + prop + " := " + node.set[target][prop]);
+      });
+    });
+  }
+  if (node.add) {
+    Object.keys(node.add).forEach(function (target) {
+      Object.keys(node.add[target]).forEach(function (prop) {
+        var amount = node.add[target][prop];
+        var sign = typeof amount === "number" && amount >= 0 ? "+" : "";
+        out.push(target + "." + prop + " " + sign + "= " + amount);
+      });
+    });
+  }
+  if (node.destroy) {
+    var list = Array.isArray(node.destroy) ? node.destroy : [node.destroy];
+    out.push("destroy: " + list.join(", "));
+  }
+  if (node.spawn) {
+    out.push("spawn: " + node.spawn.object + " → " + (node.spawn.into || "same_slot"));
+  }
+  return out;
+}
+
+function renderWeight(weight) {
+  if (weight && typeof weight === "object") {
+    return "path(" + (weight.object || "self") + "." + weight.prop + ")";
+  }
+  return String(weight);
+}
+
+function renderPick(list, indent) {
+  indent = indent || "";
+  var out = [];
+  list.forEach(function (candidate) {
+    out.push(indent + "weight=" + renderWeight(candidate.weight));
+    if (candidate.pick) {
+      out = out.concat(renderPick(candidate.pick, indent + "  "));
+    } else {
+      renderActive(candidate).forEach(function (line) { out.push(indent + "  " + line); });
+    }
+  });
+  return out;
+}
+
+function renderActionOrCombination(node) {
+  var lines = [];
+  if (node.showMenu) lines.push("showMenu: " + node.showMenu);
+  if (node.with !== undefined) lines.push("with(tag): " + node.with);
+  if (node.conditions) lines.push("conditions: " + renderConditionsList(node.conditions));
+  lines = lines.concat(renderActive(node));
+  if (node.pick) {
+    lines.push("pick:");
+    lines = lines.concat(renderPick(node.pick, "  "));
+  }
+  return lines;
+}
+
+function renderAccepts(list) {
+  if (!list || list.length === 0) return "(無制限)";
+  return list.map(function (a) {
+    var target = a.tag !== undefined ? ("tag: " + a.tag) : ("object: " + a.object);
+    return target + " (max=" + a.max + (a.consume ? ", consume" : "") + ")";
+  }).join("<br>");
+}
+
+function summarizeValue(p) {
+  if (p.value && typeof p.value === "object") return "再ロール範囲 " + p.value.min + "〜" + p.value.max;
+  return String(p.value);
+}
+
+// ------------------------------------------------------------------
+// ページ描画
+// ------------------------------------------------------------------
+
+function renderObjectListPage() {
+  var names = Object.keys(DB.objectDefs).sort();
+  var rows = names.map(function (name) {
+    var o = DB.objectDefs[name];
+    return "<tr>" +
+      "<td><a href=\"#/object/" + encodeURIComponent(o.name) + "\">" + esc(o.name) + "</a></td>" +
+      "<td>" + (o.singleton ? "✓" : "") + "</td>" +
+      "<td>" + o.tags.map(function (t) { return "<span class=\"chip\">" + esc(t) + "</span>"; }).join(" ") + "</td>" +
+      "<td>" + o.traitNames.map(function (t) { return "<span class=\"chip trait\">" + esc(t) + "</span>"; }).join(" ") + "</td>" +
+      "<td>" + Object.keys(o.props).length + "</td>" +
+      "<td>" + Object.keys(o.slots).length + "</td>" +
+      "</tr>";
+  }).join("");
+
+  return "<h1>オブジェクト一覧</h1>" +
+    "<p class=\"muted\">" + names.length + "件のobject_def（" + OWNER + "/" + REPO + "@" + BRANCH + " の " + YAML_DIR + " から取得）</p>" +
+    "<table><thead><tr><th>名前</th><th>singleton</th><th>tags</th><th>traits</th><th>props</th><th>slots</th></tr></thead>" +
+    "<tbody>" + (rows || "<tr><td colspan=\"6\">(object_defがありません)</td></tr>") + "</tbody></table>";
+}
+
+function renderObjectDetailPage(name) {
+  var o = DB.objectDefs[name];
+  if (!o) {
+    return "<p class=\"error\">object_def '" + esc(name) + "' が見つかりません。</p>" +
+      "<p><a href=\"#/\">← オブジェクト一覧へ</a></p>";
+  }
+
+  var propNames = Object.keys(o.props).sort();
+  var propsRows = propNames.map(function (pname) {
+    var p = o.props[pname];
+    return "<tr>" +
+      "<td><a href=\"#/property/" + encodeURIComponent(o.name) + "/" + encodeURIComponent(pname) + "\">" + esc(pname) + "</a></td>" +
+      "<td>" + esc(summarizeValue(p)) + "</td>" +
+      "<td>" + (p.range ? esc(p.range.min + "〜" + p.range.max) : "") + "</td>" +
+      "<td>" + (p.stages ? p.stages.length : 0) + "</td>" +
+      "</tr>";
+  }).join("");
+
+  var slotNames = Object.keys(o.slots).sort();
+  var slotsRows = slotNames.map(function (sname) {
+    var s = o.slots[sname];
+    return "<tr>" +
+      "<td>" + esc(sname) + "</td>" +
+      "<td>" + renderAccepts(s.accepts) + "</td>" +
+      "<td>" + (s.capacity != null ? s.capacity : "") + "</td>" +
+      "<td>" + (s.weight_rate != null ? s.weight_rate : 1) + "</td>" +
+      "<td>" + (s.stackable === false ? "×" : "○") + "</td>" +
+      "<td>" + (s.unit_capacity != null ? s.unit_capacity : "") + "</td>" +
+      "<td>" + (s.fixed_positions ? "○" : "") + "</td>" +
+      "</tr>";
+  }).join("");
+
+  var passivesList = [];
+  o.passives.forEach(function (block) {
+    passivesList = passivesList.concat(renderPassiveBlock(block));
+  });
+
+  var actionNames = Object.keys(o.actions).sort();
+  var actionsHtml = actionNames.map(function (aname) {
+    var lines = renderActionOrCombination(o.actions[aname]);
+    return "<div class=\"card\"><h4>" + esc(aname) + "</h4><ul class=\"plain\">" +
+      (lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(内容なし)</li>") +
+      "</ul></div>";
+  }).join("");
+
+  var comboNames = Object.keys(o.combinations).sort();
+  var combosHtml = comboNames.map(function (cname) {
+    var lines = renderActionOrCombination(o.combinations[cname]);
+    return "<div class=\"card\"><h4>" + esc(cname) + "</h4><ul class=\"plain\">" +
+      (lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(内容なし)</li>") +
+      "</ul></div>";
+  }).join("");
+
+  return "<p class=\"breadcrumb\"><a href=\"#/\">← オブジェクト一覧</a></p>" +
+    "<h1>" + esc(o.name) + (o.singleton ? "<span class=\"badge\">singleton</span>" : "") + "</h1>" +
+    "<p class=\"muted\">読み込み元: " + esc(o.source || "?") + "</p>" +
+    "<p>tags: " + (o.tags.map(function (t) { return "<span class=\"chip\">" + esc(t) + "</span>"; }).join(" ") || "<span class=\"muted\">(なし)</span>") + "</p>" +
+    "<p>traits: " + (o.traitNames.map(function (t) { return "<span class=\"chip trait\">" + esc(t) + "</span>"; }).join(" ") || "<span class=\"muted\">(なし)</span>") + "</p>" +
+    (o.stackOrder ? "<p>stack_order: <code>" + esc(o.stackOrder.property) + "</code> (" + (o.stackOrder.ascending ? "昇順" : "降順") + ")</p>" : "") +
+
+    "<h2>props</h2>" +
+    "<table><thead><tr><th>名前</th><th>初期値</th><th>range</th><th>stages</th></tr></thead>" +
+    "<tbody>" + (propsRows || "<tr><td colspan=\"4\">(なし)</td></tr>") + "</tbody></table>" +
+
+    "<h2>slots</h2>" +
+    "<table><thead><tr><th>名前</th><th>accepts</th><th>capacity</th><th>weight_rate</th><th>stackable</th><th>unit_capacity</th><th>fixed_positions</th></tr></thead>" +
+    "<tbody>" + (slotsRows || "<tr><td colspan=\"7\">(なし)</td></tr>") + "</tbody></table>" +
+
+    "<h2>passives（オブジェクトレベル）</h2>" +
+    "<ul class=\"plain\">" + (passivesList.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(なし)</li>") + "</ul>" +
+
+    "<h2>actions</h2>" + (actionsHtml || "<p class=\"muted\">(なし)</p>") +
+
+    "<h2>combinations</h2>" + (combosHtml || "<p class=\"muted\">(なし)</p>");
+}
+
+function renderPropertyDetailPage(objName, propName) {
+  var o = DB.objectDefs[objName];
+  if (!o) {
+    return "<p class=\"error\">object_def '" + esc(objName) + "' が見つかりません。</p>" +
+      "<p><a href=\"#/\">← オブジェクト一覧へ</a></p>";
+  }
+  var p = o.props[propName];
+  if (!p) {
+    return "<p class=\"error\">'" + esc(objName) + "' に '" + esc(propName) + "' というpropはありません。</p>" +
+      "<p><a href=\"#/object/" + encodeURIComponent(o.name) + "\">← " + esc(o.name) + "へ</a></p>";
+  }
+
+  function renderBoundaryEffect(label, node, boundaryLabel) {
+    if (node === undefined) {
+      if (p.range) {
+        return "<p><strong>" + label + "</strong>: <span class=\"muted\">(未指定 — rangeの" + boundaryLabel + "へ自動でsetされます)</span></p>";
+      }
+      return "<p><strong>" + label + "</strong>: <span class=\"muted\">(なし)</span></p>";
+    }
+    var lines = renderActive(node);
+    return "<p><strong>" + label + "</strong>:</p><ul class=\"plain\">" +
+      lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>";
+  }
+
+  function renderOptionalEffect(label, node) {
+    if (node === undefined) return "<p><strong>" + label + "</strong>: <span class=\"muted\">(なし)</span></p>";
+    var lines = renderActive(node);
+    return "<p><strong>" + label + "</strong>:</p><ul class=\"plain\">" +
+      lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul>";
+  }
+
+  var stagesHtml = (p.stages || []).map(function (s) {
+    var stageGate = "stage=" + s.name;
+    var lines = [];
+    (s.passives || []).forEach(function (block) {
+      lines = lines.concat(renderPassiveBlock(block, stageGate));
+    });
+    return "<div class=\"card\"><h4>" + esc(s.name) + " " +
+      (s.min !== undefined ? "(min: " + esc(s.min) + ")" : "(フォールバック: 他のどの段階にも該当しない場合)") +
+      "</h4><ul class=\"plain\">" +
+      (lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(passiveなし)</li>") +
+      "</ul></div>";
+  }).join("");
+
+  var ownPassives = [];
+  (p.passives || []).forEach(function (block) {
+    ownPassives = ownPassives.concat(renderPassiveBlock(block));
+  });
+
+  return "<p class=\"breadcrumb\"><a href=\"#/object/" + encodeURIComponent(o.name) + "\">← " + esc(o.name) + "</a></p>" +
+    "<h1>" + esc(o.name) + "<span class=\"muted\">.</span>" + esc(propName) + "</h1>" +
+    "<p>初期値: <code>" + esc(summarizeValue(p)) + "</code></p>" +
+    (p.range ? "<p>range: <code>" + esc(p.range.min + " 〜 " + p.range.max) + "</code></p>" : "") +
+
+    renderBoundaryEffect("on_overflow", p.on_overflow, "上限") +
+    renderBoundaryEffect("on_shortfall", p.on_shortfall, "下限") +
+    renderOptionalEffect("on_min", p.on_min) +
+    renderOptionalEffect("on_max", p.on_max) +
+
+    "<h2>stages</h2>" + (stagesHtml || "<p class=\"muted\">(なし)</p>") +
+
+    "<h2>passives（プロパティレベル）</h2>" +
+    "<ul class=\"plain\">" + (ownPassives.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") || "<li class=\"muted\">(なし)</li>") + "</ul>";
+}
+
+// ------------------------------------------------------------------
+// ルーティング
+// ------------------------------------------------------------------
+
+function render() {
+  var hash = location.hash.replace(/^#\/?/, "");
+  var parts = hash.split("/").filter(Boolean).map(decodeURIComponent);
+  var app = document.getElementById("app");
+
+  if (!DB) {
+    app.innerHTML = "読み込み中…";
+    return;
+  }
+
+  if (parts.length === 0) {
+    app.innerHTML = renderObjectListPage();
+  } else if (parts[0] === "object" && parts[1]) {
+    app.innerHTML = renderObjectDetailPage(parts[1]);
+  } else if (parts[0] === "property" && parts[1] && parts[2]) {
+    app.innerHTML = renderPropertyDetailPage(parts[1], parts[2]);
+  } else {
+    app.innerHTML = "<p>ページが見つかりません。 <a href=\"#/\">オブジェクト一覧へ</a></p>";
+  }
+  window.scrollTo(0, 0);
+}
+
+function init() {
+  setStatus("読み込み中…");
+  discoverYamlFiles()
+    .then(function (files) {
+      if (files.length === 0) throw new Error(YAML_DIR + " にYAMLファイルが見つかりませんでした。");
+      return fetchAllYaml(files).then(function (texts) { return { texts: texts, files: files }; });
+    })
+    .then(function (result) {
+      var parsed = parseAllYaml(result.texts, result.files);
+      DB = buildDatabase(parsed.objectDefsRaw, parsed.traitsRaw);
+      setStatus(result.files.map(function (f) { return f.name; }).join(", ") + " を読み込みました");
+      render();
+    })
+    .catch(function (err) {
+      console.error(err);
+      document.getElementById("app").innerHTML =
+        "<div class=\"error\"><strong>読み込みに失敗しました。</strong><br>" + esc(err.message || String(err)) + "</div>";
+      setStatus("エラー");
+    });
+}
+
+window.addEventListener("hashchange", render);
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

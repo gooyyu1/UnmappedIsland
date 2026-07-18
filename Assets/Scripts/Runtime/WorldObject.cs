@@ -267,8 +267,14 @@ namespace UnmappedIsland.Runtime
             }
         }
 
-        /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、6.4節・8節）。</summary>
-        internal int GetNumberByLocalId(int localId) => properties[localId].AsNumber();
+        /// <summary>
+        /// Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、6.4節・8節）。
+        /// 実効値（GetEffectiveValue）を読む。conditions（14節）と同じ理由で、modifyだけで決まる派生
+        /// プロパティ（例: weather/hourから決まるsunlight）自身のstagesを判定できるようにするため
+        /// （生の値だけを読むと、そのプロパティ自身に一切accumulate/set/addが無い場合、常に初期値のまま
+        /// 判定されてしまう）。循環参照の検出はGetEffectiveValue自身が行う。
+        /// </summary>
+        internal int GetNumberByLocalId(int localId) => properties[localId].GetEffectiveValue();
 
         internal void RegisterPassiveEffect(int localPropertyId, RegisteredPassiveEffect effect)
         {

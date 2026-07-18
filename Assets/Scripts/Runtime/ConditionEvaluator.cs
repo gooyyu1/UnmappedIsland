@@ -31,22 +31,31 @@ namespace UnmappedIsland.Runtime
             }
         }
 
+        /// <summary>
+        /// 生の値（PropertyValue.AsNumber）ではなく実効値（GetEffectiveValue、8.3節のmodifyを加味した値）を
+        /// 見る。これにより、modifyだけで決まる派生プロパティ（例: weather/hourから決まるsunlight）を
+        /// 他のconditionsから参照できる。比較対象のnode.Values側はYAML上のリテラル値（PropertyValue.FromNumber
+        /// 生成、defを持たない）なので、そちらは引き続きAsNumberで読む（GetEffectiveValueはdef.Rangeを
+        /// 参照するため、defを持たないリテラル側では呼べない）。
+        /// </summary>
         private static bool EvaluateProperty(ConditionNode node, ConditionRootResolver resolveRoot)
         {
             WorldObject target = resolveRoot(node.Root);
             if (target == null) return false;
             if (!target.TryGetProperty(node.PropertyGlobalId, out PropertyValue current)) return false;
 
+            int currentValue = current.GetEffectiveValue();
+
             switch (node.Op)
             {
-                case ConditionOp.Lt: return current.AsNumber() < node.Values[0].AsNumber();
-                case ConditionOp.Lte: return current.AsNumber() <= node.Values[0].AsNumber();
-                case ConditionOp.Gt: return current.AsNumber() > node.Values[0].AsNumber();
-                case ConditionOp.Gte: return current.AsNumber() >= node.Values[0].AsNumber();
-                case ConditionOp.Eq: return ValueEquals(current, node.Values[0]);
-                case ConditionOp.Neq: return !ValueEquals(current, node.Values[0]);
-                case ConditionOp.In: return node.Values.Any(v => ValueEquals(current, v));
-                case ConditionOp.NotIn: return !node.Values.Any(v => ValueEquals(current, v));
+                case ConditionOp.Lt: return currentValue < node.Values[0].AsNumber();
+                case ConditionOp.Lte: return currentValue <= node.Values[0].AsNumber();
+                case ConditionOp.Gt: return currentValue > node.Values[0].AsNumber();
+                case ConditionOp.Gte: return currentValue >= node.Values[0].AsNumber();
+                case ConditionOp.Eq: return currentValue == node.Values[0].AsNumber();
+                case ConditionOp.Neq: return currentValue != node.Values[0].AsNumber();
+                case ConditionOp.In: return node.Values.Any(v => currentValue == v.AsNumber());
+                case ConditionOp.NotIn: return !node.Values.Any(v => currentValue == v.AsNumber());
                 default: return false;
             }
         }
@@ -61,7 +70,5 @@ namespace UnmappedIsland.Runtime
             int slotLocal = target.Parent.Def.SlotLayout.ToLocal(node.SlotGlobalId);
             return slotLocal != LocalIndexMap.Missing && target.ParentSlotLocalId == slotLocal;
         }
-
-        private static bool ValueEquals(PropertyValue a, PropertyValue b) => a.Number == b.Number;
     }
 }

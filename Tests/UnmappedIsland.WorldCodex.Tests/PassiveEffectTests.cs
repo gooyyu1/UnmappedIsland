@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
@@ -1093,6 +1094,74 @@ object_defs:
             Assert.That(innerInstance.Parent, Is.Null, "inner_boxは自分自身のon_minにより破棄される");
             Assert.That(batteryInstance.GetEffectiveValue(chargeId), Is.EqualTo(9),
                 "親(inner_box)が同じTick内で破棄されても、子(battery)は問題なくTickされる");
+        }
+
+        // ------------------------------------------------------------------
+        // conditions（14節）は実効値を見る
+        // ------------------------------------------------------------------
+
+        [Test]
+        public void Conditions_ReadEffectiveValue_NotRawValue()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    props:
+      source:
+        value: 10
+        passives:
+          - modify:
+              self:
+                source: 5
+      target:
+        value: 0
+        passives:
+          - conditions:
+              - {prop: source, op: gte, value: 15}
+            modify:
+              self:
+                target: 100
+";
+            var codex = Load(yaml);
+            int targetId = codex.PropertyNames.GetId("target");
+
+            WorldObject instance = Spawn(codex, "thing");
+
+            Assert.That(instance.GetEffectiveValue(targetId), Is.EqualTo(100),
+                "sourceの生値は10のままだが、実効値(10+5=15)を見るゲートは条件を満たす");
+        }
+
+        [Test]
+        public void GetEffectiveValue_CircularConditionDependency_ThrowsInsteadOfStackOverflow()
+        {
+            const string yaml = @"
+object_defs:
+  circular:
+    props:
+      a:
+        value: 0
+        passives:
+          - conditions:
+              - {prop: b, op: gte, value: 0}
+            modify:
+              self:
+                a: 1
+      b:
+        value: 0
+        passives:
+          - conditions:
+              - {prop: a, op: gte, value: 0}
+            modify:
+              self:
+                b: 1
+";
+            var codex = Load(yaml);
+            int aId = codex.PropertyNames.GetId("a");
+
+            WorldObject instance = Spawn(codex, "circular");
+
+            Assert.That((Func<int>)(() => instance.GetEffectiveValue(aId)),
+                Throws.TypeOf<InvalidOperationException>().With.Message.Contain("循環参照"));
         }
     }
 }
