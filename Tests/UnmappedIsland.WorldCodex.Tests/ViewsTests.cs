@@ -1,5 +1,7 @@
+using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
+using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 using UnmappedIsland.Runtime.Views;
 
@@ -12,21 +14,30 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class ViewsTests
     {
-        private static PropertyBlueprint Prop(string name, int defaultValue)
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
         {
-            return new PropertyBlueprint { Name = name, DefaultValue = PropertyValue.FromNumber(defaultValue) };
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
         }
 
         [Test]
         public void World_ExposesDayHourAndMinute()
         {
-            var worldDef = new ObjectDefBlueprint { Name = "world", IsSingleton = true };
-            worldDef.Properties.Add(Prop("day", 3));
-            worldDef.Properties.Add(Prop("hour", 8));
-            worldDef.Properties.Add(Prop("minute", 30));
-            worldDef.Properties.Add(Prop("minutes_per_tick", 15));
-
-            var codex = WorldCodexBuilder.Build(new[] { worldDef });
+            const string yaml = @"
+object_defs:
+  world:
+    singleton: true
+    props:
+      day:
+        value: 3
+      hour:
+        value: 8
+      minute:
+        value: 30
+      minutes_per_tick:
+        value: 15
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
 
             var world = new World(instance, codex.PropertyNames);
@@ -40,20 +51,25 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void World_ReflectsModifyContributions_NotJustRawValue()
         {
-            var worldDef = new ObjectDefBlueprint { Name = "world", IsSingleton = true };
-            worldDef.Properties.Add(Prop("day", 3));
-            worldDef.Properties.Add(Prop("hour", 8));
-            worldDef.Properties.Add(Prop("minute", 30));
-            worldDef.Properties.Add(Prop("minutes_per_tick", 15));
-            worldDef.Contributions.Add(new ContributionBlueprint
-            {
-                Target = ContributionTarget.Self,
-                Kind = ContributionKind.Modify,
-                TargetPropertyName = "minute",
-                Amount = 10,
-            });
-
-            var codex = WorldCodexBuilder.Build(new[] { worldDef });
+            const string yaml = @"
+object_defs:
+  world:
+    singleton: true
+    props:
+      day:
+        value: 3
+      hour:
+        value: 8
+      minute:
+        value: 30
+      minutes_per_tick:
+        value: 15
+    passives:
+      - modify:
+          self:
+            minute: 10
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
 
             var world = new World(instance, codex.PropertyNames);
@@ -64,11 +80,16 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void PlayerCharacter_ExposesHpAndSatiety()
         {
-            var characterDef = new ObjectDefBlueprint { Name = "character" };
-            characterDef.Properties.Add(Prop("hp", 100));
-            characterDef.Properties.Add(Prop("satiety", 50));
-
-            var codex = WorldCodexBuilder.Build(new[] { characterDef });
+            const string yaml = @"
+object_defs:
+  character:
+    props:
+      hp:
+        value: 100
+      satiety:
+        value: 50
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")));
 
             var actor = new PlayerCharacter(instance, codex.PropertyNames);
@@ -80,9 +101,11 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Location_WrapsInstanceWithoutRequiringAnyProperty()
         {
-            var locationDef = new ObjectDefBlueprint { Name = "forest_clearing" };
-
-            var codex = WorldCodexBuilder.Build(new[] { locationDef });
+            const string yaml = @"
+object_defs:
+  forest_clearing: {}
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("forest_clearing")));
 
             var location = new Location(instance);

@@ -1,6 +1,8 @@
+using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
 using UnmappedIsland.GameTime;
+using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 using UnmappedIsland.Runtime.Views;
 
@@ -8,9 +10,9 @@ namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
     /// WorldClock（core.yamlのtick=15分という時間モデルに対する、ゲーム側の時間進行ロジック）に対する
-    /// 自動テスト。YAMLパーサは対象外で、ObjectDefBlueprintを直接組み立てて検証する
-    /// （ContributionTests.csと同じ方針）。プロパティ名の解決はRuntime.Views.Worldに委ね、WorldClock自体は
-    /// 文字列のプロパティ名を一切知らない（テスト側の確認もWorld越しに行う）。
+    /// 自動テスト。core.yamlのworld object_defと同じ形のYAMLフィクスチャをWorldCodexYamlLoader経由で
+    /// パースして検証する（YamlLoaderTests.csと同じ方針）。プロパティ名の解決はRuntime.Views.Worldに
+    /// 委ね、WorldClock自体は文字列のプロパティ名を一切知らない（テスト側の確認もWorld越しに行う）。
     ///
     /// minuteはtick駆動のaccumulateを持たない（YAML側の自動加算とWorldClockの加算が二重にならないように
     /// するため）。minuteへの加算はすべてWorldClockが、常にminutes_per_tick以下の小さな量ずつ行う。
@@ -18,44 +20,49 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class WorldClockTests
     {
-        private static (WorldCodex Codex, World World) BuildWorld(int minutesPerTick = 15)
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
         {
-            var world = new ObjectDefBlueprint { Name = "world", IsSingleton = true };
-            world.Properties.Add(new PropertyBlueprint { Name = "tick", DefaultValue = PropertyValue.FromNumber(0) });
-            world.Properties.Add(new PropertyBlueprint { Name = "minutes_per_tick", DefaultValue = PropertyValue.FromNumber(minutesPerTick) });
-            world.Properties.Add(new PropertyBlueprint
-            {
-                Name = "minute",
-                DefaultValue = PropertyValue.FromNumber(0),
-                Range = new PropertyRange(0, 59),
-                OnOverflow = AddSelf(("minute", -60), ("hour", 1)),
-            });
-            world.Properties.Add(new PropertyBlueprint
-            {
-                Name = "hour",
-                DefaultValue = PropertyValue.FromNumber(0),
-                Range = new PropertyRange(0, 23),
-                OnOverflow = AddSelf(("hour", -24), ("day", 1)),
-            });
-            world.Properties.Add(new PropertyBlueprint { Name = "day", DefaultValue = PropertyValue.FromNumber(1) });
-            world.Contributions.Add(new ContributionBlueprint
-            {
-                Target = ContributionTarget.Self, Kind = ContributionKind.Accumulate, TargetPropertyName = "tick", Amount = 1,
-            });
-
-            var codex = WorldCodexBuilder.Build(new[] { world });
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
-            return (codex, new World(instance, codex.PropertyNames));
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
         }
 
-        private static ActiveEffectBlueprint AddSelf(params (string Property, int Amount)[] adds)
+        private static (WorldCodex Codex, World World) BuildWorld(int minutesPerTick = 15)
         {
-            var bp = new ActiveEffectBlueprint();
-            var list = new System.Collections.Generic.List<AddBlueprint>();
-            foreach (var (property, amount) in adds)
-                list.Add(new AddBlueprint { PropertyName = property, Amount = amount });
-            bp.Adds[ReferenceRoot.Self] = list;
-            return bp;
+            string yaml = $@"
+object_defs:
+  world:
+    singleton: true
+    props:
+      tick:
+        value: 0
+        passives:
+          - accumulate:
+              self:
+                tick: 1
+      minutes_per_tick:
+        value: {minutesPerTick}
+      minute:
+        value: 0
+        range: {{min: 0, max: 59}}
+        on_overflow:
+          add:
+            self:
+              minute: -60
+              hour: 1
+      hour:
+        value: 0
+        range: {{min: 0, max: 23}}
+        on_overflow:
+          add:
+            self:
+              hour: -24
+              day: 1
+      day:
+        value: 1
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
+            return (codex, new World(instance, codex.PropertyNames));
         }
 
         [Test]

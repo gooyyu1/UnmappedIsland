@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnmappedIsland.Runtime;
 
 namespace UnmappedIsland.Codex
 {
@@ -53,7 +52,10 @@ namespace UnmappedIsland.Codex
         public int GlobalId { get; }
         public string Name { get; }
 
-        public PropertyValue DefaultValue { get; }
+        /// <summary>実行時インスタンス生成（WorldObject構築）時に、この定義に属する新しいPropertyValueへ
+        /// 渡す初期値。定義自身が「初期値がどうあるべきか」を知っているため、テンプレートとなる
+        /// PropertyValueインスタンスをCloneするのではなく、この数値からPropertyValue.Createで直接作る。</summary>
+        public int DefaultNumber { get; }
 
         /// <summary>value: {min, max} による毎tick再ロール（6.2節）。使わない場合は null。</summary>
         public PropertyRange? RerollRange { get; }
@@ -68,7 +70,7 @@ namespace UnmappedIsland.Codex
         /// （折り返し）でも、他のプロパティ（繰り上げ先）でも構わない。
         ///
         /// Rangeが定義されていて著者が明示的にon_overflowを書かなかった場合、ここには「自分自身をRange.Max
-        /// へsetする」という既定のActiveEffectがビルド時に自動生成されて入る（ObjectDefBuilder参照）。
+        /// へsetする」という既定のActiveEffectがビルド時に自動生成されて入る（Loader.ObjectDefYamlConverter参照）。
         /// これにより、著者はレンジ型プロパティの上限クランプを、on_overflowを書かずに`range`を書くだけで
         /// 実現できる。Range自体が未定義の場合のみnull（上限の仕組み自体を持たない）。
         /// </summary>
@@ -78,7 +80,7 @@ namespace UnmappedIsland.Codex
         /// on_shortfall（6.3節）: on_overflowの下限側の鏡像。値がRange.Minを下回った際に、selfへ一度だけ
         /// 適用するactive内容。Rangeが定義されていて著者が明示的にon_shortfallを書かなかった場合、
         /// 「自分自身をRange.Minへsetする」という既定のActiveEffectがビルド時に自動生成される
-        /// （ObjectDefBuilder参照）。Range自体が未定義の場合のみnull。
+        /// （Loader.ObjectDefYamlConverter参照）。Range自体が未定義の場合のみnull。
         /// </summary>
         public ActiveEffect OnShortfall { get; }
 
@@ -103,7 +105,7 @@ namespace UnmappedIsland.Codex
         public PropertyDef(
             int globalId,
             string name,
-            PropertyValue defaultValue,
+            int defaultNumber,
             PropertyRange? rerollRange,
             PropertyRange? range,
             ActiveEffect onOverflow,
@@ -114,7 +116,7 @@ namespace UnmappedIsland.Codex
         {
             GlobalId = globalId;
             Name = name;
-            DefaultValue = defaultValue;
+            DefaultNumber = defaultNumber;
             RerollRange = rerollRange;
             Range = range;
             OnOverflow = onOverflow;

@@ -91,19 +91,30 @@ namespace UnmappedIsland.Loader
 
             var traitsByName = globalTraits.ToDictionary(kv => kv.Key, kv => TraitMerger.ParseTraitEntry(kv.Key, kv.Value.Node));
 
-            var blueprints = new List<ObjectDefBlueprint>();
+            var objectNames = new NameRegistry();
+            var propertyNames = new NameRegistry();
+            var slotNames = new NameRegistry();
+            var objectDefsByGlobalId = new Dictionary<int, ObjectDef>();
 
             foreach (var kv in globalObjectDefs)
             {
                 TraitMerger.RawObjectDef raw = TraitMerger.ParseObjectDefEntry(kv.Key, kv.Value.Node);
                 var (props, slots, passiveNodes, stackOrder, actions, combinations) = TraitMerger.Resolve(raw, traitsByName);
-                blueprints.Add(ObjectDefYamlConverter.Build(
-                    kv.Key, raw.IsSingleton, raw.TraitNames, props, slots, passiveNodes, stackOrder, actions, combinations));
+                ObjectDef def = ObjectDefYamlConverter.Build(
+                    kv.Key, raw.IsSingleton, raw.TraitNames, props, slots, passiveNodes, stackOrder, actions, combinations,
+                    objectNames, propertyNames, slotNames);
+                objectDefsByGlobalId[def.GlobalId] = def;
             }
 
-            ValidateWithReferences(blueprints, globalObjectDefs.Keys, traitsByName.Keys);
+            ValidateWithReferences(objectDefsByGlobalId.Values, globalObjectDefs.Keys, traitsByName.Keys);
 
-            return WorldCodexBuilder.Build(blueprints);
+            // ここで初めて全object_defを走査し終えるため、objectNames.Countが最終値として確定する
+            // （個々のObjectDef自体はInternの都度、その時点までの登録状況だけを見て組み立てられている）。
+            var defsByGlobalId = new ObjectDef[objectNames.Count];
+            foreach (var kv in objectDefsByGlobalId) defsByGlobalId[kv.Key] = kv.Value;
+
+            var wellKnown = new WellKnownProperties(propertyNames);
+            return new WorldCodex(objectNames, propertyNames, slotNames, new ObjectDefTable(defsByGlobalId), wellKnown);
         }
 
         /// <summary>
@@ -113,23 +124,23 @@ namespace UnmappedIsland.Loader
         /// 指しているかどうかをまとめて検証する（3.3節: 「ロード後に別途バリデーションステップを設ける」）。
         /// </summary>
         private static void ValidateWithReferences(
-            IReadOnlyList<ObjectDefBlueprint> blueprints, IEnumerable<string> objectDefNames, IEnumerable<string> traitNames)
+            IEnumerable<ObjectDef> objectDefs, IEnumerable<string> objectDefNames, IEnumerable<string> traitNames)
         {
             var knownNames = new HashSet<string>(objectDefNames);
             knownNames.UnionWith(traitNames);
 
-            foreach (var bp in blueprints)
+            foreach (var def in objectDefs)
             {
-                foreach (var slot in bp.Slots)
+                foreach (var slot in def.SlotDefs)
                     foreach (var accept in slot.Accepts)
-                        if (!knownNames.Contains(accept.ObjectName))
+                        if (!knownNames.Contains(accept.With))
                             throw new YamlLoadException(
-                                $"'{bp.Name}'.slots.'{slot.Name}'.accepts: '{accept.ObjectName}' という名前のobject_defまたはtraitが見つかりません。");
+                                $"'{def.Name}'.slots.'{slot.Name}'.accepts: '{accept.With}' という名前のobject_defまたはtraitが見つかりません。");
 
-                foreach (var combination in bp.Combinations)
+                foreach (var combination in def.Combinations)
                     if (!knownNames.Contains(combination.With))
                         throw new YamlLoadException(
-                            $"'{bp.Name}'.combinations.'{combination.Name}'.with: '{combination.With}' という名前のobject_defまたはtraitが見つかりません。");
+                            $"'{def.Name}'.combinations.'{combination.Name}'.with: '{combination.With}' という名前のobject_defまたはtraitが見つかりません。");
             }
         }
 

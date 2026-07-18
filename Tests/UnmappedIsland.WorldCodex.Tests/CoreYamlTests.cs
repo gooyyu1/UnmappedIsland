@@ -44,6 +44,12 @@ namespace UnmappedIsland.Codex.Tests
             throw new FileNotFoundException($"'{relativePath}' が祖先ディレクトリの中に見つかりませんでした。");
         }
 
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
+        {
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
+        }
+
         [Test]
         public void World_IsSingletonWithExpectedDefaultProperties()
         {
@@ -128,16 +134,20 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(locations.Accepts[0].With, Is.EqualTo("location"));
 
             // locationトレイトを参照するダミーのobject_defと、参照しないobject_defをそれぞれ組み立てて検証する。
-            var forest = new ObjectDefBlueprint { Name = "test_forest" };
-            forest.TraitNames.Add("location");
-            var rock = new ObjectDefBlueprint { Name = "test_rock" };
-
-            var testCodex = WorldCodexBuilder.Build(new[]
-            {
-                new ObjectDefBlueprint { Name = "test_world", Slots = { new SlotBlueprint { Name = "locations", Accepts = { new AcceptBlueprint { ObjectName = "location", Max = 9999 } } } } },
-                forest,
-                rock,
-            });
+            const string yaml = @"
+traits:
+  location: {}
+object_defs:
+  test_world:
+    slots:
+      locations:
+        accepts:
+          - {object: location, max: 9999}
+  test_forest:
+    traits: [location]
+  test_rock: {}
+";
+            var testCodex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             int locationsSlotId = testCodex.SlotNames.GetId("locations");
             var session = new WorldSession(testCodex);

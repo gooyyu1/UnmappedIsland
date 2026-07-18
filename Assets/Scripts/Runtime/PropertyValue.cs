@@ -4,28 +4,23 @@ using UnmappedIsland.Codex;
 namespace UnmappedIsland.Runtime
 {
     /// <summary>
-    /// props の実行時の値。数値（32bit整数、6節）のみを扱う。PropertyDef.DefaultValue（ロード時の初期値
-    /// テンプレート）にも、WorldObjectが保持する現在値にも使う。Contributionの影響先は「オブジェクト」ではなく
-    /// 「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、いずれも
-    /// WorldObjectではなくこの値自身が持つ。
+    /// props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値、および
+    /// FromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。Contributionの影響先は
+    /// 「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、
+    /// いずれもWorldObjectではなくこの値自身が持つ。
     ///
     /// 値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。
     /// WorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない
     /// （自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef
     /// （range・on_overflow等）と、それを保持するWorldObject（on_overflow等の適用先解決に使う）は、
-    /// いずれもこのインスタンス自身が保持し（Clone時に紐付ける）、呼び出しのたびに引数で受け取り直す
+    /// いずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに引数で受け取り直す
     /// ことはしない。
-    ///
-    /// PropertyDef.DefaultValue は全 WorldObject で共有される1つのテンプレートなので、
-    /// WorldObject 構築時は必ず Clone() で複製したものを使う（直接共有すると、ある WorldObject への
-    /// 加減算・効果登録が他の WorldObject にも及んでしまう）。テンプレート自身はどのPropertyDef・
-    /// WorldObjectにも紐付かない（Add/SetNumber等はClone後のインスタンスに対してしか呼ばれないため）。
     /// </summary>
     public sealed class PropertyValue
     {
         public int Number { get; private set; }
 
-        /// <summary>インスタンス化された時点（Clone）で確定し、以後変わらない関係のため readonly で強制する。</summary>
+        /// <summary>インスタンス化された時点（Create）で確定し、以後変わらない関係のため readonly で強制する。</summary>
         private readonly PropertyDef def;
         private readonly WorldObject owner;
 
@@ -47,10 +42,10 @@ namespace UnmappedIsland.Runtime
 
         public int AsNumber() => Number;
 
-        /// <summary>このテンプレートから、1つの WorldObject 専用の新しいインスタンスを作る（Incomingは空で始まる）。
+        /// <summary>WorldObject構築時に、1つのプロパティ用の新しいインスタンスを作る（Incomingは空で始まる）。
         /// defは、このプロパティが実際に属することになるPropertyDef（range・on_overflow等）、ownerはそれを
         /// 保持するWorldObjectを紐付ける。</summary>
-        internal PropertyValue Clone(PropertyDef def, WorldObject owner) => new PropertyValue(Number, def, owner);
+        internal static PropertyValue Create(int number, PropertyDef def, WorldObject owner) => new PropertyValue(number, def, owner);
 
         /// <summary>SetProperty用。登録済みのIncomingはそのまま、値の中身だけを差し替える。</summary>
         internal void CopyValueFrom(PropertyValue other)
@@ -145,7 +140,7 @@ namespace UnmappedIsland.Runtime
         /// 有無や着地点によらず、on_max/on_minは境界へ到達した瞬間を必ず捉える。
         ///
         /// on_overflow/on_shortfallは、rangeの外側にはみ出していれば、著者が指定した内容（未指定なら
-        /// ビルド時に合成された既定のset、ObjectDefBuilder.BuildOverflowSideEffect参照）を適用する。
+        /// ビルド時に合成された既定のset、Loader.ObjectDefYamlConverter参照）を適用する。
         /// この適用自体がAdd/SetNumberを通るため、その場でCheckRangeEventsが再評価され、1回のTick()・
         /// AddNumber呼び出しの中で複数span分の溢れ・繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が
         /// 宣言順に関わらず連鎖的に解決される。

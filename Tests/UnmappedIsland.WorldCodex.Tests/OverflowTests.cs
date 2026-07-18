@@ -1,6 +1,7 @@
-using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
+using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 
 namespace UnmappedIsland.Codex.Tests
@@ -16,64 +17,33 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class OverflowTests
     {
-        private static PropertyBlueprint WrappingProp(
-            string name, int defaultValue, int min, int max, params (string Property, int Amount)[] onOverflow)
+        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
         {
-            var bp = new PropertyBlueprint
-            {
-                Name = name,
-                DefaultValue = PropertyValue.FromNumber(defaultValue),
-                Range = new PropertyRange(min, max),
-                OnOverflow = new ActiveEffectBlueprint(),
-            };
-            var adds = new List<AddBlueprint>();
-            foreach (var (property, amount) in onOverflow)
-                adds.Add(new AddBlueprint { PropertyName = property, Amount = amount });
-            bp.OnOverflow.Adds[ReferenceRoot.Self] = adds;
-            return bp;
+            return new WorldCodexYamlLoader.SourceGroup(
+                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
         }
 
-        private static PropertyBlueprint PlainProp(string name, int defaultValue) =>
-            new PropertyBlueprint { Name = name, DefaultValue = PropertyValue.FromNumber(defaultValue) };
-
-        /// <summary>on_overflowをset(自分を絶対値へ戻す)+add(繰り上げ先への加算)で表現する版。
-        /// core.yamlが実際に使っている文法（accumulateの"-60"のような差分ではなく、setで0へ戻す）を検証する。</summary>
-        private static PropertyBlueprint SetAndAddWrappingProp(
-            string name, int defaultValue, int min, int max, int resetTo, string carryProperty, int carryAmount)
-        {
-            var bp = new PropertyBlueprint
-            {
-                Name = name,
-                DefaultValue = PropertyValue.FromNumber(defaultValue),
-                Range = new PropertyRange(min, max),
-                OnOverflow = new ActiveEffectBlueprint(),
-            };
-            bp.OnOverflow.Sets[ReferenceRoot.Self] = new List<AssignBlueprint> { new AssignBlueprint { PropertyName = name, Value = resetTo } };
-            bp.OnOverflow.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = carryProperty, Amount = carryAmount } };
-            return bp;
-        }
-
-        private static ContributionBlueprint SelfAccumulate(string propertyName, int amount)
-        {
-            return new ContributionBlueprint
-            {
-                Target = ContributionTarget.Self,
-                Kind = ContributionKind.Accumulate,
-                TargetPropertyName = propertyName,
-                Amount = amount,
-            };
-        }
+        private static WorldCodex Load(string yaml) =>
+            WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
         [Test]
         public void AddNumber_WithSession_CorrectsOverflowImmediately_WithoutWaitingForTick()
         {
             // Tick()を待たず、AddNumberにsessionを渡した瞬間にon_overflowが判定・適用されることを確認する。
             // これにより、値がrangeの外側（この例では60）にある状態が外部から観測される瞬間は生じない。
-            var clock = new ObjectDefBlueprint { Name = "clock_immediate" };
-            clock.Properties.Add(WrappingProp("minute", 45, min: 0, max: 59, ("minute", -60), ("hour", 1)));
-            clock.Properties.Add(PlainProp("hour", 0));
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock_immediate:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+";
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
@@ -91,11 +61,19 @@ namespace UnmappedIsland.Codex.Tests
         {
             // sessionを渡さない呼び出し（既存の呼び出し方との後方互換）は、値がrangeの外側のままでも
             // 即座には補正されず、明示的にTick()を呼ぶまで持ち越されることを確認する。
-            var clock = new ObjectDefBlueprint { Name = "clock_deferred" };
-            clock.Properties.Add(WrappingProp("minute", 45, min: 0, max: 59, ("minute", -60), ("hour", 1)));
-            clock.Properties.Add(PlainProp("hour", 0));
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock_deferred:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+";
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
@@ -119,16 +97,16 @@ namespace UnmappedIsland.Codex.Tests
             // on_overflowを省略した場合の既定合成（「自分自身をrange.maxへset」）は、値がちょうど境界に
             // 着地した後は同じ値への再setになる（差分0）。AddNumberが差分0を何もしないことで、
             // CheckRangeEvents→ApplyActiveEffect→SetNumber→AddNumberという無限再帰を防いでいることを確認する。
-            var tank = new ObjectDefBlueprint { Name = "tank_immediate" };
-            tank.Properties.Add(new PropertyBlueprint
-            {
-                Name = "pressure",
-                DefaultValue = PropertyValue.FromNumber(5),
-                Range = new PropertyRange(0, 10),
-                // OnOverflowを指定しない: ObjectDefBuilderが「自分自身をrange.maxへset」を既定合成する
-            });
-
-            var codex = WorldCodexBuilder.Build(new[] { tank });
+            const string yaml = @"
+object_defs:
+  tank_immediate:
+    props:
+      pressure:
+        value: 5
+        range: {min: 0, max: 10}
+        # on_overflowを指定しない: YAMLコンバータが「自分自身をrange.maxへset」を既定合成する
+";
+            var codex = Load(yaml);
             int pressureId = codex.PropertyNames.GetId("pressure");
             var session = new WorldSession(codex);
 
@@ -142,12 +120,23 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_WrapsPropertyAndCarriesToTarget_WhenExceedingRangeMax()
         {
-            var clock = new ObjectDefBlueprint { Name = "clock" };
-            clock.Properties.Add(WrappingProp("minute", 45, min: 0, max: 59, ("minute", -60), ("hour", 1)));
-            clock.Properties.Add(PlainProp("hour", 0));
-            clock.Contributions.Add(SelfAccumulate("minute", 15));
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+";
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
@@ -165,12 +154,24 @@ namespace UnmappedIsland.Codex.Tests
         {
             // set: {self: {minute: 0}} + add: {self: {hour: 1}} という、core.yamlが実際に使っている文法
             // （accumulateの"-60"のような差分指定ではなく、setで絶対値へ戻す）を検証する。
-            var clock = new ObjectDefBlueprint { Name = "clock_set" };
-            clock.Properties.Add(SetAndAddWrappingProp("minute", 45, min: 0, max: 59, resetTo: 0, carryProperty: "hour", carryAmount: 1));
-            clock.Properties.Add(PlainProp("hour", 0));
-            clock.Contributions.Add(SelfAccumulate("minute", 15));
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock_set:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          set: {self: {minute: 0}}
+          add: {self: {hour: 1}}
+      hour:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+";
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
@@ -186,12 +187,23 @@ namespace UnmappedIsland.Codex.Tests
         [Test]
         public void Tick_DoesNotOverflow_WhenValueStaysWithinRange()
         {
-            var clock = new ObjectDefBlueprint { Name = "clock2" };
-            clock.Properties.Add(WrappingProp("minute", 10, min: 0, max: 59, ("minute", -60), ("hour", 1)));
-            clock.Properties.Add(PlainProp("hour", 0));
-            clock.Contributions.Add(SelfAccumulate("minute", 15));
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock2:
+    props:
+      minute:
+        value: 10
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+";
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
@@ -210,11 +222,19 @@ namespace UnmappedIsland.Codex.Tests
             // on_overflowの補正自体(add: {self: {minute: -10}}})がAddNumberを通るため、その場でもう一度
             // CheckRangeEventsが評価される。1tickでrangeの幅を複数回分飛び越えていても、この連鎖により
             // 1回のTick()呼び出しの中だけで完全に解決される。
-            var clock = new ObjectDefBlueprint { Name = "clock3" };
-            clock.Properties.Add(WrappingProp("minute", 35, min: 0, max: 9, ("minute", -10), ("hour", 1))); // 範囲10分刻み、既に35(3span+5超過)
-            clock.Properties.Add(PlainProp("hour", 0));
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock3:
+    props:
+      minute:
+        value: 35
+        range: {min: 0, max: 9}
+        on_overflow:
+          add: {self: {minute: -10, hour: 1}}
+      hour:
+        value: 0
+";
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
@@ -236,13 +256,29 @@ namespace UnmappedIsland.Codex.Tests
             // minuteがhourより先に宣言されていれば、minute.Tickが先に走り繰り上げを適用した直後に
             // hour.Tickが走るため、hour自身の溢れも同じtick内で連鎖して解決する
             // （ループは無いが、宣言順どおりに1回ずつ処理が進むだけで足りる）。
-            var clock = new ObjectDefBlueprint { Name = "clock4" };
-            clock.Properties.Add(WrappingProp("minute", 50, min: 0, max: 59, ("minute", -60), ("hour", 1)));
-            clock.Properties.Add(WrappingProp("hour", 23, min: 0, max: 23, ("hour", -24), ("day", 1)));
-            clock.Properties.Add(PlainProp("day", 1));
-            clock.Contributions.Add(SelfAccumulate("minute", 15)); // 50+15=65 -> minute=5, hour+1(23->24, さらに折り返す)
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock4:
+    props:
+      minute:
+        value: 50
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 23
+        range: {min: 0, max: 23}
+        on_overflow:
+          add: {self: {hour: -24, day: 1}}
+      day:
+        value: 1
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+";
+            // 50+15=65 -> minute=5, hour+1(23->24, さらに折り返す)
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             int dayId = codex.PropertyNames.GetId("day");
@@ -263,13 +299,29 @@ namespace UnmappedIsland.Codex.Tests
             // hourがminuteより先に宣言されていても、minuteのon_overflowが行うadd: {self: {hour: 1}}}が
             // AddNumberを通るため、その場でhour自身のCheckRangeEventsも即座に評価される。宣言順に関わらず
             // 同じTick()呼び出しの中で連鎖的に解決される。
-            var clock = new ObjectDefBlueprint { Name = "clock5" };
-            clock.Properties.Add(WrappingProp("hour", 23, min: 0, max: 23, ("hour", -24), ("day", 1)));
-            clock.Properties.Add(PlainProp("day", 1));
-            clock.Properties.Add(WrappingProp("minute", 50, min: 0, max: 59, ("minute", -60), ("hour", 1)));
-            clock.Contributions.Add(SelfAccumulate("minute", 15)); // 50+15=65 -> minute=5, hour+1(23->24)
-
-            var codex = WorldCodexBuilder.Build(new[] { clock });
+            const string yaml = @"
+object_defs:
+  clock5:
+    props:
+      hour:
+        value: 23
+        range: {min: 0, max: 23}
+        on_overflow:
+          add: {self: {hour: -24, day: 1}}
+      day:
+        value: 1
+      minute:
+        value: 50
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+";
+            // 50+15=65 -> minute=5, hour+1(23->24)
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             int hourId = codex.PropertyNames.GetId("hour");
             int dayId = codex.PropertyNames.GetId("day");
@@ -290,14 +342,26 @@ namespace UnmappedIsland.Codex.Tests
             // on_minのadd（WorldObject.AddNumber）と同じ規約: このobject_defが持たないプロパティへの
             // 加算は、たとえ同名のプロパティを別のobject_defが持っていて名前自体は登録されていても、
             // 黙って無視される（エラーにしない）。
-            var a = new ObjectDefBlueprint { Name = "a_clock2" };
-            a.Properties.Add(WrappingProp("minute", 45, min: 0, max: 59, ("minute", -60), ("hour", 1))); // このobject_defはhourを持たない
-            a.Contributions.Add(SelfAccumulate("minute", 15));
-
-            var b = new ObjectDefBlueprint { Name = "b_something2" };
-            b.Properties.Add(PlainProp("hour", 0)); // 別のobject_defが同名プロパティを持つ(名前だけは登録される)
-
-            var codex = WorldCodexBuilder.Build(new[] { a, b });
+            const string yaml = @"
+object_defs:
+  a_clock2:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+  b_something2:
+    props:
+      hour:
+        value: 0
+";
+            // a_clock2はhourを持たない。b_something2が同名プロパティを持つ(名前だけは登録される)
+            var codex = Load(yaml);
             int minuteId = codex.PropertyNames.GetId("minute");
             var session = new WorldSession(codex);
 
@@ -320,15 +384,25 @@ namespace UnmappedIsland.Codex.Tests
             // gaugeは0-100を循環するプロパティ(on_overflowが自分自身を-100して折り返す、時計のminuteと同じ
             // パターン)。1tickでの加算(+150)がrangeの幅(100)を超えるため、on_overflow適用後のgaugeは
             // 50(range内)に収まってしまい、on_maxの判定(>=100)をon_overflowの後に行うと見逃してしまう。
-            var tank = new ObjectDefBlueprint { Name = "tank2" };
-            var gauge = WrappingProp("gauge", 0, min: 0, max: 100, ("gauge", -100));
-            gauge.OnMax = new ActiveEffectBlueprint();
-            gauge.OnMax.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = "alarm_count", Amount = 1 } };
-            tank.Properties.Add(gauge);
-            tank.Properties.Add(PlainProp("alarm_count", 0));
-            tank.Contributions.Add(SelfAccumulate("gauge", 150));
-
-            var codex = WorldCodexBuilder.Build(new[] { tank });
+            const string yaml = @"
+object_defs:
+  tank2:
+    props:
+      gauge:
+        value: 0
+        range: {min: 0, max: 100}
+        on_overflow:
+          add: {self: {gauge: -100}}
+        on_max:
+          add: {self: {alarm_count: 1}}
+      alarm_count:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            gauge: 150
+";
+            var codex = Load(yaml);
             int gaugeId = codex.PropertyNames.GetId("gauge");
             int alarmId = codex.PropertyNames.GetId("alarm_count");
             var session = new WorldSession(codex);
@@ -347,22 +421,25 @@ namespace UnmappedIsland.Codex.Tests
         {
             // on_maxのテストの下限側の鏡像。gaugeが1tickでrangeの下限をいきなり下回った場合でも、
             // on_shortfallによる折り返しの前に、on_minのレベルトリガーがその瞬間を検知できることを確認する。
-            var tank = new ObjectDefBlueprint { Name = "tank3" };
-            var gauge = new PropertyBlueprint
-            {
-                Name = "gauge",
-                DefaultValue = PropertyValue.FromNumber(50),
-                Range = new PropertyRange(0, 100),
-                OnShortfall = new ActiveEffectBlueprint(),
-                OnMin = new ActiveEffectBlueprint(),
-            };
-            gauge.OnShortfall.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = "gauge", Amount = 150 } };
-            gauge.OnMin.Adds[ReferenceRoot.Self] = new List<AddBlueprint> { new AddBlueprint { PropertyName = "alarm_count", Amount = 1 } };
-            tank.Properties.Add(gauge);
-            tank.Properties.Add(PlainProp("alarm_count", 0));
-            tank.Contributions.Add(SelfAccumulate("gauge", -150));
-
-            var codex = WorldCodexBuilder.Build(new[] { tank });
+            const string yaml = @"
+object_defs:
+  tank3:
+    props:
+      gauge:
+        value: 50
+        range: {min: 0, max: 100}
+        on_shortfall:
+          add: {self: {gauge: 150}}
+        on_min:
+          add: {self: {alarm_count: 1}}
+      alarm_count:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            gauge: -150
+";
+            var codex = Load(yaml);
             int gaugeId = codex.PropertyNames.GetId("gauge");
             int alarmId = codex.PropertyNames.GetId("alarm_count");
             var session = new WorldSession(codex);

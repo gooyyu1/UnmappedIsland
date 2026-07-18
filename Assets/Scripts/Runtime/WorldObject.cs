@@ -36,7 +36,7 @@ namespace UnmappedIsland.Runtime
 
             properties = new PropertyValue[def.PropertyDefs.Count];
             for (int i = 0; i < properties.Length; i++)
-                properties[i] = def.PropertyDefs[i].DefaultValue.Clone(def.PropertyDefs[i], this);
+                properties[i] = PropertyValue.Create(def.PropertyDefs[i].DefaultNumber, def.PropertyDefs[i], this);
 
             slots = new Slot[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
