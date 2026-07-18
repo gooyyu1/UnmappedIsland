@@ -25,14 +25,22 @@ namespace UnmappedIsland.Runtime
     {
         public int Number { get; private set; }
 
-        private PropertyDef def;
-        private WorldObject owner;
+        /// <summary>インスタンス化された時点（Clone）で確定し、以後変わらない関係のため readonly で強制する。</summary>
+        private readonly PropertyDef def;
+        private readonly WorldObject owner;
 
         private readonly List<ActiveContribution> incoming = new List<ActiveContribution>();
 
         private PropertyValue(int number)
         {
             Number = number;
+        }
+
+        private PropertyValue(int number, PropertyDef def, WorldObject owner)
+        {
+            Number = number;
+            this.def = def;
+            this.owner = owner;
         }
 
         public static PropertyValue FromNumber(int value) => new PropertyValue(value);
@@ -42,7 +50,7 @@ namespace UnmappedIsland.Runtime
         /// <summary>このテンプレートから、1つの WorldObject 専用の新しいインスタンスを作る（Incomingは空で始まる）。
         /// defは、このプロパティが実際に属することになるPropertyDef（range・on_overflow等）、ownerはそれを
         /// 保持するWorldObjectを紐付ける。</summary>
-        internal PropertyValue Clone(PropertyDef def, WorldObject owner) => new PropertyValue(Number) { def = def, owner = owner };
+        internal PropertyValue Clone(PropertyDef def, WorldObject owner) => new PropertyValue(Number, def, owner);
 
         /// <summary>SetProperty用。登録済みのIncomingはそのまま、値の中身だけを差し替える。</summary>
         internal void CopyValueFrom(PropertyValue other)
