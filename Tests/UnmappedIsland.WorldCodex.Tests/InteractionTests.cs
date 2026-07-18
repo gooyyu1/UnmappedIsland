@@ -143,7 +143,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject basketInstance = Spawn(codex, "basket");
             WorldObject rockInstance = Spawn(codex, "rock_item");
-            session.Containment.TryMoveToSlot(rockInstance, basketInstance, itemsSlotId, out _);
+            rockInstance.MoveToSlot(basketInstance, itemsSlotId, session.Codex.WellKnown, out _);
 
             bool executed = InteractionExecutor.TryExecuteAction(rockInstance, actor: null, "use", session);
 

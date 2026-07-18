@@ -8,7 +8,7 @@ namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
     /// modify/accumulate（GameElementDefinition.md 8節）の実行時集計（WorldObject.GetEffectiveValue/
-    /// Tick、Containment.TryMoveToSlot での登録）と、on_min/on_max（6節、値がRange境界に達している間
+    /// Tick、WorldObject.MoveToSlot での登録）と、on_min/on_max（6節、値がRange境界に達している間
     /// 毎回実行されるactive内容）に対する自動テスト。YAML文字列をWorldCodexYamlLoader経由でパースして
     /// 検証する（YamlLoaderTests.csと同じ方針）。
     /// </summary>
@@ -120,16 +120,15 @@ object_defs:
             int equipSlotId = codex.SlotNames.GetId("equip");
             int inventorySlotId = codex.SlotNames.GetId("inventory");
 
-            Containment containment = codex.CreateContainment();
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject armorInstance = Spawn(codex, "armor");
 
             Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(10), "装備前はボーナスなし");
 
-            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(armorInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(15), "equipに入っている間はボーナスが乗る");
 
-            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, inventorySlotId, out _), Is.True);
+            Assert.That(armorInstance.MoveToSlot(characterInstance, inventorySlotId, codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(10), "同じ親のままequip以外へ移すとボーナスが外れる");
         }
 
@@ -160,15 +159,14 @@ object_defs:
             int equipSlotId = codex.SlotNames.GetId("equip");
             int storageSlotId = codex.SlotNames.GetId("storage");
 
-            Containment containment = codex.CreateContainment();
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject chestInstance = Spawn(codex, "chest");
             WorldObject armorInstance = Spawn(codex, "armor");
 
-            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(armorInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(15));
 
-            Assert.That(containment.TryMoveToSlot(armorInstance, chestInstance, storageSlotId, out _), Is.True);
+            Assert.That(armorInstance.MoveToSlot(chestInstance, storageSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(10), "別の親へ移動したら元の親からの登録は消える");
         }
 
@@ -195,13 +193,12 @@ object_defs:
             int decayRateId = codex.PropertyNames.GetId("decay_rate");
             int storageSlotId = codex.SlotNames.GetId("storage");
 
-            Containment containment = codex.CreateContainment();
             WorldObject containerInstance = Spawn(codex, "preserving_container");
             WorldObject foodInstance = Spawn(codex, "food");
 
             Assert.That(foodInstance.GetEffectiveValue(decayRateId), Is.EqualTo(3), "格納前は影響なし");
 
-            Assert.That(containment.TryMoveToSlot(foodInstance, containerInstance, storageSlotId, out _), Is.True);
+            Assert.That(foodInstance.MoveToSlot(containerInstance, storageSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(foodInstance.GetEffectiveValue(decayRateId), Is.EqualTo(2), "storageに入っている間は腐敗速度が下がる");
         }
 
@@ -268,13 +265,12 @@ object_defs:
             int defenseId = codex.PropertyNames.GetId("defense");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
-            Containment containment = codex.CreateContainment();
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject helmetInstance = Spawn(codex, "helmet");
             WorldObject armorInstance = Spawn(codex, "armor");
 
-            Assert.That(containment.TryMoveToSlot(helmetInstance, characterInstance, equipSlotId, out _), Is.True);
-            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(helmetInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(armorInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
 
             Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(18));
         }
@@ -303,11 +299,10 @@ object_defs:
             int defenseId = codex.PropertyNames.GetId("defense");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
-            Containment containment = codex.CreateContainment();
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject armorInstance = Spawn(codex, "armor");
 
-            Assert.That(containment.TryMoveToSlot(armorInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(armorInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
 
             Assert.That(characterInstance.GetEffectiveValue(defenseId), Is.EqualTo(100));
         }
@@ -395,7 +390,6 @@ object_defs:
             int storageSlotId = codex.SlotNames.GetId("storage");
 
             var session = new WorldSession(codex);
-            Containment containment = session.Containment;
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject trashInstance = Spawn(codex, "trash");
             WorldObject bleedingInstance = Spawn(codex, "bleeding");
@@ -403,11 +397,11 @@ object_defs:
             characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(hydrationId), Is.EqualTo(100), "装着前はTickしても変化なし");
 
-            Assert.That(containment.TryMoveToSlot(bleedingInstance, characterInstance, conditionsSlotId, out _), Is.True);
+            Assert.That(bleedingInstance.MoveToSlot(characterInstance, conditionsSlotId, codex.WellKnown, out _), Is.True);
             characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(hydrationId), Is.EqualTo(95), "conditionsに入っている間はTick毎に減る");
 
-            Assert.That(containment.TryMoveToSlot(bleedingInstance, trashInstance, storageSlotId, out _), Is.True);
+            Assert.That(bleedingInstance.MoveToSlot(trashInstance, storageSlotId, codex.WellKnown, out _), Is.True);
             characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(hydrationId), Is.EqualTo(95), "取り除いた後はTickしても変化しない");
         }
@@ -443,11 +437,10 @@ object_defs:
             int conditionsSlotId = codex.SlotNames.GetId("conditions");
 
             var session = new WorldSession(codex);
-            Containment containment = session.Containment;
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject infectionInstance = Spawn(codex, "infection");
 
-            Assert.That(containment.TryMoveToSlot(infectionInstance, characterInstance, conditionsSlotId, out _), Is.True);
+            Assert.That(infectionInstance.MoveToSlot(characterInstance, conditionsSlotId, codex.WellKnown, out _), Is.True);
 
             characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(36), "progressがnoneの間は上がらない");
@@ -488,13 +481,12 @@ object_defs:
             int equipSlotId = codex.SlotNames.GetId("equip");
 
             var session = new WorldSession(codex);
-            Containment containment = session.Containment;
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject bootsInstance = Spawn(codex, "boots");
             WorldObject exhaustionInstance = Spawn(codex, "exhaustion");
 
-            Assert.That(containment.TryMoveToSlot(bootsInstance, characterInstance, equipSlotId, out _), Is.True);
-            Assert.That(containment.TryMoveToSlot(exhaustionInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(bootsInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(exhaustionInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
 
             Assert.That(characterInstance.GetEffectiveValue(staminaId), Is.EqualTo(60), "modifyだけが都度加味される（実体値は50のまま）");
 
@@ -532,13 +524,12 @@ object_defs:
             int staminaId = codex.PropertyNames.GetId("stamina");
             int equipSlotId = codex.SlotNames.GetId("equip");
 
-            Containment containment = codex.CreateContainment();
             WorldObject characterInstance = Spawn(codex, "character");
             WorldObject bootsInstance = Spawn(codex, "boots");
             WorldObject exhaustionInstance = Spawn(codex, "exhaustion");
 
-            Assert.That(containment.TryMoveToSlot(bootsInstance, characterInstance, equipSlotId, out _), Is.True);
-            Assert.That(containment.TryMoveToSlot(exhaustionInstance, characterInstance, equipSlotId, out _), Is.True);
+            Assert.That(bootsInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(exhaustionInstance.MoveToSlot(characterInstance, equipSlotId, codex.WellKnown, out _), Is.True);
 
             var incoming = characterInstance.GetIncomingContributions(staminaId);
 
@@ -633,7 +624,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject containerInstance = Spawn(codex, "holder");
             WorldObject bombInstance = Spawn(codex, "bomb");
-            Assert.That(session.Containment.TryMoveToSlot(bombInstance, containerInstance, itemsSlotId, out _), Is.True);
+            Assert.That(bombInstance.MoveToSlot(containerInstance, itemsSlotId, session.Codex.WellKnown, out _), Is.True);
 
             containerInstance.Tick(session);
 
@@ -664,7 +655,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject containerInstance = Spawn(codex, "holder");
             WorldObject tankInstance = Spawn(codex, "tank");
-            Assert.That(session.Containment.TryMoveToSlot(tankInstance, containerInstance, itemsSlotId, out _), Is.True);
+            Assert.That(tankInstance.MoveToSlot(containerInstance, itemsSlotId, session.Codex.WellKnown, out _), Is.True);
 
             containerInstance.Tick(session);
 
@@ -695,7 +686,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject containerInstance = Spawn(codex, "backpack");
             WorldObject batteryInstance = Spawn(codex, "power_cell");
-            Assert.That(session.Containment.TryMoveToSlot(batteryInstance, containerInstance, itemsSlotId, out _), Is.True);
+            Assert.That(batteryInstance.MoveToSlot(containerInstance, itemsSlotId, session.Codex.WellKnown, out _), Is.True);
 
             containerInstance.Tick(session);
 
@@ -724,7 +715,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject containerInstance = Spawn(codex, "lantern_holder");
             WorldObject torchInstance = Spawn(codex, "torch");
-            Assert.That(session.Containment.TryMoveToSlot(torchInstance, containerInstance, itemsSlotId, out _), Is.True);
+            Assert.That(torchInstance.MoveToSlot(containerInstance, itemsSlotId, session.Codex.WellKnown, out _), Is.True);
 
             containerInstance.Tick(session);
 
@@ -789,7 +780,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject locationInstance = Spawn(codex, "clearing2");
             WorldObject wetLogInstance = Spawn(codex, "wet_log");
-            Assert.That(session.Containment.TryMoveToSlot(wetLogInstance, locationInstance, groundSlotId, out _), Is.True);
+            Assert.That(wetLogInstance.MoveToSlot(locationInstance, groundSlotId, session.Codex.WellKnown, out _), Is.True);
 
             locationInstance.Tick(session);
 
@@ -834,7 +825,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject boxInstance = Spawn(codex, "small_box");
             WorldObject geodeInstance = Spawn(codex, "geode");
-            Assert.That(session.Containment.TryMoveToSlot(geodeInstance, boxInstance, shelfSlotId, out _), Is.True);
+            Assert.That(geodeInstance.MoveToSlot(boxInstance, shelfSlotId, session.Codex.WellKnown, out _), Is.True);
 
             boxInstance.Tick(session);
 
@@ -877,7 +868,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject caveInstance = Spawn(codex, "cave");
             WorldObject veinInstance = Spawn(codex, "vein");
-            Assert.That(session.Containment.TryMoveToSlot(veinInstance, caveInstance, floorSlotId, out _), Is.True);
+            Assert.That(veinInstance.MoveToSlot(caveInstance, floorSlotId, session.Codex.WellKnown, out _), Is.True);
 
             caveInstance.Tick(session);
 
@@ -950,7 +941,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject locationInstance = Spawn(codex, "clearing3");
             WorldObject bushInstance = Spawn(codex, "bush");
-            Assert.That(session.Containment.TryMoveToSlot(bushInstance, locationInstance, groundSlotId, out _), Is.True);
+            Assert.That(bushInstance.MoveToSlot(locationInstance, groundSlotId, session.Codex.WellKnown, out _), Is.True);
 
             locationInstance.Tick(session);
 
@@ -984,9 +975,9 @@ object_defs:
             WorldObject junk2 = Spawn(codex, "junk");
             WorldObject junk3 = Spawn(codex, "junk");
 
-            Assert.That(session.Containment.TryMoveToSlot(junk1, containerInstance, contentsSlotId, out _), Is.True);
-            Assert.That(session.Containment.TryMoveToSlot(junk2, containerInstance, contentsSlotId, out _), Is.True);
-            Assert.That(session.Containment.TryMoveToSlot(junk3, containerInstance, contentsSlotId, out _), Is.True);
+            Assert.That(junk1.MoveToSlot(containerInstance, contentsSlotId, session.Codex.WellKnown, out _), Is.True);
+            Assert.That(junk2.MoveToSlot(containerInstance, contentsSlotId, session.Codex.WellKnown, out _), Is.True);
+            Assert.That(junk3.MoveToSlot(containerInstance, contentsSlotId, session.Codex.WellKnown, out _), Is.True);
 
             containerInstance.Tick(session); // 例外を投げればテスト自体が失敗する
 
@@ -1010,15 +1001,14 @@ object_defs:
             var codex = Load(yaml);
             int contentsSlotId = codex.SlotNames.GetId("contents");
 
-            Containment containment = codex.CreateContainment();
             WorldObject boxInstance = Spawn(codex, "box");
             WorldObject itemInstance = Spawn(codex, "trinket");
-            Assert.That(containment.TryMoveToSlot(itemInstance, boxInstance, contentsSlotId, out _), Is.True);
+            Assert.That(itemInstance.MoveToSlot(boxInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
 
-            containment.Destroy(itemInstance);
+            itemInstance.Destroy(codex.WellKnown);
             Assert.That(itemInstance.Parent, Is.Null);
 
-            containment.Destroy(itemInstance); // 例外を投げればテスト自体が失敗する
+            itemInstance.Destroy(codex.WellKnown); // 例外を投げればテスト自体が失敗する
             Assert.That(itemInstance.Parent, Is.Null);
         }
 
@@ -1060,8 +1050,8 @@ object_defs:
             WorldObject innerInstance = Spawn(codex, "inner_box");
             WorldObject batteryInstance = Spawn(codex, "cell");
 
-            Assert.That(session.Containment.TryMoveToSlot(innerInstance, outerInstance, itemsSlotId, out _), Is.True);
-            Assert.That(session.Containment.TryMoveToSlot(batteryInstance, innerInstance, itemsSlotId, out _), Is.True);
+            Assert.That(innerInstance.MoveToSlot(outerInstance, itemsSlotId, session.Codex.WellKnown, out _), Is.True);
+            Assert.That(batteryInstance.MoveToSlot(innerInstance, itemsSlotId, session.Codex.WellKnown, out _), Is.True);
 
             outerInstance.Tick(session);
 

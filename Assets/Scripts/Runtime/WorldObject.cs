@@ -124,6 +124,149 @@ namespace UnmappedIsland.Runtime
             ParentSlotLocalId = parentSlotLocalId;
         }
 
+        /// <summary>
+        /// スロット移動を行う唯一の汎用操作（GameElementDefinition.md 7.1節の `move_to_slot`）。
+        /// accepts/capacity/UnitCapacityの検証は新しい親の対象Slot自身（Slot.CanAccept）に委ね、
+        /// このメソッドは「自分の所属先を差し替える」こと自体（旧親からの離脱・新親への合流・
+        /// weightの伝播・contribution edgeの登録）にのみ専念する（自分のことは自分でする、CLAUDE.md参照）。
+        ///
+        /// force=true の場合、accepts/capacity/UnitCapacityの検証を飛ばして必ず配置を成功させる（spawnの
+        /// フォールバック、9.4節専用。すべてのオブジェクトは必ずどこかの親に属さなければならないという
+        /// 前提を、退避先で保証するために使う）。スロット自体が存在しない場合は force でも失敗する
+        /// （存在しない配列indexへは置けないため）。
+        /// </summary>
+        public bool MoveToSlot(WorldObject newParent, int slotGlobalId, WellKnownProperties wellKnown, out string error, bool force = false) =>
+            AttachToSlot(newParent, slotGlobalId, insertAtIndex: null, wellKnown, out error, force);
+
+        /// <summary>
+        /// same_slot専用。通常の（同種のrunへソート挿入する）配置ロジックを使わず、指定した位置へ
+        /// そのまま挿入する。破棄されたオブジェクトの位置を、新しく生成されたオブジェクトへ引き継がせるために使う
+        /// （Place参照）。
+        /// </summary>
+        internal bool InsertAtIndex(WorldObject newParent, int slotGlobalId, int index, WellKnownProperties wellKnown, out string error, bool force = false) =>
+            AttachToSlot(newParent, slotGlobalId, index, wellKnown, out error, force);
+
+        private bool AttachToSlot(WorldObject newParent, int slotGlobalId, int? insertAtIndex, WellKnownProperties wellKnown, out string error, bool force)
+        {
+            int localSlot = newParent.Def.SlotLayout.ToLocal(slotGlobalId);
+            if (localSlot == LocalIndexMap.Missing)
+            {
+                error = $"'{newParent.Def.Name}' はスロット(id={slotGlobalId})を持ちません。";
+                return false;
+            }
+
+            Slot targetSlot = newParent.GetSlotByLocalId(localSlot);
+
+            if (!force && !targetSlot.CanAccept(this, wellKnown, newParent.Def.Name, out error))
+                return false;
+
+            DetachFromParent(wellKnown);
+
+            if (insertAtIndex.HasValue)
+                targetSlot.InsertAtCapturedPosition(this, insertAtIndex.Value);
+            else
+                targetSlot.AddInternal(this);
+
+            SetParent(newParent, localSlot);
+            newParent.PropagateWeightChange(localSlot, GetNumber(wellKnown.WeightId), wellKnown);
+            RegisterEdgeWith(newParent);
+
+            error = null;
+            return true;
+        }
+
+        /// <summary>
+        /// 対象オブジェクトを、現在の親から切り離す（destroy、9.3節）。切り離された時点で
+        /// worldツリーから到達不能になり、Tickの対象からも自然に外れる（世界に存在する＝
+        /// worldの下にぶら下がっている、という前提のため、別途「存在するオブジェクト一覧」は持たない）。
+        /// 既に親を持たない場合は何もしない（destroyは繰り返し実行しても安全、6.5節）。
+        /// </summary>
+        public void Destroy(WellKnownProperties wellKnown) => DetachFromParent(wellKnown);
+
+        private void DetachFromParent(WellKnownProperties wellKnown)
+        {
+            WorldObject oldParent = Parent;
+            if (oldParent == null) return;
+
+            int oldParentSlotLocalId = ParentSlotLocalId;
+            oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(this);
+            oldParent.PropagateWeightChange(oldParentSlotLocalId, -GetNumber(wellKnown.WeightId), wellKnown);
+            UnregisterEdgeWith(oldParent);
+            SetParent(null, LocalIndexMap.Missing);
+        }
+
+        /// <summary>
+        /// ContainerSystem.md 1〜2節: 重さは derived ではなく move_to_slot の副作用として、出入りのたびに
+        /// weight プロパティへ加減算する。自分自身から祖先を遡りながら各階層の weight_rate を
+        /// 掛け合わせていくことで、入れ子（アイテム→バッグ→バックパック→装備）が自然にカスケードする。
+        /// weight_rate は端数を持つ倍率（例: 0.5）だが weight プロパティ自体は整数のため、
+        /// 各階層へ加算する直前にだけ丸める（伝播中の途中値は端数のまま次の階層の倍率と掛け合わせる）。
+        /// このメソッドは常に「対象スロットを持つ自分自身」から呼ばれ、以降は自分の祖先だけを辿る
+        /// （newParent.PropagateWeightChange(...) / oldParent.PropagateWeightChange(...) という
+        /// 呼び方をするのはそのため）。
+        /// </summary>
+        private void PropagateWeightChange(int occupiedSlotLocalId, double delta, WellKnownProperties wellKnown)
+        {
+            WorldObject current = this;
+            int slotLocalId = occupiedSlotLocalId;
+
+            while (current != null)
+            {
+                SlotDef slotDef = current.Def.SlotDefs[slotLocalId];
+                delta *= slotDef.WeightRate;
+                current.AddNumber(wellKnown.WeightId, (int)Math.Round(delta));
+
+                if (current.Parent == null) break;
+                slotLocalId = current.ParentSlotLocalId;
+                current = current.Parent;
+            }
+        }
+
+        /// <summary>
+        /// 親子関係が結ばれた瞬間に、双方の効果（modify/accumulate、8節）を相手側へ登録する。
+        /// target=Parent（自分の効果が親へ及ぶ、例: 防具の`passive.parent`）は親へ、
+        /// target=Child（親の効果が自分へ及ぶ）は自分へ登録する。target=Selfは各WorldObjectの
+        /// コンストラクタで既に登録済みのため、ここでは扱わない。kind(modify/accumulate)は登録先を
+        /// 選ぶ判断に一切影響しない（評価側でのみ区別される）。
+        /// </summary>
+        private void RegisterEdgeWith(WorldObject parent)
+        {
+            foreach (var c in Def.Contributions)
+            {
+                if (c.Target != ContributionTarget.Parent) continue;
+                int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                parent.RegisterContribution(local, new ActiveContribution(declarer: this, slotBearer: this, def: c));
+            }
+
+            foreach (var c in parent.Def.Contributions)
+            {
+                if (c.Target != ContributionTarget.Child) continue;
+                int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                RegisterContribution(local, new ActiveContribution(declarer: parent, slotBearer: this, def: c));
+            }
+        }
+
+        private void UnregisterEdgeWith(WorldObject parent)
+        {
+            foreach (var c in Def.Contributions)
+            {
+                if (c.Target != ContributionTarget.Parent) continue;
+                int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                parent.UnregisterContributionsFrom(this, local);
+            }
+
+            foreach (var c in parent.Def.Contributions)
+            {
+                if (c.Target != ContributionTarget.Child) continue;
+                int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
+                if (local == LocalIndexMap.Missing) continue;
+                UnregisterContributionsFrom(parent, local);
+            }
+        }
+
         /// <summary>Declarer自身のObjectDefに対してのみ有効なローカルID直読み（WhenOwnStageゲート専用、6.4節・8節）。</summary>
         internal int GetNumberByLocalId(int localId) => properties[localId].AsNumber();
 
@@ -140,7 +283,7 @@ namespace UnmappedIsland.Runtime
         /// <summary>
         /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
         /// target(self/parent/child)の違いはRegisterContribution呼び出し側（WorldObjectコンストラクタ・
-        /// Containment）にのみ存在し、ここでは一切区別しない。Kind.Accumulateの寄与はTick参照。
+        /// RegisterEdgeWith）にのみ存在し、ここでは一切区別しない。Kind.Accumulateの寄与はTick参照。
         /// </summary>
         public int GetEffectiveValue(int propertyGlobalId)
         {
@@ -215,7 +358,7 @@ namespace UnmappedIsland.Runtime
                 if (!effect.Destroy.Contains(key)) continue;
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
-                session.Containment.Destroy(target);
+                target.Destroy(session.Codex.WellKnown);
             }
 
             if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
@@ -331,16 +474,16 @@ namespace UnmappedIsland.Runtime
                     }
 
                     if (placed)
-                        placed = session.Containment.TryMoveToSlot(spawned, a.Parent, slot.Def.GlobalId, out _, force: false);
+                        placed = spawned.MoveToSlot(a.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
                 }
                 else if (slot.Def.FixedPositions)
                 {
                     // 新しい型が既にこのスロットに存在する（同種スタックへの合流）。番号操作は不要。
-                    placed = session.Containment.TryMoveToSlot(spawned, a.Parent, slot.Def.GlobalId, out _, force: false);
+                    placed = spawned.MoveToSlot(a.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
                 }
                 else
                 {
-                    placed = session.Containment.TryInsertAtIndex(spawned, a.Parent, slot.Def.GlobalId, a.ListIndex, out _, force: false);
+                    placed = spawned.InsertAtIndex(a.Parent, slot.Def.GlobalId, a.ListIndex, session.Codex.WellKnown, out _, force: false);
                 }
             }
             else
@@ -385,7 +528,7 @@ namespace UnmappedIsland.Runtime
         private static bool TryFirstAcceptingSlot(WorldObject spawned, WorldObject target, WorldSession session, bool force)
         {
             foreach (var slotDef in target.Def.SlotDefs)
-                if (session.Containment.TryMoveToSlot(spawned, target, slotDef.GlobalId, out _, force))
+                if (spawned.MoveToSlot(target, slotDef.GlobalId, session.Codex.WellKnown, out _, force))
                     return true;
 
             return false;

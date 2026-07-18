@@ -62,7 +62,6 @@ object_defs:
             int lifeId = codex.PropertyNames.GetId("life");
             int pileSlotId = codex.SlotNames.GetId("pile");
 
-            Containment containment = codex.CreateContainment();
             WorldObject groundInstance = Spawn(codex, "ground");
 
             WorldObject log10 = Spawn(codex, "log");
@@ -72,9 +71,9 @@ object_defs:
             WorldObject log20 = Spawn(codex, "log");
             log20.SetProperty(lifeId, PropertyValue.FromNumber(20));
 
-            containment.TryMoveToSlot(log10, groundInstance, pileSlotId, out _);
-            containment.TryMoveToSlot(log5, groundInstance, pileSlotId, out _);
-            containment.TryMoveToSlot(log20, groundInstance, pileSlotId, out _);
+            log10.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
+            log5.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
+            log20.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
 
             groundInstance.TryGetSlot(pileSlotId, out Slot pile);
 
@@ -97,15 +96,14 @@ object_defs:
             var codex = Load(yaml);
             int pileSlotId = codex.SlotNames.GetId("pile");
 
-            Containment containment = codex.CreateContainment();
             WorldObject groundInstance = Spawn(codex, "ground2");
             WorldObject wood1 = Spawn(codex, "wood");
             WorldObject wood2 = Spawn(codex, "wood");
             WorldObject rock1 = Spawn(codex, "rock");
 
-            containment.TryMoveToSlot(wood1, groundInstance, pileSlotId, out _);
-            containment.TryMoveToSlot(wood2, groundInstance, pileSlotId, out _);
-            containment.TryMoveToSlot(rock1, groundInstance, pileSlotId, out _);
+            wood1.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
+            wood2.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
+            rock1.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
 
             groundInstance.TryGetSlot(pileSlotId, out Slot pile);
             var stacks = pile.GetStacks();
@@ -152,9 +150,9 @@ object_defs:
             WorldObject bInstance = Spawn(codex, "b_item");
             WorldObject cInstance = Spawn(codex, "c_item");
 
-            session.Containment.TryMoveToSlot(aInstance, locInstance, pileSlotId, out _);
-            session.Containment.TryMoveToSlot(bInstance, locInstance, pileSlotId, out _);
-            session.Containment.TryMoveToSlot(cInstance, locInstance, pileSlotId, out _);
+            aInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
+            bInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
+            cInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
 
             locInstance.Tick(session);
 
@@ -196,10 +194,10 @@ object_defs:
             WorldObject bInstance2 = Spawn(codex, "b_item2"); // life=0 になり置き換わる方
             WorldObject cInstance = Spawn(codex, "c_item2");
 
-            session.Containment.TryMoveToSlot(aInstance, locInstance, pileSlotId, out _);
-            session.Containment.TryMoveToSlot(bInstance1, locInstance, pileSlotId, out _);
-            session.Containment.TryMoveToSlot(bInstance2, locInstance, pileSlotId, out _);
-            session.Containment.TryMoveToSlot(cInstance, locInstance, pileSlotId, out _);
+            aInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
+            bInstance1.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
+            bInstance2.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
+            cInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
 
             // bInstance1 は on_min が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
             bInstance1.SetProperty(lifeId, PropertyValue.FromNumber(5));
@@ -242,9 +240,9 @@ object_defs:
             WorldObject bInstance = Spawn(codex, "b_item3");
             WorldObject cInstance = Spawn(codex, "c_item3");
 
-            session.Containment.TryMoveToSlot(aInstance, locInstance, pileSlotId, out _);
-            session.Containment.TryMoveToSlot(bInstance, locInstance, pileSlotId, out _);
-            session.Containment.TryMoveToSlot(cInstance, locInstance, pileSlotId, out _);
+            aInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
+            bInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
+            cInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
 
             locInstance.Tick(session);
 
@@ -275,7 +273,6 @@ object_defs:
             var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
 
-            Containment containment = codex.CreateContainment();
             WorldObject handInstance = Spawn(codex, "hand_owner");
 
             WorldObject apple1 = Spawn(codex, "apple_h");
@@ -283,11 +280,11 @@ object_defs:
             WorldObject pebble1 = Spawn(codex, "pebble_h");
             WorldObject twig1 = Spawn(codex, "twig_h");
 
-            Assert.That(containment.TryMoveToSlot(apple1, handInstance, handSlotId, out _), Is.True);
-            Assert.That(containment.TryMoveToSlot(apple2, handInstance, handSlotId, out _), Is.True,
+            Assert.That(apple1.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(apple2.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _), Is.True,
                 "同種の追加はunit_capacityの種類数を消費しない");
-            Assert.That(containment.TryMoveToSlot(pebble1, handInstance, handSlotId, out _), Is.True);
-            Assert.That(containment.TryMoveToSlot(twig1, handInstance, handSlotId, out _), Is.False,
+            Assert.That(pebble1.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(twig1.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _), Is.False,
                 "3種類目はunit_capacity(2)を超えるため拒否される");
         }
 
@@ -306,16 +303,15 @@ object_defs:
             var codex = Load(yaml);
             int intakeSlotId = codex.SlotNames.GetId("intake");
 
-            Containment containment = codex.CreateContainment();
             WorldObject furnaceInstance = Spawn(codex, "furnace");
             WorldObject fuel1 = Spawn(codex, "fuel");
             WorldObject fuel2 = Spawn(codex, "fuel");
             WorldObject fuel3 = Spawn(codex, "fuel");
 
-            Assert.That(containment.TryMoveToSlot(fuel1, furnaceInstance, intakeSlotId, out _), Is.True);
-            Assert.That(containment.TryMoveToSlot(fuel2, furnaceInstance, intakeSlotId, out _), Is.True,
+            Assert.That(fuel1.MoveToSlot(furnaceInstance, intakeSlotId, codex.WellKnown, out _), Is.True);
+            Assert.That(fuel2.MoveToSlot(furnaceInstance, intakeSlotId, codex.WellKnown, out _), Is.True,
                 "非stackableは同種でも個体ごとに枠を消費する");
-            Assert.That(containment.TryMoveToSlot(fuel3, furnaceInstance, intakeSlotId, out _), Is.False,
+            Assert.That(fuel3.MoveToSlot(furnaceInstance, intakeSlotId, codex.WellKnown, out _), Is.False,
                 "同種であっても個数がunit_capacity(2)を超えるため3個目は拒否される");
         }
 
@@ -344,22 +340,21 @@ object_defs:
             int typeBId = codex.ObjectNames.GetId("type_b");
             int typeCId = codex.ObjectNames.GetId("type_c");
 
-            Containment containment = codex.CreateContainment();
             WorldObject handInstance = Spawn(codex, "hand_owner2");
             WorldObject a = Spawn(codex, "type_a");
             WorldObject b = Spawn(codex, "type_b");
 
-            containment.TryMoveToSlot(a, handInstance, handSlotId, out _);
-            containment.TryMoveToSlot(b, handInstance, handSlotId, out _);
+            a.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _);
+            b.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand2);
             Assert.That(hand2.GetGridIndex(typeAId), Is.EqualTo(0));
             Assert.That(hand2.GetGridIndex(typeBId), Is.EqualTo(1));
 
-            containment.Destroy(a); // 0番が空く
+            a.Destroy(codex.WellKnown); // 0番が空く
 
             WorldObject c = Spawn(codex, "type_c");
-            containment.TryMoveToSlot(c, handInstance, handSlotId, out _);
+            c.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _);
 
             Assert.That(hand2.GetGridIndex(typeBId), Is.EqualTo(1), "既存の型は前詰めされず番号を維持する");
             Assert.That(hand2.GetGridIndex(typeCId), Is.EqualTo(0), "新しい型は空いている最小番号(0)へ入る");
@@ -384,13 +379,12 @@ object_defs:
             int typeAId = codex.ObjectNames.GetId("type_a2");
             int typeBId = codex.ObjectNames.GetId("type_b2");
 
-            Containment containment = codex.CreateContainment();
             WorldObject handInstance = Spawn(codex, "hand_owner3");
             WorldObject a = Spawn(codex, "type_a2");
             WorldObject b = Spawn(codex, "type_b2");
 
-            containment.TryMoveToSlot(a, handInstance, handSlotId, out _);
-            containment.TryMoveToSlot(b, handInstance, handSlotId, out _);
+            a.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _);
+            b.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand3);
 
@@ -435,9 +429,9 @@ object_defs:
             WorldObject fillerInstance = Spawn(codex, "filler_item"); // 0番を先に占有
             WorldObject potatoInstance = Spawn(codex, "potato"); // 1番に入る
 
-            session.Containment.TryMoveToSlot(fillerInstance, handInstance, handSlotId, out _);
-            session.Containment.TryMoveToSlot(potatoInstance, handInstance, handSlotId, out _);
-            session.Containment.Destroy(fillerInstance); // 0番が空く（1番=potatoとは別に）
+            fillerInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
+            potatoInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
+            fillerInstance.Destroy(session.Codex.WellKnown); // 0番が空く（1番=potatoとは別に）
 
             handInstance.TryGetSlot(handSlotId, out Slot hand4);
             int potatoGridIndex = hand4.GetGridIndex(codex.ObjectNames.GetId("potato")).Value;
@@ -484,8 +478,8 @@ object_defs:
             WorldObject potato1 = Spawn(codex, "potato2"); // freshness=5のまま生き残る方
             WorldObject potato2 = Spawn(codex, "potato2"); // freshness=0のまま置き換わる方
 
-            session.Containment.TryMoveToSlot(potato1, handInstance, handSlotId, out _);
-            session.Containment.TryMoveToSlot(potato2, handInstance, handSlotId, out _);
+            potato1.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
+            potato2.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
             potato1.SetProperty(freshnessId, PropertyValue.FromNumber(5));
 
             handInstance.TryGetSlot(handSlotId, out Slot hand5);
@@ -557,12 +551,12 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject locationInstance = Spawn(codex, "loc_fallback");
             WorldObject handInstance = Spawn(codex, "hand_owner6");
-            session.Containment.TryMoveToSlot(handInstance, locationInstance, groundSlotId, out _);
+            handInstance.MoveToSlot(locationInstance, groundSlotId, session.Codex.WellKnown, out _);
 
             WorldObject aInstance = Spawn(codex, "type_a3");
             WorldObject bInstance = Spawn(codex, "type_b3");
-            session.Containment.TryMoveToSlot(aInstance, handInstance, handSlotId, out _); // grid 0
-            session.Containment.TryMoveToSlot(bInstance, handInstance, handSlotId, out _); // grid 1
+            aInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _); // grid 0
+            bInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _); // grid 1
 
             handInstance.TryGetSlot(handSlotId, out Slot hand6);
             Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
@@ -634,7 +628,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject handInstance = Spawn(codex, "hand_owner7");
             WorldObject aInstance = Spawn(codex, "type_a4");
-            session.Containment.TryMoveToSlot(aInstance, handInstance, handSlotId, out _);
+            aInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand7);
             Assert.That(hand7.GetGridIndex(aTypeId), Is.EqualTo(0));
@@ -696,8 +690,8 @@ object_defs:
             WorldObject handInstance = Spawn(codex, "hand_owner8");
             WorldObject aInstance = Spawn(codex, "type_a5");
             WorldObject bInstance = Spawn(codex, "type_b5");
-            session.Containment.TryMoveToSlot(aInstance, handInstance, handSlotId, out _);
-            session.Containment.TryMoveToSlot(bInstance, handInstance, handSlotId, out _);
+            aInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
+            bInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand8);
             // 前提を「_ _ A B」（A=2, B=3）に合わせる。
@@ -768,10 +762,10 @@ object_defs:
             WorldObject aInstance = Spawn(codex, "type_a6");
             WorldObject bInstance = Spawn(codex, "type_b6");
 
-            session.Containment.TryMoveToSlot(c1, handInstance, handSlotId, out _);
-            session.Containment.TryMoveToSlot(c2, handInstance, handSlotId, out _); // 既存のCスタックへ合流
-            session.Containment.TryMoveToSlot(aInstance, handInstance, handSlotId, out _);
-            session.Containment.TryMoveToSlot(bInstance, handInstance, handSlotId, out _);
+            c1.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
+            c2.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _); // 既存のCスタックへ合流
+            aInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
+            bInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand9);
             // 前提を「_ C(x2) A B」（C=1, A=2, B=3）に合わせる。

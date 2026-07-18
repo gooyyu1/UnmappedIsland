@@ -8,7 +8,7 @@ namespace UnmappedIsland.Runtime
     /// <summary>
     /// 1つの WorldObject が持つ、1つのスロットの実行時状態。中に入っている WorldObject の一覧を保持する。
     /// 正の情報源はこちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。
-    /// 中身の追加・削除は Containment.TryMoveToSlot 経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。
+    /// 中身の追加・削除は WorldObject.MoveToSlot 経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。
     ///
     /// Contentsの並び順は「表示上のスタック順」そのものを表す実データとして維持する（都度ソートし直す
     /// 派生ビューではない）。同種オブジェクトは常に連続した区間（run）としてまとまり、run内は
@@ -29,6 +29,65 @@ namespace UnmappedIsland.Runtime
         public Slot(SlotDef def)
         {
             Def = def;
+        }
+
+        /// <summary>
+        /// move_to_slot（7.1節）が候補オブジェクトを受け入れられるかを、この Slot 自身の Def と
+        /// Contents だけで判定する（accepts制約・capacity・UnitCapacity、7.2〜7.3節）。force=trueの
+        /// 場合はこの判定自体を呼び出し側（WorldObject.AttachToSlot）がスキップする。
+        /// </summary>
+        internal bool CanAccept(WorldObject candidate, WellKnownProperties wellKnown, string ownerName, out string error)
+        {
+            if (!AcceptsRule(candidate))
+            {
+                error = $"'{ownerName}.{Def.Name}' は '{candidate.Def.Name}' を受け入れられません（accepts制約）。";
+                return false;
+            }
+
+            if (Def.Capacity.HasValue)
+            {
+                int currentSize = SumSize(wellKnown.SizeId);
+                int addedSize = candidate.GetNumber(wellKnown.SizeId);
+                if (currentSize + addedSize > Def.Capacity.Value)
+                {
+                    error = $"'{ownerName}.{Def.Name}' の容量（{Def.Capacity}）を超えます。";
+                    return false;
+                }
+            }
+
+            if (Def.UnitCapacity.HasValue && !HasCapacityFor(candidate.Def.GlobalId))
+            {
+                error = $"'{ownerName}.{Def.Name}' の上限（{Def.UnitCapacity}）を超えます。";
+                return false;
+            }
+
+            error = null;
+            return true;
+        }
+
+        private bool AcceptsRule(WorldObject candidate)
+        {
+            IReadOnlyList<SlotAcceptRule> rules = Def.Accepts;
+            if (rules.Count == 0) return true; // accepts省略 = 無制限スロット（7.1節）
+
+            foreach (var rule in rules)
+            {
+                if (!rule.Matches(candidate.Def)) continue;
+
+                int countOfSameType = 0;
+                foreach (var existing in contents)
+                    if (rule.Matches(existing.Def)) countOfSameType++;
+
+                if (countOfSameType < rule.Max) return true;
+            }
+            return false;
+        }
+
+        private int SumSize(int sizePropertyGlobalId)
+        {
+            int total = 0;
+            foreach (var o in contents) total += o.GetNumber(sizePropertyGlobalId);
+            return total;
         }
 
         /// <summary>通常の追加。Stackable/FixedPositions/StackOrderに従って正しい位置へ挿入する。</summary>
