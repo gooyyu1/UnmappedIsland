@@ -31,11 +31,22 @@ jobs:
 
       - name: Convert markdown files to HTML
         run: |
+          # スマホでの表示崩れ対策（狭い画面でも余白を詰めてはみ出させない）。githubのviewport meta
+          # 自体はpandocの既定テンプレートが常に出力するため、ここではarticleラッパーの余白だけ補正する。
+          cat > /tmp/docs-mobile-header.html <<'EOF'
+          <style>
+            @media (max-width: 600px) {
+              .markdown-body { padding: 1rem !important; }
+            }
+          </style>
+          EOF
+
           PANDOC_OPTS=(
             --standalone
             --metadata charset=utf-8
             --css=https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css
-            --variable=include-before='<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">'
+            --include-in-header=/tmp/docs-mobile-header.html
+            --variable=include-before='<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">'
             --variable=include-after='</article>'
           )
 
@@ -91,10 +102,12 @@ jobs:
             {
               echo '<!DOCTYPE html>'
               echo '<html lang="ja"><head><meta charset="utf-8" />'
+              echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />'
               echo "<title>${title}</title>"
               echo '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />'
+              echo '<style>@media (max-width: 600px) { .markdown-body { padding: 1rem !important; } }</style>'
               echo '</head><body>'
-              echo '<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem">'
+              echo '<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">'
               echo "<h1>${title}</h1>"
               echo '<ul>'
 
