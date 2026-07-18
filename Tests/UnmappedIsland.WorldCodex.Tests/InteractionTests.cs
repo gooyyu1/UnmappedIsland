@@ -31,9 +31,9 @@ namespace UnmappedIsland.Codex.Tests
         private static PropertyBlueprint Prop(string name, int defaultValue) =>
             new PropertyBlueprint { Name = name, DefaultValue = PropertyValue.FromNumber(defaultValue) };
 
-        private static ConditionBlueprint Condition(ReferenceRoot root, string propertyName, ConditionOp op, int value)
+        private static ConditionNodeBlueprint Condition(ReferenceRoot root, string propertyName, ConditionOp op, int value)
         {
-            var c = new ConditionBlueprint { Root = root, PropertyName = propertyName, Op = op };
+            var c = new ConditionNodeBlueprint { Kind = ConditionNodeBlueprintKind.Property, Root = root, PropertyName = propertyName, Op = op };
             c.Values.Add(PropertyValue.FromNumber(value));
             return c;
         }
@@ -91,7 +91,7 @@ namespace UnmappedIsland.Codex.Tests
 
             var food = new ObjectDefBlueprint { Name = "apple2" };
             var eat = new ActionBlueprint { Name = "eat" };
-            eat.Conditions.Add(Condition(ReferenceRoot.Actor, "satiety", ConditionOp.Lt, 100));
+            eat.Conditions = Condition(ReferenceRoot.Actor, "satiety", ConditionOp.Lt, 100);
             eat.Active = ActiveEffect(adds: new[] { (ReferenceRoot.Actor, "satiety", 10) });
             food.Actions.Add(eat);
 
@@ -341,7 +341,7 @@ namespace UnmappedIsland.Codex.Tests
         {
             var wood = new ObjectDefBlueprint { Name = "wood5" };
             var chop = new CombinationBlueprint { Name = "chop", With = "axe_tool5" };
-            chop.Conditions.Add(Condition(ReferenceRoot.Dragged, "durability", ConditionOp.Gt, 0));
+            chop.Conditions = Condition(ReferenceRoot.Dragged, "durability", ConditionOp.Gt, 0);
             chop.Active = ActiveEffect(destroy: new[] { ReferenceRoot.Self });
             wood.Combinations.Add(chop);
 

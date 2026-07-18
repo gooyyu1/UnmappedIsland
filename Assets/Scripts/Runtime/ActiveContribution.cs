@@ -6,7 +6,7 @@ namespace UnmappedIsland.Runtime
     /// 登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。
     ///
     /// - Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る
-    /// - SlotBearer: 親子関係で「子」側にあたるオブジェクト。WhenSlotゲートはこれの ParentSlotLocalId を見る
+    /// - SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditions（旧when）ゲートのselfはこれを指す
     ///
     /// self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、
     /// child対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、
@@ -33,11 +33,8 @@ namespace UnmappedIsland.Runtime
                 case ContributionGateKind.Always:
                     return true;
 
-                case ContributionGateKind.WhenSlot:
-                    WorldObject parent = SlotBearer.Parent;
-                    if (parent == null) return false;
-                    int slotLocal = parent.Def.SlotLayout.ToLocal(Def.Gate.SlotGlobalId);
-                    return slotLocal != LocalIndexMap.Missing && SlotBearer.ParentSlotLocalId == slotLocal;
+                case ContributionGateKind.Conditions:
+                    return ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot);
 
                 case ContributionGateKind.WhenOwnStage:
                     int value = Declarer.GetNumberByLocalId(Def.Gate.PropertyLocalId);
@@ -46,6 +43,19 @@ namespace UnmappedIsland.Runtime
 
                 default:
                     return false;
+            }
+        }
+
+        /// <summary>conditions（旧when）内のself/parentを解決する。selfはSlotBearer（self/parent対象の
+        /// 効果ならDeclarerと同一、child対象の効果なら実際にそのスロットへ入っている子）、parentはその
+        /// 1つ上（SlotBearer.Parent）。actor/draggedはpassivesの文脈に存在しないため常にnull。</summary>
+        private WorldObject ResolveConditionRoot(ReferenceRoot root)
+        {
+            switch (root)
+            {
+                case ReferenceRoot.Self: return SlotBearer;
+                case ReferenceRoot.Parent: return SlotBearer.Parent;
+                default: return null;
             }
         }
     }

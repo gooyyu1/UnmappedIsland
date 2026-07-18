@@ -16,7 +16,9 @@ namespace UnmappedIsland.Codex
     {
         public string Name { get; }
         public ShowMenuMode ShowMenu { get; }
-        public IReadOnlyList<ConditionDef> Conditions { get; }
+
+        /// <summary>nullなら常に真（conditions省略）。</summary>
+        public ConditionNode Conditions { get; }
 
         /// <summary>ActiveかPickのどちらか一方のみが非null（どちらも指定しなければ、条件成立時に何も
         /// 起きないアクションになる）。</summary>
@@ -26,7 +28,7 @@ namespace UnmappedIsland.Codex
         public ActionDef(
             string name,
             ShowMenuMode showMenu,
-            IReadOnlyList<ConditionDef> conditions,
+            ConditionNode conditions,
             ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick)
         {

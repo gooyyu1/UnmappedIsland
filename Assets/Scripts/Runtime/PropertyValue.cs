@@ -108,13 +108,21 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// 自分の値が変わった直後に呼ぶ、on_overflow・on_shortfall・on_min・on_maxの自己判定。いずれもWorldObject.
-        /// ApplyActiveEffect（actions/combinationsと全く同じ適用経路）をそのまま呼ぶだけで、専用の適用
-        /// ロジックは一切持たない。
+        /// 自分の値が変わった直後に呼ぶ、on_max・on_min・on_overflow・on_shortfallの自己判定。いずれも
+        /// WorldObject.ApplyActiveEffect（actions/combinationsと全く同じ適用経路）をそのまま呼ぶだけで、
+        /// 専用の適用ロジックは一切持たない。
         ///
-        /// 判定順はon_overflow→on_shortfall→on_min→on_max。on_overflow/on_shortfallでrangeの境界へ値を戻して
-        /// から、その戻した後の値でon_min/on_maxの「境界以下/以上か」を判定するため、この順序が必要（例えば
-        /// on_shortfallが自分をRange.Minへ戻した場合、続くon_minの判定はその戻り値に対して行われる）。
+        /// 判定順はon_max→on_min→on_overflow→on_shortfall。on_max/on_minは「レベルトリガーの観測者」
+        /// （値を書き換えず、境界に達している事実をそのまま毎tick報告する）、on_overflow/on_shortfallは
+        /// 「値を書き換える補正者」（circular/wrapするプロパティの折り返し）という役割の違いがあるため、
+        /// 観測者を先に、補正者を後に評価する。
+        ///
+        /// この順序が重要な理由: 循環する(自身をラップして戻す)プロパティが1tickでrangeの幅を一気に飛び
+        /// 越えた場合、on_overflow/on_shortfallの折り返しは境界ちょうどには着地しないことが多い（例:
+        /// 0-100を循環するプロパティが150まで加算された場合、on_overflowの折り返しは50に着地し、100
+        /// ちょうどにはならない）。もしon_max/on_minを補正の後に判定すると、値は既にrange内へ戻ってしまって
+        /// おり、「この瞬間確かに境界へ到達していた」という事実そのものを見逃してしまう。観測者を先に
+        /// 評価することで、折り返しの有無や着地点によらず、on_max/on_minは境界へ到達した瞬間を必ず捉える。
         ///
         /// on_overflow/on_shortfallは、rangeの外側にはみ出していれば、著者が指定した内容（未指定なら
         /// ビルド時に合成された既定のset、ObjectDefBuilder.BuildOverflowSideEffect参照）を1回だけ適用する。
@@ -130,17 +138,17 @@ namespace UnmappedIsland.Runtime
         /// </summary>
         internal void CheckRangeEvents(PropertyDef def, WorldObject owner, WorldSession session)
         {
+            if (def.OnMax != null && def.Range.HasValue && AsNumber() >= def.Range.Value.Max)
+                owner.ApplyActiveEffect(def.OnMax, session, actor: null, dragged: null);
+
+            if (def.OnMin != null && def.Range.HasValue && AsNumber() <= def.Range.Value.Min)
+                owner.ApplyActiveEffect(def.OnMin, session, actor: null, dragged: null);
+
             if (def.OnOverflow != null && def.Range.HasValue && AsNumber() > def.Range.Value.Max)
                 owner.ApplyActiveEffect(def.OnOverflow, session, actor: null, dragged: null);
 
             if (def.OnShortfall != null && def.Range.HasValue && AsNumber() < def.Range.Value.Min)
                 owner.ApplyActiveEffect(def.OnShortfall, session, actor: null, dragged: null);
-
-            if (def.OnMin != null && def.Range.HasValue && AsNumber() <= def.Range.Value.Min)
-                owner.ApplyActiveEffect(def.OnMin, session, actor: null, dragged: null);
-
-            if (def.OnMax != null && def.Range.HasValue && AsNumber() >= def.Range.Value.Max)
-                owner.ApplyActiveEffect(def.OnMax, session, actor: null, dragged: null);
         }
 
         public override string ToString() => Kind == PropertyValueKind.Number ? Number.ToString() : $"symbol:{Symbol}";

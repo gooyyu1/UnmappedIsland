@@ -146,15 +146,15 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
-        /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、on_overflow・on_shortfall
-        /// （6.3節）・on_min（6.5節）の判定・実行までを、プロパティごとに自分自身で完結させる
+        /// accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、on_max・on_min（6.5節・6.6節）・
+        /// on_overflow・on_shortfall（6.3節）の判定・実行までを、プロパティごとに自分自身で完結させる
         /// （PropertyValue.Tick参照。いつ・どのプロパティが範囲外になったかの判断はすべてそちらにあり、
         /// WorldObjectは既存のApplyActiveEffect（すべて同じ適用経路）を提供するだけで、overflow専用の
         /// 処理は一切持たない）。自分自身の処理の後、子（すべてのスロットの中身）へ再帰する。すべての
         /// オブジェクトは必ずworldの下にぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は
         /// 持たない」という前提）、worldに対して1回 Tick を呼ぶだけでツリー全体が処理される。
         ///
-        /// on_min/on_overflow/on_shortfallのdestroy/spawnは、この処理の最中に自分自身や兄弟をツリーから
+        /// on_max/on_min/on_overflow/on_shortfallのdestroy/spawnは、この処理の最中に自分自身や兄弟をツリーから
         /// 切り離しうる。各スロットの中身は列挙前にスナップショットを取ることで、列挙中に自分自身や兄弟が
         /// destroyされても安全なようにしている。
         /// </summary>
@@ -170,8 +170,8 @@ namespace UnmappedIsland.Runtime
 
         /// <summary>
         /// このオブジェクトをself(このインスタンス自身)として、set/add/destroy/spawnを実行する（9.2〜9.4節）。
-        /// on_min・on_overflow・on_shortfall（6節）と、actions/combinations（11節・12節）のactive/pickが
-        /// 解決した結果の両方から呼ばれる（on_min/on_overflow/on_shortfall経由の場合、actor/draggedは
+        /// on_max・on_min・on_overflow・on_shortfall（6節）と、actions/combinations（11節・12節）のactive/pickが
+        /// 解決した結果の両方から呼ばれる（on_max/on_min/on_overflow/on_shortfall経由の場合、actor/draggedは
         /// 存在しないためnull）。
         ///
         /// selfは常にこのインスタンス自身、parentはthis.Parent、actor/draggedは呼び出し側から渡された

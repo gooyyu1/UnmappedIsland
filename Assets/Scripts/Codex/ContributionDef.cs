@@ -29,11 +29,12 @@ namespace UnmappedIsland.Codex
 
     public enum ContributionGateKind
     {
-        /// <summary>常時有効（when省略）。</summary>
+        /// <summary>常時有効（conditions省略）。</summary>
         Always,
 
-        /// <summary>SlotBearer が特定のスロットに入っている間だけ有効（`when: <スロット名>`）。</summary>
-        WhenSlot,
+        /// <summary>conditions（旧when）の条件木を毎tick評価し、真である間だけ有効。self はSlotBearer、
+        /// parentはSlotBearer.Parentとして解決する（Runtime.ActiveContribution参照）。</summary>
+        Conditions,
 
         /// <summary>Declarer 自身の特定プロパティが特定stageにある間だけ有効。</summary>
         WhenOwnStage,
@@ -42,16 +43,16 @@ namespace UnmappedIsland.Codex
     /// <summary>
     /// 効果の発動条件。Kind に応じて使うフィールドが変わる。
     ///
-    /// SlotGlobalId はグローバルIDのまま持つ（WhenSlot は「今の親のスロット構成」に対して都度ローカル化する
-    /// 必要がある。効果を宣言した側のObjectDefは、将来どんな親に取り付けられるか分からないため）。
-    /// PropertyLocalId/Stage は Declarer 自身の ObjectDef に対してビルド時に確定できるため、ローカルID・
-    /// PropertyStage参照をそのまま持てる（Declarer は常にこの ContributionDef を宣言した ObjectDef の
-    /// インスタンスになることが登録経路上で保証されているため）。
+    /// Conditionsの条件木はグローバルIDのまま持つ（self/parentの解決先は「今の親のスロット構成」に対して
+    /// 都度ローカル化する必要がある。効果を宣言した側のObjectDefは、将来どんな親に取り付けられるか
+    /// 分からないため）。PropertyLocalId/Stage は Declarer 自身の ObjectDef に対してビルド時に確定できるため、
+    /// ローカルID・PropertyStage参照をそのまま持てる（Declarer は常にこの ContributionDef を宣言した
+    /// ObjectDef のインスタンスになることが登録経路上で保証されているため）。
     /// </summary>
     public sealed class ContributionGate
     {
         public ContributionGateKind Kind;
-        public int SlotGlobalId;
+        public ConditionNode Conditions;
         public int PropertyLocalId;
         public PropertyStage Stage;
 

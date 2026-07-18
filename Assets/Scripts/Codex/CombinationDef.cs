@@ -15,7 +15,8 @@ namespace UnmappedIsland.Codex
         /// <summary>マッチング対象。object_defのidかtrait名のどちらか（Matches参照）。</summary>
         public string With { get; }
 
-        public IReadOnlyList<ConditionDef> Conditions { get; }
+        /// <summary>nullなら常に真（conditions省略）。</summary>
+        public ConditionNode Conditions { get; }
 
         /// <summary>ActiveかPickのどちらか一方のみが非null。</summary>
         public ActiveEffect Active { get; }
@@ -24,7 +25,7 @@ namespace UnmappedIsland.Codex
         public CombinationDef(
             string name,
             string with,
-            IReadOnlyList<ConditionDef> conditions,
+            ConditionNode conditions,
             ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick)
         {
