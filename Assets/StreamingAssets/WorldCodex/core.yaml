@@ -20,10 +20,17 @@ object_defs:
           - accumulate:
               self:
                 tick: 1
+      # tick内で経過した分（0〜14）。1tick=ゲーム内時間15分という対応づけ自体がゲーム固有の概念であり、
+      # WorldCodexエンジンはtickを汎用的な1ステップとしか扱わない（GameElementDefinition.md 17節）。
+      # そのため境界（15分に達した瞬間にTickを呼ぶ判断）はゲーム側（UnmappedIsland.GameTime.WorldClock）が
+      # 管理し、専用のrange/on_overflowは持たない。セーブ・ロードに必要なため、単なるゲーム側の変数
+      # ではなくworldのプロパティとして保持する。
+      minute_of_tick:
+        value: 0
       # 現在の分（0-59）。59の次で繰り上がり、hourへ+1して0に戻る（6.3節のon_overflow）。setで絶対値0へ
       # 戻すのではなく、addで折り返し量・繰り上げ量を一度に加減算する（1tickで複数span分溢れた場合でも
-      # 超過分を保持できるため、こちらのほうが堅牢）。1tick=ゲーム内時間15分、という対応づけのため、
-      # 毎tick自分自身を+15する。
+      # 超過分を保持できるため、こちらのほうが堅牢）。tick駆動のpassivesは持たず、ゲーム側がminute_of_tick
+      # と合わせて直接加算する（WorldClock参照）。
       minute:
         value: 0
         range: {min: 0, max: 59}
@@ -32,10 +39,6 @@ object_defs:
             self:
               minute: -60
               hour: 1
-        passives:
-          - accumulate:
-              self:
-                minute: 15
       # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
       hour:
         value: 0

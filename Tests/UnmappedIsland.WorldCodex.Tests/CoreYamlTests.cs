@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
+using UnmappedIsland.GameTime;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 
@@ -49,6 +50,7 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(world.IsSingleton, Is.True);
 
             Assert.That(PropOf(world, "tick").DefaultValue.AsNumber(), Is.EqualTo(0));
+            Assert.That(PropOf(world, "minute_of_tick").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "minute").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "hour").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "day").DefaultValue.AsNumber(), Is.EqualTo(1));
@@ -72,8 +74,11 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void World_TickAndMinute_AccumulatePerTick()
+        public void World_TickAndMinute_AdvanceViaWorldClock()
         {
+            // minuteはtick駆動のpassivesを持たず、WorldClock（ゲーム側）がminute_of_tickと合わせて
+            // 直接進める（GameTime.WorldClockTests参照）。core.yaml単体では、Tick()を直接呼んでも
+            // minuteは変化しないことだけをここで確認する。
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int tickId = codex.PropertyNames.GetId("tick");
             int minuteId = codex.PropertyNames.GetId("minute");
@@ -85,7 +90,7 @@ namespace UnmappedIsland.Codex.Tests
             worldInstance.Tick(session);
 
             Assert.That(worldInstance.GetNumber(tickId), Is.EqualTo(3), "tickは毎tick+1される");
-            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(45), "minuteは毎tick+15される(1tick=ゲーム内15分)");
+            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0), "minuteはtick駆動では変化しない(WorldClock経由でのみ進む)");
         }
 
         [Test]
@@ -99,12 +104,12 @@ namespace UnmappedIsland.Codex.Tests
             var session = new WorldSession(codex);
             var worldInstance = new WorldObject(1, world);
 
-            for (int i = 0; i < 4; i++) worldInstance.Tick(session); // 15*4=60分 -> minuteが折り返し、hourへ+1
+            WorldClock.Advance(codex, worldInstance, session, 60); // 60分 -> minuteが折り返し、hourへ+1
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(1));
 
-            for (int i = 0; i < 4 * 24 - 4; i++) worldInstance.Tick(session); // 残り23時間分進め、hourもdayへ折り返させる
+            WorldClock.Advance(codex, worldInstance, session, 60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(0));
