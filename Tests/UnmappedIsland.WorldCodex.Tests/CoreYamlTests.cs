@@ -50,6 +50,7 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(world.IsSingleton, Is.True);
 
             Assert.That(PropOf(world, "tick").DefaultValue.AsNumber(), Is.EqualTo(0));
+            Assert.That(PropOf(world, "minutes_per_tick").DefaultValue.AsNumber(), Is.EqualTo(15));
             Assert.That(PropOf(world, "minute_of_tick").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "minute").DefaultValue.AsNumber(), Is.EqualTo(0));
             Assert.That(PropOf(world, "hour").DefaultValue.AsNumber(), Is.EqualTo(0));

@@ -13,10 +13,11 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class WorldClockTests
     {
-        private static WorldCodex BuildWorldCodex()
+        private static WorldCodex BuildWorldCodex(int minutesPerTick = 15)
         {
             var world = new ObjectDefBlueprint { Name = "world", IsSingleton = true };
             world.Properties.Add(new PropertyBlueprint { Name = "tick", DefaultValue = PropertyValue.FromNumber(0) });
+            world.Properties.Add(new PropertyBlueprint { Name = "minutes_per_tick", DefaultValue = PropertyValue.FromNumber(minutesPerTick) });
             world.Properties.Add(new PropertyBlueprint { Name = "minute_of_tick", DefaultValue = PropertyValue.FromNumber(0) });
             world.Properties.Add(new PropertyBlueprint
             {
@@ -103,13 +104,33 @@ namespace UnmappedIsland.Codex.Tests
             int hourId = codex.PropertyNames.GetId("hour");
             int dayId = codex.PropertyNames.GetId("day");
 
+            int minutesPerTick = world.GetNumber(codex.PropertyNames.GetId("minutes_per_tick"));
+
             WorldClock.Advance(codex, world, session, 60 * 25); // 25時間分を1回で進める
 
             Assert.That(world.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(world.GetNumber(hourId), Is.EqualTo(1));
             Assert.That(world.GetNumber(dayId), Is.EqualTo(2));
             Assert.That(world.GetNumber(minuteOfTickId), Is.EqualTo(0));
-            Assert.That(world.GetNumber(tickId), Is.EqualTo(60 * 25 / WorldClock.MinutesPerTick));
+            Assert.That(world.GetNumber(tickId), Is.EqualTo(60 * 25 / minutesPerTick));
+        }
+
+        [Test]
+        public void Advance_UsesConfiguredMinutesPerTick_NotAHardcodedConstant()
+        {
+            // 1tickの長さはworld.minutes_per_tick（core.yaml側）が持つ値であり、WorldClock側に
+            // ハードコードされていないことを、15以外の値でも確認する。
+            var codex = BuildWorldCodex(minutesPerTick: 20);
+            var session = new WorldSession(codex);
+            var world = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
+
+            int tickId = codex.PropertyNames.GetId("tick");
+            int minuteOfTickId = codex.PropertyNames.GetId("minute_of_tick");
+
+            WorldClock.Advance(codex, world, session, 25);
+
+            Assert.That(world.GetNumber(tickId), Is.EqualTo(1), "minutes_per_tickが20なら25分で1tick跨ぐ");
+            Assert.That(world.GetNumber(minuteOfTickId), Is.EqualTo(5));
         }
     }
 }
