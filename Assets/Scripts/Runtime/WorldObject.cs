@@ -36,7 +36,7 @@ namespace UnmappedIsland.Runtime
 
             properties = new PropertyValue[def.PropertyDefs.Count];
             for (int i = 0; i < properties.Length; i++)
-                properties[i] = def.PropertyDefs[i].DefaultValue.Clone(def.PropertyDefs[i]);
+                properties[i] = def.PropertyDefs[i].DefaultValue.Clone(def.PropertyDefs[i], this);
 
             slots = new Slot[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
@@ -89,7 +89,7 @@ namespace UnmappedIsland.Runtime
         public void AddNumber(int globalPropertyId, int delta, WorldSession session = null)
         {
             if (!TryGetProperty(globalPropertyId, out var value)) return;
-            value.Add(delta, this, session);
+            value.Add(delta, session);
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace UnmappedIsland.Runtime
         public void SetNumber(int globalPropertyId, int value, WorldSession session = null)
         {
             if (!TryGetProperty(globalPropertyId, out var property)) return;
-            property.SetNumber(value, this, session);
+            property.SetNumber(value, session);
         }
 
         public bool TryGetSlot(int globalSlotId, out Slot slot)
@@ -163,7 +163,7 @@ namespace UnmappedIsland.Runtime
         public void Tick(WorldSession session)
         {
             for (int local = 0; local < properties.Length; local++)
-                properties[local].Tick(this, session);
+                properties[local].Tick(session);
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())
