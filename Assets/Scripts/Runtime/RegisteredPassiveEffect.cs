@@ -25,26 +25,18 @@ namespace UnmappedIsland.Runtime
             Def = def;
         }
 
-        /// <summary>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。</summary>
+        /// <summary>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。
+        /// StageとConditionsは独立したフィールドで、それぞれ非nullの場合だけそのチェックを行う（両方非nullなら
+        /// AND、両方nullなら常時有効）。</summary>
         public bool IsActive()
         {
-            switch (Def.Gate.Kind)
-            {
-                case PassiveEffectGateKind.Always:
-                    return true;
+            if (Def.Gate.Stage != null && !IsOwnStageActive())
+                return false;
 
-                case PassiveEffectGateKind.Conditions:
-                    return ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot);
+            if (Def.Gate.Conditions != null && !ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot))
+                return false;
 
-                case PassiveEffectGateKind.WhenOwnStage:
-                    return IsOwnStageActive();
-
-                case PassiveEffectGateKind.WhenOwnStageAndConditions:
-                    return IsOwnStageActive() && ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot);
-
-                default:
-                    return false;
-            }
+            return true;
         }
 
         /// <summary>Declarer自身の該当プロパティが、ゲートが指すstageに今まさに該当しているか。</summary>

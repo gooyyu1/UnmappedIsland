@@ -27,26 +27,10 @@ namespace UnmappedIsland.Codex
         Accumulate,
     }
 
-    public enum PassiveEffectGateKind
-    {
-        /// <summary>常時有効（conditions省略）。</summary>
-        Always,
-
-        /// <summary>conditions（旧when）の条件木を毎tick評価し、真である間だけ有効。self はSlotBearer、
-        /// parentはSlotBearer.Parentとして解決する（Runtime.RegisteredPassiveEffect参照）。</summary>
-        Conditions,
-
-        /// <summary>Declarer 自身の特定プロパティが特定stageにある間だけ有効。</summary>
-        WhenOwnStage,
-
-        /// <summary>WhenOwnStageとConditionsの両方（AND）。stage自身の条件に加えて、スロット条件等の
-        /// 追加条件も同時に満たす間だけ有効（例:「装備している間、かつ耐久値がintactステージの間だけ」）。</summary>
-        WhenOwnStageAndConditions,
-    }
-
     /// <summary>
-    /// 効果の発動条件。Kind に応じて使うフィールドが変わる（WhenOwnStageAndConditionsの場合、
-    /// PropertyLocalId/StageとConditionsの両方が使われ、どちらも満たす間だけ有効）。
+    /// 効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を
+    /// 表す（Stageが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら
+    /// 両方を満たす間だけ有効=AND、両方nullなら常時有効。Runtime.RegisteredPassiveEffect.IsActive参照）。
     ///
     /// Conditionsの条件木はグローバルIDのまま持つ（self/parentの解決先は「今の親のスロット構成」に対して
     /// 都度ローカル化する必要がある。効果を宣言した側のObjectDefは、将来どんな親に取り付けられるか
@@ -56,12 +40,9 @@ namespace UnmappedIsland.Codex
     /// </summary>
     public sealed class PassiveEffectGate
     {
-        public PassiveEffectGateKind Kind;
         public ConditionNode Conditions;
         public int PropertyLocalId;
         public PropertyStage Stage;
-
-        public static readonly PassiveEffectGate Always = new PassiveEffectGate { Kind = PassiveEffectGateKind.Always };
     }
 
     /// <summary>

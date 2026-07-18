@@ -285,7 +285,8 @@ object_defs:
             PassiveEffect effect = campfire.Passives.Single();
 
             Assert.That(effect.Target, Is.EqualTo(PassiveEffectTarget.Child));
-            Assert.That(effect.Gate.Kind, Is.EqualTo(PassiveEffectGateKind.WhenOwnStage));
+            Assert.That(effect.Gate.Stage, Is.Not.Null, "stage内のpassivesはStageが設定される");
+            Assert.That(effect.Gate.Conditions, Is.Null, "conditionsを書いていなければnullのまま");
         }
 
         [Test]
