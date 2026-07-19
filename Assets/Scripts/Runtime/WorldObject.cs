@@ -451,6 +451,8 @@ namespace UnmappedIsland.Runtime
                 foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
             }
 
+            if (effect.Transfer != null) ApplyTransfer(effect.Transfer, session, actor, dragged);
+
             bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
             SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
                 ? CaptureSameSlotAnchor(willDestroySelf)
@@ -481,6 +483,37 @@ namespace UnmappedIsland.Runtime
                 case ReferenceRoot.Dragged: return dragged;
                 default: return null;
             }
+        }
+
+        /// <summary>transfer（9.5節）専用の対象解決。AncestorはFindAncestorWithProperty（プロパティごとに
+        /// 解決先が変わる）へ委譲し、それ以外はResolveEffectTargetと同じ。</summary>
+        private WorldObject ResolveTransferTarget(ReferenceRoot root, int propertyGlobalId, WorldObject actor, WorldObject dragged) =>
+            root == ReferenceRoot.Ancestor ? FindAncestorWithProperty(propertyGlobalId) : ResolveEffectTarget(root, actor, dragged);
+
+        /// <summary>
+        /// transfer（9.5節）の実行。実際の移動量は、from自身が申告する「出せる量」（PropertyValue.
+        /// AvailableToTransferOut）とamountの小さい方を基本とし、allow_overflowがfalseの場合はさらに
+        /// toが申告する「受け取れる量」（PropertyValue.RemainingTransferCapacity）でも制限する。
+        /// 「実際にいくら動かせるか」の判断はいずれもPropertyValue自身に委ね、ここでは対象解決と
+        /// 移動量の確定・実行（AddNumber）のみを行う（自分のことは自分でする、CLAUDE.md参照）。
+        ///
+        /// from/toのいずれかが解決できない、あるいは対象がそのプロパティを持たない場合は何もしない。
+        /// </summary>
+        private void ApplyTransfer(TransferEffect transfer, WorldSession session, WorldObject actor, WorldObject dragged)
+        {
+            WorldObject from = ResolveTransferTarget(transfer.FromObject, transfer.FromPropertyGlobalId, actor, dragged);
+            WorldObject to = ResolveTransferTarget(transfer.ToObject, transfer.ToPropertyGlobalId, actor, dragged);
+            if (from == null || to == null) return;
+            if (!from.TryGetProperty(transfer.FromPropertyGlobalId, out var fromValue)) return;
+            if (!to.TryGetProperty(transfer.ToPropertyGlobalId, out var toValue)) return;
+
+            int moved = Math.Min(transfer.Amount, fromValue.AvailableToTransferOut());
+            if (!transfer.AllowOverflow)
+                moved = Math.Min(moved, toValue.RemainingTransferCapacity());
+            if (moved <= 0) return;
+
+            from.AddNumber(transfer.FromPropertyGlobalId, -moved, session);
+            to.AddNumber(transfer.ToPropertyGlobalId, moved, session);
         }
 
         /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged）。YAML側で

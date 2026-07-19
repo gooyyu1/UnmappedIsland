@@ -200,6 +200,19 @@ namespace UnmappedIsland.Runtime
                 owner.ApplyActiveEffect(def.OnShortfall, session, actor: null, dragged: null);
         }
 
+        /// <summary>
+        /// transfer（9.5節）で、このプロパティ自身から実際に出せる量の上限。rangeがあれば、range.Minを
+        /// 下回った分は出せないとみなす（on_shortfallの既定クランプにより実運用でNumberがMinを下回ることは
+        /// 無いが、念のためMinを下限とする）。rangeが無ければ現在値そのまま。
+        /// </summary>
+        internal int AvailableToTransferOut() => def.Range.HasValue ? Math.Max(0, Number - def.Range.Value.Min) : Number;
+
+        /// <summary>
+        /// transfer（9.5節）でallow_overflow: falseの場合に、このプロパティへ実際に受け取れる量の上限。
+        /// rangeが無ければ上限なし。
+        /// </summary>
+        internal int RemainingTransferCapacity() => def.Range.HasValue ? Math.Max(0, def.Range.Value.Max - Number) : int.MaxValue;
+
         public override string ToString() => Number.ToString();
     }
 }

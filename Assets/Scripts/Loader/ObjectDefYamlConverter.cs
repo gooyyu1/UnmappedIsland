@@ -211,7 +211,7 @@ namespace UnmappedIsland.Loader
         /// <summary>activeの内容(set/add/destroy/spawn)を1つも持たないキー集合。actions/combinations/pickの
         /// 各エントリは、専用の"active"キーを介さずshowMenu/conditions/with/weight/pickと対等な兄弟キーとして
         /// set/add/destroy/spawnを直接持つため、「activeとして何か書かれているか」をこの4キーの有無で判定する。</summary>
-        private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn" };
+        private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn", "transfer" };
 
         private static bool HasActiveContent(YamlMappingNode map) =>
             ActiveVerbKeys.Any(key => map.TryGet(key) != null);
@@ -271,6 +271,11 @@ namespace UnmappedIsland.Loader
                     ParseSpawnTargetRoot(context, into));
             }
 
+            TransferEffect transfer = null;
+            YamlMappingNode transferMap = bodyNode.TryGetMapping("transfer", context);
+            if (transferMap != null)
+                transfer = ParseTransfer($"{context}.transfer", transferMap, allowDragged, selfOnly, propertyNames);
+
             var knownKeys = new HashSet<string>(ActiveVerbKeys);
             if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
 
@@ -279,7 +284,41 @@ namespace UnmappedIsland.Loader
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-            return new ActiveEffect(sets, adds, destroy, spawn);
+            return new ActiveEffect(sets, adds, destroy, spawn, transfer);
+        }
+
+        /// <summary>
+        /// transfer（9.5節）。conditions（14節）と同じくfrom/toの参照をフラットな2フィールド
+        /// （from_object/from_prop, to_object/to_prop）で表す。from_object/to_objectは省略時self
+        /// （conditionsのobject省略時と同じ規約）。対象ルートの妥当性判定は、set/add/destroyと全く同じ
+        /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
+        /// </summary>
+        private static TransferEffect ParseTransfer(
+            string context, YamlMappingNode map, bool allowDragged, bool selfOnly, NameRegistry propertyNames)
+        {
+            string fromObjectRaw = map.TryGetScalar("from_object", context);
+            ReferenceRoot fromObject = fromObjectRaw != null
+                ? ParseActiveTargetKey(context, fromObjectRaw, allowDragged, selfOnly)
+                : ReferenceRoot.Self;
+            int fromProp = propertyNames.Intern(map.RequireScalar("from_prop", context));
+
+            string toObjectRaw = map.TryGetScalar("to_object", context);
+            ReferenceRoot toObject = toObjectRaw != null
+                ? ParseActiveTargetKey(context, toObjectRaw, allowDragged, selfOnly)
+                : ReferenceRoot.Self;
+            int toProp = propertyNames.Intern(map.RequireScalar("to_prop", context));
+
+            int amount = map.RequireInt("amount", context);
+            bool allowOverflow = map.TryGetBool("allow_overflow", context, fallback: false);
+
+            var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
+                .Where(k => k != "from_object" && k != "from_prop" && k != "to_object" && k != "to_prop"
+                         && k != "amount" && k != "allow_overflow")
+                .ToList();
+            if (unknownKeys.Count > 0)
+                throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
+            return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow);
         }
 
         /// <summary>

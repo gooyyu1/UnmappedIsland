@@ -682,7 +682,7 @@ object_defs:
 概念です。持続する条件を表す `conditions`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
 
 `active` という語自体は、YAML 上の専用キーとしては書きません。この節で説明する `set`・`add`・`destroy`・
-`spawn` を、それが書ける場所（9.5 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
+`spawn`・`transfer` を、それが書ける場所（9.6 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
 `on_min`/`on_overflow`/`on_shortfall`/`on_max`）の中に、`showMenu`/`conditions`/`with`/`weight`/`pick` と
 対等な兄弟キーとして直接書きます。専用のラップを挟まないことで、動詞（`set`/`add`/`destroy`/`spawn`）が
 `pick` と並列に並び、「実行結果は直接書くか、`pick` で確率分岐するかのどちらか」という構造がそのまま
@@ -765,7 +765,37 @@ spawn: {object: item_coconut, into: actor}
 配置されないまま消えます（生成自体はされますが、worldツリーに繋がらないため、存在しなかったのと同じ扱いに
 なります。7.1 節参照）。
 
-### 9.5 set/add/destroy/spawn が書ける場所
+### 9.5 transfer
+
+`set`/`add` は固定の値・量しか書けないため、「在庫に応じて実際に動く量が変わる」移送（例: 容器に入っている
+分だけ回復する水分補給）を表現できません。`transfer` は、`from` が指すプロパティの実体値のうち、実際に
+出せる量（0未満にはならない量）と `amount` の小さい方だけを、`to` が指すプロパティへ移す専用の動詞です。
+
+```yaml
+actions:
+  drink:
+    transfer:
+      amount: 2000
+      from_prop: water_amount
+      to_object: actor
+      to_prop: hydration
+```
+
+- **`from_object`**（省略可、既定値 `self`）・**`to_object`**（省略可、既定値 `self`）: 参照ルート。
+  `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`actor`、`combinations` 内は
+  `dragged` も）。
+- **`from_prop`**・**`to_prop`**: それぞれ移送元・移送先のプロパティ名。
+- **`amount`**: 一度に移送を試みる量の上限。
+- **`allow_overflow`**（省略可、既定値 `false`）: `to` の `range` に実際に収まる量までしか移動しません
+  （収まらない分は `from` に残ります＝液体を無駄にしません）。`true` にすると、`from` の残量と `amount` だけで
+  移動量が決まり、`to` の `range` を超えた分は `to` の `on_overflow`（未指定なら `range.max` へ自動でクランプ
+  する既定動作、6.3 節）に委ねます（あふれた分は失われます）。
+
+`from_object`/`from_prop`/`to_object`/`to_prop` を、`modify`/`set`/`add` と同じ「対象がキー、内容が値」という
+規約に合わせずフラットな4フィールドにしているのは、`conditions`（14.1 節）の `object`/`prop` と同じ理由です。
+`from`・`to` それぞれ参照は常に1組であり、複数プロパティの入れ物としてネストする必要がありません。
+
+### 9.6 set/add/destroy/spawn/transfer が書ける場所
 
 この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `conditions`/ゲートを
 持つ `passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
@@ -778,13 +808,13 @@ spawn: {object: item_coconut, into: actor}
 
 ## 10. pick（重み付き確率分岐）
 
-`pick` は、`set`/`add`/`destroy`/`spawn`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
+`pick` は、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
 重み付き候補のリストです。新しいトリガー体系は必要とせず、`passives`（無条件／`conditions`／stage 内）には
 書けません。`passives` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
 
 ### 10.1 基本構造
 
-各候補は `weight` に加えて、`set`/`add`/`destroy`/`spawn`（9 節の文法そのまま）を `weight`/`pick` と対等な
+各候補は `weight` に加えて、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節の文法そのまま）を `weight`/`pick` と対等な
 兄弟キーとして直接持ちます。候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。
 
 ```yaml
@@ -799,9 +829,9 @@ actions:
 ```
 
 候補ごとに影響を受ける対象（`self`/`actor` など）そのものが異なるケースも、このように表現できます。`pick` の
-入れ子は再帰的であり、候補の `set`/`add`/`destroy`/`spawn` の代わりにさらに別の `pick` を書くこともできます。
+入れ子は再帰的であり、候補の `set`/`add`/`destroy`/`spawn`/`transfer` の代わりにさらに別の `pick` を書くこともできます。
 
-各候補に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate`
+各候補に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`）に限られます。`modify`/`accumulate`
 は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
 終わる `pick` の候補に書く意味がありません。
 
@@ -828,7 +858,7 @@ pick:
 
 ## 11. actions（メニュー型操作）
 
-アクション（`eat`、`move` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`、または
+アクション（`eat`、`move` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`/`transfer`、または
 `pick`）を**1つの定義としてまとめて持ちます**。`object_defs`/`traits` の中に配置します（トップレベル独立キーには
 しません）。
 
@@ -855,9 +885,9 @@ traits:
 `{object, prop, op, value}` の葉と `all`/`any`/`not` の複合ノードからなる条件木です（14 節）。トップレベルは
 常に配列で、暗黙の `all`（AND）として扱われます。
 
-### 11.3 set/add/destroy/spawn（active） / pick
+### 11.3 set/add/destroy/spawn/transfer（active） / pick
 
-このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`（9 節、`active` の実体）が1回だけ適用される
+このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節、`active` の実体）が1回だけ適用される
 か、`pick`（10 節）で候補が1つ選ばれて適用されます。`showMenu`/`conditions`と対等な兄弟キーとして直接書き、
 専用の `active:` ラップは挟みません。どちらも指定しなければ、条件成立時に何も起きないアクションになります。
 
@@ -898,7 +928,7 @@ object_defs:
 
 ### 12.2 dragged
 
-`set`/`add`/`destroy`（9 節）の対象キー、および `conditions`/`weight` の `object`（14 節・10.2 節）に、
+`set`/`add`/`destroy`/`transfer`（9 節）の対象キー、および `conditions`/`weight` の `object`（14 節・10.2 節）に、
 `self`/`parent`/`child`/`actor` に加えて **`dragged`**（このインタラクションでドラッグされてきたカード）を
 使えます。`combinations` の中でのみ意味を持つ、専用のキーです。
 
