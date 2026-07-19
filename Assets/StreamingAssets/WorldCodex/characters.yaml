@@ -1,0 +1,25 @@
+# プレイヤーキャラクターの定義（GameElementDefinition.md参照）。worldと同様、プレイヤーも常に1体だけ
+# 存在するシングルトンとして扱う。GameElementDefinition.md 11節以降の`actor`は、実行時にはこのobject_def
+# のインスタンスを指す想定（actor自体はどのobject_defにも紐づかない実行文脈上の役割のため、object_defの
+# 名前でactorを解決する仕組みは無い。ここではあくまで「プレイヤーキャラの実体を表すobject_def」を定義する）。
+
+object_defs:
+  character:
+    singleton: true
+    props:
+      # 満腹度（空腹度の逆）。0で空腹状態を表す。
+      satiety:
+        value: 100
+        range: {min: 0, max: 100}
+      # 水分（乾きの逆）。0で脱水状態を表す。
+      hydration:
+        value: 100
+        range: {min: 0, max: 100}
+      # 覚醒度（眠気の逆）。0で睡眠が必要な状態を表す。
+      wakefulness:
+        value: 100
+        range: {min: 0, max: 100}
+      # 体力（疲労の逆）。0で疲労困憊の状態を表す。
+      stamina:
+        value: 100
+        range: {min: 0, max: 100}

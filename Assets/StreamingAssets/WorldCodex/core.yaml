@@ -45,7 +45,7 @@ object_defs:
       # sunlightへの「時間帯による最低限の寄与」をstages（6.4節）+passives（8節、modify）で表現する。
       # sunlightのもう一方の寄与（晴れているほど追加で明るくなる分）はweather側のstagesが担う
       # （weather参照）。両者はどちらもmodifyのため、加算的に重なってsunlightの実効値が決まる。
-      # temperature自体はhourを直接見ず、このsunlight自身のstages経由で補正する（sunlight参照）。
+      # ambient_temperature自体はhourを直接見ず、このsunlight自身のstages経由で補正する（sunlight参照）。
       # 寄与は夜が大きく負、朝・夕方が最低限、昼がより強い、という3段階。夜の値（-100）はweatherが
       # どれだけ明るくしようとしても、sunlightのrange（min:0）によるクランプで必ず0まで打ち消すための
       # ものであり、「夜は日差しの寄与を一切受け付けない」をstagesだけで（weather側にconditionsを
@@ -131,7 +131,7 @@ object_defs:
       # rangeのmin:0によって、夜（hour側の-100）はweatherの寄与がどれだけ大きくても必ず0へ
       # クランプされる。max:20は現状の組み合わせ（最大10）に対する余裕。
       #
-      # temperatureへの補正は、conditionsではなくこのsunlight自身のstages（6.4節）+WhenOwnStageゲート
+      # ambient_temperatureへの補正は、conditionsではなくこのsunlight自身のstages（6.4節）+WhenOwnStageゲート
       # （8.2節）で行う: conditionsはあくまで補助的な追加条件のためのものであり、メインの分岐はstagesが
       # 担うという方針のため。dark（sunlight=0、夜）はやや涼しく、bright（7以上、晴れた昼・晴れた朝夕・
       # 曇りの昼など）はやや暑く、中間のdim（1-6）は補正なし。しきい値・補正量はいずれも仮の値。
@@ -143,7 +143,7 @@ object_defs:
             passives:
               - modify:
                   self:
-                    temperature: -3
+                    ambient_temperature: -3
           - name: dim     # sunlight 1-6: 補正なし
             min: 1
           - name: bright  # sunlight 7以上: やや暑い
@@ -151,10 +151,11 @@ object_defs:
             passives:
               - modify:
                   self:
-                    temperature: 3
-      # 現在の気温。具体的な変動の仕組み（季節由来のレート等）はClimateSystem.mdで別途検討する。
+                    ambient_temperature: 3
+      # 現在の気温。体温（プレイヤーキャラ等が持つ、別の概念）と区別するためambient_temperatureと命名する
+      # （ClimateSystem.md参照）。具体的な変動の仕組み（季節由来のレート等）はClimateSystem.mdで別途検討する。
       # 日照による補正はsunlight参照。
-      temperature:
+      ambient_temperature:
         value: 20
     slots:
       locations:

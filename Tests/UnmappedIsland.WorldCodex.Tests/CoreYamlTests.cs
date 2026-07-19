@@ -61,7 +61,7 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(PropOf(world, "minute").DefaultNumber, Is.EqualTo(0));
             Assert.That(PropOf(world, "hour").DefaultNumber, Is.EqualTo(0));
             Assert.That(PropOf(world, "day").DefaultNumber, Is.EqualTo(1));
-            Assert.That(PropOf(world, "temperature").DefaultNumber, Is.EqualTo(20));
+            Assert.That(PropOf(world, "ambient_temperature").DefaultNumber, Is.EqualTo(20));
         }
 
         [Test]
@@ -125,34 +125,34 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
-        public void World_Sunlight_ModifiesTemperature()
+        public void World_Sunlight_ModifiesAmbientTemperature()
         {
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int hourId = codex.PropertyNames.GetId("hour");
             int weatherId = codex.PropertyNames.GetId("weather");
-            int temperatureId = codex.PropertyNames.GetId("temperature");
+            int ambientTemperatureId = codex.PropertyNames.GetId("ambient_temperature");
 
             var worldInstance = new WorldObject(1, world);
 
-            void AssertTemperatureAt(int weather, int hour, int expectedEffective, string because)
+            void AssertAmbientTemperatureAt(int weather, int hour, int expectedEffective, string because)
             {
                 worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(weather));
                 worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
-                Assert.That(worldInstance.GetEffectiveValue(temperatureId), Is.EqualTo(expectedEffective), because);
+                Assert.That(worldInstance.GetEffectiveValue(ambientTemperatureId), Is.EqualTo(expectedEffective), because);
             }
 
             // 夜はweatherによらずsunlight=0のため、常にやや涼しい（hourを直接見ず、sunlight経由で補正）
-            AssertTemperatureAt(weather: 0, hour: 2, expectedEffective: 17, "晴れの深夜でもsunlightは0なのでやや涼しい");
-            AssertTemperatureAt(weather: 3, hour: 23, expectedEffective: 17, "大雨の夜もやや涼しい");
+            AssertAmbientTemperatureAt(weather: 0, hour: 2, expectedEffective: 17, "晴れの深夜でもsunlightは0なのでやや涼しい");
+            AssertAmbientTemperatureAt(weather: 3, hour: 23, expectedEffective: 17, "大雨の夜もやや涼しい");
 
             // sunlightが中間(1-6)の時間帯は補正なし
-            AssertTemperatureAt(weather: 1, hour: 6, expectedEffective: 20, "曇りの朝(sunlight=2+2=4)は補正なし");
-            AssertTemperatureAt(weather: 3, hour: 12, expectedEffective: 20, "大雨の昼(sunlight=5+0=5)も補正なし");
+            AssertAmbientTemperatureAt(weather: 1, hour: 6, expectedEffective: 20, "曇りの朝(sunlight=2+2=4)は補正なし");
+            AssertAmbientTemperatureAt(weather: 3, hour: 12, expectedEffective: 20, "大雨の昼(sunlight=5+0=5)も補正なし");
 
             // sunlightが7以上ならやや暑い
-            AssertTemperatureAt(weather: 0, hour: 12, expectedEffective: 23, "晴れた昼(sunlight=5+5=10)はやや暑い");
-            AssertTemperatureAt(weather: 0, hour: 6, expectedEffective: 23, "晴れの朝(sunlight=2+5=7)もやや暑い");
-            AssertTemperatureAt(weather: 1, hour: 12, expectedEffective: 23, "曇りの昼(sunlight=5+2=7)もやや暑い");
+            AssertAmbientTemperatureAt(weather: 0, hour: 12, expectedEffective: 23, "晴れた昼(sunlight=5+5=10)はやや暑い");
+            AssertAmbientTemperatureAt(weather: 0, hour: 6, expectedEffective: 23, "晴れの朝(sunlight=2+5=7)もやや暑い");
+            AssertAmbientTemperatureAt(weather: 1, hour: 12, expectedEffective: 23, "曇りの昼(sunlight=5+2=7)もやや暑い");
         }
 
         [Test]
