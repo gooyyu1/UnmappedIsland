@@ -23,7 +23,8 @@ namespace UnmappedIsland.Runtime
             switch (node.Kind)
             {
                 case ConditionNodeKind.Property: return EvaluateProperty(node, resolveRoot);
-                case ConditionNodeKind.Slot: return EvaluateSlot(node, resolveRoot);
+                case ConditionNodeKind.SlotPosition: return EvaluateSlotPosition(node, resolveRoot);
+                case ConditionNodeKind.SlotContent: return EvaluateSlotContent(node, resolveRoot);
                 case ConditionNodeKind.All: return node.Children.All(child => Evaluate(child, resolveRoot));
                 case ConditionNodeKind.Any: return node.Children.Any(child => Evaluate(child, resolveRoot));
                 case ConditionNodeKind.Not: return !Evaluate(node.Children[0], resolveRoot);
@@ -66,15 +67,26 @@ namespace UnmappedIsland.Runtime
             }
         }
 
-        /// <summary>{object, slot}: objectが指すオブジェクト自身が、今まさに親のどのスロットに
+        /// <summary>{object, in_slot}: objectが指すオブジェクト自身が、今まさに親のどのスロットに
         /// 入っているかを見る（常に等価判定）。</summary>
-        private static bool EvaluateSlot(ConditionNode node, ConditionRootResolver resolveRoot)
+        private static bool EvaluateSlotPosition(ConditionNode node, ConditionRootResolver resolveRoot)
         {
             WorldObject target = resolveRoot(node.Root);
             if (target?.Parent == null) return false;
 
             int slotLocal = target.Parent.Def.SlotLayout.ToLocal(node.SlotGlobalId);
             return slotLocal != LocalIndexMap.Missing && target.ParentSlotLocalId == slotLocal;
+        }
+
+        /// <summary>{object, slot, tag}: objectが指すオブジェクト自身が持つslot（自分のスロット）の中に、
+        /// tagを持つ子オブジェクトが1つでもあるかを見る（存在判定）。EvaluateSlotPositionとは向きが逆
+        /// （objectの内側、自分のスロットの中身を見る）。</summary>
+        private static bool EvaluateSlotContent(ConditionNode node, ConditionRootResolver resolveRoot)
+        {
+            WorldObject target = resolveRoot(node.Root);
+            if (target == null || !target.TryGetSlot(node.SlotGlobalId, out Slot slot)) return false;
+
+            return slot.Contents.Any(child => child.Def.Tags.Contains(node.TagGlobalId));
         }
     }
 }

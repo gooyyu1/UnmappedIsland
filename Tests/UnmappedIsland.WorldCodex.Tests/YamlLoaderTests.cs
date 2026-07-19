@@ -324,12 +324,12 @@ object_defs:
   sword:
     passives:
       - conditions:
-          - {slot: main_hand}
+          - {in_slot: main_hand}
         modify:
           parent:
             attack: 5
       - conditions:
-          - {slot: off_hand}
+          - {in_slot: off_hand}
         modify:
           parent:
             attack: 2
@@ -672,7 +672,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionSlotAndPropTogether_Throws()
+        public void LoadFromGroups_ConditionInSlotAndPropTogether_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -680,7 +680,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {slot: equip, prop: hp, value: 1}
+          - {in_slot: equip, prop: hp, value: 1}
         destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
@@ -688,7 +688,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionSlotWithOp_Throws()
+        public void LoadFromGroups_ConditionInSlotWithOp_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -696,11 +696,107 @@ object_defs:
     actions:
       use:
         conditions:
-          - {slot: equip, op: eq}
+          - {in_slot: equip, op: eq}
         destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("未知のキー"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionSlotContent_TrueWhenTaggedChildInSlot_FalseOtherwise()
+        {
+            const string yaml = @"
+object_defs:
+  box:
+    slots:
+      content:
+        accepts:
+          - {tag: marker, max: 1}
+    actions:
+      use:
+        conditions:
+          - {slot: content, tag: red}
+        destroy: self
+  red_marker:
+    tags: [marker, red]
+  blue_marker:
+    tags: [marker, blue]
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            int contentSlotId = codex.SlotNames.GetId("content");
+
+            var session = new WorldSession(codex);
+            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box")));
+            var redMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("red_marker")));
+            redMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
+
+            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.True,
+                "contentスロットにredタグのマーカーがあるので実行される");
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionSlotContent_FalseWhenDifferentTagOrEmpty()
+        {
+            const string yaml = @"
+object_defs:
+  box2:
+    slots:
+      content:
+        accepts:
+          - {tag: marker, max: 1}
+    actions:
+      use:
+        conditions:
+          - {slot: content, tag: red}
+        destroy: self
+  blue_marker2:
+    tags: [marker, blue]
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            int contentSlotId = codex.SlotNames.GetId("content");
+
+            var session = new WorldSession(codex);
+            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box2")));
+            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.False,
+                "contentスロットが空なので実行されない");
+
+            var blueMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("blue_marker2")));
+            blueMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
+            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.False,
+                "contentスロットの中身がredタグを持たない(blueタグ)ので実行されない");
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionSlotWithoutTag_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        conditions:
+          - {slot: content}
+        destroy: self
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("tag"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionTagWithoutSlot_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        conditions:
+          - {tag: red}
+        destroy: self
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("slot"));
         }
 
         [Test]
@@ -779,7 +875,7 @@ object_defs:
             min: 1
             passives:
               - conditions:
-                  - {slot: fuel_slot}
+                  - {in_slot: fuel_slot}
                 modify:
                   child:
                     warmth: 5
@@ -1192,7 +1288,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionSlotWithAncestorObject_Throws()
+        public void LoadFromGroups_ConditionInSlotWithAncestorObject_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1200,7 +1296,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {object: ancestor, slot: somewhere}
+          - {object: ancestor, in_slot: somewhere}
         destroy: self
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),

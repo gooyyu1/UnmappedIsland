@@ -111,7 +111,7 @@ object_defs:
   armor:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             defense: 5
@@ -150,7 +150,7 @@ object_defs:
   armor:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             defense: 5
@@ -181,7 +181,7 @@ object_defs:
       storage: {}
     passives:
       - conditions:
-          - {slot: storage}
+          - {in_slot: storage}
         modify:
           child:
             decay_rate: -1
@@ -250,14 +250,14 @@ object_defs:
   helmet:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             defense: 3
   armor:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             defense: 5
@@ -291,7 +291,7 @@ object_defs:
   armor:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             defense: 20
@@ -380,7 +380,7 @@ object_defs:
   bleeding:
     passives:
       - conditions:
-          - {slot: conditions}
+          - {in_slot: conditions}
         accumulate:
           parent:
             hydration: -5
@@ -465,14 +465,14 @@ object_defs:
   boots:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             stamina: 10
   exhaustion:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         accumulate:
           parent:
             stamina: -1
@@ -509,14 +509,14 @@ object_defs:
   boots:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             stamina: 10
   exhaustion:
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         accumulate:
           parent:
             stamina: -1

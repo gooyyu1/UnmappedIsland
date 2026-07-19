@@ -1,0 +1,36 @@
+# 液体容器の定義。「容器には色々な液体が入れられるが、量(amount)だけでは中身の種類を区別できない」という
+# 課題への対応（GameElementDefinition.md 14.3節「葉: スロット中身判定」参照）。
+#
+# 採用した案（案3）: 容器自身が液体の量(water_amount)を持ち、容器の専用スロット(content)に、種類ごとの
+# タグを持つだけの目印用マーカーオブジェクトを1つ置くことで、中身の種類を識別する。飲めるかどうかのような
+# アクションは容器側に1つだけ定義し、conditions(14.3節のスロット中身判定)でマーカーのタグを見て出し分ける。
+# 容器の入れ替え(水を空けて油を注ぐ等)や、混ぜてはいけない液体同士の防止は今後の課題（未実装）。
+
+object_defs:
+  # 液体の種類を識別するためだけのマーカー。tag以外の状態(props/actions等)は一切持たない。
+  liquid_marker_water:
+    tags: [liquid_marker, liquid_water]
+  liquid_marker_oil:
+    tags: [liquid_marker, liquid_oil]
+
+  canteen:
+    props:
+      # 1L ≈ 4800単位（characters.yamlのhydration換算メモ参照）。
+      water_amount:
+        value: 0
+        range: {min: 0, max: 4800}
+    slots:
+      content:
+        accepts:
+          - {tag: liquid_marker, max: 1}
+    actions:
+      # 中身がliquid_waterタグのマーカーであるときだけ実行できる。油(liquid_oil)や空の容器では
+      # conditionsが満たされず実行されない。
+      drink:
+        conditions:
+          - {slot: content, tag: liquid_water}
+        transfer:
+          amount: 2000
+          from_prop: water_amount
+          to_object: actor
+          to_prop: hydration

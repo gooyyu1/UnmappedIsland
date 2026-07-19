@@ -591,7 +591,7 @@ object_defs:
     layer: base
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             defense: 5
@@ -606,7 +606,7 @@ object_defs:
 - `conditions` を省略すれば「常時（無条件）」を意味します。
 - `self`/`parent` 対象の効果は、両方とも「このブロックを宣言したオブジェクト自身が今どのスロットに入っている
   か」という同じ物理的な実体を指すため、`conditions` の `object` を省略（既定値 `self`）して書くのが自然です
-  （例: `{slot: equip}` は「自分自身が親の `equip` スロットに入っている間」を意味します）。`child` 対象の効果
+  （例: `{in_slot: equip}` は「自分自身が親の `equip` スロットに入っている間」を意味します）。`child` 対象の効果
   （親がdeclareし、子がゲート対象になるケース）では、`object: child` を使って子自身のスロット位置やプロパティを
   参照できます。
 
@@ -633,12 +633,12 @@ object_defs:
   sword:
     passives:
       - conditions:
-          - {slot: main_hand}
+          - {in_slot: main_hand}
         modify:
           parent:
             attack: 5
       - conditions:
-          - {slot: off_hand}
+          - {in_slot: off_hand}
         modify:
           parent:
             attack: 2
@@ -992,9 +992,10 @@ object_defs:
 
 ## 14. conditions（条件式）
 
-条件は、プロパティ比較かスロット位置判定のいずれかを表す「葉」と、複数の条件を論理積・論理和・否定で束ねる
-「複合ノード」からなる木構造です。トップレベルの `conditions:` は常に配列で、暗黙の `all`（論理積）として
-扱われます（`passives`/`stages`/`accepts`/`pick` と同じ、複数形キーは常に配列という規約、8 節）。
+条件は、プロパティ比較・スロット位置判定・スロット中身判定のいずれかを表す「葉」と、複数の条件を論理積・
+論理和・否定で束ねる「複合ノード」からなる木構造です。トップレベルの `conditions:` は常に配列で、暗黙の
+`all`（論理積）として扱われます（`passives`/`stages`/`accepts`/`pick` と同じ、複数形キーは常に配列という
+規約、8 節）。
 
 ### 14.1 葉: プロパティ比較
 
@@ -1026,32 +1027,77 @@ conditions:
 
 ### 14.2 葉: スロット位置判定
 
-`object` が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します。常に等価判定で、`op`
-は持ちません（否定したい場合は 14.3 節の `not` で包みます）。
+`object` が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します（**外側から見た
+位置**）。常に等価判定で、`op` は持ちません（否定したい場合は 14.4 節の `not` で包みます）。
 
 ```yaml
 conditions:
-  - {object: self, slot: equip}
+  - {object: self, in_slot: equip}
 ```
 
-`slot` は `prop` とは独立したフィールドで、同時には指定できません。あえて `prop` の仮想的な特殊値にしていない
-のは、(a) スロット判定には `lt`/`gt` 等の比較演算子が意味を持たないため、`op` を伴う `prop` と同じ形にすると
-無意味な組み合わせを許してしまうこと、(b) プロパティ名とスロット名は本来別の名前空間であり、同じ識別子が
-偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は文字列が一致しても
-衝突しません。
+`in_slot` は `prop` とは独立したフィールドで、同時には指定できません。あえて `prop` の仮想的な特殊値に
+していないのは、(a) スロット判定には `lt`/`gt` 等の比較演算子が意味を持たないため、`op` を伴う `prop` と
+同じ形にすると無意味な組み合わせを許してしまうこと、(b) プロパティ名とスロット名は本来別の名前空間であり、
+同じ識別子が偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は
+文字列が一致しても衝突しません。
 
 `ancestor` は「`prop` が指すプロパティ名で祖先を探す」という仕組みのため、探すプロパティを持たないスロット
-判定では `object` に指定できません（ロード時エラー）。
+位置判定では `object` に指定できません（ロード時エラー）。
 
-### 14.3 複合ノード: all / any / not
+### 14.3 葉: スロット中身判定
+
+`object` が指すオブジェクト自身が持つ**自分のスロット**の中に、指定した `tag`（4.1 節）を持つ子オブジェクトが
+1つでもあるかを判定します（**内側から見た中身**、14.2 節のスロット位置判定とは向きが逆）。常に存在判定で、
+`op` は持ちません。
+
+```yaml
+conditions:
+  - {object: self, slot: content, tag: liquid_water}
+```
+
+- **`slot`**: 判定対象の、`object` 自身が持つスロット名。
+- **`tag`**: そのスロットの中身が持つべきタグ。
+
+`slot` は 14.2 節の `in_slot` とは別フィールドです。同じ「スロットのグローバルID」を指しますが、
+`in_slot` は「`object` が親の中でどこにいるか」、`slot` は「`object` 自身の中に何が入っているか」という、
+参照する木構造上の向きが逆であるため、キー名自体を分けて区別しています（同じキー名で向きだけが異なると、
+`{object, slot}` という同じ形が2通りの意味を持ってしまい、区別できなくなるため）。
+
+液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
+スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します（コンテナ設計の検討、
+`ContainerSystem.md` 参照）。
+
+```yaml
+object_defs:
+  canteen:
+    props:
+      water_amount:
+        value: 0
+        range: {min: 0, max: 4800}
+    slots:
+      content:
+        accepts:
+          - {tag: liquid_marker, max: 1}
+    actions:
+      drink:
+        conditions:
+          - {slot: content, tag: liquid_water}
+        transfer:
+          amount: 2000
+          from_prop: water_amount
+          to_object: actor
+          to_prop: hydration
+```
+
+### 14.4 複合ノード: all / any / not
 
 複数の条件を組み合わせたい場合、`all`（論理積）・`any`（論理和）・`not`（否定）で入れ子にできます。
 
 ```yaml
 conditions:
   - any:
-      - {slot: main_hand}
-      - {slot: off_hand}
+      - {in_slot: main_hand}
+      - {in_slot: off_hand}
 ```
 
 トップレベルの配列自体が暗黙の `all` であるため、単純な AND 条件（従来通り）は複合ノードを使わず、葉を並べる
