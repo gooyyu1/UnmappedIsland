@@ -426,13 +426,13 @@ namespace UnmappedIsland.Runtime
                 if (key == ReferenceRoot.Ancestor)
                 {
                     foreach (var assign in assigns)
-                        FindAncestorWithProperty(assign.PropertyGlobalId)?.SetNumber(assign.PropertyGlobalId, assign.Value, session);
+                        FindAncestorWithProperty(assign.PropertyGlobalId)?.SetNumber(assign.PropertyGlobalId, ResolveAssignmentValue(assign, actor, dragged), session);
                     continue;
                 }
 
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
-                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, assign.Value, session);
+                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, ResolveAssignmentValue(assign, actor, dragged), session);
             }
 
             foreach (ReferenceRoot key in OrderedTargets)
@@ -467,6 +467,20 @@ namespace UnmappedIsland.Runtime
             }
 
             if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
+        }
+
+        /// <summary>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
+        /// （assign.Value）をそのまま使う。ValueRefがあれば、その参照先（{object, prop}）の現在の実効値を
+        /// 読んで使う（他のプロパティの値をそのままコピーする、9.2節）。参照先が解決できない場合は0。</summary>
+        private int ResolveAssignmentValue(PropertyAssignment assign, WorldObject actor, WorldObject dragged)
+        {
+            if (!assign.ValueRef.HasValue) return assign.Value;
+
+            PropertyPath path = assign.ValueRef.Value;
+            WorldObject source = path.Root == ReferenceRoot.Ancestor
+                ? FindAncestorWithProperty(path.PropertyGlobalId)
+                : ResolveEffectTarget(path.Root, actor, dragged);
+            return source != null && source.TryGetProperty(path.PropertyGlobalId, out PropertyValue value) ? value.GetEffectiveValue() : 0;
         }
 
         /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged)を解決する。selfは常にこの

@@ -101,8 +101,15 @@ namespace UnmappedIsland.Codex
         /// <summary>Property葉のみ有効。</summary>
         public ConditionOp Op { get; }
 
-        /// <summary>Property葉のみ有効。lt/lte/gt/gte/eq/neqは常に1要素。in/not_inは複数要素になりうる。</summary>
+        /// <summary>Property葉のみ有効かつValueRefがnullの場合のみ使う。lt/lte/gt/gte/eq/neqは常に1要素。
+        /// in/not_inは複数要素になりうる。</summary>
         public IReadOnlyList<PropertyValue> Values { get; }
+
+        /// <summary>Property葉のみ有効。非nullなら、YAML上のリテラルvalue（Values）の代わりに、この
+        /// {object, prop}参照先の現在の実効値と比較する（weightのpath参照、10.2節と同じ「リテラルか
+        /// 参照か」の二択をconditionsにも広げたもの）。in/not_inでは意味を持たない（複数値との比較に
+        /// なるため。ロード時エラー）。</summary>
+        public PropertyPath? ValueRef { get; }
 
         /// <summary>SlotPosition/SlotContent葉のみ有効。SlotPositionではobjectの親の中の位置、
         /// SlotContentではobject自身が持つスロットを指す（同じ「スロットのグローバルID」というデータ型
@@ -117,34 +124,38 @@ namespace UnmappedIsland.Codex
 
         private ConditionNode(
             ConditionNodeKind kind, ReferenceRoot root, int propertyGlobalId, ConditionOp op,
-            IReadOnlyList<PropertyValue> values, int slotGlobalId, int tagGlobalId, IReadOnlyList<ConditionNode> children)
+            IReadOnlyList<PropertyValue> values, PropertyPath? valueRef,
+            int slotGlobalId, int tagGlobalId, IReadOnlyList<ConditionNode> children)
         {
             Kind = kind;
             Root = root;
             PropertyGlobalId = propertyGlobalId;
             Op = op;
             Values = values;
+            ValueRef = valueRef;
             SlotGlobalId = slotGlobalId;
             TagGlobalId = tagGlobalId;
             Children = children;
         }
 
-        public static ConditionNode Property(ReferenceRoot root, int propertyGlobalId, ConditionOp op, IReadOnlyList<PropertyValue> values) =>
-            new ConditionNode(ConditionNodeKind.Property, root, propertyGlobalId, op, values, default, default, null);
+        public static ConditionNode Property(
+            ReferenceRoot root, int propertyGlobalId, ConditionOp op,
+            IReadOnlyList<PropertyValue> values, PropertyPath? valueRef = null) =>
+            new ConditionNode(ConditionNodeKind.Property, root, propertyGlobalId, op, values, valueRef, default, default, null);
 
         public static ConditionNode SlotPosition(ReferenceRoot root, int slotGlobalId) =>
-            new ConditionNode(ConditionNodeKind.SlotPosition, root, default, default, null, slotGlobalId, default, null);
+            new ConditionNode(ConditionNodeKind.SlotPosition, root, default, default, null, null, slotGlobalId, default, null);
 
         public static ConditionNode SlotContent(ReferenceRoot root, int slotGlobalId, int tagGlobalId) =>
-            new ConditionNode(ConditionNodeKind.SlotContent, root, default, default, null, slotGlobalId, tagGlobalId, null);
+            new ConditionNode(ConditionNodeKind.SlotContent, root, default, default, null, null, slotGlobalId, tagGlobalId, null);
 
         public static ConditionNode All(IReadOnlyList<ConditionNode> children) =>
-            new ConditionNode(ConditionNodeKind.All, default, default, default, null, default, default, children);
+            new ConditionNode(ConditionNodeKind.All, default, default, default, null, null, default, default, children);
 
         public static ConditionNode Any(IReadOnlyList<ConditionNode> children) =>
-            new ConditionNode(ConditionNodeKind.Any, default, default, default, null, default, default, children);
+            new ConditionNode(ConditionNodeKind.Any, default, default, default, null, null, default, default, children);
 
         public static ConditionNode Not(ConditionNode inner) =>
-            new ConditionNode(ConditionNodeKind.Not, default, default, default, null, default, default, new[] { inner });
+            new ConditionNode(ConditionNodeKind.Not, default, default, default, null, null, default, default, new[] { inner });
     }
 }

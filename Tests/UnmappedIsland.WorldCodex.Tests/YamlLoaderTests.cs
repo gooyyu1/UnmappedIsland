@@ -65,7 +65,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_StringPropertyValue_Throws()
+        public void LoadFromGroups_IdentifierPropertyValue_InternsAsSymbol()
         {
             const string yaml = @"
 object_defs:
@@ -74,8 +74,25 @@ object_defs:
       weather:
         value: clear
 ";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky"));
+
+            Assert.That(PropOf(codex, sky, "weather").DefaultNumber, Is.EqualTo(codex.SymbolNames.GetId("clear")),
+                "整数にも真偽値にもならない識別子は、シンボル名としてsymbolNamesへ登録される");
+        }
+
+        [Test]
+        public void LoadFromGroups_NonIdentifierPropertyValue_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  sky2:
+    props:
+      weather:
+        value: ""not a valid symbol!""
+";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("整数または真偽値"));
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("シンボル名"));
         }
 
         // ------------------------------------------------------------------
@@ -797,6 +814,91 @@ object_defs:
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("slot"));
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionValueAsPropertyReference_ComparesTwoDynamicProperties()
+        {
+            const string yaml = @"
+object_defs:
+  bottle:
+    props:
+      content:
+        value: empty
+    combinations:
+      pour_in:
+        with: liquid_container
+        conditions:
+          - {prop: content, op: eq, value: {object: dragged, prop: content}}
+        destroy: self
+  bottle_source:
+    tags: [liquid_container]
+    props:
+      content:
+        value: water
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            var session = new WorldSession(codex);
+            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")));
+            var sameContent = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("bottle_source")));
+
+            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, sameContent, null, "pour_in", session), Is.False,
+                "self(empty)とdragged(water)のcontentが異なるので不成立");
+
+            int contentId = codex.PropertyNames.GetId("content");
+            bottle.SetProperty(contentId, PropertyValue.FromNumber(codex.SymbolNames.GetId("water")));
+            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, sameContent, null, "pour_in", session), Is.True,
+                "selfとdraggedのcontentが同じ(water)なので成立");
+        }
+
+        [Test]
+        public void LoadFromGroups_ConditionValueRefWithInOp_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    actions:
+      use:
+        conditions:
+          - {prop: content, op: in, value: {object: dragged, prop: content}}
+        destroy: self
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("in"));
+        }
+
+        [Test]
+        public void LoadFromGroups_SetValueAsPropertyReference_CopiesDraggedPropertyIntoSelf()
+        {
+            const string yaml = @"
+object_defs:
+  bottle2:
+    props:
+      content:
+        value: empty
+    combinations:
+      pour_in:
+        with: liquid_container2
+        set:
+          self:
+            content: {object: dragged, prop: content}
+  oil_source:
+    tags: [liquid_container2]
+    props:
+      content:
+        value: oil
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            int contentId = codex.PropertyNames.GetId("content");
+
+            var session = new WorldSession(codex);
+            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle2")));
+            var oilSource = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("oil_source")));
+
+            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, oilSource, null, "pour_in", session), Is.True);
+            Assert.That(bottle.GetNumber(contentId), Is.EqualTo(codex.SymbolNames.GetId("oil")),
+                "set: {content: {object: dragged, prop: content}}がdraggedの現在値をそのままコピーする");
         }
 
         [Test]

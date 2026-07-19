@@ -1,36 +1,72 @@
 # 液体容器の定義。「容器には色々な液体が入れられるが、量(amount)だけでは中身の種類を区別できない」という
-# 課題への対応（GameElementDefinition.md 14.3節「葉: スロット中身判定」参照）。
+# 課題への対応（GameElementDefinition.md 6.5節「シンボル型の値」・14.1節「値の参照」参照）。
 #
-# 採用した案（案3）: 容器自身が液体の量(water_amount)を持ち、容器の専用スロット(content)に、種類ごとの
-# タグを持つだけの目印用マーカーオブジェクトを1つ置くことで、中身の種類を識別する。飲めるかどうかのような
-# アクションは容器側に1つだけ定義し、conditions(14.3節のスロット中身判定)でマーカーのタグを見て出し分ける。
-# 容器の入れ替え(水を空けて油を注ぐ等)や、混ぜてはいけない液体同士の防止は今後の課題（未実装）。
+# 採用した案: 中身の種類を、容器自身が持つシンボル型プロパティ(content)で直接表す。スロットや目印用の
+# マーカーオブジェクトは使わない。中身が同じかどうかの判定・コピーは、他のプロパティと全く同じ
+# conditions/setの語彙（値をリテラルの代わりに{object, prop}参照にできる）だけで表現できるため、
+# 液体の種類が何であれ・何種類あっても、この1つのtrait定義だけで完結する（種類ごとの列挙が不要）。
 
-object_defs:
-  # 液体の種類を識別するためだけのマーカー。tag以外の状態(props/actions等)は一切持たない。
-  liquid_marker_water:
-    tags: [liquid_marker, liquid_water]
-  liquid_marker_oil:
-    tags: [liquid_marker, liquid_oil]
-
-  canteen:
+traits:
+  liquid_container:
+    tags: [liquid_container]
     props:
-      # 1L ≈ 4800単位（characters.yamlのhydration換算メモ参照）。
-      water_amount:
+      # 1L ≈ 4800単位（characters.yamlのhydration換算メモ参照）。中身の種類によらず、量は1つの
+      # プロパティで表す（種類はcontentが別途持つため）。
+      liquid_amount:
         value: 0
         range: {min: 0, max: 4800}
-    slots:
+      # シンボル型プロパティ。中身の種類を表す。emptyは「何も入っていない」ことを表す著者選択の値
+      # であり、エンジンが特別扱いする予約語ではない（他のシンボル値と同列に比較・参照できる）。
       content:
-        accepts:
-          - {tag: liquid_marker, max: 1}
+        value: empty
     actions:
-      # 中身がliquid_waterタグのマーカーであるときだけ実行できる。油(liquid_oil)や空の容器では
-      # conditionsが満たされず実行されない。
+      # 中身がemptyでない（=何かが入っている）ときだけ実行できる。種類そのものは問わない
+      # （水以外の液体を飲めなくする等の制約は、必要になった時点でconditionsに追加する）。
       drink:
         conditions:
-          - {slot: content, tag: liquid_water}
+          - {prop: content, op: neq, value: empty}
         transfer:
           amount: 2000
-          from_prop: water_amount
+          from_prop: liquid_amount
           to_object: actor
           to_prop: hydration
+    combinations:
+      # 別の容器（liquid_containerタグを持つ何か）から注ぐ。selfのcontentが空、またはselfとdraggedの
+      # contentが同じ種類の場合だけ成立する。違う種類が既に入っている場合はconditionsを満たさず、
+      # 混ぜ物として拒否される（種類ごとにcombinationsを用意する必要はない）。
+      pour_in:
+        with: liquid_container
+        conditions:
+          - {object: dragged, prop: content, op: neq, value: empty}
+          - any:
+              - {prop: content, op: eq, value: empty}
+              - {prop: content, op: eq, value: {object: dragged, prop: content}}
+        set:
+          self:
+            content: {object: dragged, prop: content}
+        transfer:
+          amount: 2000
+          from_object: dragged
+          from_prop: liquid_amount
+          to_prop: liquid_amount
+
+object_defs:
+  # 空の状態の水筒。
+  canteen:
+    traits: [liquid_container]
+
+  # ワールドに配置する初期アイテム等で使う、あらかじめ中身が入った状態のサンプル。
+  canteen_of_water:
+    traits: [liquid_container]
+    props:
+      content:
+        value: water
+      liquid_amount:
+        value: 4800
+  canteen_of_oil:
+    traits: [liquid_container]
+    props:
+      content:
+        value: oil
+      liquid_amount:
+        value: 4800

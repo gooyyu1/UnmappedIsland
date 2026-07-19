@@ -48,16 +48,29 @@ namespace UnmappedIsland.Codex
         }
     }
 
-    /// <summary>set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。</summary>
+    /// <summary>
+    /// set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの
+    /// 代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
+    /// conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。
+    /// </summary>
     public readonly struct PropertyAssignment
     {
         public readonly int PropertyGlobalId;
         public readonly int Value;
+        public readonly PropertyPath? ValueRef;
 
         public PropertyAssignment(int propertyGlobalId, int value)
         {
             PropertyGlobalId = propertyGlobalId;
             Value = value;
+            ValueRef = null;
+        }
+
+        public PropertyAssignment(int propertyGlobalId, PropertyPath valueRef)
+        {
+            PropertyGlobalId = propertyGlobalId;
+            Value = default;
+            ValueRef = valueRef;
         }
     }
 
