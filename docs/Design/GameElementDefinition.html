@@ -519,11 +519,11 @@ inherit（祖先からの値の継承）</h3>
 <ul>
 <li>直接の親（<code>parent</code>）固定ではなく、祖先を遡る（<code>ancestor</code>）固定である理由:
 直接の親がこのプロパティを 持たない場合に対応するためです（例:
-アイテムの直接の親はプレイヤーだが、<code>temperature</code>
-は部屋が持つ）。
-途中の親がこのプロパティを定義していれば、そこで探索が止まり、そこより上（例えば部屋）までは遡りません。
-これにより、断熱容器のように「途中で値を変えて中継する」表現も、<code>inherit</code>
-とは別に、その容器自身が <code>range</code>・<code>modify</code>
+アイテムの直接の親はプレイヤーだが、<code>ambient_temperature</code>
+は部屋が
+持つ）。途中の親がこのプロパティを定義していれば、そこで探索が止まり、そこより上（例えば部屋）までは
+遡りません。これにより、断熱容器のように「途中で値を変えて中継する」表現も、<code>inherit</code>
+とは別に、その 容器自身が<code>range</code>・<code>modify</code>
 等で自分の値を作ればそのまま実現できます。</li>
 <li>worldは唯一のシングルトンであり、すべてのオブジェクトは最終的にworldの子孫であるため（7.1
 節）、
@@ -534,13 +534,13 @@ inherit（祖先からの値の継承）</h3>
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">room</span><span class="kw">:</span></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">temperature</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ambient_temperature</span><span class="kw">:</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">food</span><span class="kw">:</span></span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">temperature</span><span class="kw">:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ambient_temperature</span><span class="kw">:</span></span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">-2</span><span class="co">      # 自分のオフセット</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">inherit</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">  # 祖先(通常はroom)のtemperatureを加算する</span></span></code></pre></div>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">inherit</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">  # 祖先(通常はroom)のambient_temperatureを加算する</span></span></code></pre></div>
 <h2 id="slots親子関係とコンテナ">7. slots（親子関係とコンテナ）</h2>
 <h3 id="基本構造">7.1 基本構造</h3>
 <ul>
@@ -895,10 +895,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href=
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> lit</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
 <span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
 <span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ancestor</span><span class="kw">:</span></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
-<p>暖炉自身がカート等（<code>temperature</code>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">ambient_temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<p>暖炉自身がカート等（<code>ambient_temperature</code>
 を持たない容器）の中に置かれていても、その容器を素通りして、実際に
-<code>temperature</code>
+<code>ambient_temperature</code>
 を持つ部屋（あるいはさらに上の祖先）に効果が届きます。祖先を辿った先のオブジェクトが後で
 移動した場合（例えば暖炉を運ぶカート自身が別の部屋へ移動した場合）、その移動をきっかけに再解決され、
 新しい祖先へ効果が自動的に切り替わります。</p>
