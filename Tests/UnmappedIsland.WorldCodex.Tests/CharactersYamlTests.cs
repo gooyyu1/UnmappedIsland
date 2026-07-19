@@ -57,14 +57,15 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(PropOf(character, "hydration").DefaultNumber, Is.EqualTo(28800));
             // body_fat: 標準体型を想定した初期値=15日分(1440 tick)、-100/tickで144000。
             Assert.That(PropOf(character, "body_fat").DefaultNumber, Is.EqualTo(144000));
-            Assert.That(PropOf(character, "wakefulness").DefaultNumber, Is.EqualTo(100));
+            // wakefulness: 強制的に起こされ続けない自然な限界=24時間(96 tick)分、-100/tickでmax=9600。
+            Assert.That(PropOf(character, "wakefulness").DefaultNumber, Is.EqualTo(9600));
             Assert.That(PropOf(character, "stamina").DefaultNumber, Is.EqualTo(100));
         }
 
         [TestCase("satiety", 0, 9600)]
         [TestCase("hydration", 0, 28800)]
         [TestCase("body_fat", 0, 576000)] // 最大限に肥満した状態=60日分(5760 tick)、-100/tick。
-        [TestCase("wakefulness", 0, 100)]
+        [TestCase("wakefulness", 0, 9600)]
         [TestCase("stamina", 0, 100)]
         public void Character_Properties_HaveExpectedRange(string name, int expectedMin, int expectedMax)
         {
@@ -78,7 +79,8 @@ namespace UnmappedIsland.Codex.Tests
         [TestCase("satiety")]
         [TestCase("hydration")]
         [TestCase("body_fat")]
-        public void Character_LifeSustainingProperties_DecayByOneHundredPerTick(string name)
+        [TestCase("wakefulness")]
+        public void Character_DepletingProperties_DecayByOneHundredPerTick(string name)
         {
             var session = new WorldSession(codex);
             ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));

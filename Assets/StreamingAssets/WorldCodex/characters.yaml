@@ -41,10 +41,17 @@ object_defs:
           - accumulate:
               self:
                 body_fat: -100
-      # 覚醒度（眠気の逆）。0で睡眠が必要な状態を表す。
+      # 覚醒度（眠気の逆）。0になると強制的に眠りに入る想定（強制睡眠の実処理自体は未実装。致死性は
+      # 無い）。強制的に起こされ続けない自然な状態では、約24時間（96 tick）で自分の意思では抗えない
+      # 眠気（マイクロスリープ）が始まるとされる。satiety等と同じく-100/tickで減衰し、
+      # maxは96*100=9600とする。
       wakefulness:
-        value: 100
-        range: {min: 0, max: 100}
+        value: 9600
+        range: {min: 0, max: 9600}
+        passives:
+          - accumulate:
+              self:
+                wakefulness: -100
       # 体力（疲労の逆）。0で疲労困憊の状態を表す。
       stamina:
         value: 100
