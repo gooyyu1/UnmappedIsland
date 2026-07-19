@@ -1,0 +1,37 @@
+# 食料のサンプル定義（GameElementDefinition.md参照）。栄養バランス（characters.yaml参照）の
+# 3カテゴリ（野菜/肉/穀物・イモ）それぞれについて、南国の無人島で採取しやすく、ある程度知名度のある
+# 食材を1種類ずつ用意する。satiety・各カテゴリへの加算量はいずれも仮の値（食料ごとのカロリー密度・
+# 栄養密度の違いを表現する具体的な数値バランスは今後の課題）。
+
+object_defs:
+  # 空心菜（クウシンサイ）。熱帯・亜熱帯の水辺に自生し、非常に採取しやすい葉物野菜。
+  water_spinach:
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 8
+            vegetable_nutrition: 20000
+        destroy: self
+
+  # ヤシガニ。南国の無人島を象徴する、陸生では最大級の甲殻類。夜行性で物陰に潜んでいることが多く、
+  # 狩猟の道具がなくても採取しやすい（ハンティングと違い「見つけて捕まえる」対象）。
+  coconut_crab:
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 15
+            meat_nutrition: 20000
+        destroy: self
+
+  # タロイモ。太平洋の島々で古くから主食とされてきた、湿地でよく育つ塊茎作物。栽培せずとも
+  # 自生しているものを採取できる。
+  taro:
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 20
+            grain_tuber_nutrition: 20000
+        destroy: self

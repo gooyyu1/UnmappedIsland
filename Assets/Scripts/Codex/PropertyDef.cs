@@ -108,7 +108,7 @@ namespace UnmappedIsland.Codex
         /// （GetEffectiveValue、PropertyValue参照）。該当する祖先が見つからない場合、寄与は0
         /// （既存の「見つからなければ0」規約と同じ）。parent固定ではなくancestor固定なのは、直接の親が
         /// このプロパティを持たない場合に備えるため（例: アイテムの直接の親はプレイヤーだが、
-        /// temperatureは部屋が持つ）。
+        /// ambient_temperatureは部屋が持つ）。
         /// </summary>
         public bool Inherit { get; }
 
