@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using NUnit.Framework;
 using UnmappedIsland.Loader;
+using UnmappedIsland.Runtime;
 
 namespace UnmappedIsland.Codex.Tests
 {
@@ -50,23 +51,44 @@ namespace UnmappedIsland.Codex.Tests
             ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));
             Assert.That(character.IsSingleton, Is.True);
 
-            Assert.That(PropOf(character, "satiety").DefaultNumber, Is.EqualTo(100));
-            Assert.That(PropOf(character, "hydration").DefaultNumber, Is.EqualTo(100));
+            // satiety: 1日(96 tick)分、-100/tickでmax=9600。
+            Assert.That(PropOf(character, "satiety").DefaultNumber, Is.EqualTo(9600));
+            // hydration: 3日(288 tick)分、-100/tickでmax=28800。
+            Assert.That(PropOf(character, "hydration").DefaultNumber, Is.EqualTo(28800));
+            // body_fat: 標準体型を想定した初期値=15日分(1440 tick)、-100/tickで144000。
+            Assert.That(PropOf(character, "body_fat").DefaultNumber, Is.EqualTo(144000));
             Assert.That(PropOf(character, "wakefulness").DefaultNumber, Is.EqualTo(100));
             Assert.That(PropOf(character, "stamina").DefaultNumber, Is.EqualTo(100));
         }
 
-        [Test]
-        public void Character_Properties_AreClampedToZeroToOneHundred()
+        [TestCase("satiety", 0, 9600)]
+        [TestCase("hydration", 0, 28800)]
+        [TestCase("body_fat", 0, 576000)] // 最大限に肥満した状態=60日分(5760 tick)、-100/tick。
+        [TestCase("wakefulness", 0, 100)]
+        [TestCase("stamina", 0, 100)]
+        public void Character_Properties_HaveExpectedRange(string name, int expectedMin, int expectedMax)
         {
             ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));
-            foreach (var name in new[] { "satiety", "hydration", "wakefulness", "stamina" })
-            {
-                PropertyDef prop = PropOf(character, name);
-                Assert.That(prop.Range.HasValue, Is.True, $"{name}にはrangeが必要");
-                Assert.That(prop.Range.Value.Min, Is.EqualTo(0));
-                Assert.That(prop.Range.Value.Max, Is.EqualTo(100));
-            }
+            PropertyDef prop = PropOf(character, name);
+            Assert.That(prop.Range.HasValue, Is.True, $"{name}にはrangeが必要");
+            Assert.That(prop.Range.Value.Min, Is.EqualTo(expectedMin));
+            Assert.That(prop.Range.Value.Max, Is.EqualTo(expectedMax));
+        }
+
+        [TestCase("satiety")]
+        [TestCase("hydration")]
+        [TestCase("body_fat")]
+        public void Character_LifeSustainingProperties_DecayByOneHundredPerTick(string name)
+        {
+            var session = new WorldSession(codex);
+            ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));
+            var instance = new WorldObject(1, character);
+            int propId = codex.PropertyNames.GetId(name);
+            int before = instance.GetNumber(propId);
+
+            instance.Tick(session);
+
+            Assert.That(instance.GetNumber(propId), Is.EqualTo(before - 100));
         }
 
         private PropertyDef PropOf(ObjectDef def, string propertyName)
