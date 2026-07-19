@@ -26,25 +26,17 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。
-        /// StageとConditionsは独立したフィールドで、それぞれ非nullの場合だけそのチェックを行う（両方非nullなら
+        /// StageNameとConditionsは独立したフィールドで、それぞれ非nullの場合だけそのチェックを行う（両方非nullなら
         /// AND、両方nullなら常時有効）。</summary>
         public bool IsActive()
         {
-            if (Def.Gate.Stage != null && !IsOwnStageActive())
+            if (Def.Gate.StageName != null && !Declarer.IsInStage(Def.Gate.PropertyGlobalId, Def.Gate.StageName))
                 return false;
 
             if (Def.Gate.Conditions != null && !ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot))
                 return false;
 
             return true;
-        }
-
-        /// <summary>Declarer自身の該当プロパティが、ゲートが指すstageに今まさに該当しているか。</summary>
-        private bool IsOwnStageActive()
-        {
-            int value = Declarer.GetNumberByLocalId(Def.Gate.PropertyLocalId);
-            var stage = Declarer.Def.PropertyDefs[Def.Gate.PropertyLocalId].ResolveStage(value);
-            return ReferenceEquals(stage, Def.Gate.Stage);
         }
 
         /// <summary>conditions（旧when）内のself/parentを解決する。selfはSlotBearer（self/parent対象の

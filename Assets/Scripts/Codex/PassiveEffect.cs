@@ -33,20 +33,20 @@ namespace UnmappedIsland.Codex
 
     /// <summary>
     /// 効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を
-    /// 表す（Stageが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら
+    /// 表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら
     /// 両方を満たす間だけ有効=AND、両方nullなら常時有効。Runtime.RegisteredPassiveEffect.IsActive参照）。
     ///
-    /// Conditionsの条件木はグローバルIDのまま持つ（self/parentの解決先は「今の親のスロット構成」に対して
-    /// 都度ローカル化する必要がある。効果を宣言した側のObjectDefは、将来どんな親に取り付けられるか
-    /// 分からないため）。PropertyLocalId/Stage は Declarer 自身の ObjectDef に対してビルド時に確定できるため、
-    /// ローカルID・PropertyStage参照をそのまま持てる（Declarer は常にこの PassiveEffect を宣言した
-    /// ObjectDef のインスタンスになることが登録経路上で保証されているため）。
+    /// ConditionsもPropertyGlobalId/StageNameも、ロード時にローカルIDへ変換せずグローバルIDのまま持つ
+    /// （評価のたびにDeclarer自身がRuntime.WorldObject.IsInStageでローカル化する）。グローバルID→ローカルID
+    /// の変換コストは、1 tick=15分というこのゲームの時間スケールに対して無視できるほど小さいため、
+    /// Declarer自身のPropertyDefがすべて出来上がるまで解決を待つビルド時の2段階パースは不要（かつては
+    /// PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、この理由により撤去した）。
     /// </summary>
     public sealed class PassiveEffectGate
     {
         public ConditionNode Conditions;
-        public int PropertyLocalId;
-        public PropertyStage Stage;
+        public int PropertyGlobalId;
+        public string StageName;
     }
 
     /// <summary>

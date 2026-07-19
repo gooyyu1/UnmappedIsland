@@ -21,38 +21,6 @@ namespace UnmappedIsland.Loader
     /// </summary>
     internal static class ObjectDefYamlConverter
     {
-        /// <summary>
-        /// passives（8節）の1つの寄与を、まだグローバルIDへ解決していない状態で運ぶ、このクラス内だけの
-        /// 一時データ。WhenOwnStageゲートの解決（Declarer自身のstages参照）には、このobject_def自身の
-        /// PropertyDefがすべて出来上がっている必要があるため、props解析の完了後にまとめて解決する
-        /// （BuildPassiveEffect参照）。公開されるBlueprint型とは異なり、この関数呼び出しの外には出ない。
-        /// </summary>
-        private readonly struct RawPassiveEffect
-        {
-            public readonly PassiveEffectTarget Target;
-            public readonly PassiveEffectKind Kind;
-            public readonly string TargetPropertyName;
-            public readonly int Amount;
-            public readonly ConditionNode Conditions;
-            public readonly bool IsWhenOwnStage;
-            public readonly string GateStagePropertyName;
-            public readonly string GateStageName;
-
-            public RawPassiveEffect(
-                PassiveEffectTarget target, PassiveEffectKind kind, string targetPropertyName, int amount,
-                ConditionNode conditions, bool isWhenOwnStage, string gateStagePropertyName, string gateStageName)
-            {
-                Target = target;
-                Kind = kind;
-                TargetPropertyName = targetPropertyName;
-                Amount = amount;
-                Conditions = conditions;
-                IsWhenOwnStage = isWhenOwnStage;
-                GateStagePropertyName = gateStagePropertyName;
-                GateStageName = gateStageName;
-            }
-        }
-
         public static ObjectDef Build(
             string name,
             bool isSingleton,
@@ -69,13 +37,13 @@ namespace UnmappedIsland.Loader
             NameRegistry tagNames)
         {
             int objectGlobalId = objectNames.Intern(name);
-            var rawPassiveEffects = new List<RawPassiveEffect>();
+            var passives = new List<PassiveEffect>();
 
             var propertyDefs = new List<PropertyDef>();
             if (propsNode != null)
                 foreach (var (propName, propValueNode) in propsNode.EntriesInOrder())
                     propertyDefs.Add(ParseProperty(
-                        name, propName, (YamlMappingNode)propValueNode, rawPassiveEffects, propertyNames, slotNames, objectNames));
+                        name, propName, (YamlMappingNode)propValueNode, passives, propertyNames, slotNames, objectNames));
             var propertyLayout = new LocalIndexMap(propertyNames.Count, propertyDefs.Select(p => p.GlobalId).ToList());
 
             var slotDefs = new List<SlotDef>();
@@ -86,12 +54,8 @@ namespace UnmappedIsland.Loader
 
             foreach (YamlMappingNode passiveNode in passiveNodes)
                 ParsePassiveMapInto(
-                    rawPassiveEffects, name, passiveNode, forcedStageProperty: null, forcedStageName: null,
+                    passives, name, passiveNode, forcedStageProperty: null, forcedStageName: null,
                     propertyNames, slotNames);
-
-            var passives = rawPassiveEffects
-                .Select(c => BuildPassiveEffect(c, propertyLayout, propertyDefs, propertyNames))
-                .ToList();
 
             StackOrderDef stackOrder = null;
             if (stackOrderNode != null)
@@ -113,7 +77,7 @@ namespace UnmappedIsland.Loader
 
         private static PropertyDef ParseProperty(
             string objectDefName, string propName, YamlMappingNode node,
-            List<RawPassiveEffect> rawPassiveEffects, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames)
+            List<PassiveEffect> passives, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames)
         {
             string context = $"'{objectDefName}'.props.'{propName}'";
             int propertyGlobalId = propertyNames.Intern(propName);
@@ -183,7 +147,7 @@ namespace UnmappedIsland.Loader
                     YamlSequenceNode stagePassives = stageMap.TryGetSequence("passives", context);
                     if (stagePassives != null)
                         foreach (YamlNode passiveNode in stagePassives)
-                            ParsePassiveMapInto(rawPassiveEffects, objectDefName, (YamlMappingNode)passiveNode,
+                            ParsePassiveMapInto(passives, objectDefName, (YamlMappingNode)passiveNode,
                                 forcedStageProperty: propName, forcedStageName: stageName,
                                 propertyNames, slotNames);
                 }
@@ -192,7 +156,7 @@ namespace UnmappedIsland.Loader
             YamlSequenceNode propPassives = node.TryGetSequence("passives", context);
             if (propPassives != null)
                 foreach (YamlNode passiveNode in propPassives)
-                    ParsePassiveMapInto(rawPassiveEffects, objectDefName, (YamlMappingNode)passiveNode,
+                    ParsePassiveMapInto(passives, objectDefName, (YamlMappingNode)passiveNode,
                         forcedStageProperty: null, forcedStageName: null, propertyNames, slotNames);
 
             ActiveEffect onMin = null;
@@ -751,11 +715,12 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// passivesの1ブロック（self/parent/child/ancestor、actorは未対応のためスキップ）を読み、RawPassiveEffect
-        /// へ変換してoutputへ追加する。forcedStageProperty（非nullならstage内、nullならオブジェクト/
-        /// プロパティレベル）と、このブロックの"conditions"は独立に併用できる（例:「装備している間、かつ
-        /// 耐久値がintactステージの間だけ」）。RawPassiveEffectは両方を独立したフィールドとしてそのまま
-        /// 保持するため、ここでは特別扱いしない。
+        /// passivesの1ブロック（self/parent/child/ancestor、actorは未対応のためスキップ）を読み、
+        /// PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非nullならstage内、nullなら
+        /// オブジェクト/プロパティレベル）と、このブロックの"conditions"は独立に併用できる（例:「装備している
+        /// 間、かつ耐久値がintactステージの間だけ」）。ゲートはグローバルIDのまま持つため（BuildGate参照）、
+        /// このobject_def自身のPropertyDefが出来上がっているかどうかに関わらず、その場でPassiveEffectを
+        /// 組み上げられる。
         ///
         /// オブジェクトレベル・プロパティレベル・stage内のいずれも、"passives:"は常に配列であり、
         /// この関数はその配列の1要素（conditions/modify/accumulateのみを持つ、他のキーとは同居しない
@@ -764,7 +729,7 @@ namespace UnmappedIsland.Loader
         /// Runtime.RegisteredPassiveEffect参照）。
         /// </summary>
         private static void ParsePassiveMapInto(
-            List<RawPassiveEffect> output, string objectDefName, YamlMappingNode passiveMap,
+            List<PassiveEffect> output, string objectDefName, YamlMappingNode passiveMap,
             string forcedStageProperty, string forcedStageName,
             NameRegistry propertyNames, NameRegistry slotNames)
         {
@@ -772,13 +737,10 @@ namespace UnmappedIsland.Loader
 
             YamlSequenceNode conditionsNode = passiveMap.TryGetSequence("conditions", context);
             ConditionNode conditions = ParseConditionsField(context, conditionsNode, PassiveConditionRoots, propertyNames, slotNames);
+            PassiveEffectGate gate = BuildGate(conditions, forcedStageProperty, forcedStageName, propertyNames);
 
-            ParsePassiveOperationInto(
-                output, context, passiveMap, "modify", PassiveEffectKind.Modify,
-                conditions, forcedStageProperty, forcedStageName);
-            ParsePassiveOperationInto(
-                output, context, passiveMap, "accumulate", PassiveEffectKind.Accumulate,
-                conditions, forcedStageProperty, forcedStageName);
+            ParsePassiveOperationInto(output, context, passiveMap, "modify", PassiveEffectKind.Modify, gate, propertyNames);
+            ParsePassiveOperationInto(output, context, passiveMap, "accumulate", PassiveEffectKind.Accumulate, gate, propertyNames);
 
             var knownKeys = new HashSet<string> { "conditions", "modify", "accumulate" };
 
@@ -789,21 +751,34 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
+        /// ゲートを組み立てる。stagePropertyName（forcedStageProperty）が非nullならWhenOwnStage
+        /// （プロパティのグローバルIDとstage名をそのまま持つ。Runtime.WorldObject.IsInStageが評価時に
+        /// ローカルIDへ変換する）。conditionsと両方指定されていれば、両方を満たす間だけ有効になる
+        /// （例:「装備している間、かつ耐久値がintactステージの間だけ」。RegisteredPassiveEffect.IsActive参照）。
+        /// </summary>
+        private static PassiveEffectGate BuildGate(
+            ConditionNode conditions, string stagePropertyName, string stageName, NameRegistry propertyNames)
+        {
+            var gate = new PassiveEffectGate { Conditions = conditions };
+            if (stagePropertyName != null)
+            {
+                gate.PropertyGlobalId = propertyNames.Intern(stagePropertyName);
+                gate.StageName = stageName;
+            }
+            return gate;
+        }
+
+        /// <summary>
         /// passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
-        /// スキップ)ごとにRawPassiveEffectへ変換してoutputへ追加する。ゲートは、同じpassiveブロック内
-        /// の"conditions"（ブロック全体で1つ）とforcedStageProperty（非nullならstage自身のゲート）の
-        /// 両方をRawPassiveEffectへそのまま渡す。両方が指定されていれば、BuildPassiveEffectが
-        /// 両方を満たす間だけ有効なゲートとして組み上げる。
+        /// スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。同じpassiveブロック内のgateをそのまま
+        /// 共有する（対象・プロパティが違っても、ゲートの意味は同じであるため）。
         /// </summary>
         private static void ParsePassiveOperationInto(
-            List<RawPassiveEffect> output, string context, YamlMappingNode passiveMap,
-            string operationKey, PassiveEffectKind kind, ConditionNode conditions,
-            string forcedStageProperty, string forcedStageName)
+            List<PassiveEffect> output, string context, YamlMappingNode passiveMap,
+            string operationKey, PassiveEffectKind kind, PassiveEffectGate gate, NameRegistry propertyNames)
         {
             YamlMappingNode operationMap = passiveMap.TryGetMapping(operationKey, context);
             if (operationMap == null) return;
-
-            bool isWhenOwnStage = forcedStageProperty != null;
 
             foreach (var (targetName, bodyNode) in operationMap.EntriesInOrder())
             {
@@ -822,35 +797,9 @@ namespace UnmappedIsland.Loader
 
                 var body = (YamlMappingNode)bodyNode;
                 foreach (var (propName, amountNode) in body.EntriesInOrder())
-                    output.Add(new RawPassiveEffect(
-                        target, kind, propName, int.Parse(((YamlScalarNode)amountNode).Value),
-                        conditions, isWhenOwnStage, forcedStageProperty, forcedStageName));
+                    output.Add(new PassiveEffect(
+                        target, kind, propertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value), gate));
             }
-        }
-
-        /// <summary>
-        /// RawPassiveEffectを最終的なPassiveEffectへ変換する。WhenOwnStage判定は、Declarer自身（＝この
-        /// object_def自身）のPropertyDefからStageを引くため、ownPropertyLayout/ownPropertyDefsという
-        /// このobject_def自身の（既に組み上がった）ローカル配列を使う（他のobject_defのstageは参照できない）。
-        /// IsWhenOwnStageとConditionsは独立したフィールドとしてそのままPassiveEffectGateへ渡す。両方
-        /// 指定されていれば、Stage/Conditions双方が非nullになり、両方を満たす間だけ有効になる
-        /// （例:「装備している間、かつ耐久値がintactステージの間だけ」。RegisteredPassiveEffect.IsActive参照）。
-        /// </summary>
-        private static PassiveEffect BuildPassiveEffect(
-            RawPassiveEffect c, LocalIndexMap ownPropertyLayout, IReadOnlyList<PropertyDef> ownPropertyDefs, NameRegistry propertyNames)
-        {
-            int targetPropertyGlobalId = propertyNames.Intern(c.TargetPropertyName);
-
-            var gate = new PassiveEffectGate { Conditions = c.Conditions };
-            if (c.IsWhenOwnStage)
-            {
-                int stagePropertyLocalId = ownPropertyLayout.ToLocal(propertyNames.Intern(c.GateStagePropertyName));
-                PropertyDef stagePropertyDef = ownPropertyDefs[stagePropertyLocalId];
-                gate.PropertyLocalId = stagePropertyLocalId;
-                gate.Stage = stagePropertyDef.Stages.First(s => s.Name == c.GateStageName);
-            }
-
-            return new PassiveEffect(c.Target, c.Kind, targetPropertyGlobalId, c.Amount, gate);
         }
     }
 }
