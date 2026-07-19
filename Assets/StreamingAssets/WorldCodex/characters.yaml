@@ -23,3 +23,33 @@ object_defs:
       stamina:
         value: 100
         range: {min: 0, max: 100}
+      # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。「飽き」（同じ食料を短いスパンで繰り返し食べる
+      # ことのペナルティ、別途検討）とは異なり、こちらは粗い粒度で「あるカテゴリの食料を長期間
+      # 摂っていない」ことを検出するための仕組み。tick方式（最後に食べてからの経過tickを数える）
+      # ではなく数値の増減で表現する: 食料ごとにカロリー密度・栄養密度が異なる（高カロリー低栄養、
+      # 低カロリー高栄養）ことや、複数の食材を使った料理が複数カテゴリへ同時に部分加算されることを、
+      # そのまま表現できるため（tick方式は「食べたか否か」の二値でしかなく、量の違いを表せない）。
+      # 各カテゴリとも、食べると回復し毎tick一定量減っていく、satiety等と同じ構造を持つ。
+      # 減少した際の体調不良自体は未実装（今後の課題）。maxおよび減衰量（1週間で空になる想定）は
+      # いずれも仮の値。
+      vegetable_nutrition:
+        value: 67200
+        range: {min: 0, max: 67200}
+        passives:
+          - accumulate:
+              self:
+                vegetable_nutrition: -100
+      meat_nutrition:
+        value: 67200
+        range: {min: 0, max: 67200}
+        passives:
+          - accumulate:
+              self:
+                meat_nutrition: -100
+      grain_tuber_nutrition:
+        value: 67200
+        range: {min: 0, max: 67200}
+        passives:
+          - accumulate:
+              self:
+                grain_tuber_nutrition: -100
