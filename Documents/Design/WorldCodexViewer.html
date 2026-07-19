@@ -296,7 +296,7 @@ function buildDatabase(objectDefsRaw, traitsRaw) {
 
 // ------------------------------------------------------------------
 // 逆引き索引: 「このプロパティに影響を与えうるのはどこか」（プロパティ詳細ページの
-// 「この値に影響を与える可能性があるもの」セクション用）。
+// 「影響元」セクション用）。
 //
 // passives（object/property/stageの3レベルすべて）のmodify/accumulateを対象キー(self/parent/child)
 // ごとに全object_def分スキャンし、対象プロパティ名をキーとした索引を1つ作る。target=selfは
@@ -690,17 +690,6 @@ function renderPropertyDetailPage(objName, propName) {
       "<p><a href=\"#/object/" + encodeURIComponent(o.name) + "\">← " + esc(o.name) + "へ</a></p>";
   }
 
-  function renderBoundaryEffect(label, node, boundaryLabel) {
-    if (node === undefined) {
-      if (p.range) {
-        return "<p><strong>" + label + "</strong>: <span class=\"muted\">(未指定 — rangeの" + boundaryLabel + "へ自動でsetされます)</span></p>";
-      }
-      return "<p><strong>" + label + "</strong>: <span class=\"muted\">(なし)</span></p>";
-    }
-    var lines = renderActive(node, o.name);
-    return "<p><strong>" + label + "</strong>:</p><ul class=\"plain\">" + linesToListItems(lines, "(なし)") + "</ul>";
-  }
-
   function renderOptionalEffect(label, node) {
     if (node === undefined) return "<p><strong>" + label + "</strong>: <span class=\"muted\">(なし)</span></p>";
     var lines = renderActive(node, o.name);
@@ -713,7 +702,7 @@ function renderPropertyDetailPage(objName, propName) {
       lines = lines.concat(renderPassiveBlock(block, o.name));
     });
     return "<div class=\"card\"><h4>" + esc(s.name) + " " +
-      (s.min !== undefined ? "(min: " + esc(s.min) + ")" : "(フォールバック: 他のどの段階にも該当しない場合)") +
+      (s.min !== undefined ? "(min: " + esc(s.min) + ")" : "(フォールバック)") +
       "</h4><ul class=\"plain\">" + linesToListItems(lines, "(passiveなし)") + "</ul></div>";
   }).join("");
 
@@ -742,8 +731,8 @@ function renderPropertyDetailPage(objName, propName) {
     "<p>初期値: <code>" + esc(summarizeValue(p)) + "</code></p>" +
     (p.range ? "<p>range: <code>" + esc(p.range.min + " 〜 " + p.range.max) + "</code></p>" : "") +
 
-    renderBoundaryEffect("on_overflow", p.on_overflow, "上限") +
-    renderBoundaryEffect("on_shortfall", p.on_shortfall, "下限") +
+    renderOptionalEffect("on_overflow", p.on_overflow) +
+    renderOptionalEffect("on_shortfall", p.on_shortfall) +
     renderOptionalEffect("on_min", p.on_min) +
     renderOptionalEffect("on_max", p.on_max) +
 
@@ -752,7 +741,7 @@ function renderPropertyDetailPage(objName, propName) {
     "<h2>passives（プロパティレベル）</h2>" +
     "<ul class=\"plain\">" + linesToListItems(ownPassives, "(なし)") + "</ul>" +
 
-    "<h2>この値に影響を与える可能性があるもの</h2>" +
+    "<h2>影響元</h2>" +
     "<ul class=\"plain\">" + (influencersHtml || "<li class=\"muted\">(なし)</li>") + "</ul>";
 }
 
