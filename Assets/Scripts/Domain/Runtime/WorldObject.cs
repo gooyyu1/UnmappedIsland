@@ -566,6 +566,9 @@ namespace UnmappedIsland.Domain.Runtime
         /// 「実際にいくら動かせるか」の判断はいずれもPropertyValue自身に委ね、ここでは対象解決と
         /// 移動量の確定・実行（AddNumber）のみを行う（自分のことは自分でする、CLAUDE.md参照）。
         ///
+        /// linked_addが指定されている場合、実際に移動した量に比例してスケールされた加減算も適用する
+        /// （比例量 = delta * actual_moved / amount、整数除算・切り捨て）。
+        ///
         /// from/toのいずれかが解決できない、あるいは対象がそのプロパティを持たない場合は何もしない。
         /// </summary>
         private void ApplyTransfer(TransferEffect transfer, WorldSession session, WorldObject actor, WorldObject dragged)
@@ -583,6 +586,31 @@ namespace UnmappedIsland.Domain.Runtime
 
             from.AddNumber(transfer.FromPropertyGlobalId, -moved, session);
             to.AddNumber(transfer.ToPropertyGlobalId, moved, session);
+
+            foreach (ReferenceRoot key in OrderedTargets)
+            {
+                if (!transfer.LinkedAdd.TryGetValue(key, out var deltas)) continue;
+
+                if (key == ReferenceRoot.Ancestor)
+                {
+                    foreach (var delta in deltas)
+                    {
+                        int scaled = delta.Amount * moved / transfer.Amount;
+                        if (scaled == 0) continue;
+                        FindAncestorWithProperty(delta.PropertyGlobalId)?.AddNumber(delta.PropertyGlobalId, scaled, session);
+                    }
+                    continue;
+                }
+
+                WorldObject target = ResolveEffectTarget(key, actor, dragged);
+                if (target == null) continue;
+                foreach (var delta in deltas)
+                {
+                    int scaled = delta.Amount * moved / transfer.Amount;
+                    if (scaled == 0) continue;
+                    target.AddNumber(delta.PropertyGlobalId, scaled, session);
+                }
+            }
         }
 
         /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged）。YAML側で

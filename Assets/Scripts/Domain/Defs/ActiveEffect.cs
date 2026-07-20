@@ -167,10 +167,19 @@ namespace UnmappedIsland.Domain.Defs
         /// </summary>
         public bool AllowOverflow { get; }
 
+        /// <summary>
+        /// 実際に移動した量に比例して適用する追加の加減算（9.5節 linked_add）。
+        /// 各エントリの量は `delta * actual_moved / amount`（整数除算、切り捨て）で確定する。
+        /// amountより少ない量しか移動できなかった場合（在庫不足など）に、副効果も自動的に按分される。
+        /// 空の場合は何もしない。
+        /// </summary>
+        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> LinkedAdd { get; }
+
         public TransferEffect(
             ReferenceRoot fromObject, int fromPropertyGlobalId,
             ReferenceRoot toObject, int toPropertyGlobalId,
-            int amount, bool allowOverflow)
+            int amount, bool allowOverflow,
+            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> linkedAdd = null)
         {
             FromObject = fromObject;
             FromPropertyGlobalId = fromPropertyGlobalId;
@@ -178,6 +187,7 @@ namespace UnmappedIsland.Domain.Defs
             ToPropertyGlobalId = toPropertyGlobalId;
             Amount = amount;
             AllowOverflow = allowOverflow;
+            LinkedAdd = linkedAdd ?? new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
         }
     }
 }

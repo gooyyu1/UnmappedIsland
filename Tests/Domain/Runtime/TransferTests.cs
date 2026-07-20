@@ -213,5 +213,96 @@ object_defs:
             Assert.That(cauldron.GetNumber(waterId), Is.EqualTo(2000));
             Assert.That(cauldron.GetNumber(brothId), Is.EqualTo(1000));
         }
+
+        [Test]
+        public void Transfer_LinkedAdd_ScalesToFullAmountWhenFullyTransferred()
+        {
+            const string yaml = @"
+object_defs:
+  player5:
+    props:
+      hydration:
+        value: 0
+        range: {min: 0, max: 28800}
+      wakefulness:
+        value: 0
+        range: {min: 0, max: 28800}
+  canteen5:
+    props:
+      tea_amount:
+        value: 5000
+        range: {min: 0, max: 5000}
+    actions:
+      drink:
+        transfer:
+          amount: 1200
+          from_prop: tea_amount
+          to_object: actor
+          to_prop: hydration
+          linked_add:
+            actor:
+              wakefulness: 200
+";
+            var codex = Load(yaml);
+            int teaId = codex.PropertyNames.GetId("tea_amount");
+            int hydrationId = codex.PropertyNames.GetId("hydration");
+            int wakefulnessId = codex.PropertyNames.GetId("wakefulness");
+
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn(codex, "player5");
+            WorldObject canteen = Spawn(codex, "canteen5");
+
+            InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200), "amount(1200)分を全量移送する");
+            Assert.That(actor.GetNumber(wakefulnessId), Is.EqualTo(200), "全量移送時はlinked_addも全量(200)適用される");
+            Assert.That(canteen.GetNumber(teaId), Is.EqualTo(3800));
+        }
+
+        [Test]
+        public void Transfer_LinkedAdd_ScalesProportionallyWhenPartiallyTransferred()
+        {
+            const string yaml = @"
+object_defs:
+  player6:
+    props:
+      hydration:
+        value: 0
+        range: {min: 0, max: 28800}
+      wakefulness:
+        value: 0
+        range: {min: 0, max: 28800}
+  canteen6:
+    props:
+      tea_amount:
+        value: 600
+        range: {min: 0, max: 5000}
+    actions:
+      drink:
+        transfer:
+          amount: 1200
+          from_prop: tea_amount
+          to_object: actor
+          to_prop: hydration
+          linked_add:
+            actor:
+              wakefulness: 200
+";
+            var codex = Load(yaml);
+            int teaId = codex.PropertyNames.GetId("tea_amount");
+            int hydrationId = codex.PropertyNames.GetId("hydration");
+            int wakefulnessId = codex.PropertyNames.GetId("wakefulness");
+
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn(codex, "player6");
+            WorldObject canteen = Spawn(codex, "canteen6");
+
+            InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(600), "在庫(600)の分しか移送されない");
+            Assert.That(actor.GetNumber(wakefulnessId), Is.EqualTo(100),
+                "実際に移送された量(600)に比例してlinked_addもスケールされる(200 * 600 / 1200 = 100)");
+            Assert.That(canteen.GetNumber(teaId), Is.EqualTo(0));
+        }
     }
 }

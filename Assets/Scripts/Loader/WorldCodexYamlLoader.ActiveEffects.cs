@@ -121,6 +121,8 @@ namespace UnmappedIsland.Loader
         /// （from_object/from_prop, to_object/to_prop）で表す。from_object/to_objectは省略時self
         /// （conditionsのobject省略時と同じ規約）。対象ルートの妥当性判定は、set/add/destroyと全く同じ
         /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
+        ///
+        /// linked_add（省略可）はaddと同じ構造を持ち、実際の移動量に比例してスケールされる副効果を表す。
         /// </summary>
         private TransferEffect ParseTransfer(string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
         {
@@ -139,14 +141,26 @@ namespace UnmappedIsland.Loader
             int amount = map.RequireInt("amount", context);
             bool allowOverflow = map.TryGetBool("allow_overflow", context, fallback: false);
 
+            var linkedAdd = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
+            YamlMappingNode linkedAddMap = map.TryGetMapping("linked_add", context);
+            if (linkedAddMap != null)
+                foreach (var (targetName, targetBody) in linkedAddMap.EntriesInOrder())
+                {
+                    ReferenceRoot target = ParseActiveTargetKey($"{context}.linked_add", targetName, allowDragged, selfOnly);
+                    var deltas = new List<PropertyDelta>();
+                    foreach (var (propName, amountNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
+                        deltas.Add(new PropertyDelta(PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
+                    linkedAdd[target] = deltas;
+                }
+
             var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
                 .Where(k => k != "from_object" && k != "from_prop" && k != "to_object" && k != "to_prop"
-                         && k != "amount" && k != "allow_overflow")
+                         && k != "amount" && k != "allow_overflow" && k != "linked_add")
                 .ToList();
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-            return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow);
+            return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd);
         }
 
         /// <summary>

@@ -880,6 +880,25 @@ actions:
   （収まらない分は `from` に残ります＝液体を無駄にしません）。`true` にすると、`from` の残量と `amount` だけで
   移動量が決まり、`to` の `range` を超えた分は `to` の `on_overflow`（未指定なら `range.max` へ自動でクランプ
   する既定動作、6.3 節）に委ねます（あふれた分は失われます）。
+- **`linked_add`**（省略可）: `add`（9.1 節）と同じ構造で、実際に移動した量に比例してスケールされる
+  追加の加減算を表します。各プロパティへの加減算量は `宣言値 × 実際に移動した量 / amount`（整数除算、
+  切り捨て）で確定します。たとえば `amount: 1200` のうち実際に `600` しか移動しなかった場合、
+  `linked_add` で宣言した `200` は `200 × 600 / 1200 = 100` になります。固定の `add` では表現できない
+  「飲んだ量に比例した副効果」（例: お茶の眠気改善）を表すために使います。
+
+```yaml
+actions:
+  drink:
+    transfer:
+      amount: 1200
+      from_object: parent
+      from_prop: liquid_amount
+      to_object: actor
+      to_prop: hydration
+      linked_add:
+        actor:
+          wakefulness: 200   # 実際に移送された量に比例: 1200 飲めば +200、600 飲めば +100
+```
 
 `from_object`/`from_prop`/`to_object`/`to_prop` を、`modify`/`set`/`add` と同じ「対象がキー、内容が値」という
 規約に合わせずフラットな4フィールドにしているのは、`conditions`（14.1 節）の `object`/`prop` と同じ理由です。
