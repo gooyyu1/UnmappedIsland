@@ -14,13 +14,12 @@ traits:
       # プロパティで表す（種類はcontentが別途持つため）。maxは各object_def側でcontainerの実容量に
       # 応じて上書きする（例: coconut_bowlは250mL=1200単位）。
       #
-      # 蒸発による自然減少: 開放された水面からの蒸発量は、気候にもよるがおおむね5mm/日程度とされる
-      # （屋外の開放水面からの蒸発量の目安）。半分に割ったヤシの殻(直径10cm、開口部の面積
-      # ≈ π×5cm² ≈ 78.5cm²)なら、78.5cm²×0.5cm ≈ 39mL/日。250mL(coconut_bowlの満杯)がこの速さで
-      # 蒸発しきるまで約6.3日(≈606 tick)かかる計算になるため、1200単位/606 tick ≈ 2単位/tickとした
-      # （容器の実容量に応じたmaxとは独立に、この速さ自体は容器の種類によらず共通の値として扱う。
-      # 蓋の有無による蒸発速度の違いは今後の課題）。中身が空の間は蒸発するものが無いため、
-      # conditionsでcontent!=emptyの間だけ有効にする。
+      # 蒸発は蓋の有無で容器ごとに大きく異なる（鍋・瓶は蓋付きで蒸発しない、ヤシの殻・壺は蒸発する）
+      # ため、traitには一律の蒸発passiveを持たせない。蒸発する容器は、それぞれのobject_def側で
+      # 自分のliquid_amountに自分の速さのaccumulateを追加する（速さを読みやすいリテラルのまま
+      # 書きたいため、速さ自体を専用のプロパティにはしない。各object_defの定義を見ればその場で
+      # 速さが分かることを優先する）。liquid_amountが尽きた際にcontentをemptyへ戻すon_minは、
+      # 蒸発・飲用・注ぎ出しのいずれが原因でも同じように働くべきなので、traits側で共通に持たせる。
       liquid_amount:
         value: 0
         range: {min: 0, max: 4800}
@@ -28,12 +27,6 @@ traits:
           set:
             self:
               content: empty
-        passives:
-          - conditions:
-              - {prop: content, op: neq, value: empty}
-            accumulate:
-              self:
-                liquid_amount: -2
       # シンボル型プロパティ。中身の種類を表す。emptyは「何も入っていない」ことを表す著者選択の値
       # であり、エンジンが特別扱いする予約語ではない（他のシンボル値と同列に比較・参照できる）。
       content:
@@ -90,9 +83,55 @@ object_defs:
       liquid_amount:
         value: 4800
 
-  # ヤシの実の殻を割った器。実物の容量(約250mL)に合わせ、250mL×4.8単位/mL=1200単位を上限とする。
+  # ヤシの実の殻を割った器。最も原始的な容器で、蓋が無いため蒸発する。実物の容量(約250mL)に合わせ、
+  # 250mL×4.8単位/mL=1200単位を上限とする。
+  #
+  # 蒸発速度: 開放水面からの蒸発量の目安(≈5mm/日)と、半分に割った殻の開口部の面積(直径10cm、
+  # ≈π×5cm²≈78.5cm²)から、78.5cm²×0.5cm≈39mL/日。満杯(250mL)がこの速さで蒸発しきるまで
+  # 約6.3日(≈606 tick)。1200単位/606 tick≈2単位/tickとした。
   coconut_bowl:
     traits: [liquid_container]
     props:
       liquid_amount:
         range: {min: 0, max: 1200}
+        passives:
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+            accumulate:
+              self:
+                liquid_amount: -2
+
+  # 鍋。初級の保存容器。蓋付きのため蒸発しない。殻より大きいが瓶より小さい容量(1L)とすることで、
+  # 瓶を作る動機を残す（鍋は素材コストが軽く料理にも使えるため、容量まで瓶を上回ると瓶を作る理由が
+  # 無くなってしまう）。料理での利用・素材コストはレシピ側の実装（RecipeSystem.md、未実装）に依る。
+  pot:
+    traits: [liquid_container]
+    props:
+      liquid_amount:
+        range: {min: 0, max: 4800}
+
+  # 瓶。上級の保存容器。蓋付きのため蒸発しない。鍋より大きい容量(2L)とする。素材コストが重い
+  # （レシピ側の実装に依る、未実装）。
+  bottle:
+    traits: [liquid_container]
+    props:
+      liquid_amount:
+        range: {min: 0, max: 9600}
+
+  # 壺。上級の一時容器。容量は最大(4L)だが、蓋が無いため蒸発し、長期保存には向かない。
+  #
+  # 蒸発速度: 鍋・瓶より口が狭いと考えられるが、汲みやすさも要るため、開口部を直径15cm
+  # (≈π×7.5cm²≈176.7cm²)と仮定する。176.7cm²×0.5cm≈88mL/日。満杯(4L)がこの速さで蒸発しきる
+  # まで約45日(≈4344 tick)。19200単位/4344 tick≈4単位/tickとした（鍋・瓶のような無期限保存は
+  # できないが、蓋付き容器に比べれば十分「一時的」な保存として振る舞う）。
+  jar:
+    traits: [liquid_container]
+    props:
+      liquid_amount:
+        range: {min: 0, max: 19200}
+        passives:
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+            accumulate:
+              self:
+                liquid_amount: -4

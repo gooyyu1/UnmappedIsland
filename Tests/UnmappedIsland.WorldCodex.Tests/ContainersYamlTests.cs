@@ -78,13 +78,16 @@ namespace UnmappedIsland.Codex.Tests
             return def.PropertyDefs[local];
         }
 
-        private WorldObject SpawnCanteen(int contentSymbol, int liquidAmount)
+        private WorldObject SpawnContainer(string objectName, int contentSymbol, int liquidAmount)
         {
-            WorldObject canteen = Spawn("canteen");
-            canteen.SetProperty(contentId, PropertyValue.FromNumber(contentSymbol));
-            canteen.SetProperty(liquidAmountId, PropertyValue.FromNumber(liquidAmount));
-            return canteen;
+            WorldObject container = Spawn(objectName);
+            container.SetProperty(contentId, PropertyValue.FromNumber(contentSymbol));
+            container.SetProperty(liquidAmountId, PropertyValue.FromNumber(liquidAmount));
+            return container;
         }
+
+        private WorldObject SpawnCanteen(int contentSymbol, int liquidAmount) =>
+            SpawnContainer("canteen", contentSymbol, liquidAmount);
 
         [Test]
         public void Drink_WithNonEmptyContent_TransfersLiquidAmountToActorHydration()
@@ -113,22 +116,25 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(PropOf(canteenOfOil, "liquid_amount").DefaultNumber, Is.EqualTo(4800));
         }
 
-        [Test]
-        public void CoconutBowl_HasCapacityMatching250mL()
+        [TestCase("coconut_bowl", 1200)]
+        [TestCase("pot", 4800)]
+        [TestCase("bottle", 9600)]
+        [TestCase("jar", 19200)]
+        public void Container_HasExpectedCapacity(string objectName, int expectedMax)
         {
-            ObjectDef coconutBowl = codex.Objects.Get(codex.ObjectNames.GetId("coconut_bowl"));
-            PropertyDef liquidAmount = PropOf(coconutBowl, "liquid_amount");
+            ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId(objectName));
+            PropertyDef liquidAmount = PropOf(def, "liquid_amount");
 
             Assert.That(liquidAmount.Range.HasValue, Is.True);
-            Assert.That(liquidAmount.Range.Value.Max, Is.EqualTo(1200), "250mL×4.8単位/mL=1200単位");
+            Assert.That(liquidAmount.Range.Value.Max, Is.EqualTo(expectedMax));
         }
 
         [Test]
-        public void Evaporation_DecaysLiquidAmountOnlyWhileContentIsNotEmpty()
+        public void Evaporation_DecaysCoconutBowlOnlyWhileContentIsNotEmpty()
         {
             var session = new WorldSession(codex);
-            WorldObject withWater = SpawnCanteen(waterSymbol, 100);
-            WorldObject empty = SpawnCanteen(emptySymbol, 0);
+            WorldObject withWater = SpawnContainer("coconut_bowl", waterSymbol, 100);
+            WorldObject empty = SpawnContainer("coconut_bowl", emptySymbol, 0);
 
             withWater.Tick(session);
             empty.Tick(session);
@@ -138,15 +144,39 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
+        public void Evaporation_DecaysJarFasterThanCoconutBowl()
+        {
+            var session = new WorldSession(codex);
+            WorldObject jar = SpawnContainer("jar", waterSymbol, 100);
+
+            jar.Tick(session);
+
+            Assert.That(jar.GetNumber(liquidAmountId), Is.EqualTo(96), "壺は鍋・瓶より口が広い想定で4単位/tick蒸発する");
+        }
+
+        [TestCase("canteen")]
+        [TestCase("pot")]
+        [TestCase("bottle")]
+        public void Evaporation_SealedContainersDoNotEvaporate(string objectName)
+        {
+            var session = new WorldSession(codex);
+            WorldObject container = SpawnContainer(objectName, waterSymbol, 100);
+
+            container.Tick(session);
+
+            Assert.That(container.GetNumber(liquidAmountId), Is.EqualTo(100), "蓋付きなので蒸発しない");
+        }
+
+        [Test]
         public void Evaporation_DepletingLiquidAmount_ResetsContentToEmptyViaOnMin()
         {
             var session = new WorldSession(codex);
-            WorldObject canteen = SpawnCanteen(waterSymbol, 2);
+            WorldObject bowl = SpawnContainer("coconut_bowl", waterSymbol, 2);
 
-            canteen.Tick(session);
+            bowl.Tick(session);
 
-            Assert.That(canteen.GetNumber(liquidAmountId), Is.EqualTo(0));
-            Assert.That(canteen.GetNumber(contentId), Is.EqualTo(emptySymbol), "蒸発しきるとon_minでcontentがemptyに戻る");
+            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(0));
+            Assert.That(bowl.GetNumber(contentId), Is.EqualTo(emptySymbol), "蒸発しきるとon_minでcontentがemptyに戻る");
         }
 
         [Test]
