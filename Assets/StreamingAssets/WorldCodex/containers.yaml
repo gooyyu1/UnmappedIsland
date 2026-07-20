@@ -49,9 +49,9 @@ traits:
           from_prop: liquid_amount
           to_object: actor
           to_prop: hydration
-        add:
-          actor:
-            wakefulness: 200
+          linked_add:
+            actor:
+              wakefulness: 200
     combinations:
       pour_in:
         with: tea_liquid

@@ -166,6 +166,23 @@ namespace UnmappedIsland.Loader
         }
 
         [Test]
+        public void Drink_TeaWakefulnessEffect_IsProportionalToAmountConsumed()
+        {
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn("character");
+            WorldObject canteen = SpawnContainer("canteen", "tea", 600);
+            actor.SetProperty(hydrationId, PropertyValue.FromNumber(0));
+            actor.SetProperty(wakefulnessId, PropertyValue.FromNumber(0));
+
+            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(600), "在庫(600)の分しか水分補給されない");
+            Assert.That(actor.GetNumber(wakefulnessId), Is.EqualTo(100),
+                "飲んだ量(600)に比例した眠気改善: 200 * 600 / 1200 = 100");
+        }
+
+        [Test]
         public void Drink_OilHasNoDrinkAction()
         {
             var session = new WorldSession(codex);
