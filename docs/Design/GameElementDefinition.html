@@ -541,6 +541,33 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href=
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ambient_temperature</span><span class="kw">:</span></span>
 <span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">-2</span><span class="co">      # 自分のオフセット</span></span>
 <span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">inherit</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">  # 祖先(通常はroom)のambient_temperatureを加算する</span></span></code></pre></div>
+<h3 id="シンボル型の値">6.8 シンボル型の値</h3>
+<p>数値プロパティの値は 32bit 整数ですが、<code>value</code>
+に整数にも真偽値にもならない識別子（<code>^[a-z][a-z0-9_]*$</code>、 3.2
+節と同じ命名規則）を書くと、その識別子を<strong>シンボル名</strong>として自動的に整数へ変換します（<code>object_defs</code>/
+<code>props</code>/<code>slots</code>/<code>tags</code>
+の名前と同じ、文字列↔︎整数の相互変換の仕組みを、シンボル名専用にもう1つ用意した
+だけです）。専用の宣言（<code>symbol: true</code>
+等）は不要で、<code>value</code> の書き方だけで区別できます。</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">content</span><span class="kw">:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> water</span><span class="co">   # 整数にも真偽値にもならないため、シンボル名として登録される</span></span></code></pre></div>
+<p>液体の種類のような「離散した状態」を、専用の仕組み（enum
+型・タグ付きの子オブジェクト等）を新設せず、 既存の
+<code>props</code>/<code>conditions</code>/<code>set</code>
+の語彙だけで表現するために導入しました。値の比較・代入は 9.2 節・14.1
+節の 通り、他の数値プロパティと全く同じように書けます。</p>
+<ul>
+<li>シンボル名同士の大小関係（<code>lt</code>/<code>gt</code>
+等）は、登録順に依存する恣意的なものであり意味を持ちません。
+シンボル型のプロパティは
+<code>eq</code>/<code>neq</code>/<code>in</code>/<code>not_in</code>
+で比較する用途を想定しています。</li>
+<li><code>range</code>/<code>on_overflow</code>/<code>on_shortfall</code>/<code>stages</code>
+はいずれも数値の大小関係を前提にした仕組みのため、
+シンボル型のプロパティと組み合わせても意味のある結果にはなりません。</li>
+</ul>
 <h2 id="slots親子関係とコンテナ">7. slots（親子関係とコンテナ）</h2>
 <h3 id="基本構造">7.1 基本構造</h3>
 <ul>
@@ -561,32 +588,32 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href=
 節）は親スロットからの切り離し、<code>spawn</code>（9.4 節）
 は生成とこのツリーへの接続として表現できるのはこの前提のためです。</li>
 </ul>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">injuries</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hp</span><span class="kw">:</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">injuries</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
 <h3 id="accepts型数量の制約">7.2 accepts（型・数量の制約）</h3>
 <p><code>accepts</code>
 を書くと、スロットに格納できるオブジェクトの型と上限数を制約できます。省略時は無制限です。</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">wood</span><span class="kw">:</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">wood_material</span><span class="kw">]</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stone_knife</span><span class="kw">:</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">stone_knife_material</span><span class="kw">]</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">          # 制約なし</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">materials</span><span class="kw">:</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> wood_material</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">}</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> stone_knife_material</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="kw">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">wood</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">wood_material</span><span class="kw">]</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stone_knife</span><span class="kw">:</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">stone_knife_material</span><span class="kw">]</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">          # 制約なし</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">materials</span><span class="kw">:</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> wood_material</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">}</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> stone_knife_material</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="kw">}</span></span></code></pre></div>
 <ul>
 <li><code>consume: true</code>
 は素材として消費される、<code>consume: false</code>
@@ -613,17 +640,17 @@ trait 名では直接マッチングしません（trait
 <li>1 つの <code>slots.accepts</code> の中で <code>tag</code> と
 <code>object</code> のエントリを混在させられます。</li>
 </ul>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stew_in_progress</span><span class="kw">:</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ingredients</span><span class="kw">:</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> raw_meat</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> spice</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="kw">}</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raw_meat</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">salt</span><span class="kw">:</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">spice</span><span class="kw">]</span></span></code></pre></div></li>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stew_in_progress</span><span class="kw">:</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ingredients</span><span class="kw">:</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> raw_meat</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> spice</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="kw">}</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raw_meat</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">salt</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">spice</span><span class="kw">]</span></span></code></pre></div></li>
 </ul>
 <h3 id="capacity合計サイズの制約">7.3 capacity（合計サイズの制約）</h3>
 <p><code>capacity</code>
@@ -632,36 +659,36 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href=
 制約できます。<code>move_to_slot</code>
 が「現在の中身のサイズ合計＋新しいアイテムのサイズ ≤
 capacity」を検証し、超える場合は 移動を拒否します。</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">inventory</span><span class="kw">:</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">size</span><span class="kw">:</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">inventory</span><span class="kw">:</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">size</span><span class="kw">:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
 <h3 id="weight_rate重さの伝播率">7.4 weight_rate（重さの伝播率）</h3>
 <p>コンテナ自体の重さは、中に入っているアイテムの重さの影響を受けます。<code>move_to_slot</code>
 は、アイテムがスロットに
 出入りするたびに、そのアイテムの実効重量を、スロットの持ち主の
 <code>weight</code> プロパティへ<strong>伝播率 <code>weight_rate</code>
 を 掛けて</strong>加算・減算します（省略時は 1.0）。</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.5</span><span class="co">    # 身につけると重さが半分に感じる</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0</span><span class="co">    # 手荷物はそのまま</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cart</span><span class="kw">:</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weight</span><span class="kw">:</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span><span class="co">    # 中身の重さの10%しか伝播しない</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">equip</span><span class="kw">:</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.5</span><span class="co">    # 身につけると重さが半分に感じる</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">inventory</span><span class="kw">:</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.0</span><span class="co">    # 手荷物はそのまま</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cart</span><span class="kw">:</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">weight</span><span class="kw">:</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">weight_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span><span class="co">    # 中身の重さの10%しか伝播しない</span></span></code></pre></div>
 <p>入れ子（アイテム→バッグ→バックパック）も、この仕組みが再帰的に働くことで自然にカスケードします。</p>
 <h3 id="装備の排他制御covers-layer">7.5 装備の排他制御（covers /
 layer）</h3>
@@ -678,11 +705,11 @@ layer）</h3>
 <li>競合解決は「ブロック型」です。競合するアイテムがある場合、プレイヤーが先に既存の装備を外す必要があります
 （自動退避は採用しません）。</li>
 </ul>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">armor_leather</span><span class="kw">:</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">armor_leather</span><span class="kw">:</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span></code></pre></div>
 <h3 id="スタック表示">7.6 スタック表示</h3>
 <p>同種オブジェクトをまとめて1つの視覚的なまとまり（スタック）として表示するための設定です。ほとんどの場合、
 これは単なる表示上の見た目の話であり、世界の実体（<code>slots</code>の中身が個々のオブジェクトの集まりであること）
@@ -707,17 +734,17 @@ spawnではなく）通常の手段で初めて登場した際は、空いてい
 Survivalの手持ちUIと同じ、前詰めしない
 固定枠の挙動）。<code>same_slot</code>経由での新規登場は、下記「<code>spawn</code>との関係」で説明する別の割り当てルールに従います。</li>
 </ul>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hand</span><span class="kw">:</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">stackable</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">unit_capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">6</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">fixed_positions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">furnace_intake</span><span class="kw">:</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">stackable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">unit_capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">character</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hand</span><span class="kw">:</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">stackable</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">unit_capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">6</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">fixed_positions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">furnace_intake</span><span class="kw">:</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">stackable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">unit_capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
 <p><strong>オブジェクト側</strong>（<code>object_defs</code>の各エントリに指定）:</p>
 <ul>
 <li><strong><code>stack_order</code></strong>:
@@ -728,13 +755,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href=
 未定義で、新規インスタンスは常にスタックの末尾（挿入順）へ追加されます。劣化する液体など、複数のプロパティが
 絡む並び順のパターンは今後の検討課題です（12.1節参照）。</li>
 </ul>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">wet_log</span><span class="kw">:</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">freshness</span><span class="kw">:</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stack_order</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">property</span><span class="kw">:</span><span class="at"> freshness</span><span class="kw">,</span><span class="at"> </span><span class="fu">ascending</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="kw">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">wet_log</span><span class="kw">:</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">freshness</span><span class="kw">:</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stack_order</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">property</span><span class="kw">:</span><span class="at"> freshness</span><span class="kw">,</span><span class="at"> </span><span class="fu">ascending</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="kw">}</span></span></code></pre></div>
 <ul>
 <li><code>stack_order</code>は、この<code>ObjectDef</code>の新規インスタンスがスタックへ加わる際の並び位置決定にのみ使います。
 一度並んだ後、値の変化に追従した再ソートは行いません。これは、同種は同じ速度で変化する（<code>accumulate</code>は
@@ -809,19 +836,19 @@ stage）に紐づいて
 <code>parent</code>（親）・<code>child</code>（子）・<code>ancestor</code>（祖先、8.6
 節）の 4 つです（<code>actor</code>
 は持続的な関係に紐づかないため未対応）。</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">armor_leather</span><span class="kw">:</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">slot</span><span class="kw">:</span><span class="at"> equip</span><span class="kw">}</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">armor_leather</span><span class="kw">:</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> equip</span><span class="kw">}</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">defense</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">speed</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accuracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
 <h3 id="conditionsゲート">8.2 conditions（ゲート）</h3>
 <ul>
 <li><code>conditions</code>（14
@@ -835,8 +862,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href=
 対象の効果は、両方とも「このブロックを宣言したオブジェクト自身が今どのスロットに入っている
 か」という同じ物理的な実体を指すため、<code>conditions</code> の
 <code>object</code> を省略（既定値
-<code>self</code>）して書くのが自然です （例: <code>{slot: equip}</code>
-は「自分自身が親の <code>equip</code>
+<code>self</code>）して書くのが自然です （例:
+<code>{in_slot: equip}</code> は「自分自身が親の <code>equip</code>
 スロットに入っている間」を意味します）。<code>child</code> 対象の効果
 （親がdeclareし、子がゲート対象になるケース）では、<code>object: child</code>
 を使って子自身のスロット位置やプロパティを 参照できます。</li>
@@ -861,20 +888,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href=
 <code>parent</code>）に対して、状況によって異なる効果を与えたい場合は、<code>passives</code>
 に複数のブロックを並べます。
 典型例は、装備するスロットによってボーナス量を変えたい武器です。</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sword</span><span class="kw">:</span></span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">slot</span><span class="kw">:</span><span class="at"> main_hand</span><span class="kw">}</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">attack</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">slot</span><span class="kw">:</span><span class="at"> off_hand</span><span class="kw">}</span></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">attack</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sword</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> main_hand</span><span class="kw">}</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">attack</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> off_hand</span><span class="kw">}</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">attack</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
 <p>各ブロックは独立して登録・評価されます。同じ対象・同じプロパティに対して複数のブロックが同時に有効になった
 場合（例えば <code>conditions</code>
 を持たない=常時有効なブロックと、<code>conditions</code>
@@ -887,15 +914,15 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href=
 最初の祖先</strong>を対象にします（見つからなければこの効果は何も起きません）。<code>parent</code>（1階層固定）と異なり、
 途中の親がそのプロパティを持たない場合でも、さらに上の祖先へ自然に届きます。</p>
 <p>典型例は、部屋に置かれた暖炉が、その部屋（自分の直接の親とは限らない）の気温を上げる効果です。</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">fireplace</span><span class="kw">:</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> lit</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ancestor</span><span class="kw">:</span></span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">ambient_temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">fireplace</span><span class="kw">:</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> lit</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ancestor</span><span class="kw">:</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">ambient_temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
 <p>暖炉自身がカート等（<code>ambient_temperature</code>
 を持たない容器）の中に置かれていても、その容器を素通りして、実際に
 <code>ambient_temperature</code>
@@ -914,7 +941,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href=
 <p><code>active</code> という語自体は、YAML
 上の専用キーとしては書きません。この節で説明する
 <code>set</code>・<code>add</code>・<code>destroy</code>・
-<code>spawn</code> を、それが書ける場所（9.5 節:
+<code>spawn</code>・<code>transfer</code> を、それが書ける場所（9.6 節:
 <code>actions</code>/<code>combinations</code>
 の各エントリ、<code>pick</code> の各候補、<code>props</code> の
 <code>on_min</code>/<code>on_overflow</code>/<code>on_shortfall</code>/<code>on_max</code>）の中に、<code>showMenu</code>/<code>conditions</code>/<code>with</code>/<code>weight</code>/<code>pick</code>
@@ -936,13 +963,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href=
 節）の中では、これに加えて
 <strong><code>dragged</code></strong>（ドラッグされてきたカード）も使えます）。<code>destroy</code>はオブジェクトそのものを指す（プロパティを
 持たない）ため、<code>ancestor</code>は対象として使えません（未対応、ロード時エラー）。</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eat</span><span class="kw">:</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">actor</span><span class="kw">:</span></span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eat</span><span class="kw">:</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">actor</span><span class="kw">:</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
 <h3 id="set-add">9.2 set / add</h3>
 <p>どちらも対象プロパティの実体値へ、その場で一度だけ不可逆に反映します。</p>
 <ul>
@@ -955,6 +982,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href=
 <code>accumulate</code>（8.4
 節）が担うため、<code>set</code>/<code>add</code>
 は一時的な命令専用です。</p>
+<p><code>set</code>
+の値は、<strong>リテラル</strong>（整数・真偽値・シンボル名、6.8
+節）か、<strong><code>{object, prop}</code> 参照</strong>
+（<code>conditions</code> の値参照・<code>weight</code> の path
+参照と同じ二択）のいずれかです。参照の場合、その参照先の現在の
+実効値をそのままコピーします（他のプロパティの値を、値を知らないまま複製する用途、例:
+別の容器から 注がれた液体の種類をそのまま引き継ぐ）。</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set</span><span class="kw">:</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">content</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> dragged</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> content</span><span class="kw">}</span><span class="co">   # draggedの現在のcontentをそのままselfへコピーする</span></span></code></pre></div>
+<p><code>add</code>
+は加減算量が常に量そのもの（差分）であり、他のプロパティの値をそのままコピーする用途に当てはまらない
+ため、参照はまだ用意していません。</p>
 <h3 id="destroy">9.3 destroy</h3>
 <p>削除したい対象を直接指定します。単一の対象なら
 <code>destroy: self</code>
@@ -992,11 +1033,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href=
 （アクション実行者）は、アクション実行文脈でのみ解決できます。<code>on_min</code>/<code>on_overflow</code>/<code>on_shortfall</code>/<code>on_max</code>
 には<code>actor</code>が存在しないため使えません（配置は行われません）。</li>
 </ul>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> rotten_wood</span><span class="kw">}</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_coconut</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> rotten_wood</span><span class="kw">}</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_coconut</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">}</span></span></code></pre></div>
 <p><code>into</code>が指す起点のどのスロットにも<code>accepts</code>/<code>capacity</code>が合わず配置できなかった場合、<strong><code>fallback</code>はYAML上に
 存在せず</strong>、必ずその起点自身の親へ伝播します。伝播先では<code>accepts</code>/<code>capacity</code>を無視し、先頭のスロットへ強制的に
 配置します（すべてのオブジェクトは必ずどこかの親に属さなければならないため）。スロットの指定が不要になった
@@ -1007,8 +1048,53 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href=
 <p>伝播先の親も存在しない場合（起点が<code>world</code>直下など）、<code>into</code>への配置に失敗すると、そのオブジェクトはどこにも
 配置されないまま消えます（生成自体はされますが、worldツリーに繋がらないため、存在しなかったのと同じ扱いに
 なります。7.1 節参照）。</p>
-<h3 id="setadddestroyspawn-が書ける場所">9.5 set/add/destroy/spawn
-が書ける場所</h3>
+<h3 id="transfer">9.5 transfer</h3>
+<p><code>set</code>/<code>add</code>
+は固定の値・量しか書けないため、「在庫に応じて実際に動く量が変わる」移送（例:
+容器に入っている
+分だけ回復する水分補給）を表現できません。<code>transfer</code>
+は、<code>from</code> が指すプロパティの実体値のうち、実際に
+出せる量（0未満にはならない量）と <code>amount</code>
+の小さい方だけを、<code>to</code>
+が指すプロパティへ移す専用の動詞です。</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">drink</span><span class="kw">:</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">transfer</span><span class="kw">:</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">amount</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">from_prop</span><span class="kw">:</span><span class="at"> water_amount</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">to_object</span><span class="kw">:</span><span class="at"> actor</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">to_prop</span><span class="kw">:</span><span class="at"> hydration</span></span></code></pre></div>
+<ul>
+<li><strong><code>from_object</code></strong>（省略可、既定値
+<code>self</code>）・<strong><code>to_object</code></strong>（省略可、既定値
+<code>self</code>）: 参照ルート。 <code>set</code>/<code>add</code>
+の対象キー（9.1
+節）と同じ許可範囲（<code>self</code>/<code>parent</code>/<code>ancestor</code>/<code>actor</code>、<code>combinations</code>
+内は <code>dragged</code> も）。</li>
+<li><strong><code>from_prop</code></strong>・<strong><code>to_prop</code></strong>:
+それぞれ移送元・移送先のプロパティ名。</li>
+<li><strong><code>amount</code></strong>:
+一度に移送を試みる量の上限。</li>
+<li><strong><code>allow_overflow</code></strong>（省略可、既定値
+<code>false</code>）: <code>to</code> の <code>range</code>
+に実際に収まる量までしか移動しません （収まらない分は <code>from</code>
+に残ります＝液体を無駄にしません）。<code>true</code>
+にすると、<code>from</code> の残量と <code>amount</code> だけで
+移動量が決まり、<code>to</code> の <code>range</code> を超えた分は
+<code>to</code> の <code>on_overflow</code>（未指定なら
+<code>range.max</code> へ自動でクランプ する既定動作、6.3
+節）に委ねます（あふれた分は失われます）。</li>
+</ul>
+<p><code>from_object</code>/<code>from_prop</code>/<code>to_object</code>/<code>to_prop</code>
+を、<code>modify</code>/<code>set</code>/<code>add</code>
+と同じ「対象がキー、内容が値」という
+規約に合わせずフラットな4フィールドにしているのは、<code>conditions</code>（14.1
+節）の <code>object</code>/<code>prop</code> と同じ理由です。
+<code>from</code>・<code>to</code>
+それぞれ参照は常に1組であり、複数プロパティの入れ物としてネストする必要がありません。</p>
+<h3 id="setadddestroyspawntransfer-が書ける場所">9.6
+set/add/destroy/spawn/transfer が書ける場所</h3>
 <p>この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す
 <code>conditions</code>/ゲートを 持つ <code>passives</code>
 とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。</p>
@@ -1026,31 +1112,31 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href=
 </ul>
 <h2 id="pick重み付き確率分岐">10. pick（重み付き確率分岐）</h2>
 <p><code>pick</code>
-は、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>（9
+は、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>（9
 節）を直接書ける場所であればどこでも、<strong>その代わりに</strong>書ける、
 重み付き候補のリストです。新しいトリガー体系は必要とせず、<code>passives</code>（無条件／<code>conditions</code>／stage
 内）には 書けません。<code>passives</code>
 は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。</p>
 <h3 id="基本構造-1">10.1 基本構造</h3>
 <p>各候補は <code>weight</code>
-に加えて、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>（9
+に加えて、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>（9
 節の文法そのまま）を <code>weight</code>/<code>pick</code> と対等な
 兄弟キーとして直接持ちます。候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">attack</span><span class="kw">:</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pick</span><span class="kw">:</span></span>
-<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span>
-<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> actor</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">attack</span><span class="kw">:</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pick</span><span class="kw">:</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> actor</span></span></code></pre></div>
 <p>候補ごとに影響を受ける対象（<code>self</code>/<code>actor</code>
 など）そのものが異なるケースも、このように表現できます。<code>pick</code>
 の 入れ子は再帰的であり、候補の
-<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>
+<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>
 の代わりにさらに別の <code>pick</code> を書くこともできます。</p>
-<p>各候補に書ける内容は、一時的な命令（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>）に限られます。<code>modify</code>/<code>accumulate</code>
+<p>各候補に書ける内容は、一時的な命令（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>）に限られます。<code>modify</code>/<code>accumulate</code>
 は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
 終わる <code>pick</code> の候補に書く意味がありません。</p>
 <h3 id="weight">10.2 weight</h3>
@@ -1066,34 +1152,34 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href=
 節）も指定できる）: 外部から干渉させたい候補向け。参照先は、 通常の
 <code>props</code> として定義された値です。</li>
 </ul>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pick</span><span class="kw">:</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> accuracy</span><span class="kw">}</span></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">hp</span><span class="kw">:</span><span class="at"> </span><span class="dv">-10</span><span class="kw">}</span></span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> evasion</span><span class="kw">}</span></span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> dragged</span></span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pick</span><span class="kw">:</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> accuracy</span><span class="kw">}</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">hp</span><span class="kw">:</span><span class="at"> </span><span class="dv">-10</span><span class="kw">}</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> evasion</span><span class="kw">}</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> dragged</span></span></code></pre></div>
 <p>外部からの干渉（「戦闘スキルが高いほど命中しやすい」等）は、<code>weight</code>
 自体に専用の補正記法を用意するのではなく、
 参照先のプロパティに対する通常の <code>modify</code>
 効果として表現します。</p>
 <h2 id="actionsメニュー型操作">11. actions（メニュー型操作）</h2>
 <p>アクション（<code>eat</code>、<code>move</code>
-など）は、条件（<code>conditions</code>）と実行結果（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>、または
+など）は、条件（<code>conditions</code>）と実行結果（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>、または
 <code>pick</code>）を<strong>1つの定義としてまとめて持ちます</strong>。<code>object_defs</code>/<code>traits</code>
 の中に配置します（トップレベル独立キーには しません）。</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eatable</span><span class="kw">:</span></span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">eat</span><span class="kw">:</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">actor</span><span class="kw">:</span></span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">eatable</span><span class="kw">:</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">eat</span><span class="kw">:</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">actor</span><span class="kw">:</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">satiety</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span></code></pre></div>
 <h3 id="showmenu">11.1 showMenu</h3>
 <p>メニューへの表示方法を制御します。現時点では <code>always</code>
 のみです。</p>
@@ -1102,9 +1188,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href=
 <code>all</code>/<code>any</code>/<code>not</code>
 の複合ノードからなる条件木です（14 節）。トップレベルは
 常に配列で、暗黙の <code>all</code>（AND）として扱われます。</p>
-<h3 id="setadddestroyspawnactive-pick">11.3
-set/add/destroy/spawn（active） / pick</h3>
-<p>このアクションが実行された瞬間に、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>（9
+<h3 id="setadddestroyspawntransferactive-pick">11.3
+set/add/destroy/spawn/transfer（active） / pick</h3>
+<p>このアクションが実行された瞬間に、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>（9
 節、<code>active</code> の実体）が1回だけ適用される
 か、<code>pick</code>（10
 節）で候補が1つ選ばれて適用されます。<code>showMenu</code>/<code>conditions</code>と対等な兄弟キーとして直接書き、
@@ -1118,25 +1204,25 @@ combinations（ドラッグ型操作）</h2>
 <p><code>combinations</code>
 は、<strong>ドロップされた側（受け側）のオブジェクト</strong>に定義します。<code>with</code>（ドラッグされてきたカードが
 持つタグ、4.1 節）でマッチング対象を指定します。</p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">wood</span><span class="kw">:</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">chop</span><span class="kw">:</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> axe_tool</span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> dragged</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> durability</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> gt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> logs</span><span class="kw">}</span></span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span></span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">dragged</span><span class="kw">:</span></span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">logs</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axe_tool</span><span class="kw">:</span></span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">axe_tool</span><span class="kw">]</span></span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">durability</span><span class="kw">:</span></span>
-<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">wood</span><span class="kw">:</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">chop</span><span class="kw">:</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> axe_tool</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> dragged</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> durability</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> gt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> logs</span><span class="kw">}</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> self</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">add</span><span class="kw">:</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">dragged</span><span class="kw">:</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">durability</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">logs</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axe_tool</span><span class="kw">:</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">axe_tool</span><span class="kw">]</span></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">durability</span><span class="kw">:</span></span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
 <h3 id="with">12.1 with</h3>
 <p>マッチング対象を、タグ（4.1
 節）で指定します。<code>object_defs</code> の id や trait
@@ -1145,7 +1231,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href=
 （MOD 追加分・trait
 を介さず直接タグを宣言したカードも含む）と一致します。</p>
 <h3 id="dragged">12.2 dragged</h3>
-<p><code>set</code>/<code>add</code>/<code>destroy</code>（9
+<p><code>set</code>/<code>add</code>/<code>destroy</code>/<code>transfer</code>（9
 節）の対象キー、および <code>conditions</code>/<code>weight</code> の
 <code>object</code>（14 節・10.2 節）に、
 <code>self</code>/<code>parent</code>/<code>child</code>/<code>actor</code>
@@ -1157,40 +1243,40 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href=
 <p>どちらのカードをどちらにドラッグしても成立してほしい組み合わせは、<strong>両方のカードに
 <code>combinations</code> を書く</strong>ことで
 表現します。専用の「双方向」記法はありません。</p>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stick</span><span class="kw">:</span></span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> rope</span></span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">self</span><span class="kw">,</span><span class="at"> dragged</span><span class="kw">]</span></span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> spear</span><span class="kw">}</span></span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rope</span><span class="kw">:</span></span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
-<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> stick</span></span>
-<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">self</span><span class="kw">,</span><span class="at"> dragged</span><span class="kw">]</span></span>
-<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> spear</span><span class="kw">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">stick</span><span class="kw">:</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> rope</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">self</span><span class="kw">,</span><span class="at"> dragged</span><span class="kw">]</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> spear</span><span class="kw">}</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rope</span><span class="kw">:</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">combinations</span><span class="kw">:</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">craft_spear</span><span class="kw">:</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span><span class="at"> stick</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">self</span><span class="kw">,</span><span class="at"> dragged</span><span class="kw">]</span></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> spear</span><span class="kw">}</span></span></code></pre></div>
 <p><code>combinations</code>
 の使い分け方針（メニュー型との比較、キーの衝突の扱いなど）は
 <code>ActionSystem.md</code> を参照してください。</p>
 <h2 id="recipesレシピ">13. recipes（レシピ）</h2>
 <p>レシピは、成果物の <code>object_defs</code>
 に、名前をキーとする辞書として埋め込みます。</p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axe</span><span class="kw">:</span></span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">recipes</span><span class="kw">:</span></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">basic</span><span class="kw">:</span></span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">icon</span><span class="kw">:</span><span class="at"> axe_wip.png</span></span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">requires</span><span class="kw">:</span></span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> wood</span><span class="kw">,</span><span class="at"> </span><span class="fu">quantity</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">}</span></span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> stone_knife</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="kw">}</span></span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">requires</span><span class="kw">:</span></span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> rope</span><span class="kw">,</span><span class="at"> </span><span class="fu">quantity</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">}</span></span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">axe</span><span class="kw">:</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">recipes</span><span class="kw">:</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">basic</span><span class="kw">:</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">icon</span><span class="kw">:</span><span class="at"> axe_wip.png</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">requires</span><span class="kw">:</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> wood</span><span class="kw">,</span><span class="at"> </span><span class="fu">quantity</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">}</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> stone_knife</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="kw">}</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">requires</span><span class="kw">:</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> rope</span><span class="kw">,</span><span class="at"> </span><span class="fu">quantity</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">consume</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">}</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
 <h3 id="steps-requires">13.1 steps / requires</h3>
 <ul>
 <li>レシピは 1
@@ -1207,16 +1293,15 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href=
 <p>レシピの内部設計（製作中オブジェクトの自動生成、<code>accepts</code>
 との連携など）は <code>RecipeSystem.md</code> を参照してください。</p>
 <h2 id="conditions条件式">14. conditions（条件式）</h2>
-<p>条件は、プロパティ比較かスロット位置判定のいずれかを表す「葉」と、複数の条件を論理積・論理和・否定で束ねる
-「複合ノード」からなる木構造です。トップレベルの
+<p>条件は、プロパティ比較・スロット位置判定・スロット中身判定のいずれかを表す「葉」と、複数の条件を論理積・
+論理和・否定で束ねる「複合ノード」からなる木構造です。トップレベルの
 <code>conditions:</code> は常に配列で、暗黙の
-<code>all</code>（論理積）として
-扱われます（<code>passives</code>/<code>stages</code>/<code>accepts</code>/<code>pick</code>
-と同じ、複数形キーは常に配列という規約、8 節）。</p>
+<code>all</code>（論理積）として扱われます（<code>passives</code>/<code>stages</code>/<code>accepts</code>/<code>pick</code>
+と同じ、複数形キーは常に配列という 規約、8 節）。</p>
 <h3 id="葉-プロパティ比較">14.1 葉: プロパティ比較</h3>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> satiety</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> max</span><span class="kw">}</span></span></code></pre></div>
 <ul>
 <li><strong><code>object</code></strong>（省略可、既定値
 <code>self</code>）:
@@ -1235,8 +1320,18 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href=
 比較演算子。<code>lt</code> / <code>lte</code> / <code>gt</code> /
 <code>gte</code> / <code>eq</code> / <code>neq</code> / <code>in</code>
 / <code>not_in</code>。</li>
-<li><strong><code>value</code></strong>: 比較対象の値。</li>
+<li><strong><code>value</code></strong>:
+比較対象の値。<strong>リテラル</strong>（整数・真偽値・シンボル名、6.8
+節）か、<strong><code>{object, prop}</code> 参照</strong>
+（<code>weight</code> の path 参照、10.2
+節と同じ二択）のいずれか。参照は
+<code>lt</code>/<code>lte</code>/<code>gt</code>/<code>gte</code>/<code>eq</code>/<code>neq</code>
+でのみ 使えます（<code>in</code>/<code>not_in</code>
+は複数値との比較のため、単一の参照とは噛み合わずロード時エラーになります）。</li>
 </ul>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> content</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> eq</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> dragged</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> content</span><span class="kw">}}</span><span class="co">   # 2つの動的な値同士を比較する</span></span></code></pre></div>
 <p><code>object</code>/<code>prop</code>
 を、他の場所（<code>modify</code>/<code>set</code>/<code>add</code>
 等）と同じ「対象がキー、内容が値」という規約に合わせず
@@ -1248,40 +1343,91 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href=
 <code>modify</code>
 だけで決まる派生プロパティ（実体値自体は変化しない値。例:
 天候と時間から決まる日照）も、他の <code>conditions</code>
-から参照できます。ただし、あるプロパティの <code>modify</code>
-のゲートが、直接・間接を問わず自分自身の
-実効値に依存する（循環参照）と、実行時に例外を送出します（<code>PropertyValue.GetEffectiveValue</code>
-参照）。生の値と
-異なり実効値は計算結果そのものに依存しうるため、この種の循環はエンジン側では防げず、YAML
-の書き方で 避ける必要があります。</p>
+から参照できます。<code>value</code> が <code>{object, prop}</code>
+参照の場合も同様に実効値を読みます。ただし、 あるプロパティの
+<code>modify</code>
+のゲートが、直接・間接を問わず自分自身の実効値に依存する（循環参照）と、実行時に
+例外を送出します（<code>PropertyValue.GetEffectiveValue</code>
+参照）。生の値と異なり実効値は計算結果そのものに
+依存しうるため、この種の循環はエンジン側では防げず、YAML
+の書き方で避ける必要があります。</p>
 <h3 id="葉-スロット位置判定">14.2 葉: スロット位置判定</h3>
 <p><code>object</code>
-が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します。常に等価判定で、<code>op</code>
-は持ちません（否定したい場合は 14.3 節の <code>not</code>
+が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します（<strong>外側から見た
+位置</strong>）。常に等価判定で、<code>op</code>
+は持ちません（否定したい場合は 14.4 節の <code>not</code>
 で包みます）。</p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> self</span><span class="kw">,</span><span class="at"> </span><span class="fu">slot</span><span class="kw">:</span><span class="at"> equip</span><span class="kw">}</span></span></code></pre></div>
-<p><code>slot</code> は <code>prop</code>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> self</span><span class="kw">,</span><span class="at"> </span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> equip</span><span class="kw">}</span></span></code></pre></div>
+<p><code>in_slot</code> は <code>prop</code>
 とは独立したフィールドで、同時には指定できません。あえて
-<code>prop</code> の仮想的な特殊値にしていない のは、(a)
+<code>prop</code> の仮想的な特殊値に していないのは、(a)
 スロット判定には <code>lt</code>/<code>gt</code>
 等の比較演算子が意味を持たないため、<code>op</code> を伴う
-<code>prop</code> と同じ形にすると
-無意味な組み合わせを許してしまうこと、(b)
-プロパティ名とスロット名は本来別の名前空間であり、同じ識別子が
-偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は文字列が一致しても
-衝突しません。</p>
+<code>prop</code> と
+同じ形にすると無意味な組み合わせを許してしまうこと、(b)
+プロパティ名とスロット名は本来別の名前空間であり、
+同じ識別子が偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は
+文字列が一致しても衝突しません。</p>
 <p><code>ancestor</code> は「<code>prop</code>
 が指すプロパティ名で祖先を探す」という仕組みのため、探すプロパティを持たないスロット
-判定では <code>object</code> に指定できません（ロード時エラー）。</p>
-<h3 id="複合ノード-all-any-not">14.3 複合ノード: all / any / not</h3>
+位置判定では <code>object</code>
+に指定できません（ロード時エラー）。</p>
+<h3 id="葉-スロット中身判定">14.3 葉: スロット中身判定</h3>
+<p><code>object</code>
+が指すオブジェクト自身が持つ<strong>自分のスロット</strong>の中に、指定した
+<code>tag</code>（4.1 節）を持つ子オブジェクトが
+1つでもあるかを判定します（<strong>内側から見た中身</strong>、14.2
+節のスロット位置判定とは向きが逆）。常に存在判定で、 <code>op</code>
+は持ちません。</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> self</span><span class="kw">,</span><span class="at"> </span><span class="fu">slot</span><span class="kw">:</span><span class="at"> content</span><span class="kw">,</span><span class="at"> </span><span class="fu">tag</span><span class="kw">:</span><span class="at"> liquid_water</span><span class="kw">}</span></span></code></pre></div>
+<ul>
+<li><strong><code>slot</code></strong>: 判定対象の、<code>object</code>
+自身が持つスロット名。</li>
+<li><strong><code>tag</code></strong>:
+そのスロットの中身が持つべきタグ。</li>
+</ul>
+<p><code>slot</code> は 14.2 節の <code>in_slot</code>
+とは別フィールドです。同じ「スロットのグローバルID」を指しますが、
+<code>in_slot</code> は「<code>object</code>
+が親の中でどこにいるか」、<code>slot</code> は「<code>object</code>
+自身の中に何が入っているか」という、
+参照する木構造上の向きが逆であるため、キー名自体を分けて区別しています（同じキー名で向きだけが異なると、
+<code>{object, slot}</code>
+という同じ形が2通りの意味を持ってしまい、区別できなくなるため）。</p>
+<p>液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
+スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します（コンテナ設計の検討、
+<code>ContainerSystem.md</code> 参照）。</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">canteen</span><span class="kw">:</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">water_amount</span><span class="kw">:</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">4800</span><span class="kw">}</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">content</span><span class="kw">:</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span></span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> liquid_marker</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">drink</span><span class="kw">:</span></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">slot</span><span class="kw">:</span><span class="at"> content</span><span class="kw">,</span><span class="at"> </span><span class="fu">tag</span><span class="kw">:</span><span class="at"> liquid_water</span><span class="kw">}</span></span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">transfer</span><span class="kw">:</span></span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">amount</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span></span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">from_prop</span><span class="kw">:</span><span class="at"> water_amount</span></span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">to_object</span><span class="kw">:</span><span class="at"> actor</span></span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">to_prop</span><span class="kw">:</span><span class="at"> hydration</span></span></code></pre></div>
+<h3 id="複合ノード-all-any-not">14.4 複合ノード: all / any / not</h3>
 <p>複数の条件を組み合わせたい場合、<code>all</code>（論理積）・<code>any</code>（論理和）・<code>not</code>（否定）で入れ子にできます。</p>
-<div class="sourceCode" id="cb33"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">any</span><span class="kw">:</span></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">slot</span><span class="kw">:</span><span class="at"> main_hand</span><span class="kw">}</span></span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">slot</span><span class="kw">:</span><span class="at"> off_hand</span><span class="kw">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">any</span><span class="kw">:</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> main_hand</span><span class="kw">}</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> off_hand</span><span class="kw">}</span></span></code></pre></div>
 <p>トップレベルの配列自体が暗黙の <code>all</code> であるため、単純な
 AND 条件（従来通り）は複合ノードを使わず、葉を並べる
 だけで書けます。</p>
@@ -1290,25 +1436,25 @@ singleton（唯一のインスタンス）</h2>
 <p>「インスタンスが1つだけ存在すべき」という制約は、<code>object_defs</code>
 のエントリに <code>singleton: true</code> を追加することで
 表現します。</p>
-<div class="sourceCode" id="cb34"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
-<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
-<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
-<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">day</span><span class="kw">:</span></span>
-<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hour</span><span class="kw">:</span></span>
-<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">23</span><span class="kw">}</span></span>
-<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
-<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">hour</span><span class="kw">:</span><span class="at"> </span><span class="dv">-24</span><span class="kw">,</span><span class="at"> </span><span class="fu">day</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
-<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">minute</span><span class="kw">:</span></span>
-<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">59</span><span class="kw">}</span></span>
-<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
-<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">minute</span><span class="kw">:</span><span class="at"> </span><span class="dv">-60</span><span class="kw">,</span><span class="at"> </span><span class="fu">hour</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">world</span><span class="kw">:</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singleton</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">day</span><span class="kw">:</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hour</span><span class="kw">:</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">23</span><span class="kw">}</span></span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">hour</span><span class="kw">:</span><span class="at"> </span><span class="dv">-24</span><span class="kw">,</span><span class="at"> </span><span class="fu">day</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">minute</span><span class="kw">:</span></span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">59</span><span class="kw">}</span></span>
+<span id="cb40-16"><a href="#cb40-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
+<span id="cb40-17"><a href="#cb40-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb40-18"><a href="#cb40-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">minute</span><span class="kw">:</span><span class="at"> </span><span class="dv">-60</span><span class="kw">,</span><span class="at"> </span><span class="fu">hour</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span></code></pre></div>
 <p>（実際の定義は
 <code>Assets/StreamingAssets/WorldCodex/core.yaml</code>
 参照。<code>day</code>/<code>hour</code>/<code>minute</code>
