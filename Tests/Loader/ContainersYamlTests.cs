@@ -34,10 +34,32 @@ namespace UnmappedIsland.Loader
             string coreYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/core.yaml");
             string charactersYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/characters.yaml");
             string containersYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/containers.yaml");
+            // canteen/canteen_of_water/canteen_of_oilはcontainers.yamlから削除されたため、
+            // テストに必要な定義のみをここで補完する。
+            const string testObjects = @"
+object_defs:
+  canteen:
+    traits: [liquid_container]
+  canteen_of_water:
+    traits: [liquid_container]
+    props:
+      content:
+        value: water
+      liquid_amount:
+        value: 4800
+  canteen_of_oil:
+    traits: [liquid_container]
+    props:
+      content:
+        value: oil
+      liquid_amount:
+        value: 4800
+";
             codex = new WorldCodexYamlLoader()
                 .LoadFromFile(coreYamlPath)
                 .LoadFromFile(charactersYamlPath)
                 .LoadFromFile(containersYamlPath)
+                .Load("test_objects", testObjects)
                 .Build();
 
             contentId = codex.PropertyNames.GetId("content");
@@ -119,8 +141,8 @@ namespace UnmappedIsland.Loader
             bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
 
             Assert.That(executed, Is.True, "contentがempty以外なのでdrinkが実行される");
-            Assert.That(canteen.GetNumber(liquidAmountId), Is.EqualTo(1000));
-            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(2000));
+            Assert.That(canteen.GetNumber(liquidAmountId), Is.EqualTo(1800));
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200));
         }
 
         [Test]

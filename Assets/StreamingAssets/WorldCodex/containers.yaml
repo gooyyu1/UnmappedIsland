@@ -38,11 +38,12 @@ traits:
     actions:
       # 中身がemptyでない（=何かが入っている）ときだけ実行できる。種類そのものは問わない
       # （水以外の液体を飲めなくする等の制約は、必要になった時点でconditionsに追加する）。
+      # 一度に飲める量はcoconut_bowl一杯分(1200単位=約250mL)とする。
       drink:
         conditions:
           - {prop: content, op: neq, value: empty}
         transfer:
-          amount: 2000
+          amount: 1200
           from_prop: liquid_amount
           to_object: actor
           to_prop: hydration
@@ -67,26 +68,6 @@ traits:
           to_prop: liquid_amount
 
 object_defs:
-  # 空の状態の水筒。
-  canteen:
-    traits: [liquid_container]
-
-  # ワールドに配置する初期アイテム等で使う、あらかじめ中身が入った状態のサンプル。
-  canteen_of_water:
-    traits: [liquid_container]
-    props:
-      content:
-        value: water
-      liquid_amount:
-        value: 4800
-  canteen_of_oil:
-    traits: [liquid_container]
-    props:
-      content:
-        value: oil
-      liquid_amount:
-        value: 4800
-
   # ヤシの実の殻を割った器。最も原始的な容器で、蓋が無いため蒸発する。実物の容量(約250mL)に合わせ、
   # 250mL×4.8単位/mL=1200単位を上限とする。
   #
