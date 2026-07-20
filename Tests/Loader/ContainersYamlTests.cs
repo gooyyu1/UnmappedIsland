@@ -161,7 +161,7 @@ namespace UnmappedIsland.Loader
             bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
 
             Assert.That(executed, Is.True);
-            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(2000));
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200));
             Assert.That(actor.GetNumber(wakefulnessId), Is.EqualTo(200), "お茶だけが持つ追加効果も represented_by 経由で発動する");
         }
 
@@ -259,8 +259,8 @@ namespace UnmappedIsland.Loader
 
             Assert.That(executed, Is.True);
             Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid"));
-            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(2000));
-            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(1000));
+            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(3000));
+            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(0));
         }
 
         [Test]
@@ -274,8 +274,8 @@ namespace UnmappedIsland.Loader
 
             Assert.That(executed, Is.True);
             Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid"));
-            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(2500));
-            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(1000));
+            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(3500));
+            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(0));
         }
 
         [Test]
