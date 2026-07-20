@@ -98,6 +98,11 @@ namespace UnmappedIsland.Codex
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
 
+        /// <summary>シンボル型プロパティ（6.8節）の場合のみ非null。ResolveStageが、宣言されたstagesの
+        /// どれにも該当しない値に対して、シンボル値自身の名前をそのままステージ名とする暗黙の段階を
+        /// 都度合成するために使う（シンボル型でないプロパティではnullのまま）。</summary>
+        public NameRegistry SymbolNames { get; }
+
         /// <summary>
         /// on_min（6.5節、旧on_zero）。値がRange.Min以下である間、毎tick実行されるactive内容。0ではなく
         /// Range.Minとの比較に一般化したもの（destroyのような「底を突いた」判定を、0以外の下限を持つ
@@ -134,7 +139,8 @@ namespace UnmappedIsland.Codex
             ActiveEffect onMin = null,
             ActiveEffect onShortfall = null,
             ActiveEffect onMax = null,
-            bool inherit = false)
+            bool inherit = false,
+            NameRegistry symbolNames = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -147,6 +153,7 @@ namespace UnmappedIsland.Codex
             OnShortfall = onShortfall;
             OnMax = onMax;
             Inherit = inherit;
+            SymbolNames = symbolNames;
         }
 
         /// <summary>
@@ -154,6 +161,12 @@ namespace UnmappedIsland.Codex
         /// 最も高いminを採用）、どちらにも該当しなければmin:null・eq:null（フォールバック、他のどの段階にも
         /// 該当しない場合）の段階を返す。min:null（eq未指定時）の段階はリスト中の位置に依存しない
         /// （11.2節のサンプルでは broken(min:null) が intact(min:1) より後に書かれている）。
+        ///
+        /// シンボル型プロパティ（SymbolNamesが非null）は、宣言されたstagesのどれにも該当しない値でも
+        /// nullを返さない。シンボル値自体が既に「名前の付いた離散値」であるため、著者がその値を
+        /// stagesに書き忘れていても、値自身の名前をそのままステージ名とする段階を都度合成して返す
+        /// （nullを返すと、呼び出し側がWhenOwnStage等で「未定義の値」と「該当なし」を区別できず、
+        /// 意図せずpassivesが無効化されてしまう危険があるため）。
         /// </summary>
         public PropertyStage ResolveStage(int currentValue)
         {
@@ -177,7 +190,11 @@ namespace UnmappedIsland.Codex
                     best = stage;
             }
 
-            return eqMatch ?? best ?? fallback;
+            if (eqMatch != null) return eqMatch;
+            if (best != null) return best;
+            if (fallback != null) return fallback;
+            if (SymbolNames != null) return new PropertyStage(SymbolNames.GetName(currentValue), min: null, eq: currentValue);
+            return null;
         }
     }
 }

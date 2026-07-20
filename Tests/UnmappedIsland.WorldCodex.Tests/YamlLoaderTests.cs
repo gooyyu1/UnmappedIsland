@@ -333,8 +333,8 @@ object_defs:
 
             Assert.That(weather.ResolveStage(stormId)?.Name, Is.EqualTo("storm"));
             Assert.That(weather.ResolveStage(clearId)?.Name, Is.EqualTo("clear"));
-            Assert.That(weather.ResolveStage(somethingElseId), Is.Null,
-                "シンボル型プロパティにフォールバック段階は無く、該当する段階が無ければnull");
+            Assert.That(weather.ResolveStage(somethingElseId)?.Name, Is.EqualTo("cloudy"),
+                "stagesに書き忘れた値でも、値自身の名前をそのままステージ名とする段階が合成される（nullにはしない）");
         }
 
         [Test]

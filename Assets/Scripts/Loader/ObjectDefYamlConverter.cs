@@ -195,7 +195,8 @@ namespace UnmappedIsland.Loader
 
             bool inherit = node.TryGetBool("inherit", context, fallback: false);
 
-            return new PropertyDef(propertyGlobalId, propName, defaultNumber, rerollRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
+            return new PropertyDef(propertyGlobalId, propName, defaultNumber, rerollRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit,
+                symbolNames: isSymbolProperty ? symbolNames : null);
         }
 
         /// <summary>シンボル型の値（整数・真偽値のいずれにもならない識別子）を許容する識別子の形。
