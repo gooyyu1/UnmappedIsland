@@ -10,6 +10,7 @@ on:
       - 'Assets/Scripts/Loader/**'
       - 'Assets/StreamingAssets/WorldCodex/**'
       - 'Tests/**'
+      - '.github/workflows/tests.yml'
   pull_request:
     paths:
       - 'Assets/Scripts/Codex/**'
@@ -17,6 +18,7 @@ on:
       - 'Assets/Scripts/Loader/**'
       - 'Assets/StreamingAssets/WorldCodex/**'
       - 'Tests/**'
+      - '.github/workflows/tests.yml'
   workflow_dispatch:
 
 jobs:
@@ -33,4 +35,85 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Run tests
-        run: dotnet test Tests/UnmappedIsland.WorldCodex.Tests/UnmappedIsland.WorldCodex.Tests.csproj --configuration Release
+        id: run_tests
+        continue-on-error: true
+        run: |
+          dotnet test Tests/Tests.csproj \
+            --configuration Release \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory Tests/TestResults
+
+      - name: Generate test report markdown
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          trx_files = sorted(glob.glob("Tests/TestResults/*.trx"))
+          report_path = Path("Tests/TestResults/test-report.md")
+          report_path.parent.mkdir(parents=True, exist_ok=True)
+
+          lines = ["# dotnet test report", ""]
+
+          if not trx_files:
+            lines.append("TRX file was not found.")
+          else:
+            total = passed = failed = skipped = 0
+            cases = []
+
+            for trx_file in trx_files:
+              root = ET.parse(trx_file).getroot()
+              ns_uri = root.tag.split("}")[0].strip("{") if "}" in root.tag else ""
+              ns = {"t": ns_uri} if ns_uri else {}
+              prefix = "t:" if ns else ""
+
+              counters = root.find(f".//{prefix}Counters", ns)
+              if counters is not None:
+                total += int(counters.attrib.get("total", 0))
+                passed += int(counters.attrib.get("passed", 0))
+                failed += int(counters.attrib.get("failed", 0))
+                skipped += int(counters.attrib.get("notExecuted", 0))
+
+              for result in root.findall(f".//{prefix}UnitTestResult", ns):
+                test_name = result.attrib.get("testName", "")
+                outcome = result.attrib.get("outcome", "")
+                cases.append((outcome, test_name))
+
+            lines.extend(
+              [
+                f"- Total: **{total}**",
+                f"- Passed: **{passed}**",
+                f"- Failed: **{failed}**",
+                f"- Skipped: **{skipped}**",
+                "",
+                "## Test methods",
+                "",
+                "| Outcome | Test method |",
+                "| --- | --- |",
+              ]
+            )
+
+            for outcome, test_name in sorted(cases, key=lambda x: (x[0], x[1])):
+              safe_name = test_name.replace("|", "\\|")
+              lines.append(f"| {outcome} | `{safe_name}` |")
+
+          report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
+      - name: Publish test report to workflow summary
+        if: always()
+        run: cat Tests/TestResults/test-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-test-report
+          path: Tests/TestResults/
+          if-no-files-found: error
+
+      - name: Fail workflow when tests fail
+        if: steps.run_tests.outcome == 'failure'
+        run: exit 1
