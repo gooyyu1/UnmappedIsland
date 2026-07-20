@@ -3,7 +3,7 @@ using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Domain.Defs.Tests
+namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
     /// transfer（GameElementDefinition.md 9.5節）の実行エンジン（WorldObject.ApplyActiveEffect）に対する

@@ -4,7 +4,7 @@ using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 using UnmappedIsland.Domain.Runtime.Views;
 
-namespace UnmappedIsland.Domain.Defs.Tests
+namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
     /// WorldSession.AdvanceWorldTime（core.yamlのtick=15分という時間モデルに対する、ゲーム側の時間進行ロジック）に対する
