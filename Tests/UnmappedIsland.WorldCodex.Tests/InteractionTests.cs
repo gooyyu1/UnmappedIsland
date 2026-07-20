@@ -1,10 +1,10 @@
 using System.Linq;
 using NUnit.Framework;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
+using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// actions/combinations（GameElementDefinition.md 11節・12節）の実行エンジン（InteractionExecutor）

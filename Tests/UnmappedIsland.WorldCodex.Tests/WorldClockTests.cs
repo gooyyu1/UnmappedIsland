@@ -1,10 +1,10 @@
 using NUnit.Framework;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
-using UnmappedIsland.Runtime.Views;
+using UnmappedIsland.Domain.Runtime;
+using UnmappedIsland.Domain.Runtime.Views;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// WorldSession.AdvanceWorldTime（core.yamlのtick=15分という時間モデルに対する、ゲーム側の時間進行ロジック）に対する

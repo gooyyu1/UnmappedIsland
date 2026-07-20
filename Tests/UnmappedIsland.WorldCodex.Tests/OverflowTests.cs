@@ -1,9 +1,9 @@
 using NUnit.Framework;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
+using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// on_overflow（GameElementDefinition.md 6.3節: rangeの上限を超えたプロパティについて、on_minと全く

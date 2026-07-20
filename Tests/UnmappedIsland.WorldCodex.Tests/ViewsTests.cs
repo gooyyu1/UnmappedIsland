@@ -1,10 +1,10 @@
 using NUnit.Framework;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
-using UnmappedIsland.Runtime.Views;
+using UnmappedIsland.Domain.Runtime;
+using UnmappedIsland.Domain.Runtime.Views;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// World/PlayerCharacter/Location（Views）に対する自動テスト。ラップ対象の WorldObject が

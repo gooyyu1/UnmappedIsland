@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
 
 namespace UnmappedIsland.UnityAdapter

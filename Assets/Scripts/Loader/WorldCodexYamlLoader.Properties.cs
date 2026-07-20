@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using UnmappedIsland.Codex;
-using UnmappedIsland.Runtime;
+using UnmappedIsland.Domain.Defs;
+using UnmappedIsland.Domain.Runtime;
 using YamlDotNet.RepresentationModel;
 
 namespace UnmappedIsland.Loader
