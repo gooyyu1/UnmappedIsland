@@ -255,6 +255,7 @@ function resolveObjectDef(raw, traitsByName) {
   var passives = [];
   var tags = [];
   var stackOrderCandidate = null;
+  var stackByCandidate = null;
 
   traitNames.forEach(function (traitName) {
     var trait = traitsByName[traitName];
@@ -266,6 +267,7 @@ function resolveObjectDef(raw, traitsByName) {
     if (trait.passives) passives = passives.concat(trait.passives);
     if (trait.tags) tags = tags.concat(trait.tags);
     if (trait.stack_order && !stackOrderCandidate) stackOrderCandidate = trait.stack_order;
+    if (trait.stack_by && !stackByCandidate) stackByCandidate = trait.stack_by;
   });
 
   if (raw.passives) passives = passives.concat(raw.passives);
@@ -283,6 +285,7 @@ function resolveObjectDef(raw, traitsByName) {
     combinations: mergeIdentifierMaps(traitCombinations, raw.combinations),
     passives: passives,
     stackOrder: raw.stack_order || stackOrderCandidate,
+    stackBy: raw.stack_by || stackByCandidate,
   };
 }
 
@@ -661,6 +664,7 @@ function renderObjectDetailPage(name) {
     "<p>tags: " + (o.tags.map(function (t) { return "<span class=\"chip\">" + esc(t) + "</span>"; }).join(" ") || "<span class=\"muted\">(なし)</span>") + "</p>" +
     "<p>traits: " + (o.traitNames.map(function (t) { return "<span class=\"chip trait\">" + esc(t) + "</span>"; }).join(" ") || "<span class=\"muted\">(なし)</span>") + "</p>" +
     (o.stackOrder ? "<p>stack_order: <code>" + esc(o.stackOrder.property) + "</code> (" + (o.stackOrder.ascending ? "昇順" : "降順") + ")</p>" : "") +
+    (o.stackBy ? "<p>stack_by: <code>" + esc(o.stackBy) + "</code></p>" : "") +
 
     "<h2>props</h2>" +
     "<table><thead><tr><th>名前</th><th>初期値</th><th>range</th><th>stages</th></tr></thead>" +
