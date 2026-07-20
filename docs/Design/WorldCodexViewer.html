@@ -142,7 +142,7 @@
  * プロパティはobject_defごとに個別の定義を持てる（同名でも定義が異なりうる、
  * GameElementDefinition.md 6節）ため、プロパティ詳細はオブジェクト名とセットでのみ一意に定まる。
  *
- * traitのprops/slots/actions/combinations/tagsの合成規則は、Loader.TraitMerger（C#実装）と
+ * traitのprops/slots/actions/combinations/tagsの合成規則は、Loader.RawObjectDef.Resolve（C#実装）と
  * 同じルールをこのファイル内で再実装している（識別子キーの衝突はエラーにせず、表示上は
  * 先勝ちとして扱う簡略版。あくまで閲覧用であり、ロード時バリデーションの代替ではない）。
  */
@@ -218,7 +218,7 @@ function parseAllYaml(texts, files) {
 }
 
 // ------------------------------------------------------------------
-// trait合成（Loader.TraitMerger.Resolveの再実装、閲覧用の簡略版）
+// trait合成（Loader.RawObjectDef.Resolveの再実装、閲覧用の簡略版）
 // ------------------------------------------------------------------
 
 function mergeIdentifierMaps(traitMaps, ownMap) {
