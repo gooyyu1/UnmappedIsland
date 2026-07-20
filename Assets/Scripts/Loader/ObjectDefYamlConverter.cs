@@ -91,16 +91,18 @@ namespace UnmappedIsland.Loader
 
             PropertyRange? rerollRange = null;
             int defaultNumber;
+            bool isSymbolProperty;
             if (valueNode is YamlMappingNode rangeValueNode)
             {
                 var reroll = new PropertyRange(rangeValueNode.RequireInt("min", context), rangeValueNode.RequireInt("max", context));
                 rerollRange = reroll;
                 // 再ロール自体は未実装（別途）。デフォルト値は決定的にrange.Minで埋めておく。
                 defaultNumber = reroll.Min;
+                isSymbolProperty = false;
             }
             else
             {
-                defaultNumber = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, symbolNames);
+                defaultNumber = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, symbolNames, out isSymbolProperty);
             }
 
             PropertyRange? range = null;
@@ -142,8 +144,19 @@ namespace UnmappedIsland.Loader
                 {
                     var stageMap = (YamlMappingNode)stageNode;
                     string stageName = stageMap.RequireScalar("name", context);
-                    int? min = stageMap.TryGetInt("min", context);
-                    stages.Add(new PropertyStage(stageName, min));
+
+                    if (isSymbolProperty)
+                    {
+                        if (stageMap.TryGet("min") != null)
+                            throw new YamlLoadException(
+                                $"{context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。");
+                        stages.Add(new PropertyStage(stageName, min: null, eq: symbolNames.Intern(stageName)));
+                    }
+                    else
+                    {
+                        int? min = stageMap.TryGetInt("min", context);
+                        stages.Add(new PropertyStage(stageName, min));
+                    }
 
                     // stage自身がname/minという固有の属性を持つため配列にできず、passivesは専用の
                     // ネストしたキーのまま持つ（when違いの複数ブロックを書けるようにするため常に配列）。
@@ -196,11 +209,21 @@ namespace UnmappedIsland.Loader
         /// 自動的に判別できる。boolより先にsymbolを試すと"true"/"false"もシンボルとして解釈されてしまう
         /// ため、判定順は整数→真偽値→シンボルで固定する。
         /// </summary>
-        private static int ParseScalarNumber(string context, string raw, NameRegistry symbolNames)
+        private static int ParseScalarNumber(string context, string raw, NameRegistry symbolNames) =>
+            ParseScalarNumber(context, raw, symbolNames, out _);
+
+        /// <summary>isSymbolは、rawが整数・真偽値としてパースできず、シンボル名として登録された場合にtrue
+        /// になる（propsのstages、6.4節が、プロパティ自身がシンボル型かどうかで解釈を変えるために使う）。</summary>
+        private static int ParseScalarNumber(string context, string raw, NameRegistry symbolNames, out bool isSymbol)
         {
+            isSymbol = false;
             if (int.TryParse(raw, out int number)) return number;
             if (bool.TryParse(raw, out bool boolValue)) return boolValue ? 1 : 0;
-            if (SymbolPattern.IsMatch(raw)) return symbolNames.Intern(raw);
+            if (SymbolPattern.IsMatch(raw))
+            {
+                isSymbol = true;
+                return symbolNames.Intern(raw);
+            }
             throw new YamlLoadException($"{context}: 値 '{raw}' は整数・真偽値・シンボル名(識別子)のいずれかである必要があります。");
         }
 

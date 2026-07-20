@@ -307,6 +307,80 @@ object_defs:
         }
 
         [Test]
+        public void LoadFromGroups_SymbolPropertyStage_ResolvesByNameExactMatch()
+        {
+            const string yaml = @"
+object_defs:
+  sky3:
+    props:
+      weather:
+        value: clear
+        stages:
+          - name: storm
+          - name: clear
+            passives:
+              - modify:
+                  self:
+                    sunlight: 5
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky3"));
+            PropertyDef weather = PropOf(codex, sky, "weather");
+
+            int stormId = codex.SymbolNames.Intern("storm");
+            int clearId = codex.SymbolNames.GetId("clear");
+            int somethingElseId = codex.SymbolNames.Intern("cloudy");
+
+            Assert.That(weather.ResolveStage(stormId)?.Name, Is.EqualTo("storm"));
+            Assert.That(weather.ResolveStage(clearId)?.Name, Is.EqualTo("clear"));
+            Assert.That(weather.ResolveStage(somethingElseId), Is.Null,
+                "シンボル型プロパティにフォールバックという概念は存在せず、stagesに書かれていない値は" +
+                "常にnullになる");
+        }
+
+        [Test]
+        public void LoadFromGroups_SymbolPropertyStageWithMin_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    props:
+      weather:
+        value: clear
+        stages:
+          - name: bad
+            min: 1
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("min").And.Message.Contain("シンボル型"));
+        }
+
+        [Test]
+        public void LoadFromGroups_SymbolPropertyStagePassive_UsesWhenOwnStageGate()
+        {
+            const string yaml = @"
+object_defs:
+  sky4:
+    props:
+      weather:
+        value: clear
+        stages:
+          - name: clear
+            passives:
+              - modify:
+                  self:
+                    sunlight: 5
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky4"));
+            PassiveEffect effect = sky.Passives.Single();
+
+            Assert.That(effect.Gate.StageName, Is.EqualTo("clear"), "シンボル型のstage内のpassivesもStageNameが設定される");
+            Assert.That(effect.Gate.Conditions, Is.Null);
+        }
+
+        [Test]
         public void LoadFromGroups_PassivesIsAlwaysAnArray_RejectsMappingForm()
         {
             const string yaml = @"

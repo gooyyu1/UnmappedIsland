@@ -134,25 +134,27 @@ namespace UnmappedIsland.Codex.Tests
 
             var worldInstance = new WorldObject(1, world);
 
-            void AssertAmbientTemperatureAt(int weather, int hour, int expectedEffective, string because)
+            void AssertAmbientTemperatureAt(string weather, int hour, int expectedEffective, string because)
             {
-                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(weather));
+                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(codex.SymbolNames.Intern(weather)));
                 worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
                 Assert.That(worldInstance.GetEffectiveValue(ambientTemperatureId), Is.EqualTo(expectedEffective), because);
             }
 
             // 夜はweatherによらずsunlight=0のため、常にやや涼しい（hourを直接見ず、sunlight経由で補正）
-            AssertAmbientTemperatureAt(weather: 0, hour: 2, expectedEffective: 17, "晴れの深夜でもsunlightは0なのでやや涼しい");
-            AssertAmbientTemperatureAt(weather: 3, hour: 23, expectedEffective: 17, "大雨の夜もやや涼しい");
+            AssertAmbientTemperatureAt(weather: "storm", hour: 2, expectedEffective: 17, "暴風雨の深夜でもsunlightは0なのでやや涼しい");
+            AssertAmbientTemperatureAt(weather: "heavy_rain", hour: 23, expectedEffective: 17, "大雨の夜もやや涼しい");
 
             // sunlightが中間(1-6)の時間帯は補正なし
-            AssertAmbientTemperatureAt(weather: 1, hour: 6, expectedEffective: 20, "曇りの朝(sunlight=2+2=4)は補正なし");
-            AssertAmbientTemperatureAt(weather: 3, hour: 12, expectedEffective: 20, "大雨の昼(sunlight=5+0=5)も補正なし");
+            AssertAmbientTemperatureAt(weather: "cloudy", hour: 6, expectedEffective: 20, "曇りの朝(sunlight=2+2=4)は補正なし");
+            AssertAmbientTemperatureAt(weather: "heavy_rain", hour: 12, expectedEffective: 20, "大雨の昼(sunlight=5+0=5)も補正なし");
 
             // sunlightが7以上ならやや暑い
-            AssertAmbientTemperatureAt(weather: 0, hour: 12, expectedEffective: 23, "晴れた昼(sunlight=5+5=10)はやや暑い");
-            AssertAmbientTemperatureAt(weather: 0, hour: 6, expectedEffective: 23, "晴れの朝(sunlight=2+5=7)もやや暑い");
-            AssertAmbientTemperatureAt(weather: 1, hour: 12, expectedEffective: 23, "曇りの昼(sunlight=5+2=7)もやや暑い");
+            AssertAmbientTemperatureAt(weather: "clear", hour: 12, expectedEffective: 23, "晴れた昼(sunlight=5+5=10)はやや暑い");
+            AssertAmbientTemperatureAt(weather: "clear", hour: 6, expectedEffective: 23, "晴れの朝(sunlight=2+5=7)もやや暑い");
+            AssertAmbientTemperatureAt(weather: "cloudy", hour: 12, expectedEffective: 23, "曇りの昼(sunlight=5+2=7)もやや暑い");
+            AssertAmbientTemperatureAt(weather: "sunny", hour: 12, expectedEffective: 23, "快晴の昼(sunlight=5+7=12)もbright帯のまま");
+            AssertAmbientTemperatureAt(weather: "scorching", hour: 12, expectedEffective: 23, "最上級の晴れの昼(sunlight=5+10=15)もbright帯のまま");
         }
 
         [Test]
@@ -165,30 +167,32 @@ namespace UnmappedIsland.Codex.Tests
 
             var worldInstance = new WorldObject(1, world);
 
-            void AssertSunlightAt(int weather, int hour, int expectedEffective, string because)
+            void AssertSunlightAt(string weather, int hour, int expectedEffective, string because)
             {
-                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(weather));
+                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(codex.SymbolNames.Intern(weather)));
                 worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
                 Assert.That(worldInstance.GetEffectiveValue(sunlightId), Is.EqualTo(expectedEffective), because);
             }
 
             // 夜: hour側の最低限の寄与が0であり、weather側の追加ボーナスもconditionsで無効化されるため、
             // weatherによらず常に0（晴れていても夜であれば日差しは強くない、という設計意図）
-            AssertSunlightAt(weather: 0, hour: 2, expectedEffective: 0, "晴れの深夜でも0");
-            AssertSunlightAt(weather: 3, hour: 23, expectedEffective: 0, "大雨の夜は0");
+            AssertSunlightAt(weather: "scorching", hour: 2, expectedEffective: 0, "最上級の晴れの深夜でも0");
+            AssertSunlightAt(weather: "heavy_rain", hour: 23, expectedEffective: 0, "大雨の夜は0");
 
             // 昼(10-17時): hour側の最低限の寄与(5)に、weather側の追加ボーナスが加算される
-            AssertSunlightAt(weather: 0, hour: 12, expectedEffective: 10, "晴れた昼はhour(5)+weather(5)で最大");
-            AssertSunlightAt(weather: 1, hour: 12, expectedEffective: 7, "曇りの昼はhour(5)+weather(2)");
-            AssertSunlightAt(weather: 2, hour: 12, expectedEffective: 6, "小雨の昼はhour(5)+weather(1)");
-            AssertSunlightAt(weather: 3, hour: 12, expectedEffective: 5,
-                "大雨の昼はweatherの追加ボーナスがなくhour(5)の最低限の寄与のみ");
+            AssertSunlightAt(weather: "storm", hour: 12, expectedEffective: 5, "暴風雨の昼はweatherの追加ボーナスがなくhour(5)の最低限の寄与のみ");
+            AssertSunlightAt(weather: "heavy_rain", hour: 12, expectedEffective: 5, "大雨の昼も同様");
+            AssertSunlightAt(weather: "light_rain", hour: 12, expectedEffective: 6, "小雨の昼はhour(5)+weather(1)");
+            AssertSunlightAt(weather: "cloudy", hour: 12, expectedEffective: 7, "曇りの昼はhour(5)+weather(2)");
+            AssertSunlightAt(weather: "clear", hour: 12, expectedEffective: 10, "晴れた昼はhour(5)+weather(5)");
+            AssertSunlightAt(weather: "sunny", hour: 12, expectedEffective: 12, "快晴の昼はhour(5)+weather(7)");
+            AssertSunlightAt(weather: "scorching", hour: 12, expectedEffective: 15, "最上級の晴れの昼はhour(5)+weather(10)で最大");
 
             // 朝(6-9時)・夕方(18-21時): hour側の最低限の寄与(2)は昼より弱いが、weather側のボーナスは昼と同じ
-            AssertSunlightAt(weather: 0, hour: 7, expectedEffective: 7, "晴れの朝はhour(2)+weather(5)");
-            AssertSunlightAt(weather: 0, hour: 20, expectedEffective: 7, "晴れの夕方は朝と同じ強さ");
-            AssertSunlightAt(weather: 3, hour: 8, expectedEffective: 2,
-                "大雨の朝でもhour側の最低限の寄与(2)は残る（雨でも昼は夜より明るいはず、という設計意図）");
+            AssertSunlightAt(weather: "clear", hour: 7, expectedEffective: 7, "晴れの朝はhour(2)+weather(5)");
+            AssertSunlightAt(weather: "clear", hour: 20, expectedEffective: 7, "晴れの夕方は朝と同じ強さ");
+            AssertSunlightAt(weather: "storm", hour: 8, expectedEffective: 2,
+                "暴風雨の朝でもhour側の最低限の寄与(2)は残る（雨でも昼は夜より明るいはず、という設計意図）");
         }
 
         [Test]

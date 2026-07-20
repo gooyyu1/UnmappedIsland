@@ -43,8 +43,8 @@ object_defs:
       # 現在の時（0-23）。23の次で繰り上がり、dayへ+1して0に戻る。
       #
       # sunlightへの「時間帯による最低限の寄与」をstages（6.4節）+passives（8節、modify）で表現する。
-      # sunlightのもう一方の寄与（晴れているほど追加で明るくなる分）はweather側のstagesが担う
-      # （weather参照）。両者はどちらもmodifyのため、加算的に重なってsunlightの実効値が決まる。
+      # sunlightのもう一方の寄与（晴れているほど追加で明るくなる分）はweather側のconditions付き
+      # passiveが担う（weather参照）。両者はどちらもmodifyのため、加算的に重なってsunlightの実効値が決まる。
       # ambient_temperature自体はhourを直接見ず、このsunlight自身のstages経由で補正する（sunlight参照）。
       # 寄与は夜が大きく負、朝・夕方が最低限、昼がより強い、という3段階。夜の値（-100）はweatherが
       # どれだけ明るくしようとしても、sunlightのrange（min:0）によるクランプで必ず0まで打ち消すための
@@ -94,38 +94,50 @@ object_defs:
       # 現在の日（1始まり）。上限は未定のため無制限に加算し続ける（GameElementDefinition.md 17節）。
       day:
         value: 1
-      # 現在の天気（0=晴れ, 1=曇り, 2=小雨, 3=大雨）。晴れ→曇り→雨という遷移の仕組み自体は
-      # ClimateSystem.mdで別途検討するため、ここでは値を保持するだけ。
+      # 現在の天気。シンボル型プロパティ（6.8節）。雨のひどさ・晴れの強さの両方向へ段階を持たせ、
+      # storm（暴風雨、heavy_rainより酷い）を最も雨側、sunny・scorching（clearより強い晴れ、2段階）を
+      # 最も晴れ側に置いた、cloudyを中心とする7段階とする: storm/heavy_rain/light_rain/cloudy/clear/
+      # sunny/scorching。storm・scorchingは、特別な対策が必要な極端な天候として使う想定（対策自体は
+      # 別途、今後の課題）。晴れ→曇り→雨という遷移の仕組み自体（大気水分量による駆動）はClimateSystem.md
+      # で別途検討するため、ここでは値を保持するだけ。
       #
-      # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のstages（6.4節）+
-      # WhenOwnStageゲート（8.2節）のmodifyで与える（もう一方、hourの「時間帯による最低限の寄与」は
-      # hour参照）。weatherの値そのものによる分岐はstagesが担い、conditionsは使わない（conditionsは
-      # あくまで補助的な追加条件のためのものであり、メインの分岐はstagesが担うという方針のため）。
-      # 「夜は寄与を無効化する」という時間帯依存の判定は、weather側ではなくhour側のstagesが
-      # sunlightのrangeクランプ経由で実現する（hour参照）ため、ここでは天候の種類だけを見ればよい。
-      # heavy_rain（3）はpassivesを持たず、常に寄与なし。数値はいずれも仮の値。
+      # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のstages（6.4節）+WhenOwnStage
+      # ゲート（8.2節）のmodifyで与える（もう一方、hourの「時間帯による最低限の寄与」はhour参照）。
+      # シンボル型プロパティのstages（6.4節）は、名前自体がそのまま比較対象になる（シンボル値自身が
+      # 既に「名前の付いた離散値」であるため、ステージ名と比較値を別々に書く理由が無い）。「夜は寄与を
+      # 無効化する」という時間帯依存の判定は、weather側ではなくhour側のstagesがsunlightのrangeクランプ
+      # 経由で実現する（hour参照）ため、ここでは天候の種類だけを見ればよい。storm・heavy_rainは
+      # passivesを持たず、常に寄与なし。数値はいずれも仮の値。
       weather:
-        value: 0
+        value: clear
         stages:
-          - name: clear       # weather=0（フォールバック）: 追加ボーナスが最大
-            passives:
-              - modify:
-                  self:
-                    sunlight: 5
-          - name: cloudy      # weather=1
-            min: 1
-            passives:
-              - modify:
-                  self:
-                    sunlight: 2
-          - name: light_rain  # weather=2
-            min: 2
+          - name: storm
+          - name: heavy_rain
+          - name: light_rain
             passives:
               - modify:
                   self:
                     sunlight: 1
-          - name: heavy_rain  # weather=3: 追加ボーナスなし
-            min: 3
+          - name: cloudy
+            passives:
+              - modify:
+                  self:
+                    sunlight: 2
+          - name: clear
+            passives:
+              - modify:
+                  self:
+                    sunlight: 5
+          - name: sunny
+            passives:
+              - modify:
+                  self:
+                    sunlight: 7
+          - name: scorching
+            passives:
+              - modify:
+                  self:
+                    sunlight: 10
       # 太陽光の強さ。hour（時間帯による最低限の寄与、夜は大きく負）とweather（晴れているほど追加で
       # 明るくなる寄与）、両方のmodifyが加算的に重なって決まる、都度導出される実効値（8.3節）。
       # rangeのmin:0によって、夜（hour側の-100）はweatherの寄与がどれだけ大きくても必ず0へ
