@@ -23,15 +23,11 @@ namespace UnmappedIsland.Codex.Tests
             string coreYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/core.yaml");
             string charactersYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/characters.yaml");
             string foodsYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/foods.yaml");
-            codex = WorldCodexYamlLoader.LoadFromGroups(new[]
-            {
-                new WorldCodexYamlLoader.SourceGroup("core", new[]
-                {
-                    new WorldCodexYamlLoader.SourceFile(coreYamlPath, File.ReadAllText(coreYamlPath)),
-                    new WorldCodexYamlLoader.SourceFile(charactersYamlPath, File.ReadAllText(charactersYamlPath)),
-                    new WorldCodexYamlLoader.SourceFile(foodsYamlPath, File.ReadAllText(foodsYamlPath)),
-                }),
-            });
+            codex = new WorldCodexYamlLoader()
+                .LoadFromFile(coreYamlPath)
+                .LoadFromFile(charactersYamlPath)
+                .LoadFromFile(foodsYamlPath)
+                .Build();
         }
 
         /// <summary>dotnet testの実行ディレクトリ(bin/配下)から、リポジトリルート基準の相対パスを

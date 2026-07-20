@@ -175,7 +175,7 @@ namespace UnmappedIsland.Runtime
         /// 有無や着地点によらず、on_max/on_minは境界へ到達した瞬間を必ず捉える。
         ///
         /// on_overflow/on_shortfallは、rangeの外側にはみ出していれば、著者が指定した内容（未指定なら
-        /// ビルド時に合成された既定のset、Loader.ObjectDefYamlConverter参照）を適用する。
+        /// ビルド時に合成された既定のset、Loader.WorldCodexYamlLoader.ParseProp参照）を適用する。
         /// この適用自体がAdd/SetNumberを通るため、その場でCheckRangeEventsが再評価され、1回のTick()・
         /// AddNumber呼び出しの中で複数span分の溢れ・繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が
         /// 宣言順に関わらず連鎖的に解決される。
@@ -198,6 +198,19 @@ namespace UnmappedIsland.Runtime
 
             if (def.OnShortfall != null && def.Range.HasValue && Number < def.Range.Value.Min)
                 owner.ApplyActiveEffect(def.OnShortfall, session, actor: null, dragged: null);
+        }
+
+        /// <summary>
+        /// 今まさに指定した名前のstage（6.4節）に該当しているか（WhenOwnStageゲート専用、8節）。実効値
+        /// （GetEffectiveValue）を見る。conditions（14節）と同じ理由で、modifyだけで決まる派生プロパティ
+        /// （例: weather/hourから決まるsunlight）自身のstagesも判定できる（生の値だけを読むと、そのプロパティ
+        /// 自身に一切accumulate/set/addが無い場合、常に初期値のまま判定されてしまう）。循環参照の検出は
+        /// GetEffectiveValue自身が行う。
+        /// </summary>
+        internal bool IsInStage(string stageName)
+        {
+            PropertyStage stage = def.ResolveStage(GetEffectiveValue());
+            return stage != null && stage.Name == stageName;
         }
 
         /// <summary>

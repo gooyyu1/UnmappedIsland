@@ -23,7 +23,10 @@ namespace UnmappedIsland.UnityAdapter
 
         public static WorldCodex Load()
         {
-            return WorldCodexYamlLoader.LoadDirectories(ResolveDirectories());
+            var loader = new WorldCodexYamlLoader();
+            foreach (string directory in ResolveDirectories())
+                loader.LoadFromDirectory(directory);
+            return loader.Build();
         }
 
         private static IReadOnlyList<string> ResolveDirectories()

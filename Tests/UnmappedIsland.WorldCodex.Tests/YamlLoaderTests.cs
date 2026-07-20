@@ -14,12 +14,6 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class YamlLoaderTests
     {
-        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
-        {
-            return new WorldCodexYamlLoader.SourceGroup(
-                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
-        }
-
         private static PropertyDef PropOf(WorldCodex codex, ObjectDef def, string propertyName)
         {
             int local = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId(propertyName));
@@ -37,7 +31,7 @@ namespace UnmappedIsland.Codex.Tests
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_ParsesPropsSlotsAndStackOrder()
+        public void Load_ParsesPropsSlotsAndStackOrder()
         {
             const string yaml = @"
 object_defs:
@@ -52,7 +46,7 @@ object_defs:
       property: life
       ascending: false
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
 
@@ -65,7 +59,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_IdentifierPropertyValue_InternsAsSymbol()
+        public void Load_IdentifierPropertyValue_InternsAsSymbol()
         {
             const string yaml = @"
 object_defs:
@@ -74,7 +68,7 @@ object_defs:
       weather:
         value: clear
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky"));
 
             Assert.That(PropOf(codex, sky, "weather").DefaultNumber, Is.EqualTo(codex.SymbolNames.GetId("clear")),
@@ -82,7 +76,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_NonIdentifierPropertyValue_Throws()
+        public void Load_NonIdentifierPropertyValue_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -91,16 +85,16 @@ object_defs:
       weather:
         value: ""not a valid symbol!""
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("シンボル名"));
         }
 
         // ------------------------------------------------------------------
-        // 複数ファイル（同一グループ内）: 分割してもまとめて読める
+        // 複数ファイル・複数回のLoad呼び出し: 分割してもまとめて読める
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_MergesObjectDefsAcrossMultipleFilesInSameGroup()
+        public void Load_MergesObjectDefsAcrossMultipleCalls()
         {
             const string core = @"
 object_defs:
@@ -115,17 +109,14 @@ object_defs:
       freshness:
         value: 5
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[]
-            {
-                Group("base", ("core.yaml", core), ("foods.yaml", foods)),
-            });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", core).Load("foods.yaml", foods).Build();
 
             Assert.That(codex.ObjectNames.TryGetId("ground", out _), Is.True);
             Assert.That(codex.ObjectNames.TryGetId("apple", out _), Is.True);
         }
 
         [Test]
-        public void LoadFromGroups_DuplicateObjectDefWithinSameGroup_Throws()
+        public void Load_DuplicateObjectDefName_Throws()
         {
             const string a = @"
 object_defs:
@@ -135,16 +126,17 @@ object_defs:
 object_defs:
   rock: {}
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("base", ("a.yaml", a), ("b.yaml", b)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("a.yaml", a).Load("b.yaml", b).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("rock"));
         }
 
         // ------------------------------------------------------------------
-        // 複数グループ（ディレクトリ相当）: 後勝ちで上書き
+        // 重複は出所を問わず常にエラー（MODによる既存定義の差し替えは、専用のpatch文法で
+        // 別途表現する想定であり、このローダーは「後勝ちで上書き」という規則を持たない）
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_LaterGroupOverridesSameNameFromEarlierGroup()
+        public void Load_DuplicateObjectDefNameFromSeparateCalls_Throws()
         {
             const string baseYaml = @"
 object_defs:
@@ -160,29 +152,10 @@ object_defs:
       fuel:
         value: 999
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[]
-            {
-                Group("base", ("base.yaml", baseYaml)),
-                Group("mod", ("mod.yaml", modYaml)),
-            });
-
-            ObjectDef torch = codex.Objects.Get(codex.ObjectNames.GetId("torch"));
-            Assert.That(PropOf(codex, torch, "fuel").DefaultNumber, Is.EqualTo(999),
-                "後から渡したグループ(mod)の定義が、先のグループ(base)の同名定義を上書きする");
-        }
-
-        [Test]
-        public void LoadFromGroups_SameNameAcrossDifferentGroups_DoesNotThrow()
-        {
-            const string baseYaml = @"
-object_defs:
-  torch: {}
-";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[]
-            {
-                Group("base", ("base.yaml", baseYaml)),
-                Group("mod", ("mod.yaml", baseYaml)),
-            })), Throws.Nothing);
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("base.yaml", baseYaml).Load("mod.yaml", modYaml).Build()),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("torch"),
+                "追加のつもりが誤って上書きしてしまう事故を防ぐため、呼び出しが分かれていても同名の重複は許さない" +
+                "（MODによる意図的な差し替えは、専用のpatch文法で別途表現する想定）");
         }
 
         // ------------------------------------------------------------------
@@ -190,7 +163,7 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_ObjectDefInheritsPropsAndSlotsFromTrait()
+        public void Load_ObjectDefInheritsPropsAndSlotsFromTrait()
         {
             const string yaml = @"
 traits:
@@ -207,7 +180,7 @@ object_defs:
       life:
         value: 10
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
             Assert.That(PropOf(codex, log, "burning").DefaultNumber, Is.EqualTo(0));
@@ -215,7 +188,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ObjectDefOverridesOnlySomeTraitFieldsOnMatchingProperty()
+        public void Load_ObjectDefOverridesOnlySomeTraitFieldsOnMatchingProperty()
         {
             const string yaml = @"
 traits:
@@ -231,7 +204,7 @@ object_defs:
       temperature:
         value: 50
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef ember = codex.Objects.Get(codex.ObjectNames.GetId("ember"));
             PropertyDef temp = PropOf(codex, ember, "temperature");
@@ -243,7 +216,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_TwoTraitsWithColidingPropertyName_Throws()
+        public void Load_TwoTraitsWithColidingPropertyName_Throws()
         {
             const string yaml = @"
 traits:
@@ -259,19 +232,19 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("shared"));
         }
 
         [Test]
-        public void LoadFromGroups_UnknownTraitReference_Throws()
+        public void Load_UnknownTraitReference_Throws()
         {
             const string yaml = @"
 object_defs:
   thing:
     traits: [does_not_exist]
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("does_not_exist"));
         }
 
@@ -280,7 +253,7 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_StagePassive_UsesWhenOwnStageGate()
+        public void Load_StagePassive_UsesWhenOwnStageGate()
         {
             const string yaml = @"
 object_defs:
@@ -296,7 +269,7 @@ object_defs:
                   child:
                     warmth: 5
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef campfire = codex.Objects.Get(codex.ObjectNames.GetId("campfire"));
             PassiveEffect effect = campfire.Passives.Single();
@@ -307,7 +280,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_SymbolPropertyStage_ResolvesByNameExactMatch()
+        public void Load_SymbolPropertyStage_ResolvesByNameExactMatch()
         {
             const string yaml = @"
 object_defs:
@@ -323,7 +296,7 @@ object_defs:
                   self:
                     sunlight: 5
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky3"));
             PropertyDef weather = PropOf(codex, sky, "weather");
 
@@ -339,7 +312,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_SymbolPropertyStageWithMin_Throws()
+        public void Load_SymbolPropertyStageWithMin_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -351,12 +324,12 @@ object_defs:
           - name: bad
             min: 1
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("min").And.Message.Contain("シンボル型"));
         }
 
         [Test]
-        public void LoadFromGroups_SymbolPropertyStagePassive_UsesWhenOwnStageGate()
+        public void Load_SymbolPropertyStagePassive_UsesWhenOwnStageGate()
         {
             const string yaml = @"
 object_defs:
@@ -371,7 +344,7 @@ object_defs:
                   self:
                     sunlight: 5
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky4"));
             PassiveEffect effect = sky.Passives.Single();
@@ -381,7 +354,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_PassivesIsAlwaysAnArray_RejectsMappingForm()
+        public void Load_PassivesIsAlwaysAnArray_RejectsMappingForm()
         {
             const string yaml = @"
 object_defs:
@@ -394,12 +367,12 @@ object_defs:
             self:
               fuel: -1
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("配列"));
         }
 
         [Test]
-        public void LoadFromGroups_MultiplePassivesBlocks_EachWithDifferentConditions_YieldDifferentGatedPassives()
+        public void Load_MultiplePassivesBlocks_EachWithDifferentConditions_YieldDifferentGatedPassives()
         {
             // passivesを配列にした動機そのもの: 同じ対象(parent)に対して、装備するスロットごとに
             // 異なるmodify量を与えたい場合、conditions違いの複数ブロックが必要になる。
@@ -425,7 +398,7 @@ object_defs:
           parent:
             attack: 2
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             int attackId = codex.PropertyNames.GetId("attack");
             int mainHandId = codex.SlotNames.GetId("main_hand");
             int offHandId = codex.SlotNames.GetId("off_hand");
@@ -442,7 +415,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_OnMinWithoutRange_Throws()
+        public void Load_OnMinWithoutRange_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -453,12 +426,12 @@ object_defs:
         on_min:
           destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
         }
 
         [Test]
-        public void LoadFromGroups_OnMinWithNonSelfTarget_Throws()
+        public void Load_OnMinWithNonSelfTarget_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -470,12 +443,12 @@ object_defs:
         on_min:
           destroy: parent
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_min"));
         }
 
         [Test]
-        public void LoadFromGroups_OnMinSelf_ParsesDestroyAndSpawn()
+        public void Load_OnMinSelf_ParsesDestroyAndSpawn()
         {
             const string yaml = @"
 object_defs:
@@ -491,7 +464,7 @@ object_defs:
             into: same_slot
   ash: {}
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
             ActiveEffect onMin = PropOf(codex, log, "life").OnMin;
@@ -508,7 +481,7 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_DuplicateKeyWithinOneYamlMapping_Throws()
+        public void Load_DuplicateKeyWithinOneYamlMapping_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -519,7 +492,7 @@ object_defs:
       life:
         value: 2
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>());
         }
 
@@ -531,7 +504,7 @@ object_defs:
         private static CombinationDef CombinationOf(ObjectDef def, string name) => def.Combinations.Single(c => c.Name == name);
 
         [Test]
-        public void LoadFromGroups_ParsesActionWithConditionsAndActive()
+        public void Load_ParsesActionWithConditionsAndActive()
         {
             const string yaml = @"
 object_defs:
@@ -550,7 +523,7 @@ object_defs:
         destroy: self
   player: {}
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
             ActionDef eat = ActionOf(apple, "eat");
@@ -565,7 +538,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ParsesActionPick()
+        public void Load_ParsesActionPick()
         {
             const string yaml = @"
 object_defs:
@@ -579,7 +552,7 @@ object_defs:
             destroy: actor
   target: {}
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef weapon = codex.Objects.Get(codex.ObjectNames.GetId("weapon"));
             ActionDef attack = ActionOf(weapon, "attack");
@@ -591,7 +564,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ParsesCombinationWithAndDraggedTarget()
+        public void Load_ParsesCombinationWithAndDraggedTarget()
         {
             const string yaml = @"
 object_defs:
@@ -612,7 +585,7 @@ object_defs:
       durability:
         value: 10
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
             CombinationDef chop = CombinationOf(wood, "chop");
@@ -624,7 +597,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ActionsAndCombinationsDistributedByTrait()
+        public void Load_ActionsAndCombinationsDistributedByTrait()
         {
             const string yaml = @"
 traits:
@@ -636,14 +609,14 @@ object_defs:
   berry:
     traits: [eatable]
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
             Assert.That(ActionOf(berry, "eat").Active.Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
-        public void LoadFromGroups_TwoTraitsWithCollidingActionName_Throws()
+        public void Load_TwoTraitsWithCollidingActionName_Throws()
         {
             const string yaml = @"
 traits:
@@ -659,12 +632,12 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("use"));
         }
 
         [Test]
-        public void LoadFromGroups_DraggedTargetInActions_Throws()
+        public void Load_DraggedTargetInActions_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -673,12 +646,12 @@ object_defs:
       use:
         destroy: dragged
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("dragged"));
         }
 
         [Test]
-        public void LoadFromGroups_ChildTargetInActive_Throws()
+        public void Load_ChildTargetInActive_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -687,12 +660,12 @@ object_defs:
       use:
         destroy: child
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("child"));
         }
 
         [Test]
-        public void LoadFromGroups_UnsupportedShowMenuValue_Throws()
+        public void Load_UnsupportedShowMenuValue_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -702,12 +675,12 @@ object_defs:
         showMenu: sometimes
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("showMenu"));
         }
 
         [Test]
-        public void LoadFromGroups_WorldPathRoot_Throws()
+        public void Load_WorldPathRoot_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -718,12 +691,12 @@ object_defs:
           - {object: world, prop: day, op: gt, value: 0}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("world"));
         }
 
         [Test]
-        public void LoadFromGroups_ConditionValueMax_Throws()
+        public void Load_ConditionValueMax_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -734,12 +707,12 @@ object_defs:
           - {object: actor, prop: satiety, op: lt, value: max}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("max"));
         }
 
         [Test]
-        public void LoadFromGroups_ConditionLeaf_ObjectAndOpDefaultToSelfAndEq()
+        public void Load_ConditionLeaf_ObjectAndOpDefaultToSelfAndEq()
         {
             const string yaml = @"
 object_defs:
@@ -753,7 +726,7 @@ object_defs:
           - {prop: mode, value: 1}
         destroy: self
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
             ConditionNode leaf = ActionOf(thing, "use").Conditions.Children[0];
@@ -763,7 +736,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionInSlotAndPropTogether_Throws()
+        public void Load_ConditionInSlotAndPropTogether_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -774,12 +747,12 @@ object_defs:
           - {in_slot: equip, prop: hp, value: 1}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("slot"));
         }
 
         [Test]
-        public void LoadFromGroups_ConditionInSlotWithOp_Throws()
+        public void Load_ConditionInSlotWithOp_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -790,12 +763,12 @@ object_defs:
           - {in_slot: equip, op: eq}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("未知のキー"));
         }
 
         [Test]
-        public void LoadFromGroups_ConditionSlotContent_TrueWhenTaggedChildInSlot_FalseOtherwise()
+        public void Load_ConditionSlotContent_TrueWhenTaggedChildInSlot_FalseOtherwise()
         {
             const string yaml = @"
 object_defs:
@@ -814,7 +787,7 @@ object_defs:
   blue_marker:
     tags: [marker, blue]
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             int contentSlotId = codex.SlotNames.GetId("content");
 
             var session = new WorldSession(codex);
@@ -827,7 +800,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionSlotContent_FalseWhenDifferentTagOrEmpty()
+        public void Load_ConditionSlotContent_FalseWhenDifferentTagOrEmpty()
         {
             const string yaml = @"
 object_defs:
@@ -844,7 +817,7 @@ object_defs:
   blue_marker2:
     tags: [marker, blue]
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             int contentSlotId = codex.SlotNames.GetId("content");
 
             var session = new WorldSession(codex);
@@ -859,7 +832,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionSlotWithoutTag_Throws()
+        public void Load_ConditionSlotWithoutTag_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -870,12 +843,12 @@ object_defs:
           - {slot: content}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("tag"));
         }
 
         [Test]
-        public void LoadFromGroups_ConditionTagWithoutSlot_Throws()
+        public void Load_ConditionTagWithoutSlot_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -886,12 +859,12 @@ object_defs:
           - {tag: red}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("slot"));
         }
 
         [Test]
-        public void LoadFromGroups_ConditionValueAsPropertyReference_ComparesTwoDynamicProperties()
+        public void Load_ConditionValueAsPropertyReference_ComparesTwoDynamicProperties()
         {
             const string yaml = @"
 object_defs:
@@ -911,7 +884,7 @@ object_defs:
       content:
         value: water
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             var session = new WorldSession(codex);
             var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")));
@@ -927,7 +900,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionValueRefWithInOp_Throws()
+        public void Load_ConditionValueRefWithInOp_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -938,12 +911,12 @@ object_defs:
           - {prop: content, op: in, value: {object: dragged, prop: content}}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("in"));
         }
 
         [Test]
-        public void LoadFromGroups_SetValueAsPropertyReference_CopiesDraggedPropertyIntoSelf()
+        public void Load_SetValueAsPropertyReference_CopiesDraggedPropertyIntoSelf()
         {
             const string yaml = @"
 object_defs:
@@ -963,7 +936,7 @@ object_defs:
       content:
         value: oil
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             int contentId = codex.PropertyNames.GetId("content");
 
             var session = new WorldSession(codex);
@@ -976,7 +949,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionAnyCombinator_MatchesWhenEitherLeafIsTrue()
+        public void Load_ConditionAnyCombinator_MatchesWhenEitherLeafIsTrue()
         {
             const string yaml = @"
 object_defs:
@@ -995,7 +968,7 @@ object_defs:
               - {prop: mp, op: gte, value: 5}
         destroy: self
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
             ConditionNode conditions = ActionOf(thing, "use").Conditions;
@@ -1011,7 +984,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionNotCombinator_NegatesInnerLeaf()
+        public void Load_ConditionNotCombinator_NegatesInnerLeaf()
         {
             const string yaml = @"
 object_defs:
@@ -1025,7 +998,7 @@ object_defs:
           - not: {prop: locked, value: 1}
         destroy: self
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             var session = new WorldSession(codex);
             var thingInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
@@ -1035,7 +1008,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_StageForcedGateWithConditions_CombinesStageAndConditionsWithAnd()
+        public void Load_StageForcedGateWithConditions_CombinesStageAndConditionsWithAnd()
         {
             // ステージ強制ゲート(WhenOwnStage)とconditionsは併用でき、両方を満たす間だけ有効になる
             // （WhenOwnStageAndConditions、GameElementDefinition.md 8.2節）。
@@ -1063,7 +1036,7 @@ object_defs:
       warmth:
         value: 0
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             int heatId = codex.PropertyNames.GetId("heat");
             int warmthId = codex.PropertyNames.GetId("warmth");
             int fuelSlotId = codex.SlotNames.GetId("fuel_slot");
@@ -1087,7 +1060,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ActiveAndPickBothSpecified_Throws()
+        public void Load_ActiveAndPickBothSpecified_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1099,7 +1072,7 @@ object_defs:
           - weight: 1
             destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("pick"));
         }
 
@@ -1108,7 +1081,7 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_SlotAcceptsMatchesTagGrantedViaTrait()
+        public void Load_SlotAcceptsMatchesTagGrantedViaTrait()
         {
             const string yaml = @"
 traits:
@@ -1122,7 +1095,7 @@ object_defs:
   forest:
     traits: [location]
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             SlotDef locations = SlotOf(codex, world, "locations");
@@ -1134,7 +1107,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_SlotAcceptsMatchesTagDeclaredDirectly_EvenWithoutSharedTrait()
+        public void Load_SlotAcceptsMatchesTagDeclaredDirectly_EvenWithoutSharedTrait()
         {
             // beachはforestと同じtraitを一切参照しないが、tagsで直接同じタグを宣言する。同一traitでなくても
             // 同じように受け入れたい、というtags導入の意図そのものを検証する。
@@ -1153,7 +1126,7 @@ object_defs:
     tags: [location]
   rock: {}
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             SlotDef locations = SlotOf(codex, world, "locations");
@@ -1166,7 +1139,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_SlotAcceptsObject_MatchesOnlyThatExactObjectDef()
+        public void Load_SlotAcceptsObject_MatchesOnlyThatExactObjectDef()
         {
             const string yaml = @"
 object_defs:
@@ -1178,7 +1151,7 @@ object_defs:
   raw_meat: {}
   raw_fish: {}
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef cauldron = codex.Objects.Get(codex.ObjectNames.GetId("cauldron"));
             SlotDef ingredients = SlotOf(codex, cauldron, "ingredients");
@@ -1193,7 +1166,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_SlotAcceptsBothTagAndObject_Throws()
+        public void Load_SlotAcceptsBothTagAndObject_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1204,12 +1177,12 @@ object_defs:
           - {tag: spice, object: raw_meat, max: 1}
   raw_meat: {}
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("同時に指定できません"));
         }
 
         [Test]
-        public void LoadFromGroups_SlotAcceptsNeitherTagNorObject_Throws()
+        public void Load_SlotAcceptsNeitherTagNorObject_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1219,7 +1192,7 @@ object_defs:
         accepts:
           - {max: 1}
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("いずれかが必要です"));
         }
 
@@ -1228,7 +1201,7 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_OnOverflowWithoutRange_Throws()
+        public void Load_OnOverflowWithoutRange_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1242,12 +1215,12 @@ object_defs:
       hour:
         value: 0
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
         }
 
         [Test]
-        public void LoadFromGroups_ParsesOnOverflowAndAppliesItAtRuntime()
+        public void Load_ParsesOnOverflowAndAppliesItAtRuntime()
         {
             const string yaml = @"
 object_defs:
@@ -1262,7 +1235,7 @@ object_defs:
       hour:
         value: 0
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("clock.yaml", yaml).Build();
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
             Assert.That(PropOf(codex, clock, "minute").OnOverflow.Sets[ReferenceRoot.Self].Count, Is.EqualTo(1));
@@ -1278,7 +1251,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_OnOverflowWithNonSelfTarget_Throws()
+        public void Load_OnOverflowWithNonSelfTarget_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1290,12 +1263,12 @@ object_defs:
         on_overflow:
           add: {parent: {minute: -60}}
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_overflow"));
         }
 
         [Test]
-        public void LoadFromGroups_OnOverflowOmitted_DefaultsToClampingSelfToMax()
+        public void Load_OnOverflowOmitted_DefaultsToClampingSelfToMax()
         {
             // rangeだけ定義してon_overflowを省略すると、「自分自身をRange.Maxへsetする」既定の
             // ActiveEffectが自動生成され、上限クランプとして機能する。
@@ -1307,7 +1280,7 @@ object_defs:
         value: 90
         range: {min: 0, max: 100}
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
             Assert.That(PropOf(codex, gauge, "value").OnOverflow, Is.Not.Null);
@@ -1325,7 +1298,7 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void LoadFromGroups_OnShortfallWithoutRange_Throws()
+        public void Load_OnShortfallWithoutRange_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1336,12 +1309,12 @@ object_defs:
         on_shortfall:
           set: {self: {minute: 0}}
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("range"));
         }
 
         [Test]
-        public void LoadFromGroups_OnShortfallWithNonSelfTarget_Throws()
+        public void Load_OnShortfallWithNonSelfTarget_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1353,12 +1326,12 @@ object_defs:
         on_shortfall:
           add: {parent: {minute: 60}}
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_shortfall"));
         }
 
         [Test]
-        public void LoadFromGroups_ParsesOnShortfallAndAppliesItAtRuntime()
+        public void Load_ParsesOnShortfallAndAppliesItAtRuntime()
         {
             // on_overflowの下限側の鏡像。addで折り返し量・繰り下げ量を一度に加減算する（on_overflowと
             // 同じく、setより堅牢）。
@@ -1374,7 +1347,7 @@ object_defs:
       hour:
         value: 1
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("clock.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("clock.yaml", yaml).Build();
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
             Assert.That(PropOf(codex, clock, "minute").OnShortfall.Adds[ReferenceRoot.Self].Count, Is.EqualTo(2));
@@ -1389,7 +1362,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_OnShortfallOmitted_DefaultsToClampingSelfToMin()
+        public void Load_OnShortfallOmitted_DefaultsToClampingSelfToMin()
         {
             const string yaml = @"
 object_defs:
@@ -1399,7 +1372,7 @@ object_defs:
         value: 10
         range: {min: 0, max: 100}
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
             Assert.That(PropOf(codex, gauge, "value").OnShortfall, Is.Not.Null);
@@ -1413,7 +1386,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_ConditionAncestorRoot_SkipsNonDefiningAncestorToFindNearestDefiner()
+        public void Load_ConditionAncestorRoot_SkipsNonDefiningAncestorToFindNearestDefiner()
         {
             const string yaml = @"
 object_defs:
@@ -1433,7 +1406,7 @@ object_defs:
           - {object: ancestor, prop: weather, op: eq, value: 1}
         destroy: self
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             int contentsSlotId = codex.SlotNames.GetId("contents");
             int pocketSlotId = codex.SlotNames.GetId("pocket");
 
@@ -1450,7 +1423,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_DestroyTargetAncestor_Throws()
+        public void Load_DestroyTargetAncestor_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1459,12 +1432,12 @@ object_defs:
       use:
         destroy: ancestor
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("ancestor"));
         }
 
         [Test]
-        public void LoadFromGroups_ConditionInSlotWithAncestorObject_Throws()
+        public void Load_ConditionInSlotWithAncestorObject_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -1475,7 +1448,7 @@ object_defs:
           - {object: ancestor, in_slot: somewhere}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("ancestor"));
         }
     }
