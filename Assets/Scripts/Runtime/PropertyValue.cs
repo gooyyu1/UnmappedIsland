@@ -201,6 +201,19 @@ namespace UnmappedIsland.Runtime
         }
 
         /// <summary>
+        /// 今まさに指定した名前のstage（6.4節）に該当しているか（WhenOwnStageゲート専用、8節）。実効値
+        /// （GetEffectiveValue）を見る。conditions（14節）と同じ理由で、modifyだけで決まる派生プロパティ
+        /// （例: weather/hourから決まるsunlight）自身のstagesも判定できる（生の値だけを読むと、そのプロパティ
+        /// 自身に一切accumulate/set/addが無い場合、常に初期値のまま判定されてしまう）。循環参照の検出は
+        /// GetEffectiveValue自身が行う。
+        /// </summary>
+        internal bool IsInStage(string stageName)
+        {
+            PropertyStage stage = def.ResolveStage(GetEffectiveValue());
+            return stage != null && stage.Name == stageName;
+        }
+
+        /// <summary>
         /// transfer（9.5節）で、このプロパティ自身から実際に出せる量の上限。rangeがあれば、range.Minを
         /// 下回った分は出せないとみなす（on_shortfallの既定クランプにより実運用でNumberがMinを下回ることは
         /// 無いが、念のためMinを下限とする）。rangeが無ければ現在値そのまま。

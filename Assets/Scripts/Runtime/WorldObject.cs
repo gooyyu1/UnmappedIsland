@@ -339,22 +339,12 @@ namespace UnmappedIsland.Runtime
 
         /// <summary>
         /// 指定したグローバルIDのプロパティが、今まさに指定した名前のstageに該当しているか（WhenOwnStage
-        /// ゲート専用、6.4節・8節）。実効値（GetEffectiveValue）を見る。conditions（14節）と同じ理由で、
-        /// modifyだけで決まる派生プロパティ（例: weather/hourから決まるsunlight）自身のstagesも判定できる
-        /// （生の値だけを読むと、そのプロパティ自身に一切accumulate/set/addが無い場合、常に初期値のまま
-        /// 判定されてしまう）。循環参照の検出はGetEffectiveValue自身が行う。
-        ///
-        /// グローバルID→ローカルIDの変換をここで都度行う（ロード時に事前計算しない）。1 tick=15分という
-        /// このゲームの時間スケールに対して、この変換コストは無視できるほど小さい。
+        /// ゲート専用、6.4節・8節）。プロパティ解決だけがこのメソッドの責務で、該当stageの判定自体は
+        /// TryGetPropertyで得たPropertyValue自身に委ねる（自分のことは自分でする、CLAUDE.md参照）。
         /// </summary>
         internal bool IsInStage(int propertyGlobalId, string stageName)
         {
-            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
-            if (local == LocalIndexMap.Missing) return false;
-
-            PropertyDef def = Def.PropertyDefs[local];
-            PropertyStage stage = def.ResolveStage(properties[local].GetEffectiveValue());
-            return stage != null && stage.Name == stageName;
+            return TryGetProperty(propertyGlobalId, out var property) && property.IsInStage(stageName);
         }
 
         internal void RegisterPassiveEffect(int localPropertyId, RegisteredPassiveEffect effect)
