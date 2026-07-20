@@ -33,17 +33,11 @@ namespace UnmappedIsland.Codex.Tests
             string coreYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/core.yaml");
             string charactersYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/characters.yaml");
             string containersYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/containers.yaml");
-            var loader = new WorldCodexYamlLoader();
-            loader.LoadFromGroups(new[]
-            {
-                new WorldCodexYamlLoader.SourceGroup("core", new[]
-                {
-                    new WorldCodexYamlLoader.SourceFile(coreYamlPath, File.ReadAllText(coreYamlPath)),
-                    new WorldCodexYamlLoader.SourceFile(charactersYamlPath, File.ReadAllText(charactersYamlPath)),
-                    new WorldCodexYamlLoader.SourceFile(containersYamlPath, File.ReadAllText(containersYamlPath)),
-                }),
-            });
-            codex = loader.Build();
+            codex = new WorldCodexYamlLoader()
+                .LoadFromFile(coreYamlPath)
+                .LoadFromFile(charactersYamlPath)
+                .LoadFromFile(containersYamlPath)
+                .Build();
 
             contentId = codex.PropertyNames.GetId("content");
             liquidAmountId = codex.PropertyNames.GetId("liquid_amount");

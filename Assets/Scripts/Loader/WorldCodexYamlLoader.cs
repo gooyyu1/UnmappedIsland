@@ -11,56 +11,32 @@ namespace UnmappedIsland.Loader
     /// Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に
     /// System.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、
     /// 実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す
-    /// LoadFromGroups経由で使う）。
+    /// Load経由で使う）。
     ///
     /// インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという
     /// ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という
-    /// だけの理由。Load系メソッド（LoadDirectories/LoadFromGroups）は何度でも呼べ、呼ぶたびに
-    /// object_defs/traitsをこのインスタンス自身へ追記する（後から呼んだ分が同名エントリを上書きする、
-    /// MOD等の複数情報源対応。3.3節）。Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodex
-    /// を1つ組み立てて返し、その時点でこのインスタンスの蓄積状態は初期化される（再利用したいという
-    /// 積極的なニーズがあるわけではないが、初期化しておくこと自体に特にコストが無く、同じインスタンスを
-    /// 次の別のロードにそのまま使い回せて困る理由も無いため）。
+    /// だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに
+    /// object_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて
+    /// 書ける（例: `new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()`）。
     ///
-    /// 複数の情報源グループ（例: ゲーム本体のディレクトリ＋外部MODディレクトリ）を渡せる。同一グループ内
-    /// （＝同一の情報源）でのobject_defs/trait名の重複はエラー（3.3節の厳格モード）。異なるグループ間
-    /// では、後から渡したグループの定義が同名の定義を上書きする（MODが本体の定義を差し替えられるように
-    /// するため。3.3節で未定とされていたマージ規則をこの実装で決定した）。
+    /// object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の
+    /// 厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの
+    /// patch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため
+    /// このローダー自身は「後勝ちで上書き」という規則を一切持たない。
+    ///
+    /// Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で
+    /// このインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、
+    /// 初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて
+    /// 困る理由も無いため）。
     /// </summary>
     public sealed class WorldCodexYamlLoader
     {
         private static readonly string[] YamlExtensions = { ".yaml", ".yml" };
 
-        /// <summary>1つの情報源グループ（例: 1ディレクトリ）に属するYAMLファイル1つ分。</summary>
-        public readonly struct SourceFile
-        {
-            public readonly string Label;
-            public readonly string Text;
-
-            public SourceFile(string label, string text)
-            {
-                Label = label;
-                Text = text;
-            }
-        }
-
-        /// <summary>1つの情報源グループ（同一ディレクトリ相当）と、それに属するファイル群。</summary>
-        public readonly struct SourceGroup
-        {
-            public readonly string GroupLabel;
-            public readonly IReadOnlyList<SourceFile> Files;
-
-            public SourceGroup(string groupLabel, IReadOnlyList<SourceFile> files)
-            {
-                GroupLabel = groupLabel;
-                Files = files;
-            }
-        }
-
         /// <summary>Load系メソッドで蓄積したobject_defs/traitsの生YAMLノード。Buildが呼ばれるまでの
         /// 「組み立て途中の世界」の中身そのもの。</summary>
-        private Dictionary<string, (YamlMappingNode Node, string Source)> globalObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
-        private Dictionary<string, (YamlMappingNode Node, string Source)> globalTraits = new Dictionary<string, (YamlMappingNode, string)>();
+        private readonly Dictionary<string, (YamlMappingNode Node, string Source)> globalObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
+        private readonly Dictionary<string, (YamlMappingNode Node, string Source)> globalTraits = new Dictionary<string, (YamlMappingNode, string)>();
 
         /// <summary>
         /// 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。Buildの中でのみ使う
@@ -76,43 +52,50 @@ namespace UnmappedIsland.Loader
         internal NameRegistry SymbolNames { get; private set; } = new NameRegistry();
 
         /// <summary>
-        /// ディレクトリ群のobject_defs/traitsを、このインスタンスへ追記する。各ディレクトリ以下の
-        /// *.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込む。ディレクトリ1つ＝情報源
-        /// グループ1つとして扱う。何度でも呼べる（後から呼んだ分が同名エントリを上書きする）。
+        /// 1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込み、
+        /// object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。
         /// </summary>
-        public void LoadDirectories(IReadOnlyList<string> directoryPaths)
+        public WorldCodexYamlLoader LoadFromDirectory(string directory)
         {
-            var groups = new List<SourceGroup>();
-
-            foreach (string directory in directoryPaths)
-            {
-                var files = FindYamlFiles(directory)
-                    .Select(path => new SourceFile(path, File.ReadAllText(path)))
-                    .ToList();
-                groups.Add(new SourceGroup(directory, files));
-            }
-
-            LoadFromGroups(groups);
+            foreach (string path in FindYamlFiles(directory))
+                LoadFromFile(path);
+            return this;
         }
 
+        /// <summary>1つのファイルを読み込み、object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。</summary>
+        public WorldCodexYamlLoader LoadFromFile(string path) => Load(path, File.ReadAllText(path));
+
         /// <summary>
-        /// 既にテキストとして読み込まれたYAML群のobject_defs/traitsを、このインスタンスへ追記する
-        /// （Unity依存のファイルI/Oを呼び出し元に委ねたい場合に使う）。groupsの並び順が上書き優先順位を
-        /// 決める（後のグループほど優先。同一グループ内の重複はエラー）。何度でも呼べる。
+        /// 既にテキストとして読み込まれた1つのYAML（labelはエラーメッセージ用の出所表示）を読み込み、
+        /// object_defs/traitsをこのインスタンスへ追記する（Unity依存のファイルI/Oを呼び出し元に委ねたい
+        /// 場合や、テストでファイルを介さず直接YAML文字列を渡したい場合に使う）。何度でも呼べる。
         /// </summary>
-        public void LoadFromGroups(IReadOnlyList<SourceGroup> groups)
+        public WorldCodexYamlLoader Load(string label, string yamlText)
         {
-            foreach (SourceGroup group in groups)
+            YamlMappingNode root;
+            try
             {
-                var groupObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
-                var groupTraits = new Dictionary<string, (YamlMappingNode, string)>();
-
-                foreach (SourceFile file in group.Files)
-                    ParseFileInto(file.Text, file.Label, groupObjectDefs, groupTraits);
-
-                foreach (var kv in groupObjectDefs) globalObjectDefs[kv.Key] = kv.Value;
-                foreach (var kv in groupTraits) globalTraits[kv.Key] = kv.Value;
+                var stream = new YamlStream();
+                stream.Load(new StringReader(yamlText));
+                if (stream.Documents.Count == 0) return this;
+                root = (YamlMappingNode)stream.Documents[0].RootNode;
             }
+            catch (YamlDotNet.Core.YamlException ex)
+            {
+                throw new YamlLoadException($"{label}: YAML構文エラー: {ex.Message}", ex);
+            }
+
+            YamlMappingNode objectDefs = root.TryGetMapping("object_defs", label);
+            if (objectDefs != null)
+                foreach (var (name, node) in objectDefs.EntriesInOrder())
+                    AddUnique(globalObjectDefs, name, (YamlMappingNode)node, label, "object_defs");
+
+            YamlMappingNode traits = root.TryGetMapping("traits", label);
+            if (traits != null)
+                foreach (var (name, node) in traits.EntriesInOrder())
+                    AddUnique(globalTraits, name, (YamlMappingNode)node, label, "traits");
+
+            return this;
         }
 
         /// <summary>
@@ -148,8 +131,8 @@ namespace UnmappedIsland.Loader
 
         private void Reset()
         {
-            globalObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
-            globalTraits = new Dictionary<string, (YamlMappingNode, string)>();
+            globalObjectDefs.Clear();
+            globalTraits.Clear();
             ObjectNames = new NameRegistry();
             PropertyNames = new NameRegistry();
             SlotNames = new NameRegistry();
@@ -157,41 +140,12 @@ namespace UnmappedIsland.Loader
             SymbolNames = new NameRegistry();
         }
 
-        private static void ParseFileInto(
-            string yamlText, string fileLabel,
-            Dictionary<string, (YamlMappingNode, string)> groupObjectDefs,
-            Dictionary<string, (YamlMappingNode, string)> groupTraits)
-        {
-            YamlMappingNode root;
-            try
-            {
-                var stream = new YamlStream();
-                stream.Load(new StringReader(yamlText));
-                if (stream.Documents.Count == 0) return;
-                root = (YamlMappingNode)stream.Documents[0].RootNode;
-            }
-            catch (YamlDotNet.Core.YamlException ex)
-            {
-                throw new YamlLoadException($"{fileLabel}: YAML構文エラー: {ex.Message}", ex);
-            }
-
-            YamlMappingNode objectDefs = root.TryGetMapping("object_defs", fileLabel);
-            if (objectDefs != null)
-                foreach (var (name, node) in objectDefs.EntriesInOrder())
-                    AddUnique(groupObjectDefs, name, (YamlMappingNode)node, fileLabel, "object_defs");
-
-            YamlMappingNode traits = root.TryGetMapping("traits", fileLabel);
-            if (traits != null)
-                foreach (var (name, node) in traits.EntriesInOrder())
-                    AddUnique(groupTraits, name, (YamlMappingNode)node, fileLabel, "traits");
-        }
-
         private static void AddUnique(
             Dictionary<string, (YamlMappingNode Node, string Source)> map, string name, YamlMappingNode node, string source, string kindLabel)
         {
             if (map.TryGetValue(name, out var existing))
                 throw new YamlLoadException(
-                    $"{kindLabel} '{name}' が同一ディレクトリ内で重複しています（'{existing.Source}' と '{source}'）。");
+                    $"{kindLabel} '{name}' が重複しています（'{existing.Source}' と '{source}'）。");
             map[name] = (node, source);
         }
 

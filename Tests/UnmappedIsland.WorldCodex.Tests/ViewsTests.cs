@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
 using UnmappedIsland.Loader;
@@ -15,18 +13,7 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class ViewsTests
     {
-        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
-        {
-            return new WorldCodexYamlLoader.SourceGroup(
-                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
-        }
-
-        private static WorldCodex LoadFromGroups(IReadOnlyList<WorldCodexYamlLoader.SourceGroup> groups)
-        {
-            var loader = new WorldCodexYamlLoader();
-            loader.LoadFromGroups(groups);
-            return loader.Build();
-        }
+        private static WorldCodex Load(string yaml) => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
         [Test]
         public void World_ExposesDayHourAndMinute()
@@ -45,7 +32,7 @@ object_defs:
       minutes_per_tick:
         value: 15
 ";
-            var codex = LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = Load(yaml);
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
 
             var world = new World(instance, codex.PropertyNames);
@@ -77,7 +64,7 @@ object_defs:
           self:
             minute: 10
 ";
-            var codex = LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = Load(yaml);
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
 
             var world = new World(instance, codex.PropertyNames);
@@ -97,7 +84,7 @@ object_defs:
       satiety:
         value: 50
 ";
-            var codex = LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = Load(yaml);
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")));
 
             var actor = new PlayerCharacter(instance, codex.PropertyNames);
@@ -113,7 +100,7 @@ object_defs:
 object_defs:
   forest_clearing: {}
 ";
-            var codex = LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = Load(yaml);
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("forest_clearing")));
 
             var location = new Location(instance);

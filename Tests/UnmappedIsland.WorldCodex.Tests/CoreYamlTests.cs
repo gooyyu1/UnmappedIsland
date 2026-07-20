@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
 using UnmappedIsland.GameTime;
@@ -24,13 +22,7 @@ namespace UnmappedIsland.Codex.Tests
         public void LoadCoreYaml()
         {
             string path = FindRepoFile("Assets/StreamingAssets/WorldCodex/core.yaml");
-            var loader = new WorldCodexYamlLoader();
-            loader.LoadFromGroups(new[]
-            {
-                new WorldCodexYamlLoader.SourceGroup(
-                    "core", new[] { new WorldCodexYamlLoader.SourceFile(path, File.ReadAllText(path)) }),
-            });
-            codex = loader.Build();
+            codex = new WorldCodexYamlLoader().LoadFromFile(path).Build();
         }
 
         /// <summary>dotnet testの実行ディレクトリ(bin/配下)から、リポジトリルート基準の相対パスを
@@ -47,18 +39,7 @@ namespace UnmappedIsland.Codex.Tests
             throw new FileNotFoundException($"'{relativePath}' が祖先ディレクトリの中に見つかりませんでした。");
         }
 
-        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
-        {
-            return new WorldCodexYamlLoader.SourceGroup(
-                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
-        }
-
-        private static WorldCodex LoadFromGroups(IReadOnlyList<WorldCodexYamlLoader.SourceGroup> groups)
-        {
-            var loader = new WorldCodexYamlLoader();
-            loader.LoadFromGroups(groups);
-            return loader.Build();
-        }
+        private static WorldCodex Load(string yaml) => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
         [Test]
         public void World_IsSingletonWithExpectedDefaultProperties()
@@ -231,7 +212,7 @@ object_defs:
     tags: [location]
   test_rock: {}
 ";
-            var testCodex = LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var testCodex = Load(yaml);
 
             int locationsSlotId = testCodex.SlotNames.GetId("locations");
             var session = new WorldSession(testCodex);

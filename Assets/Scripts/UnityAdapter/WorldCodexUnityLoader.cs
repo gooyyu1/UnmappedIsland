@@ -24,7 +24,8 @@ namespace UnmappedIsland.UnityAdapter
         public static WorldCodex Load()
         {
             var loader = new WorldCodexYamlLoader();
-            loader.LoadDirectories(ResolveDirectories());
+            foreach (string directory in ResolveDirectories())
+                loader.LoadFromDirectory(directory);
             return loader.Build();
         }
 

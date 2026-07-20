@@ -1,4 +1,3 @@
-using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
 using UnmappedIsland.Loader;
@@ -17,18 +16,7 @@ namespace UnmappedIsland.Codex.Tests
     [TestFixture]
     public class OverflowTests
     {
-        private static WorldCodexYamlLoader.SourceGroup Group(string label, params (string FileLabel, string Text)[] files)
-        {
-            return new WorldCodexYamlLoader.SourceGroup(
-                label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
-        }
-
-        private static WorldCodex Load(string yaml)
-        {
-            var loader = new WorldCodexYamlLoader();
-            loader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
-            return loader.Build();
-        }
+        private static WorldCodex Load(string yaml) => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
         [Test]
         public void AddNumber_WithSession_CorrectsOverflowImmediately_WithoutWaitingForTick()
