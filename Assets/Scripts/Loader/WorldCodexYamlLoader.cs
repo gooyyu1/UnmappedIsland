@@ -167,6 +167,7 @@ namespace UnmappedIsland.Loader
                 Slots = node.TryGetMapping("slots", context),
                 Passives = node.TryGetSequence("passives", context),
                 StackOrder = node.TryGetMapping("stack_order", context),
+                StackBy = node.TryGetScalar("stack_by", context),
                 Actions = node.TryGetMapping("actions", context),
                 Combinations = node.TryGetMapping("combinations", context),
             };
@@ -200,6 +201,7 @@ namespace UnmappedIsland.Loader
                 Slots = node.TryGetMapping("slots", context),
                 Passives = node.TryGetSequence("passives", context),
                 StackOrder = node.TryGetMapping("stack_order", context),
+                StackBy = node.TryGetScalar("stack_by", context),
                 Actions = node.TryGetMapping("actions", context),
                 Combinations = node.TryGetMapping("combinations", context),
             };

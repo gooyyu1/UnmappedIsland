@@ -83,6 +83,12 @@ namespace UnmappedIsland.Runtime
             return TryGetProperty(globalPropertyId, out var v) ? v.AsNumber() : fallback;
         }
 
+        /// <summary>自分がSlotの中でどのObjectStack（7.6節）へまとまるべきかを決める値。
+        /// Def.StackByPropertyGlobalIdが指定されていなければ常にnull（ObjectDefが同じなら常に同じ
+        /// ObjectStackにまとまる、既定の挙動）。指定されていれば、そのプロパティの現在の実体値を返す。</summary>
+        internal int? StackDiscriminator =>
+            Def.StackByPropertyGlobalId.HasValue ? GetNumber(Def.StackByPropertyGlobalId.Value) : (int?)null;
+
         /// <summary>
         /// 数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の `add`、ContainerSystem.md の重さ伝播で使用）。
         /// このオブジェクトが対象プロパティを持たない場合は何もしない（例: 重さを気にしない置物）。
@@ -142,17 +148,17 @@ namespace UnmappedIsland.Runtime
         /// （存在しない配列indexへは置けないため）。
         /// </summary>
         public bool MoveToSlot(WorldObject newParent, int slotGlobalId, WellKnownProperties wellKnown, out string error, bool force = false) =>
-            AttachToSlot(newParent, slotGlobalId, insertAtIndex: null, wellKnown, out error, force);
+            AttachToSlot(newParent, slotGlobalId, capturedPosition: null, wellKnown, out error, force);
 
         /// <summary>
-        /// same_slot専用。通常の（同種のrunへソート挿入する）配置ロジックを使わず、指定した位置へ
-        /// そのまま挿入する。破棄されたオブジェクトの位置を、新しく生成されたオブジェクトへ引き継がせるために使う
-        /// （Place参照）。
+        /// same_slot専用。通常の（同種のObjectStackへソート挿入する）配置ロジックを使わず、指定した
+        /// 位置（元居たObjectStackの外側position・その中でのメンバー位置）へそのまま挿入する。破棄された
+        /// オブジェクトの位置を、新しく生成されたオブジェクトへ引き継がせるために使う（Place参照）。
         /// </summary>
-        internal bool InsertAtIndex(WorldObject newParent, int slotGlobalId, int index, WellKnownProperties wellKnown, out string error, bool force = false) =>
-            AttachToSlot(newParent, slotGlobalId, index, wellKnown, out error, force);
+        internal bool InsertAtIndex(WorldObject newParent, int slotGlobalId, CapturedPosition position, WellKnownProperties wellKnown, out string error, bool force = false) =>
+            AttachToSlot(newParent, slotGlobalId, position, wellKnown, out error, force);
 
-        private bool AttachToSlot(WorldObject newParent, int slotGlobalId, int? insertAtIndex, WellKnownProperties wellKnown, out string error, bool force)
+        private bool AttachToSlot(WorldObject newParent, int slotGlobalId, CapturedPosition? capturedPosition, WellKnownProperties wellKnown, out string error, bool force)
         {
             int localSlot = newParent.Def.SlotLayout.ToLocal(slotGlobalId);
             if (localSlot == LocalIndexMap.Missing)
@@ -168,10 +174,15 @@ namespace UnmappedIsland.Runtime
 
             DetachFromParent(wellKnown);
 
-            if (insertAtIndex.HasValue)
-                targetSlot.InsertAtCapturedPosition(this, insertAtIndex.Value);
+            if (capturedPosition.HasValue)
+            {
+                CapturedPosition p = capturedPosition.Value;
+                targetSlot.InsertAtCapturedPosition(this, p.StackIndex, p.MemberIndex, p.StackWasVacated);
+            }
             else
+            {
                 targetSlot.AddInternal(this);
+            }
 
             SetParent(newParent, localSlot);
             newParent.PropagateWeightChange(localSlot, GetNumber(wellKnown.WeightId), wellKnown);
@@ -180,6 +191,23 @@ namespace UnmappedIsland.Runtime
 
             error = null;
             return true;
+        }
+
+        /// <summary>same_slot（非FixedPositions）専用。CaptureSameSlotAnchorが捕捉した、元居たObjectStackの
+        /// 外側position(StackIndex)・その中でのメンバー位置(MemberIndex)・そのObjectStackが自分の除去で
+        /// 丸ごと消えるか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</summary>
+        internal readonly struct CapturedPosition
+        {
+            public readonly int StackIndex;
+            public readonly int MemberIndex;
+            public readonly bool StackWasVacated;
+
+            public CapturedPosition(int stackIndex, int memberIndex, bool stackWasVacated)
+            {
+                StackIndex = stackIndex;
+                MemberIndex = memberIndex;
+                StackWasVacated = stackWasVacated;
+            }
         }
 
         /// <summary>
@@ -530,13 +558,18 @@ namespace UnmappedIsland.Runtime
         /// <summary>
         /// same_slotの置き換え（型が変わりうる）に必要な位置情報を、destroyで失われる前に捕捉する。
         ///
-        /// destroyを伴う場合、自分は取り除かれるため、新しいオブジェクトは自分の元の位置（index）へ
-        /// そのまま入る。destroyを伴わない場合（自分は生き残ったまま増やす場合）、自分はまだそこに
-        /// 居続けるため、新しいオブジェクトは自分の「1つ後ろ」（index+1）へ入れる必要がある。
-        /// 両者は区別が必要で、同じindexを使い回すと後者で自分の前に割り込んでしまう。
+        /// 自分が今属しているObjectStack（7.6節）の、外側position(StackIndex)・その中でのメンバー位置
+        /// (MemberIndex)を捕捉する。destroyを伴う場合、自分は取り除かれるため、新しいオブジェクトは
+        /// 自分の元のメンバー位置へそのまま入る。destroyを伴わない場合（自分は生き残ったまま増やす場合）、
+        /// 自分はまだそこに居続けるため、新しいオブジェクトは自分の「1つ後ろ」（MemberIndex+1）へ入れる
+        /// 必要がある。両者は区別が必要で、同じ位置を使い回すと後者で自分の前に割り込んでしまう。
+        ///
+        /// destroyによって自分が自分のObjectStackの唯一のメンバーだった（=そのObjectStackが丸ごと消える）
+        /// 場合はStackWasVacated=trueとなり、消えたObjectStackの外側position自体へ新しいObjectStackが
+        /// そのまま入る（Slot.InsertAtCapturedPosition参照）。
         ///
         /// FixedPositionsスロットの固定番号も同じ考え方で、destroyによって自分が同種の最後の1個
-        /// （=その固定番号が空になる）の場合に限り、その番号をそのまま再利用できる（CanReuseGridCell）。
+        /// （=その固定番号が空になる）の場合に限り、その番号をそのまま再利用できる（StackWasVacated）。
         /// それ以外（destroyしない・destroyしても同種が残る）は自分の番号+1を起点に、隙間を探して
         /// 割り込ませる必要がある（Place参照）。
         /// </summary>
@@ -545,17 +578,15 @@ namespace UnmappedIsland.Runtime
             if (Parent == null) return null;
 
             Slot slot = Parent.GetSlotByLocalId(ParentSlotLocalId);
-            int listIndex = slot.IndexOf(this) + (willDestroySelf ? 0 : 1);
+            ObjectStack myStack = slot.FindStackContaining(this);
 
-            int? gridCellIndex = null;
-            bool canReuseGridCell = false;
-            if (slot.Def.FixedPositions)
-            {
-                gridCellIndex = slot.GetGridIndex(Def.GlobalId);
-                canReuseGridCell = willDestroySelf && slot.CountOfType(Def.GlobalId) == 1;
-            }
+            int stackIndex = slot.IndexOfStack(myStack);
+            int memberIndex = myStack.IndexOf(this) + (willDestroySelf ? 0 : 1);
+            bool stackWillBeVacated = willDestroySelf && myStack.Members.Count == 1;
 
-            return new SameSlotAnchor(Parent, ParentSlotLocalId, listIndex, gridCellIndex, canReuseGridCell);
+            int? gridCellIndex = slot.Def.FixedPositions ? myStack.GridIndex : (int?)null;
+
+            return new SameSlotAnchor(Parent, ParentSlotLocalId, stackIndex, memberIndex, stackWillBeVacated, gridCellIndex);
         }
 
         /// <summary>
@@ -574,16 +605,17 @@ namespace UnmappedIsland.Runtime
         /// spawnした側は配置先のスロット名を書かない。SameSlotなら、捕捉しておいた位置（親・スロット・
         /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。
         ///
-        /// FixedPositionsスロットでは、新しい型が既に同じスロットに存在する（同種スタックへの合流）
-        /// 場合はそのまま通常配置し、そうでなければ、自分の固定番号をそのまま再利用できる場合
-        /// （CanReuseGridCell、自分がdestroyされ同種の最後の1個だった場合）はその番号へ、できない場合
-        /// （destroyしない・destroyしても同種が残る場合）は自分の番号の右側（+1以降）で最初に見つかる
-        /// 隙間へ、他の型を押し出しながら割り込ませる。右側に隙間が無ければ、左側（-1以前）で同様に
-        /// 割り込ませる（「右が空いている限り右に、そうでなければ左に生まれる」、Slot.TryMakeRoomAndSeed
-        /// 参照）。どちらの方向にも隙間が見つからなければ配置失敗として扱い、後述のfallbackへ委ねる。
+        /// FixedPositionsスロットでは、新しい型（stack_by込みのStackKey）が既に同じスロットに存在する
+        /// （同種スタックへの合流）場合はそのまま通常配置し、そうでなければ、自分のObjectStackの固定番号を
+        /// そのまま再利用できる場合（StackWillBeVacated、自分がdestroyされ自分のObjectStackの唯一の
+        /// メンバーだった場合）はその番号へ、できない場合（destroyしない・destroyしても同種が残る場合）は
+        /// 自分の番号の右側（+1以降）で最初に見つかる隙間へ、他のObjectStackを押し出しながら割り込ませる。
+        /// 右側に隙間が無ければ、左側（-1以前）で同様に割り込ませる（「右が空いている限り右に、そうでなければ
+        /// 左に生まれる」、Slot.TryMakeRoomAndSeed参照）。どちらの方向にも隙間が見つからなければ配置失敗
+        /// として扱い、後述のfallbackへ委ねる。
         ///
-        /// それ以外の一般スロットでは、捕捉しておいたリストindexへ直接挿入する（同じ場所の後ろに
-        /// いた他のオブジェクトの位置がずれないようにするため）。
+        /// それ以外の一般スロットでは、捕捉しておいた位置（元居たObjectStackの外側position・その中での
+        /// メンバー位置）へ直接挿入する（同じ場所の後ろにいた他のオブジェクトの位置がずれないようにするため）。
         ///
         /// Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順（Def.SlotDefsの並び）に
         /// 走査し、最初に配置できたスロットへ入れる。
@@ -603,16 +635,16 @@ namespace UnmappedIsland.Runtime
                 primaryTarget = a.Parent;
                 Slot slot = a.Parent.GetSlotByLocalId(a.ParentSlotLocalId);
 
-                if (slot.Def.FixedPositions && !slot.GetGridIndex(spawned.Def.GlobalId).HasValue)
+                if (slot.Def.FixedPositions && slot.FindMatchingStack(spawned) == null)
                 {
-                    if (a.CanReuseGridCell)
+                    if (a.StackWillBeVacated)
                     {
-                        slot.SeedGridIndex(spawned.Def.GlobalId, a.GridCellIndex.Value);
+                        slot.ReserveGridIndexForNextNewStack(a.GridCellIndex.Value);
                         placed = true;
                     }
                     else
                     {
-                        placed = slot.TryMakeRoomAndSeed(spawned.Def.GlobalId, a.GridCellIndex.Value);
+                        placed = slot.TryMakeRoomAndSeed(a.GridCellIndex.Value);
                     }
 
                     if (placed)
@@ -625,7 +657,8 @@ namespace UnmappedIsland.Runtime
                 }
                 else
                 {
-                    placed = spawned.InsertAtIndex(a.Parent, slot.Def.GlobalId, a.ListIndex, session.Codex.WellKnown, out _, force: false);
+                    var position = new CapturedPosition(a.StackIndex, a.MemberIndex, a.StackWillBeVacated);
+                    placed = spawned.InsertAtIndex(a.Parent, slot.Def.GlobalId, position, session.Codex.WellKnown, out _, force: false);
                 }
             }
             else
@@ -646,22 +679,32 @@ namespace UnmappedIsland.Runtime
         {
             public readonly WorldObject Parent;
             public readonly int ParentSlotLocalId;
-            public readonly int ListIndex;
 
-            /// <summary>FixedPositionsスロットでのみ使う、自分自身の固定番号（該当スロットでなければnull）。</summary>
+            /// <summary>自分が属していたObjectStackの、Slot.Stacksにおける外側position。</summary>
+            public readonly int StackIndex;
+
+            /// <summary>そのObjectStack内での自分のメンバー位置（destroyしない場合は+1済み）。</summary>
+            public readonly int MemberIndex;
+
+            /// <summary>FixedPositionsスロットでのみ使う、自分が属していたObjectStackの固定番号
+            /// （該当スロットでなければnull）。</summary>
             public readonly int? GridCellIndex;
 
-            /// <summary>自分の固定番号を新しいオブジェクトがそのまま再利用できるか
-            /// （destroyされ、かつ自分が同種の最後の1個だった場合のみtrue）。</summary>
-            public readonly bool CanReuseGridCell;
+            /// <summary>自分の除去によって、自分が属していたObjectStackが丸ごと消える（自分がその唯一の
+            /// メンバーで、destroyされる）場合のみtrue。この場合、消えたObjectStackの固定番号・外側positionを
+            /// 新しいObjectStackがそのまま引き継ぐ。</summary>
+            public readonly bool StackWillBeVacated;
 
-            public SameSlotAnchor(WorldObject parent, int parentSlotLocalId, int listIndex, int? gridCellIndex, bool canReuseGridCell)
+            public SameSlotAnchor(
+                WorldObject parent, int parentSlotLocalId, int stackIndex, int memberIndex,
+                bool stackWillBeVacated, int? gridCellIndex)
             {
                 Parent = parent;
                 ParentSlotLocalId = parentSlotLocalId;
-                ListIndex = listIndex;
+                StackIndex = stackIndex;
+                MemberIndex = memberIndex;
+                StackWillBeVacated = stackWillBeVacated;
                 GridCellIndex = gridCellIndex;
-                CanReuseGridCell = canReuseGridCell;
             }
         }
 

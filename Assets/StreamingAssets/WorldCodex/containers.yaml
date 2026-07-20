@@ -9,6 +9,10 @@
 traits:
   liquid_container:
     tags: [liquid_container]
+    # 中身(content)が同じ容器同士だけがスタックとしてまとまり、違う中身は別のスタックとして扱う
+    # （GameElementDefinition.md 7.6節）。空(empty)の容器同士、水が入った容器同士はそれぞれ
+    # まとまるが、空の容器と水入りの容器はまとまらない。
+    stack_by: content
     props:
       # 1L ≈ 4800単位（characters.yamlのhydration換算メモ参照）。中身の種類によらず、量は1つの
       # プロパティで表す（種類はcontentが別途持つため）。maxは各object_def側でcontainerの実容量に

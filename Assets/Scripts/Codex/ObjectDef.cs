@@ -40,6 +40,14 @@ namespace UnmappedIsland.Codex
         /// 追加される（新規インスタンス同士の相対順序＝挿入順）。</summary>
         public StackOrderDef StackOrder { get; }
 
+        /// <summary>同じSlotの中で「どの単位でスタックとしてまとまるか」を決めるプロパティ（7.6節）。
+        /// nullなら常にObjectDefが同じだけでスタックがまとまる（既定の挙動）。指定されていれば、
+        /// ObjectDefが同じに加え、このプロパティの現在値も一致するインスタンス同士だけが同じ
+        /// ObjectStackにまとまる（例: 同じ液体容器でも中身(content)が違えば別のスタックとして扱う）。
+        /// スタックへ加わる時点の値で1度だけ判定し、その後の値の変化を追って自動的に移し替えることは
+        /// しない（StackOrderと同じ「一度並んだ後は追従しない」という既存の割り切りに合わせる）。</summary>
+        public int? StackByPropertyGlobalId { get; }
+
         /// <summary>このObjectDefが持つメニュー型操作（11節）。</summary>
         public IReadOnlyList<ActionDef> Actions { get; }
 
@@ -58,7 +66,8 @@ namespace UnmappedIsland.Codex
             StackOrderDef stackOrder = null,
             IReadOnlyList<int> tags = null,
             IReadOnlyList<ActionDef> actions = null,
-            IReadOnlyList<CombinationDef> combinations = null)
+            IReadOnlyList<CombinationDef> combinations = null,
+            int? stackByPropertyGlobalId = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -72,6 +81,7 @@ namespace UnmappedIsland.Codex
             Tags = tags ?? Array.Empty<int>();
             Actions = actions ?? Array.Empty<ActionDef>();
             Combinations = combinations ?? Array.Empty<CombinationDef>();
+            StackByPropertyGlobalId = stackByPropertyGlobalId;
         }
     }
 

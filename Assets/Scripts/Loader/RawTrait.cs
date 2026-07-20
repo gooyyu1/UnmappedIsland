@@ -27,6 +27,10 @@ namespace UnmappedIsland.Loader
         public YamlMappingNode Slots;
         public YamlSequenceNode Passives;
         public YamlMappingNode StackOrder;
+
+        /// <summary>stack_by（7.6節）で指定されたプロパティ名。未指定ならnull。</summary>
+        public string StackBy;
+
         public YamlMappingNode Actions;
         public YamlMappingNode Combinations;
     }

@@ -35,6 +35,10 @@ namespace UnmappedIsland.Loader
         public YamlMappingNode Slots;
         public YamlSequenceNode Passives;
         public YamlMappingNode StackOrder;
+
+        /// <summary>stack_by（7.6節）で指定されたプロパティ名。未指定ならnull。</summary>
+        public string StackBy;
+
         public YamlMappingNode Actions;
         public YamlMappingNode Combinations;
 
@@ -62,6 +66,7 @@ namespace UnmappedIsland.Loader
             var traitCombinations = new List<(string TraitName, YamlMappingNode Map)>();
             var passiveNodes = new List<YamlMappingNode>();
             var stackOrderCandidates = new List<(string TraitName, YamlMappingNode Node)>();
+            var stackByCandidates = new List<(string TraitName, string PropertyName)>();
             var tags = new List<string>();
 
             foreach (string traitName in TraitNames)
@@ -77,6 +82,7 @@ namespace UnmappedIsland.Loader
                     foreach (YamlNode passiveNode in trait.Passives)
                         passiveNodes.Add((YamlMappingNode)passiveNode);
                 if (trait.StackOrder != null) stackOrderCandidates.Add((traitName, trait.StackOrder));
+                if (trait.StackBy != null) stackByCandidates.Add((traitName, trait.StackBy));
                 tags.AddRange(trait.Tags);
             }
 
@@ -99,6 +105,16 @@ namespace UnmappedIsland.Loader
                         $"'{Name}': stack_order が複数のtrait（'{stackOrderCandidates[0].TraitName}' と " +
                         $"'{stackOrderCandidates[1].TraitName}'）で重複して宣言されています。");
                 if (stackOrderCandidates.Count == 1) stackOrderNode = stackOrderCandidates[0].Node;
+            }
+
+            string stackByName = StackBy;
+            if (stackByName == null)
+            {
+                if (stackByCandidates.Count > 1)
+                    throw new YamlLoadException(
+                        $"'{Name}': stack_by が複数のtrait（'{stackByCandidates[0].TraitName}' と " +
+                        $"'{stackByCandidates[1].TraitName}'）で重複して宣言されています。");
+                if (stackByCandidates.Count == 1) stackByName = stackByCandidates[0].PropertyName;
             }
 
             // フェーズ2: マージ済みノードから最終的なObjectDefを組み立てる。
@@ -131,10 +147,11 @@ namespace UnmappedIsland.Loader
             var actions = loader.ParseActions(Name, mergedActions);
             var combinations = loader.ParseCombinations(Name, mergedCombinations);
             var tagIds = tags.Select(loader.TagNames.Intern).Distinct().ToList();
+            int? stackByPropertyGlobalId = stackByName != null ? loader.PropertyNames.Intern(stackByName) : (int?)null;
 
             return new ObjectDef(
                 GlobalId, Name, IsSingleton, propertyLayout, propertyDefs, slotLayout, slotDefs,
-                passives, stackOrder, tagIds, actions, combinations);
+                passives, stackOrder, tagIds, actions, combinations, stackByPropertyGlobalId);
         }
 
         private static YamlMappingNode MergeIdentifierMaps(
