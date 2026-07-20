@@ -21,6 +21,8 @@ namespace UnmappedIsland.Codex.Tests
         private int contentId;
         private int liquidAmountId;
         private int hydrationId;
+        private int weatherId;
+        private int locationsSlotId;
         private int emptySymbol;
         private int waterSymbol;
         private int oilSymbol;
@@ -44,6 +46,8 @@ namespace UnmappedIsland.Codex.Tests
             contentId = codex.PropertyNames.GetId("content");
             liquidAmountId = codex.PropertyNames.GetId("liquid_amount");
             hydrationId = codex.PropertyNames.GetId("hydration");
+            weatherId = codex.PropertyNames.GetId("weather");
+            locationsSlotId = codex.SlotNames.GetId("locations");
             emptySymbol = codex.SymbolNames.GetId("empty");
             waterSymbol = codex.SymbolNames.GetId("water");
             oilSymbol = codex.SymbolNames.GetId("oil");
@@ -89,6 +93,24 @@ namespace UnmappedIsland.Codex.Tests
         private WorldObject SpawnCanteen(int contentSymbol, int liquidAmount) =>
             SpawnContainer("canteen", contentSymbol, liquidAmount);
 
+        /// <summary>指定した天気のworldインスタンスを生成する。</summary>
+        private WorldObject SpawnWorld(string weather)
+        {
+            WorldObject world = Spawn("world");
+            world.SetProperty(weatherId, PropertyValue.FromNumber(codex.SymbolNames.Intern(weather)));
+            return world;
+        }
+
+        /// <summary>{object: ancestor, prop: weather, ...}がworldへたどり着けるよう、容器をworldの
+        /// locationsスロットへ強制的に配置する（accepts上はlocationタグ専用だが、テストでは木構造上の
+        /// 親子関係だけを再現できればよいため、force:trueでaccepts判定を無視する）。</summary>
+        private WorldObject SpawnContainerUnderWorld(string objectName, int contentSymbol, int liquidAmount, WorldObject world, WorldSession session)
+        {
+            WorldObject container = SpawnContainer(objectName, contentSymbol, liquidAmount);
+            container.MoveToSlot(world, locationsSlotId, session.Codex.WellKnown, out _, force: true);
+            return container;
+        }
+
         [Test]
         public void Drink_WithNonEmptyContent_TransfersLiquidAmountToActorHydration()
         {
@@ -129,29 +151,60 @@ namespace UnmappedIsland.Codex.Tests
             Assert.That(liquidAmount.Range.Value.Max, Is.EqualTo(expectedMax));
         }
 
-        [Test]
-        public void Evaporation_DecaysCoconutBowlOnlyWhileContentIsNotEmpty()
+        [TestCase("cloudy", -1)]
+        [TestCase("clear", -2)]
+        [TestCase("sunny", -3)]
+        [TestCase("scorching", -4)]
+        public void Evaporation_CoconutBowlRateDependsOnWeather(string weather, int expectedDelta)
         {
             var session = new WorldSession(codex);
-            WorldObject withWater = SpawnContainer("coconut_bowl", waterSymbol, 100);
-            WorldObject empty = SpawnContainer("coconut_bowl", emptySymbol, 0);
+            WorldObject world = SpawnWorld(weather);
+            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", waterSymbol, 100, world, session);
 
-            withWater.Tick(session);
-            empty.Tick(session);
+            bowl.Tick(session);
 
-            Assert.That(withWater.GetNumber(liquidAmountId), Is.EqualTo(98), "中身があるので1tickで2単位蒸発する");
-            Assert.That(empty.GetNumber(liquidAmountId), Is.EqualTo(0), "空なので蒸発するものが無く0のまま");
+            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(100 + expectedDelta));
+        }
+
+        [TestCase("storm")]
+        [TestCase("heavy_rain")]
+        [TestCase("light_rain")]
+        public void Evaporation_CoconutBowlDoesNotEvaporateDuringRain(string weather)
+        {
+            var session = new WorldSession(codex);
+            WorldObject world = SpawnWorld(weather);
+            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", waterSymbol, 100, world, session);
+
+            bowl.Tick(session);
+
+            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(100), "降雨中は湿度が高いとみなし蒸発しない");
         }
 
         [Test]
-        public void Evaporation_DecaysJarFasterThanCoconutBowl()
+        public void Evaporation_EmptyCoconutBowlDoesNotEvaporateEvenWhenScorching()
         {
             var session = new WorldSession(codex);
-            WorldObject jar = SpawnContainer("jar", waterSymbol, 100);
+            WorldObject world = SpawnWorld("scorching");
+            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", emptySymbol, 0, world, session);
+
+            bowl.Tick(session);
+
+            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(0), "空なので蒸発するものが無い");
+        }
+
+        [TestCase("cloudy", -2)]
+        [TestCase("clear", -4)]
+        [TestCase("sunny", -6)]
+        [TestCase("scorching", -8)]
+        public void Evaporation_JarRateDependsOnWeather(string weather, int expectedDelta)
+        {
+            var session = new WorldSession(codex);
+            WorldObject world = SpawnWorld(weather);
+            WorldObject jar = SpawnContainerUnderWorld("jar", waterSymbol, 200, world, session);
 
             jar.Tick(session);
 
-            Assert.That(jar.GetNumber(liquidAmountId), Is.EqualTo(96), "壺は鍋・瓶より口が広い想定で4単位/tick蒸発する");
+            Assert.That(jar.GetNumber(liquidAmountId), Is.EqualTo(200 + expectedDelta), "壺は鍋・瓶より口が広い想定でcoconut_bowlの2倍の速さで蒸発する");
         }
 
         [TestCase("canteen")]
@@ -160,18 +213,20 @@ namespace UnmappedIsland.Codex.Tests
         public void Evaporation_SealedContainersDoNotEvaporate(string objectName)
         {
             var session = new WorldSession(codex);
-            WorldObject container = SpawnContainer(objectName, waterSymbol, 100);
+            WorldObject world = SpawnWorld("scorching"); // 最も蒸発しやすい天気でも蓋付きなら影響しないことを確認
+            WorldObject container = SpawnContainerUnderWorld(objectName, waterSymbol, 100, world, session);
 
             container.Tick(session);
 
-            Assert.That(container.GetNumber(liquidAmountId), Is.EqualTo(100), "蓋付きなので蒸発しない");
+            Assert.That(container.GetNumber(liquidAmountId), Is.EqualTo(100), "蓋付きなので天気によらず蒸発しない");
         }
 
         [Test]
         public void Evaporation_DepletingLiquidAmount_ResetsContentToEmptyViaOnMin()
         {
             var session = new WorldSession(codex);
-            WorldObject bowl = SpawnContainer("coconut_bowl", waterSymbol, 2);
+            WorldObject world = SpawnWorld("clear");
+            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", waterSymbol, 2, world, session);
 
             bowl.Tick(session);
 

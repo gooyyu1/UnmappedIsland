@@ -86,9 +86,18 @@ object_defs:
   # ヤシの実の殻を割った器。最も原始的な容器で、蓋が無いため蒸発する。実物の容量(約250mL)に合わせ、
   # 250mL×4.8単位/mL=1200単位を上限とする。
   #
-  # 蒸発速度: 開放水面からの蒸発量の目安(≈5mm/日)と、半分に割った殻の開口部の面積(直径10cm、
-  # ≈π×5cm²≈78.5cm²)から、78.5cm²×0.5cm≈39mL/日。満杯(250mL)がこの速さで蒸発しきるまで
-  # 約6.3日(≈606 tick)。1200単位/606 tick≈2単位/tickとした。
+  # 蒸発速度: 開放水面からの蒸発量の目安(≈5mm/日、天気がclearの場合)と、半分に割った殻の開口部の
+  # 面積(直径10cm、≈π×5cm²≈78.5cm²)から、78.5cm²×0.5cm≈39mL/日。満杯(250mL)がこの速さで
+  # 蒸発しきるまで約6.3日(≈606 tick)。1200単位/606 tick≈2単位/tickとした（world.weatherがclearの
+  # 場合の基準値）。
+  #
+  # 天気ごとの速さ: 世界の天気(world.weather、7段階、core.yaml参照)が晴れているほど蒸発は速く、
+  # 降雨中(light_rain/heavy_rain/storm、湿度が高い想定)は蒸発しないとみなしpassiveを持たせない
+  # （「湿度100%相当なら蒸発しない」という前提）。cloudyはclearの半分程度、sunny/scorchingは
+  # clearよりそれぞれ1段階・2段階速いという簡易な比を仮に採用した。速さはいずれも仮の値で、
+  # 天気の段階ごとにリテラルのまま書く（速さ自体を専用のプロパティにはしない、trait参照）。
+  # {object: ancestor, ...}で、容器がどのスロット(インベントリ・地面など)にあっても、木構造を
+  # 遡って唯一weatherを持つworldへ自然にたどり着く。
   coconut_bowl:
     traits: [liquid_container]
     props:
@@ -97,9 +106,28 @@ object_defs:
         passives:
           - conditions:
               - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: cloudy}
+            accumulate:
+              self:
+                liquid_amount: -1
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: clear}
             accumulate:
               self:
                 liquid_amount: -2
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: sunny}
+            accumulate:
+              self:
+                liquid_amount: -3
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: scorching}
+            accumulate:
+              self:
+                liquid_amount: -4
 
   # 鍋。初級の保存容器。蓋付きのため蒸発しない。殻より大きいが瓶より小さい容量(1L)とすることで、
   # 瓶を作る動機を残す（鍋は素材コストが軽く料理にも使えるため、容量まで瓶を上回ると瓶を作る理由が
@@ -122,8 +150,12 @@ object_defs:
   #
   # 蒸発速度: 鍋・瓶より口が狭いと考えられるが、汲みやすさも要るため、開口部を直径15cm
   # (≈π×7.5cm²≈176.7cm²)と仮定する。176.7cm²×0.5cm≈88mL/日。満杯(4L)がこの速さで蒸発しきる
-  # まで約45日(≈4344 tick)。19200単位/4344 tick≈4単位/tickとした（鍋・瓶のような無期限保存は
-  # できないが、蓋付き容器に比べれば十分「一時的」な保存として振る舞う）。
+  # まで約45日(≈4344 tick)。19200単位/4344 tick≈4単位/tickとした（world.weatherがclearの場合の
+  # 基準値。鍋・瓶のような無期限保存はできないが、蓋付き容器に比べれば十分「一時的」な保存として
+  # 振る舞う）。
+  #
+  # 天気ごとの速さ: coconut_bowlと同じ比（clearを基準に、cloudyは半分、sunny/scorchingはそれぞれ
+  # 1.5倍・2倍）を採用し、降雨中(light_rain/heavy_rain/storm)はpassiveを持たせない。
   jar:
     traits: [liquid_container]
     props:
@@ -132,6 +164,25 @@ object_defs:
         passives:
           - conditions:
               - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: cloudy}
+            accumulate:
+              self:
+                liquid_amount: -2
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: clear}
             accumulate:
               self:
                 liquid_amount: -4
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: sunny}
+            accumulate:
+              self:
+                liquid_amount: -6
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+              - {object: ancestor, prop: weather, op: eq, value: scorching}
+            accumulate:
+              self:
+                liquid_amount: -8
