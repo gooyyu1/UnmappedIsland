@@ -33,7 +33,7 @@ traits:
       pour_in:
         with: water_liquid
         transfer:
-          amount: 2000
+          amount: 999999
           from_object: dragged_parent
           from_prop: liquid_amount
           to_object: parent
@@ -44,7 +44,7 @@ traits:
     actions:
       drink:
         transfer:
-          amount: 2000
+          amount: 1200
           from_object: parent
           from_prop: liquid_amount
           to_object: actor
@@ -56,7 +56,7 @@ traits:
       pour_in:
         with: tea_liquid
         transfer:
-          amount: 2000
+          amount: 999999
           from_object: dragged_parent
           from_prop: liquid_amount
           to_object: parent
@@ -68,7 +68,7 @@ traits:
       pour_in:
         with: oil_liquid
         transfer:
-          amount: 2000
+          amount: 999999
           from_object: dragged_parent
           from_prop: liquid_amount
           to_object: parent
@@ -167,7 +167,7 @@ object_defs:
       pour_water:
         with: water_liquid
         transfer:
-          amount: 2000
+          amount: 999999
           from_object: dragged_parent
           from_prop: liquid_amount
           to_object: parent
@@ -178,7 +178,7 @@ object_defs:
       pour_tea:
         with: tea_liquid
         transfer:
-          amount: 2000
+          amount: 999999
           from_object: dragged_parent
           from_prop: liquid_amount
           to_object: parent
@@ -189,7 +189,7 @@ object_defs:
       pour_oil:
         with: oil_liquid
         transfer:
-          amount: 2000
+          amount: 999999
           from_object: dragged_parent
           from_prop: liquid_amount
           to_object: parent
