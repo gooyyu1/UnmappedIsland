@@ -74,7 +74,7 @@ namespace UnmappedIsland.Loader
         public void World_Tick_AccumulatesPerTick_MinuteDoesNot()
         {
             // minuteはtick駆動のpassivesを持たない。「1tick進める」たびにminutes_per_tick分だけ加算する
-            // 処理自体をWorldSession（ゲーム側）が担うため（WorldTimeAdvanceTests参照）、core.yaml単体で
+            // 処理自体をWorldSession（ゲーム側）が担うため（WorldClockTests参照）、core.yaml単体で
             // Tick()を直接呼んでもminuteは変化しないことをここで確認する。
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int tickId = codex.PropertyNames.GetId("tick");

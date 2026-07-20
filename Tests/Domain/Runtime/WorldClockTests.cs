@@ -16,7 +16,7 @@ namespace UnmappedIsland.Domain.Runtime
     /// するため）。minuteへの加算はすべてWorldSessionが、常にminutes_per_tick以下の小さな量ずつ行う。
     /// </summary>
     [TestFixture]
-    public class WorldTimeAdvanceTests
+    public class WorldClockTests
     {
         private static WorldCodex Load(string yaml) => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 

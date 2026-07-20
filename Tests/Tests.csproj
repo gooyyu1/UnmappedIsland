@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <!-- Exclude the library sub-project from the default compile glob -->
-    <Compile Remove="UnmappedIsland.WorldCodex/**" />
+    <Compile Remove="UnmappedIsland.Core/**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="UnmappedIsland.WorldCodex/UnmappedIsland.WorldCodex.csproj" />
+    <ProjectReference Include="UnmappedIsland.Core/UnmappedIsland.Core.csproj" />
   </ItemGroup>
 
 </Project>
