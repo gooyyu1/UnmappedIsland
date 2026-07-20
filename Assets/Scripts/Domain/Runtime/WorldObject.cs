@@ -40,9 +40,9 @@ namespace UnmappedIsland.Domain.Runtime
             InstanceId = instanceId;
             Def = def;
 
-            properties = new PropertyValue[def.PropertyDefs.Count];
+            properties = new PropertyValue[def.PropertyLayout.LocalCount];
             for (int i = 0; i < properties.Length; i++)
-                properties[i] = PropertyValue.Create(def.PropertyDefs[i].DefaultNumber, def.PropertyDefs[i], this);
+                properties[i] = PropertyValue.Create(def.GetPropertyDefByLocal(i).DefaultNumber, def.GetPropertyDefByLocal(i), this);
 
             slots = new Slot[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
@@ -670,7 +670,7 @@ namespace UnmappedIsland.Domain.Runtime
 
         private void CopySharedPropertiesTo(WorldObject other)
         {
-            foreach (var propertyDef in other.Def.PropertyDefs)
+            foreach (var propertyDef in other.Def.EnumeratePropertyDefs())
             {
                 if (!TryGetProperty(propertyDef.GlobalId, out PropertyValue value)) continue;
                 other.SetProperty(propertyDef.GlobalId, PropertyValue.FromNumber(value.AsNumber()));
