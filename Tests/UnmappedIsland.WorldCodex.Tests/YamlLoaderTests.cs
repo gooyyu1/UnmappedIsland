@@ -307,7 +307,7 @@ object_defs:
         }
 
         [Test]
-        public void LoadFromGroups_StageEq_ResolvesByExactMatchNotOrdering()
+        public void LoadFromGroups_SymbolPropertyStage_ResolvesByNameExactMatch()
         {
             const string yaml = @"
 object_defs:
@@ -317,14 +317,11 @@ object_defs:
         value: clear
         stages:
           - name: storm
-            eq: storm
           - name: clear
-            eq: clear
             passives:
               - modify:
                   self:
                     sunlight: 5
-          - name: unknown
 ";
             var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
             ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky3"));
@@ -336,12 +333,12 @@ object_defs:
 
             Assert.That(weather.ResolveStage(stormId)?.Name, Is.EqualTo("storm"));
             Assert.That(weather.ResolveStage(clearId)?.Name, Is.EqualTo("clear"));
-            Assert.That(weather.ResolveStage(somethingElseId)?.Name, Is.EqualTo("unknown"),
-                "eqのどれとも一致しない値はmin/eq両方省略のフォールバック段階になる");
+            Assert.That(weather.ResolveStage(somethingElseId), Is.Null,
+                "シンボル型プロパティにフォールバック段階は無く、該当する段階が無ければnull");
         }
 
         [Test]
-        public void LoadFromGroups_StageMinAndEqTogether_Throws()
+        public void LoadFromGroups_SymbolPropertyStageWithMin_Throws()
         {
             const string yaml = @"
 object_defs:
@@ -352,14 +349,13 @@ object_defs:
         stages:
           - name: bad
             min: 1
-            eq: clear
 ";
             Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("min").And.Message.Contain("eq"));
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("min").And.Message.Contain("シンボル型"));
         }
 
         [Test]
-        public void LoadFromGroups_StageEqPassive_UsesWhenOwnStageGate()
+        public void LoadFromGroups_SymbolPropertyStagePassive_UsesWhenOwnStageGate()
         {
             const string yaml = @"
 object_defs:
@@ -369,7 +365,6 @@ object_defs:
         value: clear
         stages:
           - name: clear
-            eq: clear
             passives:
               - modify:
                   self:
@@ -380,7 +375,7 @@ object_defs:
             ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky4"));
             PassiveEffect effect = sky.Passives.Single();
 
-            Assert.That(effect.Gate.StageName, Is.EqualTo("clear"), "eq指定のstage内のpassivesもStageNameが設定される");
+            Assert.That(effect.Gate.StageName, Is.EqualTo("clear"), "シンボル型のstage内のpassivesもStageNameが設定される");
             Assert.That(effect.Gate.Conditions, Is.Null);
         }
 

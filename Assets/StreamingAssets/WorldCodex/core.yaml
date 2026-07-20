@@ -103,44 +103,37 @@ object_defs:
       #
       # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のstages（6.4節）+WhenOwnStage
       # ゲート（8.2節）のmodifyで与える（もう一方、hourの「時間帯による最低限の寄与」はhour参照）。
-      # シンボル型プロパティは数値の大小関係を前提にした通常のmin（半開区間）には乗らないため、
-      # 天気の種類ごとの完全一致判定にはeq（6.4節）を使う。「夜は寄与を無効化する」という時間帯依存の
-      # 判定は、weather側ではなくhour側のstagesがsunlightのrangeクランプ経由で実現する（hour参照）ため、
-      # ここでは天候の種類だけを見ればよい。storm・heavy_rainはpassivesを持たず、常に寄与なし。
-      # 数値はいずれも仮の値。
+      # シンボル型プロパティのstages（6.4節）は、名前自体がそのまま比較対象になる（シンボル値自身が
+      # 既に「名前の付いた離散値」であるため、ステージ名と比較値を別々に書く理由が無い）。「夜は寄与を
+      # 無効化する」という時間帯依存の判定は、weather側ではなくhour側のstagesがsunlightのrangeクランプ
+      # 経由で実現する（hour参照）ため、ここでは天候の種類だけを見ればよい。storm・heavy_rainは
+      # passivesを持たず、常に寄与なし。数値はいずれも仮の値。
       weather:
         value: clear
         stages:
           - name: storm
-            eq: storm
           - name: heavy_rain
-            eq: heavy_rain
           - name: light_rain
-            eq: light_rain
             passives:
               - modify:
                   self:
                     sunlight: 1
           - name: cloudy
-            eq: cloudy
             passives:
               - modify:
                   self:
                     sunlight: 2
           - name: clear
-            eq: clear
             passives:
               - modify:
                   self:
                     sunlight: 5
           - name: sunny
-            eq: sunny
             passives:
               - modify:
                   self:
                     sunlight: 7
           - name: scorching
-            eq: scorching
             passives:
               - modify:
                   self:
