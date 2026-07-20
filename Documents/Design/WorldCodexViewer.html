@@ -496,6 +496,21 @@ function renderActive(node, selfObjectName) {
       });
     });
   }
+  if (node.transfer) {
+    var t = node.transfer;
+    var fromRef = renderPropRef(t.from_object || "self", t.from_prop, selfObjectName);
+    var toRef = renderPropRef(t.to_object || "self", t.to_prop, selfObjectName);
+    out.push("transfer: " + fromRef + " → " + toRef + " (最大" + esc(String(t.amount)) + ")");
+    if (t.linked_add) {
+      Object.keys(t.linked_add).forEach(function (target) {
+        Object.keys(t.linked_add[target]).forEach(function (prop) {
+          var amount = t.linked_add[target][prop];
+          var sign = typeof amount === "number" && amount >= 0 ? "+" : "";
+          out.push("  linked_add " + renderPropRef(target, prop, selfObjectName) + " " + sign + "= " + esc(amount) + "（比例）");
+        });
+      });
+    }
+  }
   if (node.destroy) {
     var list = Array.isArray(node.destroy) ? node.destroy : [node.destroy];
     out.push("destroy: " + list.map(function (v) { return esc(v); }).join(", "));
