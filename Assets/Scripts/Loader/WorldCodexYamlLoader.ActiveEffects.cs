@@ -170,6 +170,10 @@ namespace UnmappedIsland.Loader
                     if (!allowDragged)
                         throw new YamlLoadException($"{context}: 'dragged'はcombinationsの中でのみ使えます。");
                     return ReferenceRoot.Dragged;
+                case "dragged_parent":
+                    if (!allowDragged)
+                        throw new YamlLoadException($"{context}: 'dragged_parent'はcombinationsの中でのみ使えます。");
+                    return ReferenceRoot.DraggedParent;
                 case "child":
                     throw new YamlLoadException(
                         $"{context}: activeの対象'child'は未対応です（一度きりの命令に対して『どの子か』の意味が確定していないため）。");

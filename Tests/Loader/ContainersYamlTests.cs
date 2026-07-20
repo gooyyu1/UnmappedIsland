@@ -71,27 +71,13 @@ namespace UnmappedIsland.Loader
             return def.PropertyDefs[local];
         }
 
-        private static string CapacitySuffixFor(string containerName)
-        {
-            switch (containerName)
-            {
-                case "coconut_bowl": return "1200";
-                case "canteen":
-                case "pot": return "4800";
-                case "bottle": return "9600";
-                case "jar": return "19200";
-                default: throw new ArgumentOutOfRangeException(nameof(containerName), containerName, null);
-            }
-        }
-
-        private static string CarrierNameFor(string containerName, string liquidKind) =>
-            $"{liquidKind}_liquid_{CapacitySuffixFor(containerName)}";
+        private static string LiquidMarkerNameFor(string liquidKind) => $"{liquidKind}_liquid";
 
         private WorldObject SpawnContainer(string containerName, string liquidKind, int liquidAmount)
         {
             WorldObject container = Spawn(containerName);
-            WorldObject content = Spawn(CarrierNameFor(containerName, liquidKind));
-            content.SetProperty(liquidAmountId, PropertyValue.FromNumber(liquidAmount));
+            container.SetProperty(liquidAmountId, PropertyValue.FromNumber(liquidAmount));
+            WorldObject content = Spawn(LiquidMarkerNameFor(liquidKind));
             content.MoveToSlot(container, contentSlotId, codex.WellKnown, out _);
             return container;
         }
@@ -124,24 +110,25 @@ namespace UnmappedIsland.Loader
         }
 
         [Test]
-        public void Containers_AreSlotOnlyWrappersRepresentedByContent()
+        public void Containers_AreWrappersRepresentedByContentWithLiquidAmount()
         {
             ObjectDef canteen = codex.Objects.Get(codex.ObjectNames.GetId("canteen"));
 
             Assert.That(canteen.RepresentedBySlotGlobalId, Is.EqualTo(contentSlotId));
             Assert.That(canteen.Actions, Is.Empty, "容器本体は中身の行動を持たない");
             Assert.That(canteen.Combinations, Is.Empty, "容器本体は注ぎ処理を持たない");
-            Assert.That(canteen.PropertyDefs.Select(p => p.Name), Does.Not.Contain("liquid_amount"));
+            Assert.That(canteen.PropertyDefs.Select(p => p.Name), Does.Contain("liquid_amount"), "容器本体はliquid_amountを持つ");
         }
 
         [TestCase("coconut_bowl", 1200)]
+        [TestCase("canteen", 4800)]
         [TestCase("pot", 4800)]
         [TestCase("bottle", 9600)]
         [TestCase("jar", 19200)]
-        public void LiquidCarrier_HasExpectedCapacityForContainerFamily(string containerName, int expectedMax)
+        public void Container_HasExpectedLiquidCapacity(string containerName, int expectedMax)
         {
-            ObjectDef waterCarrier = codex.Objects.Get(codex.ObjectNames.GetId(CarrierNameFor(containerName, "water")));
-            PropertyDef liquidAmount = PropOf(waterCarrier, "liquid_amount");
+            ObjectDef container = codex.Objects.Get(codex.ObjectNames.GetId(containerName));
+            PropertyDef liquidAmount = PropOf(container, "liquid_amount");
 
             Assert.That(liquidAmount.Range.HasValue, Is.True);
             Assert.That(liquidAmount.Range.Value.Max, Is.EqualTo(expectedMax));
@@ -158,7 +145,7 @@ namespace UnmappedIsland.Loader
             bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
 
             Assert.That(executed, Is.True);
-            Assert.That(ContentOf(canteen).GetNumber(liquidAmountId), Is.EqualTo(1800));
+            Assert.That(canteen.GetNumber(liquidAmountId), Is.EqualTo(1800));
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200));
         }
 
@@ -202,7 +189,7 @@ namespace UnmappedIsland.Loader
 
             bowl.Tick(session);
 
-            Assert.That(ContentOf(bowl).GetNumber(liquidAmountId), Is.EqualTo(100 + expectedDelta));
+            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(100 + expectedDelta));
         }
 
         [TestCase("storm")]
@@ -216,7 +203,7 @@ namespace UnmappedIsland.Loader
 
             bowl.Tick(session);
 
-            Assert.That(ContentOf(bowl).GetNumber(liquidAmountId), Is.EqualTo(100));
+            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(100));
         }
 
         [TestCase("cloudy", -2)]
@@ -231,7 +218,7 @@ namespace UnmappedIsland.Loader
 
             jar.Tick(session);
 
-            Assert.That(ContentOf(jar).GetNumber(liquidAmountId), Is.EqualTo(200 + expectedDelta));
+            Assert.That(jar.GetNumber(liquidAmountId), Is.EqualTo(200 + expectedDelta));
         }
 
         [TestCase("canteen")]
@@ -245,11 +232,11 @@ namespace UnmappedIsland.Loader
 
             container.Tick(session);
 
-            Assert.That(ContentOf(container).GetNumber(liquidAmountId), Is.EqualTo(100));
+            Assert.That(container.GetNumber(liquidAmountId), Is.EqualTo(100));
         }
 
         [Test]
-        public void Evaporation_DepletingLiquid_ReplacesRepresentedContentWithEmptyCarrier()
+        public void Evaporation_DepletingLiquid_ReducesContainerAmountToZero()
         {
             var session = new WorldSession(codex);
             WorldObject world = SpawnWorld("clear");
@@ -257,12 +244,11 @@ namespace UnmappedIsland.Loader
 
             bowl.Tick(session);
 
-            Assert.That(ContentOf(bowl).Def.Name, Is.EqualTo("empty_liquid_1200"));
-            Assert.That(ContentOf(bowl).GetNumber(liquidAmountId), Is.EqualTo(0));
+            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(0));
         }
 
         [Test]
-        public void PourIn_IntoEmptyContainer_ReplacesEmptyCarrierWithDraggedLiquidFamily()
+        public void PourIn_IntoEmptyContainer_ReplacesEmptyMarkerWithDraggedLiquidType()
         {
             var session = new WorldSession(codex);
             WorldObject self = SpawnContainer("canteen", "empty", 0);
@@ -272,9 +258,9 @@ namespace UnmappedIsland.Loader
             bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, combinationName, session);
 
             Assert.That(executed, Is.True);
-            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid_4800"));
-            Assert.That(ContentOf(self).GetNumber(liquidAmountId), Is.EqualTo(2000));
-            Assert.That(ContentOf(dragged).GetNumber(liquidAmountId), Is.EqualTo(1000));
+            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid"));
+            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(2000));
+            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(1000));
         }
 
         [Test]
@@ -287,9 +273,9 @@ namespace UnmappedIsland.Loader
             bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
 
             Assert.That(executed, Is.True);
-            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid_4800"));
-            Assert.That(ContentOf(self).GetNumber(liquidAmountId), Is.EqualTo(2500));
-            Assert.That(ContentOf(dragged).GetNumber(liquidAmountId), Is.EqualTo(1000));
+            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid"));
+            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(2500));
+            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(1000));
         }
 
         [Test]
@@ -302,9 +288,9 @@ namespace UnmappedIsland.Loader
             bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
 
             Assert.That(executed, Is.False);
-            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("oil_liquid_4800"));
-            Assert.That(ContentOf(self).GetNumber(liquidAmountId), Is.EqualTo(500));
-            Assert.That(ContentOf(dragged).GetNumber(liquidAmountId), Is.EqualTo(3000));
+            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("oil_liquid"));
+            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(500));
+            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(3000));
         }
     }
 }

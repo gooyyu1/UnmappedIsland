@@ -1,5 +1,7 @@
 # 液体容器の定義。容器本体は「液体を1つ入れられるスロットを持つだけ」にし、
 # 飲用・注入・蒸発・スタック判定は represented_by された中身オブジェクト側へ委譲する。
+# liquid_amount は容器本体が持ち、中身オブジェクトは liquid_amount を持たない。
+# 飲用・注入は from_object/to_object で親容器を参照することで実現する。
 
 traits:
   liquid_container:
@@ -23,6 +25,7 @@ traits:
       drink:
         transfer:
           amount: 1200
+          from_object: parent
           from_prop: liquid_amount
           to_object: actor
           to_prop: hydration
@@ -31,8 +34,9 @@ traits:
         with: water_liquid
         transfer:
           amount: 2000
-          from_object: dragged
+          from_object: dragged_parent
           from_prop: liquid_amount
+          to_object: parent
           to_prop: liquid_amount
 
   tea_liquid:
@@ -41,6 +45,7 @@ traits:
       drink:
         transfer:
           amount: 2000
+          from_object: parent
           from_prop: liquid_amount
           to_object: actor
           to_prop: hydration
@@ -52,8 +57,9 @@ traits:
         with: tea_liquid
         transfer:
           amount: 2000
-          from_object: dragged
+          from_object: dragged_parent
           from_prop: liquid_amount
+          to_object: parent
           to_prop: liquid_amount
 
   oil_liquid:
@@ -63,894 +69,140 @@ traits:
         with: oil_liquid
         transfer:
           amount: 2000
-          from_object: dragged
+          from_object: dragged_parent
           from_prop: liquid_amount
+          to_object: parent
           to_prop: liquid_amount
+
+  evaporating_liquid:
+    passives:
+      - conditions:
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: cloudy}
+        accumulate:
+          parent:
+            liquid_amount: -1
+      - conditions:
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: clear}
+        accumulate:
+          parent:
+            liquid_amount: -2
+      - conditions:
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: sunny}
+        accumulate:
+          parent:
+            liquid_amount: -3
+      - conditions:
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: scorching}
+        accumulate:
+          parent:
+            liquid_amount: -4
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: cloudy}
+        accumulate:
+          parent:
+            liquid_amount: -2
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: clear}
+        accumulate:
+          parent:
+            liquid_amount: -4
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: sunny}
+        accumulate:
+          parent:
+            liquid_amount: -6
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, op: eq, value: scorching}
+        accumulate:
+          parent:
+            liquid_amount: -8
 
 object_defs:
   canteen:
     traits: [liquid_container, sealed_container]
+    props:
+      liquid_amount:
+        value: 0
+        range: {min: 0, max: 4800}
 
   pot:
     traits: [liquid_container, sealed_container]
+    props:
+      liquid_amount:
+        value: 0
+        range: {min: 0, max: 4800}
 
   bottle:
     traits: [liquid_container, sealed_container]
+    props:
+      liquid_amount:
+        value: 0
+        range: {min: 0, max: 9600}
 
   jar:
     traits: [liquid_container, narrow_open_container]
+    props:
+      liquid_amount:
+        value: 0
+        range: {min: 0, max: 19200}
 
   coconut_bowl:
     traits: [liquid_container, wide_open_container]
-
-  empty_liquid_1200:
-    tags: [liquid, empty_liquid]
     props:
       liquid_amount:
         value: 0
         range: {min: 0, max: 1200}
+
+  empty_liquid:
+    tags: [liquid, empty_liquid]
     combinations:
       pour_water:
         with: water_liquid
         transfer:
           amount: 2000
-          from_object: dragged
+          from_object: dragged_parent
           from_prop: liquid_amount
+          to_object: parent
           to_prop: liquid_amount
         destroy: self
         spawn:
-          object: water_liquid_1200
+          object: water_liquid
       pour_tea:
         with: tea_liquid
         transfer:
           amount: 2000
-          from_object: dragged
+          from_object: dragged_parent
           from_prop: liquid_amount
+          to_object: parent
           to_prop: liquid_amount
         destroy: self
         spawn:
-          object: tea_liquid_1200
+          object: tea_liquid
       pour_oil:
         with: oil_liquid
         transfer:
           amount: 2000
-          from_object: dragged
+          from_object: dragged_parent
           from_prop: liquid_amount
+          to_object: parent
           to_prop: liquid_amount
         destroy: self
         spawn:
-          object: oil_liquid_1200
+          object: oil_liquid
 
-  water_liquid_1200:
-    traits: [water_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 1200}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_1200
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
+  water_liquid:
+    traits: [water_liquid, evaporating_liquid]
 
-  tea_liquid_1200:
-    traits: [tea_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 1200}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_1200
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
+  tea_liquid:
+    traits: [tea_liquid, evaporating_liquid]
 
-  oil_liquid_1200:
-    traits: [oil_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 1200}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_1200
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  empty_liquid_4800:
-    tags: [liquid, empty_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
-    combinations:
-      pour_water:
-        with: water_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: water_liquid_4800
-      pour_tea:
-        with: tea_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: tea_liquid_4800
-      pour_oil:
-        with: oil_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: oil_liquid_4800
-
-  water_liquid_4800:
-    traits: [water_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_4800
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  tea_liquid_4800:
-    traits: [tea_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_4800
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  oil_liquid_4800:
-    traits: [oil_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_4800
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  empty_liquid_9600:
-    tags: [liquid, empty_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 9600}
-    combinations:
-      pour_water:
-        with: water_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: water_liquid_9600
-      pour_tea:
-        with: tea_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: tea_liquid_9600
-      pour_oil:
-        with: oil_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: oil_liquid_9600
-
-  water_liquid_9600:
-    traits: [water_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 9600}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_9600
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  tea_liquid_9600:
-    traits: [tea_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 9600}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_9600
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  oil_liquid_9600:
-    traits: [oil_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 9600}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_9600
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  empty_liquid_19200:
-    tags: [liquid, empty_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 19200}
-    combinations:
-      pour_water:
-        with: water_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: water_liquid_19200
-      pour_tea:
-        with: tea_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: tea_liquid_19200
-      pour_oil:
-        with: oil_liquid
-        transfer:
-          amount: 2000
-          from_object: dragged
-          from_prop: liquid_amount
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: oil_liquid_19200
-
-  water_liquid_19200:
-    traits: [water_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 19200}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_19200
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  tea_liquid_19200:
-    traits: [tea_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 19200}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_19200
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
-
-  oil_liquid_19200:
-    traits: [oil_liquid]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 19200}
-        on_min:
-          destroy: self
-          spawn:
-            object: empty_liquid_19200
-        passives:
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -1
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -3
-          - conditions:
-              - {object: parent, tag: wide_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: cloudy}
-            accumulate:
-              self:
-                liquid_amount: -2
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: clear}
-            accumulate:
-              self:
-                liquid_amount: -4
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: sunny}
-            accumulate:
-              self:
-                liquid_amount: -6
-          - conditions:
-              - {object: parent, tag: narrow_open_container}
-              - {object: ancestor, prop: weather, op: eq, value: scorching}
-            accumulate:
-              self:
-                liquid_amount: -8
+  oil_liquid:
+    traits: [oil_liquid, evaporating_liquid]
