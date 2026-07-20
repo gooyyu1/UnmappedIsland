@@ -345,6 +345,28 @@ object_defs:
         inherit: true  # 祖先(通常はroom)のambient_temperatureを加算する
 ```
 
+### 6.8 シンボル型の値
+
+数値プロパティの値は 32bit 整数ですが、`value` に整数にも真偽値にもならない識別子（`^[a-z][a-z0-9_]*$`、
+3.2 節と同じ命名規則）を書くと、その識別子を**シンボル名**として自動的に整数へ変換します（`object_defs`/
+`props`/`slots`/`tags` の名前と同じ、文字列↔整数の相互変換の仕組みを、シンボル名専用にもう1つ用意した
+だけです）。専用の宣言（`symbol: true` 等）は不要で、`value` の書き方だけで区別できます。
+
+```yaml
+props:
+  content:
+    value: water   # 整数にも真偽値にもならないため、シンボル名として登録される
+```
+
+液体の種類のような「離散した状態」を、専用の仕組み（enum 型・タグ付きの子オブジェクト等）を新設せず、
+既存の `props`/`conditions`/`set` の語彙だけで表現するために導入しました。値の比較・代入は 9.2 節・14.1 節の
+通り、他の数値プロパティと全く同じように書けます。
+
+- シンボル名同士の大小関係（`lt`/`gt` 等）は、登録順に依存する恣意的なものであり意味を持ちません。
+  シンボル型のプロパティは `eq`/`neq`/`in`/`not_in` で比較する用途を想定しています。
+- `range`/`on_overflow`/`on_shortfall`/`stages` はいずれも数値の大小関係を前提にした仕組みのため、
+  シンボル型のプロパティと組み合わせても意味のある結果にはなりません。
+
 ## 7. slots（親子関係とコンテナ）
 
 ### 7.1 基本構造
@@ -591,7 +613,7 @@ object_defs:
     layer: base
     passives:
       - conditions:
-          - {slot: equip}
+          - {in_slot: equip}
         modify:
           parent:
             defense: 5
@@ -606,7 +628,7 @@ object_defs:
 - `conditions` を省略すれば「常時（無条件）」を意味します。
 - `self`/`parent` 対象の効果は、両方とも「このブロックを宣言したオブジェクト自身が今どのスロットに入っている
   か」という同じ物理的な実体を指すため、`conditions` の `object` を省略（既定値 `self`）して書くのが自然です
-  （例: `{slot: equip}` は「自分自身が親の `equip` スロットに入っている間」を意味します）。`child` 対象の効果
+  （例: `{in_slot: equip}` は「自分自身が親の `equip` スロットに入っている間」を意味します）。`child` 対象の効果
   （親がdeclareし、子がゲート対象になるケース）では、`object: child` を使って子自身のスロット位置やプロパティを
   参照できます。
 
@@ -633,12 +655,12 @@ object_defs:
   sword:
     passives:
       - conditions:
-          - {slot: main_hand}
+          - {in_slot: main_hand}
         modify:
           parent:
             attack: 5
       - conditions:
-          - {slot: off_hand}
+          - {in_slot: off_hand}
         modify:
           parent:
             attack: 2
@@ -682,7 +704,7 @@ object_defs:
 概念です。持続する条件を表す `conditions`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
 
 `active` という語自体は、YAML 上の専用キーとしては書きません。この節で説明する `set`・`add`・`destroy`・
-`spawn` を、それが書ける場所（9.5 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
+`spawn`・`transfer` を、それが書ける場所（9.6 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
 `on_min`/`on_overflow`/`on_shortfall`/`on_max`）の中に、`showMenu`/`conditions`/`with`/`weight`/`pick` と
 対等な兄弟キーとして直接書きます。専用のラップを挟まないことで、動詞（`set`/`add`/`destroy`/`spawn`）が
 `pick` と並列に並び、「実行結果は直接書くか、`pick` で確率分岐するかのどちらか」という構造がそのまま
@@ -713,6 +735,20 @@ actions:
 - `add` は指定した量を既存の値へ**加減算**します。
 
 `conditions`/常時の継続的な加算は `accumulate`（8.4 節）が担うため、`set`/`add` は一時的な命令専用です。
+
+`set` の値は、**リテラル**（整数・真偽値・シンボル名、6.8 節）か、**`{object, prop}` 参照**
+（`conditions` の値参照・`weight` の path 参照と同じ二択）のいずれかです。参照の場合、その参照先の現在の
+実効値をそのままコピーします（他のプロパティの値を、値を知らないまま複製する用途、例: 別の容器から
+注がれた液体の種類をそのまま引き継ぐ）。
+
+```yaml
+set:
+  self:
+    content: {object: dragged, prop: content}   # draggedの現在のcontentをそのままselfへコピーする
+```
+
+`add` は加減算量が常に量そのもの（差分）であり、他のプロパティの値をそのままコピーする用途に当てはまらない
+ため、参照はまだ用意していません。
 
 ### 9.3 destroy
 
@@ -765,7 +801,37 @@ spawn: {object: item_coconut, into: actor}
 配置されないまま消えます（生成自体はされますが、worldツリーに繋がらないため、存在しなかったのと同じ扱いに
 なります。7.1 節参照）。
 
-### 9.5 set/add/destroy/spawn が書ける場所
+### 9.5 transfer
+
+`set`/`add` は固定の値・量しか書けないため、「在庫に応じて実際に動く量が変わる」移送（例: 容器に入っている
+分だけ回復する水分補給）を表現できません。`transfer` は、`from` が指すプロパティの実体値のうち、実際に
+出せる量（0未満にはならない量）と `amount` の小さい方だけを、`to` が指すプロパティへ移す専用の動詞です。
+
+```yaml
+actions:
+  drink:
+    transfer:
+      amount: 2000
+      from_prop: water_amount
+      to_object: actor
+      to_prop: hydration
+```
+
+- **`from_object`**（省略可、既定値 `self`）・**`to_object`**（省略可、既定値 `self`）: 参照ルート。
+  `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`actor`、`combinations` 内は
+  `dragged` も）。
+- **`from_prop`**・**`to_prop`**: それぞれ移送元・移送先のプロパティ名。
+- **`amount`**: 一度に移送を試みる量の上限。
+- **`allow_overflow`**（省略可、既定値 `false`）: `to` の `range` に実際に収まる量までしか移動しません
+  （収まらない分は `from` に残ります＝液体を無駄にしません）。`true` にすると、`from` の残量と `amount` だけで
+  移動量が決まり、`to` の `range` を超えた分は `to` の `on_overflow`（未指定なら `range.max` へ自動でクランプ
+  する既定動作、6.3 節）に委ねます（あふれた分は失われます）。
+
+`from_object`/`from_prop`/`to_object`/`to_prop` を、`modify`/`set`/`add` と同じ「対象がキー、内容が値」という
+規約に合わせずフラットな4フィールドにしているのは、`conditions`（14.1 節）の `object`/`prop` と同じ理由です。
+`from`・`to` それぞれ参照は常に1組であり、複数プロパティの入れ物としてネストする必要がありません。
+
+### 9.6 set/add/destroy/spawn/transfer が書ける場所
 
 この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `conditions`/ゲートを
 持つ `passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
@@ -778,13 +844,13 @@ spawn: {object: item_coconut, into: actor}
 
 ## 10. pick（重み付き確率分岐）
 
-`pick` は、`set`/`add`/`destroy`/`spawn`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
+`pick` は、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
 重み付き候補のリストです。新しいトリガー体系は必要とせず、`passives`（無条件／`conditions`／stage 内）には
 書けません。`passives` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
 
 ### 10.1 基本構造
 
-各候補は `weight` に加えて、`set`/`add`/`destroy`/`spawn`（9 節の文法そのまま）を `weight`/`pick` と対等な
+各候補は `weight` に加えて、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節の文法そのまま）を `weight`/`pick` と対等な
 兄弟キーとして直接持ちます。候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。
 
 ```yaml
@@ -799,9 +865,9 @@ actions:
 ```
 
 候補ごとに影響を受ける対象（`self`/`actor` など）そのものが異なるケースも、このように表現できます。`pick` の
-入れ子は再帰的であり、候補の `set`/`add`/`destroy`/`spawn` の代わりにさらに別の `pick` を書くこともできます。
+入れ子は再帰的であり、候補の `set`/`add`/`destroy`/`spawn`/`transfer` の代わりにさらに別の `pick` を書くこともできます。
 
-各候補に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`）に限られます。`modify`/`accumulate`
+各候補に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`）に限られます。`modify`/`accumulate`
 は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
 終わる `pick` の候補に書く意味がありません。
 
@@ -828,7 +894,7 @@ pick:
 
 ## 11. actions（メニュー型操作）
 
-アクション（`eat`、`move` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`、または
+アクション（`eat`、`move` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`/`transfer`、または
 `pick`）を**1つの定義としてまとめて持ちます**。`object_defs`/`traits` の中に配置します（トップレベル独立キーには
 しません）。
 
@@ -855,9 +921,9 @@ traits:
 `{object, prop, op, value}` の葉と `all`/`any`/`not` の複合ノードからなる条件木です（14 節）。トップレベルは
 常に配列で、暗黙の `all`（AND）として扱われます。
 
-### 11.3 set/add/destroy/spawn（active） / pick
+### 11.3 set/add/destroy/spawn/transfer（active） / pick
 
-このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`（9 節、`active` の実体）が1回だけ適用される
+このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節、`active` の実体）が1回だけ適用される
 か、`pick`（10 節）で候補が1つ選ばれて適用されます。`showMenu`/`conditions`と対等な兄弟キーとして直接書き、
 専用の `active:` ラップは挟みません。どちらも指定しなければ、条件成立時に何も起きないアクションになります。
 
@@ -898,7 +964,7 @@ object_defs:
 
 ### 12.2 dragged
 
-`set`/`add`/`destroy`（9 節）の対象キー、および `conditions`/`weight` の `object`（14 節・10.2 節）に、
+`set`/`add`/`destroy`/`transfer`（9 節）の対象キー、および `conditions`/`weight` の `object`（14 節・10.2 節）に、
 `self`/`parent`/`child`/`actor` に加えて **`dragged`**（このインタラクションでドラッグされてきたカード）を
 使えます。`combinations` の中でのみ意味を持つ、専用のキーです。
 
@@ -962,9 +1028,10 @@ object_defs:
 
 ## 14. conditions（条件式）
 
-条件は、プロパティ比較かスロット位置判定のいずれかを表す「葉」と、複数の条件を論理積・論理和・否定で束ねる
-「複合ノード」からなる木構造です。トップレベルの `conditions:` は常に配列で、暗黙の `all`（論理積）として
-扱われます（`passives`/`stages`/`accepts`/`pick` と同じ、複数形キーは常に配列という規約、8 節）。
+条件は、プロパティ比較・スロット位置判定・スロット中身判定のいずれかを表す「葉」と、複数の条件を論理積・
+論理和・否定で束ねる「複合ノード」からなる木構造です。トップレベルの `conditions:` は常に配列で、暗黙の
+`all`（論理積）として扱われます（`passives`/`stages`/`accepts`/`pick` と同じ、複数形キーは常に配列という
+規約、8 節）。
 
 ### 14.1 葉: プロパティ比較
 
@@ -981,7 +1048,14 @@ conditions:
   思われる概念を参照したい場合は`ancestor`で代替できる。
 - **`prop`**: 参照するプロパティ名。
 - **`op`**（省略可、既定値 `eq`）: 比較演算子。`lt` / `lte` / `gt` / `gte` / `eq` / `neq` / `in` / `not_in`。
-- **`value`**: 比較対象の値。
+- **`value`**: 比較対象の値。**リテラル**（整数・真偽値・シンボル名、6.8 節）か、**`{object, prop}` 参照**
+  （`weight` の path 参照、10.2 節と同じ二択）のいずれか。参照は `lt`/`lte`/`gt`/`gte`/`eq`/`neq` でのみ
+  使えます（`in`/`not_in` は複数値との比較のため、単一の参照とは噛み合わずロード時エラーになります）。
+
+```yaml
+conditions:
+  - {prop: content, op: eq, value: {object: dragged, prop: content}}   # 2つの動的な値同士を比較する
+```
 
 `object`/`prop` を、他の場所（`modify`/`set`/`add` 等）と同じ「対象がキー、内容が値」という規約に合わせず
 あえてフラットな2フィールドにしているのは、対象1つ・プロパティ1つの単純な参照であり、ネストする必要が無い
@@ -989,39 +1063,84 @@ conditions:
 
 `prop` が参照する値は、実体値（生の値）ではなく**実効値**（8.3 節の `modify` を加味した値）です。これにより、
 `modify` だけで決まる派生プロパティ（実体値自体は変化しない値。例: 天候と時間から決まる日照）も、他の
-`conditions` から参照できます。ただし、あるプロパティの `modify` のゲートが、直接・間接を問わず自分自身の
-実効値に依存する（循環参照）と、実行時に例外を送出します（`PropertyValue.GetEffectiveValue` 参照）。生の値と
-異なり実効値は計算結果そのものに依存しうるため、この種の循環はエンジン側では防げず、YAML の書き方で
-避ける必要があります。
+`conditions` から参照できます。`value` が `{object, prop}` 参照の場合も同様に実効値を読みます。ただし、
+あるプロパティの `modify` のゲートが、直接・間接を問わず自分自身の実効値に依存する（循環参照）と、実行時に
+例外を送出します（`PropertyValue.GetEffectiveValue` 参照）。生の値と異なり実効値は計算結果そのものに
+依存しうるため、この種の循環はエンジン側では防げず、YAML の書き方で避ける必要があります。
 
 ### 14.2 葉: スロット位置判定
 
-`object` が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します。常に等価判定で、`op`
-は持ちません（否定したい場合は 14.3 節の `not` で包みます）。
+`object` が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します（**外側から見た
+位置**）。常に等価判定で、`op` は持ちません（否定したい場合は 14.4 節の `not` で包みます）。
 
 ```yaml
 conditions:
-  - {object: self, slot: equip}
+  - {object: self, in_slot: equip}
 ```
 
-`slot` は `prop` とは独立したフィールドで、同時には指定できません。あえて `prop` の仮想的な特殊値にしていない
-のは、(a) スロット判定には `lt`/`gt` 等の比較演算子が意味を持たないため、`op` を伴う `prop` と同じ形にすると
-無意味な組み合わせを許してしまうこと、(b) プロパティ名とスロット名は本来別の名前空間であり、同じ識別子が
-偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は文字列が一致しても
-衝突しません。
+`in_slot` は `prop` とは独立したフィールドで、同時には指定できません。あえて `prop` の仮想的な特殊値に
+していないのは、(a) スロット判定には `lt`/`gt` 等の比較演算子が意味を持たないため、`op` を伴う `prop` と
+同じ形にすると無意味な組み合わせを許してしまうこと、(b) プロパティ名とスロット名は本来別の名前空間であり、
+同じ識別子が偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は
+文字列が一致しても衝突しません。
 
 `ancestor` は「`prop` が指すプロパティ名で祖先を探す」という仕組みのため、探すプロパティを持たないスロット
-判定では `object` に指定できません（ロード時エラー）。
+位置判定では `object` に指定できません（ロード時エラー）。
 
-### 14.3 複合ノード: all / any / not
+### 14.3 葉: スロット中身判定
+
+`object` が指すオブジェクト自身が持つ**自分のスロット**の中に、指定した `tag`（4.1 節）を持つ子オブジェクトが
+1つでもあるかを判定します（**内側から見た中身**、14.2 節のスロット位置判定とは向きが逆）。常に存在判定で、
+`op` は持ちません。
+
+```yaml
+conditions:
+  - {object: self, slot: content, tag: liquid_water}
+```
+
+- **`slot`**: 判定対象の、`object` 自身が持つスロット名。
+- **`tag`**: そのスロットの中身が持つべきタグ。
+
+`slot` は 14.2 節の `in_slot` とは別フィールドです。同じ「スロットのグローバルID」を指しますが、
+`in_slot` は「`object` が親の中でどこにいるか」、`slot` は「`object` 自身の中に何が入っているか」という、
+参照する木構造上の向きが逆であるため、キー名自体を分けて区別しています（同じキー名で向きだけが異なると、
+`{object, slot}` という同じ形が2通りの意味を持ってしまい、区別できなくなるため）。
+
+液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
+スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します（コンテナ設計の検討、
+`ContainerSystem.md` 参照）。
+
+```yaml
+object_defs:
+  canteen:
+    props:
+      water_amount:
+        value: 0
+        range: {min: 0, max: 4800}
+    slots:
+      content:
+        accepts:
+          - {tag: liquid_marker, max: 1}
+    actions:
+      drink:
+        conditions:
+          - {slot: content, tag: liquid_water}
+        transfer:
+          amount: 2000
+          from_prop: water_amount
+          to_object: actor
+          to_prop: hydration
+```
+
+### 14.4 複合ノード: all / any / not
 
 複数の条件を組み合わせたい場合、`all`（論理積）・`any`（論理和）・`not`（否定）で入れ子にできます。
 
 ```yaml
 conditions:
   - any:
-      - {slot: main_hand}
-      - {slot: off_hand}
+      - {in_slot: main_hand}
+      - {in_slot: off_hand}
 ```
 
 トップレベルの配列自体が暗黙の `all` であるため、単純な AND 条件（従来通り）は複合ノードを使わず、葉を並べる

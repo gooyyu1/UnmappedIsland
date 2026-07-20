@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnmappedIsland.Codex;
 using UnmappedIsland.Runtime;
 using YamlDotNet.RepresentationModel;
@@ -34,7 +35,8 @@ namespace UnmappedIsland.Loader
             NameRegistry objectNames,
             NameRegistry propertyNames,
             NameRegistry slotNames,
-            NameRegistry tagNames)
+            NameRegistry tagNames,
+            NameRegistry symbolNames)
         {
             int objectGlobalId = objectNames.Intern(name);
             var passives = new List<PassiveEffect>();
@@ -43,7 +45,7 @@ namespace UnmappedIsland.Loader
             if (propsNode != null)
                 foreach (var (propName, propValueNode) in propsNode.EntriesInOrder())
                     propertyDefs.Add(ParseProperty(
-                        name, propName, (YamlMappingNode)propValueNode, passives, propertyNames, slotNames, objectNames));
+                        name, propName, (YamlMappingNode)propValueNode, passives, propertyNames, slotNames, objectNames, tagNames, symbolNames));
             var propertyLayout = new LocalIndexMap(propertyNames.Count, propertyDefs.Select(p => p.GlobalId).ToList());
 
             var slotDefs = new List<SlotDef>();
@@ -55,7 +57,7 @@ namespace UnmappedIsland.Loader
             foreach (YamlMappingNode passiveNode in passiveNodes)
                 ParsePassiveMapInto(
                     passives, name, passiveNode, forcedStageProperty: null, forcedStageName: null,
-                    propertyNames, slotNames);
+                    propertyNames, slotNames, tagNames, symbolNames);
 
             StackOrderDef stackOrder = null;
             if (stackOrderNode != null)
@@ -66,8 +68,8 @@ namespace UnmappedIsland.Loader
                     stackOrderNode.TryGetBool("ascending", context, fallback: false));
             }
 
-            var actions = ParseActions(name, actionsNode, propertyNames, slotNames, objectNames);
-            var combinations = ParseCombinations(name, combinationsNode, propertyNames, slotNames, objectNames, tagNames);
+            var actions = ParseActions(name, actionsNode, propertyNames, slotNames, objectNames, tagNames, symbolNames);
+            var combinations = ParseCombinations(name, combinationsNode, propertyNames, slotNames, objectNames, tagNames, symbolNames);
             var tagIds = tags.Select(tagNames.Intern).Distinct().ToList();
 
             return new ObjectDef(
@@ -77,7 +79,8 @@ namespace UnmappedIsland.Loader
 
         private static PropertyDef ParseProperty(
             string objectDefName, string propName, YamlMappingNode node,
-            List<PassiveEffect> passives, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames)
+            List<PassiveEffect> passives, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames,
+            NameRegistry tagNames, NameRegistry symbolNames)
         {
             string context = $"'{objectDefName}'.props.'{propName}'";
             int propertyGlobalId = propertyNames.Intern(propName);
@@ -97,7 +100,7 @@ namespace UnmappedIsland.Loader
             }
             else
             {
-                defaultNumber = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value);
+                defaultNumber = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, symbolNames);
             }
 
             PropertyRange? range = null;
@@ -111,7 +114,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_overflowを使うには'range'が必須です。");
-                onOverflow = ParseActiveEffectBody($"{context}.on_overflow", onOverflowNode, allowDragged: false, selfOnly: true, propertyNames, objectNames);
+                onOverflow = ParseActiveEffectBody($"{context}.on_overflow", onOverflowNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
             }
             else
             {
@@ -124,7 +127,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_shortfallを使うには'range'が必須です。");
-                onShortfall = ParseActiveEffectBody($"{context}.on_shortfall", onShortfallNode, allowDragged: false, selfOnly: true, propertyNames, objectNames);
+                onShortfall = ParseActiveEffectBody($"{context}.on_shortfall", onShortfallNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
             }
             else
             {
@@ -149,7 +152,7 @@ namespace UnmappedIsland.Loader
                         foreach (YamlNode passiveNode in stagePassives)
                             ParsePassiveMapInto(passives, objectDefName, (YamlMappingNode)passiveNode,
                                 forcedStageProperty: propName, forcedStageName: stageName,
-                                propertyNames, slotNames);
+                                propertyNames, slotNames, tagNames, symbolNames);
                 }
             }
 
@@ -157,7 +160,7 @@ namespace UnmappedIsland.Loader
             if (propPassives != null)
                 foreach (YamlNode passiveNode in propPassives)
                     ParsePassiveMapInto(passives, objectDefName, (YamlMappingNode)passiveNode,
-                        forcedStageProperty: null, forcedStageName: null, propertyNames, slotNames);
+                        forcedStageProperty: null, forcedStageName: null, propertyNames, slotNames, tagNames, symbolNames);
 
             ActiveEffect onMin = null;
             YamlMappingNode onMinNode = node.TryGetMapping("on_min", context);
@@ -165,7 +168,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_minを使うには'range'が必須です。");
-                onMin = ParseActiveEffectBody($"{context}.on_min", onMinNode, allowDragged: false, selfOnly: true, propertyNames, objectNames);
+                onMin = ParseActiveEffectBody($"{context}.on_min", onMinNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
             }
 
             ActiveEffect onMax = null;
@@ -174,7 +177,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_maxを使うには'range'が必須です。");
-                onMax = ParseActiveEffectBody($"{context}.on_max", onMaxNode, allowDragged: false, selfOnly: true, propertyNames, objectNames);
+                onMax = ParseActiveEffectBody($"{context}.on_max", onMaxNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
             }
 
             bool inherit = node.TryGetBool("inherit", context, fallback: false);
@@ -182,11 +185,23 @@ namespace UnmappedIsland.Loader
             return new PropertyDef(propertyGlobalId, propName, defaultNumber, rerollRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
         }
 
-        private static int ParseScalarNumber(string context, string raw)
+        /// <summary>シンボル型の値（整数・真偽値のいずれにもならない識別子）を許容する識別子の形。
+        /// 3.2節の命名規則と同じ。</summary>
+        private static readonly Regex SymbolPattern = new Regex(@"^[a-z][a-z0-9_]*$");
+
+        /// <summary>
+        /// 整数・真偽値・シンボル名（識別子）のいずれかとして値を解釈する。整数・真偽値としてパースできない
+        /// 識別子形の文字列は、symbolNamesへ登録してそのグローバルIDを返す（シンボル型のprops、6節）。
+        /// これにより、シンボル型のpropsは専用の宣言（`symbol: true`等）を必要とせず、`value`の形だけで
+        /// 自動的に判別できる。boolより先にsymbolを試すと"true"/"false"もシンボルとして解釈されてしまう
+        /// ため、判定順は整数→真偽値→シンボルで固定する。
+        /// </summary>
+        private static int ParseScalarNumber(string context, string raw, NameRegistry symbolNames)
         {
             if (int.TryParse(raw, out int number)) return number;
             if (bool.TryParse(raw, out bool boolValue)) return boolValue ? 1 : 0;
-            throw new YamlLoadException($"{context}: 値 '{raw}' は整数または真偽値である必要があります（文字列値のプロパティは未対応です）。");
+            if (SymbolPattern.IsMatch(raw)) return symbolNames.Intern(raw);
+            throw new YamlLoadException($"{context}: 値 '{raw}' は整数・真偽値・シンボル名(識別子)のいずれかである必要があります。");
         }
 
         /// <summary>
@@ -211,7 +226,7 @@ namespace UnmappedIsland.Loader
         /// <summary>activeの内容(set/add/destroy/spawn)を1つも持たないキー集合。actions/combinations/pickの
         /// 各エントリは、専用の"active"キーを介さずshowMenu/conditions/with/weight/pickと対等な兄弟キーとして
         /// set/add/destroy/spawnを直接持つため、「activeとして何か書かれているか」をこの4キーの有無で判定する。</summary>
-        private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn" };
+        private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn", "transfer" };
 
         private static bool HasActiveContent(YamlMappingNode map) =>
             ActiveVerbKeys.Any(key => map.TryGet(key) != null);
@@ -229,7 +244,7 @@ namespace UnmappedIsland.Loader
         /// </summary>
         private static ActiveEffect ParseActiveEffectBody(
             string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly,
-            NameRegistry propertyNames, NameRegistry objectNames,
+            NameRegistry propertyNames, NameRegistry objectNames, NameRegistry symbolNames,
             IReadOnlyCollection<string> reservedKeys = null)
         {
             var sets = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>();
@@ -240,7 +255,9 @@ namespace UnmappedIsland.Loader
                     ReferenceRoot target = ParseActiveTargetKey($"{context}.set", targetName, allowDragged, selfOnly);
                     var assigns = new List<PropertyAssignment>();
                     foreach (var (propName, valueNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
-                        assigns.Add(new PropertyAssignment(propertyNames.Intern(propName), int.Parse(((YamlScalarNode)valueNode).Value)));
+                        assigns.Add(ParsePropertyAssignment(
+                            $"{context}.set.'{targetName}'.'{propName}'", propertyNames.Intern(propName), valueNode,
+                            allowDragged, selfOnly, propertyNames, symbolNames));
                     sets[target] = assigns;
                 }
 
@@ -271,6 +288,11 @@ namespace UnmappedIsland.Loader
                     ParseSpawnTargetRoot(context, into));
             }
 
+            TransferEffect transfer = null;
+            YamlMappingNode transferMap = bodyNode.TryGetMapping("transfer", context);
+            if (transferMap != null)
+                transfer = ParseTransfer($"{context}.transfer", transferMap, allowDragged, selfOnly, propertyNames);
+
             var knownKeys = new HashSet<string>(ActiveVerbKeys);
             if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
 
@@ -279,7 +301,70 @@ namespace UnmappedIsland.Loader
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-            return new ActiveEffect(sets, adds, destroy, spawn);
+            return new ActiveEffect(sets, adds, destroy, spawn, transfer);
+        }
+
+        /// <summary>
+        /// setの1エントリの値。YAMLスカラーならリテラル（整数・真偽値・シンボル名、ParseScalarNumber）、
+        /// YAMLマッピングなら{object, prop}参照（他のプロパティの現在値をそのままコピーする、9.2節）の
+        /// いずれか。参照先のobjectは、set自身の対象キー（self/parent/ancestor/actor/[dragged]）と全く同じ
+        /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
+        /// </summary>
+        private static PropertyAssignment ParsePropertyAssignment(
+            string context, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly,
+            NameRegistry propertyNames, NameRegistry symbolNames)
+        {
+            if (valueNode is YamlMappingNode refMap)
+            {
+                string objectName = refMap.TryGetScalar("object", context);
+                ReferenceRoot root = objectName != null
+                    ? ParseActiveTargetKey(context, objectName, allowDragged, selfOnly)
+                    : ReferenceRoot.Self;
+                string propName = refMap.RequireScalar("prop", context);
+
+                var unknownKeys = refMap.EntriesInOrder().Select(e => e.Key)
+                    .Where(k => k != "object" && k != "prop").ToList();
+                if (unknownKeys.Count > 0)
+                    throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
+                return new PropertyAssignment(propertyGlobalId, new PropertyPath(root, propertyNames.Intern(propName)));
+            }
+
+            return new PropertyAssignment(propertyGlobalId, ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, symbolNames));
+        }
+
+        /// <summary>
+        /// transfer（9.5節）。conditions（14節）と同じくfrom/toの参照をフラットな2フィールド
+        /// （from_object/from_prop, to_object/to_prop）で表す。from_object/to_objectは省略時self
+        /// （conditionsのobject省略時と同じ規約）。対象ルートの妥当性判定は、set/add/destroyと全く同じ
+        /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
+        /// </summary>
+        private static TransferEffect ParseTransfer(
+            string context, YamlMappingNode map, bool allowDragged, bool selfOnly, NameRegistry propertyNames)
+        {
+            string fromObjectRaw = map.TryGetScalar("from_object", context);
+            ReferenceRoot fromObject = fromObjectRaw != null
+                ? ParseActiveTargetKey(context, fromObjectRaw, allowDragged, selfOnly)
+                : ReferenceRoot.Self;
+            int fromProp = propertyNames.Intern(map.RequireScalar("from_prop", context));
+
+            string toObjectRaw = map.TryGetScalar("to_object", context);
+            ReferenceRoot toObject = toObjectRaw != null
+                ? ParseActiveTargetKey(context, toObjectRaw, allowDragged, selfOnly)
+                : ReferenceRoot.Self;
+            int toProp = propertyNames.Intern(map.RequireScalar("to_prop", context));
+
+            int amount = map.RequireInt("amount", context);
+            bool allowOverflow = map.TryGetBool("allow_overflow", context, fallback: false);
+
+            var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
+                .Where(k => k != "from_object" && k != "from_prop" && k != "to_object" && k != "to_prop"
+                         && k != "amount" && k != "allow_overflow")
+                .ToList();
+            if (unknownKeys.Count > 0)
+                throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
+            return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow);
         }
 
         /// <summary>
@@ -381,22 +466,22 @@ namespace UnmappedIsland.Loader
         /// </summary>
         private static ConditionNode ParseConditionsField(
             string context, YamlSequenceNode conditionsNode, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames)
+            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
         {
             if (conditionsNode == null) return null;
 
             var children = new List<ConditionNode>();
             foreach (YamlNode node in conditionsNode)
-                children.Add(ParseConditionNode($"{context}.conditions[{children.Count}]", node, allowedRoots, propertyNames, slotNames));
+                children.Add(ParseConditionNode($"{context}.conditions[{children.Count}]", node, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
 
             return ConditionNode.All(children);
         }
 
         /// <summary>条件木の1ノードを読む。all/any/notのいずれかのキーを持てば複合ノード、それ以外は
-        /// 葉（プロパティ比較かスロット判定のいずれか）として読む。</summary>
+        /// 葉（プロパティ比較・スロット位置判定・スロット中身判定のいずれか）として読む。</summary>
         private static ConditionNode ParseConditionNode(
             string context, YamlNode node, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames)
+            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
         {
             var map = (YamlMappingNode)node;
 
@@ -408,8 +493,8 @@ namespace UnmappedIsland.Loader
             if (combinatorCount > 1)
                 throw new YamlLoadException($"{context}: all/any/notは同時に指定できません。");
 
-            if (allNode != null) return ConditionNode.All(ParseCombinatorChildren(context, "all", allNode, allowedRoots, propertyNames, slotNames));
-            if (anyNode != null) return ConditionNode.Any(ParseCombinatorChildren(context, "any", anyNode, allowedRoots, propertyNames, slotNames));
+            if (allNode != null) return ConditionNode.All(ParseCombinatorChildren(context, "all", allNode, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
+            if (anyNode != null) return ConditionNode.Any(ParseCombinatorChildren(context, "any", anyNode, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
 
             if (notNode != null)
             {
@@ -417,56 +502,81 @@ namespace UnmappedIsland.Loader
                 if (unknown.Count > 0)
                     throw new YamlLoadException($"{context}: 'not'は他のキーと同居できません（値: '{string.Join(", ", unknown)}'）。");
 
-                return ConditionNode.Not(ParseConditionNode($"{context}.not", notNode, allowedRoots, propertyNames, slotNames));
+                return ConditionNode.Not(ParseConditionNode($"{context}.not", notNode, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
             }
 
-            return ParseConditionLeaf(context, map, allowedRoots, propertyNames, slotNames);
+            return ParseConditionLeaf(context, map, allowedRoots, propertyNames, slotNames, tagNames, symbolNames);
         }
 
         private static List<ConditionNode> ParseCombinatorChildren(
             string context, string key, YamlSequenceNode seq, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames)
+            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
         {
             var children = new List<ConditionNode>();
             foreach (YamlNode node in seq)
-                children.Add(ParseConditionNode($"{context}.{key}[{children.Count}]", node, allowedRoots, propertyNames, slotNames));
+                children.Add(ParseConditionNode($"{context}.{key}[{children.Count}]", node, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
             return children;
         }
 
         /// <summary>
-        /// 条件木の葉。objectは省略時self。{object, prop, op(省略時eq), value}のプロパティ比較か、
-        /// {object, slot}のスロット判定（常に等価判定。opは持たない）のいずれかで、同時には指定できない。
+        /// 条件木の葉。objectは省略時self。{object, prop, op(省略時eq), value}のプロパティ比較、
+        /// {object, in_slot}のスロット位置判定（常に等価判定。opは持たない）、{object, slot, tag}の
+        /// スロット中身判定（objectの自分のslotの中に、tagを持つ子がいるかの存在判定）のいずれかで、
+        /// 同時には指定できない。in_slot（外から見た位置）とslot（内側の中身）はキー名自体を分けており、
+        /// 混同の余地はない。プロパティ比較のvalueは、リテラル（整数・真偽値・シンボル名）か、
+        /// {object, prop}参照（weightのpath参照、10.2節と同じ二択）のいずれか。参照はlt/lte/gt/gte/eq/neqの
+        /// みで使える（in/not_inは複数値との比較のため、参照とは噛み合わない）。
         /// </summary>
         private static ConditionNode ParseConditionLeaf(
             string context, YamlMappingNode map, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames)
+            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
         {
             string objectName = map.TryGetScalar("object", context);
             ReferenceRoot root = objectName != null ? ParseConditionObject(context, objectName, allowedRoots) : ReferenceRoot.Self;
 
+            string inSlotName = map.TryGetScalar("in_slot", context);
             string slotName = map.TryGetScalar("slot", context);
+            string tagName = map.TryGetScalar("tag", context);
             string propName = map.TryGetScalar("prop", context);
 
-            if (slotName != null && propName != null)
-                throw new YamlLoadException($"{context}: 'slot'と'prop'は同時に指定できません。");
+            int leafKeyCount = (inSlotName != null ? 1 : 0) + (slotName != null ? 1 : 0) + (propName != null ? 1 : 0);
+            if (leafKeyCount > 1)
+                throw new YamlLoadException($"{context}: 'in_slot'/'slot'/'prop'は同時に指定できません。");
 
-            if (slotName != null)
+            if (inSlotName != null)
             {
                 if (root == ReferenceRoot.Ancestor)
                     throw new YamlLoadException(
-                        $"{context}: slot判定でobject 'ancestor'は未対応です（ancestorはプロパティ名で祖先を探すため、探すプロパティを持たないslot判定とは噛み合いません）。");
+                        $"{context}: in_slot判定でobject 'ancestor'は未対応です（ancestorはプロパティ名で祖先を探すため、探すプロパティを持たないin_slot判定とは噛み合いません）。");
 
-                var unknownSlotKeys = map.EntriesInOrder().Select(e => e.Key)
-                    .Where(k => k != "object" && k != "slot").ToList();
-                if (unknownSlotKeys.Count > 0)
+                var unknownInSlotKeys = map.EntriesInOrder().Select(e => e.Key)
+                    .Where(k => k != "object" && k != "in_slot").ToList();
+                if (unknownInSlotKeys.Count > 0)
                     throw new YamlLoadException(
-                        $"{context}: 未知のキー '{string.Join(", ", unknownSlotKeys)}' です（slot判定はobject/slotのみ持てます）。");
+                        $"{context}: 未知のキー '{string.Join(", ", unknownInSlotKeys)}' です（in_slot判定はobject/in_slotのみ持てます）。");
 
-                return ConditionNode.Slot(root, slotNames.Intern(slotName));
+                return ConditionNode.SlotPosition(root, slotNames.Intern(inSlotName));
             }
 
+            if (slotName != null)
+            {
+                if (tagName == null)
+                    throw new YamlLoadException($"{context}: 'slot'を使うスロット中身判定には'tag'が必須です。");
+
+                var unknownSlotKeys = map.EntriesInOrder().Select(e => e.Key)
+                    .Where(k => k != "object" && k != "slot" && k != "tag").ToList();
+                if (unknownSlotKeys.Count > 0)
+                    throw new YamlLoadException(
+                        $"{context}: 未知のキー '{string.Join(", ", unknownSlotKeys)}' です（スロット中身判定はobject/slot/tagのみ持てます）。");
+
+                return ConditionNode.SlotContent(root, slotNames.Intern(slotName), tagNames.Intern(tagName));
+            }
+
+            if (tagName != null)
+                throw new YamlLoadException($"{context}: 'tag'は'slot'と組み合わせてのみ使えます。");
+
             if (propName == null)
-                throw new YamlLoadException($"{context}: 'prop'または'slot'のいずれかが必要です。");
+                throw new YamlLoadException($"{context}: 'prop'・'in_slot'・'slot'のいずれかが必要です。");
 
             ConditionOp op = ConditionOp.Eq;
             string rawOp = map.TryGetScalar("op", context);
@@ -481,7 +591,25 @@ namespace UnmappedIsland.Loader
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-            List<PropertyValue> values = ParseConditionValues(context, op, valueNode);
+            if (valueNode is YamlMappingNode valueRefMap)
+            {
+                if (op == ConditionOp.In || op == ConditionOp.NotIn)
+                    throw new YamlLoadException($"{context}: op '{op}' は{{object, prop}}参照のvalueと組み合わせられません（複数値との比較のため）。");
+
+                string refObjectName = valueRefMap.TryGetScalar("object", context);
+                ReferenceRoot refRoot = refObjectName != null ? ParseConditionObject(context, refObjectName, allowedRoots) : ReferenceRoot.Self;
+                string refPropName = valueRefMap.RequireScalar("prop", context);
+
+                var unknownRefKeys = valueRefMap.EntriesInOrder().Select(e => e.Key)
+                    .Where(k => k != "object" && k != "prop").ToList();
+                if (unknownRefKeys.Count > 0)
+                    throw new YamlLoadException($"{context}.value: 未知のキー '{string.Join(", ", unknownRefKeys)}' です。");
+
+                var valueRef = new PropertyPath(refRoot, propertyNames.Intern(refPropName));
+                return ConditionNode.Property(root, propertyNames.Intern(propName), op, values: null, valueRef: valueRef);
+            }
+
+            List<PropertyValue> values = ParseConditionValues(context, op, valueNode, symbolNames);
             return ConditionNode.Property(root, propertyNames.Intern(propName), op, values);
         }
 
@@ -501,7 +629,7 @@ namespace UnmappedIsland.Loader
             }
         }
 
-        private static List<PropertyValue> ParseConditionValues(string context, ConditionOp op, YamlNode valueNode)
+        private static List<PropertyValue> ParseConditionValues(string context, ConditionOp op, YamlNode valueNode, NameRegistry symbolNames)
         {
             bool isList = op == ConditionOp.In || op == ConditionOp.NotIn;
 
@@ -509,22 +637,22 @@ namespace UnmappedIsland.Loader
             {
                 if (!(valueNode is YamlSequenceNode seq))
                     throw new YamlLoadException($"{context}: op '{op}' のvalueは配列である必要があります。");
-                return seq.Select(n => ParseConditionScalar(context, ((YamlScalarNode)n).Value)).ToList();
+                return seq.Select(n => ParseConditionScalar(context, ((YamlScalarNode)n).Value, symbolNames)).ToList();
             }
 
             if (!(valueNode is YamlScalarNode scalar))
                 throw new YamlLoadException($"{context}: valueはスカラー値である必要があります。");
 
-            return new List<PropertyValue> { ParseConditionScalar(context, scalar.Value) };
+            return new List<PropertyValue> { ParseConditionScalar(context, scalar.Value, symbolNames) };
         }
 
-        private static PropertyValue ParseConditionScalar(string context, string raw)
+        private static PropertyValue ParseConditionScalar(string context, string raw, NameRegistry symbolNames)
         {
             if (raw == "max" || raw == "min")
                 throw new YamlLoadException(
                     $"{context}: value '{raw}' は未対応です（参照先プロパティのrangeの{raw}を指す規約がまだ確定していないため）。");
 
-            return PropertyValue.FromNumber(ParseScalarNumber(context, raw));
+            return PropertyValue.FromNumber(ParseScalarNumber(context, raw, symbolNames));
         }
 
         private static WeightSpec ParseWeight(string context, YamlNode node, bool allowDragged, NameRegistry propertyNames)
@@ -558,7 +686,8 @@ namespace UnmappedIsland.Loader
         private static readonly string[] PickCandidateReservedKeys = { "weight", "pick" };
 
         private static List<PickCandidateDef> ParsePickList(
-            string context, YamlSequenceNode pickNode, bool allowDragged, NameRegistry propertyNames, NameRegistry objectNames)
+            string context, YamlSequenceNode pickNode, bool allowDragged,
+            NameRegistry propertyNames, NameRegistry objectNames, NameRegistry symbolNames)
         {
             var result = new List<PickCandidateDef>();
 
@@ -581,10 +710,10 @@ namespace UnmappedIsland.Loader
                     throw new YamlLoadException($"{candidateContext}: set/add/destroy/spawnのいずれか、またはpickが必要です。");
 
                 ActiveEffect active = hasActive
-                    ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly: false, propertyNames, objectNames, PickCandidateReservedKeys)
+                    ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly: false, propertyNames, objectNames, symbolNames, PickCandidateReservedKeys)
                     : null;
                 List<PickCandidateDef> pick = nestedPick != null
-                    ? ParsePickList(candidateContext, nestedPick, allowDragged, propertyNames, objectNames)
+                    ? ParsePickList(candidateContext, nestedPick, allowDragged, propertyNames, objectNames, symbolNames)
                     : null;
 
                 result.Add(new PickCandidateDef(weight, active, pick));
@@ -601,7 +730,8 @@ namespace UnmappedIsland.Loader
 
         /// <summary>actions_map（11節）を読む。dragged対象はメニュー型操作では意味を持たないため不可。</summary>
         private static List<ActionDef> ParseActions(
-            string objectDefName, YamlMappingNode actionsNode, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames)
+            string objectDefName, YamlMappingNode actionsNode, NameRegistry propertyNames, NameRegistry slotNames,
+            NameRegistry objectNames, NameRegistry tagNames, NameRegistry symbolNames)
         {
             var result = new List<ActionDef>();
             if (actionsNode == null) return result;
@@ -615,15 +745,15 @@ namespace UnmappedIsland.Loader
                 if (showMenuRaw != null && showMenuRaw != "always")
                     throw new YamlLoadException($"{context}: showMenuは現時点で'always'のみ対応しています（値: '{showMenuRaw}'）。");
 
-                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots, propertyNames, slotNames);
+                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots, propertyNames, slotNames, tagNames, symbolNames);
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
                 if (hasActive && pickList != null)
                     throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
 
-                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: false, selfOnly: false, propertyNames, objectNames, ActionReservedKeys) : null;
-                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: false, propertyNames, objectNames) : null;
+                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: false, selfOnly: false, propertyNames, objectNames, symbolNames, ActionReservedKeys) : null;
+                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: false, propertyNames, objectNames, symbolNames) : null;
 
                 result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, active, pick));
             }
@@ -634,7 +764,7 @@ namespace UnmappedIsland.Loader
         /// <summary>combinations_map（12節）を読む。dragged対象を使える。</summary>
         private static List<CombinationDef> ParseCombinations(
             string objectDefName, YamlMappingNode combinationsNode, NameRegistry propertyNames, NameRegistry slotNames,
-            NameRegistry objectNames, NameRegistry tagNames)
+            NameRegistry objectNames, NameRegistry tagNames, NameRegistry symbolNames)
         {
             var result = new List<CombinationDef>();
             if (combinationsNode == null) return result;
@@ -645,15 +775,15 @@ namespace UnmappedIsland.Loader
                 var map = (YamlMappingNode)node;
 
                 int with = tagNames.Intern(map.RequireScalar("with", context));
-                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots, propertyNames, slotNames);
+                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots, propertyNames, slotNames, tagNames, symbolNames);
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
                 if (hasActive && pickList != null)
                     throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
 
-                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: true, selfOnly: false, propertyNames, objectNames, CombinationReservedKeys) : null;
-                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: true, propertyNames, objectNames) : null;
+                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: true, selfOnly: false, propertyNames, objectNames, symbolNames, CombinationReservedKeys) : null;
+                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: true, propertyNames, objectNames, symbolNames) : null;
 
                 result.Add(new CombinationDef(name, with, conditions, active, pick));
             }
@@ -731,12 +861,12 @@ namespace UnmappedIsland.Loader
         private static void ParsePassiveMapInto(
             List<PassiveEffect> output, string objectDefName, YamlMappingNode passiveMap,
             string forcedStageProperty, string forcedStageName,
-            NameRegistry propertyNames, NameRegistry slotNames)
+            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
         {
             string context = $"'{objectDefName}'.passives";
 
             YamlSequenceNode conditionsNode = passiveMap.TryGetSequence("conditions", context);
-            ConditionNode conditions = ParseConditionsField(context, conditionsNode, PassiveConditionRoots, propertyNames, slotNames);
+            ConditionNode conditions = ParseConditionsField(context, conditionsNode, PassiveConditionRoots, propertyNames, slotNames, tagNames, symbolNames);
             PassiveEffectGate gate = BuildGate(conditions, forcedStageProperty, forcedStageName, propertyNames);
 
             ParsePassiveOperationInto(output, context, passiveMap, "modify", PassiveEffectKind.Modify, gate, propertyNames);

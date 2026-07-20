@@ -23,7 +23,8 @@ namespace UnmappedIsland.Runtime
             switch (node.Kind)
             {
                 case ConditionNodeKind.Property: return EvaluateProperty(node, resolveRoot);
-                case ConditionNodeKind.Slot: return EvaluateSlot(node, resolveRoot);
+                case ConditionNodeKind.SlotPosition: return EvaluateSlotPosition(node, resolveRoot);
+                case ConditionNodeKind.SlotContent: return EvaluateSlotContent(node, resolveRoot);
                 case ConditionNodeKind.All: return node.Children.All(child => Evaluate(child, resolveRoot));
                 case ConditionNodeKind.Any: return node.Children.Any(child => Evaluate(child, resolveRoot));
                 case ConditionNodeKind.Not: return !Evaluate(node.Children[0], resolveRoot);
@@ -36,45 +37,78 @@ namespace UnmappedIsland.Runtime
         /// 見る。これにより、modifyだけで決まる派生プロパティ（例: weather/hourから決まるsunlight）を
         /// 他のconditionsから参照できる。比較対象のnode.Values側はYAML上のリテラル値（PropertyValue.FromNumber
         /// 生成、defを持たない）なので、そちらは引き続きAsNumberで読む（GetEffectiveValueはdef.Rangeを
-        /// 参照するため、defを持たないリテラル側では呼べない）。
+        /// 参照するため、defを持たないリテラル側では呼べない）。ValueRefが非nullの場合はリテラルの代わりに、
+        /// その参照先の実効値を比較対象にする（ResolvePropertyEffectiveValueを、比較元・比較先の両方に
+        /// 共通で使う）。in/not_inはValueRefを持たない（ロード時に弾く）。
         ///
         /// Root=Ancestorは「どのプロパティを探すか」が決まらないと解決できない（他のrootと違い、1つの
-        /// WorldObjectに一意に定まらない）ため、resolveRootデリゲートには乗せず、ここでselfを起点に
-        /// WorldObject.FindAncestorWithPropertyを直接呼ぶ。
+        /// WorldObjectに一意に定まらない）ため、resolveRootデリゲートには乗せず、selfを起点に
+        /// WorldObject.FindAncestorWithPropertyを直接呼ぶ（ResolvePropertyEffectiveValue参照）。
         /// </summary>
         private static bool EvaluateProperty(ConditionNode node, ConditionRootResolver resolveRoot)
         {
-            WorldObject target = node.Root == ReferenceRoot.Ancestor
-                ? resolveRoot(ReferenceRoot.Self)?.FindAncestorWithProperty(node.PropertyGlobalId)
-                : resolveRoot(node.Root);
-            if (target == null) return false;
-            if (!target.TryGetProperty(node.PropertyGlobalId, out PropertyValue current)) return false;
+            int? currentValue = ResolvePropertyEffectiveValue(node.Root, node.PropertyGlobalId, resolveRoot);
+            if (currentValue == null) return false;
+            int current = currentValue.Value;
 
-            int currentValue = current.GetEffectiveValue();
+            if (node.Op == ConditionOp.In) return node.Values.Any(v => current == v.AsNumber());
+            if (node.Op == ConditionOp.NotIn) return !node.Values.Any(v => current == v.AsNumber());
+
+            int compare;
+            if (node.ValueRef.HasValue)
+            {
+                int? resolved = ResolvePropertyEffectiveValue(node.ValueRef.Value.Root, node.ValueRef.Value.PropertyGlobalId, resolveRoot);
+                if (resolved == null) return false;
+                compare = resolved.Value;
+            }
+            else
+            {
+                compare = node.Values[0].AsNumber();
+            }
 
             switch (node.Op)
             {
-                case ConditionOp.Lt: return currentValue < node.Values[0].AsNumber();
-                case ConditionOp.Lte: return currentValue <= node.Values[0].AsNumber();
-                case ConditionOp.Gt: return currentValue > node.Values[0].AsNumber();
-                case ConditionOp.Gte: return currentValue >= node.Values[0].AsNumber();
-                case ConditionOp.Eq: return currentValue == node.Values[0].AsNumber();
-                case ConditionOp.Neq: return currentValue != node.Values[0].AsNumber();
-                case ConditionOp.In: return node.Values.Any(v => currentValue == v.AsNumber());
-                case ConditionOp.NotIn: return !node.Values.Any(v => currentValue == v.AsNumber());
+                case ConditionOp.Lt: return current < compare;
+                case ConditionOp.Lte: return current <= compare;
+                case ConditionOp.Gt: return current > compare;
+                case ConditionOp.Gte: return current >= compare;
+                case ConditionOp.Eq: return current == compare;
+                case ConditionOp.Neq: return current != compare;
                 default: return false;
             }
         }
 
-        /// <summary>{object, slot}: objectが指すオブジェクト自身が、今まさに親のどのスロットに
+        /// <summary>rootが指すオブジェクトのpropertyGlobalId実効値を読む。解決できなければnull
+        /// （比較元・比較先のいずれにも使う共通処理。EvaluateProperty参照）。</summary>
+        private static int? ResolvePropertyEffectiveValue(ReferenceRoot root, int propertyGlobalId, ConditionRootResolver resolveRoot)
+        {
+            WorldObject target = root == ReferenceRoot.Ancestor
+                ? resolveRoot(ReferenceRoot.Self)?.FindAncestorWithProperty(propertyGlobalId)
+                : resolveRoot(root);
+            if (target == null) return null;
+            return target.TryGetProperty(propertyGlobalId, out PropertyValue value) ? value.GetEffectiveValue() : (int?)null;
+        }
+
+        /// <summary>{object, in_slot}: objectが指すオブジェクト自身が、今まさに親のどのスロットに
         /// 入っているかを見る（常に等価判定）。</summary>
-        private static bool EvaluateSlot(ConditionNode node, ConditionRootResolver resolveRoot)
+        private static bool EvaluateSlotPosition(ConditionNode node, ConditionRootResolver resolveRoot)
         {
             WorldObject target = resolveRoot(node.Root);
             if (target?.Parent == null) return false;
 
             int slotLocal = target.Parent.Def.SlotLayout.ToLocal(node.SlotGlobalId);
             return slotLocal != LocalIndexMap.Missing && target.ParentSlotLocalId == slotLocal;
+        }
+
+        /// <summary>{object, slot, tag}: objectが指すオブジェクト自身が持つslot（自分のスロット）の中に、
+        /// tagを持つ子オブジェクトが1つでもあるかを見る（存在判定）。EvaluateSlotPositionとは向きが逆
+        /// （objectの内側、自分のスロットの中身を見る）。</summary>
+        private static bool EvaluateSlotContent(ConditionNode node, ConditionRootResolver resolveRoot)
+        {
+            WorldObject target = resolveRoot(node.Root);
+            if (target == null || !target.TryGetSlot(node.SlotGlobalId, out Slot slot)) return false;
+
+            return slot.Contents.Any(child => child.Def.Tags.Contains(node.TagGlobalId));
         }
     }
 }

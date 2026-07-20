@@ -426,13 +426,13 @@ namespace UnmappedIsland.Runtime
                 if (key == ReferenceRoot.Ancestor)
                 {
                     foreach (var assign in assigns)
-                        FindAncestorWithProperty(assign.PropertyGlobalId)?.SetNumber(assign.PropertyGlobalId, assign.Value, session);
+                        FindAncestorWithProperty(assign.PropertyGlobalId)?.SetNumber(assign.PropertyGlobalId, ResolveAssignmentValue(assign, actor, dragged), session);
                     continue;
                 }
 
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
-                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, assign.Value, session);
+                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, ResolveAssignmentValue(assign, actor, dragged), session);
             }
 
             foreach (ReferenceRoot key in OrderedTargets)
@@ -451,6 +451,8 @@ namespace UnmappedIsland.Runtime
                 foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
             }
 
+            if (effect.Transfer != null) ApplyTransfer(effect.Transfer, session, actor, dragged);
+
             bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
             SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
                 ? CaptureSameSlotAnchor(willDestroySelf)
@@ -467,6 +469,20 @@ namespace UnmappedIsland.Runtime
             if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
         }
 
+        /// <summary>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
+        /// （assign.Value）をそのまま使う。ValueRefがあれば、その参照先（{object, prop}）の現在の実効値を
+        /// 読んで使う（他のプロパティの値をそのままコピーする、9.2節）。参照先が解決できない場合は0。</summary>
+        private int ResolveAssignmentValue(PropertyAssignment assign, WorldObject actor, WorldObject dragged)
+        {
+            if (!assign.ValueRef.HasValue) return assign.Value;
+
+            PropertyPath path = assign.ValueRef.Value;
+            WorldObject source = path.Root == ReferenceRoot.Ancestor
+                ? FindAncestorWithProperty(path.PropertyGlobalId)
+                : ResolveEffectTarget(path.Root, actor, dragged);
+            return source != null && source.TryGetProperty(path.PropertyGlobalId, out PropertyValue value) ? value.GetEffectiveValue() : 0;
+        }
+
         /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged)を解決する。selfは常にこの
         /// インスタンス自身、parentはthis.Parent（無ければnull）。Ancestorはプロパティごとに解決先が
         /// 変わりうる（FindAncestorWithProperty）ため、ここでは扱わない（ApplyActiveEffectのSets/Adds
@@ -481,6 +497,37 @@ namespace UnmappedIsland.Runtime
                 case ReferenceRoot.Dragged: return dragged;
                 default: return null;
             }
+        }
+
+        /// <summary>transfer（9.5節）専用の対象解決。AncestorはFindAncestorWithProperty（プロパティごとに
+        /// 解決先が変わる）へ委譲し、それ以外はResolveEffectTargetと同じ。</summary>
+        private WorldObject ResolveTransferTarget(ReferenceRoot root, int propertyGlobalId, WorldObject actor, WorldObject dragged) =>
+            root == ReferenceRoot.Ancestor ? FindAncestorWithProperty(propertyGlobalId) : ResolveEffectTarget(root, actor, dragged);
+
+        /// <summary>
+        /// transfer（9.5節）の実行。実際の移動量は、from自身が申告する「出せる量」（PropertyValue.
+        /// AvailableToTransferOut）とamountの小さい方を基本とし、allow_overflowがfalseの場合はさらに
+        /// toが申告する「受け取れる量」（PropertyValue.RemainingTransferCapacity）でも制限する。
+        /// 「実際にいくら動かせるか」の判断はいずれもPropertyValue自身に委ね、ここでは対象解決と
+        /// 移動量の確定・実行（AddNumber）のみを行う（自分のことは自分でする、CLAUDE.md参照）。
+        ///
+        /// from/toのいずれかが解決できない、あるいは対象がそのプロパティを持たない場合は何もしない。
+        /// </summary>
+        private void ApplyTransfer(TransferEffect transfer, WorldSession session, WorldObject actor, WorldObject dragged)
+        {
+            WorldObject from = ResolveTransferTarget(transfer.FromObject, transfer.FromPropertyGlobalId, actor, dragged);
+            WorldObject to = ResolveTransferTarget(transfer.ToObject, transfer.ToPropertyGlobalId, actor, dragged);
+            if (from == null || to == null) return;
+            if (!from.TryGetProperty(transfer.FromPropertyGlobalId, out var fromValue)) return;
+            if (!to.TryGetProperty(transfer.ToPropertyGlobalId, out var toValue)) return;
+
+            int moved = Math.Min(transfer.Amount, fromValue.AvailableToTransferOut());
+            if (!transfer.AllowOverflow)
+                moved = Math.Min(moved, toValue.RemainingTransferCapacity());
+            if (moved <= 0) return;
+
+            from.AddNumber(transfer.FromPropertyGlobalId, -moved, session);
+            to.AddNumber(transfer.ToPropertyGlobalId, moved, session);
         }
 
         /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged）。YAML側で

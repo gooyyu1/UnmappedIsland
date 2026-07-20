@@ -28,29 +28,49 @@ namespace UnmappedIsland.Codex
         /// <summary>spawn。null なら spawn なし。常にselfが実行する。</summary>
         public SpawnEffect Spawn { get; }
 
+        /// <summary>transfer（9.5節）。null なら transfer なし。fromとtoの組が常に1組のため、spawnと同じく
+        /// 対象キーを持たない単一の値として持つ（`transfer`は複数形キーではないため、8節の
+        /// 「複数形キーは常に配列」規約の対象外）。</summary>
+        public TransferEffect Transfer { get; }
+
         public ActiveEffect(
             IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> sets,
             IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> adds,
             IReadOnlyList<ReferenceRoot> destroy,
-            SpawnEffect spawn)
+            SpawnEffect spawn,
+            TransferEffect transfer = null)
         {
             Sets = sets;
             Adds = adds;
             Destroy = destroy;
             Spawn = spawn;
+            Transfer = transfer;
         }
     }
 
-    /// <summary>set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。</summary>
+    /// <summary>
+    /// set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの
+    /// 代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
+    /// conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。
+    /// </summary>
     public readonly struct PropertyAssignment
     {
         public readonly int PropertyGlobalId;
         public readonly int Value;
+        public readonly PropertyPath? ValueRef;
 
         public PropertyAssignment(int propertyGlobalId, int value)
         {
             PropertyGlobalId = propertyGlobalId;
             Value = value;
+            ValueRef = null;
+        }
+
+        public PropertyAssignment(int propertyGlobalId, PropertyPath valueRef)
+        {
+            PropertyGlobalId = propertyGlobalId;
+            Value = default;
+            ValueRef = valueRef;
         }
     }
 
@@ -111,6 +131,53 @@ namespace UnmappedIsland.Codex
         {
             ObjectGlobalId = objectGlobalId;
             Into = into;
+        }
+    }
+
+    /// <summary>
+    /// transfer（9.5節）の内容。fromが指すプロパティの実体値から、実際に出せる量とamountの小さい方だけを
+    /// toが指すプロパティへ移す（連続量の液体のような、setの固定値でもaddの無条件加減算でも表現できない
+    /// 「在庫に応じて実際に動く量が変わる」移送を表す）。
+    ///
+    /// from/toの参照は、他の場所（`modify`/`set`/`add`等）と同じ「対象がキー、内容が値」という規約に
+    /// 合わせず、conditions（14節）と同じくフラットな`from_object`/`from_prop`/`to_object`/`to_prop`の
+    /// 4フィールドで表す。fromとtoの組は常に1組であり、複数プロパティの入れ物としてネストする理由が
+    /// 無いため。
+    /// </summary>
+    public sealed class TransferEffect
+    {
+        /// <summary>移送元の参照ルート。既定値self（conditionsのobject省略時と同じ規約）。</summary>
+        public ReferenceRoot FromObject { get; }
+
+        public int FromPropertyGlobalId { get; }
+
+        /// <summary>移送先の参照ルート。既定値self。</summary>
+        public ReferenceRoot ToObject { get; }
+
+        public int ToPropertyGlobalId { get; }
+
+        /// <summary>一度に移送を試みる量の上限。実際の移動量はこれとfromの残量（・allow_overflowが falseなら
+        /// toの残容量）の小さい方になる。</summary>
+        public int Amount { get; }
+
+        /// <summary>
+        /// falseの場合（既定）、toのrangeで実際に収まる量までしか移動しない（収まらない分はfromに残す。
+        /// 液体を無駄にしない）。trueの場合、fromの残量とamountだけで移動量を決め、toのrange超過分は
+        /// toのon_overflow（未指定ならrange.maxへ自動でクランプする既定動作）に委ねる（あふれた分は失われる）。
+        /// </summary>
+        public bool AllowOverflow { get; }
+
+        public TransferEffect(
+            ReferenceRoot fromObject, int fromPropertyGlobalId,
+            ReferenceRoot toObject, int toPropertyGlobalId,
+            int amount, bool allowOverflow)
+        {
+            FromObject = fromObject;
+            FromPropertyGlobalId = fromPropertyGlobalId;
+            ToObject = toObject;
+            ToPropertyGlobalId = toPropertyGlobalId;
+            Amount = amount;
+            AllowOverflow = allowOverflow;
         }
     }
 }

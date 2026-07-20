@@ -21,8 +21,8 @@ namespace UnmappedIsland.Codex
 
         /// <summary>selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（Runtime.
         /// WorldObject.FindAncestorWithProperty参照）。「どのオブジェクトが定義しているか」に依存しない、
-        /// 木構造上の実効的な参照のための起点。Slot判定（{slot: ...}）では意味を持たないため未対応
-        /// （ロード時エラー）。</summary>
+        /// 木構造上の実効的な参照のための起点。SlotPosition判定（{in_slot: ...}）では意味を持たないため
+        /// 未対応（ロード時エラー）。</summary>
         Ancestor,
     }
 
@@ -39,7 +39,7 @@ namespace UnmappedIsland.Codex
         }
     }
 
-    /// <summary>GameElementDefinition.md 14.2節の比較演算子。</summary>
+    /// <summary>GameElementDefinition.md 14.1節の比較演算子。</summary>
     public enum ConditionOp
     {
         Lt,
@@ -57,9 +57,16 @@ namespace UnmappedIsland.Codex
         /// <summary>{object, prop, op, value}形式のプロパティ比較。</summary>
         Property,
 
-        /// <summary>{object, slot}形式の、objectが指すオブジェクト自身の現在のスロット位置チェック
-        /// （常に等価判定。opは持たない。否定したい場合はNotで包む）。</summary>
-        Slot,
+        /// <summary>{object, in_slot}形式の、objectが指すオブジェクト自身が、今まさに親のin_slotに
+        /// 入っているかのチェック（常に等価判定。opは持たない。否定したい場合はNotで包む）。「objectが
+        /// 外から見てどこに位置するか」を見る（objectの直接の親の中の位置）。</summary>
+        SlotPosition,
+
+        /// <summary>{object, slot, tag}形式の、objectが指すオブジェクト自身が持つslot（自分のスロット）の
+        /// 中に、tagを持つ子オブジェクトが1つでもあるかのチェック（存在判定。常に真偽で、opは持たない）。
+        /// SlotPositionとは向きが逆で、「objectの内側、自分のスロットの中身」を見る。
+        /// 液体容器のような「中身の種類」の判定に使う（案3、コンテナ設計の検討参照）。</summary>
+        SlotContent,
 
         /// <summary>子ノードすべての論理積。</summary>
         All,
@@ -76,14 +83,16 @@ namespace UnmappedIsland.Codex
     /// （旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。
     /// Runtime.ConditionEvaluator参照）。
     ///
-    /// 葉はPropertyとSlotの2種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて使うフィールドが変わる
-    /// （PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の慣習に合わせる）。
+    /// 葉はProperty・SlotPosition・SlotContentの3種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて
+    /// 使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の
+    /// 慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に
+    /// 関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。
     /// </summary>
     public sealed class ConditionNode
     {
         public ConditionNodeKind Kind { get; }
 
-        /// <summary>Property/Slot葉のみ有効。</summary>
+        /// <summary>Property/SlotPosition/SlotContent葉のみ有効。</summary>
         public ReferenceRoot Root { get; }
 
         /// <summary>Property葉のみ有効。</summary>
@@ -92,41 +101,61 @@ namespace UnmappedIsland.Codex
         /// <summary>Property葉のみ有効。</summary>
         public ConditionOp Op { get; }
 
-        /// <summary>Property葉のみ有効。lt/lte/gt/gte/eq/neqは常に1要素。in/not_inは複数要素になりうる。</summary>
+        /// <summary>Property葉のみ有効かつValueRefがnullの場合のみ使う。lt/lte/gt/gte/eq/neqは常に1要素。
+        /// in/not_inは複数要素になりうる。</summary>
         public IReadOnlyList<PropertyValue> Values { get; }
 
-        /// <summary>Slot葉のみ有効。</summary>
+        /// <summary>Property葉のみ有効。非nullなら、YAML上のリテラルvalue（Values）の代わりに、この
+        /// {object, prop}参照先の現在の実効値と比較する（weightのpath参照、10.2節と同じ「リテラルか
+        /// 参照か」の二択をconditionsにも広げたもの）。in/not_inでは意味を持たない（複数値との比較に
+        /// なるため。ロード時エラー）。</summary>
+        public PropertyPath? ValueRef { get; }
+
+        /// <summary>SlotPosition/SlotContent葉のみ有効。SlotPositionではobjectの親の中の位置、
+        /// SlotContentではobject自身が持つスロットを指す（同じ「スロットのグローバルID」というデータ型
+        /// だが、参照する木構造上の向きが異なる）。</summary>
         public int SlotGlobalId { get; }
+
+        /// <summary>SlotContent葉のみ有効。</summary>
+        public int TagGlobalId { get; }
 
         /// <summary>All/Any/Notのみ有効。Notは常に1要素。</summary>
         public IReadOnlyList<ConditionNode> Children { get; }
 
         private ConditionNode(
             ConditionNodeKind kind, ReferenceRoot root, int propertyGlobalId, ConditionOp op,
-            IReadOnlyList<PropertyValue> values, int slotGlobalId, IReadOnlyList<ConditionNode> children)
+            IReadOnlyList<PropertyValue> values, PropertyPath? valueRef,
+            int slotGlobalId, int tagGlobalId, IReadOnlyList<ConditionNode> children)
         {
             Kind = kind;
             Root = root;
             PropertyGlobalId = propertyGlobalId;
             Op = op;
             Values = values;
+            ValueRef = valueRef;
             SlotGlobalId = slotGlobalId;
+            TagGlobalId = tagGlobalId;
             Children = children;
         }
 
-        public static ConditionNode Property(ReferenceRoot root, int propertyGlobalId, ConditionOp op, IReadOnlyList<PropertyValue> values) =>
-            new ConditionNode(ConditionNodeKind.Property, root, propertyGlobalId, op, values, default, null);
+        public static ConditionNode Property(
+            ReferenceRoot root, int propertyGlobalId, ConditionOp op,
+            IReadOnlyList<PropertyValue> values, PropertyPath? valueRef = null) =>
+            new ConditionNode(ConditionNodeKind.Property, root, propertyGlobalId, op, values, valueRef, default, default, null);
 
-        public static ConditionNode Slot(ReferenceRoot root, int slotGlobalId) =>
-            new ConditionNode(ConditionNodeKind.Slot, root, default, default, null, slotGlobalId, null);
+        public static ConditionNode SlotPosition(ReferenceRoot root, int slotGlobalId) =>
+            new ConditionNode(ConditionNodeKind.SlotPosition, root, default, default, null, null, slotGlobalId, default, null);
+
+        public static ConditionNode SlotContent(ReferenceRoot root, int slotGlobalId, int tagGlobalId) =>
+            new ConditionNode(ConditionNodeKind.SlotContent, root, default, default, null, null, slotGlobalId, tagGlobalId, null);
 
         public static ConditionNode All(IReadOnlyList<ConditionNode> children) =>
-            new ConditionNode(ConditionNodeKind.All, default, default, default, null, default, children);
+            new ConditionNode(ConditionNodeKind.All, default, default, default, null, null, default, default, children);
 
         public static ConditionNode Any(IReadOnlyList<ConditionNode> children) =>
-            new ConditionNode(ConditionNodeKind.Any, default, default, default, null, default, children);
+            new ConditionNode(ConditionNodeKind.Any, default, default, default, null, null, default, default, children);
 
         public static ConditionNode Not(ConditionNode inner) =>
-            new ConditionNode(ConditionNodeKind.Not, default, default, default, null, default, new[] { inner });
+            new ConditionNode(ConditionNodeKind.Not, default, default, default, null, null, default, default, new[] { inner });
     }
 }

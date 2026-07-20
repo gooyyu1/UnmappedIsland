@@ -95,6 +95,7 @@ namespace UnmappedIsland.Loader
             var propertyNames = new NameRegistry();
             var slotNames = new NameRegistry();
             var tagNames = new NameRegistry();
+            var symbolNames = new NameRegistry();
             var objectDefsByGlobalId = new Dictionary<int, ObjectDef>();
 
             foreach (var kv in globalObjectDefs)
@@ -103,7 +104,7 @@ namespace UnmappedIsland.Loader
                 var (props, slots, passiveNodes, stackOrder, actions, combinations, tags) = TraitMerger.Resolve(raw, traitsByName);
                 ObjectDef def = ObjectDefYamlConverter.Build(
                     kv.Key, raw.IsSingleton, tags, props, slots, passiveNodes, stackOrder, actions, combinations,
-                    objectNames, propertyNames, slotNames, tagNames);
+                    objectNames, propertyNames, slotNames, tagNames, symbolNames);
                 objectDefsByGlobalId[def.GlobalId] = def;
             }
 
@@ -113,7 +114,7 @@ namespace UnmappedIsland.Loader
             foreach (var kv in objectDefsByGlobalId) defsByGlobalId[kv.Key] = kv.Value;
 
             var wellKnown = new WellKnownProperties(propertyNames);
-            return new WorldCodex(objectNames, propertyNames, slotNames, tagNames, new ObjectDefTable(defsByGlobalId), wellKnown);
+            return new WorldCodex(objectNames, propertyNames, slotNames, tagNames, symbolNames, new ObjectDefTable(defsByGlobalId), wellKnown);
         }
 
         private static void ParseFileInto(
