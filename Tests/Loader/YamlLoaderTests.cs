@@ -16,8 +16,7 @@ namespace UnmappedIsland.Loader
     {
         private static PropertyDef PropOf(WorldCodex codex, ObjectDef def, string propertyName)
         {
-            int local = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId(propertyName));
-            return def.PropertyDefs[local];
+            return def.GetPropertyDef(codex.PropertyNames.GetId(propertyName));
         }
 
         private static SlotDef SlotOf(WorldCodex codex, ObjectDef def, string slotName)

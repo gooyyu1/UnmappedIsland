@@ -24,7 +24,7 @@ namespace UnmappedIsland.Domain.Defs
         public LocalIndexMap PropertyLayout { get; }
 
         /// <summary>ローカルindexで並ぶ密配列。PropertyLayout と対になる。</summary>
-        public IReadOnlyList<PropertyDef> PropertyDefs { get; }
+        internal IReadOnlyList<PropertyDef> PropertyDefs { get; }
 
         /// <summary>グローバルなスロットID → このObjectDefにおけるローカルindex。</summary>
         public LocalIndexMap SlotLayout { get; }
@@ -51,6 +51,13 @@ namespace UnmappedIsland.Domain.Defs
 
         /// <summary>このObjectDefが（受け側として）持つドラッグ型操作（12節）。</summary>
         public IReadOnlyList<CombinationDef> Combinations { get; }
+
+        /// <summary>グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はnull。</summary>
+        public PropertyDef GetPropertyDef(int globalPropertyId)
+        {
+            int local = PropertyLayout.ToLocal(globalPropertyId);
+            return local == LocalIndexMap.Missing ? null : PropertyDefs[local];
+        }
 
         public ObjectDef(
             int globalId,
