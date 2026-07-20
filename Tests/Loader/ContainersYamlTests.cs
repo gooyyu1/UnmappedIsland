@@ -158,8 +158,8 @@ namespace UnmappedIsland.Loader
             bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
 
             Assert.That(executed, Is.True);
-            Assert.That(ContentOf(canteen).GetNumber(liquidAmountId), Is.EqualTo(1000));
-            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(2000));
+            Assert.That(ContentOf(canteen).GetNumber(liquidAmountId), Is.EqualTo(1800));
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200));
         }
 
         [Test]

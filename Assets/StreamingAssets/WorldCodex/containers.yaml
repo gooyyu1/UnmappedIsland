@@ -22,7 +22,7 @@ traits:
     actions:
       drink:
         transfer:
-          amount: 2000
+          amount: 1200
           from_prop: liquid_amount
           to_object: actor
           to_prop: hydration
