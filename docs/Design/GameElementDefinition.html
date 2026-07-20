@@ -803,25 +803,27 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href=
 <li><p><code>stack_order</code>は、この<code>ObjectDef</code>の新規インスタンスがスタックへ加わる際の並び位置決定にのみ使います。
 一度並んだ後、値の変化に追従した再ソートは行いません。これは、同種は同じ速度で変化する（<code>accumulate</code>は
 <code>ObjectDef</code>ごとに一定量、8.4節）という前提のもとでのみ正しく、挿入時点の相対順序がその後も保たれます。</p></li>
-<li><p><strong><code>stack_by</code></strong>:
-プロパティ名。指定すると、「同じ<code>ObjectDef</code>であること」に加え「このプロパティの現在値も
-一致すること」が同じ<code>ObjectStack</code>にまとまる条件になります（既定=省略時は<code>ObjectDef</code>が同じだけでまとまる）。
-中身の種類によって同じ道具でも別物として扱いたい容器（同じ水筒でも、水が入ったものと空のものは別スタック、
-種類を問わず同じ水同士はまとめたい）のような、「中身が同じかどうか」でスタックの単位を決めたいケースに使います。</p></li>
+<li><p><strong><code>represented_by</code></strong>:
+スロット名。指定すると、そのスロットに現在入っている最初の1個を、このオブジェクトの
+<strong>代表</strong>として扱います。代表が存在する間、<code>actions</code>/<code>combinations</code>の実行対象はこのオブジェクト自身ではなく
+代表オブジェクトになり、<code>ObjectStack</code>のまとまり判定でも「自分の<code>ObjectDef</code>が同じ」に加えて、
+<code>represented_by</code>で辿った代表オブジェクト（さらにその代表…）の<code>ObjectDef</code>列が完全一致することを要求します。
+これにより、容器本体は「液体を1つ入れるスロットを持つだけ」の入れ物に徹し、中身のタグ・行動・追加効果は
+中身オブジェクト自身が持てます。</p></li>
 </ul>
 <div class="sourceCode" id="cb21"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">canteen</span><span class="kw">:</span></span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stack_by</span><span class="kw">:</span><span class="at"> content</span></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">represented_by</span><span class="kw">:</span><span class="at"> content</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
 <span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">content</span><span class="kw">:</span></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> empty</span></span></code></pre></div>
-<p><code>stack_order</code>と同じく、スタックへ加わる時点の値で1度だけ判定し、その後の値の変化を追って自動的に
-別のスタックへ移し替えることはしません（容器の中身が後から変わっても、同じスロットに居続ける限り
-見た目上のスタックはそのまま）。<code>fixed_positions</code>の固定番号も、<code>ObjectDef</code>単位ではなく<code>ObjectStack</code>単位
-（＝<code>stack_by</code>込みの単位）で割り当てられるため、中身が違う容器同士は固定番号を共有しません。<code>traits</code>側
-（5節）でも宣言でき、<code>stack_order</code>と同じ規則（自身の宣言が優先、複数の<code>trait</code>が重複宣言していればエラー）
-でマージされます。</p>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> liquid</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}]</span></span></code></pre></div>
+<p>代表が見つからない（スロットが空、またはそのslot自体を持たない）場合は自分自身をそのまま使います。
+<code>stack_order</code>と同じく、スタックへ加わるかどうかの判定は挿入時に1度だけ行い、その後の中身の変化を追って
+自動的に別スタックへ移し替えることはしません。<code>fixed_positions</code>の固定番号も<code>ObjectStack</code>単位で
+割り当てられるため、代表オブジェクトが違う容器同士は同じ固定番号を共有しません。<code>traits</code>側（5節）でも
+宣言でき、<code>stack_order</code>と同じ規則（自身の宣言が優先、複数の<code>trait</code>が重複宣言していればエラー）で
+マージされます。</p>
 <p><strong><code>spawn</code>（9.4節）との関係</strong>:
 <code>into</code>を省略（<code>same_slot</code>）した置き換えは、<code>destroy</code>を<code>spawn</code>より先に実行し
 （9.3節・9.4節参照）、破棄されたオブジェクトが占めていた位置を新しいオブジェクトへそのまま引き継がせます。
