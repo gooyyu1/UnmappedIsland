@@ -91,11 +91,7 @@ namespace UnmappedIsland.Loader
 
             var traitsByName = globalTraits.ToDictionary(kv => kv.Key, kv => TraitMerger.ParseTraitEntry(kv.Key, kv.Value.Node));
 
-            var objectNames = new NameRegistry();
-            var propertyNames = new NameRegistry();
-            var slotNames = new NameRegistry();
-            var tagNames = new NameRegistry();
-            var symbolNames = new NameRegistry();
+            var codex = new WorldCodex();
             var objectDefsByGlobalId = new Dictionary<int, ObjectDef>();
 
             foreach (var kv in globalObjectDefs)
@@ -103,18 +99,17 @@ namespace UnmappedIsland.Loader
                 TraitMerger.RawObjectDef raw = TraitMerger.ParseObjectDefEntry(kv.Key, kv.Value.Node);
                 var (props, slots, passiveNodes, stackOrder, actions, combinations, tags) = TraitMerger.Resolve(raw, traitsByName);
                 ObjectDef def = ObjectDefYamlConverter.Build(
-                    kv.Key, raw.IsSingleton, tags, props, slots, passiveNodes, stackOrder, actions, combinations,
-                    objectNames, propertyNames, slotNames, tagNames, symbolNames);
+                    kv.Key, raw.IsSingleton, tags, props, slots, passiveNodes, stackOrder, actions, combinations, codex);
                 objectDefsByGlobalId[def.GlobalId] = def;
             }
 
-            // ここで初めて全object_defを走査し終えるため、objectNames.Countが最終値として確定する
+            // ここで初めて全object_defを走査し終えるため、codex.ObjectNames.Countが最終値として確定する
             // （個々のObjectDef自体はInternの都度、その時点までの登録状況だけを見て組み立てられている）。
-            var defsByGlobalId = new ObjectDef[objectNames.Count];
+            var defsByGlobalId = new ObjectDef[codex.ObjectNames.Count];
             foreach (var kv in objectDefsByGlobalId) defsByGlobalId[kv.Key] = kv.Value;
 
-            var wellKnown = new WellKnownProperties(propertyNames);
-            return new WorldCodex(objectNames, propertyNames, slotNames, tagNames, symbolNames, new ObjectDefTable(defsByGlobalId), wellKnown);
+            codex.SetObjects(new ObjectDefTable(defsByGlobalId), new WellKnownProperties(codex.PropertyNames));
+            return codex;
         }
 
         private static void ParseFileInto(
