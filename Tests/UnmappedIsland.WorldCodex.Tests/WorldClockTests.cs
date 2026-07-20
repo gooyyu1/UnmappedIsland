@@ -1,6 +1,5 @@
 using NUnit.Framework;
 using UnmappedIsland.Codex;
-using UnmappedIsland.GameTime;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 using UnmappedIsland.Runtime.Views;
@@ -8,16 +7,16 @@ using UnmappedIsland.Runtime.Views;
 namespace UnmappedIsland.Codex.Tests
 {
     /// <summary>
-    /// WorldClock（core.yamlのtick=15分という時間モデルに対する、ゲーム側の時間進行ロジック）に対する
+    /// WorldSession.AdvanceWorldTime（core.yamlのtick=15分という時間モデルに対する、ゲーム側の時間進行ロジック）に対する
     /// 自動テスト。core.yamlのworld object_defと同じ形のYAMLフィクスチャをWorldCodexYamlLoader経由で
     /// パースして検証する（YamlLoaderTests.csと同じ方針）。プロパティ名の解決はRuntime.Views.Worldに
-    /// 委ね、WorldClock自体は文字列のプロパティ名を一切知らない（テスト側の確認もWorld越しに行う）。
+    /// 委ね、WorldSession自体は文字列のプロパティ名を一切知らない（テスト側の確認もWorld越しに行う）。
     ///
-    /// minuteはtick駆動のaccumulateを持たない（YAML側の自動加算とWorldClockの加算が二重にならないように
-    /// するため）。minuteへの加算はすべてWorldClockが、常にminutes_per_tick以下の小さな量ずつ行う。
+    /// minuteはtick駆動のaccumulateを持たない（YAML側の自動加算とWorldSessionの加算が二重にならないように
+    /// するため）。minuteへの加算はすべてWorldSessionが、常にminutes_per_tick以下の小さな量ずつ行う。
     /// </summary>
     [TestFixture]
-    public class WorldClockTests
+    public class WorldTimeAdvanceTests
     {
         private static WorldCodex Load(string yaml) => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
@@ -67,7 +66,7 @@ object_defs:
             var session = new WorldSession(codex);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            WorldClock.Advance(world, session, 5);
+            session.AdvanceWorldTime(world, 5);
 
             Assert.That(world.Minute, Is.EqualTo(5), "15分未満はTickを跨がず、そのまま加算される");
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(0));
@@ -82,8 +81,8 @@ object_defs:
             var session = new WorldSession(codex);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            WorldClock.Advance(world, session, 5);
-            WorldClock.Advance(world, session, 20);
+            session.AdvanceWorldTime(world, 5);
+            session.AdvanceWorldTime(world, 20);
 
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1), "5+20=25分 -> 15分境界を1回だけ跨ぐ");
             Assert.That(world.Minute, Is.EqualTo(25), "minuteはtickの回数によらずamountの合計をそのまま反映する");
@@ -99,8 +98,8 @@ object_defs:
             var session = new WorldSession(codex);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            WorldClock.Advance(world, session, 10); // tick内経過分は10、まだ境界に届かない
-            WorldClock.Advance(world, session, 10); // 10+10=20分 -> 15を1回跨ぐ
+            session.AdvanceWorldTime(world, 10); // tick内経過分は10、まだ境界に届かない
+            session.AdvanceWorldTime(world, 10); // 10+10=20分 -> 15を1回跨ぐ
 
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1));
             Assert.That(world.Minute, Is.EqualTo(20));
@@ -117,7 +116,7 @@ object_defs:
 
             int minutesPerTick = world.MinutesPerTick;
 
-            WorldClock.Advance(world, session, 60 * 25); // 25時間分を1回で進める
+            session.AdvanceWorldTime(world, 60 * 25); // 25時間分を1回で進める
 
             Assert.That(world.Minute, Is.EqualTo(0));
             Assert.That(world.Hour, Is.EqualTo(1));
@@ -128,13 +127,13 @@ object_defs:
         [Test]
         public void Advance_UsesConfiguredMinutesPerTick_NotAHardcodedConstant()
         {
-            // 1tickの長さはworld.minutes_per_tick（core.yaml側）が持つ値であり、WorldClock側に
+            // 1tickの長さはworld.minutes_per_tick（core.yaml側）が持つ値であり、WorldSession側に
             // ハードコードされていないことを、15以外の値でも確認する。
             var (codex, world) = BuildWorld(minutesPerTick: 20);
             var session = new WorldSession(codex);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            WorldClock.Advance(world, session, 25);
+            session.AdvanceWorldTime(world, 25);
 
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1), "minutes_per_tickが20なら25分で1tick跨ぐ");
             Assert.That(world.Minute % world.MinutesPerTick, Is.EqualTo(5));
