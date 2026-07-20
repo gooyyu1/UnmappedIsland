@@ -5,7 +5,13 @@
     <LangVersion>9.0</LangVersion>
     <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
+    <RootNamespace>UnmappedIsland</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Exclude the library sub-project from the default compile glob -->
+    <Compile Remove="UnmappedIsland.Core/**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
@@ -14,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../UnmappedIsland.WorldCodex/UnmappedIsland.WorldCodex.csproj" />
+    <ProjectReference Include="UnmappedIsland.Core/UnmappedIsland.Core.csproj" />
   </ItemGroup>
 
 </Project>

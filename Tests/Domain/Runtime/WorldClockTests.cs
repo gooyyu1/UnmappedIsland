@@ -4,7 +4,7 @@ using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 using UnmappedIsland.Domain.Runtime.Views;
 
-namespace UnmappedIsland.Domain.Defs.Tests
+namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
     /// WorldSession.AdvanceWorldTime（core.yamlのtick=15分という時間モデルに対する、ゲーム側の時間進行ロジック）に対する
@@ -16,7 +16,7 @@ namespace UnmappedIsland.Domain.Defs.Tests
     /// するため）。minuteへの加算はすべてWorldSessionが、常にminutes_per_tick以下の小さな量ずつ行う。
     /// </summary>
     [TestFixture]
-    public class WorldTimeAdvanceTests
+    public class WorldClockTests
     {
         private static WorldCodex Load(string yaml) => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 

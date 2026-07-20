@@ -4,7 +4,7 @@ using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Domain.Defs.Tests
+namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
     /// stack_by（GameElementDefinition.md 7.6節）に対する自動テスト。同じObjectDefでも指定した

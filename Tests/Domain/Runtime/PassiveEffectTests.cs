@@ -5,7 +5,7 @@ using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Domain.Defs.Tests
+namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
     /// modify/accumulate（GameElementDefinition.md 8節）の実行時集計（WorldObject.GetEffectiveValue/
