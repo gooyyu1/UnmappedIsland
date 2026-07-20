@@ -307,6 +307,84 @@ object_defs:
         }
 
         [Test]
+        public void LoadFromGroups_StageEq_ResolvesByExactMatchNotOrdering()
+        {
+            const string yaml = @"
+object_defs:
+  sky3:
+    props:
+      weather:
+        value: clear
+        stages:
+          - name: storm
+            eq: storm
+          - name: clear
+            eq: clear
+            passives:
+              - modify:
+                  self:
+                    sunlight: 5
+          - name: unknown
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky3"));
+            PropertyDef weather = PropOf(codex, sky, "weather");
+
+            int stormId = codex.SymbolNames.Intern("storm");
+            int clearId = codex.SymbolNames.GetId("clear");
+            int somethingElseId = codex.SymbolNames.Intern("cloudy");
+
+            Assert.That(weather.ResolveStage(stormId)?.Name, Is.EqualTo("storm"));
+            Assert.That(weather.ResolveStage(clearId)?.Name, Is.EqualTo("clear"));
+            Assert.That(weather.ResolveStage(somethingElseId)?.Name, Is.EqualTo("unknown"),
+                "eqのどれとも一致しない値はmin/eq両方省略のフォールバック段階になる");
+        }
+
+        [Test]
+        public void LoadFromGroups_StageMinAndEqTogether_Throws()
+        {
+            const string yaml = @"
+object_defs:
+  thing:
+    props:
+      weather:
+        value: clear
+        stages:
+          - name: bad
+            min: 1
+            eq: clear
+";
+            Assert.That((Func<WorldCodex>)(() => WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) })),
+                Throws.TypeOf<YamlLoadException>().With.Message.Contain("min").And.Message.Contain("eq"));
+        }
+
+        [Test]
+        public void LoadFromGroups_StageEqPassive_UsesWhenOwnStageGate()
+        {
+            const string yaml = @"
+object_defs:
+  sky4:
+    props:
+      weather:
+        value: clear
+        stages:
+          - name: clear
+            eq: clear
+            passives:
+              - modify:
+                  self:
+                    sunlight: 5
+";
+            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+
+            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky4"));
+            PassiveEffect effect = sky.Passives.Single();
+
+            Assert.That(effect.Gate.StageName, Is.EqualTo("clear"), "eq指定のstage内のpassivesもStageNameが設定される");
+            Assert.That(effect.Gate.Conditions, Is.Null);
+        }
+
+        [Test]
         public void LoadFromGroups_PassivesIsAlwaysAnArray_RejectsMappingForm()
         {
             const string yaml = @"

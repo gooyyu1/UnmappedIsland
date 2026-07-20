@@ -143,7 +143,11 @@ namespace UnmappedIsland.Loader
                     var stageMap = (YamlMappingNode)stageNode;
                     string stageName = stageMap.RequireScalar("name", context);
                     int? min = stageMap.TryGetInt("min", context);
-                    stages.Add(new PropertyStage(stageName, min));
+                    string rawEq = stageMap.TryGetScalar("eq", context);
+                    int? eq = rawEq != null ? ParseScalarNumber(context, rawEq, symbolNames) : (int?)null;
+                    if (min.HasValue && eq.HasValue)
+                        throw new YamlLoadException($"{context}: stageの'min'と'eq'は同時に指定できません。");
+                    stages.Add(new PropertyStage(stageName, min, eq));
 
                     // stage自身がname/minという固有の属性を持つため配列にできず、passivesは専用の
                     // ネストしたキーのまま持つ（when違いの複数ブロックを書けるようにするため常に配列）。

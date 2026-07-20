@@ -101,40 +101,50 @@ object_defs:
       # 別途、今後の課題）。晴れ→曇り→雨という遷移の仕組み自体（大気水分量による駆動）はClimateSystem.md
       # で別途検討するため、ここでは値を保持するだけ。
       #
-      # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のconditions付きpassiveで与える
-      # （もう一方、hourの「時間帯による最低限の寄与」はhour参照）。シンボル型プロパティは数値の大小関係を
-      # 前提にしたstages（6.4節）には乗らないため、天気の種類ごとの分岐はconditions（op: eq）で行う。
-      # 「夜は寄与を無効化する」という時間帯依存の判定は、weather側ではなくhour側のstagesが
-      # sunlightのrangeクランプ経由で実現する（hour参照）ため、ここでは天候の種類だけを見ればよい。
-      # storm・heavy_rainはpassivesを持たず、常に寄与なし。数値はいずれも仮の値。
+      # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のstages（6.4節）+WhenOwnStage
+      # ゲート（8.2節）のmodifyで与える（もう一方、hourの「時間帯による最低限の寄与」はhour参照）。
+      # シンボル型プロパティは数値の大小関係を前提にした通常のmin（半開区間）には乗らないため、
+      # 天気の種類ごとの完全一致判定にはeq（6.4節）を使う。「夜は寄与を無効化する」という時間帯依存の
+      # 判定は、weather側ではなくhour側のstagesがsunlightのrangeクランプ経由で実現する（hour参照）ため、
+      # ここでは天候の種類だけを見ればよい。storm・heavy_rainはpassivesを持たず、常に寄与なし。
+      # 数値はいずれも仮の値。
       weather:
         value: clear
-        passives:
-          - conditions:
-              - {prop: weather, op: eq, value: light_rain}
-            modify:
-              self:
-                sunlight: 1
-          - conditions:
-              - {prop: weather, op: eq, value: cloudy}
-            modify:
-              self:
-                sunlight: 2
-          - conditions:
-              - {prop: weather, op: eq, value: clear}
-            modify:
-              self:
-                sunlight: 5
-          - conditions:
-              - {prop: weather, op: eq, value: sunny}
-            modify:
-              self:
-                sunlight: 7
-          - conditions:
-              - {prop: weather, op: eq, value: scorching}
-            modify:
-              self:
-                sunlight: 10
+        stages:
+          - name: storm
+            eq: storm
+          - name: heavy_rain
+            eq: heavy_rain
+          - name: light_rain
+            eq: light_rain
+            passives:
+              - modify:
+                  self:
+                    sunlight: 1
+          - name: cloudy
+            eq: cloudy
+            passives:
+              - modify:
+                  self:
+                    sunlight: 2
+          - name: clear
+            eq: clear
+            passives:
+              - modify:
+                  self:
+                    sunlight: 5
+          - name: sunny
+            eq: sunny
+            passives:
+              - modify:
+                  self:
+                    sunlight: 7
+          - name: scorching
+            eq: scorching
+            passives:
+              - modify:
+                  self:
+                    sunlight: 10
       # 太陽光の強さ。hour（時間帯による最低限の寄与、夜は大きく負）とweather（晴れているほど追加で
       # 明るくなる寄与）、両方のmodifyが加算的に重なって決まる、都度導出される実効値（8.3節）。
       # rangeのmin:0によって、夜（hour側の-100）はweatherの寄与がどれだけ大きくても必ず0へ

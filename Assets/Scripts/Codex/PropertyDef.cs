@@ -22,18 +22,29 @@ namespace UnmappedIsland.Codex
         }
     }
 
-    /// <summary>6.4節の stages の1段。区間は下限のみで表す半開区間。</summary>
+    /// <summary>
+    /// 6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。
+    ///
+    /// Min: 区間は下限のみで表す半開区間。値の大小関係を前提にした数値プロパティ向け。
+    /// Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように、内部で保持する整数値の大小関係が
+    /// 著者にとって意味を持たない（NameRegistryへの登録順で決まるだけの）値に対して使う。
+    /// どちらも未指定なら最下段（それ以外のどの段にも該当しない場合のフォールバック、6.4節）。
+    /// </summary>
     public sealed class PropertyStage
     {
         public string Name { get; }
 
-        /// <summary>下限。null は最下段（それより下の残り全ての値を拾う、6.4節）。</summary>
+        /// <summary>下限。null は最下段（それより下の残り全ての値を拾う、6.4節）、またはEq指定時。</summary>
         public int? Min { get; }
 
-        public PropertyStage(string name, int? min)
+        /// <summary>完全一致判定の対象値。null は未指定（Minまたはフォールバックとして扱う）。</summary>
+        public int? Eq { get; }
+
+        public PropertyStage(string name, int? min, int? eq = null)
         {
             Name = name;
             Min = min;
+            Eq = eq;
         }
 
         // 段階ごとの passive/active（8節）はこの検討の対象外。フィールドを足すだけで済み、
@@ -139,16 +150,24 @@ namespace UnmappedIsland.Codex
         }
 
         /// <summary>
-        /// 現在値が該当する段階を返す。min:null の段階は「他のどの段階にも該当しない場合」のフォールバックであり、
-        /// リスト中の位置には依存しない（11.2節のサンプルでは broken(min:null) が intact(min:1) より後に書かれている）。
+        /// 現在値が該当する段階を返す。eq指定の段階（完全一致）が優先され、次にmin指定の段階（半開区間、
+        /// 最も高いminを採用）、どちらにも該当しなければmin:null・eq:null（フォールバック、他のどの段階にも
+        /// 該当しない場合）の段階を返す。min:null（eq未指定時）の段階はリスト中の位置に依存しない
+        /// （11.2節のサンプルでは broken(min:null) が intact(min:1) より後に書かれている）。
         /// </summary>
         public PropertyStage ResolveStage(int currentValue)
         {
             PropertyStage fallback = null;
             PropertyStage best = null;
+            PropertyStage eqMatch = null;
 
             foreach (var stage in Stages)
             {
+                if (stage.Eq.HasValue)
+                {
+                    if (currentValue == stage.Eq.Value) eqMatch = stage;
+                    continue;
+                }
                 if (stage.Min == null)
                 {
                     fallback = stage;
@@ -158,7 +177,7 @@ namespace UnmappedIsland.Codex
                     best = stage;
             }
 
-            return best ?? fallback;
+            return eqMatch ?? best ?? fallback;
         }
     }
 }
