@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -23,11 +24,13 @@ namespace UnmappedIsland.Codex.Tests
         public void LoadCoreYaml()
         {
             string path = FindRepoFile("Assets/StreamingAssets/WorldCodex/core.yaml");
-            codex = WorldCodexYamlLoader.LoadFromGroups(new[]
+            var loader = new WorldCodexYamlLoader();
+            loader.LoadFromGroups(new[]
             {
                 new WorldCodexYamlLoader.SourceGroup(
                     "core", new[] { new WorldCodexYamlLoader.SourceFile(path, File.ReadAllText(path)) }),
             });
+            codex = loader.Build();
         }
 
         /// <summary>dotnet testの実行ディレクトリ(bin/配下)から、リポジトリルート基準の相対パスを
@@ -48,6 +51,13 @@ namespace UnmappedIsland.Codex.Tests
         {
             return new WorldCodexYamlLoader.SourceGroup(
                 label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
+        }
+
+        private static WorldCodex LoadFromGroups(IReadOnlyList<WorldCodexYamlLoader.SourceGroup> groups)
+        {
+            var loader = new WorldCodexYamlLoader();
+            loader.LoadFromGroups(groups);
+            return loader.Build();
         }
 
         [Test]
@@ -221,7 +231,7 @@ object_defs:
     tags: [location]
   test_rock: {}
 ";
-            var testCodex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var testCodex = LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
 
             int locationsSlotId = testCodex.SlotNames.GetId("locations");
             var session = new WorldSession(testCodex);

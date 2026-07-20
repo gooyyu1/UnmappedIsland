@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
@@ -24,6 +25,13 @@ namespace UnmappedIsland.Codex.Tests
         {
             return new WorldCodexYamlLoader.SourceGroup(
                 label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
+        }
+
+        private static WorldCodex LoadFromGroups(IReadOnlyList<WorldCodexYamlLoader.SourceGroup> groups)
+        {
+            var loader = new WorldCodexYamlLoader();
+            loader.LoadFromGroups(groups);
+            return loader.Build();
         }
 
         private static (WorldCodex Codex, World World) BuildWorld(int minutesPerTick = 15)
@@ -60,7 +68,7 @@ object_defs:
       day:
         value: 1
 ";
-            var codex = WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            var codex = LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
             var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
             return (codex, new World(instance, codex.PropertyNames));
         }

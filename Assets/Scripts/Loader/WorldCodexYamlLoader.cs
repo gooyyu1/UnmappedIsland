@@ -13,12 +13,21 @@ namespace UnmappedIsland.Loader
     /// 実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す
     /// LoadFromGroups経由で使う）。
     ///
+    /// インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという
+    /// ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という
+    /// だけの理由。Load系メソッド（LoadDirectories/LoadFromGroups）は何度でも呼べ、呼ぶたびに
+    /// object_defs/traitsをこのインスタンス自身へ追記する（後から呼んだ分が同名エントリを上書きする、
+    /// MOD等の複数情報源対応。3.3節）。Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodex
+    /// を1つ組み立てて返し、その時点でこのインスタンスの蓄積状態は初期化される（再利用したいという
+    /// 積極的なニーズがあるわけではないが、初期化しておくこと自体に特にコストが無く、同じインスタンスを
+    /// 次の別のロードにそのまま使い回せて困る理由も無いため）。
+    ///
     /// 複数の情報源グループ（例: ゲーム本体のディレクトリ＋外部MODディレクトリ）を渡せる。同一グループ内
     /// （＝同一の情報源）でのobject_defs/trait名の重複はエラー（3.3節の厳格モード）。異なるグループ間
     /// では、後から渡したグループの定義が同名の定義を上書きする（MODが本体の定義を差し替えられるように
     /// するため。3.3節で未定とされていたマージ規則をこの実装で決定した）。
     /// </summary>
-    public static class WorldCodexYamlLoader
+    public sealed class WorldCodexYamlLoader
     {
         private static readonly string[] YamlExtensions = { ".yaml", ".yml" };
 
@@ -48,11 +57,30 @@ namespace UnmappedIsland.Loader
             }
         }
 
+        /// <summary>Load系メソッドで蓄積したobject_defs/traitsの生YAMLノード。Buildが呼ばれるまでの
+        /// 「組み立て途中の世界」の中身そのもの。</summary>
+        private Dictionary<string, (YamlMappingNode Node, string Source)> globalObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
+        private Dictionary<string, (YamlMappingNode Node, string Source)> globalTraits = new Dictionary<string, (YamlMappingNode, string)>();
+
         /// <summary>
-        /// ディレクトリ群からWorldCodexを組み立てる。各ディレクトリ以下の*.yaml/*.ymlファイルを
-        /// 再帰的に（決定的な順序で）すべて読み込む。ディレクトリ1つ＝情報源グループ1つとして扱う。
+        /// 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。Buildの中でのみ使う
+        /// （Load系メソッドは生YAMLノードの収集のみを行い、名前解決は一切しない）が、Loader.
+        /// ObjectDefYamlConverter以下の各パース処理へこのインスタンス自身を渡すことで、これらの
+        /// メソッドが必要な名前空間をここから読めるようにする（NameRegistryをバラバラの引数として
+        /// 渡し回さない）。
         /// </summary>
-        public static WorldCodex LoadDirectories(IReadOnlyList<string> directoryPaths)
+        internal NameRegistry ObjectNames { get; private set; } = new NameRegistry();
+        internal NameRegistry PropertyNames { get; private set; } = new NameRegistry();
+        internal NameRegistry SlotNames { get; private set; } = new NameRegistry();
+        internal NameRegistry TagNames { get; private set; } = new NameRegistry();
+        internal NameRegistry SymbolNames { get; private set; } = new NameRegistry();
+
+        /// <summary>
+        /// ディレクトリ群のobject_defs/traitsを、このインスタンスへ追記する。各ディレクトリ以下の
+        /// *.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込む。ディレクトリ1つ＝情報源
+        /// グループ1つとして扱う。何度でも呼べる（後から呼んだ分が同名エントリを上書きする）。
+        /// </summary>
+        public void LoadDirectories(IReadOnlyList<string> directoryPaths)
         {
             var groups = new List<SourceGroup>();
 
@@ -64,19 +92,16 @@ namespace UnmappedIsland.Loader
                 groups.Add(new SourceGroup(directory, files));
             }
 
-            return LoadFromGroups(groups);
+            LoadFromGroups(groups);
         }
 
         /// <summary>
-        /// 既にテキストとして読み込まれたYAML群からWorldCodexを組み立てる（Unity依存のファイルI/Oを
-        /// 呼び出し元に委ねたい場合に使う）。groupsの並び順が上書き優先順位を決める
-        /// （後のグループほど優先。同一グループ内の重複はエラー）。
+        /// 既にテキストとして読み込まれたYAML群のobject_defs/traitsを、このインスタンスへ追記する
+        /// （Unity依存のファイルI/Oを呼び出し元に委ねたい場合に使う）。groupsの並び順が上書き優先順位を
+        /// 決める（後のグループほど優先。同一グループ内の重複はエラー）。何度でも呼べる。
         /// </summary>
-        public static WorldCodex LoadFromGroups(IReadOnlyList<SourceGroup> groups)
+        public void LoadFromGroups(IReadOnlyList<SourceGroup> groups)
         {
-            var globalObjectDefs = new Dictionary<string, (YamlMappingNode Node, string Source)>();
-            var globalTraits = new Dictionary<string, (YamlMappingNode Node, string Source)>();
-
             foreach (SourceGroup group in groups)
             {
                 var groupObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
@@ -88,14 +113,16 @@ namespace UnmappedIsland.Loader
                 foreach (var kv in groupObjectDefs) globalObjectDefs[kv.Key] = kv.Value;
                 foreach (var kv in groupTraits) globalTraits[kv.Key] = kv.Value;
             }
+        }
 
+        /// <summary>
+        /// これまでLoad系メソッドで蓄積したobject_defs/traitsから、最終的な不変のWorldCodexを1つ組み立てて
+        /// 返す。呼び終わると、このインスタンスの蓄積状態（object_defs/traits・5種のNameRegistry）は
+        /// 初期化される。
+        /// </summary>
+        public WorldCodex Build()
+        {
             var traitsByName = globalTraits.ToDictionary(kv => kv.Key, kv => TraitMerger.ParseTraitEntry(kv.Key, kv.Value.Node));
-
-            var objectNames = new NameRegistry();
-            var propertyNames = new NameRegistry();
-            var slotNames = new NameRegistry();
-            var tagNames = new NameRegistry();
-            var symbolNames = new NameRegistry();
             var objectDefsByGlobalId = new Dictionary<int, ObjectDef>();
 
             foreach (var kv in globalObjectDefs)
@@ -103,18 +130,31 @@ namespace UnmappedIsland.Loader
                 TraitMerger.RawObjectDef raw = TraitMerger.ParseObjectDefEntry(kv.Key, kv.Value.Node);
                 var (props, slots, passiveNodes, stackOrder, actions, combinations, tags) = TraitMerger.Resolve(raw, traitsByName);
                 ObjectDef def = ObjectDefYamlConverter.Build(
-                    kv.Key, raw.IsSingleton, tags, props, slots, passiveNodes, stackOrder, actions, combinations,
-                    objectNames, propertyNames, slotNames, tagNames, symbolNames);
+                    kv.Key, raw.IsSingleton, tags, props, slots, passiveNodes, stackOrder, actions, combinations, this);
                 objectDefsByGlobalId[def.GlobalId] = def;
             }
 
-            // ここで初めて全object_defを走査し終えるため、objectNames.Countが最終値として確定する
+            // ここで初めて全object_defを走査し終えるため、ObjectNames.Countが最終値として確定する
             // （個々のObjectDef自体はInternの都度、その時点までの登録状況だけを見て組み立てられている）。
-            var defsByGlobalId = new ObjectDef[objectNames.Count];
+            var defsByGlobalId = new ObjectDef[ObjectNames.Count];
             foreach (var kv in objectDefsByGlobalId) defsByGlobalId[kv.Key] = kv.Value;
 
-            var wellKnown = new WellKnownProperties(propertyNames);
-            return new WorldCodex(objectNames, propertyNames, slotNames, tagNames, symbolNames, new ObjectDefTable(defsByGlobalId), wellKnown);
+            var wellKnown = new WellKnownProperties(PropertyNames);
+            var codex = new WorldCodex(ObjectNames, PropertyNames, SlotNames, TagNames, SymbolNames, new ObjectDefTable(defsByGlobalId), wellKnown);
+
+            Reset();
+            return codex;
+        }
+
+        private void Reset()
+        {
+            globalObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
+            globalTraits = new Dictionary<string, (YamlMappingNode, string)>();
+            ObjectNames = new NameRegistry();
+            PropertyNames = new NameRegistry();
+            SlotNames = new NameRegistry();
+            TagNames = new NameRegistry();
+            SymbolNames = new NameRegistry();
         }
 
         private static void ParseFileInto(

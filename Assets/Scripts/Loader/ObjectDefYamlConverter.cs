@@ -11,11 +11,12 @@ namespace UnmappedIsland.Loader
     /// 既にtrait解決済み（TraitMerger参照）の props/slots/passives/stack_order/actions/combinations ノードから、
     /// 最終的な ObjectDef を直接組み立てる（GameElementDefinition.md 6〜7節・7.6節に対応）。
     ///
-    /// 名前（プロパティ名・スロット名・object名）は、このパース処理そのものの中で NameRegistry.Intern を
-    /// 呼んで都度グローバルIDへ解決する。Internは冪等（同じ名前なら何度呼んでも同じIDを返す）なため、
-    /// 「先に全object_defを走査してから初めて名前解決を始める」といった2パス構成は不要（かつては
-    /// ObjectDefBlueprintという中間データ経由の2段構成だったが、Internの冪等性を踏まえてこの1段構成に
-    /// 統合した）。
+    /// 名前（プロパティ名・スロット名・object名等）は、このパース処理そのものの中で、呼び出し元から渡された
+    /// WorldCodexYamlLoader自身が持つNameRegistryのIntern を呼んで都度グローバルIDへ解決する（個々の
+    /// NameRegistryをバラバラの引数として渡し回さない。WorldCodexYamlLoader参照）。Internは冪等（同じ名前
+    /// なら何度呼んでも同じIDを返す）なため、「先に全object_defを走査してから初めて名前解決を始める」
+    /// といった2パス構成は不要（かつてはObjectDefBlueprintという中間データ経由の2段構成だったが、
+    /// Internの冪等性を踏まえてこの1段構成に統合した）。
     ///
     /// 未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）:
     /// recipes/covers/layer、passivesのactor対象、on_min/on_max/on_overflow/on_shortfallのself以外の対象。
@@ -32,45 +33,38 @@ namespace UnmappedIsland.Loader
             YamlMappingNode stackOrderNode,
             YamlMappingNode actionsNode,
             YamlMappingNode combinationsNode,
-            NameRegistry objectNames,
-            NameRegistry propertyNames,
-            NameRegistry slotNames,
-            NameRegistry tagNames,
-            NameRegistry symbolNames)
+            WorldCodexYamlLoader loader)
         {
-            int objectGlobalId = objectNames.Intern(name);
+            int objectGlobalId = loader.ObjectNames.Intern(name);
             var passives = new List<PassiveEffect>();
 
             var propertyDefs = new List<PropertyDef>();
             if (propsNode != null)
                 foreach (var (propName, propValueNode) in propsNode.EntriesInOrder())
-                    propertyDefs.Add(ParseProperty(
-                        name, propName, (YamlMappingNode)propValueNode, passives, propertyNames, slotNames, objectNames, tagNames, symbolNames));
-            var propertyLayout = new LocalIndexMap(propertyNames.Count, propertyDefs.Select(p => p.GlobalId).ToList());
+                    propertyDefs.Add(ParseProperty(name, propName, (YamlMappingNode)propValueNode, passives, loader));
+            var propertyLayout = new LocalIndexMap(loader.PropertyNames.Count, propertyDefs.Select(p => p.GlobalId).ToList());
 
             var slotDefs = new List<SlotDef>();
             if (slotsNode != null)
                 foreach (var (slotName, slotValueNode) in slotsNode.EntriesInOrder())
-                    slotDefs.Add(ParseSlot(name, slotName, (YamlMappingNode)slotValueNode, slotNames, tagNames, objectNames));
-            var slotLayout = new LocalIndexMap(slotNames.Count, slotDefs.Select(s => s.GlobalId).ToList());
+                    slotDefs.Add(ParseSlot(name, slotName, (YamlMappingNode)slotValueNode, loader));
+            var slotLayout = new LocalIndexMap(loader.SlotNames.Count, slotDefs.Select(s => s.GlobalId).ToList());
 
             foreach (YamlMappingNode passiveNode in passiveNodes)
-                ParsePassiveMapInto(
-                    passives, name, passiveNode, forcedStageProperty: null, forcedStageName: null,
-                    propertyNames, slotNames, tagNames, symbolNames);
+                ParsePassiveMapInto(passives, name, passiveNode, forcedStageProperty: null, forcedStageName: null, loader);
 
             StackOrderDef stackOrder = null;
             if (stackOrderNode != null)
             {
                 string context = $"'{name}'.stack_order";
                 stackOrder = new StackOrderDef(
-                    propertyNames.Intern(stackOrderNode.RequireScalar("property", context)),
+                    loader.PropertyNames.Intern(stackOrderNode.RequireScalar("property", context)),
                     stackOrderNode.TryGetBool("ascending", context, fallback: false));
             }
 
-            var actions = ParseActions(name, actionsNode, propertyNames, slotNames, objectNames, tagNames, symbolNames);
-            var combinations = ParseCombinations(name, combinationsNode, propertyNames, slotNames, objectNames, tagNames, symbolNames);
-            var tagIds = tags.Select(tagNames.Intern).Distinct().ToList();
+            var actions = ParseActions(name, actionsNode, loader);
+            var combinations = ParseCombinations(name, combinationsNode, loader);
+            var tagIds = tags.Select(loader.TagNames.Intern).Distinct().ToList();
 
             return new ObjectDef(
                 objectGlobalId, name, isSingleton, propertyLayout, propertyDefs, slotLayout, slotDefs,
@@ -78,12 +72,10 @@ namespace UnmappedIsland.Loader
         }
 
         private static PropertyDef ParseProperty(
-            string objectDefName, string propName, YamlMappingNode node,
-            List<PassiveEffect> passives, NameRegistry propertyNames, NameRegistry slotNames, NameRegistry objectNames,
-            NameRegistry tagNames, NameRegistry symbolNames)
+            string objectDefName, string propName, YamlMappingNode node, List<PassiveEffect> passives, WorldCodexYamlLoader loader)
         {
             string context = $"'{objectDefName}'.props.'{propName}'";
-            int propertyGlobalId = propertyNames.Intern(propName);
+            int propertyGlobalId = loader.PropertyNames.Intern(propName);
 
             YamlNode valueNode = node.TryGet("value");
             if (valueNode == null)
@@ -102,7 +94,7 @@ namespace UnmappedIsland.Loader
             }
             else
             {
-                defaultNumber = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, symbolNames, out isSymbolProperty);
+                defaultNumber = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, loader, out isSymbolProperty);
             }
 
             PropertyRange? range = null;
@@ -116,7 +108,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_overflowを使うには'range'が必須です。");
-                onOverflow = ParseActiveEffectBody($"{context}.on_overflow", onOverflowNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
+                onOverflow = ParseActiveEffectBody($"{context}.on_overflow", onOverflowNode, allowDragged: false, selfOnly: true, loader);
             }
             else
             {
@@ -129,7 +121,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_shortfallを使うには'range'が必須です。");
-                onShortfall = ParseActiveEffectBody($"{context}.on_shortfall", onShortfallNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
+                onShortfall = ParseActiveEffectBody($"{context}.on_shortfall", onShortfallNode, allowDragged: false, selfOnly: true, loader);
             }
             else
             {
@@ -150,7 +142,7 @@ namespace UnmappedIsland.Loader
                         if (stageMap.TryGet("min") != null)
                             throw new YamlLoadException(
                                 $"{context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。");
-                        stages.Add(new PropertyStage(stageName, min: null, eq: symbolNames.Intern(stageName)));
+                        stages.Add(new PropertyStage(stageName, min: null, eq: loader.SymbolNames.Intern(stageName)));
                     }
                     else
                     {
@@ -164,8 +156,7 @@ namespace UnmappedIsland.Loader
                     if (stagePassives != null)
                         foreach (YamlNode passiveNode in stagePassives)
                             ParsePassiveMapInto(passives, objectDefName, (YamlMappingNode)passiveNode,
-                                forcedStageProperty: propName, forcedStageName: stageName,
-                                propertyNames, slotNames, tagNames, symbolNames);
+                                forcedStageProperty: propName, forcedStageName: stageName, loader);
                 }
             }
 
@@ -173,7 +164,7 @@ namespace UnmappedIsland.Loader
             if (propPassives != null)
                 foreach (YamlNode passiveNode in propPassives)
                     ParsePassiveMapInto(passives, objectDefName, (YamlMappingNode)passiveNode,
-                        forcedStageProperty: null, forcedStageName: null, propertyNames, slotNames, tagNames, symbolNames);
+                        forcedStageProperty: null, forcedStageName: null, loader);
 
             ActiveEffect onMin = null;
             YamlMappingNode onMinNode = node.TryGetMapping("on_min", context);
@@ -181,7 +172,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_minを使うには'range'が必須です。");
-                onMin = ParseActiveEffectBody($"{context}.on_min", onMinNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
+                onMin = ParseActiveEffectBody($"{context}.on_min", onMinNode, allowDragged: false, selfOnly: true, loader);
             }
 
             ActiveEffect onMax = null;
@@ -190,7 +181,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_maxを使うには'range'が必須です。");
-                onMax = ParseActiveEffectBody($"{context}.on_max", onMaxNode, allowDragged: false, selfOnly: true, propertyNames, objectNames, symbolNames);
+                onMax = ParseActiveEffectBody($"{context}.on_max", onMaxNode, allowDragged: false, selfOnly: true, loader);
             }
 
             bool inherit = node.TryGetBool("inherit", context, fallback: false);
@@ -204,17 +195,17 @@ namespace UnmappedIsland.Loader
 
         /// <summary>
         /// 整数・真偽値・シンボル名（識別子）のいずれかとして値を解釈する。整数・真偽値としてパースできない
-        /// 識別子形の文字列は、symbolNamesへ登録してそのグローバルIDを返す（シンボル型のprops、6節）。
+        /// 識別子形の文字列は、loader.SymbolNamesへ登録してそのグローバルIDを返す（シンボル型のprops、6節）。
         /// これにより、シンボル型のpropsは専用の宣言（`symbol: true`等）を必要とせず、`value`の形だけで
         /// 自動的に判別できる。boolより先にsymbolを試すと"true"/"false"もシンボルとして解釈されてしまう
         /// ため、判定順は整数→真偽値→シンボルで固定する。
         /// </summary>
-        private static int ParseScalarNumber(string context, string raw, NameRegistry symbolNames) =>
-            ParseScalarNumber(context, raw, symbolNames, out _);
+        private static int ParseScalarNumber(string context, string raw, WorldCodexYamlLoader loader) =>
+            ParseScalarNumber(context, raw, loader, out _);
 
         /// <summary>isSymbolは、rawが整数・真偽値としてパースできず、シンボル名として登録された場合にtrue
         /// になる（propsのstages、6.4節が、プロパティ自身がシンボル型かどうかで解釈を変えるために使う）。</summary>
-        private static int ParseScalarNumber(string context, string raw, NameRegistry symbolNames, out bool isSymbol)
+        private static int ParseScalarNumber(string context, string raw, WorldCodexYamlLoader loader, out bool isSymbol)
         {
             isSymbol = false;
             if (int.TryParse(raw, out int number)) return number;
@@ -222,7 +213,7 @@ namespace UnmappedIsland.Loader
             if (SymbolPattern.IsMatch(raw))
             {
                 isSymbol = true;
-                return symbolNames.Intern(raw);
+                return loader.SymbolNames.Intern(raw);
             }
             throw new YamlLoadException($"{context}: 値 '{raw}' は整数・真偽値・シンボル名(識別子)のいずれかである必要があります。");
         }
@@ -266,8 +257,7 @@ namespace UnmappedIsland.Loader
         /// spawnは常にselfが実行するものとみなすため対象キーを持たない（対象別のラップを挟まない）。
         /// </summary>
         private static ActiveEffect ParseActiveEffectBody(
-            string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly,
-            NameRegistry propertyNames, NameRegistry objectNames, NameRegistry symbolNames,
+            string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly, WorldCodexYamlLoader loader,
             IReadOnlyCollection<string> reservedKeys = null)
         {
             var sets = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>();
@@ -279,8 +269,8 @@ namespace UnmappedIsland.Loader
                     var assigns = new List<PropertyAssignment>();
                     foreach (var (propName, valueNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
                         assigns.Add(ParsePropertyAssignment(
-                            $"{context}.set.'{targetName}'.'{propName}'", propertyNames.Intern(propName), valueNode,
-                            allowDragged, selfOnly, propertyNames, symbolNames));
+                            $"{context}.set.'{targetName}'.'{propName}'", loader.PropertyNames.Intern(propName), valueNode,
+                            allowDragged, selfOnly, loader));
                     sets[target] = assigns;
                 }
 
@@ -292,7 +282,7 @@ namespace UnmappedIsland.Loader
                     ReferenceRoot target = ParseActiveTargetKey($"{context}.add", targetName, allowDragged, selfOnly);
                     var deltas = new List<PropertyDelta>();
                     foreach (var (propName, amountNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
-                        deltas.Add(new PropertyDelta(propertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
+                        deltas.Add(new PropertyDelta(loader.PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
                     adds[target] = deltas;
                 }
 
@@ -307,14 +297,14 @@ namespace UnmappedIsland.Loader
             {
                 string into = spawnMap.TryGetScalar("into", context);
                 spawn = new SpawnEffect(
-                    objectNames.Intern(spawnMap.RequireScalar("object", context)),
+                    loader.ObjectNames.Intern(spawnMap.RequireScalar("object", context)),
                     ParseSpawnTargetRoot(context, into));
             }
 
             TransferEffect transfer = null;
             YamlMappingNode transferMap = bodyNode.TryGetMapping("transfer", context);
             if (transferMap != null)
-                transfer = ParseTransfer($"{context}.transfer", transferMap, allowDragged, selfOnly, propertyNames);
+                transfer = ParseTransfer($"{context}.transfer", transferMap, allowDragged, selfOnly, loader);
 
             var knownKeys = new HashSet<string>(ActiveVerbKeys);
             if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
@@ -334,8 +324,7 @@ namespace UnmappedIsland.Loader
         /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
         /// </summary>
         private static PropertyAssignment ParsePropertyAssignment(
-            string context, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly,
-            NameRegistry propertyNames, NameRegistry symbolNames)
+            string context, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly, WorldCodexYamlLoader loader)
         {
             if (valueNode is YamlMappingNode refMap)
             {
@@ -350,10 +339,10 @@ namespace UnmappedIsland.Loader
                 if (unknownKeys.Count > 0)
                     throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-                return new PropertyAssignment(propertyGlobalId, new PropertyPath(root, propertyNames.Intern(propName)));
+                return new PropertyAssignment(propertyGlobalId, new PropertyPath(root, loader.PropertyNames.Intern(propName)));
             }
 
-            return new PropertyAssignment(propertyGlobalId, ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, symbolNames));
+            return new PropertyAssignment(propertyGlobalId, ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, loader));
         }
 
         /// <summary>
@@ -363,19 +352,19 @@ namespace UnmappedIsland.Loader
         /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
         /// </summary>
         private static TransferEffect ParseTransfer(
-            string context, YamlMappingNode map, bool allowDragged, bool selfOnly, NameRegistry propertyNames)
+            string context, YamlMappingNode map, bool allowDragged, bool selfOnly, WorldCodexYamlLoader loader)
         {
             string fromObjectRaw = map.TryGetScalar("from_object", context);
             ReferenceRoot fromObject = fromObjectRaw != null
                 ? ParseActiveTargetKey(context, fromObjectRaw, allowDragged, selfOnly)
                 : ReferenceRoot.Self;
-            int fromProp = propertyNames.Intern(map.RequireScalar("from_prop", context));
+            int fromProp = loader.PropertyNames.Intern(map.RequireScalar("from_prop", context));
 
             string toObjectRaw = map.TryGetScalar("to_object", context);
             ReferenceRoot toObject = toObjectRaw != null
                 ? ParseActiveTargetKey(context, toObjectRaw, allowDragged, selfOnly)
                 : ReferenceRoot.Self;
-            int toProp = propertyNames.Intern(map.RequireScalar("to_prop", context));
+            int toProp = loader.PropertyNames.Intern(map.RequireScalar("to_prop", context));
 
             int amount = map.RequireInt("amount", context);
             bool allowOverflow = map.TryGetBool("allow_overflow", context, fallback: false);
@@ -488,14 +477,13 @@ namespace UnmappedIsland.Loader
         /// {object, slot}）か、入れ子のall/any/notのいずれか。conditionsNodeがnullなら省略（常に真）。
         /// </summary>
         private static ConditionNode ParseConditionsField(
-            string context, YamlSequenceNode conditionsNode, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
+            string context, YamlSequenceNode conditionsNode, IReadOnlyCollection<ReferenceRoot> allowedRoots, WorldCodexYamlLoader loader)
         {
             if (conditionsNode == null) return null;
 
             var children = new List<ConditionNode>();
             foreach (YamlNode node in conditionsNode)
-                children.Add(ParseConditionNode($"{context}.conditions[{children.Count}]", node, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
+                children.Add(ParseConditionNode($"{context}.conditions[{children.Count}]", node, allowedRoots, loader));
 
             return ConditionNode.All(children);
         }
@@ -503,8 +491,7 @@ namespace UnmappedIsland.Loader
         /// <summary>条件木の1ノードを読む。all/any/notのいずれかのキーを持てば複合ノード、それ以外は
         /// 葉（プロパティ比較・スロット位置判定・スロット中身判定のいずれか）として読む。</summary>
         private static ConditionNode ParseConditionNode(
-            string context, YamlNode node, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
+            string context, YamlNode node, IReadOnlyCollection<ReferenceRoot> allowedRoots, WorldCodexYamlLoader loader)
         {
             var map = (YamlMappingNode)node;
 
@@ -516,8 +503,8 @@ namespace UnmappedIsland.Loader
             if (combinatorCount > 1)
                 throw new YamlLoadException($"{context}: all/any/notは同時に指定できません。");
 
-            if (allNode != null) return ConditionNode.All(ParseCombinatorChildren(context, "all", allNode, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
-            if (anyNode != null) return ConditionNode.Any(ParseCombinatorChildren(context, "any", anyNode, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
+            if (allNode != null) return ConditionNode.All(ParseCombinatorChildren(context, "all", allNode, allowedRoots, loader));
+            if (anyNode != null) return ConditionNode.Any(ParseCombinatorChildren(context, "any", anyNode, allowedRoots, loader));
 
             if (notNode != null)
             {
@@ -525,19 +512,18 @@ namespace UnmappedIsland.Loader
                 if (unknown.Count > 0)
                     throw new YamlLoadException($"{context}: 'not'は他のキーと同居できません（値: '{string.Join(", ", unknown)}'）。");
 
-                return ConditionNode.Not(ParseConditionNode($"{context}.not", notNode, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
+                return ConditionNode.Not(ParseConditionNode($"{context}.not", notNode, allowedRoots, loader));
             }
 
-            return ParseConditionLeaf(context, map, allowedRoots, propertyNames, slotNames, tagNames, symbolNames);
+            return ParseConditionLeaf(context, map, allowedRoots, loader);
         }
 
         private static List<ConditionNode> ParseCombinatorChildren(
-            string context, string key, YamlSequenceNode seq, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
+            string context, string key, YamlSequenceNode seq, IReadOnlyCollection<ReferenceRoot> allowedRoots, WorldCodexYamlLoader loader)
         {
             var children = new List<ConditionNode>();
             foreach (YamlNode node in seq)
-                children.Add(ParseConditionNode($"{context}.{key}[{children.Count}]", node, allowedRoots, propertyNames, slotNames, tagNames, symbolNames));
+                children.Add(ParseConditionNode($"{context}.{key}[{children.Count}]", node, allowedRoots, loader));
             return children;
         }
 
@@ -551,8 +537,7 @@ namespace UnmappedIsland.Loader
         /// みで使える（in/not_inは複数値との比較のため、参照とは噛み合わない）。
         /// </summary>
         private static ConditionNode ParseConditionLeaf(
-            string context, YamlMappingNode map, IReadOnlyCollection<ReferenceRoot> allowedRoots,
-            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
+            string context, YamlMappingNode map, IReadOnlyCollection<ReferenceRoot> allowedRoots, WorldCodexYamlLoader loader)
         {
             string objectName = map.TryGetScalar("object", context);
             ReferenceRoot root = objectName != null ? ParseConditionObject(context, objectName, allowedRoots) : ReferenceRoot.Self;
@@ -578,7 +563,7 @@ namespace UnmappedIsland.Loader
                     throw new YamlLoadException(
                         $"{context}: 未知のキー '{string.Join(", ", unknownInSlotKeys)}' です（in_slot判定はobject/in_slotのみ持てます）。");
 
-                return ConditionNode.SlotPosition(root, slotNames.Intern(inSlotName));
+                return ConditionNode.SlotPosition(root, loader.SlotNames.Intern(inSlotName));
             }
 
             if (slotName != null)
@@ -592,7 +577,7 @@ namespace UnmappedIsland.Loader
                     throw new YamlLoadException(
                         $"{context}: 未知のキー '{string.Join(", ", unknownSlotKeys)}' です（スロット中身判定はobject/slot/tagのみ持てます）。");
 
-                return ConditionNode.SlotContent(root, slotNames.Intern(slotName), tagNames.Intern(tagName));
+                return ConditionNode.SlotContent(root, loader.SlotNames.Intern(slotName), loader.TagNames.Intern(tagName));
             }
 
             if (tagName != null)
@@ -628,12 +613,12 @@ namespace UnmappedIsland.Loader
                 if (unknownRefKeys.Count > 0)
                     throw new YamlLoadException($"{context}.value: 未知のキー '{string.Join(", ", unknownRefKeys)}' です。");
 
-                var valueRef = new PropertyPath(refRoot, propertyNames.Intern(refPropName));
-                return ConditionNode.Property(root, propertyNames.Intern(propName), op, values: null, valueRef: valueRef);
+                var valueRef = new PropertyPath(refRoot, loader.PropertyNames.Intern(refPropName));
+                return ConditionNode.Property(root, loader.PropertyNames.Intern(propName), op, values: null, valueRef: valueRef);
             }
 
-            List<PropertyValue> values = ParseConditionValues(context, op, valueNode, symbolNames);
-            return ConditionNode.Property(root, propertyNames.Intern(propName), op, values);
+            List<PropertyValue> values = ParseConditionValues(context, op, valueNode, loader);
+            return ConditionNode.Property(root, loader.PropertyNames.Intern(propName), op, values);
         }
 
         private static ConditionOp ParseConditionOp(string context, string raw)
@@ -652,7 +637,7 @@ namespace UnmappedIsland.Loader
             }
         }
 
-        private static List<PropertyValue> ParseConditionValues(string context, ConditionOp op, YamlNode valueNode, NameRegistry symbolNames)
+        private static List<PropertyValue> ParseConditionValues(string context, ConditionOp op, YamlNode valueNode, WorldCodexYamlLoader loader)
         {
             bool isList = op == ConditionOp.In || op == ConditionOp.NotIn;
 
@@ -660,25 +645,25 @@ namespace UnmappedIsland.Loader
             {
                 if (!(valueNode is YamlSequenceNode seq))
                     throw new YamlLoadException($"{context}: op '{op}' のvalueは配列である必要があります。");
-                return seq.Select(n => ParseConditionScalar(context, ((YamlScalarNode)n).Value, symbolNames)).ToList();
+                return seq.Select(n => ParseConditionScalar(context, ((YamlScalarNode)n).Value, loader)).ToList();
             }
 
             if (!(valueNode is YamlScalarNode scalar))
                 throw new YamlLoadException($"{context}: valueはスカラー値である必要があります。");
 
-            return new List<PropertyValue> { ParseConditionScalar(context, scalar.Value, symbolNames) };
+            return new List<PropertyValue> { ParseConditionScalar(context, scalar.Value, loader) };
         }
 
-        private static PropertyValue ParseConditionScalar(string context, string raw, NameRegistry symbolNames)
+        private static PropertyValue ParseConditionScalar(string context, string raw, WorldCodexYamlLoader loader)
         {
             if (raw == "max" || raw == "min")
                 throw new YamlLoadException(
                     $"{context}: value '{raw}' は未対応です（参照先プロパティのrangeの{raw}を指す規約がまだ確定していないため）。");
 
-            return PropertyValue.FromNumber(ParseScalarNumber(context, raw, symbolNames));
+            return PropertyValue.FromNumber(ParseScalarNumber(context, raw, loader));
         }
 
-        private static WeightSpec ParseWeight(string context, YamlNode node, bool allowDragged, NameRegistry propertyNames)
+        private static WeightSpec ParseWeight(string context, YamlNode node, bool allowDragged, WorldCodexYamlLoader loader)
         {
             if (node is YamlScalarNode scalar)
             {
@@ -699,7 +684,7 @@ namespace UnmappedIsland.Loader
                 if (unknownKeys.Count > 0)
                     throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-                return WeightSpec.FromPath(new PropertyPath(root, propertyNames.Intern(propName)));
+                return WeightSpec.FromPath(new PropertyPath(root, loader.PropertyNames.Intern(propName)));
             }
 
             throw new YamlLoadException($"{context}: weightはリテラル数値か{{object, prop}}のいずれかである必要があります。");
@@ -709,8 +694,7 @@ namespace UnmappedIsland.Loader
         private static readonly string[] PickCandidateReservedKeys = { "weight", "pick" };
 
         private static List<PickCandidateDef> ParsePickList(
-            string context, YamlSequenceNode pickNode, bool allowDragged,
-            NameRegistry propertyNames, NameRegistry objectNames, NameRegistry symbolNames)
+            string context, YamlSequenceNode pickNode, bool allowDragged, WorldCodexYamlLoader loader)
         {
             var result = new List<PickCandidateDef>();
 
@@ -722,7 +706,7 @@ namespace UnmappedIsland.Loader
                 YamlNode weightNode = map.TryGet("weight");
                 if (weightNode == null) throw new YamlLoadException($"{candidateContext}: 'weight'は必須です。");
 
-                WeightSpec weight = ParseWeight(candidateContext, weightNode, allowDragged, propertyNames);
+                WeightSpec weight = ParseWeight(candidateContext, weightNode, allowDragged, loader);
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode nestedPick = map.TryGetSequence("pick", candidateContext);
@@ -733,10 +717,10 @@ namespace UnmappedIsland.Loader
                     throw new YamlLoadException($"{candidateContext}: set/add/destroy/spawnのいずれか、またはpickが必要です。");
 
                 ActiveEffect active = hasActive
-                    ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly: false, propertyNames, objectNames, symbolNames, PickCandidateReservedKeys)
+                    ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly: false, loader, PickCandidateReservedKeys)
                     : null;
                 List<PickCandidateDef> pick = nestedPick != null
-                    ? ParsePickList(candidateContext, nestedPick, allowDragged, propertyNames, objectNames, symbolNames)
+                    ? ParsePickList(candidateContext, nestedPick, allowDragged, loader)
                     : null;
 
                 result.Add(new PickCandidateDef(weight, active, pick));
@@ -752,9 +736,7 @@ namespace UnmappedIsland.Loader
         private static readonly string[] CombinationReservedKeys = { "with", "conditions", "pick" };
 
         /// <summary>actions_map（11節）を読む。dragged対象はメニュー型操作では意味を持たないため不可。</summary>
-        private static List<ActionDef> ParseActions(
-            string objectDefName, YamlMappingNode actionsNode, NameRegistry propertyNames, NameRegistry slotNames,
-            NameRegistry objectNames, NameRegistry tagNames, NameRegistry symbolNames)
+        private static List<ActionDef> ParseActions(string objectDefName, YamlMappingNode actionsNode, WorldCodexYamlLoader loader)
         {
             var result = new List<ActionDef>();
             if (actionsNode == null) return result;
@@ -768,15 +750,15 @@ namespace UnmappedIsland.Loader
                 if (showMenuRaw != null && showMenuRaw != "always")
                     throw new YamlLoadException($"{context}: showMenuは現時点で'always'のみ対応しています（値: '{showMenuRaw}'）。");
 
-                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots, propertyNames, slotNames, tagNames, symbolNames);
+                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots, loader);
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
                 if (hasActive && pickList != null)
                     throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
 
-                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: false, selfOnly: false, propertyNames, objectNames, symbolNames, ActionReservedKeys) : null;
-                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: false, propertyNames, objectNames, symbolNames) : null;
+                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: false, selfOnly: false, loader, ActionReservedKeys) : null;
+                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: false, loader) : null;
 
                 result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, active, pick));
             }
@@ -785,9 +767,7 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>combinations_map（12節）を読む。dragged対象を使える。</summary>
-        private static List<CombinationDef> ParseCombinations(
-            string objectDefName, YamlMappingNode combinationsNode, NameRegistry propertyNames, NameRegistry slotNames,
-            NameRegistry objectNames, NameRegistry tagNames, NameRegistry symbolNames)
+        private static List<CombinationDef> ParseCombinations(string objectDefName, YamlMappingNode combinationsNode, WorldCodexYamlLoader loader)
         {
             var result = new List<CombinationDef>();
             if (combinationsNode == null) return result;
@@ -797,16 +777,16 @@ namespace UnmappedIsland.Loader
                 string context = $"'{objectDefName}'.combinations.'{name}'";
                 var map = (YamlMappingNode)node;
 
-                int with = tagNames.Intern(map.RequireScalar("with", context));
-                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots, propertyNames, slotNames, tagNames, symbolNames);
+                int with = loader.TagNames.Intern(map.RequireScalar("with", context));
+                ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots, loader);
 
                 bool hasActive = HasActiveContent(map);
                 YamlSequenceNode pickList = map.TryGetSequence("pick", context);
                 if (hasActive && pickList != null)
                     throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
 
-                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: true, selfOnly: false, propertyNames, objectNames, symbolNames, CombinationReservedKeys) : null;
-                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: true, propertyNames, objectNames, symbolNames) : null;
+                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: true, selfOnly: false, loader, CombinationReservedKeys) : null;
+                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: true, loader) : null;
 
                 result.Add(new CombinationDef(name, with, conditions, active, pick));
             }
@@ -827,12 +807,10 @@ namespace UnmappedIsland.Loader
             }
         }
 
-        private static SlotDef ParseSlot(
-            string objectDefName, string slotName, YamlMappingNode node,
-            NameRegistry slotNames, NameRegistry tagNames, NameRegistry objectNames)
+        private static SlotDef ParseSlot(string objectDefName, string slotName, YamlMappingNode node, WorldCodexYamlLoader loader)
         {
             string context = $"'{objectDefName}'.slots.'{slotName}'";
-            int slotGlobalId = slotNames.Intern(slotName);
+            int slotGlobalId = loader.SlotNames.Intern(slotName);
 
             var accepts = new List<SlotAcceptRule>();
             YamlSequenceNode acceptsNode = node.TryGetSequence("accepts", context);
@@ -850,7 +828,7 @@ namespace UnmappedIsland.Loader
                         throw new YamlLoadException($"{acceptContext}: 'tag'または'object'のいずれかが必要です。");
 
                     SlotAcceptTargetKind targetKind = tagName != null ? SlotAcceptTargetKind.Tag : SlotAcceptTargetKind.Object;
-                    int with = tagName != null ? tagNames.Intern(tagName) : objectNames.Intern(objectName);
+                    int with = tagName != null ? loader.TagNames.Intern(tagName) : loader.ObjectNames.Intern(objectName);
 
                     accepts.Add(new SlotAcceptRule(
                         targetKind, with,
@@ -883,17 +861,16 @@ namespace UnmappedIsland.Loader
         /// </summary>
         private static void ParsePassiveMapInto(
             List<PassiveEffect> output, string objectDefName, YamlMappingNode passiveMap,
-            string forcedStageProperty, string forcedStageName,
-            NameRegistry propertyNames, NameRegistry slotNames, NameRegistry tagNames, NameRegistry symbolNames)
+            string forcedStageProperty, string forcedStageName, WorldCodexYamlLoader loader)
         {
             string context = $"'{objectDefName}'.passives";
 
             YamlSequenceNode conditionsNode = passiveMap.TryGetSequence("conditions", context);
-            ConditionNode conditions = ParseConditionsField(context, conditionsNode, PassiveConditionRoots, propertyNames, slotNames, tagNames, symbolNames);
-            PassiveEffectGate gate = BuildGate(conditions, forcedStageProperty, forcedStageName, propertyNames);
+            ConditionNode conditions = ParseConditionsField(context, conditionsNode, PassiveConditionRoots, loader);
+            PassiveEffectGate gate = BuildGate(conditions, forcedStageProperty, forcedStageName, loader);
 
-            ParsePassiveOperationInto(output, context, passiveMap, "modify", PassiveEffectKind.Modify, gate, propertyNames);
-            ParsePassiveOperationInto(output, context, passiveMap, "accumulate", PassiveEffectKind.Accumulate, gate, propertyNames);
+            ParsePassiveOperationInto(output, context, passiveMap, "modify", PassiveEffectKind.Modify, gate, loader);
+            ParsePassiveOperationInto(output, context, passiveMap, "accumulate", PassiveEffectKind.Accumulate, gate, loader);
 
             var knownKeys = new HashSet<string> { "conditions", "modify", "accumulate" };
 
@@ -910,12 +887,12 @@ namespace UnmappedIsland.Loader
         /// （例:「装備している間、かつ耐久値がintactステージの間だけ」。RegisteredPassiveEffect.IsActive参照）。
         /// </summary>
         private static PassiveEffectGate BuildGate(
-            ConditionNode conditions, string stagePropertyName, string stageName, NameRegistry propertyNames)
+            ConditionNode conditions, string stagePropertyName, string stageName, WorldCodexYamlLoader loader)
         {
             var gate = new PassiveEffectGate { Conditions = conditions };
             if (stagePropertyName != null)
             {
-                gate.PropertyGlobalId = propertyNames.Intern(stagePropertyName);
+                gate.PropertyGlobalId = loader.PropertyNames.Intern(stagePropertyName);
                 gate.StageName = stageName;
             }
             return gate;
@@ -928,7 +905,7 @@ namespace UnmappedIsland.Loader
         /// </summary>
         private static void ParsePassiveOperationInto(
             List<PassiveEffect> output, string context, YamlMappingNode passiveMap,
-            string operationKey, PassiveEffectKind kind, PassiveEffectGate gate, NameRegistry propertyNames)
+            string operationKey, PassiveEffectKind kind, PassiveEffectGate gate, WorldCodexYamlLoader loader)
         {
             YamlMappingNode operationMap = passiveMap.TryGetMapping(operationKey, context);
             if (operationMap == null) return;
@@ -951,7 +928,7 @@ namespace UnmappedIsland.Loader
                 var body = (YamlMappingNode)bodyNode;
                 foreach (var (propName, amountNode) in body.EntriesInOrder())
                     output.Add(new PassiveEffect(
-                        target, kind, propertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value), gate));
+                        target, kind, loader.PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value), gate));
             }
         }
     }

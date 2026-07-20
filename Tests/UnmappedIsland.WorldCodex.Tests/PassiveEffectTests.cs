@@ -30,8 +30,12 @@ namespace UnmappedIsland.Codex.Tests
                 label, files.Select(f => new WorldCodexYamlLoader.SourceFile(f.FileLabel, f.Text)).ToList());
         }
 
-        private static WorldCodex Load(string yaml) =>
-            WorldCodexYamlLoader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+        private static WorldCodex Load(string yaml)
+        {
+            var loader = new WorldCodexYamlLoader();
+            loader.LoadFromGroups(new[] { Group("core", ("core.yaml", yaml)) });
+            return loader.Build();
+        }
 
         private WorldObject Spawn(WorldCodex codex, string objectName)
         {
