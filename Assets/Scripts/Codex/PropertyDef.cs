@@ -81,7 +81,7 @@ namespace UnmappedIsland.Codex
         /// （折り返し）でも、他のプロパティ（繰り上げ先）でも構わない。
         ///
         /// Rangeが定義されていて著者が明示的にon_overflowを書かなかった場合、ここには「自分自身をRange.Max
-        /// へsetする」という既定のActiveEffectがビルド時に自動生成されて入る（Loader.ObjectDefYamlConverter参照）。
+        /// へsetする」という既定のActiveEffectがビルド時に自動生成されて入る（Loader.WorldCodexYamlLoader.ParseProp参照）。
         /// これにより、著者はレンジ型プロパティの上限クランプを、on_overflowを書かずに`range`を書くだけで
         /// 実現できる。Range自体が未定義の場合のみnull（上限の仕組み自体を持たない）。
         /// </summary>
@@ -91,7 +91,7 @@ namespace UnmappedIsland.Codex
         /// on_shortfall（6.3節）: on_overflowの下限側の鏡像。値がRange.Minを下回った際に、selfへ一度だけ
         /// 適用するactive内容。Rangeが定義されていて著者が明示的にon_shortfallを書かなかった場合、
         /// 「自分自身をRange.Minへsetする」という既定のActiveEffectがビルド時に自動生成される
-        /// （Loader.ObjectDefYamlConverter参照）。Range自体が未定義の場合のみnull。
+        /// （Loader.WorldCodexYamlLoader.ParseProp参照）。Range自体が未定義の場合のみnull。
         /// </summary>
         public ActiveEffect OnShortfall { get; }
 
@@ -173,7 +173,7 @@ namespace UnmappedIsland.Codex
         /// （より高いminを持つ段）という概念が無いため、一致した時点で他の段を見ずに返してよい
         /// （min側は全段を見て最も高いminを採用する必要があるため、こちらは最後まで走査する）。
         ///
-        /// シンボル型プロパティ（Loader.ObjectDefYamlConverterが常にeqをnameから自動導出するため、
+        /// シンボル型プロパティ（Loader.WorldCodexYamlLoader.ParseStageが常にeqをnameから自動導出するため、
         /// フォールバックの段を作る手段が無い）には、そもそもフォールバックという概念自体が存在しない。
         /// 数値型プロパティも著者がフォールバック段階（min省略）を書かなければ同様にnullを返し得る。
         /// 理由は異なるが、いずれにせよResolveStageの戻り値はnullになり得るものとして扱い、呼び出し側

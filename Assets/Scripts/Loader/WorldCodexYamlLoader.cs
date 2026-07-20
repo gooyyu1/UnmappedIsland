@@ -13,6 +13,23 @@ namespace UnmappedIsland.Loader
     /// 実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す
     /// Load経由で使う）。
     ///
+    /// YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの
+    /// ParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/
+    /// ParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース
+    /// メソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。
+    /// 一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の
+    /// フィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。
+    /// RawObjectDef.cs参照）。
+    ///
+    /// props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり
+    /// （RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う
+    /// （プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、
+    /// これらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および
+    /// ParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて
+    /// 呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、
+    /// shallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし
+    /// object_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。
+    ///
     /// インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという
     /// ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という
     /// だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに
@@ -29,21 +46,18 @@ namespace UnmappedIsland.Loader
     /// 初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて
     /// 困る理由も無いため）。
     /// </summary>
-    public sealed class WorldCodexYamlLoader
+    public sealed partial class WorldCodexYamlLoader
     {
         private static readonly string[] YamlExtensions = { ".yaml", ".yml" };
 
-        /// <summary>Load系メソッドで蓄積したobject_defs/traitsの生YAMLノード。Buildが呼ばれるまでの
-        /// 「組み立て途中の世界」の中身そのもの。</summary>
-        private readonly Dictionary<string, (YamlMappingNode Node, string Source)> globalObjectDefs = new Dictionary<string, (YamlMappingNode, string)>();
-        private readonly Dictionary<string, (YamlMappingNode Node, string Source)> globalTraits = new Dictionary<string, (YamlMappingNode, string)>();
+        /// <summary>Load系メソッドで蓄積した、パース済みだがtrait未解決のobject_defs/traits。Buildが
+        /// 呼ばれるまでの「組み立て途中の世界」の中身そのもの。</summary>
+        private readonly Dictionary<string, RawObjectDef> globalObjectDefs = new Dictionary<string, RawObjectDef>();
+        private readonly Dictionary<string, RawTrait> globalTraits = new Dictionary<string, RawTrait>();
 
         /// <summary>
-        /// 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。Buildの中でのみ使う
-        /// （Load系メソッドは生YAMLノードの収集のみを行い、名前解決は一切しない）が、Loader.
-        /// ObjectDefYamlConverter以下の各パース処理へこのインスタンス自身を渡すことで、これらの
-        /// メソッドが必要な名前空間をここから読めるようにする（NameRegistryをバラバラの引数として
-        /// 渡し回さない）。
+        /// 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。他のpartialファイルの各パース
+        /// メソッドが、このインスタンス自身から必要な名前空間を読む。
         /// </summary>
         internal NameRegistry ObjectNames { get; private set; } = new NameRegistry();
         internal NameRegistry PropertyNames { get; private set; } = new NameRegistry();
@@ -88,12 +102,12 @@ namespace UnmappedIsland.Loader
             YamlMappingNode objectDefs = root.TryGetMapping("object_defs", label);
             if (objectDefs != null)
                 foreach (var (name, node) in objectDefs.EntriesInOrder())
-                    AddUnique(globalObjectDefs, name, (YamlMappingNode)node, label, "object_defs");
+                    AddUnique(globalObjectDefs, name, ParseObjectDef(name, (YamlMappingNode)node, label), "object_defs");
 
             YamlMappingNode traits = root.TryGetMapping("traits", label);
             if (traits != null)
                 foreach (var (name, node) in traits.EntriesInOrder())
-                    AddUnique(globalTraits, name, (YamlMappingNode)node, label, "traits");
+                    AddUnique(globalTraits, name, ParseTrait(name, (YamlMappingNode)node, label), "traits");
 
             return this;
         }
@@ -105,15 +119,10 @@ namespace UnmappedIsland.Loader
         /// </summary>
         public WorldCodex Build()
         {
-            var traitsByName = globalTraits.ToDictionary(kv => kv.Key, kv => TraitMerger.ParseTraitEntry(kv.Key, kv.Value.Node));
             var objectDefsByGlobalId = new Dictionary<int, ObjectDef>();
-
             foreach (var kv in globalObjectDefs)
             {
-                TraitMerger.RawObjectDef raw = TraitMerger.ParseObjectDefEntry(kv.Key, kv.Value.Node);
-                var (props, slots, passiveNodes, stackOrder, actions, combinations, tags) = TraitMerger.Resolve(raw, traitsByName);
-                ObjectDef def = ObjectDefYamlConverter.Build(
-                    kv.Key, raw.IsSingleton, tags, props, slots, passiveNodes, stackOrder, actions, combinations, this);
+                ObjectDef def = kv.Value.Resolve(globalTraits, this);
                 objectDefsByGlobalId[def.GlobalId] = def;
             }
 
@@ -140,13 +149,83 @@ namespace UnmappedIsland.Loader
             SymbolNames = new NameRegistry();
         }
 
-        private static void AddUnique(
-            Dictionary<string, (YamlMappingNode Node, string Source)> map, string name, YamlMappingNode node, string source, string kindLabel)
+        /// <summary>object_defs.'name'の1エントリを浅く抽出する。props/slots/passives/stack_order/
+        /// actions/combinationsはtrait合成（RawObjectDef.Resolve）がまだ起こりうるため、意味解釈前の
+        /// 生YAMLノードのまま持つ。自分自身の識別性（GlobalId）はtrait解決に依存しないため、ここで
+        /// ObjectNames.Internを呼んで確定させる。</summary>
+        private RawObjectDef ParseObjectDef(string name, YamlMappingNode node, string source)
+        {
+            string context = $"object_defs.'{name}'";
+
+            var raw = new RawObjectDef
+            {
+                Name = name,
+                Source = source,
+                GlobalId = ObjectNames.Intern(name),
+                IsSingleton = node.TryGetBool("singleton", context, fallback: false),
+                Props = node.TryGetMapping("props", context),
+                Slots = node.TryGetMapping("slots", context),
+                Passives = node.TryGetSequence("passives", context),
+                StackOrder = node.TryGetMapping("stack_order", context),
+                Actions = node.TryGetMapping("actions", context),
+                Combinations = node.TryGetMapping("combinations", context),
+            };
+
+            YamlSequenceNode traits = node.TryGetSequence("traits", context);
+            if (traits != null)
+                foreach (YamlNode t in traits)
+                    raw.TraitNames.Add(((YamlScalarNode)t).Value);
+
+            YamlSequenceNode tags = node.TryGetSequence("tags", context);
+            if (tags != null)
+                foreach (YamlNode t in tags)
+                    raw.Tags.Add(((YamlScalarNode)t).Value);
+
+            return raw;
+        }
+
+        /// <summary>traits.'name'の1エントリを浅く抽出する。ParseObjectDefと同じ理由で、props/slots/
+        /// passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。traitはそれ自体が
+        /// インスタンス化されることも、実行時に識別されることも無いため、interning対象の識別子を
+        /// 持たない。</summary>
+        private RawTrait ParseTrait(string name, YamlMappingNode node, string source)
+        {
+            string context = $"traits.'{name}'";
+
+            var raw = new RawTrait
+            {
+                Name = name,
+                Source = source,
+                Props = node.TryGetMapping("props", context),
+                Slots = node.TryGetMapping("slots", context),
+                Passives = node.TryGetSequence("passives", context),
+                StackOrder = node.TryGetMapping("stack_order", context),
+                Actions = node.TryGetMapping("actions", context),
+                Combinations = node.TryGetMapping("combinations", context),
+            };
+
+            YamlSequenceNode tags = node.TryGetSequence("tags", context);
+            if (tags != null)
+                foreach (YamlNode t in tags)
+                    raw.Tags.Add(((YamlScalarNode)t).Value);
+
+            return raw;
+        }
+
+        private static void AddUnique(Dictionary<string, RawObjectDef> map, string name, RawObjectDef raw, string kindLabel)
         {
             if (map.TryGetValue(name, out var existing))
                 throw new YamlLoadException(
-                    $"{kindLabel} '{name}' が重複しています（'{existing.Source}' と '{source}'）。");
-            map[name] = (node, source);
+                    $"{kindLabel} '{name}' が重複しています（'{existing.Source}' と '{raw.Source}'）。");
+            map[name] = raw;
+        }
+
+        private static void AddUnique(Dictionary<string, RawTrait> map, string name, RawTrait raw, string kindLabel)
+        {
+            if (map.TryGetValue(name, out var existing))
+                throw new YamlLoadException(
+                    $"{kindLabel} '{name}' が重複しています（'{existing.Source}' と '{raw.Source}'）。");
+            map[name] = raw;
         }
 
         private static IEnumerable<string> FindYamlFiles(string directory)

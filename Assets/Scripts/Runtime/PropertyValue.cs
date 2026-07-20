@@ -175,7 +175,7 @@ namespace UnmappedIsland.Runtime
         /// 有無や着地点によらず、on_max/on_minは境界へ到達した瞬間を必ず捉える。
         ///
         /// on_overflow/on_shortfallは、rangeの外側にはみ出していれば、著者が指定した内容（未指定なら
-        /// ビルド時に合成された既定のset、Loader.ObjectDefYamlConverter参照）を適用する。
+        /// ビルド時に合成された既定のset、Loader.WorldCodexYamlLoader.ParseProp参照）を適用する。
         /// この適用自体がAdd/SetNumberを通るため、その場でCheckRangeEventsが再評価され、1回のTick()・
         /// AddNumber呼び出しの中で複数span分の溢れ・繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が
         /// 宣言順に関わらず連鎖的に解決される。
