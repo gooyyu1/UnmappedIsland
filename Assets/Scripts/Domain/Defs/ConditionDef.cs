@@ -19,6 +19,11 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>combinations内でのみ意味を持つ、ドラッグされてきたカード（12.2節）。</summary>
         Dragged,
 
+        /// <summary>combinations内でのみ意味を持つ、ドラッグされてきたカードの直接の親。
+        /// 液体容器のような「中身のオブジェクトがコンテナ親のプロパティを参照する」ケース
+        /// （液体マーカーのpour_in/pour_*が、dragged容器のliquid_amountへ移送する）で使う。</summary>
+        DraggedParent,
+
         /// <summary>selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（Runtime.
         /// WorldObject.FindAncestorWithProperty参照）。「どのオブジェクトが定義しているか」に依存しない、
         /// 木構造上の実効的な参照のための起点。SlotPosition判定（{in_slot: ...}）では意味を持たないため

@@ -125,6 +125,7 @@ namespace UnmappedIsland.Domain.Runtime
                 case ReferenceRoot.Parent: return self.Parent;
                 case ReferenceRoot.Actor: return actor;
                 case ReferenceRoot.Dragged: return dragged;
+                case ReferenceRoot.DraggedParent: return dragged?.Parent;
                 default: return null;
             }
         }

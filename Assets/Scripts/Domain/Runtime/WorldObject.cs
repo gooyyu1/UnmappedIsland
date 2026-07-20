@@ -537,10 +537,10 @@ namespace UnmappedIsland.Domain.Runtime
             return source != null && source.TryGetProperty(path.PropertyGlobalId, out PropertyValue value) ? value.GetEffectiveValue() : 0;
         }
 
-        /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged)を解決する。selfは常にこの
-        /// インスタンス自身、parentはthis.Parent（無ければnull）。Ancestorはプロパティごとに解決先が
-        /// 変わりうる（FindAncestorWithProperty）ため、ここでは扱わない（ApplyActiveEffectのSets/Adds
-        /// ループがkey==Ancestorを直接特別扱いする）。</summary>
+        /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged/dragged_parent)を解決する。selfは常にこの
+        /// インスタンス自身、parentはthis.Parent（無ければnull）、dragged_parentはdraggedの直接の親（無ければnull）。
+        /// Ancestorはプロパティごとに解決先が変わりうる（FindAncestorWithProperty）ため、ここでは扱わない
+        /// （ApplyActiveEffectのSets/Addsループがkey==Ancestorを直接特別扱いする）。</summary>
         private WorldObject ResolveEffectTarget(ReferenceRoot root, WorldObject actor, WorldObject dragged)
         {
             switch (root)
@@ -549,6 +549,7 @@ namespace UnmappedIsland.Domain.Runtime
                 case ReferenceRoot.Parent: return Parent;
                 case ReferenceRoot.Actor: return actor;
                 case ReferenceRoot.Dragged: return dragged;
+                case ReferenceRoot.DraggedParent: return dragged?.Parent;
                 default: return null;
             }
         }
