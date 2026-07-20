@@ -153,14 +153,14 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>objが現在属しているObjectStack（無ければnull）。</summary>
         internal ObjectStack FindStackContaining(WorldObject obj) => stacks.FirstOrDefault(s => s.Members.Contains(obj));
 
-        /// <summary>candidateが合流できる既存のObjectStack（ObjectDef・StackTypeが一致するもの、無ければnull）。</summary>
+        /// <summary>candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければnull）。</summary>
         internal ObjectStack FindMatchingStack(WorldObject candidate) => stacks.FirstOrDefault(s => s.Matches(candidate));
 
         /// <summary>このObjectStackが外側リスト(Stacks)の何番目にあるか。</summary>
         internal int IndexOfStack(ObjectStack stack) => stacks.IndexOf(stack);
 
-        /// <summary>型globalIdに対応するObjectStackの固定番号（無ければnull）。stack_byを使わない
-        /// ObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。stack_byを使う
+        /// <summary>型globalIdに対応するObjectStackの固定番号（無ければnull）。represented_byを使わない
+        /// ObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。represented_byを使う
         /// ObjectDefについて調べたい場合は、FindStackContaining等で具体的なWorldObjectから辿ること。</summary>
         public int? GetGridIndex(int objectDefGlobalId) =>
             stacks.FirstOrDefault(s => s.Def.GlobalId == objectDefGlobalId)?.GridIndex;
@@ -224,7 +224,7 @@ namespace UnmappedIsland.Domain.Runtime
 
         /// <summary>
         /// プレイヤーによる手動並び替え。対象の型が既に存在する番号と入れ替える（無ければ何もしない）。
-        /// 前詰めしない前提のため、単純な2者間のswapとして表現する。stack_byを使わないObjectDef向けの
+        /// 前詰めしない前提のため、単純な2者間のswapとして表現する。represented_byを使わないObjectDef向けの
         /// 簡易API（GetGridIndexと同じ理由）。
         /// </summary>
         public bool TrySetManualPosition(int objectDefGlobalId, int newGridIndex)

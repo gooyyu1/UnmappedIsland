@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
@@ -8,25 +9,20 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Loader
 {
     /// <summary>
-    /// Assets/StreamingAssets/WorldCodex/containers.yaml（液体容器のサンプル定義。中身の種類をシンボル型
-    /// プロパティ(content)で直接表し、conditions/setの値をリテラルの代わりに{object, prop}参照にできる
-    /// 仕組み（GameElementDefinition.md 14.1節・9.2節）だけで混ぜ物防止まで表現する設計）が、core.yaml・
-    /// characters.yamlと同じディレクトリ内の複数ファイルとして実際に正しくロードでき、drink/pour_inが
-    /// 意図通り動くことを確認する自動テスト（CharactersYamlTests/FoodsYamlTests参照、同じ方針）。
+    /// Assets/StreamingAssets/WorldCodex/containers.yaml が、represented_by で中身オブジェクトへ委譲する
+    /// 新しい液体容器モデルを正しく表現できているかを確認する自動テスト。
     /// </summary>
     [TestFixture]
     public class ContainersYamlTests
     {
         private WorldCodex codex;
         private int nextInstanceId;
-        private int contentId;
-        private int liquidAmountId;
         private int hydrationId;
+        private int wakefulnessId;
         private int weatherId;
         private int locationsSlotId;
-        private int emptySymbol;
-        private int waterSymbol;
-        private int oilSymbol;
+        private int contentSlotId;
+        private int liquidAmountId;
 
         [OneTimeSetUp]
         public void LoadWorldCodex()
@@ -34,42 +30,18 @@ namespace UnmappedIsland.Loader
             string coreYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/core.yaml");
             string charactersYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/characters.yaml");
             string containersYamlPath = FindRepoFile("Assets/StreamingAssets/WorldCodex/containers.yaml");
-            // canteen/canteen_of_water/canteen_of_oilはcontainers.yamlから削除されたため、
-            // テストに必要な定義のみをここで補完する。
-            const string testObjects = @"
-object_defs:
-  canteen:
-    traits: [liquid_container]
-  canteen_of_water:
-    traits: [liquid_container]
-    props:
-      content:
-        value: water
-      liquid_amount:
-        value: 4800
-  canteen_of_oil:
-    traits: [liquid_container]
-    props:
-      content:
-        value: oil
-      liquid_amount:
-        value: 4800
-";
             codex = new WorldCodexYamlLoader()
                 .LoadFromFile(coreYamlPath)
                 .LoadFromFile(charactersYamlPath)
                 .LoadFromFile(containersYamlPath)
-                .Load("test_objects", testObjects)
                 .Build();
 
-            contentId = codex.PropertyNames.GetId("content");
-            liquidAmountId = codex.PropertyNames.GetId("liquid_amount");
             hydrationId = codex.PropertyNames.GetId("hydration");
+            wakefulnessId = codex.PropertyNames.GetId("wakefulness");
             weatherId = codex.PropertyNames.GetId("weather");
             locationsSlotId = codex.SlotNames.GetId("locations");
-            emptySymbol = codex.SymbolNames.GetId("empty");
-            waterSymbol = codex.SymbolNames.GetId("water");
-            oilSymbol = codex.SymbolNames.GetId("oil");
+            contentSlotId = codex.SlotNames.GetId("content");
+            liquidAmountId = codex.PropertyNames.GetId("liquid_amount");
         }
 
         [SetUp]
@@ -78,8 +50,6 @@ object_defs:
             nextInstanceId = 1;
         }
 
-        /// <summary>dotnet testの実行ディレクトリ(bin/配下)から、リポジトリルート基準の相対パスを
-        /// たどれるよう、targetを含む祖先ディレクトリを探索する。</summary>
         private static string FindRepoFile(string relativePath)
         {
             var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -101,18 +71,37 @@ object_defs:
             return def.PropertyDefs[local];
         }
 
-        private WorldObject SpawnContainer(string objectName, int contentSymbol, int liquidAmount)
+        private static string CapacitySuffixFor(string containerName)
         {
-            WorldObject container = Spawn(objectName);
-            container.SetProperty(contentId, PropertyValue.FromNumber(contentSymbol));
-            container.SetProperty(liquidAmountId, PropertyValue.FromNumber(liquidAmount));
+            switch (containerName)
+            {
+                case "coconut_bowl": return "1200";
+                case "canteen":
+                case "pot": return "4800";
+                case "bottle": return "9600";
+                case "jar": return "19200";
+                default: throw new ArgumentOutOfRangeException(nameof(containerName), containerName, null);
+            }
+        }
+
+        private static string CarrierNameFor(string containerName, string liquidKind) =>
+            $"{liquidKind}_liquid_{CapacitySuffixFor(containerName)}";
+
+        private WorldObject SpawnContainer(string containerName, string liquidKind, int liquidAmount)
+        {
+            WorldObject container = Spawn(containerName);
+            WorldObject content = Spawn(CarrierNameFor(containerName, liquidKind));
+            content.SetProperty(liquidAmountId, PropertyValue.FromNumber(liquidAmount));
+            content.MoveToSlot(container, contentSlotId, codex.WellKnown, out _);
             return container;
         }
 
-        private WorldObject SpawnCanteen(int contentSymbol, int liquidAmount) =>
-            SpawnContainer("canteen", contentSymbol, liquidAmount);
+        private WorldObject ContentOf(WorldObject container)
+        {
+            container.TryGetSlot(contentSlotId, out Slot slot);
+            return slot.Contents.Single();
+        }
 
-        /// <summary>指定した天気のworldインスタンスを生成する。</summary>
         private WorldObject SpawnWorld(string weather)
         {
             WorldObject world = Spawn("world");
@@ -120,54 +109,85 @@ object_defs:
             return world;
         }
 
-        /// <summary>{object: ancestor, prop: weather, ...}がworldへたどり着けるよう、容器をworldの
-        /// locationsスロットへ強制的に配置する（accepts上はlocationタグ専用だが、テストでは木構造上の
-        /// 親子関係だけを再現できればよいため、force:trueでaccepts判定を無視する）。</summary>
-        private WorldObject SpawnContainerUnderWorld(string objectName, int contentSymbol, int liquidAmount, WorldObject world, WorldSession session)
+        private WorldObject SpawnContainerUnderWorld(string containerName, string liquidKind, int liquidAmount, WorldObject world, WorldSession session)
         {
-            WorldObject container = SpawnContainer(objectName, contentSymbol, liquidAmount);
+            WorldObject container = SpawnContainer(containerName, liquidKind, liquidAmount);
             container.MoveToSlot(world, locationsSlotId, session.Codex.WellKnown, out _, force: true);
             return container;
         }
 
-        [Test]
-        public void Drink_WithNonEmptyContent_TransfersLiquidAmountToActorHydration()
+        private string FindOnlyMatchingCombinationName(WorldObject self, WorldObject dragged)
         {
-            var session = new WorldSession(codex);
-            WorldObject actor = Spawn("character");
-            WorldObject canteen = SpawnCanteen(waterSymbol, 3000);
-            actor.SetProperty(hydrationId, PropertyValue.FromNumber(0));
-
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
-
-            Assert.That(executed, Is.True, "contentがempty以外なのでdrinkが実行される");
-            Assert.That(canteen.GetNumber(liquidAmountId), Is.EqualTo(1800));
-            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200));
+            var matches = InteractionExecutor.FindMatchingCombinations(self, dragged).ToList();
+            Assert.That(matches.Count, Is.EqualTo(1), "この組み合わせでは候補が1つだけであることを前提にしている");
+            return matches[0].Name;
         }
 
         [Test]
-        public void CanteenOfWaterAndOil_HavePrefilledContentAndLiquidAmount()
+        public void Containers_AreSlotOnlyWrappersRepresentedByContent()
         {
-            ObjectDef canteenOfWater = codex.Objects.Get(codex.ObjectNames.GetId("canteen_of_water"));
-            ObjectDef canteenOfOil = codex.Objects.Get(codex.ObjectNames.GetId("canteen_of_oil"));
+            ObjectDef canteen = codex.Objects.Get(codex.ObjectNames.GetId("canteen"));
 
-            Assert.That(PropOf(canteenOfWater, "content").DefaultNumber, Is.EqualTo(waterSymbol));
-            Assert.That(PropOf(canteenOfWater, "liquid_amount").DefaultNumber, Is.EqualTo(4800));
-            Assert.That(PropOf(canteenOfOil, "content").DefaultNumber, Is.EqualTo(oilSymbol));
-            Assert.That(PropOf(canteenOfOil, "liquid_amount").DefaultNumber, Is.EqualTo(4800));
+            Assert.That(canteen.RepresentedBySlotGlobalId, Is.EqualTo(contentSlotId));
+            Assert.That(canteen.Actions, Is.Empty, "容器本体は中身の行動を持たない");
+            Assert.That(canteen.Combinations, Is.Empty, "容器本体は注ぎ処理を持たない");
+            Assert.That(canteen.PropertyDefs.Select(p => p.Name), Does.Not.Contain("liquid_amount"));
         }
 
         [TestCase("coconut_bowl", 1200)]
         [TestCase("pot", 4800)]
         [TestCase("bottle", 9600)]
         [TestCase("jar", 19200)]
-        public void Container_HasExpectedCapacity(string objectName, int expectedMax)
+        public void LiquidCarrier_HasExpectedCapacityForContainerFamily(string containerName, int expectedMax)
         {
-            ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId(objectName));
-            PropertyDef liquidAmount = PropOf(def, "liquid_amount");
+            ObjectDef waterCarrier = codex.Objects.Get(codex.ObjectNames.GetId(CarrierNameFor(containerName, "water")));
+            PropertyDef liquidAmount = PropOf(waterCarrier, "liquid_amount");
 
             Assert.That(liquidAmount.Range.HasValue, Is.True);
             Assert.That(liquidAmount.Range.Value.Max, Is.EqualTo(expectedMax));
+        }
+
+        [Test]
+        public void Drink_WaterDelegatesFromContainerToRepresentedLiquid()
+        {
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn("character");
+            WorldObject canteen = SpawnContainer("canteen", "water", 3000);
+            actor.SetProperty(hydrationId, PropertyValue.FromNumber(0));
+
+            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(ContentOf(canteen).GetNumber(liquidAmountId), Is.EqualTo(1800));
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200));
+        }
+
+        [Test]
+        public void Drink_TeaCanApplyAdditionalContentSpecificEffect()
+        {
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn("character");
+            WorldObject canteen = SpawnContainer("canteen", "tea", 3000);
+            actor.SetProperty(hydrationId, PropertyValue.FromNumber(0));
+            actor.SetProperty(wakefulnessId, PropertyValue.FromNumber(0));
+
+            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(2000));
+            Assert.That(actor.GetNumber(wakefulnessId), Is.EqualTo(200), "お茶だけが持つ追加効果も represented_by 経由で発動する");
+        }
+
+        [Test]
+        public void Drink_OilHasNoDrinkAction()
+        {
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn("character");
+            WorldObject canteen = SpawnContainer("canteen", "oil", 3000);
+
+            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+
+            Assert.That(executed, Is.False, "飲用不可の液体は自分でdrinkアクションを持たない");
         }
 
         [TestCase("cloudy", -1)]
@@ -178,11 +198,11 @@ object_defs:
         {
             var session = new WorldSession(codex);
             WorldObject world = SpawnWorld(weather);
-            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", waterSymbol, 100, world, session);
+            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", "water", 100, world, session);
 
             bowl.Tick(session);
 
-            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(100 + expectedDelta));
+            Assert.That(ContentOf(bowl).GetNumber(liquidAmountId), Is.EqualTo(100 + expectedDelta));
         }
 
         [TestCase("storm")]
@@ -192,23 +212,11 @@ object_defs:
         {
             var session = new WorldSession(codex);
             WorldObject world = SpawnWorld(weather);
-            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", waterSymbol, 100, world, session);
+            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", "water", 100, world, session);
 
             bowl.Tick(session);
 
-            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(100), "降雨中は湿度が高いとみなし蒸発しない");
-        }
-
-        [Test]
-        public void Evaporation_EmptyCoconutBowlDoesNotEvaporateEvenWhenScorching()
-        {
-            var session = new WorldSession(codex);
-            WorldObject world = SpawnWorld("scorching");
-            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", emptySymbol, 0, world, session);
-
-            bowl.Tick(session);
-
-            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(0), "空なので蒸発するものが無い");
+            Assert.That(ContentOf(bowl).GetNumber(liquidAmountId), Is.EqualTo(100));
         }
 
         [TestCase("cloudy", -2)]
@@ -219,11 +227,11 @@ object_defs:
         {
             var session = new WorldSession(codex);
             WorldObject world = SpawnWorld(weather);
-            WorldObject jar = SpawnContainerUnderWorld("jar", waterSymbol, 200, world, session);
+            WorldObject jar = SpawnContainerUnderWorld("jar", "water", 200, world, session);
 
             jar.Tick(session);
 
-            Assert.That(jar.GetNumber(liquidAmountId), Is.EqualTo(200 + expectedDelta), "壺は鍋・瓶より口が広い想定でcoconut_bowlの2倍の速さで蒸発する");
+            Assert.That(ContentOf(jar).GetNumber(liquidAmountId), Is.EqualTo(200 + expectedDelta));
         }
 
         [TestCase("canteen")]
@@ -232,94 +240,71 @@ object_defs:
         public void Evaporation_SealedContainersDoNotEvaporate(string objectName)
         {
             var session = new WorldSession(codex);
-            WorldObject world = SpawnWorld("scorching"); // 最も蒸発しやすい天気でも蓋付きなら影響しないことを確認
-            WorldObject container = SpawnContainerUnderWorld(objectName, waterSymbol, 100, world, session);
+            WorldObject world = SpawnWorld("scorching");
+            WorldObject container = SpawnContainerUnderWorld(objectName, "water", 100, world, session);
 
             container.Tick(session);
 
-            Assert.That(container.GetNumber(liquidAmountId), Is.EqualTo(100), "蓋付きなので天気によらず蒸発しない");
+            Assert.That(ContentOf(container).GetNumber(liquidAmountId), Is.EqualTo(100));
         }
 
         [Test]
-        public void Evaporation_DepletingLiquidAmount_ResetsContentToEmptyViaOnMin()
+        public void Evaporation_DepletingLiquid_ReplacesRepresentedContentWithEmptyCarrier()
         {
             var session = new WorldSession(codex);
             WorldObject world = SpawnWorld("clear");
-            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", waterSymbol, 2, world, session);
+            WorldObject bowl = SpawnContainerUnderWorld("coconut_bowl", "water", 2, world, session);
 
             bowl.Tick(session);
 
-            Assert.That(bowl.GetNumber(liquidAmountId), Is.EqualTo(0));
-            Assert.That(bowl.GetNumber(contentId), Is.EqualTo(emptySymbol), "蒸発しきるとon_minでcontentがemptyに戻る");
+            Assert.That(ContentOf(bowl).Def.Name, Is.EqualTo("empty_liquid_1200"));
+            Assert.That(ContentOf(bowl).GetNumber(liquidAmountId), Is.EqualTo(0));
         }
 
         [Test]
-        public void Drink_WithEmptyContent_DoesNothingAndReturnsFalse()
+        public void PourIn_IntoEmptyContainer_ReplacesEmptyCarrierWithDraggedLiquidFamily()
         {
             var session = new WorldSession(codex);
-            WorldObject actor = Spawn("character");
-            WorldObject canteen = SpawnCanteen(emptySymbol, 0);
+            WorldObject self = SpawnContainer("canteen", "empty", 0);
+            WorldObject dragged = SpawnContainer("canteen", "water", 3000);
+            string combinationName = FindOnlyMatchingCombinationName(self, dragged);
 
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, combinationName, session);
 
-            Assert.That(executed, Is.False, "contentがemptyなのでdrinkは実行されない");
+            Assert.That(executed, Is.True);
+            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid_4800"));
+            Assert.That(ContentOf(self).GetNumber(liquidAmountId), Is.EqualTo(2000));
+            Assert.That(ContentOf(dragged).GetNumber(liquidAmountId), Is.EqualTo(1000));
         }
 
         [Test]
-        public void PourIn_IntoEmptyContainer_CopiesContentAndTransfersAmount()
+        public void PourIn_IntoContainerWithSameContent_TopsUpWithoutChangingLiquidType()
         {
             var session = new WorldSession(codex);
-            WorldObject self = SpawnCanteen(emptySymbol, 0);
-            WorldObject dragged = SpawnCanteen(waterSymbol, 3000);
+            WorldObject self = SpawnContainer("canteen", "water", 500);
+            WorldObject dragged = SpawnContainer("canteen", "water", 3000);
 
             bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
 
-            Assert.That(executed, Is.True, "selfが空なので注げる");
-            Assert.That(self.GetNumber(contentId), Is.EqualTo(waterSymbol), "空だった容器の中身がdraggedと同じ種類になる");
-            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(2000));
-            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(1000));
-        }
-
-        [Test]
-        public void PourIn_IntoContainerWithSameContent_TopsUpWithoutChangingContent()
-        {
-            var session = new WorldSession(codex);
-            WorldObject self = SpawnCanteen(waterSymbol, 500);
-            WorldObject dragged = SpawnCanteen(waterSymbol, 3000);
-
-            bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
-
-            Assert.That(executed, Is.True, "selfとdraggedが同じ種類(water)なので継ぎ足せる");
-            Assert.That(self.GetNumber(contentId), Is.EqualTo(waterSymbol));
-            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(2500));
-            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(1000));
+            Assert.That(executed, Is.True);
+            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid_4800"));
+            Assert.That(ContentOf(self).GetNumber(liquidAmountId), Is.EqualTo(2500));
+            Assert.That(ContentOf(dragged).GetNumber(liquidAmountId), Is.EqualTo(1000));
         }
 
         [Test]
         public void PourIn_IntoContainerWithDifferentContent_DoesNothingAndReturnsFalse()
         {
             var session = new WorldSession(codex);
-            WorldObject self = SpawnCanteen(oilSymbol, 500);
-            WorldObject dragged = SpawnCanteen(waterSymbol, 3000);
+            WorldObject self = SpawnContainer("canteen", "oil", 500);
+            WorldObject dragged = SpawnContainer("canteen", "water", 3000);
 
             bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
 
-            Assert.That(executed, Is.False, "selfに既に違う種類(oil)が入っているため、水を注ぐと混ざってしまうので拒否される");
-            Assert.That(self.GetNumber(contentId), Is.EqualTo(oilSymbol), "中身は変化しない");
-            Assert.That(self.GetNumber(liquidAmountId), Is.EqualTo(500));
-            Assert.That(dragged.GetNumber(liquidAmountId), Is.EqualTo(3000), "実行されないのでdragged側も変化しない");
-        }
-
-        [Test]
-        public void PourIn_FromEmptyDragged_DoesNothingAndReturnsFalse()
-        {
-            var session = new WorldSession(codex);
-            WorldObject self = SpawnCanteen(emptySymbol, 0);
-            WorldObject dragged = SpawnCanteen(emptySymbol, 0);
-
-            bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
-
-            Assert.That(executed, Is.False, "draggedが空(注げる中身が無い)なので実行されない");
+            Assert.That(executed, Is.False);
+            Assert.That(ContentOf(self).Def.Name, Is.EqualTo("oil_liquid_4800"));
+            Assert.That(ContentOf(self).GetNumber(liquidAmountId), Is.EqualTo(500));
+            Assert.That(ContentOf(dragged).GetNumber(liquidAmountId), Is.EqualTo(3000));
         }
     }
 }
