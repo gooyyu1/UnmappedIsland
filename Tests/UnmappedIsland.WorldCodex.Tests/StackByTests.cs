@@ -1,10 +1,10 @@
 using System.Linq;
 using NUnit.Framework;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
+using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// stack_by（GameElementDefinition.md 7.6節）に対する自動テスト。同じObjectDefでも指定した

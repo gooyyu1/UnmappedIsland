@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using YamlDotNet.RepresentationModel;
 
 namespace UnmappedIsland.Loader

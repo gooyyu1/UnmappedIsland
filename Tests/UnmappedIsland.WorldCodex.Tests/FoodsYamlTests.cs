@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using NUnit.Framework;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
+using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/foods.yaml（サンプル食料の定義）が、core.yaml・

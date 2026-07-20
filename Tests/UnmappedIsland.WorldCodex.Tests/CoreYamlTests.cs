@@ -1,12 +1,12 @@
 using System;
 using System.IO;
 using NUnit.Framework;
-using UnmappedIsland.Codex;
+using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
-using UnmappedIsland.Runtime.Views;
+using UnmappedIsland.Domain.Runtime;
+using UnmappedIsland.Domain.Runtime.Views;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/core.yaml（ゲーム本体の最も基本的な定義: world・locationトレイト）

@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using NUnit.Framework;
 using UnmappedIsland.Loader;
-using UnmappedIsland.Runtime;
+using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Codex.Tests
+namespace UnmappedIsland.Domain.Defs.Tests
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/containers.yaml（液体容器のサンプル定義。中身の種類をシンボル型
