@@ -137,10 +137,12 @@
  * このHTMLファイル1つで完結する（Documents/以下に置くと、既存のdocs.yml（.github/workflows/）が
  * docs/へ自動コピーするため、GitHub Pages公開のために追加の作業は不要）。
  *
- * 3段構成: オブジェクト一覧(#/) → オブジェクト詳細(#/object/<name>) →
+ * 4段構成: オブジェクト一覧(#/) → オブジェクト詳細(#/object/<name>) →
  * プロパティ詳細(#/property/<objectName>/<propertyName>)。
  * プロパティはobject_defごとに個別の定義を持てる（同名でも定義が異なりうる、
  * GameElementDefinition.md 6節）ため、プロパティ詳細はオブジェクト名とセットでのみ一意に定まる。
+ * プロパティの参照先が複数の候補に絞れない場合は、その名前のプロパティを持つ
+ * object_defの一覧ページ(#/prop-candidates/<propertyName>)へリンクする。
  *
  * traitのprops/slots/actions/combinations/tagsの合成規則は、Loader.RawObjectDef.Resolve（C#実装）と
  * 同じルールをこのファイル内で再実装している（識別子キーの衝突はエラーにせず、表示上は
@@ -419,10 +421,8 @@ function renderPropRef(targetKind, propName, selfObjectName) {
     return "<a href=\"#/property/" + encodeURIComponent(candidates[0]) + "/" + encodeURIComponent(propName) + "\">" + label +
       "</a><span class=\"muted\">（→" + esc(candidates[0]) + "）</span>";
   }
-  var links = candidates.map(function (c) {
-    return "<a href=\"#/property/" + encodeURIComponent(c) + "/" + encodeURIComponent(propName) + "\">" + esc(c) + "</a>";
-  }).join("、");
-  return label + "<span class=\"muted\">（候補: " + links + "）</span>";
+  return "<a href=\"#/prop-candidates/" + encodeURIComponent(propName) + "\">" + label +
+    "</a><span class=\"muted\">（候補複数）</span>";
 }
 
 function renderObjectRef(objectName) {
@@ -749,6 +749,28 @@ function renderPropertyDetailPage(objName, propName) {
     "<ul class=\"plain\">" + (influencersHtml || "<li class=\"muted\">(なし)</li>") + "</ul>";
 }
 
+function renderPropCandidatesPage(propName) {
+  var candidates = findObjectsWithProperty(propName);
+  if (candidates.length === 0) {
+    return "<p class=\"error\">'" + esc(propName) + "' という名前のpropはどのobject_defにも存在しません。</p>" +
+      "<p><a href=\"#/\">← オブジェクト一覧へ</a></p>";
+  }
+
+  var rows = candidates.map(function (objName) {
+    return "<tr>" +
+      "<td><a href=\"#/object/" + encodeURIComponent(objName) + "\">" + esc(objName) + "</a></td>" +
+      "<td><a href=\"#/property/" + encodeURIComponent(objName) + "/" + encodeURIComponent(propName) + "\">" +
+        esc(objName) + "." + esc(propName) + "</a></td>" +
+      "</tr>";
+  }).join("");
+
+  return "<p class=\"breadcrumb\"><a href=\"#/\">← オブジェクト一覧</a></p>" +
+    "<h1><span class=\"muted\">prop candidates: </span>" + esc(propName) + "</h1>" +
+    "<p class=\"muted\">'" + esc(propName) + "' という名前のpropを持つobject_def一覧</p>" +
+    "<table><thead><tr><th>object_def</th><th>プロパティ詳細</th></tr></thead>" +
+    "<tbody>" + rows + "</tbody></table>";
+}
+
 // ------------------------------------------------------------------
 // ルーティング
 // ------------------------------------------------------------------
@@ -769,6 +791,8 @@ function render() {
     app.innerHTML = renderObjectDetailPage(parts[1]);
   } else if (parts[0] === "property" && parts[1] && parts[2]) {
     app.innerHTML = renderPropertyDetailPage(parts[1], parts[2]);
+  } else if (parts[0] === "prop-candidates" && parts[1]) {
+    app.innerHTML = renderPropCandidatesPage(parts[1]);
   } else {
     app.innerHTML = "<p>ページが見つかりません。 <a href=\"#/\">オブジェクト一覧へ</a></p>";
   }
