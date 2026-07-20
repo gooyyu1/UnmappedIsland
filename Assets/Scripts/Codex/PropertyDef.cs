@@ -98,6 +98,11 @@ namespace UnmappedIsland.Codex
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
 
+        /// <summary>Stages中のmin:null・eq:null（フォールバック）の段。Stagesはコンストラクタ以降不変のため、
+        /// currentValueに依らず一度だけ求めれば済み、ResolveStageの呼び出し毎に走査し直す必要が無い。
+        /// 該当が無ければnull（フォールバックを持たないプロパティ、シンボル型プロパティ等）。</summary>
+        private readonly PropertyStage fallbackStage;
+
         /// <summary>
         /// on_min（6.5節、旧on_zero）。値がRange.Min以下である間、毎tick実行されるactive内容。0ではなく
         /// Range.Minとの比較に一般化したもの（destroyのような「底を突いた」判定を、0以外の下限を持つ
@@ -147,43 +152,49 @@ namespace UnmappedIsland.Codex
             OnShortfall = onShortfall;
             OnMax = onMax;
             Inherit = inherit;
+
+            foreach (var stage in Stages)
+            {
+                if (!stage.Eq.HasValue && stage.Min == null)
+                {
+                    fallbackStage = stage;
+                    break;
+                }
+            }
         }
 
         /// <summary>
         /// 現在値が該当する段階を返す。eq指定の段階（完全一致）が優先され、次にmin指定の段階（半開区間、
-        /// 最も高いminを採用）、どちらにも該当しなければmin:null・eq:null（フォールバック、他のどの段階にも
-        /// 該当しない場合）の段階を返す。min:null（eq未指定時）の段階はリスト中の位置に依存しない
+        /// 最も高いminを採用）、どちらにも該当しなければfallbackStage（他のどの段階にも該当しない場合の
+        /// フォールバック、6.4節）を返す。min:null（eq未指定時）の段階はリスト中の位置に依存しない
         /// （11.2節のサンプルでは broken(min:null) が intact(min:1) より後に書かれている）。
         ///
+        /// eq指定の段階は「一致するかしないか」の二択であり、min指定の段階のような「より良い一致」
+        /// （より高いminを持つ段）という概念が無いため、一致した時点で他の段を見ずに返してよい
+        /// （min側は全段を見て最も高いminを採用する必要があるため、こちらは最後まで走査する）。
+        ///
         /// シンボル型プロパティ（Loader.ObjectDefYamlConverterが常にeqをnameから自動導出するため、
-        /// min:null・eq:null（フォールバック）の段階を作る手段が無い）には、そもそもフォールバックという
-        /// 概念自体が存在しない。数値型プロパティも著者がフォールバック段階（min省略）を書かなければ
-        /// 同様にnullを返し得る。理由は異なるが、いずれにせよResolveStageの戻り値はnullになり得るものとして
-        /// 扱い、呼び出し側（IsInStage等）が常にnullチェックする前提とする。
+        /// フォールバックの段を作る手段が無い）には、そもそもフォールバックという概念自体が存在しない。
+        /// 数値型プロパティも著者がフォールバック段階（min省略）を書かなければ同様にnullを返し得る。
+        /// 理由は異なるが、いずれにせよResolveStageの戻り値はnullになり得るものとして扱い、呼び出し側
+        /// （IsInStage等）が常にnullチェックする前提とする。
         /// </summary>
         public PropertyStage ResolveStage(int currentValue)
         {
-            PropertyStage fallback = null;
             PropertyStage best = null;
-            PropertyStage eqMatch = null;
 
             foreach (var stage in Stages)
             {
                 if (stage.Eq.HasValue)
                 {
-                    if (currentValue == stage.Eq.Value) eqMatch = stage;
+                    if (currentValue == stage.Eq.Value) return stage;
                     continue;
                 }
-                if (stage.Min == null)
-                {
-                    fallback = stage;
-                    continue;
-                }
-                if (currentValue >= stage.Min.Value && (best == null || stage.Min.Value > best.Min.Value))
+                if (stage.Min.HasValue && currentValue >= stage.Min.Value && (best == null || stage.Min.Value > best.Min.Value))
                     best = stage;
             }
 
-            return eqMatch ?? best ?? fallback;
+            return best ?? fallbackStage;
         }
     }
 }
