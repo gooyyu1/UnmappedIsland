@@ -848,19 +848,23 @@ object_defs:
         }
 
         [Test]
-        public void Load_ConditionTagWithoutSlot_Throws()
+        public void Load_ConditionTagWithoutSlot_ParsesAsObjectTagCheck()
         {
             const string yaml = @"
 object_defs:
   thing:
+    tags: [red]
     actions:
       use:
         conditions:
           - {tag: red}
         destroy: self
 ";
-            Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
-                Throws.TypeOf<YamlLoadException>().With.Message.Contain("slot"));
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
+            var session = new WorldSession(codex);
+            var thing = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
+
+            Assert.That(InteractionExecutor.TryExecuteAction(thing, null, "use", session), Is.True);
         }
 
         [Test]

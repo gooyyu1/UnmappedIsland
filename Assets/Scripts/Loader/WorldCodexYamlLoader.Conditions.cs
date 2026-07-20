@@ -106,7 +106,8 @@ namespace UnmappedIsland.Loader
         /// <summary>
         /// 条件木の葉。objectは省略時self。{object, prop, op(省略時eq), value}のプロパティ比較、
         /// {object, in_slot}のスロット位置判定（常に等価判定。opは持たない）、{object, slot, tag}の
-        /// スロット中身判定（objectの自分のslotの中に、tagを持つ子がいるかの存在判定）のいずれかで、
+        /// スロット中身判定（objectの自分のslotの中に、tagを持つ子がいるかの存在判定）、
+        /// {object, tag}のオブジェクト自身のタグ判定のいずれかで、
         /// 同時には指定できない。in_slot（外から見た位置）とslot（内側の中身）はキー名自体を分けており、
         /// 混同の余地はない。プロパティ比較のvalueは、リテラル（整数・真偽値・シンボル名）か、
         /// {object, prop}参照（weightのpath参照、10.2節と同じ二択）のいずれか。参照はlt/lte/gt/gte/eq/neqの
@@ -123,9 +124,13 @@ namespace UnmappedIsland.Loader
             string tagName = map.TryGetScalar("tag", context);
             string propName = map.TryGetScalar("prop", context);
 
-            int leafKeyCount = (inSlotName != null ? 1 : 0) + (slotName != null ? 1 : 0) + (propName != null ? 1 : 0);
+            int leafKeyCount =
+                (inSlotName != null ? 1 : 0) +
+                (slotName != null ? 1 : 0) +
+                (propName != null ? 1 : 0) +
+                (tagName != null && slotName == null ? 1 : 0);
             if (leafKeyCount > 1)
-                throw new YamlLoadException($"{context}: 'in_slot'/'slot'/'prop'は同時に指定できません。");
+                throw new YamlLoadException($"{context}: 'in_slot'/'slot'/'prop'/'tag'は同時に指定できません。");
 
             if (inSlotName != null)
             {
@@ -157,10 +162,18 @@ namespace UnmappedIsland.Loader
             }
 
             if (tagName != null)
-                throw new YamlLoadException($"{context}: 'tag'は'slot'と組み合わせてのみ使えます。");
+            {
+                var unknownTagKeys = map.EntriesInOrder().Select(e => e.Key)
+                    .Where(k => k != "object" && k != "tag").ToList();
+                if (unknownTagKeys.Count > 0)
+                    throw new YamlLoadException(
+                        $"{context}: 未知のキー '{string.Join(", ", unknownTagKeys)}' です（tag判定はobject/tagのみ持てます）。");
+
+                return ConditionNode.ObjectTag(root, TagNames.Intern(tagName));
+            }
 
             if (propName == null)
-                throw new YamlLoadException($"{context}: 'prop'・'in_slot'・'slot'のいずれかが必要です。");
+                throw new YamlLoadException($"{context}: 'prop'・'in_slot'・'slot'・'tag'のいずれかが必要です。");
 
             ConditionOp op = ConditionOp.Eq;
             string rawOp = map.TryGetScalar("op", context);

@@ -163,6 +163,44 @@ object_defs:
             Assert.That(executed, Is.True, "アクション自体は実行される(親が無いのでparent対象の適用だけが無視される)");
         }
 
+        [Test]
+        public void TryExecuteAction_DelegatesToRepresentedContentWhenPresent()
+        {
+            const string yaml = @"
+object_defs:
+  player_repr:
+    props:
+      satiety:
+        value: 0
+  snack_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: edible, max: 1}]
+  apple_slice:
+    tags: [edible]
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 10
+";
+            var codex = Load(yaml);
+            int satietyId = codex.PropertyNames.GetId("satiety");
+            int contentSlotId = codex.SlotNames.GetId("content");
+
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn(codex, "player_repr");
+            WorldObject container = Spawn(codex, "snack_container");
+            WorldObject slice = Spawn(codex, "apple_slice");
+            slice.MoveToSlot(container, contentSlotId, codex.WellKnown, out _);
+
+            bool executed = InteractionExecutor.TryExecuteAction(container, actor, "eat", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(actor.GetNumber(satietyId), Is.EqualTo(10));
+        }
+
         // ------------------------------------------------------------------
         // pick: 重み付き確率分岐
         // ------------------------------------------------------------------
@@ -278,6 +316,89 @@ object_defs:
             Assert.That(executed, Is.True);
             Assert.That(woodInstance.Parent, Is.Null, "self(wood)はdestroyされる");
             Assert.That(axeInstance.GetNumber(durabilityId), Is.EqualTo(9));
+        }
+
+        [Test]
+        public void TryExecuteCombination_DelegatesReceiverAndDraggedToRepresentedContents()
+        {
+            const string yaml = @"
+traits:
+  liquid_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+object_defs:
+  receiver:
+    traits: [liquid_container]
+  source:
+    traits: [liquid_container]
+  water_liquid:
+    tags: [liquid, water_liquid]
+    props:
+      amount:
+        value: 0
+    combinations:
+      pour_in:
+        with: water_liquid
+        add:
+          self:
+            amount: 2
+          dragged:
+            amount: -2
+";
+            var codex = Load(yaml);
+            int contentSlotId = codex.SlotNames.GetId("content");
+            int amountId = codex.PropertyNames.GetId("amount");
+
+            var session = new WorldSession(codex);
+            WorldObject receiver = Spawn(codex, "receiver");
+            WorldObject source = Spawn(codex, "source");
+            WorldObject receiverLiquid = Spawn(codex, "water_liquid");
+            WorldObject sourceLiquid = Spawn(codex, "water_liquid");
+            receiverLiquid.SetProperty(amountId, PropertyValue.FromNumber(1));
+            sourceLiquid.SetProperty(amountId, PropertyValue.FromNumber(5));
+            receiverLiquid.MoveToSlot(receiver, contentSlotId, codex.WellKnown, out _);
+            sourceLiquid.MoveToSlot(source, contentSlotId, codex.WellKnown, out _);
+
+            bool executed = InteractionExecutor.TryExecuteCombination(receiver, source, actor: null, "pour_in", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(receiverLiquid.GetNumber(amountId), Is.EqualTo(3));
+            Assert.That(sourceLiquid.GetNumber(amountId), Is.EqualTo(3));
+        }
+
+        [Test]
+        public void FindMatchingCombinations_UsesRepresentedContents()
+        {
+            const string yaml = @"
+traits:
+  liquid_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+object_defs:
+  receiver2:
+    traits: [liquid_container]
+  source2:
+    traits: [liquid_container]
+  water_liquid2:
+    tags: [liquid, water_liquid2]
+    combinations:
+      pour_in:
+        with: water_liquid2
+        destroy: self
+";
+            var codex = Load(yaml);
+            int contentSlotId = codex.SlotNames.GetId("content");
+
+            WorldObject receiver = Spawn(codex, "receiver2");
+            WorldObject source = Spawn(codex, "source2");
+            Spawn(codex, "water_liquid2").MoveToSlot(receiver, contentSlotId, codex.WellKnown, out _);
+            Spawn(codex, "water_liquid2").MoveToSlot(source, contentSlotId, codex.WellKnown, out _);
+            var names = InteractionExecutor.FindMatchingCombinations(receiver, source).Select(c => c.Name).ToList();
+            Assert.That(names, Is.EqualTo(new[] { "pour_in" }));
         }
 
         [Test]

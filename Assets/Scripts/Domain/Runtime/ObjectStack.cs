@@ -5,9 +5,9 @@ namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
     /// Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり（GameElementDefinition.md
-    /// 7.6節）。ObjectDefが同じで、かつ ObjectDef.StackByPropertyGlobalId が指定されていればそのプロパティの
-    /// 値も一致するインスタンス同士だけが、同じObjectStackにまとまる（例: 同じ液体容器でも中身(content)が
-    /// 違えば別々のObjectStackになる）。
+    /// 7.6節）。ObjectDefが同じで、かつ represented_by が指定されていれば、その代表オブジェクト
+    /// （さらにその代表…）のObjectDef列も一致するインスタンス同士だけが同じObjectStackにまとまる
+    /// （例: 同じ液体容器でも中身のObjectDefが違えば別々のObjectStackになる）。
     ///
     /// 「このオブジェクトは自分に合流できるか」「自分の中のどこへ挿入すべきか」の判断は、呼び出し側
     /// （Slot）に代わりこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。
@@ -16,10 +16,9 @@ namespace UnmappedIsland.Domain.Runtime
     {
         public ObjectDef Def { get; }
 
-        /// <summary>ObjectDef.StackByPropertyGlobalIdで指定されたプロパティの、このスタックが生まれた
-        /// 時点での値。未指定のObjectDefなら常にnull。加わった後の値の変化を追って自動的に移し替える
-        /// ことはしない（ObjectDef.StackByPropertyGlobalId参照）。</summary>
-        public int? StackType { get; }
+        /// <summary>represented_byで辿った代表ObjectDef列の、このスタックが生まれた時点でのスナップショット。
+        /// 代表未指定・空なら空列。加わった後の中身の変化を追って自動的に移し替えることはしない。</summary>
+        public IReadOnlyList<int> RepresentationChain { get; }
 
         private readonly List<WorldObject> members;
         public IReadOnlyList<WorldObject> Members => members;
@@ -30,20 +29,20 @@ namespace UnmappedIsland.Domain.Runtime
         internal ObjectStack(WorldObject seed)
         {
             Def = seed.Def;
-            StackType = seed.StackDiscriminator;
+            RepresentationChain = seed.CaptureRepresentationChain();
             members = new List<WorldObject> { seed };
         }
 
-        private ObjectStack(ObjectDef def, int? stackType, List<WorldObject> initialMembers)
+        private ObjectStack(ObjectDef def, IReadOnlyList<int> representationChain, List<WorldObject> initialMembers)
         {
             Def = def;
-            StackType = stackType;
+            RepresentationChain = representationChain;
             members = initialMembers;
         }
 
-        /// <summary>candidateがこのObjectStackへ合流できるか（ObjectDefが同じ、かつStackTypeも同じ）。</summary>
+        /// <summary>candidateがこのObjectStackへ合流できるか（ObjectDefが同じ、かつ代表ObjectDef列も同じ）。</summary>
         internal bool Matches(WorldObject candidate) =>
-            candidate.Def.GlobalId == Def.GlobalId && candidate.StackDiscriminator == StackType;
+            candidate.Def.GlobalId == Def.GlobalId && candidate.HasRepresentationChain(RepresentationChain);
 
         /// <summary>ObjectDef.StackOrderに従って、自分のMembers内の正しい位置へobjを挿入する
         /// （未定義なら常に末尾＝挿入順、Slot.IndexWithinRunの元のロジックをそのまま踏襲）。</summary>
@@ -60,7 +59,7 @@ namespace UnmappedIsland.Domain.Runtime
         {
             var moved = members.GetRange(atIndex, members.Count - atIndex);
             members.RemoveRange(atIndex, members.Count - atIndex);
-            return new ObjectStack(Def, StackType, moved);
+            return new ObjectStack(Def, RepresentationChain, moved);
         }
 
         private int ComputeInsertionIndex(WorldObject obj)

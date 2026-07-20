@@ -25,6 +25,7 @@ namespace UnmappedIsland.Domain.Runtime
                 case ConditionNodeKind.Property: return EvaluateProperty(node, resolveRoot);
                 case ConditionNodeKind.SlotPosition: return EvaluateSlotPosition(node, resolveRoot);
                 case ConditionNodeKind.SlotContent: return EvaluateSlotContent(node, resolveRoot);
+                case ConditionNodeKind.ObjectTag: return EvaluateObjectTag(node, resolveRoot);
                 case ConditionNodeKind.All: return node.Children.All(child => Evaluate(child, resolveRoot));
                 case ConditionNodeKind.Any: return node.Children.Any(child => Evaluate(child, resolveRoot));
                 case ConditionNodeKind.Not: return !Evaluate(node.Children[0], resolveRoot);
@@ -109,6 +110,12 @@ namespace UnmappedIsland.Domain.Runtime
             if (target == null || !target.TryGetSlot(node.SlotGlobalId, out Slot slot)) return false;
 
             return slot.Contents.Any(child => child.Def.Tags.Contains(node.TagGlobalId));
+        }
+
+        private static bool EvaluateObjectTag(ConditionNode node, ConditionRootResolver resolveRoot)
+        {
+            WorldObject target = resolveRoot(node.Root);
+            return target != null && target.Def.Tags.Contains(node.TagGlobalId);
         }
     }
 }

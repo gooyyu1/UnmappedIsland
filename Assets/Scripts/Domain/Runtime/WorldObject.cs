@@ -83,11 +83,47 @@ namespace UnmappedIsland.Domain.Runtime
             return TryGetProperty(globalPropertyId, out var v) ? v.AsNumber() : fallback;
         }
 
-        /// <summary>自分がSlotの中でどのObjectStack（7.6節）へまとまるべきかを決める値。
-        /// Def.StackByPropertyGlobalIdが指定されていなければ常にnull（ObjectDefが同じなら常に同じ
-        /// ObjectStackにまとまる、既定の挙動）。指定されていれば、そのプロパティの現在の実体値を返す。</summary>
-        internal int? StackDiscriminator =>
-            Def.StackByPropertyGlobalId.HasValue ? GetNumber(Def.StackByPropertyGlobalId.Value) : (int?)null;
+        /// <summary>interaction/stack判定の代表として採用する、represented_by先の最初の子を返す。
+        /// represented_by未指定・対象スロット不存在・空スロットなら自分自身を返す。代表オブジェクトが
+        /// さらにrepresented_byを持つ場合は、その代表へ再帰的に委譲する。</summary>
+        internal WorldObject ResolveInteractionTarget()
+        {
+            if (!Def.RepresentedBySlotGlobalId.HasValue) return this;
+            if (!TryGetSlot(Def.RepresentedBySlotGlobalId.Value, out Slot slot)) return this;
+            WorldObject represented = slot.Contents.FirstOrDefault();
+            return represented?.ResolveInteractionTarget() ?? this;
+        }
+
+        /// <summary>stack判定用の代表ObjectDef列を、現在のrepresented_byチェーンからスナップショットする。
+        /// 自分自身のObjectDefは呼び出し側（ObjectStack.Def）が既に持っているため含めず、代表の代表…だけを
+        /// 深さ順に並べる。</summary>
+        internal IReadOnlyList<int> CaptureRepresentationChain()
+        {
+            var chain = new List<int>();
+            AppendRepresentationChain(chain);
+            return chain;
+        }
+
+        internal bool HasRepresentationChain(IReadOnlyList<int> expected)
+        {
+            var actual = CaptureRepresentationChain();
+            if (actual.Count != expected.Count) return false;
+            for (int i = 0; i < actual.Count; i++)
+                if (actual[i] != expected[i]) return false;
+            return true;
+        }
+
+        private void AppendRepresentationChain(List<int> chain)
+        {
+            if (!Def.RepresentedBySlotGlobalId.HasValue) return;
+            if (!TryGetSlot(Def.RepresentedBySlotGlobalId.Value, out Slot slot)) return;
+
+            WorldObject represented = slot.Contents.FirstOrDefault();
+            if (represented == null) return;
+
+            chain.Add(represented.Def.GlobalId);
+            represented.AppendRepresentationChain(chain);
+        }
 
         /// <summary>
         /// 数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の `add`、ContainerSystem.md の重さ伝播で使用）。
@@ -598,14 +634,25 @@ namespace UnmappedIsland.Domain.Runtime
         private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor, SameSlotAnchor? anchor)
         {
             WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
+            if (effect.Into == SpawnTargetRoot.SameSlot)
+                CopySharedPropertiesTo(spawned);
             Place(spawned, effect.Into, session, actor, anchor);
+        }
+
+        private void CopySharedPropertiesTo(WorldObject other)
+        {
+            foreach (var propertyDef in other.Def.PropertyDefs)
+            {
+                if (!TryGetProperty(propertyDef.GlobalId, out PropertyValue value)) continue;
+                other.SetProperty(propertyDef.GlobalId, PropertyValue.FromNumber(value.AsNumber()));
+            }
         }
 
         /// <summary>
         /// spawnした側は配置先のスロット名を書かない。SameSlotなら、捕捉しておいた位置（親・スロット・
         /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。
         ///
-        /// FixedPositionsスロットでは、新しい型（stack_by込みのStackKey）が既に同じスロットに存在する
+        /// FixedPositionsスロットでは、新しい型（represented_by込みのStackKey）が既に同じスロットに存在する
         /// （同種スタックへの合流）場合はそのまま通常配置し、そうでなければ、自分のObjectStackの固定番号を
         /// そのまま再利用できる場合（StackWillBeVacated、自分がdestroyされ自分のObjectStackの唯一の
         /// メンバーだった場合）はその番号へ、できない場合（destroyしない・destroyしても同種が残る場合）は
