@@ -63,10 +63,10 @@ object_defs:
         public void Advance_WithinSameTick_OnlyAddsAmountWithoutFiringTick()
         {
             var (codex, world) = BuildWorld();
-            var session = new WorldSession(codex);
+            var session = new WorldSession(codex, world);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            session.AdvanceWorldTime(world, 5);
+            session.AdvanceWorldTime(5);
 
             Assert.That(world.Minute, Is.EqualTo(5), "15分未満はTickを跨がず、そのまま加算される");
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(0));
@@ -78,11 +78,11 @@ object_defs:
             // ユーザー提示の具体例: tick内経過分(minute % minutes_per_tick)が5の状態で20分進めると、
             // Tickが1回実行され、tick内経過分は10になる。
             var (codex, world) = BuildWorld();
-            var session = new WorldSession(codex);
+            var session = new WorldSession(codex, world);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            session.AdvanceWorldTime(world, 5);
-            session.AdvanceWorldTime(world, 20);
+            session.AdvanceWorldTime(5);
+            session.AdvanceWorldTime(20);
 
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1), "5+20=25分 -> 15分境界を1回だけ跨ぐ");
             Assert.That(world.Minute, Is.EqualTo(25), "minuteはtickの回数によらずamountの合計をそのまま反映する");
@@ -95,11 +95,11 @@ object_defs:
             // 1回あたりの呼び出しがminutes_per_tick未満でも、複数回の呼び出しの累積で境界を跨いだことを
             // 正しく検知できる（tick内経過分をminuteから毎回読み直しているため）。
             var (codex, world) = BuildWorld();
-            var session = new WorldSession(codex);
+            var session = new WorldSession(codex, world);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            session.AdvanceWorldTime(world, 10); // tick内経過分は10、まだ境界に届かない
-            session.AdvanceWorldTime(world, 10); // 10+10=20分 -> 15を1回跨ぐ
+            session.AdvanceWorldTime(10); // tick内経過分は10、まだ境界に届かない
+            session.AdvanceWorldTime(10); // 10+10=20分 -> 15を1回跨ぐ
 
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1));
             Assert.That(world.Minute, Is.EqualTo(20));
@@ -110,13 +110,13 @@ object_defs:
         public void Advance_LargeAmount_FiresMultipleTicksAndCascadesToHourAndDay()
         {
             var (codex, world) = BuildWorld();
-            var session = new WorldSession(codex);
+            var session = new WorldSession(codex, world);
             int tickId = codex.PropertyNames.GetId("tick");
             int dayId = codex.PropertyNames.GetId("day");
 
             int minutesPerTick = world.MinutesPerTick;
 
-            session.AdvanceWorldTime(world, 60 * 25); // 25時間分を1回で進める
+            session.AdvanceWorldTime(60 * 25); // 25時間分を1回で進める
 
             Assert.That(world.Minute, Is.EqualTo(0));
             Assert.That(world.Hour, Is.EqualTo(1));
@@ -130,10 +130,10 @@ object_defs:
             // 1tickの長さはworld.minutes_per_tick（core.yaml側）が持つ値であり、WorldSession側に
             // ハードコードされていないことを、15以外の値でも確認する。
             var (codex, world) = BuildWorld(minutesPerTick: 20);
-            var session = new WorldSession(codex);
+            var session = new WorldSession(codex, world);
             int tickId = codex.PropertyNames.GetId("tick");
 
-            session.AdvanceWorldTime(world, 25);
+            session.AdvanceWorldTime(25);
 
             Assert.That(world.Instance.GetNumber(tickId), Is.EqualTo(1), "minutes_per_tickが20なら25分で1tick跨ぐ");
             Assert.That(world.Minute % world.MinutesPerTick, Is.EqualTo(5));

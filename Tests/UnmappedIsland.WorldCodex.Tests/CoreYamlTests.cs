@@ -98,16 +98,16 @@ namespace UnmappedIsland.Codex.Tests
             int hourId = codex.PropertyNames.GetId("hour");
             int dayId = codex.PropertyNames.GetId("day");
 
-            var session = new WorldSession(codex);
             var worldInstance = new WorldObject(1, world);
             var worldView = new World(worldInstance, codex.PropertyNames);
+            var session = new WorldSession(codex, worldView);
 
-            session.AdvanceWorldTime(worldView, 60); // 60分 -> minuteが折り返し、hourへ+1
+            session.AdvanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(1));
 
-            session.AdvanceWorldTime(worldView, 60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
+            session.AdvanceWorldTime(60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(0));

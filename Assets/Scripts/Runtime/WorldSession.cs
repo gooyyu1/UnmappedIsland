@@ -14,6 +14,7 @@ namespace UnmappedIsland.Runtime
     public sealed class WorldSession
     {
         public WorldCodex Codex { get; }
+        public World World { get; }
 
         /// <summary>pick（10節）の重み付き抽選に使う乱数源。テストで決定的に振る舞わせたい場合は、
         /// シード固定の Random を渡せるようにコンストラクタで差し替え可能にしている。</summary>
@@ -25,6 +26,12 @@ namespace UnmappedIsland.Runtime
         {
             Codex = codex;
             Rng = rng ?? new Random();
+        }
+
+        public WorldSession(WorldCodex codex, World world, Random rng = null)
+            : this(codex, rng)
+        {
+            World = world ?? throw new ArgumentNullException(nameof(world));
         }
 
         /// <summary>
@@ -41,8 +48,14 @@ namespace UnmappedIsland.Runtime
         /// ゲーム内時間をamount分だけ進める。tick境界（minute % minutes_per_tick が0に戻る瞬間）を
         /// 跨ぐたびに、その境界までminuteを進めてTick()を1回実行する。
         /// </summary>
-        public void AdvanceWorldTime(World world, int amount)
+        public void AdvanceWorldTime(int amount)
         {
+            if (World == null)
+            {
+                throw new InvalidOperationException("AdvanceWorldTime requires a WorldSession created with a World.");
+            }
+
+            World world = World;
             int minutesPerTick = world.MinutesPerTick;
             int minuteOfTick = world.Minute % minutesPerTick;
             int total = minuteOfTick + amount;
