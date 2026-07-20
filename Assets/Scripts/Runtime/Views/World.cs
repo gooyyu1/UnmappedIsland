@@ -35,10 +35,10 @@ namespace UnmappedIsland.Runtime.Views
         public int Hour => Instance.GetEffectiveValue(hourId);
         public int Minute => Instance.GetEffectiveValue(minuteId);
 
-        /// <summary>1tickに相当するゲーム内時間（分）。実体値をそのまま返す（GameTime.WorldClock参照）。</summary>
+        /// <summary>1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.AdvanceWorldTime参照）。</summary>
         public int MinutesPerTick => Instance.GetNumber(minutesPerTickId);
 
-        /// <summary>minuteへamountを加減算する（GameTime.WorldClock専用。負の値も許容する）。sessionを
+        /// <summary>minuteへamountを加減算する（WorldSession.AdvanceWorldTime専用。負の値も許容する）。sessionを
         /// 渡すことで、on_overflow等がTickを待たずその場で判定・実行される（WorldObject.AddNumber参照）。</summary>
         public void AddMinutes(int amount, WorldSession session) => Instance.AddNumber(minuteId, amount, session);
     }

@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using NUnit.Framework;
 using UnmappedIsland.Codex;
-using UnmappedIsland.GameTime;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Runtime;
 using UnmappedIsland.Runtime.Views;
@@ -75,7 +74,7 @@ namespace UnmappedIsland.Codex.Tests
         public void World_Tick_AccumulatesPerTick_MinuteDoesNot()
         {
             // minuteはtick駆動のpassivesを持たない。「1tick進める」たびにminutes_per_tick分だけ加算する
-            // 処理自体をWorldClock（ゲーム側）が担うため（GameTime.WorldClockTests参照）、core.yaml単体で
+            // 処理自体をWorldSession（ゲーム側）が担うため（WorldTimeAdvanceTests参照）、core.yaml単体で
             // Tick()を直接呼んでもminuteは変化しないことをここで確認する。
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int tickId = codex.PropertyNames.GetId("tick");
@@ -88,7 +87,7 @@ namespace UnmappedIsland.Codex.Tests
             worldInstance.Tick(session);
 
             Assert.That(worldInstance.GetNumber(tickId), Is.EqualTo(3), "tickは毎tick+1される");
-            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0), "minuteはtick駆動では変化しない(WorldClock経由でのみ進む)");
+            Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0), "minuteはtick駆動では変化しない(WorldSession経由でのみ進む)");
         }
 
         [Test]
@@ -103,12 +102,12 @@ namespace UnmappedIsland.Codex.Tests
             var worldInstance = new WorldObject(1, world);
             var worldView = new World(worldInstance, codex.PropertyNames);
 
-            WorldClock.Advance(worldView, session, 60); // 60分 -> minuteが折り返し、hourへ+1
+            session.AdvanceWorldTime(worldView, 60); // 60分 -> minuteが折り返し、hourへ+1
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(1));
 
-            WorldClock.Advance(worldView, session, 60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
+            session.AdvanceWorldTime(worldView, 60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
 
             Assert.That(worldInstance.GetNumber(minuteId), Is.EqualTo(0));
             Assert.That(worldInstance.GetNumber(hourId), Is.EqualTo(0));

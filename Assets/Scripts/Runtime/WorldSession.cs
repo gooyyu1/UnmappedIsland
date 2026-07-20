@@ -1,5 +1,6 @@
 using System;
 using UnmappedIsland.Codex;
+using UnmappedIsland.Runtime.Views;
 
 namespace UnmappedIsland.Runtime
 {
@@ -34,6 +35,35 @@ namespace UnmappedIsland.Runtime
         {
             ObjectDef def = Codex.Objects.Get(objectDefGlobalId);
             return new WorldObject(nextInstanceId++, def);
+        }
+
+        /// <summary>
+        /// ゲーム内時間をamount分だけ進める。tick境界（minute % minutes_per_tick が0に戻る瞬間）を
+        /// 跨ぐたびに、その境界までminuteを進めてTick()を1回実行する。
+        /// </summary>
+        public void AdvanceWorldTime(World world, int amount)
+        {
+            int minutesPerTick = world.MinutesPerTick;
+            int minuteOfTick = world.Minute % minutesPerTick;
+            int total = minuteOfTick + amount;
+            int ticksToRun = total / minutesPerTick;
+
+            if (ticksToRun == 0)
+            {
+                world.AddMinutes(amount, this);
+                return;
+            }
+
+            world.AddMinutes(minutesPerTick - minuteOfTick, this);
+            world.Instance.Tick(this);
+
+            for (int i = 1; i < ticksToRun; i++)
+            {
+                world.AddMinutes(minutesPerTick, this);
+                world.Instance.Tick(this);
+            }
+
+            world.AddMinutes(total % minutesPerTick, this);
         }
     }
 }
