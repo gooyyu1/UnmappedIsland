@@ -155,11 +155,11 @@ namespace UnmappedIsland.Codex
         /// 該当しない場合）の段階を返す。min:null（eq未指定時）の段階はリスト中の位置に依存しない
         /// （11.2節のサンプルでは broken(min:null) が intact(min:1) より後に書かれている）。
         ///
-        /// フォールバック段階を著者が書かなかった場合（数値型・シンボル型を問わず）、該当する段階が
-        /// 一つも無ければnullを返す。これは数値型プロパティで元々あり得た挙動であり、シンボル型
-        /// プロパティだけ特別扱いして値の名前から段階を合成しても、フォールバック書き忘れというnullの
-        /// 根本原因は数値型側に残ったままで解消できない。そのため、ResolveStageの戻り値はnullになり得る
-        /// ものとして統一的に扱い、呼び出し側（IsInStage等）が常にnullチェックする前提とする。
+        /// シンボル型プロパティ（Loader.ObjectDefYamlConverterが常にeqをnameから自動導出するため、
+        /// min:null・eq:null（フォールバック）の段階を作る手段が無い）には、そもそもフォールバックという
+        /// 概念自体が存在しない。数値型プロパティも著者がフォールバック段階（min省略）を書かなければ
+        /// 同様にnullを返し得る。理由は異なるが、いずれにせよResolveStageの戻り値はnullになり得るものとして
+        /// 扱い、呼び出し側（IsInStage等）が常にnullチェックする前提とする。
         /// </summary>
         public PropertyStage ResolveStage(int currentValue)
         {

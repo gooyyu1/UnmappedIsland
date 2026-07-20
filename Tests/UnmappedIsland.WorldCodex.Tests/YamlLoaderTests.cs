@@ -334,8 +334,8 @@ object_defs:
             Assert.That(weather.ResolveStage(stormId)?.Name, Is.EqualTo("storm"));
             Assert.That(weather.ResolveStage(clearId)?.Name, Is.EqualTo("clear"));
             Assert.That(weather.ResolveStage(somethingElseId), Is.Null,
-                "シンボル型プロパティにフォールバック段階は無く、stagesに書かれていない値はnullになる" +
-                "（フォールバック書き忘れによるnullは数値型でも起こり得る一般的な性質のため、特別扱いしない）");
+                "シンボル型プロパティにフォールバックという概念は存在せず、stagesに書かれていない値は" +
+                "常にnullになる");
         }
 
         [Test]
