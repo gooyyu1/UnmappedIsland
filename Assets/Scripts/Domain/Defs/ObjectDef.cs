@@ -40,13 +40,11 @@ namespace UnmappedIsland.Domain.Defs
         /// 追加される（新規インスタンス同士の相対順序＝挿入順）。</summary>
         public StackOrderDef StackOrder { get; }
 
-        /// <summary>同じSlotの中で「どの単位でスタックとしてまとまるか」を決めるプロパティ（7.6節）。
-        /// nullなら常にObjectDefが同じだけでスタックがまとまる（既定の挙動）。指定されていれば、
-        /// ObjectDefが同じに加え、このプロパティの現在値も一致するインスタンス同士だけが同じ
-        /// ObjectStackにまとまる（例: 同じ液体容器でも中身(content)が違えば別のスタックとして扱う）。
-        /// スタックへ加わる時点の値で1度だけ判定し、その後の値の変化を追って自動的に移し替えることは
-        /// しない（StackOrderと同じ「一度並んだ後は追従しない」という既存の割り切りに合わせる）。</summary>
-        public int? StackByPropertyGlobalId { get; }
+        /// <summary>このobject_defがinteraction/stack判定を、どのスロット内の代表オブジェクトへ委譲するか
+        /// を表すスロットのグローバルID（7.6節）。nullなら常に自分自身を代表とする。指定されていれば、
+        /// そのスロットに現在入っている最初の1個が interaction の実行対象になり、stack判定でも
+        /// その代表オブジェクト（さらにその代表…）のObjectDef列を使って区別する。</summary>
+        public int? RepresentedBySlotGlobalId { get; }
 
         /// <summary>このObjectDefが持つメニュー型操作（11節）。</summary>
         public IReadOnlyList<ActionDef> Actions { get; }
@@ -67,7 +65,7 @@ namespace UnmappedIsland.Domain.Defs
             IReadOnlyList<int> tags = null,
             IReadOnlyList<ActionDef> actions = null,
             IReadOnlyList<CombinationDef> combinations = null,
-            int? stackByPropertyGlobalId = null)
+            int? representedBySlotGlobalId = null)
         {
             GlobalId = globalId;
             Name = name;
@@ -81,7 +79,7 @@ namespace UnmappedIsland.Domain.Defs
             Tags = tags ?? Array.Empty<int>();
             Actions = actions ?? Array.Empty<ActionDef>();
             Combinations = combinations ?? Array.Empty<CombinationDef>();
-            StackByPropertyGlobalId = stackByPropertyGlobalId;
+            RepresentedBySlotGlobalId = representedBySlotGlobalId;
         }
     }
 

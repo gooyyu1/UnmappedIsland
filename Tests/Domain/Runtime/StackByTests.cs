@@ -7,11 +7,11 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
-    /// stack_by（GameElementDefinition.md 7.6節）に対する自動テスト。同じObjectDefでも指定した
-    /// プロパティの値が違えば別のObjectStackとしてまとまることを検証する（例: 中身の違う容器）。
+    /// represented_by（GameElementDefinition.md 7.6節）に対する自動テスト。同じObjectDefでも、代表オブジェクト
+    /// （さらにその代表…）が異なれば別のObjectStackになることを検証する。
     /// </summary>
     [TestFixture]
-    public class StackByTests
+    public class RepresentedByTests
     {
         private int nextInstanceId;
 
@@ -29,29 +29,43 @@ namespace UnmappedIsland.Domain.Runtime
             return new WorldObject(nextInstanceId++, def);
         }
 
+        private WorldObject SpawnRepresentedContainer(WorldCodex codex, string containerName, string contentName)
+        {
+            int contentSlotId = codex.SlotNames.GetId("content");
+            WorldObject container = Spawn(codex, containerName);
+            WorldObject content = Spawn(codex, contentName);
+            content.MoveToSlot(container, contentSlotId, codex.WellKnown, out _);
+            return container;
+        }
+
         [Test]
-        public void StackBy_GroupsBySharedPropertyValue_NotJustObjectDef()
+        public void RepresentedBy_GroupsByRepresentedObjectDef_NotJustContainerDef()
         {
             const string yaml = @"
+traits:
+  represented_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
 object_defs:
-  bag_sb:
+  bag_repr:
     slots:
       pile: {}
+  empty_liquid:
+    tags: [liquid]
+  water_liquid:
+    tags: [liquid]
   jug:
-    stack_by: content_id
-    props:
-      content_id:
-        value: 0
+    traits: [represented_container]
 ";
             var codex = Load(yaml);
             int pileSlotId = codex.SlotNames.GetId("pile");
-            int contentId = codex.PropertyNames.GetId("content_id");
 
-            WorldObject bag = Spawn(codex, "bag_sb");
-            WorldObject emptyJug1 = Spawn(codex, "jug");
-            WorldObject emptyJug2 = Spawn(codex, "jug");
-            WorldObject waterJug = Spawn(codex, "jug");
-            waterJug.SetProperty(contentId, PropertyValue.FromNumber(1));
+            WorldObject bag = Spawn(codex, "bag_repr");
+            WorldObject emptyJug1 = SpawnRepresentedContainer(codex, "jug", "empty_liquid");
+            WorldObject emptyJug2 = SpawnRepresentedContainer(codex, "jug", "empty_liquid");
+            WorldObject waterJug = SpawnRepresentedContainer(codex, "jug", "water_liquid");
 
             emptyJug1.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
             emptyJug2.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
@@ -60,69 +74,106 @@ object_defs:
             bag.TryGetSlot(pileSlotId, out Slot pile);
             var stacks = pile.GetStacks();
 
-            Assert.That(stacks.Count, Is.EqualTo(2), "同じjugでも中身(content_id)が違えば別のObjectStackになる");
-            Assert.That(stacks[0].Members.Count, Is.EqualTo(2), "中身が同じ(空)の2個は同じObjectStackにまとまる");
-            Assert.That(stacks[1].Members.Count, Is.EqualTo(1), "中身が違う1個は独立したObjectStack");
+            Assert.That(stacks.Count, Is.EqualTo(2), "同じjugでも represented_by 先のObjectDefが違えば別スタックになる");
+            Assert.That(stacks[0].Members.Count, Is.EqualTo(2));
+            Assert.That(stacks[1].Members.Count, Is.EqualTo(1));
         }
 
         [Test]
-        public void StackBy_TraitLevelDeclaration_AppliesToObjectDefsUsingIt()
+        public void RepresentedBy_RecursivelyDistinguishesRepresentedChains()
         {
             const string yaml = @"
 traits:
-  container:
-    stack_by: content_id
-    props:
-      content_id:
-        value: 0
+  represented_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+  represented_liquid:
+    represented_by: essence
+    slots:
+      essence:
+        accepts: [{tag: essence, max: 1}]
 object_defs:
-  bag_sb2:
+  bag_repr2:
     slots:
       pile: {}
-  pot_sb:
-    traits: [container]
+  sweet_essence:
+    tags: [essence]
+  bitter_essence:
+    tags: [essence]
+  broth:
+    traits: [represented_liquid]
+    tags: [liquid]
+  bottle_repr:
+    traits: [represented_container]
 ";
             var codex = Load(yaml);
             int pileSlotId = codex.SlotNames.GetId("pile");
-            int contentId = codex.PropertyNames.GetId("content_id");
+            int contentSlotId = codex.SlotNames.GetId("content");
+            int essenceSlotId = codex.SlotNames.GetId("essence");
 
-            WorldObject bag = Spawn(codex, "bag_sb2");
-            WorldObject pot1 = Spawn(codex, "pot_sb");
-            WorldObject pot2 = Spawn(codex, "pot_sb");
-            pot2.SetProperty(contentId, PropertyValue.FromNumber(1));
+            WorldObject bag = Spawn(codex, "bag_repr2");
 
-            pot1.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
-            pot2.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+            WorldObject bottle1 = Spawn(codex, "bottle_repr");
+            WorldObject bottle2 = Spawn(codex, "bottle_repr");
+            WorldObject bottle3 = Spawn(codex, "bottle_repr");
+            WorldObject broth1 = Spawn(codex, "broth");
+            WorldObject broth2 = Spawn(codex, "broth");
+            WorldObject broth3 = Spawn(codex, "broth");
+            WorldObject sweet1 = Spawn(codex, "sweet_essence");
+            WorldObject sweet2 = Spawn(codex, "sweet_essence");
+            WorldObject bitter = Spawn(codex, "bitter_essence");
+
+            broth1.MoveToSlot(bottle1, contentSlotId, codex.WellKnown, out _);
+            broth2.MoveToSlot(bottle2, contentSlotId, codex.WellKnown, out _);
+            broth3.MoveToSlot(bottle3, contentSlotId, codex.WellKnown, out _);
+            sweet1.MoveToSlot(broth1, essenceSlotId, codex.WellKnown, out _);
+            sweet2.MoveToSlot(broth2, essenceSlotId, codex.WellKnown, out _);
+            bitter.MoveToSlot(broth3, essenceSlotId, codex.WellKnown, out _);
+
+            bottle1.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+            bottle2.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+            bottle3.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
 
             bag.TryGetSlot(pileSlotId, out Slot pile);
-            Assert.That(pile.GetStacks().Count, Is.EqualTo(2), "trait経由で宣言したstack_byも同様に効く");
+            var stacks = pile.GetStacks();
+
+            Assert.That(stacks.Count, Is.EqualTo(2), "代表の代表まで同じときだけ同じスタックにまとまる");
+            Assert.That(stacks[0].Members.Count, Is.EqualTo(2));
+            Assert.That(stacks[1].Members.Count, Is.EqualTo(1));
         }
 
         [Test]
-        public void StackBy_FixedPositions_DoesNotShareGridCellAcrossDifferentStackTypes()
+        public void RepresentedBy_FixedPositions_DoesNotShareGridCellAcrossDifferentRepresentatives()
         {
             const string yaml = @"
+traits:
+  represented_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
 object_defs:
-  hand_sb:
+  hand_repr:
     slots:
       hand:
         stackable: true
         unit_capacity: 3
         fixed_positions: true
-  jug2:
-    stack_by: content_id
-    props:
-      content_id:
-        value: 0
+  empty_liquid:
+    tags: [liquid]
+  water_liquid:
+    tags: [liquid]
+  jug_repr2:
+    traits: [represented_container]
 ";
             var codex = Load(yaml);
             int handSlotId = codex.SlotNames.GetId("hand");
-            int contentId = codex.PropertyNames.GetId("content_id");
 
-            WorldObject hand = Spawn(codex, "hand_sb");
-            WorldObject emptyJug = Spawn(codex, "jug2");
-            WorldObject waterJug = Spawn(codex, "jug2");
-            waterJug.SetProperty(contentId, PropertyValue.FromNumber(1));
+            WorldObject hand = Spawn(codex, "hand_repr");
+            WorldObject emptyJug = SpawnRepresentedContainer(codex, "jug_repr2", "empty_liquid");
+            WorldObject waterJug = SpawnRepresentedContainer(codex, "jug_repr2", "water_liquid");
 
             emptyJug.MoveToSlot(hand, handSlotId, codex.WellKnown, out _);
             waterJug.MoveToSlot(hand, handSlotId, codex.WellKnown, out _);
@@ -130,9 +181,8 @@ object_defs:
             hand.TryGetSlot(handSlotId, out Slot handSlot);
             var stacks = handSlot.GetStacks();
 
-            Assert.That(stacks.Count, Is.EqualTo(2), "中身が違うので、同じObjectDefでも別々のObjectStack(=別々の固定番号)になる");
-            Assert.That(stacks.Select(s => s.GridIndex), Is.EquivalentTo(new int?[] { 0, 1 }),
-                "スタックできない(合流できない)もの同士は同じ固定番号を共有できない");
+            Assert.That(stacks.Count, Is.EqualTo(2));
+            Assert.That(stacks.Select(s => s.GridIndex), Is.EquivalentTo(new int?[] { 0, 1 }));
         }
     }
 }

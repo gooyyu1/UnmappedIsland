@@ -68,6 +68,10 @@ namespace UnmappedIsland.Domain.Defs
         /// 液体容器のような「中身の種類」の判定に使う（案3、コンテナ設計の検討参照）。</summary>
         SlotContent,
 
+        /// <summary>{object, tag}形式の、objectが指すオブジェクト自身がtagを持つかのチェック（存在判定）。
+        /// 親オブジェクトのタグで分岐するpassiveなど、「オブジェクト自身の種類」を見たい条件で使う。</summary>
+        ObjectTag,
+
         /// <summary>子ノードすべての論理積。</summary>
         All,
 
@@ -83,7 +87,7 @@ namespace UnmappedIsland.Domain.Defs
     /// （旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。
     /// Runtime.ConditionEvaluator参照）。
     ///
-    /// 葉はProperty・SlotPosition・SlotContentの3種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて
+    /// 葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて
     /// 使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の
     /// 慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に
     /// 関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。
@@ -92,7 +96,7 @@ namespace UnmappedIsland.Domain.Defs
     {
         public ConditionNodeKind Kind { get; }
 
-        /// <summary>Property/SlotPosition/SlotContent葉のみ有効。</summary>
+        /// <summary>Property/SlotPosition/SlotContent/ObjectTag葉のみ有効。</summary>
         public ReferenceRoot Root { get; }
 
         /// <summary>Property葉のみ有効。</summary>
@@ -116,7 +120,7 @@ namespace UnmappedIsland.Domain.Defs
         /// だが、参照する木構造上の向きが異なる）。</summary>
         public int SlotGlobalId { get; }
 
-        /// <summary>SlotContent葉のみ有効。</summary>
+        /// <summary>SlotContent/ObjectTag葉のみ有効。</summary>
         public int TagGlobalId { get; }
 
         /// <summary>All/Any/Notのみ有効。Notは常に1要素。</summary>
@@ -148,6 +152,9 @@ namespace UnmappedIsland.Domain.Defs
 
         public static ConditionNode SlotContent(ReferenceRoot root, int slotGlobalId, int tagGlobalId) =>
             new ConditionNode(ConditionNodeKind.SlotContent, root, default, default, null, null, slotGlobalId, tagGlobalId, null);
+
+        public static ConditionNode ObjectTag(ReferenceRoot root, int tagGlobalId) =>
+            new ConditionNode(ConditionNodeKind.ObjectTag, root, default, default, null, null, default, tagGlobalId, null);
 
         public static ConditionNode All(IReadOnlyList<ConditionNode> children) =>
             new ConditionNode(ConditionNodeKind.All, default, default, default, null, null, default, default, children);

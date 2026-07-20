@@ -19,6 +19,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         public static bool TryExecuteAction(WorldObject self, WorldObject actor, string actionName, WorldSession session)
         {
+            self = self.ResolveInteractionTarget();
             ActionDef action = self.Def.Actions.FirstOrDefault(a => a.Name == actionName);
             if (action == null) return false;
             if (!EvaluateConditions(action.Conditions, self, actor, dragged: null)) return false;
@@ -35,6 +36,8 @@ namespace UnmappedIsland.Domain.Runtime
         public static bool TryExecuteCombination(
             WorldObject self, WorldObject dragged, WorldObject actor, string combinationName, WorldSession session)
         {
+            self = self.ResolveInteractionTarget();
+            dragged = dragged.ResolveInteractionTarget();
             CombinationDef combination = self.Def.Combinations.FirstOrDefault(c => c.Name == combinationName);
             if (combination == null) return false;
             if (!combination.Matches(dragged.Def)) return false;
@@ -55,6 +58,8 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         public static IEnumerable<CombinationDef> FindMatchingCombinations(WorldObject self, WorldObject dragged)
         {
+            self = self.ResolveInteractionTarget();
+            dragged = dragged.ResolveInteractionTarget();
             return self.Def.Combinations.Where(c => c.Matches(dragged.Def));
         }
 
