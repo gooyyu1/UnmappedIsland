@@ -11,10 +11,29 @@ traits:
     tags: [liquid_container]
     props:
       # 1L ≈ 4800単位（characters.yamlのhydration換算メモ参照）。中身の種類によらず、量は1つの
-      # プロパティで表す（種類はcontentが別途持つため）。
+      # プロパティで表す（種類はcontentが別途持つため）。maxは各object_def側でcontainerの実容量に
+      # 応じて上書きする（例: coconut_bowlは250mL=1200単位）。
+      #
+      # 蒸発による自然減少: 開放された水面からの蒸発量は、気候にもよるがおおむね5mm/日程度とされる
+      # （屋外の開放水面からの蒸発量の目安）。半分に割ったヤシの殻(直径10cm、開口部の面積
+      # ≈ π×5cm² ≈ 78.5cm²)なら、78.5cm²×0.5cm ≈ 39mL/日。250mL(coconut_bowlの満杯)がこの速さで
+      # 蒸発しきるまで約6.3日(≈606 tick)かかる計算になるため、1200単位/606 tick ≈ 2単位/tickとした
+      # （容器の実容量に応じたmaxとは独立に、この速さ自体は容器の種類によらず共通の値として扱う。
+      # 蓋の有無による蒸発速度の違いは今後の課題）。中身が空の間は蒸発するものが無いため、
+      # conditionsでcontent!=emptyの間だけ有効にする。
       liquid_amount:
         value: 0
         range: {min: 0, max: 4800}
+        on_min:
+          set:
+            self:
+              content: empty
+        passives:
+          - conditions:
+              - {prop: content, op: neq, value: empty}
+            accumulate:
+              self:
+                liquid_amount: -2
       # シンボル型プロパティ。中身の種類を表す。emptyは「何も入っていない」ことを表す著者選択の値
       # であり、エンジンが特別扱いする予約語ではない（他のシンボル値と同列に比較・参照できる）。
       content:
@@ -70,3 +89,10 @@ object_defs:
         value: oil
       liquid_amount:
         value: 4800
+
+  # ヤシの実の殻を割った器。実物の容量(約250mL)に合わせ、250mL×4.8単位/mL=1200単位を上限とする。
+  coconut_bowl:
+    traits: [liquid_container]
+    props:
+      liquid_amount:
+        range: {min: 0, max: 1200}

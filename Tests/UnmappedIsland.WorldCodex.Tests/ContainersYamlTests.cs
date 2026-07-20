@@ -114,6 +114,42 @@ namespace UnmappedIsland.Codex.Tests
         }
 
         [Test]
+        public void CoconutBowl_HasCapacityMatching250mL()
+        {
+            ObjectDef coconutBowl = codex.Objects.Get(codex.ObjectNames.GetId("coconut_bowl"));
+            PropertyDef liquidAmount = PropOf(coconutBowl, "liquid_amount");
+
+            Assert.That(liquidAmount.Range.HasValue, Is.True);
+            Assert.That(liquidAmount.Range.Value.Max, Is.EqualTo(1200), "250mL×4.8単位/mL=1200単位");
+        }
+
+        [Test]
+        public void Evaporation_DecaysLiquidAmountOnlyWhileContentIsNotEmpty()
+        {
+            var session = new WorldSession(codex);
+            WorldObject withWater = SpawnCanteen(waterSymbol, 100);
+            WorldObject empty = SpawnCanteen(emptySymbol, 0);
+
+            withWater.Tick(session);
+            empty.Tick(session);
+
+            Assert.That(withWater.GetNumber(liquidAmountId), Is.EqualTo(98), "中身があるので1tickで2単位蒸発する");
+            Assert.That(empty.GetNumber(liquidAmountId), Is.EqualTo(0), "空なので蒸発するものが無く0のまま");
+        }
+
+        [Test]
+        public void Evaporation_DepletingLiquidAmount_ResetsContentToEmptyViaOnMin()
+        {
+            var session = new WorldSession(codex);
+            WorldObject canteen = SpawnCanteen(waterSymbol, 2);
+
+            canteen.Tick(session);
+
+            Assert.That(canteen.GetNumber(liquidAmountId), Is.EqualTo(0));
+            Assert.That(canteen.GetNumber(contentId), Is.EqualTo(emptySymbol), "蒸発しきるとon_minでcontentがemptyに戻る");
+        }
+
+        [Test]
         public void Drink_WithEmptyContent_DoesNothingAndReturnsFalse()
         {
             var session = new WorldSession(codex);
