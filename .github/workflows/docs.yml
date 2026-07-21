@@ -103,50 +103,52 @@ jobs:
           docfx metadata docfx.json
           docfx build docfx.json
           # DocFX は docs/Reference/index.html を生成しないため、Reference/ 直下の導線ページを追加する。
-          cat > docs/Reference/index.html << 'REFEOF'
-          <!DOCTYPE html>
-          <html lang="ja">
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-            <title>UnmappedIsland コードリファレンス</title>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
-            <style>@media (max-width: 600px) { .markdown-body { padding: 1rem !important; } }</style>
-          </head>
-          <body>
-          <article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
-            <h1>UnmappedIsland コードリファレンス</h1>
-            <ul>
-              <li><a href="toc.html">型一覧（toc）</a></li>
-            </ul>
-          </article>
-          </body>
-          </html>
-          REFEOF
-
-      - name: Wrap toc.html in full HTML for mobile
-        run: |
-          # DocFX が生成する toc.html は <html>/<head> を持たない断片ファイルのため、
-          # モバイルで直接開くとビューポート設定もスタイルも存在せず崩れる。
-          # jQuery の .load() によるフラグメント読み込みは完全な HTML ドキュメントにも対応しているため、
-          # 既存の埋め込み表示は壊れない。
+          # toc.html は断片ファイルのまま保持し、index.html 側に埋め込んでスマホからも見やすくする。
           {
             echo '<!DOCTYPE html>'
             echo '<html lang="ja">'
             echo '<head>'
             echo '  <meta charset="utf-8" />'
             echo '  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />'
-            echo '  <title>型一覧 | UnmappedIsland API リファレンス</title>'
+            echo '  <title>UnmappedIsland コードリファレンス</title>'
             echo '  <link rel="stylesheet" href="styles/docfx.vendor.min.css" />'
             echo '  <link rel="stylesheet" href="styles/docfx.css" />'
+            echo '  <link rel="stylesheet" href="styles/main.css" />'
+            echo '  <style>'
+            echo '    body { margin: 0; }'
+            echo '    .reference-toc-page { max-width: 900px; margin: 0 auto; padding: 1rem 2rem; box-sizing: border-box; }'
+            echo '    .reference-toc-page .sidefilter,'
+            echo '    .reference-toc-page .sidetoc {'
+            echo '      position: static;'
+            echo '      width: auto;'
+            echo '      top: auto;'
+            echo '      bottom: auto;'
+            echo '      float: none;'
+            echo '      border: none;'
+            echo '    }'
+            echo '    .reference-toc-page .sidetoc {'
+            echo '      overflow: visible;'
+            echo '      max-height: none;'
+            echo '      padding-bottom: 0;'
+            echo '    }'
+            echo '    .reference-toc-page .toc { margin: 0; padding: 0; }'
+            echo '    .reference-toc-page .sidefilter { padding-left: 0; padding-right: 0; }'
+            echo '    @media (max-width: 600px) { .reference-toc-page { padding: 1rem; } }'
+            echo '  </style>'
             echo '</head>'
             echo '<body>'
+            echo '  <main class="reference-toc-page">'
+            echo '    <h1>UnmappedIsland コードリファレンス</h1>'
+            echo '    <p><a href="../">トップへ戻る</a></p>'
             cat docs/Reference/toc.html
+            echo '  </main>'
+            echo '  <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>'
+            echo '  <script type="text/javascript" src="styles/docfx.js"></script>'
+            echo '  <script type="text/javascript" src="styles/main.js"></script>'
             echo '</body>'
             echo '</html>'
-          } > /tmp/toc_wrapped.html
-          mv /tmp/toc_wrapped.html docs/Reference/toc.html
-          echo "toc.html wrapped in full HTML document"
+          } > docs/Reference/index.html
+          echo "Embedded toc.html into docs/Reference/index.html"
 
       - name: Generate folder index.html files for Documents subtree
         run: |
