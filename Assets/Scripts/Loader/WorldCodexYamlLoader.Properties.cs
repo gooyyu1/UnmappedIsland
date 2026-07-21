@@ -170,13 +170,13 @@ namespace UnmappedIsland.Loader
         /// クランプを`range`を書くだけで実現でき、繰り上げ等の特別な挙動が要る場合だけon_overflow/
         /// on_shortfallを明示すればよい。
         /// </summary>
-        private static ActiveEffect BuildDefaultOverflowEffect(PropertyRange range, int propertyGlobalId, bool isMax)
+        private static ActiveEffects BuildDefaultOverflowEffect(PropertyRange range, int propertyGlobalId, bool isMax)
         {
-            var operations = new List<ActiveOperation>
+            var operations = new List<ActiveEffect>
             {
                 new SetEffect(ReferenceRoot.Self, propertyGlobalId, isMax ? range.Max : range.Min),
             };
-            return new ActiveEffect(operations);
+            return new ActiveEffects(operations);
         }
     }
 }

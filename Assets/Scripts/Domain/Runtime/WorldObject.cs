@@ -483,8 +483,14 @@ namespace UnmappedIsland.Domain.Runtime
         /// （このインスタンス自身）が実行するものとみなすため、同じ場所への配置(SameSlot)はself自身の
         /// destroy有無だけを見ればよい。
         /// </summary>
-        public void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged) =>
-            effect.ApplyTo(this, session, actor, dragged);
+        public void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
+        {
+            // same_slot spawnの位置捕捉をdestroyと共有するための文脈を、この最上位の適用1回分だけ作り、
+            // 効果（単一命令・合成ActiveEffects・pickのいずれでも）へそのまま渡す。pickの抽選や合成の
+            // 展開は各ActiveEffectが自分で行う（自分のことは自分でする、CLAUDE.md参照）。
+            var context = new ActiveApplication(this);
+            effect.Apply(this, session, actor, dragged, context);
+        }
 
         /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged/dragged_parent)を解決する。selfは常にこの
         /// インスタンス自身、parentはthis.Parent（無ければnull）、dragged_parentはdraggedの直接の親（無ければnull）。
@@ -510,7 +516,7 @@ namespace UnmappedIsland.Domain.Runtime
             root == ReferenceRoot.Ancestor ? FindAncestorWithProperty(propertyGlobalId) : ResolveEffectTarget(root, actor, dragged);
 
         /// <summary>
-        /// 1回のactive効果適用（1つのActiveEffect.ApplyTo）で共有される文脈。現状の唯一の役割は、
+        /// 1回のactive効果適用（最上位のActiveEffect.Apply1回）で共有される文脈。現状の唯一の役割は、
         /// same_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで
         /// 一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。
         ///

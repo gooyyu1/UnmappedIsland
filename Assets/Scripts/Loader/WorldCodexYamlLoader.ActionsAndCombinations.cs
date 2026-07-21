@@ -59,32 +59,32 @@ namespace UnmappedIsland.Loader
                 if (!hasActive && nestedPick == null)
                     throw new YamlLoadException($"{candidateContext}: set/add/destroy/spawnのいずれか、またはpickが必要です。");
 
-                ActiveEffect active = hasActive
+                // activeとpickは排他。この候補が選ばれたときに適用する効果を、単一のActiveEffect
+                // （合成ActiveEffects、またはネストしたpickのPickEffect）として持たせる。
+                ActiveEffect effect = hasActive
                     ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly: false, PickCandidateReservedKeys)
-                    : null;
-                List<PickCandidateDef> pick = nestedPick != null
-                    ? ParsePickList(candidateContext, nestedPick, allowDragged)
-                    : null;
+                    : new PickEffect(ParsePickList(candidateContext, nestedPick, allowDragged));
 
-                result.Add(new PickCandidateDef(weight, new EffectOutcome(active, pick)));
+                result.Add(new PickCandidateDef(weight, effect));
             }
 
             return result;
         }
 
-        /// <summary>set/add/destroy/spawn（active）とpickは排他。両方あればエラー、どちらも無ければ
-        /// 「条件成立時に何も起きない」EffectOutcomeを返す。action/combination共通の解釈（pick候補は必ず
+        /// <summary>set/add/destroy/spawn（active）とpickは排他。条件成立時に適用する効果を、単一の
+        /// ActiveEffect（合成ActiveEffects、またはpickのPickEffect）として返す。両方あればエラー、どちらも
+        /// 無ければnull（条件成立時に何も起きない）。action/combination共通の解釈（pick候補は必ず
         /// いずれかを要求するため、この共通ヘルパーは使わずParsePickList側で個別に検証する）。</summary>
-        private EffectOutcome ParseEffectOutcome(string context, YamlMappingNode map, bool allowDragged, string[] reservedKeys)
+        private ActiveEffect ParseEffect(string context, YamlMappingNode map, bool allowDragged, string[] reservedKeys)
         {
             bool hasActive = HasActiveContent(map);
             YamlSequenceNode pickList = map.TryGetSequence("pick", context);
             if (hasActive && pickList != null)
                 throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
 
-            ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged, selfOnly: false, reservedKeys) : null;
-            List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged) : null;
-            return new EffectOutcome(active, pick);
+            if (hasActive) return ParseActiveEffectBody(context, map, allowDragged, selfOnly: false, reservedKeys);
+            if (pickList != null) return new PickEffect(ParsePickList(context, pickList, allowDragged));
+            return null;
         }
 
         /// <summary>actionエントリが持つ、showMenu/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
@@ -110,9 +110,9 @@ namespace UnmappedIsland.Loader
                     throw new YamlLoadException($"{context}: showMenuは現時点で'always'のみ対応しています（値: '{showMenuRaw}'）。");
 
                 ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots);
-                EffectOutcome outcome = ParseEffectOutcome(context, map, allowDragged: false, ActionReservedKeys);
+                ActiveEffect effect = ParseEffect(context, map, allowDragged: false, ActionReservedKeys);
 
-                result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, outcome));
+                result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, effect));
             }
 
             return result;
@@ -132,9 +132,9 @@ namespace UnmappedIsland.Loader
 
                 int with = TagNames.Intern(map.RequireScalar("with", context));
                 ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots);
-                EffectOutcome outcome = ParseEffectOutcome(context, map, allowDragged: true, CombinationReservedKeys);
+                ActiveEffect effect = ParseEffect(context, map, allowDragged: true, CombinationReservedKeys);
 
-                result.Add(new CombinationDef(name, with, conditions, outcome));
+                result.Add(new CombinationDef(name, with, conditions, effect));
             }
 
             return result;
