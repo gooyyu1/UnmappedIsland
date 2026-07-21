@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
@@ -37,5 +38,16 @@ namespace UnmappedIsland.Domain.Defs
 
         /// <summary>draggedDefがこのcombinationのWithタグを持っていれば真（12.1節）。</summary>
         public bool Matches(ObjectDef draggedDef) => draggedDef.Tags.Contains(With);
+
+        internal bool TryExecute(WorldObject self, WorldObject dragged, WorldObject actor, WorldSession session)
+        {
+            if (!Matches(dragged.Def)) return false;
+            if (Conditions != null && !Conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged)))
+                return false;
+
+            ActiveEffect effect = PickCandidateDef.ResolveEffect(Active, Pick, self, actor, dragged, session);
+            if (effect != null) self.ApplyActiveEffect(effect, session, actor, dragged);
+            return true;
+        }
     }
 }

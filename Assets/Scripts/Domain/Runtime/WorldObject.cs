@@ -94,6 +94,15 @@ namespace UnmappedIsland.Domain.Runtime
             return represented?.ResolveInteractionTarget() ?? this;
         }
 
+        public bool TryExecuteAction(string actionName, WorldObject actor, WorldSession session) =>
+            Def.TryExecuteAction(this, actor, actionName, session);
+
+        public bool TryExecuteCombination(WorldObject dragged, WorldObject actor, string combinationName, WorldSession session) =>
+            Def.TryExecuteCombination(this, dragged, actor, combinationName, session);
+
+        public IEnumerable<CombinationDef> FindMatchingCombinations(WorldObject dragged) =>
+            Def.FindMatchingCombinations(this, dragged);
+
         /// <summary>stack判定用の代表ObjectDef列を、現在のrepresented_byチェーンからスナップショットする。
         /// 自分自身のObjectDefは呼び出し側（ObjectStack.Def）が既に持っているため含めず、代表の代表…だけを
         /// 深さ順に並べる。</summary>

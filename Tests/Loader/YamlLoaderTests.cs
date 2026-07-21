@@ -849,7 +849,7 @@ object_defs:
             var redMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("red_marker")));
             redMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
 
-            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.True,
+            Assert.That(box.TryExecuteAction("use", actor: null, session), Is.True,
                 "contentスロットにredタグのマーカーがあるので実行される");
         }
 
@@ -876,12 +876,12 @@ object_defs:
 
             var session = new WorldSession(codex);
             var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box2")));
-            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.False,
+            Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットが空なので実行されない");
 
             var blueMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("blue_marker2")));
             blueMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
-            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.False,
+            Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットの中身がredタグを持たない(blueタグ)ので実行されない");
         }
 
@@ -918,7 +918,7 @@ object_defs:
             var session = new WorldSession(codex);
             var thing = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
 
-            Assert.That(InteractionExecutor.TryExecuteAction(thing, null, "use", session), Is.True);
+            Assert.That(thing.TryExecuteAction("use", null, session), Is.True);
         }
 
         [Test]
@@ -948,12 +948,12 @@ object_defs:
             var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")));
             var sameContent = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("bottle_source")));
 
-            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, sameContent, null, "pour_in", session), Is.False,
+            Assert.That(bottle.TryExecuteCombination(sameContent, null, "pour_in", session), Is.False,
                 "self(empty)とdragged(water)のcontentが異なるので不成立");
 
             int contentId = codex.PropertyNames.GetId("content");
             bottle.SetProperty(contentId, codex.SymbolNames.GetId("water"));
-            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, sameContent, null, "pour_in", session), Is.True,
+            Assert.That(bottle.TryExecuteCombination(sameContent, null, "pour_in", session), Is.True,
                 "selfとdraggedのcontentが同じ(water)なので成立");
         }
 
@@ -1001,7 +1001,7 @@ object_defs:
             var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle2")));
             var oilSource = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("oil_source")));
 
-            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, oilSource, null, "pour_in", session), Is.True);
+            Assert.That(bottle.TryExecuteCombination(oilSource, null, "pour_in", session), Is.True);
             Assert.That(bottle.GetNumber(contentId), Is.EqualTo(codex.SymbolNames.GetId("oil")),
                 "set: {content: {object: dragged, prop: content}}がdraggedの現在値をそのままコピーする");
         }
@@ -1037,7 +1037,7 @@ object_defs:
             var session = new WorldSession(codex);
             var thingInstance = new WorldObject(1, thing);
 
-            Assert.That(InteractionExecutor.TryExecuteAction(thingInstance, actor: null, "use", session), Is.True,
+            Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.True,
                 "hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する");
         }
 
@@ -1061,7 +1061,7 @@ object_defs:
             var session = new WorldSession(codex);
             var thingInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
 
-            Assert.That(InteractionExecutor.TryExecuteAction(thingInstance, actor: null, "use", session), Is.False,
+            Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.False,
                 "locked(1)がprop:1と一致するため、not: {...}は偽になる");
         }
 
@@ -1476,7 +1476,7 @@ object_defs:
             Assert.That(characterInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(foodInstance.MoveToSlot(characterInstance, pocketSlotId, codex.WellKnown, out _), Is.True);
 
-            Assert.That(InteractionExecutor.TryExecuteAction(foodInstance, actor: null, "check", session), Is.True,
+            Assert.That(foodInstance.TryExecuteAction("check", actor: null, session), Is.True,
                 "characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる");
         }
 

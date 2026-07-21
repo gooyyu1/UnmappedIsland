@@ -103,7 +103,7 @@ namespace UnmappedIsland.StreamingAssets
 
         private string FindOnlyMatchingCombinationName(WorldObject self, WorldObject dragged)
         {
-            var matches = InteractionExecutor.FindMatchingCombinations(self, dragged).ToList();
+            var matches = self.FindMatchingCombinations(dragged).ToList();
             Assert.That(matches.Count, Is.EqualTo(1), "この組み合わせでは候補が1つだけであることを前提にしている");
             return matches[0].Name;
         }
@@ -141,7 +141,7 @@ namespace UnmappedIsland.StreamingAssets
             WorldObject canteen = SpawnContainer("canteen", "water", 3000);
             actor.SetProperty(hydrationId, 0);
 
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            bool executed = canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(executed, Is.True);
             Assert.That(canteen.GetNumber(liquidAmountId), Is.EqualTo(1800));
@@ -157,7 +157,7 @@ namespace UnmappedIsland.StreamingAssets
             actor.SetProperty(hydrationId, 0);
             actor.SetProperty(wakefulnessId, 0);
 
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            bool executed = canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(executed, Is.True);
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200));
@@ -173,7 +173,7 @@ namespace UnmappedIsland.StreamingAssets
             actor.SetProperty(hydrationId, 0);
             actor.SetProperty(wakefulnessId, 0);
 
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            bool executed = canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(executed, Is.True);
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(600), "在庫(600)の分しか水分補給されない");
@@ -188,7 +188,7 @@ namespace UnmappedIsland.StreamingAssets
             WorldObject actor = Spawn("character");
             WorldObject canteen = SpawnContainer("canteen", "oil", 3000);
 
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            bool executed = canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(executed, Is.False, "飲用不可の液体は自分でdrinkアクションを持たない");
         }
@@ -271,7 +271,7 @@ namespace UnmappedIsland.StreamingAssets
             WorldObject dragged = SpawnContainer("canteen", "water", 3000);
             string combinationName = FindOnlyMatchingCombinationName(self, dragged);
 
-            bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, combinationName, session);
+            bool executed = self.TryExecuteCombination(dragged, null, combinationName, session);
 
             Assert.That(executed, Is.True);
             Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid"));
@@ -286,7 +286,7 @@ namespace UnmappedIsland.StreamingAssets
             WorldObject self = SpawnContainer("canteen", "water", 500);
             WorldObject dragged = SpawnContainer("canteen", "water", 3000);
 
-            bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
+            bool executed = self.TryExecuteCombination(dragged, null, "pour_in", session);
 
             Assert.That(executed, Is.True);
             Assert.That(ContentOf(self).Def.Name, Is.EqualTo("water_liquid"));
@@ -301,7 +301,7 @@ namespace UnmappedIsland.StreamingAssets
             WorldObject self = SpawnContainer("canteen", "oil", 500);
             WorldObject dragged = SpawnContainer("canteen", "water", 3000);
 
-            bool executed = InteractionExecutor.TryExecuteCombination(self, dragged, null, "pour_in", session);
+            bool executed = self.TryExecuteCombination(dragged, null, "pour_in", session);
 
             Assert.That(executed, Is.False);
             Assert.That(ContentOf(self).Def.Name, Is.EqualTo("oil_liquid"));

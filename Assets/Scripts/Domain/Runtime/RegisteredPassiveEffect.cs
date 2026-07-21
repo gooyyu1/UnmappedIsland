@@ -28,28 +28,6 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。
         /// StageNameとConditionsは独立したフィールドで、それぞれ非nullの場合だけそのチェックを行う（両方非nullなら
         /// AND、両方nullなら常時有効）。</summary>
-        public bool IsActive()
-        {
-            if (Def.Gate.StageName != null && !Declarer.IsInStage(Def.Gate.PropertyGlobalId, Def.Gate.StageName))
-                return false;
-
-            if (Def.Gate.Conditions != null && !ConditionEvaluator.Evaluate(Def.Gate.Conditions, ResolveConditionRoot))
-                return false;
-
-            return true;
-        }
-
-        /// <summary>conditions（旧when）内のself/parentを解決する。selfはSlotBearer（self/parent対象の
-        /// 効果ならDeclarerと同一、child対象の効果なら実際にそのスロットへ入っている子）、parentはその
-        /// 1つ上（SlotBearer.Parent）。actor/draggedはpassivesの文脈に存在しないため常にnull。</summary>
-        private WorldObject ResolveConditionRoot(ReferenceRoot root)
-        {
-            switch (root)
-            {
-                case ReferenceRoot.Self: return SlotBearer;
-                case ReferenceRoot.Parent: return SlotBearer.Parent;
-                default: return null;
-            }
-        }
+        public bool IsActive() => Def.Gate.IsSatisfied(Declarer, SlotBearer);
     }
 }

@@ -1,3 +1,5 @@
+using UnmappedIsland.Domain.Runtime;
+
 namespace UnmappedIsland.Domain.Defs
 {
     /// <summary>
@@ -47,6 +49,27 @@ namespace UnmappedIsland.Domain.Defs
         public ConditionNode Conditions;
         public int PropertyGlobalId;
         public string StageName;
+
+        internal bool IsSatisfied(WorldObject declarer, WorldObject slotBearer)
+        {
+            if (StageName != null && !declarer.IsInStage(PropertyGlobalId, StageName))
+                return false;
+
+            if (Conditions != null && !Conditions.Evaluate(root => Resolve(root, slotBearer)))
+                return false;
+
+            return true;
+        }
+
+        private static WorldObject Resolve(ReferenceRoot root, WorldObject slotBearer)
+        {
+            switch (root)
+            {
+                case ReferenceRoot.Self: return slotBearer;
+                case ReferenceRoot.Parent: return slotBearer.Parent;
+                default: return null;
+            }
+        }
     }
 
     /// <summary>
