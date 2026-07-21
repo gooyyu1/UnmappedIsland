@@ -31,31 +31,15 @@ namespace UnmappedIsland.Loader
             string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly,
             IReadOnlyCollection<string> reservedKeys = null)
         {
-            var sets = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>();
             YamlMappingNode setMap = bodyNode.TryGetMapping("set", context);
-            if (setMap != null)
-                foreach (var (targetName, targetBody) in setMap.EntriesInOrder())
-                {
-                    ReferenceRoot target = ParseActiveTargetKey($"{context}.set", targetName, allowDragged, selfOnly);
-                    var assigns = new List<PropertyAssignment>();
-                    foreach (var (propName, valueNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
-                        assigns.Add(ParsePropertyAssignment(
-                            $"{context}.set.'{targetName}'.'{propName}'", PropertyNames.Intern(propName), valueNode,
-                            allowDragged, selfOnly));
-                    sets[target] = assigns;
-                }
+            var sets = setMap != null
+                ? ParseSets($"{context}.set", setMap, allowDragged, selfOnly)
+                : new Dictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>();
 
-            var adds = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
             YamlMappingNode addMap = bodyNode.TryGetMapping("add", context);
-            if (addMap != null)
-                foreach (var (targetName, targetBody) in addMap.EntriesInOrder())
-                {
-                    ReferenceRoot target = ParseActiveTargetKey($"{context}.add", targetName, allowDragged, selfOnly);
-                    var deltas = new List<PropertyDelta>();
-                    foreach (var (propName, amountNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
-                        deltas.Add(new PropertyDelta(PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
-                    adds[target] = deltas;
-                }
+            var adds = addMap != null
+                ? ParseAdds($"{context}.add", addMap, allowDragged, selfOnly)
+                : new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
 
             var destroy = new List<ReferenceRoot>();
             YamlNode destroyNode = bodyNode.TryGet("destroy");
@@ -135,17 +119,10 @@ namespace UnmappedIsland.Loader
             int amount = map.RequireInt("amount", context);
             bool allowOverflow = map.TryGetBool("allow_overflow", context, fallback: false);
 
-            var linkedAdd = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
             YamlMappingNode linkedAddMap = map.TryGetMapping("linked_add", context);
-            if (linkedAddMap != null)
-                foreach (var (targetName, targetBody) in linkedAddMap.EntriesInOrder())
-                {
-                    ReferenceRoot target = ParseActiveTargetKey($"{context}.linked_add", targetName, allowDragged, selfOnly);
-                    var deltas = new List<PropertyDelta>();
-                    foreach (var (propName, amountNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
-                        deltas.Add(new PropertyDelta(PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
-                    linkedAdd[target] = deltas;
-                }
+            var linkedAdd = linkedAddMap != null
+                ? ParseAdds($"{context}.linked_add", linkedAddMap, allowDragged, selfOnly)
+                : new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
 
             var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
                 .Where(k => k != "from_object" && k != "from_prop" && k != "to_object" && k != "to_prop"
@@ -155,6 +132,40 @@ namespace UnmappedIsland.Loader
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
             return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd);
+        }
+
+        private Dictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> ParseSets(
+            string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
+        {
+            var sets = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>();
+            foreach (var (targetName, targetBody) in map.EntriesInOrder())
+            {
+                ReferenceRoot target = ParseActiveTargetKey(context, targetName, allowDragged, selfOnly);
+                var assigns = new List<PropertyAssignment>();
+                foreach (var (propName, valueNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
+                    assigns.Add(ParsePropertyAssignment(
+                        $"{context}.'{targetName}'.'{propName}'", PropertyNames.Intern(propName), valueNode,
+                        allowDragged, selfOnly));
+                sets[target] = assigns;
+            }
+
+            return sets;
+        }
+
+        private Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> ParseAdds(
+            string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
+        {
+            var adds = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
+            foreach (var (targetName, targetBody) in map.EntriesInOrder())
+            {
+                ReferenceRoot target = ParseActiveTargetKey(context, targetName, allowDragged, selfOnly);
+                var deltas = new List<PropertyDelta>();
+                foreach (var (propName, amountNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
+                    deltas.Add(new PropertyDelta(PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
+                adds[target] = deltas;
+            }
+
+            return adds;
         }
 
         private IEnumerable<SpawnEffect> ParseSpawns(string context, YamlNode node)
