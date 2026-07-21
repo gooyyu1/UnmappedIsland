@@ -41,7 +41,7 @@ namespace UnmappedIsland.Domain.Runtime
             Def = def;
 
             properties = def.EnumeratePropertyDefs()
-                .Select(pd => PropertyValue.Create(pd.DefaultNumber, pd, this))
+                .Select(pd => pd.CreateValue(this))
                 .ToArray();
 
             slots = def.EnumerateSlotDefs()

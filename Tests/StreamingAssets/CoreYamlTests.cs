@@ -46,12 +46,14 @@ namespace UnmappedIsland.StreamingAssets
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             Assert.That(world.IsSingleton, Is.True);
 
-            Assert.That(PropOf(world, "tick").DefaultNumber, Is.EqualTo(0));
-            Assert.That(PropOf(world, "minutes_per_tick").DefaultNumber, Is.EqualTo(15));
-            Assert.That(PropOf(world, "minute").DefaultNumber, Is.EqualTo(0));
-            Assert.That(PropOf(world, "hour").DefaultNumber, Is.EqualTo(0));
-            Assert.That(PropOf(world, "day").DefaultNumber, Is.EqualTo(1));
-            Assert.That(PropOf(world, "ambient_temperature").DefaultNumber, Is.EqualTo(20));
+            // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
+            var instance = new WorldObject(1, world);
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("tick")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minutes_per_tick")), Is.EqualTo(15));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hour")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("day")), Is.EqualTo(1));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("ambient_temperature")), Is.EqualTo(20));
         }
 
         [Test]

@@ -35,17 +35,15 @@ namespace UnmappedIsland.Domain.Runtime
         /// になるため、再入を検出した時点でGetEffectiveValue自身が分かりやすい例外を投げる。</summary>
         private bool isComputingEffectiveValue;
 
-        private PropertyValue(int number, PropertyDef def, WorldObject owner)
+        /// <summary>1つのプロパティ用の新しいインスタンス（Incomingは空で始まる）。生成はPropertyDef.CreateValue
+        /// が担う（初期値numberは定義側が決める）。defはこのプロパティが属するPropertyDef、ownerはそれを保持する
+        /// WorldObject。</summary>
+        public PropertyValue(int number, PropertyDef def, WorldObject owner)
         {
             Number = number;
             this.def = def;
             this.owner = owner;
         }
-
-        /// <summary>WorldObject構築時に、1つのプロパティ用の新しいインスタンスを作る（Incomingは空で始まる）。
-        /// defは、このプロパティが実際に属することになるPropertyDef（range・on_overflow等）、ownerはそれを
-        /// 保持するWorldObjectを紐付ける。</summary>
-        public static PropertyValue Create(int number, PropertyDef def, WorldObject owner) => new PropertyValue(number, def, owner);
 
         /// <summary>SetProperty用。登録済みのIncomingはそのまま、値の中身だけを差し替える。</summary>
         public void CopyValueFrom(int number)

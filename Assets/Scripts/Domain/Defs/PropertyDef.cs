@@ -65,9 +65,9 @@ namespace UnmappedIsland.Domain.Defs
         public string Name { get; }
 
         /// <summary>実行時インスタンス生成（WorldObject構築）時に、この定義に属する新しいPropertyValueへ
-        /// 渡す初期値。定義自身が「初期値がどうあるべきか」を知っているため、テンプレートとなる
-        /// PropertyValueインスタンスをCloneするのではなく、この数値からPropertyValue.Createで直接作る。</summary>
-        public int DefaultNumber { get; }
+        /// 渡す初期値。定義自身が「初期値がどうあるべきか」を知っているため、生成（CreateValue）も定義側で
+        /// 行う。外部はCreateValue越しに値を受け取るため、この数値自体は公開しない。</summary>
+        private readonly int defaultNumber;
 
         /// <summary>value: {min, max} による毎tick再ロール（6.2節）。使わない場合は null。</summary>
         public PropertyRange? RerollRange { get; }
@@ -150,7 +150,7 @@ namespace UnmappedIsland.Domain.Defs
         {
             GlobalId = globalId;
             Name = name;
-            DefaultNumber = defaultNumber;
+            this.defaultNumber = defaultNumber;
             RerollRange = rerollRange;
             Range = range;
             this.onOverflow = onOverflow;
@@ -169,6 +169,14 @@ namespace UnmappedIsland.Domain.Defs
                 }
             }
         }
+
+        /// <summary>
+        /// このプロパティ定義に属する、新しい実行時値（PropertyValue）を生成する。初期値は定義自身が知る
+        /// defaultNumberで埋める。ownerはその値を保持することになるWorldObject。定義が「初期値がどうあるべきか」
+        /// を知っているため、生成の責務も定義側に置き、呼び出し側（WorldObject）は初期値を一切意識しない
+        /// （自分のことは自分でする、CLAUDE.md参照）。
+        /// </summary>
+        public PropertyValue CreateValue(WorldObject owner) => new PropertyValue(defaultNumber, this, owner);
 
         /// <summary>
         /// number（このプロパティを保持するownerの、変更直後の実体値）に対して、on_max・on_min・on_overflow・
