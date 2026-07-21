@@ -105,6 +105,58 @@ object_defs:
         }
 
         [Test]
+        public void Transfer_Array_AppliesMultipleTransfersInOneAction()
+        {
+            const string yaml = @"
+object_defs:
+  player_multi:
+    props:
+      hydration:
+        value: 0
+        range: {min: 0, max: 28800}
+      vitamin:
+        value: 0
+        range: {min: 0, max: 28800}
+  canteen_multi:
+    props:
+      water_amount:
+        value: 5000
+        range: {min: 0, max: 5000}
+      juice_amount:
+        value: 3000
+        range: {min: 0, max: 5000}
+    actions:
+      drink:
+        transfer:
+          - amount: 2000
+            from_prop: water_amount
+            to_object: actor
+            to_prop: hydration
+          - amount: 1000
+            from_prop: juice_amount
+            to_object: actor
+            to_prop: vitamin
+";
+            var codex = Load(yaml);
+            int waterId = codex.PropertyNames.GetId("water_amount");
+            int juiceId = codex.PropertyNames.GetId("juice_amount");
+            int hydrationId = codex.PropertyNames.GetId("hydration");
+            int vitaminId = codex.PropertyNames.GetId("vitamin");
+
+            var session = new WorldSession(codex);
+            WorldObject actor = Spawn(codex, "player_multi");
+            WorldObject canteen = Spawn(codex, "canteen_multi");
+
+            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(canteen.GetNumber(waterId), Is.EqualTo(3000));
+            Assert.That(canteen.GetNumber(juiceId), Is.EqualTo(2000));
+            Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(2000));
+            Assert.That(actor.GetNumber(vitaminId), Is.EqualTo(1000));
+        }
+
+        [Test]
         public void Transfer_AllowOverflowFalse_ClampsToDestinationRemainingCapacity_LeavingRestInSource()
         {
             const string yaml = @"

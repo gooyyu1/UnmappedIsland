@@ -97,6 +97,36 @@ object_defs:
         }
 
         [Test]
+        public void TryExecuteAction_SpawnArray_GeneratesMultipleObjectsInOneAction()
+        {
+            const string yaml = @"
+object_defs:
+  crate:
+    slots:
+      inside: {}
+    actions:
+      open:
+        spawn:
+          - {object: apple_loot, into: self}
+          - {object: berry_loot, into: self}
+  apple_loot: {}
+  berry_loot: {}
+";
+            var codex = Load(yaml);
+            int insideSlotId = codex.SlotNames.GetId("inside");
+
+            var session = new WorldSession(codex);
+            WorldObject crate = Spawn(codex, "crate");
+
+            bool executed = InteractionExecutor.TryExecuteAction(crate, actor: null, "open", session);
+
+            crate.TryGetSlot(insideSlotId, out Slot inside);
+            Assert.That(executed, Is.True);
+            Assert.That(inside.Contents.Count, Is.EqualTo(2));
+            Assert.That(inside.Contents.Select(c => c.Def.Name), Is.EquivalentTo(new[] { "apple_loot", "berry_loot" }));
+        }
+
+        [Test]
         public void TryExecuteAction_UnknownActionName_ReturnsFalse()
         {
             const string yaml = @"
@@ -316,6 +346,52 @@ object_defs:
             Assert.That(executed, Is.True);
             Assert.That(woodInstance.Parent, Is.Null, "self(wood)はdestroyされる");
             Assert.That(axeInstance.GetNumber(durabilityId), Is.EqualTo(9));
+        }
+
+        [Test]
+        public void TryExecuteCombination_AppliesSetAndAddToDraggedParent()
+        {
+            const string yaml = @"
+object_defs:
+  lever:
+    combinations:
+      operate:
+        with: marker_tag
+        add:
+          dragged_parent:
+            power: 3
+        set:
+          dragged_parent:
+            mode: 2
+  carrier:
+    props:
+      power:
+        value: 1
+      mode:
+        value: 0
+    slots:
+      hold:
+        accepts:
+          - {tag: marker_tag, max: 1}
+  marker:
+    tags: [marker_tag]
+";
+            var codex = Load(yaml);
+            int holdSlotId = codex.SlotNames.GetId("hold");
+            int powerId = codex.PropertyNames.GetId("power");
+            int modeId = codex.PropertyNames.GetId("mode");
+
+            var session = new WorldSession(codex);
+            WorldObject lever = Spawn(codex, "lever");
+            WorldObject carrier = Spawn(codex, "carrier");
+            WorldObject marker = Spawn(codex, "marker");
+            marker.MoveToSlot(carrier, holdSlotId, codex.WellKnown, out _);
+
+            bool executed = InteractionExecutor.TryExecuteCombination(lever, marker, actor: null, "operate", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(carrier.GetNumber(powerId), Is.EqualTo(4));
+            Assert.That(carrier.GetNumber(modeId), Is.EqualTo(2));
         }
 
         [Test]

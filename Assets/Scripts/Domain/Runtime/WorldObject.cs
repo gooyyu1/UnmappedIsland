@@ -505,10 +505,11 @@ namespace UnmappedIsland.Domain.Runtime
                 foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
             }
 
-            if (effect.Transfer != null) ApplyTransfer(effect.Transfer, session, actor, dragged);
+            foreach (TransferEffect transfer in effect.Transfers)
+                ApplyTransfer(transfer, session, actor, dragged);
 
             bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
-            SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
+            SameSlotAnchor? anchor = effect.Spawns.Any(s => s.Into == SpawnTargetRoot.SameSlot)
                 ? CaptureSameSlotAnchor(willDestroySelf)
                 : null;
 
@@ -520,7 +521,8 @@ namespace UnmappedIsland.Domain.Runtime
                 target.Destroy(session.Codex.WellKnown);
             }
 
-            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
+            foreach (SpawnEffect spawn in effect.Spawns)
+                ExecuteSpawn(spawn, session, actor, anchor);
         }
 
         /// <summary>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
@@ -613,11 +615,11 @@ namespace UnmappedIsland.Domain.Runtime
             }
         }
 
-        /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged）。YAML側で
+        /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged→dragged_parent）。YAML側で
         /// 対象間の適用順序は規定されていないため、決定的な順序を1つ選んで固定する。</summary>
         private static readonly ReferenceRoot[] OrderedTargets =
         {
-            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged,
+            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged, ReferenceRoot.DraggedParent,
         };
 
         /// <summary>
