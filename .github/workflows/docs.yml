@@ -99,20 +99,28 @@ jobs:
       - name: Generate API Reference with DocFX
         run: |
           # docfx.json は metadata.dest="api"（一時YAML）、build.dest="docs/Reference" で設定済み。
-          # まず metadata サブコマンドでAPI定義のYAMLを生成し、続いて build サブコマンドでHTMLを生成する。
+          # build.content.src="api" を使い、公開HTMLは docs/Reference/ 直下に出力する。
           docfx metadata docfx.json
           docfx build docfx.json
-          # DocFX は api/ 以下にHTMLを出力するが docs/Reference/index.html は生成しないため、
-          # api/ へのリダイレクトを手動で追加する。
+          # DocFX は docs/Reference/index.html を生成しないため、Reference/ 直下の導線ページを追加する。
           cat > docs/Reference/index.html << 'REFEOF'
           <!DOCTYPE html>
           <html lang="ja">
           <head>
             <meta charset="utf-8" />
-            <meta http-equiv="refresh" content="0;url=api/" />
-            <title>APIリファレンス</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+            <title>UnmappedIsland コードリファレンス</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+            <style>@media (max-width: 600px) { .markdown-body { padding: 1rem !important; } }</style>
           </head>
-          <body><a href="api/">APIリファレンス</a></body>
+          <body>
+          <article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+            <h1>UnmappedIsland コードリファレンス</h1>
+            <ul>
+              <li><a href="toc.html">型一覧（toc）</a></li>
+            </ul>
+          </article>
+          </body>
           </html>
           REFEOF
 
@@ -178,7 +186,7 @@ jobs:
             <h1>UnmappedIsland</h1>
             <ul>
               <li><a href="Documents/">Documents/</a> — 設計書・仕様書・プランニング</li>
-              <li><a href="Reference/">Reference/</a> — APIリファレンス（DocFX自動生成）</li>
+              <li><a href="Reference/">Reference/</a> — コードリファレンス（DocFX自動生成）</li>
             </ul>
           </article>
           </body>

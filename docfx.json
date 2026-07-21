@@ -13,7 +13,8 @@
   "build": {
     "content": [
       {
-        "files": ["api/**.yml", "api/index.md"]
+        "src": "api",
+        "files": ["*.yml", "index.md"]
       }
     ],
     "globalMetadata": {
