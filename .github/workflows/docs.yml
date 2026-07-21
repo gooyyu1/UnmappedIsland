@@ -163,6 +163,11 @@ jobs:
             local rel="${dir#docs/}"
             local title="${rel:-Documents}"
 
+            if [ -f "$dir/index.html" ]; then
+              echo "Skipped (already exists): $dir/index.html"
+              return
+            fi
+
             {
               echo '<!DOCTYPE html>'
               echo '<html lang="ja"><head><meta charset="utf-8" />'
@@ -201,7 +206,11 @@ jobs:
         run: |
           # サイトルートのindex.html：Documents（設計書・仕様書等）と
           # Reference（DocFXによるAPIリファレンス）の両方へ辿れるトップページ。
-          cat > docs/index.html << 'INDEXEOF'
+          # すでにindex.htmlが存在する場合は上書きしない。
+          if [ -f docs/index.html ]; then
+            echo "docs/index.html already exists, skipping."
+          else
+            cat > docs/index.html << 'INDEXEOF'
           <!DOCTYPE html>
           <html lang="ja">
           <head>
@@ -222,7 +231,8 @@ jobs:
           </body>
           </html>
           INDEXEOF
-          echo "Generated: docs/index.html"
+            echo "Generated: docs/index.html"
+          fi
 
       - name: Commit generated files
         run: |
