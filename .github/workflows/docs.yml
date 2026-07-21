@@ -124,6 +124,30 @@ jobs:
           </html>
           REFEOF
 
+      - name: Wrap toc.html in full HTML for mobile
+        run: |
+          # DocFX が生成する toc.html は <html>/<head> を持たない断片ファイルのため、
+          # モバイルで直接開くとビューポート設定もスタイルも存在せず崩れる。
+          # jQuery の .load() によるフラグメント読み込みは完全な HTML ドキュメントにも対応しているため、
+          # 既存の埋め込み表示は壊れない。
+          {
+            echo '<!DOCTYPE html>'
+            echo '<html lang="ja">'
+            echo '<head>'
+            echo '  <meta charset="utf-8" />'
+            echo '  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />'
+            echo '  <title>型一覧 | UnmappedIsland API リファレンス</title>'
+            echo '  <link rel="stylesheet" href="styles/docfx.vendor.min.css" />'
+            echo '  <link rel="stylesheet" href="styles/docfx.css" />'
+            echo '</head>'
+            echo '<body>'
+            cat docs/Reference/toc.html
+            echo '</body>'
+            echo '</html>'
+          } > /tmp/toc_wrapped.html
+          mv /tmp/toc_wrapped.html docs/Reference/toc.html
+          echo "toc.html wrapped in full HTML document"
+
       - name: Generate folder index.html files for Documents subtree
         run: |
           # docs/Documents/ 以下の各フォルダに index.html を生成する。
