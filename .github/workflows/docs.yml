@@ -8,6 +8,7 @@ on:
       - 'Documents/**'
       - 'Assets/Scripts/**'
       - 'docfx.json'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 permissions:
