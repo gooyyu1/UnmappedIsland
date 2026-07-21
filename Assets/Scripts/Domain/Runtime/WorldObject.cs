@@ -505,11 +505,11 @@ namespace UnmappedIsland.Domain.Runtime
                 foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
             }
 
-            foreach (TransferEffect transfer in effect.Transfer)
+            foreach (TransferEffect transfer in effect.Transfers)
                 ApplyTransfer(transfer, session, actor, dragged);
 
             bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
-            SameSlotAnchor? anchor = effect.Spawn.Any(s => s.Into == SpawnTargetRoot.SameSlot)
+            SameSlotAnchor? anchor = effect.Spawns.Any(s => s.Into == SpawnTargetRoot.SameSlot)
                 ? CaptureSameSlotAnchor(willDestroySelf)
                 : null;
 
@@ -521,7 +521,7 @@ namespace UnmappedIsland.Domain.Runtime
                 target.Destroy(session.Codex.WellKnown);
             }
 
-            foreach (SpawnEffect spawn in effect.Spawn)
+            foreach (SpawnEffect spawn in effect.Spawns)
                 ExecuteSpawn(spawn, session, actor, anchor);
         }
 

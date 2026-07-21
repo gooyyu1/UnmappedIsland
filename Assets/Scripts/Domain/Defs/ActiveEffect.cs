@@ -26,23 +26,23 @@ namespace UnmappedIsland.Domain.Defs
         public IReadOnlyList<ReferenceRoot> Destroy { get; }
 
         /// <summary>spawn。空なら spawn なし。常にselfが実行する。</summary>
-        public IReadOnlyList<SpawnEffect> Spawn { get; }
+        public IReadOnlyList<SpawnEffect> Spawns { get; }
 
         /// <summary>transfer（9.5節）。空なら transfer なし。</summary>
-        public IReadOnlyList<TransferEffect> Transfer { get; }
+        public IReadOnlyList<TransferEffect> Transfers { get; }
 
         public ActiveEffect(
             IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> sets,
             IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> adds,
             IReadOnlyList<ReferenceRoot> destroy,
-            IReadOnlyList<SpawnEffect> spawn = null,
-            IReadOnlyList<TransferEffect> transfer = null)
+            IReadOnlyList<SpawnEffect> spawns,
+            IReadOnlyList<TransferEffect> transfers)
         {
             Sets = sets;
             Adds = adds;
             Destroy = destroy;
-            Spawn = spawn ?? System.Array.Empty<SpawnEffect>();
-            Transfer = transfer ?? System.Array.Empty<TransferEffect>();
+            Spawns = spawns;
+            Transfers = transfers;
         }
     }
 

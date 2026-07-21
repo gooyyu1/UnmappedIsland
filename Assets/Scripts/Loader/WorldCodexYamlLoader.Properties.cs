@@ -179,7 +179,12 @@ namespace UnmappedIsland.Loader
                 },
             };
             var adds = new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
-            return new ActiveEffect(sets, adds, System.Array.Empty<ReferenceRoot>(), spawn: null);
+            return new ActiveEffect(
+                sets,
+                adds,
+                System.Array.Empty<ReferenceRoot>(),
+                System.Array.Empty<SpawnEffect>(),
+                System.Array.Empty<TransferEffect>());
         }
     }
 }

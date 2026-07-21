@@ -62,14 +62,14 @@ namespace UnmappedIsland.Loader
             if (destroyNode != null)
                 destroy.AddRange(ParseDestroyTargets($"{context}.destroy", destroyNode, allowDragged, selfOnly));
 
-            var spawn = new List<SpawnEffect>();
+            var spawns = new List<SpawnEffect>();
             YamlNode spawnNode = bodyNode.TryGet("spawn");
-            if (spawnNode != null) spawn.AddRange(ParseSpawns($"{context}.spawn", spawnNode));
+            if (spawnNode != null) spawns.AddRange(ParseSpawns($"{context}.spawn", spawnNode));
 
-            var transfer = new List<TransferEffect>();
+            var transfers = new List<TransferEffect>();
             YamlNode transferNode = bodyNode.TryGet("transfer");
             if (transferNode != null)
-                transfer.AddRange(ParseTransfers($"{context}.transfer", transferNode, allowDragged, selfOnly));
+                transfers.AddRange(ParseTransfers($"{context}.transfer", transferNode, allowDragged, selfOnly));
 
             var knownKeys = new HashSet<string>(ActiveVerbKeys);
             if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
@@ -79,7 +79,7 @@ namespace UnmappedIsland.Loader
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-            return new ActiveEffect(sets, adds, destroy, spawn, transfer);
+            return new ActiveEffect(sets, adds, destroy, spawns, transfers);
         }
 
         /// <summary>
