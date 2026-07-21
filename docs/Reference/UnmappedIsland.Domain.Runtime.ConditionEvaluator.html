@@ -169,6 +169,288 @@
       </tr>
     </tbody>
   </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateObjectTag_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag(UnmappedIsland.Domain.Defs.ConditionNode%2CUnmappedIsland.Domain.Runtime.ConditionRootResolver)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/ConditionEvaluator.cs/#L115">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateObjectTag_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateObjectTag_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)">EvaluateObjectTag(ConditionNode, ConditionRootResolver)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private static bool EvaluateObjectTag(ConditionNode node, ConditionRootResolver resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
+        <td><span class="parametername">node</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionRootResolver.html">ConditionRootResolver</a></td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateProperty_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty(UnmappedIsland.Domain.Defs.ConditionNode%2CUnmappedIsland.Domain.Runtime.ConditionRootResolver)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/ConditionEvaluator.cs/#L49">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateProperty_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateProperty_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)">EvaluateProperty(ConditionNode, ConditionRootResolver)</h4>
+  <div class="markdown level1 summary"><p>生の値（PropertyValue.AsNumber）ではなく実効値（GetEffectiveValue、8.3節のmodifyを加味した値）を
+見る。これにより、modifyだけで決まる派生プロパティ（例: weather/hourから決まるsunlight）を
+他のconditionsから参照できる。比較対象のnode.Values側はYAML上のリテラル値（PropertyValue.FromNumber
+生成、defを持たない）なので、そちらは引き続きAsNumberで読む（GetEffectiveValueはdef.Rangeを
+参照するため、defを持たないリテラル側では呼べない）。ValueRefが非nullの場合はリテラルの代わりに、
+その参照先の実効値を比較対象にする（ResolvePropertyEffectiveValueを、比較元・比較先の両方に
+共通で使う）。in/not_inはValueRefを持たない（ロード時に弾く）。</p>
+<p>Root=Ancestorは「どのプロパティを探すか」が決まらないと解決できない（他のrootと違い、1つの
+WorldObjectに一意に定まらない）ため、resolveRootデリゲートには乗せず、selfを起点に
+WorldObject.FindAncestorWithPropertyを直接呼ぶ（ResolvePropertyEffectiveValue参照）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private static bool EvaluateProperty(ConditionNode node, ConditionRootResolver resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
+        <td><span class="parametername">node</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionRootResolver.html">ConditionRootResolver</a></td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotContent_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent(UnmappedIsland.Domain.Defs.ConditionNode%2CUnmappedIsland.Domain.Runtime.ConditionRootResolver)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/ConditionEvaluator.cs/#L107">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotContent_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotContent_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)">EvaluateSlotContent(ConditionNode, ConditionRootResolver)</h4>
+  <div class="markdown level1 summary"><p>{object, slot, tag}: objectが指すオブジェクト自身が持つslot（自分のスロット）の中に、
+tagを持つ子オブジェクトが1つでもあるかを見る（存在判定）。EvaluateSlotPositionとは向きが逆
+（objectの内側、自分のスロットの中身を見る）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private static bool EvaluateSlotContent(ConditionNode node, ConditionRootResolver resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
+        <td><span class="parametername">node</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionRootResolver.html">ConditionRootResolver</a></td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotPosition_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition(UnmappedIsland.Domain.Defs.ConditionNode%2CUnmappedIsland.Domain.Runtime.ConditionRootResolver)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/ConditionEvaluator.cs/#L95">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotPosition_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotPosition_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)">EvaluateSlotPosition(ConditionNode, ConditionRootResolver)</h4>
+  <div class="markdown level1 summary"><p>{object, in_slot}: objectが指すオブジェクト自身が、今まさに親のどのスロットに
+入っているかを見る（常に等価判定）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private static bool EvaluateSlotPosition(ConditionNode node, ConditionRootResolver resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
+        <td><span class="parametername">node</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionRootResolver.html">ConditionRootResolver</a></td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_ConditionEvaluator_ResolvePropertyEffectiveValue_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Runtime_ConditionRootResolver_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CUnmappedIsland.Domain.Runtime.ConditionRootResolver)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/ConditionEvaluator.cs/#L84">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_ResolvePropertyEffectiveValue_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_ConditionEvaluator_ResolvePropertyEffectiveValue_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Runtime_ConditionRootResolver_" data-uid="UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Runtime.ConditionRootResolver)">ResolvePropertyEffectiveValue(ReferenceRoot, int, ConditionRootResolver)</h4>
+  <div class="markdown level1 summary"><p>rootが指すオブジェクトのpropertyGlobalId実効値を読む。解決できなければnull
+（比較元・比較先のいずれにも使う共通処理。EvaluateProperty参照）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private static int? ResolvePropertyEffectiveValue(ReferenceRoot root, int propertyGlobalId, ConditionRootResolver resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><span class="parametername">root</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">propertyGlobalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionRootResolver.html">ConditionRootResolver</a></td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
 
 </article>
           </div>

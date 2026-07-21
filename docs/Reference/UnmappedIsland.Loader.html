@@ -78,6 +78,25 @@
     <h3 id="classes">
 Classes
 </h3>
+      <h4><a class="xref" href="UnmappedIsland.Loader.RawObjectDef.html">RawObjectDef</a></h4>
+      <section><p>object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。
+props/slots/passives/stack_order/actions/combinationsは、フィールド単位の上書きマージ
+（props/slots/actions/combinationsの4つ全てが対象。Resolve参照）がまだ起こりうるため、あえて
+意味解釈済みの型にせずYamlMappingNode/YamlSequenceNodeのまま持つ。</p>
+<p>自分自身の識別性（GlobalId）はtrait解決に依存しないため、パース時点（Loader.
+WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slot名等は、trait側からも
+追加されうる・shallow-overrideで中身が変わりうるため、Resolveの中で初めて確定する。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Loader.RawTrait.html">RawTrait</a></h4>
+      <section><p>traits（GameElementDefinition.md 5節、mixin）の1エントリの、まだtrait解決（object_defへの合成）を
+経ていない生の形。props/slots/passives/stack_order/actions/combinationsは、フィールド単位の
+上書きマージ（RawObjectDef.Resolve参照）がまだ起こりうるため、あえて意味解釈済みの型にせず
+YamlMappingNode/YamlSequenceNodeのまま持つ。</p>
+<p>1つのtraitは複数のobject_defから参照されうり、参照するobject_defごとに異なるフィールドだけを
+上書きされうるため、trait自身の内容を「一度きり確定する完成品」にはできない（参照されるたびに
+新しいマージが起こる）。この点がRawObjectDef（常にちょうど1回だけ解決される）と本質的に異なり、
+RawTraitがRawObjectDefとは別に存在する理由そのものになっている。</p>
+</section>
       <h4><a class="xref" href="UnmappedIsland.Loader.WorldCodexYamlLoader.html">WorldCodexYamlLoader</a></h4>
       <section><p>YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。
 Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に
@@ -116,6 +135,10 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
       <h4><a class="xref" href="UnmappedIsland.Loader.YamlLoadException.html">YamlLoadException</a></h4>
       <section><p>YAMLロード時のエラー（重複キー・未知のフィールド・必須フィールド欠落・trait解決の失敗など）。
 どのファイル・どのobject_def/trait名で起きたかを呼び出し側でメッセージに含める。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Loader.YamlNodeExtensions.html">YamlNodeExtensions</a></h4>
+      <section><p>YamlDotNetのRepresentationModel（YamlMappingNode等）に対する、フィールド取り出し用の
+薄いヘルパー。エラーメッセージにcontext（ファイル名・object_def名など）を含められるようにする。</p>
 </section>
 
 

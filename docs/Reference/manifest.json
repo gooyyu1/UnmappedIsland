@@ -642,6 +642,34 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.yml\" sourcestartlinenumber=\"1\">same_slot（非FixedPositions）専用。CaptureSameSlotAnchorが捕捉した、元居たObjectStackの\n外側position(StackIndex)・その中でのメンバー位置(MemberIndex)・そのObjectStackが自分の除去で\n丸ごと消えるか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.yml\" sourcestartlinenumber=\"1\">CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.yml",
       "output": {
         ".html": {
@@ -684,6 +712,34 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Loader.RawObjectDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Loader.RawObjectDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Loader.RawObjectDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.RawObjectDef.yml\" sourcestartlinenumber=\"1\">object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。\nprops/slots/passives/stack_order/actions/combinationsは、フィールド単位の上書きマージ\n（props/slots/actions/combinationsの4つ全てが対象。Resolve参照）がまだ起こりうるため、あえて\n意味解釈済みの型にせずYamlMappingNode/YamlSequenceNodeのまま持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.RawObjectDef.yml\" sourcestartlinenumber=\"6\">自分自身の識別性（GlobalId）はtrait解決に依存しないため、パース時点（Loader.\nWorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slot名等は、trait側からも\n追加されうる・shallow-overrideで中身が変わりうるため、Resolveの中で初めて確定する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Loader.RawTrait.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Loader.RawTrait.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Loader.RawTrait",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.RawTrait.yml\" sourcestartlinenumber=\"1\">traits（GameElementDefinition.md 5節、mixin）の1エントリの、まだtrait解決（object_defへの合成）を\n経ていない生の形。props/slots/passives/stack_order/actions/combinationsは、フィールド単位の\n上書きマージ（RawObjectDef.Resolve参照）がまだ起こりうるため、あえて意味解釈済みの型にせず\nYamlMappingNode/YamlSequenceNodeのまま持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.RawTrait.yml\" sourcestartlinenumber=\"6\">1つのtraitは複数のobject_defから参照されうり、参照するobject_defごとに異なるフィールドだけを\n上書きされうるため、trait自身の内容を「一度きり確定する完成品」にはできない（参照されるたびに\n新しいマージが起こる）。この点がRawObjectDef（常にちょうど1回だけ解決される）と本質的に異なり、\nRawTraitがRawObjectDefとは別に存在する理由そのものになっている。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml",
       "output": {
         ".html": {
@@ -709,6 +765,20 @@
       "IsMRef": true,
       "Title": "UnmappedIsland.Loader.YamlLoadException",
       "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.YamlLoadException.yml\" sourcestartlinenumber=\"1\">YAMLロード時のエラー（重複キー・未知のフィールド・必須フィールド欠落・trait解決の失敗など）。\nどのファイル・どのobject_def/trait名で起きたかを呼び出し側でメッセージに含める。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Loader.YamlNodeExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Loader.YamlNodeExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Loader.YamlNodeExtensions",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.YamlNodeExtensions.yml\" sourcestartlinenumber=\"1\">YamlDotNetのRepresentationModel（YamlMappingNode等）に対する、フィールド取り出し用の\n薄いヘルパー。エラーメッセージにcontext（ファイル名・object_def名など）を含められるようにする。</p>\n"
     },
     {
       "type": "ManagedReference",

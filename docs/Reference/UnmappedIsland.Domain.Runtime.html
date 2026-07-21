@@ -142,6 +142,17 @@ PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAP
 スロット移動（move_to_slot）自体は WorldObject.MoveToSlot が自分自身の責務として行うため、
 ここでは仲介しない（WellKnownPropertiesは Codex.WellKnown からその都度渡す）。</p>
 </section>
+    <h3 id="structs">
+Structs
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html">WorldObject.CapturedPosition</a></h4>
+      <section><p>same_slot（非FixedPositions）専用。CaptureSameSlotAnchorが捕捉した、元居たObjectStackの
+外側position(StackIndex)・その中でのメンバー位置(MemberIndex)・そのObjectStackが自分の除去で
+丸ごと消えるか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html">WorldObject.SameSlotAnchor</a></h4>
+      <section><p>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット。</p>
+</section>
     <h3 id="delegates">
 Delegates
 </h3>

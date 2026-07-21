@@ -148,6 +148,69 @@
       </tr>
     </tbody>
   </table>
+  <h3 id="fields">Fields
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_pendingGridReservation.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.pendingGridReservation%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L32">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_pendingGridReservation" data-uid="UnmappedIsland.Domain.Runtime.Slot.pendingGridReservation">pendingGridReservation</h4>
+  <div class="markdown level1 summary"><p>same_slot(FixedPositions)専用の一時予約。次にAddInternalで新規スタックが作られる際、
+AssignGridIndexで新規採番する代わりにこの値をそのまま割り当てる（1回のAddInternal呼び出しで
+必ず消費される）。TryMakeRoomAndSeed/ReserveGridIndexForNextNewStack参照。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private int? pendingGridReservation</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_stacks.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.stacks%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L21">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_stacks" data-uid="UnmappedIsland.Domain.Runtime.Slot.stacks">stacks</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly List&lt;ObjectStack&gt; stacks</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1">List</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <h3 id="properties">Properties
 </h3>
   <span class="small pull-right mobile-hide">
@@ -247,6 +310,277 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_AcceptsRule_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.AcceptsRule(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L73">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_AcceptsRule_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AcceptsRule*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_AcceptsRule_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AcceptsRule(UnmappedIsland.Domain.Runtime.WorldObject)">AcceptsRule(WorldObject)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private bool AcceptsRule(WorldObject candidate)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">candidate</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_AddInternal_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.AddInternal(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L100">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_AddInternal_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AddInternal*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_AddInternal_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AddInternal(UnmappedIsland.Domain.Runtime.WorldObject)">AddInternal(WorldObject)</h4>
+  <div class="markdown level1 summary"><p>通常の追加。Stackable/FixedPositions/StackOrderに従って正しいObjectStack・位置へ挿入する。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal void AddInternal(WorldObject obj)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">obj</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_AssignGridIndex.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L173">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_AssignGridIndex_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_AssignGridIndex" data-uid="UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex">AssignGridIndex()</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private int AssignGridIndex()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_CanAccept_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String_System_String__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.CanAccept(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Defs.WellKnownProperties%2CSystem.String%2CSystem.String%40)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L44">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_CanAccept_" data-uid="UnmappedIsland.Domain.Runtime.Slot.CanAccept*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_CanAccept_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String_System_String__" data-uid="UnmappedIsland.Domain.Runtime.Slot.CanAccept(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String,System.String@)">CanAccept(WorldObject, WellKnownProperties, string, out string)</h4>
+  <div class="markdown level1 summary"><p>move_to_slot（7.1節）が候補オブジェクトを受け入れられるかを、この Slot 自身の Def と
+Stacks だけで判定する（accepts制約・capacity・UnitCapacity、7.2〜7.3節）。force=trueの
+場合はこの判定自体を呼び出し側（WorldObject.AttachToSlot）がスキップする。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal bool CanAccept(WorldObject candidate, WellKnownProperties wellKnown, string ownerName, out string error)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">candidate</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.WellKnownProperties.html">WellKnownProperties</a></td>
+        <td><span class="parametername">wellKnown</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">ownerName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">error</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_FindMatchingStack_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.FindMatchingStack(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L157">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_FindMatchingStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindMatchingStack*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_FindMatchingStack_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindMatchingStack(UnmappedIsland.Domain.Runtime.WorldObject)">FindMatchingStack(WorldObject)</h4>
+  <div class="markdown level1 summary"><p>candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければnull）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal ObjectStack FindMatchingStack(WorldObject candidate)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">candidate</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_FindStackContaining_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.FindStackContaining(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L154">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_FindStackContaining_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindStackContaining*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_FindStackContaining_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindStackContaining(UnmappedIsland.Domain.Runtime.WorldObject)">FindStackContaining(WorldObject)</h4>
+  <div class="markdown level1 summary"><p>objが現在属しているObjectStack（無ければnull）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal ObjectStack FindStackContaining(WorldObject obj)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">obj</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_GetGridIndex_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.GetGridIndex(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
@@ -322,6 +656,408 @@ ObjectDefについて調べたい場合は、FindStackContaining等で具体的�
     <tbody>
       <tr>
         <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_HasCapacityFor_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.HasCapacityFor(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L92">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_HasCapacityFor_" data-uid="UnmappedIsland.Domain.Runtime.Slot.HasCapacityFor*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_HasCapacityFor_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.HasCapacityFor(UnmappedIsland.Domain.Runtime.WorldObject)">HasCapacityFor(WorldObject)</h4>
+  <div class="markdown level1 summary"><p>UnitCapacity（種類数/個数の上限）に、candidateを新たに加える余地があるか。Stackableなら
+既存のObjectStackへ合流できる場合は新しい枠を消費しない（この場合に限りDef.Stackableを見る。
+非Stackableは同種でも常に個体ごとに新しいObjectStackを作るため、合流によるタダ乗りは無い）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private bool HasCapacityFor(WorldObject candidate)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">candidate</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_IndexOfStack_UnmappedIsland_Domain_Runtime_ObjectStack_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.IndexOfStack(UnmappedIsland.Domain.Runtime.ObjectStack)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L160">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_IndexOfStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.IndexOfStack*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_IndexOfStack_UnmappedIsland_Domain_Runtime_ObjectStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.IndexOfStack(UnmappedIsland.Domain.Runtime.ObjectStack)">IndexOfStack(ObjectStack)</h4>
+  <div class="markdown level1 summary"><p>このObjectStackが外側リスト(Stacks)の何番目にあるか。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal int IndexOfStack(ObjectStack stack)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></td>
+        <td><span class="parametername">stack</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_InsertAtCapturedPosition_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CSystem.Int32%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L128">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_InsertAtCapturedPosition_" data-uid="UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_InsertAtCapturedPosition_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_System_Boolean_" data-uid="UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,System.Boolean)">InsertAtCapturedPosition(WorldObject, int, int, bool)</h4>
+  <div class="markdown level1 summary"><p>same_slotによる置き換え専用（非FixedPositions）。destroy前に捕捉しておいた「元居たObjectStackの
+外側position(stackIndex)・その中でのメンバー位置(memberIndex)」へ、自動整列を一切行わず正確に
+割り込ませる。元のObjectStackが（自分がその唯一のメンバーで）丸ごと消えた場合(stackWasVacated)は、
+消えた位置(stackIndex)へ新規ObjectStackとしてそのまま入る。元のObjectStackが生き残る場合は、
+memberIndexが境界（先頭・末尾）ならその直前・直後へ、途中であれば元のObjectStackを前後2つに
+分割してその間へ割り込ませる（元の平坦リストでの位置引き継ぎ、Codex.WorldObject.CaptureSameSlotAnchor
+参照）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal void InsertAtCapturedPosition(WorldObject obj, int stackIndex, int memberIndex, bool stackWasVacated)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">obj</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">stackIndex</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">memberIndex</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">stackWasVacated</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_InsertNewStack_UnmappedIsland_Domain_Runtime_ObjectStack_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.InsertNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L110">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_InsertNewStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.InsertNewStack*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_InsertNewStack_UnmappedIsland_Domain_Runtime_ObjectStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.InsertNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)">InsertNewStack(ObjectStack)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private void InsertNewStack(ObjectStack newStack)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></td>
+        <td><span class="parametername">newStack</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.RemoveInternal(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L145">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_" data-uid="UnmappedIsland.Domain.Runtime.Slot.RemoveInternal*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.RemoveInternal(UnmappedIsland.Domain.Runtime.WorldObject)">RemoveInternal(WorldObject)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal void RemoveInternal(WorldObject obj)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">obj</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_ReserveGridIndexForNextNewStack_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L171">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_ReserveGridIndexForNextNewStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_ReserveGridIndexForNextNewStack_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack(System.Int32)">ReserveGridIndexForNextNewStack(int)</h4>
+  <div class="markdown level1 summary"><p>same_slot(FixedPositions)専用の予約。次にAddInternalで新規ObjectStackが作られる際、
+AssignGridIndexで新規採番する代わりにgridIndexをそのまま割り当てる（destroyされた自分自身が
+同種の最後の1個で、自分の固定番号をそのまま新しい型へ引き継がせたい場合に使う）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal void ReserveGridIndexForNextNewStack(int gridIndex)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">gridIndex</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_SumSize_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.SumSize(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L87">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_SumSize_" data-uid="UnmappedIsland.Domain.Runtime.Slot.SumSize*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_SumSize_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.SumSize(System.Int32)">SumSize(int)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private int SumSize(int sizePropertyGlobalId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">sizePropertyGlobalId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L197">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32)">TryMakeRoomAndSeed(int)</h4>
+  <div class="markdown level1 summary"><p>same_slot専用。selfIndexの右側（+1以降）で最初に見つかる空き番号へ、無ければ左側（-1以前）で
+同様に、間にいる他のObjectStackを押し出しながら、次に生成されるObjectStackの固定番号として
+予約する（実際の生成・挿入は直後のAddInternal→AssignGridIndexが行う。押し出しはObjectStack単位で
+行うため、押し出されるObjectStackがスタック（同種複数個）であっても中身の相対順序は変わらない）。
+どちらの方向にも空きが見つからなければfalseを返す（呼び出し側でfallbackへ委ねる）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal bool TryMakeRoomAndSeed(int selfIndex)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">selfIndex</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L200">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32,System.Int32)">TryMakeRoomAndSeed(int, int)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private bool TryMakeRoomAndSeed(int selfIndex, int step)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">selfIndex</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">step</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
         <td></td>
       </tr>
     </tbody>

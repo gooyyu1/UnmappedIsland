@@ -115,6 +115,80 @@ Runtime.ConditionEvaluator参照）。</p>
   <div class="codewrapper">
     <pre><code class="lang-csharp hljs">public sealed class ConditionNode</code></pre>
   </div>
+  <h3 id="constructors">Constructors
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode__ctor_UnmappedIsland_Domain_Defs_ConditionNodeKind_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Runtime_PropertyValue__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__System_Int32_System_Int32_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.%23ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind%2CUnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.ConditionOp%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Runtime.PropertyValue%7D%2CSystem.Nullable%7BUnmappedIsland.Domain.Defs.PropertyPath%7D%2CSystem.Int32%2CSystem.Int32%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ConditionNode%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L134">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ConditionNode__ctor_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ConditionNode__ctor_UnmappedIsland_Domain_Defs_ConditionNodeKind_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Runtime_PropertyValue__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__System_Int32_System_Int32_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.#ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Runtime.PropertyValue},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath},System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})">ConditionNode(ConditionNodeKind, ReferenceRoot, int, ConditionOp, IReadOnlyList&lt;PropertyValue&gt;, PropertyPath?, int, int, IReadOnlyList&lt;ConditionNode&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private ConditionNode(ConditionNodeKind kind, ReferenceRoot root, int propertyGlobalId, ConditionOp op, IReadOnlyList&lt;PropertyValue&gt; values, PropertyPath? valueRef, int slotGlobalId, int tagGlobalId, IReadOnlyList&lt;ConditionNode&gt; children)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNodeKind.html">ConditionNodeKind</a></td>
+        <td><span class="parametername">kind</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><span class="parametername">root</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">propertyGlobalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionOp.html">ConditionOp</a></td>
+        <td><span class="parametername">op</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a>&gt;</td>
+        <td><span class="parametername">values</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyPath.html">PropertyPath</a>?</td>
+        <td><span class="parametername">valueRef</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">slotGlobalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">tagGlobalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a>&gt;</td>
+        <td><span class="parametername">children</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <h3 id="properties">Properties
 </h3>
   <span class="small pull-right mobile-hide">
