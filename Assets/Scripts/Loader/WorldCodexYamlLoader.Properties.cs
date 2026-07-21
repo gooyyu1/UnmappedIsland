@@ -19,15 +19,16 @@ namespace UnmappedIsland.Loader
             if (valueNode == null)
                 throw new YamlLoadException($"{context}: 必須フィールド 'value' がありません（traitの継承先で指定してください）。");
 
-            PropertyRange? rerollRange = null;
+            PropertyRange? initialValueRange = null;
             int defaultNumber;
             bool isSymbolProperty;
             if (valueNode is YamlMappingNode rangeValueNode)
             {
-                var reroll = new PropertyRange(rangeValueNode.RequireInt("min", context), rangeValueNode.RequireInt("max", context));
-                rerollRange = reroll;
-                // 再ロール自体は未実装（別途）。デフォルト値は決定的にrange.Minで埋めておく。
-                defaultNumber = reroll.Min;
+                var initial = new PropertyRange(rangeValueNode.RequireInt("min", context), rangeValueNode.RequireInt("max", context));
+                initialValueRange = initial;
+                // 初期値はspawn時（RNGあり）に[min,max]の一様乱数で決まる（PropertyDef.CreateValue）。
+                // RNGを渡さない直接生成では決定的にminをフォールバックとして使う。
+                defaultNumber = initial.Min;
                 isSymbolProperty = false;
             }
             else
@@ -98,7 +99,7 @@ namespace UnmappedIsland.Loader
 
             bool inherit = node.TryGetBool("inherit", context, fallback: false);
 
-            return new PropertyDef(propertyGlobalId, propName, defaultNumber, rerollRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
+            return new PropertyDef(propertyGlobalId, propName, defaultNumber, initialValueRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
         }
 
         /// <summary>1つのstagesエントリを解釈する（GameElementDefinition.md 6.4節）。プロパティ自身が

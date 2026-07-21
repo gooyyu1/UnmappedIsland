@@ -35,13 +35,16 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>Parent の中で自分が入っているスロットのローカルID。Parent が null なら Missing。</summary>
         public int ParentSlotLocalId { get; private set; } = LocalIndexMap.Missing;
 
-        public WorldObject(int instanceId, ObjectDef def)
+        /// <summary>rng は value:{min,max} を持つプロパティの初期値ランダム化に使う乱数源（spawn時は
+        /// WorldSession.Rng を渡す）。null の場合はランダム化を行わず、各プロパティは決定的な初期値
+        /// （レンジ指定時はmin）で始まる。</summary>
+        public WorldObject(int instanceId, ObjectDef def, Random rng = null)
         {
             InstanceId = instanceId;
             Def = def;
 
             properties = def.EnumeratePropertyDefs()
-                .Select(pd => pd.CreateValue(this))
+                .Select(pd => pd.CreateValue(this, rng))
                 .ToArray();
 
             slots = def.EnumerateSlotDefs()

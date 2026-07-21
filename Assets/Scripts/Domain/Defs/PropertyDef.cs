@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnmappedIsland.Domain.Runtime;
 
@@ -69,8 +70,10 @@ namespace UnmappedIsland.Domain.Defs
         /// 行う。外部はCreateValue越しに値を受け取るため、この数値自体は公開しない。</summary>
         private readonly int defaultNumber;
 
-        /// <summary>value: {min, max} による毎tick再ロール（6.2節）。使わない場合は null。</summary>
-        public PropertyRange? RerollRange { get; }
+        /// <summary>value: {min, max} 記法による初期値のランダム範囲（6.2節）。指定時、spawn（RNGあり）での
+        /// 生成では初期値を[min,max]の一様乱数にする（CreateValue参照）。使わない場合は null。初期値の決定は
+        /// このPropertyDef自身の責務のため外部へは公開しない。</summary>
+        private readonly PropertyRange? initialValueRange;
 
         /// <summary>取りうる値域（6.3節）。on_overflow/on_shortfall/on_min/on_maxを使う場合は必須。使わない場合は null。</summary>
         public PropertyRange? Range { get; }
@@ -139,7 +142,7 @@ namespace UnmappedIsland.Domain.Defs
             int globalId,
             string name,
             int defaultNumber,
-            PropertyRange? rerollRange,
+            PropertyRange? initialValueRange,
             PropertyRange? range,
             ActiveEffect onOverflow,
             IReadOnlyList<PropertyStage> stages,
@@ -151,7 +154,7 @@ namespace UnmappedIsland.Domain.Defs
             GlobalId = globalId;
             Name = name;
             this.defaultNumber = defaultNumber;
-            RerollRange = rerollRange;
+            this.initialValueRange = initialValueRange;
             Range = range;
             this.onOverflow = onOverflow;
             this.stages = stages;
@@ -171,12 +174,27 @@ namespace UnmappedIsland.Domain.Defs
         }
 
         /// <summary>
-        /// このプロパティ定義に属する、新しい実行時値（PropertyValue）を生成する。初期値は定義自身が知る
-        /// defaultNumberで埋める。ownerはその値を保持することになるWorldObject。定義が「初期値がどうあるべきか」
-        /// を知っているため、生成の責務も定義側に置き、呼び出し側（WorldObject）は初期値を一切意識しない
-        /// （自分のことは自分でする、CLAUDE.md参照）。
+        /// このプロパティ定義に属する、新しい実行時値（PropertyValue）を生成する。ownerはその値を保持する
+        /// WorldObject、rngは初期値のランダム化に使う乱数源（spawn時はWorldSession.Rng、テスト等の直接生成では
+        /// null）。
+        ///
+        /// value: {min, max} 記法（initialValueRange）を持つプロパティは、rngが渡された場合に限り初期値を
+        /// [min,max]の一様乱数にする（6.2節）。rngがnull、またはランダム範囲を持たない場合は決定的な
+        /// defaultNumber（レンジ指定時はmin）で埋める。初期値をどう決めるかは定義自身の責務であり、
+        /// 呼び出し側（WorldObject）は一切意識しない（自分のことは自分でする、CLAUDE.md参照）。
         /// </summary>
-        public PropertyValue CreateValue(WorldObject owner) => new PropertyValue(defaultNumber, this, owner);
+        public PropertyValue CreateValue(WorldObject owner, Random rng)
+        {
+            int initial = defaultNumber;
+            if (initialValueRange.HasValue && rng != null)
+            {
+                int min = initialValueRange.Value.Min;
+                int max = initialValueRange.Value.Max;
+                // Random.Nextの上限は排他なので+1して[min,max]の閉区間にする（max==int.MaxValueのみ桁あふれ回避）。
+                initial = rng.Next(min, max == int.MaxValue ? max : max + 1);
+            }
+            return new PropertyValue(initial, this, owner);
+        }
 
         /// <summary>
         /// number（このプロパティを保持するownerの、変更直後の実体値）に対して、on_max・on_min・on_overflow・

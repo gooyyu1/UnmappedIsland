@@ -41,7 +41,7 @@ namespace UnmappedIsland.Domain.Runtime
         public WorldObject Spawn(int objectDefGlobalId)
         {
             ObjectDef def = Codex.Objects.Get(objectDefGlobalId);
-            return new WorldObject(nextInstanceId++, def);
+            return new WorldObject(nextInstanceId++, def, Rng);
         }
 
         /// <summary>
