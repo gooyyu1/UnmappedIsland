@@ -38,7 +38,8 @@ namespace UnmappedIsland.Domain.Defs
     /// </summary>
     public sealed class PickCandidateDef
     {
-        public WeightSpec Weight { get; }
+        /// <summary>抽選の重み（10.2節）。SelectWeightedがこのPickCandidateDef自身で読むだけのため公開しない。</summary>
+        private readonly WeightSpec weight;
 
         /// <summary>activeかpickのどちらか一方のみが非null。どちらもこのPickCandidateDef自身の
         /// ResolveEffectだけが読むため（呼び出し側は結果のActiveEffectしか受け取らない）privateに閉じる
@@ -49,7 +50,7 @@ namespace UnmappedIsland.Domain.Defs
         public PickCandidateDef(
             WeightSpec weight, ActiveEffect active, IReadOnlyList<PickCandidateDef> pick)
         {
-            Weight = weight;
+            this.weight = weight;
             this.active = active;
             this.pick = pick;
         }
@@ -72,7 +73,7 @@ namespace UnmappedIsland.Domain.Defs
         {
             if (candidates.Count == 1) return candidates[0];
 
-            var weights = candidates.Select(c => System.Math.Max(0, c.Weight.Resolve(self, actor, dragged))).ToList();
+            var weights = candidates.Select(c => System.Math.Max(0, c.weight.Resolve(self, actor, dragged))).ToList();
             double total = weights.Sum();
             if (total <= 0) return candidates[0];
 
