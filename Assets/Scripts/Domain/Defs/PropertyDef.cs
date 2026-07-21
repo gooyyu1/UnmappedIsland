@@ -65,14 +65,14 @@ namespace UnmappedIsland.Domain.Defs
         public int GlobalId { get; }
         public string Name { get; }
 
-        /// <summary>実行時インスタンス生成（WorldObject構築）時に、この定義に属する新しいPropertyValueへ
-        /// 渡す初期値。定義自身が「初期値がどうあるべきか」を知っているため、生成（CreateValue）も定義側で
-        /// 行う。外部はCreateValue越しに値を受け取るため、この数値自体は公開しない。</summary>
-        private readonly int defaultNumber;
+        /// <summary>初期値（スカラー）。value:{min,max}によるランダム範囲（initialValueRange）を持たない
+        /// プロパティの初期値そのもの。持つ場合は、RNGを使わない生成でのフォールバック（= range.min）。生成
+        /// （CreateValue）は定義側の責務のため、この値自体は公開しない。initialValueRangeと対で「初期値」を表す。</summary>
+        private readonly int initialValue;
 
         /// <summary>value: {min, max} 記法による初期値のランダム範囲（6.2節）。指定時、spawn（RNGあり）での
         /// 生成では初期値を[min,max]の一様乱数にする（CreateValue参照）。使わない場合は null。初期値の決定は
-        /// このPropertyDef自身の責務のため外部へは公開しない。</summary>
+        /// このPropertyDef自身の責務のため外部へは公開しない。initialValueと対で「初期値」を表す。</summary>
         private readonly PropertyRange? initialValueRange;
 
         /// <summary>取りうる値域（6.3節）。on_overflow/on_shortfall/on_min/on_maxを使う場合は必須。使わない場合は null。</summary>
@@ -141,7 +141,7 @@ namespace UnmappedIsland.Domain.Defs
         public PropertyDef(
             int globalId,
             string name,
-            int defaultNumber,
+            int initialValue,
             PropertyRange? initialValueRange,
             PropertyRange? range,
             ActiveEffect onOverflow,
@@ -153,7 +153,7 @@ namespace UnmappedIsland.Domain.Defs
         {
             GlobalId = globalId;
             Name = name;
-            this.defaultNumber = defaultNumber;
+            this.initialValue = initialValue;
             this.initialValueRange = initialValueRange;
             Range = range;
             this.onOverflow = onOverflow;
@@ -175,17 +175,18 @@ namespace UnmappedIsland.Domain.Defs
 
         /// <summary>
         /// このプロパティ定義に属する、新しい実行時値（PropertyValue）を生成する。ownerはその値を保持する
-        /// WorldObject、rngは初期値のランダム化に使う乱数源（spawn時はWorldSession.Rng、テスト等の直接生成では
-        /// null）。
+        /// WorldObject、sessionは生成文脈（初期値のランダム化にはsession.Rngを使う。spawn時はそのセッション、
+        /// テスト等の直接生成ではnull）。CheckRangeEventsと同じく、生成もsessionを文脈として受け取る。
         ///
-        /// value: {min, max} 記法（initialValueRange）を持つプロパティは、rngが渡された場合に限り初期値を
-        /// [min,max]の一様乱数にする（6.2節）。rngがnull、またはランダム範囲を持たない場合は決定的な
-        /// defaultNumber（レンジ指定時はmin）で埋める。初期値をどう決めるかは定義自身の責務であり、
-        /// 呼び出し側（WorldObject）は一切意識しない（自分のことは自分でする、CLAUDE.md参照）。
+        /// value: {min, max} 記法（initialValueRange）を持つプロパティは、sessionが渡された場合に限り初期値を
+        /// [min,max]の一様乱数にする（6.2節）。sessionがnull、またはランダム範囲を持たない場合は決定的な
+        /// initialValue（レンジ指定時はmin）で埋める。初期値をどう決めるかは定義自身の責務であり、呼び出し側
+        /// （WorldObject）は一切意識しない（自分のことは自分でする、CLAUDE.md参照）。
         /// </summary>
-        public PropertyValue CreateValue(WorldObject owner, Random rng)
+        public PropertyValue CreateValue(WorldObject owner, WorldSession session)
         {
-            int initial = defaultNumber;
+            int initial = initialValue;
+            Random rng = session?.Rng;
             if (initialValueRange.HasValue && rng != null)
             {
                 int min = initialValueRange.Value.Min;
