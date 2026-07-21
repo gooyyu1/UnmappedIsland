@@ -102,8 +102,8 @@ jobs:
           # build.content.src="api" を使い、公開HTMLは docs/Reference/ 直下に出力する。
           docfx metadata docfx.json
           docfx build docfx.json
-          # DocFX は docs/Reference/index.html を生成しないため、Reference/ 直下の導線ページを追加する。
           # toc.html は断片ファイルのまま保持し、index.html 側に埋め込んでスマホからも見やすくする。
+          # このindex.htmlは毎回上書きする（後続のindex.html一括生成ステップより前に生成されるため上書きされない）。
           {
             echo '<!DOCTYPE html>'
             echo '<html lang="ja">'
@@ -148,16 +148,21 @@ jobs:
             echo '</body>'
             echo '</html>'
           } > docs/Reference/index.html
-          echo "Embedded toc.html into docs/Reference/index.html"
+          echo "Generated: docs/Reference/index.html"
 
-      - name: Generate folder index.html files for Documents subtree
+      - name: Generate missing index.html files
         run: |
-          # docs/Documents/ 以下の各フォルダに index.html を生成する。
-          # docs/Reference/ は DocFX が独自のナビゲーションを生成するため対象外とする。
+          # docs/ 配下の全ディレクトリを走査し、index.html が存在しないフォルダにのみ生成する。
+          # すでにindex.htmlがあるフォルダ（Pandoc変換済みやDocFX生成済みを含む）は上書きしない。
           generate_index() {
             local dir="$1"
             local rel="${dir#docs/}"
-            local title="${rel:-Documents}"
+            local title="${rel:-UnmappedIsland}"
+
+            if [ -f "$dir/index.html" ]; then
+              echo "Skipped (already exists): $dir/index.html"
+              return
+            fi
 
             {
               echo '<!DOCTYPE html>'
@@ -170,7 +175,9 @@ jobs:
               echo '<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">'
               echo "<h1>${title}</h1>"
               echo '<ul>'
-              echo '<li><a href="../">.. (親フォルダ)</a></li>'
+              if [ -n "$rel" ]; then
+                echo '<li><a href="../">.. (親フォルダ)</a></li>'
+              fi
 
               find "$dir" -mindepth 1 -maxdepth 1 -type d | sort | while read -r sub; do
                 name="$(basename "$sub")"
@@ -189,36 +196,9 @@ jobs:
             echo "Generated: $dir/index.html"
           }
 
-          find docs/Documents -type d | sort | while read -r d; do
+          find docs -type d | sort | while read -r d; do
             generate_index "$d"
           done
-
-      - name: Create top-level index.html
-        run: |
-          # サイトルートのindex.html：Documents（設計書・仕様書等）と
-          # Reference（DocFXによるAPIリファレンス）の両方へ辿れるトップページ。
-          cat > docs/index.html << 'INDEXEOF'
-          <!DOCTYPE html>
-          <html lang="ja">
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-            <title>UnmappedIsland</title>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
-            <style>@media (max-width: 600px) { .markdown-body { padding: 1rem !important; } }</style>
-          </head>
-          <body>
-          <article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
-            <h1>UnmappedIsland</h1>
-            <ul>
-              <li><a href="Documents/">Documents/</a> — 設計書・仕様書・プランニング</li>
-              <li><a href="Reference/">Reference/</a> — コードリファレンス（DocFX自動生成）</li>
-            </ul>
-          </article>
-          </body>
-          </html>
-          INDEXEOF
-          echo "Generated: docs/index.html"
 
       - name: Commit generated files
         run: |
