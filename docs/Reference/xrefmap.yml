@@ -874,6 +874,19 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ObjectDef.EnumeratePropertyDefs
   nameWithType: ObjectDef.EnumeratePropertyDefs
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.EnumerateSlotDefs
+  name: EnumerateSlotDefs()
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_EnumerateSlotDefs
+  commentId: M:UnmappedIsland.Domain.Defs.ObjectDef.EnumerateSlotDefs
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.EnumerateSlotDefs()
+  nameWithType: ObjectDef.EnumerateSlotDefs()
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.EnumerateSlotDefs*
+  name: EnumerateSlotDefs
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_EnumerateSlotDefs_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ObjectDef.EnumerateSlotDefs
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.EnumerateSlotDefs
+  nameWithType: ObjectDef.EnumerateSlotDefs
 - uid: UnmappedIsland.Domain.Defs.ObjectDef.GetPropertyDef(System.Int32)
   name: GetPropertyDef(int)
   href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_GetPropertyDef_System_Int32_
@@ -890,6 +903,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ObjectDef.GetPropertyDef
   nameWithType: ObjectDef.GetPropertyDef
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.GetSlotDef(System.Int32)
+  name: GetSlotDef(int)
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_GetSlotDef_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Defs.ObjectDef.GetSlotDef(System.Int32)
+  name.vb: GetSlotDef(Integer)
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.GetSlotDef(int)
+  fullName.vb: UnmappedIsland.Domain.Defs.ObjectDef.GetSlotDef(Integer)
+  nameWithType: ObjectDef.GetSlotDef(int)
+  nameWithType.vb: ObjectDef.GetSlotDef(Integer)
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.GetSlotDef*
+  name: GetSlotDef
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_GetSlotDef_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ObjectDef.GetSlotDef
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.GetSlotDef
+  nameWithType: ObjectDef.GetSlotDef
 - uid: UnmappedIsland.Domain.Defs.ObjectDef.GlobalId
   name: GlobalId
   href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_GlobalId
