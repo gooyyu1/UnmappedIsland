@@ -470,9 +470,9 @@ object_defs:
 
             Assert.That(onMin, Is.Not.Null);
             Assert.That(onMin.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(onMin.Spawn, Is.Not.Null);
-            Assert.That(onMin.Spawn.Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
-            Assert.That(codex.ObjectNames.GetName(onMin.Spawn.ObjectGlobalId), Is.EqualTo("ash"));
+            Assert.That(onMin.Spawn.Count, Is.EqualTo(1));
+            Assert.That(onMin.Spawn[0].Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
+            Assert.That(codex.ObjectNames.GetName(onMin.Spawn[0].ObjectGlobalId), Is.EqualTo("ash"));
         }
 
         // ------------------------------------------------------------------
@@ -537,6 +537,42 @@ object_defs:
         }
 
         [Test]
+        public void Load_ActionActiveSpawnAndTransfer_AcceptsArrays()
+        {
+            const string yaml = @"
+object_defs:
+  flask:
+    actions:
+      use:
+        spawn:
+          - {object: steam}
+          - {object: smell}
+        transfer:
+          - {amount: 100, from_prop: a, to_prop: b}
+          - {amount: 200, from_prop: c, to_prop: d}
+  steam: {}
+  smell: {}
+  sink:
+    props:
+      a: {value: 0}
+      b: {value: 0}
+      c: {value: 0}
+      d: {value: 0}
+";
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
+
+            ObjectDef flask = codex.Objects.Get(codex.ObjectNames.GetId("flask"));
+            ActionDef use = ActionOf(flask, "use");
+
+            Assert.That(use.Active.Spawn.Count, Is.EqualTo(2));
+            Assert.That(codex.ObjectNames.GetName(use.Active.Spawn[0].ObjectGlobalId), Is.EqualTo("steam"));
+            Assert.That(codex.ObjectNames.GetName(use.Active.Spawn[1].ObjectGlobalId), Is.EqualTo("smell"));
+            Assert.That(use.Active.Transfer.Count, Is.EqualTo(2));
+            Assert.That(use.Active.Transfer[0].Amount, Is.EqualTo(100));
+            Assert.That(use.Active.Transfer[1].Amount, Is.EqualTo(200));
+        }
+
+        [Test]
         public void Load_ParsesActionPick()
         {
             const string yaml = @"
@@ -592,7 +628,8 @@ object_defs:
             Assert.That(chop.With, Is.EqualTo(codex.TagNames.GetId("axe_tool")));
             Assert.That(chop.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Dragged));
             Assert.That(chop.Active.Adds.ContainsKey(ReferenceRoot.Dragged), Is.True);
-            Assert.That(codex.ObjectNames.GetName(chop.Active.Spawn.ObjectGlobalId), Is.EqualTo("logs"));
+            Assert.That(chop.Active.Spawn.Count, Is.EqualTo(1));
+            Assert.That(codex.ObjectNames.GetName(chop.Active.Spawn[0].ObjectGlobalId), Is.EqualTo("logs"));
         }
 
         [Test]

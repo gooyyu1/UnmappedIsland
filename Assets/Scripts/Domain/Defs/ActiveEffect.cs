@@ -25,26 +25,24 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>削除する対象。空なら destroy なし。</summary>
         public IReadOnlyList<ReferenceRoot> Destroy { get; }
 
-        /// <summary>spawn。null なら spawn なし。常にselfが実行する。</summary>
-        public SpawnEffect Spawn { get; }
+        /// <summary>spawn。空なら spawn なし。常にselfが実行する。</summary>
+        public IReadOnlyList<SpawnEffect> Spawn { get; }
 
-        /// <summary>transfer（9.5節）。null なら transfer なし。fromとtoの組が常に1組のため、spawnと同じく
-        /// 対象キーを持たない単一の値として持つ（`transfer`は複数形キーではないため、8節の
-        /// 「複数形キーは常に配列」規約の対象外）。</summary>
-        public TransferEffect Transfer { get; }
+        /// <summary>transfer（9.5節）。空なら transfer なし。</summary>
+        public IReadOnlyList<TransferEffect> Transfer { get; }
 
         public ActiveEffect(
             IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> sets,
             IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> adds,
             IReadOnlyList<ReferenceRoot> destroy,
-            SpawnEffect spawn,
-            TransferEffect transfer = null)
+            IReadOnlyList<SpawnEffect> spawn = null,
+            IReadOnlyList<TransferEffect> transfer = null)
         {
             Sets = sets;
             Adds = adds;
             Destroy = destroy;
-            Spawn = spawn;
-            Transfer = transfer;
+            Spawn = spawn ?? System.Array.Empty<SpawnEffect>();
+            Transfer = transfer ?? System.Array.Empty<TransferEffect>();
         }
     }
 

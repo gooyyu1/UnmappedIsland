@@ -97,6 +97,36 @@ object_defs:
         }
 
         [Test]
+        public void TryExecuteAction_SpawnArray_GeneratesMultipleObjectsInOneAction()
+        {
+            const string yaml = @"
+object_defs:
+  crate:
+    slots:
+      inside: {}
+    actions:
+      open:
+        spawn:
+          - {object: apple_loot, into: self}
+          - {object: berry_loot, into: self}
+  apple_loot: {}
+  berry_loot: {}
+";
+            var codex = Load(yaml);
+            int insideSlotId = codex.SlotNames.GetId("inside");
+
+            var session = new WorldSession(codex);
+            WorldObject crate = Spawn(codex, "crate");
+
+            bool executed = InteractionExecutor.TryExecuteAction(crate, actor: null, "open", session);
+
+            crate.TryGetSlot(insideSlotId, out Slot inside);
+            Assert.That(executed, Is.True);
+            Assert.That(inside.Contents.Count, Is.EqualTo(2));
+            Assert.That(inside.Contents.Select(c => c.Def.Name), Is.EquivalentTo(new[] { "apple_loot", "berry_loot" }));
+        }
+
+        [Test]
         public void TryExecuteAction_UnknownActionName_ReturnsFalse()
         {
             const string yaml = @"

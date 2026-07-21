@@ -62,20 +62,14 @@ namespace UnmappedIsland.Loader
             if (destroyNode != null)
                 destroy.AddRange(ParseDestroyTargets($"{context}.destroy", destroyNode, allowDragged, selfOnly));
 
-            SpawnEffect spawn = null;
-            YamlMappingNode spawnMap = bodyNode.TryGetMapping("spawn", context);
-            if (spawnMap != null)
-            {
-                string into = spawnMap.TryGetScalar("into", context);
-                spawn = new SpawnEffect(
-                    ObjectNames.Intern(spawnMap.RequireScalar("object", context)),
-                    ParseSpawnTargetRoot(context, into));
-            }
+            var spawn = new List<SpawnEffect>();
+            YamlNode spawnNode = bodyNode.TryGet("spawn");
+            if (spawnNode != null) spawn.AddRange(ParseSpawns($"{context}.spawn", spawnNode));
 
-            TransferEffect transfer = null;
-            YamlMappingNode transferMap = bodyNode.TryGetMapping("transfer", context);
-            if (transferMap != null)
-                transfer = ParseTransfer($"{context}.transfer", transferMap, allowDragged, selfOnly);
+            var transfer = new List<TransferEffect>();
+            YamlNode transferNode = bodyNode.TryGet("transfer");
+            if (transferNode != null)
+                transfer.AddRange(ParseTransfers($"{context}.transfer", transferNode, allowDragged, selfOnly));
 
             var knownKeys = new HashSet<string>(ActiveVerbKeys);
             if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
@@ -161,6 +155,64 @@ namespace UnmappedIsland.Loader
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
             return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd);
+        }
+
+        private IEnumerable<SpawnEffect> ParseSpawns(string context, YamlNode node)
+        {
+            if (node is YamlMappingNode map)
+            {
+                yield return ParseSpawn(context, map);
+                yield break;
+            }
+
+            if (node is YamlSequenceNode seq)
+            {
+                for (int i = 0; i < seq.Children.Count; i++)
+                {
+                    if (!(seq.Children[i] is YamlMappingNode item))
+                        throw new YamlLoadException($"{context}[{i}]: 各要素はmappingである必要があります。");
+                    yield return ParseSpawn($"{context}[{i}]", item);
+                }
+                yield break;
+            }
+
+            throw new YamlLoadException($"{context}: mappingかmappingの配列である必要があります。");
+        }
+
+        private SpawnEffect ParseSpawn(string context, YamlMappingNode map)
+        {
+            string into = map.TryGetScalar("into", context);
+
+            var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
+                .Where(k => k != "object" && k != "into").ToList();
+            if (unknownKeys.Count > 0)
+                throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
+            return new SpawnEffect(
+                ObjectNames.Intern(map.RequireScalar("object", context)),
+                ParseSpawnTargetRoot(context, into));
+        }
+
+        private IEnumerable<TransferEffect> ParseTransfers(string context, YamlNode node, bool allowDragged, bool selfOnly)
+        {
+            if (node is YamlMappingNode map)
+            {
+                yield return ParseTransfer(context, map, allowDragged, selfOnly);
+                yield break;
+            }
+
+            if (node is YamlSequenceNode seq)
+            {
+                for (int i = 0; i < seq.Children.Count; i++)
+                {
+                    if (!(seq.Children[i] is YamlMappingNode item))
+                        throw new YamlLoadException($"{context}[{i}]: 各要素はmappingである必要があります。");
+                    yield return ParseTransfer($"{context}[{i}]", item, allowDragged, selfOnly);
+                }
+                yield break;
+            }
+
+            throw new YamlLoadException($"{context}: mappingかmappingの配列である必要があります。");
         }
 
         /// <summary>

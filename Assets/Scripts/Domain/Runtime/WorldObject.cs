@@ -505,10 +505,11 @@ namespace UnmappedIsland.Domain.Runtime
                 foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
             }
 
-            if (effect.Transfer != null) ApplyTransfer(effect.Transfer, session, actor, dragged);
+            foreach (TransferEffect transfer in effect.Transfer)
+                ApplyTransfer(transfer, session, actor, dragged);
 
             bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
-            SameSlotAnchor? anchor = effect.Spawn != null && effect.Spawn.Into == SpawnTargetRoot.SameSlot
+            SameSlotAnchor? anchor = effect.Spawn.Any(s => s.Into == SpawnTargetRoot.SameSlot)
                 ? CaptureSameSlotAnchor(willDestroySelf)
                 : null;
 
@@ -520,7 +521,8 @@ namespace UnmappedIsland.Domain.Runtime
                 target.Destroy(session.Codex.WellKnown);
             }
 
-            if (effect.Spawn != null) ExecuteSpawn(effect.Spawn, session, actor, anchor);
+            foreach (SpawnEffect spawn in effect.Spawn)
+                ExecuteSpawn(spawn, session, actor, anchor);
         }
 
         /// <summary>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
