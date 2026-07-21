@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Struct PropertyAssignment | UnmappedIsland API リファレンス </title>
+      <title>Struct SetEffect | UnmappedIsland API リファレンス </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Struct PropertyAssignment | UnmappedIsland API リファレンス ">
+      <meta name="title" content="Struct SetEffect | UnmappedIsland API リファレンス ">
     
     <meta name="description" content="set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの 代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、 conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。">
       <link rel="shortcut icon" href="favicon.ico">
@@ -69,11 +69,11 @@
       <div role="main" class="container body-content hide-when-search">
         <div class="article row grid">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.SetEffect">
 
 
 
-  <h1 id="UnmappedIsland_Domain_Defs_PropertyAssignment" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment" class="text-break">Struct PropertyAssignment</h1>
+  <h1 id="UnmappedIsland_Domain_Defs_SetEffect" data-uid="UnmappedIsland.Domain.Defs.SetEffect" class="text-break">Struct SetEffect</h1>
   <div class="markdown level0 summary"><p>set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの
 代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
 conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>
@@ -102,26 +102,26 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Defs.html">Defs</a></h6>
   <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
-  <h5 id="UnmappedIsland_Domain_Defs_PropertyAssignment_syntax">Syntax</h5>
+  <h5 id="UnmappedIsland_Domain_Defs_SetEffect_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public readonly struct PropertyAssignment</code></pre>
+    <pre><code class="lang-csharp hljs">public readonly struct SetEffect</code></pre>
   </div>
   <h3 id="constructors">Constructors
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyAssignment__ctor_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyAssignment.%23ctor(System.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(System.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L60">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_PropertyAssignment__ctor_" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PropertyAssignment__ctor_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment.#ctor(System.Int32,System.Int32)">PropertyAssignment(int, int)</h4>
+  <a id="UnmappedIsland_Domain_Defs_SetEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,System.Int32)">SetEffect(int, int)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public PropertyAssignment(int propertyGlobalId, int value)</code></pre>
+    <pre><code class="lang-csharp hljs">public SetEffect(int propertyGlobalId, int value)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -147,18 +147,18 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyAssignment__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyAssignment.%23ctor(System.Int32%2CUnmappedIsland.Domain.Defs.PropertyPath)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(System.Int32%2CUnmappedIsland.Domain.Defs.PropertyPath)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L67">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_PropertyAssignment__ctor_" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PropertyAssignment__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment.#ctor(System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)">PropertyAssignment(int, PropertyPath)</h4>
+  <a id="UnmappedIsland_Domain_Defs_SetEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)">SetEffect(int, PropertyPath)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public PropertyAssignment(int propertyGlobalId, PropertyPath valueRef)</code></pre>
+    <pre><code class="lang-csharp hljs">public SetEffect(int propertyGlobalId, PropertyPath valueRef)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -186,12 +186,12 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyAssignment_PropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyAssignment.PropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_PropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.PropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L56">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_PropertyAssignment_PropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment.PropertyGlobalId">PropertyGlobalId</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_PropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.SetEffect.PropertyGlobalId">PropertyGlobalId</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -215,12 +215,12 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyAssignment_Value.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyAssignment.Value%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_Value.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.Value%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L57">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_PropertyAssignment_Value" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment.Value">Value</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_Value" data-uid="UnmappedIsland.Domain.Defs.SetEffect.Value">Value</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -244,12 +244,12 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyAssignment_ValueRef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyAssignment.ValueRef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_ValueRef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.ValueRef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L58">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_PropertyAssignment_ValueRef" data-uid="UnmappedIsland.Domain.Defs.PropertyAssignment.ValueRef">ValueRef</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_ValueRef" data-uid="UnmappedIsland.Domain.Defs.SetEffect.ValueRef">ValueRef</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -280,7 +280,7 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyAssignment.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyAssignment%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
                     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L54" class="contribution-link">View Source</a>

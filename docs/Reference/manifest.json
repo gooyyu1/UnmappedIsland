@@ -12,6 +12,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.AccumulateEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.AccumulateEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.AccumulateEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AccumulateEffect.yml\" sourcestartlinenumber=\"1\">条件が真の間、tick毎に実体値そのものへ加減算し続ける持続効果（不可逆、8.4節）。PropertyValueの\naccumulate用incomingへ登録され、WorldObject.Tickが走査する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Defs.ActionDef.yml",
       "output": {
         ".html": {
@@ -22,7 +36,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ActionDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActionDef.yml\" sourcestartlinenumber=\"1\">メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと実行結果(active/pick)を\n1つの定義としてまとめて持つ。object_defs/traitsの中に、識別子をキーとする辞書として配置される。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActionDef.yml\" sourcestartlinenumber=\"1\">メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと実行結果（EffectOutcome＝\nactive/pick）を1つの定義としてまとめて持つ。object_defs/traitsの中に、識別子をキーとする辞書として\n配置される。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -40,6 +54,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.AddEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.AddEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.AddEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AddEffect.yml\" sourcestartlinenumber=\"1\">add の1エントリ（対象プロパティのグローバルIDと加減算量）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Defs.CombinationDef.yml",
       "output": {
         ".html": {
@@ -50,7 +78,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.CombinationDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.CombinationDef.yml\" sourcestartlinenumber=\"1\">ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の\nobject_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.CombinationDef.yml\" sourcestartlinenumber=\"1\">ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の\nobject_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。\nconditionsと実行結果（EffectOutcome＝active/pick）を1つの定義としてまとめて持つ。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -96,6 +124,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.EffectOutcome.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.EffectOutcome.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.EffectOutcome",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.EffectOutcome.yml\" sourcestartlinenumber=\"1\">アクション・combination・pick候補が「条件成立時に何を起こすか」を表す実行結果（9・10節）。\n直接の active（ActiveEffect）か、weightで1つ選ぶ pick（さらに再帰しうる候補列）の\nどちらか一方のみを持つ（どちらも無ければ何も起きない）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.EffectOutcome.yml\" sourcestartlinenumber=\"5\">ActionDef・CombinationDef・PickCandidateDefはいずれも「conditions等の固有部分＋この実行結果」という\n同じ構造を持つため、active/pickの保持と「結局どのActiveEffectを適用するか」の解決（active優先、\n無ければweight抽選で1候補を選び、その候補の実行結果へ再帰）をこの1つの型に集約する。各Defはこの型を\n1つ持ち、Resolveへ委譲するだけでよい（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml",
       "output": {
         ".html": {
@@ -107,6 +149,20 @@
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.LocalIndexMap",
       "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml\" sourcestartlinenumber=\"1\">特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、\nゲーム全体で共有されるグローバルID空間とを対応付ける表。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml\" sourcestartlinenumber=\"4\">ObjectDefごとに「持っているプロパティ／スロット」は異なるため、グローバルID空間全体を\nそのままインデックスに使うと大半が未使用の疎な配列になってしまう。そこで ObjectDef 側は\n自分が実際に持つものだけを詰めた密なローカル配列を持ち、この表がその変換を担う。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ModifyEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ModifyEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ModifyEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ModifyEffect.yml\" sourcestartlinenumber=\"1\">条件が真の間だけ、都度導出される実効値に寄与する持続効果（可逆、8.3節）。実体値そのものは\n書き換えない。PropertyValueのmodify用incomingへ登録され、WorldObject.GetEffectiveValueが走査する。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -162,7 +218,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PassiveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する、1つの効果（8節）。ObjectDef.Passives の要素。\nTarget が Self/Parent/Child のどれであっても、Kind が Modify/Accumulate のどちらであっても構造は同じで、\n違いは登録時にどこへ・誰の状態と紐付けて置くか（Target）と、どちらの評価経路が読むか（Kind）だけに閉じる\n（Runtime.WorldObject.GetEffectiveValue / Tick 参照）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは\n「どのオブジェクトのどのプロパティへ紐付くか（Target/TargetPropertyGlobalId）」と「ゲートが有効な間だけ\nいくら効くか（ActiveAmount）」。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"5\">modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ\n加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに\n分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の\n唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"10\">Amount・Gate は「今いくら効いているか」というこの効果自身の内部事情であり、ActiveAmountを通してのみ\n外へ出す（PropertyValueは量もゲートも意識しない、自分のことは自分でする、CLAUDE.md参照）。Targetと\nTargetPropertyGlobalIdは登録先を決めるWorldObject側が読むため公開する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"14\">アクション/combination/pickの効果として書かれる一時的な <code sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"14\">add</code>（実行された瞬間に1回だけ効く）は、\nこの登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -176,21 +232,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PassiveEffectGate",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"1\">効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を\n表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら\n両方を満たす間だけ有効=AND、両方nullなら常時有効。Runtime.RegisteredPassiveEffect.IsActive参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"5\">ConditionsもPropertyGlobalId/StageNameも、ロード時にローカルIDへ変換せずグローバルIDのまま持つ\n（評価のたびにDeclarer自身がRuntime.WorldObject.IsInStageでローカル化する）。グローバルID→ローカルID\nの変換コストは、1 tick=15分というこのゲームの時間スケールに対して無視できるほど小さいため、\nDeclarer自身のPropertyDefがすべて出来上がるまで解決を待つビルド時の2段階パースは不要（かつては\nPropertyLocalId/PropertyStage参照をビルド時に確定させていたが、この理由により撤去した）。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Defs.PassiveEffectKind.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Defs.PassiveEffectKind",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"1\">効果の性質。どちらも self/parent/child・ゲートによる登録の仕組み（8節）を共有するが、\n実体値への反映のされ方が異なる。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"4\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"4\">Modify: 条件が真の間だけ、都度導出される実効値に寄与する（可逆、WorldObject.GetEffectiveValue）</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"5\">Accumulate: 条件が真の間、tick毎に実体値そのものへ加減算し続ける（不可逆、WorldObject.Tick）</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"7\">アクション/combination/pickの効果として書かれる一時的な <code sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"7\">add</code>（実行された瞬間に1回だけ効く）は、\nこの登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"1\">効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を\n表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら\n両方を満たす間だけ有効=AND、両方nullなら常時有効。PassiveEffect.ActiveAmountから呼ばれる）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"5\">ConditionsもPropertyGlobalId/StageNameも、ロード時にローカルIDへ変換せずグローバルIDのまま持つ\n（評価のたびにDeclarer自身がRuntime.WorldObject.IsInStageでローカル化する）。グローバルID→ローカルID\nの変換コストは、1 tick=15分というこのゲームの時間スケールに対して無視できるほど小さいため、\nDeclarer自身のPropertyDefがすべて出来上がるまで解決を待つビルド時の2段階パースは不要（かつては\nPropertyLocalId/PropertyStage参照をビルド時に確定させていたが、この理由により撤去した）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -218,21 +260,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PickCandidateDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml\" sourcestartlinenumber=\"1\">pickの1候補（GameElementDefinition.md 10節）。weightに加えて、自分自身のactive（対象をキーとする\n辞書）か、さらに別のpickのどちらか一方を持つ（同時には持たない。候補自身がpickを持つ再帰も許容する）。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyAssignment.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Defs.PropertyAssignment.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Defs.PropertyAssignment",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyAssignment.yml\" sourcestartlinenumber=\"1\">set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの\n代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml\" sourcestartlinenumber=\"1\">pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときの\n実行結果（EffectOutcome＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も許容する）を持つ。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -247,20 +275,6 @@
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PropertyDef",
       "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、\nローカルIDをそのままindexとする密配列に格納される。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"4\">同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、\n定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyDelta.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Defs.PropertyDelta.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Defs.PropertyDelta",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDelta.yml\" sourcestartlinenumber=\"1\">add の1エントリ（対象プロパティのグローバルIDと加減算量）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -331,6 +345,20 @@
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ReferenceRootResolver",
       "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.SetEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.SetEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.SetEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SetEffect.yml\" sourcestartlinenumber=\"1\">set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの\n代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>\n"
     },
     {
       "type": "ManagedReference",

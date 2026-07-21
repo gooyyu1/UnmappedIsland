@@ -256,21 +256,20 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_IsActive.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.IsActive%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ActiveAmount.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ActiveAmount%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L31">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L34">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_IsActive_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.IsActive*"></a>
-  <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_IsActive" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.IsActive">IsActive()</h4>
-  <div class="markdown level1 summary"><p>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。
-StageNameとConditionsは独立したフィールドで、それぞれ非nullの場合だけそのチェックを行う（両方非nullなら
-AND、両方nullなら常時有効）。</p>
+  <a id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ActiveAmount_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ActiveAmount*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ActiveAmount" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ActiveAmount">ActiveAmount()</h4>
+  <div class="markdown level1 summary"><p>この効果が現在の文脈（Declarer/SlotBearer）で寄与している量。ゲート（8.2節）が有効なら
+Amount、無効なら0。判定と量はいずれもDef自身が持つため、こちらはDeclarer/SlotBearerを渡して委ねる。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public bool IsActive()</code></pre>
+    <pre><code class="lang-csharp hljs">public int ActiveAmount()</code></pre>
   </div>
   <h5 class="returns">Returns</h5>
   <table class="table table-bordered table-condensed">
@@ -282,7 +281,41 @@ AND、両方nullなら常時有効）。</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L30">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_RegisterInto_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue)">RegisterInto(PropertyValue)</h4>
+  <div class="markdown level1 summary"><p>この登録をDef（PassiveEffect）自身に頼んで、対象プロパティ値の適切なincoming
+（modify用/accumulate用）へ登録させる。どちらのバケツに入るかはDefが決める。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void RegisterInto(PropertyValue target)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a></td>
+        <td><span class="parametername">target</span></td>
         <td></td>
       </tr>
     </tbody>

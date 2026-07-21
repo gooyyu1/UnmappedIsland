@@ -1075,14 +1075,13 @@ RegisterEdgeWith）にのみ存在し、ここでは一切区別しない。Kind
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_GetIncomingPassiveEffects_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.GetIncomingPassiveEffects(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L818">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L817">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldObject_GetIncomingPassiveEffects_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetIncomingPassiveEffects*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_GetIncomingPassiveEffects_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetIncomingPassiveEffects(System.Int32)">GetIncomingPassiveEffects(int)</h4>
   <div class="markdown level1 summary"><p>現在このプロパティに登録されている全寄与（modify/accumulate両方）を列挙する。
-「このプロパティに何が影響しているか」をUIで表示したい場合に使う。ゲートが現在有効かどうかは
-呼び出し側で RegisteredPassiveEffect.IsActive() 相当の判定をしたい場合、Kind別にGetEffectiveValue/Tickの
-結果と突き合わせる。</p>
+「このプロパティに何が影響しているか」をUIで表示したい場合に使う。各効果が現在いくら効いているかは
+RegisteredPassiveEffect.ActiveAmount()（ゲートが有効ならAmount、無効なら0）で得られる。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1704,13 +1703,13 @@ target=Child（親の効果が自分へ及ぶ）は自分へ登録する。targe
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_ResolveAssignmentValue_UnmappedIsland_Domain_Defs_PropertyAssignment_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue(UnmappedIsland.Domain.Defs.PropertyAssignment%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_ResolveAssignmentValue_UnmappedIsland_Domain_Defs_SetEffect_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue(UnmappedIsland.Domain.Defs.SetEffect%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L543">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldObject_ResolveAssignmentValue_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue*"></a>
-  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_ResolveAssignmentValue_UnmappedIsland_Domain_Defs_PropertyAssignment_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue(UnmappedIsland.Domain.Defs.PropertyAssignment,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ResolveAssignmentValue(PropertyAssignment, WorldObject, WorldObject)</h4>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_ResolveAssignmentValue_UnmappedIsland_Domain_Defs_SetEffect_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue(UnmappedIsland.Domain.Defs.SetEffect,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ResolveAssignmentValue(SetEffect, WorldObject, WorldObject)</h4>
   <div class="markdown level1 summary"><p>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
 （assign.Value）をそのまま使う。ValueRefがあれば、その参照先（{object, prop}）の現在の実効値を
 読んで使う（他のプロパティの値をそのままコピーする、9.2節）。参照先が解決できない場合は0。</p>
@@ -1718,7 +1717,7 @@ target=Child（親の効果が自分へ及ぶ）は自分へ登録する。targe
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">private int ResolveAssignmentValue(PropertyAssignment assign, WorldObject actor, WorldObject dragged)</code></pre>
+    <pre><code class="lang-csharp hljs">private int ResolveAssignmentValue(SetEffect assign, WorldObject actor, WorldObject dragged)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -1731,7 +1730,7 @@ target=Child（親の効果が自分へ及ぶ）は自分へ登録する。targe
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyAssignment.html">PropertyAssignment</a></td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.SetEffect.html">SetEffect</a></td>
         <td><span class="parametername">assign</span></td>
         <td></td>
       </tr>

@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class PassiveEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="1つの ObjectDef が宣言する、1つの効果（8節）。ObjectDef.Passives の要素。 Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumulate のどちらであっても構造は同じで、 違いは登録時にどこへ・誰の状態と紐付けて置くか（Target）と、どちらの評価経路が読むか（Kind）だけに閉じる （Runtime.WorldObject.GetEffectiveValue / Tick 参照）。">
+    <meta name="description" content="1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは 「どのオブジェクトのどのプロパティへ紐付くか（Target/TargetPropertyGlobalId）」と「ゲートが有効な間だけ いくら効くか（ActiveAmount）」。 modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ 加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに 分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の 唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。 Amount・Gate は「今いくら効いているか」というこの効果自身の内部事情であり、ActiveAmountを通してのみ 外へ出す（PropertyValueは量もゲートも意識しない、自分のことは自分でする、CLAUDE.md参照）。Targetと TargetPropertyGlobalIdは登録先を決めるWorldObject側が読むため公開する。 アクション/combination/pickの効果として書かれる一時的な add（実行された瞬間に1回だけ効く）は、 この登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,16 +74,26 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_PassiveEffect" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect" class="text-break">Class PassiveEffect</h1>
-  <div class="markdown level0 summary"><p>1つの ObjectDef が宣言する、1つの効果（8節）。ObjectDef.Passives の要素。
-Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumulate のどちらであっても構造は同じで、
-違いは登録時にどこへ・誰の状態と紐付けて置くか（Target）と、どちらの評価経路が読むか（Kind）だけに閉じる
-（Runtime.WorldObject.GetEffectiveValue / Tick 参照）。</p>
+  <div class="markdown level0 summary"><p>1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは
+「どのオブジェクトのどのプロパティへ紐付くか（Target/TargetPropertyGlobalId）」と「ゲートが有効な間だけ
+いくら効くか（ActiveAmount）」。</p>
+<p>modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ
+加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに
+分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の
+唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。</p>
+<p>Amount・Gate は「今いくら効いているか」というこの効果自身の内部事情であり、ActiveAmountを通してのみ
+外へ出す（PropertyValueは量もゲートも意識しない、自分のことは自分でする、CLAUDE.md参照）。Targetと
+TargetPropertyGlobalIdは登録先を決めるWorldObject側が読むため公開する。</p>
+<p>アクション/combination/pickの効果として書かれる一時的な <code>add</code>（実行された瞬間に1回だけ効く）は、
+この登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
     <div class="level1"><span class="xref">PassiveEffect</span></div>
+      <div class="level2"><a class="xref" href="UnmappedIsland.Domain.Defs.AccumulateEffect.html">AccumulateEffect</a></div>
+      <div class="level2"><a class="xref" href="UnmappedIsland.Domain.Defs.ModifyEffect.html">ModifyEffect</a></div>
   </div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
@@ -100,6 +110,9 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
     </div>
     <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
+    </div>
+    <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
     </div>
     <div>
@@ -110,24 +123,24 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
   <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
   <h5 id="UnmappedIsland_Domain_Defs_PassiveEffect_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class PassiveEffect</code></pre>
+    <pre><code class="lang-csharp hljs">public abstract class PassiveEffect</code></pre>
   </div>
   <h3 id="constructors">Constructors
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect__ctor_UnmappedIsland_Domain_Defs_PassiveEffectTarget_UnmappedIsland_Domain_Defs_PassiveEffectKind_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.%23ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget%2CUnmappedIsland.Domain.Defs.PassiveEffectKind%2CSystem.Int32%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.PassiveEffectGate)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect__ctor_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.%23ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget%2CSystem.Int32%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.PassiveEffectGate)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L99">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L94">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PassiveEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect__ctor_UnmappedIsland_Domain_Defs_PassiveEffectTarget_UnmappedIsland_Domain_Defs_PassiveEffectKind_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,UnmappedIsland.Domain.Defs.PassiveEffectKind,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)">PassiveEffect(PassiveEffectTarget, PassiveEffectKind, int, int, PassiveEffectGate)</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect__ctor_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)">PassiveEffect(PassiveEffectTarget, int, int, PassiveEffectGate)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public PassiveEffect(PassiveEffectTarget target, PassiveEffectKind kind, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)</code></pre>
+    <pre><code class="lang-csharp hljs">protected PassiveEffect(PassiveEffectTarget target, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -142,11 +155,6 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
       <tr>
         <td><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectTarget.html">PassiveEffectTarget</a></td>
         <td><span class="parametername">target</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectKind.html">PassiveEffectKind</a></td>
-        <td><span class="parametername">kind</span></td>
         <td></td>
       </tr>
       <tr>
@@ -166,24 +174,23 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
       </tr>
     </tbody>
   </table>
-  <h3 id="properties">Properties
+  <h3 id="fields">Fields
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_Amount.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.Amount%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_amount.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.amount%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L96">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L91">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_PassiveEffect_Amount_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Amount*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_Amount" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Amount">Amount</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_amount" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.amount">amount</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int Amount { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly int amount</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
     <thead>
       <tr>
@@ -200,20 +207,19 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_Gate.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.Gate%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_gate.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.gate%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L97">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L92">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_PassiveEffect_Gate_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Gate*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_Gate" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Gate">Gate</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_gate" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.gate">gate</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public PassiveEffectGate Gate { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly PassiveEffectGate gate</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
     <thead>
       <tr>
@@ -228,42 +234,14 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
       </tr>
     </tbody>
   </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_Kind.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.Kind%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L94">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_PassiveEffect_Kind_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Kind*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_Kind" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Kind">Kind</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public PassiveEffectKind Kind { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectKind.html">PassiveEffectKind</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
+  <h3 id="properties">Properties
+</h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_Target.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.Target%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L93">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L88">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PassiveEffect_Target_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Target*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_Target" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.Target">Target</h4>
@@ -293,7 +271,7 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_TargetPropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L95">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L89">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PassiveEffect_TargetPropertyGlobalId_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_TargetPropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId">TargetPropertyGlobalId</h4>
@@ -318,6 +296,102 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
       </tr>
     </tbody>
   </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_ActiveAmount_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.ActiveAmount(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L113">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PassiveEffect_ActiveAmount_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.ActiveAmount*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_ActiveAmount_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.ActiveAmount(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ActiveAmount(WorldObject, WorldObject)</h4>
+  <div class="markdown level1 summary"><p>declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならAmountを、無効なら0を返す。
+「今この効果はいくら効いているか」をAmountとゲート判定込みで自分で答えるため、Amount/Gateを外へ
+出す必要がない。modify（実効値へ合算）でもaccumulate（tick時に実体値へ加算）でも同じ量。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int ActiveAmount(WorldObject declarer, WorldObject slotBearer)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">declarer</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">slotBearer</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue%2CUnmappedIsland.Domain.Runtime.RegisteredPassiveEffect)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L108">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PassiveEffect_RegisterInto_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.RegisterInto*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue,UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect)">RegisterInto(PropertyValue, RegisteredPassiveEffect)</h4>
+  <div class="markdown level1 summary"><p>この効果（registration）を、対象プロパティ値（target）の適切なincomingへ登録する。
+modify用かaccumulate用かは具象クラスが決める（判別子は型そのもの）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public abstract void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a></td>
+        <td><span class="parametername">target</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html">RegisteredPassiveEffect</a></td>
+        <td><span class="parametername">registration</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
 
 </article>
           </div>
@@ -330,7 +404,7 @@ Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumula
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L91" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L86" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
