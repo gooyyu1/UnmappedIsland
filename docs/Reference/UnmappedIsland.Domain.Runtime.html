@@ -91,12 +91,13 @@ Classes
 PassiveEffectの影響先は
 「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、
 いずれもWorldObjectではなくこの値自身が持つ。</p>
-<p>値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。
-WorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない
-（自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef
-（range・on_overflow等）と、それを保持するWorldObject（on_overflow等の適用先解決に使う）は、
-いずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに引数で受け取り直す
-ことはしない。</p>
+<p>値の変更（Add/SetNumber）はこのクラス自身が完結して行い、値が変わった直後に、自分のPropertyDefへ
+rangeイベントの判定を委譲する（def.CheckRangeEvents）。どのon_*をいつ発火するかという規則はrange・
+on_*の定義を持つPropertyDef本人の責務であり、こちらは「値が変わった」とだけ通知する（自分のことは
+自分でする、というOOPの原則。CLAUDE.md参照）。WorldObjectはローカルID解決のみを担い、値の変更に
+伴って何を判定・実行すべきかには一切関与しない。判定の委譲先である自分自身のPropertyDefと、その適用先
+となるWorldObjectは、いずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに
+引数で受け取り直すことはしない。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html">RegisteredPassiveEffect</a></h4>
       <section><p>登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。</p>

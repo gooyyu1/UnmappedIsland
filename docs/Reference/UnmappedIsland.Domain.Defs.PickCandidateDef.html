@@ -117,7 +117,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.%23ctor(UnmappedIsland.Domain.Defs.WeightSpec%2CUnmappedIsland.Domain.Defs.ActiveEffect%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PickCandidateDef%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L47">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L49">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef})">PickCandidateDef(WeightSpec, ActiveEffect, IReadOnlyList&lt;PickCandidateDef&gt;)</h4>
@@ -154,25 +154,26 @@
       </tr>
     </tbody>
   </table>
-  <h3 id="properties">Properties
+  <h3 id="fields">Fields
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_Active.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.Active%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_active.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.active%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L44">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L46">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_Active_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Active*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_Active" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Active">Active</h4>
-  <div class="markdown level1 summary"><p>ActiveかPickのどちらか一方のみが非null。</p>
+  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_active" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.active">active</h4>
+  <div class="markdown level1 summary"><p>activeかpickのどちらか一方のみが非null。どちらもこのPickCandidateDef自身の
+ResolveEffectだけが読むため（呼び出し側は結果のActiveEffectしか受け取らない）privateに閉じる
+（ActionDefのactive/pickと同じ方針）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public ActiveEffect Active { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly ActiveEffect active</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
     <thead>
       <tr>
@@ -189,20 +190,19 @@
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_Pick.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.Pick%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_pick.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.pick%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L45">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L47">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_Pick_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Pick*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_Pick" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Pick">Pick</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_pick" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.pick">pick</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;PickCandidateDef&gt; Pick { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly IReadOnlyList&lt;PickCandidateDef&gt; pick</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
     <thead>
       <tr>
@@ -217,6 +217,8 @@
       </tr>
     </tbody>
   </table>
+  <h3 id="properties">Properties
+</h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_Weight.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.Weight%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
@@ -254,7 +256,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PickCandidateDef%7D%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L55">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L57">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveEffect_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)">ResolveEffect(ActiveEffect, IReadOnlyList&lt;PickCandidateDef&gt;, WorldObject, WorldObject, WorldObject, WorldSession)</h4>
@@ -262,7 +264,7 @@
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">internal static ActiveEffect ResolveEffect(ActiveEffect active, IReadOnlyList&lt;PickCandidateDef&gt; pick, WorldObject self, WorldObject actor, WorldObject dragged, WorldSession session)</code></pre>
+    <pre><code class="lang-csharp hljs">public static ActiveEffect ResolveEffect(ActiveEffect active, IReadOnlyList&lt;PickCandidateDef&gt; pick, WorldObject self, WorldObject actor, WorldObject dragged, WorldSession session)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -326,7 +328,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_SelectWeighted_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PickCandidateDef%7D%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L68">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L70">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_SelectWeighted_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_SelectWeighted_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)">SelectWeighted(IReadOnlyList&lt;PickCandidateDef&gt;, WorldObject, WorldObject, WorldObject, WorldSession)</h4>

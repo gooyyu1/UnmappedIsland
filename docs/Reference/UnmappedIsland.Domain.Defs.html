@@ -144,7 +144,7 @@ PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、
 辞書）か、さらに別のpickのどちらか一方を持つ（同時には持たない。候補自身がpickを持つ再帰も許容する）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyDef.html">PropertyDef</a></h4>
-      <section><p>1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.PropertyDefs の1要素として、
+      <section><p>1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、
 ローカルIDをそのままindexとする密配列に格納される。</p>
 <p>同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、
 定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>
@@ -166,7 +166,7 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.SlotDef.html">SlotDef</a></h4>
       <section><p>1つの ObjectDef が持つ、1つのスロットの定義（GameElementDefinition.md 7.1〜7.4節）。
-ObjectDef.SlotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。</p>
+ObjectDef.slotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.SpawnEffect.html">SpawnEffect</a></h4>
       <section><p>spawn（9.4節）の内容。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は

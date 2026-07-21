@@ -32,32 +32,6 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.ActionDef.New
   nameWithType: ActionDef.ActionDef
   nameWithType.vb: ActionDef.New
-- uid: UnmappedIsland.Domain.Defs.ActionDef.Active
-  name: Active
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_Active
-  commentId: P:UnmappedIsland.Domain.Defs.ActionDef.Active
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.Active
-  nameWithType: ActionDef.Active
-- uid: UnmappedIsland.Domain.Defs.ActionDef.Active*
-  name: Active
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_Active_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActionDef.Active
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.Active
-  nameWithType: ActionDef.Active
-- uid: UnmappedIsland.Domain.Defs.ActionDef.Conditions
-  name: Conditions
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_Conditions
-  commentId: P:UnmappedIsland.Domain.Defs.ActionDef.Conditions
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.Conditions
-  nameWithType: ActionDef.Conditions
-- uid: UnmappedIsland.Domain.Defs.ActionDef.Conditions*
-  name: Conditions
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_Conditions_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActionDef.Conditions
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.Conditions
-  nameWithType: ActionDef.Conditions
 - uid: UnmappedIsland.Domain.Defs.ActionDef.Name
   name: Name
   href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_Name
@@ -71,19 +45,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ActionDef.Name
   nameWithType: ActionDef.Name
-- uid: UnmappedIsland.Domain.Defs.ActionDef.Pick
-  name: Pick
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_Pick
-  commentId: P:UnmappedIsland.Domain.Defs.ActionDef.Pick
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.Pick
-  nameWithType: ActionDef.Pick
-- uid: UnmappedIsland.Domain.Defs.ActionDef.Pick*
-  name: Pick
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_Pick_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActionDef.Pick
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.Pick
-  nameWithType: ActionDef.Pick
 - uid: UnmappedIsland.Domain.Defs.ActionDef.ShowMenu
   name: ShowMenu
   href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_ShowMenu
@@ -110,6 +71,24 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ActionDef.TryExecute
   nameWithType: ActionDef.TryExecute
+- uid: UnmappedIsland.Domain.Defs.ActionDef.active
+  name: active
+  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_active
+  commentId: F:UnmappedIsland.Domain.Defs.ActionDef.active
+  fullName: UnmappedIsland.Domain.Defs.ActionDef.active
+  nameWithType: ActionDef.active
+- uid: UnmappedIsland.Domain.Defs.ActionDef.conditions
+  name: conditions
+  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_conditions
+  commentId: F:UnmappedIsland.Domain.Defs.ActionDef.conditions
+  fullName: UnmappedIsland.Domain.Defs.ActionDef.conditions
+  nameWithType: ActionDef.conditions
+- uid: UnmappedIsland.Domain.Defs.ActionDef.pick
+  name: pick
+  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_pick
+  commentId: F:UnmappedIsland.Domain.Defs.ActionDef.pick
+  fullName: UnmappedIsland.Domain.Defs.ActionDef.pick
+  nameWithType: ActionDef.pick
 - uid: UnmappedIsland.Domain.Defs.ActiveEffect
   name: ActiveEffect
   href: UnmappedIsland.Domain.Defs.ActiveEffect.html
@@ -1002,19 +981,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ObjectDef.Passives
   nameWithType: ObjectDef.Passives
-- uid: UnmappedIsland.Domain.Defs.ObjectDef.PropertyDefs
-  name: PropertyDefs
-  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_PropertyDefs
-  commentId: P:UnmappedIsland.Domain.Defs.ObjectDef.PropertyDefs
-  fullName: UnmappedIsland.Domain.Defs.ObjectDef.PropertyDefs
-  nameWithType: ObjectDef.PropertyDefs
-- uid: UnmappedIsland.Domain.Defs.ObjectDef.PropertyDefs*
-  name: PropertyDefs
-  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_PropertyDefs_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ObjectDef.PropertyDefs
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ObjectDef.PropertyDefs
-  nameWithType: ObjectDef.PropertyDefs
 - uid: UnmappedIsland.Domain.Defs.ObjectDef.PropertyLayout
   name: PropertyLayout
   href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_PropertyLayout
@@ -1041,19 +1007,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ObjectDef.RepresentedBySlotGlobalId
   nameWithType: ObjectDef.RepresentedBySlotGlobalId
-- uid: UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs
-  name: SlotDefs
-  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_SlotDefs
-  commentId: P:UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs
-  fullName: UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs
-  nameWithType: ObjectDef.SlotDefs
-- uid: UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs*
-  name: SlotDefs
-  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_SlotDefs_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs
-  nameWithType: ObjectDef.SlotDefs
 - uid: UnmappedIsland.Domain.Defs.ObjectDef.SlotLayout
   name: SlotLayout
   href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_SlotLayout
@@ -1125,6 +1078,18 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination
   nameWithType: ObjectDef.TryExecuteCombination
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.propertyDefs
+  name: propertyDefs
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_propertyDefs
+  commentId: F:UnmappedIsland.Domain.Defs.ObjectDef.propertyDefs
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.propertyDefs
+  nameWithType: ObjectDef.propertyDefs
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.slotDefs
+  name: slotDefs
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_slotDefs
+  commentId: F:UnmappedIsland.Domain.Defs.ObjectDef.slotDefs
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.slotDefs
+  nameWithType: ObjectDef.slotDefs
 - uid: UnmappedIsland.Domain.Defs.ObjectDefTable
   name: ObjectDefTable
   href: UnmappedIsland.Domain.Defs.ObjectDefTable.html
@@ -1417,32 +1382,6 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.PickCandidateDef.New
   nameWithType: PickCandidateDef.PickCandidateDef
   nameWithType.vb: PickCandidateDef.New
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Active
-  name: Active
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Active
-  commentId: P:UnmappedIsland.Domain.Defs.PickCandidateDef.Active
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Active
-  nameWithType: PickCandidateDef.Active
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Active*
-  name: Active
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Active_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PickCandidateDef.Active
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Active
-  nameWithType: PickCandidateDef.Active
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Pick
-  name: Pick
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Pick
-  commentId: P:UnmappedIsland.Domain.Defs.PickCandidateDef.Pick
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Pick
-  nameWithType: PickCandidateDef.Pick
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Pick*
-  name: Pick
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Pick_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PickCandidateDef.Pick
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Pick
-  nameWithType: PickCandidateDef.Pick
 - uid: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
   name: ResolveEffect(ActiveEffect, IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
   href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
@@ -1488,6 +1427,18 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Weight
   nameWithType: PickCandidateDef.Weight
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.active
+  name: active
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_active
+  commentId: F:UnmappedIsland.Domain.Defs.PickCandidateDef.active
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.active
+  nameWithType: PickCandidateDef.active
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.pick
+  name: pick
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_pick
+  commentId: F:UnmappedIsland.Domain.Defs.PickCandidateDef.pick
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.pick
+  nameWithType: PickCandidateDef.pick
 - uid: UnmappedIsland.Domain.Defs.PropertyAssignment
   name: PropertyAssignment
   href: UnmappedIsland.Domain.Defs.PropertyAssignment.html
@@ -1565,19 +1516,35 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.PropertyDef.New
   nameWithType: PropertyDef.PropertyDef
   nameWithType.vb: PropertyDef.New
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber
-  name: DefaultNumber
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_DefaultNumber
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber
-  nameWithType: PropertyDef.DefaultNumber
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber*
-  name: DefaultNumber
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_DefaultNumber_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.CheckRangeEvents(System.Int32,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: CheckRangeEvents(int, WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_CheckRangeEvents_System_Int32_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.PropertyDef.CheckRangeEvents(System.Int32,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: CheckRangeEvents(Integer, WorldObject, WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.CheckRangeEvents(int, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Defs.PropertyDef.CheckRangeEvents(Integer, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: PropertyDef.CheckRangeEvents(int, WorldObject, WorldSession)
+  nameWithType.vb: PropertyDef.CheckRangeEvents(Integer, WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.CheckRangeEvents*
+  name: CheckRangeEvents
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_CheckRangeEvents_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.CheckRangeEvents
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber
-  nameWithType: PropertyDef.DefaultNumber
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.CheckRangeEvents
+  nameWithType: PropertyDef.CheckRangeEvents
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.CreateValue(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: CreateValue(WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_CreateValue_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.PropertyDef.CreateValue(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.CreateValue(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: PropertyDef.CreateValue(WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.CreateValue*
+  name: CreateValue
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_CreateValue_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.CreateValue
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.CreateValue
+  nameWithType: PropertyDef.CreateValue
 - uid: UnmappedIsland.Domain.Defs.PropertyDef.GlobalId
   name: GlobalId
   href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_GlobalId
@@ -1591,19 +1558,35 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PropertyDef.GlobalId
   nameWithType: PropertyDef.GlobalId
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.Inherit
-  name: Inherit
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_Inherit
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.Inherit
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.Inherit
-  nameWithType: PropertyDef.Inherit
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.Inherit*
-  name: Inherit
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_Inherit_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.Inherit
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.InheritedContribution(UnmappedIsland.Domain.Runtime.WorldObject)
+  name: InheritedContribution(WorldObject)
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_InheritedContribution_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.PropertyDef.InheritedContribution(UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.InheritedContribution(UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: PropertyDef.InheritedContribution(WorldObject)
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.InheritedContribution*
+  name: InheritedContribution
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_InheritedContribution_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.InheritedContribution
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.Inherit
-  nameWithType: PropertyDef.Inherit
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.InheritedContribution
+  nameWithType: PropertyDef.InheritedContribution
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.IsInStage(System.Int32,System.String)
+  name: IsInStage(int, string)
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_IsInStage_System_Int32_System_String_
+  commentId: M:UnmappedIsland.Domain.Defs.PropertyDef.IsInStage(System.Int32,System.String)
+  name.vb: IsInStage(Integer, String)
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.IsInStage(int, string)
+  fullName.vb: UnmappedIsland.Domain.Defs.PropertyDef.IsInStage(Integer, String)
+  nameWithType: PropertyDef.IsInStage(int, string)
+  nameWithType.vb: PropertyDef.IsInStage(Integer, String)
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.IsInStage*
+  name: IsInStage
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_IsInStage_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.IsInStage
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.IsInStage
+  nameWithType: PropertyDef.IsInStage
 - uid: UnmappedIsland.Domain.Defs.PropertyDef.Name
   name: Name
   href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_Name
@@ -1617,58 +1600,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PropertyDef.Name
   nameWithType: PropertyDef.Name
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnMax
-  name: OnMax
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnMax
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.OnMax
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnMax
-  nameWithType: PropertyDef.OnMax
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnMax*
-  name: OnMax
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnMax_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.OnMax
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnMax
-  nameWithType: PropertyDef.OnMax
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnMin
-  name: OnMin
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnMin
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.OnMin
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnMin
-  nameWithType: PropertyDef.OnMin
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnMin*
-  name: OnMin
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnMin_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.OnMin
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnMin
-  nameWithType: PropertyDef.OnMin
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow
-  name: OnOverflow
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnOverflow
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow
-  nameWithType: PropertyDef.OnOverflow
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow*
-  name: OnOverflow
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnOverflow_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow
-  nameWithType: PropertyDef.OnOverflow
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall
-  name: OnShortfall
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnShortfall
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall
-  nameWithType: PropertyDef.OnShortfall
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall*
-  name: OnShortfall
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_OnShortfall_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall
-  nameWithType: PropertyDef.OnShortfall
 - uid: UnmappedIsland.Domain.Defs.PropertyDef.Range
   name: Range
   href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_Range
@@ -1682,19 +1613,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PropertyDef.Range
   nameWithType: PropertyDef.Range
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.RerollRange
-  name: RerollRange
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_RerollRange
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.RerollRange
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.RerollRange
-  nameWithType: PropertyDef.RerollRange
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.RerollRange*
-  name: RerollRange
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_RerollRange_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.RerollRange
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.RerollRange
-  nameWithType: PropertyDef.RerollRange
 - uid: UnmappedIsland.Domain.Defs.PropertyDef.ResolveStage(System.Int32)
   name: ResolveStage(int)
   href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_ResolveStage_System_Int32_
@@ -1711,25 +1629,60 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PropertyDef.ResolveStage
   nameWithType: PropertyDef.ResolveStage
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.Stages
-  name: Stages
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_Stages
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyDef.Stages
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.Stages
-  nameWithType: PropertyDef.Stages
-- uid: UnmappedIsland.Domain.Defs.PropertyDef.Stages*
-  name: Stages
-  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_Stages_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyDef.Stages
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyDef.Stages
-  nameWithType: PropertyDef.Stages
 - uid: UnmappedIsland.Domain.Defs.PropertyDef.fallbackStage
   name: fallbackStage
   href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_fallbackStage
   commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.fallbackStage
   fullName: UnmappedIsland.Domain.Defs.PropertyDef.fallbackStage
   nameWithType: PropertyDef.fallbackStage
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.inherit
+  name: inherit
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_inherit
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.inherit
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.inherit
+  nameWithType: PropertyDef.inherit
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.initialValue
+  name: initialValue
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_initialValue
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.initialValue
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.initialValue
+  nameWithType: PropertyDef.initialValue
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.initialValueRange
+  name: initialValueRange
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_initialValueRange
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.initialValueRange
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.initialValueRange
+  nameWithType: PropertyDef.initialValueRange
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.onMax
+  name: onMax
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_onMax
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.onMax
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.onMax
+  nameWithType: PropertyDef.onMax
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.onMin
+  name: onMin
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_onMin
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.onMin
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.onMin
+  nameWithType: PropertyDef.onMin
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.onOverflow
+  name: onOverflow
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_onOverflow
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.onOverflow
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.onOverflow
+  nameWithType: PropertyDef.onOverflow
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.onShortfall
+  name: onShortfall
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_onShortfall
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.onShortfall
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.onShortfall
+  nameWithType: PropertyDef.onShortfall
+- uid: UnmappedIsland.Domain.Defs.PropertyDef.stages
+  name: stages
+  href: UnmappedIsland.Domain.Defs.PropertyDef.html#UnmappedIsland_Domain_Defs_PropertyDef_stages
+  commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.stages
+  fullName: UnmappedIsland.Domain.Defs.PropertyDef.stages
+  nameWithType: PropertyDef.stages
 - uid: UnmappedIsland.Domain.Defs.PropertyDelta
   name: PropertyDelta
   href: UnmappedIsland.Domain.Defs.PropertyDelta.html
@@ -2951,19 +2904,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.PropertyValue.AvailableToTransferOut
   nameWithType: PropertyValue.AvailableToTransferOut
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.CheckRangeEvents(UnmappedIsland.Domain.Runtime.WorldSession)
-  name: CheckRangeEvents(WorldSession)
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_CheckRangeEvents_UnmappedIsland_Domain_Runtime_WorldSession_
-  commentId: M:UnmappedIsland.Domain.Runtime.PropertyValue.CheckRangeEvents(UnmappedIsland.Domain.Runtime.WorldSession)
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.CheckRangeEvents(UnmappedIsland.Domain.Runtime.WorldSession)
-  nameWithType: PropertyValue.CheckRangeEvents(WorldSession)
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.CheckRangeEvents*
-  name: CheckRangeEvents
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_CheckRangeEvents_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.PropertyValue.CheckRangeEvents
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.CheckRangeEvents
-  nameWithType: PropertyValue.CheckRangeEvents
 - uid: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(System.Int32)
   name: CopyValueFrom(int)
   href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_CopyValueFrom_System_Int32_
@@ -2980,22 +2920,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom
   nameWithType: PropertyValue.CopyValueFrom
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.Create(System.Int32,UnmappedIsland.Domain.Defs.PropertyDef,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: Create(int, PropertyDef, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_Create_System_Int32_UnmappedIsland_Domain_Defs_PropertyDef_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.PropertyValue.Create(System.Int32,UnmappedIsland.Domain.Defs.PropertyDef,UnmappedIsland.Domain.Runtime.WorldObject)
-  name.vb: Create(Integer, PropertyDef, WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.Create(int, UnmappedIsland.Domain.Defs.PropertyDef, UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName.vb: UnmappedIsland.Domain.Runtime.PropertyValue.Create(Integer, UnmappedIsland.Domain.Defs.PropertyDef, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: PropertyValue.Create(int, PropertyDef, WorldObject)
-  nameWithType.vb: PropertyValue.Create(Integer, PropertyDef, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.Create*
-  name: Create
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_Create_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.PropertyValue.Create
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.Create
-  nameWithType: PropertyValue.Create
 - uid: UnmappedIsland.Domain.Runtime.PropertyValue.GetEffectiveValue
   name: GetEffectiveValue()
   href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_GetEffectiveValue
@@ -3816,15 +3740,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Runtime.WorldObject
   fullName: UnmappedIsland.Domain.Runtime.WorldObject
   nameWithType: WorldObject
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.#ctor(System.Int32,UnmappedIsland.Domain.Defs.ObjectDef)
-  name: WorldObject(int, ObjectDef)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject__ctor_System_Int32_UnmappedIsland_Domain_Defs_ObjectDef_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.#ctor(System.Int32,UnmappedIsland.Domain.Defs.ObjectDef)
-  name.vb: New(Integer, ObjectDef)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.WorldObject(int, UnmappedIsland.Domain.Defs.ObjectDef)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.New(Integer, UnmappedIsland.Domain.Defs.ObjectDef)
-  nameWithType: WorldObject.WorldObject(int, ObjectDef)
-  nameWithType.vb: WorldObject.New(Integer, ObjectDef)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.#ctor(System.Int32,UnmappedIsland.Domain.Defs.ObjectDef,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: WorldObject(int, ObjectDef, WorldSession)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject__ctor_System_Int32_UnmappedIsland_Domain_Defs_ObjectDef_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.#ctor(System.Int32,UnmappedIsland.Domain.Defs.ObjectDef,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: New(Integer, ObjectDef, WorldSession)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.WorldObject(int, UnmappedIsland.Domain.Defs.ObjectDef, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.New(Integer, UnmappedIsland.Domain.Defs.ObjectDef, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: WorldObject.WorldObject(int, ObjectDef, WorldSession)
+  nameWithType.vb: WorldObject.New(Integer, ObjectDef, WorldSession)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.#ctor*
   name: WorldObject
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject__ctor_

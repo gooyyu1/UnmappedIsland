@@ -246,7 +246,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PropertyDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.PropertyDefs の1要素として、\nローカルIDをそのままindexとする密配列に格納される。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"4\">同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、\n定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、\nローカルIDをそのままindexとする密配列に格納される。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"4\">同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、\n定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -386,7 +386,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SlotDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SlotDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのスロットの定義（GameElementDefinition.md 7.1〜7.4節）。\nObjectDef.SlotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SlotDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのスロットの定義（GameElementDefinition.md 7.1〜7.4節）。\nObjectDef.slotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -526,7 +526,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.PropertyValue",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"1\">props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値として使う。\nPassiveEffectの影響先は\n「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、\nいずれもWorldObjectではなくこの値自身が持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"6\">値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。\nWorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない\n（自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef\n（range・on_overflow等）と、それを保持するWorldObject（on_overflow等の適用先解決に使う）は、\nいずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに引数で受け取り直す\nことはしない。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"1\">props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値として使う。\nPassiveEffectの影響先は\n「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、\nいずれもWorldObjectではなくこの値自身が持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"6\">値の変更（Add/SetNumber）はこのクラス自身が完結して行い、値が変わった直後に、自分のPropertyDefへ\nrangeイベントの判定を委譲する（def.CheckRangeEvents）。どのon_*をいつ発火するかという規則はrange・\non_*の定義を持つPropertyDef本人の責務であり、こちらは「値が変わった」とだけ通知する（自分のことは\n自分でする、というOOPの原則。CLAUDE.md参照）。WorldObjectはローカルID解決のみを担い、値の変更に\n伴って何を判定・実行すべきかには一切関与しない。判定の委譲先である自分自身のPropertyDefと、その適用先\nとなるWorldObjectは、いずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに\n引数で受け取り直すことはしない。</p>\n"
     },
     {
       "type": "ManagedReference",
