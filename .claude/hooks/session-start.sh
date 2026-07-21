@@ -11,12 +11,20 @@
 #
 # 冪等（SDK が既にあれば何もしない）・非対話。既定では Claude Code on the web
 # （CLAUDE_CODE_REMOTE=true）でのみ実体処理を行う。
+#
+# 非同期モード: 先頭で async 宣言を出力し、以降の重い処理（SDK 導入・restore）を
+# セッション開始と並行してバックグラウンドで走らせる。起動待ちが無くなる代わりに、
+# 準備完了前に dotnet を使おうとしうる競合があるため、後続の `dotnet test` 実行時に
+# まだ導入中なら少し待つ想定（初回のみ）。
 set -euo pipefail
 
 # --- web(remote) 以外では何もしない -------------------------------------------
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
+
+# 非同期実行を宣言（この行以降はバックグラウンドで実行される）。
+echo '{"async": true, "asyncTimeout": 600000}'
 
 REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 
