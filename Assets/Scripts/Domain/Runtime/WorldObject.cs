@@ -53,7 +53,7 @@ namespace UnmappedIsland.Domain.Runtime
 
             foreach (var c in def.Passives)
             {
-                if (c.Target != PassiveEffectTarget.Self) continue;
+                if (c.Target != ReferenceRoot.Self) continue;
                 int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
@@ -317,7 +317,7 @@ namespace UnmappedIsland.Domain.Runtime
         {
             foreach (var c in Def.Passives)
             {
-                if (c.Target != PassiveEffectTarget.Parent) continue;
+                if (c.Target != ReferenceRoot.Parent) continue;
                 int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 parent.RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
@@ -325,7 +325,7 @@ namespace UnmappedIsland.Domain.Runtime
 
             foreach (var c in parent.Def.Passives)
             {
-                if (c.Target != PassiveEffectTarget.Child) continue;
+                if (c.Target != ReferenceRoot.Child) continue;
                 int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: parent, slotBearer: this, def: c));
@@ -336,7 +336,7 @@ namespace UnmappedIsland.Domain.Runtime
         {
             foreach (var c in Def.Passives)
             {
-                if (c.Target != PassiveEffectTarget.Parent) continue;
+                if (c.Target != ReferenceRoot.Parent) continue;
                 int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 parent.UnregisterPassiveEffectsFrom(this, local);
@@ -344,7 +344,7 @@ namespace UnmappedIsland.Domain.Runtime
 
             foreach (var c in parent.Def.Passives)
             {
-                if (c.Target != PassiveEffectTarget.Child) continue;
+                if (c.Target != ReferenceRoot.Child) continue;
                 int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
                 if (local == LocalIndexMap.Missing) continue;
                 UnregisterPassiveEffectsFrom(parent, local);
@@ -379,7 +379,7 @@ namespace UnmappedIsland.Domain.Runtime
         {
             foreach (var c in Def.Passives)
             {
-                if (c.Target != PassiveEffectTarget.Ancestor) continue;
+                if (c.Target != ReferenceRoot.Ancestor) continue;
 
                 if (ancestorRegistrations.TryGetValue(c, out WorldObject previous) && previous != null)
                 {
