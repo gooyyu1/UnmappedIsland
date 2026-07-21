@@ -63,8 +63,8 @@ namespace UnmappedIsland.StreamingAssets
 
             // 栄養カテゴリはtickごとに減衰する（characters.yaml参照）ため、加算量だけを検証したい。
             // 一旦0まで下げてから食べさせ、増分だけを見る。
-            character.SetProperty(satietyId, PropertyValue.FromNumber(0));
-            character.SetProperty(nutritionId, PropertyValue.FromNumber(0));
+            character.SetProperty(satietyId, 0);
+            character.SetProperty(nutritionId, 0);
 
             Assert.That(InteractionExecutor.TryExecuteAction(food, character, "eat", session), Is.True);
 

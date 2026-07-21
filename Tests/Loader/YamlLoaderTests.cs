@@ -897,7 +897,7 @@ object_defs:
                 "self(empty)とdragged(water)のcontentが異なるので不成立");
 
             int contentId = codex.PropertyNames.GetId("content");
-            bottle.SetProperty(contentId, PropertyValue.FromNumber(codex.SymbolNames.GetId("water")));
+            bottle.SetProperty(contentId, codex.SymbolNames.GetId("water"));
             Assert.That(InteractionExecutor.TryExecuteCombination(bottle, sameContent, null, "pour_in", session), Is.True,
                 "selfとdraggedのcontentが同じ(water)なので成立");
         }
@@ -1053,7 +1053,7 @@ object_defs:
             Assert.That(logInstance.GetEffectiveValue(warmthId), Is.EqualTo(0),
                 "fuel_slotには入っているが、heatがunlitステージのためボーナスなし");
 
-            campfireInstance.SetProperty(heatId, PropertyValue.FromNumber(1));
+            campfireInstance.SetProperty(heatId, 1);
             Assert.That(logInstance.GetEffectiveValue(warmthId), Is.EqualTo(5),
                 "litステージかつfuel_slot条件の両方を満たすのでボーナスが乗る");
 
@@ -1246,7 +1246,7 @@ object_defs:
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, clock);
-            instance.SetProperty(codex.PropertyNames.GetId("minute"), PropertyValue.FromNumber(60)); // 手動で溢れさせる
+            instance.SetProperty(codex.PropertyNames.GetId("minute"), 60); // 手動で溢れさせる
             instance.Tick(session); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
 
             Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(0));
@@ -1290,7 +1290,7 @@ object_defs:
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, gauge);
-            instance.SetProperty(codex.PropertyNames.GetId("value"), PropertyValue.FromNumber(150));
+            instance.SetProperty(codex.PropertyNames.GetId("value"), 150);
             instance.Tick(session);
 
             Assert.That(instance.GetNumber(codex.PropertyNames.GetId("value")), Is.EqualTo(100), "既定のon_overflowにより100へクランプされる");
@@ -1357,7 +1357,7 @@ object_defs:
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, clock);
-            instance.SetProperty(codex.PropertyNames.GetId("minute"), PropertyValue.FromNumber(-10)); // 手動で下回らせる
+            instance.SetProperty(codex.PropertyNames.GetId("minute"), -10); // 手動で下回らせる
             instance.Tick(session);
 
             Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(50));
@@ -1382,7 +1382,7 @@ object_defs:
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, gauge);
-            instance.SetProperty(codex.PropertyNames.GetId("value"), PropertyValue.FromNumber(-50));
+            instance.SetProperty(codex.PropertyNames.GetId("value"), -50);
             instance.Tick(session);
 
             Assert.That(instance.GetNumber(codex.PropertyNames.GetId("value")), Is.EqualTo(0), "既定のon_shortfallにより0へクランプされる");

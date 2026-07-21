@@ -70,7 +70,7 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>登録済みのIncoming（modify/accumulate）はそのまま、値の中身だけを差し替える。</summary>
-        public void SetProperty(int globalPropertyId, PropertyValue value)
+        public void SetProperty(int globalPropertyId, int value)
         {
             int local = Def.PropertyLayout.ToLocal(globalPropertyId);
             if (local == LocalIndexMap.Missing)
@@ -80,7 +80,7 @@ namespace UnmappedIsland.Domain.Runtime
 
         public int GetNumber(int globalPropertyId, int fallback = 0)
         {
-            return TryGetProperty(globalPropertyId, out var v) ? v.AsNumber() : fallback;
+            return TryGetProperty(globalPropertyId, out var v) ? v.Number : fallback;
         }
 
         /// <summary>interaction/stack判定の代表として採用する、represented_by先の最初の子を返す。
@@ -673,7 +673,7 @@ namespace UnmappedIsland.Domain.Runtime
             foreach (var propertyDef in other.Def.EnumeratePropertyDefs())
             {
                 if (!TryGetProperty(propertyDef.GlobalId, out PropertyValue value)) continue;
-                other.SetProperty(propertyDef.GlobalId, PropertyValue.FromNumber(value.AsNumber()));
+                other.SetProperty(propertyDef.GlobalId, value.Number);
             }
         }
 

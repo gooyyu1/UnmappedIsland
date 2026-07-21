@@ -90,6 +90,30 @@ object_defs:
         }
 
         [Test]
+        public void SetProperty_ReplacesRawValue_AndKeepsRegisteredIncomingEffects()
+        {
+            const string yaml = @"
+object_defs:
+  torch:
+    props:
+      brightness:
+        value: 1
+    passives:
+      - modify:
+          self:
+            brightness: 2
+";
+            var codex = Load(yaml);
+            int brightnessId = codex.PropertyNames.GetId("brightness");
+            WorldObject instance = Spawn(codex, "torch");
+
+            instance.SetProperty(brightnessId, 10);
+
+            Assert.That(instance.GetNumber(brightnessId), Is.EqualTo(10), "生値だけを差し替える");
+            Assert.That(instance.GetEffectiveValue(brightnessId), Is.EqualTo(12), "既存のincoming（modify）は維持される");
+        }
+
+        [Test]
         public void Modify_Parent_WhenSlot_AppliesOnlyWhileInThatSlot()
         {
             const string yaml = @"
@@ -224,7 +248,7 @@ object_defs:
 
             Assert.That(instance.GetEffectiveValue(outputId), Is.EqualTo(15), "chargeが満タンなのでfullステージのボーナスが乗る");
 
-            instance.SetProperty(chargeId, PropertyValue.FromNumber(10));
+            instance.SetProperty(chargeId, 10);
 
             Assert.That(instance.GetEffectiveValue(outputId), Is.EqualTo(5), "chargeがlowステージへ落ちたのでボーナスが消える（再登録なし）");
         }
@@ -439,7 +463,7 @@ object_defs:
             characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(36), "progressがnoneの間は上がらない");
 
-            infectionInstance.SetProperty(progressId, PropertyValue.FromNumber(30));
+            infectionInstance.SetProperty(progressId, 30);
             characterInstance.Tick(session);
             Assert.That(characterInstance.GetEffectiveValue(temperatureId), Is.EqualTo(37), "mildへ遷移した後は毎Tick上がる（再登録なし）");
         }

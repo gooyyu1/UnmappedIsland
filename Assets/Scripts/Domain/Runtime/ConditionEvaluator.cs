@@ -34,11 +34,10 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
-        /// 生の値（PropertyValue.AsNumber）ではなく実効値（GetEffectiveValue、8.3節のmodifyを加味した値）を
+        /// 生の値（PropertyValue.Number）ではなく実効値（GetEffectiveValue、8.3節のmodifyを加味した値）を
         /// 見る。これにより、modifyだけで決まる派生プロパティ（例: weather/hourから決まるsunlight）を
-        /// 他のconditionsから参照できる。比較対象のnode.Values側はYAML上のリテラル値（PropertyValue.FromNumber
-        /// 生成、defを持たない）なので、そちらは引き続きAsNumberで読む（GetEffectiveValueはdef.Rangeを
-        /// 参照するため、defを持たないリテラル側では呼べない）。ValueRefが非nullの場合はリテラルの代わりに、
+        /// 他のconditionsから参照できる。比較対象のnode.Values側はYAML上の数値リテラル（defを持たない）なので、
+        /// そのまま数値として比較する。ValueRefが非nullの場合はリテラルの代わりに、
         /// その参照先の実効値を比較対象にする（ResolvePropertyEffectiveValueを、比較元・比較先の両方に
         /// 共通で使う）。in/not_inはValueRefを持たない（ロード時に弾く）。
         ///
@@ -52,8 +51,8 @@ namespace UnmappedIsland.Domain.Runtime
             if (currentValue == null) return false;
             int current = currentValue.Value;
 
-            if (node.Op == ConditionOp.In) return node.Values.Any(v => current == v.AsNumber());
-            if (node.Op == ConditionOp.NotIn) return !node.Values.Any(v => current == v.AsNumber());
+            if (node.Op == ConditionOp.In) return node.Values.Any(v => current == v);
+            if (node.Op == ConditionOp.NotIn) return !node.Values.Any(v => current == v);
 
             int compare;
             if (node.ValueRef.HasValue)
@@ -64,7 +63,7 @@ namespace UnmappedIsland.Domain.Runtime
             }
             else
             {
-                compare = node.Values[0].AsNumber();
+                compare = node.Values[0];
             }
 
             switch (node.Op)

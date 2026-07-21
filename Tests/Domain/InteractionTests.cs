@@ -273,7 +273,7 @@ object_defs:
 
             var session = new WorldSession(codex);
             WorldObject actor = Spawn(codex, "player4");
-            actor.SetProperty(luckId, PropertyValue.FromNumber(1000)); // 2番目(重み0固定)を圧倒する
+            actor.SetProperty(luckId, 1000); // 2番目(重み0固定)を圧倒する
             WorldObject bowInstance = Spawn(codex, "bow");
 
             InteractionExecutor.TryExecuteAction(bowInstance, actor, "shoot", session);
@@ -356,8 +356,8 @@ object_defs:
             WorldObject source = Spawn(codex, "source");
             WorldObject receiverLiquid = Spawn(codex, "water_liquid");
             WorldObject sourceLiquid = Spawn(codex, "water_liquid");
-            receiverLiquid.SetProperty(amountId, PropertyValue.FromNumber(1));
-            sourceLiquid.SetProperty(amountId, PropertyValue.FromNumber(5));
+            receiverLiquid.SetProperty(amountId, 1);
+            sourceLiquid.SetProperty(amountId, 5);
             receiverLiquid.MoveToSlot(receiver, contentSlotId, codex.WellKnown, out _);
             sourceLiquid.MoveToSlot(source, contentSlotId, codex.WellKnown, out _);
 
@@ -500,7 +500,7 @@ object_defs:
             Assert.That(InteractionExecutor.TryExecuteCombination(woodInstance, axeInstance, null, "chop", session), Is.False,
                 "durabilityが0(gt 0を満たさない)なので実行されない");
 
-            axeInstance.SetProperty(durabilityId, PropertyValue.FromNumber(1));
+            axeInstance.SetProperty(durabilityId, 1);
             Assert.That(InteractionExecutor.TryExecuteCombination(woodInstance, axeInstance, null, "chop", session), Is.True);
         }
     }

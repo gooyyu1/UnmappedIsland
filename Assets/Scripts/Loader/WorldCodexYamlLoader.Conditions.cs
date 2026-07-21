@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnmappedIsland.Domain.Defs;
-using UnmappedIsland.Domain.Runtime;
 using YamlDotNet.RepresentationModel;
 
 namespace UnmappedIsland.Loader
@@ -206,7 +205,7 @@ namespace UnmappedIsland.Loader
                 return ConditionNode.Property(root, PropertyNames.Intern(propName), op, values: null, valueRef: valueRef);
             }
 
-            List<PropertyValue> values = ParseConditionValues(context, op, valueNode);
+            List<int> values = ParseConditionValues(context, op, valueNode);
             return ConditionNode.Property(root, PropertyNames.Intern(propName), op, values);
         }
 
@@ -226,7 +225,7 @@ namespace UnmappedIsland.Loader
             }
         }
 
-        private List<PropertyValue> ParseConditionValues(string context, ConditionOp op, YamlNode valueNode)
+        private List<int> ParseConditionValues(string context, ConditionOp op, YamlNode valueNode)
         {
             bool isList = op == ConditionOp.In || op == ConditionOp.NotIn;
 
@@ -240,16 +239,16 @@ namespace UnmappedIsland.Loader
             if (!(valueNode is YamlScalarNode scalar))
                 throw new YamlLoadException($"{context}: valueはスカラー値である必要があります。");
 
-            return new List<PropertyValue> { ParseConditionScalar(context, scalar.Value) };
+            return new List<int> { ParseConditionScalar(context, scalar.Value) };
         }
 
-        private PropertyValue ParseConditionScalar(string context, string raw)
+        private int ParseConditionScalar(string context, string raw)
         {
             if (raw == "max" || raw == "min")
                 throw new YamlLoadException(
                     $"{context}: value '{raw}' は未対応です（参照先プロパティのrangeの{raw}を指す規約がまだ確定していないため）。");
 
-            return PropertyValue.FromNumber(ParseScalarNumber(context, raw));
+            return ParseScalarNumber(context, raw);
         }
     }
 }

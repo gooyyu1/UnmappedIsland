@@ -58,11 +58,11 @@ object_defs:
             WorldObject groundInstance = Spawn(codex, "ground");
 
             WorldObject log10 = Spawn(codex, "log");
-            log10.SetProperty(lifeId, PropertyValue.FromNumber(10));
+            log10.SetProperty(lifeId, 10);
             WorldObject log5 = Spawn(codex, "log");
-            log5.SetProperty(lifeId, PropertyValue.FromNumber(5));
+            log5.SetProperty(lifeId, 5);
             WorldObject log20 = Spawn(codex, "log");
-            log20.SetProperty(lifeId, PropertyValue.FromNumber(20));
+            log20.SetProperty(lifeId, 20);
 
             log10.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
             log5.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
@@ -193,7 +193,7 @@ object_defs:
             cInstance.MoveToSlot(locInstance, pileSlotId, session.Codex.WellKnown, out _);
 
             // bInstance1 は on_min が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
-            bInstance1.SetProperty(lifeId, PropertyValue.FromNumber(5));
+            bInstance1.SetProperty(lifeId, 5);
 
             locInstance.Tick(session);
 
@@ -473,7 +473,7 @@ object_defs:
 
             potato1.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
             potato2.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
-            potato1.SetProperty(freshnessId, PropertyValue.FromNumber(5));
+            potato1.SetProperty(freshnessId, 5);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand5);
             int potatoGridIndex = hand5.GetGridIndex(potatoId).Value;
@@ -560,18 +560,18 @@ object_defs:
             Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(2));
 
             // --- Cが生まれる: 期待 A(0) C(1) B(2) _(3) ---
-            aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(0));
+            aInstance.SetProperty(spawnCId, 0);
             handInstance.Tick(session);
-            aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(1)); // 再発火を防ぐ
+            aInstance.SetProperty(spawnCId, 1); // 再発火を防ぐ
 
             Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
             Assert.That(hand6.GetGridIndex(cTypeId), Is.EqualTo(1), "空いている1番へそのまま入る（ずれ無し）");
             Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(2), "Bの番号は変わらない");
 
             // --- Dが生まれる: 期待 A(0) D(1) C(2) B(3) ---
-            aInstance.SetProperty(spawnDId, PropertyValue.FromNumber(0));
+            aInstance.SetProperty(spawnDId, 0);
             handInstance.Tick(session);
-            aInstance.SetProperty(spawnDId, PropertyValue.FromNumber(1));
+            aInstance.SetProperty(spawnDId, 1);
 
             Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
             Assert.That(hand6.GetGridIndex(dTypeId), Is.EqualTo(1), "Dは1番に割り込む");
@@ -584,7 +584,7 @@ object_defs:
                 "Contentsの並び順もA D C Bになっている");
 
             // --- Eが生まれる: 4枠すべて埋まっており入る場所が無いのでfallback ---
-            aInstance.SetProperty(spawnEId, PropertyValue.FromNumber(0));
+            aInstance.SetProperty(spawnEId, 0);
             handInstance.Tick(session);
 
             Assert.That(hand6.Contents.Any(o => o.Def.Name == "type_e3"), Is.False, "handには入らない");
@@ -692,16 +692,16 @@ object_defs:
             Assert.That(hand8.TrySetManualPosition(bTypeId, 3), Is.True);
 
             // --- Cが生まれる: 期待 _ C A B ---
-            aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(0));
+            aInstance.SetProperty(spawnCId, 0);
             handInstance.Tick(session);
-            aInstance.SetProperty(spawnCId, PropertyValue.FromNumber(1));
+            aInstance.SetProperty(spawnCId, 1);
 
             Assert.That(hand8.GetGridIndex(cTypeId), Is.EqualTo(1), "右(3番)はBで埋まっているため、左の空き(1番)へ入る");
             Assert.That(hand8.GetGridIndex(aTypeId), Is.EqualTo(2), "Aの番号は変わらない");
             Assert.That(hand8.GetGridIndex(bTypeId), Is.EqualTo(3), "Bの番号も変わらない");
 
             // --- Dが生まれる: 期待 C A D B ---
-            bInstance.SetProperty(spawnDId, PropertyValue.FromNumber(0));
+            bInstance.SetProperty(spawnDId, 0);
             handInstance.Tick(session);
 
             Assert.That(hand8.GetGridIndex(cTypeId), Is.EqualTo(0), "Cはさらに左へ押し出される");
@@ -769,7 +769,7 @@ object_defs:
 
             // Bから(destroyなしで)Dが生まれる: 右(4番)は存在せず、左は「A(2)」で埋まっているため、
             // さらに左の空き(0番)まで探し、C・Aをそれぞれ1つずつ左へ押し出してDが2番に割り込む。
-            bInstance.SetProperty(spawnDId, PropertyValue.FromNumber(0));
+            bInstance.SetProperty(spawnDId, 0);
             handInstance.Tick(session);
 
             Assert.That(hand9.GetGridIndex(cTypeId), Is.EqualTo(0), "Cのスタックごと左へ押し出される");
