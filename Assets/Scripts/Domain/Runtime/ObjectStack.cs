@@ -44,9 +44,22 @@ namespace UnmappedIsland.Domain.Runtime
         public bool Matches(WorldObject candidate) =>
             candidate.Def.GlobalId == Def.GlobalId && candidate.HasRepresentationChain(RepresentationChain);
 
-        /// <summary>ObjectDef.StackOrderに従って、自分のMembers内の正しい位置へobjを挿入する
-        /// （未定義なら常に末尾＝挿入順、Slot.IndexWithinRunの元のロジックをそのまま踏襲）。</summary>
-        public void Insert(WorldObject obj) => members.Insert(ComputeInsertionIndex(obj), obj);
+        /// <summary>
+        /// objがこのスタックへ合流できる（Matches: ObjectDef・代表ObjectDef列が一致）場合のみ、
+        /// ObjectDef.StackOrderに従って自分のMembers内の正しい位置へ挿入し、trueを返す（並び順が未定義なら
+        /// 常に末尾＝挿入順、Slot.IndexWithinRunの元のロジックをそのまま踏襲）。
+        ///
+        /// 合流できないオブジェクト（ObjectDef違い・代表列違い＝別スタックになるべきもの）を無理やり
+        /// 押し込む事故を防ぐため、Matchesを満たさない場合は何もせずfalseを返す。「このオブジェクトを自分へ
+        /// 入れてよいか」の判断はスタック自身の不変条件（同種のみが積み重なる）に属するため、呼び出し側が
+        /// 事前に確認済みかどうかに依存せず、このメソッド自身が最後の砦として保証する。
+        /// </summary>
+        public bool TryInsert(WorldObject obj)
+        {
+            if (!Matches(obj)) return false;
+            members.Insert(ComputeInsertionIndex(obj), obj);
+            return true;
+        }
 
         public void Remove(WorldObject obj) => members.Remove(obj);
 

@@ -101,8 +101,10 @@ namespace UnmappedIsland.Domain.Runtime
         {
             if (!Def.Stackable) { stacks.Add(new ObjectStack(obj)); return; }
 
+            // 合流できる既存スタックがあればそこへ。TryInsertはMatchesを満たさない相手を弾くため、
+            // 万一合致しないスタックが返っても無理に押し込まれず、新規スタック生成へフォールバックする。
             ObjectStack existing = FindMatchingStack(obj);
-            if (existing != null) { existing.Insert(obj); return; }
+            if (existing != null && existing.TryInsert(obj)) return;
 
             InsertNewStack(new ObjectStack(obj));
         }
