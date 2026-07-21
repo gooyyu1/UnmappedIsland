@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
@@ -515,7 +517,17 @@ object_defs:
         // ------------------------------------------------------------------
 
         private static ActionDef ActionOf(ObjectDef def, string name) => def.Actions.Single(a => a.Name == name);
+        private static ConditionNode ActionConditionsOf(ActionDef action) => ReadPrivateProperty<ConditionNode>(action, "Conditions");
+        private static ActiveEffect ActionActiveOf(ActionDef action) => ReadPrivateProperty<ActiveEffect>(action, "Active");
+        private static IReadOnlyList<PickCandidateDef> ActionPickOf(ActionDef action) => ReadPrivateProperty<IReadOnlyList<PickCandidateDef>>(action, "Pick");
         private static CombinationDef CombinationOf(ObjectDef def, string name) => def.Combinations.Single(c => c.Name == name);
+
+        private static T ReadPrivateProperty<T>(object target, string propertyName)
+        {
+            PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(property, Is.Not.Null, $"{target.GetType().Name}.{propertyName} が見つかりません。");
+            return (T)property.GetValue(target);
+        }
 
         [Test]
         public void Load_ParsesActionWithConditionsAndActive()
@@ -544,9 +556,10 @@ object_defs:
 
             ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
             ActionDef eat = ActionOf(apple, "eat");
-            Assert.That(eat.Active, Is.Not.Null);
-            Assert.That(eat.Active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
-            Assert.That(eat.Active.Destroy, Contains.Item(ReferenceRoot.Self));
+            ActiveEffect active = ActionActiveOf(eat);
+            Assert.That(active, Is.Not.Null);
+            Assert.That(active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
+            Assert.That(active.Destroy, Contains.Item(ReferenceRoot.Self));
 
             int satietyId = codex.PropertyNames.GetId("satiety");
             var session = new WorldSession(codex);
@@ -587,13 +600,14 @@ object_defs:
 
             ObjectDef flask = codex.Objects.Get(codex.ObjectNames.GetId("flask"));
             ActionDef use = ActionOf(flask, "use");
+            ActiveEffect active = ActionActiveOf(use);
 
-            Assert.That(use.Active.Spawns.Count, Is.EqualTo(2));
-            Assert.That(use.Active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("steam")));
-            Assert.That(use.Active.Spawns[1].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("smell")));
-            Assert.That(use.Active.Transfers.Count, Is.EqualTo(2));
-            Assert.That(use.Active.Transfers[0].Amount, Is.EqualTo(100));
-            Assert.That(use.Active.Transfers[1].Amount, Is.EqualTo(200));
+            Assert.That(active.Spawns.Count, Is.EqualTo(2));
+            Assert.That(active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("steam")));
+            Assert.That(active.Spawns[1].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("smell")));
+            Assert.That(active.Transfers.Count, Is.EqualTo(2));
+            Assert.That(active.Transfers[0].Amount, Is.EqualTo(100));
+            Assert.That(active.Transfers[1].Amount, Is.EqualTo(200));
         }
 
         [Test]
@@ -615,9 +629,11 @@ object_defs:
 
             ObjectDef weapon = codex.Objects.Get(codex.ObjectNames.GetId("weapon"));
             ActionDef attack = ActionOf(weapon, "attack");
+            ActiveEffect active = ActionActiveOf(attack);
+            IReadOnlyList<PickCandidateDef> pick = ActionPickOf(attack);
 
-            Assert.That(attack.Active, Is.Null);
-            Assert.That(attack.Pick.Count, Is.EqualTo(2));
+            Assert.That(active, Is.Null);
+            Assert.That(pick.Count, Is.EqualTo(2));
         }
 
         [Test]
@@ -680,7 +696,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
-            Assert.That(ActionOf(berry, "eat").Active.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(ActionActiveOf(ActionOf(berry, "eat")).Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
