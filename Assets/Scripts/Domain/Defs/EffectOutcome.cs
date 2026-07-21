@@ -36,28 +36,29 @@ namespace UnmappedIsland.Domain.Defs
             if (active != null) return active;
             if (pick == null || pick.Count == 0) return null;
 
-            PickCandidateDef chosen = SelectWeighted(pick, self, actor, dragged, session);
+            PickCandidateDef chosen = SelectWeighted(self, actor, dragged, session);
             return chosen.Outcome.Resolve(self, actor, dragged, session);
         }
 
-        private static PickCandidateDef SelectWeighted(
-            IReadOnlyList<PickCandidateDef> candidates, WorldObject self, WorldObject actor, WorldObject dragged, WorldSession session)
+        /// <summary>自分のpick候補群を、それぞれのweightで重み付き抽選して1つ選ぶ。Resolveが事前に
+        /// pickの非null・非空を保証してから呼ぶ。</summary>
+        private PickCandidateDef SelectWeighted(WorldObject self, WorldObject actor, WorldObject dragged, WorldSession session)
         {
-            if (candidates.Count == 1) return candidates[0];
+            if (pick.Count == 1) return pick[0];
 
-            var weights = candidates.Select(c => Math.Max(0, c.ResolveWeight(self, actor, dragged))).ToList();
+            var weights = pick.Select(c => Math.Max(0, c.ResolveWeight(self, actor, dragged))).ToList();
             double total = weights.Sum();
-            if (total <= 0) return candidates[0];
+            if (total <= 0) return pick[0];
 
             double roll = session.Rng.NextDouble() * total;
             double cumulative = 0;
-            for (int i = 0; i < candidates.Count; i++)
+            for (int i = 0; i < pick.Count; i++)
             {
                 cumulative += weights[i];
-                if (roll < cumulative) return candidates[i];
+                if (roll < cumulative) return pick[i];
             }
 
-            return candidates[candidates.Count - 1];
+            return pick[pick.Count - 1];
         }
     }
 }
