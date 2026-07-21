@@ -244,6 +244,18 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.AddEffect.amount
   fullName: UnmappedIsland.Domain.Defs.AddEffect.amount
   nameWithType: AddEffect.amount
+- uid: UnmappedIsland.Domain.Defs.AddEffect.propertyGlobalId
+  name: propertyGlobalId
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_propertyGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.AddEffect.propertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.propertyGlobalId
+  nameWithType: AddEffect.propertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.AddEffect.target
+  name: target
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_target
+  commentId: F:UnmappedIsland.Domain.Defs.AddEffect.target
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.target
+  nameWithType: AddEffect.target
 - uid: UnmappedIsland.Domain.Defs.CombinationDef
   name: CombinationDef
   href: UnmappedIsland.Domain.Defs.CombinationDef.html
@@ -1329,6 +1341,35 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PassiveEffect.ActiveAmount
   nameWithType: PassiveEffect.ActiveAmount
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.Register(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Register(WorldObject, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_Register_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffect.Register(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.Register(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: PassiveEffect.Register(WorldObject, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.Register*
+  name: Register
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_Register_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffect.Register
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.Register
+  nameWithType: PassiveEffect.Register
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterChild(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name: RegisterChild(WorldObject, WorldObject, bool)
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_RegisterChild_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffect.RegisterChild(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name.vb: RegisterChild(WorldObject, WorldObject, Boolean)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterChild(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, bool)
+  fullName.vb: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterChild(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, Boolean)
+  nameWithType: PassiveEffect.RegisterChild(WorldObject, WorldObject, bool)
+  nameWithType.vb: PassiveEffect.RegisterChild(WorldObject, WorldObject, Boolean)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterChild*
+  name: RegisterChild
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_RegisterChild_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffect.RegisterChild
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterChild
+  nameWithType: PassiveEffect.RegisterChild
 - uid: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue,UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect)
   name: RegisterInto(PropertyValue, RegisteredPassiveEffect)
   href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_
@@ -1342,32 +1383,44 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterInto
   nameWithType: PassiveEffect.RegisterInto
-- uid: UnmappedIsland.Domain.Defs.PassiveEffect.Target
-  name: Target
-  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_Target
-  commentId: P:UnmappedIsland.Domain.Defs.PassiveEffect.Target
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.Target
-  nameWithType: PassiveEffect.Target
-- uid: UnmappedIsland.Domain.Defs.PassiveEffect.Target*
-  name: Target
-  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_Target_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffect.Target
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Boolean)
+  name: RegisterRelation(WorldObject, ReferenceRoot, bool)
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_RegisterRelation_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Boolean)
+  name.vb: RegisterRelation(WorldObject, ReferenceRoot, Boolean)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Defs.ReferenceRoot, bool)
+  fullName.vb: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Defs.ReferenceRoot, Boolean)
+  nameWithType: PassiveEffect.RegisterRelation(WorldObject, ReferenceRoot, bool)
+  nameWithType.vb: PassiveEffect.RegisterRelation(WorldObject, ReferenceRoot, Boolean)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name: RegisterRelation(WorldObject, ReferenceRoot, WorldObject, bool)
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_RegisterRelation_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name.vb: RegisterRelation(WorldObject, ReferenceRoot, WorldObject, Boolean)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject, bool)
+  fullName.vb: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject, Boolean)
+  nameWithType: PassiveEffect.RegisterRelation(WorldObject, ReferenceRoot, WorldObject, bool)
+  nameWithType.vb: PassiveEffect.RegisterRelation(WorldObject, ReferenceRoot, WorldObject, Boolean)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation*
+  name: RegisterRelation
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_RegisterRelation_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.Target
-  nameWithType: PassiveEffect.Target
-- uid: UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId
-  name: TargetPropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_TargetPropertyGlobalId
-  commentId: P:UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId
-  nameWithType: PassiveEffect.TargetPropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId*
-  name: TargetPropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_TargetPropertyGlobalId_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.RegisterRelation
+  nameWithType: PassiveEffect.RegisterRelation
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.Unregister(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Unregister(WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_Unregister_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffect.Unregister(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.Unregister(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: PassiveEffect.Unregister(WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.Unregister*
+  name: Unregister
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_Unregister_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffect.Unregister
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.TargetPropertyGlobalId
-  nameWithType: PassiveEffect.TargetPropertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.Unregister
+  nameWithType: PassiveEffect.Unregister
 - uid: UnmappedIsland.Domain.Defs.PassiveEffect.amount
   name: amount
   href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_amount
@@ -1380,6 +1433,18 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.PassiveEffect.gate
   fullName: UnmappedIsland.Domain.Defs.PassiveEffect.gate
   nameWithType: PassiveEffect.gate
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.target
+  name: target
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_target
+  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffect.target
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.target
+  nameWithType: PassiveEffect.target
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.targetPropertyGlobalId
+  name: targetPropertyGlobalId
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect_targetPropertyGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffect.targetPropertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.targetPropertyGlobalId
+  nameWithType: PassiveEffect.targetPropertyGlobalId
 - uid: UnmappedIsland.Domain.Defs.PassiveEffectGate
   name: PassiveEffectGate
   href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html
@@ -1761,57 +1826,6 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.stages
   fullName: UnmappedIsland.Domain.Defs.PropertyDef.stages
   nameWithType: PropertyDef.stages
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation
-  name: PropertyMutation
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html
-  commentId: T:UnmappedIsland.Domain.Defs.PropertyMutation
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation
-  nameWithType: PropertyMutation
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)
-  name: PropertyMutation(ReferenceRoot, int)
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Defs.PropertyMutation.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)
-  name.vb: New(ReferenceRoot, Integer)
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyMutation(UnmappedIsland.Domain.Defs.ReferenceRoot, int)
-  fullName.vb: UnmappedIsland.Domain.Defs.PropertyMutation.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer)
-  nameWithType: PropertyMutation.PropertyMutation(ReferenceRoot, int)
-  nameWithType.vb: PropertyMutation.New(ReferenceRoot, Integer)
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.#ctor*
-  name: PropertyMutation
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation__ctor_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.#ctor
-  isSpec: "True"
-  name.vb: New
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyMutation
-  fullName.vb: UnmappedIsland.Domain.Defs.PropertyMutation.New
-  nameWithType: PropertyMutation.PropertyMutation
-  nameWithType.vb: PropertyMutation.New
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
-  name: PropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
-  nameWithType: PropertyMutation.PropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId*
-  name: PropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
-  nameWithType: PropertyMutation.PropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Target
-  name: Target
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Target
-  commentId: P:UnmappedIsland.Domain.Defs.PropertyMutation.Target
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Target
-  nameWithType: PropertyMutation.Target
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Target*
-  name: Target
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Target_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.Target
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Target
-  nameWithType: PropertyMutation.Target
 - uid: UnmappedIsland.Domain.Defs.PropertyPath
   name: PropertyPath
   href: UnmappedIsland.Domain.Defs.PropertyPath.html
@@ -2093,6 +2107,18 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.SetEffect.ResolveValue
   nameWithType: SetEffect.ResolveValue
+- uid: UnmappedIsland.Domain.Defs.SetEffect.propertyGlobalId
+  name: propertyGlobalId
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_propertyGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.SetEffect.propertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.propertyGlobalId
+  nameWithType: SetEffect.propertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.SetEffect.target
+  name: target
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_target
+  commentId: F:UnmappedIsland.Domain.Defs.SetEffect.target
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.target
+  nameWithType: SetEffect.target
 - uid: UnmappedIsland.Domain.Defs.SetEffect.value
   name: value
   href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_value
@@ -4459,32 +4485,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.PropagateWeightChange
   nameWithType: WorldObject.PropagateWeightChange
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.RefreshAncestorTargetedPassivesRecursively
-  name: RefreshAncestorTargetedPassivesRecursively()
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RefreshAncestorTargetedPassivesRecursively
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.RefreshAncestorTargetedPassivesRecursively
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RefreshAncestorTargetedPassivesRecursively()
-  nameWithType: WorldObject.RefreshAncestorTargetedPassivesRecursively()
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.RefreshAncestorTargetedPassivesRecursively*
-  name: RefreshAncestorTargetedPassivesRecursively
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RefreshAncestorTargetedPassivesRecursively_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.RefreshAncestorTargetedPassivesRecursively
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RefreshAncestorTargetedPassivesRecursively
-  nameWithType: WorldObject.RefreshAncestorTargetedPassivesRecursively
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.RefreshOwnAncestorTargetedPassives
-  name: RefreshOwnAncestorTargetedPassives()
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RefreshOwnAncestorTargetedPassives
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.RefreshOwnAncestorTargetedPassives
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RefreshOwnAncestorTargetedPassives()
-  nameWithType: WorldObject.RefreshOwnAncestorTargetedPassives()
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.RefreshOwnAncestorTargetedPassives*
-  name: RefreshOwnAncestorTargetedPassives
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RefreshOwnAncestorTargetedPassives_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.RefreshOwnAncestorTargetedPassives
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RefreshOwnAncestorTargetedPassives
-  nameWithType: WorldObject.RefreshOwnAncestorTargetedPassives
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject)
   name: RegisterEdgeWith(WorldObject)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RegisterEdgeWith_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -4665,6 +4665,38 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty
   nameWithType: WorldObject.SetProperty
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(System.Boolean)
+  name: SyncAncestorTargetedRecursively(bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncAncestorTargetedRecursively_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(System.Boolean)
+  name.vb: SyncAncestorTargetedRecursively(Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(Boolean)
+  nameWithType: WorldObject.SyncAncestorTargetedRecursively(bool)
+  nameWithType.vb: WorldObject.SyncAncestorTargetedRecursively(Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively*
+  name: SyncAncestorTargetedRecursively
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncAncestorTargetedRecursively_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively
+  nameWithType: WorldObject.SyncAncestorTargetedRecursively
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name: SyncEdgeWith(WorldObject, bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncEdgeWith_UnmappedIsland_Domain_Runtime_WorldObject_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name.vb: SyncEdgeWith(WorldObject, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject, Boolean)
+  nameWithType: WorldObject.SyncEdgeWith(WorldObject, bool)
+  nameWithType.vb: WorldObject.SyncEdgeWith(WorldObject, Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith*
+  name: SyncEdgeWith
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncEdgeWith_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith
+  nameWithType: WorldObject.SyncEdgeWith
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.Tick(UnmappedIsland.Domain.Runtime.WorldSession)
   name: Tick(WorldSession)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_Tick_UnmappedIsland_Domain_Runtime_WorldSession_
@@ -4787,12 +4819,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.UnregisterPassiveEffectsFrom
   nameWithType: WorldObject.UnregisterPassiveEffectsFrom
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ancestorRegistrations
-  name: ancestorRegistrations
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ancestorRegistrations
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.ancestorRegistrations
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ancestorRegistrations
-  nameWithType: WorldObject.ancestorRegistrations
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.properties
   name: properties
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_properties

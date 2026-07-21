@@ -78,7 +78,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.AddEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AddEffect.yml\" sourcestartlinenumber=\"1\">add の1命令（対象プロパティへ加減算する）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AddEffect.yml\" sourcestartlinenumber=\"1\">add の1命令（対象プロパティへ加減算する）。対象の解決はowner.ResolveEffectTargetOrAncestorに\n委ねる（Ancestorのプロパティ別解決も含めて任せる）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -232,7 +232,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PassiveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは\n「どのオブジェクトのどのプロパティへ紐付くか（Target/TargetPropertyGlobalId）」と「ゲートが有効な間だけ\nいくら効くか（ActiveAmount）」。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"5\">modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ\n加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに\n分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の\n唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"10\">Amount・Gate は「今いくら効いているか」というこの効果自身の内部事情であり、ActiveAmountを通してのみ\n外へ出す（PropertyValueは量もゲートも意識しない、自分のことは自分でする、CLAUDE.md参照）。Targetと\nTargetPropertyGlobalIdは登録先を決めるWorldObject側が読むため公開する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"14\">アクション/combination/pickの効果として書かれる一時的な <code sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"14\">add</code>（実行された瞬間に1回だけ効く）は、\nこの登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは\n「どのオブジェクトのどのプロパティへ紐付くか（target/targetPropertyGlobalId）」と「ゲートが有効な間だけ\nいくら効くか（ActiveAmount）」。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"5\">modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ\n加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに\n分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の\n唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"10\">「どこへ紐付くか」（target/targetPropertyGlobalId）も「今いくら効いているか」（amount/gate）も、この効果\n自身の内部事情である。登録先の解決と登録/解除は、targetの種別に応じて自分で行う（RegisterRelation、\n自分のことは自分でする、CLAUDE.md参照）。呼び出し側（WorldObject）は生成・エッジ形成/解消・トポロジ変化と\nいったライフサイクルの契機で「登録してほしい/解除してほしい」と依頼するだけで、どのtargetがどこへ\n紐付くかは一切知らない。target=Ancestorも、ツリー構造が変わる前に解除・変わった後に登録するという順序を\n呼び出し側が守るため、「今この瞬間の祖先」を毎回ownerから辿るだけでよく、前回の登録先を憶える必要はない。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"17\">アクション/combination/pickの効果として書かれる一時的な <code sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"17\">add</code>（実行された瞬間に1回だけ効く）は、\nこの登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -289,20 +289,6 @@
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PropertyDef",
       "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、\nローカルIDをそのままindexとする密配列に格納される。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"4\">同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、\n定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyMutation.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Defs.PropertyMutation.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Defs.PropertyMutation",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyMutation.yml\" sourcestartlinenumber=\"1\">プロパティを書き換える単一命令（set/add、9.2節）。対象(Target)・対象プロパティを共通で持ち、ownerの\n文脈で対象を解決する部分をActiveEffectとして共有する（対象の解決はowner.ResolveEffectTargetOrAncestorに\n委ね、Ancestorのプロパティ別解決も含めて任せる）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -386,7 +372,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SetEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SetEffect.yml\" sourcestartlinenumber=\"1\">set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、\nその{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SetEffect.yml\" sourcestartlinenumber=\"1\">set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、\nその{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。対象の解決は\nowner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別解決も含めて任せる）。</p>\n"
     },
     {
       "type": "ManagedReference",
