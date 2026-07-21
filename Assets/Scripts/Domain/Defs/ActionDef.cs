@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
@@ -15,7 +16,7 @@ namespace UnmappedIsland.Domain.Defs
     public sealed class ActionDef
     {
         public string Name { get; }
-        public ShowMenuMode ShowMenu { get; }
+        internal ShowMenuMode ShowMenu { get; }
 
         /// <summary>nullなら常に真（conditions省略）。</summary>
         public ConditionNode Conditions { get; }
@@ -37,6 +38,16 @@ namespace UnmappedIsland.Domain.Defs
             Conditions = conditions;
             Active = active;
             Pick = pick;
+        }
+
+        internal bool TryExecute(WorldObject self, WorldObject actor, WorldSession session)
+        {
+            if (Conditions != null && !Conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged: null)))
+                return false;
+
+            ActiveEffect effect = PickCandidateDef.ResolveEffect(Active, Pick, self, actor, dragged: null, session);
+            if (effect != null) self.ApplyActiveEffect(effect, session, actor, dragged: null);
+            return true;
         }
     }
 }

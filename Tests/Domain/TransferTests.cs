@@ -60,7 +60,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player");
             WorldObject canteen = Spawn(codex, "canteen");
 
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            bool executed = canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(executed, Is.True);
             Assert.That(canteen.GetNumber(waterId), Is.EqualTo(3000), "amount(2000)だけ減る");
@@ -98,7 +98,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player2");
             WorldObject canteen = Spawn(codex, "canteen2");
 
-            InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(canteen.GetNumber(waterId), Is.EqualTo(0), "容器に実際に入っていた分(500)しか出せない");
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(500), "実際に出せた分(500)しか回復しない");
@@ -147,7 +147,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player_multi");
             WorldObject canteen = Spawn(codex, "canteen_multi");
 
-            bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            bool executed = canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(executed, Is.True);
             Assert.That(canteen.GetNumber(waterId), Is.EqualTo(3000));
@@ -187,7 +187,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player3");
             WorldObject canteen = Spawn(codex, "canteen3");
 
-            InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(28800), "残容量(100)分しか回復しない");
             Assert.That(canteen.GetNumber(waterId), Is.EqualTo(4900), "収まらない分(1900)は容器に残る(水を無駄にしない)");
@@ -225,7 +225,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player4");
             WorldObject canteen = Spawn(codex, "canteen4");
 
-            InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(canteen.GetNumber(waterId), Is.EqualTo(3000), "toの残容量を見ずにamount(2000)そのまま出す");
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(28800),
@@ -259,7 +259,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject cauldron = Spawn(codex, "cauldron");
 
-            bool executed = InteractionExecutor.TryExecuteAction(cauldron, actor: null, "pour_in", session);
+            bool executed = cauldron.TryExecuteAction("pour_in", actor: null, session);
 
             Assert.That(executed, Is.True, "from_object/to_objectを省略してもself同士で成立する");
             Assert.That(cauldron.GetNumber(waterId), Is.EqualTo(2000));
@@ -304,7 +304,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player5");
             WorldObject canteen = Spawn(codex, "canteen5");
 
-            InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(1200), "amount(1200)分を全量移送する");
             Assert.That(actor.GetNumber(wakefulnessId), Is.EqualTo(200), "全量移送時はlinked_addも全量(200)適用される");
@@ -349,7 +349,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player6");
             WorldObject canteen = Spawn(codex, "canteen6");
 
-            InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
+            canteen.TryExecuteAction("drink", actor, session);
 
             Assert.That(actor.GetNumber(hydrationId), Is.EqualTo(600), "在庫(600)の分しか移送されない");
             Assert.That(actor.GetNumber(wakefulnessId), Is.EqualTo(100),

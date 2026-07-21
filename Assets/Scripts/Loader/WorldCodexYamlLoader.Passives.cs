@@ -53,13 +53,11 @@ namespace UnmappedIsland.Loader
         /// </summary>
         private PassiveEffectGate BuildGate(ConditionNode conditions, string stagePropertyName, string stageName)
         {
-            var gate = new PassiveEffectGate { Conditions = conditions };
+            int? propertyGlobalId = null;
             if (stagePropertyName != null)
-            {
-                gate.PropertyGlobalId = PropertyNames.Intern(stagePropertyName);
-                gate.StageName = stageName;
-            }
-            return gate;
+                propertyGlobalId = PropertyNames.Intern(stagePropertyName);
+
+            return new PassiveEffectGate(conditions, propertyGlobalId, stageName);
         }
 
         /// <summary>

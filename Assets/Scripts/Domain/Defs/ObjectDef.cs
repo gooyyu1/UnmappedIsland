@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
@@ -100,6 +102,29 @@ namespace UnmappedIsland.Domain.Defs
             Actions = actions ?? Array.Empty<ActionDef>();
             Combinations = combinations ?? Array.Empty<CombinationDef>();
             RepresentedBySlotGlobalId = representedBySlotGlobalId;
+        }
+
+        internal bool TryExecuteAction(WorldObject self, WorldObject actor, string actionName, WorldSession session)
+        {
+            self = self.ResolveInteractionTarget();
+            ActionDef action = self.Def.Actions.FirstOrDefault(a => a.Name == actionName);
+            return action != null && action.TryExecute(self, actor, session);
+        }
+
+        internal bool TryExecuteCombination(
+            WorldObject self, WorldObject dragged, WorldObject actor, string combinationName, WorldSession session)
+        {
+            self = self.ResolveInteractionTarget();
+            dragged = dragged.ResolveInteractionTarget();
+            CombinationDef combination = self.Def.Combinations.FirstOrDefault(c => c.Name == combinationName);
+            return combination != null && combination.TryExecute(self, dragged, actor, session);
+        }
+
+        internal IEnumerable<CombinationDef> FindMatchingCombinations(WorldObject self, WorldObject dragged)
+        {
+            self = self.ResolveInteractionTarget();
+            dragged = dragged.ResolveInteractionTarget();
+            return self.Def.Combinations.Where(c => c.Matches(dragged.Def));
         }
     }
 

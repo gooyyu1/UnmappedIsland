@@ -7,8 +7,8 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain
 {
     /// <summary>
-    /// actions/combinations（GameElementDefinition.md 11節・12節）の実行エンジン（InteractionExecutor）
-    /// に対する自動テスト。core.yamlと同じ形のYAMLフィクスチャをWorldCodexYamlLoader経由でパースして
+    /// actions/combinations（GameElementDefinition.md 11節・12節）を Defs 側の実行ロジックを通して呼ぶ
+    /// WorldObject API に対する自動テスト。core.yamlと同じ形のYAMLフィクスチャをWorldCodexYamlLoader経由でパースして
     /// 検証する（YamlLoaderTests.csと同じ方針）。
     /// </summary>
     [TestFixture]
@@ -58,7 +58,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player");
             WorldObject appleInstance = Spawn(codex, "apple");
 
-            bool executed = InteractionExecutor.TryExecuteAction(appleInstance, actor, "eat", session);
+            bool executed = appleInstance.TryExecuteAction("eat", actor, session);
 
             Assert.That(executed, Is.True);
             Assert.That(actor.GetNumber(satietyId), Is.EqualTo(10));
@@ -90,7 +90,7 @@ object_defs:
             WorldObject actor = Spawn(codex, "player2");
             WorldObject appleInstance = Spawn(codex, "apple2");
 
-            bool executed = InteractionExecutor.TryExecuteAction(appleInstance, actor, "eat", session);
+            bool executed = appleInstance.TryExecuteAction("eat", actor, session);
 
             Assert.That(executed, Is.False, "satietyが既に100(<100を満たさない)のため実行されない");
             Assert.That(actor.GetNumber(satietyId), Is.EqualTo(100), "条件を満たさないため何も変化しない");
@@ -118,7 +118,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject crate = Spawn(codex, "crate");
 
-            bool executed = InteractionExecutor.TryExecuteAction(crate, actor: null, "open", session);
+            bool executed = crate.TryExecuteAction("open", actor: null, session);
 
             crate.TryGetSlot(insideSlotId, out Slot inside);
             Assert.That(executed, Is.True);
@@ -138,7 +138,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject appleInstance = Spawn(codex, "apple3");
 
-            Assert.That(InteractionExecutor.TryExecuteAction(appleInstance, null, "does_not_exist", session), Is.False);
+            Assert.That(appleInstance.TryExecuteAction("does_not_exist", null, session), Is.False);
         }
 
         [Test]
@@ -168,7 +168,7 @@ object_defs:
             WorldObject rockInstance = Spawn(codex, "rock_item");
             rockInstance.MoveToSlot(basketInstance, itemsSlotId, session.Codex.WellKnown, out _);
 
-            bool executed = InteractionExecutor.TryExecuteAction(rockInstance, actor: null, "use", session);
+            bool executed = rockInstance.TryExecuteAction("use", actor: null, session);
 
             Assert.That(executed, Is.True);
             Assert.That(basketInstance.GetNumber(budgetId), Is.EqualTo(9));
@@ -188,7 +188,7 @@ object_defs:
             var session = new WorldSession(codex);
             WorldObject rockInstance = Spawn(codex, "rock_item2"); // 親を持たない
 
-            bool executed = InteractionExecutor.TryExecuteAction(rockInstance, actor: null, "use", session);
+            bool executed = rockInstance.TryExecuteAction("use", actor: null, session);
 
             Assert.That(executed, Is.True, "アクション自体は実行される(親が無いのでparent対象の適用だけが無視される)");
         }
@@ -225,7 +225,7 @@ object_defs:
             WorldObject slice = Spawn(codex, "apple_slice");
             slice.MoveToSlot(container, contentSlotId, codex.WellKnown, out _);
 
-            bool executed = InteractionExecutor.TryExecuteAction(container, actor, "eat", session);
+            bool executed = container.TryExecuteAction("eat", actor, session);
 
             Assert.That(executed, Is.True);
             Assert.That(actor.GetNumber(satietyId), Is.EqualTo(10));
@@ -266,7 +266,7 @@ object_defs:
 
             for (int i = 0; i < 20; i++)
             {
-                InteractionExecutor.TryExecuteAction(swordInstance, actor, "attack", session);
+                swordInstance.TryExecuteAction("attack", actor, session);
             }
 
             Assert.That(actor.GetNumber(hpId), Is.EqualTo(100 - 20 * 10),
@@ -306,7 +306,7 @@ object_defs:
             actor.SetProperty(luckId, 1000); // 2番目(重み0固定)を圧倒する
             WorldObject bowInstance = Spawn(codex, "bow");
 
-            InteractionExecutor.TryExecuteAction(bowInstance, actor, "shoot", session);
+            bowInstance.TryExecuteAction("shoot", actor, session);
 
             Assert.That(actor.GetNumber(hpId), Is.EqualTo(101), "luck(1000)がweightのpath参照先なので、ほぼ確実に1番目の候補が選ばれる");
         }
@@ -341,7 +341,7 @@ object_defs:
             WorldObject woodInstance = Spawn(codex, "wood");
             WorldObject axeInstance = Spawn(codex, "axe_tool");
 
-            bool executed = InteractionExecutor.TryExecuteCombination(woodInstance, axeInstance, actor: null, "chop", session);
+            bool executed = woodInstance.TryExecuteCombination(axeInstance, actor: null, "chop", session);
 
             Assert.That(executed, Is.True);
             Assert.That(woodInstance.Parent, Is.Null, "self(wood)はdestroyされる");
@@ -387,7 +387,7 @@ object_defs:
             WorldObject marker = Spawn(codex, "marker");
             marker.MoveToSlot(carrier, holdSlotId, codex.WellKnown, out _);
 
-            bool executed = InteractionExecutor.TryExecuteCombination(lever, marker, actor: null, "operate", session);
+            bool executed = lever.TryExecuteCombination(marker, actor: null, "operate", session);
 
             Assert.That(executed, Is.True);
             Assert.That(carrier.GetNumber(powerId), Is.EqualTo(4));
@@ -437,7 +437,7 @@ object_defs:
             receiverLiquid.MoveToSlot(receiver, contentSlotId, codex.WellKnown, out _);
             sourceLiquid.MoveToSlot(source, contentSlotId, codex.WellKnown, out _);
 
-            bool executed = InteractionExecutor.TryExecuteCombination(receiver, source, actor: null, "pour_in", session);
+            bool executed = receiver.TryExecuteCombination(source, actor: null, "pour_in", session);
 
             Assert.That(executed, Is.True);
             Assert.That(receiverLiquid.GetNumber(amountId), Is.EqualTo(3));
@@ -473,7 +473,7 @@ object_defs:
             WorldObject source = Spawn(codex, "source2");
             Spawn(codex, "water_liquid2").MoveToSlot(receiver, contentSlotId, codex.WellKnown, out _);
             Spawn(codex, "water_liquid2").MoveToSlot(source, contentSlotId, codex.WellKnown, out _);
-            var names = InteractionExecutor.FindMatchingCombinations(receiver, source).Select(c => c.Name).ToList();
+            var names = receiver.FindMatchingCombinations(source).Select(c => c.Name).ToList();
             Assert.That(names, Is.EqualTo(new[] { "pour_in" }));
         }
 
@@ -494,7 +494,7 @@ object_defs:
             WorldObject woodInstance = Spawn(codex, "wood2");
             WorldObject pebbleInstance = Spawn(codex, "pebble3");
 
-            bool executed = InteractionExecutor.TryExecuteCombination(woodInstance, pebbleInstance, actor: null, "chop", session);
+            bool executed = woodInstance.TryExecuteCombination(pebbleInstance, actor: null, "chop", session);
 
             Assert.That(executed, Is.False, "draggedがwithのタグを持たないため実行されない");
         }
@@ -519,7 +519,7 @@ object_defs:
             WorldObject woodInstance = Spawn(codex, "wood3");
             WorldObject axeInstance = Spawn(codex, "axe_tool3");
 
-            bool executed = InteractionExecutor.TryExecuteCombination(woodInstance, axeInstance, actor: null, "chop", session);
+            bool executed = woodInstance.TryExecuteCombination(axeInstance, actor: null, "chop", session);
 
             Assert.That(executed, Is.True, "object_def自身のidではなく、参照したtrait経由で得た'sharp_tool'タグでマッチする");
         }
@@ -543,7 +543,7 @@ object_defs:
             WorldObject woodInstance = Spawn(codex, "wood4");
             WorldObject axeInstance = Spawn(codex, "axe_tool4");
 
-            var matches = InteractionExecutor.FindMatchingCombinations(woodInstance, axeInstance).ToList();
+            var matches = woodInstance.FindMatchingCombinations(axeInstance).ToList();
 
             Assert.That(matches.Select(c => c.Name), Is.EqualTo(new[] { "chop" }));
         }
@@ -573,11 +573,11 @@ object_defs:
             WorldObject woodInstance = Spawn(codex, "wood5");
             WorldObject axeInstance = Spawn(codex, "axe_tool5");
 
-            Assert.That(InteractionExecutor.TryExecuteCombination(woodInstance, axeInstance, null, "chop", session), Is.False,
+            Assert.That(woodInstance.TryExecuteCombination(axeInstance, null, "chop", session), Is.False,
                 "durabilityが0(gt 0を満たさない)なので実行されない");
 
             axeInstance.SetProperty(durabilityId, 1);
-            Assert.That(InteractionExecutor.TryExecuteCombination(woodInstance, axeInstance, null, "chop", session), Is.True);
+            Assert.That(woodInstance.TryExecuteCombination(axeInstance, null, "chop", session), Is.True);
         }
     }
 }

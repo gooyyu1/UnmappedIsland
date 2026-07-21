@@ -292,8 +292,6 @@ object_defs:
             PassiveEffect effect = campfire.Passives.Single();
 
             Assert.That(effect.Target, Is.EqualTo(PassiveEffectTarget.Child));
-            Assert.That(effect.Gate.StageName, Is.Not.Null, "stage内のpassivesはStageNameが設定される");
-            Assert.That(effect.Gate.Conditions, Is.Null, "conditionsを書いていなければnullのまま");
         }
 
         [Test]
@@ -366,8 +364,7 @@ object_defs:
             ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky4"));
             PassiveEffect effect = sky.Passives.Single();
 
-            Assert.That(effect.Gate.StageName, Is.EqualTo("clear"), "シンボル型のstage内のpassivesもStageNameが設定される");
-            Assert.That(effect.Gate.Conditions, Is.Null);
+            Assert.That(effect.Target, Is.EqualTo(PassiveEffectTarget.Self));
         }
 
         [Test]
@@ -490,7 +487,7 @@ object_defs:
             Assert.That(onMin.Destroy, Contains.Item(ReferenceRoot.Self));
             Assert.That(onMin.Spawns.Count, Is.EqualTo(1));
             Assert.That(onMin.Spawns[0].Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
-            Assert.That(codex.ObjectNames.GetName(onMin.Spawns[0].ObjectGlobalId), Is.EqualTo("ash"));
+            Assert.That(onMin.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("ash")));
         }
 
         // ------------------------------------------------------------------
@@ -545,7 +542,6 @@ object_defs:
             ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
             ActionDef eat = ActionOf(apple, "eat");
 
-            Assert.That(eat.ShowMenu, Is.EqualTo(ShowMenuMode.Always));
             Assert.That(eat.Conditions.Children.Count, Is.EqualTo(1));
             Assert.That(eat.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Actor));
             Assert.That(eat.Conditions.Children[0].Op, Is.EqualTo(ConditionOp.Lt));
@@ -583,8 +579,8 @@ object_defs:
             ActionDef use = ActionOf(flask, "use");
 
             Assert.That(use.Active.Spawns.Count, Is.EqualTo(2));
-            Assert.That(codex.ObjectNames.GetName(use.Active.Spawns[0].ObjectGlobalId), Is.EqualTo("steam"));
-            Assert.That(codex.ObjectNames.GetName(use.Active.Spawns[1].ObjectGlobalId), Is.EqualTo("smell"));
+            Assert.That(use.Active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("steam")));
+            Assert.That(use.Active.Spawns[1].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("smell")));
             Assert.That(use.Active.Transfers.Count, Is.EqualTo(2));
             Assert.That(use.Active.Transfers[0].Amount, Is.EqualTo(100));
             Assert.That(use.Active.Transfers[1].Amount, Is.EqualTo(200));
@@ -612,8 +608,6 @@ object_defs:
 
             Assert.That(attack.Active, Is.Null);
             Assert.That(attack.Pick.Count, Is.EqualTo(2));
-            Assert.That(attack.Pick[0].Weight.IsPathRef, Is.False);
-            Assert.That(attack.Pick[0].Weight.Literal, Is.EqualTo(50));
         }
 
         [Test]
@@ -643,11 +637,10 @@ object_defs:
             ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
             CombinationDef chop = CombinationOf(wood, "chop");
 
-            Assert.That(chop.With, Is.EqualTo(codex.TagNames.GetId("axe_tool")));
             Assert.That(chop.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Dragged));
             Assert.That(chop.Active.Adds.ContainsKey(ReferenceRoot.Dragged), Is.True);
             Assert.That(chop.Active.Spawns.Count, Is.EqualTo(1));
-            Assert.That(codex.ObjectNames.GetName(chop.Active.Spawns[0].ObjectGlobalId), Is.EqualTo("logs"));
+            Assert.That(chop.Active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("logs")));
         }
 
         [Test]
@@ -849,7 +842,7 @@ object_defs:
             var redMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("red_marker")));
             redMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
 
-            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.True,
+            Assert.That(box.TryExecuteAction("use", actor: null, session), Is.True,
                 "contentスロットにredタグのマーカーがあるので実行される");
         }
 
@@ -876,12 +869,12 @@ object_defs:
 
             var session = new WorldSession(codex);
             var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box2")));
-            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.False,
+            Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットが空なので実行されない");
 
             var blueMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("blue_marker2")));
             blueMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
-            Assert.That(InteractionExecutor.TryExecuteAction(box, actor: null, "use", session), Is.False,
+            Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットの中身がredタグを持たない(blueタグ)ので実行されない");
         }
 
@@ -918,7 +911,7 @@ object_defs:
             var session = new WorldSession(codex);
             var thing = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
 
-            Assert.That(InteractionExecutor.TryExecuteAction(thing, null, "use", session), Is.True);
+            Assert.That(thing.TryExecuteAction("use", null, session), Is.True);
         }
 
         [Test]
@@ -948,12 +941,12 @@ object_defs:
             var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")));
             var sameContent = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("bottle_source")));
 
-            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, sameContent, null, "pour_in", session), Is.False,
+            Assert.That(bottle.TryExecuteCombination(sameContent, null, "pour_in", session), Is.False,
                 "self(empty)とdragged(water)のcontentが異なるので不成立");
 
             int contentId = codex.PropertyNames.GetId("content");
             bottle.SetProperty(contentId, codex.SymbolNames.GetId("water"));
-            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, sameContent, null, "pour_in", session), Is.True,
+            Assert.That(bottle.TryExecuteCombination(sameContent, null, "pour_in", session), Is.True,
                 "selfとdraggedのcontentが同じ(water)なので成立");
         }
 
@@ -1001,7 +994,7 @@ object_defs:
             var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle2")));
             var oilSource = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("oil_source")));
 
-            Assert.That(InteractionExecutor.TryExecuteCombination(bottle, oilSource, null, "pour_in", session), Is.True);
+            Assert.That(bottle.TryExecuteCombination(oilSource, null, "pour_in", session), Is.True);
             Assert.That(bottle.GetNumber(contentId), Is.EqualTo(codex.SymbolNames.GetId("oil")),
                 "set: {content: {object: dragged, prop: content}}がdraggedの現在値をそのままコピーする");
         }
@@ -1037,7 +1030,7 @@ object_defs:
             var session = new WorldSession(codex);
             var thingInstance = new WorldObject(1, thing);
 
-            Assert.That(InteractionExecutor.TryExecuteAction(thingInstance, actor: null, "use", session), Is.True,
+            Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.True,
                 "hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する");
         }
 
@@ -1061,7 +1054,7 @@ object_defs:
             var session = new WorldSession(codex);
             var thingInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
 
-            Assert.That(InteractionExecutor.TryExecuteAction(thingInstance, actor: null, "use", session), Is.False,
+            Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.False,
                 "locked(1)がprop:1と一致するため、not: {...}は偽になる");
         }
 
@@ -1158,8 +1151,6 @@ object_defs:
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             SlotDef locations = SlotOf(codex, world, "locations");
 
-            Assert.That(locations.Accepts[0].With, Is.EqualTo(codex.TagNames.GetId("location")));
-
             ObjectDef forest = codex.Objects.Get(codex.ObjectNames.GetId("forest"));
             Assert.That(locations.Accepts[0].Matches(forest), Is.True);
         }
@@ -1215,7 +1206,6 @@ object_defs:
             SlotDef ingredients = SlotOf(codex, cauldron, "ingredients");
 
             Assert.That(ingredients.Accepts[0].TargetKind, Is.EqualTo(SlotAcceptTargetKind.Object));
-            Assert.That(ingredients.Accepts[0].With, Is.EqualTo(codex.ObjectNames.GetId("raw_meat")));
 
             ObjectDef rawMeat = codex.Objects.Get(codex.ObjectNames.GetId("raw_meat"));
             ObjectDef rawFish = codex.Objects.Get(codex.ObjectNames.GetId("raw_fish"));
@@ -1476,7 +1466,7 @@ object_defs:
             Assert.That(characterInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(foodInstance.MoveToSlot(characterInstance, pocketSlotId, codex.WellKnown, out _), Is.True);
 
-            Assert.That(InteractionExecutor.TryExecuteAction(foodInstance, actor: null, "check", session), Is.True,
+            Assert.That(foodInstance.TryExecuteAction("check", actor: null, session), Is.True,
                 "characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる");
         }
 

@@ -66,7 +66,7 @@ namespace UnmappedIsland.StreamingAssets
             character.SetProperty(satietyId, 0);
             character.SetProperty(nutritionId, 0);
 
-            Assert.That(InteractionExecutor.TryExecuteAction(food, character, "eat", session), Is.True);
+            Assert.That(food.TryExecuteAction("eat", character, session), Is.True);
 
             Assert.That(character.GetNumber(satietyId), Is.EqualTo(expectedSatietyGain));
             Assert.That(character.GetNumber(nutritionId), Is.EqualTo(20000));

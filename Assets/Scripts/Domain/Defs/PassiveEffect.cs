@@ -1,3 +1,5 @@
+using UnmappedIsland.Domain.Runtime;
+
 namespace UnmappedIsland.Domain.Defs
 {
     /// <summary>
@@ -44,9 +46,40 @@ namespace UnmappedIsland.Domain.Defs
     /// </summary>
     public sealed class PassiveEffectGate
     {
-        public ConditionNode Conditions;
-        public int PropertyGlobalId;
-        public string StageName;
+        private readonly ConditionNode conditions;
+        private readonly int? propertyGlobalId;
+        private readonly string stageName;
+
+        internal PassiveEffectGate(ConditionNode conditions, int? propertyGlobalId = null, string stageName = null)
+        {
+            this.conditions = conditions;
+            this.propertyGlobalId = propertyGlobalId;
+            this.stageName = stageName;
+        }
+
+        internal bool IsSatisfied(WorldObject declarer, WorldObject slotBearer)
+        {
+            if (stageName != null)
+            {
+                if (!propertyGlobalId.HasValue || !declarer.IsInStage(propertyGlobalId.Value, stageName))
+                    return false;
+            }
+
+            if (conditions != null && !conditions.Evaluate(root => Resolve(root, slotBearer)))
+                return false;
+
+            return true;
+        }
+
+        private static WorldObject Resolve(ReferenceRoot root, WorldObject slotBearer)
+        {
+            switch (root)
+            {
+                case ReferenceRoot.Self: return slotBearer;
+                case ReferenceRoot.Parent: return slotBearer.Parent;
+                default: return null;
+            }
+        }
     }
 
     /// <summary>

@@ -1,7 +1,26 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
+    internal static class ReferenceRootResolver
+    {
+        internal static WorldObject Resolve(ReferenceRoot root, WorldObject self, WorldObject actor, WorldObject dragged)
+        {
+            switch (root)
+            {
+                case ReferenceRoot.Self: return self;
+                case ReferenceRoot.Parent: return self?.Parent;
+                case ReferenceRoot.Actor: return actor;
+                case ReferenceRoot.Dragged: return dragged;
+                case ReferenceRoot.DraggedParent: return dragged?.Parent;
+                default: return null;
+            }
+        }
+    }
+
     /// <summary>
     /// conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）が共通で参照する
     /// 起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層のパスは現状の用例に
@@ -88,8 +107,7 @@ namespace UnmappedIsland.Domain.Defs
 
     /// <summary>
     /// conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート
-    /// （旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。
-    /// Runtime.ConditionEvaluator参照）。
+    /// （旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけが呼び出し側にある）。
     ///
     /// 葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて
     /// 使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の
@@ -168,5 +186,85 @@ namespace UnmappedIsland.Domain.Defs
 
         public static ConditionNode Not(ConditionNode inner) =>
             new ConditionNode(ConditionNodeKind.Not, default, default, default, null, null, default, default, new[] { inner });
+
+        internal bool Evaluate(Func<ReferenceRoot, WorldObject> resolveRoot)
+        {
+            switch (Kind)
+            {
+                case ConditionNodeKind.Property: return EvaluateProperty(resolveRoot);
+                case ConditionNodeKind.SlotPosition: return EvaluateSlotPosition(resolveRoot);
+                case ConditionNodeKind.SlotContent: return EvaluateSlotContent(resolveRoot);
+                case ConditionNodeKind.ObjectTag: return EvaluateObjectTag(resolveRoot);
+                case ConditionNodeKind.All: return Children.All(child => child.Evaluate(resolveRoot));
+                case ConditionNodeKind.Any: return Children.Any(child => child.Evaluate(resolveRoot));
+                case ConditionNodeKind.Not: return !Children[0].Evaluate(resolveRoot);
+                default: return false;
+            }
+        }
+
+        private bool EvaluateProperty(Func<ReferenceRoot, WorldObject> resolveRoot)
+        {
+            int? currentValue = ResolvePropertyEffectiveValue(Root, PropertyGlobalId, resolveRoot);
+            if (currentValue == null) return false;
+            int current = currentValue.Value;
+
+            if (Op == ConditionOp.In) return Values.Any(v => current == v);
+            if (Op == ConditionOp.NotIn) return !Values.Any(v => current == v);
+
+            int compare;
+            if (ValueRef.HasValue)
+            {
+                int? resolved = ResolvePropertyEffectiveValue(ValueRef.Value.Root, ValueRef.Value.PropertyGlobalId, resolveRoot);
+                if (resolved == null) return false;
+                compare = resolved.Value;
+            }
+            else
+            {
+                compare = Values[0];
+            }
+
+            switch (Op)
+            {
+                case ConditionOp.Lt: return current < compare;
+                case ConditionOp.Lte: return current <= compare;
+                case ConditionOp.Gt: return current > compare;
+                case ConditionOp.Gte: return current >= compare;
+                case ConditionOp.Eq: return current == compare;
+                case ConditionOp.Neq: return current != compare;
+                default: return false;
+            }
+        }
+
+        private int? ResolvePropertyEffectiveValue(
+            ReferenceRoot root, int propertyGlobalId, Func<ReferenceRoot, WorldObject> resolveRoot)
+        {
+            WorldObject target = root == ReferenceRoot.Ancestor
+                ? resolveRoot(ReferenceRoot.Self)?.FindAncestorWithProperty(propertyGlobalId)
+                : resolveRoot(root);
+            if (target == null) return null;
+            return target.TryGetProperty(propertyGlobalId, out PropertyValue value) ? value.GetEffectiveValue() : (int?)null;
+        }
+
+        private bool EvaluateSlotPosition(Func<ReferenceRoot, WorldObject> resolveRoot)
+        {
+            WorldObject target = resolveRoot(Root);
+            if (target?.Parent == null) return false;
+
+            int slotLocal = target.Parent.Def.SlotLayout.ToLocal(SlotGlobalId);
+            return slotLocal != LocalIndexMap.Missing && target.ParentSlotLocalId == slotLocal;
+        }
+
+        private bool EvaluateSlotContent(Func<ReferenceRoot, WorldObject> resolveRoot)
+        {
+            WorldObject target = resolveRoot(Root);
+            if (target == null || !target.TryGetSlot(SlotGlobalId, out Slot slot)) return false;
+            return slot.Contents.Any(child => child.Def.Tags.Contains(TagGlobalId));
+        }
+
+        private bool EvaluateObjectTag(Func<ReferenceRoot, WorldObject> resolveRoot)
+        {
+            WorldObject target = resolveRoot(Root);
+            return target != null && target.Def.Tags.Contains(TagGlobalId);
+        }
     }
 }
