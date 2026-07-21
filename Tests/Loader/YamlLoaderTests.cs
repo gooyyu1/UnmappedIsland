@@ -21,8 +21,7 @@ namespace UnmappedIsland.Loader
 
         private static SlotDef SlotOf(WorldCodex codex, ObjectDef def, string slotName)
         {
-            int local = def.SlotLayout.ToLocal(codex.SlotNames.GetId(slotName));
-            return def.SlotDefs[local];
+            return def.GetSlotDef(codex.SlotNames.GetId(slotName));
         }
 
         // ------------------------------------------------------------------
@@ -86,6 +85,25 @@ object_defs:
 ";
             Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("シンボル名"));
+        }
+
+        [Test]
+        public void GetSlotDef_ReturnsNullWhenObjectDoesNotHaveThatSlot()
+        {
+            const string yaml = @"
+object_defs:
+  log:
+    slots:
+      inside: {}
+  apple: {}
+";
+            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
+            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
+            ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
+            int insideSlotId = codex.SlotNames.GetId("inside");
+
+            Assert.That(log.GetSlotDef(insideSlotId), Is.Not.Null);
+            Assert.That(apple.GetSlotDef(insideSlotId), Is.Null);
         }
 
         // ------------------------------------------------------------------

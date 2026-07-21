@@ -30,7 +30,7 @@ namespace UnmappedIsland.Domain.Defs
         public LocalIndexMap SlotLayout { get; }
 
         /// <summary>ローカルindexで並ぶ密配列。SlotLayout と対になる。</summary>
-        public IReadOnlyList<SlotDef> SlotDefs { get; }
+        private IReadOnlyList<SlotDef> SlotDefs { get; }
 
         /// <summary>このObjectDefが宣言する効果（8節）。target(self/parent/child)・kind(modify/accumulate)を
         /// 問わず1つのリストで持つ。</summary>
@@ -59,8 +59,18 @@ namespace UnmappedIsland.Domain.Defs
             return local == LocalIndexMap.Missing ? null : PropertyDefs[local];
         }
 
+        /// <summary>グローバルIDでこのObjectDefのSlotDefを取得する。存在しない場合はnull。</summary>
+        public SlotDef GetSlotDef(int globalSlotId)
+        {
+            int local = SlotLayout.ToLocal(globalSlotId);
+            return local == LocalIndexMap.Missing ? null : SlotDefs[local];
+        }
+
         /// <summary>全PropertyDefを列挙する（WorldObject内部利用専用）。</summary>
         internal IEnumerable<PropertyDef> EnumeratePropertyDefs() => PropertyDefs;
+
+        /// <summary>全SlotDefを列挙する（WorldObject内部利用専用）。</summary>
+        internal IEnumerable<SlotDef> EnumerateSlotDefs() => SlotDefs;
 
         public ObjectDef(
             int globalId,

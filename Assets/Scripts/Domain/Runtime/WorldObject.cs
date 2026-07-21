@@ -44,9 +44,9 @@ namespace UnmappedIsland.Domain.Runtime
                 .Select(pd => PropertyValue.Create(pd.DefaultNumber, pd, this))
                 .ToArray();
 
-            slots = new Slot[def.SlotDefs.Count];
-            for (int i = 0; i < slots.Length; i++)
-                slots[i] = new Slot(def.SlotDefs[i]);
+            slots = def.EnumerateSlotDefs()
+                .Select(sd => new Slot(sd))
+                .ToArray();
 
             foreach (var c in def.Passives)
             {
@@ -284,7 +284,7 @@ namespace UnmappedIsland.Domain.Runtime
 
             while (current != null)
             {
-                SlotDef slotDef = current.Def.SlotDefs[slotLocalId];
+                SlotDef slotDef = current.GetSlotByLocalId(slotLocalId).Def;
                 delta *= slotDef.WeightRate;
                 current.AddNumber(wellKnown.WeightId, (int)Math.Round(delta));
 
@@ -693,7 +693,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// それ以外の一般スロットでは、捕捉しておいた位置（元居たObjectStackの外側position・その中での
         /// メンバー位置）へ直接挿入する（同じ場所の後ろにいた他のオブジェクトの位置がずれないようにするため）。
         ///
-        /// Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順（Def.SlotDefsの並び）に
+        /// Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順に
         /// 走査し、最初に配置できたスロットへ入れる。
         ///
         /// 配置に失敗した場合は、必ずその起点自身の親へ伝播し、accepts/capacityを無視して
@@ -788,7 +788,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// force=trueはaccepts/capacityの検証を飛ばすため、スロットが1つでもあれば必ず成功する。</summary>
         private static bool TryFirstAcceptingSlot(WorldObject spawned, WorldObject target, WorldSession session, bool force)
         {
-            foreach (var slotDef in target.Def.SlotDefs)
+            foreach (var slotDef in target.Def.EnumerateSlotDefs())
                 if (spawned.MoveToSlot(target, slotDef.GlobalId, session.Codex.WellKnown, out _, force))
                     return true;
 

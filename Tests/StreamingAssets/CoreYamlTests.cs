@@ -235,8 +235,7 @@ object_defs:
 
         private SlotDef SlotOf(ObjectDef def, string slotName)
         {
-            int local = def.SlotLayout.ToLocal(codex.SlotNames.GetId(slotName));
-            return def.SlotDefs[local];
+            return def.GetSlotDef(codex.SlotNames.GetId(slotName));
         }
     }
 }
