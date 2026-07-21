@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnmappedIsland.Domain.Defs
 {
@@ -17,19 +18,19 @@ namespace UnmappedIsland.Domain.Defs
     public sealed class ActiveEffect
     {
         /// <summary>対象ごとのset(絶対値代入)。空なら該当対象へのsetなし。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> Sets { get; }
+        private IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> Sets { get; }
 
         /// <summary>対象ごとのadd(加減算)。空なら該当対象へのaddなし。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> Adds { get; }
+        private IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> Adds { get; }
 
         /// <summary>削除する対象。空なら destroy なし。</summary>
-        public IReadOnlyList<ReferenceRoot> Destroy { get; }
+        private IReadOnlyList<ReferenceRoot> Destroy { get; }
 
         /// <summary>spawn。空なら spawn なし。常にselfが実行する。</summary>
-        public IReadOnlyList<SpawnEffect> Spawns { get; }
+        private IReadOnlyList<SpawnEffect> Spawns { get; }
 
         /// <summary>transfer（9.5節）。空なら transfer なし。</summary>
-        public IReadOnlyList<TransferEffect> Transfers { get; }
+        private IReadOnlyList<TransferEffect> Transfers { get; }
 
         public ActiveEffect(
             IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> sets,
@@ -44,6 +45,20 @@ namespace UnmappedIsland.Domain.Defs
             Spawns = spawns;
             Transfers = transfers;
         }
+
+        internal bool TryGetSetFor(ReferenceRoot target, out IReadOnlyList<PropertyAssignment> assigns) =>
+            Sets.TryGetValue(target, out assigns);
+
+        internal bool TryGetAddFor(ReferenceRoot target, out IReadOnlyList<PropertyDelta> deltas) =>
+            Adds.TryGetValue(target, out deltas);
+
+        internal bool HasDestroyTarget(ReferenceRoot target) => Destroy.Contains(target);
+
+        internal bool HasSameSlotSpawn() => Spawns.Any(s => s.Into == SpawnTargetRoot.SameSlot);
+
+        internal IEnumerable<SpawnEffect> EnumerateSpawns() => Spawns;
+
+        internal IEnumerable<TransferEffect> EnumerateTransfers() => Transfers;
     }
 
     /// <summary>

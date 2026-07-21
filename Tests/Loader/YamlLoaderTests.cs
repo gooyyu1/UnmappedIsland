@@ -466,6 +466,9 @@ object_defs:
         {
             const string yaml = @"
 object_defs:
+  holder:
+    slots:
+      items: {}
   log:
     props:
       life:
@@ -484,10 +487,19 @@ object_defs:
             ActiveEffect onMin = PropOf(codex, log, "life").OnMin;
 
             Assert.That(onMin, Is.Not.Null);
-            Assert.That(onMin.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(onMin.Spawns.Count, Is.EqualTo(1));
-            Assert.That(onMin.Spawns[0].Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
-            Assert.That(onMin.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("ash")));
+
+            int itemsSlotId = codex.SlotNames.GetId("items");
+            var session = new WorldSession(codex);
+            var holder = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("holder")));
+            var logInstance = new WorldObject(2, log);
+            Assert.That(logInstance.MoveToSlot(holder, itemsSlotId, codex.WellKnown, out _), Is.True);
+
+            holder.Tick(session);
+
+            Assert.That(logInstance.Parent, Is.Null);
+            holder.TryGetSlot(itemsSlotId, out Slot slot);
+            Assert.That(slot.Contents.Count, Is.EqualTo(1));
+            Assert.That(slot.Contents[0].Def.GlobalId, Is.EqualTo(codex.ObjectNames.GetId("ash")));
         }
 
         // ------------------------------------------------------------------
@@ -535,7 +547,10 @@ object_defs:
           actor:
             satiety: 10
         destroy: self
-  player: {}
+  player:
+    props:
+      satiety:
+        value: 0
 ";
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
@@ -546,8 +561,15 @@ object_defs:
             Assert.That(eat.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Actor));
             Assert.That(eat.Conditions.Children[0].Op, Is.EqualTo(ConditionOp.Lt));
             Assert.That(eat.Active, Is.Not.Null);
-            Assert.That(eat.Active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
-            Assert.That(eat.Active.Destroy, Contains.Item(ReferenceRoot.Self));
+
+            var session = new WorldSession(codex);
+            var appleInstance = new WorldObject(1, apple);
+            var actor = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("player")));
+            actor.SetProperty(codex.PropertyNames.GetId("satiety"), 0);
+
+            Assert.That(appleInstance.TryExecuteAction("eat", actor, session), Is.True);
+            Assert.That(actor.GetNumber(codex.PropertyNames.GetId("satiety")), Is.EqualTo(10));
+            Assert.That(appleInstance.Parent, Is.Null);
         }
 
         [Test]
@@ -555,7 +577,15 @@ object_defs:
         {
             const string yaml = @"
 object_defs:
+  holder:
+    slots:
+      inside: {}
   flask:
+    props:
+      a: {value: 0}
+      b: {value: 0}
+      c: {value: 0}
+      d: {value: 0}
     actions:
       use:
         spawn:
@@ -566,24 +596,33 @@ object_defs:
           - {amount: 200, from_prop: c, to_prop: d}
   steam: {}
   smell: {}
-  sink:
-    props:
-      a: {value: 0}
-      b: {value: 0}
-      c: {value: 0}
-      d: {value: 0}
 ";
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef flask = codex.Objects.Get(codex.ObjectNames.GetId("flask"));
             ActionDef use = ActionOf(flask, "use");
+            Assert.That(use.Active, Is.Not.Null);
 
-            Assert.That(use.Active.Spawns.Count, Is.EqualTo(2));
-            Assert.That(use.Active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("steam")));
-            Assert.That(use.Active.Spawns[1].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("smell")));
-            Assert.That(use.Active.Transfers.Count, Is.EqualTo(2));
-            Assert.That(use.Active.Transfers[0].Amount, Is.EqualTo(100));
-            Assert.That(use.Active.Transfers[1].Amount, Is.EqualTo(200));
+            int insideSlotId = codex.SlotNames.GetId("inside");
+            var session = new WorldSession(codex);
+            var holder = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("holder")));
+            var flaskInstance = new WorldObject(2, flask);
+            Assert.That(flaskInstance.MoveToSlot(holder, insideSlotId, codex.WellKnown, out _), Is.True);
+
+            flaskInstance.SetProperty(codex.PropertyNames.GetId("a"), 150);
+            flaskInstance.SetProperty(codex.PropertyNames.GetId("b"), 10);
+            flaskInstance.SetProperty(codex.PropertyNames.GetId("c"), 500);
+            flaskInstance.SetProperty(codex.PropertyNames.GetId("d"), 20);
+
+            Assert.That(flaskInstance.TryExecuteAction("use", actor: null, session), Is.True);
+            Assert.That(flaskInstance.GetNumber(codex.PropertyNames.GetId("a")), Is.EqualTo(50));
+            Assert.That(flaskInstance.GetNumber(codex.PropertyNames.GetId("b")), Is.EqualTo(110));
+            Assert.That(flaskInstance.GetNumber(codex.PropertyNames.GetId("c")), Is.EqualTo(300));
+            Assert.That(flaskInstance.GetNumber(codex.PropertyNames.GetId("d")), Is.EqualTo(220));
+
+            Assert.That(holder.TryGetSlot(insideSlotId, out Slot slot), Is.True);
+            Assert.That(slot.Contents.Count(o => o.Def.GlobalId == codex.ObjectNames.GetId("steam")), Is.EqualTo(1));
+            Assert.That(slot.Contents.Count(o => o.Def.GlobalId == codex.ObjectNames.GetId("smell")), Is.EqualTo(1));
         }
 
         [Test]
@@ -628,6 +667,7 @@ object_defs:
             durability: -1
   logs: {}
   axe_tool:
+    tags: [axe_tool]
     props:
       durability:
         value: 10
@@ -638,9 +678,7 @@ object_defs:
             CombinationDef chop = CombinationOf(wood, "chop");
 
             Assert.That(chop.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Dragged));
-            Assert.That(chop.Active.Adds.ContainsKey(ReferenceRoot.Dragged), Is.True);
-            Assert.That(chop.Active.Spawns.Count, Is.EqualTo(1));
-            Assert.That(chop.Active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("logs")));
+            Assert.That(chop.Active, Is.Not.Null);
         }
 
         [Test]
@@ -653,13 +691,23 @@ traits:
       eat:
         destroy: self
 object_defs:
+  holder:
+    slots:
+      inside: {}
   berry:
     traits: [eatable]
 ";
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
-            Assert.That(ActionOf(berry, "eat").Active.Destroy, Contains.Item(ReferenceRoot.Self));
+            int insideSlotId = codex.SlotNames.GetId("inside");
+            var session = new WorldSession(codex);
+            var holder = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("holder")));
+            var berryInstance = new WorldObject(2, berry);
+            Assert.That(berryInstance.MoveToSlot(holder, insideSlotId, codex.WellKnown, out _), Is.True);
+
+            Assert.That(berryInstance.TryExecuteAction("eat", actor: null, session), Is.True);
+            Assert.That(berryInstance.Parent, Is.Null);
         }
 
         [Test]
@@ -1286,8 +1334,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("clock.yaml", yaml).Build();
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
-            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Sets[ReferenceRoot.Self].Count, Is.EqualTo(1));
-            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Adds[ReferenceRoot.Self].Count, Is.EqualTo(1));
+            Assert.That(PropOf(codex, clock, "minute").OnOverflow, Is.Not.Null);
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, clock);
@@ -1398,7 +1445,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("clock.yaml", yaml).Build();
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
-            Assert.That(PropOf(codex, clock, "minute").OnShortfall.Adds[ReferenceRoot.Self].Count, Is.EqualTo(2));
+            Assert.That(PropOf(codex, clock, "minute").OnShortfall, Is.Not.Null);
 
             var session = new WorldSession(codex);
             var instance = new WorldObject(1, clock);

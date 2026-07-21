@@ -484,7 +484,7 @@ namespace UnmappedIsland.Domain.Runtime
         {
             foreach (ReferenceRoot key in OrderedTargets)
             {
-                if (!effect.Sets.TryGetValue(key, out var assigns)) continue;
+                if (!effect.TryGetSetFor(key, out var assigns)) continue;
 
                 if (key == ReferenceRoot.Ancestor)
                 {
@@ -500,7 +500,7 @@ namespace UnmappedIsland.Domain.Runtime
 
             foreach (ReferenceRoot key in OrderedTargets)
             {
-                if (!effect.Adds.TryGetValue(key, out var deltas)) continue;
+                if (!effect.TryGetAddFor(key, out var deltas)) continue;
 
                 if (key == ReferenceRoot.Ancestor)
                 {
@@ -514,23 +514,23 @@ namespace UnmappedIsland.Domain.Runtime
                 foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
             }
 
-            foreach (TransferEffect transfer in effect.Transfers)
+            foreach (TransferEffect transfer in effect.EnumerateTransfers())
                 ApplyTransfer(transfer, session, actor, dragged);
 
-            bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
-            SameSlotAnchor? anchor = effect.Spawns.Any(s => s.Into == SpawnTargetRoot.SameSlot)
+            bool willDestroySelf = effect.HasDestroyTarget(ReferenceRoot.Self);
+            SameSlotAnchor? anchor = effect.HasSameSlotSpawn()
                 ? CaptureSameSlotAnchor(willDestroySelf)
                 : null;
 
             foreach (ReferenceRoot key in OrderedTargets)
             {
-                if (!effect.Destroy.Contains(key)) continue;
+                if (!effect.HasDestroyTarget(key)) continue;
                 WorldObject target = ResolveEffectTarget(key, actor, dragged);
                 if (target == null) continue;
                 target.Destroy(session.Codex.WellKnown);
             }
 
-            foreach (SpawnEffect spawn in effect.Spawns)
+            foreach (SpawnEffect spawn in effect.EnumerateSpawns())
                 ExecuteSpawn(spawn, session, actor, anchor);
         }
 

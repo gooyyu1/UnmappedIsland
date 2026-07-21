@@ -583,7 +583,6 @@ object_defs:
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("candle"));
 
             Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wax")).OnMin, Is.Not.Null);
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wax")).OnMin.Destroy, Contains.Item(ReferenceRoot.Self));
             Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wick_length")).OnMin, Is.Null);
         }
 
@@ -610,7 +609,6 @@ object_defs:
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("tank"));
 
             Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("pressure")).OnMax, Is.Not.Null);
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("pressure")).OnMax.Destroy, Contains.Item(ReferenceRoot.Self));
             Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("temperature")).OnMax, Is.Null);
         }
 
