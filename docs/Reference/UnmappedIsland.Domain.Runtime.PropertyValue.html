@@ -586,7 +586,7 @@ defは、このプロパティが実際に属することになるPropertyDef（
   <h4 id="UnmappedIsland_Domain_Runtime_PropertyValue_GetEffectiveValue" data-uid="UnmappedIsland.Domain.Runtime.PropertyValue.GetEffectiveValue">GetEffectiveValue()</h4>
   <div class="markdown level1 summary"><p>modify（Kind.Modify）とinherit（自分の直接の親から遡った祖先からの継承）を加味した実効値
 （8.3節）。可逆な寄与であり、実体値そのものは書き換えない。</p>
-<p>conditions（14節）はこの実効値を読む（ConditionEvaluator参照）ため、他のmodifyのゲート判定・
+<p>conditions（14節）はこの実効値を読む（ConditionNode.Evaluate参照）ため、他のmodifyのゲート判定・
 inheritの祖先探索から再入する可能性がある。isComputingEffectiveValueで、この呼び出し自身への
 再入（＝循環参照）を検出し、スタックオーバーフローになる前に分かりやすい例外を投げる
 （inherit自体は木構造が循環しない前提のため無限再帰にはならないが、他のmodifyのゲート経由の

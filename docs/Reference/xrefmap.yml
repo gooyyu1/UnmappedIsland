@@ -97,6 +97,19 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ActionDef.ShowMenu
   nameWithType: ActionDef.ShowMenu
+- uid: UnmappedIsland.Domain.Defs.ActionDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: TryExecute(WorldObject, WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_TryExecute_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.ActionDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.ActionDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: ActionDef.TryExecute(WorldObject, WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.ActionDef.TryExecute*
+  name: TryExecute
+  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_TryExecute_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActionDef.TryExecute
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ActionDef.TryExecute
+  nameWithType: ActionDef.TryExecute
 - uid: UnmappedIsland.Domain.Defs.ActiveEffect
   name: ActiveEffect
   href: UnmappedIsland.Domain.Defs.ActiveEffect.html
@@ -277,19 +290,25 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.CombinationDef.Pick
   nameWithType: CombinationDef.Pick
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.With
-  name: With
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_With
-  commentId: P:UnmappedIsland.Domain.Defs.CombinationDef.With
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.With
-  nameWithType: CombinationDef.With
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.With*
-  name: With
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_With_
-  commentId: Overload:UnmappedIsland.Domain.Defs.CombinationDef.With
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: TryExecute(WorldObject, WorldObject, WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: CombinationDef.TryExecute(WorldObject, WorldObject, WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.TryExecute*
+  name: TryExecute
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_
+  commentId: Overload:UnmappedIsland.Domain.Defs.CombinationDef.TryExecute
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.With
-  nameWithType: CombinationDef.With
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.TryExecute
+  nameWithType: CombinationDef.TryExecute
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.with
+  name: with
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_with
+  commentId: F:UnmappedIsland.Domain.Defs.CombinationDef.with
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.with
+  nameWithType: CombinationDef.with
 - uid: UnmappedIsland.Domain.Defs.ConditionNode
   name: ConditionNode
   href: UnmappedIsland.Domain.Defs.ConditionNode.html
@@ -360,6 +379,86 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.Children
   nameWithType: ConditionNode.Children
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.Evaluate(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name: Evaluate(Func<ReferenceRoot, WorldObject>)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Evaluate_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.Evaluate(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name.vb: Evaluate(Func(Of ReferenceRoot, WorldObject))
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Evaluate(System.Func<UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.Evaluate(System.Func(Of UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject))
+  nameWithType: ConditionNode.Evaluate(Func<ReferenceRoot, WorldObject>)
+  nameWithType.vb: ConditionNode.Evaluate(Func(Of ReferenceRoot, WorldObject))
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.Evaluate*
+  name: Evaluate
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Evaluate_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.Evaluate
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Evaluate
+  nameWithType: ConditionNode.Evaluate
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name: EvaluateObjectTag(Func<ReferenceRoot, WorldObject>)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateObjectTag_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name.vb: EvaluateObjectTag(Func(Of ReferenceRoot, WorldObject))
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag(System.Func<UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag(System.Func(Of UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject))
+  nameWithType: ConditionNode.EvaluateObjectTag(Func<ReferenceRoot, WorldObject>)
+  nameWithType.vb: ConditionNode.EvaluateObjectTag(Func(Of ReferenceRoot, WorldObject))
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag*
+  name: EvaluateObjectTag
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateObjectTag_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag
+  nameWithType: ConditionNode.EvaluateObjectTag
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name: EvaluateProperty(Func<ReferenceRoot, WorldObject>)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateProperty_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name.vb: EvaluateProperty(Func(Of ReferenceRoot, WorldObject))
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty(System.Func<UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty(System.Func(Of UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject))
+  nameWithType: ConditionNode.EvaluateProperty(Func<ReferenceRoot, WorldObject>)
+  nameWithType.vb: ConditionNode.EvaluateProperty(Func(Of ReferenceRoot, WorldObject))
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty*
+  name: EvaluateProperty
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateProperty_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty
+  nameWithType: ConditionNode.EvaluateProperty
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name: EvaluateSlotContent(Func<ReferenceRoot, WorldObject>)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotContent_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name.vb: EvaluateSlotContent(Func(Of ReferenceRoot, WorldObject))
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent(System.Func<UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent(System.Func(Of UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject))
+  nameWithType: ConditionNode.EvaluateSlotContent(Func<ReferenceRoot, WorldObject>)
+  nameWithType.vb: ConditionNode.EvaluateSlotContent(Func(Of ReferenceRoot, WorldObject))
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent*
+  name: EvaluateSlotContent
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotContent_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent
+  nameWithType: ConditionNode.EvaluateSlotContent
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name: EvaluateSlotPosition(Func<ReferenceRoot, WorldObject>)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotPosition_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name.vb: EvaluateSlotPosition(Func(Of ReferenceRoot, WorldObject))
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition(System.Func<UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition(System.Func(Of UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject))
+  nameWithType: ConditionNode.EvaluateSlotPosition(Func<ReferenceRoot, WorldObject>)
+  nameWithType.vb: ConditionNode.EvaluateSlotPosition(Func(Of ReferenceRoot, WorldObject))
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition*
+  name: EvaluateSlotPosition
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotPosition_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition
+  nameWithType: ConditionNode.EvaluateSlotPosition
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.Kind
   name: Kind
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Kind
@@ -444,6 +543,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId
   nameWithType: ConditionNode.PropertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name: ResolvePropertyEffectiveValue(ReferenceRoot, int, Func<ReferenceRoot, WorldObject>)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_ResolvePropertyEffectiveValue_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
+  name.vb: ResolvePropertyEffectiveValue(ReferenceRoot, Integer, Func(Of ReferenceRoot, WorldObject))
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot, int, System.Func<UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, System.Func(Of UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject))
+  nameWithType: ConditionNode.ResolvePropertyEffectiveValue(ReferenceRoot, int, Func<ReferenceRoot, WorldObject>)
+  nameWithType.vb: ConditionNode.ResolvePropertyEffectiveValue(ReferenceRoot, Integer, Func(Of ReferenceRoot, WorldObject))
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue*
+  name: ResolvePropertyEffectiveValue
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_ResolvePropertyEffectiveValue_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue
+  nameWithType: ConditionNode.ResolvePropertyEffectiveValue
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.Root
   name: Root
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Root
@@ -674,19 +789,6 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.LocalIndexMap.Empty
   fullName: UnmappedIsland.Domain.Defs.LocalIndexMap.Empty
   nameWithType: LocalIndexMap.Empty
-- uid: UnmappedIsland.Domain.Defs.LocalIndexMap.LocalCount
-  name: LocalCount
-  href: UnmappedIsland.Domain.Defs.LocalIndexMap.html#UnmappedIsland_Domain_Defs_LocalIndexMap_LocalCount
-  commentId: P:UnmappedIsland.Domain.Defs.LocalIndexMap.LocalCount
-  fullName: UnmappedIsland.Domain.Defs.LocalIndexMap.LocalCount
-  nameWithType: LocalIndexMap.LocalCount
-- uid: UnmappedIsland.Domain.Defs.LocalIndexMap.LocalCount*
-  name: LocalCount
-  href: UnmappedIsland.Domain.Defs.LocalIndexMap.html#UnmappedIsland_Domain_Defs_LocalIndexMap_LocalCount_
-  commentId: Overload:UnmappedIsland.Domain.Defs.LocalIndexMap.LocalCount
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.LocalIndexMap.LocalCount
-  nameWithType: LocalIndexMap.LocalCount
 - uid: UnmappedIsland.Domain.Defs.LocalIndexMap.Missing
   name: Missing
   href: UnmappedIsland.Domain.Defs.LocalIndexMap.html#UnmappedIsland_Domain_Defs_LocalIndexMap_Missing
@@ -887,6 +989,19 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ObjectDef.EnumerateSlotDefs
   nameWithType: ObjectDef.EnumerateSlotDefs
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: FindMatchingCombinations(WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_FindMatchingCombinations_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.ObjectDef.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: ObjectDef.FindMatchingCombinations(WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.FindMatchingCombinations*
+  name: FindMatchingCombinations
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_FindMatchingCombinations_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ObjectDef.FindMatchingCombinations
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.FindMatchingCombinations
+  nameWithType: ObjectDef.FindMatchingCombinations
 - uid: UnmappedIsland.Domain.Defs.ObjectDef.GetPropertyDef(System.Int32)
   name: GetPropertyDef(int)
   href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_GetPropertyDef_System_Int32_
@@ -1062,6 +1177,38 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ObjectDef.Tags
   nameWithType: ObjectDef.Tags
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: TryExecuteAction(WorldObject, WorldObject, string, WorldSession)
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_TryExecuteAction_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: TryExecuteAction(WorldObject, WorldObject, String, WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, string, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, String, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: ObjectDef.TryExecuteAction(WorldObject, WorldObject, string, WorldSession)
+  nameWithType.vb: ObjectDef.TryExecuteAction(WorldObject, WorldObject, String, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteAction*
+  name: TryExecuteAction
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_TryExecuteAction_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteAction
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteAction
+  nameWithType: ObjectDef.TryExecuteAction
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: TryExecuteCombination(WorldObject, WorldObject, WorldObject, string, WorldSession)
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_TryExecuteCombination_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: TryExecuteCombination(WorldObject, WorldObject, WorldObject, String, WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, string, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, String, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: ObjectDef.TryExecuteCombination(WorldObject, WorldObject, WorldObject, string, WorldSession)
+  nameWithType.vb: ObjectDef.TryExecuteCombination(WorldObject, WorldObject, WorldObject, String, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination*
+  name: TryExecuteCombination
+  href: UnmappedIsland.Domain.Defs.ObjectDef.html#UnmappedIsland_Domain_Defs_ObjectDef_TryExecuteCombination_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ObjectDef.TryExecuteCombination
+  nameWithType: ObjectDef.TryExecuteCombination
 - uid: UnmappedIsland.Domain.Defs.ObjectDefTable
   name: ObjectDefTable
   href: UnmappedIsland.Domain.Defs.ObjectDefTable.html
@@ -1218,24 +1365,69 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.PassiveEffectGate
   fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate
   nameWithType: PassiveEffectGate
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.Conditions
-  name: Conditions
-  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_Conditions
-  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectGate.Conditions
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.Conditions
-  nameWithType: PassiveEffectGate.Conditions
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.PropertyGlobalId
-  name: PropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_PropertyGlobalId
-  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectGate.PropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.PropertyGlobalId
-  nameWithType: PassiveEffectGate.PropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.StageName
-  name: StageName
-  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_StageName
-  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectGate.StageName
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.StageName
-  nameWithType: PassiveEffectGate.StageName
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.#ctor(UnmappedIsland.Domain.Defs.ConditionNode,System.Nullable{System.Int32},System.String)
+  name: PassiveEffectGate(ConditionNode, int?, string)
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate__ctor_UnmappedIsland_Domain_Defs_ConditionNode_System_Nullable_System_Int32__System_String_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffectGate.#ctor(UnmappedIsland.Domain.Defs.ConditionNode,System.Nullable{System.Int32},System.String)
+  name.vb: New(ConditionNode, Integer?, String)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.PassiveEffectGate(UnmappedIsland.Domain.Defs.ConditionNode, int?, string)
+  fullName.vb: UnmappedIsland.Domain.Defs.PassiveEffectGate.New(UnmappedIsland.Domain.Defs.ConditionNode, Integer?, String)
+  nameWithType: PassiveEffectGate.PassiveEffectGate(ConditionNode, int?, string)
+  nameWithType.vb: PassiveEffectGate.New(ConditionNode, Integer?, String)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.#ctor*
+  name: PassiveEffectGate
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffectGate.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.PassiveEffectGate
+  fullName.vb: UnmappedIsland.Domain.Defs.PassiveEffectGate.New
+  nameWithType: PassiveEffectGate.PassiveEffectGate
+  nameWithType.vb: PassiveEffectGate.New
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: IsSatisfied(WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_IsSatisfied_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: PassiveEffectGate.IsSatisfied(WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied*
+  name: IsSatisfied
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_IsSatisfied_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied
+  nameWithType: PassiveEffectGate.IsSatisfied
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Resolve(ReferenceRoot, WorldObject)
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_Resolve_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: PassiveEffectGate.Resolve(ReferenceRoot, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve*
+  name: Resolve
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_Resolve_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve
+  nameWithType: PassiveEffectGate.Resolve
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.conditions
+  name: conditions
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_conditions
+  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectGate.conditions
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.conditions
+  nameWithType: PassiveEffectGate.conditions
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.propertyGlobalId
+  name: propertyGlobalId
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_propertyGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectGate.propertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.propertyGlobalId
+  nameWithType: PassiveEffectGate.propertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.PassiveEffectGate.stageName
+  name: stageName
+  href: UnmappedIsland.Domain.Defs.PassiveEffectGate.html#UnmappedIsland_Domain_Defs_PassiveEffectGate_stageName
+  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectGate.stageName
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.stageName
+  nameWithType: PassiveEffectGate.stageName
 - uid: UnmappedIsland.Domain.Defs.PassiveEffectKind
   name: PassiveEffectKind
   href: UnmappedIsland.Domain.Defs.PassiveEffectKind.html
@@ -1335,6 +1527,38 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Pick
   nameWithType: PickCandidateDef.Pick
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: ResolveEffect(ActiveEffect, IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: ResolveEffect(ActiveEffect, IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PickCandidateDef>, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PickCandidateDef), UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: PickCandidateDef.ResolveEffect(ActiveEffect, IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
+  nameWithType.vb: PickCandidateDef.ResolveEffect(ActiveEffect, IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect*
+  name: ResolveEffect
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveEffect_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveEffect
+  nameWithType: PickCandidateDef.ResolveEffect
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: SelectWeighted(IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_SelectWeighted_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: SelectWeighted(IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PickCandidateDef>, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PickCandidateDef), UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: PickCandidateDef.SelectWeighted(IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
+  nameWithType.vb: PickCandidateDef.SelectWeighted(IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted*
+  name: SelectWeighted
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_SelectWeighted_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.SelectWeighted
+  nameWithType: PickCandidateDef.SelectWeighted
 - uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Weight
   name: Weight
   href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Weight
@@ -1823,6 +2047,25 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.ReferenceRoot.Self
   fullName: UnmappedIsland.Domain.Defs.ReferenceRoot.Self
   nameWithType: ReferenceRoot.Self
+- uid: UnmappedIsland.Domain.Defs.ReferenceRootResolver
+  name: ReferenceRootResolver
+  href: UnmappedIsland.Domain.Defs.ReferenceRootResolver.html
+  commentId: T:UnmappedIsland.Domain.Defs.ReferenceRootResolver
+  fullName: UnmappedIsland.Domain.Defs.ReferenceRootResolver
+  nameWithType: ReferenceRootResolver
+- uid: UnmappedIsland.Domain.Defs.ReferenceRootResolver.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Resolve(ReferenceRoot, WorldObject, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.ReferenceRootResolver.html#UnmappedIsland_Domain_Defs_ReferenceRootResolver_Resolve_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.ReferenceRootResolver.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.ReferenceRootResolver.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: ReferenceRootResolver.Resolve(ReferenceRoot, WorldObject, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.ReferenceRootResolver.Resolve*
+  name: Resolve
+  href: UnmappedIsland.Domain.Defs.ReferenceRootResolver.html#UnmappedIsland_Domain_Defs_ReferenceRootResolver_Resolve_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ReferenceRootResolver.Resolve
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ReferenceRootResolver.Resolve
+  nameWithType: ReferenceRootResolver.Resolve
 - uid: UnmappedIsland.Domain.Defs.ShowMenuMode
   name: ShowMenuMode
   href: UnmappedIsland.Domain.Defs.ShowMenuMode.html
@@ -1912,19 +2155,12 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.SlotAcceptRule.TargetKind
   nameWithType: SlotAcceptRule.TargetKind
-- uid: UnmappedIsland.Domain.Defs.SlotAcceptRule.With
-  name: With
-  href: UnmappedIsland.Domain.Defs.SlotAcceptRule.html#UnmappedIsland_Domain_Defs_SlotAcceptRule_With
-  commentId: P:UnmappedIsland.Domain.Defs.SlotAcceptRule.With
-  fullName: UnmappedIsland.Domain.Defs.SlotAcceptRule.With
-  nameWithType: SlotAcceptRule.With
-- uid: UnmappedIsland.Domain.Defs.SlotAcceptRule.With*
-  name: With
-  href: UnmappedIsland.Domain.Defs.SlotAcceptRule.html#UnmappedIsland_Domain_Defs_SlotAcceptRule_With_
-  commentId: Overload:UnmappedIsland.Domain.Defs.SlotAcceptRule.With
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.SlotAcceptRule.With
-  nameWithType: SlotAcceptRule.With
+- uid: UnmappedIsland.Domain.Defs.SlotAcceptRule.with
+  name: with
+  href: UnmappedIsland.Domain.Defs.SlotAcceptRule.html#UnmappedIsland_Domain_Defs_SlotAcceptRule_with
+  commentId: F:UnmappedIsland.Domain.Defs.SlotAcceptRule.with
+  fullName: UnmappedIsland.Domain.Defs.SlotAcceptRule.with
+  nameWithType: SlotAcceptRule.with
 - uid: UnmappedIsland.Domain.Defs.SlotAcceptTargetKind
   name: SlotAcceptTargetKind
   href: UnmappedIsland.Domain.Defs.SlotAcceptTargetKind.html
@@ -2368,24 +2604,37 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.WeightSpec.FromPath
   nameWithType: WeightSpec.FromPath
-- uid: UnmappedIsland.Domain.Defs.WeightSpec.IsPathRef
-  name: IsPathRef
-  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_IsPathRef
-  commentId: F:UnmappedIsland.Domain.Defs.WeightSpec.IsPathRef
-  fullName: UnmappedIsland.Domain.Defs.WeightSpec.IsPathRef
-  nameWithType: WeightSpec.IsPathRef
-- uid: UnmappedIsland.Domain.Defs.WeightSpec.Literal
-  name: Literal
-  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_Literal
-  commentId: F:UnmappedIsland.Domain.Defs.WeightSpec.Literal
-  fullName: UnmappedIsland.Domain.Defs.WeightSpec.Literal
-  nameWithType: WeightSpec.Literal
-- uid: UnmappedIsland.Domain.Defs.WeightSpec.Path
-  name: Path
-  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_Path
-  commentId: F:UnmappedIsland.Domain.Defs.WeightSpec.Path
-  fullName: UnmappedIsland.Domain.Defs.WeightSpec.Path
-  nameWithType: WeightSpec.Path
+- uid: UnmappedIsland.Domain.Defs.WeightSpec.Resolve(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Resolve(WorldObject, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_Resolve_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.WeightSpec.Resolve(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.WeightSpec.Resolve(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: WeightSpec.Resolve(WorldObject, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.WeightSpec.Resolve*
+  name: Resolve
+  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_Resolve_
+  commentId: Overload:UnmappedIsland.Domain.Defs.WeightSpec.Resolve
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.WeightSpec.Resolve
+  nameWithType: WeightSpec.Resolve
+- uid: UnmappedIsland.Domain.Defs.WeightSpec.isPathRef
+  name: isPathRef
+  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_isPathRef
+  commentId: F:UnmappedIsland.Domain.Defs.WeightSpec.isPathRef
+  fullName: UnmappedIsland.Domain.Defs.WeightSpec.isPathRef
+  nameWithType: WeightSpec.isPathRef
+- uid: UnmappedIsland.Domain.Defs.WeightSpec.literal
+  name: literal
+  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_literal
+  commentId: F:UnmappedIsland.Domain.Defs.WeightSpec.literal
+  fullName: UnmappedIsland.Domain.Defs.WeightSpec.literal
+  nameWithType: WeightSpec.literal
+- uid: UnmappedIsland.Domain.Defs.WeightSpec.path
+  name: path
+  href: UnmappedIsland.Domain.Defs.WeightSpec.html#UnmappedIsland_Domain_Defs_WeightSpec_path
+  commentId: F:UnmappedIsland.Domain.Defs.WeightSpec.path
+  fullName: UnmappedIsland.Domain.Defs.WeightSpec.path
+  nameWithType: WeightSpec.path
 - uid: UnmappedIsland.Domain.Defs.WellKnownProperties
   name: WellKnownProperties
   href: UnmappedIsland.Domain.Defs.WellKnownProperties.html
@@ -2559,221 +2808,6 @@ references:
   commentId: N:UnmappedIsland.Domain.Runtime
   fullName: UnmappedIsland.Domain.Runtime
   nameWithType: UnmappedIsland.Domain.Runtime
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator
-  name: ConditionEvaluator
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html
-  commentId: T:UnmappedIsland.Domain.Runtime.ConditionEvaluator
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator
-  nameWithType: ConditionEvaluator
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.Evaluate(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  name: Evaluate(ConditionNode, ConditionRootResolver)
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_Evaluate_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_
-  commentId: M:UnmappedIsland.Domain.Runtime.ConditionEvaluator.Evaluate(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.Evaluate(UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  nameWithType: ConditionEvaluator.Evaluate(ConditionNode, ConditionRootResolver)
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.Evaluate*
-  name: Evaluate
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_Evaluate_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ConditionEvaluator.Evaluate
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.Evaluate
-  nameWithType: ConditionEvaluator.Evaluate
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  name: EvaluateObjectTag(ConditionNode, ConditionRootResolver)
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateObjectTag_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_
-  commentId: M:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag(UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  nameWithType: ConditionEvaluator.EvaluateObjectTag(ConditionNode, ConditionRootResolver)
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag*
-  name: EvaluateObjectTag
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateObjectTag_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateObjectTag
-  nameWithType: ConditionEvaluator.EvaluateObjectTag
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  name: EvaluateProperty(ConditionNode, ConditionRootResolver)
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateProperty_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_
-  commentId: M:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty(UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  nameWithType: ConditionEvaluator.EvaluateProperty(ConditionNode, ConditionRootResolver)
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty*
-  name: EvaluateProperty
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateProperty_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateProperty
-  nameWithType: ConditionEvaluator.EvaluateProperty
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  name: EvaluateSlotContent(ConditionNode, ConditionRootResolver)
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotContent_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_
-  commentId: M:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent(UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  nameWithType: ConditionEvaluator.EvaluateSlotContent(ConditionNode, ConditionRootResolver)
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent*
-  name: EvaluateSlotContent
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotContent_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotContent
-  nameWithType: ConditionEvaluator.EvaluateSlotContent
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  name: EvaluateSlotPosition(ConditionNode, ConditionRootResolver)
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotPosition_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_ConditionRootResolver_
-  commentId: M:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition(UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  nameWithType: ConditionEvaluator.EvaluateSlotPosition(ConditionNode, ConditionRootResolver)
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition*
-  name: EvaluateSlotPosition
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_EvaluateSlotPosition_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.EvaluateSlotPosition
-  nameWithType: ConditionEvaluator.EvaluateSlotPosition
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  name: ResolvePropertyEffectiveValue(ReferenceRoot, int, ConditionRootResolver)
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_ResolvePropertyEffectiveValue_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Runtime_ConditionRootResolver_
-  commentId: M:UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  name.vb: ResolvePropertyEffectiveValue(ReferenceRoot, Integer, ConditionRootResolver)
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  fullName.vb: UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Runtime.ConditionRootResolver)
-  nameWithType: ConditionEvaluator.ResolvePropertyEffectiveValue(ReferenceRoot, int, ConditionRootResolver)
-  nameWithType.vb: ConditionEvaluator.ResolvePropertyEffectiveValue(ReferenceRoot, Integer, ConditionRootResolver)
-- uid: UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue*
-  name: ResolvePropertyEffectiveValue
-  href: UnmappedIsland.Domain.Runtime.ConditionEvaluator.html#UnmappedIsland_Domain_Runtime_ConditionEvaluator_ResolvePropertyEffectiveValue_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ConditionEvaluator.ResolvePropertyEffectiveValue
-  nameWithType: ConditionEvaluator.ResolvePropertyEffectiveValue
-- uid: UnmappedIsland.Domain.Runtime.ConditionRootResolver
-  name: ConditionRootResolver
-  href: UnmappedIsland.Domain.Runtime.ConditionRootResolver.html
-  commentId: T:UnmappedIsland.Domain.Runtime.ConditionRootResolver
-  fullName: UnmappedIsland.Domain.Runtime.ConditionRootResolver
-  nameWithType: ConditionRootResolver
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor
-  name: InteractionExecutor
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html
-  commentId: T:UnmappedIsland.Domain.Runtime.InteractionExecutor
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor
-  nameWithType: InteractionExecutor
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: EvaluateConditions(ConditionNode, WorldObject, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_EvaluateConditions_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions(UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: InteractionExecutor.EvaluateConditions(ConditionNode, WorldObject, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions*
-  name: EvaluateConditions
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_EvaluateConditions_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions
-  nameWithType: InteractionExecutor.EvaluateConditions
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: FindMatchingCombinations(WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_FindMatchingCombinations_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: InteractionExecutor.FindMatchingCombinations(WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations*
-  name: FindMatchingCombinations
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_FindMatchingCombinations_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations
-  nameWithType: InteractionExecutor.FindMatchingCombinations
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  name: ResolveEffect(ActiveEffect, IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_ResolveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  name.vb: ResolveEffect(ActiveEffect, IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PickCandidateDef>, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
-  fullName.vb: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveEffect(UnmappedIsland.Domain.Defs.ActiveEffect, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PickCandidateDef), UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
-  nameWithType: InteractionExecutor.ResolveEffect(ActiveEffect, IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
-  nameWithType.vb: InteractionExecutor.ResolveEffect(ActiveEffect, IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveEffect*
-  name: ResolveEffect
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_ResolveEffect_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveEffect
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveEffect
-  nameWithType: InteractionExecutor.ResolveEffect
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveTarget(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: ResolveTarget(ReferenceRoot, WorldObject, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_ResolveTarget_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveTarget(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveTarget(UnmappedIsland.Domain.Defs.ReferenceRoot, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: InteractionExecutor.ResolveTarget(ReferenceRoot, WorldObject, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveTarget*
-  name: ResolveTarget
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_ResolveTarget_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveTarget
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveTarget
-  nameWithType: InteractionExecutor.ResolveTarget
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveWeight(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: ResolveWeight(WeightSpec, WorldObject, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_ResolveWeight_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveWeight(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveWeight(UnmappedIsland.Domain.Defs.WeightSpec, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: InteractionExecutor.ResolveWeight(WeightSpec, WorldObject, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveWeight*
-  name: ResolveWeight
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_ResolveWeight_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveWeight
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.ResolveWeight
-  nameWithType: InteractionExecutor.ResolveWeight
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.SelectWeighted(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  name: SelectWeighted(IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_SelectWeighted_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.SelectWeighted(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef},UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  name.vb: SelectWeighted(IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.SelectWeighted(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PickCandidateDef>, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
-  fullName.vb: UnmappedIsland.Domain.Runtime.InteractionExecutor.SelectWeighted(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PickCandidateDef), UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
-  nameWithType: InteractionExecutor.SelectWeighted(IReadOnlyList<PickCandidateDef>, WorldObject, WorldObject, WorldObject, WorldSession)
-  nameWithType.vb: InteractionExecutor.SelectWeighted(IReadOnlyList(Of PickCandidateDef), WorldObject, WorldObject, WorldObject, WorldSession)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.SelectWeighted*
-  name: SelectWeighted
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_SelectWeighted_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.SelectWeighted
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.SelectWeighted
-  nameWithType: InteractionExecutor.SelectWeighted
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
-  name: TryExecuteAction(WorldObject, WorldObject, string, WorldSession)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteAction_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
-  name.vb: TryExecuteAction(WorldObject, WorldObject, String, WorldSession)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, string, UnmappedIsland.Domain.Runtime.WorldSession)
-  fullName.vb: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, String, UnmappedIsland.Domain.Runtime.WorldSession)
-  nameWithType: InteractionExecutor.TryExecuteAction(WorldObject, WorldObject, string, WorldSession)
-  nameWithType.vb: InteractionExecutor.TryExecuteAction(WorldObject, WorldObject, String, WorldSession)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction*
-  name: TryExecuteAction
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteAction_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction
-  nameWithType: InteractionExecutor.TryExecuteAction
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
-  name: TryExecuteCombination(WorldObject, WorldObject, WorldObject, string, WorldSession)
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteCombination_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_
-  commentId: M:UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
-  name.vb: TryExecuteCombination(WorldObject, WorldObject, WorldObject, String, WorldSession)
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, string, UnmappedIsland.Domain.Runtime.WorldSession)
-  fullName.vb: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, String, UnmappedIsland.Domain.Runtime.WorldSession)
-  nameWithType: InteractionExecutor.TryExecuteCombination(WorldObject, WorldObject, WorldObject, string, WorldSession)
-  nameWithType.vb: InteractionExecutor.TryExecuteCombination(WorldObject, WorldObject, WorldObject, String, WorldSession)
-- uid: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination*
-  name: TryExecuteCombination
-  href: UnmappedIsland.Domain.Runtime.InteractionExecutor.html#UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteCombination_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination
-  nameWithType: InteractionExecutor.TryExecuteCombination
 - uid: UnmappedIsland.Domain.Runtime.ObjectStack
   name: ObjectStack
   href: UnmappedIsland.Domain.Runtime.ObjectStack.html
@@ -3270,19 +3304,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.IsActive
   nameWithType: RegisteredPassiveEffect.IsActive
-- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ResolveConditionRoot(UnmappedIsland.Domain.Defs.ReferenceRoot)
-  name: ResolveConditionRoot(ReferenceRoot)
-  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ResolveConditionRoot_UnmappedIsland_Domain_Defs_ReferenceRoot_
-  commentId: M:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ResolveConditionRoot(UnmappedIsland.Domain.Defs.ReferenceRoot)
-  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ResolveConditionRoot(UnmappedIsland.Domain.Defs.ReferenceRoot)
-  nameWithType: RegisteredPassiveEffect.ResolveConditionRoot(ReferenceRoot)
-- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ResolveConditionRoot*
-  name: ResolveConditionRoot
-  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ResolveConditionRoot_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ResolveConditionRoot
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ResolveConditionRoot
-  nameWithType: RegisteredPassiveEffect.ResolveConditionRoot
 - uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.SlotBearer
   name: SlotBearer
   href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_SlotBearer
@@ -4125,6 +4146,19 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.FindAncestorWithProperty
   nameWithType: WorldObject.FindAncestorWithProperty
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject)
+  name: FindMatchingCombinations(WorldObject)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_FindMatchingCombinations_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: WorldObject.FindMatchingCombinations(WorldObject)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.FindMatchingCombinations*
+  name: FindMatchingCombinations
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_FindMatchingCombinations_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.FindMatchingCombinations
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.FindMatchingCombinations
+  nameWithType: WorldObject.FindMatchingCombinations
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.GetEffectiveValue(System.Int32)
   name: GetEffectiveValue(int)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_GetEffectiveValue_System_Int32_
@@ -4559,6 +4593,38 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.Tick
   nameWithType: WorldObject.Tick
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteAction(System.String,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: TryExecuteAction(string, WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_TryExecuteAction_System_String_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteAction(System.String,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: TryExecuteAction(String, WorldObject, WorldSession)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteAction(string, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteAction(String, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: WorldObject.TryExecuteAction(string, WorldObject, WorldSession)
+  nameWithType.vb: WorldObject.TryExecuteAction(String, WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteAction*
+  name: TryExecuteAction
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_TryExecuteAction_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteAction
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteAction
+  nameWithType: WorldObject.TryExecuteAction
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: TryExecuteCombination(WorldObject, WorldObject, string, WorldSession)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_TryExecuteCombination_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)
+  name.vb: TryExecuteCombination(WorldObject, WorldObject, String, WorldSession)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, string, UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, String, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: WorldObject.TryExecuteCombination(WorldObject, WorldObject, string, WorldSession)
+  nameWithType.vb: WorldObject.TryExecuteCombination(WorldObject, WorldObject, String, WorldSession)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteCombination*
+  name: TryExecuteCombination
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_TryExecuteCombination_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteCombination
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.TryExecuteCombination
+  nameWithType: WorldObject.TryExecuteCombination
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.TryFirstAcceptingSlot(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,System.Boolean)
   name: TryFirstAcceptingSlot(WorldObject, WorldObject, WorldSession, bool)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_TryFirstAcceptingSlot_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_System_Boolean_

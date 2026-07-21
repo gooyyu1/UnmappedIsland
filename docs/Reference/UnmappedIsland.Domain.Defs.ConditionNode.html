@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class ConditionNode | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート （旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。 Runtime.ConditionEvaluator参照）。 葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて 使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の 慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に 関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。">
+    <meta name="description" content="conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート （旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけが呼び出し側にある）。 葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて 使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の 慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に 関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,8 +75,7 @@
 
   <h1 id="UnmappedIsland_Domain_Defs_ConditionNode" data-uid="UnmappedIsland.Domain.Defs.ConditionNode" class="text-break">Class ConditionNode</h1>
   <div class="markdown level0 summary"><p>conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート
-（旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。
-Runtime.ConditionEvaluator参照）。</p>
+（旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけが呼び出し側にある）。</p>
 <p>葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて
 使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の
 慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に
@@ -122,7 +121,7 @@ Runtime.ConditionEvaluator参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode__ctor_UnmappedIsland_Domain_Defs_ConditionNodeKind_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_System_Int32__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__System_Int32_System_Int32_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.%23ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind%2CUnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.ConditionOp%2CSystem.Collections.Generic.IReadOnlyList%7BSystem.Int32%7D%2CSystem.Nullable%7BUnmappedIsland.Domain.Defs.PropertyPath%7D%2CSystem.Int32%2CSystem.Int32%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ConditionNode%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L133">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L151">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode__ctor_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode__ctor_UnmappedIsland_Domain_Defs_ConditionNodeKind_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_System_Int32__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__System_Int32_System_Int32_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.#ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{System.Int32},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath},System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})">ConditionNode(ConditionNodeKind, ReferenceRoot, int, ConditionOp, IReadOnlyList&lt;int&gt;, PropertyPath?, int, int, IReadOnlyList&lt;ConditionNode&gt;)</h4>
@@ -196,7 +195,7 @@ Runtime.ConditionEvaluator参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Children.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Children%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L131">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L149">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Children_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Children*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Children" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Children">Children</h4>
@@ -227,7 +226,7 @@ Runtime.ConditionEvaluator参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Kind.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Kind%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L101">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L119">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Kind_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Kind*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Kind" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Kind">Kind</h4>
@@ -257,7 +256,7 @@ Runtime.ConditionEvaluator参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Op.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Op%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L110">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L128">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Op_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Op*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Op" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Op">Op</h4>
@@ -288,7 +287,7 @@ Runtime.ConditionEvaluator参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_PropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L107">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L125">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_PropertyGlobalId_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_PropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId">PropertyGlobalId</h4>
@@ -319,7 +318,7 @@ Runtime.ConditionEvaluator参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Root.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Root%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L104">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L122">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Root_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Root*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Root" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Root">Root</h4>
@@ -350,7 +349,7 @@ Runtime.ConditionEvaluator参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_SlotGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L125">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L143">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_SlotGlobalId_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_SlotGlobalId" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId">SlotGlobalId</h4>
@@ -383,7 +382,7 @@ SlotContentではobject自身が持つスロットを指す（同じ「スロッ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_TagGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L128">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L146">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_TagGlobalId_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_TagGlobalId" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId">TagGlobalId</h4>
@@ -414,7 +413,7 @@ SlotContentではobject自身が持つスロットを指す（同じ「スロッ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_ValueRef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.ValueRef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L120">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L138">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_ValueRef_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.ValueRef*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_ValueRef" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.ValueRef">ValueRef</h4>
@@ -448,7 +447,7 @@ SlotContentではobject自身が持つスロットを指す（同じ「スロッ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Values.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Values%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L114">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L132">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Values_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Values*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Values" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Values">Values</h4>
@@ -482,7 +481,7 @@ in/not_inは複数要素になりうる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_All_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.All(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ConditionNode%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L163">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L181">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_All_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.All*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_All_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.All(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})">All(IReadOnlyList&lt;ConditionNode&gt;)</h4>
@@ -529,7 +528,7 @@ in/not_inは複数要素になりうる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Any_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Any(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ConditionNode%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L166">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L184">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Any_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Any*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Any_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Any(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})">Any(IReadOnlyList&lt;ConditionNode&gt;)</h4>
@@ -573,10 +572,245 @@ in/not_inは複数要素になりうる。</p>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Evaluate_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Evaluate(System.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CUnmappedIsland.Domain.Runtime.WorldObject%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L190">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ConditionNode_Evaluate_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Evaluate*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Evaluate_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Evaluate(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})">Evaluate(Func&lt;ReferenceRoot, WorldObject&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal bool Evaluate(Func&lt;ReferenceRoot, WorldObject&gt; resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-2">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>&gt;</td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_EvaluateObjectTag_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag(System.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CUnmappedIsland.Domain.Runtime.WorldObject%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L264">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateObjectTag_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateObjectTag_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateObjectTag(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})">EvaluateObjectTag(Func&lt;ReferenceRoot, WorldObject&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private bool EvaluateObjectTag(Func&lt;ReferenceRoot, WorldObject&gt; resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-2">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>&gt;</td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_EvaluateProperty_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty(System.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CUnmappedIsland.Domain.Runtime.WorldObject%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L205">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateProperty_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateProperty_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateProperty(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})">EvaluateProperty(Func&lt;ReferenceRoot, WorldObject&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private bool EvaluateProperty(Func&lt;ReferenceRoot, WorldObject&gt; resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-2">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>&gt;</td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotContent_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent(System.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CUnmappedIsland.Domain.Runtime.WorldObject%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L257">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotContent_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotContent_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotContent(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})">EvaluateSlotContent(Func&lt;ReferenceRoot, WorldObject&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private bool EvaluateSlotContent(Func&lt;ReferenceRoot, WorldObject&gt; resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-2">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>&gt;</td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotPosition_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition(System.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CUnmappedIsland.Domain.Runtime.WorldObject%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L248">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotPosition_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_EvaluateSlotPosition_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})">EvaluateSlotPosition(Func&lt;ReferenceRoot, WorldObject&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private bool EvaluateSlotPosition(Func&lt;ReferenceRoot, WorldObject&gt; resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-2">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>&gt;</td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Not_UnmappedIsland_Domain_Defs_ConditionNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Not(UnmappedIsland.Domain.Defs.ConditionNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L169">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L187">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Not_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Not*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Not_UnmappedIsland_Domain_Defs_ConditionNode_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Not(UnmappedIsland.Domain.Defs.ConditionNode)">Not(ConditionNode)</h4>
@@ -623,7 +857,7 @@ in/not_inは複数要素になりうる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_ObjectTag_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.ObjectTag(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L160">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L178">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_ObjectTag_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.ObjectTag*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_ObjectTag_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.ObjectTag(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)">ObjectTag(ReferenceRoot, int)</h4>
@@ -675,7 +909,7 @@ in/not_inは複数要素になりうる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_Property_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_System_Int32__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.ConditionOp%2CSystem.Collections.Generic.IReadOnlyList%7BSystem.Int32%7D%2CSystem.Nullable%7BUnmappedIsland.Domain.Defs.PropertyPath%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L149">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L167">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_Property_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Property*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_Property_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_System_Int32__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{System.Int32},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath})">Property(ReferenceRoot, int, ConditionOp, IReadOnlyList&lt;int&gt;, PropertyPath?)</h4>
@@ -739,10 +973,67 @@ in/not_inは複数要素になりうる。</p>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_ResolvePropertyEffectiveValue_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CSystem.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CUnmappedIsland.Domain.Runtime.WorldObject%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L238">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ConditionNode_ResolvePropertyEffectiveValue_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_ResolvePropertyEffectiveValue_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})">ResolvePropertyEffectiveValue(ReferenceRoot, int, Func&lt;ReferenceRoot, WorldObject&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private int? ResolvePropertyEffectiveValue(ReferenceRoot root, int propertyGlobalId, Func&lt;ReferenceRoot, WorldObject&gt; resolveRoot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><span class="parametername">root</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">propertyGlobalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-2">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>&gt;</td>
+        <td><span class="parametername">resolveRoot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_SlotContent_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.SlotContent(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L157">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L175">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_SlotContent_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.SlotContent*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_SlotContent_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.SlotContent(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)">SlotContent(ReferenceRoot, int, int)</h4>
@@ -799,7 +1090,7 @@ in/not_inは複数要素になりうる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode_SlotPosition_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode.SlotPosition(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L154">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L172">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ConditionNode_SlotPosition_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.SlotPosition*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ConditionNode_SlotPosition_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.ConditionNode.SlotPosition(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)">SlotPosition(ReferenceRoot, int)</h4>
@@ -858,7 +1149,7 @@ in/not_inは複数要素になりうる。</p>
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ConditionNode.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ConditionNode%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L99" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ConditionDef.cs/#L117" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

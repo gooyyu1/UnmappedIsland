@@ -64,7 +64,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ConditionNode",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"1\">conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート\n（旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。\nRuntime.ConditionEvaluator参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"5\">葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて\n使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の\n慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に\n関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"1\">conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート\n（旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけが呼び出し側にある）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"4\">葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて\n使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の\n慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に\n関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -320,6 +320,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ReferenceRootResolver.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ReferenceRootResolver.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ReferenceRootResolver",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Defs.ShowMenuMode.yml",
       "output": {
         ".html": {
@@ -485,48 +499,6 @@
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs",
       "Summary": null
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.ConditionEvaluator.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Runtime.ConditionEvaluator.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Runtime.ConditionEvaluator",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ConditionEvaluator.yml\" sourcestartlinenumber=\"1\">conditions（GameElementDefinition.md 14節）の条件木を評価する。actions/combinationsの一度きりの\n判定（InteractionExecutor）と、passivesの持続的なゲート（RegisteredPassiveEffect.IsActive）の両方が\nこの同じ評価器を共用する。両者の違いはrootの解決方法（resolveRoot）だけに閉じる。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.ConditionRootResolver.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Runtime.ConditionRootResolver.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Runtime.ConditionRootResolver",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ConditionRootResolver.yml\" sourcestartlinenumber=\"1\">rootが指すWorldObjectを解決する。呼び出し文脈ごとに解決できる対象が異なるため\n（actions/combinationsはself/parent/actor/dragged、passivesのゲートはself/parentのみ）、\n解決できない/この文脈で無効なrootにはnullを返す。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.InteractionExecutor.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Runtime.InteractionExecutor.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Runtime.InteractionExecutor",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.InteractionExecutor.yml\" sourcestartlinenumber=\"1\">actions（GameElementDefinition.md 11節）・combinations（12節）の実行エンジン。conditionsの評価、\npick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ適用するところまでをここで担う。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.InteractionExecutor.yml\" sourcestartlinenumber=\"4\">set/add/destroyの対象(self/parent/actor/dragged)ごとの解決はWorldObject.ApplyActiveEffectに\n集約されている。ここに残るResolveTargetはconditions/weightのpath解決専用。</p>\n"
     },
     {
       "type": "ManagedReference",

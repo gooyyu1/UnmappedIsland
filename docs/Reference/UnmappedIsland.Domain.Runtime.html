@@ -78,17 +78,6 @@
     <h3 id="classes">
 Classes
 </h3>
-      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionEvaluator.html">ConditionEvaluator</a></h4>
-      <section><p>conditions（GameElementDefinition.md 14節）の条件木を評価する。actions/combinationsの一度きりの
-判定（InteractionExecutor）と、passivesの持続的なゲート（RegisteredPassiveEffect.IsActive）の両方が
-この同じ評価器を共用する。両者の違いはrootの解決方法（resolveRoot）だけに閉じる。</p>
-</section>
-      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.InteractionExecutor.html">InteractionExecutor</a></h4>
-      <section><p>actions（GameElementDefinition.md 11節）・combinations（12節）の実行エンジン。conditionsの評価、
-pick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ適用するところまでをここで担う。</p>
-<p>set/add/destroyの対象(self/parent/actor/dragged)ごとの解決はWorldObject.ApplyActiveEffectに
-集約されている。ここに残るResolveTargetはconditions/weightのpath解決専用。</p>
-</section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></h4>
       <section><p>Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり（GameElementDefinition.md
 7.6節）。ObjectDefが同じで、かつ represented_by が指定されていれば、その代表オブジェクト
@@ -152,14 +141,6 @@ Structs
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html">WorldObject.SameSlotAnchor</a></h4>
       <section><p>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット。</p>
-</section>
-    <h3 id="delegates">
-Delegates
-</h3>
-      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionRootResolver.html">ConditionRootResolver</a></h4>
-      <section><p>rootが指すWorldObjectを解決する。呼び出し文脈ごとに解決できる対象が異なるため
-（actions/combinationsはself/parent/actor/dragged、passivesのゲートはself/parentのみ）、
-解決できない/この文脈で無効なrootにはnullを返す。</p>
 </section>
 
 

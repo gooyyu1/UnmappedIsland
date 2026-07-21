@@ -116,21 +116,65 @@ PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、
   <div class="codewrapper">
     <pre><code class="lang-csharp hljs">public sealed class PassiveEffectGate</code></pre>
   </div>
-  <h3 id="fields">Fields
+  <h3 id="constructors">Constructors
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_Conditions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.Conditions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate__ctor_UnmappedIsland_Domain_Defs_ConditionNode_System_Nullable_System_Int32__System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.%23ctor(UnmappedIsland.Domain.Defs.ConditionNode%2CSystem.Nullable%7BSystem.Int32%7D%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L47">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L53">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_Conditions" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.Conditions">Conditions</h4>
+  <a id="UnmappedIsland_Domain_Defs_PassiveEffectGate__ctor_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate__ctor_UnmappedIsland_Domain_Defs_ConditionNode_System_Nullable_System_Int32__System_String_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.#ctor(UnmappedIsland.Domain.Defs.ConditionNode,System.Nullable{System.Int32},System.String)">PassiveEffectGate(ConditionNode, int?, string)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public ConditionNode Conditions</code></pre>
+    <pre><code class="lang-csharp hljs">internal PassiveEffectGate(ConditionNode conditions, int? propertyGlobalId = null, string stageName = null)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
+        <td><span class="parametername">conditions</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
+        <td><span class="parametername">propertyGlobalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">stageName</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="fields">Fields
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_conditions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.conditions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L49">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_conditions" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.conditions">conditions</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly ConditionNode conditions</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
@@ -149,17 +193,17 @@ PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_PropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.PropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_propertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.propertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L48">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L50">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_PropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.PropertyGlobalId">PropertyGlobalId</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_propertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.propertyGlobalId">propertyGlobalId</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int PropertyGlobalId</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly int? propertyGlobalId</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
@@ -171,24 +215,24 @@ PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
         <td></td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_StageName.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.StageName%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_stageName.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.stageName%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L49">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L51">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_StageName" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.StageName">StageName</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_stageName" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.stageName">stageName</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public string StageName</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly string stageName</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
@@ -205,6 +249,112 @@ PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、
       </tr>
     </tbody>
   </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_IsSatisfied_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L60">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PassiveEffectGate_IsSatisfied_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_IsSatisfied_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.IsSatisfied(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">IsSatisfied(WorldObject, WorldObject)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">internal bool IsSatisfied(WorldObject declarer, WorldObject slotBearer)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">declarer</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">slotBearer</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate_Resolve_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L74">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PassiveEffectGate_Resolve_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PassiveEffectGate_Resolve_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffectGate.Resolve(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject)">Resolve(ReferenceRoot, WorldObject)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private static WorldObject Resolve(ReferenceRoot root, WorldObject slotBearer)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><span class="parametername">root</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">slotBearer</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
 
 </article>
           </div>
@@ -217,7 +367,7 @@ PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffectGate.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffectGate%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L45" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffect.cs/#L47" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
