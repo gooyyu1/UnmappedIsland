@@ -18,22 +18,6 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// 効果の性質。どちらも self/parent/child・ゲートによる登録の仕組み（8節）を共有するが、
-    /// 実体値への反映のされ方が異なる。
-    ///
-    /// - Modify: 条件が真の間だけ、都度導出される実効値に寄与する（可逆、WorldObject.GetEffectiveValue）
-    /// - Accumulate: 条件が真の間、tick毎に実体値そのものへ加減算し続ける（不可逆、WorldObject.Tick）
-    ///
-    /// アクション/combination/pickの効果として書かれる一時的な `add`（実行された瞬間に1回だけ効く）は、
-    /// この登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。
-    /// </summary>
-    public enum PassiveEffectKind
-    {
-        Modify,
-        Accumulate,
-    }
-
-    /// <summary>
     /// 効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を
     /// 表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら
     /// 両方を満たす間だけ有効=AND、両方nullなら常時有効。PassiveEffect.ActiveAmountから呼ばれる）。
@@ -83,55 +67,76 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// 1つの ObjectDef が宣言する、1つの効果（8節）。ObjectDef.Passives の要素。
-    /// Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumulate のどちらであっても構造は同じで、
-    /// 違いは登録時にどこへ・誰の状態と紐付けて置くか（Target）と、どちらの評価経路が読むか（Kind）だけに閉じる
-    /// （Runtime.WorldObject.GetEffectiveValue / Tick 参照）。
+    /// 1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは
+    /// 「どのオブジェクトのどのプロパティへ紐付くか（Target/TargetPropertyGlobalId）」と「ゲートが有効な間だけ
+    /// いくら効くか（ActiveAmount）」。
     ///
-    /// Kind（modify/accumulate）・Amount・Gate は「自分がどのincomingへ入り、今いくら効いているか」という
-    /// この効果自身の内部事情であり、外部（PropertyValue）へは公開しない。登録（RegisterInto）と有効量の
-    /// 算出（ActiveAmount）を自分で行い、PropertyValueは種別も量もゲートも意識しない（自分のことは自分でする、
-    /// CLAUDE.md参照）。TargetとTargetPropertyGlobalId（＝どのオブジェクトのどのプロパティへ紐付けるか）は
-    /// 登録先を決めるWorldObject側が読むため公開する。
+    /// modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ
+    /// 加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがPropertyAssignment/PropertyDeltaに
+    /// 分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の
+    /// 唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。
+    ///
+    /// Amount・Gate は「今いくら効いているか」というこの効果自身の内部事情であり、ActiveAmountを通してのみ
+    /// 外へ出す（PropertyValueは量もゲートも意識しない、自分のことは自分でする、CLAUDE.md参照）。Targetと
+    /// TargetPropertyGlobalIdは登録先を決めるWorldObject側が読むため公開する。
+    ///
+    /// アクション/combination/pickの効果として書かれる一時的な `add`（実行された瞬間に1回だけ効く）は、
+    /// この登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。
     /// </summary>
-    public sealed class PassiveEffect
+    public abstract class PassiveEffect
     {
         public PassiveEffectTarget Target { get; }
         public int TargetPropertyGlobalId { get; }
 
-        private readonly PassiveEffectKind kind;
         private readonly int amount;
         private readonly PassiveEffectGate gate;
 
-        public PassiveEffect(
+        protected PassiveEffect(
             PassiveEffectTarget target,
-            PassiveEffectKind kind,
             int targetPropertyGlobalId,
             int amount,
             PassiveEffectGate gate)
         {
             Target = target;
             TargetPropertyGlobalId = targetPropertyGlobalId;
-            this.kind = kind;
             this.amount = amount;
             this.gate = gate;
         }
 
-        /// <summary>この効果（registration）を、対象プロパティ値（target）の適切なincomingへ登録する。modify用か
-        /// accumulate用かはKind＝この効果自身の内部事情で決まり、PropertyValueは種別を意識しない。</summary>
-        public void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration)
-        {
-            switch (kind)
-            {
-                case PassiveEffectKind.Modify: target.RegisterModify(registration); break;
-                case PassiveEffectKind.Accumulate: target.RegisterAccumulate(registration); break;
-            }
-        }
+        /// <summary>この効果（registration）を、対象プロパティ値（target）の適切なincomingへ登録する。
+        /// modify用かaccumulate用かは具象クラスが決める（判別子は型そのもの）。</summary>
+        public abstract void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration);
 
         /// <summary>declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならAmountを、無効なら0を返す。
         /// 「今この効果はいくら効いているか」をAmountとゲート判定込みで自分で答えるため、Amount/Gateを外へ
         /// 出す必要がない。modify（実効値へ合算）でもaccumulate（tick時に実体値へ加算）でも同じ量。</summary>
         public int ActiveAmount(WorldObject declarer, WorldObject slotBearer) =>
             gate.IsSatisfied(declarer, slotBearer) ? amount : 0;
+    }
+
+    /// <summary>
+    /// 条件が真の間だけ、都度導出される実効値に寄与する持続効果（可逆、8.3節）。実体値そのものは
+    /// 書き換えない。PropertyValueのmodify用incomingへ登録され、WorldObject.GetEffectiveValueが走査する。
+    /// </summary>
+    public sealed class ModifyEffect : PassiveEffect
+    {
+        public ModifyEffect(PassiveEffectTarget target, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)
+            : base(target, targetPropertyGlobalId, amount, gate) { }
+
+        public override void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration) =>
+            target.RegisterModify(registration);
+    }
+
+    /// <summary>
+    /// 条件が真の間、tick毎に実体値そのものへ加減算し続ける持続効果（不可逆、8.4節）。PropertyValueの
+    /// accumulate用incomingへ登録され、WorldObject.Tickが走査する。
+    /// </summary>
+    public sealed class AccumulateEffect : PassiveEffect
+    {
+        public AccumulateEffect(PassiveEffectTarget target, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)
+            : base(target, targetPropertyGlobalId, amount, gate) { }
+
+        public override void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration) =>
+            target.RegisterAccumulate(registration);
     }
 }
