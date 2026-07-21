@@ -225,32 +225,6 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.CombinationDef.New
   nameWithType: CombinationDef.CombinationDef
   nameWithType.vb: CombinationDef.New
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.Active
-  name: Active
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_Active
-  commentId: P:UnmappedIsland.Domain.Defs.CombinationDef.Active
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.Active
-  nameWithType: CombinationDef.Active
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.Active*
-  name: Active
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_Active_
-  commentId: Overload:UnmappedIsland.Domain.Defs.CombinationDef.Active
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.Active
-  nameWithType: CombinationDef.Active
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.Conditions
-  name: Conditions
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_Conditions
-  commentId: P:UnmappedIsland.Domain.Defs.CombinationDef.Conditions
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.Conditions
-  nameWithType: CombinationDef.Conditions
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.Conditions*
-  name: Conditions
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_Conditions_
-  commentId: Overload:UnmappedIsland.Domain.Defs.CombinationDef.Conditions
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.Conditions
-  nameWithType: CombinationDef.Conditions
 - uid: UnmappedIsland.Domain.Defs.CombinationDef.Matches(UnmappedIsland.Domain.Defs.ObjectDef)
   name: Matches(ObjectDef)
   href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_Matches_UnmappedIsland_Domain_Defs_ObjectDef_
@@ -277,19 +251,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.CombinationDef.Name
   nameWithType: CombinationDef.Name
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.Pick
-  name: Pick
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_Pick
-  commentId: P:UnmappedIsland.Domain.Defs.CombinationDef.Pick
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.Pick
-  nameWithType: CombinationDef.Pick
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.Pick*
-  name: Pick
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_Pick_
-  commentId: Overload:UnmappedIsland.Domain.Defs.CombinationDef.Pick
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.Pick
-  nameWithType: CombinationDef.Pick
 - uid: UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
   name: TryExecute(WorldObject, WorldObject, WorldObject, WorldSession)
   href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
@@ -303,6 +264,24 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.CombinationDef.TryExecute
   nameWithType: CombinationDef.TryExecute
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.active
+  name: active
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_active
+  commentId: F:UnmappedIsland.Domain.Defs.CombinationDef.active
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.active
+  nameWithType: CombinationDef.active
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.conditions
+  name: conditions
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_conditions
+  commentId: F:UnmappedIsland.Domain.Defs.CombinationDef.conditions
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.conditions
+  nameWithType: CombinationDef.conditions
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.pick
+  name: pick
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_pick
+  commentId: F:UnmappedIsland.Domain.Defs.CombinationDef.pick
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.pick
+  nameWithType: CombinationDef.pick
 - uid: UnmappedIsland.Domain.Defs.CombinationDef.with
   name: with
   href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_with

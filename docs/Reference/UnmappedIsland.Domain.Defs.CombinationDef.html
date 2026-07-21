@@ -117,7 +117,7 @@ object_defに定義する。Withは、ドラッグされてきたカードとの
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef__ctor_System_String_System_Int32_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.%23ctor(System.String%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.ConditionNode%2CUnmappedIsland.Domain.Defs.ActiveEffect%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PickCandidateDef%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L24">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L23">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_CombinationDef__ctor_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef__ctor_System_String_System_Int32_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.#ctor(System.String,System.Int32,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef})">CombinationDef(string, int, ConditionNode, ActiveEffect, IReadOnlyList&lt;PickCandidateDef&gt;)</h4>
@@ -168,6 +168,95 @@ object_defに定義する。Withは、ドラッグされてきたカードとの
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_active.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.active%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L20">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_active" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.active">active</h4>
+  <div class="markdown level1 summary"><p>ActiveかPickのどちらか一方のみが非null。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly ActiveEffect active</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_conditions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.conditions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L17">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_conditions" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.conditions">conditions</h4>
+  <div class="markdown level1 summary"><p>nullなら常に真（conditions省略）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly ConditionNode conditions</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_pick.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.pick%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L21">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_pick" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.pick">pick</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly IReadOnlyList&lt;PickCandidateDef&gt; pick</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PickCandidateDef.html">PickCandidateDef</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_with.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.with%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
@@ -199,68 +288,6 @@ object_defに定義する。Withは、ドラッグされてきたカードとの
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_Active.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.Active%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L21">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_CombinationDef_Active_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Active*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_Active" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Active">Active</h4>
-  <div class="markdown level1 summary"><p>ActiveかPickのどちらか一方のみが非null。</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public ActiveEffect Active { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_Conditions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.Conditions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L18">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_CombinationDef_Conditions_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Conditions*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_Conditions" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Conditions">Conditions</h4>
-  <div class="markdown level1 summary"><p>マッチング対象のタグ（Matches参照）。</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public ConditionNode Conditions { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_Name.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.Name%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
@@ -289,36 +316,6 @@ object_defに定義する。Withは、ドラッグされてきたカードとの
       </tr>
     </tbody>
   </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_Pick.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.Pick%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L22">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_CombinationDef_Pick_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Pick*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_Pick" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Pick">Pick</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;PickCandidateDef&gt; Pick { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PickCandidateDef.html">PickCandidateDef</a>&gt;</td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
   <h3 id="methods">Methods
 </h3>
   <span class="small pull-right mobile-hide">
@@ -326,7 +323,7 @@ object_defに定義する。Withは、ドラッグされてきたカードとの
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_Matches_UnmappedIsland_Domain_Defs_ObjectDef_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.Matches(UnmappedIsland.Domain.Defs.ObjectDef)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L39">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L38">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_CombinationDef_Matches_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Matches*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_Matches_UnmappedIsland_Domain_Defs_ObjectDef_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Matches(UnmappedIsland.Domain.Defs.ObjectDef)">Matches(ObjectDef)</h4>
@@ -374,7 +371,7 @@ object_defに定義する。Withは、ドラッグされてきたカードとの
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L41">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L40">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.TryExecute*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)">TryExecute(WorldObject, WorldObject, WorldObject, WorldSession)</h4>
