@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'Documents/**'
+      - 'Assets/Scripts/**'
+      - 'docfx.json'
   workflow_dispatch:
 
 permissions:
@@ -27,7 +29,7 @@ jobs:
       - name: Prepare docs output directories
         run: |
           rm -rf docs
-          mkdir -p docs/Design docs/Planning docs/Specification
+          mkdir -p docs/Documents/Design docs/Documents/Planning docs/Documents/Specification
 
       - name: Convert markdown files to HTML
         run: |
@@ -51,10 +53,10 @@ jobs:
           )
 
           find Documents -name '*.md' | while read md_file; do
-            # Derive output path: Documents/Design/Foo.md -> docs/Design/Foo.html
+            # Derive output path: Documents/Design/Foo.md -> docs/Documents/Design/Foo.html
             rel="${md_file#Documents/}"          # strip leading "Documents/"
-            out_dir="docs/$(dirname "$rel")"
-            out_file="docs/${rel%.md}.html"
+            out_dir="docs/Documents/$(dirname "$rel")"
+            out_file="docs/Documents/${rel%.md}.html"
             mkdir -p "$out_dir"
             pandoc "${PANDOC_OPTS[@]}" \
               --metadata title="$(basename "${rel%.md}")" \
@@ -70,33 +72,57 @@ jobs:
           # untouched even though only Design/README.html exists in the output. Rewrite
           # every such relative href (anything without a ":" is treated as relative,
           # so http(s):// and mailto: links are left alone) from .md to .html.
-          find docs -name '*.html' | while read -r html_file; do
+          find docs/Documents -name '*.html' | while read -r html_file; do
             sed -i -E 's/href="([^":]+)\.md(#[^"]*)?"/href="\1.html\2"/g' "$html_file"
           done
-          echo "Rewrote internal .md links to .html across docs/"
+          echo "Rewrote internal .md links to .html across docs/Documents/"
 
-      - name: Copy HTML mocks and assets to docs
+      - name: Copy HTML mocks and assets to docs/Documents
         run: |
-          # Copy standalone HTML mocks and screenshots from Documents to docs
+          # Copy standalone HTML mocks and screenshots from Documents to docs/Documents
           find Documents -name '*.html' -o -name '*.png' -o -name '*.jpg' -o -name '*.gif' | while read asset; do
             rel="${asset#Documents/}"
-            dest="docs/${rel}"
+            dest="docs/Documents/${rel}"
             mkdir -p "$(dirname "$dest")"
             cp "$asset" "$dest"
             echo "Copied: $dest"
           done
 
-      - name: Generate folder index.html files
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install DocFX
+        run: dotnet tool install -g docfx
+
+      - name: Generate API Reference with DocFX
         run: |
-          # Markdown links to a folder (e.g. GitHub's own directory browser) have no
-          # equivalent once converted to static HTML, so every folder under docs/
-          # (including its root) gets its own auto-generated index.html listing that
-          # folder's immediate contents. This prevents 404s when a bare folder URL
-          # is requested from the published site.
+          # docfx.json は metadata.dest="api"（一時YAML）、build.dest="docs/Reference" で設定済み。
+          # まず metadata サブコマンドでAPI定義のYAMLを生成し、続いて build サブコマンドでHTMLを生成する。
+          docfx metadata docfx.json
+          docfx build docfx.json
+          # DocFX は api/ 以下にHTMLを出力するが docs/Reference/index.html は生成しないため、
+          # api/ へのリダイレクトを手動で追加する。
+          cat > docs/Reference/index.html << 'REFEOF'
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+            <meta charset="utf-8" />
+            <meta http-equiv="refresh" content="0;url=api/" />
+            <title>APIリファレンス</title>
+          </head>
+          <body><a href="api/">APIリファレンス</a></body>
+          </html>
+          REFEOF
+
+      - name: Generate folder index.html files for Documents subtree
+        run: |
+          # docs/Documents/ 以下の各フォルダに index.html を生成する。
+          # docs/Reference/ は DocFX が独自のナビゲーションを生成するため対象外とする。
           generate_index() {
             local dir="$1"
-            local rel="${dir#docs}"
-            rel="${rel#/}"
+            local rel="${dir#docs/}"
             local title="${rel:-Documents}"
 
             {
@@ -110,10 +136,7 @@ jobs:
               echo '<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">'
               echo "<h1>${title}</h1>"
               echo '<ul>'
-
-              if [ "$dir" != "docs" ]; then
-                echo '<li><a href="../">.. (親フォルダ)</a></li>'
-              fi
+              echo '<li><a href="../">.. (親フォルダ)</a></li>'
 
               find "$dir" -mindepth 1 -maxdepth 1 -type d | sort | while read -r sub; do
                 name="$(basename "$sub")"
@@ -132,9 +155,36 @@ jobs:
             echo "Generated: $dir/index.html"
           }
 
-          find docs -type d | sort | while read -r d; do
+          find docs/Documents -type d | sort | while read -r d; do
             generate_index "$d"
           done
+
+      - name: Create top-level index.html
+        run: |
+          # サイトルートのindex.html：Documents（設計書・仕様書等）と
+          # Reference（DocFXによるAPIリファレンス）の両方へ辿れるトップページ。
+          cat > docs/index.html << 'INDEXEOF'
+          <!DOCTYPE html>
+          <html lang="ja">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+            <title>UnmappedIsland</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+            <style>@media (max-width: 600px) { .markdown-body { padding: 1rem !important; } }</style>
+          </head>
+          <body>
+          <article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+            <h1>UnmappedIsland</h1>
+            <ul>
+              <li><a href="Documents/">Documents/</a> — 設計書・仕様書・プランニング</li>
+              <li><a href="Reference/">Reference/</a> — APIリファレンス（DocFX自動生成）</li>
+            </ul>
+          </article>
+          </body>
+          </html>
+          INDEXEOF
+          echo "Generated: docs/index.html"
 
       - name: Commit generated files
         run: |
