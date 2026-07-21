@@ -36,7 +36,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ActionDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActionDef.yml\" sourcestartlinenumber=\"1\">メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと実行結果（EffectOutcome＝\nactive/pick）を1つの定義としてまとめて持つ。object_defs/traitsの中に、識別子をキーとする辞書として\n配置される。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActionDef.yml\" sourcestartlinenumber=\"1\">メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと条件成立時に適用する効果\n（ActiveEffect＝active/pickのどちらか一方。排他なので単一のActiveEffect変数で表せる）を1つの定義\nとしてまとめて持つ。object_defs/traitsの中に、識別子をキーとする辞書として配置される。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -50,21 +50,21 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ActiveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">一時的な命令の内容（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">add</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">destroy</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">spawn</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">transfer</code>、9節）。on_min・on_overflow・on_shortfall（6節）、\nactions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"4\">中身は「1操作(ActiveOperation)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/spawn/transferは\nすべてApplyを持つActiveOperationの具象型で、対象の解決も適用も各操作自身が行う。passiveのmodify/\naccumulateがPassiveEffectのリストなのと対称）。呼び出し側は「適用してほしい」と依頼するだけで、\nどの操作をどの順で適用すべきかは一切知らない（自分のことは自分でする、CLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"9\">on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。owner（self）の文脈\n（actor/dragged）を受け取り、「対象を解決して自分を適用する」までを自分で行う（自分のことは\n自分でする、CLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"5\">具象は3種:</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">単一の命令（SetEffect/AddEffect/DestroyEffect/SpawnEffect/TransferEffect、9節）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"7\">それらを宣言順にまとめた合成（ActiveEffects。set/add/destroy/spawn/transferの並び）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"8\">weightで1候補を選んで適用するpick（PickEffect、10節。候補の効果もまたActiveEffectなので再帰しうる）。</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"10\">これらはすべて同じApplyで適用でき、activeとpickが排他であること（どちらか一方のみ）も、\n「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は\nこのActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"14\">contextは1回の適用（最上位のApply1回）で共有される。same_slot spawnが必要とする「destroyで\n失われる前のselfの位置」を、destroy側とspawn側が同じcontextを通して受け渡すために使う（それ以外の\n効果は無視してよい）。</p>\n"
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ActiveOperation.yml",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ActiveEffects.yml",
       "output": {
         ".html": {
-          "relative_path": "UnmappedIsland.Domain.Defs.ActiveOperation.html"
+          "relative_path": "UnmappedIsland.Domain.Defs.ActiveEffects.html"
         }
       },
       "version": "",
       "Uid": null,
       "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Defs.ActiveOperation",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveOperation.yml\" sourcestartlinenumber=\"1\">一時的な命令(active)の1操作（set/add/destroy/spawn/transfer、9節）。owner（この操作を発する自分自身）の\n文脈（actor/dragged）を受け取り、「対象を解決して自分を適用する」までを自分で行う（PropertyValueへの\n登録で持続するpassiveのPassiveEffectと対になる、一度きり側のポリモーフィズム。自分のことは自分でする、\nCLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveOperation.yml\" sourcestartlinenumber=\"6\">contextは1回の適用（1つのActiveEffect.ApplyTo）で共有される。same_slot spawnが必要とする「destroyで\n失われる前のselfの位置」を、destroy側とspawn側が同じcontextを通して受け渡すために使う（それ以外の\n操作は無視してよい）。</p>\n"
+      "Title": "UnmappedIsland.Domain.Defs.ActiveEffects",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">一時的な命令の内容（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">add</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">destroy</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">spawn</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">transfer</code>、9節）を宣言順にまとめた合成効果。\non_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）のすべてから\n共用する。中身は「単一の命令(ActiveEffect)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/\nspawn/transferはすべてApplyを持つActiveEffectの具象型で、対象の解決も適用も各命令自身が行う。\npassiveのmodify/accumulateがPassiveEffectのリストなのと対称）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"7\">自分もまたActiveEffectであり（合成もまた1つの効果）、適用は各要素を宣言順にApplyしていくだけ。\non_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -78,7 +78,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.AddEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AddEffect.yml\" sourcestartlinenumber=\"1\">add の1操作（対象プロパティへ加減算する）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AddEffect.yml\" sourcestartlinenumber=\"1\">add の1命令（対象プロパティへ加減算する）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -92,7 +92,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.CombinationDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.CombinationDef.yml\" sourcestartlinenumber=\"1\">ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の\nobject_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。\nconditionsと実行結果（EffectOutcome＝active/pick）を1つの定義としてまとめて持つ。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.CombinationDef.yml\" sourcestartlinenumber=\"1\">ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の\nobject_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。\nconditionsと条件成立時に適用する効果（ActiveEffect＝active/pickのどちらか一方。排他なので単一の\nActiveEffect変数で表せる）を1つの定義としてまとめて持つ。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -148,21 +148,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.DestroyEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy の1操作（対象オブジェクトそのものを削除する、9.3節）。<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy: self</code>は要素1つ、\n<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"2\">destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。対象がselfの場合、削除で位置が\n失われる前に、same_slot spawnのための位置アンカーをcontextへ捕捉させてから削除する\n（destroyの後ろに並ぶspawnがその位置を引き継げるようにするため。ApplyActiveEffectの適用順参照）。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Defs.EffectOutcome.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Defs.EffectOutcome.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Defs.EffectOutcome",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.EffectOutcome.yml\" sourcestartlinenumber=\"1\">アクション・combination・pick候補が「条件成立時に何を起こすか」を表す実行結果（9・10節）。\n直接の active（ActiveEffect）か、weightで1つ選ぶ pick（さらに再帰しうる候補列）の\nどちらか一方のみを持つ（どちらも無ければ何も起きない）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.EffectOutcome.yml\" sourcestartlinenumber=\"5\">ActionDef・CombinationDef・PickCandidateDefはいずれも「conditions等の固有部分＋この実行結果」という\n同じ構造を持つため、active/pickの保持と「結局どのActiveEffectを適用するか」の解決（active優先、\n無ければweight抽選で1候補を選び、その候補の実行結果へ再帰）をこの1つの型に集約する。各Defはこの型を\n1つ持ち、Resolveへ委譲するだけでよい（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy: self</code>は要素1つ、\n<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"2\">destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。対象がselfの場合、削除で位置が\n失われる前に、same_slot spawnのための位置アンカーをcontextへ捕捉させてから削除する\n（destroyの後ろに並ぶspawnがその位置を引き継げるようにするため。ActiveEffectsの適用順参照）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -274,7 +260,21 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PickCandidateDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml\" sourcestartlinenumber=\"1\">pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときの\n実行結果（EffectOutcome＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も許容する）を持つ。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml\" sourcestartlinenumber=\"1\">pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに\n適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、\nActiveEffectのポリモーフィズムでそのまま許容する）を持つ。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PickEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PickEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PickEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickEffect.yml\" sourcestartlinenumber=\"1\">pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。自分もまたActiveEffectであり\n（activeと排他な選択肢の一方）、選ばれた候補の効果もまたActiveEffect（さらにpickなら再帰する）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickEffect.yml\" sourcestartlinenumber=\"4\">抽選（weight按分）と適用を自分で完結させる。候補が無ければ何もしない（条件成立時に何も起きない）。\n選択に使うRNGはsessionから、weightの解決に使う文脈はApplyの引数(owner=self/actor/dragged)から得る。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -302,7 +302,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PropertyMutation",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyMutation.yml\" sourcestartlinenumber=\"1\">プロパティを書き換える1操作（set/add、9.2節）。対象(Target)・対象プロパティを共通で持ち、ownerの文脈で\n対象を解決する部分をActiveOperationとして共有する（対象の解決はowner.ResolveEffectTargetOrAncestorに\n委ね、Ancestorのプロパティ別解決も含めて任せる）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyMutation.yml\" sourcestartlinenumber=\"1\">プロパティを書き換える単一命令（set/add、9.2節）。対象(Target)・対象プロパティを共通で持ち、ownerの\n文脈で対象を解決する部分をActiveEffectとして共有する（対象の解決はowner.ResolveEffectTargetOrAncestorに\n委ね、Ancestorのプロパティ別解決も含めて任せる）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -386,7 +386,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SetEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SetEffect.yml\" sourcestartlinenumber=\"1\">set の1操作（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、\nその{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SetEffect.yml\" sourcestartlinenumber=\"1\">set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、\nその{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -456,7 +456,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SpawnEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"1\">spawn（9.4節）の1操作。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は\n一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、\naccepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ\nならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"6\">伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない\nまま消える（何も起きなかったのと同じ扱い）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"9\">実際の配置（スロット・スタックの操作、same_slotの位置引き継ぎ）はowner（self）とそのスロット/\nスタックの領分であるため、ExecuteSpawnへ委ねる（配置先の在庫や隙間を知っているのは配置先自身）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"1\">spawn（9.4節）の1命令。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は\n一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、\naccepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ\nならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"6\">伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない\nまま消える（何も起きなかったのと同じ扱い）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"9\">実際の配置（スロット・スタックの操作、same_slotの位置引き継ぎ）はowner（self）とそのスロット/\nスタックの領分であるため、ExecuteSpawnへ委ねる（配置先の在庫や隙間を知っているのは配置先自身）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -498,7 +498,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.TransferEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"1\">transfer（9.5節）の1操作。fromが指すプロパティの実体値から、実際に出せる量とAmountの小さい方だけを\ntoが指すプロパティへ移す（連続量の液体のような、setの固定値でもaddの無条件加減算でも表現できない\n「在庫に応じて実際に動く量が変わる」移送を表す）。「実際にいくら動かせるか」の判断はfrom/to自身の\nPropertyValueに委ね、この操作は対象解決と移動量の確定・実行のみを行う（自分のことは自分でする、\nCLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">from/toの参照は、他の場所（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">modify</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">add</code>等）と同じ「対象がキー、内容が値」という規約に\n合わせず、conditions（14節）と同じくフラットな<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">from_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">from_prop</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">to_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">to_prop</code>の\n4フィールドで表す。fromとtoの組は常に1組であり、複数プロパティの入れ物としてネストする理由が\n無いため。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"1\">transfer（9.5節）の1命令。fromが指すプロパティの実体値から、実際に出せる量とAmountの小さい方だけを\ntoが指すプロパティへ移す（連続量の液体のような、setの固定値でもaddの無条件加減算でも表現できない\n「在庫に応じて実際に動く量が変わる」移送を表す）。「実際にいくら動かせるか」の判断はfrom/to自身の\nPropertyValueに委ね、この命令は対象解決と移動量の確定・実行のみを行う（自分のことは自分でする、\nCLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">from/toの参照は、他の場所（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">modify</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">add</code>等）と同じ「対象がキー、内容が値」という規約に\n合わせず、conditions（14節）と同じくフラットな<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">from_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">from_prop</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">to_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">to_prop</code>の\n4フィールドで表す。fromとtoの組は常に1組であり、複数プロパティの入れ物としてネストする理由が\n無いため。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -680,7 +680,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.yml\" sourcestartlinenumber=\"1\">1回のactive効果適用（1つのActiveEffect.ApplyTo）で共有される文脈。現状の唯一の役割は、\nsame_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで\n一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.yml\" sourcestartlinenumber=\"5\">destroy側（DestroyEffectがselfを消す直前）はNotifyOriginWillBeDestroyedで、spawn側\n（same_slot配置）はSameSlotAnchor取得時に、それぞれ捕捉を要求する。どちらが先でも初回のみ\n実際に捕捉し、以降はキャッシュを返す。selfが消される適用ではdestroyが必ずspawnより前に\n実行される（パーサの並び順）ため、self破棄を織り込んだ位置（memberIndex等）が正しく捕捉される。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.yml\" sourcestartlinenumber=\"1\">1回のactive効果適用（最上位のActiveEffect.Apply1回）で共有される文脈。現状の唯一の役割は、\nsame_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで\n一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.yml\" sourcestartlinenumber=\"5\">destroy側（DestroyEffectがselfを消す直前）はNotifyOriginWillBeDestroyedで、spawn側\n（same_slot配置）はSameSlotAnchor取得時に、それぞれ捕捉を要求する。どちらが先でも初回のみ\n実際に捕捉し、以降はキャッシュを返す。selfが消される適用ではdestroyが必ずspawnより前に\n実行される（パーサの並び順）ため、self破棄を織り込んだ位置（memberIndex等）が正しく捕捉される。</p>\n"
     },
     {
       "type": "ManagedReference",

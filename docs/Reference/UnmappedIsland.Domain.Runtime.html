@@ -126,7 +126,7 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
 PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html">WorldObject.ActiveApplication</a></h4>
-      <section><p>1回のactive効果適用（1つのActiveEffect.ApplyTo）で共有される文脈。現状の唯一の役割は、
+      <section><p>1回のactive効果適用（最上位のActiveEffect.Apply1回）で共有される文脈。現状の唯一の役割は、
 same_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで
 一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。</p>
 <p>destroy側（DestroyEffectがselfを消す直前）はNotifyOriginWillBeDestroyedで、spawn側

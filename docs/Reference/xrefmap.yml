@@ -51,15 +51,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.ActionDef
   fullName: UnmappedIsland.Domain.Defs.ActionDef
   nameWithType: ActionDef
-- uid: UnmappedIsland.Domain.Defs.ActionDef.#ctor(System.String,UnmappedIsland.Domain.Defs.ShowMenuMode,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.EffectOutcome)
-  name: ActionDef(string, ShowMenuMode, ConditionNode, EffectOutcome)
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef__ctor_System_String_UnmappedIsland_Domain_Defs_ShowMenuMode_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_EffectOutcome_
-  commentId: M:UnmappedIsland.Domain.Defs.ActionDef.#ctor(System.String,UnmappedIsland.Domain.Defs.ShowMenuMode,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.EffectOutcome)
-  name.vb: New(String, ShowMenuMode, ConditionNode, EffectOutcome)
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.ActionDef(string, UnmappedIsland.Domain.Defs.ShowMenuMode, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.EffectOutcome)
-  fullName.vb: UnmappedIsland.Domain.Defs.ActionDef.New(String, UnmappedIsland.Domain.Defs.ShowMenuMode, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.EffectOutcome)
-  nameWithType: ActionDef.ActionDef(string, ShowMenuMode, ConditionNode, EffectOutcome)
-  nameWithType.vb: ActionDef.New(String, ShowMenuMode, ConditionNode, EffectOutcome)
+- uid: UnmappedIsland.Domain.Defs.ActionDef.#ctor(System.String,UnmappedIsland.Domain.Defs.ShowMenuMode,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.ActiveEffect)
+  name: ActionDef(string, ShowMenuMode, ConditionNode, ActiveEffect)
+  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef__ctor_System_String_UnmappedIsland_Domain_Defs_ShowMenuMode_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_ActiveEffect_
+  commentId: M:UnmappedIsland.Domain.Defs.ActionDef.#ctor(System.String,UnmappedIsland.Domain.Defs.ShowMenuMode,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.ActiveEffect)
+  name.vb: New(String, ShowMenuMode, ConditionNode, ActiveEffect)
+  fullName: UnmappedIsland.Domain.Defs.ActionDef.ActionDef(string, UnmappedIsland.Domain.Defs.ShowMenuMode, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.ActiveEffect)
+  fullName.vb: UnmappedIsland.Domain.Defs.ActionDef.New(String, UnmappedIsland.Domain.Defs.ShowMenuMode, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.ActiveEffect)
+  nameWithType: ActionDef.ActionDef(string, ShowMenuMode, ConditionNode, ActiveEffect)
+  nameWithType.vb: ActionDef.New(String, ShowMenuMode, ConditionNode, ActiveEffect)
 - uid: UnmappedIsland.Domain.Defs.ActionDef.#ctor*
   name: ActionDef
   href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef__ctor_
@@ -115,75 +115,75 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.ActionDef.conditions
   fullName: UnmappedIsland.Domain.Defs.ActionDef.conditions
   nameWithType: ActionDef.conditions
-- uid: UnmappedIsland.Domain.Defs.ActionDef.outcome
-  name: outcome
-  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_outcome
-  commentId: F:UnmappedIsland.Domain.Defs.ActionDef.outcome
-  fullName: UnmappedIsland.Domain.Defs.ActionDef.outcome
-  nameWithType: ActionDef.outcome
+- uid: UnmappedIsland.Domain.Defs.ActionDef.effect
+  name: effect
+  href: UnmappedIsland.Domain.Defs.ActionDef.html#UnmappedIsland_Domain_Defs_ActionDef_effect
+  commentId: F:UnmappedIsland.Domain.Defs.ActionDef.effect
+  fullName: UnmappedIsland.Domain.Defs.ActionDef.effect
+  nameWithType: ActionDef.effect
 - uid: UnmappedIsland.Domain.Defs.ActiveEffect
   name: ActiveEffect
   href: UnmappedIsland.Domain.Defs.ActiveEffect.html
   commentId: T:UnmappedIsland.Domain.Defs.ActiveEffect
   fullName: UnmappedIsland.Domain.Defs.ActiveEffect
   nameWithType: ActiveEffect
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveOperation})
-  name: ActiveEffect(IReadOnlyList<ActiveOperation>)
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveOperation__
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveOperation})
-  name.vb: New(IReadOnlyList(Of ActiveOperation))
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ActiveOperation>)
-  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ActiveOperation))
-  nameWithType: ActiveEffect.ActiveEffect(IReadOnlyList<ActiveOperation>)
-  nameWithType.vb: ActiveEffect.New(IReadOnlyList(Of ActiveOperation))
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor*
-  name: ActiveEffect
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: ActiveEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Apply
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Apply
+  nameWithType: ActiveEffect.Apply
+- uid: UnmappedIsland.Domain.Defs.ActiveEffects
+  name: ActiveEffects
+  href: UnmappedIsland.Domain.Defs.ActiveEffects.html
+  commentId: T:UnmappedIsland.Domain.Defs.ActiveEffects
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffects
+  nameWithType: ActiveEffects
+- uid: UnmappedIsland.Domain.Defs.ActiveEffects.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveEffect})
+  name: ActiveEffects(IReadOnlyList<ActiveEffect>)
+  href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveEffect__
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffects.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveEffect})
+  name.vb: New(IReadOnlyList(Of ActiveEffect))
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffects.ActiveEffects(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ActiveEffect>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffects.New(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ActiveEffect))
+  nameWithType: ActiveEffects.ActiveEffects(IReadOnlyList<ActiveEffect>)
+  nameWithType.vb: ActiveEffects.New(IReadOnlyList(Of ActiveEffect))
+- uid: UnmappedIsland.Domain.Defs.ActiveEffects.#ctor*
+  name: ActiveEffects
+  href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffects.#ctor
   isSpec: "True"
   name.vb: New
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect
-  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New
-  nameWithType: ActiveEffect.ActiveEffect
-  nameWithType.vb: ActiveEffect.New
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: ApplyTo(WorldObject, WorldSession, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_ApplyTo_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: ActiveEffect.ApplyTo(WorldObject, WorldSession, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo*
-  name: ApplyTo
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_ApplyTo_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo
-  nameWithType: ActiveEffect.ApplyTo
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.operations
-  name: operations
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_operations
-  commentId: F:UnmappedIsland.Domain.Defs.ActiveEffect.operations
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.operations
-  nameWithType: ActiveEffect.operations
-- uid: UnmappedIsland.Domain.Defs.ActiveOperation
-  name: ActiveOperation
-  href: UnmappedIsland.Domain.Defs.ActiveOperation.html
-  commentId: T:UnmappedIsland.Domain.Defs.ActiveOperation
-  fullName: UnmappedIsland.Domain.Defs.ActiveOperation
-  nameWithType: ActiveOperation
-- uid: UnmappedIsland.Domain.Defs.ActiveOperation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffects.ActiveEffects
+  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffects.New
+  nameWithType: ActiveEffects.ActiveEffects
+  nameWithType.vb: ActiveEffects.New
+- uid: UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
   name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.ActiveOperation.html#UnmappedIsland_Domain_Defs_ActiveOperation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveOperation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.ActiveOperation.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: ActiveOperation.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
-- uid: UnmappedIsland.Domain.Defs.ActiveOperation.Apply*
+  href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: ActiveEffects.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.ActiveEffects.Apply*
   name: Apply
-  href: UnmappedIsland.Domain.Defs.ActiveOperation.html#UnmappedIsland_Domain_Defs_ActiveOperation_Apply_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveOperation.Apply
+  href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffects.Apply
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveOperation.Apply
-  nameWithType: ActiveOperation.Apply
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffects.Apply
+  nameWithType: ActiveEffects.Apply
+- uid: UnmappedIsland.Domain.Defs.ActiveEffects.operations
+  name: operations
+  href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects_operations
+  commentId: F:UnmappedIsland.Domain.Defs.ActiveEffects.operations
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffects.operations
+  nameWithType: ActiveEffects.operations
 - uid: UnmappedIsland.Domain.Defs.AddEffect
   name: AddEffect
   href: UnmappedIsland.Domain.Defs.AddEffect.html
@@ -250,15 +250,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.CombinationDef
   fullName: UnmappedIsland.Domain.Defs.CombinationDef
   nameWithType: CombinationDef
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.#ctor(System.String,System.Int32,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.EffectOutcome)
-  name: CombinationDef(string, int, ConditionNode, EffectOutcome)
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef__ctor_System_String_System_Int32_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_EffectOutcome_
-  commentId: M:UnmappedIsland.Domain.Defs.CombinationDef.#ctor(System.String,System.Int32,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.EffectOutcome)
-  name.vb: New(String, Integer, ConditionNode, EffectOutcome)
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.CombinationDef(string, int, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.EffectOutcome)
-  fullName.vb: UnmappedIsland.Domain.Defs.CombinationDef.New(String, Integer, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.EffectOutcome)
-  nameWithType: CombinationDef.CombinationDef(string, int, ConditionNode, EffectOutcome)
-  nameWithType.vb: CombinationDef.New(String, Integer, ConditionNode, EffectOutcome)
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.#ctor(System.String,System.Int32,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.ActiveEffect)
+  name: CombinationDef(string, int, ConditionNode, ActiveEffect)
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef__ctor_System_String_System_Int32_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_ActiveEffect_
+  commentId: M:UnmappedIsland.Domain.Defs.CombinationDef.#ctor(System.String,System.Int32,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.ActiveEffect)
+  name.vb: New(String, Integer, ConditionNode, ActiveEffect)
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.CombinationDef(string, int, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.ActiveEffect)
+  fullName.vb: UnmappedIsland.Domain.Defs.CombinationDef.New(String, Integer, UnmappedIsland.Domain.Defs.ConditionNode, UnmappedIsland.Domain.Defs.ActiveEffect)
+  nameWithType: CombinationDef.CombinationDef(string, int, ConditionNode, ActiveEffect)
+  nameWithType.vb: CombinationDef.New(String, Integer, ConditionNode, ActiveEffect)
 - uid: UnmappedIsland.Domain.Defs.CombinationDef.#ctor*
   name: CombinationDef
   href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef__ctor_
@@ -314,12 +314,12 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.CombinationDef.conditions
   fullName: UnmappedIsland.Domain.Defs.CombinationDef.conditions
   nameWithType: CombinationDef.conditions
-- uid: UnmappedIsland.Domain.Defs.CombinationDef.outcome
-  name: outcome
-  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_outcome
-  commentId: F:UnmappedIsland.Domain.Defs.CombinationDef.outcome
-  fullName: UnmappedIsland.Domain.Defs.CombinationDef.outcome
-  nameWithType: CombinationDef.outcome
+- uid: UnmappedIsland.Domain.Defs.CombinationDef.effect
+  name: effect
+  href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_effect
+  commentId: F:UnmappedIsland.Domain.Defs.CombinationDef.effect
+  fullName: UnmappedIsland.Domain.Defs.CombinationDef.effect
+  nameWithType: CombinationDef.effect
 - uid: UnmappedIsland.Domain.Defs.CombinationDef.with
   name: with
   href: UnmappedIsland.Domain.Defs.CombinationDef.html#UnmappedIsland_Domain_Defs_CombinationDef_with
@@ -756,69 +756,6 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.DestroyEffect.target
   fullName: UnmappedIsland.Domain.Defs.DestroyEffect.target
   nameWithType: DestroyEffect.target
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome
-  name: EffectOutcome
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html
-  commentId: T:UnmappedIsland.Domain.Defs.EffectOutcome
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome
-  nameWithType: EffectOutcome
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.#ctor(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef})
-  name: EffectOutcome(ActiveEffect, IReadOnlyList<PickCandidateDef>)
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome__ctor_UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__
-  commentId: M:UnmappedIsland.Domain.Defs.EffectOutcome.#ctor(UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef})
-  name.vb: New(ActiveEffect, IReadOnlyList(Of PickCandidateDef))
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.EffectOutcome(UnmappedIsland.Domain.Defs.ActiveEffect, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PickCandidateDef>)
-  fullName.vb: UnmappedIsland.Domain.Defs.EffectOutcome.New(UnmappedIsland.Domain.Defs.ActiveEffect, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PickCandidateDef))
-  nameWithType: EffectOutcome.EffectOutcome(ActiveEffect, IReadOnlyList<PickCandidateDef>)
-  nameWithType.vb: EffectOutcome.New(ActiveEffect, IReadOnlyList(Of PickCandidateDef))
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.#ctor*
-  name: EffectOutcome
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome__ctor_
-  commentId: Overload:UnmappedIsland.Domain.Defs.EffectOutcome.#ctor
-  isSpec: "True"
-  name.vb: New
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.EffectOutcome
-  fullName.vb: UnmappedIsland.Domain.Defs.EffectOutcome.New
-  nameWithType: EffectOutcome.EffectOutcome
-  nameWithType.vb: EffectOutcome.New
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.Resolve(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  name: Resolve(WorldObject, WorldObject, WorldObject, WorldSession)
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome_Resolve_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
-  commentId: M:UnmappedIsland.Domain.Defs.EffectOutcome.Resolve(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.Resolve(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
-  nameWithType: EffectOutcome.Resolve(WorldObject, WorldObject, WorldObject, WorldSession)
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.Resolve*
-  name: Resolve
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome_Resolve_
-  commentId: Overload:UnmappedIsland.Domain.Defs.EffectOutcome.Resolve
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.Resolve
-  nameWithType: EffectOutcome.Resolve
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  name: SelectWeighted(WorldObject, WorldObject, WorldObject, WorldSession)
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome_SelectWeighted_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
-  commentId: M:UnmappedIsland.Domain.Defs.EffectOutcome.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
-  nameWithType: EffectOutcome.SelectWeighted(WorldObject, WorldObject, WorldObject, WorldSession)
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.SelectWeighted*
-  name: SelectWeighted
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome_SelectWeighted_
-  commentId: Overload:UnmappedIsland.Domain.Defs.EffectOutcome.SelectWeighted
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.SelectWeighted
-  nameWithType: EffectOutcome.SelectWeighted
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.active
-  name: active
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome_active
-  commentId: F:UnmappedIsland.Domain.Defs.EffectOutcome.active
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.active
-  nameWithType: EffectOutcome.active
-- uid: UnmappedIsland.Domain.Defs.EffectOutcome.pick
-  name: pick
-  href: UnmappedIsland.Domain.Defs.EffectOutcome.html#UnmappedIsland_Domain_Defs_EffectOutcome_pick
-  commentId: F:UnmappedIsland.Domain.Defs.EffectOutcome.pick
-  fullName: UnmappedIsland.Domain.Defs.EffectOutcome.pick
-  nameWithType: EffectOutcome.pick
 - uid: UnmappedIsland.Domain.Defs.LocalIndexMap
   name: LocalIndexMap
   href: UnmappedIsland.Domain.Defs.LocalIndexMap.html
@@ -1518,15 +1455,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.PickCandidateDef
   fullName: UnmappedIsland.Domain.Defs.PickCandidateDef
   nameWithType: PickCandidateDef
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.EffectOutcome)
-  name: PickCandidateDef(WeightSpec, EffectOutcome)
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_EffectOutcome_
-  commentId: M:UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.EffectOutcome)
-  name.vb: New(WeightSpec, EffectOutcome)
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.PickCandidateDef(UnmappedIsland.Domain.Defs.WeightSpec, UnmappedIsland.Domain.Defs.EffectOutcome)
-  fullName.vb: UnmappedIsland.Domain.Defs.PickCandidateDef.New(UnmappedIsland.Domain.Defs.WeightSpec, UnmappedIsland.Domain.Defs.EffectOutcome)
-  nameWithType: PickCandidateDef.PickCandidateDef(WeightSpec, EffectOutcome)
-  nameWithType.vb: PickCandidateDef.New(WeightSpec, EffectOutcome)
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.ActiveEffect)
+  name: PickCandidateDef(WeightSpec, ActiveEffect)
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_ActiveEffect_
+  commentId: M:UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.ActiveEffect)
+  name.vb: New(WeightSpec, ActiveEffect)
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.PickCandidateDef(UnmappedIsland.Domain.Defs.WeightSpec, UnmappedIsland.Domain.Defs.ActiveEffect)
+  fullName.vb: UnmappedIsland.Domain.Defs.PickCandidateDef.New(UnmappedIsland.Domain.Defs.WeightSpec, UnmappedIsland.Domain.Defs.ActiveEffect)
+  nameWithType: PickCandidateDef.PickCandidateDef(WeightSpec, ActiveEffect)
+  nameWithType.vb: PickCandidateDef.New(WeightSpec, ActiveEffect)
 - uid: UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor*
   name: PickCandidateDef
   href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_
@@ -1537,19 +1474,19 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.PickCandidateDef.New
   nameWithType: PickCandidateDef.PickCandidateDef
   nameWithType.vb: PickCandidateDef.New
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome
-  name: Outcome
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Outcome
-  commentId: P:UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome
-  nameWithType: PickCandidateDef.Outcome
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome*
-  name: Outcome
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Outcome_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: PickCandidateDef.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PickCandidateDef.Apply
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome
-  nameWithType: PickCandidateDef.Outcome
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply
+  nameWithType: PickCandidateDef.Apply
 - uid: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
   name: ResolveWeight(WorldObject, WorldObject, WorldObject)
   href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveWeight_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -1563,12 +1500,75 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight
   nameWithType: PickCandidateDef.ResolveWeight
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.effect
+  name: effect
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_effect
+  commentId: F:UnmappedIsland.Domain.Defs.PickCandidateDef.effect
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.effect
+  nameWithType: PickCandidateDef.effect
 - uid: UnmappedIsland.Domain.Defs.PickCandidateDef.weight
   name: weight
   href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_weight
   commentId: F:UnmappedIsland.Domain.Defs.PickCandidateDef.weight
   fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.weight
   nameWithType: PickCandidateDef.weight
+- uid: UnmappedIsland.Domain.Defs.PickEffect
+  name: PickEffect
+  href: UnmappedIsland.Domain.Defs.PickEffect.html
+  commentId: T:UnmappedIsland.Domain.Defs.PickEffect
+  fullName: UnmappedIsland.Domain.Defs.PickEffect
+  nameWithType: PickEffect
+- uid: UnmappedIsland.Domain.Defs.PickEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef})
+  name: PickEffect(IReadOnlyList<PickCandidateDef>)
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__
+  commentId: M:UnmappedIsland.Domain.Defs.PickEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef})
+  name.vb: New(IReadOnlyList(Of PickCandidateDef))
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.PickEffect(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PickCandidateDef>)
+  fullName.vb: UnmappedIsland.Domain.Defs.PickEffect.New(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PickCandidateDef))
+  nameWithType: PickEffect.PickEffect(IReadOnlyList<PickCandidateDef>)
+  nameWithType.vb: PickEffect.New(IReadOnlyList(Of PickCandidateDef))
+- uid: UnmappedIsland.Domain.Defs.PickEffect.#ctor*
+  name: PickEffect
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PickEffect.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.PickEffect
+  fullName.vb: UnmappedIsland.Domain.Defs.PickEffect.New
+  nameWithType: PickEffect.PickEffect
+  nameWithType.vb: PickEffect.New
+- uid: UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: PickEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.PickEffect.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PickEffect.Apply
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.Apply
+  nameWithType: PickEffect.Apply
+- uid: UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  name: SelectWeighted(WorldObject, WorldObject, WorldObject, WorldSession)
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_SelectWeighted_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_
+  commentId: M:UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession)
+  nameWithType: PickEffect.SelectWeighted(WorldObject, WorldObject, WorldObject, WorldSession)
+- uid: UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted*
+  name: SelectWeighted
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_SelectWeighted_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted
+  nameWithType: PickEffect.SelectWeighted
+- uid: UnmappedIsland.Domain.Defs.PickEffect.candidates
+  name: candidates
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_candidates
+  commentId: F:UnmappedIsland.Domain.Defs.PickEffect.candidates
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.candidates
+  nameWithType: PickEffect.candidates
 - uid: UnmappedIsland.Domain.Defs.PropertyDef
   name: PropertyDef
   href: UnmappedIsland.Domain.Defs.PropertyDef.html
@@ -5553,22 +5553,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargets
   nameWithType: WorldCodexYamlLoader.ParseDestroyTargets
-- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffectOutcome(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.String[])
-  name: ParseEffectOutcome(string, YamlMappingNode, bool, string[])
-  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseEffectOutcome_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_String___
-  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffectOutcome(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.String[])
-  name.vb: ParseEffectOutcome(String, YamlMappingNode, Boolean, String())
-  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffectOutcome(string, YamlDotNet.RepresentationModel.YamlMappingNode, bool, string[])
-  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffectOutcome(String, YamlDotNet.RepresentationModel.YamlMappingNode, Boolean, String())
-  nameWithType: WorldCodexYamlLoader.ParseEffectOutcome(string, YamlMappingNode, bool, string[])
-  nameWithType.vb: WorldCodexYamlLoader.ParseEffectOutcome(String, YamlMappingNode, Boolean, String())
-- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffectOutcome*
-  name: ParseEffectOutcome
-  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseEffectOutcome_
-  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffectOutcome
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.String[])
+  name: ParseEffect(string, YamlMappingNode, bool, string[])
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseEffect_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_String___
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.String[])
+  name.vb: ParseEffect(String, YamlMappingNode, Boolean, String())
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect(string, YamlDotNet.RepresentationModel.YamlMappingNode, bool, string[])
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect(String, YamlDotNet.RepresentationModel.YamlMappingNode, Boolean, String())
+  nameWithType: WorldCodexYamlLoader.ParseEffect(string, YamlMappingNode, bool, string[])
+  nameWithType.vb: WorldCodexYamlLoader.ParseEffect(String, YamlMappingNode, Boolean, String())
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect*
+  name: ParseEffect
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseEffect_
+  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect
   isSpec: "True"
-  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffectOutcome
-  nameWithType: WorldCodexYamlLoader.ParseEffectOutcome
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect
+  nameWithType: WorldCodexYamlLoader.ParseEffect
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseObjectDef(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String)
   name: ParseObjectDef(string, YamlMappingNode, string)
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseObjectDef_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_

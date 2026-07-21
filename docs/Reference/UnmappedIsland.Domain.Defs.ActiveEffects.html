@@ -5,11 +5,11 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Class DestroyEffect | UnmappedIsland API リファレンス </title>
+      <title>Class ActiveEffects | UnmappedIsland API リファレンス </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Class DestroyEffect | UnmappedIsland API リファレンス ">
+      <meta name="title" content="Class ActiveEffects | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。destroy: selfは要素1つ、 destroy: [self, dragged]は要素2つのDestroyEffectとして表す。対象がselfの場合、削除で位置が 失われる前に、same_slot spawnのための位置アンカーをcontextへ捕捉させてから削除する （destroyの後ろに並ぶspawnがその位置を引き継げるようにするため。ActiveEffectsの適用順参照）。">
+    <meta name="description" content="一時的な命令の内容（set/add/destroy/spawn/transfer、9節）を宣言順にまとめた合成効果。 on_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）のすべてから 共用する。中身は「単一の命令(ActiveEffect)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/ spawn/transferはすべてApplyを持つActiveEffectの具象型で、対象の解決も適用も各命令自身が行う。 passiveのmodify/accumulateがPassiveEffectのリストなのと対称）。 自分もまたActiveEffectであり（合成もまた1つの効果）、適用は各要素を宣言順にApplyしていくだけ。 on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -69,22 +69,25 @@
       <div role="main" class="container body-content hide-when-search">
         <div class="article row grid">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects">
 
 
 
-  <h1 id="UnmappedIsland_Domain_Defs_DestroyEffect" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect" class="text-break">Class DestroyEffect</h1>
-  <div class="markdown level0 summary"><p>destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code>destroy: self</code>は要素1つ、
-<code>destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。対象がselfの場合、削除で位置が
-失われる前に、same_slot spawnのための位置アンカーをcontextへ捕捉させてから削除する
-（destroyの後ろに並ぶspawnがその位置を引き継げるようにするため。ActiveEffectsの適用順参照）。</p>
+  <h1 id="UnmappedIsland_Domain_Defs_ActiveEffects" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects" class="text-break">Class ActiveEffects</h1>
+  <div class="markdown level0 summary"><p>一時的な命令の内容（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>、9節）を宣言順にまとめた合成効果。
+on_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）のすべてから
+共用する。中身は「単一の命令(ActiveEffect)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/
+spawn/transferはすべてApplyを持つActiveEffectの具象型で、対象の解決も適用も各命令自身が行う。
+passiveのmodify/accumulateがPassiveEffectのリストなのと対称）。</p>
+<p>自分もまたActiveEffectであり（合成もまた1つの効果）、適用は各要素を宣言順にApplyしていくだけ。
+on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
     <div class="level1"><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></div>
-    <div class="level2"><span class="xref">DestroyEffect</span></div>
+    <div class="level2"><span class="xref">ActiveEffects</span></div>
   </div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
@@ -109,26 +112,26 @@
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Defs.html">Defs</a></h6>
   <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
-  <h5 id="UnmappedIsland_Domain_Defs_DestroyEffect_syntax">Syntax</h5>
+  <h5 id="UnmappedIsland_Domain_Defs_ActiveEffects_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class DestroyEffect : ActiveEffect</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class ActiveEffects : ActiveEffect</code></pre>
   </div>
   <h3 id="constructors">Constructors
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveEffect__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects.%23ctor(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ActiveEffect%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L161">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L49">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_DestroyEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_DestroyEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot)">DestroyEffect(ReferenceRoot)</h4>
+  <a id="UnmappedIsland_Domain_Defs_ActiveEffects__ctor_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffects__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveEffect__" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveEffect})">ActiveEffects(IReadOnlyList&lt;ActiveEffect&gt;)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public DestroyEffect(ReferenceRoot target)</code></pre>
+    <pre><code class="lang-csharp hljs">public ActiveEffects(IReadOnlyList&lt;ActiveEffect&gt; operations)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -141,8 +144,8 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
-        <td><span class="parametername">target</span></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a>&gt;</td>
+        <td><span class="parametername">operations</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -151,17 +154,20 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect_target.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect.target%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects_operations.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects.operations%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L159">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L47">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_DestroyEffect_target" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.target">target</h4>
-  <div class="markdown level1 summary"></div>
+  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffects_operations" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.operations">operations</h4>
+  <div class="markdown level1 summary"><p>set/add/destroy/spawn/transferを区別しない、単一命令の宣言順リスト。適用順は
+リスト順（パーサがset→add→transfer→destroy→spawnの順で並べる。同一プロパティへのset後add、
+destroyで空いた位置へのspawn（same_slot）という依存関係のため）。</p>
+</div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">private readonly ReferenceRoot target</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly IReadOnlyList&lt;ActiveEffect&gt; operations</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
@@ -173,7 +179,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
@@ -182,13 +188,13 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L166">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L54">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_DestroyEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.Apply*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_DestroyEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)">Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)</h4>
+  <a id="UnmappedIsland_Domain_Defs_ActiveEffects_Apply_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.Apply*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffects_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)">Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -243,10 +249,10 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L157" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L42" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

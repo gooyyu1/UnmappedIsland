@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class PickCandidateDef | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときの 実行結果（EffectOutcome＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も許容する）を持つ。">
+    <meta name="description" content="pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに 適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、 ActiveEffectのポリモーフィズムでそのまま許容する）を持つ。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,8 +74,9 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_PickCandidateDef" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef" class="text-break">Class PickCandidateDef</h1>
-  <div class="markdown level0 summary"><p>pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときの
-実行結果（EffectOutcome＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も許容する）を持つ。</p>
+  <div class="markdown level0 summary"><p>pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに
+適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、
+ActiveEffectのポリモーフィズムでそのまま許容する）を持つ。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -114,18 +115,18 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_EffectOutcome_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.%23ctor(UnmappedIsland.Domain.Defs.WeightSpec%2CUnmappedIsland.Domain.Defs.EffectOutcome)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_ActiveEffect_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.%23ctor(UnmappedIsland.Domain.Defs.WeightSpec%2CUnmappedIsland.Domain.Defs.ActiveEffect)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L45">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L47">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_EffectOutcome_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.EffectOutcome)">PickCandidateDef(WeightSpec, EffectOutcome)</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_ActiveEffect_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.ActiveEffect)">PickCandidateDef(WeightSpec, ActiveEffect)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public PickCandidateDef(WeightSpec weight, EffectOutcome outcome)</code></pre>
+    <pre><code class="lang-csharp hljs">public PickCandidateDef(WeightSpec weight, ActiveEffect effect)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -143,8 +144,8 @@
         <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.EffectOutcome.html">EffectOutcome</a></td>
-        <td><span class="parametername">outcome</span></td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td><span class="parametername">effect</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -153,13 +154,44 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_effect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.effect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L45">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_effect" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.effect">effect</h4>
+  <div class="markdown level1 summary"><p>この候補が選ばれたときに適用する効果（さらにpickを持てば再帰する）。nullなら何も
+起きない。PickEffectがこの候補を選んだときにApplyへ委ねる。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly ActiveEffect effect</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_weight.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.weight%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L40">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L41">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_weight" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.weight">weight</h4>
-  <div class="markdown level1 summary"><p>抽選の重み（10.2節）。ResolveWeight越しにEffectOutcomeが読むだけのため公開しない。</p>
+  <div class="markdown level1 summary"><p>抽選の重み（10.2節）。ResolveWeight越しにPickEffectが読むだけのため公開しない。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -181,51 +213,71 @@
       </tr>
     </tbody>
   </table>
-  <h3 id="properties">Properties
+  <h3 id="methods">Methods
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_Outcome.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L43">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L58">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_Outcome_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_Outcome" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Outcome">Outcome</h4>
-  <div class="markdown level1 summary"><p>この候補が選ばれたときの実行結果（さらにpickを持てば再帰する）。EffectOutcome.Resolveが読む。</p>
+  <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Apply*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)">Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)</h4>
+  <div class="markdown level1 summary"><p>この候補が選ばれたときに、自分の効果を適用する（PickEffectが選択後に呼ぶ）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public EffectOutcome Outcome { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged, WorldObject.ActiveApplication context)</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
     <thead>
       <tr>
         <th>Type</th>
+        <th>Name</th>
         <th>Description</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.EffectOutcome.html">EffectOutcome</a></td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">owner</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">actor</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">dragged</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>.<a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html">ActiveApplication</a></td>
+        <td><span class="parametername">context</span></td>
         <td></td>
       </tr>
     </tbody>
   </table>
-  <h3 id="methods">Methods
-</h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveWeight_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L52">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L54">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveWeight_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveWeight_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ResolveWeight(WorldObject, WorldObject, WorldObject)</h4>
-  <div class="markdown level1 summary"><p>この候補の抽選重みを、現在の文脈で解決する（EffectOutcomeのweight抽選が使う）。</p>
+  <div class="markdown level1 summary"><p>この候補の抽選重みを、現在の文脈で解決する（PickEffectのweight抽選が使う）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -286,7 +338,7 @@
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L37" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickDef.cs/#L38" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

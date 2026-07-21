@@ -5,11 +5,11 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Class AddEffect | UnmappedIsland API リファレンス </title>
+      <title>Class PickEffect | UnmappedIsland API リファレンス </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Class AddEffect | UnmappedIsland API リファレンス ">
+      <meta name="title" content="Class PickEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="add の1命令（対象プロパティへ加減算する）。">
+    <meta name="description" content="pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。自分もまたActiveEffectであり （activeと排他な選択肢の一方）、選ばれた候補の効果もまたActiveEffect（さらにpickなら再帰する）。 抽選（weight按分）と適用を自分で完結させる。候補が無ければ何もしない（条件成立時に何も起きない）。 選択に使うRNGはsessionから、weightの解決に使う文脈はApplyの引数(owner=self/actor/dragged)から得る。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -69,20 +69,22 @@
       <div role="main" class="container body-content hide-when-search">
         <div class="article row grid">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.AddEffect">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.PickEffect">
 
 
 
-  <h1 id="UnmappedIsland_Domain_Defs_AddEffect" data-uid="UnmappedIsland.Domain.Defs.AddEffect" class="text-break">Class AddEffect</h1>
-  <div class="markdown level0 summary"><p>add の1命令（対象プロパティへ加減算する）。</p>
+  <h1 id="UnmappedIsland_Domain_Defs_PickEffect" data-uid="UnmappedIsland.Domain.Defs.PickEffect" class="text-break">Class PickEffect</h1>
+  <div class="markdown level0 summary"><p>pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。自分もまたActiveEffectであり
+（activeと排他な選択肢の一方）、選ばれた候補の効果もまたActiveEffect（さらにpickなら再帰する）。</p>
+<p>抽選（weight按分）と適用を自分で完結させる。候補が無ければ何もしない（条件成立時に何も起きない）。
+選択に使うRNGはsessionから、weightの解決に使う文脈はApplyの引数(owner=self/actor/dragged)から得る。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
     <div class="level1"><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></div>
-    <div class="level2"><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyMutation.html">PropertyMutation</a></div>
-    <div class="level3"><span class="xref">AddEffect</span></div>
+    <div class="level2"><span class="xref">PickEffect</span></div>
   </div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
@@ -107,26 +109,26 @@
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Defs.html">Defs</a></h6>
   <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
-  <h5 id="UnmappedIsland_Domain_Defs_AddEffect_syntax">Syntax</h5>
+  <h5 id="UnmappedIsland_Domain_Defs_PickEffect_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class AddEffect : PropertyMutation</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class PickEffect : ActiveEffect</code></pre>
   </div>
   <h3 id="constructors">Constructors
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_AddEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.AddEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickEffect.%23ctor(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PickCandidateDef%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L128">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L19">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_AddEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.AddEffect.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_AddEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.AddEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)">AddEffect(ReferenceRoot, int, int)</h4>
+  <a id="UnmappedIsland_Domain_Defs_PickEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.PickEffect.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PickEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PickCandidateDef__" data-uid="UnmappedIsland.Domain.Defs.PickEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PickCandidateDef})">PickEffect(IReadOnlyList&lt;PickCandidateDef&gt;)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public AddEffect(ReferenceRoot target, int propertyGlobalId, int amount)</code></pre>
+    <pre><code class="lang-csharp hljs">public PickEffect(IReadOnlyList&lt;PickCandidateDef&gt; candidates)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -139,18 +141,8 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
-        <td><span class="parametername">target</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
-        <td><span class="parametername">propertyGlobalId</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
-        <td><span class="parametername">amount</span></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PickCandidateDef.html">PickCandidateDef</a>&gt;</td>
+        <td><span class="parametername">candidates</span></td>
         <td></td>
       </tr>
     </tbody>
@@ -159,17 +151,17 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_AddEffect_amount.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.AddEffect.amount%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickEffect_candidates.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickEffect.candidates%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L126">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L17">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_AddEffect_amount" data-uid="UnmappedIsland.Domain.Defs.AddEffect.amount">amount</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_PickEffect_candidates" data-uid="UnmappedIsland.Domain.Defs.PickEffect.candidates">candidates</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">private readonly int amount</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly IReadOnlyList&lt;PickCandidateDef&gt; candidates</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
@@ -181,7 +173,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PickCandidateDef.html">PickCandidateDef</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
@@ -190,13 +182,13 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_AddEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L134">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L24">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_AddEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.AddEffect.Apply*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_AddEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_" data-uid="UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)">Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)</h4>
+  <a id="UnmappedIsland_Domain_Defs_PickEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.PickEffect.Apply*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PickEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_" data-uid="UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)">Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -244,21 +236,20 @@
   <div><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_">ActiveEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)</a></div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_AddEffect_ApplyScaled_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickEffect_SelectWeighted_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L142">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L35">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_AddEffect_ApplyScaled_" data-uid="UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_AddEffect_ApplyScaled_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)">ApplyScaled(WorldObject, WorldSession, WorldObject, WorldObject, int, int)</h4>
-  <div class="markdown level1 summary"><p>transfer（9.5節）のlinked_add用: 実際に移動した量に比例してスケール（amount*numerator/
-denominator、整数除算）した量を加減算する。numerator/denominatorが1/1なら通常のadd（Apply）と同じ。
-スケール後が0なら何もしない。</p>
+  <a id="UnmappedIsland_Domain_Defs_PickEffect_SelectWeighted_" data-uid="UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PickEffect_SelectWeighted_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Defs.PickEffect.SelectWeighted(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)">SelectWeighted(WorldObject, WorldObject, WorldObject, WorldSession)</h4>
+  <div class="markdown level1 summary"><p>候補群を、それぞれのweightで重み付き抽選して1つ選ぶ。候補が非空であることは
+Applyが事前に保証してから呼ぶ。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public void ApplyScaled(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged, int numerator, int denominator)</code></pre>
+    <pre><code class="lang-csharp hljs">private PickCandidateDef SelectWeighted(WorldObject self, WorldObject actor, WorldObject dragged, WorldSession session)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -272,12 +263,7 @@ denominator、整数除算）した量を加減算する。numerator/denominator
     <tbody>
       <tr>
         <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
-        <td><span class="parametername">owner</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
-        <td><span class="parametername">session</span></td>
+        <td><span class="parametername">self</span></td>
         <td></td>
       </tr>
       <tr>
@@ -291,13 +277,23 @@ denominator、整数除算）した量を加減算する。numerator/denominator
         <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
-        <td><span class="parametername">numerator</span></td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
         <td></td>
       </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
-        <td><span class="parametername">denominator</span></td>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PickCandidateDef.html">PickCandidateDef</a></td>
         <td></td>
       </tr>
     </tbody>
@@ -311,10 +307,10 @@ denominator、整数除算）した量を加減算する。numerator/denominator
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_AddEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.AddEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L124" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L15" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
