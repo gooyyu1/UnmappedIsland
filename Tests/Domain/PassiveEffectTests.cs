@@ -551,9 +551,11 @@ object_defs:
 
             var incoming = characterInstance.GetIncomingPassiveEffects(staminaId);
 
+            // 種別（modify/accumulate）はPassiveEffectの内部事情で外から見えないため、Declarerで両方の
+            // 効果が種別を問わず1つの一覧に載ることを確認する（bootsはmodify、exhaustionはaccumulate）。
             Assert.That(incoming.Count, Is.EqualTo(2));
-            Assert.That(incoming.Any(c => c.Def.Kind == PassiveEffectKind.Modify), Is.True);
-            Assert.That(incoming.Any(c => c.Def.Kind == PassiveEffectKind.Accumulate), Is.True);
+            Assert.That(incoming.Any(c => c.Declarer == bootsInstance), Is.True);
+            Assert.That(incoming.Any(c => c.Declarer == exhaustionInstance), Is.True);
         }
 
         // ------------------------------------------------------------------

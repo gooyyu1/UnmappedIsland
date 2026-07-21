@@ -25,9 +25,12 @@ namespace UnmappedIsland.Domain.Runtime
             Def = def;
         }
 
-        /// <summary>このゲートが現在有効かどうか（8.2節）。自分自身(Def.Gate/Declarer/SlotBearer)だけで判定できる。
-        /// StageNameとConditionsは独立したフィールドで、それぞれ非nullの場合だけそのチェックを行う（両方非nullなら
-        /// AND、両方nullなら常時有効）。</summary>
-        public bool IsActive() => Def.Gate.IsSatisfied(Declarer, SlotBearer);
+        /// <summary>この登録をDef（PassiveEffect）自身に頼んで、対象プロパティ値の適切なincoming
+        /// （modify用/accumulate用）へ登録させる。どちらのバケツに入るかはDefが決める。</summary>
+        public void RegisterInto(PropertyValue target) => Def.RegisterInto(target, this);
+
+        /// <summary>この効果が現在の文脈（Declarer/SlotBearer）で寄与している量。ゲート（8.2節）が有効なら
+        /// Amount、無効なら0。判定と量はいずれもDef自身が持つため、こちらはDeclarer/SlotBearerを渡して委ねる。</summary>
+        public int ActiveAmount() => Def.ActiveAmount(Declarer, SlotBearer);
     }
 }

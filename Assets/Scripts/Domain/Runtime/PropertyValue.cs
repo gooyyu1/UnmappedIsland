@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnmappedIsland.Domain.Defs;
 
 namespace UnmappedIsland.Domain.Runtime
@@ -26,7 +27,12 @@ namespace UnmappedIsland.Domain.Runtime
         private readonly PropertyDef def;
         private readonly WorldObject owner;
 
-        private readonly List<RegisteredPassiveEffect> incoming = new List<RegisteredPassiveEffect>();
+        /// <summary>登録済みのmodify効果（都度導出される実効値へ寄与、GetEffectiveValueが走査）と、
+        /// accumulate効果（tick毎に実体値へ加減算、Tickが走査）を、それぞれ別のリストに分けて持つ。本質的に
+        /// 消費されるタイミングも意味も異なる2種を分離することで、実効値算出時にaccumulate側を走査せずに済み
+        /// （効率）、どちらの種別かの判定もここには持たない（種別はPassiveEffect自身の内部事情）。</summary>
+        private readonly List<RegisteredPassiveEffect> modifyEffects = new List<RegisteredPassiveEffect>();
+        private readonly List<RegisteredPassiveEffect> accumulateEffects = new List<RegisteredPassiveEffect>();
 
         /// <summary>GetEffectiveValue計算中かどうか（再入検出用）。conditions（14節）がGetEffectiveValueを
         /// 読むようになったことで、あるプロパティのmodifyのゲートが（直接・間接を問わず）自分自身の実効値に
@@ -80,12 +86,24 @@ namespace UnmappedIsland.Domain.Runtime
             Add(value - Number, session);
         }
 
-        public void RegisterPassiveEffect(RegisteredPassiveEffect effect) => incoming.Add(effect);
+        /// <summary>効果を登録する。modify用/accumulate用のどちらのリストへ入るかは効果自身（PassiveEffect）が
+        /// 決めてRegisterModify/RegisterAccumulateを呼び分ける。こちらは種別を意識しない。</summary>
+        public void RegisterPassiveEffect(RegisteredPassiveEffect effect) => effect.RegisterInto(this);
 
-        public void UnregisterPassiveEffectsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
+        /// <summary>modify効果としての登録先（PassiveEffect.RegisterInto経由でのみ呼ばれる想定）。</summary>
+        public void RegisterModify(RegisteredPassiveEffect effect) => modifyEffects.Add(effect);
+
+        /// <summary>accumulate効果としての登録先（PassiveEffect.RegisterInto経由でのみ呼ばれる想定）。</summary>
+        public void RegisterAccumulate(RegisteredPassiveEffect effect) => accumulateEffects.Add(effect);
+
+        public void UnregisterPassiveEffectsFrom(WorldObject declarer)
+        {
+            modifyEffects.RemoveAll(c => c.Declarer == declarer);
+            accumulateEffects.RemoveAll(c => c.Declarer == declarer);
+        }
 
         /// <summary>現在登録されている全寄与（modify/accumulate両方）。UIで「何が影響しているか」を表示する用途。</summary>
-        public IReadOnlyList<RegisteredPassiveEffect> Incoming => incoming;
+        public IReadOnlyList<RegisteredPassiveEffect> Incoming => modifyEffects.Concat(accumulateEffects).ToList();
 
         /// <summary>
         /// modify（Kind.Modify）とinherit（自分の直接の親から遡った祖先からの継承）を加味した実効値
@@ -109,9 +127,8 @@ namespace UnmappedIsland.Domain.Runtime
             {
                 int sum = Number;
 
-                foreach (var c in incoming)
-                    if (c.Def.Kind == PassiveEffectKind.Modify && c.IsActive())
-                        sum += c.Def.Amount;
+                foreach (var c in modifyEffects)
+                    sum += c.ActiveAmount();
 
                 sum += def.InheritedContribution(owner);
 
@@ -131,12 +148,8 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         public void Tick(WorldSession session)
         {
-            foreach (var c in incoming)
-            {
-                if (c.Def.Kind != PassiveEffectKind.Accumulate) continue;
-                if (!c.IsActive()) continue;
-                Number += c.Def.Amount;
-            }
+            foreach (var c in accumulateEffects)
+                Number += c.ActiveAmount();
 
             def.CheckRangeEvents(Number, owner, session);
         }
