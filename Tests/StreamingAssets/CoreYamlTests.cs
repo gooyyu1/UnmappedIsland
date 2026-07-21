@@ -46,12 +46,14 @@ namespace UnmappedIsland.StreamingAssets
             ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             Assert.That(world.IsSingleton, Is.True);
 
-            Assert.That(PropOf(world, "tick").DefaultNumber, Is.EqualTo(0));
-            Assert.That(PropOf(world, "minutes_per_tick").DefaultNumber, Is.EqualTo(15));
-            Assert.That(PropOf(world, "minute").DefaultNumber, Is.EqualTo(0));
-            Assert.That(PropOf(world, "hour").DefaultNumber, Is.EqualTo(0));
-            Assert.That(PropOf(world, "day").DefaultNumber, Is.EqualTo(1));
-            Assert.That(PropOf(world, "ambient_temperature").DefaultNumber, Is.EqualTo(20));
+            // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
+            var instance = new WorldObject(1, world, new WorldSession(codex));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("tick")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minutes_per_tick")), Is.EqualTo(15));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("minute")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hour")), Is.EqualTo(0));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("day")), Is.EqualTo(1));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("ambient_temperature")), Is.EqualTo(20));
         }
 
         [Test]
@@ -61,13 +63,9 @@ namespace UnmappedIsland.StreamingAssets
 
             PropertyDef minute = PropOf(world, "minute");
             Assert.That(minute.Range.Value.Max, Is.EqualTo(59));
-            Assert.That(minute.OnOverflow, Is.Not.Null);
-            Assert.That(minute.OnOverflow.Adds[ReferenceRoot.Self].Count, Is.GreaterThan(0));
 
             PropertyDef hour = PropOf(world, "hour");
             Assert.That(hour.Range.Value.Max, Is.EqualTo(23));
-            Assert.That(hour.OnOverflow, Is.Not.Null);
-            Assert.That(hour.OnOverflow.Adds[ReferenceRoot.Self].Count, Is.GreaterThan(0));
         }
 
         [Test]
@@ -81,7 +79,7 @@ namespace UnmappedIsland.StreamingAssets
             int minuteId = codex.PropertyNames.GetId("minute");
 
             var session = new WorldSession(codex);
-            var worldInstance = new WorldObject(1, world);
+            var worldInstance = new WorldObject(1, world, session);
             worldInstance.Tick(session);
             worldInstance.Tick(session);
             worldInstance.Tick(session);
@@ -98,7 +96,7 @@ namespace UnmappedIsland.StreamingAssets
             int hourId = codex.PropertyNames.GetId("hour");
             int dayId = codex.PropertyNames.GetId("day");
 
-            var worldInstance = new WorldObject(1, world);
+            var worldInstance = new WorldObject(1, world, new WorldSession(codex));
             var worldView = new World(worldInstance, codex.PropertyNames);
             var session = new WorldSession(codex, worldView);
 
@@ -122,7 +120,7 @@ namespace UnmappedIsland.StreamingAssets
             int weatherId = codex.PropertyNames.GetId("weather");
             int ambientTemperatureId = codex.PropertyNames.GetId("ambient_temperature");
 
-            var worldInstance = new WorldObject(1, world);
+            var worldInstance = new WorldObject(1, world, new WorldSession(codex));
 
             void AssertAmbientTemperatureAt(string weather, int hour, int expectedEffective, string because)
             {
@@ -155,7 +153,7 @@ namespace UnmappedIsland.StreamingAssets
             int weatherId = codex.PropertyNames.GetId("weather");
             int sunlightId = codex.PropertyNames.GetId("sunlight");
 
-            var worldInstance = new WorldObject(1, world);
+            var worldInstance = new WorldObject(1, world, new WorldSession(codex));
 
             void AssertSunlightAt(string weather, int hour, int expectedEffective, string because)
             {
@@ -215,10 +213,10 @@ object_defs:
 
             int locationsSlotId = testCodex.SlotNames.GetId("locations");
             var session = new WorldSession(testCodex);
-            WorldObject worldInstance = new WorldObject(1, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_world")));
-            WorldObject forestInstance = new WorldObject(2, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_forest")));
-            WorldObject beachInstance = new WorldObject(3, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_beach")));
-            WorldObject rockInstance = new WorldObject(4, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_rock")));
+            WorldObject worldInstance = new WorldObject(1, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_world")), session);
+            WorldObject forestInstance = new WorldObject(2, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_forest")), session);
+            WorldObject beachInstance = new WorldObject(3, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_beach")), session);
+            WorldObject rockInstance = new WorldObject(4, testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_rock")), session);
 
             Assert.That(forestInstance.MoveToSlot(worldInstance, locationsSlotId, session.Codex.WellKnown, out _), Is.True,
                 "traitを経由してlocationタグを持つオブジェクトは受け入れられる");

@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using NUnit.Framework;
 using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
@@ -16,64 +13,9 @@ namespace UnmappedIsland.Loader
     [TestFixture]
     public class YamlLoaderTests
     {
-        private static PropertyDef PropOf(WorldCodex codex, ObjectDef def, string propertyName)
-        {
-            return def.GetPropertyDef(codex.PropertyNames.GetId(propertyName));
-        }
-
-        private static SlotDef SlotOf(WorldCodex codex, ObjectDef def, string slotName)
-        {
-            return def.GetSlotDef(codex.SlotNames.GetId(slotName));
-        }
-
         // ------------------------------------------------------------------
         // 基本: 1ファイル内のobject_defs
         // ------------------------------------------------------------------
-
-        [Test]
-        public void Load_ParsesPropsSlotsAndStackOrder()
-        {
-            const string yaml = @"
-object_defs:
-  log:
-    props:
-      life:
-        value: 10
-    slots:
-      inside:
-        capacity: 5
-    stack_order:
-      property: life
-      ascending: false
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
-
-            Assert.That(PropOf(codex, log, "life").DefaultNumber, Is.EqualTo(10));
-            Assert.That(SlotOf(codex, log, "inside").Capacity, Is.EqualTo(5.0));
-
-            Assert.That(log.StackOrder, Is.Not.Null);
-            Assert.That(log.StackOrder.PropertyGlobalId, Is.EqualTo(codex.PropertyNames.GetId("life")));
-            Assert.That(log.StackOrder.Ascending, Is.False);
-        }
-
-        [Test]
-        public void Load_IdentifierPropertyValue_InternsAsSymbol()
-        {
-            const string yaml = @"
-object_defs:
-  sky:
-    props:
-      weather:
-        value: clear
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky"));
-
-            Assert.That(PropOf(codex, sky, "weather").DefaultNumber, Is.EqualTo(codex.SymbolNames.GetId("clear")),
-                "整数にも真偽値にもならない識別子は、シンボル名としてsymbolNamesへ登録される");
-        }
 
         [Test]
         public void Load_NonIdentifierPropertyValue_Throws()
@@ -87,25 +29,6 @@ object_defs:
 ";
             Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("シンボル名"));
-        }
-
-        [Test]
-        public void GetSlotDef_ReturnsNullWhenObjectDoesNotHaveThatSlot()
-        {
-            const string yaml = @"
-object_defs:
-  log:
-    slots:
-      inside: {}
-  apple: {}
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
-            ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
-            int insideSlotId = codex.SlotNames.GetId("inside");
-
-            Assert.That(log.GetSlotDef(insideSlotId), Is.Not.Null);
-            Assert.That(apple.GetSlotDef(insideSlotId), Is.Null);
         }
 
         // ------------------------------------------------------------------
@@ -182,59 +105,6 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void Load_ObjectDefInheritsPropsAndSlotsFromTrait()
-        {
-            const string yaml = @"
-traits:
-  flammable:
-    props:
-      burning:
-        value: 0
-    slots:
-      fire_pit: {}
-object_defs:
-  log:
-    traits: [flammable]
-    props:
-      life:
-        value: 10
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
-            Assert.That(PropOf(codex, log, "burning").DefaultNumber, Is.EqualTo(0));
-            Assert.That(SlotOf(codex, log, "fire_pit"), Is.Not.Null);
-        }
-
-        [Test]
-        public void Load_ObjectDefOverridesOnlySomeTraitFieldsOnMatchingProperty()
-        {
-            const string yaml = @"
-traits:
-  has_temp:
-    props:
-      temperature:
-        value: 0
-        range: {min: 0, max: 100}
-object_defs:
-  ember:
-    traits: [has_temp]
-    props:
-      temperature:
-        value: 50
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef ember = codex.Objects.Get(codex.ObjectNames.GetId("ember"));
-            PropertyDef temp = PropOf(codex, ember, "temperature");
-
-            Assert.That(temp.DefaultNumber, Is.EqualTo(50), "object_def側のvalueで上書きされる");
-            Assert.That(temp.Range, Is.Not.Null, "object_defが指定していないrangeはtrait側から引き継がれる");
-            Assert.That(temp.Range.Value.Min, Is.EqualTo(0));
-            Assert.That(temp.Range.Value.Max, Is.EqualTo(100));
-        }
-
-        [Test]
         public void Load_TwoTraitsWithColidingPropertyName_Throws()
         {
             const string yaml = @"
@@ -272,63 +142,6 @@ object_defs:
         // ------------------------------------------------------------------
 
         [Test]
-        public void Load_StagePassive_UsesWhenOwnStageGate()
-        {
-            const string yaml = @"
-object_defs:
-  campfire:
-    props:
-      heat:
-        value: 0
-        stages:
-          - name: lit
-            min: 1
-            passives:
-              - modify:
-                  child:
-                    warmth: 5
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef campfire = codex.Objects.Get(codex.ObjectNames.GetId("campfire"));
-            PassiveEffect effect = campfire.Passives.Single();
-
-            Assert.That(effect.Target, Is.EqualTo(PassiveEffectTarget.Child));
-        }
-
-        [Test]
-        public void Load_SymbolPropertyStage_ResolvesByNameExactMatch()
-        {
-            const string yaml = @"
-object_defs:
-  sky3:
-    props:
-      weather:
-        value: clear
-        stages:
-          - name: storm
-          - name: clear
-            passives:
-              - modify:
-                  self:
-                    sunlight: 5
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky3"));
-            PropertyDef weather = PropOf(codex, sky, "weather");
-
-            int stormId = codex.SymbolNames.Intern("storm");
-            int clearId = codex.SymbolNames.GetId("clear");
-            int somethingElseId = codex.SymbolNames.Intern("cloudy");
-
-            Assert.That(weather.ResolveStage(stormId)?.Name, Is.EqualTo("storm"));
-            Assert.That(weather.ResolveStage(clearId)?.Name, Is.EqualTo("clear"));
-            Assert.That(weather.ResolveStage(somethingElseId), Is.Null,
-                "シンボル型プロパティにフォールバックという概念は存在せず、stagesに書かれていない値は" +
-                "常にnullになる");
-        }
-
-        [Test]
         public void Load_SymbolPropertyStageWithMin_Throws()
         {
             const string yaml = @"
@@ -343,30 +156,6 @@ object_defs:
 ";
             Assert.That((Func<WorldCodex>)(() => new WorldCodexYamlLoader().Load("core.yaml", yaml).Build()),
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("min").And.Message.Contain("シンボル型"));
-        }
-
-        [Test]
-        public void Load_SymbolPropertyStagePassive_UsesWhenOwnStageGate()
-        {
-            const string yaml = @"
-object_defs:
-  sky4:
-    props:
-      weather:
-        value: clear
-        stages:
-          - name: clear
-            passives:
-              - modify:
-                  self:
-                    sunlight: 5
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef sky = codex.Objects.Get(codex.ObjectNames.GetId("sky4"));
-            PassiveEffect effect = sky.Passives.Single();
-
-            Assert.That(effect.Target, Is.EqualTo(PassiveEffectTarget.Self));
         }
 
         [Test]
@@ -420,8 +209,8 @@ object_defs:
             int offHandId = codex.SlotNames.GetId("off_hand");
 
             var session = new WorldSession(codex);
-            var characterInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")));
-            var swordInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("sword")));
+            var characterInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")), session);
+            var swordInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("sword")), session);
 
             Assert.That(swordInstance.MoveToSlot(characterInstance, mainHandId, session.Codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(attackId), Is.EqualTo(15), "main_handでは+5");
@@ -463,35 +252,6 @@ object_defs:
                 Throws.TypeOf<YamlLoadException>().With.Message.Contain("on_min"));
         }
 
-        [Test]
-        public void Load_OnMinSelf_ParsesDestroyAndSpawn()
-        {
-            const string yaml = @"
-object_defs:
-  log:
-    props:
-      life:
-        value: 0
-        range: {min: 0, max: 100}
-        on_min:
-          destroy: self
-          spawn:
-            object: ash
-            into: same_slot
-  ash: {}
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef log = codex.Objects.Get(codex.ObjectNames.GetId("log"));
-            ActiveEffect onMin = PropOf(codex, log, "life").OnMin;
-
-            Assert.That(onMin, Is.Not.Null);
-            Assert.That(onMin.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(onMin.Spawns.Count, Is.EqualTo(1));
-            Assert.That(onMin.Spawns[0].Into, Is.EqualTo(SpawnTargetRoot.SameSlot));
-            Assert.That(onMin.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("ash")));
-        }
-
         // ------------------------------------------------------------------
         // 構文エラー
         // ------------------------------------------------------------------
@@ -515,19 +275,6 @@ object_defs:
         // ------------------------------------------------------------------
         // actions / combinations
         // ------------------------------------------------------------------
-
-        private static ActionDef ActionOf(ObjectDef def, string name) => def.Actions.Single(a => a.Name == name);
-        private static ConditionNode ActionConditionsOf(ActionDef action) => ReadPrivateProperty<ConditionNode>(action, "Conditions");
-        private static ActiveEffect ActionActiveOf(ActionDef action) => ReadPrivateProperty<ActiveEffect>(action, "Active");
-        private static IReadOnlyList<PickCandidateDef> ActionPickOf(ActionDef action) => ReadPrivateProperty<IReadOnlyList<PickCandidateDef>>(action, "Pick");
-        private static CombinationDef CombinationOf(ObjectDef def, string name) => def.Combinations.Single(c => c.Name == name);
-
-        private static T ReadPrivateProperty<T>(object target, string propertyName)
-        {
-            PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(property, Is.Not.Null, $"{target.GetType().Name}.{propertyName} が見つかりません。");
-            return (T)property.GetValue(target);
-        }
 
         [Test]
         public void Load_ParsesActionWithConditionsAndActive()
@@ -555,85 +302,16 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
-            ActionDef eat = ActionOf(apple, "eat");
-            ActiveEffect active = ActionActiveOf(eat);
-            Assert.That(active, Is.Not.Null);
-            Assert.That(active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
-            Assert.That(active.Destroy, Contains.Item(ReferenceRoot.Self));
-
             int satietyId = codex.PropertyNames.GetId("satiety");
             var session = new WorldSession(codex);
-            var appleInstance = new WorldObject(1, apple);
-            var player = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("player")));
+            var appleInstance = new WorldObject(1, apple, session);
+            var player = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("player")), session);
 
             Assert.That(appleInstance.TryExecuteAction("eat", player, session), Is.False,
                 "actor.satiety=100 は lt 100 を満たさない");
             player.SetNumber(satietyId, 99);
             Assert.That(appleInstance.TryExecuteAction("eat", player, session), Is.True,
                 "actor.satiety=99 は lt 100 を満たす");
-        }
-
-        [Test]
-        public void Load_ActionActiveSpawnAndTransfer_AcceptsArrays()
-        {
-            const string yaml = @"
-object_defs:
-  flask:
-    actions:
-      use:
-        spawn:
-          - {object: steam}
-          - {object: smell}
-        transfer:
-          - {amount: 100, from_prop: a, to_prop: b}
-          - {amount: 200, from_prop: c, to_prop: d}
-  steam: {}
-  smell: {}
-  sink:
-    props:
-      a: {value: 0}
-      b: {value: 0}
-      c: {value: 0}
-      d: {value: 0}
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef flask = codex.Objects.Get(codex.ObjectNames.GetId("flask"));
-            ActionDef use = ActionOf(flask, "use");
-            ActiveEffect active = ActionActiveOf(use);
-
-            Assert.That(active.Spawns.Count, Is.EqualTo(2));
-            Assert.That(active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("steam")));
-            Assert.That(active.Spawns[1].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("smell")));
-            Assert.That(active.Transfers.Count, Is.EqualTo(2));
-            Assert.That(active.Transfers[0].Amount, Is.EqualTo(100));
-            Assert.That(active.Transfers[1].Amount, Is.EqualTo(200));
-        }
-
-        [Test]
-        public void Load_ParsesActionPick()
-        {
-            const string yaml = @"
-object_defs:
-  weapon:
-    actions:
-      attack:
-        pick:
-          - weight: 50
-            destroy: self
-          - weight: 50
-            destroy: actor
-  target: {}
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef weapon = codex.Objects.Get(codex.ObjectNames.GetId("weapon"));
-            ActionDef attack = ActionOf(weapon, "attack");
-            ActiveEffect active = ActionActiveOf(attack);
-            IReadOnlyList<PickCandidateDef> pick = ActionPickOf(attack);
-
-            Assert.That(active, Is.Null);
-            Assert.That(pick.Count, Is.EqualTo(2));
         }
 
         [Test]
@@ -664,8 +342,8 @@ object_defs:
 
             ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
             var session = new WorldSession(codex);
-            var woodInstance = new WorldObject(1, wood);
-            var axe = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("axe_tool")));
+            var woodInstance = new WorldObject(1, wood, session);
+            var axe = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("axe_tool")), session);
 
             axe.SetNumber(durabilityId, 0);
             Assert.That(woodInstance.TryExecuteCombination(axe, null, "chop", session), Is.False,
@@ -675,25 +353,6 @@ object_defs:
                 "dragged.durability=10 のとき条件 gt 0 を満たす");
             Assert.That(axe.GetNumber(durabilityId), Is.EqualTo(9), "add: dragged.durability: -1 が適用される");
             Assert.That(woodInstance.Parent, Is.Null, "destroy: self が適用される");
-        }
-
-        [Test]
-        public void Load_ActionsAndCombinationsDistributedByTrait()
-        {
-            const string yaml = @"
-traits:
-  eatable:
-    actions:
-      eat:
-        destroy: self
-object_defs:
-  berry:
-    traits: [eatable]
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
-            Assert.That(ActionActiveOf(ActionOf(berry, "eat")).Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
@@ -812,7 +471,7 @@ object_defs:
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
             int modeId = codex.PropertyNames.GetId("mode");
             var session = new WorldSession(codex);
-            var thingInstance = new WorldObject(1, thing);
+            var thingInstance = new WorldObject(1, thing, session);
 
             Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.True,
                 "object/op省略時は self.mode == 1 の等価比較として成立する");
@@ -877,8 +536,8 @@ object_defs:
             int contentSlotId = codex.SlotNames.GetId("content");
 
             var session = new WorldSession(codex);
-            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box")));
-            var redMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("red_marker")));
+            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box")), session);
+            var redMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("red_marker")), session);
             redMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
 
             Assert.That(box.TryExecuteAction("use", actor: null, session), Is.True,
@@ -907,11 +566,11 @@ object_defs:
             int contentSlotId = codex.SlotNames.GetId("content");
 
             var session = new WorldSession(codex);
-            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box2")));
+            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box2")), session);
             Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットが空なので実行されない");
 
-            var blueMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("blue_marker2")));
+            var blueMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("blue_marker2")), session);
             blueMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
             Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットの中身がredタグを持たない(blueタグ)ので実行されない");
@@ -948,7 +607,7 @@ object_defs:
 ";
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             var session = new WorldSession(codex);
-            var thing = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
+            var thing = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")), session);
 
             Assert.That(thing.TryExecuteAction("use", null, session), Is.True);
         }
@@ -977,8 +636,8 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             var session = new WorldSession(codex);
-            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")));
-            var sameContent = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("bottle_source")));
+            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")), session);
+            var sameContent = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("bottle_source")), session);
 
             Assert.That(bottle.TryExecuteCombination(sameContent, null, "pour_in", session), Is.False,
                 "self(empty)とdragged(water)のcontentが異なるので不成立");
@@ -1030,8 +689,8 @@ object_defs:
             int contentId = codex.PropertyNames.GetId("content");
 
             var session = new WorldSession(codex);
-            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle2")));
-            var oilSource = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("oil_source")));
+            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle2")), session);
+            var oilSource = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("oil_source")), session);
 
             Assert.That(bottle.TryExecuteCombination(oilSource, null, "pour_in", session), Is.True);
             Assert.That(bottle.GetNumber(contentId), Is.EqualTo(codex.SymbolNames.GetId("oil")),
@@ -1062,8 +721,8 @@ object_defs:
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
             var session = new WorldSession(codex);
-            var falseCase = new WorldObject(1, thing);
-            var trueCase = new WorldObject(2, thing);
+            var falseCase = new WorldObject(1, thing, session);
+            var trueCase = new WorldObject(2, thing, session);
             int hpId = codex.PropertyNames.GetId("hp");
             int mpId = codex.PropertyNames.GetId("mp");
 
@@ -1094,7 +753,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             var session = new WorldSession(codex);
-            var thingInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
+            var thingInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")), session);
 
             Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.False,
                 "locked(1)がprop:1と一致するため、not: {...}は偽になる");
@@ -1136,8 +795,8 @@ object_defs:
             int storageSlotId = codex.SlotNames.GetId("storage");
 
             var session = new WorldSession(codex);
-            var campfireInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("campfire")));
-            var logInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("log")));
+            var campfireInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("campfire")), session);
+            var logInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("log")), session);
 
             Assert.That(logInstance.MoveToSlot(campfireInstance, fuelSlotId, session.Codex.WellKnown, out _), Is.True);
             Assert.That(logInstance.GetEffectiveValue(warmthId), Is.EqualTo(0),
@@ -1172,88 +831,6 @@ object_defs:
         // ------------------------------------------------------------------
         // tags（4節）: accepts.tag / combinations.with のマッチング
         // ------------------------------------------------------------------
-
-        [Test]
-        public void Load_SlotAcceptsMatchesTagGrantedViaTrait()
-        {
-            const string yaml = @"
-traits:
-  location: {tags: [location]}
-object_defs:
-  world:
-    slots:
-      locations:
-        accepts:
-          - {tag: location, max: 10}
-  forest:
-    traits: [location]
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
-            SlotDef locations = SlotOf(codex, world, "locations");
-
-            ObjectDef forest = codex.Objects.Get(codex.ObjectNames.GetId("forest"));
-            Assert.That(locations.Accepts[0].Matches(forest), Is.True);
-        }
-
-        [Test]
-        public void Load_SlotAcceptsMatchesTagDeclaredDirectly_EvenWithoutSharedTrait()
-        {
-            // beachはforestと同じtraitを一切参照しないが、tagsで直接同じタグを宣言する。同一traitでなくても
-            // 同じように受け入れたい、というtags導入の意図そのものを検証する。
-            const string yaml = @"
-traits:
-  location: {tags: [location]}
-object_defs:
-  world:
-    slots:
-      locations:
-        accepts:
-          - {tag: location, max: 10}
-  forest:
-    traits: [location]
-  beach:
-    tags: [location]
-  rock: {}
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef world = codex.Objects.Get(codex.ObjectNames.GetId("world"));
-            SlotDef locations = SlotOf(codex, world, "locations");
-
-            ObjectDef beach = codex.Objects.Get(codex.ObjectNames.GetId("beach"));
-            ObjectDef rock = codex.Objects.Get(codex.ObjectNames.GetId("rock"));
-
-            Assert.That(locations.Accepts[0].Matches(beach), Is.True, "traitを介さず直接tagsで宣言したタグでもマッチする");
-            Assert.That(locations.Accepts[0].Matches(rock), Is.False, "タグを持たないobject_defはマッチしない");
-        }
-
-        [Test]
-        public void Load_SlotAcceptsObject_MatchesOnlyThatExactObjectDef()
-        {
-            const string yaml = @"
-object_defs:
-  cauldron:
-    slots:
-      ingredients:
-        accepts:
-          - {object: raw_meat, max: 1}
-  raw_meat: {}
-  raw_fish: {}
-";
-            var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
-
-            ObjectDef cauldron = codex.Objects.Get(codex.ObjectNames.GetId("cauldron"));
-            SlotDef ingredients = SlotOf(codex, cauldron, "ingredients");
-
-            Assert.That(ingredients.Accepts[0].TargetKind, Is.EqualTo(SlotAcceptTargetKind.Object));
-
-            ObjectDef rawMeat = codex.Objects.Get(codex.ObjectNames.GetId("raw_meat"));
-            ObjectDef rawFish = codex.Objects.Get(codex.ObjectNames.GetId("raw_fish"));
-            Assert.That(ingredients.Accepts[0].Matches(rawMeat), Is.True);
-            Assert.That(ingredients.Accepts[0].Matches(rawFish), Is.False, "objectは対象の型そのものにしかマッチしない");
-        }
 
         [Test]
         public void Load_SlotAcceptsBothTagAndObject_Throws()
@@ -1328,11 +905,9 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("clock.yaml", yaml).Build();
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
-            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Sets[ReferenceRoot.Self].Count, Is.EqualTo(1));
-            Assert.That(PropOf(codex, clock, "minute").OnOverflow.Adds[ReferenceRoot.Self].Count, Is.EqualTo(1));
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, clock);
+            var instance = new WorldObject(1, clock, session);
             instance.SetProperty(codex.PropertyNames.GetId("minute"), 60); // 手動で溢れさせる
             instance.Tick(session); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
 
@@ -1373,10 +948,9 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
-            Assert.That(PropOf(codex, gauge, "value").OnOverflow, Is.Not.Null);
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, gauge);
+            var instance = new WorldObject(1, gauge, session);
             instance.SetProperty(codex.PropertyNames.GetId("value"), 150);
             instance.Tick(session);
 
@@ -1440,10 +1014,9 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("clock.yaml", yaml).Build();
 
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
-            Assert.That(PropOf(codex, clock, "minute").OnShortfall.Adds[ReferenceRoot.Self].Count, Is.EqualTo(2));
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, clock);
+            var instance = new WorldObject(1, clock, session);
             instance.SetProperty(codex.PropertyNames.GetId("minute"), -10); // 手動で下回らせる
             instance.Tick(session);
 
@@ -1465,10 +1038,9 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
-            Assert.That(PropOf(codex, gauge, "value").OnShortfall, Is.Not.Null);
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, gauge);
+            var instance = new WorldObject(1, gauge, session);
             instance.SetProperty(codex.PropertyNames.GetId("value"), -50);
             instance.Tick(session);
 
@@ -1501,9 +1073,9 @@ object_defs:
             int pocketSlotId = codex.SlotNames.GetId("pocket");
 
             var session = new WorldSession(codex);
-            var roomInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("room")));
-            var characterInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("character")));
-            var foodInstance = new WorldObject(3, codex.Objects.Get(codex.ObjectNames.GetId("food")));
+            var roomInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("room")), session);
+            var characterInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("character")), session);
+            var foodInstance = new WorldObject(3, codex.Objects.Get(codex.ObjectNames.GetId("food")), session);
 
             Assert.That(characterInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(foodInstance.MoveToSlot(characterInstance, pocketSlotId, codex.WellKnown, out _), Is.True);

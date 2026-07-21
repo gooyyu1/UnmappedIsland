@@ -50,14 +50,14 @@ namespace UnmappedIsland.Domain.Defs
         private readonly int? propertyGlobalId;
         private readonly string stageName;
 
-        internal PassiveEffectGate(ConditionNode conditions, int? propertyGlobalId = null, string stageName = null)
+        public PassiveEffectGate(ConditionNode conditions, int? propertyGlobalId = null, string stageName = null)
         {
             this.conditions = conditions;
             this.propertyGlobalId = propertyGlobalId;
             this.stageName = stageName;
         }
 
-        internal bool IsSatisfied(WorldObject declarer, WorldObject slotBearer)
+        public bool IsSatisfied(WorldObject declarer, WorldObject slotBearer)
         {
             if (stageName != null)
             {

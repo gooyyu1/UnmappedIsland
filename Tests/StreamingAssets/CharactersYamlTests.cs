@@ -48,15 +48,17 @@ namespace UnmappedIsland.StreamingAssets
             ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));
             Assert.That(character.IsSingleton, Is.True);
 
+            // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
+            var instance = new WorldObject(1, character, new WorldSession(codex));
             // satiety: 1日(96 tick)分、-100/tickでmax=9600。
-            Assert.That(PropOf(character, "satiety").DefaultNumber, Is.EqualTo(9600));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("satiety")), Is.EqualTo(9600));
             // hydration: 3日(288 tick)分、-100/tickでmax=28800。
-            Assert.That(PropOf(character, "hydration").DefaultNumber, Is.EqualTo(28800));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("hydration")), Is.EqualTo(28800));
             // body_fat: 標準体型を想定した初期値=15日分(1440 tick)、-100/tickで144000。
-            Assert.That(PropOf(character, "body_fat").DefaultNumber, Is.EqualTo(144000));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("body_fat")), Is.EqualTo(144000));
             // wakefulness: 強制的に起こされ続けない自然な限界=24時間(96 tick)分、-100/tickでmax=9600。
-            Assert.That(PropOf(character, "wakefulness").DefaultNumber, Is.EqualTo(9600));
-            Assert.That(PropOf(character, "stamina").DefaultNumber, Is.EqualTo(100));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("wakefulness")), Is.EqualTo(9600));
+            Assert.That(instance.GetNumber(codex.PropertyNames.GetId("stamina")), Is.EqualTo(100));
         }
 
         [TestCase("satiety", 0, 9600)]
@@ -81,7 +83,7 @@ namespace UnmappedIsland.StreamingAssets
         {
             var session = new WorldSession(codex);
             ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));
-            var instance = new WorldObject(1, character);
+            var instance = new WorldObject(1, character, session);
             int propId = codex.PropertyNames.GetId(name);
             int before = instance.GetNumber(propId);
 

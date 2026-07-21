@@ -41,7 +41,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// Stacks だけで判定する（accepts制約・capacity・UnitCapacity、7.2〜7.3節）。force=trueの
         /// 場合はこの判定自体を呼び出し側（WorldObject.AttachToSlot）がスキップする。
         /// </summary>
-        internal bool CanAccept(WorldObject candidate, WellKnownProperties wellKnown, string ownerName, out string error)
+        public bool CanAccept(WorldObject candidate, WellKnownProperties wellKnown, string ownerName, out string error)
         {
             if (!AcceptsRule(candidate))
             {
@@ -97,7 +97,7 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>通常の追加。Stackable/FixedPositions/StackOrderに従って正しいObjectStack・位置へ挿入する。</summary>
-        internal void AddInternal(WorldObject obj)
+        public void AddInternal(WorldObject obj)
         {
             if (!Def.Stackable) { stacks.Add(new ObjectStack(obj)); return; }
 
@@ -125,7 +125,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// 分割してその間へ割り込ませる（元の平坦リストでの位置引き継ぎ、Codex.WorldObject.CaptureSameSlotAnchor
         /// 参照）。
         /// </summary>
-        internal void InsertAtCapturedPosition(WorldObject obj, int stackIndex, int memberIndex, bool stackWasVacated)
+        public void InsertAtCapturedPosition(WorldObject obj, int stackIndex, int memberIndex, bool stackWasVacated)
         {
             if (stackWasVacated)
             {
@@ -142,7 +142,7 @@ namespace UnmappedIsland.Domain.Runtime
             stacks.Insert(stackIndex + 2, after);
         }
 
-        internal void RemoveInternal(WorldObject obj)
+        public void RemoveInternal(WorldObject obj)
         {
             ObjectStack stack = FindStackContaining(obj);
             if (stack == null) return;
@@ -151,13 +151,13 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>objが現在属しているObjectStack（無ければnull）。</summary>
-        internal ObjectStack FindStackContaining(WorldObject obj) => stacks.FirstOrDefault(s => s.Members.Contains(obj));
+        public ObjectStack FindStackContaining(WorldObject obj) => stacks.FirstOrDefault(s => s.Members.Contains(obj));
 
         /// <summary>candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければnull）。</summary>
-        internal ObjectStack FindMatchingStack(WorldObject candidate) => stacks.FirstOrDefault(s => s.Matches(candidate));
+        public ObjectStack FindMatchingStack(WorldObject candidate) => stacks.FirstOrDefault(s => s.Matches(candidate));
 
         /// <summary>このObjectStackが外側リスト(Stacks)の何番目にあるか。</summary>
-        internal int IndexOfStack(ObjectStack stack) => stacks.IndexOf(stack);
+        public int IndexOfStack(ObjectStack stack) => stacks.IndexOf(stack);
 
         /// <summary>型globalIdに対応するObjectStackの固定番号（無ければnull）。represented_byを使わない
         /// ObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。represented_byを使う
@@ -168,7 +168,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>same_slot(FixedPositions)専用の予約。次にAddInternalで新規ObjectStackが作られる際、
         /// AssignGridIndexで新規採番する代わりにgridIndexをそのまま割り当てる（destroyされた自分自身が
         /// 同種の最後の1個で、自分の固定番号をそのまま新しい型へ引き継がせたい場合に使う）。</summary>
-        internal void ReserveGridIndexForNextNewStack(int gridIndex) => pendingGridReservation = gridIndex;
+        public void ReserveGridIndexForNextNewStack(int gridIndex) => pendingGridReservation = gridIndex;
 
         private int AssignGridIndex()
         {
@@ -194,7 +194,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// 行うため、押し出されるObjectStackがスタック（同種複数個）であっても中身の相対順序は変わらない）。
         /// どちらの方向にも空きが見つからなければfalseを返す（呼び出し側でfallbackへ委ねる）。
         /// </summary>
-        internal bool TryMakeRoomAndSeed(int selfIndex) =>
+        public bool TryMakeRoomAndSeed(int selfIndex) =>
             TryMakeRoomAndSeed(selfIndex, step: 1) || TryMakeRoomAndSeed(selfIndex, step: -1);
 
         private bool TryMakeRoomAndSeed(int selfIndex, int step)

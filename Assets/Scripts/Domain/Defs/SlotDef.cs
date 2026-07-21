@@ -45,7 +45,7 @@ namespace UnmappedIsland.Domain.Defs
 
     /// <summary>
     /// 1つの ObjectDef が持つ、1つのスロットの定義（GameElementDefinition.md 7.1〜7.4節）。
-    /// ObjectDef.SlotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。
+    /// ObjectDef.slotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。
     /// </summary>
     public sealed class SlotDef
     {

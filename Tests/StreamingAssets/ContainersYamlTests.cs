@@ -63,7 +63,7 @@ namespace UnmappedIsland.StreamingAssets
         }
 
         private WorldObject Spawn(string objectName) =>
-            new WorldObject(nextInstanceId++, codex.Objects.Get(codex.ObjectNames.GetId(objectName)));
+            new WorldObject(nextInstanceId++, codex.Objects.Get(codex.ObjectNames.GetId(objectName)), new WorldSession(codex));
 
         private PropertyDef PropOf(ObjectDef def, string propertyName)
         {

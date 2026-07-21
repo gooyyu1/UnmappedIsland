@@ -19,12 +19,12 @@ namespace UnmappedIsland.Domain.Defs
         public ShowMenuMode ShowMenu { get; }
 
         /// <summary>nullなら常に真（conditions省略）。</summary>
-        private ConditionNode Conditions { get; }
+        private readonly ConditionNode conditions;
 
         /// <summary>ActiveかPickのどちらか一方のみが非null（どちらも指定しなければ、条件成立時に何も
         /// 起きないアクションになる）。</summary>
-        private ActiveEffect Active { get; }
-        private IReadOnlyList<PickCandidateDef> Pick { get; }
+        private readonly ActiveEffect active;
+        private readonly IReadOnlyList<PickCandidateDef> pick;
 
         public ActionDef(
             string name,
@@ -35,17 +35,17 @@ namespace UnmappedIsland.Domain.Defs
         {
             Name = name;
             ShowMenu = showMenu;
-            Conditions = conditions;
-            Active = active;
-            Pick = pick;
+            this.conditions = conditions;
+            this.active = active;
+            this.pick = pick;
         }
 
-        internal bool TryExecute(WorldObject self, WorldObject actor, WorldSession session)
+        public bool TryExecute(WorldObject self, WorldObject actor, WorldSession session)
         {
-            if (Conditions != null && !Conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged: null)))
+            if (conditions != null && !conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged: null)))
                 return false;
 
-            ActiveEffect effect = PickCandidateDef.ResolveEffect(Active, Pick, self, actor, dragged: null, session);
+            ActiveEffect effect = PickCandidateDef.ResolveEffect(active, pick, self, actor, dragged: null, session);
             if (effect != null) self.ApplyActiveEffect(effect, session, actor, dragged: null);
             return true;
         }

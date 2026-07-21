@@ -9,8 +9,8 @@ namespace UnmappedIsland.Loader
     public sealed partial class WorldCodexYamlLoader
     {
         /// <summary>1つのprops.'propName'エントリを解釈し、PropertyDefを組み立てる（GameElementDefinition.md
-        /// 6節）。RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれるため internal。</summary>
-        internal PropertyDef ParseProp(string objectDefName, string propName, YamlMappingNode node, List<PassiveEffect> passives)
+        /// 6節）。RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれる。</summary>
+        public PropertyDef ParseProp(string objectDefName, string propName, YamlMappingNode node, List<PassiveEffect> passives)
         {
             string context = $"'{objectDefName}'.props.'{propName}'";
             int propertyGlobalId = PropertyNames.Intern(propName);
@@ -19,20 +19,21 @@ namespace UnmappedIsland.Loader
             if (valueNode == null)
                 throw new YamlLoadException($"{context}: 必須フィールド 'value' がありません（traitの継承先で指定してください）。");
 
-            PropertyRange? rerollRange = null;
-            int defaultNumber;
+            PropertyRange? initialValueRange = null;
+            int initialValue;
             bool isSymbolProperty;
             if (valueNode is YamlMappingNode rangeValueNode)
             {
-                var reroll = new PropertyRange(rangeValueNode.RequireInt("min", context), rangeValueNode.RequireInt("max", context));
-                rerollRange = reroll;
-                // 再ロール自体は未実装（別途）。デフォルト値は決定的にrange.Minで埋めておく。
-                defaultNumber = reroll.Min;
+                var initRange = new PropertyRange(rangeValueNode.RequireInt("min", context), rangeValueNode.RequireInt("max", context));
+                initialValueRange = initRange;
+                // 初期値はspawn時（sessionあり）に[min,max]の一様乱数で決まる（PropertyDef.CreateValue）。
+                // sessionを渡さない直接生成では決定的にminをフォールバックとして使う。
+                initialValue = initRange.Min;
                 isSymbolProperty = false;
             }
             else
             {
-                defaultNumber = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, out isSymbolProperty);
+                initialValue = ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value, out isSymbolProperty);
             }
 
             PropertyRange? range = null;
@@ -98,7 +99,7 @@ namespace UnmappedIsland.Loader
 
             bool inherit = node.TryGetBool("inherit", context, fallback: false);
 
-            return new PropertyDef(propertyGlobalId, propName, defaultNumber, rerollRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
+            return new PropertyDef(propertyGlobalId, propName, initialValue, initialValueRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
         }
 
         /// <summary>1つのstagesエントリを解釈する（GameElementDefinition.md 6.4節）。プロパティ自身が

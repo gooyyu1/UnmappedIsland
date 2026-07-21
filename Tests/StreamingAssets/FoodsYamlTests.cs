@@ -46,7 +46,7 @@ namespace UnmappedIsland.StreamingAssets
         }
 
         private WorldObject Spawn(string objectName, int instanceId) =>
-            new WorldObject(instanceId, codex.Objects.Get(codex.ObjectNames.GetId(objectName)));
+            new WorldObject(instanceId, codex.Objects.Get(codex.ObjectNames.GetId(objectName)), new WorldSession(codex));
 
         [TestCase("water_spinach", "vegetable_nutrition", 8)]
         [TestCase("coconut_crab", "meat_nutrition", 15)]
@@ -76,10 +76,13 @@ namespace UnmappedIsland.StreamingAssets
         public void Character_HasThreeNutritionCategories_FullByDefaultWithWeekLongDecay()
         {
             ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));
+            var instance = new WorldObject(1, character, new WorldSession(codex));
             foreach (var name in new[] { "vegetable_nutrition", "meat_nutrition", "grain_tuber_nutrition" })
             {
-                PropertyDef prop = character.GetPropertyDef(codex.PropertyNames.GetId(name));
-                Assert.That(prop.DefaultNumber, Is.EqualTo(67200), $"{name}の初期値");
+                int id = codex.PropertyNames.GetId(name);
+                // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
+                Assert.That(instance.GetNumber(id), Is.EqualTo(67200), $"{name}の初期値");
+                PropertyDef prop = character.GetPropertyDef(id);
                 Assert.That(prop.Range.Value.Min, Is.EqualTo(0));
                 Assert.That(prop.Range.Value.Max, Is.EqualTo(67200));
             }

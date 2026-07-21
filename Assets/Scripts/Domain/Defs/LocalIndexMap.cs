@@ -38,6 +38,6 @@ namespace UnmappedIsland.Domain.Defs
             return globalToLocal[globalId];
         }
 
-        internal static readonly LocalIndexMap Empty = new LocalIndexMap(0, Array.Empty<int>());
+        public static readonly LocalIndexMap Empty = new LocalIndexMap(0, Array.Empty<int>());
     }
 }

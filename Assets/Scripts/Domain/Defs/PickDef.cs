@@ -21,7 +21,7 @@ namespace UnmappedIsland.Domain.Defs
         public static WeightSpec FromLiteral(double literal) => new WeightSpec(false, literal, default);
         public static WeightSpec FromPath(PropertyPath path) => new WeightSpec(true, 0, path);
 
-        internal double Resolve(WorldObject self, WorldObject actor, WorldObject dragged)
+        public double Resolve(WorldObject self, WorldObject actor, WorldObject dragged)
         {
             if (!isPathRef) return literal;
 
@@ -40,19 +40,21 @@ namespace UnmappedIsland.Domain.Defs
     {
         public WeightSpec Weight { get; }
 
-        /// <summary>ActiveかPickのどちらか一方のみが非null。</summary>
-        public ActiveEffect Active { get; }
-        public IReadOnlyList<PickCandidateDef> Pick { get; }
+        /// <summary>activeかpickのどちらか一方のみが非null。どちらもこのPickCandidateDef自身の
+        /// ResolveEffectだけが読むため（呼び出し側は結果のActiveEffectしか受け取らない）privateに閉じる
+        /// （ActionDefのactive/pickと同じ方針）。</summary>
+        private readonly ActiveEffect active;
+        private readonly IReadOnlyList<PickCandidateDef> pick;
 
         public PickCandidateDef(
             WeightSpec weight, ActiveEffect active, IReadOnlyList<PickCandidateDef> pick)
         {
             Weight = weight;
-            Active = active;
-            Pick = pick;
+            this.active = active;
+            this.pick = pick;
         }
 
-        internal static ActiveEffect ResolveEffect(
+        public static ActiveEffect ResolveEffect(
             ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick,
             WorldObject self, WorldObject actor, WorldObject dragged,
@@ -62,7 +64,7 @@ namespace UnmappedIsland.Domain.Defs
             if (pick == null || pick.Count == 0) return null;
 
             PickCandidateDef chosen = SelectWeighted(pick, self, actor, dragged, session);
-            return ResolveEffect(chosen.Active, chosen.Pick, self, actor, dragged, session);
+            return ResolveEffect(chosen.active, chosen.pick, self, actor, dragged, session);
         }
 
         private static PickCandidateDef SelectWeighted(
