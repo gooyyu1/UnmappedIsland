@@ -32,6 +32,12 @@ namespace UnmappedIsland.Domain.Defs
     {
         Self,
         Parent,
+
+        /// <summary>passiveのtarget専用（8.1節）。親が宣言した効果を、そのスロットに入った各子へ
+        /// ブロードキャスト登録するために使う（WorldObject.RegisterEdgeWith参照）。単一の参照先へ解決される
+        /// conditions/active/weight/transferの文脈では意味を持たない（それらの許可rootには含めない）。</summary>
+        Child,
+
         Actor,
 
         /// <summary>combinations内でのみ意味を持つ、ドラッグされてきたカード（12.2節）。</summary>

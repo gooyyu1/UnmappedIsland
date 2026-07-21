@@ -34,12 +34,12 @@ namespace UnmappedIsland.Loader
             YamlMappingNode setMap = bodyNode.TryGetMapping("set", context);
             var sets = setMap != null
                 ? ParseSets($"{context}.set", setMap, allowDragged, selfOnly)
-                : new Dictionary<ReferenceRoot, IReadOnlyList<SetEffect>>();
+                : new List<SetEffect>();
 
             YamlMappingNode addMap = bodyNode.TryGetMapping("add", context);
             var adds = addMap != null
                 ? ParseAdds($"{context}.add", addMap, allowDragged, selfOnly)
-                : new Dictionary<ReferenceRoot, IReadOnlyList<AddEffect>>();
+                : new List<AddEffect>();
 
             var destroy = new List<ReferenceRoot>();
             YamlNode destroyNode = bodyNode.TryGet("destroy");
@@ -73,7 +73,7 @@ namespace UnmappedIsland.Loader
         /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
         /// </summary>
         private SetEffect ParseSetEffect(
-            string context, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly)
+            string context, ReferenceRoot target, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly)
         {
             if (valueNode is YamlMappingNode refMap)
             {
@@ -88,10 +88,10 @@ namespace UnmappedIsland.Loader
                 if (unknownKeys.Count > 0)
                     throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-                return new SetEffect(propertyGlobalId, new PropertyPath(root, PropertyNames.Intern(propName)));
+                return new SetEffect(target, propertyGlobalId, new PropertyPath(root, PropertyNames.Intern(propName)));
             }
 
-            return new SetEffect(propertyGlobalId, ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value));
+            return new SetEffect(target, propertyGlobalId, ParseScalarNumber(context, ((YamlScalarNode)valueNode).Value));
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace UnmappedIsland.Loader
             YamlMappingNode linkedAddMap = map.TryGetMapping("linked_add", context);
             var linkedAdd = linkedAddMap != null
                 ? ParseAdds($"{context}.linked_add", linkedAddMap, allowDragged, selfOnly)
-                : new Dictionary<ReferenceRoot, IReadOnlyList<AddEffect>>();
+                : new List<AddEffect>();
 
             var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
                 .Where(k => k != "from_object" && k != "from_prop" && k != "to_object" && k != "to_prop"
@@ -134,35 +134,37 @@ namespace UnmappedIsland.Loader
             return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd);
         }
 
-        private Dictionary<ReferenceRoot, IReadOnlyList<SetEffect>> ParseSets(
+        /// <summary>setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む（対象別の入れ子は
+        /// 各SetEffectがTargetとして自分で持つため、辞書グループ化ではなくフラットに展開する。passiveの
+        /// ParsePassiveOperationIntoがModifyEffect/AccumulateEffectのリストを作るのと対称）。</summary>
+        private List<SetEffect> ParseSets(
             string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
         {
-            var sets = new Dictionary<ReferenceRoot, IReadOnlyList<SetEffect>>();
+            var sets = new List<SetEffect>();
             foreach (var (targetName, targetBody) in map.EntriesInOrder())
             {
                 ReferenceRoot target = ParseActiveTargetKey(context, targetName, allowDragged, selfOnly);
-                var assigns = new List<SetEffect>();
                 foreach (var (propName, valueNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
-                    assigns.Add(ParseSetEffect(
-                        $"{context}.'{targetName}'.'{propName}'", PropertyNames.Intern(propName), valueNode,
+                    sets.Add(ParseSetEffect(
+                        $"{context}.'{targetName}'.'{propName}'", target, PropertyNames.Intern(propName), valueNode,
                         allowDragged, selfOnly));
-                sets[target] = assigns;
             }
 
             return sets;
         }
 
-        private Dictionary<ReferenceRoot, IReadOnlyList<AddEffect>> ParseAdds(
+        /// <summary>addを「対象付きの1操作(AddEffect)」の宣言順フラットリストへ読む（ParseSetsと同じく、
+        /// 対象は各AddEffectがTargetとして自分で持つ）。</summary>
+        private List<AddEffect> ParseAdds(
             string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
         {
-            var adds = new Dictionary<ReferenceRoot, IReadOnlyList<AddEffect>>();
+            var adds = new List<AddEffect>();
             foreach (var (targetName, targetBody) in map.EntriesInOrder())
             {
                 ReferenceRoot target = ParseActiveTargetKey(context, targetName, allowDragged, selfOnly);
-                var deltas = new List<AddEffect>();
                 foreach (var (propName, amountNode) in ((YamlMappingNode)targetBody).EntriesInOrder())
-                    deltas.Add(new AddEffect(PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
-                adds[target] = deltas;
+                    adds.Add(new AddEffect(
+                        target, PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value)));
             }
 
             return adds;

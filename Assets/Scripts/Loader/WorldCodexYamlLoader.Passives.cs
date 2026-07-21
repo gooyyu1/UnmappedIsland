@@ -72,7 +72,7 @@ namespace UnmappedIsland.Loader
         private void ParsePassiveOperationInto(
             List<PassiveEffect> output, string context, YamlMappingNode passiveMap,
             string operationKey,
-            Func<PassiveEffectTarget, int, int, PassiveEffectGate, PassiveEffect> makeEffect,
+            Func<ReferenceRoot, int, int, PassiveEffectGate, PassiveEffect> makeEffect,
             PassiveEffectGate gate)
         {
             YamlMappingNode operationMap = passiveMap.TryGetMapping(operationKey, context);
@@ -80,15 +80,15 @@ namespace UnmappedIsland.Loader
 
             foreach (var (targetName, bodyNode) in operationMap.EntriesInOrder())
             {
-                if (targetName == "actor") continue; // 未対応（PassiveEffectTargetにActorが無いため）
+                if (targetName == "actor") continue; // 未対応（passiveのtargetにactorは無いため）
 
-                PassiveEffectTarget target;
+                ReferenceRoot target;
                 switch (targetName)
                 {
-                    case "self": target = PassiveEffectTarget.Self; break;
-                    case "parent": target = PassiveEffectTarget.Parent; break;
-                    case "child": target = PassiveEffectTarget.Child; break;
-                    case "ancestor": target = PassiveEffectTarget.Ancestor; break;
+                    case "self": target = ReferenceRoot.Self; break;
+                    case "parent": target = ReferenceRoot.Parent; break;
+                    case "child": target = ReferenceRoot.Child; break;
+                    case "ancestor": target = ReferenceRoot.Ancestor; break;
                     default:
                         throw new YamlLoadException($"{context}.{operationKey}: 未知の対象キー '{targetName}' です。");
                 }

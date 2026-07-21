@@ -3,21 +3,6 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain.Defs
 {
     /// <summary>
-    /// 効果の対象（8.1節の self/parent/child）。値そのものは登録時にしか使わず、
-    /// 読み取り側（WorldObject.GetEffectiveValue/Tick）はこの区別を一切見ない。
-    /// </summary>
-    public enum PassiveEffectTarget
-    {
-        Self,
-        Parent,
-        Child,
-
-        /// <summary>Declarer自身の直接の親から遡り、このプロパティを定義している最初の祖先（Runtime.
-        /// WorldObject.FindAncestorWithProperty参照）。祖先が見つからない場合、この効果は登録されない。</summary>
-        Ancestor,
-    }
-
-    /// <summary>
     /// 効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を
     /// 表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら
     /// 両方を満たす間だけ有効=AND、両方nullなら常時有効。PassiveEffect.ActiveAmountから呼ばれる）。
@@ -85,14 +70,14 @@ namespace UnmappedIsland.Domain.Defs
     /// </summary>
     public abstract class PassiveEffect
     {
-        public PassiveEffectTarget Target { get; }
+        public ReferenceRoot Target { get; }
         public int TargetPropertyGlobalId { get; }
 
         private readonly int amount;
         private readonly PassiveEffectGate gate;
 
         protected PassiveEffect(
-            PassiveEffectTarget target,
+            ReferenceRoot target,
             int targetPropertyGlobalId,
             int amount,
             PassiveEffectGate gate)
@@ -120,7 +105,7 @@ namespace UnmappedIsland.Domain.Defs
     /// </summary>
     public sealed class ModifyEffect : PassiveEffect
     {
-        public ModifyEffect(PassiveEffectTarget target, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)
+        public ModifyEffect(ReferenceRoot target, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)
             : base(target, targetPropertyGlobalId, amount, gate) { }
 
         public override void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration) =>
@@ -133,7 +118,7 @@ namespace UnmappedIsland.Domain.Defs
     /// </summary>
     public sealed class AccumulateEffect : PassiveEffect
     {
-        public AccumulateEffect(PassiveEffectTarget target, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)
+        public AccumulateEffect(ReferenceRoot target, int targetPropertyGlobalId, int amount, PassiveEffectGate gate)
             : base(target, targetPropertyGlobalId, amount, gate) { }
 
         public override void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration) =>
