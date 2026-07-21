@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class InteractionExecutor | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class InteractionExecutor | UnmappedIsland API リファレンス ">
+    
+    <meta name="description" content="actions（GameElementDefinition.md 11節）・combinations（12節）の実行エンジン。conditionsの評価、 pick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ適用するところまでをここで担う。 set/add/destroyの対象(self/parent/actor/dragged)ごとの解決はWorldObject.ApplyActiveEffectに 集約されている。ここに残るResolveTargetはconditions/weightのpath解決専用。">
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor">
+
+
+
+  <h1 id="UnmappedIsland_Domain_Runtime_InteractionExecutor" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor" class="text-break">Class InteractionExecutor</h1>
+  <div class="markdown level0 summary"><p>actions（GameElementDefinition.md 11節）・combinations（12節）の実行エンジン。conditionsの評価、
+pick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ適用するところまでをここで担う。</p>
+<p>set/add/destroyの対象(self/parent/actor/dragged)ごとの解決はWorldObject.ApplyActiveEffectに
+集約されている。ここに残るResolveTargetはconditions/weightのpath解決専用。</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">InteractionExecutor</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Runtime.html">Runtime</a></h6>
+  <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
+  <h5 id="UnmappedIsland_Domain_Runtime_InteractionExecutor_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class InteractionExecutor</code></pre>
+  </div>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_InteractionExecutor_EvaluateConditions_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions(UnmappedIsland.Domain.Defs.ConditionNode%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/InteractionExecutor.cs/#L52">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_InteractionExecutor_EvaluateConditions_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_InteractionExecutor_EvaluateConditions_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.EvaluateConditions(UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">EvaluateConditions(ConditionNode, WorldObject, WorldObject, WorldObject)</h4>
+  <div class="markdown level1 summary"><p>{object, prop, op, value}の条件木（14節、all/any/notを含む）を満たすか。nullは常に真。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static bool EvaluateConditions(ConditionNode conditions, WorldObject self, WorldObject actor, WorldObject dragged)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></td>
+        <td><span class="parametername">conditions</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">self</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">actor</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">dragged</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_InteractionExecutor_FindMatchingCombinations_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/InteractionExecutor.cs/#L59">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_InteractionExecutor_FindMatchingCombinations_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_InteractionExecutor_FindMatchingCombinations_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.FindMatchingCombinations(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">FindMatchingCombinations(WorldObject, WorldObject)</h4>
+  <div class="markdown level1 summary"><p>selfにdraggedをドロップしようとした際に成立しうるcombinationsを、宣言順にすべて列挙する
+（conditionsは評価しない。ドラッグ中のハイライト等、UIが候補を把握するための問い合わせ用途）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static IEnumerable&lt;CombinationDef&gt; FindMatchingCombinations(WorldObject self, WorldObject dragged)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">self</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">dragged</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1">IEnumerable</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.CombinationDef.html">CombinationDef</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteAction_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.String%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/InteractionExecutor.cs/#L20">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteAction_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteAction_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteAction(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)">TryExecuteAction(WorldObject, WorldObject, string, WorldSession)</h4>
+  <div class="markdown level1 summary"><p>selfが持つactionNameのアクションを、actor視点で実行を試みる。アクションが存在しない、
+conditionsを満たさない場合はfalseを返し、何も変更しない。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static bool TryExecuteAction(WorldObject self, WorldObject actor, string actionName, WorldSession session)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">self</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">actor</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">actionName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteCombination_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.String%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/InteractionExecutor.cs/#L36">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteCombination_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_InteractionExecutor_TryExecuteCombination_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_String_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.InteractionExecutor.TryExecuteCombination(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.String,UnmappedIsland.Domain.Runtime.WorldSession)">TryExecuteCombination(WorldObject, WorldObject, WorldObject, string, WorldSession)</h4>
+  <div class="markdown level1 summary"><p>selfにdraggedをドロップした結果、combinationNameのcombinationを実行を試みる。combinationが
+存在しない、withがdraggedにマッチしない、conditionsを満たさない場合はfalseを返す。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static bool TryExecuteCombination(WorldObject self, WorldObject dragged, WorldObject actor, string combinationName, WorldSession session)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">self</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">dragged</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">actor</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">combinationName</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_InteractionExecutor.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.InteractionExecutor%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/InteractionExecutor.cs/#L14" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

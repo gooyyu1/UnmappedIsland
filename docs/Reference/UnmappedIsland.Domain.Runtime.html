@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Namespace UnmappedIsland.Domain.Runtime | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Namespace UnmappedIsland.Domain.Runtime | UnmappedIsland API リファレンス ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Runtime">
+
+  <h1 id="UnmappedIsland_Domain_Runtime" data-uid="UnmappedIsland.Domain.Runtime" class="text-break">Namespace UnmappedIsland.Domain.Runtime</h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="markdown level0 remarks"></div>
+    <h3 id="classes">
+Classes
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionEvaluator.html">ConditionEvaluator</a></h4>
+      <section><p>conditions（GameElementDefinition.md 14節）の条件木を評価する。actions/combinationsの一度きりの
+判定（InteractionExecutor）と、passivesの持続的なゲート（RegisteredPassiveEffect.IsActive）の両方が
+この同じ評価器を共用する。両者の違いはrootの解決方法（resolveRoot）だけに閉じる。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.InteractionExecutor.html">InteractionExecutor</a></h4>
+      <section><p>actions（GameElementDefinition.md 11節）・combinations（12節）の実行エンジン。conditionsの評価、
+pick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ適用するところまでをここで担う。</p>
+<p>set/add/destroyの対象(self/parent/actor/dragged)ごとの解決はWorldObject.ApplyActiveEffectに
+集約されている。ここに残るResolveTargetはconditions/weightのpath解決専用。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></h4>
+      <section><p>Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり（GameElementDefinition.md
+7.6節）。ObjectDefが同じで、かつ represented_by が指定されていれば、その代表オブジェクト
+（さらにその代表…）のObjectDef列も一致するインスタンス同士だけが同じObjectStackにまとまる
+（例: 同じ液体容器でも中身のObjectDefが違えば別々のObjectStackになる）。</p>
+<p>「このオブジェクトは自分に合流できるか」「自分の中のどこへ挿入すべきか」の判断は、呼び出し側
+（Slot）に代わりこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a></h4>
+      <section><p>props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値、および
+FromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。PassiveEffectの影響先は
+「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、
+いずれもWorldObjectではなくこの値自身が持つ。</p>
+<p>値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。
+WorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない
+（自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef
+（range・on_overflow等）と、それを保持するWorldObject（on_overflow等の適用先解決に使う）は、
+いずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに引数で受け取り直す
+ことはしない。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html">RegisteredPassiveEffect</a></h4>
+      <section><p>登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。</p>
+<ul>
+<li>Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る</li>
+<li>SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditions（旧when）ゲートのselfはこれを指す</li>
+</ul>
+<p>self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、
+child対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、
+読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Slot.html">Slot</a></h4>
+      <section><p>1つの WorldObject が持つ、1つのスロットの実行時状態。中に入っている WorldObject を、ObjectStack
+（7.6節、「見た目上1つのまとまり」）のリストとして保持する。正の情報源はこちら側（親のスロット配列）
+であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>
+<p>Stacksの並び順は「表示上のスタック順」そのものを表す実データとして維持する（都度ソートし直す
+派生ビューではない）。中身の追加・削除は WorldObject.MoveToSlot 経由でのみ行う（両者の整合性を
+1箇所でのみ保証するため）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></h4>
+      <section><p>実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、
+&quot;Object&quot;（言語組み込みの System.Object 等と衝突する）や汎用OOP用語の &quot;Instance&quot; を避けて命名している。</p>
+<p>プロパティの現在値・スロットの中身は、いずれも Def 側のローカルIDをそのままindexとする
+密配列として保持する（グローバルIDでの辞書引きは行わない）。プロパティへ登録された効果
+（modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため
+PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></h4>
+      <section><p>実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態
+（WorldCodex.cs のコメントで予告されている「実行時側」の最小実装）。WorldCodex 自体は
+ロード後不変な定義の集合であり続けるため、instance ID の発行という可変な状態はここに持たせる。
+スロット移動（move_to_slot）自体は WorldObject.MoveToSlot が自分自身の責務として行うため、
+ここでは仲介しない（WellKnownPropertiesは Codex.WellKnown からその都度渡す）。</p>
+</section>
+    <h3 id="delegates">
+Delegates
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.ConditionRootResolver.html">ConditionRootResolver</a></h4>
+      <section><p>rootが指すWorldObjectを解決する。呼び出し文脈ごとに解決できる対象が異なるため
+（actions/combinationsはself/parent/actor/dragged、passivesのゲートはself/parentのみ）、
+解決できない/この文脈で無効なrootにはnullを返す。</p>
+</section>
+
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Namespace UnmappedIsland.Domain.Runtime.Views | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Namespace UnmappedIsland.Domain.Runtime.Views | UnmappedIsland API リファレンス ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Runtime.Views">
+
+  <h1 id="UnmappedIsland_Domain_Runtime_Views" data-uid="UnmappedIsland.Domain.Runtime.Views" class="text-break">Namespace UnmappedIsland.Domain.Runtime.Views</h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="markdown level0 remarks"></div>
+    <h3 id="classes">
+Classes
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Views.Location.html">Location</a></h4>
+      <section><p>ロケーションに対する、UI/ゲームロジック向けの型付きビュー。World/PlayerCharacter と同じ理由で
+継承ではなくラップにしている。</p>
+<p>ロケーションが持つべきプロパティはまだ何も確定していないため、現時点では Instance への
+アクセスのみを提供する。具体的なプロパティが定まり次第、World/PlayerCharacter と同様に
+名前付きアクセサを追加する。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Views.PlayerCharacter.html">PlayerCharacter</a></h4>
+      <section><p>actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック
+向けの型付きビュー。World と同じ理由で継承ではなくラップにしている。</p>
+<p>どのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Views.World.html">World</a></h4>
+      <section><p>world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの
+型付きビュー。継承（class World : WorldObject）ではなくラップにしているのは、WorldCodex が
+traitによる合成モデルを採用しており、C#側のクラス階層と噛み合わないため。</p>
+<p>コンストラクタで解決するのはプロパティ名→グローバルIDだけで、グローバル→ローカルの変換は
+毎回 WorldObject 側の配列引きに任せる（軽量なため、事前キャッシュはしない）。
+world がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの
+ものだけを実装している。</p>
+</section>
+
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

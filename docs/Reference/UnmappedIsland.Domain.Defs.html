@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Namespace UnmappedIsland.Domain.Defs | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Namespace UnmappedIsland.Domain.Defs | UnmappedIsland API リファレンス ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs">
+
+  <h1 id="UnmappedIsland_Domain_Defs" data-uid="UnmappedIsland.Domain.Defs" class="text-break">Namespace UnmappedIsland.Domain.Defs</h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="markdown level0 remarks"></div>
+    <h3 id="classes">
+Classes
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ActionDef.html">ActionDef</a></h4>
+      <section><p>メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと実行結果(active/pick)を
+1つの定義としてまとめて持つ。object_defs/traitsの中に、識別子をキーとする辞書として配置される。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></h4>
+      <section><p>一時的な命令の内容（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>、9節）。on_min・on_overflow・on_shortfall（6節）、
+actions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。</p>
+<p>文法は「操作が上位、対象(self/parent/actor/dragged)が下位」（例: <code>add: {self: {hour: 1}}</code>）。
+set/addは複数の対象へ同時に書けるため、対象ごとの一覧を辞書として持つ。destroyは削除対象を
+直接指すリスト（<code>destroy: self</code>は要素1つのリストとして表す）。spawnは常にselfが実行するものと
+みなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、
+実行者＝selfとは別の概念）。</p>
+<p>on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.CombinationDef.html">CombinationDef</a></h4>
+      <section><p>ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の
+object_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNode.html">ConditionNode</a></h4>
+      <section><p>conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート
+（旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。
+Runtime.ConditionEvaluator参照）。</p>
+<p>葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて
+使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の
+慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に
+関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.LocalIndexMap.html">LocalIndexMap</a></h4>
+      <section><p>特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、
+ゲーム全体で共有されるグローバルID空間とを対応付ける表。</p>
+<p>ObjectDefごとに「持っているプロパティ／スロット」は異なるため、グローバルID空間全体を
+そのままインデックスに使うと大半が未使用の疎な配列になってしまう。そこで ObjectDef 側は
+自分が実際に持つものだけを詰めた密なローカル配列を持ち、この表がその変換を担う。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.NameRegistry.html">NameRegistry</a></h4>
+      <section><p>YAML上の識別子（ObjectDef名・プロパティ名・スロット名など）と、実行時に扱うグローバルなintを
+相互変換する。「名前の空間」ごとに1つ用意する（object用・property用・slot用は別々のインスタンス）。
+ロード完了後は Intern を呼ばず、読み取り専用として扱う想定。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ObjectDef.html">ObjectDef</a></h4>
+      <section><p>型定義（<code>object_defs</code> の1エントリ、4節）。ロード完了後は不変として扱う。
+実行時インスタンスは WorldObject（Runtime名前空間）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ObjectDefTable.html">ObjectDefTable</a></h4>
+      <section><p>ロード済みの全 ObjectDef を、グローバルIDをそのままindexとする配列で保持する。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffect.html">PassiveEffect</a></h4>
+      <section><p>1つの ObjectDef が宣言する、1つの効果（8節）。ObjectDef.Passives の要素。
+Target が Self/Parent/Child のどれであっても、Kind が Modify/Accumulate のどちらであっても構造は同じで、
+違いは登録時にどこへ・誰の状態と紐付けて置くか（Target）と、どちらの評価経路が読むか（Kind）だけに閉じる
+（Runtime.WorldObject.GetEffectiveValue / Tick 参照）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectGate.html">PassiveEffectGate</a></h4>
+      <section><p>効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を
+表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら
+両方を満たす間だけ有効=AND、両方nullなら常時有効。Runtime.RegisteredPassiveEffect.IsActive参照）。</p>
+<p>ConditionsもPropertyGlobalId/StageNameも、ロード時にローカルIDへ変換せずグローバルIDのまま持つ
+（評価のたびにDeclarer自身がRuntime.WorldObject.IsInStageでローカル化する）。グローバルID→ローカルID
+の変換コストは、1 tick=15分というこのゲームの時間スケールに対して無視できるほど小さいため、
+Declarer自身のPropertyDefがすべて出来上がるまで解決を待つビルド時の2段階パースは不要（かつては
+PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、この理由により撤去した）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PickCandidateDef.html">PickCandidateDef</a></h4>
+      <section><p>pickの1候補（GameElementDefinition.md 10節）。weightに加えて、自分自身のactive（対象をキーとする
+辞書）か、さらに別のpickのどちらか一方を持つ（同時には持たない。候補自身がpickを持つ再帰も許容する）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyDef.html">PropertyDef</a></h4>
+      <section><p>1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.PropertyDefs の1要素として、
+ローカルIDをそのままindexとする密配列に格納される。</p>
+<p>同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、
+定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyStage.html">PropertyStage</a></h4>
+      <section><p>6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。</p>
+<p>Min: 区間は下限のみで表す半開区間。値の大小関係を前提にした数値プロパティ向け。
+Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように、内部で保持する整数値の大小関係が
+著者にとって意味を持たない（NameRegistryへの登録順で決まるだけの）値に対して使う。
+どちらも未指定なら最下段（それ以外のどの段にも該当しない場合のフォールバック、6.4節）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.SlotAcceptRule.html">SlotAcceptRule</a></h4>
+      <section><p>GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、
+Withをタグ（4節）のグローバルIDか、object_defそのもののグローバルIDのどちらかとして解釈する
+（Matches参照）。trait名では直接マッチングしない: traitはmixin合成後に消えてしまう外部から
+参照すべきでない存在であり、trait経由でタグ付けしたければtags（4節）を使う。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.SlotDef.html">SlotDef</a></h4>
+      <section><p>1つの ObjectDef が持つ、1つのスロットの定義（GameElementDefinition.md 7.1〜7.4節）。
+ObjectDef.SlotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.SpawnEffect.html">SpawnEffect</a></h4>
+      <section><p>spawn（9.4節）の内容。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は
+一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、
+accepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ
+ならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。</p>
+<p>伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない
+まま消える（何も起きなかったのと同じ扱い）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.StackOrderDef.html">StackOrderDef</a></h4>
+      <section><p>同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（例: 劣化アイテムは寿命が短いものほど、
+液体容器は中身が少ないものほど「手前＝一番上に重なる」）。</p>
+<p>Ascendingは「プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか」を表す。「手前に重ねたい
+ものほどリストの末尾に置く」という規約（Slot参照）のもとでは、寿命・残量など「小さいほど手前」に
+したい値は Ascending=false（値が小さいものほど末尾）を指定する。</p>
+<p>このObjectDefの新規インスタンスがスタックへ加わる際の並び位置決定にのみ使う（表示専用の概念）。
+一度並んだ後、値の変化に追従した再ソートは行わない（同種は同じ速度で変化する前提のため、
+挿入時点の相対順序がその後も保たれる、8.4節のaccumulateのような一定速度の変化を想定）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.TransferEffect.html">TransferEffect</a></h4>
+      <section><p>transfer（9.5節）の内容。fromが指すプロパティの実体値から、実際に出せる量とamountの小さい方だけを
+toが指すプロパティへ移す（連続量の液体のような、setの固定値でもaddの無条件加減算でも表現できない
+「在庫に応じて実際に動く量が変わる」移送を表す）。</p>
+<p>from/toの参照は、他の場所（<code>modify</code>/<code>set</code>/<code>add</code>等）と同じ「対象がキー、内容が値」という規約に
+合わせず、conditions（14節）と同じくフラットな<code>from_object</code>/<code>from_prop</code>/<code>to_object</code>/<code>to_prop</code>の
+4フィールドで表す。fromとtoの組は常に1組であり、複数プロパティの入れ物としてネストする理由が
+無いため。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.WellKnownProperties.html">WellKnownProperties</a></h4>
+      <section><p>エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。
+props 自体はどの ObjectDef も自由に追加できる汎用機構だが、&quot;size&quot;/&quot;weight&quot; という2つの名前だけは
+move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直接読みに行く。
+ロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.WorldCodex.html">WorldCodex</a></h4>
+      <section><p>ロードされたYAMLファイル全体（GameElementDefinition.md 3.1節: 「ファイル全体が1つの WorldCodex を
+表します」）を表す、唯一の集約オブジェクト。名前空間ではなくこのクラスが「WorldCodex」そのもの。</p>
+<p>中身は本体データ（ObjectDefTable）と、それを読むために必要な5種の名前空間
+（object/property/slot/tag/symbol）の NameRegistry、および汎用エンジンが規約として直接参照する
+WellKnownProperties。ロード完了後は不変として扱う（Intern は Loader.WorldCodexYamlLoader の中でしか
+呼ばれない）。SymbolNamesは、シンボル型のprops（6節）の値（整数にも真偽値にもならない識別子）が
+登録される名前空間で、他の4種とは独立（同じ文字列が別の名前空間で使われていても衝突しない）。</p>
+<p>実行中に生成される WorldObject（可変な実行時状態）はここには含まれない。WorldCodex はあくまで
+「定義」の集合であり、生成されたインスタンスの管理は別の場所（実行時側、UnmappedIsland.Domain.Runtime）が
+担う想定。</p>
+</section>
+    <h3 id="structs">
+Structs
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyAssignment.html">PropertyAssignment</a></h4>
+      <section><p>set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの
+代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
+conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyDelta.html">PropertyDelta</a></h4>
+      <section><p>add の1エントリ（対象プロパティのグローバルIDと加減算量）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyPath.html">PropertyPath</a></h4>
+      <section><p>{object, prop}が指す、1階層のプロパティ参照。weightのpath参照（10.2節）で使う。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyRange.html">PropertyRange</a></h4>
+      <section></section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.WeightSpec.html">WeightSpec</a></h4>
+      <section><p>pick候補のweight（10.2節）。リテラル定数か、既存propsへのパス参照のいずれか。</p>
+</section>
+    <h3 id="enums">
+Enums
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionNodeKind.html">ConditionNodeKind</a></h4>
+      <section></section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ConditionOp.html">ConditionOp</a></h4>
+      <section><p>GameElementDefinition.md 14.1節の比較演算子。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectKind.html">PassiveEffectKind</a></h4>
+      <section><p>効果の性質。どちらも self/parent/child・ゲートによる登録の仕組み（8節）を共有するが、
+実体値への反映のされ方が異なる。</p>
+<ul>
+<li>Modify: 条件が真の間だけ、都度導出される実効値に寄与する（可逆、WorldObject.GetEffectiveValue）</li>
+<li>Accumulate: 条件が真の間、tick毎に実体値そのものへ加減算し続ける（不可逆、WorldObject.Tick）</li>
+</ul>
+<p>アクション/combination/pickの効果として書かれる一時的な <code>add</code>（実行された瞬間に1回だけ効く）は、
+この登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectTarget.html">PassiveEffectTarget</a></h4>
+      <section><p>効果の対象（8.1節の self/parent/child）。値そのものは登録時にしか使わず、
+読み取り側（WorldObject.GetEffectiveValue/Tick）はこの区別を一切見ない。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></h4>
+      <section><p>conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）が共通で参照する
+起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層のパスは現状の用例に
+存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため、
+起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが「見つからなければ
+worldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ShowMenuMode.html">ShowMenuMode</a></h4>
+      <section><p>showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 4節: 他の値の要否は未決定）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.SlotAcceptTargetKind.html">SlotAcceptTargetKind</a></h4>
+      <section><p>1つのSlotAcceptRuleが何を基準にマッチングするか。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.SpawnTargetRoot.html">SpawnTargetRoot</a></h4>
+      <section><p>spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定しない。対象オブジェクトが持つ
+スロットを宣言順に走査し、最初に配置できたスロットへ入れる（型ごとに用意されたスロットへ
+自然に振り分けられるため、著者がスロット名を知っている必要がない）。</p>
+<p>fallback はYAML上に存在しない。配置に失敗した場合は必ず、解決した起点自身の親へ伝播する
+（WorldObject.Place参照）。Actor はアクション実行文脈でのみ解決できる。on_min/on_overflow/
+on_shortfallにはactorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。</p>
+</section>
+
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

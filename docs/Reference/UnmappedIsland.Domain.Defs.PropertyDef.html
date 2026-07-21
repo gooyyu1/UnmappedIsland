@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class PropertyDef | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class PropertyDef | UnmappedIsland API リファレンス ">
+    
+    <meta name="description" content="1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.PropertyDefs の1要素として、 ローカルIDをそのままindexとする密配列に格納される。 同名のプロパティ（例: &amp;quot;durability&amp;quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、 定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。">
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.PropertyDef">
+
+
+
+  <h1 id="UnmappedIsland_Domain_Defs_PropertyDef" data-uid="UnmappedIsland.Domain.Defs.PropertyDef" class="text-break">Class PropertyDef</h1>
+  <div class="markdown level0 summary"><p>1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.PropertyDefs の1要素として、
+ローカルIDをそのままindexとする密配列に格納される。</p>
+<p>同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、
+定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">PropertyDef</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Defs.html">Defs</a></h6>
+  <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
+  <h5 id="UnmappedIsland_Domain_Defs_PropertyDef_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class PropertyDef</code></pre>
+  </div>
+  <h3 id="constructors">Constructors
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef__ctor_System_Int32_System_String_System_Int32_System_Nullable_UnmappedIsland_Domain_Defs_PropertyRange__System_Nullable_UnmappedIsland_Domain_Defs_PropertyRange__UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyStage__UnmappedIsland_Domain_Defs_ActiveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.%23ctor(System.Int32%2CSystem.String%2CSystem.Int32%2CSystem.Nullable%7BUnmappedIsland.Domain.Defs.PropertyRange%7D%2CSystem.Nullable%7BUnmappedIsland.Domain.Defs.PropertyRange%7D%2CUnmappedIsland.Domain.Defs.ActiveEffect%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PropertyStage%7D%2CUnmappedIsland.Domain.Defs.ActiveEffect%2CUnmappedIsland.Domain.Defs.ActiveEffect%2CUnmappedIsland.Domain.Defs.ActiveEffect%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L131">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef__ctor_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef__ctor_System_Int32_System_String_System_Int32_System_Nullable_UnmappedIsland_Domain_Defs_PropertyRange__System_Nullable_UnmappedIsland_Domain_Defs_PropertyRange__UnmappedIsland_Domain_Defs_ActiveEffect_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyStage__UnmappedIsland_Domain_Defs_ActiveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_UnmappedIsland_Domain_Defs_ActiveEffect_System_Boolean_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.#ctor(System.Int32,System.String,System.Int32,System.Nullable{UnmappedIsland.Domain.Defs.PropertyRange},System.Nullable{UnmappedIsland.Domain.Defs.PropertyRange},UnmappedIsland.Domain.Defs.ActiveEffect,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyStage},UnmappedIsland.Domain.Defs.ActiveEffect,UnmappedIsland.Domain.Defs.ActiveEffect,UnmappedIsland.Domain.Defs.ActiveEffect,System.Boolean)">PropertyDef(int, string, int, PropertyRange?, PropertyRange?, ActiveEffect, IReadOnlyList&lt;PropertyStage&gt;, ActiveEffect, ActiveEffect, ActiveEffect, bool)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public PropertyDef(int globalId, string name, int defaultNumber, PropertyRange? rerollRange, PropertyRange? range, ActiveEffect onOverflow, IReadOnlyList&lt;PropertyStage&gt; stages, ActiveEffect onMin = null, ActiveEffect onShortfall = null, ActiveEffect onMax = null, bool inherit = false)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">defaultNumber</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyRange.html">PropertyRange</a>?</td>
+        <td><span class="parametername">rerollRange</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyRange.html">PropertyRange</a>?</td>
+        <td><span class="parametername">range</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td><span class="parametername">onOverflow</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PropertyStage.html">PropertyStage</a>&gt;</td>
+        <td><span class="parametername">stages</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td><span class="parametername">onMin</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td><span class="parametername">onShortfall</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td><span class="parametername">onMax</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">inherit</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_DefaultNumber.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L69">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_DefaultNumber_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_DefaultNumber" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.DefaultNumber">DefaultNumber</h4>
+  <div class="markdown level1 summary"><p>実行時インスタンス生成（WorldObject構築）時に、この定義に属する新しいPropertyValueへ
+渡す初期値。定義自身が「初期値がどうあるべきか」を知っているため、テンプレートとなる
+PropertyValueインスタンスをCloneするのではなく、この数値からPropertyValue.Createで直接作る。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int DefaultNumber { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_GlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.GlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L63">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_GlobalId_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.GlobalId*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_GlobalId" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.GlobalId">GlobalId</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int GlobalId { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_Inherit.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.Inherit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L129">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_Inherit_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Inherit*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_Inherit" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Inherit">Inherit</h4>
+  <div class="markdown level1 summary"><p>inherit: 自分の直接の親から遡り、この名前のプロパティを定義している最初の祖先（Runtime.
+WorldObject.FindAncestorWithProperty参照）の実効値を、自分の実効値に加算するか
+（GetEffectiveValue、PropertyValue参照）。該当する祖先が見つからない場合、寄与は0
+（既存の「見つからなければ0」規約と同じ）。parent固定ではなくancestor固定なのは、直接の親が
+このプロパティを持たない場合に備えるため（例: アイテムの直接の親はプレイヤーだが、
+ambient_temperatureは部屋が持つ）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool Inherit { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_Name.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.Name%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L64">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_Name_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Name*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_Name" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Name">Name</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public string Name { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_OnMax.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.OnMax%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L119">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_OnMax_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnMax*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_OnMax" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnMax">OnMax</h4>
+  <div class="markdown level1 summary"><p>on_max（6.6節）。値がRange.Max以上である間、毎tick実行されるactive内容。on_minの上限側の鏡像。
+on_overflow/on_shortfallとは異なり、著者が明示的に書かない限り既定の自動生成は行わない
+（null なら on_max を持たない）。Rangeが必須。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ActiveEffect OnMax { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_OnMin.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.OnMin%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L112">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_OnMin_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnMin*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_OnMin" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnMin">OnMin</h4>
+  <div class="markdown level1 summary"><p>on_min（6.5節、旧on_zero）。値がRange.Min以下である間、毎tick実行されるactive内容。0ではなく
+Range.Minとの比較に一般化したもの（destroyのような「底を突いた」判定を、0以外の下限を持つ
+プロパティにも使えるようにする）。on_overflow/on_shortfallとは異なり、著者が明示的に書かない
+限り既定の自動生成は行わない（null なら on_min を持たない）。Rangeが必須。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ActiveEffect OnMin { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_OnOverflow.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L88">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_OnOverflow_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_OnOverflow" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnOverflow">OnOverflow</h4>
+  <div class="markdown level1 summary"><p>on_overflow（6.3節）: 値がRange.Maxを超えた際に、selfへ一度だけ適用するactive内容。ActiveEffectを
+そのまま流用し、適用もWorldObject.ApplyActiveEffectをそのまま呼ぶだけで済ませる（オーバーフロー
+専用の適用ロジックはWorldObject側に一切持たない）。対象プロパティ（Adds/Sets）は自分自身
+（折り返し）でも、他のプロパティ（繰り上げ先）でも構わない。</p>
+<p>Rangeが定義されていて著者が明示的にon_overflowを書かなかった場合、ここには「自分自身をRange.Max
+へsetする」という既定のActiveEffectがビルド時に自動生成されて入る（Loader.WorldCodexYamlLoader.ParseProp参照）。
+これにより、著者はレンジ型プロパティの上限クランプを、on_overflowを書かずに<code>range</code>を書くだけで
+実現できる。Range自体が未定義の場合のみnull（上限の仕組み自体を持たない）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ActiveEffect OnOverflow { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_OnShortfall.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L96">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_OnShortfall_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_OnShortfall" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.OnShortfall">OnShortfall</h4>
+  <div class="markdown level1 summary"><p>on_shortfall（6.3節）: on_overflowの下限側の鏡像。値がRange.Minを下回った際に、selfへ一度だけ
+適用するactive内容。Rangeが定義されていて著者が明示的にon_shortfallを書かなかった場合、
+「自分自身をRange.Minへsetする」という既定のActiveEffectがビルド時に自動生成される
+（Loader.WorldCodexYamlLoader.ParseProp参照）。Range自体が未定義の場合のみnull。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ActiveEffect OnShortfall { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffect.html">ActiveEffect</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_Range.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.Range%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L75">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_Range_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Range*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_Range" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Range">Range</h4>
+  <div class="markdown level1 summary"><p>取りうる値域（6.3節）。on_overflow/on_shortfall/on_min/on_maxを使う場合は必須。使わない場合は null。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public PropertyRange? Range { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyRange.html">PropertyRange</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_RerollRange.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.RerollRange%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L72">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_RerollRange_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.RerollRange*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_RerollRange" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.RerollRange">RerollRange</h4>
+  <div class="markdown level1 summary"><p>value: {min, max} による毎tick再ロール（6.2節）。使わない場合は null。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public PropertyRange? RerollRange { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyRange.html">PropertyRange</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_Stages.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.Stages%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L99">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_Stages_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Stages*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_Stages" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.Stages">Stages</h4>
+  <div class="markdown level1 summary"><p>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;PropertyStage&gt; Stages { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PropertyStage.html">PropertyStage</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef_ResolveStage_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef.ResolveStage(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L182">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_PropertyDef_ResolveStage_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.ResolveStage*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_PropertyDef_ResolveStage_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.PropertyDef.ResolveStage(System.Int32)">ResolveStage(int)</h4>
+  <div class="markdown level1 summary"><p>現在値が該当する段階を返す。eq指定の段階（完全一致）が優先され、次にmin指定の段階（半開区間、
+最も高いminを採用）、どちらにも該当しなければfallbackStage（他のどの段階にも該当しない場合の
+フォールバック、6.4節）を返す。min:null（eq未指定時）の段階はリスト中の位置に依存しない
+（11.2節のサンプルでは broken(min:null) が intact(min:1) より後に書かれている）。</p>
+<p>eq指定の段階は「一致するかしないか」の二択であり、min指定の段階のような「より良い一致」
+（より高いminを持つ段）という概念が無いため、一致した時点で他の段を見ずに返してよい
+（min側は全段を見て最も高いminを採用する必要があるため、こちらは最後まで走査する）。</p>
+<p>シンボル型プロパティ（Loader.WorldCodexYamlLoader.ParseStageが常にeqをnameから自動導出するため、
+フォールバックの段を作る手段が無い）には、そもそもフォールバックという概念自体が存在しない。
+数値型プロパティも著者がフォールバック段階（min省略）を書かなければ同様にnullを返し得る。
+理由は異なるが、いずれにせよResolveStageの戻り値はnullになり得るものとして扱い、呼び出し側
+（IsInStage等）が常にnullチェックする前提とする。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public PropertyStage ResolveStage(int currentValue)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">currentValue</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyStage.html">PropertyStage</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyDef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyDef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L61" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

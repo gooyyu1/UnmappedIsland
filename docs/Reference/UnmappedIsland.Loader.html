@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Namespace UnmappedIsland.Loader | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Namespace UnmappedIsland.Loader | UnmappedIsland API リファレンス ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Loader">
+
+  <h1 id="UnmappedIsland_Loader" data-uid="UnmappedIsland.Loader" class="text-break">Namespace UnmappedIsland.Loader</h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="markdown level0 remarks"></div>
+    <h3 id="classes">
+Classes
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Loader.WorldCodexYamlLoader.html">WorldCodexYamlLoader</a></h4>
+      <section><p>YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。
+Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に
+System.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、
+実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す
+Load経由で使う）。</p>
+<p>YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの
+ParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/
+ParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース
+メソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。
+一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の
+フィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。
+RawObjectDef.cs参照）。</p>
+<p>props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり
+（RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う
+（プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、
+これらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および
+ParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて
+呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、
+shallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし
+object_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。</p>
+<p>インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという
+ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という
+だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに
+object_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて
+書ける（例: <code>new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()</code>）。</p>
+<p>object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の
+厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの
+patch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため
+このローダー自身は「後勝ちで上書き」という規則を一切持たない。</p>
+<p>Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で
+このインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、
+初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて
+困る理由も無いため）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Loader.YamlLoadException.html">YamlLoadException</a></h4>
+      <section><p>YAMLロード時のエラー（重複キー・未知のフィールド・必須フィールド欠落・trait解決の失敗など）。
+どのファイル・どのobject_def/trait名で起きたかを呼び出し側でメッセージに含める。</p>
+</section>
+
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

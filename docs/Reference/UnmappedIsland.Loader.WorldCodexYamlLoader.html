@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class WorldCodexYamlLoader | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class WorldCodexYamlLoader | UnmappedIsland API リファレンス ">
+    
+    <meta name="description" content="YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。 Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に System.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、 実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す Load経由で使う）。 YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの ParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/ ParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース メソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。 一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の フィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。 RawObjectDef.cs参照）。 props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり （RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う （プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、 これらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および ParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて 呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、 shallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし object_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。 インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに object_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて 書ける（例: new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()）。 object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の 厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの patch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため このローダー自身は「後勝ちで上書き」という規則を一切持たない。 Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で このインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、 初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて 困る理由も無いため）。">
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader">
+
+
+
+  <h1 id="UnmappedIsland_Loader_WorldCodexYamlLoader" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader" class="text-break">Class WorldCodexYamlLoader</h1>
+  <div class="markdown level0 summary"><p>YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。
+Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に
+System.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、
+実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す
+Load経由で使う）。</p>
+<p>YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの
+ParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/
+ParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース
+メソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。
+一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の
+フィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。
+RawObjectDef.cs参照）。</p>
+<p>props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり
+（RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う
+（プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、
+これらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および
+ParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて
+呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、
+shallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし
+object_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。</p>
+<p>インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという
+ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という
+だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに
+object_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて
+書ける（例: <code>new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()</code>）。</p>
+<p>object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の
+厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの
+patch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため
+このローダー自身は「後勝ちで上書き」という規則を一切持たない。</p>
+<p>Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で
+このインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、
+初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて
+困る理由も無いため）。</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">WorldCodexYamlLoader</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Loader.html">Loader</a></h6>
+  <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
+  <h5 id="UnmappedIsland_Loader_WorldCodexYamlLoader_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class WorldCodexYamlLoader</code></pre>
+  </div>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_Build.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.Build%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L120">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_Build_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Build*"></a>
+  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_Build" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Build">Build()</h4>
+  <div class="markdown level1 summary"><p>これまでLoad系メソッドで蓄積したobject_defs/traitsから、最終的な不変のWorldCodexを1つ組み立てて
+返す。呼び終わると、このインスタンスの蓄積状態（object_defs/traits・5種のNameRegistry）は
+初期化される。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public WorldCodex Build()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.WorldCodex.html">WorldCodex</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_Load_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.Load(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L87">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_Load_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Load*"></a>
+  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_Load_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Load(System.String,System.String)">Load(string, string)</h4>
+  <div class="markdown level1 summary"><p>既にテキストとして読み込まれた1つのYAML（labelはエラーメッセージ用の出所表示）を読み込み、
+object_defs/traitsをこのインスタンスへ追記する（Unity依存のファイルI/Oを呼び出し元に委ねたい
+場合や、テストでファイルを介さず直接YAML文字列を渡したい場合に使う）。何度でも呼べる。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public WorldCodexYamlLoader Load(string label, string yamlText)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">label</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">yamlText</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Loader.WorldCodexYamlLoader.html">WorldCodexYamlLoader</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromDirectory_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromDirectory(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L72">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromDirectory_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromDirectory*"></a>
+  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromDirectory_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromDirectory(System.String)">LoadFromDirectory(string)</h4>
+  <div class="markdown level1 summary"><p>1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込み、
+object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public WorldCodexYamlLoader LoadFromDirectory(string directory)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">directory</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Loader.WorldCodexYamlLoader.html">WorldCodexYamlLoader</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromFile_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromFile(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L80">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromFile_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromFile*"></a>
+  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromFile_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromFile(System.String)">LoadFromFile(string)</h4>
+  <div class="markdown level1 summary"><p>1つのファイルを読み込み、object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public WorldCodexYamlLoader LoadFromFile(string path)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">path</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Loader.WorldCodexYamlLoader.html">WorldCodexYamlLoader</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Slots.cs/#L7" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

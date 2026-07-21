@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class ObjectDef | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class ObjectDef | UnmappedIsland API リファレンス ">
+    
+    <meta name="description" content="型定義（object_defs の1エントリ、4節）。ロード完了後は不変として扱う。 実行時インスタンスは WorldObject（Runtime名前空間）。">
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.ObjectDef">
+
+
+
+  <h1 id="UnmappedIsland_Domain_Defs_ObjectDef" data-uid="UnmappedIsland.Domain.Defs.ObjectDef" class="text-break">Class ObjectDef</h1>
+  <div class="markdown level0 summary"><p>型定義（<code>object_defs</code> の1エントリ、4節）。ロード完了後は不変として扱う。
+実行時インスタンスは WorldObject（Runtime名前空間）。</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">ObjectDef</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Defs.html">Defs</a></h6>
+  <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
+  <h5 id="UnmappedIsland_Domain_Defs_ObjectDef_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class ObjectDef</code></pre>
+  </div>
+  <h3 id="constructors">Constructors
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef__ctor_System_Int32_System_String_System_Boolean_UnmappedIsland_Domain_Defs_LocalIndexMap_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyDef__UnmappedIsland_Domain_Defs_LocalIndexMap_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SlotDef__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_StackOrderDef_System_Collections_Generic_IReadOnlyList_System_Int32__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActionDef__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_CombinationDef__System_Nullable_System_Int32__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.%23ctor(System.Int32%2CSystem.String%2CSystem.Boolean%2CUnmappedIsland.Domain.Defs.LocalIndexMap%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PropertyDef%7D%2CUnmappedIsland.Domain.Defs.LocalIndexMap%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.SlotDef%7D%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CUnmappedIsland.Domain.Defs.StackOrderDef%2CSystem.Collections.Generic.IReadOnlyList%7BSystem.Int32%7D%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ActionDef%7D%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.CombinationDef%7D%2CSystem.Nullable%7BSystem.Int32%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L65">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef__ctor_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef__ctor_System_Int32_System_String_System_Boolean_UnmappedIsland_Domain_Defs_LocalIndexMap_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyDef__UnmappedIsland_Domain_Defs_LocalIndexMap_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SlotDef__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_StackOrderDef_System_Collections_Generic_IReadOnlyList_System_Int32__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActionDef__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_CombinationDef__System_Nullable_System_Int32__" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.#ctor(System.Int32,System.String,System.Boolean,UnmappedIsland.Domain.Defs.LocalIndexMap,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyDef},UnmappedIsland.Domain.Defs.LocalIndexMap,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SlotDef},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.StackOrderDef,System.Collections.Generic.IReadOnlyList{System.Int32},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActionDef},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.CombinationDef},System.Nullable{System.Int32})">ObjectDef(int, string, bool, LocalIndexMap, IReadOnlyList&lt;PropertyDef&gt;, LocalIndexMap, IReadOnlyList&lt;SlotDef&gt;, IReadOnlyList&lt;PassiveEffect&gt;, StackOrderDef, IReadOnlyList&lt;int&gt;, IReadOnlyList&lt;ActionDef&gt;, IReadOnlyList&lt;CombinationDef&gt;, int?)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ObjectDef(int globalId, string name, bool isSingleton, LocalIndexMap propertyLayout, IReadOnlyList&lt;PropertyDef&gt; propertyDefs, LocalIndexMap slotLayout, IReadOnlyList&lt;SlotDef&gt; slotDefs, IReadOnlyList&lt;PassiveEffect&gt; passives, StackOrderDef stackOrder = null, IReadOnlyList&lt;int&gt; tags = null, IReadOnlyList&lt;ActionDef&gt; actions = null, IReadOnlyList&lt;CombinationDef&gt; combinations = null, int? representedBySlotGlobalId = null)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">name</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">isSingleton</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.LocalIndexMap.html">LocalIndexMap</a></td>
+        <td><span class="parametername">propertyLayout</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PropertyDef.html">PropertyDef</a>&gt;</td>
+        <td><span class="parametername">propertyDefs</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.LocalIndexMap.html">LocalIndexMap</a></td>
+        <td><span class="parametername">slotLayout</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SlotDef.html">SlotDef</a>&gt;</td>
+        <td><span class="parametername">slotDefs</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffect.html">PassiveEffect</a>&gt;</td>
+        <td><span class="parametername">passives</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.StackOrderDef.html">StackOrderDef</a></td>
+        <td><span class="parametername">stackOrder</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>&gt;</td>
+        <td><span class="parametername">tags</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ActionDef.html">ActionDef</a>&gt;</td>
+        <td><span class="parametername">actions</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.CombinationDef.html">CombinationDef</a>&gt;</td>
+        <td><span class="parametername">combinations</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
+        <td><span class="parametername">representedBySlotGlobalId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_Actions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.Actions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L50">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_Actions_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Actions*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_Actions" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Actions">Actions</h4>
+  <div class="markdown level1 summary"><p>このObjectDefが持つメニュー型操作（11節）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;ActionDef&gt; Actions { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ActionDef.html">ActionDef</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_Combinations.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.Combinations%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L53">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_Combinations_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Combinations*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_Combinations" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Combinations">Combinations</h4>
+  <div class="markdown level1 summary"><p>このObjectDefが（受け側として）持つドラッグ型操作（12節）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;CombinationDef&gt; Combinations { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.CombinationDef.html">CombinationDef</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_GlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.GlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L12">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_GlobalId_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.GlobalId*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_GlobalId" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.GlobalId">GlobalId</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int GlobalId { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_IsSingleton.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.IsSingleton%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L16">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_IsSingleton_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.IsSingleton*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_IsSingleton" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.IsSingleton">IsSingleton</h4>
+  <div class="markdown level1 summary"><p>唯一のインスタンスしか存在しない想定（9節、例: world）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool IsSingleton { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_Name.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.Name%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L13">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_Name_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Name*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_Name" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Name">Name</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public string Name { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_Passives.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.Passives%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L37">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_Passives_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Passives*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_Passives" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Passives">Passives</h4>
+  <div class="markdown level1 summary"><p>このObjectDefが宣言する効果（8節）。target(self/parent/child)・kind(modify/accumulate)を
+問わず1つのリストで持つ。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;PassiveEffect&gt; Passives { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffect.html">PassiveEffect</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_PropertyLayout.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.PropertyLayout%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L24">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_PropertyLayout_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.PropertyLayout*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_PropertyLayout" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.PropertyLayout">PropertyLayout</h4>
+  <div class="markdown level1 summary"><p>グローバルなプロパティID → このObjectDefにおけるローカルindex。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public LocalIndexMap PropertyLayout { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.LocalIndexMap.html">LocalIndexMap</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_RepresentedBySlotGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.RepresentedBySlotGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L47">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_RepresentedBySlotGlobalId_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.RepresentedBySlotGlobalId*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_RepresentedBySlotGlobalId" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.RepresentedBySlotGlobalId">RepresentedBySlotGlobalId</h4>
+  <div class="markdown level1 summary"><p>このobject_defがinteraction/stack判定を、どのスロット内の代表オブジェクトへ委譲するか
+を表すスロットのグローバルID（7.6節）。nullなら常に自分自身を代表とする。指定されていれば、
+そのスロットに現在入っている最初の1個が interaction の実行対象になり、stack判定でも
+その代表オブジェクト（さらにその代表…）のObjectDef列を使って区別する。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int? RepresentedBySlotGlobalId { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_SlotDefs.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L33">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_SlotDefs_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_SlotDefs" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.SlotDefs">SlotDefs</h4>
+  <div class="markdown level1 summary"><p>ローカルindexで並ぶ密配列。SlotLayout と対になる。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;SlotDef&gt; SlotDefs { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SlotDef.html">SlotDef</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_SlotLayout.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.SlotLayout%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L30">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_SlotLayout_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.SlotLayout*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_SlotLayout" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.SlotLayout">SlotLayout</h4>
+  <div class="markdown level1 summary"><p>グローバルなスロットID → このObjectDefにおけるローカルindex。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public LocalIndexMap SlotLayout { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.LocalIndexMap.html">LocalIndexMap</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_StackOrder.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.StackOrder%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L41">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_StackOrder_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.StackOrder*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_StackOrder" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.StackOrder">StackOrder</h4>
+  <div class="markdown level1 summary"><p>スタック内での並び順（表示専用）。null なら並び順は未定義で、常にスタックの末尾へ
+追加される（新規インスタンス同士の相対順序＝挿入順）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public StackOrderDef StackOrder { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.StackOrderDef.html">StackOrderDef</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_Tags.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.Tags%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L21">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_Tags_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Tags*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_Tags" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Tags">Tags</h4>
+  <div class="markdown level1 summary"><p>この object_def が持つタグのグローバルIDの一覧（4節）。自分自身が直接宣言したタグと、
+参照した trait（5節）が宣言していたタグの両方を合成済みで持つ（trait自体は合成後に消えるため、
+slots.accepts（7.2節）・combinations.with（12.1節）はこのタグ集合だけを見てマッチングする）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;int&gt; Tags { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef_GetPropertyDef_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef.GetPropertyDef(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L56">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_ObjectDef_GetPropertyDef_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.GetPropertyDef*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_GetPropertyDef_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.GetPropertyDef(System.Int32)">GetPropertyDef(int)</h4>
+  <div class="markdown level1 summary"><p>グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はnull。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public PropertyDef GetPropertyDef(int globalPropertyId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalPropertyId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyDef.html">PropertyDef</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ObjectDef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ObjectDef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ObjectDef.cs/#L10" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

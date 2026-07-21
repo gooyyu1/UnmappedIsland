@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class WorldObject | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class WorldObject | UnmappedIsland API リファレンス ">
+    
+    <meta name="description" content="実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、 &amp;quot;Object&amp;quot;（言語組み込みの System.Object 等と衝突する）や汎用OOP用語の &amp;quot;Instance&amp;quot; を避けて命名している。 プロパティの現在値・スロットの中身は、いずれも Def 側のローカルIDをそのままindexとする 密配列として保持する（グローバルIDでの辞書引きは行わない）。プロパティへ登録された効果 （modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。">
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Runtime.WorldObject">
+
+
+
+  <h1 id="UnmappedIsland_Domain_Runtime_WorldObject" data-uid="UnmappedIsland.Domain.Runtime.WorldObject" class="text-break">Class WorldObject</h1>
+  <div class="markdown level0 summary"><p>実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、
+&quot;Object&quot;（言語組み込みの System.Object 等と衝突する）や汎用OOP用語の &quot;Instance&quot; を避けて命名している。</p>
+<p>プロパティの現在値・スロットの中身は、いずれも Def 側のローカルIDをそのままindexとする
+密配列として保持する（グローバルIDでの辞書引きは行わない）。プロパティへ登録された効果
+（modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため
+PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">WorldObject</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Runtime.html">Runtime</a></h6>
+  <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
+  <h5 id="UnmappedIsland_Domain_Runtime_WorldObject_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class WorldObject</code></pre>
+  </div>
+  <h3 id="constructors">Constructors
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject__ctor_System_Int32_UnmappedIsland_Domain_Defs_ObjectDef_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.%23ctor(System.Int32%2CUnmappedIsland.Domain.Defs.ObjectDef)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L38">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject__ctor_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject__ctor_System_Int32_UnmappedIsland_Domain_Defs_ObjectDef_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.#ctor(System.Int32,UnmappedIsland.Domain.Defs.ObjectDef)">WorldObject(int, ObjectDef)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public WorldObject(int instanceId, ObjectDef def)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">instanceId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ObjectDef.html">ObjectDef</a></td>
+        <td><span class="parametername">def</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_Def.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.Def%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L20">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_Def_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Def*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_Def" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Def">Def</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ObjectDef Def { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ObjectDef.html">ObjectDef</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_InstanceId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.InstanceId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L19">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_InstanceId_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.InstanceId*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_InstanceId" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.InstanceId">InstanceId</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int InstanceId { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_Parent.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.Parent%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L33">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_Parent_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Parent*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_Parent" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Parent">Parent</h4>
+  <div class="markdown level1 summary"><p>所属先（7.1節）。子は必ず1つの親に属する。ルート（未格納）なら null。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public WorldObject Parent { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_ParentSlotLocalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.ParentSlotLocalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L36">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_ParentSlotLocalId_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.ParentSlotLocalId*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_ParentSlotLocalId" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.ParentSlotLocalId">ParentSlotLocalId</h4>
+  <div class="markdown level1 summary"><p>Parent の中で自分が入っているスロットのローカルID。Parent が null なら Missing。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int ParentSlotLocalId { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_AddNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.AddNumber(System.Int32%2CSystem.Int32%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L137">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_AddNumber_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.AddNumber*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_AddNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.AddNumber(System.Int32,System.Int32,UnmappedIsland.Domain.Runtime.WorldSession)">AddNumber(int, int, WorldSession)</h4>
+  <div class="markdown level1 summary"><p>数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の <code>add</code>、ContainerSystem.md の重さ伝播で使用）。
+このオブジェクトが対象プロパティを持たない場合は何もしない（例: 重さを気にしない置物）。</p>
+<p>プロパティ解決だけがこのメソッドの責務で、値の変更・range判定（on_overflow等）はすべて
+PropertyValue.Add自身に委ねる（自分のことは自分でする、CLAUDE.md参照）。sessionを渡さない
+呼び出しは、その場では判定を行わない（既存の「後で明示的にTick()を呼んで判定させる」
+呼び出し方との後方互換のため）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void AddNumber(int globalPropertyId, int delta, WorldSession session = null)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalPropertyId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">delta</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_Destroy_UnmappedIsland_Domain_Defs_WellKnownProperties_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.Destroy(UnmappedIsland.Domain.Defs.WellKnownProperties)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L255">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_Destroy_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Destroy*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_Destroy_UnmappedIsland_Domain_Defs_WellKnownProperties_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Destroy(UnmappedIsland.Domain.Defs.WellKnownProperties)">Destroy(WellKnownProperties)</h4>
+  <div class="markdown level1 summary"><p>対象オブジェクトを、現在の親から切り離す（destroy、9.3節）。切り離された時点で
+worldツリーから到達不能になり、Tickの対象からも自然に外れる（世界に存在する＝
+worldの下にぶら下がっている、という前提のため、別途「存在するオブジェクト一覧」は持たない）。
+既に親を持たない場合は何もしない（destroyは繰り返し実行しても安全、6.5節）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Destroy(WellKnownProperties wellKnown)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.WellKnownProperties.html">WellKnownProperties</a></td>
+        <td><span class="parametername">wellKnown</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_GetEffectiveValue_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.GetEffectiveValue(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L429">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_GetEffectiveValue_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetEffectiveValue*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_GetEffectiveValue_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetEffectiveValue(System.Int32)">GetEffectiveValue(int)</h4>
+  <div class="markdown level1 summary"><p>modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
+target(self/parent/child)の違いはRegisterPassiveEffect呼び出し側（WorldObjectコンストラクタ・
+RegisterEdgeWith）にのみ存在し、ここでは一切区別しない。Kind.Accumulateの寄与はTick参照。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int GetEffectiveValue(int propertyGlobalId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">propertyGlobalId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_GetIncomingPassiveEffects_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.GetIncomingPassiveEffects(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L804">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_GetIncomingPassiveEffects_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetIncomingPassiveEffects*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_GetIncomingPassiveEffects_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetIncomingPassiveEffects(System.Int32)">GetIncomingPassiveEffects(int)</h4>
+  <div class="markdown level1 summary"><p>現在このプロパティに登録されている全寄与（modify/accumulate両方）を列挙する。
+「このプロパティに何が影響しているか」をUIで表示したい場合に使う。ゲートが現在有効かどうかは
+呼び出し側で RegisteredPassiveEffect.IsActive() 相当の判定をしたい場合、Kind別にGetEffectiveValue/Tickの
+結果と突き合わせる。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;RegisteredPassiveEffect&gt; GetIncomingPassiveEffects(int propertyGlobalId)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">propertyGlobalId</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html">RegisteredPassiveEffect</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_GetNumber_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.GetNumber(System.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L81">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_GetNumber_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetNumber*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_GetNumber_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.GetNumber(System.Int32,System.Int32)">GetNumber(int, int)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int GetNumber(int globalPropertyId, int fallback = 0)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalPropertyId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">fallback</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_MoveToSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.MoveToSlot(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.WellKnownProperties%2CSystem.String%40%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L186">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_MoveToSlot_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.MoveToSlot*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_MoveToSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.MoveToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)">MoveToSlot(WorldObject, int, WellKnownProperties, out string, bool)</h4>
+  <div class="markdown level1 summary"><p>スロット移動を行う唯一の汎用操作（GameElementDefinition.md 7.1節の <code>move_to_slot</code>）。
+accepts/capacity/UnitCapacityの検証は新しい親の対象Slot自身（Slot.CanAccept）に委ね、
+このメソッドは「自分の所属先を差し替える」こと自体（旧親からの離脱・新親への合流・
+weightの伝播・passive effect edgeの登録）にのみ専念する（自分のことは自分でする、CLAUDE.md参照）。</p>
+<p>force=true の場合、accepts/capacity/UnitCapacityの検証を飛ばして必ず配置を成功させる（spawnの
+フォールバック、9.4節専用。すべてのオブジェクトは必ずどこかの親に属さなければならないという
+前提を、退避先で保証するために使う）。スロット自体が存在しない場合は force でも失敗する
+（存在しない配列indexへは置けないため）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool MoveToSlot(WorldObject newParent, int slotGlobalId, WellKnownProperties wellKnown, out string error, bool force = false)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">newParent</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">slotGlobalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.WellKnownProperties.html">WellKnownProperties</a></td>
+        <td><span class="parametername">wellKnown</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">error</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><span class="parametername">force</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_SetNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.SetNumber(System.Int32%2CSystem.Int32%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L149">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_SetNumber_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.SetNumber*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_SetNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.SetNumber(System.Int32,System.Int32,UnmappedIsland.Domain.Runtime.WorldSession)">SetNumber(int, int, WorldSession)</h4>
+  <div class="markdown level1 summary"><p>数値プロパティへの不可逆な絶対値代入（GameElementDefinition.md 9.2節の<code>set</code>）。addとは異なり、
+既存の値を無視して指定した値でそのまま置き換える。このオブジェクトが対象プロパティを
+持たない場合は何もしない（AddNumberと同じ規約）。プロパティ解決だけがこのメソッドの責務で、
+差分計算・range判定はすべてPropertyValue.SetNumber自身に委ねる。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void SetNumber(int globalPropertyId, int value, WorldSession session = null)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalPropertyId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">value</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_SetProperty_System_Int32_UnmappedIsland_Domain_Runtime_PropertyValue_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(System.Int32%2CUnmappedIsland.Domain.Runtime.PropertyValue)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L73">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_SetProperty_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.SetProperty*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_SetProperty_System_Int32_UnmappedIsland_Domain_Runtime_PropertyValue_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(System.Int32,UnmappedIsland.Domain.Runtime.PropertyValue)">SetProperty(int, PropertyValue)</h4>
+  <div class="markdown level1 summary"><p>登録済みのIncoming（modify/accumulate）はそのまま、値の中身だけを差し替える。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void SetProperty(int globalPropertyId, PropertyValue value)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalPropertyId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a></td>
+        <td><span class="parametername">value</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_Tick_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.Tick(UnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L447">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_Tick_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Tick*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_Tick_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.Tick(UnmappedIsland.Domain.Runtime.WorldSession)">Tick(WorldSession)</h4>
+  <div class="markdown level1 summary"><p>accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、on_max・on_min（6.5節・6.6節）・
+on_overflow・on_shortfall（6.3節）の判定・実行までを、プロパティごとに自分自身で完結させる
+（PropertyValue.Tick参照。いつ・どのプロパティが範囲外になったかの判断はすべてそちらにあり、
+WorldObjectは既存のApplyActiveEffect（すべて同じ適用経路）を提供するだけで、overflow専用の
+処理は一切持たない）。自分自身の処理の後、子（すべてのスロットの中身）へ再帰する。すべての
+オブジェクトは必ずworldの下にぶら下がるため（「別途『世界に存在するすべてのオブジェクト』一覧は
+持たない」という前提）、worldに対して1回 Tick を呼ぶだけでツリー全体が処理される。</p>
+<p>on_max/on_min/on_overflow/on_shortfallのdestroy/spawnは、この処理の最中に自分自身や兄弟をツリーから
+切り離しうる。各スロットの中身は列挙前にスナップショットを取ることで、列挙中に自分自身や兄弟が
+destroyされても安全なようにしている。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Tick(WorldSession session)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_TryGetProperty_System_Int32_UnmappedIsland_Domain_Runtime_PropertyValue__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.TryGetProperty(System.Int32%2CUnmappedIsland.Domain.Runtime.PropertyValue%40)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L60">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_TryGetProperty_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.TryGetProperty*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_TryGetProperty_System_Int32_UnmappedIsland_Domain_Runtime_PropertyValue__" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.TryGetProperty(System.Int32,UnmappedIsland.Domain.Runtime.PropertyValue@)">TryGetProperty(int, out PropertyValue)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool TryGetProperty(int globalPropertyId, out PropertyValue value)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalPropertyId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a></td>
+        <td><span class="parametername">value</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_TryGetSlot_System_Int32_UnmappedIsland_Domain_Runtime_Slot__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.TryGetSlot(System.Int32%2CUnmappedIsland.Domain.Runtime.Slot%40)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L155">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_TryGetSlot_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.TryGetSlot*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_TryGetSlot_System_Int32_UnmappedIsland_Domain_Runtime_Slot__" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.TryGetSlot(System.Int32,UnmappedIsland.Domain.Runtime.Slot@)">TryGetSlot(int, out Slot)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool TryGetSlot(int globalSlotId, out Slot slot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">globalSlotId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.Slot.html">Slot</a></td>
+        <td><span class="parametername">slot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L17" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

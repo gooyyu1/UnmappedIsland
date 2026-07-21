@@ -1,0 +1,746 @@
+{
+  "source_base_path": "/home/runner/work/UnmappedIsland/UnmappedIsland",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "Resource",
+      "output": {
+        "resource": {
+          "relative_path": "index.json"
+        }
+      }
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ActionDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ActionDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ActionDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActionDef.yml\" sourcestartlinenumber=\"1\">メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと実行結果(active/pick)を\n1つの定義としてまとめて持つ。object_defs/traitsの中に、識別子をキーとする辞書として配置される。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ActiveEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ActiveEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ActiveEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">一時的な命令の内容（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">add</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">destroy</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">spawn</code>、9節）。on_min・on_overflow・on_shortfall（6節）、\nactions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"4\">文法は「操作が上位、対象(self/parent/actor/dragged)が下位」（例: <code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"4\">add: {self: {hour: 1}}</code>）。\nset/addは複数の対象へ同時に書けるため、対象ごとの一覧を辞書として持つ。destroyは削除対象を\n直接指すリスト（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">destroy: self</code>は要素1つのリストとして表す）。spawnは常にselfが実行するものと\nみなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、\n実行者＝selfとは別の概念）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"10\">on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.CombinationDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.CombinationDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.CombinationDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.CombinationDef.yml\" sourcestartlinenumber=\"1\">ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の\nobject_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ConditionNode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ConditionNode.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ConditionNode",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"1\">conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート\n（旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけがRuntime側にある。\nRuntime.ConditionEvaluator参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"5\">葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて\n使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の\n慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に\n関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ConditionNodeKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ConditionNodeKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ConditionNodeKind",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ConditionOp.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ConditionOp.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ConditionOp",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionOp.yml\" sourcestartlinenumber=\"1\">GameElementDefinition.md 14.1節の比較演算子。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.LocalIndexMap.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.LocalIndexMap",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml\" sourcestartlinenumber=\"1\">特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、\nゲーム全体で共有されるグローバルID空間とを対応付ける表。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml\" sourcestartlinenumber=\"4\">ObjectDefごとに「持っているプロパティ／スロット」は異なるため、グローバルID空間全体を\nそのままインデックスに使うと大半が未使用の疎な配列になってしまう。そこで ObjectDef 側は\n自分が実際に持つものだけを詰めた密なローカル配列を持ち、この表がその変換を担う。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.NameRegistry.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.NameRegistry.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.NameRegistry",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.NameRegistry.yml\" sourcestartlinenumber=\"1\">YAML上の識別子（ObjectDef名・プロパティ名・スロット名など）と、実行時に扱うグローバルなintを\n相互変換する。「名前の空間」ごとに1つ用意する（object用・property用・slot用は別々のインスタンス）。\nロード完了後は Intern を呼ばず、読み取り専用として扱う想定。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ObjectDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ObjectDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ObjectDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ObjectDef.yml\" sourcestartlinenumber=\"1\">型定義（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ObjectDef.yml\" sourcestartlinenumber=\"1\">object_defs</code> の1エントリ、4節）。ロード完了後は不変として扱う。\n実行時インスタンスは WorldObject（Runtime名前空間）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ObjectDefTable.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ObjectDefTable.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ObjectDefTable",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ObjectDefTable.yml\" sourcestartlinenumber=\"1\">ロード済みの全 ObjectDef を、グローバルIDをそのままindexとする配列で保持する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PassiveEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PassiveEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PassiveEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する、1つの効果（8節）。ObjectDef.Passives の要素。\nTarget が Self/Parent/Child のどれであっても、Kind が Modify/Accumulate のどちらであっても構造は同じで、\n違いは登録時にどこへ・誰の状態と紐付けて置くか（Target）と、どちらの評価経路が読むか（Kind）だけに閉じる\n（Runtime.WorldObject.GetEffectiveValue / Tick 参照）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PassiveEffectGate.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PassiveEffectGate",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"1\">効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を\n表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら\n両方を満たす間だけ有効=AND、両方nullなら常時有効。Runtime.RegisteredPassiveEffect.IsActive参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"5\">ConditionsもPropertyGlobalId/StageNameも、ロード時にローカルIDへ変換せずグローバルIDのまま持つ\n（評価のたびにDeclarer自身がRuntime.WorldObject.IsInStageでローカル化する）。グローバルID→ローカルID\nの変換コストは、1 tick=15分というこのゲームの時間スケールに対して無視できるほど小さいため、\nDeclarer自身のPropertyDefがすべて出来上がるまで解決を待つビルド時の2段階パースは不要（かつては\nPropertyLocalId/PropertyStage参照をビルド時に確定させていたが、この理由により撤去した）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PassiveEffectKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PassiveEffectKind",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"1\">効果の性質。どちらも self/parent/child・ゲートによる登録の仕組み（8節）を共有するが、\n実体値への反映のされ方が異なる。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"4\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"4\">Modify: 条件が真の間だけ、都度導出される実効値に寄与する（可逆、WorldObject.GetEffectiveValue）</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"5\">Accumulate: 条件が真の間、tick毎に実体値そのものへ加減算し続ける（不可逆、WorldObject.Tick）</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"7\">アクション/combination/pickの効果として書かれる一時的な <code sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectKind.yml\" sourcestartlinenumber=\"7\">add</code>（実行された瞬間に1回だけ効く）は、\nこの登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PassiveEffectTarget.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PassiveEffectTarget.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PassiveEffectTarget",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectTarget.yml\" sourcestartlinenumber=\"1\">効果の対象（8.1節の self/parent/child）。値そのものは登録時にしか使わず、\n読み取り側（WorldObject.GetEffectiveValue/Tick）はこの区別を一切見ない。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PickCandidateDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PickCandidateDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml\" sourcestartlinenumber=\"1\">pickの1候補（GameElementDefinition.md 10節）。weightに加えて、自分自身のactive（対象をキーとする\n辞書）か、さらに別のpickのどちらか一方を持つ（同時には持たない。候補自身がpickを持つ再帰も許容する）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyAssignment.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PropertyAssignment.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PropertyAssignment",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyAssignment.yml\" sourcestartlinenumber=\"1\">set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの\n代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PropertyDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PropertyDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.PropertyDefs の1要素として、\nローカルIDをそのままindexとする密配列に格納される。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"4\">同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、\n定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyDelta.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PropertyDelta.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PropertyDelta",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDelta.yml\" sourcestartlinenumber=\"1\">add の1エントリ（対象プロパティのグローバルIDと加減算量）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyPath.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PropertyPath.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PropertyPath",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyPath.yml\" sourcestartlinenumber=\"1\">{object, prop}が指す、1階層のプロパティ参照。weightのpath参照（10.2節）で使う。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyRange.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PropertyRange.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PropertyRange",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PropertyStage.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PropertyStage.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PropertyStage",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyStage.yml\" sourcestartlinenumber=\"1\">6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyStage.yml\" sourcestartlinenumber=\"3\">Min: 区間は下限のみで表す半開区間。値の大小関係を前提にした数値プロパティ向け。\nEq: 完全一致判定。シンボル型プロパティ（6.8節）のように、内部で保持する整数値の大小関係が\n著者にとって意味を持たない（NameRegistryへの登録順で決まるだけの）値に対して使う。\nどちらも未指定なら最下段（それ以外のどの段にも該当しない場合のフォールバック、6.4節）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ReferenceRoot.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ReferenceRoot.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ReferenceRoot",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRoot.yml\" sourcestartlinenumber=\"1\">conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）が共通で参照する\n起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層のパスは現状の用例に\n存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため、\n起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが「見つからなければ\nworldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.ShowMenuMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.ShowMenuMode.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.ShowMenuMode",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ShowMenuMode.yml\" sourcestartlinenumber=\"1\">showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 4節: 他の値の要否は未決定）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.SlotAcceptRule.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.SlotAcceptRule.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.SlotAcceptRule",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SlotAcceptRule.yml\" sourcestartlinenumber=\"1\">GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、\nWithをタグ（4節）のグローバルIDか、object_defそのもののグローバルIDのどちらかとして解釈する\n（Matches参照）。trait名では直接マッチングしない: traitはmixin合成後に消えてしまう外部から\n参照すべきでない存在であり、trait経由でタグ付けしたければtags（4節）を使う。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.SlotAcceptTargetKind.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.SlotAcceptTargetKind.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.SlotAcceptTargetKind",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SlotAcceptTargetKind.yml\" sourcestartlinenumber=\"1\">1つのSlotAcceptRuleが何を基準にマッチングするか。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.SlotDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.SlotDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.SlotDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SlotDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのスロットの定義（GameElementDefinition.md 7.1〜7.4節）。\nObjectDef.SlotDefs の1要素として、ローカルIDをそのままindexとする密配列に格納される。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.SpawnEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.SpawnEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.SpawnEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"1\">spawn（9.4節）の内容。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は\n一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、\naccepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ\nならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"6\">伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない\nまま消える（何も起きなかったのと同じ扱い）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.SpawnTargetRoot.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.SpawnTargetRoot.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.SpawnTargetRoot",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnTargetRoot.yml\" sourcestartlinenumber=\"1\">spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定しない。対象オブジェクトが持つ\nスロットを宣言順に走査し、最初に配置できたスロットへ入れる（型ごとに用意されたスロットへ\n自然に振り分けられるため、著者がスロット名を知っている必要がない）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnTargetRoot.yml\" sourcestartlinenumber=\"5\">fallback はYAML上に存在しない。配置に失敗した場合は必ず、解決した起点自身の親へ伝播する\n（WorldObject.Place参照）。Actor はアクション実行文脈でのみ解決できる。on_min/on_overflow/\non_shortfallにはactorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.StackOrderDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.StackOrderDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.StackOrderDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"1\">同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（例: 劣化アイテムは寿命が短いものほど、\n液体容器は中身が少ないものほど「手前＝一番上に重なる」）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"4\">Ascendingは「プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか」を表す。「手前に重ねたい\nものほどリストの末尾に置く」という規約（Slot参照）のもとでは、寿命・残量など「小さいほど手前」に\nしたい値は Ascending=false（値が小さいものほど末尾）を指定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"8\">このObjectDefの新規インスタンスがスタックへ加わる際の並び位置決定にのみ使う（表示専用の概念）。\n一度並んだ後、値の変化に追従した再ソートは行わない（同種は同じ速度で変化する前提のため、\n挿入時点の相対順序がその後も保たれる、8.4節のaccumulateのような一定速度の変化を想定）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.TransferEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.TransferEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.TransferEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"1\">transfer（9.5節）の内容。fromが指すプロパティの実体値から、実際に出せる量とamountの小さい方だけを\ntoが指すプロパティへ移す（連続量の液体のような、setの固定値でもaddの無条件加減算でも表現できない\n「在庫に応じて実際に動く量が変わる」移送を表す）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"5\">from/toの参照は、他の場所（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"5\">modify</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"5\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"5\">add</code>等）と同じ「対象がキー、内容が値」という規約に\n合わせず、conditions（14節）と同じくフラットな<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"6\">from_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"6\">from_prop</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"6\">to_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"6\">to_prop</code>の\n4フィールドで表す。fromとtoの組は常に1組であり、複数プロパティの入れ物としてネストする理由が\n無いため。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.WeightSpec.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.WeightSpec.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.WeightSpec",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WeightSpec.yml\" sourcestartlinenumber=\"1\">pick候補のweight（10.2節）。リテラル定数か、既存propsへのパス参照のいずれか。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.WellKnownProperties.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.WellKnownProperties.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.WellKnownProperties",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WellKnownProperties.yml\" sourcestartlinenumber=\"1\">エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。\nprops 自体はどの ObjectDef も自由に追加できる汎用機構だが、&quot;size&quot;/&quot;weight&quot; という2つの名前だけは\nmove_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直接読みに行く。\nロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.WorldCodex.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.WorldCodex.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.WorldCodex",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WorldCodex.yml\" sourcestartlinenumber=\"1\">ロードされたYAMLファイル全体（GameElementDefinition.md 3.1節: 「ファイル全体が1つの WorldCodex を\n表します」）を表す、唯一の集約オブジェクト。名前空間ではなくこのクラスが「WorldCodex」そのもの。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WorldCodex.yml\" sourcestartlinenumber=\"4\">中身は本体データ（ObjectDefTable）と、それを読むために必要な5種の名前空間\n（object/property/slot/tag/symbol）の NameRegistry、および汎用エンジンが規約として直接参照する\nWellKnownProperties。ロード完了後は不変として扱う（Intern は Loader.WorldCodexYamlLoader の中でしか\n呼ばれない）。SymbolNamesは、シンボル型のprops（6節）の値（整数にも真偽値にもならない識別子）が\n登録される名前空間で、他の4種とは独立（同じ文字列が別の名前空間で使われていても衝突しない）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WorldCodex.yml\" sourcestartlinenumber=\"10\">実行中に生成される WorldObject（可変な実行時状態）はここには含まれない。WorldCodex はあくまで\n「定義」の集合であり、生成されたインスタンスの管理は別の場所（実行時側、UnmappedIsland.Domain.Runtime）が\n担う想定。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.ConditionEvaluator.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.ConditionEvaluator.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.ConditionEvaluator",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ConditionEvaluator.yml\" sourcestartlinenumber=\"1\">conditions（GameElementDefinition.md 14節）の条件木を評価する。actions/combinationsの一度きりの\n判定（InteractionExecutor）と、passivesの持続的なゲート（RegisteredPassiveEffect.IsActive）の両方が\nこの同じ評価器を共用する。両者の違いはrootの解決方法（resolveRoot）だけに閉じる。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.ConditionRootResolver.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.ConditionRootResolver.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.ConditionRootResolver",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ConditionRootResolver.yml\" sourcestartlinenumber=\"1\">rootが指すWorldObjectを解決する。呼び出し文脈ごとに解決できる対象が異なるため\n（actions/combinationsはself/parent/actor/dragged、passivesのゲートはself/parentのみ）、\n解決できない/この文脈で無効なrootにはnullを返す。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.InteractionExecutor.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.InteractionExecutor.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.InteractionExecutor",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.InteractionExecutor.yml\" sourcestartlinenumber=\"1\">actions（GameElementDefinition.md 11節）・combinations（12節）の実行エンジン。conditionsの評価、\npick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ適用するところまでをここで担う。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.InteractionExecutor.yml\" sourcestartlinenumber=\"4\">set/add/destroyの対象(self/parent/actor/dragged)ごとの解決はWorldObject.ApplyActiveEffectに\n集約されている。ここに残るResolveTargetはconditions/weightのpath解決専用。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.ObjectStack.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.ObjectStack.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.ObjectStack",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ObjectStack.yml\" sourcestartlinenumber=\"1\">Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり（GameElementDefinition.md\n7.6節）。ObjectDefが同じで、かつ represented_by が指定されていれば、その代表オブジェクト\n（さらにその代表…）のObjectDef列も一致するインスタンス同士だけが同じObjectStackにまとまる\n（例: 同じ液体容器でも中身のObjectDefが違えば別々のObjectStackになる）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ObjectStack.yml\" sourcestartlinenumber=\"6\">「このオブジェクトは自分に合流できるか」「自分の中のどこへ挿入すべきか」の判断は、呼び出し側\n（Slot）に代わりこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.PropertyValue.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.PropertyValue.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.PropertyValue",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"1\">props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値、および\nFromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。PassiveEffectの影響先は\n「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、\nいずれもWorldObjectではなくこの値自身が持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"6\">値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。\nWorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない\n（自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef\n（range・on_overflow等）と、それを保持するWorldObject（on_overflow等の適用先解決に使う）は、\nいずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに引数で受け取り直す\nことはしない。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"1\">登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"3\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"3\">Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"4\">SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditions（旧when）ゲートのselfはこれを指す</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"6\">self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、\nchild対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、\n読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.Slot.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.Slot.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.Slot",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"1\">1つの WorldObject が持つ、1つのスロットの実行時状態。中に入っている WorldObject を、ObjectStack\n（7.6節、「見た目上1つのまとまり」）のリストとして保持する。正の情報源はこちら側（親のスロット配列）\nであり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"5\">Stacksの並び順は「表示上のスタック順」そのものを表す実データとして維持する（都度ソートし直す\n派生ビューではない）。中身の追加・削除は WorldObject.MoveToSlot 経由でのみ行う（両者の整合性を\n1箇所でのみ保証するため）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.Views.Location.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.Views.Location.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.Views.Location",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"1\">ロケーションに対する、UI/ゲームロジック向けの型付きビュー。World/PlayerCharacter と同じ理由で\n継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"4\">ロケーションが持つべきプロパティはまだ何も確定していないため、現時点では Instance への\nアクセスのみを提供する。具体的なプロパティが定まり次第、World/PlayerCharacter と同様に\n名前付きアクセサを追加する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.Views.PlayerCharacter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.Views.PlayerCharacter.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.Views.PlayerCharacter",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.PlayerCharacter.yml\" sourcestartlinenumber=\"1\">actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック\n向けの型付きビュー。World と同じ理由で継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.PlayerCharacter.yml\" sourcestartlinenumber=\"4\">どのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.Views.World.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.Views.World.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.Views.World",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.World.yml\" sourcestartlinenumber=\"1\">world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの\n型付きビュー。継承（class World : WorldObject）ではなくラップにしているのは、WorldCodex が\ntraitによる合成モデルを採用しており、C#側のクラス階層と噛み合わないため。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.World.yml\" sourcestartlinenumber=\"5\">コンストラクタで解決するのはプロパティ名→グローバルIDだけで、グローバル→ローカルの変換は\n毎回 WorldObject 側の配列引きに任せる（軽量なため、事前キャッシュはしない）。\nworld がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの\nものだけを実装している。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.Views.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.Views.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.Views",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.WorldObject",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.yml\" sourcestartlinenumber=\"1\">実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、\n&quot;Object&quot;（言語組み込みの System.Object 等と衝突する）や汎用OOP用語の &quot;Instance&quot; を避けて命名している。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.yml\" sourcestartlinenumber=\"4\">プロパティの現在値・スロットの中身は、いずれも Def 側のローカルIDをそのままindexとする\n密配列として保持する（グローバルIDでの辞書引きは行わない）。プロパティへ登録された効果\n（modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため\nPropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldSession.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.WorldSession.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.WorldSession",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldSession.yml\" sourcestartlinenumber=\"1\">実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態\n（WorldCodex.cs のコメントで予告されている「実行時側」の最小実装）。WorldCodex 自体は\nロード後不変な定義の集合であり続けるため、instance ID の発行という可変な状態はここに持たせる。\nスロット移動（move_to_slot）自体は WorldObject.MoveToSlot が自分自身の責務として行うため、\nここでは仲介しない（WellKnownPropertiesは Codex.WellKnown からその都度渡す）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Loader.WorldCodexYamlLoader.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Loader.WorldCodexYamlLoader",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"1\">YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。\nCodex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に\nSystem.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、\n実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す\nLoad経由で使う）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"7\">YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの\nParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/\nParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース\nメソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。\n一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の\nフィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。\nRawObjectDef.cs参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"15\">props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり\n（RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う\n（プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、\nこれらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および\nParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて\n呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、\nshallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし\nobject_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"24\">インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという\nニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という\nだけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに\nobject_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて\n書ける（例: <code sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"28\">new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()</code>）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"30\">object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の\n厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの\npatch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため\nこのローダー自身は「後勝ちで上書き」という規則を一切持たない。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"35\">Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で\nこのインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、\n初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて\n困る理由も無いため）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Loader.YamlLoadException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Loader.YamlLoadException.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Loader.YamlLoadException",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.YamlLoadException.yml\" sourcestartlinenumber=\"1\">YAMLロード時のエラー（重複キー・未知のフィールド・必須フィールド欠落・trait解決の失敗など）。\nどのファイル・どのobject_def/trait名で起きたかを呼び出し側でメッセージに含める。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Loader.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Loader.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Loader",
+      "Summary": null
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "api/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html"
+        },
+        ".json": {
+          "relative_path": "toc.json"
+        }
+      },
+      "version": ""
+    }
+  ],
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}
