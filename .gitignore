@@ -110,3 +110,7 @@ InitTestScene*.unity*
 Tests/**/bin/
 Tests/**/obj/
 !Tests/**/*.csproj
+
+# DocFX の中間生成ファイル（docfx.json の metadata.dest が生成するYAMLスタブ）。
+# ワークフロー実行中にのみ存在する一時ディレクトリ。
+/api/

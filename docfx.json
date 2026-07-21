@@ -1,0 +1,26 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": ".",
+          "files": ["Tests/UnmappedIsland.Core/UnmappedIsland.Core.csproj"]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "src": "api",
+        "files": ["*.yml", "index.md"]
+      }
+    ],
+    "globalMetadata": {
+      "_appTitle": "UnmappedIsland API リファレンス",
+      "_enableSearch": true
+    },
+    "dest": "docs/Reference"
+  }
+}
