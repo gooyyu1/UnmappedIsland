@@ -127,15 +127,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.ActiveEffect
   fullName: UnmappedIsland.Domain.Defs.ActiveEffect
   nameWithType: ActiveEffect
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SetEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
-  name: ActiveEffect(IReadOnlyList<SetEffect>, IReadOnlyList<AddEffect>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SetEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_AddEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ReferenceRoot__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SpawnEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_TransferEffect__
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SetEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
-  name.vb: New(IReadOnlyList(Of SetEffect), IReadOnlyList(Of AddEffect), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.SetEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.AddEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ReferenceRoot>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.SpawnEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.TransferEffect>)
-  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.SetEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.AddEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ReferenceRoot), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.SpawnEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.TransferEffect))
-  nameWithType: ActiveEffect.ActiveEffect(IReadOnlyList<SetEffect>, IReadOnlyList<AddEffect>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
-  nameWithType.vb: ActiveEffect.New(IReadOnlyList(Of SetEffect), IReadOnlyList(Of AddEffect), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveOperation})
+  name: ActiveEffect(IReadOnlyList<ActiveOperation>)
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveOperation__
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveOperation})
+  name.vb: New(IReadOnlyList(Of ActiveOperation))
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ActiveOperation>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ActiveOperation))
+  nameWithType: ActiveEffect.ActiveEffect(IReadOnlyList<ActiveOperation>)
+  nameWithType.vb: ActiveEffect.New(IReadOnlyList(Of ActiveOperation))
 - uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor*
   name: ActiveEffect
   href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_
@@ -146,71 +146,44 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New
   nameWithType: ActiveEffect.ActiveEffect
   nameWithType.vb: ActiveEffect.New
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Adds
-  name: Adds
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Adds
-  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Adds
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Adds
-  nameWithType: ActiveEffect.Adds
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Adds*
-  name: Adds
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Adds_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Adds
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: ApplyTo(WorldObject, WorldSession, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_ApplyTo_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: ActiveEffect.ApplyTo(WorldObject, WorldSession, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo*
+  name: ApplyTo
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_ApplyTo_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Adds
-  nameWithType: ActiveEffect.Adds
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Destroy
-  name: Destroy
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Destroy
-  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Destroy
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Destroy
-  nameWithType: ActiveEffect.Destroy
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Destroy*
-  name: Destroy
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Destroy_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Destroy
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo
+  nameWithType: ActiveEffect.ApplyTo
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.operations
+  name: operations
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_operations
+  commentId: F:UnmappedIsland.Domain.Defs.ActiveEffect.operations
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.operations
+  nameWithType: ActiveEffect.operations
+- uid: UnmappedIsland.Domain.Defs.ActiveOperation
+  name: ActiveOperation
+  href: UnmappedIsland.Domain.Defs.ActiveOperation.html
+  commentId: T:UnmappedIsland.Domain.Defs.ActiveOperation
+  fullName: UnmappedIsland.Domain.Defs.ActiveOperation
+  nameWithType: ActiveOperation
+- uid: UnmappedIsland.Domain.Defs.ActiveOperation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.ActiveOperation.html#UnmappedIsland_Domain_Defs_ActiveOperation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveOperation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.ActiveOperation.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: ActiveOperation.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.ActiveOperation.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.ActiveOperation.html#UnmappedIsland_Domain_Defs_ActiveOperation_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveOperation.Apply
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Destroy
-  nameWithType: ActiveEffect.Destroy
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Sets
-  name: Sets
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Sets
-  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Sets
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Sets
-  nameWithType: ActiveEffect.Sets
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Sets*
-  name: Sets
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Sets_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Sets
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Sets
-  nameWithType: ActiveEffect.Sets
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
-  name: Spawns
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Spawns
-  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
-  nameWithType: ActiveEffect.Spawns
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns*
-  name: Spawns
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Spawns_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
-  nameWithType: ActiveEffect.Spawns
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
-  name: Transfers
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Transfers
-  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
-  nameWithType: ActiveEffect.Transfers
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers*
-  name: Transfers
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Transfers_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
-  nameWithType: ActiveEffect.Transfers
+  fullName: UnmappedIsland.Domain.Defs.ActiveOperation.Apply
+  nameWithType: ActiveOperation.Apply
 - uid: UnmappedIsland.Domain.Defs.AddEffect
   name: AddEffect
   href: UnmappedIsland.Domain.Defs.AddEffect.html
@@ -236,12 +209,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.AddEffect.New
   nameWithType: AddEffect.AddEffect
   nameWithType.vb: AddEffect.New
-- uid: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: AddEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: AddEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
 - uid: UnmappedIsland.Domain.Defs.AddEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_
@@ -739,6 +712,50 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.ConditionOp.NotIn
   fullName: UnmappedIsland.Domain.Defs.ConditionOp.NotIn
   nameWithType: ConditionOp.NotIn
+- uid: UnmappedIsland.Domain.Defs.DestroyEffect
+  name: DestroyEffect
+  href: UnmappedIsland.Domain.Defs.DestroyEffect.html
+  commentId: T:UnmappedIsland.Domain.Defs.DestroyEffect
+  fullName: UnmappedIsland.Domain.Defs.DestroyEffect
+  nameWithType: DestroyEffect
+- uid: UnmappedIsland.Domain.Defs.DestroyEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot)
+  name: DestroyEffect(ReferenceRoot)
+  href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_
+  commentId: M:UnmappedIsland.Domain.Defs.DestroyEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot)
+  name.vb: New(ReferenceRoot)
+  fullName: UnmappedIsland.Domain.Defs.DestroyEffect.DestroyEffect(UnmappedIsland.Domain.Defs.ReferenceRoot)
+  fullName.vb: UnmappedIsland.Domain.Defs.DestroyEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot)
+  nameWithType: DestroyEffect.DestroyEffect(ReferenceRoot)
+  nameWithType.vb: DestroyEffect.New(ReferenceRoot)
+- uid: UnmappedIsland.Domain.Defs.DestroyEffect.#ctor*
+  name: DestroyEffect
+  href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Defs.DestroyEffect.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: UnmappedIsland.Domain.Defs.DestroyEffect.DestroyEffect
+  fullName.vb: UnmappedIsland.Domain.Defs.DestroyEffect.New
+  nameWithType: DestroyEffect.DestroyEffect
+  nameWithType.vb: DestroyEffect.New
+- uid: UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: DestroyEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.DestroyEffect.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.DestroyEffect.Apply
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.DestroyEffect.Apply
+  nameWithType: DestroyEffect.Apply
+- uid: UnmappedIsland.Domain.Defs.DestroyEffect.target
+  name: target
+  href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect_target
+  commentId: F:UnmappedIsland.Domain.Defs.DestroyEffect.target
+  fullName: UnmappedIsland.Domain.Defs.DestroyEffect.target
+  nameWithType: DestroyEffect.target
 - uid: UnmappedIsland.Domain.Defs.EffectOutcome
   name: EffectOutcome
   href: UnmappedIsland.Domain.Defs.EffectOutcome.html
@@ -1769,19 +1786,6 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.PropertyMutation.New
   nameWithType: PropertyMutation.PropertyMutation
   nameWithType.vb: PropertyMutation.New
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: PropertyMutation.Apply(WorldObject, WorldSession, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Apply*
-  name: Apply
-  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Apply_
-  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.Apply
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Apply
-  nameWithType: PropertyMutation.Apply
 - uid: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
   name: PropertyGlobalId
   href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId
@@ -2063,12 +2067,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.SetEffect.New
   nameWithType: SetEffect.SetEffect
   nameWithType.vb: SetEffect.New
-- uid: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: SetEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: SetEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
 - uid: UnmappedIsland.Domain.Defs.SetEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_
@@ -2368,6 +2372,19 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.SpawnEffect.New
   nameWithType: SpawnEffect.SpawnEffect
   nameWithType.vb: SpawnEffect.New
+- uid: UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.SpawnEffect.html#UnmappedIsland_Domain_Defs_SpawnEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: SpawnEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.SpawnEffect.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.SpawnEffect.html#UnmappedIsland_Domain_Defs_SpawnEffect_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.SpawnEffect.Apply
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.SpawnEffect.Apply
+  nameWithType: SpawnEffect.Apply
 - uid: UnmappedIsland.Domain.Defs.SpawnEffect.Into
   name: Into
   href: UnmappedIsland.Domain.Defs.SpawnEffect.html#UnmappedIsland_Domain_Defs_SpawnEffect_Into
@@ -2494,97 +2511,61 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.TransferEffect.New
   nameWithType: TransferEffect.TransferEffect
   nameWithType.vb: TransferEffect.New
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.AllowOverflow
-  name: AllowOverflow
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_AllowOverflow
-  commentId: P:UnmappedIsland.Domain.Defs.TransferEffect.AllowOverflow
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.AllowOverflow
-  nameWithType: TransferEffect.AllowOverflow
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.AllowOverflow*
-  name: AllowOverflow
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_AllowOverflow_
-  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.AllowOverflow
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: TransferEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.Apply
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.AllowOverflow
-  nameWithType: TransferEffect.AllowOverflow
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.Amount
-  name: Amount
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_Amount
-  commentId: P:UnmappedIsland.Domain.Defs.TransferEffect.Amount
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.Amount
-  nameWithType: TransferEffect.Amount
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.Amount*
-  name: Amount
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_Amount_
-  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.Amount
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.Amount
-  nameWithType: TransferEffect.Amount
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.FromObject
-  name: FromObject
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_FromObject
-  commentId: P:UnmappedIsland.Domain.Defs.TransferEffect.FromObject
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.FromObject
-  nameWithType: TransferEffect.FromObject
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.FromObject*
-  name: FromObject
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_FromObject_
-  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.FromObject
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.FromObject
-  nameWithType: TransferEffect.FromObject
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.FromPropertyGlobalId
-  name: FromPropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_FromPropertyGlobalId
-  commentId: P:UnmappedIsland.Domain.Defs.TransferEffect.FromPropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.FromPropertyGlobalId
-  nameWithType: TransferEffect.FromPropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.FromPropertyGlobalId*
-  name: FromPropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_FromPropertyGlobalId_
-  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.FromPropertyGlobalId
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.FromPropertyGlobalId
-  nameWithType: TransferEffect.FromPropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.LinkedAdd
-  name: LinkedAdd
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_LinkedAdd
-  commentId: P:UnmappedIsland.Domain.Defs.TransferEffect.LinkedAdd
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.LinkedAdd
-  nameWithType: TransferEffect.LinkedAdd
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.LinkedAdd*
-  name: LinkedAdd
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_LinkedAdd_
-  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.LinkedAdd
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.LinkedAdd
-  nameWithType: TransferEffect.LinkedAdd
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.ToObject
-  name: ToObject
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_ToObject
-  commentId: P:UnmappedIsland.Domain.Defs.TransferEffect.ToObject
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.ToObject
-  nameWithType: TransferEffect.ToObject
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.ToObject*
-  name: ToObject
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_ToObject_
-  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.ToObject
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.ToObject
-  nameWithType: TransferEffect.ToObject
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.ToPropertyGlobalId
-  name: ToPropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_ToPropertyGlobalId
-  commentId: P:UnmappedIsland.Domain.Defs.TransferEffect.ToPropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.ToPropertyGlobalId
-  nameWithType: TransferEffect.ToPropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.ToPropertyGlobalId*
-  name: ToPropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_ToPropertyGlobalId_
-  commentId: Overload:UnmappedIsland.Domain.Defs.TransferEffect.ToPropertyGlobalId
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.ToPropertyGlobalId
-  nameWithType: TransferEffect.ToPropertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.Apply
+  nameWithType: TransferEffect.Apply
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.allowOverflow
+  name: allowOverflow
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_allowOverflow
+  commentId: F:UnmappedIsland.Domain.Defs.TransferEffect.allowOverflow
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.allowOverflow
+  nameWithType: TransferEffect.allowOverflow
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.amount
+  name: amount
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_amount
+  commentId: F:UnmappedIsland.Domain.Defs.TransferEffect.amount
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.amount
+  nameWithType: TransferEffect.amount
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.fromObject
+  name: fromObject
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_fromObject
+  commentId: F:UnmappedIsland.Domain.Defs.TransferEffect.fromObject
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.fromObject
+  nameWithType: TransferEffect.fromObject
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.fromPropertyGlobalId
+  name: fromPropertyGlobalId
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_fromPropertyGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.TransferEffect.fromPropertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.fromPropertyGlobalId
+  nameWithType: TransferEffect.fromPropertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.linkedAdd
+  name: linkedAdd
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_linkedAdd
+  commentId: F:UnmappedIsland.Domain.Defs.TransferEffect.linkedAdd
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.linkedAdd
+  nameWithType: TransferEffect.linkedAdd
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.toObject
+  name: toObject
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_toObject
+  commentId: F:UnmappedIsland.Domain.Defs.TransferEffect.toObject
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.toObject
+  nameWithType: TransferEffect.toObject
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.toPropertyGlobalId
+  name: toPropertyGlobalId
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_toPropertyGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.TransferEffect.toPropertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.toPropertyGlobalId
+  nameWithType: TransferEffect.toPropertyGlobalId
 - uid: UnmappedIsland.Domain.Defs.WeightSpec
   name: WeightSpec
   href: UnmappedIsland.Domain.Defs.WeightSpec.html
@@ -3970,6 +3951,91 @@ references:
   fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.New
   nameWithType: WorldObject.WorldObject
   nameWithType.vb: WorldObject.New
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication
+  name: WorldObject.ActiveApplication
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html
+  commentId: T:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication
+  nameWithType: WorldObject.ActiveApplication
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor(UnmappedIsland.Domain.Runtime.WorldObject)
+  name: ActiveApplication(WorldObject)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication__ctor_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor(UnmappedIsland.Domain.Runtime.WorldObject)
+  name.vb: New(WorldObject)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.ActiveApplication(UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.New(UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: WorldObject.ActiveApplication.ActiveApplication(WorldObject)
+  nameWithType.vb: WorldObject.ActiveApplication.New(WorldObject)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor*
+  name: ActiveApplication
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.ActiveApplication
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.New
+  nameWithType: WorldObject.ActiveApplication.ActiveApplication
+  nameWithType.vb: WorldObject.ActiveApplication.New
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(System.Boolean)
+  name: Capture(bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_Capture_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(System.Boolean)
+  name.vb: Capture(Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(Boolean)
+  nameWithType: WorldObject.ActiveApplication.Capture(bool)
+  nameWithType.vb: WorldObject.ActiveApplication.Capture(Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture*
+  name: Capture
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_Capture_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture
+  nameWithType: WorldObject.ActiveApplication.Capture
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
+  name: NotifyOriginWillBeDestroyed()
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_NotifyOriginWillBeDestroyed
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed()
+  nameWithType: WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed()
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed*
+  name: NotifyOriginWillBeDestroyed
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_NotifyOriginWillBeDestroyed_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
+  nameWithType: WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor(UnmappedIsland.Domain.Defs.SpawnTargetRoot)
+  name: SameSlotAnchorFor(SpawnTargetRoot)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_SameSlotAnchorFor_UnmappedIsland_Domain_Defs_SpawnTargetRoot_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor(UnmappedIsland.Domain.Defs.SpawnTargetRoot)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor(UnmappedIsland.Domain.Defs.SpawnTargetRoot)
+  nameWithType: WorldObject.ActiveApplication.SameSlotAnchorFor(SpawnTargetRoot)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor*
+  name: SameSlotAnchorFor
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_SameSlotAnchorFor_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor
+  nameWithType: WorldObject.ActiveApplication.SameSlotAnchorFor
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchor
+  name: anchor
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_anchor
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchor
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchor
+  nameWithType: WorldObject.ActiveApplication.anchor
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchorCaptured
+  name: anchorCaptured
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_anchorCaptured
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchorCaptured
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchorCaptured
+  nameWithType: WorldObject.ActiveApplication.anchorCaptured
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.origin
+  name: origin
+  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_origin
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.origin
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.origin
+  nameWithType: WorldObject.ActiveApplication.origin
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.AddNumber(System.Int32,System.Int32,UnmappedIsland.Domain.Runtime.WorldSession)
   name: AddNumber(int, int, WorldSession)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AddNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_
@@ -4015,19 +4081,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ApplyActiveEffect
   nameWithType: WorldObject.ApplyActiveEffect
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ApplyTransfer(UnmappedIsland.Domain.Defs.TransferEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: ApplyTransfer(TransferEffect, WorldSession, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ApplyTransfer_UnmappedIsland_Domain_Defs_TransferEffect_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ApplyTransfer(UnmappedIsland.Domain.Defs.TransferEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ApplyTransfer(UnmappedIsland.Domain.Defs.TransferEffect, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: WorldObject.ApplyTransfer(TransferEffect, WorldSession, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ApplyTransfer*
-  name: ApplyTransfer
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ApplyTransfer_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ApplyTransfer
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ApplyTransfer
-  nameWithType: WorldObject.ApplyTransfer
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
   name: AttachToSlot(WorldObject, int, CapturedPosition?, WellKnownProperties, out string, bool)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AttachToSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition__UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
@@ -4168,12 +4221,12 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.DetachFromParent
   nameWithType: WorldObject.DetachFromParent
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor})
-  name: ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, SameSlotAnchor?)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ExecuteSpawn_UnmappedIsland_Domain_Defs_SpawnEffect_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor__
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor})
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor?)
-  nameWithType: WorldObject.ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, WorldObject.SameSlotAnchor?)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  name: ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, ActiveApplication)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ExecuteSpawn_UnmappedIsland_Domain_Defs_SpawnEffect_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
+  nameWithType: WorldObject.ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, WorldObject.ActiveApplication)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn*
   name: ExecuteSpawn
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ExecuteSpawn_

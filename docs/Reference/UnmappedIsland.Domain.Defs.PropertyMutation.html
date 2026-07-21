@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class PropertyMutation | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="一度きりのプロパティ書き換え1操作（set/add、9.2節）。対象(Target)・対象プロパティ・適用方法を自分で 持ち、ownerの文脈（actor/dragged）を受け取って「対象を解決し自分を適用する」までを自分で行う （PropertyValueへの登録で持続するpassiveのModifyEffect/AccumulateEffectと対になる、一度きり側の ポリモーフィズム。自分のことは自分でする、CLAUDE.md参照）。対象の解決（Ancestorのプロパティ別解決を 含む）はowner.ResolveEffectTargetOrAncestorに委ねる。">
+    <meta name="description" content="プロパティを書き換える1操作（set/add、9.2節）。対象(Target)・対象プロパティを共通で持ち、ownerの文脈で 対象を解決する部分をActiveOperationとして共有する（対象の解決はowner.ResolveEffectTargetOrAncestorに 委ね、Ancestorのプロパティ別解決も含めて任せる）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,22 +74,24 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_PropertyMutation" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation" class="text-break">Class PropertyMutation</h1>
-  <div class="markdown level0 summary"><p>一度きりのプロパティ書き換え1操作（set/add、9.2節）。対象(Target)・対象プロパティ・適用方法を自分で
-持ち、ownerの文脈（actor/dragged）を受け取って「対象を解決し自分を適用する」までを自分で行う
-（PropertyValueへの登録で持続するpassiveのModifyEffect/AccumulateEffectと対になる、一度きり側の
-ポリモーフィズム。自分のことは自分でする、CLAUDE.md参照）。対象の解決（Ancestorのプロパティ別解決を
-含む）はowner.ResolveEffectTargetOrAncestorに委ねる。</p>
+  <div class="markdown level0 summary"><p>プロパティを書き換える1操作（set/add、9.2節）。対象(Target)・対象プロパティを共通で持ち、ownerの文脈で
+対象を解決する部分をActiveOperationとして共有する（対象の解決はowner.ResolveEffectTargetOrAncestorに
+委ね、Ancestorのプロパティ別解決も含めて任せる）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
-    <div class="level1"><span class="xref">PropertyMutation</span></div>
-      <div class="level2"><a class="xref" href="UnmappedIsland.Domain.Defs.AddEffect.html">AddEffect</a></div>
-      <div class="level2"><a class="xref" href="UnmappedIsland.Domain.Defs.SetEffect.html">SetEffect</a></div>
+    <div class="level1"><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveOperation.html">ActiveOperation</a></div>
+    <div class="level2"><span class="xref">PropertyMutation</span></div>
+      <div class="level3"><a class="xref" href="UnmappedIsland.Domain.Defs.AddEffect.html">AddEffect</a></div>
+      <div class="level3"><a class="xref" href="UnmappedIsland.Domain.Defs.SetEffect.html">SetEffect</a></div>
   </div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="UnmappedIsland.Domain.Defs.ActiveOperation.html#UnmappedIsland_Domain_Defs_ActiveOperation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_">ActiveOperation.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)</a>
+    </div>
     <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
     </div>
@@ -116,7 +118,7 @@
   <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
   <h5 id="UnmappedIsland_Domain_Defs_PropertyMutation_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public abstract class PropertyMutation</code></pre>
+    <pre><code class="lang-csharp hljs">public abstract class PropertyMutation : ActiveOperation</code></pre>
   </div>
   <h3 id="constructors">Constructors
 </h3>
@@ -125,7 +127,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyMutation__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyMutation.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L62">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L67">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PropertyMutation__ctor_" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PropertyMutation__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)">PropertyMutation(ReferenceRoot, int)</h4>
@@ -164,7 +166,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L60">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L65">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId_" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId">PropertyGlobalId</h4>
@@ -194,7 +196,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyMutation_Target.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyMutation.Target%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L59">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L64">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PropertyMutation_Target_" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.Target*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PropertyMutation_Target" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.Target">Target</h4>
@@ -219,57 +221,6 @@
       </tr>
     </tbody>
   </table>
-  <h3 id="methods">Methods
-</h3>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyMutation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L70">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_PropertyMutation_Apply_" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.Apply*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_PropertyMutation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">Apply(WorldObject, WorldSession, WorldObject, WorldObject)</h4>
-  <div class="markdown level1 summary"><p>owner（この操作を発する自分自身）の文脈で対象を解決し、自分を1回適用する。
-対象が解決できなければ何もしない。</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public abstract void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged)</code></pre>
-  </div>
-  <h5 class="parameters">Parameters</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
-        <td><span class="parametername">owner</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
-        <td><span class="parametername">session</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
-        <td><span class="parametername">actor</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
-        <td><span class="parametername">dragged</span></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
 
 </article>
           </div>
@@ -282,7 +233,7 @@
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyMutation.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyMutation%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L57" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L62" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

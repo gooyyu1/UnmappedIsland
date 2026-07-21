@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class ActiveEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="一時的な命令の内容（set/add/destroy/spawn、9節）。on_min・on_overflow・on_shortfall（6節）、 actions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。 set/addは「対象付きの1操作(SetEffect/AddEffect)」のリストとして持つ（passiveのmodify/accumulateが ModifyEffect/AccumulateEffectのリストなのと対称。対象は各操作自身がReferenceRootとして持つ）。 destroyは削除対象を直接指すリスト（destroy: selfは要素1つのリストとして表す）。spawnは常にselfが 実行するものとみなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、 実行者＝selfとは別の概念）。 on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。">
+    <meta name="description" content="一時的な命令の内容（set/add/destroy/spawn/transfer、9節）。on_min・on_overflow・on_shortfall（6節）、 actions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。 中身は「1操作(ActiveOperation)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/spawn/transferは すべてApplyを持つActiveOperationの具象型で、対象の解決も適用も各操作自身が行う。passiveのmodify/ accumulateがPassiveEffectのリストなのと対称）。呼び出し側は「適用してほしい」と依頼するだけで、 どの操作をどの順で適用すべきかは一切知らない（自分のことは自分でする、CLAUDE.md参照）。 on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,13 +74,12 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_ActiveEffect" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect" class="text-break">Class ActiveEffect</h1>
-  <div class="markdown level0 summary"><p>一時的な命令の内容（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>、9節）。on_min・on_overflow・on_shortfall（6節）、
+  <div class="markdown level0 summary"><p>一時的な命令の内容（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>、9節）。on_min・on_overflow・on_shortfall（6節）、
 actions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。</p>
-<p>set/addは「対象付きの1操作(SetEffect/AddEffect)」のリストとして持つ（passiveのmodify/accumulateが
-ModifyEffect/AccumulateEffectのリストなのと対称。対象は各操作自身がReferenceRootとして持つ）。
-destroyは削除対象を直接指すリスト（<code>destroy: self</code>は要素1つのリストとして表す）。spawnは常にselfが
-実行するものとみなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、
-実行者＝selfとは別の概念）。</p>
+<p>中身は「1操作(ActiveOperation)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/spawn/transferは
+すべてApplyを持つActiveOperationの具象型で、対象の解決も適用も各操作自身が行う。passiveのmodify/
+accumulateがPassiveEffectのリストなのと対称）。呼び出し側は「適用してほしい」と依頼するだけで、
+どの操作をどの順で適用すべきかは一切知らない（自分のことは自分でする、CLAUDE.md参照）。</p>
 <p>on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
@@ -120,18 +119,18 @@ destroyは削除対象を直接指すリスト（<code>destroy: self</code>は�
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SetEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_AddEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ReferenceRoot__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SpawnEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_TransferEffect__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.%23ctor(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.SetEffect%7D%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.AddEffect%7D%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ReferenceRoot%7D%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.SpawnEffect%7D%2CSystem.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.TransferEffect%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveOperation__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.%23ctor(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ActiveOperation%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L35">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L25">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ActiveEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SetEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_AddEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ReferenceRoot__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SpawnEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_TransferEffect__" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SetEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})">ActiveEffect(IReadOnlyList&lt;SetEffect&gt;, IReadOnlyList&lt;AddEffect&gt;, IReadOnlyList&lt;ReferenceRoot&gt;, IReadOnlyList&lt;SpawnEffect&gt;, IReadOnlyList&lt;TransferEffect&gt;)</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveOperation__" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveOperation})">ActiveEffect(IReadOnlyList&lt;ActiveOperation&gt;)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public ActiveEffect(IReadOnlyList&lt;SetEffect&gt; sets, IReadOnlyList&lt;AddEffect&gt; adds, IReadOnlyList&lt;ReferenceRoot&gt; destroy, IReadOnlyList&lt;SpawnEffect&gt; spawns, IReadOnlyList&lt;TransferEffect&gt; transfers)</code></pre>
+    <pre><code class="lang-csharp hljs">public ActiveEffect(IReadOnlyList&lt;ActiveOperation&gt; operations)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -144,51 +143,32 @@ destroyは削除対象を直接指すリスト（<code>destroy: self</code>は�
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SetEffect.html">SetEffect</a>&gt;</td>
-        <td><span class="parametername">sets</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.AddEffect.html">AddEffect</a>&gt;</td>
-        <td><span class="parametername">adds</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>&gt;</td>
-        <td><span class="parametername">destroy</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SpawnEffect.html">SpawnEffect</a>&gt;</td>
-        <td><span class="parametername">spawns</span></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.TransferEffect.html">TransferEffect</a>&gt;</td>
-        <td><span class="parametername">transfers</span></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ActiveOperation.html">ActiveOperation</a>&gt;</td>
+        <td><span class="parametername">operations</span></td>
         <td></td>
       </tr>
     </tbody>
   </table>
-  <h3 id="properties">Properties
+  <h3 id="fields">Fields
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_Adds.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.Adds%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_operations.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.operations%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L24">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L23">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_ActiveEffect_Adds_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Adds*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_Adds" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Adds">Adds</h4>
-  <div class="markdown level1 summary"><p>add(加減算)の一覧。宣言順。空ならaddなし。</p>
+  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_operations" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.operations">operations</h4>
+  <div class="markdown level1 summary"><p>set/add/destroy/spawn/transferを区別しない、1操作の宣言順リスト。適用順は
+リスト順（パーサがset→add→transfer→destroy→spawnの順で並べる。同一プロパティへのset後add、
+destroyで空いた位置へのspawn（same_slot）という依存関係のため）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;AddEffect&gt; Adds { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly IReadOnlyList&lt;ActiveOperation&gt; operations</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
     <thead>
       <tr>
@@ -198,131 +178,58 @@ destroyは削除対象を直接指すリスト（<code>destroy: self</code>は�
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.AddEffect.html">AddEffect</a>&gt;</td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ActiveOperation.html">ActiveOperation</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
   </table>
+  <h3 id="methods">Methods
+</h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_Destroy.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.Destroy%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_ApplyTo_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L27">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L32">View Source</a>
   </span>
-  <a id="UnmappedIsland_Domain_Defs_ActiveEffect_Destroy_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Destroy*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_Destroy" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Destroy">Destroy</h4>
-  <div class="markdown level1 summary"><p>削除する対象。空なら destroy なし。</p>
+  <a id="UnmappedIsland_Domain_Defs_ActiveEffect_ApplyTo_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_ApplyTo_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.ApplyTo(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ApplyTo(WorldObject, WorldSession, WorldObject, WorldObject)</h4>
+  <div class="markdown level1 summary"><p>この命令を、owner（self）として宣言順に適用する。same_slot spawnのための位置捕捉を
+destroyと共有するための文脈(ActiveApplication)を1回分だけ作り、各操作へ渡す。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;ReferenceRoot&gt; Destroy { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public void ApplyTo(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged)</code></pre>
   </div>
-  <h5 class="propertyValue">Property Value</h5>
+  <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
     <thead>
       <tr>
         <th>Type</th>
+        <th>Name</th>
         <th>Description</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>&gt;</td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">owner</span></td>
         <td></td>
       </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_Sets.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.Sets%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L21">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_ActiveEffect_Sets_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Sets*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_Sets" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Sets">Sets</h4>
-  <div class="markdown level1 summary"><p>set(絶対値代入)の一覧。宣言順。空ならsetなし。</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;SetEffect&gt; Sets { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
       <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SetEffect.html">SetEffect</a>&gt;</td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
         <td></td>
       </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_Spawns.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.Spawns%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L30">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_ActiveEffect_Spawns_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Spawns*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_Spawns" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Spawns">Spawns</h4>
-  <div class="markdown level1 summary"><p>spawn。空なら spawn なし。常にselfが実行する。</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;SpawnEffect&gt; Spawns { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
       <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SpawnEffect.html">SpawnEffect</a>&gt;</td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">actor</span></td>
         <td></td>
       </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_Transfers.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.Transfers%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L33">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Defs_ActiveEffect_Transfers_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Transfers*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_Transfers" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Transfers">Transfers</h4>
-  <div class="markdown level1 summary"><p>transfer（9.5節）。空なら transfer なし。</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;TransferEffect&gt; Transfers { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
       <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.TransferEffect.html">TransferEffect</a>&gt;</td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">dragged</span></td>
         <td></td>
       </tr>
     </tbody>
