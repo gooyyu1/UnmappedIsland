@@ -7,15 +7,15 @@ namespace UnmappedIsland.Domain.Defs
     /// <summary>pick候補のweight（10.2節）。リテラル定数か、既存propsへのパス参照のいずれか。</summary>
     public readonly struct WeightSpec
     {
-        public readonly bool IsPathRef;
-        public readonly double Literal;
-        public readonly PropertyPath Path;
+        private readonly bool isPathRef;
+        private readonly double literal;
+        private readonly PropertyPath path;
 
         private WeightSpec(bool isPathRef, double literal, PropertyPath path)
         {
-            IsPathRef = isPathRef;
-            Literal = literal;
-            Path = path;
+            this.isPathRef = isPathRef;
+            this.literal = literal;
+            this.path = path;
         }
 
         public static WeightSpec FromLiteral(double literal) => new WeightSpec(false, literal, default);
@@ -23,12 +23,12 @@ namespace UnmappedIsland.Domain.Defs
 
         internal double Resolve(WorldObject self, WorldObject actor, WorldObject dragged)
         {
-            if (!IsPathRef) return Literal;
+            if (!isPathRef) return literal;
 
-            WorldObject target = Path.Root == ReferenceRoot.Ancestor
-                ? self.FindAncestorWithProperty(Path.PropertyGlobalId)
-                : ReferenceRootResolver.Resolve(Path.Root, self, actor, dragged);
-            return target != null ? target.GetEffectiveValue(Path.PropertyGlobalId) : 0;
+            WorldObject target = path.Root == ReferenceRoot.Ancestor
+                ? self.FindAncestorWithProperty(path.PropertyGlobalId)
+                : ReferenceRootResolver.Resolve(path.Root, self, actor, dragged);
+            return target != null ? target.GetEffectiveValue(path.PropertyGlobalId) : 0;
         }
     }
 

@@ -17,17 +17,14 @@ namespace UnmappedIsland.Domain.Defs
 
         private readonly int[] globalToLocal;
 
-        public int LocalCount { get; }
-
         /// <param name="globalCount">現時点のグローバルID空間の大きさ（NameRegistry.Count）。</param>
         /// <param name="globalIdsOrderedByLocalIndex">ローカル配列の並び順そのままに並べたグローバルID列。</param>
         public LocalIndexMap(int globalCount, IReadOnlyList<int> globalIdsOrderedByLocalIndex)
         {
-            LocalCount = globalIdsOrderedByLocalIndex.Count;
             globalToLocal = new int[globalCount];
             Array.Fill(globalToLocal, Missing);
 
-            for (int local = 0; local < LocalCount; local++)
+            for (int local = 0; local < globalIdsOrderedByLocalIndex.Count; local++)
             {
                 int global = globalIdsOrderedByLocalIndex[local];
                 globalToLocal[global] = local;
@@ -41,6 +38,6 @@ namespace UnmappedIsland.Domain.Defs
             return globalToLocal[globalId];
         }
 
-        public static readonly LocalIndexMap Empty = new LocalIndexMap(0, Array.Empty<int>());
+        internal static readonly LocalIndexMap Empty = new LocalIndexMap(0, Array.Empty<int>());
     }
 }

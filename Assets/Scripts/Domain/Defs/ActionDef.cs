@@ -16,7 +16,7 @@ namespace UnmappedIsland.Domain.Defs
     public sealed class ActionDef
     {
         public string Name { get; }
-        public ShowMenuMode ShowMenu { get; }
+        internal ShowMenuMode ShowMenu { get; }
 
         /// <summary>nullなら常に真（conditions省略）。</summary>
         public ConditionNode Conditions { get; }

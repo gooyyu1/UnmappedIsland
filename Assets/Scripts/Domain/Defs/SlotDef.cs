@@ -24,14 +24,14 @@ namespace UnmappedIsland.Domain.Defs
     public sealed class SlotAcceptRule
     {
         public SlotAcceptTargetKind TargetKind { get; }
-        public int With { get; }
+        private readonly int with;
         public int Max { get; }
         public bool Consume { get; }
 
         public SlotAcceptRule(SlotAcceptTargetKind targetKind, int with, int max, bool consume)
         {
             TargetKind = targetKind;
-            With = with;
+            this.with = with;
             Max = max;
             Consume = consume;
         }
@@ -39,8 +39,8 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>TargetKind.Tagならcandidateがそのタグを持っていれば真、TargetKind.Objectならcandidate
         /// がまさにそのobject_defそのものであれば真（CombinationDef.Matchesとはタグ側のみ同じ規約）。</summary>
         public bool Matches(ObjectDef candidateDef) => TargetKind == SlotAcceptTargetKind.Tag
-            ? candidateDef.Tags.Contains(With)
-            : candidateDef.GlobalId == With;
+            ? candidateDef.Tags.Contains(with)
+            : candidateDef.GlobalId == with;
     }
 
     /// <summary>

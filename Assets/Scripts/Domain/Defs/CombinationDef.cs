@@ -11,10 +11,9 @@ namespace UnmappedIsland.Domain.Defs
     public sealed class CombinationDef
     {
         public string Name { get; }
+        private readonly int with;
 
         /// <summary>マッチング対象のタグ（Matches参照）。</summary>
-        public int With { get; }
-
         /// <summary>nullなら常に真（conditions省略）。</summary>
         public ConditionNode Conditions { get; }
 
@@ -30,14 +29,14 @@ namespace UnmappedIsland.Domain.Defs
             IReadOnlyList<PickCandidateDef> pick)
         {
             Name = name;
-            With = with;
+            this.with = with;
             Conditions = conditions;
             Active = active;
             Pick = pick;
         }
 
         /// <summary>draggedDefがこのcombinationのWithタグを持っていれば真（12.1節）。</summary>
-        public bool Matches(ObjectDef draggedDef) => draggedDef.Tags.Contains(With);
+        public bool Matches(ObjectDef draggedDef) => draggedDef.Tags.Contains(with);
 
         internal bool TryExecute(WorldObject self, WorldObject dragged, WorldObject actor, WorldSession session)
         {
