@@ -172,16 +172,11 @@ namespace UnmappedIsland.Loader
         /// </summary>
         private static ActiveEffect BuildDefaultOverflowEffect(PropertyRange range, int propertyGlobalId, bool isMax)
         {
-            var sets = new List<SetEffect>
+            var operations = new List<ActiveOperation>
             {
                 new SetEffect(ReferenceRoot.Self, propertyGlobalId, isMax ? range.Max : range.Min),
             };
-            return new ActiveEffect(
-                sets,
-                System.Array.Empty<AddEffect>(),
-                System.Array.Empty<ReferenceRoot>(),
-                System.Array.Empty<SpawnEffect>(),
-                System.Array.Empty<TransferEffect>());
+            return new ActiveEffect(operations);
         }
     }
 }

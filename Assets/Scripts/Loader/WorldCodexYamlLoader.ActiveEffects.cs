@@ -31,29 +31,31 @@ namespace UnmappedIsland.Loader
             string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly,
             IReadOnlyCollection<string> reservedKeys = null)
         {
+            // 1操作(ActiveOperation)の宣言順フラットリストを1本組み立てる。適用順はset→add→transfer→
+            // destroy→spawn（同一プロパティへのset後add、destroyで空いた位置へのspawn(same_slot)という
+            // 依存関係のため。ActiveEffect.ApplyToはこのリスト順にそのまま適用する）。
+            var operations = new List<ActiveOperation>();
+
             YamlMappingNode setMap = bodyNode.TryGetMapping("set", context);
-            var sets = setMap != null
-                ? ParseSets($"{context}.set", setMap, allowDragged, selfOnly)
-                : new List<SetEffect>();
+            if (setMap != null)
+                operations.AddRange(ParseSets($"{context}.set", setMap, allowDragged, selfOnly));
 
             YamlMappingNode addMap = bodyNode.TryGetMapping("add", context);
-            var adds = addMap != null
-                ? ParseAdds($"{context}.add", addMap, allowDragged, selfOnly)
-                : new List<AddEffect>();
+            if (addMap != null)
+                operations.AddRange(ParseAdds($"{context}.add", addMap, allowDragged, selfOnly));
 
-            var destroy = new List<ReferenceRoot>();
-            YamlNode destroyNode = bodyNode.TryGet("destroy");
-            if (destroyNode != null)
-                destroy.AddRange(ParseDestroyTargets($"{context}.destroy", destroyNode, allowDragged, selfOnly));
-
-            var spawns = new List<SpawnEffect>();
-            YamlNode spawnNode = bodyNode.TryGet("spawn");
-            if (spawnNode != null) spawns.AddRange(ParseSpawns($"{context}.spawn", spawnNode));
-
-            var transfers = new List<TransferEffect>();
             YamlNode transferNode = bodyNode.TryGet("transfer");
             if (transferNode != null)
-                transfers.AddRange(ParseTransfers($"{context}.transfer", transferNode, allowDragged, selfOnly));
+                operations.AddRange(ParseTransfers($"{context}.transfer", transferNode, allowDragged, selfOnly));
+
+            YamlNode destroyNode = bodyNode.TryGet("destroy");
+            if (destroyNode != null)
+                foreach (ReferenceRoot target in ParseDestroyTargets($"{context}.destroy", destroyNode, allowDragged, selfOnly))
+                    operations.Add(new DestroyEffect(target));
+
+            YamlNode spawnNode = bodyNode.TryGet("spawn");
+            if (spawnNode != null)
+                operations.AddRange(ParseSpawns($"{context}.spawn", spawnNode));
 
             var knownKeys = new HashSet<string>(ActiveVerbKeys);
             if (reservedKeys != null) knownKeys.UnionWith(reservedKeys);
@@ -63,7 +65,7 @@ namespace UnmappedIsland.Loader
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-            return new ActiveEffect(sets, adds, destroy, spawns, transfers);
+            return new ActiveEffect(operations);
         }
 
         /// <summary>
