@@ -45,10 +45,10 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>WorldObject構築時に、1つのプロパティ用の新しいインスタンスを作る（Incomingは空で始まる）。
         /// defは、このプロパティが実際に属することになるPropertyDef（range・on_overflow等）、ownerはそれを
         /// 保持するWorldObjectを紐付ける。</summary>
-        internal static PropertyValue Create(int number, PropertyDef def, WorldObject owner) => new PropertyValue(number, def, owner);
+        public static PropertyValue Create(int number, PropertyDef def, WorldObject owner) => new PropertyValue(number, def, owner);
 
         /// <summary>SetProperty用。登録済みのIncomingはそのまま、値の中身だけを差し替える。</summary>
-        internal void CopyValueFrom(int number)
+        public void CopyValueFrom(int number)
         {
             Number = number;
         }
@@ -66,7 +66,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// ちょうど境界に着地した後にも自分自身を再度setし直すことで、Add→def.CheckRangeEvents→
         /// ApplyActiveEffect→SetNumber→Addという呼び出しが無限に連鎖するのを防ぐガードを兼ねる。
         /// </summary>
-        internal void Add(int delta, WorldSession session)
+        public void Add(int delta, WorldSession session)
         {
             if (delta == 0) return;
 
@@ -77,17 +77,17 @@ namespace UnmappedIsland.Domain.Runtime
 
         /// <summary>絶対値代入（set）。実体はAddへの委譲（差分=value-現在値を加算する）ため、range判定は
         /// Add側に一本化される。</summary>
-        internal void SetNumber(int value, WorldSession session)
+        public void SetNumber(int value, WorldSession session)
         {
             Add(value - Number, session);
         }
 
-        internal void RegisterPassiveEffect(RegisteredPassiveEffect effect) => incoming.Add(effect);
+        public void RegisterPassiveEffect(RegisteredPassiveEffect effect) => incoming.Add(effect);
 
-        internal void UnregisterPassiveEffectsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
+        public void UnregisterPassiveEffectsFrom(WorldObject declarer) => incoming.RemoveAll(c => c.Declarer == declarer);
 
         /// <summary>現在登録されている全寄与（modify/accumulate両方）。UIで「何が影響しているか」を表示する用途。</summary>
-        internal IReadOnlyList<RegisteredPassiveEffect> Incoming => incoming;
+        public IReadOnlyList<RegisteredPassiveEffect> Incoming => incoming;
 
         /// <summary>
         /// modify（Kind.Modify）とinherit（自分の直接の親から遡った祖先からの継承）を加味した実効値
@@ -99,7 +99,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// （inherit自体は木構造が循環しない前提のため無限再帰にはならないが、他のmodifyのゲート経由の
         /// 循環参照は依然としてこのガードが必要）。
         /// </summary>
-        internal int GetEffectiveValue()
+        public int GetEffectiveValue()
         {
             if (isComputingEffectiveValue)
                 throw new InvalidOperationException(
@@ -136,7 +136,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// PropertyDefへ委譲する（def.CheckRangeEvents参照）。ゲームループから1tickにつき1回、WorldObject.Tick
         /// 経由で全プロパティに対して呼ばれる想定。
         /// </summary>
-        internal void Tick(WorldSession session)
+        public void Tick(WorldSession session)
         {
             foreach (var c in incoming)
             {
@@ -155,7 +155,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// 自身に一切accumulate/set/addが無い場合、常に初期値のまま判定されてしまう）。循環参照の検出は
         /// GetEffectiveValue自身が行う。
         /// </summary>
-        internal bool IsInStage(string stageName)
+        public bool IsInStage(string stageName)
         {
             PropertyStage stage = def.ResolveStage(GetEffectiveValue());
             return stage != null && stage.Name == stageName;
@@ -166,13 +166,13 @@ namespace UnmappedIsland.Domain.Runtime
         /// 下回った分は出せないとみなす（on_shortfallの既定クランプにより実運用でNumberがMinを下回ることは
         /// 無いが、念のためMinを下限とする）。rangeが無ければ現在値そのまま。
         /// </summary>
-        internal int AvailableToTransferOut() => def.Range.HasValue ? Math.Max(0, Number - def.Range.Value.Min) : Number;
+        public int AvailableToTransferOut() => def.Range.HasValue ? Math.Max(0, Number - def.Range.Value.Min) : Number;
 
         /// <summary>
         /// transfer（9.5節）でallow_overflow: falseの場合に、このプロパティへ実際に受け取れる量の上限。
         /// rangeが無ければ上限なし。
         /// </summary>
-        internal int RemainingTransferCapacity() => def.Range.HasValue ? Math.Max(0, def.Range.Value.Max - Number) : int.MaxValue;
+        public int RemainingTransferCapacity() => def.Range.HasValue ? Math.Max(0, def.Range.Value.Max - Number) : int.MaxValue;
 
         public override string ToString() => Number.ToString();
     }

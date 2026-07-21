@@ -86,7 +86,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>interaction/stack判定の代表として採用する、represented_by先の最初の子を返す。
         /// represented_by未指定・対象スロット不存在・空スロットなら自分自身を返す。代表オブジェクトが
         /// さらにrepresented_byを持つ場合は、その代表へ再帰的に委譲する。</summary>
-        internal WorldObject ResolveInteractionTarget()
+        public WorldObject ResolveInteractionTarget()
         {
             if (!Def.RepresentedBySlotGlobalId.HasValue) return this;
             if (!TryGetSlot(Def.RepresentedBySlotGlobalId.Value, out Slot slot)) return this;
@@ -106,14 +106,14 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>stack判定用の代表ObjectDef列を、現在のrepresented_byチェーンからスナップショットする。
         /// 自分自身のObjectDefは呼び出し側（ObjectStack.Def）が既に持っているため含めず、代表の代表…だけを
         /// 深さ順に並べる。</summary>
-        internal IReadOnlyList<int> CaptureRepresentationChain()
+        public IReadOnlyList<int> CaptureRepresentationChain()
         {
             var chain = new List<int>();
             AppendRepresentationChain(chain);
             return chain;
         }
 
-        internal bool HasRepresentationChain(IReadOnlyList<int> expected)
+        public bool HasRepresentationChain(IReadOnlyList<int> expected)
         {
             var actual = CaptureRepresentationChain();
             if (actual.Count != expected.Count) return false;
@@ -173,9 +173,9 @@ namespace UnmappedIsland.Domain.Runtime
             return true;
         }
 
-        internal Slot GetSlotByLocalId(int localId) => slots[localId];
+        public Slot GetSlotByLocalId(int localId) => slots[localId];
 
-        internal void SetParent(WorldObject parent, int parentSlotLocalId)
+        public void SetParent(WorldObject parent, int parentSlotLocalId)
         {
             Parent = parent;
             ParentSlotLocalId = parentSlotLocalId;
@@ -200,7 +200,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// 位置（元居たObjectStackの外側position・その中でのメンバー位置）へそのまま挿入する。破棄された
         /// オブジェクトの位置を、新しく生成されたオブジェクトへ引き継がせるために使う（Place参照）。
         /// </summary>
-        internal bool InsertAtIndex(WorldObject newParent, int slotGlobalId, CapturedPosition position, WellKnownProperties wellKnown, out string error, bool force = false) =>
+        public bool InsertAtIndex(WorldObject newParent, int slotGlobalId, CapturedPosition position, WellKnownProperties wellKnown, out string error, bool force = false) =>
             AttachToSlot(newParent, slotGlobalId, position, wellKnown, out error, force);
 
         private bool AttachToSlot(WorldObject newParent, int slotGlobalId, CapturedPosition? capturedPosition, WellKnownProperties wellKnown, out string error, bool force)
@@ -241,7 +241,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>same_slot（非FixedPositions）専用。CaptureSameSlotAnchorが捕捉した、元居たObjectStackの
         /// 外側position(StackIndex)・その中でのメンバー位置(MemberIndex)・そのObjectStackが自分の除去で
         /// 丸ごと消えるか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</summary>
-        internal readonly struct CapturedPosition
+        public readonly struct CapturedPosition
         {
             public readonly int StackIndex;
             public readonly int MemberIndex;
@@ -354,7 +354,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// 見つからなければnull。すべてのオブジェクトは必ずworldを根とするツリーに属し、循環はしないため、
         /// このループは木の深さに収まる（GameElementDefinition.md 7.1節）。
         /// </summary>
-        internal WorldObject FindAncestorWithProperty(int propertyGlobalId)
+        public WorldObject FindAncestorWithProperty(int propertyGlobalId)
         {
             WorldObject current = Parent;
             while (current != null)
@@ -415,17 +415,17 @@ namespace UnmappedIsland.Domain.Runtime
         /// ゲート専用、6.4節・8節）。プロパティ解決だけがこのメソッドの責務で、該当stageの判定自体は
         /// TryGetPropertyで得たPropertyValue自身に委ねる（自分のことは自分でする、CLAUDE.md参照）。
         /// </summary>
-        internal bool IsInStage(int propertyGlobalId, string stageName)
+        public bool IsInStage(int propertyGlobalId, string stageName)
         {
             return TryGetProperty(propertyGlobalId, out var property) && property.IsInStage(stageName);
         }
 
-        internal void RegisterPassiveEffect(int localPropertyId, RegisteredPassiveEffect effect)
+        public void RegisterPassiveEffect(int localPropertyId, RegisteredPassiveEffect effect)
         {
             properties[localPropertyId].RegisterPassiveEffect(effect);
         }
 
-        internal void UnregisterPassiveEffectsFrom(WorldObject declarer, int localPropertyId)
+        public void UnregisterPassiveEffectsFrom(WorldObject declarer, int localPropertyId)
         {
             properties[localPropertyId].UnregisterPassiveEffectsFrom(declarer);
         }
@@ -480,7 +480,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// （このインスタンス自身）が実行するものとみなすため、同じ場所への配置(SameSlot)はself自身の
         /// destroy有無だけを見ればよい。
         /// </summary>
-        internal void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
+        public void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
         {
             foreach (ReferenceRoot key in OrderedTargets)
             {

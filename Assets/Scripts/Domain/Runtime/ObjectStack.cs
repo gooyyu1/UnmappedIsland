@@ -24,9 +24,9 @@ namespace UnmappedIsland.Domain.Runtime
         public IReadOnlyList<WorldObject> Members => members;
 
         /// <summary>FixedPositionsスロットでのみ使う、このスタック自身の固定番号。それ以外は常にnull。</summary>
-        public int? GridIndex { get; internal set; }
+        public int? GridIndex { get; set; }
 
-        internal ObjectStack(WorldObject seed)
+        public ObjectStack(WorldObject seed)
         {
             Def = seed.Def;
             RepresentationChain = seed.CaptureRepresentationChain();
@@ -41,21 +41,21 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>candidateがこのObjectStackへ合流できるか（ObjectDefが同じ、かつ代表ObjectDef列も同じ）。</summary>
-        internal bool Matches(WorldObject candidate) =>
+        public bool Matches(WorldObject candidate) =>
             candidate.Def.GlobalId == Def.GlobalId && candidate.HasRepresentationChain(RepresentationChain);
 
         /// <summary>ObjectDef.StackOrderに従って、自分のMembers内の正しい位置へobjを挿入する
         /// （未定義なら常に末尾＝挿入順、Slot.IndexWithinRunの元のロジックをそのまま踏襲）。</summary>
-        internal void Insert(WorldObject obj) => members.Insert(ComputeInsertionIndex(obj), obj);
+        public void Insert(WorldObject obj) => members.Insert(ComputeInsertionIndex(obj), obj);
 
-        internal void Remove(WorldObject obj) => members.Remove(obj);
+        public void Remove(WorldObject obj) => members.Remove(obj);
 
-        internal int IndexOf(WorldObject obj) => members.IndexOf(obj);
+        public int IndexOf(WorldObject obj) => members.IndexOf(obj);
 
         /// <summary>atIndex以降のMembersを切り出し、新しいObjectStackとして返す（自分自身はatIndexより
         /// 前だけを残す）。same_slotで型の異なるオブジェクトがスタックの途中へ割り込む際、このスタックを
         /// 前後2つに分割するために使う（Slot.InsertAtCapturedPosition参照）。</summary>
-        internal ObjectStack Split(int atIndex)
+        public ObjectStack Split(int atIndex)
         {
             var moved = members.GetRange(atIndex, members.Count - atIndex);
             members.RemoveRange(atIndex, members.Count - atIndex);

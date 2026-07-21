@@ -7,8 +7,8 @@ namespace UnmappedIsland.Loader
     public sealed partial class WorldCodexYamlLoader
     {
         /// <summary>1つのslots.'slotName'エントリを解釈し、SlotDefを組み立てる。RawObjectDef.Resolveから、
-        /// trait合成済みのノードに対して呼ばれるため internal。</summary>
-        internal SlotDef ParseSlot(string objectDefName, string slotName, YamlMappingNode node)
+        /// trait合成済みのノードに対して呼ばれる。</summary>
+        public SlotDef ParseSlot(string objectDefName, string slotName, YamlMappingNode node)
         {
             string context = $"'{objectDefName}'.slots.'{slotName}'";
             int slotGlobalId = SlotNames.Intern(slotName);

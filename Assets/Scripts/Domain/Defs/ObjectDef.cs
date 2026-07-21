@@ -69,10 +69,10 @@ namespace UnmappedIsland.Domain.Defs
         }
 
         /// <summary>全PropertyDefを列挙する（WorldObject内部利用専用）。</summary>
-        internal IEnumerable<PropertyDef> EnumeratePropertyDefs() => propertyDefs;
+        public IEnumerable<PropertyDef> EnumeratePropertyDefs() => propertyDefs;
 
         /// <summary>全SlotDefを列挙する（WorldObject内部利用専用）。</summary>
-        internal IEnumerable<SlotDef> EnumerateSlotDefs() => slotDefs;
+        public IEnumerable<SlotDef> EnumerateSlotDefs() => slotDefs;
 
         public ObjectDef(
             int globalId,
@@ -104,14 +104,14 @@ namespace UnmappedIsland.Domain.Defs
             RepresentedBySlotGlobalId = representedBySlotGlobalId;
         }
 
-        internal bool TryExecuteAction(WorldObject self, WorldObject actor, string actionName, WorldSession session)
+        public bool TryExecuteAction(WorldObject self, WorldObject actor, string actionName, WorldSession session)
         {
             self = self.ResolveInteractionTarget();
             ActionDef action = self.Def.Actions.FirstOrDefault(a => a.Name == actionName);
             return action != null && action.TryExecute(self, actor, session);
         }
 
-        internal bool TryExecuteCombination(
+        public bool TryExecuteCombination(
             WorldObject self, WorldObject dragged, WorldObject actor, string combinationName, WorldSession session)
         {
             self = self.ResolveInteractionTarget();
@@ -120,7 +120,7 @@ namespace UnmappedIsland.Domain.Defs
             return combination != null && combination.TryExecute(self, dragged, actor, session);
         }
 
-        internal IEnumerable<CombinationDef> FindMatchingCombinations(WorldObject self, WorldObject dragged)
+        public IEnumerable<CombinationDef> FindMatchingCombinations(WorldObject self, WorldObject dragged)
         {
             self = self.ResolveInteractionTarget();
             dragged = dragged.ResolveInteractionTarget();

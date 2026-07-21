@@ -8,7 +8,7 @@ namespace UnmappedIsland.Loader
     /// YamlDotNetのRepresentationModel（YamlMappingNode等）に対する、フィールド取り出し用の
     /// 薄いヘルパー。エラーメッセージにcontext（ファイル名・object_def名など）を含められるようにする。
     /// </summary>
-    internal static class YamlNodeExtensions
+    public static class YamlNodeExtensions
     {
         public static YamlNode TryGet(this YamlMappingNode map, string key)
         {

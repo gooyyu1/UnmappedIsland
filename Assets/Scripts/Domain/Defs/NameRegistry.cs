@@ -37,6 +37,6 @@ namespace UnmappedIsland.Domain.Defs
             return id;
         }
 
-        internal string GetName(int id) => idToName[id];
+        public string GetName(int id) => idToName[id];
     }
 }

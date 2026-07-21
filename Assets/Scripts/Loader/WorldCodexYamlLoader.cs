@@ -59,11 +59,11 @@ namespace UnmappedIsland.Loader
         /// 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。他のpartialファイルの各パース
         /// メソッドが、このインスタンス自身から必要な名前空間を読む。
         /// </summary>
-        internal NameRegistry ObjectNames { get; private set; } = new NameRegistry();
-        internal NameRegistry PropertyNames { get; private set; } = new NameRegistry();
-        internal NameRegistry SlotNames { get; private set; } = new NameRegistry();
-        internal NameRegistry TagNames { get; private set; } = new NameRegistry();
-        internal NameRegistry SymbolNames { get; private set; } = new NameRegistry();
+        public NameRegistry ObjectNames { get; private set; } = new NameRegistry();
+        public NameRegistry PropertyNames { get; private set; } = new NameRegistry();
+        public NameRegistry SlotNames { get; private set; } = new NameRegistry();
+        public NameRegistry TagNames { get; private set; } = new NameRegistry();
+        public NameRegistry SymbolNames { get; private set; } = new NameRegistry();
 
         /// <summary>
         /// 1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込み、

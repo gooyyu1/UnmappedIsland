@@ -37,7 +37,7 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>draggedDefがこのcombinationのWithタグを持っていれば真（12.1節）。</summary>
         public bool Matches(ObjectDef draggedDef) => draggedDef.Tags.Contains(with);
 
-        internal bool TryExecute(WorldObject self, WorldObject dragged, WorldObject actor, WorldSession session)
+        public bool TryExecute(WorldObject self, WorldObject dragged, WorldObject actor, WorldSession session)
         {
             if (!Matches(dragged.Def)) return false;
             if (conditions != null && !conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged)))

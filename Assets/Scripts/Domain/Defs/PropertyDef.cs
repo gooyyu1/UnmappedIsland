@@ -192,7 +192,7 @@ namespace UnmappedIsland.Domain.Defs
         /// 再度呼ばれ、1回のTick()・AddNumber呼び出しの中で複数span分の溢れ・繰り上げ先自身のさらなる
         /// 溢れ（分→時→日の連鎖）が宣言順に関わらず連鎖的に解決される。
         /// </summary>
-        internal void CheckRangeEvents(int number, WorldObject owner, WorldSession session)
+        public void CheckRangeEvents(int number, WorldObject owner, WorldSession session)
         {
             if (!Range.HasValue) return;
             PropertyRange range = Range.Value;

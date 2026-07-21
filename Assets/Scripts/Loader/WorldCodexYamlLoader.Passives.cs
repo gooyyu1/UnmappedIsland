@@ -22,9 +22,9 @@ namespace UnmappedIsland.Loader
         /// self対象・parent対象は常に同じSlotBearerを指すため、対象ごとに持たせても意味が重複するだけ。
         /// Runtime.RegisteredPassiveEffect参照）。
         ///
-        /// RawObjectDef.Resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれるため internal。
+        /// RawObjectDef.Resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。
         /// </summary>
-        internal void ParsePassive(
+        public void ParsePassive(
             List<PassiveEffect> output, string objectDefName, YamlMappingNode passiveMap,
             string forcedStageProperty, string forcedStageName)
         {

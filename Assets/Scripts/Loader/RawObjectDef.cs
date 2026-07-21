@@ -16,7 +16,7 @@ namespace UnmappedIsland.Loader
     /// WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slot名等は、trait側からも
     /// 追加されうる・shallow-overrideで中身が変わりうるため、Resolveの中で初めて確定する。
     /// </summary>
-    internal sealed class RawObjectDef
+    public sealed class RawObjectDef
     {
         public string Name;
 
@@ -58,7 +58,7 @@ namespace UnmappedIsland.Loader
         ///   ちょうど1つが指定している必要がある（複数のtraitが指定していればエラー）。
         /// 未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）: recipes/covers/layer。
         /// </summary>
-        internal ObjectDef Resolve(IReadOnlyDictionary<string, RawTrait> traitsByName, WorldCodexYamlLoader loader)
+        public ObjectDef Resolve(IReadOnlyDictionary<string, RawTrait> traitsByName, WorldCodexYamlLoader loader)
         {
             var traitProps = new List<(string TraitName, YamlMappingNode Map)>();
             var traitSlots = new List<(string TraitName, YamlMappingNode Map)>();

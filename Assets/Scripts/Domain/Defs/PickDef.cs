@@ -21,7 +21,7 @@ namespace UnmappedIsland.Domain.Defs
         public static WeightSpec FromLiteral(double literal) => new WeightSpec(false, literal, default);
         public static WeightSpec FromPath(PropertyPath path) => new WeightSpec(true, 0, path);
 
-        internal double Resolve(WorldObject self, WorldObject actor, WorldObject dragged)
+        public double Resolve(WorldObject self, WorldObject actor, WorldObject dragged)
         {
             if (!isPathRef) return literal;
 
@@ -54,7 +54,7 @@ namespace UnmappedIsland.Domain.Defs
             this.pick = pick;
         }
 
-        internal static ActiveEffect ResolveEffect(
+        public static ActiveEffect ResolveEffect(
             ActiveEffect active,
             IReadOnlyList<PickCandidateDef> pick,
             WorldObject self, WorldObject actor, WorldObject dragged,

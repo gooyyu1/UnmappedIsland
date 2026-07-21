@@ -14,7 +14,7 @@ namespace UnmappedIsland.Loader
     /// 新しいマージが起こる）。この点がRawObjectDef（常にちょうど1回だけ解決される）と本質的に異なり、
     /// RawTraitがRawObjectDefとは別に存在する理由そのものになっている。
     /// </summary>
-    internal sealed class RawTrait
+    public sealed class RawTrait
     {
         public string Name;
 

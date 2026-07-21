@@ -79,8 +79,8 @@ namespace UnmappedIsland.Loader
         private static readonly string[] CombinationReservedKeys = { "with", "conditions", "pick" };
 
         /// <summary>actions_map（11節）を読む。dragged対象はメニュー型操作では意味を持たないため不可。
-        /// RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれるため internal。</summary>
-        internal List<ActionDef> ParseActions(string objectDefName, YamlMappingNode actionsNode)
+        /// RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれる。</summary>
+        public List<ActionDef> ParseActions(string objectDefName, YamlMappingNode actionsNode)
         {
             var result = new List<ActionDef>();
             if (actionsNode == null) return result;
@@ -111,8 +111,8 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>combinations_map（12節）を読む。dragged対象を使える。RawObjectDef.Resolveから、
-        /// trait合成済みのノードに対して呼ばれるため internal。</summary>
-        internal List<CombinationDef> ParseCombinations(string objectDefName, YamlMappingNode combinationsNode)
+        /// trait合成済みのノードに対して呼ばれる。</summary>
+        public List<CombinationDef> ParseCombinations(string objectDefName, YamlMappingNode combinationsNode)
         {
             var result = new List<CombinationDef>();
             if (combinationsNode == null) return result;

@@ -40,7 +40,7 @@ namespace UnmappedIsland.Domain.Defs
             this.pick = pick;
         }
 
-        internal bool TryExecute(WorldObject self, WorldObject actor, WorldSession session)
+        public bool TryExecute(WorldObject self, WorldObject actor, WorldSession session)
         {
             if (conditions != null && !conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged: null)))
                 return false;

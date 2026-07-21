@@ -5,9 +5,9 @@ using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
-    internal static class ReferenceRootResolver
+    public static class ReferenceRootResolver
     {
-        internal static WorldObject Resolve(ReferenceRoot root, WorldObject self, WorldObject actor, WorldObject dragged)
+        public static WorldObject Resolve(ReferenceRoot root, WorldObject self, WorldObject actor, WorldObject dragged)
         {
             switch (root)
             {
@@ -187,7 +187,7 @@ namespace UnmappedIsland.Domain.Defs
         public static ConditionNode Not(ConditionNode inner) =>
             new ConditionNode(ConditionNodeKind.Not, default, default, default, null, null, default, default, new[] { inner });
 
-        internal bool Evaluate(Func<ReferenceRoot, WorldObject> resolveRoot)
+        public bool Evaluate(Func<ReferenceRoot, WorldObject> resolveRoot)
         {
             switch (kind)
             {
