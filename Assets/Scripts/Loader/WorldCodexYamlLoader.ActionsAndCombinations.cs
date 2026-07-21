@@ -66,10 +66,25 @@ namespace UnmappedIsland.Loader
                     ? ParsePickList(candidateContext, nestedPick, allowDragged)
                     : null;
 
-                result.Add(new PickCandidateDef(weight, active, pick));
+                result.Add(new PickCandidateDef(weight, new EffectOutcome(active, pick)));
             }
 
             return result;
+        }
+
+        /// <summary>set/add/destroy/spawn（active）とpickは排他。両方あればエラー、どちらも無ければ
+        /// 「条件成立時に何も起きない」EffectOutcomeを返す。action/combination共通の解釈（pick候補は必ず
+        /// いずれかを要求するため、この共通ヘルパーは使わずParsePickList側で個別に検証する）。</summary>
+        private EffectOutcome ParseEffectOutcome(string context, YamlMappingNode map, bool allowDragged, string[] reservedKeys)
+        {
+            bool hasActive = HasActiveContent(map);
+            YamlSequenceNode pickList = map.TryGetSequence("pick", context);
+            if (hasActive && pickList != null)
+                throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
+
+            ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged, selfOnly: false, reservedKeys) : null;
+            List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged) : null;
+            return new EffectOutcome(active, pick);
         }
 
         /// <summary>actionエントリが持つ、showMenu/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
@@ -95,16 +110,9 @@ namespace UnmappedIsland.Loader
                     throw new YamlLoadException($"{context}: showMenuは現時点で'always'のみ対応しています（値: '{showMenuRaw}'）。");
 
                 ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots);
+                EffectOutcome outcome = ParseEffectOutcome(context, map, allowDragged: false, ActionReservedKeys);
 
-                bool hasActive = HasActiveContent(map);
-                YamlSequenceNode pickList = map.TryGetSequence("pick", context);
-                if (hasActive && pickList != null)
-                    throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
-
-                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: false, selfOnly: false, ActionReservedKeys) : null;
-                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: false) : null;
-
-                result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, active, pick));
+                result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, outcome));
             }
 
             return result;
@@ -124,16 +132,9 @@ namespace UnmappedIsland.Loader
 
                 int with = TagNames.Intern(map.RequireScalar("with", context));
                 ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), CombinationConditionRoots);
+                EffectOutcome outcome = ParseEffectOutcome(context, map, allowDragged: true, CombinationReservedKeys);
 
-                bool hasActive = HasActiveContent(map);
-                YamlSequenceNode pickList = map.TryGetSequence("pick", context);
-                if (hasActive && pickList != null)
-                    throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
-
-                ActiveEffect active = hasActive ? ParseActiveEffectBody(context, map, allowDragged: true, selfOnly: false, CombinationReservedKeys) : null;
-                List<PickCandidateDef> pick = pickList != null ? ParsePickList(context, pickList, allowDragged: true) : null;
-
-                result.Add(new CombinationDef(name, with, conditions, active, pick));
+                result.Add(new CombinationDef(name, with, conditions, outcome));
             }
 
             return result;

@@ -17,10 +17,10 @@ namespace UnmappedIsland.Domain.Defs
     public sealed class ActiveEffect
     {
         /// <summary>対象ごとのset(絶対値代入)。空なら該当対象へのsetなし。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> Sets { get; }
+        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<SetEffect>> Sets { get; }
 
         /// <summary>対象ごとのadd(加減算)。空なら該当対象へのaddなし。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> Adds { get; }
+        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> Adds { get; }
 
         /// <summary>削除する対象。空なら destroy なし。</summary>
         public IReadOnlyList<ReferenceRoot> Destroy { get; }
@@ -32,8 +32,8 @@ namespace UnmappedIsland.Domain.Defs
         public IReadOnlyList<TransferEffect> Transfers { get; }
 
         public ActiveEffect(
-            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>> sets,
-            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> adds,
+            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<SetEffect>> sets,
+            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> adds,
             IReadOnlyList<ReferenceRoot> destroy,
             IReadOnlyList<SpawnEffect> spawns,
             IReadOnlyList<TransferEffect> transfers)
@@ -51,20 +51,20 @@ namespace UnmappedIsland.Domain.Defs
     /// 代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
     /// conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。
     /// </summary>
-    public readonly struct PropertyAssignment
+    public readonly struct SetEffect
     {
         public readonly int PropertyGlobalId;
         public readonly int Value;
         public readonly PropertyPath? ValueRef;
 
-        public PropertyAssignment(int propertyGlobalId, int value)
+        public SetEffect(int propertyGlobalId, int value)
         {
             PropertyGlobalId = propertyGlobalId;
             Value = value;
             ValueRef = null;
         }
 
-        public PropertyAssignment(int propertyGlobalId, PropertyPath valueRef)
+        public SetEffect(int propertyGlobalId, PropertyPath valueRef)
         {
             PropertyGlobalId = propertyGlobalId;
             Value = default;
@@ -73,12 +73,12 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>add の1エントリ（対象プロパティのグローバルIDと加減算量）。</summary>
-    public readonly struct PropertyDelta
+    public readonly struct AddEffect
     {
         public readonly int PropertyGlobalId;
         public readonly int Amount;
 
-        public PropertyDelta(int propertyGlobalId, int amount)
+        public AddEffect(int propertyGlobalId, int amount)
         {
             PropertyGlobalId = propertyGlobalId;
             Amount = amount;
@@ -171,13 +171,13 @@ namespace UnmappedIsland.Domain.Defs
         /// amountより少ない量しか移動できなかった場合（在庫不足など）に、副効果も自動的に按分される。
         /// 空の場合は何もしない。
         /// </summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> LinkedAdd { get; }
+        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> LinkedAdd { get; }
 
         public TransferEffect(
             ReferenceRoot fromObject, int fromPropertyGlobalId,
             ReferenceRoot toObject, int toPropertyGlobalId,
             int amount, bool allowOverflow,
-            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>> linkedAdd = null)
+            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> linkedAdd = null)
         {
             FromObject = fromObject;
             FromPropertyGlobalId = fromPropertyGlobalId;
@@ -185,7 +185,7 @@ namespace UnmappedIsland.Domain.Defs
             ToPropertyGlobalId = toPropertyGlobalId;
             Amount = amount;
             AllowOverflow = allowOverflow;
-            LinkedAdd = linkedAdd ?? new Dictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>();
+            LinkedAdd = linkedAdd ?? new Dictionary<ReferenceRoot, IReadOnlyList<AddEffect>>();
         }
     }
 }

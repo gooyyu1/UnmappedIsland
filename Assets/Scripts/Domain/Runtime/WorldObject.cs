@@ -540,7 +540,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
         /// （assign.Value）をそのまま使う。ValueRefがあれば、その参照先（{object, prop}）の現在の実効値を
         /// 読んで使う（他のプロパティの値をそのままコピーする、9.2節）。参照先が解決できない場合は0。</summary>
-        private int ResolveAssignmentValue(PropertyAssignment assign, WorldObject actor, WorldObject dragged)
+        private int ResolveAssignmentValue(SetEffect assign, WorldObject actor, WorldObject dragged)
         {
             if (!assign.ValueRef.HasValue) return assign.Value;
 
@@ -811,9 +811,8 @@ namespace UnmappedIsland.Domain.Runtime
 
         /// <summary>
         /// 現在このプロパティに登録されている全寄与（modify/accumulate両方）を列挙する。
-        /// 「このプロパティに何が影響しているか」をUIで表示したい場合に使う。ゲートが現在有効かどうかは
-        /// 呼び出し側で RegisteredPassiveEffect.IsActive() 相当の判定をしたい場合、Kind別にGetEffectiveValue/Tickの
-        /// 結果と突き合わせる。
+        /// 「このプロパティに何が影響しているか」をUIで表示したい場合に使う。各効果が現在いくら効いているかは
+        /// RegisteredPassiveEffect.ActiveAmount()（ゲートが有効ならAmount、無効なら0）で得られる。
         /// </summary>
         public IReadOnlyList<RegisteredPassiveEffect> GetIncomingPassiveEffects(int propertyGlobalId)
         {

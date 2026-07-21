@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnmappedIsland.Domain.Defs;
@@ -34,8 +35,10 @@ namespace UnmappedIsland.Loader
             ConditionNode conditions = ParseConditionsField(context, conditionsNode, PassiveConditionRoots);
             PassiveEffectGate gate = BuildGate(conditions, forcedStageProperty, forcedStageName);
 
-            ParsePassiveOperationInto(output, context, passiveMap, "modify", PassiveEffectKind.Modify, gate);
-            ParsePassiveOperationInto(output, context, passiveMap, "accumulate", PassiveEffectKind.Accumulate, gate);
+            ParsePassiveOperationInto(output, context, passiveMap, "modify",
+                (target, propId, amount, g) => new ModifyEffect(target, propId, amount, g), gate);
+            ParsePassiveOperationInto(output, context, passiveMap, "accumulate",
+                (target, propId, amount, g) => new AccumulateEffect(target, propId, amount, g), gate);
 
             var knownKeys = new HashSet<string> { "conditions", "modify", "accumulate" };
 
@@ -49,7 +52,7 @@ namespace UnmappedIsland.Loader
         /// ゲートを組み立てる。stagePropertyName（forcedStageProperty）が非nullならWhenOwnStage
         /// （プロパティのグローバルIDとstage名をそのまま持つ。Runtime.WorldObject.IsInStageが評価時に
         /// ローカルIDへ変換する）。conditionsと両方指定されていれば、両方を満たす間だけ有効になる
-        /// （例:「装備している間、かつ耐久値がintactステージの間だけ」。RegisteredPassiveEffect.IsActive参照）。
+        /// （例:「装備している間、かつ耐久値がintactステージの間だけ」。PassiveEffect.ActiveAmount参照）。
         /// </summary>
         private PassiveEffectGate BuildGate(ConditionNode conditions, string stagePropertyName, string stageName)
         {
@@ -62,12 +65,15 @@ namespace UnmappedIsland.Loader
 
         /// <summary>
         /// passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
-        /// スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。同じpassiveブロック内のgateをそのまま
-        /// 共有する（対象・プロパティが違っても、ゲートの意味は同じであるため）。
+        /// スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。どの具象型（ModifyEffect/AccumulateEffect）
+        /// を作るかはmakeEffectファクトリで受け取る（判別enumは持たない）。同じpassiveブロック内のgateを
+        /// そのまま共有する（対象・プロパティが違っても、ゲートの意味は同じであるため）。
         /// </summary>
         private void ParsePassiveOperationInto(
             List<PassiveEffect> output, string context, YamlMappingNode passiveMap,
-            string operationKey, PassiveEffectKind kind, PassiveEffectGate gate)
+            string operationKey,
+            Func<PassiveEffectTarget, int, int, PassiveEffectGate, PassiveEffect> makeEffect,
+            PassiveEffectGate gate)
         {
             YamlMappingNode operationMap = passiveMap.TryGetMapping(operationKey, context);
             if (operationMap == null) return;
@@ -89,8 +95,8 @@ namespace UnmappedIsland.Loader
 
                 var body = (YamlMappingNode)bodyNode;
                 foreach (var (propName, amountNode) in body.EntriesInOrder())
-                    output.Add(new PassiveEffect(
-                        target, kind, PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value), gate));
+                    output.Add(makeEffect(
+                        target, PropertyNames.Intern(propName), int.Parse(((YamlScalarNode)amountNode).Value), gate));
             }
         }
     }

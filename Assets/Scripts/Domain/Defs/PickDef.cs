@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
@@ -33,58 +31,25 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// pickの1候補（GameElementDefinition.md 10節）。weightに加えて、自分自身のactive（対象をキーとする
-    /// 辞書）か、さらに別のpickのどちらか一方を持つ（同時には持たない。候補自身がpickを持つ再帰も許容する）。
+    /// pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときの
+    /// 実行結果（EffectOutcome＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も許容する）を持つ。
     /// </summary>
     public sealed class PickCandidateDef
     {
-        public WeightSpec Weight { get; }
+        /// <summary>抽選の重み（10.2節）。ResolveWeight越しにEffectOutcomeが読むだけのため公開しない。</summary>
+        private readonly WeightSpec weight;
 
-        /// <summary>activeかpickのどちらか一方のみが非null。どちらもこのPickCandidateDef自身の
-        /// ResolveEffectだけが読むため（呼び出し側は結果のActiveEffectしか受け取らない）privateに閉じる
-        /// （ActionDefのactive/pickと同じ方針）。</summary>
-        private readonly ActiveEffect active;
-        private readonly IReadOnlyList<PickCandidateDef> pick;
+        /// <summary>この候補が選ばれたときの実行結果（さらにpickを持てば再帰する）。EffectOutcome.Resolveが読む。</summary>
+        public EffectOutcome Outcome { get; }
 
-        public PickCandidateDef(
-            WeightSpec weight, ActiveEffect active, IReadOnlyList<PickCandidateDef> pick)
+        public PickCandidateDef(WeightSpec weight, EffectOutcome outcome)
         {
-            Weight = weight;
-            this.active = active;
-            this.pick = pick;
+            this.weight = weight;
+            Outcome = outcome;
         }
 
-        public static ActiveEffect ResolveEffect(
-            ActiveEffect active,
-            IReadOnlyList<PickCandidateDef> pick,
-            WorldObject self, WorldObject actor, WorldObject dragged,
-            WorldSession session)
-        {
-            if (active != null) return active;
-            if (pick == null || pick.Count == 0) return null;
-
-            PickCandidateDef chosen = SelectWeighted(pick, self, actor, dragged, session);
-            return ResolveEffect(chosen.active, chosen.pick, self, actor, dragged, session);
-        }
-
-        private static PickCandidateDef SelectWeighted(
-            IReadOnlyList<PickCandidateDef> candidates, WorldObject self, WorldObject actor, WorldObject dragged, WorldSession session)
-        {
-            if (candidates.Count == 1) return candidates[0];
-
-            var weights = candidates.Select(c => System.Math.Max(0, c.Weight.Resolve(self, actor, dragged))).ToList();
-            double total = weights.Sum();
-            if (total <= 0) return candidates[0];
-
-            double roll = session.Rng.NextDouble() * total;
-            double cumulative = 0;
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                cumulative += weights[i];
-                if (roll < cumulative) return candidates[i];
-            }
-
-            return candidates[candidates.Count - 1];
-        }
+        /// <summary>この候補の抽選重みを、現在の文脈で解決する（EffectOutcomeのweight抽選が使う）。</summary>
+        public double ResolveWeight(WorldObject self, WorldObject actor, WorldObject dragged) =>
+            weight.Resolve(self, actor, dragged);
     }
 }
