@@ -483,37 +483,14 @@ namespace UnmappedIsland.Domain.Runtime
         /// （このインスタンス自身）が実行するものとみなすため、同じ場所への配置(SameSlot)はself自身の
         /// destroy有無だけを見ればよい。
         /// </summary>
-        public void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
-        {
-            // set→addの順（同一プロパティにset後addを重ねる書き方を成立させる）。各操作は対象付きで、
-            // 自分で対象を解決して適用する（PropertyMutation.Apply）。対象間の適用順序はYAML宣言順＝
-            // 決定的（規約上、対象間の順序は規定しない。以前はOrderedTargetsで固定していた）。
-            foreach (SetEffect set in effect.Sets)
-                set.Apply(this, session, actor, dragged);
-
-            foreach (AddEffect add in effect.Adds)
-                add.Apply(this, session, actor, dragged);
-
-            foreach (TransferEffect transfer in effect.Transfers)
-                ApplyTransfer(transfer, session, actor, dragged);
-
-            bool willDestroySelf = effect.Destroy.Contains(ReferenceRoot.Self);
-            SameSlotAnchor? anchor = effect.Spawns.Any(s => s.Into == SpawnTargetRoot.SameSlot)
-                ? CaptureSameSlotAnchor(willDestroySelf)
-                : null;
-
-            foreach (ReferenceRoot key in effect.Destroy)
-                ResolveEffectTarget(key, actor, dragged)?.Destroy(session.Codex.WellKnown);
-
-            foreach (SpawnEffect spawn in effect.Spawns)
-                ExecuteSpawn(spawn, session, actor, anchor);
-        }
+        public void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged) =>
+            effect.ApplyTo(this, session, actor, dragged);
 
         /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged/dragged_parent)を解決する。selfは常にこの
         /// インスタンス自身、parentはthis.Parent（無ければnull）、dragged_parentはdraggedの直接の親（無ければnull）。
         /// Ancestorはプロパティごとに解決先が変わりうる（FindAncestorWithProperty）ため、ここでは扱わない
-        /// （ResolveEffectTargetOrAncestorがkey==Ancestorを特別扱いする）。</summary>
-        private WorldObject ResolveEffectTarget(ReferenceRoot root, WorldObject actor, WorldObject dragged)
+        /// （ResolveEffectTargetOrAncestorがkey==Ancestorを特別扱いする）。destroy（DestroyEffect）が対象解決に使う。</summary>
+        public WorldObject ResolveEffectTarget(ReferenceRoot root, WorldObject actor, WorldObject dragged)
         {
             switch (root)
             {
@@ -528,41 +505,52 @@ namespace UnmappedIsland.Domain.Runtime
 
         /// <summary>active（set/add/transferのlinked_add）の対象解決。AncestorはFindAncestorWithProperty
         /// （プロパティごとに解決先が変わる）へ委譲し、それ以外はResolveEffectTargetと同じ。SetEffect/AddEffect/
-        /// transferが自分を適用する際の対象解決に共有する（propertyGlobalIdはAncestor解決にのみ使う）。</summary>
+        /// TransferEffectが自分を適用する際の対象解決に共有する（propertyGlobalIdはAncestor解決にのみ使う）。</summary>
         public WorldObject ResolveEffectTargetOrAncestor(ReferenceRoot root, int propertyGlobalId, WorldObject actor, WorldObject dragged) =>
             root == ReferenceRoot.Ancestor ? FindAncestorWithProperty(propertyGlobalId) : ResolveEffectTarget(root, actor, dragged);
 
         /// <summary>
-        /// transfer（9.5節）の実行。実際の移動量は、from自身が申告する「出せる量」（PropertyValue.
-        /// AvailableToTransferOut）とamountの小さい方を基本とし、allow_overflowがfalseの場合はさらに
-        /// toが申告する「受け取れる量」（PropertyValue.RemainingTransferCapacity）でも制限する。
-        /// 「実際にいくら動かせるか」の判断はいずれもPropertyValue自身に委ね、ここでは対象解決と
-        /// 移動量の確定・実行（AddNumber）のみを行う（自分のことは自分でする、CLAUDE.md参照）。
+        /// 1回のactive効果適用（1つのActiveEffect.ApplyTo）で共有される文脈。現状の唯一の役割は、
+        /// same_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで
+        /// 一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。
         ///
-        /// linked_addが指定されている場合、実際に移動した量に比例してスケールされた加減算も適用する
-        /// （比例量 = delta * actual_moved / amount、整数除算・切り捨て）。
-        ///
-        /// from/toのいずれかが解決できない、あるいは対象がそのプロパティを持たない場合は何もしない。
+        /// destroy側（DestroyEffectがselfを消す直前）はNotifyOriginWillBeDestroyedで、spawn側
+        /// （same_slot配置）はSameSlotAnchor取得時に、それぞれ捕捉を要求する。どちらが先でも初回のみ
+        /// 実際に捕捉し、以降はキャッシュを返す。selfが消される適用ではdestroyが必ずspawnより前に
+        /// 実行される（パーサの並び順）ため、self破棄を織り込んだ位置（memberIndex等）が正しく捕捉される。
         /// </summary>
-        private void ApplyTransfer(TransferEffect transfer, WorldSession session, WorldObject actor, WorldObject dragged)
+        public sealed class ActiveApplication
         {
-            WorldObject from = ResolveEffectTargetOrAncestor(transfer.FromObject, transfer.FromPropertyGlobalId, actor, dragged);
-            WorldObject to = ResolveEffectTargetOrAncestor(transfer.ToObject, transfer.ToPropertyGlobalId, actor, dragged);
-            if (from == null || to == null) return;
-            if (!from.TryGetProperty(transfer.FromPropertyGlobalId, out var fromValue)) return;
-            if (!to.TryGetProperty(transfer.ToPropertyGlobalId, out var toValue)) return;
+            private readonly WorldObject origin;
+            private SameSlotAnchor? anchor;
+            private bool anchorCaptured;
 
-            int moved = Math.Min(transfer.Amount, fromValue.AvailableToTransferOut());
-            if (!transfer.AllowOverflow)
-                moved = Math.Min(moved, toValue.RemainingTransferCapacity());
-            if (moved <= 0) return;
+            public ActiveApplication(WorldObject origin)
+            {
+                this.origin = origin;
+            }
 
-            from.AddNumber(transfer.FromPropertyGlobalId, -moved, session);
-            to.AddNumber(transfer.ToPropertyGlobalId, moved, session);
+            /// <summary>DestroyEffectがorigin（self）を破棄する直前に呼ぶ。破棄で位置が失われる前に、
+            /// self破棄を織り込んで（willDestroySelf=true）アンカーを捕捉する。</summary>
+            public void NotifyOriginWillBeDestroyed() => Capture(willDestroySelf: true);
 
-            // 実際に動いた量(moved)に比例させて副効果を適用する。各AddEffectが自分でスケール適用する。
-            foreach (AddEffect linked in transfer.LinkedAdd)
-                linked.ApplyScaled(this, session, actor, dragged, numerator: moved, denominator: transfer.Amount);
+            /// <summary>same_slot spawnが配置位置として読む（same_slot以外はnull）。まだ捕捉していなければ、
+            /// selfは生き残るもの（willDestroySelf=false）として捕捉する。ExecuteSpawnが使う。</summary>
+            public SameSlotAnchor? SameSlotAnchorFor(SpawnTargetRoot into) =>
+                into == SpawnTargetRoot.SameSlot ? Capture(willDestroySelf: false) : null;
+
+            /// <summary>初回のみ実際に捕捉し、以降はキャッシュを返す（destroy側とspawn側のどちらが先に
+            /// 要求しても、位置は一度だけ・正しいwillDestroySelfで確定する）。</summary>
+            private SameSlotAnchor? Capture(bool willDestroySelf)
+            {
+                if (!anchorCaptured)
+                {
+                    anchor = origin.CaptureSameSlotAnchor(willDestroySelf);
+                    anchorCaptured = true;
+                }
+
+                return anchor;
+            }
         }
 
         /// <summary>
@@ -605,12 +593,12 @@ namespace UnmappedIsland.Domain.Runtime
         /// 親も無い場合、生成したオブジェクトはどこにも配置されないまま消える（worldツリーに繋がらない
         /// ため存在しないのと同じ）。
         /// </summary>
-        private void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor, SameSlotAnchor? anchor)
+        public void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor, ActiveApplication context)
         {
             WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
             if (effect.Into == SpawnTargetRoot.SameSlot)
                 CopySharedPropertiesTo(spawned);
-            Place(spawned, effect.Into, session, actor, anchor);
+            Place(spawned, effect.Into, session, actor, context.SameSlotAnchorFor(effect.Into));
         }
 
         private void CopySharedPropertiesTo(WorldObject other)
@@ -695,8 +683,9 @@ namespace UnmappedIsland.Domain.Runtime
             TryFirstAcceptingSlot(spawned, primaryTarget.Parent, session, force: true);
         }
 
-        /// <summary>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット。</summary>
-        private readonly struct SameSlotAnchor
+        /// <summary>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット
+        /// （ActiveApplicationがdestroy側とspawn側の間で受け渡す）。</summary>
+        public readonly struct SameSlotAnchor
         {
             public readonly WorldObject Parent;
             public readonly int ParentSlotLocalId;
