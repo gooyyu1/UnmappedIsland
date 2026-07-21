@@ -59,9 +59,6 @@ namespace UnmappedIsland.Domain.Defs
             return local == LocalIndexMap.Missing ? null : PropertyDefs[local];
         }
 
-        /// <summary>ローカルindexでPropertyDefを取得する（WorldObject内部利用専用）。</summary>
-        internal PropertyDef GetPropertyDefByLocal(int localIndex) => PropertyDefs[localIndex];
-
         /// <summary>全PropertyDefを列挙する（WorldObject内部利用専用）。</summary>
         internal IEnumerable<PropertyDef> EnumeratePropertyDefs() => PropertyDefs;
 

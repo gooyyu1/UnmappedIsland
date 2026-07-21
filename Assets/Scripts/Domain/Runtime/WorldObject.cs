@@ -40,9 +40,9 @@ namespace UnmappedIsland.Domain.Runtime
             InstanceId = instanceId;
             Def = def;
 
-            properties = new PropertyValue[def.PropertyLayout.LocalCount];
-            for (int i = 0; i < properties.Length; i++)
-                properties[i] = PropertyValue.Create(def.GetPropertyDefByLocal(i).DefaultNumber, def.GetPropertyDefByLocal(i), this);
+            properties = def.EnumeratePropertyDefs()
+                .Select(pd => PropertyValue.Create(pd.DefaultNumber, pd, this))
+                .ToArray();
 
             slots = new Slot[def.SlotDefs.Count];
             for (int i = 0; i < slots.Length; i++)
