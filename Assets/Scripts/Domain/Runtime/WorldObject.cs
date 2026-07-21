@@ -19,7 +19,7 @@ namespace UnmappedIsland.Domain.Runtime
         public int InstanceId { get; }
         public ObjectDef Def { get; }
 
-        // ローカルindexで並ぶ密配列。それぞれ Def.PropertyDefs / Def.SlotDefs と対になる。
+        // ローカルindexで並ぶ密配列。それぞれ Def.propertyDefs / Def.slotDefs と対になる。
         private readonly PropertyValue[] properties;
         private readonly Slot[] slots;
 

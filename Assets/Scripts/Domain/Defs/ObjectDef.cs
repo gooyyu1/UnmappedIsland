@@ -26,13 +26,13 @@ namespace UnmappedIsland.Domain.Defs
         public LocalIndexMap PropertyLayout { get; }
 
         /// <summary>ローカルindexで並ぶ密配列。PropertyLayout と対になる。</summary>
-        private IReadOnlyList<PropertyDef> PropertyDefs { get; }
+        private readonly IReadOnlyList<PropertyDef> propertyDefs;
 
         /// <summary>グローバルなスロットID → このObjectDefにおけるローカルindex。</summary>
         public LocalIndexMap SlotLayout { get; }
 
         /// <summary>ローカルindexで並ぶ密配列。SlotLayout と対になる。</summary>
-        private IReadOnlyList<SlotDef> SlotDefs { get; }
+        private readonly IReadOnlyList<SlotDef> slotDefs;
 
         /// <summary>このObjectDefが宣言する効果（8節）。target(self/parent/child)・kind(modify/accumulate)を
         /// 問わず1つのリストで持つ。</summary>
@@ -58,21 +58,21 @@ namespace UnmappedIsland.Domain.Defs
         public PropertyDef GetPropertyDef(int globalPropertyId)
         {
             int local = PropertyLayout.ToLocal(globalPropertyId);
-            return local == LocalIndexMap.Missing ? null : PropertyDefs[local];
+            return local == LocalIndexMap.Missing ? null : propertyDefs[local];
         }
 
         /// <summary>グローバルIDでこのObjectDefのSlotDefを取得する。存在しない場合はnull。</summary>
         public SlotDef GetSlotDef(int globalSlotId)
         {
             int local = SlotLayout.ToLocal(globalSlotId);
-            return local == LocalIndexMap.Missing ? null : SlotDefs[local];
+            return local == LocalIndexMap.Missing ? null : slotDefs[local];
         }
 
         /// <summary>全PropertyDefを列挙する（WorldObject内部利用専用）。</summary>
-        internal IEnumerable<PropertyDef> EnumeratePropertyDefs() => PropertyDefs;
+        internal IEnumerable<PropertyDef> EnumeratePropertyDefs() => propertyDefs;
 
         /// <summary>全SlotDefを列挙する（WorldObject内部利用専用）。</summary>
-        internal IEnumerable<SlotDef> EnumerateSlotDefs() => SlotDefs;
+        internal IEnumerable<SlotDef> EnumerateSlotDefs() => slotDefs;
 
         public ObjectDef(
             int globalId,
@@ -93,9 +93,9 @@ namespace UnmappedIsland.Domain.Defs
             Name = name;
             IsSingleton = isSingleton;
             PropertyLayout = propertyLayout;
-            PropertyDefs = propertyDefs;
+            this.propertyDefs = propertyDefs;
             SlotLayout = slotLayout;
-            SlotDefs = slotDefs;
+            this.slotDefs = slotDefs;
             Passives = passives;
             StackOrder = stackOrder;
             Tags = tags ?? Array.Empty<int>();

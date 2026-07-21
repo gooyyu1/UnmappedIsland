@@ -40,18 +40,18 @@ namespace UnmappedIsland.Domain.Defs
     {
         public WeightSpec Weight { get; }
 
-        /// <summary>ActiveかPickのどちらか一方のみが非null。どちらもこのPickCandidateDef自身の
+        /// <summary>activeかpickのどちらか一方のみが非null。どちらもこのPickCandidateDef自身の
         /// ResolveEffectだけが読むため（呼び出し側は結果のActiveEffectしか受け取らない）privateに閉じる
-        /// （ActionDef.Active/Pickと同じ方針）。</summary>
-        private ActiveEffect Active { get; }
-        private IReadOnlyList<PickCandidateDef> Pick { get; }
+        /// （ActionDefのactive/pickと同じ方針）。</summary>
+        private readonly ActiveEffect active;
+        private readonly IReadOnlyList<PickCandidateDef> pick;
 
         public PickCandidateDef(
             WeightSpec weight, ActiveEffect active, IReadOnlyList<PickCandidateDef> pick)
         {
             Weight = weight;
-            Active = active;
-            Pick = pick;
+            this.active = active;
+            this.pick = pick;
         }
 
         internal static ActiveEffect ResolveEffect(
@@ -64,7 +64,7 @@ namespace UnmappedIsland.Domain.Defs
             if (pick == null || pick.Count == 0) return null;
 
             PickCandidateDef chosen = SelectWeighted(pick, self, actor, dragged, session);
-            return ResolveEffect(chosen.Active, chosen.Pick, self, actor, dragged, session);
+            return ResolveEffect(chosen.active, chosen.pick, self, actor, dragged, session);
         }
 
         private static PickCandidateDef SelectWeighted(

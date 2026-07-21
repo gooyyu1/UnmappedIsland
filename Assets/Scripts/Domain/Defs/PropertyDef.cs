@@ -49,11 +49,11 @@ namespace UnmappedIsland.Domain.Defs
         }
 
         // 段階ごとの passive/active（8節）はこの検討の対象外。フィールドを足すだけで済み、
-        // Property配列のレイアウト（ObjectDef.PropertyDefs / WorldObjectのproperties配列）には影響しない。
+        // Property配列のレイアウト（ObjectDef.propertyDefs / WorldObjectのproperties配列）には影響しない。
     }
 
     /// <summary>
-    /// 1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.PropertyDefs の1要素として、
+    /// 1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、
     /// ローカルIDをそのままindexとする密配列に格納される。
     ///
     /// 同名のプロパティ（例: "durability"）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、
@@ -90,7 +90,7 @@ namespace UnmappedIsland.Domain.Defs
         /// 値を保持するRuntime.PropertyValueは「値が変わった」とだけ通知する。そのため個々のon_*は外部へ
         /// 公開せずprivateに閉じる。
         /// </summary>
-        private ActiveEffect OnOverflow { get; }
+        private readonly ActiveEffect onOverflow;
 
         /// <summary>
         /// on_shortfall（6.3節）: on_overflowの下限側の鏡像。値がRange.Minを下回った際に、selfへ一度だけ
@@ -98,7 +98,7 @@ namespace UnmappedIsland.Domain.Defs
         /// 「自分自身をRange.Minへsetする」という既定のActiveEffectがビルド時に自動生成される
         /// （Loader.WorldCodexYamlLoader.ParseProp参照）。Range自体が未定義の場合のみnull。
         /// </summary>
-        private ActiveEffect OnShortfall { get; }
+        private readonly ActiveEffect onShortfall;
 
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
@@ -114,14 +114,14 @@ namespace UnmappedIsland.Domain.Defs
         /// プロパティにも使えるようにする）。on_overflow/on_shortfallとは異なり、著者が明示的に書かない
         /// 限り既定の自動生成は行わない（null なら on_min を持たない）。Rangeが必須。
         /// </summary>
-        private ActiveEffect OnMin { get; }
+        private readonly ActiveEffect onMin;
 
         /// <summary>
         /// on_max（6.6節）。値がRange.Max以上である間、毎tick実行されるactive内容。on_minの上限側の鏡像。
         /// on_overflow/on_shortfallとは異なり、著者が明示的に書かない限り既定の自動生成は行わない
         /// （null なら on_max を持たない）。Rangeが必須。
         /// </summary>
-        private ActiveEffect OnMax { get; }
+        private readonly ActiveEffect onMax;
 
         /// <summary>
         /// inherit: 自分の直接の親から遡り、この名前のプロパティを定義している最初の祖先（Runtime.
@@ -151,11 +151,11 @@ namespace UnmappedIsland.Domain.Defs
             DefaultNumber = defaultNumber;
             RerollRange = rerollRange;
             Range = range;
-            OnOverflow = onOverflow;
+            this.onOverflow = onOverflow;
             Stages = stages;
-            OnMin = onMin;
-            OnShortfall = onShortfall;
-            OnMax = onMax;
+            this.onMin = onMin;
+            this.onShortfall = onShortfall;
+            this.onMax = onMax;
             Inherit = inherit;
 
             foreach (var stage in Stages)
@@ -197,17 +197,17 @@ namespace UnmappedIsland.Domain.Defs
             if (!Range.HasValue) return;
             PropertyRange range = Range.Value;
 
-            if (OnMax != null && number >= range.Max)
-                owner.ApplyActiveEffect(OnMax, session, actor: null, dragged: null);
+            if (onMax != null && number >= range.Max)
+                owner.ApplyActiveEffect(onMax, session, actor: null, dragged: null);
 
-            if (OnMin != null && number <= range.Min)
-                owner.ApplyActiveEffect(OnMin, session, actor: null, dragged: null);
+            if (onMin != null && number <= range.Min)
+                owner.ApplyActiveEffect(onMin, session, actor: null, dragged: null);
 
-            if (OnOverflow != null && number > range.Max)
-                owner.ApplyActiveEffect(OnOverflow, session, actor: null, dragged: null);
+            if (onOverflow != null && number > range.Max)
+                owner.ApplyActiveEffect(onOverflow, session, actor: null, dragged: null);
 
-            if (OnShortfall != null && number < range.Min)
-                owner.ApplyActiveEffect(OnShortfall, session, actor: null, dragged: null);
+            if (onShortfall != null && number < range.Min)
+                owner.ApplyActiveEffect(onShortfall, session, actor: null, dragged: null);
         }
 
         /// <summary>
