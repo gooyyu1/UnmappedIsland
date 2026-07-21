@@ -5,7 +5,7 @@ using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Loader
+namespace UnmappedIsland.StreamingAssets
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/characters.yaml（プレイヤーキャラクターの定義）が、core.yamlと

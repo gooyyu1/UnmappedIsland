@@ -6,7 +6,7 @@ using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Loader
+namespace UnmappedIsland.StreamingAssets
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/containers.yaml が、represented_by で中身オブジェクトへ委譲する
