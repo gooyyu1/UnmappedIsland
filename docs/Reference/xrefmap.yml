@@ -366,19 +366,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.Any
   nameWithType: ConditionNode.Any
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Children
-  name: Children
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Children
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.Children
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Children
-  nameWithType: ConditionNode.Children
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Children*
-  name: Children
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Children_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.Children
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Children
-  nameWithType: ConditionNode.Children
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.Evaluate(System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
   name: Evaluate(Func<ReferenceRoot, WorldObject>)
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Evaluate_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
@@ -459,19 +446,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.EvaluateSlotPosition
   nameWithType: ConditionNode.EvaluateSlotPosition
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Kind
-  name: Kind
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Kind
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.Kind
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Kind
-  nameWithType: ConditionNode.Kind
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Kind*
-  name: Kind
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Kind_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.Kind
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Kind
-  nameWithType: ConditionNode.Kind
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.Not(UnmappedIsland.Domain.Defs.ConditionNode)
   name: Not(ConditionNode)
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Not_UnmappedIsland_Domain_Defs_ConditionNode_
@@ -501,19 +475,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.ObjectTag
   nameWithType: ConditionNode.ObjectTag
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Op
-  name: Op
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Op
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.Op
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Op
-  nameWithType: ConditionNode.Op
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Op*
-  name: Op
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Op_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.Op
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Op
-  nameWithType: ConditionNode.Op
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{System.Int32},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath})
   name: Property(ReferenceRoot, int, ConditionOp, IReadOnlyList<int>, PropertyPath?)
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Property_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_System_Int32__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__
@@ -530,19 +491,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.Property
   nameWithType: ConditionNode.Property
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId
-  name: PropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_PropertyGlobalId
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId
-  nameWithType: ConditionNode.PropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId*
-  name: PropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_PropertyGlobalId_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.PropertyGlobalId
-  nameWithType: ConditionNode.PropertyGlobalId
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject})
   name: ResolvePropertyEffectiveValue(ReferenceRoot, int, Func<ReferenceRoot, WorldObject>)
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_ResolvePropertyEffectiveValue_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject__
@@ -559,19 +507,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.ResolvePropertyEffectiveValue
   nameWithType: ConditionNode.ResolvePropertyEffectiveValue
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Root
-  name: Root
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Root
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.Root
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Root
-  nameWithType: ConditionNode.Root
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Root*
-  name: Root
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Root_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.Root
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Root
-  nameWithType: ConditionNode.Root
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.SlotContent(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)
   name: SlotContent(ReferenceRoot, int, int)
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_SlotContent_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_
@@ -588,19 +523,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.SlotContent
   nameWithType: ConditionNode.SlotContent
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId
-  name: SlotGlobalId
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_SlotGlobalId
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId
-  nameWithType: ConditionNode.SlotGlobalId
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId*
-  name: SlotGlobalId
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_SlotGlobalId_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.SlotGlobalId
-  nameWithType: ConditionNode.SlotGlobalId
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.SlotPosition(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)
   name: SlotPosition(ReferenceRoot, int)
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_SlotPosition_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_
@@ -617,45 +539,60 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.SlotPosition
   nameWithType: ConditionNode.SlotPosition
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId
-  name: TagGlobalId
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_TagGlobalId
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId
-  nameWithType: ConditionNode.TagGlobalId
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId*
-  name: TagGlobalId
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_TagGlobalId_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.TagGlobalId
-  nameWithType: ConditionNode.TagGlobalId
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.ValueRef
-  name: ValueRef
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_ValueRef
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.ValueRef
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.ValueRef
-  nameWithType: ConditionNode.ValueRef
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.ValueRef*
-  name: ValueRef
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_ValueRef_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.ValueRef
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.ValueRef
-  nameWithType: ConditionNode.ValueRef
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Values
-  name: Values
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Values
-  commentId: P:UnmappedIsland.Domain.Defs.ConditionNode.Values
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Values
-  nameWithType: ConditionNode.Values
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Values*
-  name: Values
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Values_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ConditionNode.Values
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Values
-  nameWithType: ConditionNode.Values
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.children
+  name: children
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_children
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.children
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.children
+  nameWithType: ConditionNode.children
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.kind
+  name: kind
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_kind
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.kind
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.kind
+  nameWithType: ConditionNode.kind
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.op
+  name: op
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_op
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.op
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.op
+  nameWithType: ConditionNode.op
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.propertyGlobalId
+  name: propertyGlobalId
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_propertyGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.propertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.propertyGlobalId
+  nameWithType: ConditionNode.propertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.root
+  name: root
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_root
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.root
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.root
+  nameWithType: ConditionNode.root
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.slotGlobalId
+  name: slotGlobalId
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_slotGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.slotGlobalId
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.slotGlobalId
+  nameWithType: ConditionNode.slotGlobalId
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.tagGlobalId
+  name: tagGlobalId
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_tagGlobalId
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.tagGlobalId
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.tagGlobalId
+  nameWithType: ConditionNode.tagGlobalId
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.valueRef
+  name: valueRef
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_valueRef
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.valueRef
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.valueRef
+  nameWithType: ConditionNode.valueRef
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.values
+  name: values
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_values
+  commentId: F:UnmappedIsland.Domain.Defs.ConditionNode.values
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.values
+  nameWithType: ConditionNode.values
 - uid: UnmappedIsland.Domain.Defs.ConditionNodeKind
   name: ConditionNodeKind
   href: UnmappedIsland.Domain.Defs.ConditionNodeKind.html
