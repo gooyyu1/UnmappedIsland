@@ -67,8 +67,7 @@ namespace UnmappedIsland.Loader
 
         private PropertyDef PropOf(ObjectDef def, string propertyName)
         {
-            int local = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId(propertyName));
-            return def.PropertyDefs[local];
+            return def.GetPropertyDef(codex.PropertyNames.GetId(propertyName));
         }
 
         private static string LiquidMarkerNameFor(string liquidKind) => $"{liquidKind}_liquid";
@@ -117,7 +116,7 @@ namespace UnmappedIsland.Loader
             Assert.That(canteen.RepresentedBySlotGlobalId, Is.EqualTo(contentSlotId));
             Assert.That(canteen.Actions, Is.Empty, "容器本体は中身の行動を持たない");
             Assert.That(canteen.Combinations, Is.Empty, "容器本体は注ぎ処理を持たない");
-            Assert.That(canteen.PropertyDefs.Select(p => p.Name), Does.Contain("liquid_amount"), "容器本体はliquid_amountを持つ");
+            Assert.That(canteen.GetPropertyDef(codex.PropertyNames.GetId("liquid_amount")), Is.Not.Null, "容器本体はliquid_amountを持つ");
         }
 
         [TestCase("coconut_bowl", 1200)]

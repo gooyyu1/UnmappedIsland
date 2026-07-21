@@ -558,12 +558,9 @@ object_defs:
             var codex = Load(yaml);
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("candle"));
 
-            int waxLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wax"));
-            int wickLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("wick_length"));
-
-            Assert.That(def.PropertyDefs[waxLocal].OnMin, Is.Not.Null);
-            Assert.That(def.PropertyDefs[waxLocal].OnMin.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(def.PropertyDefs[wickLocal].OnMin, Is.Null);
+            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wax")).OnMin, Is.Not.Null);
+            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wax")).OnMin.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wick_length")).OnMin, Is.Null);
         }
 
         // ------------------------------------------------------------------
@@ -588,12 +585,9 @@ object_defs:
             var codex = Load(yaml);
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("tank"));
 
-            int pressureLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("pressure"));
-            int tempLocal = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId("temperature"));
-
-            Assert.That(def.PropertyDefs[pressureLocal].OnMax, Is.Not.Null);
-            Assert.That(def.PropertyDefs[pressureLocal].OnMax.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(def.PropertyDefs[tempLocal].OnMax, Is.Null);
+            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("pressure")).OnMax, Is.Not.Null);
+            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("pressure")).OnMax.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("temperature")).OnMax, Is.Null);
         }
 
         [Test]

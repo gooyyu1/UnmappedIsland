@@ -92,8 +92,7 @@ namespace UnmappedIsland.Loader
 
         private PropertyDef PropOf(ObjectDef def, string propertyName)
         {
-            int local = def.PropertyLayout.ToLocal(codex.PropertyNames.GetId(propertyName));
-            return def.PropertyDefs[local];
+            return def.GetPropertyDef(codex.PropertyNames.GetId(propertyName));
         }
     }
 }

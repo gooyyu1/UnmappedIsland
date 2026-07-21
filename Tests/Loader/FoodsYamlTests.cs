@@ -78,8 +78,7 @@ namespace UnmappedIsland.Loader
             ObjectDef character = codex.Objects.Get(codex.ObjectNames.GetId("character"));
             foreach (var name in new[] { "vegetable_nutrition", "meat_nutrition", "grain_tuber_nutrition" })
             {
-                int local = character.PropertyLayout.ToLocal(codex.PropertyNames.GetId(name));
-                PropertyDef prop = character.PropertyDefs[local];
+                PropertyDef prop = character.GetPropertyDef(codex.PropertyNames.GetId(name));
                 Assert.That(prop.DefaultNumber, Is.EqualTo(67200), $"{name}の初期値");
                 Assert.That(prop.Range.Value.Min, Is.EqualTo(0));
                 Assert.That(prop.Range.Value.Max, Is.EqualTo(67200));
