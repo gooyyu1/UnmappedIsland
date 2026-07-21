@@ -40,9 +40,11 @@ namespace UnmappedIsland.Domain.Defs
     {
         public WeightSpec Weight { get; }
 
-        /// <summary>ActiveかPickのどちらか一方のみが非null。</summary>
-        public ActiveEffect Active { get; }
-        public IReadOnlyList<PickCandidateDef> Pick { get; }
+        /// <summary>ActiveかPickのどちらか一方のみが非null。どちらもこのPickCandidateDef自身の
+        /// ResolveEffectだけが読むため（呼び出し側は結果のActiveEffectしか受け取らない）privateに閉じる
+        /// （ActionDef.Active/Pickと同じ方針）。</summary>
+        private ActiveEffect Active { get; }
+        private IReadOnlyList<PickCandidateDef> Pick { get; }
 
         public PickCandidateDef(
             WeightSpec weight, ActiveEffect active, IReadOnlyList<PickCandidateDef> pick)
