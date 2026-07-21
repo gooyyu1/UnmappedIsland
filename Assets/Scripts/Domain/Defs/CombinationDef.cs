@@ -13,13 +13,12 @@ namespace UnmappedIsland.Domain.Defs
         public string Name { get; }
         private readonly int with;
 
-        /// <summary>マッチング対象のタグ（Matches参照）。</summary>
         /// <summary>nullなら常に真（conditions省略）。</summary>
-        public ConditionNode Conditions { get; }
+        private readonly ConditionNode conditions;
 
         /// <summary>ActiveかPickのどちらか一方のみが非null。</summary>
-        public ActiveEffect Active { get; }
-        public IReadOnlyList<PickCandidateDef> Pick { get; }
+        private readonly ActiveEffect active;
+        private readonly IReadOnlyList<PickCandidateDef> pick;
 
         public CombinationDef(
             string name,
@@ -30,9 +29,9 @@ namespace UnmappedIsland.Domain.Defs
         {
             Name = name;
             this.with = with;
-            Conditions = conditions;
-            Active = active;
-            Pick = pick;
+            this.conditions = conditions;
+            this.active = active;
+            this.pick = pick;
         }
 
         /// <summary>draggedDefがこのcombinationのWithタグを持っていれば真（12.1節）。</summary>
@@ -41,10 +40,10 @@ namespace UnmappedIsland.Domain.Defs
         internal bool TryExecute(WorldObject self, WorldObject dragged, WorldObject actor, WorldSession session)
         {
             if (!Matches(dragged.Def)) return false;
-            if (Conditions != null && !Conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged)))
+            if (conditions != null && !conditions.Evaluate(root => ReferenceRootResolver.Resolve(root, self, actor, dragged)))
                 return false;
 
-            ActiveEffect effect = PickCandidateDef.ResolveEffect(Active, Pick, self, actor, dragged, session);
+            ActiveEffect effect = PickCandidateDef.ResolveEffect(active, pick, self, actor, dragged, session);
             if (effect != null) self.ApplyActiveEffect(effect, session, actor, dragged);
             return true;
         }
