@@ -5,11 +5,11 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Struct SetEffect | UnmappedIsland API リファレンス </title>
+      <title>Class SetEffect | UnmappedIsland API リファレンス </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Struct SetEffect | UnmappedIsland API リファレンス ">
+      <meta name="title" content="Class SetEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの 代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、 conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。">
+    <meta name="description" content="set の1操作（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、 その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、 conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -73,25 +73,28 @@
 
 
 
-  <h1 id="UnmappedIsland_Domain_Defs_SetEffect" data-uid="UnmappedIsland.Domain.Defs.SetEffect" class="text-break">Struct SetEffect</h1>
-  <div class="markdown level0 summary"><p>set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの
-代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
+  <h1 id="UnmappedIsland_Domain_Defs_SetEffect" data-uid="UnmappedIsland.Domain.Defs.SetEffect" class="text-break">Class SetEffect</h1>
+  <div class="markdown level0 summary"><p>set の1操作（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、
+その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
 conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyMutation.html">PropertyMutation</a></div>
+    <div class="level2"><span class="xref">SetEffect</span></div>
+  </div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
     <div>
-      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.valuetype.equals">ValueType.Equals(object)</a>
-    </div>
-    <div>
-      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode">ValueType.GetHashCode()</a>
-    </div>
-    <div>
-      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.valuetype.tostring">ValueType.ToString()</a>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
     </div>
     <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
     </div>
     <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
@@ -99,29 +102,32 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
     <div>
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
     </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Defs.html">Defs</a></h6>
   <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
   <h5 id="UnmappedIsland_Domain_Defs_SetEffect_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public readonly struct SetEffect</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class SetEffect : PropertyMutation</code></pre>
   </div>
   <h3 id="constructors">Constructors
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(System.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L60">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L83">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SetEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,System.Int32)">SetEffect(int, int)</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)">SetEffect(ReferenceRoot, int, int)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public SetEffect(int propertyGlobalId, int value)</code></pre>
+    <pre><code class="lang-csharp hljs">public SetEffect(ReferenceRoot target, int propertyGlobalId, int value)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -133,6 +139,11 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
       </tr>
     </thead>
     <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><span class="parametername">target</span></td>
+        <td></td>
+      </tr>
       <tr>
         <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
         <td><span class="parametername">propertyGlobalId</span></td>
@@ -147,18 +158,18 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(System.Int32%2CUnmappedIsland.Domain.Defs.PropertyPath)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.PropertyPath)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L67">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L90">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SetEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor*"></a>
-  <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)">SetEffect(int, PropertyPath)</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)">SetEffect(ReferenceRoot, int, PropertyPath)</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public SetEffect(int propertyGlobalId, PropertyPath valueRef)</code></pre>
+    <pre><code class="lang-csharp hljs">public SetEffect(ReferenceRoot target, int propertyGlobalId, PropertyPath valueRef)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -170,6 +181,11 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
       </tr>
     </thead>
     <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><span class="parametername">target</span></td>
+        <td></td>
+      </tr>
       <tr>
         <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
         <td><span class="parametername">propertyGlobalId</span></td>
@@ -186,17 +202,17 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_PropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.PropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_value.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.value%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L56">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L80">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_PropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.SetEffect.PropertyGlobalId">PropertyGlobalId</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_value" data-uid="UnmappedIsland.Domain.Defs.SetEffect.value">value</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public readonly int PropertyGlobalId</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly int value</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
@@ -215,46 +231,17 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_Value.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.Value%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_valueRef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.valueRef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L57">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L81">View Source</a>
   </span>
-  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_Value" data-uid="UnmappedIsland.Domain.Defs.SetEffect.Value">Value</h4>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_valueRef" data-uid="UnmappedIsland.Domain.Defs.SetEffect.valueRef">valueRef</h4>
   <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public readonly int Value</code></pre>
-  </div>
-  <h5 class="fieldValue">Field Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_ValueRef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.ValueRef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L58">View Source</a>
-  </span>
-  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_ValueRef" data-uid="UnmappedIsland.Domain.Defs.SetEffect.ValueRef">ValueRef</h4>
-  <div class="markdown level1 summary"></div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public readonly PropertyPath? ValueRef</code></pre>
+    <pre><code class="lang-csharp hljs">private readonly PropertyPath? valueRef</code></pre>
   </div>
   <h5 class="fieldValue">Field Value</h5>
   <table class="table table-bordered table-condensed">
@@ -271,6 +258,118 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
       </tr>
     </tbody>
   </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L97">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_SetEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.Apply*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">Apply(WorldObject, WorldSession, WorldObject, WorldObject)</h4>
+  <div class="markdown level1 summary"><p>owner（この操作を発する自分自身）の文脈で対象を解決し、自分を1回適用する。
+対象が解決できなければ何もしない。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public override void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">owner</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></td>
+        <td><span class="parametername">session</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">actor</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">dragged</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="overrides">Overrides</h5>
+  <div><a class="xref" href="UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_">PropertyMutation.Apply(WorldObject, WorldSession, WorldObject, WorldObject)</a></div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.ResolveValue(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L105">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.ResolveValue*"></a>
+  <h4 id="UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.ResolveValue(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ResolveValue(WorldObject, WorldObject, WorldObject)</h4>
+  <div class="markdown level1 summary"><p>実際に代入する値。valueRefが無ければリテラル、あればその参照先の現在の実効値
+（解決できなければ0）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private int ResolveValue(WorldObject owner, WorldObject actor, WorldObject dragged)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">owner</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">actor</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">dragged</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
 
 </article>
           </div>
@@ -283,7 +382,7 @@ conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L54" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L78" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

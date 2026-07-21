@@ -1261,7 +1261,7 @@ spawnは常にselfが実行するものとみなすため対象キーを持た�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveTargetKey_System_String_System_String_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveTargetKey(System.String%2CSystem.String%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L235">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L237">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveTargetKey_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveTargetKey*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveTargetKey_System_String_System_String_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveTargetKey(System.String,System.String,System.Boolean,System.Boolean)">ParseActiveTargetKey(string, string, bool, bool)</h4>
@@ -1327,15 +1327,17 @@ childは、一度きりの命令に対して「どの子か」の意味がまだ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L155">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L158">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)">ParseAdds(string, YamlMappingNode, bool, bool)</h4>
-  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 summary"><p>addを「対象付きの1操作(AddEffect)」の宣言順フラットリストへ読む（ParseSetsと同じく、
+対象は各AddEffectがTargetとして自分で持つ）。</p>
+</div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">private Dictionary&lt;ReferenceRoot, IReadOnlyList&lt;AddEffect&gt;&gt; ParseAdds(string context, YamlMappingNode map, bool allowDragged, bool selfOnly)</code></pre>
+    <pre><code class="lang-csharp hljs">private List&lt;AddEffect&gt; ParseAdds(string context, YamlMappingNode map, bool allowDragged, bool selfOnly)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -1379,7 +1381,7 @@ childは、一度きりの命令に対して「どの子か」の意味がまだ
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2">Dictionary</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.AddEffect.html">AddEffect</a>&gt;&gt;</td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1">List</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.AddEffect.html">AddEffect</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
@@ -1910,7 +1912,7 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargetKey_System_String_System_String_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargetKey(System.String%2CSystem.String%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L277">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L279">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargetKey_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargetKey*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargetKey_System_String_System_String_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargetKey(System.String,System.String,System.Boolean,System.Boolean)">ParseDestroyTargetKey(string, string, bool, bool)</h4>
@@ -1972,7 +1974,7 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargets_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargets(System.String%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L266">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L268">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargets_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargets*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargets_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargets(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)">ParseDestroyTargets(string, YamlNode, bool, bool)</h4>
@@ -2225,13 +2227,13 @@ Runtime.RegisteredPassiveEffect参照）。</p>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List%7BUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CSystem.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String%2CSystem.Func%7BUnmappedIsland.Domain.Defs.PassiveEffectTarget%2CSystem.Int32%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.PassiveEffectGate%2CUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CUnmappedIsland.Domain.Defs.PassiveEffectGate)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List%7BUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CSystem.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String%2CSystem.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.PassiveEffectGate%2CUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CUnmappedIsland.Domain.Defs.PassiveEffectGate)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Passives.cs/#L72">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto*"></a>
-  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.Func{UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate,UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.PassiveEffectGate)">ParsePassiveOperationInto(List&lt;PassiveEffect&gt;, string, YamlMappingNode, string, Func&lt;PassiveEffectTarget, int, int, PassiveEffectGate, PassiveEffect&gt;, PassiveEffectGate)</h4>
+  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate,UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.PassiveEffectGate)">ParsePassiveOperationInto(List&lt;PassiveEffect&gt;, string, YamlMappingNode, string, Func&lt;ReferenceRoot, int, int, PassiveEffectGate, PassiveEffect&gt;, PassiveEffectGate)</h4>
   <div class="markdown level1 summary"><p>passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
 スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。どの具象型（ModifyEffect/AccumulateEffect）
 を作るかはmakeEffectファクトリで受け取る（判別enumは持たない）。同じpassiveブロック内のgateを
@@ -2240,7 +2242,7 @@ Runtime.RegisteredPassiveEffect参照）。</p>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">private void ParsePassiveOperationInto(List&lt;PassiveEffect&gt; output, string context, YamlMappingNode passiveMap, string operationKey, Func&lt;PassiveEffectTarget, int, int, PassiveEffectGate, PassiveEffect&gt; makeEffect, PassiveEffectGate gate)</code></pre>
+    <pre><code class="lang-csharp hljs">private void ParsePassiveOperationInto(List&lt;PassiveEffect&gt; output, string context, YamlMappingNode passiveMap, string operationKey, Func&lt;ReferenceRoot, int, int, PassiveEffectGate, PassiveEffect&gt; makeEffect, PassiveEffectGate gate)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -2273,7 +2275,7 @@ Runtime.RegisteredPassiveEffect参照）。</p>
         <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-5">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectTarget.html">PassiveEffectTarget</a>, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>, <a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectGate.html">PassiveEffectGate</a>, <a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffect.html">PassiveEffect</a>&gt;</td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.func-5">Func</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>, <a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffectGate.html">PassiveEffectGate</a>, <a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffect.html">PassiveEffect</a>&gt;</td>
         <td><span class="parametername">makeEffect</span></td>
         <td></td>
       </tr>
@@ -2523,13 +2525,13 @@ Runtime.RegisteredPassiveEffect参照）。</p>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String%2CSystem.Int32%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String%2CUnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
     <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L75">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect*"></a>
-  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String,System.Int32,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)">ParseSetEffect(string, int, YamlNode, bool, bool)</h4>
+  <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)">ParseSetEffect(string, ReferenceRoot, int, YamlNode, bool, bool)</h4>
   <div class="markdown level1 summary"><p>setの1エントリの値。YAMLスカラーならリテラル（整数・真偽値・シンボル名、ParseScalarNumber）、
 YAMLマッピングなら{object, prop}参照（他のプロパティの現在値をそのままコピーする、9.2節）の
 いずれか。参照先のobjectは、set自身の対象キー（self/parent/ancestor/actor/[dragged]）と全く同じ
@@ -2538,7 +2540,7 @@ YAMLマッピングなら{object, prop}参照（他のプロパティの現在�
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">private SetEffect ParseSetEffect(string context, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly)</code></pre>
+    <pre><code class="lang-csharp hljs">private SetEffect ParseSetEffect(string context, ReferenceRoot target, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -2553,6 +2555,11 @@ YAMLマッピングなら{object, prop}参照（他のプロパティの現在�
       <tr>
         <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
         <td><span class="parametername">context</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a></td>
+        <td><span class="parametername">target</span></td>
         <td></td>
       </tr>
       <tr>
@@ -2597,15 +2604,18 @@ YAMLマッピングなら{object, prop}参照（他のプロパティの現在�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L137">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L140">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)">ParseSets(string, YamlMappingNode, bool, bool)</h4>
-  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 summary"><p>setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む（対象別の入れ子は
+各SetEffectがTargetとして自分で持つため、辞書グループ化ではなくフラットに展開する。passiveの
+ParsePassiveOperationIntoがModifyEffect/AccumulateEffectのリストを作るのと対称）。</p>
+</div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">private Dictionary&lt;ReferenceRoot, IReadOnlyList&lt;SetEffect&gt;&gt; ParseSets(string context, YamlMappingNode map, bool allowDragged, bool selfOnly)</code></pre>
+    <pre><code class="lang-csharp hljs">private List&lt;SetEffect&gt; ParseSets(string context, YamlMappingNode map, bool allowDragged, bool selfOnly)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-condensed">
@@ -2649,7 +2659,7 @@ YAMLマッピングなら{object, prop}参照（他のプロパティの現在�
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2">Dictionary</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.ReferenceRoot.html">ReferenceRoot</a>, <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SetEffect.html">SetEffect</a>&gt;&gt;</td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1">List</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.SetEffect.html">SetEffect</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
@@ -2718,7 +2728,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L193">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L195">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseSpawn(string, YamlMappingNode)</h4>
@@ -2770,7 +2780,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawnTargetRoot_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L286">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L288">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawnTargetRoot_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawnTargetRoot_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot(System.String,System.String)">ParseSpawnTargetRoot(string, string)</h4>
@@ -2822,7 +2832,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_System_String_YamlDotNet_RepresentationModel_YamlNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(System.String%2CYamlDotNet.RepresentationModel.YamlNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L171">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L173">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_System_String_YamlDotNet_RepresentationModel_YamlNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(System.String,YamlDotNet.RepresentationModel.YamlNode)">ParseSpawns(string, YamlNode)</h4>
@@ -3077,7 +3087,7 @@ passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。tr
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(System.String%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L207">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L209">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)">ParseTransfers(string, YamlNode, bool, bool)</h4>

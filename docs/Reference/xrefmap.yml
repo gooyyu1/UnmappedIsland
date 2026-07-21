@@ -13,15 +13,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.AccumulateEffect
   fullName: UnmappedIsland.Domain.Defs.AccumulateEffect
   nameWithType: AccumulateEffect
-- uid: UnmappedIsland.Domain.Defs.AccumulateEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name: AccumulateEffect(PassiveEffectTarget, int, int, PassiveEffectGate)
-  href: UnmappedIsland.Domain.Defs.AccumulateEffect.html#UnmappedIsland_Domain_Defs_AccumulateEffect__ctor_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_
-  commentId: M:UnmappedIsland.Domain.Defs.AccumulateEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name.vb: New(PassiveEffectTarget, Integer, Integer, PassiveEffectGate)
-  fullName: UnmappedIsland.Domain.Defs.AccumulateEffect.AccumulateEffect(UnmappedIsland.Domain.Defs.PassiveEffectTarget, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  fullName.vb: UnmappedIsland.Domain.Defs.AccumulateEffect.New(UnmappedIsland.Domain.Defs.PassiveEffectTarget, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  nameWithType: AccumulateEffect.AccumulateEffect(PassiveEffectTarget, int, int, PassiveEffectGate)
-  nameWithType.vb: AccumulateEffect.New(PassiveEffectTarget, Integer, Integer, PassiveEffectGate)
+- uid: UnmappedIsland.Domain.Defs.AccumulateEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name: AccumulateEffect(ReferenceRoot, int, int, PassiveEffectGate)
+  href: UnmappedIsland.Domain.Defs.AccumulateEffect.html#UnmappedIsland_Domain_Defs_AccumulateEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_
+  commentId: M:UnmappedIsland.Domain.Defs.AccumulateEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name.vb: New(ReferenceRoot, Integer, Integer, PassiveEffectGate)
+  fullName: UnmappedIsland.Domain.Defs.AccumulateEffect.AccumulateEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  fullName.vb: UnmappedIsland.Domain.Defs.AccumulateEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  nameWithType: AccumulateEffect.AccumulateEffect(ReferenceRoot, int, int, PassiveEffectGate)
+  nameWithType.vb: AccumulateEffect.New(ReferenceRoot, Integer, Integer, PassiveEffectGate)
 - uid: UnmappedIsland.Domain.Defs.AccumulateEffect.#ctor*
   name: AccumulateEffect
   href: UnmappedIsland.Domain.Defs.AccumulateEffect.html#UnmappedIsland_Domain_Defs_AccumulateEffect__ctor_
@@ -127,15 +127,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.ActiveEffect
   fullName: UnmappedIsland.Domain.Defs.ActiveEffect
   nameWithType: ActiveEffect
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SetEffect}},System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect}},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
-  name: ActiveEffect(IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<SetEffect>>, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyDictionary_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SetEffect___System_Collections_Generic_IReadOnlyDictionary_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_AddEffect___System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ReferenceRoot__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SpawnEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_TransferEffect__
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SetEffect}},System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect}},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
-  name.vb: New(IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of SetEffect)), IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of AddEffect)), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect(System.Collections.Generic.IReadOnlyDictionary<UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.SetEffect>>, System.Collections.Generic.IReadOnlyDictionary<UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.AddEffect>>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ReferenceRoot>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.SpawnEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.TransferEffect>)
-  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New(System.Collections.Generic.IReadOnlyDictionary(Of UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.SetEffect)), System.Collections.Generic.IReadOnlyDictionary(Of UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.AddEffect)), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ReferenceRoot), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.SpawnEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.TransferEffect))
-  nameWithType: ActiveEffect.ActiveEffect(IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<SetEffect>>, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
-  nameWithType.vb: ActiveEffect.New(IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of SetEffect)), IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of AddEffect)), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SetEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
+  name: ActiveEffect(IReadOnlyList<SetEffect>, IReadOnlyList<AddEffect>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SetEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_AddEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ReferenceRoot__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SpawnEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_TransferEffect__
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SetEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
+  name.vb: New(IReadOnlyList(Of SetEffect), IReadOnlyList(Of AddEffect), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect(System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.SetEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.AddEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ReferenceRoot>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.SpawnEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.TransferEffect>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New(System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.SetEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.AddEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ReferenceRoot), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.SpawnEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.TransferEffect))
+  nameWithType: ActiveEffect.ActiveEffect(IReadOnlyList<SetEffect>, IReadOnlyList<AddEffect>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
+  nameWithType.vb: ActiveEffect.New(IReadOnlyList(Of SetEffect), IReadOnlyList(Of AddEffect), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
 - uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor*
   name: ActiveEffect
   href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_
@@ -217,15 +217,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.AddEffect
   fullName: UnmappedIsland.Domain.Defs.AddEffect
   nameWithType: AddEffect
-- uid: UnmappedIsland.Domain.Defs.AddEffect.#ctor(System.Int32,System.Int32)
-  name: AddEffect(int, int)
-  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect__ctor_System_Int32_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.#ctor(System.Int32,System.Int32)
-  name.vb: New(Integer, Integer)
-  fullName: UnmappedIsland.Domain.Defs.AddEffect.AddEffect(int, int)
-  fullName.vb: UnmappedIsland.Domain.Defs.AddEffect.New(Integer, Integer)
-  nameWithType: AddEffect.AddEffect(int, int)
-  nameWithType.vb: AddEffect.New(Integer, Integer)
+- uid: UnmappedIsland.Domain.Defs.AddEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)
+  name: AddEffect(ReferenceRoot, int, int)
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)
+  name.vb: New(ReferenceRoot, Integer, Integer)
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.AddEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, int)
+  fullName.vb: UnmappedIsland.Domain.Defs.AddEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer)
+  nameWithType: AddEffect.AddEffect(ReferenceRoot, int, int)
+  nameWithType.vb: AddEffect.New(ReferenceRoot, Integer, Integer)
 - uid: UnmappedIsland.Domain.Defs.AddEffect.#ctor*
   name: AddEffect
   href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect__ctor_
@@ -236,18 +236,41 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.AddEffect.New
   nameWithType: AddEffect.AddEffect
   nameWithType.vb: AddEffect.New
-- uid: UnmappedIsland.Domain.Defs.AddEffect.Amount
-  name: Amount
-  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Amount
-  commentId: F:UnmappedIsland.Domain.Defs.AddEffect.Amount
-  fullName: UnmappedIsland.Domain.Defs.AddEffect.Amount
-  nameWithType: AddEffect.Amount
-- uid: UnmappedIsland.Domain.Defs.AddEffect.PropertyGlobalId
-  name: PropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_PropertyGlobalId
-  commentId: F:UnmappedIsland.Domain.Defs.AddEffect.PropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.AddEffect.PropertyGlobalId
-  nameWithType: AddEffect.PropertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: AddEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.AddEffect.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.AddEffect.Apply
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.Apply
+  nameWithType: AddEffect.Apply
+- uid: UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
+  name: ApplyScaled(WorldObject, WorldSession, WorldObject, WorldObject, int, int)
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_ApplyScaled_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
+  name.vb: ApplyScaled(WorldObject, WorldSession, WorldObject, WorldObject, Integer, Integer)
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, int, int)
+  fullName.vb: UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer)
+  nameWithType: AddEffect.ApplyScaled(WorldObject, WorldSession, WorldObject, WorldObject, int, int)
+  nameWithType.vb: AddEffect.ApplyScaled(WorldObject, WorldSession, WorldObject, WorldObject, Integer, Integer)
+- uid: UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled*
+  name: ApplyScaled
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_ApplyScaled_
+  commentId: Overload:UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.ApplyScaled
+  nameWithType: AddEffect.ApplyScaled
+- uid: UnmappedIsland.Domain.Defs.AddEffect.amount
+  name: amount
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_amount
+  commentId: F:UnmappedIsland.Domain.Defs.AddEffect.amount
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.amount
+  nameWithType: AddEffect.amount
 - uid: UnmappedIsland.Domain.Defs.CombinationDef
   name: CombinationDef
   href: UnmappedIsland.Domain.Defs.CombinationDef.html
@@ -844,15 +867,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.ModifyEffect
   fullName: UnmappedIsland.Domain.Defs.ModifyEffect
   nameWithType: ModifyEffect
-- uid: UnmappedIsland.Domain.Defs.ModifyEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name: ModifyEffect(PassiveEffectTarget, int, int, PassiveEffectGate)
-  href: UnmappedIsland.Domain.Defs.ModifyEffect.html#UnmappedIsland_Domain_Defs_ModifyEffect__ctor_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_
-  commentId: M:UnmappedIsland.Domain.Defs.ModifyEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name.vb: New(PassiveEffectTarget, Integer, Integer, PassiveEffectGate)
-  fullName: UnmappedIsland.Domain.Defs.ModifyEffect.ModifyEffect(UnmappedIsland.Domain.Defs.PassiveEffectTarget, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  fullName.vb: UnmappedIsland.Domain.Defs.ModifyEffect.New(UnmappedIsland.Domain.Defs.PassiveEffectTarget, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  nameWithType: ModifyEffect.ModifyEffect(PassiveEffectTarget, int, int, PassiveEffectGate)
-  nameWithType.vb: ModifyEffect.New(PassiveEffectTarget, Integer, Integer, PassiveEffectGate)
+- uid: UnmappedIsland.Domain.Defs.ModifyEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name: ModifyEffect(ReferenceRoot, int, int, PassiveEffectGate)
+  href: UnmappedIsland.Domain.Defs.ModifyEffect.html#UnmappedIsland_Domain_Defs_ModifyEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_
+  commentId: M:UnmappedIsland.Domain.Defs.ModifyEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name.vb: New(ReferenceRoot, Integer, Integer, PassiveEffectGate)
+  fullName: UnmappedIsland.Domain.Defs.ModifyEffect.ModifyEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  fullName.vb: UnmappedIsland.Domain.Defs.ModifyEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  nameWithType: ModifyEffect.ModifyEffect(ReferenceRoot, int, int, PassiveEffectGate)
+  nameWithType.vb: ModifyEffect.New(ReferenceRoot, Integer, Integer, PassiveEffectGate)
 - uid: UnmappedIsland.Domain.Defs.ModifyEffect.#ctor*
   name: ModifyEffect
   href: UnmappedIsland.Domain.Defs.ModifyEffect.html#UnmappedIsland_Domain_Defs_ModifyEffect__ctor_
@@ -1320,15 +1343,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.PassiveEffect
   fullName: UnmappedIsland.Domain.Defs.PassiveEffect
   nameWithType: PassiveEffect
-- uid: UnmappedIsland.Domain.Defs.PassiveEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name: PassiveEffect(PassiveEffectTarget, int, int, PassiveEffectGate)
-  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect__ctor_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_
-  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffect.#ctor(UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name.vb: New(PassiveEffectTarget, Integer, Integer, PassiveEffectGate)
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.PassiveEffect(UnmappedIsland.Domain.Defs.PassiveEffectTarget, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  fullName.vb: UnmappedIsland.Domain.Defs.PassiveEffect.New(UnmappedIsland.Domain.Defs.PassiveEffectTarget, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  nameWithType: PassiveEffect.PassiveEffect(PassiveEffectTarget, int, int, PassiveEffectGate)
-  nameWithType.vb: PassiveEffect.New(PassiveEffectTarget, Integer, Integer, PassiveEffectGate)
+- uid: UnmappedIsland.Domain.Defs.PassiveEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name: PassiveEffect(ReferenceRoot, int, int, PassiveEffectGate)
+  href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_
+  commentId: M:UnmappedIsland.Domain.Defs.PassiveEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name.vb: New(ReferenceRoot, Integer, Integer, PassiveEffectGate)
+  fullName: UnmappedIsland.Domain.Defs.PassiveEffect.PassiveEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  fullName.vb: UnmappedIsland.Domain.Defs.PassiveEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  nameWithType: PassiveEffect.PassiveEffect(ReferenceRoot, int, int, PassiveEffectGate)
+  nameWithType.vb: PassiveEffect.New(ReferenceRoot, Integer, Integer, PassiveEffectGate)
 - uid: UnmappedIsland.Domain.Defs.PassiveEffect.#ctor*
   name: PassiveEffect
   href: UnmappedIsland.Domain.Defs.PassiveEffect.html#UnmappedIsland_Domain_Defs_PassiveEffect__ctor_
@@ -1472,36 +1495,6 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectGate.stageName
   fullName: UnmappedIsland.Domain.Defs.PassiveEffectGate.stageName
   nameWithType: PassiveEffectGate.stageName
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectTarget
-  name: PassiveEffectTarget
-  href: UnmappedIsland.Domain.Defs.PassiveEffectTarget.html
-  commentId: T:UnmappedIsland.Domain.Defs.PassiveEffectTarget
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectTarget
-  nameWithType: PassiveEffectTarget
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Ancestor
-  name: Ancestor
-  href: UnmappedIsland.Domain.Defs.PassiveEffectTarget.html#UnmappedIsland_Domain_Defs_PassiveEffectTarget_Ancestor
-  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectTarget.Ancestor
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Ancestor
-  nameWithType: PassiveEffectTarget.Ancestor
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Child
-  name: Child
-  href: UnmappedIsland.Domain.Defs.PassiveEffectTarget.html#UnmappedIsland_Domain_Defs_PassiveEffectTarget_Child
-  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectTarget.Child
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Child
-  nameWithType: PassiveEffectTarget.Child
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Parent
-  name: Parent
-  href: UnmappedIsland.Domain.Defs.PassiveEffectTarget.html#UnmappedIsland_Domain_Defs_PassiveEffectTarget_Parent
-  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectTarget.Parent
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Parent
-  nameWithType: PassiveEffectTarget.Parent
-- uid: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Self
-  name: Self
-  href: UnmappedIsland.Domain.Defs.PassiveEffectTarget.html#UnmappedIsland_Domain_Defs_PassiveEffectTarget_Self
-  commentId: F:UnmappedIsland.Domain.Defs.PassiveEffectTarget.Self
-  fullName: UnmappedIsland.Domain.Defs.PassiveEffectTarget.Self
-  nameWithType: PassiveEffectTarget.Self
 - uid: UnmappedIsland.Domain.Defs.PickCandidateDef
   name: PickCandidateDef
   href: UnmappedIsland.Domain.Defs.PickCandidateDef.html
@@ -1751,6 +1744,70 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.PropertyDef.stages
   fullName: UnmappedIsland.Domain.Defs.PropertyDef.stages
   nameWithType: PropertyDef.stages
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation
+  name: PropertyMutation
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html
+  commentId: T:UnmappedIsland.Domain.Defs.PropertyMutation
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation
+  nameWithType: PropertyMutation
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)
+  name: PropertyMutation(ReferenceRoot, int)
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Defs.PropertyMutation.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)
+  name.vb: New(ReferenceRoot, Integer)
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyMutation(UnmappedIsland.Domain.Defs.ReferenceRoot, int)
+  fullName.vb: UnmappedIsland.Domain.Defs.PropertyMutation.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer)
+  nameWithType: PropertyMutation.PropertyMutation(ReferenceRoot, int)
+  nameWithType.vb: PropertyMutation.New(ReferenceRoot, Integer)
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.#ctor*
+  name: PropertyMutation
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyMutation
+  fullName.vb: UnmappedIsland.Domain.Defs.PropertyMutation.New
+  nameWithType: PropertyMutation.PropertyMutation
+  nameWithType.vb: PropertyMutation.New
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: PropertyMutation.Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.Apply
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Apply
+  nameWithType: PropertyMutation.Apply
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
+  name: PropertyGlobalId
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId
+  commentId: P:UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
+  nameWithType: PropertyMutation.PropertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId*
+  name: PropertyGlobalId
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_PropertyGlobalId_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.PropertyGlobalId
+  nameWithType: PropertyMutation.PropertyGlobalId
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Target
+  name: Target
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Target
+  commentId: P:UnmappedIsland.Domain.Defs.PropertyMutation.Target
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Target
+  nameWithType: PropertyMutation.Target
+- uid: UnmappedIsland.Domain.Defs.PropertyMutation.Target*
+  name: Target
+  href: UnmappedIsland.Domain.Defs.PropertyMutation.html#UnmappedIsland_Domain_Defs_PropertyMutation_Target_
+  commentId: Overload:UnmappedIsland.Domain.Defs.PropertyMutation.Target
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.PropertyMutation.Target
+  nameWithType: PropertyMutation.Target
 - uid: UnmappedIsland.Domain.Defs.PropertyPath
   name: PropertyPath
   href: UnmappedIsland.Domain.Defs.PropertyPath.html
@@ -1923,6 +1980,12 @@ references:
   commentId: F:UnmappedIsland.Domain.Defs.ReferenceRoot.Ancestor
   fullName: UnmappedIsland.Domain.Defs.ReferenceRoot.Ancestor
   nameWithType: ReferenceRoot.Ancestor
+- uid: UnmappedIsland.Domain.Defs.ReferenceRoot.Child
+  name: Child
+  href: UnmappedIsland.Domain.Defs.ReferenceRoot.html#UnmappedIsland_Domain_Defs_ReferenceRoot_Child
+  commentId: F:UnmappedIsland.Domain.Defs.ReferenceRoot.Child
+  fullName: UnmappedIsland.Domain.Defs.ReferenceRoot.Child
+  nameWithType: ReferenceRoot.Child
 - uid: UnmappedIsland.Domain.Defs.ReferenceRoot.Dragged
   name: Dragged
   href: UnmappedIsland.Domain.Defs.ReferenceRoot.html#UnmappedIsland_Domain_Defs_ReferenceRoot_Dragged
@@ -1972,24 +2035,24 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.SetEffect
   fullName: UnmappedIsland.Domain.Defs.SetEffect
   nameWithType: SetEffect
-- uid: UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,System.Int32)
-  name: SetEffect(int, int)
-  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,System.Int32)
-  name.vb: New(Integer, Integer)
-  fullName: UnmappedIsland.Domain.Defs.SetEffect.SetEffect(int, int)
-  fullName.vb: UnmappedIsland.Domain.Defs.SetEffect.New(Integer, Integer)
-  nameWithType: SetEffect.SetEffect(int, int)
-  nameWithType.vb: SetEffect.New(Integer, Integer)
-- uid: UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)
-  name: SetEffect(int, PropertyPath)
-  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_
-  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.#ctor(System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)
-  name.vb: New(Integer, PropertyPath)
-  fullName: UnmappedIsland.Domain.Defs.SetEffect.SetEffect(int, UnmappedIsland.Domain.Defs.PropertyPath)
-  fullName.vb: UnmappedIsland.Domain.Defs.SetEffect.New(Integer, UnmappedIsland.Domain.Defs.PropertyPath)
-  nameWithType: SetEffect.SetEffect(int, PropertyPath)
-  nameWithType.vb: SetEffect.New(Integer, PropertyPath)
+- uid: UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)
+  name: SetEffect(ReferenceRoot, int, int)
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)
+  name.vb: New(ReferenceRoot, Integer, Integer)
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.SetEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, int)
+  fullName.vb: UnmappedIsland.Domain.Defs.SetEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer)
+  nameWithType: SetEffect.SetEffect(ReferenceRoot, int, int)
+  nameWithType.vb: SetEffect.New(ReferenceRoot, Integer, Integer)
+- uid: UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)
+  name: SetEffect(ReferenceRoot, int, PropertyPath)
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_
+  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)
+  name.vb: New(ReferenceRoot, Integer, PropertyPath)
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.SetEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Defs.PropertyPath)
+  fullName.vb: UnmappedIsland.Domain.Defs.SetEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Defs.PropertyPath)
+  nameWithType: SetEffect.SetEffect(ReferenceRoot, int, PropertyPath)
+  nameWithType.vb: SetEffect.New(ReferenceRoot, Integer, PropertyPath)
 - uid: UnmappedIsland.Domain.Defs.SetEffect.#ctor*
   name: SetEffect
   href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect__ctor_
@@ -2000,24 +2063,44 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.SetEffect.New
   nameWithType: SetEffect.SetEffect
   nameWithType.vb: SetEffect.New
-- uid: UnmappedIsland.Domain.Defs.SetEffect.PropertyGlobalId
-  name: PropertyGlobalId
-  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_PropertyGlobalId
-  commentId: F:UnmappedIsland.Domain.Defs.SetEffect.PropertyGlobalId
-  fullName: UnmappedIsland.Domain.Defs.SetEffect.PropertyGlobalId
-  nameWithType: SetEffect.PropertyGlobalId
-- uid: UnmappedIsland.Domain.Defs.SetEffect.Value
-  name: Value
-  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Value
-  commentId: F:UnmappedIsland.Domain.Defs.SetEffect.Value
-  fullName: UnmappedIsland.Domain.Defs.SetEffect.Value
-  nameWithType: SetEffect.Value
-- uid: UnmappedIsland.Domain.Defs.SetEffect.ValueRef
-  name: ValueRef
-  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_ValueRef
-  commentId: F:UnmappedIsland.Domain.Defs.SetEffect.ValueRef
-  fullName: UnmappedIsland.Domain.Defs.SetEffect.ValueRef
-  nameWithType: SetEffect.ValueRef
+- uid: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: SetEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.SetEffect.Apply*
+  name: Apply
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_
+  commentId: Overload:UnmappedIsland.Domain.Defs.SetEffect.Apply
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.Apply
+  nameWithType: SetEffect.Apply
+- uid: UnmappedIsland.Domain.Defs.SetEffect.ResolveValue(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: ResolveValue(WorldObject, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.ResolveValue(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.ResolveValue(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: SetEffect.ResolveValue(WorldObject, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Defs.SetEffect.ResolveValue*
+  name: ResolveValue
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_
+  commentId: Overload:UnmappedIsland.Domain.Defs.SetEffect.ResolveValue
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.ResolveValue
+  nameWithType: SetEffect.ResolveValue
+- uid: UnmappedIsland.Domain.Defs.SetEffect.value
+  name: value
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_value
+  commentId: F:UnmappedIsland.Domain.Defs.SetEffect.value
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.value
+  nameWithType: SetEffect.value
+- uid: UnmappedIsland.Domain.Defs.SetEffect.valueRef
+  name: valueRef
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_valueRef
+  commentId: F:UnmappedIsland.Domain.Defs.SetEffect.valueRef
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.valueRef
+  nameWithType: SetEffect.valueRef
 - uid: UnmappedIsland.Domain.Defs.ShowMenuMode
   name: ShowMenuMode
   href: UnmappedIsland.Domain.Defs.ShowMenuMode.html
@@ -2392,15 +2475,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.TransferEffect
   fullName: UnmappedIsland.Domain.Defs.TransferEffect
   nameWithType: TransferEffect
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect}})
-  name: TransferEffect(ReferenceRoot, int, ReferenceRoot, int, int, bool, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>>)
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_System_Boolean_System_Collections_Generic_IReadOnlyDictionary_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_AddEffect___
-  commentId: M:UnmappedIsland.Domain.Defs.TransferEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect}})
-  name.vb: New(ReferenceRoot, Integer, ReferenceRoot, Integer, Integer, Boolean, IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of AddEffect)))
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.TransferEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Defs.ReferenceRoot, int, int, bool, System.Collections.Generic.IReadOnlyDictionary<UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.AddEffect>>)
-  fullName.vb: UnmappedIsland.Domain.Defs.TransferEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer, Boolean, System.Collections.Generic.IReadOnlyDictionary(Of UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.AddEffect)))
-  nameWithType: TransferEffect.TransferEffect(ReferenceRoot, int, ReferenceRoot, int, int, bool, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>>)
-  nameWithType.vb: TransferEffect.New(ReferenceRoot, Integer, ReferenceRoot, Integer, Integer, Boolean, IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of AddEffect)))
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect})
+  name: TransferEffect(ReferenceRoot, int, ReferenceRoot, int, int, bool, IReadOnlyList<AddEffect>)
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_System_Boolean_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_AddEffect__
+  commentId: M:UnmappedIsland.Domain.Defs.TransferEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,System.Boolean,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.AddEffect})
+  name.vb: New(ReferenceRoot, Integer, ReferenceRoot, Integer, Integer, Boolean, IReadOnlyList(Of AddEffect))
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.TransferEffect(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Defs.ReferenceRoot, int, int, bool, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.AddEffect>)
+  fullName.vb: UnmappedIsland.Domain.Defs.TransferEffect.New(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer, Boolean, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.AddEffect))
+  nameWithType: TransferEffect.TransferEffect(ReferenceRoot, int, ReferenceRoot, int, int, bool, IReadOnlyList<AddEffect>)
+  nameWithType.vb: TransferEffect.New(ReferenceRoot, Integer, ReferenceRoot, Integer, Integer, Boolean, IReadOnlyList(Of AddEffect))
 - uid: UnmappedIsland.Domain.Defs.TransferEffect.#ctor*
   name: TransferEffect
   href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect__ctor_
@@ -4268,12 +4351,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.MoveToSlot
   nameWithType: WorldObject.MoveToSlot
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.OrderedTargets
-  name: OrderedTargets
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_OrderedTargets
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.OrderedTargets
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.OrderedTargets
-  nameWithType: WorldObject.OrderedTargets
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.Parent
   name: Parent
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_Parent
@@ -4384,19 +4461,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.RegisterPassiveEffect
   nameWithType: WorldObject.RegisterPassiveEffect
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue(UnmappedIsland.Domain.Defs.SetEffect,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: ResolveAssignmentValue(SetEffect, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveAssignmentValue_UnmappedIsland_Domain_Defs_SetEffect_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue(UnmappedIsland.Domain.Defs.SetEffect,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue(UnmappedIsland.Domain.Defs.SetEffect, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: WorldObject.ResolveAssignmentValue(SetEffect, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue*
-  name: ResolveAssignmentValue
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveAssignmentValue_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveAssignmentValue
-  nameWithType: WorldObject.ResolveAssignmentValue
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTarget(UnmappedIsland.Domain.Defs.ReferenceRoot,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
   name: ResolveEffectTarget(ReferenceRoot, WorldObject, WorldObject)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveEffectTarget_UnmappedIsland_Domain_Defs_ReferenceRoot_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -4410,6 +4474,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTarget
   nameWithType: WorldObject.ResolveEffectTarget
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTargetOrAncestor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name: ResolveEffectTargetOrAncestor(ReferenceRoot, int, WorldObject, WorldObject)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveEffectTargetOrAncestor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTargetOrAncestor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
+  name.vb: ResolveEffectTargetOrAncestor(ReferenceRoot, Integer, WorldObject, WorldObject)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTargetOrAncestor(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTargetOrAncestor(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
+  nameWithType: WorldObject.ResolveEffectTargetOrAncestor(ReferenceRoot, int, WorldObject, WorldObject)
+  nameWithType.vb: WorldObject.ResolveEffectTargetOrAncestor(ReferenceRoot, Integer, WorldObject, WorldObject)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTargetOrAncestor*
+  name: ResolveEffectTargetOrAncestor
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveEffectTargetOrAncestor_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTargetOrAncestor
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveEffectTargetOrAncestor
+  nameWithType: WorldObject.ResolveEffectTargetOrAncestor
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveInteractionTarget
   name: ResolveInteractionTarget()
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveInteractionTarget
@@ -4423,22 +4503,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveInteractionTarget
   nameWithType: WorldObject.ResolveInteractionTarget
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveTransferTarget(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name: ResolveTransferTarget(ReferenceRoot, int, WorldObject, WorldObject)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveTransferTarget_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ResolveTransferTarget(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)
-  name.vb: ResolveTransferTarget(ReferenceRoot, Integer, WorldObject, WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveTransferTarget(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ResolveTransferTarget(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: WorldObject.ResolveTransferTarget(ReferenceRoot, int, WorldObject, WorldObject)
-  nameWithType.vb: WorldObject.ResolveTransferTarget(ReferenceRoot, Integer, WorldObject, WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ResolveTransferTarget*
-  name: ResolveTransferTarget
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ResolveTransferTarget_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ResolveTransferTarget
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveTransferTarget
-  nameWithType: WorldObject.ResolveTransferTarget
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor
   name: WorldObject.SameSlotAnchor
   href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html
@@ -5484,15 +5548,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassive
   nameWithType: WorldCodexYamlLoader.ParsePassive
-- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.Func{UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate,UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name: ParsePassiveOperationInto(List<PassiveEffect>, string, YamlMappingNode, string, Func<PassiveEffectTarget, int, int, PassiveEffectGate, PassiveEffect>, PassiveEffectGate)
-  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_PassiveEffectTarget_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_
-  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.Func{UnmappedIsland.Domain.Defs.PassiveEffectTarget,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate,UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  name.vb: ParsePassiveOperationInto(List(Of PassiveEffect), String, YamlMappingNode, String, Func(Of PassiveEffectTarget, Integer, Integer, PassiveEffectGate, PassiveEffect), PassiveEffectGate)
-  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List<UnmappedIsland.Domain.Defs.PassiveEffect>, string, YamlDotNet.RepresentationModel.YamlMappingNode, string, System.Func<UnmappedIsland.Domain.Defs.PassiveEffectTarget, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate, UnmappedIsland.Domain.Defs.PassiveEffect>, UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List(Of UnmappedIsland.Domain.Defs.PassiveEffect), String, YamlDotNet.RepresentationModel.YamlMappingNode, String, System.Func(Of UnmappedIsland.Domain.Defs.PassiveEffectTarget, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate, UnmappedIsland.Domain.Defs.PassiveEffect), UnmappedIsland.Domain.Defs.PassiveEffectGate)
-  nameWithType: WorldCodexYamlLoader.ParsePassiveOperationInto(List<PassiveEffect>, string, YamlMappingNode, string, Func<PassiveEffectTarget, int, int, PassiveEffectGate, PassiveEffect>, PassiveEffectGate)
-  nameWithType.vb: WorldCodexYamlLoader.ParsePassiveOperationInto(List(Of PassiveEffect), String, YamlMappingNode, String, Func(Of PassiveEffectTarget, Integer, Integer, PassiveEffectGate, PassiveEffect), PassiveEffectGate)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate,UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name: ParsePassiveOperationInto(List<PassiveEffect>, string, YamlMappingNode, string, Func<ReferenceRoot, int, int, PassiveEffectGate, PassiveEffect>, PassiveEffectGate)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate,UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  name.vb: ParsePassiveOperationInto(List(Of PassiveEffect), String, YamlMappingNode, String, Func(Of ReferenceRoot, Integer, Integer, PassiveEffectGate, PassiveEffect), PassiveEffectGate)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List<UnmappedIsland.Domain.Defs.PassiveEffect>, string, YamlDotNet.RepresentationModel.YamlMappingNode, string, System.Func<UnmappedIsland.Domain.Defs.ReferenceRoot, int, int, UnmappedIsland.Domain.Defs.PassiveEffectGate, UnmappedIsland.Domain.Defs.PassiveEffect>, UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List(Of UnmappedIsland.Domain.Defs.PassiveEffect), String, YamlDotNet.RepresentationModel.YamlMappingNode, String, System.Func(Of UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, Integer, UnmappedIsland.Domain.Defs.PassiveEffectGate, UnmappedIsland.Domain.Defs.PassiveEffect), UnmappedIsland.Domain.Defs.PassiveEffectGate)
+  nameWithType: WorldCodexYamlLoader.ParsePassiveOperationInto(List<PassiveEffect>, string, YamlMappingNode, string, Func<ReferenceRoot, int, int, PassiveEffectGate, PassiveEffect>, PassiveEffectGate)
+  nameWithType.vb: WorldCodexYamlLoader.ParsePassiveOperationInto(List(Of PassiveEffect), String, YamlMappingNode, String, Func(Of ReferenceRoot, Integer, Integer, PassiveEffectGate, PassiveEffect), PassiveEffectGate)
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto*
   name: ParsePassiveOperationInto
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_
@@ -5557,15 +5621,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber
   nameWithType: WorldCodexYamlLoader.ParseScalarNumber
-- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String,System.Int32,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)
-  name: ParseSetEffect(string, int, YamlNode, bool, bool)
-  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_
-  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String,System.Int32,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)
-  name.vb: ParseSetEffect(String, Integer, YamlNode, Boolean, Boolean)
-  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(string, int, YamlDotNet.RepresentationModel.YamlNode, bool, bool)
-  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(String, Integer, YamlDotNet.RepresentationModel.YamlNode, Boolean, Boolean)
-  nameWithType: WorldCodexYamlLoader.ParseSetEffect(string, int, YamlNode, bool, bool)
-  nameWithType.vb: WorldCodexYamlLoader.ParseSetEffect(String, Integer, YamlNode, Boolean, Boolean)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)
+  name: ParseSetEffect(string, ReferenceRoot, int, YamlNode, bool, bool)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)
+  name.vb: ParseSetEffect(String, ReferenceRoot, Integer, YamlNode, Boolean, Boolean)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(string, UnmappedIsland.Domain.Defs.ReferenceRoot, int, YamlDotNet.RepresentationModel.YamlNode, bool, bool)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(String, UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, YamlDotNet.RepresentationModel.YamlNode, Boolean, Boolean)
+  nameWithType: WorldCodexYamlLoader.ParseSetEffect(string, ReferenceRoot, int, YamlNode, bool, bool)
+  nameWithType.vb: WorldCodexYamlLoader.ParseSetEffect(String, ReferenceRoot, Integer, YamlNode, Boolean, Boolean)
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect*
   name: ParseSetEffect
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_
