@@ -660,14 +660,9 @@ object_defs:
         value: 10
 ";
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
+            int durabilityId = codex.PropertyNames.GetId("durability");
 
             ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
-            CombinationDef chop = CombinationOf(wood, "chop");
-            Assert.That(chop.Active.Adds.ContainsKey(ReferenceRoot.Dragged), Is.True);
-            Assert.That(chop.Active.Spawns.Count, Is.EqualTo(1));
-            Assert.That(chop.Active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("logs")));
-
-            int durabilityId = codex.PropertyNames.GetId("durability");
             var session = new WorldSession(codex);
             var woodInstance = new WorldObject(1, wood);
             var axe = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("axe_tool")));
@@ -675,9 +670,11 @@ object_defs:
             axe.SetNumber(durabilityId, 0);
             Assert.That(woodInstance.TryExecuteCombination(axe, null, "chop", session), Is.False,
                 "dragged.durability=0 のとき条件 gt 0 を満たさない");
-            axe.SetNumber(durabilityId, 1);
+            axe.SetNumber(durabilityId, 10);
             Assert.That(woodInstance.TryExecuteCombination(axe, null, "chop", session), Is.True,
-                "dragged.durability=1 のとき条件 gt 0 を満たす");
+                "dragged.durability=10 のとき条件 gt 0 を満たす");
+            Assert.That(axe.GetNumber(durabilityId), Is.EqualTo(9), "add: dragged.durability: -1 が適用される");
+            Assert.That(woodInstance.Parent, Is.Null, "destroy: self が適用される");
         }
 
         [Test]
