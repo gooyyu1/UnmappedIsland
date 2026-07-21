@@ -48,6 +48,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import glob
+          import re
           import xml.etree.ElementTree as ET
           from pathlib import Path
 
@@ -61,7 +62,28 @@ jobs:
             lines.append("TRX file was not found.")
           else:
             total = passed = failed = skipped = 0
-            cases = []
+            cases_by_class = {}
+
+            def split_test_name(test_name: str):
+              name_without_args = test_name.split("(", 1)[0]
+              if "." in name_without_args:
+                class_name, method_name = name_without_args.rsplit(".", 1)
+                return class_name, method_name
+              return "(unknown)", name_without_args
+
+            def classify_outcome(outcome: str):
+              normalized = (outcome or "").lower()
+              if normalized == "passed":
+                return "passed"
+              if normalized == "failed":
+                return "failed"
+              if normalized in {"notexecuted", "skipped"}:
+                return "skipped"
+              return "other"
+
+            def to_anchor(text: str):
+              anchor = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+              return anchor or "class"
 
             for trx_file in trx_files:
               root = ET.parse(trx_file).getroot()
@@ -76,10 +98,24 @@ jobs:
                 failed += int(counters.attrib.get("failed", 0))
                 skipped += int(counters.attrib.get("notExecuted", 0))
 
+              class_by_test_id = {}
+              for unit_test in root.findall(f".//{prefix}UnitTest", ns):
+                test_id = unit_test.attrib.get("id")
+                test_method = unit_test.find(f"{prefix}TestMethod", ns)
+                if not test_id:
+                  continue
+                if test_method is not None:
+                  class_name = test_method.attrib.get("className")
+                  method_name = test_method.attrib.get("name")
+                  if class_name and method_name:
+                    class_by_test_id[test_id] = (class_name, method_name)
+
               for result in root.findall(f".//{prefix}UnitTestResult", ns):
                 test_name = result.attrib.get("testName", "")
                 outcome = result.attrib.get("outcome", "")
-                cases.append((outcome, test_name))
+                test_id = result.attrib.get("testId", "")
+                class_name, method_name = class_by_test_id.get(test_id, split_test_name(test_name))
+                cases_by_class.setdefault(class_name, []).append((outcome, method_name))
 
             lines.extend(
               [
@@ -88,16 +124,55 @@ jobs:
                 f"- Failed: **{failed}**",
                 f"- Skipped: **{skipped}**",
                 "",
-                "## Test methods",
+                "## Class summary",
                 "",
-                "| Outcome | Test method |",
-                "| --- | --- |",
+                "| Class | Total | Passed | Failed | Skipped | Details |",
+                "| --- | ---: | ---: | ---: | ---: | --- |",
               ]
             )
 
-            for outcome, test_name in sorted(cases, key=lambda x: (x[0], x[1])):
-              safe_name = test_name.replace("|", "\\|")
-              lines.append(f"| {outcome} | `{safe_name}` |")
+            used_anchors = set()
+            class_sections = []
+            for class_name in sorted(cases_by_class):
+              class_cases = cases_by_class[class_name]
+              class_total = len(class_cases)
+              class_passed = sum(1 for outcome, _ in class_cases if classify_outcome(outcome) == "passed")
+              class_failed = sum(1 for outcome, _ in class_cases if classify_outcome(outcome) == "failed")
+              class_skipped = sum(1 for outcome, _ in class_cases if classify_outcome(outcome) == "skipped")
+
+              base_anchor = f"class-{to_anchor(class_name)}"
+              anchor = base_anchor
+              suffix = 2
+              while anchor in used_anchors:
+                anchor = f"{base_anchor}-{suffix}"
+                suffix += 1
+              used_anchors.add(anchor)
+
+              safe_class_name = class_name.replace("|", "\\|")
+              lines.append(
+                f"| `{safe_class_name}` | {class_total} | {class_passed} | {class_failed} | {class_skipped} | [Details](#{anchor}) |"
+              )
+              class_sections.append((class_name, class_cases, anchor))
+
+            lines.extend(["", "## Class details", ""])
+
+            for class_name, class_cases, anchor in class_sections:
+              safe_class_name = class_name.replace("|", "\\|")
+              lines.extend(
+                [
+                  f'<a id="{anchor}"></a>',
+                  f"### `{safe_class_name}`",
+                  "",
+                  "| Outcome | Test method |",
+                  "| --- | --- |",
+                ]
+              )
+
+              for outcome, method_name in sorted(class_cases, key=lambda x: (x[0], x[1])):
+                safe_method_name = method_name.replace("|", "\\|")
+                lines.append(f"| {outcome} | `{safe_method_name}` |")
+
+              lines.append("")
 
           report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
           PY

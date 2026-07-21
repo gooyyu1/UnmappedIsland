@@ -87,7 +87,7 @@ dotnet test Tests/Tests.csproj
 ### GitHub Actions でのレポート
 
 `.github/workflows/tests.yml` では `dotnet test` の結果を TRX として保存し、`dotnet-test-report` artifact として公開します。  
-Workflow の Summary にも件数（Total/Passed/Failed/Skipped）とテストメソッド名一覧を出力します。
+Workflow の Summary には件数（Total/Passed/Failed/Skipped）に加えて、クラス単位サマリとクラス別メソッド詳細（ページ内リンク付き）を出力します。
 
 ---
 
