@@ -4,7 +4,7 @@ using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 
-namespace UnmappedIsland.Domain.Runtime
+namespace UnmappedIsland.Domain
 {
     /// <summary>
     /// actions/combinations（GameElementDefinition.md 11節・12節）の実行エンジン（InteractionExecutor）

@@ -4,7 +4,7 @@ using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 using UnmappedIsland.Domain.Runtime.Views;
 
-namespace UnmappedIsland.Domain.Runtime
+namespace UnmappedIsland.Domain
 {
     /// <summary>
     /// World/PlayerCharacter/Location（Views）に対する自動テスト。ラップ対象の WorldObject が
