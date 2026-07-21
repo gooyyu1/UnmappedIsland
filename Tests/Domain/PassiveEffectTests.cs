@@ -29,7 +29,7 @@ namespace UnmappedIsland.Domain
         private WorldObject Spawn(WorldCodex codex, string objectName)
         {
             ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId(objectName));
-            return new WorldObject(nextInstanceId++, def);
+            return new WorldObject(nextInstanceId++, def, new WorldSession(codex));
         }
 
         // ------------------------------------------------------------------

@@ -40,7 +40,7 @@ object_defs:
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_immediate")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_immediate")), session);
 
             instance.AddNumber(minuteId, 15, session); // 45+15=60 > 59。Tick()は一度も呼んでいない
 
@@ -70,7 +70,7 @@ object_defs:
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_deferred")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_deferred")), session);
 
             instance.AddNumber(minuteId, 15); // sessionを渡さない
 
@@ -102,7 +102,7 @@ object_defs:
             int pressureId = codex.PropertyNames.GetId("pressure");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank_immediate")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank_immediate")), session);
 
             instance.AddNumber(pressureId, 5, session); // 5+5=10 >= max(10)。例外・スタックオーバーフローを起こさなければ成功
 
@@ -133,7 +133,7 @@ object_defs:
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock")), session);
 
             instance.Tick(session); // 45 + 15 = 60 > 59 なので折り返す
 
@@ -168,7 +168,7 @@ object_defs:
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_set")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock_set")), session);
 
             instance.Tick(session); // 45 + 15 = 60 > 59 なので折り返す
 
@@ -200,7 +200,7 @@ object_defs:
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock2")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock2")), session);
 
             instance.Tick(session); // 10 + 15 = 25、59以下なので折り返さない
 
@@ -231,7 +231,7 @@ object_defs:
             int hourId = codex.PropertyNames.GetId("hour");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock3")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock3")), session);
 
             instance.Tick(session);
             Assert.That(instance.GetNumber(minuteId), Is.EqualTo(5), "3span分の補正が1回のTick()の中で連鎖的に解決される");
@@ -276,7 +276,7 @@ object_defs:
             int dayId = codex.PropertyNames.GetId("day");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock4")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock4")), session);
 
             instance.Tick(session);
 
@@ -319,7 +319,7 @@ object_defs:
             int dayId = codex.PropertyNames.GetId("day");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock5")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("clock5")), session);
 
             instance.Tick(session);
 
@@ -357,7 +357,7 @@ object_defs:
             int minuteId = codex.PropertyNames.GetId("minute");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("a_clock2")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("a_clock2")), session);
 
             instance.Tick(session); // 例外を投げればテスト自体が失敗する
 
@@ -399,7 +399,7 @@ object_defs:
             int alarmId = codex.PropertyNames.GetId("alarm_count");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank2")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank2")), session);
 
             instance.Tick(session); // 0 + 150 = 150 > 100 なので折り返す
 
@@ -436,7 +436,7 @@ object_defs:
             int alarmId = codex.PropertyNames.GetId("alarm_count");
             var session = new WorldSession(codex);
 
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank3")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("tank3")), session);
 
             instance.Tick(session); // 50 - 150 = -100 < 0 なので折り返す。折り返し量(+150)はmin(0)ちょうどには
             // 着地させない(50に着地させる)ことで、「折り返し後の値がたまたま境界と一致する」ケースと区別する。

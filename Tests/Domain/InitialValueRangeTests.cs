@@ -56,16 +56,5 @@ object_defs:
             Assert.That(FirstSpawn(999), Is.EqualTo(FirstSpawn(999)),
                 "同じシードなら初期値も再現する（決定的に振る舞わせられる）");
         }
-
-        [Test]
-        public void DirectConstruction_WithoutRng_FallsBackToMin()
-        {
-            WorldCodex codex = Load();
-            int qualityId = codex.PropertyNames.GetId("quality");
-            var gem = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("gem")));
-
-            Assert.That(gem.GetNumber(qualityId), Is.EqualTo(10),
-                "RNGを渡さない直接生成では決定的にminで始まる");
-        }
     }
 }

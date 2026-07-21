@@ -55,7 +55,7 @@ object_defs:
         value: 1
 ";
             var codex = Load(yaml);
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")), new WorldSession(codex));
             return (codex, new World(instance, codex.PropertyNames));
         }
 

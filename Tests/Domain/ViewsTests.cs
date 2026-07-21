@@ -33,7 +33,7 @@ object_defs:
         value: 15
 ";
             var codex = Load(yaml);
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")), new WorldSession(codex));
 
             var world = new World(instance, codex.PropertyNames);
 
@@ -65,7 +65,7 @@ object_defs:
             minute: 10
 ";
             var codex = Load(yaml);
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("world")), new WorldSession(codex));
 
             var world = new World(instance, codex.PropertyNames);
 
@@ -85,7 +85,7 @@ object_defs:
         value: 50
 ";
             var codex = Load(yaml);
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")), new WorldSession(codex));
 
             var actor = new PlayerCharacter(instance, codex.PropertyNames);
 
@@ -101,7 +101,7 @@ object_defs:
   forest_clearing: {}
 ";
             var codex = Load(yaml);
-            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("forest_clearing")));
+            var instance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("forest_clearing")), new WorldSession(codex));
 
             var location = new Location(instance);
 

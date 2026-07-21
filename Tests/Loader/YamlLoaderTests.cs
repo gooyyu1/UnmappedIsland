@@ -209,8 +209,8 @@ object_defs:
             int offHandId = codex.SlotNames.GetId("off_hand");
 
             var session = new WorldSession(codex);
-            var characterInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")));
-            var swordInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("sword")));
+            var characterInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("character")), session);
+            var swordInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("sword")), session);
 
             Assert.That(swordInstance.MoveToSlot(characterInstance, mainHandId, session.Codex.WellKnown, out _), Is.True);
             Assert.That(characterInstance.GetEffectiveValue(attackId), Is.EqualTo(15), "main_handでは+5");
@@ -304,8 +304,8 @@ object_defs:
             ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
             int satietyId = codex.PropertyNames.GetId("satiety");
             var session = new WorldSession(codex);
-            var appleInstance = new WorldObject(1, apple);
-            var player = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("player")));
+            var appleInstance = new WorldObject(1, apple, session);
+            var player = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("player")), session);
 
             Assert.That(appleInstance.TryExecuteAction("eat", player, session), Is.False,
                 "actor.satiety=100 は lt 100 を満たさない");
@@ -342,8 +342,8 @@ object_defs:
 
             ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
             var session = new WorldSession(codex);
-            var woodInstance = new WorldObject(1, wood);
-            var axe = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("axe_tool")));
+            var woodInstance = new WorldObject(1, wood, session);
+            var axe = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("axe_tool")), session);
 
             axe.SetNumber(durabilityId, 0);
             Assert.That(woodInstance.TryExecuteCombination(axe, null, "chop", session), Is.False,
@@ -471,7 +471,7 @@ object_defs:
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
             int modeId = codex.PropertyNames.GetId("mode");
             var session = new WorldSession(codex);
-            var thingInstance = new WorldObject(1, thing);
+            var thingInstance = new WorldObject(1, thing, session);
 
             Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.True,
                 "object/op省略時は self.mode == 1 の等価比較として成立する");
@@ -536,8 +536,8 @@ object_defs:
             int contentSlotId = codex.SlotNames.GetId("content");
 
             var session = new WorldSession(codex);
-            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box")));
-            var redMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("red_marker")));
+            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box")), session);
+            var redMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("red_marker")), session);
             redMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
 
             Assert.That(box.TryExecuteAction("use", actor: null, session), Is.True,
@@ -566,11 +566,11 @@ object_defs:
             int contentSlotId = codex.SlotNames.GetId("content");
 
             var session = new WorldSession(codex);
-            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box2")));
+            var box = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("box2")), session);
             Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットが空なので実行されない");
 
-            var blueMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("blue_marker2")));
+            var blueMarker = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("blue_marker2")), session);
             blueMarker.MoveToSlot(box, contentSlotId, session.Codex.WellKnown, out _);
             Assert.That(box.TryExecuteAction("use", actor: null, session), Is.False,
                 "contentスロットの中身がredタグを持たない(blueタグ)ので実行されない");
@@ -607,7 +607,7 @@ object_defs:
 ";
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             var session = new WorldSession(codex);
-            var thing = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
+            var thing = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")), session);
 
             Assert.That(thing.TryExecuteAction("use", null, session), Is.True);
         }
@@ -636,8 +636,8 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             var session = new WorldSession(codex);
-            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")));
-            var sameContent = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("bottle_source")));
+            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle")), session);
+            var sameContent = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("bottle_source")), session);
 
             Assert.That(bottle.TryExecuteCombination(sameContent, null, "pour_in", session), Is.False,
                 "self(empty)とdragged(water)のcontentが異なるので不成立");
@@ -689,8 +689,8 @@ object_defs:
             int contentId = codex.PropertyNames.GetId("content");
 
             var session = new WorldSession(codex);
-            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle2")));
-            var oilSource = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("oil_source")));
+            var bottle = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("bottle2")), session);
+            var oilSource = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("oil_source")), session);
 
             Assert.That(bottle.TryExecuteCombination(oilSource, null, "pour_in", session), Is.True);
             Assert.That(bottle.GetNumber(contentId), Is.EqualTo(codex.SymbolNames.GetId("oil")),
@@ -721,8 +721,8 @@ object_defs:
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
             var session = new WorldSession(codex);
-            var falseCase = new WorldObject(1, thing);
-            var trueCase = new WorldObject(2, thing);
+            var falseCase = new WorldObject(1, thing, session);
+            var trueCase = new WorldObject(2, thing, session);
             int hpId = codex.PropertyNames.GetId("hp");
             int mpId = codex.PropertyNames.GetId("mp");
 
@@ -753,7 +753,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             var session = new WorldSession(codex);
-            var thingInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")));
+            var thingInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("thing")), session);
 
             Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.False,
                 "locked(1)がprop:1と一致するため、not: {...}は偽になる");
@@ -795,8 +795,8 @@ object_defs:
             int storageSlotId = codex.SlotNames.GetId("storage");
 
             var session = new WorldSession(codex);
-            var campfireInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("campfire")));
-            var logInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("log")));
+            var campfireInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("campfire")), session);
+            var logInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("log")), session);
 
             Assert.That(logInstance.MoveToSlot(campfireInstance, fuelSlotId, session.Codex.WellKnown, out _), Is.True);
             Assert.That(logInstance.GetEffectiveValue(warmthId), Is.EqualTo(0),
@@ -907,7 +907,7 @@ object_defs:
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, clock);
+            var instance = new WorldObject(1, clock, session);
             instance.SetProperty(codex.PropertyNames.GetId("minute"), 60); // 手動で溢れさせる
             instance.Tick(session); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
 
@@ -950,7 +950,7 @@ object_defs:
             ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, gauge);
+            var instance = new WorldObject(1, gauge, session);
             instance.SetProperty(codex.PropertyNames.GetId("value"), 150);
             instance.Tick(session);
 
@@ -1016,7 +1016,7 @@ object_defs:
             ObjectDef clock = codex.Objects.Get(codex.ObjectNames.GetId("clock"));
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, clock);
+            var instance = new WorldObject(1, clock, session);
             instance.SetProperty(codex.PropertyNames.GetId("minute"), -10); // 手動で下回らせる
             instance.Tick(session);
 
@@ -1040,7 +1040,7 @@ object_defs:
             ObjectDef gauge = codex.Objects.Get(codex.ObjectNames.GetId("gauge"));
 
             var session = new WorldSession(codex);
-            var instance = new WorldObject(1, gauge);
+            var instance = new WorldObject(1, gauge, session);
             instance.SetProperty(codex.PropertyNames.GetId("value"), -50);
             instance.Tick(session);
 
@@ -1073,9 +1073,9 @@ object_defs:
             int pocketSlotId = codex.SlotNames.GetId("pocket");
 
             var session = new WorldSession(codex);
-            var roomInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("room")));
-            var characterInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("character")));
-            var foodInstance = new WorldObject(3, codex.Objects.Get(codex.ObjectNames.GetId("food")));
+            var roomInstance = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("room")), session);
+            var characterInstance = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("character")), session);
+            var foodInstance = new WorldObject(3, codex.Objects.Get(codex.ObjectNames.GetId("food")), session);
 
             Assert.That(characterInstance.MoveToSlot(roomInstance, contentsSlotId, codex.WellKnown, out _), Is.True);
             Assert.That(foodInstance.MoveToSlot(characterInstance, pocketSlotId, codex.WellKnown, out _), Is.True);

@@ -36,9 +36,9 @@ namespace UnmappedIsland.Domain.Runtime
         public int ParentSlotLocalId { get; private set; } = LocalIndexMap.Missing;
 
         /// <summary>session は生成文脈。value:{min,max} を持つプロパティの初期値ランダム化に session.Rng を
-        /// 使う（spawn時はそのセッションを渡す）。null の場合はランダム化を行わず、各プロパティは決定的な
-        /// 初期値（レンジ指定時はmin）で始まる。</summary>
-        public WorldObject(int instanceId, ObjectDef def, WorldSession session = null)
+        /// 使う（spawn時はそのセッションを渡す）。WorldObjectは常に何らかのセッションの下で生成されるため、
+        /// sessionは必須。</summary>
+        public WorldObject(int instanceId, ObjectDef def, WorldSession session)
         {
             InstanceId = instanceId;
             Def = def;

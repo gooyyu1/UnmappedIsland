@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnmappedIsland.Domain.Runtime;
 
@@ -175,24 +174,22 @@ namespace UnmappedIsland.Domain.Defs
 
         /// <summary>
         /// このプロパティ定義に属する、新しい実行時値（PropertyValue）を生成する。ownerはその値を保持する
-        /// WorldObject、sessionは生成文脈（初期値のランダム化にはsession.Rngを使う。spawn時はそのセッション、
-        /// テスト等の直接生成ではnull）。CheckRangeEventsと同じく、生成もsessionを文脈として受け取る。
+        /// WorldObject、sessionは生成文脈（初期値のランダム化にsession.Rngを使う）。CheckRangeEventsと同じく、
+        /// 生成もsessionを文脈として受け取る。
         ///
-        /// value: {min, max} 記法（initialValueRange）を持つプロパティは、sessionが渡された場合に限り初期値を
-        /// [min,max]の一様乱数にする（6.2節）。sessionがnull、またはランダム範囲を持たない場合は決定的な
-        /// initialValue（レンジ指定時はmin）で埋める。初期値をどう決めるかは定義自身の責務であり、呼び出し側
-        /// （WorldObject）は一切意識しない（自分のことは自分でする、CLAUDE.md参照）。
+        /// value: {min, max} 記法（initialValueRange）を持つプロパティは初期値を[min,max]の一様乱数にする
+        /// （6.2節）。ランダム範囲を持たない場合は決定的なinitialValueで埋める。初期値をどう決めるかは定義自身の
+        /// 責務であり、呼び出し側（WorldObject）は一切意識しない（自分のことは自分でする、CLAUDE.md参照）。
         /// </summary>
         public PropertyValue CreateValue(WorldObject owner, WorldSession session)
         {
             int initial = initialValue;
-            Random rng = session?.Rng;
-            if (initialValueRange.HasValue && rng != null)
+            if (initialValueRange.HasValue)
             {
                 int min = initialValueRange.Value.Min;
                 int max = initialValueRange.Value.Max;
                 // Random.Nextの上限は排他なので+1して[min,max]の閉区間にする（max==int.MaxValueのみ桁あふれ回避）。
-                initial = rng.Next(min, max == int.MaxValue ? max : max + 1);
+                initial = session.Rng.Next(min, max == int.MaxValue ? max : max + 1);
             }
             return new PropertyValue(initial, this, owner);
         }
