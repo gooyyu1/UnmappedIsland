@@ -26,6 +26,7 @@
 
 ### その他
 
+- [Domain.Defs と Domain.Runtime の統合方針](./DomainDefsRuntimeIntegration.md)
 - [画面レイアウト検討](./ScreenLayout.md)
 
 ## 含まれるドキュメント例
