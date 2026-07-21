@@ -16,15 +16,15 @@ namespace UnmappedIsland.Domain.Defs
     public sealed class ActionDef
     {
         public string Name { get; }
-        internal ShowMenuMode ShowMenu { get; }
+        public ShowMenuMode ShowMenu { get; }
 
         /// <summary>nullなら常に真（conditions省略）。</summary>
-        public ConditionNode Conditions { get; }
+        private ConditionNode Conditions { get; }
 
         /// <summary>ActiveかPickのどちらか一方のみが非null（どちらも指定しなければ、条件成立時に何も
         /// 起きないアクションになる）。</summary>
-        public ActiveEffect Active { get; }
-        public IReadOnlyList<PickCandidateDef> Pick { get; }
+        private ActiveEffect Active { get; }
+        private IReadOnlyList<PickCandidateDef> Pick { get; }
 
         public ActionDef(
             string name,
