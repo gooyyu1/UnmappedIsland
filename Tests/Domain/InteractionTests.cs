@@ -349,6 +349,52 @@ object_defs:
         }
 
         [Test]
+        public void TryExecuteCombination_AppliesSetAndAddToDraggedParent()
+        {
+            const string yaml = @"
+object_defs:
+  lever:
+    combinations:
+      operate:
+        with: marker_tag
+        add:
+          dragged_parent:
+            power: 3
+        set:
+          dragged_parent:
+            mode: 2
+  carrier:
+    props:
+      power:
+        value: 1
+      mode:
+        value: 0
+    slots:
+      hold:
+        accepts:
+          - {tag: marker_tag, max: 1}
+  marker:
+    tags: [marker_tag]
+";
+            var codex = Load(yaml);
+            int holdSlotId = codex.SlotNames.GetId("hold");
+            int powerId = codex.PropertyNames.GetId("power");
+            int modeId = codex.PropertyNames.GetId("mode");
+
+            var session = new WorldSession(codex);
+            WorldObject lever = Spawn(codex, "lever");
+            WorldObject carrier = Spawn(codex, "carrier");
+            WorldObject marker = Spawn(codex, "marker");
+            marker.MoveToSlot(carrier, holdSlotId, codex.WellKnown, out _);
+
+            bool executed = InteractionExecutor.TryExecuteCombination(lever, marker, actor: null, "operate", session);
+
+            Assert.That(executed, Is.True);
+            Assert.That(carrier.GetNumber(powerId), Is.EqualTo(4));
+            Assert.That(carrier.GetNumber(modeId), Is.EqualTo(2));
+        }
+
+        [Test]
         public void TryExecuteCombination_DelegatesReceiverAndDraggedToRepresentedContents()
         {
             const string yaml = @"

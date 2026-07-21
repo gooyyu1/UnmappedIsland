@@ -615,11 +615,11 @@ namespace UnmappedIsland.Domain.Runtime
             }
         }
 
-        /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged）。YAML側で
+        /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged→dragged_parent）。YAML側で
         /// 対象間の適用順序は規定されていないため、決定的な順序を1つ選んで固定する。</summary>
         private static readonly ReferenceRoot[] OrderedTargets =
         {
-            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged,
+            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged, ReferenceRoot.DraggedParent,
         };
 
         /// <summary>
