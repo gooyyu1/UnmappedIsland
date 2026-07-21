@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>DomainDefsRuntimeIntegration</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+  <style>
+    @media (max-width: 600px) {
+      .markdown-body { padding: 1rem !important; }
+    }
+  </style>
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+<header id="title-block-header">
+<h1 class="title">DomainDefsRuntimeIntegration</h1>
+</header>
+<h1 id="domain.defs-と-domain.runtime-の統合方針">Domain.Defs と
+Domain.Runtime の統合方針</h1>
+<h2 id="概要">概要</h2>
+<p>本ドキュメントは、<code>Assets/Scripts/Domain/Defs/</code> と
+<code>Assets/Scripts/Domain/Runtime/</code> を分けている現在の構成を、
+今後も維持すべきかどうかを検討した結果をまとめたものです。結論だけ先に書くと、<strong>段階的に統合すべき</strong>です。</p>
+<p>ここで言う統合は、まず
+<strong>「定義を持つ側が、その定義に基づく振る舞いも自分で引き受ける」</strong>
+という責務の統合を指します。
+フォルダ・名前空間を即座に1つへ潰すことは最終段階であり、出発点ではありません。</p>
+<h2 id="結論">1. 結論</h2>
+<ul>
+<li><code>WorldObject</code> / <code>PropertyValue</code> /
+<code>Slot</code> / <code>WorldSession</code>
+のような<strong>実行時状態</strong>は Runtime 側に残す</li>
+<li><code>ActionDef</code> / <code>CombinationDef</code> /
+<code>ConditionNode</code> / <code>PassiveEffectGate</code>
+のような<strong>定義とその解釈規則</strong>は、 「定義だけ公開して
+Runtime
+側の補助クラスが読む」形をやめ、定義自身が振る舞いを持つ方向へ寄せる</li>
+<li>したがって、<strong>Defs と Runtime
+は責務の境界としては現状より強く統合するべき</strong>であり、現在の
+「Defs は public なデータ置き場、Runtime
+がそれを見て実行する」という分割は維持しない</li>
+</ul>
+<h2 id="現状の分割で起きている問題">2. 現状の分割で起きている問題</h2>
+<h3 id="runtime-が-defs-の中身を読んで手順を組み立てている">2.1 Runtime
+が Defs の中身を読んで手順を組み立てている</h3>
+<p>代表例が <code>InteractionExecutor</code> です。</p>
+<ul>
+<li><code>WorldObject.Def.Actions</code> から <code>ActionDef</code>
+を探す</li>
+<li><code>ActionDef.Conditions</code> を <code>ConditionEvaluator</code>
+に渡して判定する</li>
+<li><code>ActionDef.Active</code> / <code>ActionDef.Pick</code>
+を見て効果を解決する</li>
+<li><code>CombinationDef.With</code> /
+<code>CombinationDef.Conditions</code> も同様に外側から読む</li>
+</ul>
+<p>つまり、アクションや組み合わせの「意味」は <code>ActionDef</code> /
+<code>CombinationDef</code> 自身ではなく、外部の
+<code>InteractionExecutor</code> が知っています。Defs 側は多くの情報を
+public に公開するだけになっており、
+「この定義をどう実行するか」という知識が所有者の外へ漏れています。</p>
+<h3 id="条件木の評価規則が-conditionnode-自身にない">2.2
+条件木の評価規則が ConditionNode 自身にない</h3>
+<p><code>ConditionNode</code> は conditions
+の構文木そのものですが、評価ロジックは Runtime 側の
+<code>ConditionEvaluator</code>
+にあります。<code>PassiveEffectGate</code> も <code>ConditionNode</code>
+を保持するだけで、 実際の判定は
+<code>RegisteredPassiveEffect.IsActive()</code>
+から外部評価器へ委譲しています。</p>
+<p>これも「定義を持つ側が、自分の意味を自分で説明できていない」状態です。</p>
+<h3 id="public-公開範囲が広がりやすい">2.3 public
+公開範囲が広がりやすい</h3>
+<p>Defs と Runtime を厳密に分けようとすると、Runtime
+から参照したい情報を Defs 側で広く公開せざるを得ません。
+<code>Tags</code>、<code>Passives</code>、<code>Actions</code>、<code>Combinations</code>、<code>PropertyLayout</code>、<code>SlotLayout</code>
+などが典型です。</p>
+<p>もちろん一部の公開は必要ですが、現在の分割は「Runtime
+が外から組み立てる」前提なので、公開が構造的に増えます。 その結果、Defs
+側の不変条件を Defs 自身で守りにくくなります。</p>
+<h2 id="それでも完全分離に見える利点">3.
+それでも完全分離に見える利点</h2>
+<p>現在の構成には、次の分かりやすさがあります。</p>
+<ul>
+<li><code>Defs</code> はロード後不変の定義</li>
+<li><code>Runtime</code> は実行時の状態と処理</li>
+<li>依存方向も概ね <code>Runtime -&gt; Defs</code> に揃っている</li>
+</ul>
+<p>ただし、この分かりやすさで得られているのは主に<strong>見た目の整理</strong>です。実際には
+2 節の通り、 処理の本体が Runtime 側へ流れ込み、Defs
+側は「公開された生データ」に近づいています。</p>
+<p>このコストは、<code>InteractionExecutor</code> や
+<code>ConditionEvaluator</code> のような「Defs
+の意味を外部が代行しているクラス」として
+既にコード上へ現れており、単なる抽象的な懸念ではありません。</p>
+<h2 id="採用する統合方針">4. 採用する統合方針</h2>
+<h3 id="defs-自身が振る舞いを持つ">4.1 Defs 自身が振る舞いを持つ</h3>
+<p>今後は次の方向を基本方針とします。</p>
+<ul>
+<li><code>ConditionNode</code> が自分自身を評価する</li>
+<li><code>PassiveEffectGate</code> が自分自身の成立可否を判定する</li>
+<li><code>ActionDef</code> が「この action を実行できるか /
+実行すると何が起きるか」を引き受ける</li>
+<li><code>CombinationDef</code> が matching と実行を引き受ける</li>
+<li><code>WeightSpec</code> / <code>PickCandidateDef</code>
+も、自分の解決規則を自分の近くへ寄せる</li>
+</ul>
+<p>Runtime 側は、<code>WorldObject</code> や <code>WorldSession</code>
+といった実行時コンテキストを提供する役に留めます。
+「この後に何を判定し、どの定義をどう解釈するか」は Defs
+側の責務です。</p>
+<h3 id="ただし状態まで-defs-に寄せる必要はない">4.2 ただし状態まで Defs
+に寄せる必要はない</h3>
+<p><code>PropertyValue</code> が自分の range
+判定を自分で行っているように、実行時状態を持つクラスがその場で不変条件を守る構造自体は
+妥当です。今回統合したいのは <strong>定義と、その定義の解釈規則</strong>
+であって、実行時状態まで Defs 側へ吸収することではありません。</p>
+<h2 id="進め方">5. 進め方</h2>
+<ol type="1">
+<li><code>ConditionEvaluator</code> の責務を <code>ConditionNode</code>
+/ <code>PassiveEffectGate</code> 側へ移す</li>
+<li><code>InteractionExecutor</code> の責務を <code>ActionDef</code> /
+<code>CombinationDef</code> / <code>Pick</code> 系へ移す</li>
+<li>その結果として Runtime
+側に残るのが「状態管理だけ」になった段階で、必要ならフォルダ・名前空間も再編する</li>
+</ol>
+<p>重要なのは、<strong>名前空間を先に潰すことではなく、責務のねじれを先に解消すること</strong>です。
+責務の統合が終われば、<code>Domain.Defs</code> と
+<code>Domain.Runtime</code>
+の物理的な分割を残す意味があるかを改めて判断できます。</p>
+</article>
+</body>
+</html>
