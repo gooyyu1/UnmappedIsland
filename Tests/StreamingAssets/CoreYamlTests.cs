@@ -6,7 +6,7 @@ using UnmappedIsland.Loader;
 using UnmappedIsland.Domain.Runtime;
 using UnmappedIsland.Domain.Runtime.Views;
 
-namespace UnmappedIsland.Loader
+namespace UnmappedIsland.StreamingAssets
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/core.yaml（ゲーム本体の最も基本的な定義: world・locationトレイト）

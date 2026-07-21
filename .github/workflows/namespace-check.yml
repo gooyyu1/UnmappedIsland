@@ -1,0 +1,29 @@
+name: Namespace Convention Check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Assets/Scripts/**'
+      - 'Tests/**'
+      - 'Tools/check_namespace.py'
+      - '.github/workflows/namespace-check.yml'
+  pull_request:
+    paths:
+      - 'Assets/Scripts/**'
+      - 'Tests/**'
+      - 'Tools/check_namespace.py'
+      - '.github/workflows/namespace-check.yml'
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check namespace/folder convention
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check namespaces
+        run: python3 Tools/check_namespace.py
