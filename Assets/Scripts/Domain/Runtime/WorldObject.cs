@@ -540,7 +540,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
         /// （assign.Value）をそのまま使う。ValueRefがあれば、その参照先（{object, prop}）の現在の実効値を
         /// 読んで使う（他のプロパティの値をそのままコピーする、9.2節）。参照先が解決できない場合は0。</summary>
-        private int ResolveAssignmentValue(PropertyAssignment assign, WorldObject actor, WorldObject dragged)
+        private int ResolveAssignmentValue(SetEffect assign, WorldObject actor, WorldObject dragged)
         {
             if (!assign.ValueRef.HasValue) return assign.Value;
 

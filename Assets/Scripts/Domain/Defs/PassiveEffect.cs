@@ -72,7 +72,7 @@ namespace UnmappedIsland.Domain.Defs
     /// いくら効くか（ActiveAmount）」。
     ///
     /// modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ
-    /// 加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがPropertyAssignment/PropertyDeltaに
+    /// 加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに
     /// 分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の
     /// 唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。
     ///
