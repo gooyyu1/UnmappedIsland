@@ -19,6 +19,22 @@
 
 ---
 
+## フォルダ名と名前空間の対応ルール
+
+`Assets/Scripts/` および `Tests/` 以下では、**フォルダ名と名前空間を必ず一致させること**。
+
+- `Assets/Scripts/<FolderPath>/` に置かれたファイルの名前空間は `UnmappedIsland.<FolderPath>` とする。
+  - 例: `Assets/Scripts/Domain/Runtime/` → `namespace UnmappedIsland.Domain.Runtime`
+  - 例: `Assets/Scripts/Loader/` → `namespace UnmappedIsland.Loader`
+- `Tests/<FolderPath>/` に置かれたファイルの名前空間は `UnmappedIsland.<FolderPath>` とする。
+  - 例: `Tests/Domain/` → `namespace UnmappedIsland.Domain`
+  - 例: `Tests/StreamingAssets/` → `namespace UnmappedIsland.StreamingAssets`
+  - 例: `Tests/Loader/` → `namespace UnmappedIsland.Loader`
+
+名前空間がフォルダと一致しない場合は、ファイルを正しいフォルダへ移動するか、名前空間を修正すること。
+
+---
+
 ## スクリーンショット取得について
 
 このエージェント環境では **Playwright MCP ツールは動作しない**（タイムアウト／OAuth エラーが発生する）。
