@@ -554,7 +554,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.PropertyValue",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"1\">props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値、および\nFromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。PassiveEffectの影響先は\n「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、\nいずれもWorldObjectではなくこの値自身が持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"6\">値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。\nWorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない\n（自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef\n（range・on_overflow等）と、それを保持するWorldObject（on_overflow等の適用先解決に使う）は、\nいずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに引数で受け取り直す\nことはしない。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"1\">props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値として使う。\nPassiveEffectの影響先は\n「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、\nいずれもWorldObjectではなくこの値自身が持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"6\">値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。\nWorldObjectはローカルID解決のみを担い、値の変更に伴って何を判定・実行すべきかには一切関与しない\n（自分のことは自分でする、というOOPの原則。CLAUDE.md参照）。判定・実行に必要な自分自身のPropertyDef\n（range・on_overflow等）と、それを保持するWorldObject（on_overflow等の適用先解決に使う）は、\nいずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに引数で受け取り直す\nことはしない。</p>\n"
     },
     {
       "type": "ManagedReference",

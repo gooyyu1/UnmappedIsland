@@ -296,15 +296,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.ConditionNode
   fullName: UnmappedIsland.Domain.Defs.ConditionNode
   nameWithType: ConditionNode
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.#ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Runtime.PropertyValue},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath},System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})
-  name: ConditionNode(ConditionNodeKind, ReferenceRoot, int, ConditionOp, IReadOnlyList<PropertyValue>, PropertyPath?, int, int, IReadOnlyList<ConditionNode>)
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode__ctor_UnmappedIsland_Domain_Defs_ConditionNodeKind_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Runtime_PropertyValue__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__System_Int32_System_Int32_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__
-  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.#ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Runtime.PropertyValue},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath},System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})
-  name.vb: New(ConditionNodeKind, ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of PropertyValue), PropertyPath?, Integer, Integer, IReadOnlyList(Of ConditionNode))
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.ConditionNode(UnmappedIsland.Domain.Defs.ConditionNodeKind, UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Runtime.PropertyValue>, UnmappedIsland.Domain.Defs.PropertyPath?, int, int, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ConditionNode>)
-  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.New(UnmappedIsland.Domain.Defs.ConditionNodeKind, UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Runtime.PropertyValue), UnmappedIsland.Domain.Defs.PropertyPath?, Integer, Integer, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ConditionNode))
-  nameWithType: ConditionNode.ConditionNode(ConditionNodeKind, ReferenceRoot, int, ConditionOp, IReadOnlyList<PropertyValue>, PropertyPath?, int, int, IReadOnlyList<ConditionNode>)
-  nameWithType.vb: ConditionNode.New(ConditionNodeKind, ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of PropertyValue), PropertyPath?, Integer, Integer, IReadOnlyList(Of ConditionNode))
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.#ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{System.Int32},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath},System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})
+  name: ConditionNode(ConditionNodeKind, ReferenceRoot, int, ConditionOp, IReadOnlyList<int>, PropertyPath?, int, int, IReadOnlyList<ConditionNode>)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode__ctor_UnmappedIsland_Domain_Defs_ConditionNodeKind_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_System_Int32__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__System_Int32_System_Int32_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ConditionNode__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.#ctor(UnmappedIsland.Domain.Defs.ConditionNodeKind,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{System.Int32},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath},System.Int32,System.Int32,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ConditionNode})
+  name.vb: New(ConditionNodeKind, ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of Integer), PropertyPath?, Integer, Integer, IReadOnlyList(Of ConditionNode))
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.ConditionNode(UnmappedIsland.Domain.Defs.ConditionNodeKind, UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList<int>, UnmappedIsland.Domain.Defs.PropertyPath?, int, int, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ConditionNode>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.New(UnmappedIsland.Domain.Defs.ConditionNodeKind, UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList(Of Integer), UnmappedIsland.Domain.Defs.PropertyPath?, Integer, Integer, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ConditionNode))
+  nameWithType: ConditionNode.ConditionNode(ConditionNodeKind, ReferenceRoot, int, ConditionOp, IReadOnlyList<int>, PropertyPath?, int, int, IReadOnlyList<ConditionNode>)
+  nameWithType.vb: ConditionNode.New(ConditionNodeKind, ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of Integer), PropertyPath?, Integer, Integer, IReadOnlyList(Of ConditionNode))
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.#ctor*
   name: ConditionNode
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode__ctor_
@@ -415,15 +415,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ConditionNode.Op
   nameWithType: ConditionNode.Op
-- uid: UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Runtime.PropertyValue},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath})
-  name: Property(ReferenceRoot, int, ConditionOp, IReadOnlyList<PropertyValue>, PropertyPath?)
-  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Property_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Runtime_PropertyValue__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__
-  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Runtime.PropertyValue},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath})
-  name.vb: Property(ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of PropertyValue), PropertyPath?)
-  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Runtime.PropertyValue>, UnmappedIsland.Domain.Defs.PropertyPath?)
-  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Runtime.PropertyValue), UnmappedIsland.Domain.Defs.PropertyPath?)
-  nameWithType: ConditionNode.Property(ReferenceRoot, int, ConditionOp, IReadOnlyList<PropertyValue>, PropertyPath?)
-  nameWithType.vb: ConditionNode.Property(ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of PropertyValue), PropertyPath?)
+- uid: UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{System.Int32},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath})
+  name: Property(ReferenceRoot, int, ConditionOp, IReadOnlyList<int>, PropertyPath?)
+  href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Property_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_ConditionOp_System_Collections_Generic_IReadOnlyList_System_Int32__System_Nullable_UnmappedIsland_Domain_Defs_PropertyPath__
+  commentId: M:UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.ConditionOp,System.Collections.Generic.IReadOnlyList{System.Int32},System.Nullable{UnmappedIsland.Domain.Defs.PropertyPath})
+  name.vb: Property(ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of Integer), PropertyPath?)
+  fullName: UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot, int, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList<int>, UnmappedIsland.Domain.Defs.PropertyPath?)
+  fullName.vb: UnmappedIsland.Domain.Defs.ConditionNode.Property(UnmappedIsland.Domain.Defs.ReferenceRoot, Integer, UnmappedIsland.Domain.Defs.ConditionOp, System.Collections.Generic.IReadOnlyList(Of Integer), UnmappedIsland.Domain.Defs.PropertyPath?)
+  nameWithType: ConditionNode.Property(ReferenceRoot, int, ConditionOp, IReadOnlyList<int>, PropertyPath?)
+  nameWithType.vb: ConditionNode.Property(ReferenceRoot, Integer, ConditionOp, IReadOnlyList(Of Integer), PropertyPath?)
 - uid: UnmappedIsland.Domain.Defs.ConditionNode.Property*
   name: Property
   href: UnmappedIsland.Domain.Defs.ConditionNode.html#UnmappedIsland_Domain_Defs_ConditionNode_Property_
@@ -2924,15 +2924,6 @@ references:
   commentId: T:UnmappedIsland.Domain.Runtime.PropertyValue
   fullName: UnmappedIsland.Domain.Runtime.PropertyValue
   nameWithType: PropertyValue
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.#ctor(System.Int32)
-  name: PropertyValue(int)
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue__ctor_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.PropertyValue.#ctor(System.Int32)
-  name.vb: New(Integer)
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.PropertyValue(int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.PropertyValue.New(Integer)
-  nameWithType: PropertyValue.PropertyValue(int)
-  nameWithType.vb: PropertyValue.New(Integer)
 - uid: UnmappedIsland.Domain.Runtime.PropertyValue.#ctor(System.Int32,UnmappedIsland.Domain.Defs.PropertyDef,UnmappedIsland.Domain.Runtime.WorldObject)
   name: PropertyValue(int, PropertyDef, WorldObject)
   href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue__ctor_System_Int32_UnmappedIsland_Domain_Defs_PropertyDef_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -2968,19 +2959,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.PropertyValue.Add
   nameWithType: PropertyValue.Add
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.AsNumber
-  name: AsNumber()
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_AsNumber
-  commentId: M:UnmappedIsland.Domain.Runtime.PropertyValue.AsNumber
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.AsNumber()
-  nameWithType: PropertyValue.AsNumber()
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.AsNumber*
-  name: AsNumber
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_AsNumber_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.PropertyValue.AsNumber
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.AsNumber
-  nameWithType: PropertyValue.AsNumber
 - uid: UnmappedIsland.Domain.Runtime.PropertyValue.AvailableToTransferOut
   name: AvailableToTransferOut()
   href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_AvailableToTransferOut
@@ -3007,12 +2985,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.PropertyValue.CheckRangeEvents
   nameWithType: PropertyValue.CheckRangeEvents
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(UnmappedIsland.Domain.Runtime.PropertyValue)
-  name: CopyValueFrom(PropertyValue)
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_CopyValueFrom_UnmappedIsland_Domain_Runtime_PropertyValue_
-  commentId: M:UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(UnmappedIsland.Domain.Runtime.PropertyValue)
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(UnmappedIsland.Domain.Runtime.PropertyValue)
-  nameWithType: PropertyValue.CopyValueFrom(PropertyValue)
+- uid: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(System.Int32)
+  name: CopyValueFrom(int)
+  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_CopyValueFrom_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(System.Int32)
+  name.vb: CopyValueFrom(Integer)
+  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom(Integer)
+  nameWithType: PropertyValue.CopyValueFrom(int)
+  nameWithType.vb: PropertyValue.CopyValueFrom(Integer)
 - uid: UnmappedIsland.Domain.Runtime.PropertyValue.CopyValueFrom*
   name: CopyValueFrom
   href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_CopyValueFrom_
@@ -3036,22 +3017,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.PropertyValue.Create
   nameWithType: PropertyValue.Create
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.FromNumber(System.Int32)
-  name: FromNumber(int)
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_FromNumber_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.PropertyValue.FromNumber(System.Int32)
-  name.vb: FromNumber(Integer)
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.FromNumber(int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.PropertyValue.FromNumber(Integer)
-  nameWithType: PropertyValue.FromNumber(int)
-  nameWithType.vb: PropertyValue.FromNumber(Integer)
-- uid: UnmappedIsland.Domain.Runtime.PropertyValue.FromNumber*
-  name: FromNumber
-  href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_FromNumber_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.PropertyValue.FromNumber
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.PropertyValue.FromNumber
-  nameWithType: PropertyValue.FromNumber
 - uid: UnmappedIsland.Domain.Runtime.PropertyValue.GetEffectiveValue
   name: GetEffectiveValue()
   href: UnmappedIsland.Domain.Runtime.PropertyValue.html#UnmappedIsland_Domain_Runtime_PropertyValue_GetEffectiveValue
@@ -4536,15 +4501,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.SetParent
   nameWithType: WorldObject.SetParent
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(System.Int32,UnmappedIsland.Domain.Runtime.PropertyValue)
-  name: SetProperty(int, PropertyValue)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SetProperty_System_Int32_UnmappedIsland_Domain_Runtime_PropertyValue_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(System.Int32,UnmappedIsland.Domain.Runtime.PropertyValue)
-  name.vb: SetProperty(Integer, PropertyValue)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(int, UnmappedIsland.Domain.Runtime.PropertyValue)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(Integer, UnmappedIsland.Domain.Runtime.PropertyValue)
-  nameWithType: WorldObject.SetProperty(int, PropertyValue)
-  nameWithType.vb: WorldObject.SetProperty(Integer, PropertyValue)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(System.Int32,System.Int32)
+  name: SetProperty(int, int)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SetProperty_System_Int32_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(System.Int32,System.Int32)
+  name.vb: SetProperty(Integer, Integer)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(int, int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty(Integer, Integer)
+  nameWithType: WorldObject.SetProperty(int, int)
+  nameWithType.vb: WorldObject.SetProperty(Integer, Integer)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty*
   name: SetProperty
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SetProperty_

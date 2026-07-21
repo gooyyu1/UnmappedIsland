@@ -98,8 +98,8 @@ pick（10節）の重み付き抽選、解決した1つのActiveEffectをselfへ
 （Slot）に代わりこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a></h4>
-      <section><p>props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値、および
-FromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。PassiveEffectの影響先は
+      <section><p>props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値として使う。
+PassiveEffectの影響先は
 「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、
 いずれもWorldObjectではなくこの値自身が持つ。</p>
 <p>値の変更（Add/SetNumber）とrangeイベントの判定（CheckRangeEvents）はこのクラス自身が完結して行う。
