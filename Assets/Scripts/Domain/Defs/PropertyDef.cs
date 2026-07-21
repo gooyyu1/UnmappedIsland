@@ -100,8 +100,9 @@ namespace UnmappedIsland.Domain.Defs
         /// </summary>
         private readonly ActiveEffect onShortfall;
 
-        /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
-        public IReadOnlyList<PropertyStage> Stages { get; }
+        /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。
+        /// どの段に該当するかの判定（ResolveStage/IsInStage）はこのPropertyDef自身が行うため、外部へは公開しない。</summary>
+        private readonly IReadOnlyList<PropertyStage> stages;
 
         /// <summary>Stages中のmin:null・eq:null（フォールバック）の段。Stagesはコンストラクタ以降不変のため、
         /// currentValueに依らず一度だけ求めれば済み、ResolveStageの呼び出し毎に走査し直す必要が無い。
@@ -129,9 +130,10 @@ namespace UnmappedIsland.Domain.Defs
         /// （GetEffectiveValue、PropertyValue参照）。該当する祖先が見つからない場合、寄与は0
         /// （既存の「見つからなければ0」規約と同じ）。parent固定ではなくancestor固定なのは、直接の親が
         /// このプロパティを持たない場合に備えるため（例: アイテムの直接の親はプレイヤーだが、
-        /// ambient_temperatureは部屋が持つ）。
+        /// ambient_temperatureは部屋が持つ）。継承の寄与計算（InheritedContribution）はこのPropertyDef自身が
+        /// 行うため、フラグ自体は外部へ公開しない。
         /// </summary>
-        public bool Inherit { get; }
+        private readonly bool inherit;
 
         public PropertyDef(
             int globalId,
@@ -152,13 +154,13 @@ namespace UnmappedIsland.Domain.Defs
             RerollRange = rerollRange;
             Range = range;
             this.onOverflow = onOverflow;
-            Stages = stages;
+            this.stages = stages;
             this.onMin = onMin;
             this.onShortfall = onShortfall;
             this.onMax = onMax;
-            Inherit = inherit;
+            this.inherit = inherit;
 
-            foreach (var stage in Stages)
+            foreach (var stage in stages)
             {
                 if (!stage.Eq.HasValue && stage.Min == null)
                 {
@@ -226,11 +228,11 @@ namespace UnmappedIsland.Domain.Defs
         /// 理由は異なるが、いずれにせよResolveStageの戻り値はnullになり得るものとして扱い、呼び出し側
         /// （IsInStage等）が常にnullチェックする前提とする。
         /// </summary>
-        public PropertyStage ResolveStage(int currentValue)
+        private PropertyStage ResolveStage(int currentValue)
         {
             PropertyStage best = null;
 
-            foreach (var stage in Stages)
+            foreach (var stage in stages)
             {
                 if (stage.Eq.HasValue)
                 {
@@ -242,6 +244,30 @@ namespace UnmappedIsland.Domain.Defs
             }
 
             return best ?? fallbackStage;
+        }
+
+        /// <summary>
+        /// 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。
+        /// 実効値からどの段に落ちるか（ResolveStage）はPropertyDef自身の責務であり、値を保持する
+        /// Runtime.PropertyValueは自分の実効値を渡して判定を委ねる（stages/ResolveStage自体は公開しない）。
+        /// </summary>
+        public bool IsInStage(int effectiveValue, string stageName)
+        {
+            PropertyStage stage = ResolveStage(effectiveValue);
+            return stage != null && stage.Name == stageName;
+        }
+
+        /// <summary>
+        /// inherit（6節）: このプロパティのinheritが有効なとき、owner（このプロパティを保持するWorldObject）の
+        /// 直接の親から遡り、同名プロパティを定義している最初の祖先の実効値を、ownerの実効値へ加える寄与として
+        /// 返す。inheritが無効、または該当する祖先が見つからない場合は0（「見つからなければ0」規約）。どの祖先から
+        /// 幾ら継承するかはPropertyDef自身の責務であり、PropertyValueはこの寄与を自分の実効値へ足すだけ。
+        /// </summary>
+        public int InheritedContribution(WorldObject owner)
+        {
+            if (!inherit) return 0;
+            WorldObject ancestor = owner.FindAncestorWithProperty(GlobalId);
+            return ancestor != null ? ancestor.GetEffectiveValue(GlobalId) : 0;
         }
     }
 }

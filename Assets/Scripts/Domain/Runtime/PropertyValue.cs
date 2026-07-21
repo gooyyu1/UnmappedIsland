@@ -115,12 +115,7 @@ namespace UnmappedIsland.Domain.Runtime
                     if (c.Def.Kind == PassiveEffectKind.Modify && c.IsActive())
                         sum += c.Def.Amount;
 
-                if (def.Inherit)
-                {
-                    WorldObject ancestor = owner.FindAncestorWithProperty(def.GlobalId);
-                    if (ancestor != null)
-                        sum += ancestor.GetEffectiveValue(def.GlobalId);
-                }
+                sum += def.InheritedContribution(owner);
 
                 return def.Range.HasValue ? def.Range.Value.Clamp(sum) : sum;
             }
@@ -157,8 +152,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         public bool IsInStage(string stageName)
         {
-            PropertyStage stage = def.ResolveStage(GetEffectiveValue());
-            return stage != null && stage.Name == stageName;
+            return def.IsInStage(GetEffectiveValue(), stageName);
         }
 
         /// <summary>
