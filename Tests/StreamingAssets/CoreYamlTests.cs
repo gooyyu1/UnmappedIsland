@@ -126,8 +126,8 @@ namespace UnmappedIsland.StreamingAssets
 
             void AssertAmbientTemperatureAt(string weather, int hour, int expectedEffective, string because)
             {
-                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(codex.SymbolNames.Intern(weather)));
-                worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
+                worldInstance.SetProperty(weatherId, codex.SymbolNames.Intern(weather));
+                worldInstance.SetProperty(hourId, hour);
                 Assert.That(worldInstance.GetEffectiveValue(ambientTemperatureId), Is.EqualTo(expectedEffective), because);
             }
 
@@ -159,8 +159,8 @@ namespace UnmappedIsland.StreamingAssets
 
             void AssertSunlightAt(string weather, int hour, int expectedEffective, string because)
             {
-                worldInstance.SetProperty(weatherId, PropertyValue.FromNumber(codex.SymbolNames.Intern(weather)));
-                worldInstance.SetProperty(hourId, PropertyValue.FromNumber(hour));
+                worldInstance.SetProperty(weatherId, codex.SymbolNames.Intern(weather));
+                worldInstance.SetProperty(hourId, hour);
                 Assert.That(worldInstance.GetEffectiveValue(sunlightId), Is.EqualTo(expectedEffective), because);
             }
 

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
@@ -112,7 +111,7 @@ namespace UnmappedIsland.Domain.Defs
 
         /// <summary>Property葉のみ有効かつValueRefがnullの場合のみ使う。lt/lte/gt/gte/eq/neqは常に1要素。
         /// in/not_inは複数要素になりうる。</summary>
-        public IReadOnlyList<PropertyValue> Values { get; }
+        public IReadOnlyList<int> Values { get; }
 
         /// <summary>Property葉のみ有効。非nullなら、YAML上のリテラルvalue（Values）の代わりに、この
         /// {object, prop}参照先の現在の実効値と比較する（weightのpath参照、10.2節と同じ「リテラルか
@@ -133,7 +132,7 @@ namespace UnmappedIsland.Domain.Defs
 
         private ConditionNode(
             ConditionNodeKind kind, ReferenceRoot root, int propertyGlobalId, ConditionOp op,
-            IReadOnlyList<PropertyValue> values, PropertyPath? valueRef,
+            IReadOnlyList<int> values, PropertyPath? valueRef,
             int slotGlobalId, int tagGlobalId, IReadOnlyList<ConditionNode> children)
         {
             Kind = kind;
@@ -149,7 +148,7 @@ namespace UnmappedIsland.Domain.Defs
 
         public static ConditionNode Property(
             ReferenceRoot root, int propertyGlobalId, ConditionOp op,
-            IReadOnlyList<PropertyValue> values, PropertyPath? valueRef = null) =>
+            IReadOnlyList<int> values, PropertyPath? valueRef = null) =>
             new ConditionNode(ConditionNodeKind.Property, root, propertyGlobalId, op, values, valueRef, default, default, null);
 
         public static ConditionNode SlotPosition(ReferenceRoot root, int slotGlobalId) =>

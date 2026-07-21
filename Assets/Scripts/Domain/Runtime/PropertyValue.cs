@@ -5,8 +5,8 @@ using UnmappedIsland.Domain.Defs;
 namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
-    /// props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値、および
-    /// FromNumberで作る単発の値（テスト等でのSetProperty用）の両方に使う。PassiveEffectの影響先は
+    /// props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値として使う。
+    /// PassiveEffectの影響先は
     /// 「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、
     /// いずれもWorldObjectではなくこの値自身が持つ。
     ///
@@ -34,11 +34,6 @@ namespace UnmappedIsland.Domain.Runtime
         /// になるため、再入を検出した時点でGetEffectiveValue自身が分かりやすい例外を投げる。</summary>
         private bool isComputingEffectiveValue;
 
-        private PropertyValue(int number)
-        {
-            Number = number;
-        }
-
         private PropertyValue(int number, PropertyDef def, WorldObject owner)
         {
             Number = number;
@@ -46,19 +41,15 @@ namespace UnmappedIsland.Domain.Runtime
             this.owner = owner;
         }
 
-        public static PropertyValue FromNumber(int value) => new PropertyValue(value);
-
-        public int AsNumber() => Number;
-
         /// <summary>WorldObject構築時に、1つのプロパティ用の新しいインスタンスを作る（Incomingは空で始まる）。
         /// defは、このプロパティが実際に属することになるPropertyDef（range・on_overflow等）、ownerはそれを
         /// 保持するWorldObjectを紐付ける。</summary>
         internal static PropertyValue Create(int number, PropertyDef def, WorldObject owner) => new PropertyValue(number, def, owner);
 
         /// <summary>SetProperty用。登録済みのIncomingはそのまま、値の中身だけを差し替える。</summary>
-        internal void CopyValueFrom(PropertyValue other)
+        internal void CopyValueFrom(int number)
         {
-            Number = other.Number;
+            Number = number;
         }
 
         /// <summary>

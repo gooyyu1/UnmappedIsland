@@ -75,7 +75,7 @@ namespace UnmappedIsland.StreamingAssets
         private WorldObject SpawnContainer(string containerName, string liquidKind, int liquidAmount)
         {
             WorldObject container = Spawn(containerName);
-            container.SetProperty(liquidAmountId, PropertyValue.FromNumber(liquidAmount));
+            container.SetProperty(liquidAmountId, liquidAmount);
             WorldObject content = Spawn(LiquidMarkerNameFor(liquidKind));
             content.MoveToSlot(container, contentSlotId, codex.WellKnown, out _);
             return container;
@@ -90,7 +90,7 @@ namespace UnmappedIsland.StreamingAssets
         private WorldObject SpawnWorld(string weather)
         {
             WorldObject world = Spawn("world");
-            world.SetProperty(weatherId, PropertyValue.FromNumber(codex.SymbolNames.Intern(weather)));
+            world.SetProperty(weatherId, codex.SymbolNames.Intern(weather));
             return world;
         }
 
@@ -139,7 +139,7 @@ namespace UnmappedIsland.StreamingAssets
             var session = new WorldSession(codex);
             WorldObject actor = Spawn("character");
             WorldObject canteen = SpawnContainer("canteen", "water", 3000);
-            actor.SetProperty(hydrationId, PropertyValue.FromNumber(0));
+            actor.SetProperty(hydrationId, 0);
 
             bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
 
@@ -154,8 +154,8 @@ namespace UnmappedIsland.StreamingAssets
             var session = new WorldSession(codex);
             WorldObject actor = Spawn("character");
             WorldObject canteen = SpawnContainer("canteen", "tea", 3000);
-            actor.SetProperty(hydrationId, PropertyValue.FromNumber(0));
-            actor.SetProperty(wakefulnessId, PropertyValue.FromNumber(0));
+            actor.SetProperty(hydrationId, 0);
+            actor.SetProperty(wakefulnessId, 0);
 
             bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
 
@@ -170,8 +170,8 @@ namespace UnmappedIsland.StreamingAssets
             var session = new WorldSession(codex);
             WorldObject actor = Spawn("character");
             WorldObject canteen = SpawnContainer("canteen", "tea", 600);
-            actor.SetProperty(hydrationId, PropertyValue.FromNumber(0));
-            actor.SetProperty(wakefulnessId, PropertyValue.FromNumber(0));
+            actor.SetProperty(hydrationId, 0);
+            actor.SetProperty(wakefulnessId, 0);
 
             bool executed = InteractionExecutor.TryExecuteAction(canteen, actor, "drink", session);
 
