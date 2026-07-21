@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
@@ -515,7 +517,17 @@ object_defs:
         // ------------------------------------------------------------------
 
         private static ActionDef ActionOf(ObjectDef def, string name) => def.Actions.Single(a => a.Name == name);
+        private static ConditionNode ActionConditionsOf(ActionDef action) => ReadPrivateProperty<ConditionNode>(action, "Conditions");
+        private static ActiveEffect ActionActiveOf(ActionDef action) => ReadPrivateProperty<ActiveEffect>(action, "Active");
+        private static IReadOnlyList<PickCandidateDef> ActionPickOf(ActionDef action) => ReadPrivateProperty<IReadOnlyList<PickCandidateDef>>(action, "Pick");
         private static CombinationDef CombinationOf(ObjectDef def, string name) => def.Combinations.Single(c => c.Name == name);
+
+        private static T ReadPrivateProperty<T>(object target, string propertyName)
+        {
+            PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(property, Is.Not.Null, $"{target.GetType().Name}.{propertyName} が見つかりません。");
+            return (T)property.GetValue(target);
+        }
 
         [Test]
         public void Load_ParsesActionWithConditionsAndActive()
@@ -535,19 +547,30 @@ object_defs:
           actor:
             satiety: 10
         destroy: self
-  player: {}
+  player:
+    props:
+      satiety:
+        value: 100
 ";
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
             ActionDef eat = ActionOf(apple, "eat");
+            ActiveEffect active = ActionActiveOf(eat);
+            Assert.That(active, Is.Not.Null);
+            Assert.That(active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
+            Assert.That(active.Destroy, Contains.Item(ReferenceRoot.Self));
 
-            Assert.That(eat.Conditions.Children.Count, Is.EqualTo(1));
-            Assert.That(eat.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Actor));
-            Assert.That(eat.Conditions.Children[0].Op, Is.EqualTo(ConditionOp.Lt));
-            Assert.That(eat.Active, Is.Not.Null);
-            Assert.That(eat.Active.Adds.ContainsKey(ReferenceRoot.Actor), Is.True);
-            Assert.That(eat.Active.Destroy, Contains.Item(ReferenceRoot.Self));
+            int satietyId = codex.PropertyNames.GetId("satiety");
+            var session = new WorldSession(codex);
+            var appleInstance = new WorldObject(1, apple);
+            var player = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("player")));
+
+            Assert.That(appleInstance.TryExecuteAction("eat", player, session), Is.False,
+                "actor.satiety=100 は lt 100 を満たさない");
+            player.SetNumber(satietyId, 99);
+            Assert.That(appleInstance.TryExecuteAction("eat", player, session), Is.True,
+                "actor.satiety=99 は lt 100 を満たす");
         }
 
         [Test]
@@ -577,13 +600,14 @@ object_defs:
 
             ObjectDef flask = codex.Objects.Get(codex.ObjectNames.GetId("flask"));
             ActionDef use = ActionOf(flask, "use");
+            ActiveEffect active = ActionActiveOf(use);
 
-            Assert.That(use.Active.Spawns.Count, Is.EqualTo(2));
-            Assert.That(use.Active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("steam")));
-            Assert.That(use.Active.Spawns[1].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("smell")));
-            Assert.That(use.Active.Transfers.Count, Is.EqualTo(2));
-            Assert.That(use.Active.Transfers[0].Amount, Is.EqualTo(100));
-            Assert.That(use.Active.Transfers[1].Amount, Is.EqualTo(200));
+            Assert.That(active.Spawns.Count, Is.EqualTo(2));
+            Assert.That(active.Spawns[0].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("steam")));
+            Assert.That(active.Spawns[1].ObjectGlobalId, Is.EqualTo(codex.ObjectNames.GetId("smell")));
+            Assert.That(active.Transfers.Count, Is.EqualTo(2));
+            Assert.That(active.Transfers[0].Amount, Is.EqualTo(100));
+            Assert.That(active.Transfers[1].Amount, Is.EqualTo(200));
         }
 
         [Test]
@@ -605,9 +629,11 @@ object_defs:
 
             ObjectDef weapon = codex.Objects.Get(codex.ObjectNames.GetId("weapon"));
             ActionDef attack = ActionOf(weapon, "attack");
+            ActiveEffect active = ActionActiveOf(attack);
+            IReadOnlyList<PickCandidateDef> pick = ActionPickOf(attack);
 
-            Assert.That(attack.Active, Is.Null);
-            Assert.That(attack.Pick.Count, Is.EqualTo(2));
+            Assert.That(active, Is.Null);
+            Assert.That(pick.Count, Is.EqualTo(2));
         }
 
         [Test]
@@ -636,17 +662,19 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
             int durabilityId = codex.PropertyNames.GetId("durability");
 
+            ObjectDef wood = codex.Objects.Get(codex.ObjectNames.GetId("wood"));
             var session = new WorldSession(codex);
-            var wood = new WorldObject(1, codex.Objects.Get(codex.ObjectNames.GetId("wood")));
+            var woodInstance = new WorldObject(1, wood);
             var axe = new WorldObject(2, codex.Objects.Get(codex.ObjectNames.GetId("axe_tool")));
 
-            axe.SetProperty(durabilityId, 0);
-            Assert.That(wood.TryExecuteCombination(axe, actor: null, "chop", session), Is.False, "conditions(dragged.durability > 0)を満たさない");
-
-            axe.SetProperty(durabilityId, 10);
-            Assert.That(wood.TryExecuteCombination(axe, actor: null, "chop", session), Is.True);
+            axe.SetNumber(durabilityId, 0);
+            Assert.That(woodInstance.TryExecuteCombination(axe, null, "chop", session), Is.False,
+                "dragged.durability=0 のとき条件 gt 0 を満たさない");
+            axe.SetNumber(durabilityId, 10);
+            Assert.That(woodInstance.TryExecuteCombination(axe, null, "chop", session), Is.True,
+                "dragged.durability=10 のとき条件 gt 0 を満たす");
             Assert.That(axe.GetNumber(durabilityId), Is.EqualTo(9), "add: dragged.durability: -1 が適用される");
-            Assert.That(wood.Parent, Is.Null, "destroy: self が適用される");
+            Assert.That(woodInstance.Parent, Is.Null, "destroy: self が適用される");
         }
 
         [Test]
@@ -665,7 +693,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef berry = codex.Objects.Get(codex.ObjectNames.GetId("berry"));
-            Assert.That(ActionOf(berry, "eat").Active.Destroy, Contains.Item(ReferenceRoot.Self));
+            Assert.That(ActionActiveOf(ActionOf(berry, "eat")).Destroy, Contains.Item(ReferenceRoot.Self));
         }
 
         [Test]
@@ -782,10 +810,15 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
-            ConditionNode leaf = ActionOf(thing, "use").Conditions.Children[0];
+            int modeId = codex.PropertyNames.GetId("mode");
+            var session = new WorldSession(codex);
+            var thingInstance = new WorldObject(1, thing);
 
-            Assert.That(leaf.Root, Is.EqualTo(ReferenceRoot.Self), "objectを省略するとself");
-            Assert.That(leaf.Op, Is.EqualTo(ConditionOp.Eq), "opを省略するとeq");
+            Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.True,
+                "object/op省略時は self.mode == 1 の等価比較として成立する");
+            thingInstance.SetNumber(modeId, 2);
+            Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.False,
+                "self.mode != 1 では不成立");
         }
 
         [Test]
@@ -1028,15 +1061,18 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
-            ConditionNode conditions = ActionOf(thing, "use").Conditions;
-
-            Assert.That(conditions.Kind, Is.EqualTo(ConditionNodeKind.All), "conditionsの最上位は暗黙のall");
-            Assert.That(conditions.Children[0].Kind, Is.EqualTo(ConditionNodeKind.Any));
-
             var session = new WorldSession(codex);
-            var thingInstance = new WorldObject(1, thing);
+            var falseCase = new WorldObject(1, thing);
+            var trueCase = new WorldObject(2, thing);
+            int hpId = codex.PropertyNames.GetId("hp");
+            int mpId = codex.PropertyNames.GetId("mp");
 
-            Assert.That(thingInstance.TryExecuteAction("use", actor: null, session), Is.True,
+            falseCase.SetNumber(hpId, 99);
+            falseCase.SetNumber(mpId, 4);
+            Assert.That(falseCase.TryExecuteAction("use", actor: null, session), Is.False,
+                "hp(99)もmp(4)も条件を満たさないため不成立");
+
+            Assert.That(trueCase.TryExecuteAction("use", actor: null, session), Is.True,
                 "hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する");
         }
 
