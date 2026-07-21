@@ -61,42 +61,30 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// プロパティを書き換える単一命令（set/add、9.2節）。対象(Target)・対象プロパティを共通で持ち、ownerの
-    /// 文脈で対象を解決する部分をActiveEffectとして共有する（対象の解決はowner.ResolveEffectTargetOrAncestorに
-    /// 委ね、Ancestorのプロパティ別解決も含めて任せる）。
-    /// </summary>
-    public abstract class PropertyMutation : ActiveEffect
-    {
-        protected ReferenceRoot Target { get; }
-        protected int PropertyGlobalId { get; }
-
-        protected PropertyMutation(ReferenceRoot target, int propertyGlobalId)
-        {
-            Target = target;
-            PropertyGlobalId = propertyGlobalId;
-        }
-    }
-
-    /// <summary>
     /// set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、
     /// その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
-    /// conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。
+    /// conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。対象の解決は
+    /// owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別解決も含めて任せる）。
     /// </summary>
-    public sealed class SetEffect : PropertyMutation
+    public sealed class SetEffect : ActiveEffect
     {
+        private readonly ReferenceRoot target;
+        private readonly int propertyGlobalId;
         private readonly int value;
         private readonly PropertyPath? valueRef;
 
         public SetEffect(ReferenceRoot target, int propertyGlobalId, int value)
-            : base(target, propertyGlobalId)
         {
+            this.target = target;
+            this.propertyGlobalId = propertyGlobalId;
             this.value = value;
             valueRef = null;
         }
 
         public SetEffect(ReferenceRoot target, int propertyGlobalId, PropertyPath valueRef)
-            : base(target, propertyGlobalId)
         {
+            this.target = target;
+            this.propertyGlobalId = propertyGlobalId;
             value = default;
             this.valueRef = valueRef;
         }
@@ -105,8 +93,8 @@ namespace UnmappedIsland.Domain.Defs
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
             WorldObject.ActiveApplication context)
         {
-            WorldObject target = owner.ResolveEffectTargetOrAncestor(Target, PropertyGlobalId, actor, dragged);
-            target?.SetNumber(PropertyGlobalId, ResolveValue(owner, actor, dragged), session);
+            WorldObject resolved = owner.ResolveEffectTargetOrAncestor(target, propertyGlobalId, actor, dragged);
+            resolved?.SetNumber(propertyGlobalId, ResolveValue(owner, actor, dragged), session);
         }
 
         /// <summary>実際に代入する値。valueRefが無ければリテラル、あればその参照先の現在の実効値
@@ -120,14 +108,18 @@ namespace UnmappedIsland.Domain.Defs
         }
     }
 
-    /// <summary>add の1命令（対象プロパティへ加減算する）。</summary>
-    public sealed class AddEffect : PropertyMutation
+    /// <summary>add の1命令（対象プロパティへ加減算する）。対象の解決はowner.ResolveEffectTargetOrAncestorに
+    /// 委ねる（Ancestorのプロパティ別解決も含めて任せる）。</summary>
+    public sealed class AddEffect : ActiveEffect
     {
+        private readonly ReferenceRoot target;
+        private readonly int propertyGlobalId;
         private readonly int amount;
 
         public AddEffect(ReferenceRoot target, int propertyGlobalId, int amount)
-            : base(target, propertyGlobalId)
         {
+            this.target = target;
+            this.propertyGlobalId = propertyGlobalId;
             this.amount = amount;
         }
 
@@ -143,8 +135,8 @@ namespace UnmappedIsland.Domain.Defs
         {
             int scaled = amount * numerator / denominator;
             if (scaled == 0) return;
-            WorldObject target = owner.ResolveEffectTargetOrAncestor(Target, PropertyGlobalId, actor, dragged);
-            target?.AddNumber(PropertyGlobalId, scaled, session);
+            WorldObject resolved = owner.ResolveEffectTargetOrAncestor(target, propertyGlobalId, actor, dragged);
+            resolved?.AddNumber(propertyGlobalId, scaled, session);
         }
     }
 
