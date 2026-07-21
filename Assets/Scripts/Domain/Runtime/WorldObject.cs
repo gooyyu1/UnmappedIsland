@@ -485,37 +485,14 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         public void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
         {
-            foreach (ReferenceRoot key in OrderedTargets)
-            {
-                if (!effect.Sets.TryGetValue(key, out var assigns)) continue;
+            // set→addの順（同一プロパティにset後addを重ねる書き方を成立させる）。各操作は対象付きで、
+            // 自分で対象を解決して適用する（PropertyMutation.Apply）。対象間の適用順序はYAML宣言順＝
+            // 決定的（規約上、対象間の順序は規定しない。以前はOrderedTargetsで固定していた）。
+            foreach (SetEffect set in effect.Sets)
+                set.Apply(this, session, actor, dragged);
 
-                if (key == ReferenceRoot.Ancestor)
-                {
-                    foreach (var assign in assigns)
-                        FindAncestorWithProperty(assign.PropertyGlobalId)?.SetNumber(assign.PropertyGlobalId, ResolveAssignmentValue(assign, actor, dragged), session);
-                    continue;
-                }
-
-                WorldObject target = ResolveEffectTarget(key, actor, dragged);
-                if (target == null) continue;
-                foreach (var assign in assigns) target.SetNumber(assign.PropertyGlobalId, ResolveAssignmentValue(assign, actor, dragged), session);
-            }
-
-            foreach (ReferenceRoot key in OrderedTargets)
-            {
-                if (!effect.Adds.TryGetValue(key, out var deltas)) continue;
-
-                if (key == ReferenceRoot.Ancestor)
-                {
-                    foreach (var delta in deltas)
-                        FindAncestorWithProperty(delta.PropertyGlobalId)?.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
-                    continue;
-                }
-
-                WorldObject target = ResolveEffectTarget(key, actor, dragged);
-                if (target == null) continue;
-                foreach (var delta in deltas) target.AddNumber(delta.PropertyGlobalId, delta.Amount, session);
-            }
+            foreach (AddEffect add in effect.Adds)
+                add.Apply(this, session, actor, dragged);
 
             foreach (TransferEffect transfer in effect.Transfers)
                 ApplyTransfer(transfer, session, actor, dragged);
@@ -525,36 +502,17 @@ namespace UnmappedIsland.Domain.Runtime
                 ? CaptureSameSlotAnchor(willDestroySelf)
                 : null;
 
-            foreach (ReferenceRoot key in OrderedTargets)
-            {
-                if (!effect.Destroy.Contains(key)) continue;
-                WorldObject target = ResolveEffectTarget(key, actor, dragged);
-                if (target == null) continue;
-                target.Destroy(session.Codex.WellKnown);
-            }
+            foreach (ReferenceRoot key in effect.Destroy)
+                ResolveEffectTarget(key, actor, dragged)?.Destroy(session.Codex.WellKnown);
 
             foreach (SpawnEffect spawn in effect.Spawns)
                 ExecuteSpawn(spawn, session, actor, anchor);
         }
 
-        /// <summary>setの1エントリが実際に代入する値を確定する。ValueRefが無ければYAML上のリテラル値
-        /// （assign.Value）をそのまま使う。ValueRefがあれば、その参照先（{object, prop}）の現在の実効値を
-        /// 読んで使う（他のプロパティの値をそのままコピーする、9.2節）。参照先が解決できない場合は0。</summary>
-        private int ResolveAssignmentValue(SetEffect assign, WorldObject actor, WorldObject dragged)
-        {
-            if (!assign.ValueRef.HasValue) return assign.Value;
-
-            PropertyPath path = assign.ValueRef.Value;
-            WorldObject source = path.Root == ReferenceRoot.Ancestor
-                ? FindAncestorWithProperty(path.PropertyGlobalId)
-                : ResolveEffectTarget(path.Root, actor, dragged);
-            return source != null && source.TryGetProperty(path.PropertyGlobalId, out PropertyValue value) ? value.GetEffectiveValue() : 0;
-        }
-
         /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged/dragged_parent)を解決する。selfは常にこの
         /// インスタンス自身、parentはthis.Parent（無ければnull）、dragged_parentはdraggedの直接の親（無ければnull）。
         /// Ancestorはプロパティごとに解決先が変わりうる（FindAncestorWithProperty）ため、ここでは扱わない
-        /// （ApplyActiveEffectのSets/Addsループがkey==Ancestorを直接特別扱いする）。</summary>
+        /// （ResolveEffectTargetOrAncestorがkey==Ancestorを特別扱いする）。</summary>
         private WorldObject ResolveEffectTarget(ReferenceRoot root, WorldObject actor, WorldObject dragged)
         {
             switch (root)
@@ -568,9 +526,10 @@ namespace UnmappedIsland.Domain.Runtime
             }
         }
 
-        /// <summary>transfer（9.5節）専用の対象解決。AncestorはFindAncestorWithProperty（プロパティごとに
-        /// 解決先が変わる）へ委譲し、それ以外はResolveEffectTargetと同じ。</summary>
-        private WorldObject ResolveTransferTarget(ReferenceRoot root, int propertyGlobalId, WorldObject actor, WorldObject dragged) =>
+        /// <summary>active（set/add/transferのlinked_add）の対象解決。AncestorはFindAncestorWithProperty
+        /// （プロパティごとに解決先が変わる）へ委譲し、それ以外はResolveEffectTargetと同じ。SetEffect/AddEffect/
+        /// transferが自分を適用する際の対象解決に共有する（propertyGlobalIdはAncestor解決にのみ使う）。</summary>
+        public WorldObject ResolveEffectTargetOrAncestor(ReferenceRoot root, int propertyGlobalId, WorldObject actor, WorldObject dragged) =>
             root == ReferenceRoot.Ancestor ? FindAncestorWithProperty(propertyGlobalId) : ResolveEffectTarget(root, actor, dragged);
 
         /// <summary>
@@ -587,8 +546,8 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         private void ApplyTransfer(TransferEffect transfer, WorldSession session, WorldObject actor, WorldObject dragged)
         {
-            WorldObject from = ResolveTransferTarget(transfer.FromObject, transfer.FromPropertyGlobalId, actor, dragged);
-            WorldObject to = ResolveTransferTarget(transfer.ToObject, transfer.ToPropertyGlobalId, actor, dragged);
+            WorldObject from = ResolveEffectTargetOrAncestor(transfer.FromObject, transfer.FromPropertyGlobalId, actor, dragged);
+            WorldObject to = ResolveEffectTargetOrAncestor(transfer.ToObject, transfer.ToPropertyGlobalId, actor, dragged);
             if (from == null || to == null) return;
             if (!from.TryGetProperty(transfer.FromPropertyGlobalId, out var fromValue)) return;
             if (!to.TryGetProperty(transfer.ToPropertyGlobalId, out var toValue)) return;
@@ -601,38 +560,10 @@ namespace UnmappedIsland.Domain.Runtime
             from.AddNumber(transfer.FromPropertyGlobalId, -moved, session);
             to.AddNumber(transfer.ToPropertyGlobalId, moved, session);
 
-            foreach (ReferenceRoot key in OrderedTargets)
-            {
-                if (!transfer.LinkedAdd.TryGetValue(key, out var deltas)) continue;
-
-                if (key == ReferenceRoot.Ancestor)
-                {
-                    foreach (var delta in deltas)
-                    {
-                        int scaled = delta.Amount * moved / transfer.Amount;
-                        if (scaled == 0) continue;
-                        FindAncestorWithProperty(delta.PropertyGlobalId)?.AddNumber(delta.PropertyGlobalId, scaled, session);
-                    }
-                    continue;
-                }
-
-                WorldObject target = ResolveEffectTarget(key, actor, dragged);
-                if (target == null) continue;
-                foreach (var delta in deltas)
-                {
-                    int scaled = delta.Amount * moved / transfer.Amount;
-                    if (scaled == 0) continue;
-                    target.AddNumber(delta.PropertyGlobalId, scaled, session);
-                }
-            }
+            // 実際に動いた量(moved)に比例させて副効果を適用する。各AddEffectが自分でスケール適用する。
+            foreach (AddEffect linked in transfer.LinkedAdd)
+                linked.ApplyScaled(this, session, actor, dragged, numerator: moved, denominator: transfer.Amount);
         }
-
-        /// <summary>set/add/destroyを解決する際の固定順（self→parent→ancestor→actor→dragged→dragged_parent）。YAML側で
-        /// 対象間の適用順序は規定されていないため、決定的な順序を1つ選んで固定する。</summary>
-        private static readonly ReferenceRoot[] OrderedTargets =
-        {
-            ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged, ReferenceRoot.DraggedParent,
-        };
 
         /// <summary>
         /// same_slotの置き換え（型が変わりうる）に必要な位置情報を、destroyで失われる前に捕捉する。

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
@@ -6,21 +7,21 @@ namespace UnmappedIsland.Domain.Defs
     /// 一時的な命令の内容（`set`/`add`/`destroy`/`spawn`、9節）。on_min・on_overflow・on_shortfall（6節）、
     /// actions/combinations/pickのactive（11・12・10節）のすべてから、この1つの型をそのまま共用する。
     ///
-    /// 文法は「操作が上位、対象(self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。
-    /// set/addは複数の対象へ同時に書けるため、対象ごとの一覧を辞書として持つ。destroyは削除対象を
-    /// 直接指すリスト（`destroy: self`は要素1つのリストとして表す）。spawnは常にselfが実行するものと
-    /// みなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、
+    /// set/addは「対象付きの1操作(SetEffect/AddEffect)」のリストとして持つ（passiveのmodify/accumulateが
+    /// ModifyEffect/AccumulateEffectのリストなのと対称。対象は各操作自身がReferenceRootとして持つ）。
+    /// destroyは削除対象を直接指すリスト（`destroy: self`は要素1つのリストとして表す）。spawnは常にselfが
+    /// 実行するものとみなすため対象キーを持たない（対象別に分かれているのはSpawn.Into＝配置先の起点であり、
     /// 実行者＝selfとは別の概念）。
     ///
     /// on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。
     /// </summary>
     public sealed class ActiveEffect
     {
-        /// <summary>対象ごとのset(絶対値代入)。空なら該当対象へのsetなし。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<SetEffect>> Sets { get; }
+        /// <summary>set(絶対値代入)の一覧。宣言順。空ならsetなし。</summary>
+        public IReadOnlyList<SetEffect> Sets { get; }
 
-        /// <summary>対象ごとのadd(加減算)。空なら該当対象へのaddなし。</summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> Adds { get; }
+        /// <summary>add(加減算)の一覧。宣言順。空ならaddなし。</summary>
+        public IReadOnlyList<AddEffect> Adds { get; }
 
         /// <summary>削除する対象。空なら destroy なし。</summary>
         public IReadOnlyList<ReferenceRoot> Destroy { get; }
@@ -32,8 +33,8 @@ namespace UnmappedIsland.Domain.Defs
         public IReadOnlyList<TransferEffect> Transfers { get; }
 
         public ActiveEffect(
-            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<SetEffect>> sets,
-            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> adds,
+            IReadOnlyList<SetEffect> sets,
+            IReadOnlyList<AddEffect> adds,
             IReadOnlyList<ReferenceRoot> destroy,
             IReadOnlyList<SpawnEffect> spawns,
             IReadOnlyList<TransferEffect> transfers)
@@ -47,41 +48,92 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// set の1エントリ（対象プロパティのグローバルIDと代入する絶対値）。ValueRefが非nullの場合、Valueの
-    /// 代わりに、その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
-    /// conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。
+    /// 一度きりのプロパティ書き換え1操作（set/add、9.2節）。対象(Target)・対象プロパティ・適用方法を自分で
+    /// 持ち、ownerの文脈（actor/dragged）を受け取って「対象を解決し自分を適用する」までを自分で行う
+    /// （PropertyValueへの登録で持続するpassiveのModifyEffect/AccumulateEffectと対になる、一度きり側の
+    /// ポリモーフィズム。自分のことは自分でする、CLAUDE.md参照）。対象の解決（Ancestorのプロパティ別解決を
+    /// 含む）はowner.ResolveEffectTargetOrAncestorに委ねる。
     /// </summary>
-    public readonly struct SetEffect
+    public abstract class PropertyMutation
     {
-        public readonly int PropertyGlobalId;
-        public readonly int Value;
-        public readonly PropertyPath? ValueRef;
+        protected ReferenceRoot Target { get; }
+        protected int PropertyGlobalId { get; }
 
-        public SetEffect(int propertyGlobalId, int value)
+        protected PropertyMutation(ReferenceRoot target, int propertyGlobalId)
         {
+            Target = target;
             PropertyGlobalId = propertyGlobalId;
-            Value = value;
-            ValueRef = null;
         }
 
-        public SetEffect(int propertyGlobalId, PropertyPath valueRef)
+        /// <summary>owner（この操作を発する自分自身）の文脈で対象を解決し、自分を1回適用する。
+        /// 対象が解決できなければ何もしない。</summary>
+        public abstract void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged);
+    }
+
+    /// <summary>
+    /// set の1操作（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、
+    /// その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
+    /// conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。
+    /// </summary>
+    public sealed class SetEffect : PropertyMutation
+    {
+        private readonly int value;
+        private readonly PropertyPath? valueRef;
+
+        public SetEffect(ReferenceRoot target, int propertyGlobalId, int value)
+            : base(target, propertyGlobalId)
         {
-            PropertyGlobalId = propertyGlobalId;
-            Value = default;
-            ValueRef = valueRef;
+            this.value = value;
+            valueRef = null;
+        }
+
+        public SetEffect(ReferenceRoot target, int propertyGlobalId, PropertyPath valueRef)
+            : base(target, propertyGlobalId)
+        {
+            value = default;
+            this.valueRef = valueRef;
+        }
+
+        public override void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged)
+        {
+            WorldObject target = owner.ResolveEffectTargetOrAncestor(Target, PropertyGlobalId, actor, dragged);
+            target?.SetNumber(PropertyGlobalId, ResolveValue(owner, actor, dragged), session);
+        }
+
+        /// <summary>実際に代入する値。valueRefが無ければリテラル、あればその参照先の現在の実効値
+        /// （解決できなければ0）。</summary>
+        private int ResolveValue(WorldObject owner, WorldObject actor, WorldObject dragged)
+        {
+            if (!valueRef.HasValue) return value;
+            PropertyPath path = valueRef.Value;
+            WorldObject source = owner.ResolveEffectTargetOrAncestor(path.Root, path.PropertyGlobalId, actor, dragged);
+            return source != null && source.TryGetProperty(path.PropertyGlobalId, out PropertyValue v) ? v.GetEffectiveValue() : 0;
         }
     }
 
-    /// <summary>add の1エントリ（対象プロパティのグローバルIDと加減算量）。</summary>
-    public readonly struct AddEffect
+    /// <summary>add の1操作（対象プロパティへ加減算する）。</summary>
+    public sealed class AddEffect : PropertyMutation
     {
-        public readonly int PropertyGlobalId;
-        public readonly int Amount;
+        private readonly int amount;
 
-        public AddEffect(int propertyGlobalId, int amount)
+        public AddEffect(ReferenceRoot target, int propertyGlobalId, int amount)
+            : base(target, propertyGlobalId)
         {
-            PropertyGlobalId = propertyGlobalId;
-            Amount = amount;
+            this.amount = amount;
+        }
+
+        public override void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged) =>
+            ApplyScaled(owner, session, actor, dragged, numerator: 1, denominator: 1);
+
+        /// <summary>transfer（9.5節）のlinked_add用: 実際に移動した量に比例してスケール（amount*numerator/
+        /// denominator、整数除算）した量を加減算する。numerator/denominatorが1/1なら通常のadd（Apply）と同じ。
+        /// スケール後が0なら何もしない。</summary>
+        public void ApplyScaled(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged, int numerator, int denominator)
+        {
+            int scaled = amount * numerator / denominator;
+            if (scaled == 0) return;
+            WorldObject target = owner.ResolveEffectTargetOrAncestor(Target, PropertyGlobalId, actor, dragged);
+            target?.AddNumber(PropertyGlobalId, scaled, session);
         }
     }
 
@@ -166,18 +218,18 @@ namespace UnmappedIsland.Domain.Defs
         public bool AllowOverflow { get; }
 
         /// <summary>
-        /// 実際に移動した量に比例して適用する追加の加減算（9.5節 linked_add）。
-        /// 各エントリの量は `delta * actual_moved / amount`（整数除算、切り捨て）で確定する。
+        /// 実際に移動した量に比例して適用する追加の加減算（9.5節 linked_add）。各エントリの量は
+        /// `amount * actual_moved / transfer.amount`（整数除算、切り捨て）で確定する（AddEffect.ApplyScaled）。
         /// amountより少ない量しか移動できなかった場合（在庫不足など）に、副効果も自動的に按分される。
         /// 空の場合は何もしない。
         /// </summary>
-        public IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> LinkedAdd { get; }
+        public IReadOnlyList<AddEffect> LinkedAdd { get; }
 
         public TransferEffect(
             ReferenceRoot fromObject, int fromPropertyGlobalId,
             ReferenceRoot toObject, int toPropertyGlobalId,
             int amount, bool allowOverflow,
-            IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<AddEffect>> linkedAdd = null)
+            IReadOnlyList<AddEffect> linkedAdd = null)
         {
             FromObject = fromObject;
             FromPropertyGlobalId = fromPropertyGlobalId;
@@ -185,7 +237,7 @@ namespace UnmappedIsland.Domain.Defs
             ToPropertyGlobalId = toPropertyGlobalId;
             Amount = amount;
             AllowOverflow = allowOverflow;
-            LinkedAdd = linkedAdd ?? new Dictionary<ReferenceRoot, IReadOnlyList<AddEffect>>();
+            LinkedAdd = linkedAdd ?? new List<AddEffect>();
         }
     }
 }
