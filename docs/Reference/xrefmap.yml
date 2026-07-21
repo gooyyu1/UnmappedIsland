@@ -103,15 +103,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.ActiveEffect
   fullName: UnmappedIsland.Domain.Defs.ActiveEffect
   nameWithType: ActiveEffect
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyAssignment}},System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyDelta}},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Defs.TransferEffect)
-  name: ActiveEffect(IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>, IReadOnlyList<ReferenceRoot>, SpawnEffect, TransferEffect)
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyDictionary_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyAssignment___System_Collections_Generic_IReadOnlyDictionary_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyDelta___System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ReferenceRoot__UnmappedIsland_Domain_Defs_SpawnEffect_UnmappedIsland_Domain_Defs_TransferEffect_
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyAssignment}},System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyDelta}},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Defs.TransferEffect)
-  name.vb: New(IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyAssignment)), IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyDelta)), IReadOnlyList(Of ReferenceRoot), SpawnEffect, TransferEffect)
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect(System.Collections.Generic.IReadOnlyDictionary<UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PropertyAssignment>>, System.Collections.Generic.IReadOnlyDictionary<UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PropertyDelta>>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ReferenceRoot>, UnmappedIsland.Domain.Defs.SpawnEffect, UnmappedIsland.Domain.Defs.TransferEffect)
-  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New(System.Collections.Generic.IReadOnlyDictionary(Of UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PropertyAssignment)), System.Collections.Generic.IReadOnlyDictionary(Of UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PropertyDelta)), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ReferenceRoot), UnmappedIsland.Domain.Defs.SpawnEffect, UnmappedIsland.Domain.Defs.TransferEffect)
-  nameWithType: ActiveEffect.ActiveEffect(IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>, IReadOnlyList<ReferenceRoot>, SpawnEffect, TransferEffect)
-  nameWithType.vb: ActiveEffect.New(IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyAssignment)), IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyDelta)), IReadOnlyList(Of ReferenceRoot), SpawnEffect, TransferEffect)
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyAssignment}},System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyDelta}},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
+  name: ActiveEffect(IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_System_Collections_Generic_IReadOnlyDictionary_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyAssignment___System_Collections_Generic_IReadOnlyDictionary_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PropertyDelta___System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ReferenceRoot__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_SpawnEffect__System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_TransferEffect__
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.#ctor(System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyAssignment}},System.Collections.Generic.IReadOnlyDictionary{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PropertyDelta}},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ReferenceRoot},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.SpawnEffect},System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.TransferEffect})
+  name.vb: New(IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyAssignment)), IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyDelta)), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.ActiveEffect(System.Collections.Generic.IReadOnlyDictionary<UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PropertyAssignment>>, System.Collections.Generic.IReadOnlyDictionary<UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.PropertyDelta>>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.ReferenceRoot>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.SpawnEffect>, System.Collections.Generic.IReadOnlyList<UnmappedIsland.Domain.Defs.TransferEffect>)
+  fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffect.New(System.Collections.Generic.IReadOnlyDictionary(Of UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PropertyAssignment)), System.Collections.Generic.IReadOnlyDictionary(Of UnmappedIsland.Domain.Defs.ReferenceRoot, System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.PropertyDelta)), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.ReferenceRoot), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.SpawnEffect), System.Collections.Generic.IReadOnlyList(Of UnmappedIsland.Domain.Defs.TransferEffect))
+  nameWithType: ActiveEffect.ActiveEffect(IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyAssignment>>, IReadOnlyDictionary<ReferenceRoot, IReadOnlyList<PropertyDelta>>, IReadOnlyList<ReferenceRoot>, IReadOnlyList<SpawnEffect>, IReadOnlyList<TransferEffect>)
+  nameWithType.vb: ActiveEffect.New(IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyAssignment)), IReadOnlyDictionary(Of ReferenceRoot, IReadOnlyList(Of PropertyDelta)), IReadOnlyList(Of ReferenceRoot), IReadOnlyList(Of SpawnEffect), IReadOnlyList(Of TransferEffect))
 - uid: UnmappedIsland.Domain.Defs.ActiveEffect.#ctor*
   name: ActiveEffect
   href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect__ctor_
@@ -161,32 +161,32 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Sets
   nameWithType: ActiveEffect.Sets
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Spawn
-  name: Spawn
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Spawn
-  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Spawn
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Spawn
-  nameWithType: ActiveEffect.Spawn
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Spawn*
-  name: Spawn
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Spawn_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Spawn
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
+  name: Spawns
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Spawns
+  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
+  nameWithType: ActiveEffect.Spawns
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns*
+  name: Spawns
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Spawns_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Spawn
-  nameWithType: ActiveEffect.Spawn
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Transfer
-  name: Transfer
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Transfer
-  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Transfer
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Transfer
-  nameWithType: ActiveEffect.Transfer
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Transfer*
-  name: Transfer
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Transfer_
-  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Transfer
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Spawns
+  nameWithType: ActiveEffect.Spawns
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
+  name: Transfers
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Transfers
+  commentId: P:UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
+  nameWithType: ActiveEffect.Transfers
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers*
+  name: Transfers
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Transfers_
+  commentId: Overload:UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Transfer
-  nameWithType: ActiveEffect.Transfer
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Transfers
+  nameWithType: ActiveEffect.Transfers
 - uid: UnmappedIsland.Domain.Defs.CombinationDef
   name: CombinationDef
   href: UnmappedIsland.Domain.Defs.CombinationDef.html
@@ -5210,6 +5210,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveTargetKey
   nameWithType: WorldCodexYamlLoader.ParseActiveTargetKey
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)
+  name: ParseAdds(string, YamlMappingNode, bool, bool)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)
+  name.vb: ParseAdds(String, YamlMappingNode, Boolean, Boolean)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(string, YamlDotNet.RepresentationModel.YamlMappingNode, bool, bool)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(String, YamlDotNet.RepresentationModel.YamlMappingNode, Boolean, Boolean)
+  nameWithType: WorldCodexYamlLoader.ParseAdds(string, YamlMappingNode, bool, bool)
+  nameWithType.vb: WorldCodexYamlLoader.ParseAdds(String, YamlMappingNode, Boolean, Boolean)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds*
+  name: ParseAdds
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_
+  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds
+  isSpec: "True"
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds
+  nameWithType: WorldCodexYamlLoader.ParseAdds
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseCombinations(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)
   name: ParseCombinations(string, YamlMappingNode)
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseCombinations_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_
@@ -5507,6 +5523,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber
   nameWithType: WorldCodexYamlLoader.ParseScalarNumber
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)
+  name: ParseSets(string, YamlMappingNode, bool, bool)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)
+  name.vb: ParseSets(String, YamlMappingNode, Boolean, Boolean)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(string, YamlDotNet.RepresentationModel.YamlMappingNode, bool, bool)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(String, YamlDotNet.RepresentationModel.YamlMappingNode, Boolean, Boolean)
+  nameWithType: WorldCodexYamlLoader.ParseSets(string, YamlMappingNode, bool, bool)
+  nameWithType.vb: WorldCodexYamlLoader.ParseSets(String, YamlMappingNode, Boolean, Boolean)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets*
+  name: ParseSets
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_
+  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets
+  isSpec: "True"
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets
+  nameWithType: WorldCodexYamlLoader.ParseSets
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSlot(System.String,System.String,YamlDotNet.RepresentationModel.YamlMappingNode)
   name: ParseSlot(string, string, YamlMappingNode)
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSlot_System_String_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_
@@ -5523,6 +5555,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSlot
   nameWithType: WorldCodexYamlLoader.ParseSlot
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)
+  name: ParseSpawn(string, YamlMappingNode)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)
+  name.vb: ParseSpawn(String, YamlMappingNode)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(string, YamlDotNet.RepresentationModel.YamlMappingNode)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(String, YamlDotNet.RepresentationModel.YamlMappingNode)
+  nameWithType: WorldCodexYamlLoader.ParseSpawn(string, YamlMappingNode)
+  nameWithType.vb: WorldCodexYamlLoader.ParseSpawn(String, YamlMappingNode)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn*
+  name: ParseSpawn
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_
+  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn
+  isSpec: "True"
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn
+  nameWithType: WorldCodexYamlLoader.ParseSpawn
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot(System.String,System.String)
   name: ParseSpawnTargetRoot(string, string)
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawnTargetRoot_System_String_System_String_
@@ -5539,6 +5587,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot
   nameWithType: WorldCodexYamlLoader.ParseSpawnTargetRoot
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(System.String,YamlDotNet.RepresentationModel.YamlNode)
+  name: ParseSpawns(string, YamlNode)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_System_String_YamlDotNet_RepresentationModel_YamlNode_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(System.String,YamlDotNet.RepresentationModel.YamlNode)
+  name.vb: ParseSpawns(String, YamlNode)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(string, YamlDotNet.RepresentationModel.YamlNode)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(String, YamlDotNet.RepresentationModel.YamlNode)
+  nameWithType: WorldCodexYamlLoader.ParseSpawns(string, YamlNode)
+  nameWithType.vb: WorldCodexYamlLoader.ParseSpawns(String, YamlNode)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns*
+  name: ParseSpawns
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_
+  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns
+  isSpec: "True"
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns
+  nameWithType: WorldCodexYamlLoader.ParseSpawns
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseStage(System.String,System.String,System.String,System.Boolean,System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},YamlDotNet.RepresentationModel.YamlMappingNode)
   name: ParseStage(string, string, string, bool, List<PassiveEffect>, YamlMappingNode)
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseStage_System_String_System_String_System_String_System_Boolean_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__YamlDotNet_RepresentationModel_YamlMappingNode_
@@ -5587,6 +5651,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfer
   nameWithType: WorldCodexYamlLoader.ParseTransfer
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)
+  name: ParseTransfers(string, YamlNode, bool, bool)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)
+  name.vb: ParseTransfers(String, YamlNode, Boolean, Boolean)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(string, YamlDotNet.RepresentationModel.YamlNode, bool, bool)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(String, YamlDotNet.RepresentationModel.YamlNode, Boolean, Boolean)
+  nameWithType: WorldCodexYamlLoader.ParseTransfers(string, YamlNode, bool, bool)
+  nameWithType.vb: WorldCodexYamlLoader.ParseTransfers(String, YamlNode, Boolean, Boolean)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers*
+  name: ParseTransfers
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_
+  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers
+  isSpec: "True"
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers
+  nameWithType: WorldCodexYamlLoader.ParseTransfers
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseWeight(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Boolean)
   name: ParseWeight(string, YamlNode, bool)
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseWeight_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_
