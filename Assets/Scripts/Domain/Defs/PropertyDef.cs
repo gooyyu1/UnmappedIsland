@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
@@ -84,8 +85,12 @@ namespace UnmappedIsland.Domain.Defs
         /// へsetする」という既定のActiveEffectがビルド時に自動生成されて入る（Loader.WorldCodexYamlLoader.ParseProp参照）。
         /// これにより、著者はレンジ型プロパティの上限クランプを、on_overflowを書かずに`range`を書くだけで
         /// 実現できる。Range自体が未定義の場合のみnull（上限の仕組み自体を持たない）。
+        ///
+        /// どのイベントをいつ発火するかという判定はこのPropertyDef自身の責務であり（CheckRangeEvents参照）、
+        /// 値を保持するRuntime.PropertyValueは「値が変わった」とだけ通知する。そのため個々のon_*は外部へ
+        /// 公開せずprivateに閉じる。
         /// </summary>
-        public ActiveEffect OnOverflow { get; }
+        private ActiveEffect OnOverflow { get; }
 
         /// <summary>
         /// on_shortfall（6.3節）: on_overflowの下限側の鏡像。値がRange.Minを下回った際に、selfへ一度だけ
@@ -93,7 +98,7 @@ namespace UnmappedIsland.Domain.Defs
         /// 「自分自身をRange.Minへsetする」という既定のActiveEffectがビルド時に自動生成される
         /// （Loader.WorldCodexYamlLoader.ParseProp参照）。Range自体が未定義の場合のみnull。
         /// </summary>
-        public ActiveEffect OnShortfall { get; }
+        private ActiveEffect OnShortfall { get; }
 
         /// <summary>順不同で構わない（ResolveStage が min の値そのもので判定するため）。空なら stages なし。</summary>
         public IReadOnlyList<PropertyStage> Stages { get; }
@@ -109,14 +114,14 @@ namespace UnmappedIsland.Domain.Defs
         /// プロパティにも使えるようにする）。on_overflow/on_shortfallとは異なり、著者が明示的に書かない
         /// 限り既定の自動生成は行わない（null なら on_min を持たない）。Rangeが必須。
         /// </summary>
-        public ActiveEffect OnMin { get; }
+        private ActiveEffect OnMin { get; }
 
         /// <summary>
         /// on_max（6.6節）。値がRange.Max以上である間、毎tick実行されるactive内容。on_minの上限側の鏡像。
         /// on_overflow/on_shortfallとは異なり、著者が明示的に書かない限り既定の自動生成は行わない
         /// （null なら on_max を持たない）。Rangeが必須。
         /// </summary>
-        public ActiveEffect OnMax { get; }
+        private ActiveEffect OnMax { get; }
 
         /// <summary>
         /// inherit: 自分の直接の親から遡り、この名前のプロパティを定義している最初の祖先（Runtime.
@@ -161,6 +166,48 @@ namespace UnmappedIsland.Domain.Defs
                     break;
                 }
             }
+        }
+
+        /// <summary>
+        /// number（このプロパティを保持するownerの、変更直後の実体値）に対して、on_max・on_min・on_overflow・
+        /// on_shortfall（6.3節・6.5節・6.6節）を判定し、該当するものをowner自身へ適用する。どのイベントを
+        /// いつ発火するかはこのPropertyDef（range・on_*の定義を持つ本人）の責務であり、値を保持する
+        /// Runtime.PropertyValueは「値が変わった」とだけ通知してこの判定を委譲する（自分のことは自分でする、
+        /// CLAUDE.md参照）。適用はowner.ApplyActiveEffect（actions/combinationsと全く同じ適用経路）を
+        /// そのまま呼ぶだけで、専用の適用ロジックは一切持たない。Rangeが未定義なら何もしない。
+        ///
+        /// 判定順はon_max→on_min→on_overflow→on_shortfall。on_max/on_minは「レベルトリガーの観測者」
+        /// （値を書き換えず、境界に達している事実をそのまま報告する）、on_overflow/on_shortfallは
+        /// 「値を書き換える補正者」（circular/wrapするプロパティの折り返し）という役割の違いがあるため、
+        /// 観測者を先に、補正者を後に評価する。
+        ///
+        /// この順序が重要な理由: 循環する(自身をラップして戻す)プロパティが一度にrangeの幅を飛び越えた場合、
+        /// on_overflow/on_shortfallの折り返しは境界ちょうどには着地しないことが多い（例: 0-100を循環する
+        /// プロパティが150まで加算された場合、on_overflowの折り返しは50に着地し、100ちょうどにはならない）。
+        /// もしon_max/on_minを補正の後に判定すると、値は既にrange内へ戻ってしまっており、「この瞬間確かに
+        /// 境界へ到達していた」という事実そのものを見逃してしまう。観測者を先に評価することで、折り返しの
+        /// 有無や着地点によらず、on_max/on_minは境界へ到達した瞬間を必ず捉える。
+        ///
+        /// on_overflow/on_shortfallの適用自体がowner側のAdd/SetNumberを通るため、その場で本メソッドが
+        /// 再度呼ばれ、1回のTick()・AddNumber呼び出しの中で複数span分の溢れ・繰り上げ先自身のさらなる
+        /// 溢れ（分→時→日の連鎖）が宣言順に関わらず連鎖的に解決される。
+        /// </summary>
+        internal void CheckRangeEvents(int number, WorldObject owner, WorldSession session)
+        {
+            if (!Range.HasValue) return;
+            PropertyRange range = Range.Value;
+
+            if (OnMax != null && number >= range.Max)
+                owner.ApplyActiveEffect(OnMax, session, actor: null, dragged: null);
+
+            if (OnMin != null && number <= range.Min)
+                owner.ApplyActiveEffect(OnMin, session, actor: null, dragged: null);
+
+            if (OnOverflow != null && number > range.Max)
+                owner.ApplyActiveEffect(OnOverflow, session, actor: null, dragged: null);
+
+            if (OnShortfall != null && number < range.Min)
+                owner.ApplyActiveEffect(OnShortfall, session, actor: null, dragged: null);
         }
 
         /// <summary>

@@ -564,55 +564,9 @@ object_defs:
         // destroyは親スロットからの切り離し、spawnは生成+move_to_slotとして表現する。
         // ------------------------------------------------------------------
 
-        [Test]
-        public void OnMin_IsCarriedThroughToPropertyDef()
-        {
-            const string yaml = @"
-object_defs:
-  candle:
-    props:
-      wax:
-        value: 100
-        range: {min: 0, max: 2147483647}
-        on_min:
-          destroy: self
-      wick_length:
-        value: 5
-";
-            var codex = Load(yaml);
-            ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("candle"));
-
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wax")).OnMin, Is.Not.Null);
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wax")).OnMin.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("wick_length")).OnMin, Is.Null);
-        }
-
         // ------------------------------------------------------------------
         // on_max: on_minの上限側の鏡像。値がRange.Max以上である間、毎tick実行されるactive内容。
         // ------------------------------------------------------------------
-
-        [Test]
-        public void OnMax_IsCarriedThroughToPropertyDef()
-        {
-            const string yaml = @"
-object_defs:
-  tank:
-    props:
-      pressure:
-        value: 0
-        range: {min: 0, max: 2147483647}
-        on_max:
-          destroy: self
-      temperature:
-        value: 20
-";
-            var codex = Load(yaml);
-            ObjectDef def = codex.Objects.Get(codex.ObjectNames.GetId("tank"));
-
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("pressure")).OnMax, Is.Not.Null);
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("pressure")).OnMax.Destroy, Contains.Item(ReferenceRoot.Self));
-            Assert.That(def.GetPropertyDef(codex.PropertyNames.GetId("temperature")).OnMax, Is.Null);
-        }
 
         [Test]
         public void Tick_DestroysSelfWhenOnMaxFires()
