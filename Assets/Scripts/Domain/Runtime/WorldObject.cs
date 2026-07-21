@@ -23,12 +23,6 @@ namespace UnmappedIsland.Domain.Runtime
         private readonly PropertyValue[] properties;
         private readonly Slot[] slots;
 
-        /// <summary>Target=AncestorのpassiveごとにDeclarer(=this)が現在どの祖先へ登録済みかを憶える
-        /// （再解決時、古い登録先が分からないと解除できないため。RefreshOwnAncestorTargetedPassives参照）。
-        /// キーは常にDef.Passivesの要素そのもの（ObjectDefごとに共有される同一インスタンス）。値は
-        /// 見つからなかった場合null。</summary>
-        private readonly Dictionary<PassiveEffect, WorldObject> ancestorRegistrations = new Dictionary<PassiveEffect, WorldObject>();
-
         /// <summary>所属先（7.1節）。子は必ず1つの親に属する。ルート（未格納）なら null。</summary>
         public WorldObject Parent { get; private set; }
 
@@ -51,13 +45,11 @@ namespace UnmappedIsland.Domain.Runtime
                 .Select(sd => new Slot(sd))
                 .ToArray();
 
+            // 生成時はまだトポロジが無いため、自分自身との関係（Self）だけを伝える。相手はowner自身なので
+            // 渡さない（効果がSelfのときだけ自分自身へ登録する）。Parent/Child/AncestorはMoveToSlot以降の
+            // エッジ形成/祖先再解決で登録される。
             foreach (var c in def.Passives)
-            {
-                if (c.Target != ReferenceRoot.Self) continue;
-                int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
-                if (local == LocalIndexMap.Missing) continue;
-                RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
-            }
+                c.RegisterRelation(this, ReferenceRoot.Self, register: true);
         }
 
         public bool TryGetProperty(int globalPropertyId, out PropertyValue value)
@@ -235,7 +227,9 @@ namespace UnmappedIsland.Domain.Runtime
             SetParent(newParent, localSlot);
             newParent.PropagateWeightChange(localSlot, GetNumber(wellKnown.WeightId), wellKnown);
             RegisterEdgeWith(newParent);
-            RefreshAncestorTargetedPassivesRecursively();
+            // トポロジが変わった後（新しい親チェーンが確定した後）に、祖先対象の登録を（this＋子孫について）
+            // 現在の祖先へ登録する。DetachFromParentでの解除と対になり、Refresh（前回の登録先の記憶）が要らない。
+            SyncAncestorTargetedRecursively(register: true);
 
             error = null;
             return true;
@@ -271,12 +265,16 @@ namespace UnmappedIsland.Domain.Runtime
             WorldObject oldParent = Parent;
             if (oldParent == null) return;
 
+            // トポロジが変わる前に、祖先対象の登録を（this＋子孫について）現在の祖先から解除しておく。
+            // 変わる前なので旧祖先はまだownerから辿れ、変わった後に再登録するため「前回どこへ登録したか」を
+            // 憶えておく必要がない（再登録はAttachToSlot側、または破棄ならそもそも不要）。
+            SyncAncestorTargetedRecursively(register: false);
+
             int oldParentSlotLocalId = ParentSlotLocalId;
             oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(this);
             oldParent.PropagateWeightChange(oldParentSlotLocalId, -GetNumber(wellKnown.WeightId), wellKnown);
             UnregisterEdgeWith(oldParent);
             SetParent(null, LocalIndexMap.Missing);
-            RefreshAncestorTargetedPassivesRecursively();
         }
 
         /// <summary>
@@ -313,42 +311,20 @@ namespace UnmappedIsland.Domain.Runtime
         /// コンストラクタで既に登録済みのため、ここでは扱わない。kind(modify/accumulate)は登録先を
         /// 選ぶ判断に一切影響しない（評価側でのみ区別される）。
         /// </summary>
-        private void RegisterEdgeWith(WorldObject parent)
+        private void RegisterEdgeWith(WorldObject parent) => SyncEdgeWith(parent, register: true);
+
+        private void UnregisterEdgeWith(WorldObject parent) => SyncEdgeWith(parent, register: false);
+
+        /// <summary>thisとparentのエッジが形成/解消された契機を、双方の持続効果へ伝える。thisから見れば
+        /// 相手はParent（相手はowner自身から辿れるので渡さない）、parentから見れば相手はChild（どの子かは
+        /// 一意に辿れないため、その子thisをRegisterChildへ明示的に渡す）。登録先の解決・登録/解除は効果自身が行う。</summary>
+        private void SyncEdgeWith(WorldObject parent, bool register)
         {
             foreach (var c in Def.Passives)
-            {
-                if (c.Target != ReferenceRoot.Parent) continue;
-                int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
-                if (local == LocalIndexMap.Missing) continue;
-                parent.RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
-            }
+                c.RegisterRelation(this, ReferenceRoot.Parent, register);
 
             foreach (var c in parent.Def.Passives)
-            {
-                if (c.Target != ReferenceRoot.Child) continue;
-                int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
-                if (local == LocalIndexMap.Missing) continue;
-                RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: parent, slotBearer: this, def: c));
-            }
-        }
-
-        private void UnregisterEdgeWith(WorldObject parent)
-        {
-            foreach (var c in Def.Passives)
-            {
-                if (c.Target != ReferenceRoot.Parent) continue;
-                int local = parent.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
-                if (local == LocalIndexMap.Missing) continue;
-                parent.UnregisterPassiveEffectsFrom(this, local);
-            }
-
-            foreach (var c in parent.Def.Passives)
-            {
-                if (c.Target != ReferenceRoot.Child) continue;
-                int local = Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
-                if (local == LocalIndexMap.Missing) continue;
-                UnregisterPassiveEffectsFrom(parent, local);
-            }
+                c.RegisterChild(parent, this, register);
         }
 
         /// <summary>
@@ -370,47 +346,20 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
-        /// Target=Ancestorのpassivesを、自分自身についてのみ再解決・再登録する。既存の登録先
-        /// （ancestorRegistrationsに憶えている、前回FindAncestorWithPropertyが返した祖先）から
-        /// まず解除し、現在の親チェーンで改めて探索し直して登録する。祖先が見つからない場合は
-        /// 登録なし（この効果は何もしない）。
+        /// 自分自身の直接の親が変わる（MoveToSlot/Destroy）際、その前に解除(register=false)・後に登録
+        /// (register=true)として呼ぶ。自分の祖先チェーンが変わるのは自分自身だけでなく、自分の子孫全員に
+        /// とっても同じ（子孫からのAncestor探索は自分を通過してさらに上へ続きうる）ため、自分自身と、すべての
+        /// 子孫について、Target=Ancestorのpassivesを現在の祖先へ登録/解除する。トポロジ変化前に解除・変化後に
+        /// 登録する順序を守ることで、いずれの時点でも祖先はownerから辿れ、前回の登録先を憶える必要がない。
         /// </summary>
-        private void RefreshOwnAncestorTargetedPassives()
+        private void SyncAncestorTargetedRecursively(bool register)
         {
             foreach (var c in Def.Passives)
-            {
-                if (c.Target != ReferenceRoot.Ancestor) continue;
+                c.RegisterRelation(this, ReferenceRoot.Ancestor, register);
 
-                if (ancestorRegistrations.TryGetValue(c, out WorldObject previous) && previous != null)
-                {
-                    int prevLocal = previous.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
-                    if (prevLocal != LocalIndexMap.Missing)
-                        previous.UnregisterPassiveEffectsFrom(this, prevLocal);
-                }
-
-                WorldObject ancestor = FindAncestorWithProperty(c.TargetPropertyGlobalId);
-                if (ancestor != null)
-                {
-                    int local = ancestor.Def.PropertyLayout.ToLocal(c.TargetPropertyGlobalId);
-                    ancestor.RegisterPassiveEffect(local, new RegisteredPassiveEffect(declarer: this, slotBearer: this, def: c));
-                }
-
-                ancestorRegistrations[c] = ancestor;
-            }
-        }
-
-        /// <summary>
-        /// 自分自身の直接の親が変わった（MoveToSlot/Destroy）際に呼ぶ。自分の祖先チェーンが変わるのは
-        /// 自分自身だけでなく、自分の子孫全員にとっても同じである（子孫からのAncestor探索は自分を
-        /// 通過してさらに上へ続きうるため）。そのため、自分自身と、すべての子孫について、Target=Ancestor
-        /// のpassivesを再解決・再登録する。
-        /// </summary>
-        private void RefreshAncestorTargetedPassivesRecursively()
-        {
-            RefreshOwnAncestorTargetedPassives();
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())
-                    child.RefreshAncestorTargetedPassivesRecursively();
+                    child.SyncAncestorTargetedRecursively(register);
         }
 
         /// <summary>
@@ -423,20 +372,29 @@ namespace UnmappedIsland.Domain.Runtime
             return TryGetProperty(propertyGlobalId, out var property) && property.IsInStage(stageName);
         }
 
-        public void RegisterPassiveEffect(int localPropertyId, RegisteredPassiveEffect effect)
+        /// <summary>グローバルプロパティIDで指す対象プロパティのincomingへ、登録済み効果1件を登録する
+        /// （PassiveEffectが登録先を解決して呼ぶ）。このオブジェクトがそのプロパティを持たなければ何もしない
+        /// （登録先の有無の判定をここに閉じ込め、呼び出し側は宛先の有無を気にしなくてよい）。</summary>
+        public void RegisterPassiveEffect(int propertyGlobalId, RegisteredPassiveEffect effect)
         {
-            properties[localPropertyId].RegisterPassiveEffect(effect);
+            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
+            if (local == LocalIndexMap.Missing) return;
+            properties[local].RegisterPassiveEffect(effect);
         }
 
-        public void UnregisterPassiveEffectsFrom(WorldObject declarer, int localPropertyId)
+        /// <summary>グローバルプロパティIDで指す対象プロパティから、declarerが宣言した登録を解除する。
+        /// このオブジェクトがそのプロパティを持たなければ何もしない。</summary>
+        public void UnregisterPassiveEffectsFrom(WorldObject declarer, int propertyGlobalId)
         {
-            properties[localPropertyId].UnregisterPassiveEffectsFrom(declarer);
+            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
+            if (local == LocalIndexMap.Missing) return;
+            properties[local].UnregisterPassiveEffectsFrom(declarer);
         }
 
         /// <summary>
         /// modify（Kind.Modify）のみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
-        /// target(self/parent/child)の違いはRegisterPassiveEffect呼び出し側（WorldObjectコンストラクタ・
-        /// RegisterEdgeWith）にのみ存在し、ここでは一切区別しない。Kind.Accumulateの寄与はTick参照。
+        /// target(self/parent/child/ancestor)の違いは各PassiveEffectが登録時に解決済みで、ここ（読み取り側）は
+        /// 登録された寄与を一律に合算するだけで一切区別しない。Kind.Accumulateの寄与はTick参照。
         /// </summary>
         public int GetEffectiveValue(int propertyGlobalId)
         {
