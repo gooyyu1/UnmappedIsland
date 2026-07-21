@@ -27,14 +27,14 @@ namespace UnmappedIsland.Loader
         /// destroyは削除対象を直接指す（`destroy: self`、または複数対象なら`destroy: [self, dragged]`）。
         /// spawnは常にselfが実行するものとみなすため対象キーを持たない（対象別のラップを挟まない）。
         /// </summary>
-        private ActiveEffect ParseActiveEffectBody(
+        private ActiveEffects ParseActiveEffectBody(
             string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly,
             IReadOnlyCollection<string> reservedKeys = null)
         {
-            // 1操作(ActiveOperation)の宣言順フラットリストを1本組み立てる。適用順はset→add→transfer→
+            // 単一命令(ActiveEffect)の宣言順フラットリストを1本組み立てる。適用順はset→add→transfer→
             // destroy→spawn（同一プロパティへのset後add、destroyで空いた位置へのspawn(same_slot)という
-            // 依存関係のため。ActiveEffect.ApplyToはこのリスト順にそのまま適用する）。
-            var operations = new List<ActiveOperation>();
+            // 依存関係のため。ActiveEffects.Applyはこのリスト順にそのまま適用する）。
+            var operations = new List<ActiveEffect>();
 
             YamlMappingNode setMap = bodyNode.TryGetMapping("set", context);
             if (setMap != null)
@@ -65,7 +65,7 @@ namespace UnmappedIsland.Loader
             if (unknownKeys.Count > 0)
                 throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
 
-            return new ActiveEffect(operations);
+            return new ActiveEffects(operations);
         }
 
         /// <summary>

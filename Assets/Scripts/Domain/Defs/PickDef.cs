@@ -31,25 +31,31 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときの
-    /// 実行結果（EffectOutcome＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も許容する）を持つ。
+    /// pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに
+    /// 適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、
+    /// ActiveEffectのポリモーフィズムでそのまま許容する）を持つ。
     /// </summary>
     public sealed class PickCandidateDef
     {
-        /// <summary>抽選の重み（10.2節）。ResolveWeight越しにEffectOutcomeが読むだけのため公開しない。</summary>
+        /// <summary>抽選の重み（10.2節）。ResolveWeight越しにPickEffectが読むだけのため公開しない。</summary>
         private readonly WeightSpec weight;
 
-        /// <summary>この候補が選ばれたときの実行結果（さらにpickを持てば再帰する）。EffectOutcome.Resolveが読む。</summary>
-        public EffectOutcome Outcome { get; }
+        /// <summary>この候補が選ばれたときに適用する効果（さらにpickを持てば再帰する）。nullなら何も
+        /// 起きない。PickEffectがこの候補を選んだときにApplyへ委ねる。</summary>
+        private readonly ActiveEffect effect;
 
-        public PickCandidateDef(WeightSpec weight, EffectOutcome outcome)
+        public PickCandidateDef(WeightSpec weight, ActiveEffect effect)
         {
             this.weight = weight;
-            Outcome = outcome;
+            this.effect = effect;
         }
 
-        /// <summary>この候補の抽選重みを、現在の文脈で解決する（EffectOutcomeのweight抽選が使う）。</summary>
+        /// <summary>この候補の抽選重みを、現在の文脈で解決する（PickEffectのweight抽選が使う）。</summary>
         public double ResolveWeight(WorldObject self, WorldObject actor, WorldObject dragged) =>
             weight.Resolve(self, actor, dragged);
+
+        /// <summary>この候補が選ばれたときに、自分の効果を適用する（PickEffectが選択後に呼ぶ）。</summary>
+        public void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged, WorldObject.ActiveApplication context) =>
+            effect?.Apply(owner, session, actor, dragged, context);
     }
 }
