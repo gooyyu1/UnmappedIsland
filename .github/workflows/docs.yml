@@ -102,53 +102,57 @@ jobs:
           # build.content.src="api" を使い、公開HTMLは docs/Reference/ 直下に出力する。
           docfx metadata docfx.json
           docfx build docfx.json
-          # DocFX は docs/Reference/index.html を生成しないため、Reference/ 直下の導線ページを追加する。
+          # DocFX が docs/Reference/index.html を生成していない場合のみ、Reference/ 直下の導線ページを追加する。
           # toc.html は断片ファイルのまま保持し、index.html 側に埋め込んでスマホからも見やすくする。
-          {
-            echo '<!DOCTYPE html>'
-            echo '<html lang="ja">'
-            echo '<head>'
-            echo '  <meta charset="utf-8" />'
-            echo '  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />'
-            echo '  <title>UnmappedIsland コードリファレンス</title>'
-            echo '  <link rel="stylesheet" href="styles/docfx.vendor.min.css" />'
-            echo '  <link rel="stylesheet" href="styles/docfx.css" />'
-            echo '  <link rel="stylesheet" href="styles/main.css" />'
-            echo '  <style>'
-            echo '    body { margin: 0; }'
-            echo '    .reference-toc-page { max-width: 900px; margin: 0 auto; padding: 1rem 2rem; box-sizing: border-box; }'
-            echo '    .reference-toc-page .sidefilter,'
-            echo '    .reference-toc-page .sidetoc {'
-            echo '      position: static;'
-            echo '      width: auto;'
-            echo '      top: auto;'
-            echo '      bottom: auto;'
-            echo '      float: none;'
-            echo '      border: none;'
-            echo '    }'
-            echo '    .reference-toc-page .sidetoc {'
-            echo '      overflow: visible;'
-            echo '      max-height: none;'
-            echo '      padding-bottom: 0;'
-            echo '    }'
-            echo '    .reference-toc-page .toc { margin: 0; padding: 0; }'
-            echo '    .reference-toc-page .sidefilter { padding-left: 0; padding-right: 0; }'
-            echo '    @media (max-width: 600px) { .reference-toc-page { padding: 1rem; } }'
-            echo '  </style>'
-            echo '</head>'
-            echo '<body>'
-            echo '  <main class="reference-toc-page">'
-            echo '    <h1>UnmappedIsland コードリファレンス</h1>'
-            echo '    <p><a href="../">トップへ戻る</a></p>'
-            cat docs/Reference/toc.html
-            echo '  </main>'
-            echo '  <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>'
-            echo '  <script type="text/javascript" src="styles/docfx.js"></script>'
-            echo '  <script type="text/javascript" src="styles/main.js"></script>'
-            echo '</body>'
-            echo '</html>'
-          } > docs/Reference/index.html
-          echo "Embedded toc.html into docs/Reference/index.html"
+          if [ ! -f docs/Reference/index.html ]; then
+            {
+              echo '<!DOCTYPE html>'
+              echo '<html lang="ja">'
+              echo '<head>'
+              echo '  <meta charset="utf-8" />'
+              echo '  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />'
+              echo '  <title>UnmappedIsland コードリファレンス</title>'
+              echo '  <link rel="stylesheet" href="styles/docfx.vendor.min.css" />'
+              echo '  <link rel="stylesheet" href="styles/docfx.css" />'
+              echo '  <link rel="stylesheet" href="styles/main.css" />'
+              echo '  <style>'
+              echo '    body { margin: 0; }'
+              echo '    .reference-toc-page { max-width: 900px; margin: 0 auto; padding: 1rem 2rem; box-sizing: border-box; }'
+              echo '    .reference-toc-page .sidefilter,'
+              echo '    .reference-toc-page .sidetoc {'
+              echo '      position: static;'
+              echo '      width: auto;'
+              echo '      top: auto;'
+              echo '      bottom: auto;'
+              echo '      float: none;'
+              echo '      border: none;'
+              echo '    }'
+              echo '    .reference-toc-page .sidetoc {'
+              echo '      overflow: visible;'
+              echo '      max-height: none;'
+              echo '      padding-bottom: 0;'
+              echo '    }'
+              echo '    .reference-toc-page .toc { margin: 0; padding: 0; }'
+              echo '    .reference-toc-page .sidefilter { padding-left: 0; padding-right: 0; }'
+              echo '    @media (max-width: 600px) { .reference-toc-page { padding: 1rem; } }'
+              echo '  </style>'
+              echo '</head>'
+              echo '<body>'
+              echo '  <main class="reference-toc-page">'
+              echo '    <h1>UnmappedIsland コードリファレンス</h1>'
+              echo '    <p><a href="../">トップへ戻る</a></p>'
+              cat docs/Reference/toc.html
+              echo '  </main>'
+              echo '  <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>'
+              echo '  <script type="text/javascript" src="styles/docfx.js"></script>'
+              echo '  <script type="text/javascript" src="styles/main.js"></script>'
+              echo '</body>'
+              echo '</html>'
+            } > docs/Reference/index.html
+            echo "Embedded toc.html into docs/Reference/index.html"
+          else
+            echo "docs/Reference/index.html already exists (generated by DocFX), skipping."
+          fi
 
       - name: Generate folder index.html files for Documents subtree
         run: |
