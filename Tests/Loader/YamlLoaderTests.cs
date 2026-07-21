@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using NUnit.Framework;
 using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Loader;
@@ -527,7 +529,17 @@ object_defs:
         // ------------------------------------------------------------------
 
         private static ActionDef ActionOf(ObjectDef def, string name) => def.Actions.Single(a => a.Name == name);
+        private static ConditionNode ActionConditionsOf(ActionDef action) => ReadPrivateProperty<ConditionNode>(action, "Conditions");
+        private static ActiveEffect ActionActiveOf(ActionDef action) => ReadPrivateProperty<ActiveEffect>(action, "Active");
+        private static IReadOnlyList<PickCandidateDef> ActionPickOf(ActionDef action) => ReadPrivateProperty<IReadOnlyList<PickCandidateDef>>(action, "Pick");
         private static CombinationDef CombinationOf(ObjectDef def, string name) => def.Combinations.Single(c => c.Name == name);
+
+        private static T ReadPrivateProperty<T>(object target, string propertyName)
+        {
+            PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.That(property, Is.Not.Null, $"{target.GetType().Name}.{propertyName} が見つかりません。");
+            return (T)property.GetValue(target);
+        }
 
         [Test]
         public void Load_ParsesActionWithConditionsAndActive()
@@ -556,11 +568,13 @@ object_defs:
 
             ObjectDef apple = codex.Objects.Get(codex.ObjectNames.GetId("apple"));
             ActionDef eat = ActionOf(apple, "eat");
+            ConditionNode conditions = ActionConditionsOf(eat);
+            ActiveEffect active = ActionActiveOf(eat);
 
-            Assert.That(eat.Conditions.Children.Count, Is.EqualTo(1));
-            Assert.That(eat.Conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Actor));
-            Assert.That(eat.Conditions.Children[0].Op, Is.EqualTo(ConditionOp.Lt));
-            Assert.That(eat.Active, Is.Not.Null);
+            Assert.That(conditions.Children.Count, Is.EqualTo(1));
+            Assert.That(conditions.Children[0].Root, Is.EqualTo(ReferenceRoot.Actor));
+            Assert.That(conditions.Children[0].Op, Is.EqualTo(ConditionOp.Lt));
+            Assert.That(active, Is.Not.Null);
 
             var session = new WorldSession(codex);
             var appleInstance = new WorldObject(1, apple);
@@ -644,9 +658,11 @@ object_defs:
 
             ObjectDef weapon = codex.Objects.Get(codex.ObjectNames.GetId("weapon"));
             ActionDef attack = ActionOf(weapon, "attack");
+            ActiveEffect active = ActionActiveOf(attack);
+            IReadOnlyList<PickCandidateDef> pick = ActionPickOf(attack);
 
-            Assert.That(attack.Active, Is.Null);
-            Assert.That(attack.Pick.Count, Is.EqualTo(2));
+            Assert.That(active, Is.Null);
+            Assert.That(pick.Count, Is.EqualTo(2));
         }
 
         [Test]
@@ -824,7 +840,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
-            ConditionNode leaf = ActionOf(thing, "use").Conditions.Children[0];
+            ConditionNode leaf = ActionConditionsOf(ActionOf(thing, "use")).Children[0];
 
             Assert.That(leaf.Root, Is.EqualTo(ReferenceRoot.Self), "objectを省略するとself");
             Assert.That(leaf.Op, Is.EqualTo(ConditionOp.Eq), "opを省略するとeq");
@@ -1070,7 +1086,7 @@ object_defs:
             var codex = new WorldCodexYamlLoader().Load("core.yaml", yaml).Build();
 
             ObjectDef thing = codex.Objects.Get(codex.ObjectNames.GetId("thing"));
-            ConditionNode conditions = ActionOf(thing, "use").Conditions;
+            ConditionNode conditions = ActionConditionsOf(ActionOf(thing, "use"));
 
             Assert.That(conditions.Kind, Is.EqualTo(ConditionNodeKind.All), "conditionsの最上位は暗黙のall");
             Assert.That(conditions.Children[0].Kind, Is.EqualTo(ConditionNodeKind.Any));
