@@ -57,19 +57,9 @@ namespace UnmappedIsland.Domain.Runtime
 
         private int ComputeInsertionIndex(WorldObject obj)
         {
+            // 並び順が未定義なら常に末尾（挿入順）。定義があれば、どこへ挿すかの判断はStackOrderDef自身に委ねる。
             StackOrderDef order = obj.Def.StackOrder;
-            if (order == null) return members.Count; // 並び順未定義は常に末尾（挿入順）
-
-            int value = obj.GetNumber(order.PropertyGlobalId);
-            int i = 0;
-            while (i < members.Count)
-            {
-                int otherValue = members[i].GetNumber(order.PropertyGlobalId);
-                bool staysBefore = order.Ascending ? otherValue <= value : otherValue >= value;
-                if (!staysBefore) break;
-                i++;
-            }
-            return i;
+            return order == null ? members.Count : order.InsertionIndexOf(obj, members);
         }
     }
 }
