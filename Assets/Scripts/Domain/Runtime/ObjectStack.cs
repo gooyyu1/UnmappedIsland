@@ -14,8 +14,6 @@ namespace UnmappedIsland.Domain.Runtime
     /// </summary>
     public sealed class ObjectStack
     {
-        public ObjectDef Def { get; }
-
         /// <summary>このスタックのアイデンティティ。seed自身のObjectDefを先頭に、represented_byで辿った
         /// 代表ObjectDef列が続く、このスタックが生まれた時点でのスナップショット。外側オブジェクトも含めて
         /// いるため、これ一つで「合流できる同種か」を完全に表す（別途Defを突き合わせる必要は無い）。
@@ -29,7 +27,6 @@ namespace UnmappedIsland.Domain.Runtime
 
         public ObjectStack(WorldObject seed)
         {
-            Def = seed.Def;
             RepresentationChain = seed.CaptureRepresentationChain();
             members = new List<WorldObject> { seed };
         }

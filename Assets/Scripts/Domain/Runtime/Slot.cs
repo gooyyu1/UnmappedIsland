@@ -238,27 +238,21 @@ namespace UnmappedIsland.Domain.Runtime
         public ObjectStack FindMatchingStack(WorldObject candidate) =>
             cells.FirstOrDefault(c => c != null && c.Matches(candidate));
 
-        /// <summary>このObjectStackがセルの並びの何番目にあるか（＝位置。FixedPositionsでは固定番号）。</summary>
+        /// <summary>このObjectStackがセルの並びの何番目にあるか（＝位置。FixedPositionsでは固定番号）。
+        /// 属していなければ-1。位置を知りたい呼び出し側は、対象の具体的なObjectStack（Cells /
+        /// FindStackContaining / FindMatchingStackで得る）を渡す。型（ObjectDef）では引かない——
+        /// represented_byが絡むと同じ外側Defでも別スタックが並びうるため、Defは位置を一意に決めない。</summary>
         public int IndexOfStack(ObjectStack stack) => cells.IndexOf(stack);
 
-        /// <summary>型globalIdに対応するObjectStackの位置（＝FixedPositionsの固定番号、無ければnull）。
-        /// represented_byを使わないObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。
-        /// represented_byを使うObjectDefは、Cells + IndexOfStack で具体的なスタックから辿ること。</summary>
-        public int? GetGridIndex(int objectDefGlobalId)
-        {
-            int i = cells.FindIndex(c => c != null && c.Def.GlobalId == objectDefGlobalId);
-            return i >= 0 ? i : (int?)null;
-        }
-
         /// <summary>
-        /// プレイヤーによる手動並び替え（FixedPositions専用）。対象の型のセルを、指定した番号のセルと入れ替える
+        /// プレイヤーによる手動並び替え（FixedPositions専用）。対象のスタックを、指定した番号のセルと入れ替える
         /// （相手が空セルなら実質移動になり、元のセルが空く）。前詰めしない前提のため、単純な2者間のswap。
-        /// represented_byを使わないObjectDef向けの簡易API（GetGridIndexと同じ理由）。
+        /// 対象は具体的なObjectStackで受け取る（型では一意に定まらないため。IndexOfStack参照）。
         /// </summary>
-        public bool TrySetManualPosition(int objectDefGlobalId, int newGridIndex)
+        public bool TrySetManualPosition(ObjectStack stack, int newGridIndex)
         {
             if (!Def.FixedPositions) return false;
-            int cur = cells.FindIndex(c => c != null && c.Def.GlobalId == objectDefGlobalId);
+            int cur = cells.IndexOf(stack);
             if (cur < 0) return false;
             if (newGridIndex < 0 || newGridIndex >= cells.Count) return false;
 

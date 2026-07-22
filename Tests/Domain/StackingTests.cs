@@ -30,6 +30,18 @@ namespace UnmappedIsland.Domain
             return new WorldObject(nextInstanceId++, def, new WorldSession(codex));
         }
 
+        // テスト補助: 固定スロット内で、指定した型(ObjectDef)のアイテムを持つスタックとその番号を引く。
+        // 素の型（represented_by無し＝1型1スタック）のテスト専用。スタック側のDefではなく各メンバーの
+        // Def(WorldObject.Def)で引くのであって、外側Def一致で位置を決めているわけではない。
+        private static ObjectStack StackOfType(Slot slot, int objectDefGlobalId) =>
+            slot.Cells.FirstOrDefault(s => s != null && s.Members[0].Def.GlobalId == objectDefGlobalId);
+
+        private static int? GridIndexOfType(Slot slot, int objectDefGlobalId)
+        {
+            ObjectStack stack = StackOfType(slot, objectDefGlobalId);
+            return stack != null ? slot.IndexOfStack(stack) : (int?)null;
+        }
+
         // ------------------------------------------------------------------
         // ObjectDef.StackOrder: 同種のrun内で「手前に重ねたいものほど末尾」に並ぶこと
         // ------------------------------------------------------------------
@@ -102,9 +114,9 @@ object_defs:
             var stacks = pile.Cells;
 
             Assert.That(stacks.Count, Is.EqualTo(2));
-            Assert.That(stacks[0].Def.Name, Is.EqualTo("wood"));
+            Assert.That(stacks[0].Members[0].Def.Name, Is.EqualTo("wood"));
             Assert.That(stacks[0].Members.Count, Is.EqualTo(2));
-            Assert.That(stacks[1].Def.Name, Is.EqualTo("rock"));
+            Assert.That(stacks[1].Members[0].Def.Name, Is.EqualTo("rock"));
             Assert.That(stacks[1].Members.Count, Is.EqualTo(1));
         }
 
@@ -341,16 +353,16 @@ object_defs:
             b.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand2);
-            Assert.That(hand2.GetGridIndex(typeAId), Is.EqualTo(0));
-            Assert.That(hand2.GetGridIndex(typeBId), Is.EqualTo(1));
+            Assert.That(GridIndexOfType(hand2, typeAId), Is.EqualTo(0));
+            Assert.That(GridIndexOfType(hand2, typeBId), Is.EqualTo(1));
 
             a.Destroy(codex.WellKnown); // 0番が空く
 
             WorldObject c = Spawn(codex, "type_c");
             c.MoveToSlot(handInstance, handSlotId, codex.WellKnown, out _);
 
-            Assert.That(hand2.GetGridIndex(typeBId), Is.EqualTo(1), "既存の型は前詰めされず番号を維持する");
-            Assert.That(hand2.GetGridIndex(typeCId), Is.EqualTo(0), "新しい型は空いている最小番号(0)へ入る");
+            Assert.That(GridIndexOfType(hand2, typeBId), Is.EqualTo(1), "既存の型は前詰めされず番号を維持する");
+            Assert.That(GridIndexOfType(hand2, typeCId), Is.EqualTo(0), "新しい型は空いている最小番号(0)へ入る");
         }
 
         [Test]
@@ -381,9 +393,9 @@ object_defs:
 
             handInstance.TryGetSlot(handSlotId, out Slot hand3);
 
-            Assert.That(hand3.TrySetManualPosition(typeAId, 1), Is.True);
-            Assert.That(hand3.GetGridIndex(typeAId), Is.EqualTo(1));
-            Assert.That(hand3.GetGridIndex(typeBId), Is.EqualTo(0), "入れ替え先の型は元のtypeAの番号へ移る");
+            Assert.That(hand3.TrySetManualPosition(StackOfType(hand3, typeAId), 1), Is.True);
+            Assert.That(GridIndexOfType(hand3, typeAId), Is.EqualTo(1));
+            Assert.That(GridIndexOfType(hand3, typeBId), Is.EqualTo(0), "入れ替え先の型は元のtypeAの番号へ移る");
         }
 
         [Test]
@@ -427,12 +439,12 @@ object_defs:
             fillerInstance.Destroy(session.Codex.WellKnown); // 0番が空く（1番=potatoとは別に）
 
             handInstance.TryGetSlot(handSlotId, out Slot hand4);
-            int potatoGridIndex = hand4.GetGridIndex(codex.ObjectNames.GetId("potato")).Value;
+            int potatoGridIndex = GridIndexOfType(hand4, codex.ObjectNames.GetId("potato")).Value;
             Assert.That(potatoGridIndex, Is.EqualTo(1), "前提: potatoは1番のまま（0番が空いても前詰めされない）");
 
             handInstance.Tick(session);
 
-            Assert.That(hand4.GetGridIndex(rottenId), Is.EqualTo(potatoGridIndex),
+            Assert.That(GridIndexOfType(hand4, rottenId), Is.EqualTo(potatoGridIndex),
                 "唯一のインスタンスが置き換わる場合、固定番号(1番)はそのまま新しい型へ引き継がれる" +
                 "（空き最小番号である0番を新規に割り当てられるのではない）");
         }
@@ -476,12 +488,12 @@ object_defs:
             potato1.SetProperty(freshnessId, 5);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand5);
-            int potatoGridIndex = hand5.GetGridIndex(potatoId).Value;
+            int potatoGridIndex = GridIndexOfType(hand5, potatoId).Value;
 
             handInstance.Tick(session);
 
-            Assert.That(hand5.GetGridIndex(potatoId), Is.EqualTo(potatoGridIndex), "残ったpotatoの番号は変わらない");
-            Assert.That(hand5.GetGridIndex(rottenId), Is.Not.EqualTo(potatoGridIndex),
+            Assert.That(GridIndexOfType(hand5, potatoId), Is.EqualTo(potatoGridIndex), "残ったpotatoの番号は変わらない");
+            Assert.That(GridIndexOfType(hand5, rottenId), Is.Not.EqualTo(potatoGridIndex),
                 "同種が残っている場合、新しい型は別の固定番号を新規に割り当てられる");
         }
 
@@ -552,31 +564,31 @@ object_defs:
             bInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _); // grid 1
 
             handInstance.TryGetSlot(handSlotId, out Slot hand6);
-            Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
-            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(1), "前提: A(0) _ B(1)... ではなくA(0) B(1)の状態からBを2番へ動かす");
+            Assert.That(GridIndexOfType(hand6, aTypeId), Is.EqualTo(0));
+            Assert.That(GridIndexOfType(hand6, bTypeId), Is.EqualTo(1), "前提: A(0) _ B(1)... ではなくA(0) B(1)の状態からBを2番へ動かす");
 
             // 前提を「A _ B _」（A=0, B=2）に合わせるため、Bを手動で2番へ動かす。
-            Assert.That(hand6.TrySetManualPosition(bTypeId, 2), Is.True);
-            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(2));
+            Assert.That(hand6.TrySetManualPosition(StackOfType(hand6, bTypeId), 2), Is.True);
+            Assert.That(GridIndexOfType(hand6, bTypeId), Is.EqualTo(2));
 
             // --- Cが生まれる: 期待 A(0) C(1) B(2) _(3) ---
             aInstance.SetProperty(spawnCId, 0);
             handInstance.Tick(session);
             aInstance.SetProperty(spawnCId, 1); // 再発火を防ぐ
 
-            Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
-            Assert.That(hand6.GetGridIndex(cTypeId), Is.EqualTo(1), "空いている1番へそのまま入る（ずれ無し）");
-            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(2), "Bの番号は変わらない");
+            Assert.That(GridIndexOfType(hand6, aTypeId), Is.EqualTo(0));
+            Assert.That(GridIndexOfType(hand6, cTypeId), Is.EqualTo(1), "空いている1番へそのまま入る（ずれ無し）");
+            Assert.That(GridIndexOfType(hand6, bTypeId), Is.EqualTo(2), "Bの番号は変わらない");
 
             // --- Dが生まれる: 期待 A(0) D(1) C(2) B(3) ---
             aInstance.SetProperty(spawnDId, 0);
             handInstance.Tick(session);
             aInstance.SetProperty(spawnDId, 1);
 
-            Assert.That(hand6.GetGridIndex(aTypeId), Is.EqualTo(0));
-            Assert.That(hand6.GetGridIndex(dTypeId), Is.EqualTo(1), "Dは1番に割り込む");
-            Assert.That(hand6.GetGridIndex(cTypeId), Is.EqualTo(2), "Cは押し出されて2番になる");
-            Assert.That(hand6.GetGridIndex(bTypeId), Is.EqualTo(3), "Bも押し出されて3番になる");
+            Assert.That(GridIndexOfType(hand6, aTypeId), Is.EqualTo(0));
+            Assert.That(GridIndexOfType(hand6, dTypeId), Is.EqualTo(1), "Dは1番に割り込む");
+            Assert.That(GridIndexOfType(hand6, cTypeId), Is.EqualTo(2), "Cは押し出されて2番になる");
+            Assert.That(GridIndexOfType(hand6, bTypeId), Is.EqualTo(3), "Bも押し出されて3番になる");
 
             handInstance.TryGetSlot(handSlotId, out Slot handAfterD);
             Assert.That(handAfterD.Contents.Select(o => o.Def.Name),
@@ -624,7 +636,7 @@ object_defs:
             aInstance.MoveToSlot(handInstance, handSlotId, session.Codex.WellKnown, out _);
 
             handInstance.TryGetSlot(handSlotId, out Slot hand7);
-            Assert.That(hand7.GetGridIndex(aTypeId), Is.EqualTo(0));
+            Assert.That(GridIndexOfType(hand7, aTypeId), Is.EqualTo(0));
 
             // unit_capacity=1なので、別の型なら絶対に入らないが、同種のスタックへの合流は
             // 新しい固定番号を消費しないため、あふれずに成功するはず。
@@ -632,7 +644,7 @@ object_defs:
 
             Assert.That(hand7.Contents.Count(o => o.Def.Name == "type_a4"), Is.EqualTo(2),
                 "同種はunit_capacity(1)を超えず、既存のグリッドへ合流する");
-            Assert.That(hand7.GetGridIndex(aTypeId), Is.EqualTo(0), "固定番号は変わらない");
+            Assert.That(GridIndexOfType(hand7, aTypeId), Is.EqualTo(0), "固定番号は変わらない");
         }
 
         [Test]
@@ -688,26 +700,26 @@ object_defs:
 
             handInstance.TryGetSlot(handSlotId, out Slot hand8);
             // 前提を「_ _ A B」（A=2, B=3）に合わせる。
-            Assert.That(hand8.TrySetManualPosition(aTypeId, 2), Is.True);
-            Assert.That(hand8.TrySetManualPosition(bTypeId, 3), Is.True);
+            Assert.That(hand8.TrySetManualPosition(StackOfType(hand8, aTypeId), 2), Is.True);
+            Assert.That(hand8.TrySetManualPosition(StackOfType(hand8, bTypeId), 3), Is.True);
 
             // --- Cが生まれる: 期待 _ C A B ---
             aInstance.SetProperty(spawnCId, 0);
             handInstance.Tick(session);
             aInstance.SetProperty(spawnCId, 1);
 
-            Assert.That(hand8.GetGridIndex(cTypeId), Is.EqualTo(1), "右(3番)はBで埋まっているため、左の空き(1番)へ入る");
-            Assert.That(hand8.GetGridIndex(aTypeId), Is.EqualTo(2), "Aの番号は変わらない");
-            Assert.That(hand8.GetGridIndex(bTypeId), Is.EqualTo(3), "Bの番号も変わらない");
+            Assert.That(GridIndexOfType(hand8, cTypeId), Is.EqualTo(1), "右(3番)はBで埋まっているため、左の空き(1番)へ入る");
+            Assert.That(GridIndexOfType(hand8, aTypeId), Is.EqualTo(2), "Aの番号は変わらない");
+            Assert.That(GridIndexOfType(hand8, bTypeId), Is.EqualTo(3), "Bの番号も変わらない");
 
             // --- Dが生まれる: 期待 C A D B ---
             bInstance.SetProperty(spawnDId, 0);
             handInstance.Tick(session);
 
-            Assert.That(hand8.GetGridIndex(cTypeId), Is.EqualTo(0), "Cはさらに左へ押し出される");
-            Assert.That(hand8.GetGridIndex(aTypeId), Is.EqualTo(1), "Aも左へ押し出される");
-            Assert.That(hand8.GetGridIndex(dTypeId), Is.EqualTo(2), "Dは2番に割り込む");
-            Assert.That(hand8.GetGridIndex(bTypeId), Is.EqualTo(3), "Bの番号は変わらない");
+            Assert.That(GridIndexOfType(hand8, cTypeId), Is.EqualTo(0), "Cはさらに左へ押し出される");
+            Assert.That(GridIndexOfType(hand8, aTypeId), Is.EqualTo(1), "Aも左へ押し出される");
+            Assert.That(GridIndexOfType(hand8, dTypeId), Is.EqualTo(2), "Dは2番に割り込む");
+            Assert.That(GridIndexOfType(hand8, bTypeId), Is.EqualTo(3), "Bの番号は変わらない");
 
             Assert.That(hand8.Contents.Select(o => o.Def.Name),
                 Is.EqualTo(new[] { "type_c4", "type_a5", "type_d4", "type_b5" }),
@@ -762,9 +774,9 @@ object_defs:
 
             handInstance.TryGetSlot(handSlotId, out Slot hand9);
             // 前提を「_ C(x2) A B」（C=1, A=2, B=3）に合わせる。
-            Assert.That(hand9.TrySetManualPosition(cTypeId, 1), Is.True);
-            Assert.That(hand9.TrySetManualPosition(aTypeId, 2), Is.True);
-            Assert.That(hand9.TrySetManualPosition(bTypeId, 3), Is.True);
+            Assert.That(hand9.TrySetManualPosition(StackOfType(hand9, cTypeId), 1), Is.True);
+            Assert.That(hand9.TrySetManualPosition(StackOfType(hand9, aTypeId), 2), Is.True);
+            Assert.That(hand9.TrySetManualPosition(StackOfType(hand9, bTypeId), 3), Is.True);
             Assert.That(hand9.Contents.Count(o => o.Def.GlobalId == cTypeId), Is.EqualTo(2));
 
             // Bから(destroyなしで)Dが生まれる: 右(4番)は存在せず、左は「A(2)」で埋まっているため、
@@ -772,10 +784,10 @@ object_defs:
             bInstance.SetProperty(spawnDId, 0);
             handInstance.Tick(session);
 
-            Assert.That(hand9.GetGridIndex(cTypeId), Is.EqualTo(0), "Cのスタックごと左へ押し出される");
-            Assert.That(hand9.GetGridIndex(aTypeId), Is.EqualTo(1), "Aも左へ押し出される");
-            Assert.That(hand9.GetGridIndex(dTypeId), Is.EqualTo(2), "Dは2番に割り込む");
-            Assert.That(hand9.GetGridIndex(bTypeId), Is.EqualTo(3), "Bの番号は変わらない");
+            Assert.That(GridIndexOfType(hand9, cTypeId), Is.EqualTo(0), "Cのスタックごと左へ押し出される");
+            Assert.That(GridIndexOfType(hand9, aTypeId), Is.EqualTo(1), "Aも左へ押し出される");
+            Assert.That(GridIndexOfType(hand9, dTypeId), Is.EqualTo(2), "Dは2番に割り込む");
+            Assert.That(GridIndexOfType(hand9, bTypeId), Is.EqualTo(3), "Bの番号は変わらない");
 
             Assert.That(hand9.Contents.Count(o => o.Def.GlobalId == cTypeId), Is.EqualTo(2), "押し出されてもCのスタックの個数は変わらない");
             Assert.That(hand9.Contents.Select(o => o.Def.Name),
