@@ -2992,19 +2992,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.ObjectStack.Remove
   nameWithType: ObjectStack.Remove
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain
-  name: RepresentationChain
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_RepresentationChain
-  commentId: P:UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain
-  nameWithType: ObjectStack.RepresentationChain
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain*
-  name: RepresentationChain
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_RepresentationChain_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain
-  nameWithType: ObjectStack.RepresentationChain
 - uid: UnmappedIsland.Domain.Runtime.ObjectStack.TryInsert(UnmappedIsland.Domain.Runtime.WorldObject)
   name: TryInsert(WorldObject)
   href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_TryInsert_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -3024,6 +3011,12 @@ references:
   commentId: F:UnmappedIsland.Domain.Runtime.ObjectStack.members
   fullName: UnmappedIsland.Domain.Runtime.ObjectStack.members
   nameWithType: ObjectStack.members
+- uid: UnmappedIsland.Domain.Runtime.ObjectStack.representationChain
+  name: representationChain
+  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_representationChain
+  commentId: F:UnmappedIsland.Domain.Runtime.ObjectStack.representationChain
+  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.representationChain
+  nameWithType: ObjectStack.representationChain
 - uid: UnmappedIsland.Domain.Runtime.PropertyValue
   name: PropertyValue
   href: UnmappedIsland.Domain.Runtime.PropertyValue.html
@@ -3337,19 +3330,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Declarer
   nameWithType: RegisteredPassiveEffect.Declarer
-- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Def
-  name: Def
-  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_Def
-  commentId: P:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Def
-  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Def
-  nameWithType: RegisteredPassiveEffect.Def
-- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Def*
-  name: Def
-  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_Def_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Def
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Def
-  nameWithType: RegisteredPassiveEffect.Def
 - uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue)
   name: RegisterInto(PropertyValue)
   href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_
@@ -3363,19 +3343,18 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto
   nameWithType: RegisteredPassiveEffect.RegisterInto
-- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.SlotBearer
-  name: SlotBearer
-  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_SlotBearer
-  commentId: P:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.SlotBearer
-  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.SlotBearer
-  nameWithType: RegisteredPassiveEffect.SlotBearer
-- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.SlotBearer*
-  name: SlotBearer
-  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_SlotBearer_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.SlotBearer
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.SlotBearer
-  nameWithType: RegisteredPassiveEffect.SlotBearer
+- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.def
+  name: def
+  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_def
+  commentId: F:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.def
+  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.def
+  nameWithType: RegisteredPassiveEffect.def
+- uid: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.slotBearer
+  name: slotBearer
+  href: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html#UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_slotBearer
+  commentId: F:UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.slotBearer
+  fullName: UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.slotBearer
+  nameWithType: RegisteredPassiveEffect.slotBearer
 - uid: UnmappedIsland.Domain.Runtime.Slot
   name: Slot
   href: UnmappedIsland.Domain.Runtime.Slot.html

@@ -179,6 +179,41 @@
       </tr>
     </tbody>
   </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_ObjectStack_representationChain.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.ObjectStack.representationChain%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/ObjectStack.cs/#L23">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_ObjectStack_representationChain" data-uid="UnmappedIsland.Domain.Runtime.ObjectStack.representationChain">representationChain</h4>
+  <div class="markdown level1 summary"><p>このスタックのアイデンティティ。seed自身のObjectDefを先頭に、represented_byで辿った
+代表ObjectDef列が続く、このスタックが生まれた時点でのスナップショット。外側オブジェクトも含めて
+いるため、これ一つで「合流できる同種か」を完全に表す（別途Defを突き合わせる必要は無い）。
+生成後は書き換えず、合流判定の“動かない物差し”として固定する。メンバーの中身が変わってこの列に
+合致しなくなった場合に動くのは、そのメンバーの所属スタック（抜けて適切なスタックへ移る）であって、
+この列ではない。合流判定(Matches)でのみ使う内部状態なので外へは見せない。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly IReadOnlyList&lt;int&gt; representationChain</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <h3 id="properties">Properties
 </h3>
   <span class="small pull-right mobile-hide">
@@ -207,42 +242,6 @@
     <tbody>
       <tr>
         <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>&gt;</td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_ObjectStack_RepresentationChain.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/ObjectStack.cs/#L23">View Source</a>
-  </span>
-  <a id="UnmappedIsland_Domain_Runtime_ObjectStack_RepresentationChain_" data-uid="UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain*"></a>
-  <h4 id="UnmappedIsland_Domain_Runtime_ObjectStack_RepresentationChain" data-uid="UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain">RepresentationChain</h4>
-  <div class="markdown level1 summary"><p>このスタックのアイデンティティ。seed自身のObjectDefを先頭に、represented_byで辿った
-代表ObjectDef列が続く、このスタックが生まれた時点でのスナップショット。外側オブジェクトも含めて
-いるため、これ一つで「合流できる同種か」を完全に表す（別途Defを突き合わせる必要は無い）。
-生成後は書き換えず、合流判定の“動かない物差し”として固定する。メンバーの中身が変わってこの列に
-合致しなくなった場合に動くのは、そのメンバーの所属スタック（抜けて適切なスタックへ移る）であって、
-この列ではない。</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;int&gt; RepresentationChain { get; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
