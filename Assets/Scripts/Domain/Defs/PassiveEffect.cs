@@ -108,7 +108,7 @@ namespace UnmappedIsland.Domain.Defs
         ///
         /// Ancestorも「今この瞬間の祖先」はownerから辿れるためここで扱える。登録/解除は必ず、ツリー構造が
         /// 変わる前（＝解除、旧祖先が辿れるうち）と変わった後（＝登録、新祖先が辿れる）に分けて呼ばれるため、
-        /// 「前回どこへ登録したか」を憶えておく必要がない（呼び出し側WorldObject.SyncAncestorTargetedRecursively）。
+        /// 「前回どこへ登録したか」を憶えておく必要がない（呼び出し側WorldObject.RegisterAncestorTargetedRecursively）。
         ///
         /// Childは相手（どの子か）がownerから一意に辿れない（親は複数の子を持ち、契機はその1人が付いた/離れた
         /// こと）ため、ここでは扱わない。専用のRegisterChildを使う。
