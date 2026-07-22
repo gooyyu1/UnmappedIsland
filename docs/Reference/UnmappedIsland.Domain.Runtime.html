@@ -110,12 +110,18 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
 読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Slot.html">Slot</a></h4>
-      <section><p>1つの WorldObject が持つ、1つのスロットの実行時状態。中に入っている WorldObject を、ObjectStack
-（7.6節、「見た目上1つのまとまり」）のリストとして保持する。正の情報源はこちら側（親のスロット配列）
-であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>
-<p>Stacksの並び順は「表示上のスタック順」そのものを表す実データとして維持する（都度ソートし直す
-派生ビューではない）。中身の追加・削除は WorldObject.MoveToSlot 経由でのみ行う（両者の整合性を
-1箇所でのみ保証するため）。</p>
+      <section><p>1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは
+1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は
+こちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>
+<p>FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。</p>
+<ul>
+<li>FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が
+安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。</li>
+<li>非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。
+この差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot
+置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。</li>
+</ul>
+<p>中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></h4>
       <section><p>実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、
@@ -140,11 +146,15 @@ Structs
 スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。
 「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から
 行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>
-<p>置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/
-固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、
-またはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら
-（同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された
-ObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。</p>
+<p>置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居たスタック(固定
+番号)に、同種がまだ残っているか」で決まる。残っているなら（selfが生き残る、またはdestroyされても
+同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、残っていないなら（同種が全て消えた）その空いた
+位置をそのまま引き継ぐ。この判別は在庫（originStack.Members.Count）で行う（OriginKindRemains）——
+「その位置が同種を受け入れられるか」ではない点に注意。空になったスタックも同種を受け入れ可能だが位置は
+引き継ぐべきで、固定スロットが空スタックを保持する実装でも在庫判定なら正しい。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html">WorldObject.SameSlotPlacement</a></h4>
+      <section><p>same_slot置き換えの配置指示: originが居たセルの位置と、そのセルに同種が残っているか。</p>
 </section>
 
 

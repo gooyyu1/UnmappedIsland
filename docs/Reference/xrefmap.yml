@@ -2901,19 +2901,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.ObjectStack.Def
   nameWithType: ObjectStack.Def
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.GridIndex
-  name: GridIndex
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_GridIndex
-  commentId: P:UnmappedIsland.Domain.Runtime.ObjectStack.GridIndex
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.GridIndex
-  nameWithType: ObjectStack.GridIndex
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.GridIndex*
-  name: GridIndex
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_GridIndex_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ObjectStack.GridIndex
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.GridIndex
-  nameWithType: ObjectStack.GridIndex
 - uid: UnmappedIsland.Domain.Runtime.ObjectStack.Matches(UnmappedIsland.Domain.Runtime.WorldObject)
   name: Matches(WorldObject)
   href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_Matches_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -3388,19 +3375,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.Slot.AddInternal
   nameWithType: Slot.AddInternal
-- uid: UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex
-  name: AssignGridIndex()
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_AssignGridIndex
-  commentId: M:UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex
-  fullName: UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex()
-  nameWithType: Slot.AssignGridIndex()
-- uid: UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex*
-  name: AssignGridIndex
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_AssignGridIndex_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.Slot.AssignGridIndex
-  nameWithType: Slot.AssignGridIndex
 - uid: UnmappedIsland.Domain.Runtime.Slot.CanAccept(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String,System.String@)
   name: CanAccept(WorldObject, WellKnownProperties, string, out string)
   href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_CanAccept_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String_System_String__
@@ -3524,35 +3498,48 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.Slot.IndexOfStack
   nameWithType: Slot.IndexOfStack
-- uid: UnmappedIsland.Domain.Runtime.Slot.InsertNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)
-  name: InsertNewStack(ObjectStack)
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertNewStack_UnmappedIsland_Domain_Runtime_ObjectStack_
-  commentId: M:UnmappedIsland.Domain.Runtime.Slot.InsertNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)
-  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)
-  nameWithType: Slot.InsertNewStack(ObjectStack)
-- uid: UnmappedIsland.Domain.Runtime.Slot.InsertNewStack*
-  name: InsertNewStack
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertNewStack_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.InsertNewStack
+- uid: UnmappedIsland.Domain.Runtime.Slot.LiveStacks
+  name: LiveStacks
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_LiveStacks
+  commentId: P:UnmappedIsland.Domain.Runtime.Slot.LiveStacks
+  fullName: UnmappedIsland.Domain.Runtime.Slot.LiveStacks
+  nameWithType: Slot.LiveStacks
+- uid: UnmappedIsland.Domain.Runtime.Slot.LiveStacks*
+  name: LiveStacks
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_LiveStacks_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.LiveStacks
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertNewStack
-  nameWithType: Slot.InsertNewStack
-- uid: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
-  name: InsertNewStackAt(WorldObject, int)
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertNewStackAt_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
-  name.vb: InsertNewStackAt(WorldObject, Integer)
-  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject, int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject, Integer)
-  nameWithType: Slot.InsertNewStackAt(WorldObject, int)
-  nameWithType.vb: Slot.InsertNewStackAt(WorldObject, Integer)
-- uid: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt*
-  name: InsertNewStackAt
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertNewStackAt_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt
+  fullName: UnmappedIsland.Domain.Runtime.Slot.LiveStacks
+  nameWithType: Slot.LiveStacks
+- uid: UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)
+  name: PlaceNewStack(ObjectStack)
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_PlaceNewStack_UnmappedIsland_Domain_Runtime_ObjectStack_
+  commentId: M:UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)
+  fullName: UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)
+  nameWithType: Slot.PlaceNewStack(ObjectStack)
+- uid: UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack*
+  name: PlaceNewStack
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_PlaceNewStack_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt
-  nameWithType: Slot.InsertNewStackAt
+  fullName: UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack
+  nameWithType: Slot.PlaceNewStack
+- uid: UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Boolean)
+  name: PlaceSameSlot(WorldObject, int, bool)
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_PlaceSameSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Boolean)
+  name.vb: PlaceSameSlot(WorldObject, Integer, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot(UnmappedIsland.Domain.Runtime.WorldObject, int, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Boolean)
+  nameWithType: Slot.PlaceSameSlot(WorldObject, int, bool)
+  nameWithType.vb: Slot.PlaceSameSlot(WorldObject, Integer, Boolean)
+- uid: UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot*
+  name: PlaceSameSlot
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_PlaceSameSlot_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot
+  nameWithType: Slot.PlaceSameSlot
 - uid: UnmappedIsland.Domain.Runtime.Slot.RemoveInternal(UnmappedIsland.Domain.Runtime.WorldObject)
   name: RemoveInternal(WorldObject)
   href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -3566,22 +3553,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.Slot.RemoveInternal
   nameWithType: Slot.RemoveInternal
-- uid: UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack(System.Int32)
-  name: ReserveGridIndexForNextNewStack(int)
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_ReserveGridIndexForNextNewStack_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack(System.Int32)
-  name.vb: ReserveGridIndexForNextNewStack(Integer)
-  fullName: UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack(int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack(Integer)
-  nameWithType: Slot.ReserveGridIndexForNextNewStack(int)
-  nameWithType.vb: Slot.ReserveGridIndexForNextNewStack(Integer)
-- uid: UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack*
-  name: ReserveGridIndexForNextNewStack
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_ReserveGridIndexForNextNewStack_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.Slot.ReserveGridIndexForNextNewStack
-  nameWithType: Slot.ReserveGridIndexForNextNewStack
 - uid: UnmappedIsland.Domain.Runtime.Slot.Stacks
   name: Stacks
   href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_Stacks
@@ -3611,31 +3582,54 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.Slot.SumSize
   nameWithType: Slot.SumSize
-- uid: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32)
-  name: TryMakeRoomAndSeed(int)
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32)
-  name.vb: TryMakeRoomAndSeed(Integer)
-  fullName: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(Integer)
-  nameWithType: Slot.TryMakeRoomAndSeed(int)
-  nameWithType.vb: Slot.TryMakeRoomAndSeed(Integer)
-- uid: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32,System.Int32)
-  name: TryMakeRoomAndSeed(int, int)
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_System_Int32_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(System.Int32,System.Int32)
-  name.vb: TryMakeRoomAndSeed(Integer, Integer)
-  fullName: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(int, int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed(Integer, Integer)
-  nameWithType: Slot.TryMakeRoomAndSeed(int, int)
-  nameWithType.vb: Slot.TryMakeRoomAndSeed(Integer, Integer)
-- uid: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed*
-  name: TryMakeRoomAndSeed
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryMakeRoomAndSeed_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed
+- uid: UnmappedIsland.Domain.Runtime.Slot.TryFillCell(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
+  name: TryFillCell(WorldObject, int)
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryFillCell_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.Slot.TryFillCell(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
+  name.vb: TryFillCell(WorldObject, Integer)
+  fullName: UnmappedIsland.Domain.Runtime.Slot.TryFillCell(UnmappedIsland.Domain.Runtime.WorldObject, int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.TryFillCell(UnmappedIsland.Domain.Runtime.WorldObject, Integer)
+  nameWithType: Slot.TryFillCell(WorldObject, int)
+  nameWithType.vb: Slot.TryFillCell(WorldObject, Integer)
+- uid: UnmappedIsland.Domain.Runtime.Slot.TryFillCell*
+  name: TryFillCell
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryFillCell_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.TryFillCell
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.Slot.TryMakeRoomAndSeed
-  nameWithType: Slot.TryMakeRoomAndSeed
+  fullName: UnmappedIsland.Domain.Runtime.Slot.TryFillCell
+  nameWithType: Slot.TryFillCell
+- uid: UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
+  name: TryPlaceAdjacent(WorldObject, int)
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryPlaceAdjacent_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
+  name.vb: TryPlaceAdjacent(WorldObject, Integer)
+  fullName: UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent(UnmappedIsland.Domain.Runtime.WorldObject, int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent(UnmappedIsland.Domain.Runtime.WorldObject, Integer)
+  nameWithType: Slot.TryPlaceAdjacent(WorldObject, int)
+  nameWithType.vb: Slot.TryPlaceAdjacent(WorldObject, Integer)
+- uid: UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent*
+  name: TryPlaceAdjacent
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryPlaceAdjacent_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent
+  nameWithType: Slot.TryPlaceAdjacent
+- uid: UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
+  name: TryPlaceShifted(WorldObject, int, int)
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryPlaceShifted_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
+  name.vb: TryPlaceShifted(WorldObject, Integer, Integer)
+  fullName: UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted(UnmappedIsland.Domain.Runtime.WorldObject, int, int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer)
+  nameWithType: Slot.TryPlaceShifted(WorldObject, int, int)
+  nameWithType.vb: Slot.TryPlaceShifted(WorldObject, Integer, Integer)
+- uid: UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted*
+  name: TryPlaceShifted
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TryPlaceShifted_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted
+  nameWithType: Slot.TryPlaceShifted
 - uid: UnmappedIsland.Domain.Runtime.Slot.TrySetManualPosition(System.Int32,System.Int32)
   name: TrySetManualPosition(int, int)
   href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_TrySetManualPosition_System_Int32_System_Int32_
@@ -3652,18 +3646,12 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.Slot.TrySetManualPosition
   nameWithType: Slot.TrySetManualPosition
-- uid: UnmappedIsland.Domain.Runtime.Slot.pendingGridReservation
-  name: pendingGridReservation
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_pendingGridReservation
-  commentId: F:UnmappedIsland.Domain.Runtime.Slot.pendingGridReservation
-  fullName: UnmappedIsland.Domain.Runtime.Slot.pendingGridReservation
-  nameWithType: Slot.pendingGridReservation
-- uid: UnmappedIsland.Domain.Runtime.Slot.stacks
-  name: stacks
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_stacks
-  commentId: F:UnmappedIsland.Domain.Runtime.Slot.stacks
-  fullName: UnmappedIsland.Domain.Runtime.Slot.stacks
-  nameWithType: Slot.stacks
+- uid: UnmappedIsland.Domain.Runtime.Slot.cells
+  name: cells
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_cells
+  commentId: F:UnmappedIsland.Domain.Runtime.Slot.cells
+  fullName: UnmappedIsland.Domain.Runtime.Slot.cells
+  nameWithType: Slot.cells
 - uid: UnmappedIsland.Domain.Runtime.Views
   name: UnmappedIsland.Domain.Runtime.Views
   href: UnmappedIsland.Domain.Runtime.Views.html
@@ -3984,15 +3972,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ApplyActiveEffect
   nameWithType: WorldObject.ApplyActiveEffect
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{System.Int32},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name: AttachToSlot(WorldObject, int, int?, WellKnownProperties, out string, bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AttachToSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Nullable_System_Int32__UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{System.Int32},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name.vb: AttachToSlot(WorldObject, Integer, Integer?, WellKnownProperties, String, Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, int, int?, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer?, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
-  nameWithType: WorldObject.AttachToSlot(WorldObject, int, int?, WellKnownProperties, out string, bool)
-  nameWithType.vb: WorldObject.AttachToSlot(WorldObject, Integer, Integer?, WellKnownProperties, String, Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name: AttachToSlot(WorldObject, int, SameSlotPlacement?, WellKnownProperties, out string, bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AttachToSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_SameSlotPlacement__UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name.vb: AttachToSlot(WorldObject, Integer, SameSlotPlacement?, WellKnownProperties, String, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, int, UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement?, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, Integer, UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement?, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
+  nameWithType: WorldObject.AttachToSlot(WorldObject, int, WorldObject.SameSlotPlacement?, WellKnownProperties, out string, bool)
+  nameWithType.vb: WorldObject.AttachToSlot(WorldObject, Integer, WorldObject.SameSlotPlacement?, WellKnownProperties, String, Boolean)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot*
   name: AttachToSlot
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AttachToSlot_
@@ -4103,32 +4091,32 @@ references:
   fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.New
   nameWithType: WorldObject.EffectSite.EffectSite
   nameWithType.vb: WorldObject.EffectSite.New
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
-  name: GridIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_GridIndex
-  commentId: P:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
-  nameWithType: WorldObject.EffectSite.GridIndex
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex*
-  name: GridIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_GridIndex_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex(UnmappedIsland.Domain.Runtime.Slot)
+  name: OriginCellIndex(Slot)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellIndex_UnmappedIsland_Domain_Runtime_Slot_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex(UnmappedIsland.Domain.Runtime.Slot)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex(UnmappedIsland.Domain.Runtime.Slot)
+  nameWithType: WorldObject.EffectSite.OriginCellIndex(Slot)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex*
+  name: OriginCellIndex
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellIndex_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
-  nameWithType: WorldObject.EffectSite.GridIndex
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)
-  name: OriginCellStillOccupied(Slot)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellStillOccupied_UnmappedIsland_Domain_Runtime_Slot_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)
-  nameWithType: WorldObject.EffectSite.OriginCellStillOccupied(Slot)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied*
-  name: OriginCellStillOccupied
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellStillOccupied_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex
+  nameWithType: WorldObject.EffectSite.OriginCellIndex
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains
+  name: OriginKindRemains
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginKindRemains
+  commentId: P:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains
+  nameWithType: WorldObject.EffectSite.OriginKindRemains
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains*
+  name: OriginKindRemains
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginKindRemains_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied
-  nameWithType: WorldObject.EffectSite.OriginCellStillOccupied
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains
+  nameWithType: WorldObject.EffectSite.OriginKindRemains
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent
   name: Parent
   href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_Parent
@@ -4141,19 +4129,6 @@ references:
   commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId
   nameWithType: WorldObject.EffectSite.ParentSlotLocalId
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex(UnmappedIsland.Domain.Runtime.Slot)
-  name: ResolveInsertStackIndex(Slot)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertStackIndex_UnmappedIsland_Domain_Runtime_Slot_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex(UnmappedIsland.Domain.Runtime.Slot)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex(UnmappedIsland.Domain.Runtime.Slot)
-  nameWithType: WorldObject.EffectSite.ResolveInsertStackIndex(Slot)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex*
-  name: ResolveInsertStackIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertStackIndex_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex
-  nameWithType: WorldObject.EffectSite.ResolveInsertStackIndex
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack
   name: originStack
   href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_originStack
@@ -4288,22 +4263,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.HasRepresentationChain
   nameWithType: WorldObject.HasRepresentationChain
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name: InsertAtStackIndex(WorldObject, int, int, WellKnownProperties, out string, bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertAtStackIndex_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name.vb: InsertAtStackIndex(WorldObject, Integer, Integer, WellKnownProperties, String, Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject, int, int, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
-  nameWithType: WorldObject.InsertAtStackIndex(WorldObject, int, int, WellKnownProperties, out string, bool)
-  nameWithType.vb: WorldObject.InsertAtStackIndex(WorldObject, Integer, Integer, WellKnownProperties, String, Boolean)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex*
-  name: InsertAtStackIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertAtStackIndex_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertSameSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name: InsertSameSlot(WorldObject, int, SameSlotPlacement, WellKnownProperties, out string, bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertSameSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_WorldObject_SameSlotPlacement_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.InsertSameSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name.vb: InsertSameSlot(WorldObject, Integer, SameSlotPlacement, WellKnownProperties, String, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertSameSlot(UnmappedIsland.Domain.Runtime.WorldObject, int, UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.InsertSameSlot(UnmappedIsland.Domain.Runtime.WorldObject, Integer, UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
+  nameWithType: WorldObject.InsertSameSlot(WorldObject, int, WorldObject.SameSlotPlacement, WellKnownProperties, out string, bool)
+  nameWithType.vb: WorldObject.InsertSameSlot(WorldObject, Integer, WorldObject.SameSlotPlacement, WellKnownProperties, String, Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertSameSlot*
+  name: InsertSameSlot
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertSameSlot_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.InsertSameSlot
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex
-  nameWithType: WorldObject.InsertAtStackIndex
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertSameSlot
+  nameWithType: WorldObject.InsertSameSlot
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.InstanceId
   name: InstanceId
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InstanceId
@@ -4475,6 +4450,43 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveInteractionTarget
   nameWithType: WorldObject.ResolveInteractionTarget
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement
+  name: WorldObject.SameSlotPlacement
+  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html
+  commentId: T:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement
+  nameWithType: WorldObject.SameSlotPlacement
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.#ctor(System.Int32,System.Boolean)
+  name: SameSlotPlacement(int, bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotPlacement__ctor_System_Int32_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.#ctor(System.Int32,System.Boolean)
+  name.vb: New(Integer, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.SameSlotPlacement(int, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.New(Integer, Boolean)
+  nameWithType: WorldObject.SameSlotPlacement.SameSlotPlacement(int, bool)
+  nameWithType.vb: WorldObject.SameSlotPlacement.New(Integer, Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.#ctor*
+  name: SameSlotPlacement
+  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotPlacement__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.SameSlotPlacement
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.New
+  nameWithType: WorldObject.SameSlotPlacement.SameSlotPlacement
+  nameWithType.vb: WorldObject.SameSlotPlacement.New
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.KindRemains
+  name: KindRemains
+  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotPlacement_KindRemains
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.KindRemains
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.KindRemains
+  nameWithType: WorldObject.SameSlotPlacement.KindRemains
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.OriginCellIndex
+  name: OriginCellIndex
+  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotPlacement_OriginCellIndex
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.OriginCellIndex
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.OriginCellIndex
+  nameWithType: WorldObject.SameSlotPlacement.OriginCellIndex
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.SetNumber(System.Int32,System.Int32,UnmappedIsland.Domain.Runtime.WorldSession)
   name: SetNumber(int, int, WorldSession)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SetNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_

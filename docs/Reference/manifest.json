@@ -596,7 +596,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.Slot",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"1\">1つの WorldObject が持つ、1つのスロットの実行時状態。中に入っている WorldObject を、ObjectStack\n（7.6節、「見た目上1つのまとまり」）のリストとして保持する。正の情報源はこちら側（親のスロット配列）\nであり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"5\">Stacksの並び順は「表示上のスタック順」そのものを表す実データとして維持する（都度ソートし直す\n派生ビューではない）。中身の追加・削除は WorldObject.MoveToSlot 経由でのみ行う（両者の整合性を\n1箇所でのみ保証するため）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"1\">1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは\n1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は\nこちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"5\">FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"6\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"6\">FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が\n安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"8\">非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。\nこの差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot\n置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"12\">中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -666,7 +666,21 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.WorldObject.EffectSite",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"1\">active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した\nスナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。\n「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から\n行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"6\">置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/\n固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、\nまたはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら\n（同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された\nObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"1\">active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した\nスナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。\n「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から\n行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"6\">置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居たスタック(固定\n番号)に、同種がまだ残っているか」で決まる。残っているなら（selfが生き残る、またはdestroyされても\n同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、残っていないなら（同種が全て消えた）その空いた\n位置をそのまま引き継ぐ。この判別は在庫（originStack.Members.Count）で行う（OriginKindRemains）——\n「その位置が同種を受け入れられるか」ではない点に注意。空になったスタックも同種を受け入れ可能だが位置は\n引き継ぐべきで、固定スロットが空スタックを保持する実装でも在庫判定なら正しい。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.yml\" sourcestartlinenumber=\"1\">same_slot置き換えの配置指示: originが居たセルの位置と、そのセルに同種が残っているか。</p>\n"
     },
     {
       "type": "ManagedReference",
