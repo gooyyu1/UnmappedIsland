@@ -48,8 +48,7 @@ namespace UnmappedIsland.Domain.Runtime
             // 生成時はまだトポロジが無いため、自分自身との関係（Self）だけを伝える。相手はowner自身なので
             // 渡さない（効果がSelfのときだけ自分自身へ登録する）。Parent/Child/AncestorはMoveToSlot以降の
             // エッジ形成/祖先再解決で登録される。
-            foreach (var c in def.Passives)
-                c.RegisterRelation(this, ReferenceRoot.Self, register: true);
+            def.Passives.RegisterRelation(this, ReferenceRoot.Self, register: true);
         }
 
         public bool TryGetProperty(int globalPropertyId, out PropertyValue value)
@@ -98,8 +97,10 @@ namespace UnmappedIsland.Domain.Runtime
             Def.FindMatchingCombinations(this, dragged);
 
         /// <summary>stack判定用の代表ObjectDef列を、現在のrepresented_byチェーンからスナップショットする。
-        /// 自分自身のObjectDefは呼び出し側（ObjectStack.Def）が既に持っているため含めず、代表の代表…だけを
-        /// 深さ順に並べる。</summary>
+        /// 先頭は自分自身のObjectDefで、続いて代表・代表の代表…を深さ順に並べる（外側オブジェクトも同種判定の
+        /// 対象に含める。例: 水入りボウルと水入り瓶は先頭のObjectDefが違うので別スタックになる）。
+        /// スナップショット作成時のみ列を組み立てる。合流判定の突き合わせはMatchesRepresentationが辿りながら
+        /// 行うため、候補側で毎回この列を作り直すことはしない。</summary>
         public IReadOnlyList<int> CaptureRepresentationChain()
         {
             var chain = new List<int>();
@@ -107,25 +108,61 @@ namespace UnmappedIsland.Domain.Runtime
             return chain;
         }
 
-        public bool HasRepresentationChain(IReadOnlyList<int> expected)
+        /// <summary>自分の代表チェーン（自分自身＋represented_by先…）が、スナップショット済みのexpectedと
+        /// 完全に一致するか。expectedと突き合わせながらチェーンを辿り、値の食い違い・長さ違いを見つけ次第
+        /// 打ち切る（合流判定は頻繁に呼ばれるため、候補側のList生成を伴わない）。</summary>
+        public bool MatchesRepresentation(IReadOnlyList<int> expected) =>
+            MatchRepresentationFrom(expected, 0) == expected.Count;
+
+        /// <summary>expected[index..]と、自分以下の代表チェーンを突き合わせる。一致した分だけ進めたindexを返し、
+        /// 途中で食い違う（値が違う／expectedが先に尽きる）と-1を返す。</summary>
+        private int MatchRepresentationFrom(IReadOnlyList<int> expected, int index)
         {
-            var actual = CaptureRepresentationChain();
-            if (actual.Count != expected.Count) return false;
-            for (int i = 0; i < actual.Count; i++)
-                if (actual[i] != expected[i]) return false;
-            return true;
+            if (index >= expected.Count || expected[index] != Def.GlobalId) return -1;
+            index++;
+
+            if (!Def.RepresentedBySlotGlobalId.HasValue) return index;
+            if (!TryGetSlot(Def.RepresentedBySlotGlobalId.Value, out Slot slot)) return index;
+
+            WorldObject represented = slot.Contents.FirstOrDefault();
+            return represented == null ? index : represented.MatchRepresentationFrom(expected, index);
         }
 
         private void AppendRepresentationChain(List<int> chain)
         {
+            chain.Add(Def.GlobalId);
             if (!Def.RepresentedBySlotGlobalId.HasValue) return;
             if (!TryGetSlot(Def.RepresentedBySlotGlobalId.Value, out Slot slot)) return;
 
             WorldObject represented = slot.Contents.FirstOrDefault();
-            if (represented == null) return;
+            represented?.AppendRepresentationChain(chain);
+        }
 
-            chain.Add(represented.Def.GlobalId);
-            represented.AppendRepresentationChain(chain);
+        /// <summary>
+        /// 自分の代表チェーン（represented_byで畳んだ同種判定の識別子）が変わった直後の後始末。represented_by先
+        /// スロットの中身が入れ替わったときに呼ばれる。まず自分自身が今の所属スタックの固定識別子にまだ合致するかを
+        /// スロットへ再判定させ（合致しなければ抜けて適切なスタックへ移る＝同種の別スタックへ合流／無ければ新規）、
+        /// 次に自分を代表として使っている一つ上（親）があれば、その親の代表チェーンも連鎖的に変わったので同じ後始末を
+        /// 親へ伝える。各段は「自分を再判定し、自分を代表に使う一つ上へ同じ依頼を渡す」だけの局所処理で、上りは
+        /// represented_byのネスト分だけ有界（自分のことは自分でする、CLAUDE.md参照）。
+        /// </summary>
+        private void OnRepresentationChanged()
+        {
+            if (Parent == null) return;
+
+            Parent.GetSlotByLocalId(ParentSlotLocalId).Restack(this);
+
+            // 自分が親のrepresented_by先スロットに居るなら、自分の代表チェーンの変化は親の代表チェーンの変化でもある。
+            if (Parent.IsRepresentedBySlot(ParentSlotLocalId))
+                Parent.OnRepresentationChanged();
+        }
+
+        /// <summary>slotLocalIdが、このオブジェクトの代表を採るスロット（represented_by先）か。中身が入れ替わった
+        /// スロットがこれなら、自分の代表チェーンが変わったということ。</summary>
+        private bool IsRepresentedBySlot(int slotLocalId)
+        {
+            if (!Def.RepresentedBySlotGlobalId.HasValue) return false;
+            return Def.SlotLayout.ToLocal(Def.RepresentedBySlotGlobalId.Value) == slotLocalId;
         }
 
         /// <summary>
@@ -249,6 +286,11 @@ namespace UnmappedIsland.Domain.Runtime
             // 現在の祖先へ登録する。DetachFromParentでの解除と対になり、Refresh（前回の登録先の記憶）が要らない。
             SyncAncestorTargetedRecursively(register: true);
 
+            // 入ったスロットが newParent の represented_by 先なら、newParent の代表チェーンが変わった。
+            // newParent 自身のスタック所属を再判定させ、必要なら上位へ連鎖させる（OnRepresentationChanged）。
+            if (newParent.IsRepresentedBySlot(localSlot))
+                newParent.OnRepresentationChanged();
+
             error = null;
             return true;
         }
@@ -276,6 +318,11 @@ namespace UnmappedIsland.Domain.Runtime
             oldParent.PropagateWeightChange(oldParentSlotLocalId, -GetNumber(wellKnown.WeightId), wellKnown);
             UnregisterEdgeWith(oldParent);
             SetParent(null, LocalIndexMap.Missing);
+
+            // 抜けたスロットが oldParent の represented_by 先なら、oldParent の代表チェーンが変わった。
+            // oldParent 自身のスタック所属を再判定させ、必要なら上位へ連鎖させる（OnRepresentationChanged）。
+            if (oldParent.IsRepresentedBySlot(oldParentSlotLocalId))
+                oldParent.OnRepresentationChanged();
         }
 
         /// <summary>
@@ -321,11 +368,8 @@ namespace UnmappedIsland.Domain.Runtime
         /// 一意に辿れないため、その子thisをRegisterChildへ明示的に渡す）。登録先の解決・登録/解除は効果自身が行う。</summary>
         private void SyncEdgeWith(WorldObject parent, bool register)
         {
-            foreach (var c in Def.Passives)
-                c.RegisterRelation(this, ReferenceRoot.Parent, register);
-
-            foreach (var c in parent.Def.Passives)
-                c.RegisterChild(parent, this, register);
+            Def.Passives.RegisterRelation(this, ReferenceRoot.Parent, register);
+            parent.Def.Passives.RegisterChild(parent, this, register);
         }
 
         /// <summary>
@@ -355,8 +399,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         private void SyncAncestorTargetedRecursively(bool register)
         {
-            foreach (var c in Def.Passives)
-                c.RegisterRelation(this, ReferenceRoot.Ancestor, register);
+            Def.Passives.RegisterRelation(this, ReferenceRoot.Ancestor, register);
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())

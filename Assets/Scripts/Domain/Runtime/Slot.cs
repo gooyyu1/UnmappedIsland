@@ -28,8 +28,10 @@ namespace UnmappedIsland.Domain.Runtime
 
         private IEnumerable<ObjectStack> LiveStacks => cells.Where(c => c != null);
 
-        /// <summary>実在するスタックだけ（空セルnullを除く）。位置は GetGridIndex / IndexOfStack で別途得る。</summary>
-        public IReadOnlyList<ObjectStack> Stacks => LiveStacks.ToList();
+        /// <summary>セルの並びそのもの（空セルは null）。位置＝添字。FixedPositionsでは空セルnullを含んだまま
+        /// 番号が安定し、非FixedPositionsでは前詰め済みなのでnullを含まない。「実在スタックだけを位置無視で
+        /// 並べたい」用途は無いため、そのようなビュー（旧Stacks）は提供しない。位置と一緒に扱うのが前提。</summary>
+        public IReadOnlyList<ObjectStack> Cells => cells.ToList();
 
         /// <summary>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。スタックの概念に興味が無い
         /// 呼び出し側（タグ判定・重さ集計・子の一括走査など、ほとんどが内部処理）はこちらを使う。</summary>
@@ -143,6 +145,35 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
+        /// objの代表チェーン（represented_byで畳んだ同種の識別子）が変わったかもしれないとき、objが今の所属
+        /// スタックの固定識別子にまだ合致するかを判定し、合致しなくなっていれば抜いて入れ直す（同種の既存
+        /// スタックがあれば合流、無ければ新規スタック。抜けた跡が空になれば固定は空セル化・前詰めは除去）。
+        /// これによりスロットの「同種は1スタックにまとまる」という不変条件を、中身の変化後も保つ。
+        ///
+        /// 非Stackableは同種でも常に個体ごとの別スタックで、合流もしなければ並びも保ちたいので対象外
+        /// （識別子が古くなっても、その識別子で合流判定される相手が居ないため実害が無い）。
+        /// </summary>
+        public void Restack(WorldObject obj)
+        {
+            if (!Def.Stackable) return;
+
+            int idx = cells.FindIndex(c => c != null && c.Members.Contains(obj));
+            if (idx < 0) return;
+
+            ObjectStack current = cells[idx];
+            if (current.Matches(obj)) return; // まだ同じ識別子に合致：動かす必要は無い
+
+            current.Remove(obj);
+            if (current.Members.Count == 0)
+            {
+                if (Def.FixedPositions) cells[idx] = null;
+                else cells.RemoveAt(idx);
+            }
+
+            AddInternal(obj);
+        }
+
+        /// <summary>
         /// same_slotによる置き換え（GameElementDefinition.md 9.4節）。置き換えオブジェクトを新規スタックとして、
         /// originが居たセル(originCellIndex)を基準に配置する（EffectSite.OriginCellIndex/OriginKindRemains参照）。
         /// 自動整列は行わない（同種はObjectStack内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
@@ -207,27 +238,21 @@ namespace UnmappedIsland.Domain.Runtime
         public ObjectStack FindMatchingStack(WorldObject candidate) =>
             cells.FirstOrDefault(c => c != null && c.Matches(candidate));
 
-        /// <summary>このObjectStackがセルの並びの何番目にあるか（＝位置。FixedPositionsでは固定番号）。</summary>
+        /// <summary>このObjectStackがセルの並びの何番目にあるか（＝位置。FixedPositionsでは固定番号）。
+        /// 属していなければ-1。位置を知りたい呼び出し側は、対象の具体的なObjectStack（Cells /
+        /// FindStackContaining / FindMatchingStackで得る）を渡す。型（ObjectDef）では引かない——
+        /// represented_byが絡むと同じ外側Defでも別スタックが並びうるため、Defは位置を一意に決めない。</summary>
         public int IndexOfStack(ObjectStack stack) => cells.IndexOf(stack);
 
-        /// <summary>型globalIdに対応するObjectStackの位置（＝FixedPositionsの固定番号、無ければnull）。
-        /// represented_byを使わないObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。
-        /// represented_byを使うObjectDefは、GetStacks + IndexOfStack で具体的なスタックから辿ること。</summary>
-        public int? GetGridIndex(int objectDefGlobalId)
-        {
-            int i = cells.FindIndex(c => c != null && c.Def.GlobalId == objectDefGlobalId);
-            return i >= 0 ? i : (int?)null;
-        }
-
         /// <summary>
-        /// プレイヤーによる手動並び替え（FixedPositions専用）。対象の型のセルを、指定した番号のセルと入れ替える
+        /// プレイヤーによる手動並び替え（FixedPositions専用）。対象のスタックを、指定した番号のセルと入れ替える
         /// （相手が空セルなら実質移動になり、元のセルが空く）。前詰めしない前提のため、単純な2者間のswap。
-        /// represented_byを使わないObjectDef向けの簡易API（GetGridIndexと同じ理由）。
+        /// 対象は具体的なObjectStackで受け取る（型では一意に定まらないため。IndexOfStack参照）。
         /// </summary>
-        public bool TrySetManualPosition(int objectDefGlobalId, int newGridIndex)
+        public bool TrySetManualPosition(ObjectStack stack, int newGridIndex)
         {
             if (!Def.FixedPositions) return false;
-            int cur = cells.FindIndex(c => c != null && c.Def.GlobalId == objectDefGlobalId);
+            int cur = cells.IndexOf(stack);
             if (cur < 0) return false;
             if (newGridIndex < 0 || newGridIndex >= cells.Count) return false;
 
@@ -236,8 +261,5 @@ namespace UnmappedIsland.Domain.Runtime
             cells[cur] = tmp;
             return true;
         }
-
-        /// <summary>表示用: このスロットが持つ実在スタックの一覧（空セルは含まない）。</summary>
-        public IReadOnlyList<ObjectStack> GetStacks() => Stacks;
     }
 }
