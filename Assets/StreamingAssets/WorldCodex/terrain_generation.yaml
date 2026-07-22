@@ -1,0 +1,214 @@
+# 地形生成の定義（TerrainGeneration.md参照）。土地・道そのもののobject_defsはlocations.yamlが持ち、
+# このファイルは「島がどう生成されるか」（軸・LocationType・生成スコープ）だけを定義する。
+# ルートキー axes / location_types / generation_scopes は object_defs / traits と対等な、
+# 地形生成専用のトップレベルキー（ローダーのWorldCodexYamlLoader.Generation.cs が解釈する）。
+#
+# 数値の規約: 軸の値は 0〜100 の整数（百分率）。エンジン全体の「プロパティ値は32bit整数のみ・
+# 小数は登場しない」という規約（GameElementDefinition.md 6節）に合わせ、YAMLにfloatを書かせない。
+# ノイズ等の計算の内部だけ実数を使い、サイトへ値を与える時点で整数へ量子化する。
+# weight・move_cost も整数（100=等倍）。
+
+# ------------------------------------------------------------------
+# axes: 地点が持つ連続値パラメータ（TerrainGeneration.md 3.1節）。
+# generatorは汎用プリミティブの重み合成（blend）:
+# - distance_field: 島の縁からの距離（reference: edge。中心=100、縁=0）
+# - layered_noise: シード付き格子値ノイズ（octaves/frequency/seed_offset）
+# 現時点のプリミティブはこの2種のみ。blob_scatter・modifiers（3.1節）は必要になった時点で追加する。
+# ------------------------------------------------------------------
+axes:
+  # 標高。縁から遠い（内陸である）ほど高くなる距離場を主成分に、ノイズで起伏を加える。
+  # 「海岸に囲まれた島で、内陸に山がある」という島の基本形はこの軸が作る。
+  elevation:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: distance_field, reference: edge, weight: 70}
+        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 30}
+
+  # 湿り気（乾燥度の逆）。純粋なノイズで、島のどこが湿りどこが乾くかをシードごとに変える。
+  # 草原（中庸）・密林（高湿）・荒野（乾燥）の配置を分ける追加の地形生成パラメータ。
+  humidity:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: layered_noise, octaves: 2, frequency: 3, seed_offset: 23, weight: 100}
+
+  # 海岸からの距離（縁=0、中心=100）。海岸帯の判定（generation_scopes.island.coast_band）と、
+  # 「海岸にしか出ない/海岸には出ない」のhard_limitsに使う。
+  coastal_distance:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: distance_field, reference: edge, weight: 100}
+
+  # 岩がちさ。海岸のバリエーション（砂浜/岩海岸/岸壁）と、内陸の岩場の判別に使う。
+  ruggedness:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: layered_noise, octaves: 4, frequency: 4, seed_offset: 37, weight: 100}
+
+# ------------------------------------------------------------------
+# location_types: 軸空間上の「理想点+許容範囲」としてのLocationType定義
+# （TerrainGeneration.md 3.2節）。マッチングは正規化した重み付き距離の最近傍探索:
+#   D = sqrt( Σ w_i * ((v_i - ideal_i) / tolerance_i)^2 / Σ w_i )
+# 言及した軸だけで正規化（Σw_iで割る）するため、言及軸が少ない型が構造的に有利になる
+# 次元数バイアスは生じない。toleranceは距離のスケール（1 tolerance分のずれ=単位距離1）であり、
+# 超えたら除外というゲートではない。絶対的な除外はhard_limitsだけが担う（3.2〜3.3節の
+# tolerance/hard_limitsの役割を実装で一義化したもの）。
+#
+# - object_def: この型が実体化するときのobject_defs（locations.yaml）のid。Build時に存在検証する。
+# - display_name: 命名処理（「東の草原」等）に使う表示名。
+# - move_cost: 移動コスト（100=等倍）。道のtravel_minutes = 距離 × base_minutes_per_distance ×
+#   両端move_costの平均/100 で決まる（3.5節のdifficultyを時間に代表させる）。
+# - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（3.3節）。
+#   priorityが最も高いfallbackが選ばれる。
+# - 海岸過多の防止: 海岸3種はhard_limits(coastal_distance.max=coast_band)で海岸帯にしか出ず、
+#   内陸型はmin=coast_band+1で海岸帯に出ない。海岸帯のサイト数自体を絞る工夫はサイト配置側
+#   （generation_scopes.island.interior_bias と hull_coast）が担う。
+# ------------------------------------------------------------------
+location_types:
+  sandy_beach:
+    object_def: sandy_beach
+    display_name: 砂浜
+    applicable_scopes: [island]
+    move_cost: 100
+    axis_preferences:
+      ruggedness: {ideal: 15, tolerance: 30, weight: 100}
+    hard_limits:
+      coastal_distance: {max: 15}
+
+  rocky_coast:
+    object_def: rocky_coast
+    display_name: 岩だらけの海岸
+    applicable_scopes: [island]
+    move_cost: 130
+    axis_preferences:
+      ruggedness: {ideal: 60, tolerance: 30, weight: 100}
+      elevation:  {ideal: 10, tolerance: 30, weight: 60}
+    hard_limits:
+      coastal_distance: {max: 15}
+
+  cliff_coast:
+    object_def: cliff_coast
+    display_name: 岸壁
+    applicable_scopes: [island]
+    move_cost: 170
+    axis_preferences:
+      ruggedness: {ideal: 90, tolerance: 25, weight: 100}
+      elevation:  {ideal: 45, tolerance: 25, weight: 80}
+    hard_limits:
+      coastal_distance: {max: 15}
+
+  grassland:
+    object_def: grassland
+    display_name: 草原
+    applicable_scopes: [island]
+    move_cost: 100
+    axis_preferences:
+      humidity:  {ideal: 45, tolerance: 20, weight: 100}
+      elevation: {ideal: 30, tolerance: 25, weight: 80}
+    hard_limits:
+      coastal_distance: {min: 16}
+      elevation: {max: 60}
+
+  forest:
+    object_def: forest
+    display_name: 森林
+    applicable_scopes: [island]
+    move_cost: 120
+    axis_preferences:
+      humidity:  {ideal: 65, tolerance: 20, weight: 100}
+      elevation: {ideal: 40, tolerance: 30, weight: 80}
+    hard_limits:
+      coastal_distance: {min: 16}
+      elevation: {max: 70}
+
+  jungle:
+    object_def: jungle
+    display_name: 密林
+    applicable_scopes: [island]
+    move_cost: 160
+    axis_preferences:
+      humidity:  {ideal: 90, tolerance: 20, weight: 120}
+      elevation: {ideal: 30, tolerance: 30, weight: 60}
+    hard_limits:
+      coastal_distance: {min: 16}
+      humidity: {min: 65}
+      elevation: {max: 65}
+
+  rocky_field:
+    object_def: rocky_field
+    display_name: 岩場
+    applicable_scopes: [island]
+    move_cost: 140
+    axis_preferences:
+      ruggedness: {ideal: 85, tolerance: 25, weight: 100}
+      humidity:   {ideal: 35, tolerance: 30, weight: 50}
+    hard_limits:
+      coastal_distance: {min: 16}
+      elevation: {max: 75}
+
+  wasteland:
+    object_def: wasteland
+    display_name: 荒野
+    applicable_scopes: [island]
+    is_fallback: true
+    priority: 0
+    move_cost: 110
+    axis_preferences:
+      humidity: {ideal: 10, tolerance: 25, weight: 100}
+    hard_limits:
+      coastal_distance: {min: 16}
+
+  mountainside:
+    object_def: mountainside
+    display_name: 山腹
+    applicable_scopes: [island]
+    move_cost: 200
+    axis_preferences:
+      elevation: {ideal: 75, tolerance: 15, weight: 100}
+    hard_limits:
+      coastal_distance: {min: 16}
+      elevation: {min: 55}
+
+  mountain_peak:
+    object_def: mountain_peak
+    display_name: 山頂
+    applicable_scopes: [island]
+    move_cost: 250
+    axis_preferences:
+      elevation: {ideal: 100, tolerance: 15, weight: 100}
+    hard_limits:
+      coastal_distance: {min: 16}
+      elevation: {min: 80}
+
+# ------------------------------------------------------------------
+# generation_scopes: 生成スコープごとのパラメータプリセット（TerrainGeneration.md 3.7節）。
+# 島の生成と構造物内部の生成は同一の生成ロジックを共有し、違いはこのプリセットの差だけにする、
+# という方針のための器。現時点ではislandスコープのみ定義する（structure_interiorは
+# 洞窟内部の再帰生成とあわせて今後の課題）。
+# ------------------------------------------------------------------
+generation_scopes:
+  island:
+    # 生成する土地の数（この範囲からシードで抽選）。
+    site_count: {min: 10, max: 20}
+    # coastal_distanceがこの値以下のサイトを「海岸帯」とみなす（海岸型のhard_limitsと対で使う）。
+    coast_band: 15
+    # 外周リング（島を囲む海岸候補の配置枠、SitePlacer参照）のサイトのcoastal_distanceを
+    # 海岸帯へクランプし、島が必ず海岸で囲まれることを保証する。
+    hull_coast: true
+    # サイト配置の内陸バイアス（0=一様、100=最大）。島の縁に張り付くサイトを減らし、
+    # 海岸が多くなりすぎないようにする（普通に円盤へ一様散布すると面積比で外周が多数になるため）。
+    interior_bias: 60
+    # MST以外のDelaunay辺を復活させる迂回率の閾値（%）。現グラフでの2点間最短距離が
+    # 直結距離のこの割合を超えるなら、その辺を近道として復活させる。
+    extra_edge_detour_factor: 160
+    # 抽象座標の距離1あたりの基準移動時間（分）。島の直径=200単位を想定
+    # （隣接する土地の典型的な距離は40前後 → 移動コスト等倍でおよそ45分）。
+    base_minutes_per_distance: 1
+    # 島全体のバランス保証（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への実装回答）。
+    # 軸の分布だけでは個数を保証できないため、「指定軸が最大/最小のサイトへ、この型を強制割当する」
+    # という明示的な保証をマッチングの前に行う。島には必ず山がひとつある。
+    guarantees:
+      - {location_type: mountain_peak, count: 1, axis: elevation, pick: max}

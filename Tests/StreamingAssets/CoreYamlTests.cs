@@ -31,7 +31,7 @@ namespace UnmappedIsland.StreamingAssets
             var dir = new DirectoryInfo(AppContext.BaseDirectory);
             while (dir != null)
             {
-                string candidate = Path.Combine(dir.FullName, relativePath);
+                string candidate = System.IO.Path.Combine(dir.FullName, relativePath);
                 if (File.Exists(candidate)) return candidate;
                 dir = dir.Parent;
             }

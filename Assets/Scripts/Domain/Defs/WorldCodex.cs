@@ -25,6 +25,10 @@ namespace UnmappedIsland.Domain.Defs
         public ObjectDefTable Objects { get; }
         public WellKnownProperties WellKnown { get; }
 
+        /// <summary>地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。
+        /// 生成定義を1つも含まないロードではnull（地形生成を使わないCodexも成立する）。</summary>
+        public Generation.GenerationDefs Generation { get; }
+
         public WorldCodex(
             NameRegistry objectNames,
             NameRegistry propertyNames,
@@ -32,7 +36,8 @@ namespace UnmappedIsland.Domain.Defs
             NameRegistry tagNames,
             NameRegistry symbolNames,
             ObjectDefTable objects,
-            WellKnownProperties wellKnown)
+            WellKnownProperties wellKnown,
+            Generation.GenerationDefs generation = null)
         {
             ObjectNames = objectNames;
             PropertyNames = propertyNames;
@@ -41,6 +46,7 @@ namespace UnmappedIsland.Domain.Defs
             SymbolNames = symbolNames;
             Objects = objects;
             WellKnown = wellKnown;
+            Generation = generation;
         }
     }
 }

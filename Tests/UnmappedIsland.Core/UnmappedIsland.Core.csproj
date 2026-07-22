@@ -20,6 +20,7 @@
   <ItemGroup>
     <Compile Include="../../Assets/Scripts/Domain/Defs/**/*.cs" />
     <Compile Include="../../Assets/Scripts/Domain/Runtime/**/*.cs" />
+    <Compile Include="../../Assets/Scripts/Domain/Generation/**/*.cs" />
     <Compile Include="../../Assets/Scripts/Loader/**/*.cs" />
   </ItemGroup>
 

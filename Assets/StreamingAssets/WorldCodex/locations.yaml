@@ -1,0 +1,415 @@
+# 土地（location）と道（path）の定義（TerrainGeneration.md・GameElementDefinition.md参照）。
+# 個々の土地種別はcore.yamlのコメントで予告されていた「別ファイルで追加する地形定義」にあたる。
+# 地形生成そのもの（どの土地がいくつ・どう繋がって生成されるか）はterrain_generation.yamlの
+# axes/location_types/generation_scopesと、Domain/Generationの生成パイプラインが担う。
+#
+# すべての土地は location trait（core.yaml、タグ配布専用）と、この
+# ファイルで定義する explorable trait（土地共通の構造: スロット5つ+探索進捗）を実装する。
+# 「探索で何が見つかるか」「探索できる回数（進捗の上限）」は地形ごとに異なるため、
+# explorable traitには持たせず、各土地のobject_defが探索アクション（explore）として個別に定義する。
+
+traits:
+  # 土地共通の構造。スロットの宣言順には意味がある:
+  # - spawn（9.4節）は配置先スロットを宣言順に走査するため、探索の発見物（into: self）は
+  #   タグ（item/fixture）のacceptsによってitems/fixturesへ自然に振り分けられる。
+  # - 配置失敗時のフォールバック（親へ強制配置）は先頭スロットへ入るため、itemsを先頭に置く
+  #   （「持ちきれない発見物は地面に落ちる」を自然に実現する）。
+  explorable:
+    slots:
+      # アイテムが置かれるスロット。サイズ制限なし。
+      items:
+        accepts:
+          - {tag: item, max: 9999}
+      # 木や植物、建築物や家具、洞窟の入口などの設置物スロット。サイズ制限なし。
+      fixtures:
+        accepts:
+          - {tag: fixture, max: 9999}
+      # キャラクタを入れるスロット。固定型（fixed_positions）で、スタック数は1つだけ
+      # （unit_capacity: 1。stackableは既定true=同種はスタックにまとまるため、枠は1つ）。
+      characters:
+        accepts:
+          - {tag: character, max: 9999}
+        unit_capacity: 1
+        fixed_positions: true
+      # 生成時に道（path）を隠しておくスロット。探索の進捗が道のrequired_progressへ達すると、
+      # Location（Views）がpathsスロットへ移して「発見」させる。UI側はこのスロットを表示しない想定。
+      undiscovered_paths:
+        accepts:
+          - {tag: path, max: 9999}
+      # 発見済みの道のスロット。道のtravel（移動）アクションはin_slot: pathsを条件に持つため、
+      # このスロットに居る間だけ実行できる。
+      paths:
+        accepts:
+          - {tag: path, max: 9999}
+    props:
+      # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索できる回数=range.max、
+      # 10〜20回）を必ず与える（5節の「traitでvalueなし=継承先で必須」の規約）。
+      exploration_progress: {}
+
+object_defs:
+  # ------------------------------------------------------------------
+  # 道（path）。土地と土地の繋がり1本の片方向分を表し、地形生成が辺1本につき両端へ1個ずつ
+  # 生成する（それぞれdestination_idが相手側を指す。片方の土地だけ先に探索が進み、
+  # 非対称に発見される状態も自然に表現できる）。
+  # - travel_minutes: 移動時間（分）。距離と移動難易度から生成時に計算され、インスタンスごとに
+  #   上書きされる（TerrainGeneration.md 3.5節のdistance/difficultyを時間に代表させたもの）。
+  # - required_progress: 親の土地のexploration_progressがこの値に達すると発見される。
+  # - destination_id: 移動先LocationのインスタンスID。定義時点では決まらない、生成時に確定する
+  #   個体への参照のため、object_def参照ではなくインスタンスIDのプロパティで持つ（moveの規約）。
+  # ------------------------------------------------------------------
+  path:
+    tags: [path]
+    props:
+      travel_minutes:
+        value: 60
+      required_progress:
+        value: 1
+      destination_id:
+        value: 0
+    actions:
+      travel:
+        showMenu: always
+        conditions:
+          - {in_slot: paths}   # 未発見（undiscovered_paths側）の間は実行できない
+        duration: {prop: travel_minutes}
+        move:
+          object: actor
+          to_prop: destination_id
+
+  # ------------------------------------------------------------------
+  # 探索で見つかる発見物（アイテム）。itemタグによって土地のitemsスロットへ振り分けられる。
+  # ------------------------------------------------------------------
+
+  # ヤシの実。果肉と汁で、満腹と水分の両方をわずかに回復できる。
+  coconut:
+    tags: [item]
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 12
+            hydration: 960
+            vegetable_nutrition: 5000
+        destroy: self
+
+  # 流木。乾いた木材として、焚き火や工作の素材になる想定（レシピは今後の課題）。
+  driftwood:
+    tags: [item]
+
+  # 石。道具や炉の素材になる想定（レシピは今後の課題）。
+  stone:
+    tags: [item]
+
+  # 枝。燃料や工作の素材になる想定（レシピは今後の課題）。
+  branch:
+    tags: [item]
+
+  # ------------------------------------------------------------------
+  # 探索で見つかる設置物（植物・構造物）。fixtureタグによって土地のfixturesスロットへ
+  # 振り分けられる。いずれも現時点では発見されるだけのプレースホルダで、採取・内部生成などの
+  # 振る舞いは今後の課題。
+  # ------------------------------------------------------------------
+
+  # ヤシの木。定期的にヤシの実を落とす採取ポイントになる想定。
+  palm_tree:
+    tags: [fixture]
+
+  # ベリーの茂み。定期的に実を付ける採取ポイントになる想定。
+  berry_bush:
+    tags: [fixture]
+
+  # 洞窟の入口。TerrainGeneration.md 3.7節の構造物（内部に子Locationグラフを持つStructure）の
+  # 入口となる想定。内部の再帰生成はstructure_interiorスコープの実装とあわせて今後の課題。
+  cave_entrance:
+    tags: [fixture]
+
+  # 湧き水。飲用・補水ポイントになる想定（drinkアクションはContainerSystem.mdの液体表現と
+  # あわせて今後の課題）。
+  spring:
+    tags: [fixture]
+
+  # ------------------------------------------------------------------
+  # 土地。すべて traits: [location, explorable]。
+  # - exploration_progress.range.max = 探索できる回数（10〜20）。
+  # - exploreのconditionsの値はrange.maxと同じ値のリテラル（`value: max`記法は未対応のため。
+  #   二重管理になる点はStreamingAssetsテストで一致を検証する）。
+  # - exploreのpickは「その土地で何が見つかるか」の確率テーブル。進捗+1（add self）は
+  #   addとpickが排他という文法上、全候補に含める（10節）。
+  # - durationは1回の探索にかかる時間（分）。見通しが悪い・足場が悪い土地ほど長い。
+  # ------------------------------------------------------------------
+
+  # 砂浜。開けていて歩きやすく、漂着物とヤシの実に恵まれる。
+  sandy_beach:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 10}
+    actions:
+      explore:
+        showMenu: always
+        duration: 30
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 10}
+        pick:
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: coconut, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: driftwood, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: coconut_crab, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: palm_tree, into: self}
+
+  # 岩だらけの海岸。石とヤシガニが多いが、足場が悪く探索に時間がかかる。
+  rocky_coast:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 12}
+    actions:
+      explore:
+        showMenu: always
+        duration: 45
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 12}
+        pick:
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: coconut_crab, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: driftwood, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: cave_entrance, into: self}
+
+  # 岸壁。切り立った崖の海岸。得られるものは少ないが、洞窟が口を開けていることがある。
+  cliff_coast:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 10}
+    actions:
+      explore:
+        showMenu: always
+        duration: 60
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 10}
+        pick:
+          - weight: 40
+            add: {self: {exploration_progress: 1}}
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: driftwood, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: cave_entrance, into: self}
+
+  # 草原。見通しがよく歩きやすい。食べられる野草と水場に恵まれる。
+  grassland:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 12}
+    actions:
+      explore:
+        showMenu: always
+        duration: 30
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 12}
+        pick:
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: water_spinach, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: taro, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: berry_bush, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: spring, into: self}
+
+  # 森林。木々に囲まれ、枝・木の実・水場が見つかる。
+  forest:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 15}
+    actions:
+      explore:
+        showMenu: always
+        duration: 45
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 15}
+        pick:
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: branch, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: berry_bush, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: taro, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: spring, into: self}
+
+  # 密林。湿って鬱蒼としており、探索には時間がかかるが、食料は最も豊か。
+  jungle:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 18}
+    actions:
+      explore:
+        showMenu: always
+        duration: 60
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 18}
+        pick:
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: branch, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: coconut, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: water_spinach, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: taro, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: palm_tree, into: self}
+
+  # 岩場。ごろごろした岩の間に、石材と洞窟が見つかる。
+  rocky_field:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 12}
+    actions:
+      explore:
+        showMenu: always
+        duration: 45
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 12}
+        pick:
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+          - weight: 35
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: branch, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: cave_entrance, into: self}
+
+  # 荒野。乾いてひび割れた不毛の土地。得られるものは少ない。
+  wasteland:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 10}
+    actions:
+      explore:
+        showMenu: always
+        duration: 30
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 10}
+        pick:
+          - weight: 50
+            add: {self: {exploration_progress: 1}}
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: branch, into: self}
+
+  # 山腹。山の中腹の斜面。石と枝のほか、洞窟の入口が見つかりやすい。
+  mountainside:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 15}
+    actions:
+      explore:
+        showMenu: always
+        duration: 60
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 15}
+        pick:
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: branch, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: cave_entrance, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: berry_bush, into: self}
+
+  # 山頂。島で最も高い場所。風が強く得られるものは少ないが、島全体を見渡せる
+  # （見渡しによる地図公開などの効果は今後の課題）。
+  mountain_peak:
+    traits: [location, explorable]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 10}
+    actions:
+      explore:
+        showMenu: always
+        duration: 45
+        conditions:
+          - {prop: exploration_progress, op: lt, value: 10}
+        pick:
+          - weight: 50
+            add: {self: {exploration_progress: 1}}
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: cave_entrance, into: self}

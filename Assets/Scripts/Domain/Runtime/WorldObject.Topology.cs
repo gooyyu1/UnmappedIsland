@@ -165,5 +165,48 @@ namespace UnmappedIsland.Domain.Runtime
             }
             return null;
         }
+
+        /// <summary>自分から親を遡った、所属ツリーの根（通常はworld。未配置なら自分自身）。</summary>
+        public WorldObject FindRoot()
+        {
+            WorldObject current = this;
+            while (current.Parent != null) current = current.Parent;
+            return current;
+        }
+
+        /// <summary>
+        /// 自分自身を含む子孫から、指定したInstanceIdを持つWorldObjectを探す（深さ優先）。見つからなければ
+        /// null。インスタンスIDでの参照はmove（MoveEffect参照）のように「定義時点では決まらず、生成時に
+        /// 確定した個体」を指す唯一の手段であり、「世界に存在する＝worldツリーに繋がっている」という前提
+        /// （7.1節）のもと、別途のインスタンス一覧を持たずツリー走査だけで解決する。
+        /// </summary>
+        public WorldObject FindDescendantByInstanceId(int instanceId)
+        {
+            if (InstanceId == instanceId) return this;
+
+            foreach (Slot slot in slots)
+                foreach (WorldObject child in slot.Contents)
+                {
+                    WorldObject found = child.FindDescendantByInstanceId(instanceId);
+                    if (found != null) return found;
+                }
+
+            return null;
+        }
+
+        /// <summary>
+        /// targetが持つスロットを宣言順に走査し、最初に受け入れられたスロットへ自分自身を移動する
+        /// （spawnのinto（9.4節）と同じ「著者がスロット名を知らなくても、型ごとに用意されたスロットへ
+        /// 自然に振り分けられる」規約を、既存オブジェクトの移動（move）にも使う）。force=trueは
+        /// accepts/capacityの検証を飛ばすため、スロットが1つでもあれば必ず成功する。
+        /// </summary>
+        public bool MoveIntoFirstAcceptingSlot(WorldObject target, WellKnownProperties wellKnown, bool force = false)
+        {
+            foreach (SlotDef slotDef in target.Def.EnumerateSlotDefs())
+                if (MoveToSlot(target, slotDef.GlobalId, wellKnown, out _, force))
+                    return true;
+
+            return false;
+        }
     }
 }

@@ -5,7 +5,9 @@
 
 object_defs:
   # 空心菜（クウシンサイ）。熱帯・亜熱帯の水辺に自生し、非常に採取しやすい葉物野菜。
+  # itemタグは土地（locations.yaml）のitemsスロットのaccepts判定用（探索の発見物として振り分ける）。
   water_spinach:
+    tags: [item]
     actions:
       eat:
         add:
@@ -17,6 +19,7 @@ object_defs:
   # ヤシガニ。南国の無人島を象徴する、陸生では最大級の甲殻類。夜行性で物陰に潜んでいることが多く、
   # 狩猟の道具がなくても採取しやすい（ハンティングと違い「見つけて捕まえる」対象）。
   coconut_crab:
+    tags: [item]
     actions:
       eat:
         add:
@@ -28,6 +31,7 @@ object_defs:
   # タロイモ。太平洋の島々で古くから主食とされてきた、湿地でよく育つ塊茎作物。栽培せずとも
   # 自生しているものを採取できる。
   taro:
+    tags: [item]
     actions:
       eat:
         add:

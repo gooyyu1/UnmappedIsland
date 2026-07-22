@@ -1,7 +1,7 @@
 # ゲーム全体の最も基本的な定義（Documents/Design/GameElementDefinition.md参照）。
 # 唯一のシングルトンであるworldと、それが束ねるlocationsスロット・locationトレイトのみを含む。
-# 個々のlocation種別（forest/beachなど地形の具体的な種類）はTerrainGeneration.mdの検討が済み次第、
-# 別ファイル（terrains.yaml等）で追加する。
+# 個々のlocation種別（草原・砂浜など地形の具体的な種類）と道はlocations.yamlが、
+# 地形生成の定義（軸・LocationType・生成スコープ）はterrain_generation.yamlが持つ。
 
 traits:
   # worldのlocationsスロットの受け入れ判定専用のタグ（4節のtags・7.2節のaccepts参照）。中身を持たず、
