@@ -23,9 +23,6 @@ namespace UnmappedIsland.Domain.Runtime
         private readonly List<WorldObject> members;
         public IReadOnlyList<WorldObject> Members => members;
 
-        /// <summary>FixedPositionsスロットでのみ使う、このスタック自身の固定番号。それ以外は常にnull。</summary>
-        public int? GridIndex { get; set; }
-
         public ObjectStack(WorldObject seed)
         {
             Def = seed.Def;

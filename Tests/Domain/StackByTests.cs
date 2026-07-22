@@ -182,7 +182,7 @@ object_defs:
             var stacks = handSlot.GetStacks();
 
             Assert.That(stacks.Count, Is.EqualTo(2));
-            Assert.That(stacks.Select(s => s.GridIndex), Is.EquivalentTo(new int?[] { 0, 1 }));
+            Assert.That(stacks.Select(s => handSlot.IndexOfStack(s)), Is.EquivalentTo(new[] { 0, 1 }));
         }
     }
 }
