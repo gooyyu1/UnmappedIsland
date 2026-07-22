@@ -67,10 +67,9 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>登録済みのIncoming（modify/accumulate）はそのまま、値の中身だけを差し替える。</summary>
         public void SetProperty(int globalPropertyId, int value)
         {
-            int local = Def.PropertyLayout.ToLocal(globalPropertyId);
-            if (local == LocalIndexMap.Missing)
+            if (!TryGetProperty(globalPropertyId, out PropertyValue property))
                 throw new InvalidOperationException($"'{Def.Name}' はプロパティ(id={globalPropertyId})を持ちません。");
-            properties[local].CopyValueFrom(value);
+            property.CopyValueFrom(value);
         }
 
         public int GetNumber(int globalPropertyId, int fallback = 0)
@@ -377,18 +376,16 @@ namespace UnmappedIsland.Domain.Runtime
         /// （登録先の有無の判定をここに閉じ込め、呼び出し側は宛先の有無を気にしなくてよい）。</summary>
         public void RegisterPassiveEffect(int propertyGlobalId, RegisteredPassiveEffect effect)
         {
-            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
-            if (local == LocalIndexMap.Missing) return;
-            properties[local].RegisterPassiveEffect(effect);
+            if (TryGetProperty(propertyGlobalId, out PropertyValue property))
+                property.RegisterPassiveEffect(effect);
         }
 
         /// <summary>グローバルプロパティIDで指す対象プロパティから、declarerが宣言した登録を解除する。
         /// このオブジェクトがそのプロパティを持たなければ何もしない。</summary>
         public void UnregisterPassiveEffectsFrom(WorldObject declarer, int propertyGlobalId)
         {
-            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
-            if (local == LocalIndexMap.Missing) return;
-            properties[local].UnregisterPassiveEffectsFrom(declarer);
+            if (TryGetProperty(propertyGlobalId, out PropertyValue property))
+                property.UnregisterPassiveEffectsFrom(declarer);
         }
 
         /// <summary>
@@ -700,9 +697,9 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         public IReadOnlyList<RegisteredPassiveEffect> GetIncomingPassiveEffects(int propertyGlobalId)
         {
-            int local = Def.PropertyLayout.ToLocal(propertyGlobalId);
-            if (local == LocalIndexMap.Missing) return Array.Empty<RegisteredPassiveEffect>();
-            return properties[local].Incoming;
+            return TryGetProperty(propertyGlobalId, out PropertyValue property)
+                ? property.Incoming
+                : Array.Empty<RegisteredPassiveEffect>();
         }
     }
 }
