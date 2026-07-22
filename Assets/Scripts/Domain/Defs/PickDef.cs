@@ -55,7 +55,7 @@ namespace UnmappedIsland.Domain.Defs
             weight.Resolve(self, actor, dragged);
 
         /// <summary>この候補が選ばれたときに、自分の効果を適用する（PickEffectが選択後に呼ぶ）。</summary>
-        public void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged, WorldObject.ActiveApplication context) =>
-            effect?.Apply(owner, session, actor, dragged, context);
+        public void Apply(WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged, WorldObject.EffectSite? effectSite) =>
+            effect?.Apply(owner, session, actor, dragged, effectSite);
     }
 }

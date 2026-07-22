@@ -18,15 +18,16 @@ namespace UnmappedIsland.Domain.Defs
     /// 「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は
     /// このActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。
     ///
-    /// contextは1回の適用（最上位のApply1回）で共有される。same_slot spawnが必要とする「destroyで
-    /// 失われる前のselfの位置」を、destroy側とspawn側が同じcontextを通して受け渡すために使う（それ以外の
-    /// 効果は無視してよい）。
+    /// effectSiteは、この最上位の適用の入口(WorldObject.ApplyActiveEffect)で先に捕捉した「selfが今
+    /// 占めている位置」のスナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ
+    /// 同種を保持しているか」を配置時に見て置き換え位置を決める（それ以外の効果は無視してよい）。効果の
+    /// ツリー（合成ActiveEffects・pick）を素通しで伝わるだけなので、destroyが何かを書き込む必要はない。
     /// </summary>
     public abstract class ActiveEffect
     {
         public abstract void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context);
+            WorldObject.EffectSite? effectSite);
     }
 
     /// <summary>
@@ -53,10 +54,10 @@ namespace UnmappedIsland.Domain.Defs
 
         public override void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context)
+            WorldObject.EffectSite? effectSite)
         {
             foreach (ActiveEffect operation in operations)
-                operation.Apply(owner, session, actor, dragged, context);
+                operation.Apply(owner, session, actor, dragged, effectSite);
         }
     }
 
@@ -91,7 +92,7 @@ namespace UnmappedIsland.Domain.Defs
 
         public override void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context)
+            WorldObject.EffectSite? effectSite)
         {
             WorldObject resolved = owner.ResolveEffectTargetOrAncestor(target, propertyGlobalId, actor, dragged);
             resolved?.SetNumber(propertyGlobalId, ResolveValue(owner, actor, dragged), session);
@@ -125,7 +126,7 @@ namespace UnmappedIsland.Domain.Defs
 
         public override void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context) =>
+            WorldObject.EffectSite? effectSite) =>
             ApplyScaled(owner, session, actor, dragged, numerator: 1, denominator: 1);
 
         /// <summary>transfer（9.5節）のlinked_add用: 実際に移動した量に比例してスケール（amount*numerator/
@@ -142,9 +143,10 @@ namespace UnmappedIsland.Domain.Defs
 
     /// <summary>
     /// destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。`destroy: self`は要素1つ、
-    /// `destroy: [self, dragged]`は要素2つのDestroyEffectとして表す。対象がselfの場合、削除で位置が
-    /// 失われる前に、same_slot spawnのための位置アンカーをcontextへ捕捉させてから削除する
-    /// （destroyの後ろに並ぶspawnがその位置を引き継げるようにするため。ActiveEffectsの適用順参照）。
+    /// `destroy: [self, dragged]`は要素2つのDestroyEffectとして表す。same_slot spawnとの連携は
+    /// destroyが何かを通知する必要はない（selfの位置アンカーはApplyActiveEffectの入口で先に捕捉済みで、
+    /// 「selfが消えたか」ではなく「その位置がまだ同種を保持しているか」を配置時に判断するため。
+    /// EffectSite参照）。
     /// </summary>
     public sealed class DestroyEffect : ActiveEffect
     {
@@ -157,13 +159,10 @@ namespace UnmappedIsland.Domain.Defs
 
         public override void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context)
+            WorldObject.EffectSite? effectSite)
         {
             WorldObject victim = owner.ResolveEffectTarget(target, actor, dragged);
-            if (victim == null) return;
-            if (target == ReferenceRoot.Self)
-                context.NotifyOriginWillBeDestroyed();
-            victim.Destroy(session.Codex.WellKnown);
+            victim?.Destroy(session.Codex.WellKnown);
         }
     }
 
@@ -218,8 +217,8 @@ namespace UnmappedIsland.Domain.Defs
 
         public override void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context) =>
-            owner.ExecuteSpawn(this, session, actor, context);
+            WorldObject.EffectSite? effectSite) =>
+            owner.ExecuteSpawn(this, session, actor, effectSite);
     }
 
     /// <summary>
@@ -271,7 +270,7 @@ namespace UnmappedIsland.Domain.Defs
         /// </summary>
         public override void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context)
+            WorldObject.EffectSite? effectSite)
         {
             WorldObject from = owner.ResolveEffectTargetOrAncestor(fromObject, fromPropertyGlobalId, actor, dragged);
             WorldObject to = owner.ResolveEffectTargetOrAncestor(toObject, toPropertyGlobalId, actor, dragged);

@@ -119,13 +119,12 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
-        /// same_slotによる置き換え専用（非FixedPositions）。destroy前に捕捉しておいた「元居たObjectStackの
-        /// 外側position(stackIndex)・その中でのメンバー位置(memberIndex)」へ、自動整列を一切行わず正確に
-        /// 割り込ませる。元のObjectStackが（自分がその唯一のメンバーで）丸ごと消えた場合(stackWasVacated)は、
+        /// same_slotによる置き換え専用（非FixedPositions）。効果適用前に捕捉した位置から配置時に決めた「元居た
+        /// ObjectStackの外側position(stackIndex)・その中でのメンバー位置(memberIndex)」へ、自動整列を一切
+        /// 行わず正確に割り込ませる。元のObjectStackが（同種が全て消えて）丸ごと除去された場合(stackWasVacated)は、
         /// 消えた位置(stackIndex)へ新規ObjectStackとしてそのまま入る。元のObjectStackが生き残る場合は、
         /// memberIndexが境界（先頭・末尾）ならその直前・直後へ、途中であれば元のObjectStackを前後2つに
-        /// 分割してその間へ割り込ませる（元の平坦リストでの位置引き継ぎ、Codex.WorldObject.CaptureSameSlotAnchor
-        /// 参照）。
+        /// 分割してその間へ割り込ませる（元の平坦リストでの位置引き継ぎ、Codex.WorldObject.EffectSite参照）。
         /// </summary>
         public void InsertAtCapturedPosition(WorldObject obj, int stackIndex, int memberIndex, bool stackWasVacated)
         {

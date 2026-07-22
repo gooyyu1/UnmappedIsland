@@ -23,11 +23,11 @@ namespace UnmappedIsland.Domain.Defs
 
         public override void Apply(
             WorldObject owner, WorldSession session, WorldObject actor, WorldObject dragged,
-            WorldObject.ActiveApplication context)
+            WorldObject.EffectSite? effectSite)
         {
             if (candidates == null || candidates.Count == 0) return;
             PickCandidateDef chosen = SelectWeighted(owner, actor, dragged, session);
-            chosen.Apply(owner, session, actor, dragged, context);
+            chosen.Apply(owner, session, actor, dragged, effectSite);
         }
 
         /// <summary>候補群を、それぞれのweightで重み付き抽選して1つ選ぶ。候補が非空であることは

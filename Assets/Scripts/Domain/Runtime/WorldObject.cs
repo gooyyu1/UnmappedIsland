@@ -234,9 +234,9 @@ namespace UnmappedIsland.Domain.Runtime
             return true;
         }
 
-        /// <summary>same_slot（非FixedPositions）専用。CaptureSameSlotAnchorが捕捉した、元居たObjectStackの
-        /// 外側position(StackIndex)・その中でのメンバー位置(MemberIndex)・そのObjectStackが自分の除去で
-        /// 丸ごと消えるか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</summary>
+        /// <summary>same_slot（非FixedPositions）専用。EffectSite.ResolveInsertPositionが配置時のスロット
+        /// の状態から決めた挿入位置＝元居たObjectStackの外側position(StackIndex)・その中でのメンバー位置
+        /// (MemberIndex)・そのObjectStackが除去済みか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</summary>
         public readonly struct CapturedPosition
         {
             public readonly int StackIndex;
@@ -434,17 +434,19 @@ namespace UnmappedIsland.Domain.Runtime
         /// destroyをspawnより先に行う（9.3節・9.4節）。カードスタックのUIでは、種類が変わるアイテムが
         /// はみ出さないよう、置き換え後のオブジェクトが「破棄されるオブジェクトが占めていた位置」を
         /// 引き継ぐ必要があるため、destroyで実際に位置が空いてから通常の（force無しの）配置を行う。
-        /// 位置情報はdestroyで失われる前に捕捉しておく（CaptureSameSlotAnchor参照）。spawnは常にself
-        /// （このインスタンス自身）が実行するものとみなすため、同じ場所への配置(SameSlot)はself自身の
-        /// destroy有無だけを見ればよい。
+        /// selfの位置はこの入口(ApplyActiveEffect)でeffectSiteとして先に捕捉しておき、destroyで
+        /// 失われた後も、配置時にその位置がまだ同種を保持しているかを見て置き換え位置を決める
+        /// （CaptureEffectSite/EffectSite参照）。spawnは常にself（このインスタンス自身）が実行する
+        /// ものとみなす。
         /// </summary>
         public void ApplyActiveEffect(ActiveEffect effect, WorldSession session, WorldObject actor, WorldObject dragged)
         {
-            // same_slot spawnの位置捕捉をdestroyと共有するための文脈を、この最上位の適用1回分だけ作り、
-            // 効果（単一命令・合成ActiveEffects・pickのいずれでも）へそのまま渡す。pickの抽選や合成の
-            // 展開は各ActiveEffectが自分で行う（自分のことは自分でする、CLAUDE.md参照）。
-            var context = new ActiveApplication(this);
-            effect.Apply(this, session, actor, dragged, context);
+            // same_slot spawnのために「selfが今占めている位置」を、まだ何も起きていないこの入口で先に捕捉し、
+            // 効果（単一命令・合成ActiveEffects・pickのいずれでも）へそのまま素通しで渡す。destroyがselfを
+            // 消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められるため、
+            // destroyがアンカーへ何かを書き込む必要はない（EffectSite参照）。
+            EffectSite? effectSite = CaptureEffectSite();
+            effect.Apply(this, session, actor, dragged, effectSite);
         }
 
         /// <summary>set/add/destroyの対象キー(self/parent/actor/dragged/dragged_parent)を解決する。selfは常にこの
@@ -471,81 +473,24 @@ namespace UnmappedIsland.Domain.Runtime
             root == ReferenceRoot.Ancestor ? FindAncestorWithProperty(propertyGlobalId) : ResolveEffectTarget(root, actor, dragged);
 
         /// <summary>
-        /// 1回のactive効果適用（最上位のActiveEffect.Apply1回）で共有される文脈。現状の唯一の役割は、
-        /// same_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで
-        /// 一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。
-        ///
-        /// destroy側（DestroyEffectがselfを消す直前）はNotifyOriginWillBeDestroyedで、spawn側
-        /// （same_slot配置）はSameSlotAnchor取得時に、それぞれ捕捉を要求する。どちらが先でも初回のみ
-        /// 実際に捕捉し、以降はキャッシュを返す。selfが消される適用ではdestroyが必ずspawnより前に
-        /// 実行される（パーサの並び順）ため、self破棄を織り込んだ位置（memberIndex等）が正しく捕捉される。
+        /// same_slotの置き換え（型が変わりうる）のために、selfが今占めている位置を、まだ何も起きていない
+        /// ApplyActiveEffectの入口でそのまま捕捉する（selfのObjectStack・その中でのメンバー位置・外側position）。
+        /// willDestroySelfのような「これから消えるか」の予測は織り込まない。置き換え位置の判断（元の位置を
+        /// そのまま引き継ぐか、selfの直後か）は、配置時に「その位置がまだ同種を保持しているか」を見て
+        /// EffectSite自身が行う（EffectSite参照）。Parentが無ければ位置が無いのでnull。
         /// </summary>
-        public sealed class ActiveApplication
-        {
-            private readonly WorldObject origin;
-            private SameSlotAnchor? anchor;
-            private bool anchorCaptured;
-
-            public ActiveApplication(WorldObject origin)
-            {
-                this.origin = origin;
-            }
-
-            /// <summary>DestroyEffectがorigin（self）を破棄する直前に呼ぶ。破棄で位置が失われる前に、
-            /// self破棄を織り込んで（willDestroySelf=true）アンカーを捕捉する。</summary>
-            public void NotifyOriginWillBeDestroyed() => Capture(willDestroySelf: true);
-
-            /// <summary>same_slot spawnが配置位置として読む（same_slot以外はnull）。まだ捕捉していなければ、
-            /// selfは生き残るもの（willDestroySelf=false）として捕捉する。ExecuteSpawnが使う。</summary>
-            public SameSlotAnchor? SameSlotAnchorFor(SpawnTargetRoot into) =>
-                into == SpawnTargetRoot.SameSlot ? Capture(willDestroySelf: false) : null;
-
-            /// <summary>初回のみ実際に捕捉し、以降はキャッシュを返す（destroy側とspawn側のどちらが先に
-            /// 要求しても、位置は一度だけ・正しいwillDestroySelfで確定する）。</summary>
-            private SameSlotAnchor? Capture(bool willDestroySelf)
-            {
-                if (!anchorCaptured)
-                {
-                    anchor = origin.CaptureSameSlotAnchor(willDestroySelf);
-                    anchorCaptured = true;
-                }
-
-                return anchor;
-            }
-        }
-
-        /// <summary>
-        /// same_slotの置き換え（型が変わりうる）に必要な位置情報を、destroyで失われる前に捕捉する。
-        ///
-        /// 自分が今属しているObjectStack（7.6節）の、外側position(StackIndex)・その中でのメンバー位置
-        /// (MemberIndex)を捕捉する。destroyを伴う場合、自分は取り除かれるため、新しいオブジェクトは
-        /// 自分の元のメンバー位置へそのまま入る。destroyを伴わない場合（自分は生き残ったまま増やす場合）、
-        /// 自分はまだそこに居続けるため、新しいオブジェクトは自分の「1つ後ろ」（MemberIndex+1）へ入れる
-        /// 必要がある。両者は区別が必要で、同じ位置を使い回すと後者で自分の前に割り込んでしまう。
-        ///
-        /// destroyによって自分が自分のObjectStackの唯一のメンバーだった（=そのObjectStackが丸ごと消える）
-        /// 場合はStackWasVacated=trueとなり、消えたObjectStackの外側position自体へ新しいObjectStackが
-        /// そのまま入る（Slot.InsertAtCapturedPosition参照）。
-        ///
-        /// FixedPositionsスロットの固定番号も同じ考え方で、destroyによって自分が同種の最後の1個
-        /// （=その固定番号が空になる）の場合に限り、その番号をそのまま再利用できる（StackWasVacated）。
-        /// それ以外（destroyしない・destroyしても同種が残る）は自分の番号+1を起点に、隙間を探して
-        /// 割り込ませる必要がある（Place参照）。
-        /// </summary>
-        private SameSlotAnchor? CaptureSameSlotAnchor(bool willDestroySelf)
+        private EffectSite? CaptureEffectSite()
         {
             if (Parent == null) return null;
 
             Slot slot = Parent.GetSlotByLocalId(ParentSlotLocalId);
-            ObjectStack myStack = slot.FindStackContaining(this);
+            ObjectStack originStack = slot.FindStackContaining(this);
+            if (originStack == null) return null;
 
-            int stackIndex = slot.IndexOfStack(myStack);
-            int memberIndex = myStack.IndexOf(this) + (willDestroySelf ? 0 : 1);
-            bool stackWillBeVacated = willDestroySelf && myStack.Members.Count == 1;
-
-            int? gridCellIndex = slot.Def.FixedPositions ? myStack.GridIndex : (int?)null;
-
-            return new SameSlotAnchor(Parent, ParentSlotLocalId, stackIndex, memberIndex, stackWillBeVacated, gridCellIndex);
+            return new EffectSite(
+                Parent, ParentSlotLocalId, originStack, origin: this,
+                stackIndexAtCapture: slot.IndexOfStack(originStack),
+                memberIndexAtCapture: originStack.IndexOf(this));
         }
 
         /// <summary>
@@ -554,12 +499,13 @@ namespace UnmappedIsland.Domain.Runtime
         /// 親も無い場合、生成したオブジェクトはどこにも配置されないまま消える（worldツリーに繋がらない
         /// ため存在しないのと同じ）。
         /// </summary>
-        public void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor, ActiveApplication context)
+        public void ExecuteSpawn(SpawnEffect effect, WorldSession session, WorldObject actor, EffectSite? effectSite)
         {
             WorldObject spawned = session.Spawn(effect.ObjectGlobalId);
             if (effect.Into == SpawnTargetRoot.SameSlot)
                 CopySharedPropertiesTo(spawned);
-            Place(spawned, effect.Into, session, actor, context.SameSlotAnchorFor(effect.Into));
+            Place(spawned, effect.Into, session, actor,
+                effect.Into == SpawnTargetRoot.SameSlot ? effectSite : null);
         }
 
         private void CopySharedPropertiesTo(WorldObject other)
@@ -576,16 +522,17 @@ namespace UnmappedIsland.Domain.Runtime
         /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。
         ///
         /// FixedPositionsスロットでは、新しい型（represented_by込みのStackKey）が既に同じスロットに存在する
-        /// （同種スタックへの合流）場合はそのまま通常配置し、そうでなければ、自分のObjectStackの固定番号を
-        /// そのまま再利用できる場合（StackWillBeVacated、自分がdestroyされ自分のObjectStackの唯一の
-        /// メンバーだった場合）はその番号へ、できない場合（destroyしない・destroyしても同種が残る場合）は
-        /// 自分の番号の右側（+1以降）で最初に見つかる隙間へ、他のObjectStackを押し出しながら割り込ませる。
-        /// 右側に隙間が無ければ、左側（-1以前）で同様に割り込ませる（「右が空いている限り右に、そうでなければ
-        /// 左に生まれる」、Slot.TryMakeRoomAndSeed参照）。どちらの方向にも隙間が見つからなければ配置失敗
-        /// として扱い、後述のfallbackへ委ねる。
+        /// （同種スタックへの合流）場合はそのまま通常配置し、そうでなければ、元の固定番号がまだ同種を
+        /// 保持している場合（OriginCellStillOccupied＝selfが生き残る、またはdestroyされても同種が残る場合）は
+        /// 自分の番号の右側（+1以降）で最初に見つかる隙間へ、他のObjectStackを押し出しながら割り込ませ、
+        /// 保持していない場合（同種が全て消えて番号が空いた場合）はその番号をそのまま引き継ぐ。右側に隙間が
+        /// 無ければ、左側（-1以前）で同様に割り込ませる（「右が空いている限り右に、そうでなければ左に生まれる」、
+        /// Slot.TryMakeRoomAndSeed参照）。どちらの方向にも隙間が見つからなければ配置失敗として扱い、
+        /// 後述のfallbackへ委ねる。
         ///
-        /// それ以外の一般スロットでは、捕捉しておいた位置（元居たObjectStackの外側position・その中での
-        /// メンバー位置）へ直接挿入する（同じ場所の後ろにいた他のオブジェクトの位置がずれないようにするため）。
+        /// それ以外の一般スロットでは、EffectSiteが配置時のスロットの状態から決めた位置（元の位置が
+        /// 空いていればそこへ新規スタックとして、健在ならselfの直後・元のメンバー位置へ）へ直接挿入する
+        /// （同じ場所の後ろにいた他のオブジェクトの位置がずれないようにするため）。
         ///
         /// Self/Actorなら、解決できた対象オブジェクトが持つスロットを宣言順に
         /// 走査し、最初に配置できたスロットへ入れる。
@@ -593,42 +540,45 @@ namespace UnmappedIsland.Domain.Runtime
         /// 配置に失敗した場合は、必ずその起点自身の親へ伝播し、accepts/capacityを無視して
         /// 強制的に配置する（先頭のスロットへ必ず入る）。伝播先の親も無ければ何もしない。
         /// </summary>
-        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor, SameSlotAnchor? anchor)
+        private void Place(WorldObject spawned, SpawnTargetRoot into, WorldSession session, WorldObject actor, EffectSite? site)
         {
             WorldObject primaryTarget;
             bool placed;
 
             if (into == SpawnTargetRoot.SameSlot)
             {
-                if (anchor == null) return;
-                SameSlotAnchor a = anchor.Value;
-                primaryTarget = a.Parent;
-                Slot slot = a.Parent.GetSlotByLocalId(a.ParentSlotLocalId);
+                if (site == null) return;
+                EffectSite s = site.Value;
+                primaryTarget = s.Parent;
+                Slot slot = s.Parent.GetSlotByLocalId(s.ParentSlotLocalId);
 
                 if (slot.Def.FixedPositions && slot.FindMatchingStack(spawned) == null)
                 {
-                    if (a.StackWillBeVacated)
+                    // 元の固定番号が今も同種を保持しているなら（selfが生き残る/同種が残る）その隣へ隙間を作り、
+                    // 空いているなら（同種が消えた）その番号をそのまま引き継ぐ。「selfがdestroyされたか」ではなく
+                    // 「その番号がまだ同種を受け入れているか」で決める。
+                    if (s.OriginCellStillOccupied(slot))
                     {
-                        slot.ReserveGridIndexForNextNewStack(a.GridCellIndex.Value);
-                        placed = true;
+                        placed = slot.TryMakeRoomAndSeed(s.GridIndex);
                     }
                     else
                     {
-                        placed = slot.TryMakeRoomAndSeed(a.GridCellIndex.Value);
+                        slot.ReserveGridIndexForNextNewStack(s.GridIndex);
+                        placed = true;
                     }
 
                     if (placed)
-                        placed = spawned.MoveToSlot(a.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
+                        placed = spawned.MoveToSlot(s.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
                 }
                 else if (slot.Def.FixedPositions)
                 {
                     // 新しい型が既にこのスロットに存在する（同種スタックへの合流）。番号操作は不要。
-                    placed = spawned.MoveToSlot(a.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
+                    placed = spawned.MoveToSlot(s.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
                 }
                 else
                 {
-                    var position = new CapturedPosition(a.StackIndex, a.MemberIndex, a.StackWillBeVacated);
-                    placed = spawned.InsertAtIndex(a.Parent, slot.Def.GlobalId, position, session.Codex.WellKnown, out _, force: false);
+                    placed = spawned.InsertAtIndex(
+                        s.Parent, slot.Def.GlobalId, s.ResolveInsertPosition(slot), session.Codex.WellKnown, out _, force: false);
                 }
             }
             else
@@ -644,38 +594,75 @@ namespace UnmappedIsland.Domain.Runtime
             TryFirstAcceptingSlot(spawned, primaryTarget.Parent, session, force: true);
         }
 
-        /// <summary>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット
-        /// （ActiveApplicationがdestroy側とspawn側の間で受け渡す）。</summary>
-        public readonly struct SameSlotAnchor
+        /// <summary>
+        /// active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した
+        /// スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。
+        /// 「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から
+        /// 行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。
+        ///
+        /// 置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/
+        /// 固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、
+        /// またはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら
+        /// （同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された
+        /// ObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。
+        /// </summary>
+        public readonly struct EffectSite
         {
             public readonly WorldObject Parent;
             public readonly int ParentSlotLocalId;
 
-            /// <summary>自分が属していたObjectStackの、Slot.Stacksにおける外側position。</summary>
-            public readonly int StackIndex;
+            /// <summary>捕捉時にself(origin)が属していたObjectStack。配置時にこれがまだSlot.Stacksに残って
+            /// いるか（＝同種を保持しているか）で置き換え位置を分岐する。除去済みでもGridIndexは保持される。</summary>
+            private readonly ObjectStack originStack;
 
-            /// <summary>そのObjectStack内での自分のメンバー位置（destroyしない場合は+1済み）。</summary>
-            public readonly int MemberIndex;
+            /// <summary>この位置を捕捉した張本人（spawnを宣言したself）。配置時にoriginStackへまだ残っているか
+            /// で、「self自身が生き残ったか」を判定する。</summary>
+            private readonly WorldObject origin;
 
-            /// <summary>FixedPositionsスロットでのみ使う、自分が属していたObjectStackの固定番号
-            /// （該当スロットでなければnull）。</summary>
-            public readonly int? GridCellIndex;
+            /// <summary>捕捉時のoriginStackの外側position。originStackごと除去された場合の挿入位置に使う
+            /// （除去後はIndexOfStackで引けないため捕捉値が要る）。</summary>
+            private readonly int stackIndexAtCapture;
 
-            /// <summary>自分の除去によって、自分が属していたObjectStackが丸ごと消える（自分がその唯一の
-            /// メンバーで、destroyされる）場合のみtrue。この場合、消えたObjectStackの固定番号・外側positionを
-            /// 新しいObjectStackがそのまま引き継ぐ。</summary>
-            public readonly bool StackWillBeVacated;
+            /// <summary>捕捉時のorigin自身のメンバー位置。originだけ消えて同種の兄弟が残る場合の挿入位置に使う
+            /// （その場合originは消えていてIndexOfで引けないため捕捉値が要る）。</summary>
+            private readonly int memberIndexAtCapture;
 
-            public SameSlotAnchor(
-                WorldObject parent, int parentSlotLocalId, int stackIndex, int memberIndex,
-                bool stackWillBeVacated, int? gridCellIndex)
+            public EffectSite(
+                WorldObject parent, int parentSlotLocalId, ObjectStack originStack, WorldObject origin,
+                int stackIndexAtCapture, int memberIndexAtCapture)
             {
                 Parent = parent;
                 ParentSlotLocalId = parentSlotLocalId;
-                StackIndex = stackIndex;
-                MemberIndex = memberIndex;
-                StackWillBeVacated = stackWillBeVacated;
-                GridCellIndex = gridCellIndex;
+                this.originStack = originStack;
+                this.origin = origin;
+                this.stackIndexAtCapture = stackIndexAtCapture;
+                this.memberIndexAtCapture = memberIndexAtCapture;
+            }
+
+            /// <summary>FixedPositions用: originStackの固定番号（除去済みでも保持される。FixedPositionsスロット
+            /// では必ず採番済み）。</summary>
+            public int GridIndex => originStack.GridIndex.Value;
+
+            /// <summary>元の位置(originStack)が今もこのスロットに残って同種を保持しているか。空になって
+            /// 除去されているならfalse＝その位置は空き。</summary>
+            public bool OriginCellStillOccupied(Slot slot) => slot.IndexOfStack(originStack) >= 0;
+
+            /// <summary>
+            /// 非FixedPositionsスロット用の挿入位置を、配置時のスロットの状態から決める。
+            /// - originStackが除去済み（同種が全て消えた）: 元の外側positionへ新規スタックとして入る(stackWasVacated)。
+            /// - originStackが健在で、origin自身もまだ居る（self生き残り）: origin自身の直後(+1)へ。
+            /// - originStackが健在だが、originは消えて兄弟が残る: originが居た元のメンバー位置へ（兄弟が繰り上がった
+            ///   その位置に割り込むことで、元のoriginの場所をそのまま引き継ぐ）。
+            /// </summary>
+            public CapturedPosition ResolveInsertPosition(Slot slot)
+            {
+                int liveStackIndex = slot.IndexOfStack(originStack);
+                if (liveStackIndex < 0)
+                    return new CapturedPosition(stackIndexAtCapture, memberIndex: 0, stackWasVacated: true);
+
+                int originMember = originStack.IndexOf(origin);
+                int memberIndex = originMember >= 0 ? originMember + 1 : memberIndexAtCapture;
+                return new CapturedPosition(liveStackIndex, memberIndex, stackWasVacated: false);
             }
         }
 
