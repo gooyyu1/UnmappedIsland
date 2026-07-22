@@ -246,14 +246,9 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>targetが持つスロットを宣言順に走査し、最初に配置できたスロットへ入れる。
-        /// force=trueはaccepts/capacityの検証を飛ばすため、スロットが1つでもあれば必ず成功する。</summary>
-        private static bool TryFirstAcceptingSlot(WorldObject spawned, WorldObject target, WorldSession session, bool force)
-        {
-            foreach (var slotDef in target.Def.EnumerateSlotDefs())
-                if (spawned.MoveToSlot(target, slotDef.GlobalId, session.Codex.WellKnown, out _, force))
-                    return true;
-
-            return false;
-        }
+        /// force=trueはaccepts/capacityの検証を飛ばすため、スロットが1つでもあれば必ず成功する。
+        /// 走査・配置そのものは移動する本人のMoveIntoFirstAcceptingSlot（moveと共用、Topology）に委ねる。</summary>
+        private static bool TryFirstAcceptingSlot(WorldObject spawned, WorldObject target, WorldSession session, bool force) =>
+            spawned.MoveIntoFirstAcceptingSlot(target, session.Codex.WellKnown, force);
     }
 }

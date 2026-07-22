@@ -8,10 +8,10 @@ namespace UnmappedIsland.Loader
 {
     public sealed partial class WorldCodexYamlLoader
     {
-        /// <summary>activeの内容(set/add/destroy/spawn)を1つも持たないキー集合。actions/combinations/pickの
+        /// <summary>activeの内容(set/add/destroy/spawn/transfer/move)のキー集合。actions/combinations/pickの
         /// 各エントリは、専用の"active"キーを介さずshowMenu/conditions/with/weight/pickと対等な兄弟キーとして
-        /// set/add/destroy/spawnを直接持つため、「activeとして何か書かれているか」をこの4キーの有無で判定する。</summary>
-        private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn", "transfer" };
+        /// これらを直接持つため、「activeとして何か書かれているか」をこのキー群の有無で判定する。</summary>
+        private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn", "transfer", "move" };
 
         private static bool HasActiveContent(YamlMappingNode map) =>
             ActiveVerbKeys.Any(key => map.TryGet(key) != null);
@@ -32,8 +32,9 @@ namespace UnmappedIsland.Loader
             IReadOnlyCollection<string> reservedKeys = null)
         {
             // 単一命令(ActiveEffect)の宣言順フラットリストを1本組み立てる。適用順はset→add→transfer→
-            // destroy→spawn（同一プロパティへのset後add、destroyで空いた位置へのspawn(same_slot)という
-            // 依存関係のため。ActiveEffects.Applyはこのリスト順にそのまま適用する）。
+            // move→destroy→spawn（同一プロパティへのset後add、destroyで空いた位置へのspawn(same_slot)という
+            // 依存関係のため。moveはdestroyより前＝移動対象・参照プロパティが消える前に解決する。
+            // ActiveEffects.Applyはこのリスト順にそのまま適用する）。
             var operations = new List<ActiveEffect>();
 
             YamlMappingNode setMap = bodyNode.TryGetMapping("set", context);
@@ -47,6 +48,10 @@ namespace UnmappedIsland.Loader
             YamlNode transferNode = bodyNode.TryGet("transfer");
             if (transferNode != null)
                 operations.AddRange(ParseTransfers($"{context}.transfer", transferNode, allowDragged, selfOnly));
+
+            YamlMappingNode moveNode = bodyNode.TryGetMapping("move", context);
+            if (moveNode != null)
+                operations.Add(ParseMove($"{context}.move", moveNode, selfOnly));
 
             YamlNode destroyNode = bodyNode.TryGet("destroy");
             if (destroyNode != null)
@@ -228,6 +233,32 @@ namespace UnmappedIsland.Loader
             }
 
             throw new YamlLoadException($"{context}: mappingかmappingの配列である必要があります。");
+        }
+
+        /// <summary>
+        /// move（対象オブジェクトを、to_propが指すインスタンスIDのオブジェクトの中へ移動する。MoveEffect参照）。
+        /// transferと同じフラットフィールド規約（`move: {object: actor, to_prop: destination_id}`）。
+        /// objectは現時点でactorのみ対応（移動の主語として今必要なのがプレイヤーだけであり、それ以外の
+        /// 対象の移動には「どの子か」等の未確定な意味論が伴うため）。on_min/on_overflow/on_shortfall/on_max
+        /// （selfOnly）にはactorが存在しないため使えない。
+        /// </summary>
+        private MoveEffect ParseMove(string context, YamlMappingNode map, bool selfOnly)
+        {
+            if (selfOnly)
+                throw new YamlLoadException($"{context}: moveはon_min/on_max/on_overflow/on_shortfallでは使えません（actorが存在しないため）。");
+
+            string objectRaw = map.RequireScalar("object", context);
+            if (objectRaw != "actor")
+                throw new YamlLoadException($"{context}: moveのobjectは現時点で'actor'のみ対応しています（値: '{objectRaw}'）。");
+
+            int toProp = PropertyNames.Intern(map.RequireScalar("to_prop", context));
+
+            var unknownKeys = map.EntriesInOrder().Select(e => e.Key)
+                .Where(k => k != "object" && k != "to_prop").ToList();
+            if (unknownKeys.Count > 0)
+                throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+
+            return new MoveEffect(ReferenceRoot.Actor, toProp);
         }
 
         /// <summary>

@@ -7,12 +7,12 @@ namespace UnmappedIsland.Loader
 {
     public sealed partial class WorldCodexYamlLoader
     {
-        private WeightSpec ParseWeight(string context, YamlNode node, bool allowDragged)
+        private WeightSpec ParseWeight(string context, YamlNode node, bool allowDragged, string fieldName = "weight")
         {
             if (node is YamlScalarNode scalar)
             {
                 if (!double.TryParse(scalar.Value, out double literal))
-                    throw new YamlLoadException($"{context}: weightは数値である必要があります（値: '{scalar.Value}'）。");
+                    throw new YamlLoadException($"{context}: {fieldName}は数値である必要があります（値: '{scalar.Value}'）。");
                 return WeightSpec.FromLiteral(literal);
             }
 
@@ -31,7 +31,7 @@ namespace UnmappedIsland.Loader
                 return WeightSpec.FromPath(new PropertyPath(root, PropertyNames.Intern(propName)));
             }
 
-            throw new YamlLoadException($"{context}: weightはリテラル数値か{{object, prop}}のいずれかである必要があります。");
+            throw new YamlLoadException($"{context}: {fieldName}はリテラル数値か{{object, prop}}のいずれかである必要があります。");
         }
 
         /// <summary>pick候補が持つ、weight/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
@@ -87,8 +87,8 @@ namespace UnmappedIsland.Loader
             return null;
         }
 
-        /// <summary>actionエントリが持つ、showMenu/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
-        private static readonly string[] ActionReservedKeys = { "showMenu", "conditions", "pick" };
+        /// <summary>actionエントリが持つ、showMenu/conditions/duration/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
+        private static readonly string[] ActionReservedKeys = { "showMenu", "conditions", "duration", "pick" };
 
         /// <summary>combinationエントリが持つ、with/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
         private static readonly string[] CombinationReservedKeys = { "with", "conditions", "pick" };
@@ -112,7 +112,14 @@ namespace UnmappedIsland.Loader
                 ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots);
                 ActiveEffect effect = ParseEffect(context, map, allowDragged: false, ActionReservedKeys);
 
-                result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, effect));
+                // duration（実行にかかるゲーム内時間・分）。weightと同じ「リテラルか{object, prop}参照か」の
+                // 二択（WeightSpecを流用）。省略時は時間を消費しない。
+                YamlNode durationNode = map.TryGet("duration");
+                WeightSpec? duration = durationNode != null
+                    ? ParseWeight($"{context}.duration", durationNode, allowDragged: false, fieldName: "duration")
+                    : (WeightSpec?)null;
+
+                result.Add(new ActionDef(name, ShowMenuMode.Always, conditions, effect, duration));
             }
 
             return result;
