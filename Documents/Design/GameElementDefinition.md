@@ -4,7 +4,7 @@
 
 本ドキュメントは、`WorldCodex`（ゲーム内のあらゆる要素を定義する YAML）の**文法そのもの**を体系的にまとめた、唯一の
 リファレンスです。`traits`・`object_defs`・`props`・`stages`・`slots`・`combinations`・`recipes`・`passives`・`active`・
-`modify`・`accumulate`・`add`・`destroy`・`spawn`・`pick`・`actions`・`conditions` など、YAML 上のキーワードの意味と
+`modify`・`accumulate`・`add`・`destroy`・`spawn`・`move`・`pick`・`actions`・`duration`・`conditions` など、YAML 上のキーワードの意味と
 書き方はすべてここに集約します。
 
 本書が定めるのは**文法**だけです。その文法を使って気候・レシピ・重さ・カード間の相互作用といった**具体的なゲーム内容を
@@ -14,7 +14,8 @@
 - `RecipeSystem.md` — アイテムの製作
 - `ContainerSystem.md` — コンテナの容量・重さ
 - `ActionSystem.md` — カード間相互作用（`actions`/`combinations`）の使い分け方針
-- `TerrainGeneration.md` — 地形生成
+- `TerrainGeneration.md` — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
+- `ExplorationSystem.md` — 生成された土地の構造と挙動（スロット・探索・道の発見と移動）
 
 形式的なスキーマ定義（[JSON Schema](https://json-schema.org/)）は `WorldCodex.schema.json`（メタ情報は
 `WorldCodexSchema.md`）を参照してください。本書はスキーマの人間向け解説を兼ねますが、機械的な検証はスキーマ側が担います。
@@ -758,9 +759,9 @@ object_defs:
 概念です。持続する条件を表す `conditions`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
 
 `active` という語自体は、YAML 上の専用キーとしては書きません。この節で説明する `set`・`add`・`destroy`・
-`spawn`・`transfer` を、それが書ける場所（9.6 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
+`spawn`・`transfer`・`move` を、それが書ける場所（9.7 節: `actions`/`combinations` の各エントリ、`pick` の各候補、`props` の
 `on_min`/`on_overflow`/`on_shortfall`/`on_max`）の中に、`showMenu`/`conditions`/`with`/`weight`/`pick` と
-対等な兄弟キーとして直接書きます。専用のラップを挟まないことで、動詞（`set`/`add`/`destroy`/`spawn`）が
+対等な兄弟キーとして直接書きます。専用のラップを挟まないことで、動詞（`set`/`add`/`destroy`/`spawn`/`move`）が
 `pick` と並列に並び、「実行結果は直接書くか、`pick` で確率分岐するかのどちらか」という構造がそのまま
 YAML の見た目に表れます。
 
@@ -904,26 +905,65 @@ actions:
 規約に合わせずフラットな4フィールドにしているのは、`conditions`（14.1 節）の `object`/`prop` と同じ理由です。
 `from`・`to` それぞれ参照は常に1組であり、複数プロパティの入れ物としてネストする必要がありません。
 
-### 9.6 set/add/destroy/spawn/transfer が書ける場所
+### 9.6 move
+
+`set`/`add`/`destroy`/`spawn`/`transfer` は、対象の所属先（どの親のどのスロットに入っているか）そのものは
+変更しません。`move` は、既に世界に存在するオブジェクトを、**別の場所（生成時に確定した特定のインスタンス）
+の中へ移動させる**専用の動詞です。`transfer`（9.5 節）が連続量（プロパティの値）を移すのに対し、`move` は
+オブジェクト自身の所属を移す、という対になる関係にあります。典型例は、土地と土地を繋ぐ道の移動アクション
+（`actor` を移動先の土地へ移す）です。
+
+```yaml
+actions:
+  travel:
+    move:
+      object: actor
+      to_prop: destination_id
+```
+
+- **`object`**: 移動させる対象。現時点で `actor` のみ対応です（`self`/`parent`/`dragged` 等、他の対象は
+  「一度きりの命令に対してどれを動かすか」の意味論がまだ確定していないため未対応・ロード時エラー。9.1 節で
+  `active` の対象キー `child` が未対応なのと同じ理由）。
+- **`to_prop`**: `self`（`move` を宣言したオブジェクト自身）が持つプロパティ名。その実効値を
+  `WorldObject` のインスタンスID（生成時に発行される、実行時限りの識別子）として解釈し、移動先とみなします。
+
+移動先を `object_defs` の id（型）ではなくプロパティ値（インスタンスID）で指すのは、`move` が使われる典型例
+（生成された特定の道が指す、生成された特定の移動先）が、**定義時点では決まらず、実行時に初めて確定する
+個体**を指す必要があるためです。`spawn`（9.4 節）の `object` のような型参照では、この個体を一意に指せません。
+実際の解決は、`self` から所属ツリーの根（`world`、15 節。すべてのオブジェクトは必ずここへ辿り着きます、
+7.1 節）まで遡り、そこから `InstanceId` が一致する子孫を探すことで行います。解決できない場合（`to_prop` を
+持たない、該当インスタンスが世界のどこにも存在しない）は、他の対象解決の失敗（9.1 節）と同じく、何も
+起きません。
+
+配置先の**スロット名を書く必要はありません**。`spawn` の `into`（9.4 節）と同様、移動先が持つスロットを
+宣言順に走査し、最初に配置できたスロットへ入れます。ただし `spawn` と異なり、`move` には `accepts`/`capacity`
+を無視した強制配置（親への伝播フォールバック）は**ありません**。移動対象は既に世界のどこかに存在しており
+「配置先が見つからなければ消える」わけにはいかないため、配置に失敗した場合は単に元の場所に留まります。
+
+`move` は `actions`/`combinations`/`pick` の各候補のいずれでも書けますが、`on_min`/`on_overflow`/
+`on_shortfall`/`on_max`（6 節、`self` のみが有効な対象）では使えません（`actor` が存在しないため、
+ロード時エラー）。
+
+### 9.7 set/add/destroy/spawn/transfer/move が書ける場所
 
 この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `conditions`/ゲートを
 持つ `passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
 
-- `actions`/`combinations` の各エントリ（11 節・12 節）— `showMenu`/`conditions`/`with`/`pick` と対等な
-  兄弟キー
+- `actions`/`combinations` の各エントリ（11 節・12 節）— `showMenu`/`conditions`/`duration`/`with`/`pick` と
+  対等な兄弟キー（`duration` は現時点で `actions` のみが持ちます、11.3 節）
 - `pick` の各候補（10 節）— `weight`/`pick` と対等な兄弟キー
 - `props` の `on_min`（6.5 節）・`on_overflow`/`on_shortfall`（6.3 節）・`on_max`（6.6 節）— これらは専用の
   キーの直下にそのまま書きます（元々ラップを挟んでいなかったため変更なし）
 
 ## 10. pick（重み付き確率分岐）
 
-`pick` は、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
+`pick` は、`set`/`add`/`destroy`/`spawn`/`transfer`/`move`（9 節）を直接書ける場所であればどこでも、**その代わりに**書ける、
 重み付き候補のリストです。新しいトリガー体系は必要とせず、`passives`（無条件／`conditions`／stage 内）には
 書けません。`passives` は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。
 
 ### 10.1 基本構造
 
-各候補は `weight` に加えて、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節の文法そのまま）を `weight`/`pick` と対等な
+各候補は `weight` に加えて、`set`/`add`/`destroy`/`spawn`/`transfer`/`move`（9 節の文法そのまま）を `weight`/`pick` と対等な
 兄弟キーとして直接持ちます。候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。
 
 ```yaml
@@ -938,9 +978,9 @@ actions:
 ```
 
 候補ごとに影響を受ける対象（`self`/`actor` など）そのものが異なるケースも、このように表現できます。`pick` の
-入れ子は再帰的であり、候補の `set`/`add`/`destroy`/`spawn`/`transfer` の代わりにさらに別の `pick` を書くこともできます。
+入れ子は再帰的であり、候補の `set`/`add`/`destroy`/`spawn`/`transfer`/`move` の代わりにさらに別の `pick` を書くこともできます。
 
-各候補に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`）に限られます。`modify`/`accumulate`
+各候補に書ける内容は、一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`/`move`）に限られます。`modify`/`accumulate`
 は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
 終わる `pick` の候補に書く意味がありません。
 
@@ -967,9 +1007,9 @@ pick:
 
 ## 11. actions（メニュー型操作）
 
-アクション（`eat`、`move` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`/`transfer`、または
-`pick`）を**1つの定義としてまとめて持ちます**。`object_defs`/`traits` の中に配置します（トップレベル独立キーには
-しません）。
+アクション（`eat`、`travel` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`/`transfer`/`move`、
+または `pick`）、および実行にかかるゲーム内時間（`duration`）を**1つの定義としてまとめて持ちます**。
+`object_defs`/`traits` の中に配置します（トップレベル独立キーにはしません）。
 
 ```yaml
 traits:
@@ -994,11 +1034,36 @@ traits:
 `{object, prop, op, value}` の葉と `all`/`any`/`not` の複合ノードからなる条件木です（14 節）。トップレベルは
 常に配列で、暗黙の `all`（AND）として扱われます。
 
-### 11.3 set/add/destroy/spawn/transfer（active） / pick
+### 11.3 duration（実行にかかるゲーム内時間）
 
-このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`/`transfer`（9 節、`active` の実体）が1回だけ適用される
-か、`pick`（10 節）で候補が1つ選ばれて適用されます。`showMenu`/`conditions`と対等な兄弟キーとして直接書き、
-専用の `active:` ラップは挟みません。どちらも指定しなければ、条件成立時に何も起きないアクションになります。
+`duration` は、このアクションを実行するのにかかるゲーム内時間（分）です。`showMenu`/`conditions`と対等な
+兄弟キーとして直接書きます。省略すれば時間を消費しません（例: `eat`のような即座に終わる操作）。
+
+```yaml
+actions:
+  explore:
+    duration: 30          # 探索は1回30分かかる
+    ...
+  travel:
+    duration: {prop: travel_minutes}   # 道ごとに異なる移動時間を、selfのプロパティから読む
+    ...
+```
+
+値は、`weight`（10.2 節）と同じ**リテラル数値**か**`{object, prop}` 参照**のいずれかです。参照は`self`の
+プロパティを指す使い方（移動時間が道ごとに異なる、上の`travel`の例）を主に想定していますが、10.2節と同じ
+`object`省略時の既定（`self`）・`ancestor`を含む解決規則をそのまま共有します。
+
+条件（`conditions`）が不成立でアクション自体が実行されなかった場合、`duration`は消費されません。時間の消費は
+**実行結果（`set`/`add`/`destroy`/`spawn`/`transfer`/`move`、または`pick`）が適用された後**に行われます
+（先に時間を進めてしまうと、時間経過にともなう`tick`駆動の変化——腐敗による`destroy`など——が、まだ効果を
+適用していない対象を先に消してしまう事故が起こりうるため）。
+
+### 11.4 set/add/destroy/spawn/transfer/move（active） / pick
+
+このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`/`transfer`/`move`（9 節、`active` の実体）が
+1回だけ適用されるか、`pick`（10 節）で候補が1つ選ばれて適用されます。`showMenu`/`conditions`/`duration`と
+対等な兄弟キーとして直接書き、専用の `active:` ラップは挟みません。どちらも指定しなければ、条件成立時に
+何も起きないアクションになります。
 
 **`actor` はすべてのアクションに暗黙的に存在し、常にプレイヤーキャラクターを指します。** `parent`（木構造上の直接の
 格納先）とは独立した参照です。
@@ -1253,9 +1318,11 @@ object_defs:
 
 ## 16. 本書の対象外
 
-- **地形生成**（`Axis`/`LocationType`/`generation_scope` 等）: 記法自体は本書と同じ「識別子をキーとする辞書」に
-  統一済みですが、フィールド名・詳細な軸空間マッチングは `TerrainGeneration.md` が検討中の段階のため、本書には
-  含めません。
+- **地形生成**（`axes`/`location_types`/`generation_scopes`）: 記法自体は本書と同じ「識別子をキーとする辞書」を
+  採用し実装済みですが、フィールドの意味・軸空間マッチングのアルゴリズムは地形生成固有の内容であるため、
+  本書には含めず `TerrainGeneration.md` に委ねます。地形生成によって作られた `Location` 自身の構造
+  （スロット・探索・道の発見と移動）は `ExplorationSystem.md` を参照してください（そちらは本書の `slots`・
+  `props`・`actions`・`move`・`duration` の応用例です）。
 - **`derived`（導出値）**: 「他の props から計算される値」という概念自体、採否がまだ決まっていません（17 節）。
 
 ## 17. 今後の検討課題

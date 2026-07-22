@@ -22,7 +22,8 @@
 - [レシピシステム設計](./RecipeSystem.md)
 - [コンテナの容量と重さ](./ContainerSystem.md)
 - [カード間の相互作用（actions / combinations の使い分け）](./ActionSystem.md)
-- [地形生成システム設計](./TerrainGeneration.md)
+- [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
+- [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
 
 ### その他
 
