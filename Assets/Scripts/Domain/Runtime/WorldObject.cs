@@ -140,6 +140,33 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
+        /// 自分の代表チェーン（represented_byで畳んだ同種判定の識別子）が変わった直後の後始末。represented_by先
+        /// スロットの中身が入れ替わったときに呼ばれる。まず自分自身が今の所属スタックの固定識別子にまだ合致するかを
+        /// スロットへ再判定させ（合致しなければ抜けて適切なスタックへ移る＝同種の別スタックへ合流／無ければ新規）、
+        /// 次に自分を代表として使っている一つ上（親）があれば、その親の代表チェーンも連鎖的に変わったので同じ後始末を
+        /// 親へ伝える。各段は「自分を再判定し、自分を代表に使う一つ上へ同じ依頼を渡す」だけの局所処理で、上りは
+        /// represented_byのネスト分だけ有界（自分のことは自分でする、CLAUDE.md参照）。
+        /// </summary>
+        private void OnRepresentationChanged()
+        {
+            if (Parent == null) return;
+
+            Parent.GetSlotByLocalId(ParentSlotLocalId).Restack(this);
+
+            // 自分が親のrepresented_by先スロットに居るなら、自分の代表チェーンの変化は親の代表チェーンの変化でもある。
+            if (Parent.IsRepresentedBySlot(ParentSlotLocalId))
+                Parent.OnRepresentationChanged();
+        }
+
+        /// <summary>slotLocalIdが、このオブジェクトの代表を採るスロット（represented_by先）か。中身が入れ替わった
+        /// スロットがこれなら、自分の代表チェーンが変わったということ。</summary>
+        private bool IsRepresentedBySlot(int slotLocalId)
+        {
+            if (!Def.RepresentedBySlotGlobalId.HasValue) return false;
+            return Def.SlotLayout.ToLocal(Def.RepresentedBySlotGlobalId.Value) == slotLocalId;
+        }
+
+        /// <summary>
         /// 数値プロパティへの不可逆な加減算（GameElementDefinition.md 9.2節の `add`、ContainerSystem.md の重さ伝播で使用）。
         /// このオブジェクトが対象プロパティを持たない場合は何もしない（例: 重さを気にしない置物）。
         ///
@@ -260,6 +287,11 @@ namespace UnmappedIsland.Domain.Runtime
             // 現在の祖先へ登録する。DetachFromParentでの解除と対になり、Refresh（前回の登録先の記憶）が要らない。
             SyncAncestorTargetedRecursively(register: true);
 
+            // 入ったスロットが newParent の represented_by 先なら、newParent の代表チェーンが変わった。
+            // newParent 自身のスタック所属を再判定させ、必要なら上位へ連鎖させる（OnRepresentationChanged）。
+            if (newParent.IsRepresentedBySlot(localSlot))
+                newParent.OnRepresentationChanged();
+
             error = null;
             return true;
         }
@@ -287,6 +319,11 @@ namespace UnmappedIsland.Domain.Runtime
             oldParent.PropagateWeightChange(oldParentSlotLocalId, -GetNumber(wellKnown.WeightId), wellKnown);
             UnregisterEdgeWith(oldParent);
             SetParent(null, LocalIndexMap.Missing);
+
+            // 抜けたスロットが oldParent の represented_by 先なら、oldParent の代表チェーンが変わった。
+            // oldParent 自身のスタック所属を再判定させ、必要なら上位へ連鎖させる（OnRepresentationChanged）。
+            if (oldParent.IsRepresentedBySlot(oldParentSlotLocalId))
+                oldParent.OnRepresentationChanged();
         }
 
         /// <summary>

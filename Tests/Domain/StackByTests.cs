@@ -121,6 +121,115 @@ object_defs:
         }
 
         [Test]
+        public void RepresentedBy_ContentEmptied_RemigratesToMatchingStack()
+        {
+            // 既に空ボウルのスタックがある状態で、水入りボウルの中身が空になったら、そのボウルは
+            // 弾き出されて既存の空ボウルスタックへ合流する（スロット全体で「同種は1スタック」を保つ）。
+            const string yaml = @"
+traits:
+  represented_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+object_defs:
+  bag_remig:
+    slots:
+      pile: {}
+  water_liquid:
+    tags: [liquid]
+  bowl:
+    traits: [represented_container]
+";
+            var codex = Load(yaml);
+            int pileSlotId = codex.SlotNames.GetId("pile");
+            int contentSlotId = codex.SlotNames.GetId("content");
+
+            WorldObject bag = Spawn(codex, "bag_remig");
+            WorldObject emptyBowl = Spawn(codex, "bowl");
+            WorldObject waterBowl = Spawn(codex, "bowl");
+            WorldObject water = Spawn(codex, "water_liquid");
+            water.MoveToSlot(waterBowl, contentSlotId, codex.WellKnown, out _);
+
+            emptyBowl.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+            waterBowl.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+
+            bag.TryGetSlot(pileSlotId, out Slot pile);
+            Assert.That(pile.Cells.Count(c => c != null), Is.EqualTo(2), "最初は空ボウルと水入りボウルで別スタック");
+
+            // 水入りボウルの中身を消す → 空ボウルになり、既存の空ボウルスタックへ再合流するはず。
+            water.Destroy(codex.WellKnown);
+
+            var live = pile.Cells.Where(c => c != null).ToList();
+            Assert.That(live.Count, Is.EqualTo(1), "空になったボウルは既存の空ボウルスタックへ合流し1スタックにまとまる");
+            Assert.That(live[0].Members, Is.EquivalentTo(new[] { emptyBowl, waterBowl }));
+        }
+
+        [Test]
+        public void RepresentedBy_DeepContentChange_PropagatesRestackToOutermost()
+        {
+            // 瓶→出汁→エッセンスの2段代表。末端のエッセンスを差し替えるだけで、最上位（瓶）のスタックまで
+            // 再判定が連鎖して、同じだった2本の瓶が別スタックに分かれること（局所規則の自己伝播）を確かめる。
+            const string yaml = @"
+traits:
+  represented_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+  represented_liquid:
+    represented_by: essence
+    slots:
+      essence:
+        accepts: [{tag: essence, max: 1}]
+object_defs:
+  bag_deep:
+    slots:
+      pile: {}
+  sweet_essence:
+    tags: [essence]
+  bitter_essence:
+    tags: [essence]
+  broth:
+    traits: [represented_liquid]
+    tags: [liquid]
+  bottle_deep:
+    traits: [represented_container]
+";
+            var codex = Load(yaml);
+            int pileSlotId = codex.SlotNames.GetId("pile");
+            int contentSlotId = codex.SlotNames.GetId("content");
+            int essenceSlotId = codex.SlotNames.GetId("essence");
+
+            WorldObject bag = Spawn(codex, "bag_deep");
+            WorldObject bottleA = Spawn(codex, "bottle_deep");
+            WorldObject bottleB = Spawn(codex, "bottle_deep");
+            WorldObject brothA = Spawn(codex, "broth");
+            WorldObject brothB = Spawn(codex, "broth");
+            WorldObject sweetA = Spawn(codex, "sweet_essence");
+            WorldObject sweetB = Spawn(codex, "sweet_essence");
+
+            sweetA.MoveToSlot(brothA, essenceSlotId, codex.WellKnown, out _);
+            sweetB.MoveToSlot(brothB, essenceSlotId, codex.WellKnown, out _);
+            brothA.MoveToSlot(bottleA, contentSlotId, codex.WellKnown, out _);
+            brothB.MoveToSlot(bottleB, contentSlotId, codex.WellKnown, out _);
+            bottleA.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+            bottleB.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+
+            bag.TryGetSlot(pileSlotId, out Slot pile);
+            Assert.That(pile.Cells.Count(c => c != null), Is.EqualTo(1), "代表の代表まで同じなので最初は同じスタック");
+
+            // brothA の末端エッセンスを sweet → bitter に差し替える。
+            sweetA.Destroy(codex.WellKnown);
+            WorldObject bitterA = Spawn(codex, "bitter_essence");
+            bitterA.MoveToSlot(brothA, essenceSlotId, codex.WellKnown, out _);
+
+            var live = pile.Cells.Where(c => c != null).ToList();
+            Assert.That(live.Count, Is.EqualTo(2), "末端の差し替えが最上位まで伝播し、2本の瓶が別スタックに分かれる");
+            Assert.That(live.SelectMany(s => s.Members), Is.EquivalentTo(new[] { bottleA, bottleB }));
+        }
+
+        [Test]
         public void RepresentedBy_RecursivelyDistinguishesRepresentedChains()
         {
             const string yaml = @"

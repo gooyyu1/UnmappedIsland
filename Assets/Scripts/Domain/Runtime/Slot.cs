@@ -145,6 +145,35 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
+        /// objの代表チェーン（represented_byで畳んだ同種の識別子）が変わったかもしれないとき、objが今の所属
+        /// スタックの固定識別子にまだ合致するかを判定し、合致しなくなっていれば抜いて入れ直す（同種の既存
+        /// スタックがあれば合流、無ければ新規スタック。抜けた跡が空になれば固定は空セル化・前詰めは除去）。
+        /// これによりスロットの「同種は1スタックにまとまる」という不変条件を、中身の変化後も保つ。
+        ///
+        /// 非Stackableは同種でも常に個体ごとの別スタックで、合流もしなければ並びも保ちたいので対象外
+        /// （識別子が古くなっても、その識別子で合流判定される相手が居ないため実害が無い）。
+        /// </summary>
+        public void Restack(WorldObject obj)
+        {
+            if (!Def.Stackable) return;
+
+            int idx = cells.FindIndex(c => c != null && c.Members.Contains(obj));
+            if (idx < 0) return;
+
+            ObjectStack current = cells[idx];
+            if (current.Matches(obj)) return; // まだ同じ識別子に合致：動かす必要は無い
+
+            current.Remove(obj);
+            if (current.Members.Count == 0)
+            {
+                if (Def.FixedPositions) cells[idx] = null;
+                else cells.RemoveAt(idx);
+            }
+
+            AddInternal(obj);
+        }
+
+        /// <summary>
         /// same_slotによる置き換え（GameElementDefinition.md 9.4節）。置き換えオブジェクトを新規スタックとして、
         /// originが居たセル(originCellIndex)を基準に配置する（EffectSite.OriginCellIndex/OriginKindRemains参照）。
         /// 自動整列は行わない（同種はObjectStack内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
