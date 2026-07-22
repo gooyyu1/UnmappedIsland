@@ -109,6 +109,10 @@ namespace UnmappedIsland.Loader
                 foreach (var (name, node) in traits.EntriesInOrder())
                     AddUnique(globalTraits, name, ParseTrait(name, (YamlMappingNode)node, label), "traits");
 
+            // 地形生成の3ルートキー（axes/location_types/generation_scopes）。object_defs/traitsと対等な
+            // トップレベルキーで、terrain_generation.yaml等に置かれる（WorldCodexYamlLoader.Generation.cs）。
+            LoadGenerationSections(label, root);
+
             return this;
         }
 
@@ -132,7 +136,8 @@ namespace UnmappedIsland.Loader
             foreach (var kv in objectDefsByGlobalId) defsByGlobalId[kv.Key] = kv.Value;
 
             var wellKnown = new WellKnownProperties(PropertyNames);
-            var codex = new WorldCodex(ObjectNames, PropertyNames, SlotNames, TagNames, SymbolNames, new ObjectDefTable(defsByGlobalId), wellKnown);
+            var generation = BuildGenerationDefs(objectDefsByGlobalId);
+            var codex = new WorldCodex(ObjectNames, PropertyNames, SlotNames, TagNames, SymbolNames, new ObjectDefTable(defsByGlobalId), wellKnown, generation);
 
             Reset();
             return codex;
@@ -142,6 +147,7 @@ namespace UnmappedIsland.Loader
         {
             globalObjectDefs.Clear();
             globalTraits.Clear();
+            ResetGeneration();
             ObjectNames = new NameRegistry();
             PropertyNames = new NameRegistry();
             SlotNames = new NameRegistry();
