@@ -6,6 +6,9 @@
 object_defs:
   character:
     singleton: true
+    # 土地（locations.yaml）のcharactersスロットのaccepts判定用。将来のNPC・動物も同じタグを
+    # 持てば同じスロットへ入れられる（4.1節: タグはtraitを介さず直接宣言できる）。
+    tags: [character]
     props:
       # 満腹度（空腹度の逆）。0になっても即死はしないが、体調不良につながる想定（体調不良自体は未実装。
       # 致死性は体脂肪が担う、body_fat参照）。十分に満腹な状態から水も食料も摂らない場合、1日
