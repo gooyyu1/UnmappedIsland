@@ -187,17 +187,17 @@ namespace UnmappedIsland.Domain.Runtime
         /// （存在しない配列indexへは置けないため）。
         /// </summary>
         public bool MoveToSlot(WorldObject newParent, int slotGlobalId, WellKnownProperties wellKnown, out string error, bool force = false) =>
-            AttachToSlot(newParent, slotGlobalId, capturedPosition: null, wellKnown, out error, force);
+            AttachToSlot(newParent, slotGlobalId, insertStackIndex: null, wellKnown, out error, force);
 
         /// <summary>
-        /// same_slot専用。通常の（同種のObjectStackへソート挿入する）配置ロジックを使わず、指定した
-        /// 位置（元居たObjectStackの外側position・その中でのメンバー位置）へそのまま挿入する。破棄された
-        /// オブジェクトの位置を、新しく生成されたオブジェクトへ引き継がせるために使う（Place参照）。
+        /// same_slot専用。通常の（同種のObjectStackへソート挿入する）配置ロジックを使わず、置き換えオブジェクトを
+        /// 新規ObjectStackとして、指定した外側position(stackIndex)へそのまま割り込ませる。破棄されたオブジェクトの
+        /// 位置を、新しく生成されたオブジェクトへ引き継がせるために使う（Place参照）。
         /// </summary>
-        public bool InsertAtIndex(WorldObject newParent, int slotGlobalId, CapturedPosition position, WellKnownProperties wellKnown, out string error, bool force = false) =>
-            AttachToSlot(newParent, slotGlobalId, position, wellKnown, out error, force);
+        public bool InsertAtStackIndex(WorldObject newParent, int slotGlobalId, int stackIndex, WellKnownProperties wellKnown, out string error, bool force = false) =>
+            AttachToSlot(newParent, slotGlobalId, stackIndex, wellKnown, out error, force);
 
-        private bool AttachToSlot(WorldObject newParent, int slotGlobalId, CapturedPosition? capturedPosition, WellKnownProperties wellKnown, out string error, bool force)
+        private bool AttachToSlot(WorldObject newParent, int slotGlobalId, int? insertStackIndex, WellKnownProperties wellKnown, out string error, bool force)
         {
             int localSlot = newParent.Def.SlotLayout.ToLocal(slotGlobalId);
             if (localSlot == LocalIndexMap.Missing)
@@ -213,15 +213,10 @@ namespace UnmappedIsland.Domain.Runtime
 
             DetachFromParent(wellKnown);
 
-            if (capturedPosition.HasValue)
-            {
-                CapturedPosition p = capturedPosition.Value;
-                targetSlot.InsertAtCapturedPosition(this, p.StackIndex, p.MemberIndex, p.StackWasVacated);
-            }
+            if (insertStackIndex.HasValue)
+                targetSlot.InsertNewStackAt(this, insertStackIndex.Value);
             else
-            {
                 targetSlot.AddInternal(this);
-            }
 
             SetParent(newParent, localSlot);
             newParent.PropagateWeightChange(localSlot, GetNumber(wellKnown.WeightId), wellKnown);
@@ -232,23 +227,6 @@ namespace UnmappedIsland.Domain.Runtime
 
             error = null;
             return true;
-        }
-
-        /// <summary>same_slot（非FixedPositions）専用。EffectSite.ResolveInsertPositionが配置時のスロット
-        /// の状態から決めた挿入位置＝元居たObjectStackの外側position(StackIndex)・その中でのメンバー位置
-        /// (MemberIndex)・そのObjectStackが除去済みか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</summary>
-        public readonly struct CapturedPosition
-        {
-            public readonly int StackIndex;
-            public readonly int MemberIndex;
-            public readonly bool StackWasVacated;
-
-            public CapturedPosition(int stackIndex, int memberIndex, bool stackWasVacated)
-            {
-                StackIndex = stackIndex;
-                MemberIndex = memberIndex;
-                StackWasVacated = stackWasVacated;
-            }
         }
 
         /// <summary>
@@ -488,9 +466,7 @@ namespace UnmappedIsland.Domain.Runtime
             if (originStack == null) return null;
 
             return new EffectSite(
-                Parent, ParentSlotLocalId, originStack, origin: this,
-                stackIndexAtCapture: slot.IndexOfStack(originStack),
-                memberIndexAtCapture: originStack.IndexOf(this));
+                Parent, ParentSlotLocalId, originStack, stackIndexAtCapture: slot.IndexOfStack(originStack));
         }
 
         /// <summary>
@@ -577,8 +553,8 @@ namespace UnmappedIsland.Domain.Runtime
                 }
                 else
                 {
-                    placed = spawned.InsertAtIndex(
-                        s.Parent, slot.Def.GlobalId, s.ResolveInsertPosition(slot), session.Codex.WellKnown, out _, force: false);
+                    placed = spawned.InsertAtStackIndex(
+                        s.Parent, slot.Def.GlobalId, s.ResolveInsertStackIndex(slot), session.Codex.WellKnown, out _, force: false);
                 }
             }
             else
@@ -615,28 +591,16 @@ namespace UnmappedIsland.Domain.Runtime
             /// いるか（＝同種を保持しているか）で置き換え位置を分岐する。除去済みでもGridIndexは保持される。</summary>
             private readonly ObjectStack originStack;
 
-            /// <summary>この位置を捕捉した張本人（spawnを宣言したself）。配置時にoriginStackへまだ残っているか
-            /// で、「self自身が生き残ったか」を判定する。</summary>
-            private readonly WorldObject origin;
-
             /// <summary>捕捉時のoriginStackの外側position。originStackごと除去された場合の挿入位置に使う
             /// （除去後はIndexOfStackで引けないため捕捉値が要る）。</summary>
             private readonly int stackIndexAtCapture;
 
-            /// <summary>捕捉時のorigin自身のメンバー位置。originだけ消えて同種の兄弟が残る場合の挿入位置に使う
-            /// （その場合originは消えていてIndexOfで引けないため捕捉値が要る）。</summary>
-            private readonly int memberIndexAtCapture;
-
-            public EffectSite(
-                WorldObject parent, int parentSlotLocalId, ObjectStack originStack, WorldObject origin,
-                int stackIndexAtCapture, int memberIndexAtCapture)
+            public EffectSite(WorldObject parent, int parentSlotLocalId, ObjectStack originStack, int stackIndexAtCapture)
             {
                 Parent = parent;
                 ParentSlotLocalId = parentSlotLocalId;
                 this.originStack = originStack;
-                this.origin = origin;
                 this.stackIndexAtCapture = stackIndexAtCapture;
-                this.memberIndexAtCapture = memberIndexAtCapture;
             }
 
             /// <summary>FixedPositions用: originStackの固定番号（除去済みでも保持される。FixedPositionsスロット
@@ -648,21 +612,16 @@ namespace UnmappedIsland.Domain.Runtime
             public bool OriginCellStillOccupied(Slot slot) => slot.IndexOfStack(originStack) >= 0;
 
             /// <summary>
-            /// 非FixedPositionsスロット用の挿入位置を、配置時のスロットの状態から決める。
-            /// - originStackが除去済み（同種が全て消えた）: 元の外側positionへ新規スタックとして入る(stackWasVacated)。
-            /// - originStackが健在で、origin自身もまだ居る（self生き残り）: origin自身の直後(+1)へ。
-            /// - originStackが健在だが、originは消えて兄弟が残る: originが居た元のメンバー位置へ（兄弟が繰り上がった
-            ///   その位置に割り込むことで、元のoriginの場所をそのまま引き継ぐ）。
+            /// 非FixedPositionsスロット用に、置き換えオブジェクトを新規スタックとして入れる外側position。
+            /// スタック内での何番目かは持たない（同種はObjectStack内で自動整列されるため、割り込み位置は意味を
+            /// 持たず、同種の山を割るべきでもない）。
+            /// - originStackが除去済み（同種が全て消えた）: 空いた元の位置(stackIndexAtCapture)へ。
+            /// - originStackが健在（selfが生き残る／同種の兄弟が残る）: その山の直後(+1)へ（山はそのまま保つ）。
             /// </summary>
-            public CapturedPosition ResolveInsertPosition(Slot slot)
+            public int ResolveInsertStackIndex(Slot slot)
             {
                 int liveStackIndex = slot.IndexOfStack(originStack);
-                if (liveStackIndex < 0)
-                    return new CapturedPosition(stackIndexAtCapture, memberIndex: 0, stackWasVacated: true);
-
-                int originMember = originStack.IndexOf(origin);
-                int memberIndex = originMember >= 0 ? originMember + 1 : memberIndexAtCapture;
-                return new CapturedPosition(liveStackIndex, memberIndex, stackWasVacated: false);
+                return liveStackIndex >= 0 ? liveStackIndex + 1 : stackIndexAtCapture;
             }
         }
 

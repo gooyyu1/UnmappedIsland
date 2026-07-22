@@ -33,13 +33,6 @@ namespace UnmappedIsland.Domain.Runtime
             members = new List<WorldObject> { seed };
         }
 
-        private ObjectStack(ObjectDef def, IReadOnlyList<int> representationChain, List<WorldObject> initialMembers)
-        {
-            Def = def;
-            RepresentationChain = representationChain;
-            members = initialMembers;
-        }
-
         /// <summary>candidateがこのObjectStackへ合流できるか（ObjectDefが同じ、かつ代表ObjectDef列も同じ）。</summary>
         public bool Matches(WorldObject candidate) =>
             candidate.Def.GlobalId == Def.GlobalId && candidate.HasRepresentationChain(RepresentationChain);
@@ -62,18 +55,6 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         public void Remove(WorldObject obj) => members.Remove(obj);
-
-        public int IndexOf(WorldObject obj) => members.IndexOf(obj);
-
-        /// <summary>atIndex以降のMembersを切り出し、新しいObjectStackとして返す（自分自身はatIndexより
-        /// 前だけを残す）。same_slotで型の異なるオブジェクトがスタックの途中へ割り込む際、このスタックを
-        /// 前後2つに分割するために使う（Slot.InsertAtCapturedPosition参照）。</summary>
-        public ObjectStack Split(int atIndex)
-        {
-            var moved = members.GetRange(atIndex, members.Count - atIndex);
-            members.RemoveRange(atIndex, members.Count - atIndex);
-            return new ObjectStack(Def, RepresentationChain, moved);
-        }
 
         private int ComputeInsertionIndex(WorldObject obj)
         {

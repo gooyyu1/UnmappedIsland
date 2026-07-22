@@ -119,29 +119,14 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
-        /// same_slotによる置き換え専用（非FixedPositions）。効果適用前に捕捉した位置から配置時に決めた「元居た
-        /// ObjectStackの外側position(stackIndex)・その中でのメンバー位置(memberIndex)」へ、自動整列を一切
-        /// 行わず正確に割り込ませる。元のObjectStackが（同種が全て消えて）丸ごと除去された場合(stackWasVacated)は、
-        /// 消えた位置(stackIndex)へ新規ObjectStackとしてそのまま入る。元のObjectStackが生き残る場合は、
-        /// memberIndexが境界（先頭・末尾）ならその直前・直後へ、途中であれば元のObjectStackを前後2つに
-        /// 分割してその間へ割り込ませる（元の平坦リストでの位置引き継ぎ、Codex.WorldObject.EffectSite参照）。
+        /// same_slotによる置き換え専用（非FixedPositions）。置き換えオブジェクトを新規ObjectStackとして、
+        /// 配置時に決めた外側position(stackIndex)へ自動整列を一切行わず割り込ませる（EffectSite.
+        /// ResolveInsertStackIndex参照）。stackIndexが範囲外（元の位置が末尾だった等）でも末尾へ丸めて入る。
+        /// スタック内での割り込み位置は扱わない（同種はObjectStack内で自動整列されるため意味を持たず、同種の
+        /// 山を割るべきでもない）。
         /// </summary>
-        public void InsertAtCapturedPosition(WorldObject obj, int stackIndex, int memberIndex, bool stackWasVacated)
-        {
-            if (stackWasVacated)
-            {
-                stacks.Insert(Math.Min(stackIndex, stacks.Count), new ObjectStack(obj));
-                return;
-            }
-
-            ObjectStack existingStack = stacks[stackIndex];
-            if (memberIndex <= 0) { stacks.Insert(stackIndex, new ObjectStack(obj)); return; }
-            if (memberIndex >= existingStack.Members.Count) { stacks.Insert(stackIndex + 1, new ObjectStack(obj)); return; }
-
-            ObjectStack after = existingStack.Split(memberIndex);
-            stacks.Insert(stackIndex + 1, new ObjectStack(obj));
-            stacks.Insert(stackIndex + 2, after);
-        }
+        public void InsertNewStackAt(WorldObject obj, int stackIndex) =>
+            stacks.Insert(Math.Min(stackIndex, stacks.Count), new ObjectStack(obj));
 
         public void RemoveInternal(WorldObject obj)
         {
