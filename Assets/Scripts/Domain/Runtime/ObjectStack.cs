@@ -16,8 +16,10 @@ namespace UnmappedIsland.Domain.Runtime
     {
         public ObjectDef Def { get; }
 
-        /// <summary>represented_byで辿った代表ObjectDef列の、このスタックが生まれた時点でのスナップショット。
-        /// 代表未指定・空なら空列。加わった後の中身の変化を追って自動的に移し替えることはしない。</summary>
+        /// <summary>このスタックのアイデンティティ。seed自身のObjectDefを先頭に、represented_byで辿った
+        /// 代表ObjectDef列が続く、このスタックが生まれた時点でのスナップショット。外側オブジェクトも含めて
+        /// いるため、これ一つで「合流できる同種か」を完全に表す（別途Defを突き合わせる必要は無い）。
+        /// 加わった後の中身の変化を追って自動的に移し替えることはしない。</summary>
         public IReadOnlyList<int> RepresentationChain { get; }
 
         private readonly List<WorldObject> members;
@@ -30,9 +32,10 @@ namespace UnmappedIsland.Domain.Runtime
             members = new List<WorldObject> { seed };
         }
 
-        /// <summary>candidateがこのObjectStackへ合流できるか（ObjectDefが同じ、かつ代表ObjectDef列も同じ）。</summary>
+        /// <summary>candidateがこのObjectStackへ合流できるか。自分自身＋代表ObjectDef列（RepresentationChain）が
+        /// 完全に一致するかを、candidate自身に辿らせて判定する（外側オブジェクトも先頭要素として含まれる）。</summary>
         public bool Matches(WorldObject candidate) =>
-            candidate.Def.GlobalId == Def.GlobalId && candidate.HasRepresentationChain(RepresentationChain);
+            candidate.MatchesRepresentation(RepresentationChain);
 
         /// <summary>
         /// objがこのスタックへ合流できる（Matches: ObjectDef・代表ObjectDef列が一致）場合のみ、

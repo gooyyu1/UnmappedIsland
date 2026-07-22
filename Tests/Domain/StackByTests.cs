@@ -80,6 +80,47 @@ object_defs:
         }
 
         [Test]
+        public void RepresentedBy_DifferentContainerDef_SameContent_DoesNotStack()
+        {
+            // represented_by は同種判定を「中身のObjectDefまで」細分化するが、外側オブジェクト自体も
+            // アイデンティティの先頭要素として含まれる。中身が同じ水でも、容器のObjectDefが違えば別スタック。
+            const string yaml = @"
+traits:
+  represented_container:
+    represented_by: content
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+object_defs:
+  bag_repr3:
+    slots:
+      pile: {}
+  water_liquid:
+    tags: [liquid]
+  bowl:
+    traits: [represented_container]
+  bottle:
+    traits: [represented_container]
+";
+            var codex = Load(yaml);
+            int pileSlotId = codex.SlotNames.GetId("pile");
+
+            WorldObject bag = Spawn(codex, "bag_repr3");
+            WorldObject waterBowl = SpawnRepresentedContainer(codex, "bowl", "water_liquid");
+            WorldObject waterBottle = SpawnRepresentedContainer(codex, "bottle", "water_liquid");
+
+            waterBowl.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+            waterBottle.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
+
+            bag.TryGetSlot(pileSlotId, out Slot pile);
+            var stacks = pile.Cells;
+
+            Assert.That(stacks.Count, Is.EqualTo(2), "中身が同じ水でも容器（外側ObjectDef）が違えば別スタックになる");
+            Assert.That(stacks[0].Members.Count, Is.EqualTo(1));
+            Assert.That(stacks[1].Members.Count, Is.EqualTo(1));
+        }
+
+        [Test]
         public void RepresentedBy_RecursivelyDistinguishesRepresentedChains()
         {
             const string yaml = @"

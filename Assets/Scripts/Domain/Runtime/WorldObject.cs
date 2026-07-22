@@ -98,8 +98,10 @@ namespace UnmappedIsland.Domain.Runtime
             Def.FindMatchingCombinations(this, dragged);
 
         /// <summary>stack判定用の代表ObjectDef列を、現在のrepresented_byチェーンからスナップショットする。
-        /// 自分自身のObjectDefは呼び出し側（ObjectStack.Def）が既に持っているため含めず、代表の代表…だけを
-        /// 深さ順に並べる。</summary>
+        /// 先頭は自分自身のObjectDefで、続いて代表・代表の代表…を深さ順に並べる（外側オブジェクトも同種判定の
+        /// 対象に含める。例: 水入りボウルと水入り瓶は先頭のObjectDefが違うので別スタックになる）。
+        /// スナップショット作成時のみ列を組み立てる。合流判定の突き合わせはMatchesRepresentationが辿りながら
+        /// 行うため、候補側で毎回この列を作り直すことはしない。</summary>
         public IReadOnlyList<int> CaptureRepresentationChain()
         {
             var chain = new List<int>();
@@ -107,25 +109,34 @@ namespace UnmappedIsland.Domain.Runtime
             return chain;
         }
 
-        public bool HasRepresentationChain(IReadOnlyList<int> expected)
+        /// <summary>自分の代表チェーン（自分自身＋represented_by先…）が、スナップショット済みのexpectedと
+        /// 完全に一致するか。expectedと突き合わせながらチェーンを辿り、値の食い違い・長さ違いを見つけ次第
+        /// 打ち切る（合流判定は頻繁に呼ばれるため、候補側のList生成を伴わない）。</summary>
+        public bool MatchesRepresentation(IReadOnlyList<int> expected) =>
+            MatchRepresentationFrom(expected, 0) == expected.Count;
+
+        /// <summary>expected[index..]と、自分以下の代表チェーンを突き合わせる。一致した分だけ進めたindexを返し、
+        /// 途中で食い違う（値が違う／expectedが先に尽きる）と-1を返す。</summary>
+        private int MatchRepresentationFrom(IReadOnlyList<int> expected, int index)
         {
-            var actual = CaptureRepresentationChain();
-            if (actual.Count != expected.Count) return false;
-            for (int i = 0; i < actual.Count; i++)
-                if (actual[i] != expected[i]) return false;
-            return true;
+            if (index >= expected.Count || expected[index] != Def.GlobalId) return -1;
+            index++;
+
+            if (!Def.RepresentedBySlotGlobalId.HasValue) return index;
+            if (!TryGetSlot(Def.RepresentedBySlotGlobalId.Value, out Slot slot)) return index;
+
+            WorldObject represented = slot.Contents.FirstOrDefault();
+            return represented == null ? index : represented.MatchRepresentationFrom(expected, index);
         }
 
         private void AppendRepresentationChain(List<int> chain)
         {
+            chain.Add(Def.GlobalId);
             if (!Def.RepresentedBySlotGlobalId.HasValue) return;
             if (!TryGetSlot(Def.RepresentedBySlotGlobalId.Value, out Slot slot)) return;
 
             WorldObject represented = slot.Contents.FirstOrDefault();
-            if (represented == null) return;
-
-            chain.Add(represented.Def.GlobalId);
-            represented.AppendRepresentationChain(chain);
+            represented?.AppendRepresentationChain(chain);
         }
 
         /// <summary>
