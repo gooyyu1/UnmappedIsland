@@ -430,13 +430,13 @@
   </span>
   <a id="UnmappedIsland_Domain_Defs_ObjectDef_Passives_" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Passives*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ObjectDef_Passives" data-uid="UnmappedIsland.Domain.Defs.ObjectDef.Passives">Passives</h4>
-  <div class="markdown level1 summary"><p>このObjectDefが宣言する効果（8節）。target(self/parent/child)・kind(modify/accumulate)を
-問わず1つのリストで持つ。</p>
+  <div class="markdown level1 summary"><p>このObjectDefが宣言する持続効果（8節）の一式。target(self/parent/child)・kind(modify/accumulate)を
+問わずまとめて持つ。要素は外へ出さず、登録/解除の一括依頼だけを受ける（PassiveEffects参照）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IReadOnlyList&lt;PassiveEffect&gt; Passives { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public PassiveEffects Passives { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -448,7 +448,7 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1">IReadOnlyList</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffect.html">PassiveEffect</a>&gt;</td>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.PassiveEffects.html">PassiveEffects</a></td>
         <td></td>
       </tr>
     </tbody>

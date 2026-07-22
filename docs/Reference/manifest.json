@@ -250,6 +250,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.PassiveEffects.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.PassiveEffects.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.PassiveEffects",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffects.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する持続効果（8節）の一式。target(self/parent/child/ancestor)・\nkind(modify/accumulate)を問わず1つにまとめて持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffects.yml\" sourcestartlinenumber=\"4\">これらは常に「まとめて」扱われる——生成・エッジ形成/解消・トポロジ変化といった契機のたびに、\n全effectへ同じ登録/解除を依頼する——ため、要素リストを外へ見せず、まとめて依頼を受ける操作\n（RegisterRelation/RegisterChild）だけを公開する。呼び出し側（WorldObject）は個々のPassiveEffectを\nforeachで回す必要がなく、「この関係が変わったので登録/解除してほしい」と一式へ依頼するだけでよい\n（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml",
       "output": {
         ".html": {
@@ -470,7 +484,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.StackOrderDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"1\">同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（例: 劣化アイテムは寿命が短いものほど、\n液体容器は中身が少ないものほど「手前＝一番上に重なる」）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"4\">Ascendingは「プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか」を表す。「手前に重ねたい\nものほどリストの末尾に置く」という規約（Slot参照）のもとでは、寿命・残量など「小さいほど手前」に\nしたい値は Ascending=false（値が小さいものほど末尾）を指定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"8\">このObjectDefの新規インスタンスがスタックへ加わる際の並び位置決定にのみ使う（表示専用の概念）。\n一度並んだ後、値の変化に追従した再ソートは行わない（同種は同じ速度で変化する前提のため、\n挿入時点の相対順序がその後も保たれる、8.4節のaccumulateのような一定速度の変化を想定）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"1\">同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（例: 劣化アイテムは寿命が短いものほど、\n液体容器は中身が少ないものほど「手前＝一番上に重なる」）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"4\">ascendingは「プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか」を表す。「手前に重ねたい\nものほどリストの末尾に置く」という規約（Slot参照）のもとでは、寿命・残量など「小さいほど手前」に\nしたい値は ascending=false（値が小さいものほど末尾）を指定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"8\">このObjectDefの新規インスタンスがスタックへ加わる際の並び位置決定にのみ使う（表示専用の概念）。\n一度並んだ後、値の変化に追従した再ソートは行わない（同種は同じ速度で変化する前提のため、\n挿入時点の相対順序がその後も保たれる、8.4節のaccumulateのような一定速度の変化を想定）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"12\">「どのプロパティで・どちら向きに並べるか」はこの定義自身の内部事情なので外へ出さず、挿入位置を\n求める処理もこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
     },
     {
       "type": "ManagedReference",
