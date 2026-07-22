@@ -19,7 +19,9 @@ namespace UnmappedIsland.Domain.Runtime
         /// <summary>このスタックのアイデンティティ。seed自身のObjectDefを先頭に、represented_byで辿った
         /// 代表ObjectDef列が続く、このスタックが生まれた時点でのスナップショット。外側オブジェクトも含めて
         /// いるため、これ一つで「合流できる同種か」を完全に表す（別途Defを突き合わせる必要は無い）。
-        /// 加わった後の中身の変化を追って自動的に移し替えることはしない。</summary>
+        /// 生成後は書き換えず、合流判定の“動かない物差し”として固定する。メンバーの中身が変わってこの列に
+        /// 合致しなくなった場合に動くのは、そのメンバーの所属スタック（抜けて適切なスタックへ移る）であって、
+        /// この列ではない。</summary>
         public IReadOnlyList<int> RepresentationChain { get; }
 
         private readonly List<WorldObject> members;
