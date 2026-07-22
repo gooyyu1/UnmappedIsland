@@ -11,20 +11,13 @@ namespace UnmappedIsland.Domain.Runtime
     public sealed partial class WorldObject
     {
         /// <summary>
-        /// 親子関係が結ばれた瞬間に、双方の効果（modify/accumulate、8節）を相手側へ登録する。
-        /// target=Parent（自分の効果が親へ及ぶ、例: 防具の`passive.parent`）は親へ、
-        /// target=Child（親の効果が自分へ及ぶ）は自分へ登録する。target=Selfは各WorldObjectの
-        /// コンストラクタで既に登録済みのため、ここでは扱わない。kind(modify/accumulate)は登録先を
-        /// 選ぶ判断に一切影響しない（評価側でのみ区別される）。
+        /// 親子のエッジが形成/解消された契機を、双方の効果（modify/accumulate、8節）へ伝える（register=trueで登録、
+        /// falseで解除）。thisから見れば相手はParent（防具の`passive.parent`等。相手はowner自身から辿れるので渡さない）、
+        /// parentから見れば相手はChild（親の効果が子へ及ぶ。どの子かは一意に辿れないため、その子thisを明示的に渡す）。
+        /// target=Selfは各WorldObjectのコンストラクタで登録済みのため、ここでは扱わない。登録先の解決・登録/解除は
+        /// 効果自身が行い、kind(modify/accumulate)は登録先の選択に影響しない（評価側でのみ区別される）。
         /// </summary>
-        private void RegisterEdgeWith(WorldObject parent) => SyncEdgeWith(parent, register: true);
-
-        private void UnregisterEdgeWith(WorldObject parent) => SyncEdgeWith(parent, register: false);
-
-        /// <summary>thisとparentのエッジが形成/解消された契機を、双方の持続効果へ伝える。thisから見れば
-        /// 相手はParent（相手はowner自身から辿れるので渡さない）、parentから見れば相手はChild（どの子かは
-        /// 一意に辿れないため、その子thisをRegisterChildへ明示的に渡す）。登録先の解決・登録/解除は効果自身が行う。</summary>
-        private void SyncEdgeWith(WorldObject parent, bool register)
+        private void RegisterEdgeWith(WorldObject parent, bool register)
         {
             Def.Passives.RegisterRelation(this, ReferenceRoot.Parent, register);
             parent.Def.Passives.RegisterChild(parent, this, register);
@@ -37,13 +30,13 @@ namespace UnmappedIsland.Domain.Runtime
         /// 子孫について、Target=Ancestorのpassivesを現在の祖先へ登録/解除する。トポロジ変化前に解除・変化後に
         /// 登録する順序を守ることで、いずれの時点でも祖先はownerから辿れ、前回の登録先を憶える必要がない。
         /// </summary>
-        private void SyncAncestorTargetedRecursively(bool register)
+        private void RegisterAncestorTargetedRecursively(bool register)
         {
             Def.Passives.RegisterRelation(this, ReferenceRoot.Ancestor, register);
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())
-                    child.SyncAncestorTargetedRecursively(register);
+                    child.RegisterAncestorTargetedRecursively(register);
         }
 
         /// <summary>グローバルプロパティIDで指す対象プロパティのincomingへ、登録済み効果1件を登録する

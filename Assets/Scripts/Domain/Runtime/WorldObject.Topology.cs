@@ -77,10 +77,10 @@ namespace UnmappedIsland.Domain.Runtime
 
             SetParent(newParent, localSlot);
             newParent.PropagateWeightChange(localSlot, GetNumber(wellKnown.WeightId), wellKnown);
-            RegisterEdgeWith(newParent);
+            RegisterEdgeWith(newParent, register: true);
             // トポロジが変わった後（新しい親チェーンが確定した後）に、祖先対象の登録を（this＋子孫について）
             // 現在の祖先へ登録する。DetachFromParentでの解除と対になり、Refresh（前回の登録先の記憶）が要らない。
-            SyncAncestorTargetedRecursively(register: true);
+            RegisterAncestorTargetedRecursively(register: true);
 
             // 入ったスロットが newParent の represented_by 先なら、newParent の代表チェーンが変わった。
             // newParent 自身のスタック所属を再判定させ、必要なら上位へ連鎖させる（OnRepresentationChanged）。
@@ -107,12 +107,12 @@ namespace UnmappedIsland.Domain.Runtime
             // トポロジが変わる前に、祖先対象の登録を（this＋子孫について）現在の祖先から解除しておく。
             // 変わる前なので旧祖先はまだownerから辿れ、変わった後に再登録するため「前回どこへ登録したか」を
             // 憶えておく必要がない（再登録はAttachToSlot側、または破棄ならそもそも不要）。
-            SyncAncestorTargetedRecursively(register: false);
+            RegisterAncestorTargetedRecursively(register: false);
 
             int oldParentSlotLocalId = ParentSlotLocalId;
             oldParent.GetSlotByLocalId(oldParentSlotLocalId).RemoveInternal(this);
             oldParent.PropagateWeightChange(oldParentSlotLocalId, -GetNumber(wellKnown.WeightId), wellKnown);
-            UnregisterEdgeWith(oldParent);
+            RegisterEdgeWith(oldParent, register: false);
             SetParent(null, LocalIndexMap.Missing);
 
             // 抜けたスロットが oldParent の represented_by 先なら、oldParent の代表チェーンが変わった。
