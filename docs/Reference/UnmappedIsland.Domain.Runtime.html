@@ -124,12 +124,9 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
 <p>中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></h4>
-      <section><p>実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、
-&quot;Object&quot;（言語組み込みの System.Object 等と衝突する）や汎用OOP用語の &quot;Instance&quot; を避けて命名している。</p>
-<p>プロパティの現在値・スロットの中身は、いずれも Def 側のローカルIDをそのままindexとする
-密配列として保持する（グローバルIDでの辞書引きは行わない）。プロパティへ登録された効果
-（modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため
-PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。</p>
+      <section><p>WorldObject の一部（能動効果 set/add/destroy/spawn/transfer・actions/combinations・tick）。
+効果の適用入口（ApplyActiveEffect）と対象解決、same_slot spawn の位置捕捉（EffectSite）・配置（Place）を持つ。
+値の変更そのものは対象の PropertyValue へ、条件判定・抽選は Def 側の効果へ委ねる。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></h4>
       <section><p>実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態

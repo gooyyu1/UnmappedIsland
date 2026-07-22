@@ -4439,12 +4439,31 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.PropagateWeightChange
   nameWithType: WorldObject.PropagateWeightChange
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject)
-  name: RegisterEdgeWith(WorldObject)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RegisterEdgeWith_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: WorldObject.RegisterEdgeWith(WorldObject)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.RegisterAncestorTargetedRecursively(System.Boolean)
+  name: RegisterAncestorTargetedRecursively(bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RegisterAncestorTargetedRecursively_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.RegisterAncestorTargetedRecursively(System.Boolean)
+  name.vb: RegisterAncestorTargetedRecursively(Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RegisterAncestorTargetedRecursively(bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.RegisterAncestorTargetedRecursively(Boolean)
+  nameWithType: WorldObject.RegisterAncestorTargetedRecursively(bool)
+  nameWithType.vb: WorldObject.RegisterAncestorTargetedRecursively(Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.RegisterAncestorTargetedRecursively*
+  name: RegisterAncestorTargetedRecursively
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RegisterAncestorTargetedRecursively_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.RegisterAncestorTargetedRecursively
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RegisterAncestorTargetedRecursively
+  nameWithType: WorldObject.RegisterAncestorTargetedRecursively
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name: RegisterEdgeWith(WorldObject, bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RegisterEdgeWith_UnmappedIsland_Domain_Runtime_WorldObject_System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
+  name.vb: RegisterEdgeWith(WorldObject, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject, Boolean)
+  nameWithType: WorldObject.RegisterEdgeWith(WorldObject, bool)
+  nameWithType.vb: WorldObject.RegisterEdgeWith(WorldObject, Boolean)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.RegisterEdgeWith*
   name: RegisterEdgeWith
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_RegisterEdgeWith_
@@ -4595,38 +4614,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.SetProperty
   nameWithType: WorldObject.SetProperty
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(System.Boolean)
-  name: SyncAncestorTargetedRecursively(bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncAncestorTargetedRecursively_System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(System.Boolean)
-  name.vb: SyncAncestorTargetedRecursively(Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively(Boolean)
-  nameWithType: WorldObject.SyncAncestorTargetedRecursively(bool)
-  nameWithType.vb: WorldObject.SyncAncestorTargetedRecursively(Boolean)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively*
-  name: SyncAncestorTargetedRecursively
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncAncestorTargetedRecursively_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncAncestorTargetedRecursively
-  nameWithType: WorldObject.SyncAncestorTargetedRecursively
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
-  name: SyncEdgeWith(WorldObject, bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncEdgeWith_UnmappedIsland_Domain_Runtime_WorldObject_System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)
-  name.vb: SyncEdgeWith(WorldObject, Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject, bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject, Boolean)
-  nameWithType: WorldObject.SyncEdgeWith(WorldObject, bool)
-  nameWithType.vb: WorldObject.SyncEdgeWith(WorldObject, Boolean)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith*
-  name: SyncEdgeWith
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SyncEdgeWith_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SyncEdgeWith
-  nameWithType: WorldObject.SyncEdgeWith
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.Tick(UnmappedIsland.Domain.Runtime.WorldSession)
   name: Tick(WorldSession)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_Tick_UnmappedIsland_Domain_Runtime_WorldSession_
@@ -4720,19 +4707,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.TryGetSlot
   nameWithType: WorldObject.TryGetSlot
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.UnregisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject)
-  name: UnregisterEdgeWith(WorldObject)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_UnregisterEdgeWith_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.UnregisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.UnregisterEdgeWith(UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: WorldObject.UnregisterEdgeWith(WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.UnregisterEdgeWith*
-  name: UnregisterEdgeWith
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_UnregisterEdgeWith_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.UnregisterEdgeWith
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.UnregisterEdgeWith
-  nameWithType: WorldObject.UnregisterEdgeWith
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.UnregisterPassiveEffectsFrom(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
   name: UnregisterPassiveEffectsFrom(WorldObject, int)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_UnregisterPassiveEffectsFrom_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_

@@ -316,7 +316,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PropertyPath",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyPath.yml\" sourcestartlinenumber=\"1\">{object, prop}が指す、1階層のプロパティ参照。weightのpath参照（10.2節）で使う。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyPath.yml\" sourcestartlinenumber=\"1\">{object, prop}が指す、1階層のプロパティ参照（ReferenceRoot＋プロパティのグローバルID）。\nweightのpath参照（10.2節）・conditionsのvalueRef（14節）・activeのvalueRefが共有する\n（いずれも「リテラルか参照か」の二択の『参照』側）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -358,7 +358,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ReferenceRoot",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRoot.yml\" sourcestartlinenumber=\"1\">conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）が共通で参照する\n起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層のパスは現状の用例に\n存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため、\n起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが「見つからなければ\nworldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRoot.yml\" sourcestartlinenumber=\"1\">conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の\n対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層の\nパスは現状の用例に存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する\n仕組みがまだ無いため、起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが\n「見つからなければworldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -372,7 +372,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ReferenceRootResolver",
-      "Summary": null
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRootResolver.yml\" sourcestartlinenumber=\"1\">ReferenceRoot（self/parent/actor/dragged/dragged_parent）を、実行時のWorldObjectへ解決する。\nAncestorはプロパティごとに解決先が変わりうるため、ここでは扱わず各利用側がFindAncestorWithPropertyを\n併用する（default→null）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -708,7 +708,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.WorldObject",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.yml\" sourcestartlinenumber=\"1\">実行時のオブジェクト実体（ObjectDef のインスタンス）。WorldCodex 全体の呼称に合わせ、\n&quot;Object&quot;（言語組み込みの System.Object 等と衝突する）や汎用OOP用語の &quot;Instance&quot; を避けて命名している。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.yml\" sourcestartlinenumber=\"4\">プロパティの現在値・スロットの中身は、いずれも Def 側のローカルIDをそのままindexとする\n密配列として保持する（グローバルIDでの辞書引きは行わない）。プロパティへ登録された効果\n（modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため\nPropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.yml\" sourcestartlinenumber=\"1\">WorldObject の一部（能動効果 set/add/destroy/spawn/transfer・actions/combinations・tick）。\n効果の適用入口（ApplyActiveEffect）と対象解決、same_slot spawn の位置捕捉（EffectSite）・配置（Place）を持つ。\n値の変更そのものは対象の PropertyValue へ、条件判定・抽選は Def 側の効果へ委ねる。</p>\n"
     },
     {
       "type": "ManagedReference",
