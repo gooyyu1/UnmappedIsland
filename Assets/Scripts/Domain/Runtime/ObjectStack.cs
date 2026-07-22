@@ -19,22 +19,22 @@ namespace UnmappedIsland.Domain.Runtime
         /// いるため、これ一つで「合流できる同種か」を完全に表す（別途Defを突き合わせる必要は無い）。
         /// 生成後は書き換えず、合流判定の“動かない物差し”として固定する。メンバーの中身が変わってこの列に
         /// 合致しなくなった場合に動くのは、そのメンバーの所属スタック（抜けて適切なスタックへ移る）であって、
-        /// この列ではない。</summary>
-        public IReadOnlyList<int> RepresentationChain { get; }
+        /// この列ではない。合流判定(Matches)でのみ使う内部状態なので外へは見せない。</summary>
+        private readonly IReadOnlyList<int> representationChain;
 
         private readonly List<WorldObject> members;
         public IReadOnlyList<WorldObject> Members => members;
 
         public ObjectStack(WorldObject seed)
         {
-            RepresentationChain = seed.CaptureRepresentationChain();
+            representationChain = seed.CaptureRepresentationChain();
             members = new List<WorldObject> { seed };
         }
 
         /// <summary>candidateがこのObjectStackへ合流できるか。自分自身＋代表ObjectDef列（RepresentationChain）が
         /// 完全に一致するかを、candidate自身に辿らせて判定する（外側オブジェクトも先頭要素として含まれる）。</summary>
         public bool Matches(WorldObject candidate) =>
-            candidate.MatchesRepresentation(RepresentationChain);
+            candidate.MatchesRepresentation(representationChain);
 
         /// <summary>
         /// objがこのスタックへ合流できる（Matches: ObjectDef・代表ObjectDef列が一致）場合のみ、
