@@ -2856,15 +2856,6 @@ references:
   commentId: T:UnmappedIsland.Domain.Runtime.ObjectStack
   fullName: UnmappedIsland.Domain.Runtime.ObjectStack
   nameWithType: ObjectStack
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.#ctor(UnmappedIsland.Domain.Defs.ObjectDef,System.Collections.Generic.IReadOnlyList{System.Int32},System.Collections.Generic.List{UnmappedIsland.Domain.Runtime.WorldObject})
-  name: ObjectStack(ObjectDef, IReadOnlyList<int>, List<WorldObject>)
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack__ctor_UnmappedIsland_Domain_Defs_ObjectDef_System_Collections_Generic_IReadOnlyList_System_Int32__System_Collections_Generic_List_UnmappedIsland_Domain_Runtime_WorldObject__
-  commentId: M:UnmappedIsland.Domain.Runtime.ObjectStack.#ctor(UnmappedIsland.Domain.Defs.ObjectDef,System.Collections.Generic.IReadOnlyList{System.Int32},System.Collections.Generic.List{UnmappedIsland.Domain.Runtime.WorldObject})
-  name.vb: New(ObjectDef, IReadOnlyList(Of Integer), List(Of WorldObject))
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.ObjectStack(UnmappedIsland.Domain.Defs.ObjectDef, System.Collections.Generic.IReadOnlyList<int>, System.Collections.Generic.List<UnmappedIsland.Domain.Runtime.WorldObject>)
-  fullName.vb: UnmappedIsland.Domain.Runtime.ObjectStack.New(UnmappedIsland.Domain.Defs.ObjectDef, System.Collections.Generic.IReadOnlyList(Of Integer), System.Collections.Generic.List(Of UnmappedIsland.Domain.Runtime.WorldObject))
-  nameWithType: ObjectStack.ObjectStack(ObjectDef, IReadOnlyList<int>, List<WorldObject>)
-  nameWithType.vb: ObjectStack.New(ObjectDef, IReadOnlyList(Of Integer), List(Of WorldObject))
 - uid: UnmappedIsland.Domain.Runtime.ObjectStack.#ctor(UnmappedIsland.Domain.Runtime.WorldObject)
   name: ObjectStack(WorldObject)
   href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack__ctor_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -2923,19 +2914,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.ObjectStack.GridIndex
   nameWithType: ObjectStack.GridIndex
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.IndexOf(UnmappedIsland.Domain.Runtime.WorldObject)
-  name: IndexOf(WorldObject)
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_IndexOf_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.ObjectStack.IndexOf(UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.IndexOf(UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: ObjectStack.IndexOf(WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.IndexOf*
-  name: IndexOf
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_IndexOf_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ObjectStack.IndexOf
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.IndexOf
-  nameWithType: ObjectStack.IndexOf
 - uid: UnmappedIsland.Domain.Runtime.ObjectStack.Matches(UnmappedIsland.Domain.Runtime.WorldObject)
   name: Matches(WorldObject)
   href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_Matches_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -2988,22 +2966,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.ObjectStack.RepresentationChain
   nameWithType: ObjectStack.RepresentationChain
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.Split(System.Int32)
-  name: Split(int)
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_Split_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.ObjectStack.Split(System.Int32)
-  name.vb: Split(Integer)
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.Split(int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.ObjectStack.Split(Integer)
-  nameWithType: ObjectStack.Split(int)
-  nameWithType.vb: ObjectStack.Split(Integer)
-- uid: UnmappedIsland.Domain.Runtime.ObjectStack.Split*
-  name: Split
-  href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_Split_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.ObjectStack.Split
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.ObjectStack.Split
-  nameWithType: ObjectStack.Split
 - uid: UnmappedIsland.Domain.Runtime.ObjectStack.TryInsert(UnmappedIsland.Domain.Runtime.WorldObject)
   name: TryInsert(WorldObject)
   href: UnmappedIsland.Domain.Runtime.ObjectStack.html#UnmappedIsland_Domain_Runtime_ObjectStack_TryInsert_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -3562,22 +3524,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.Slot.IndexOfStack
   nameWithType: Slot.IndexOfStack
-- uid: UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,System.Boolean)
-  name: InsertAtCapturedPosition(WorldObject, int, int, bool)
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertAtCapturedPosition_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,System.Boolean)
-  name.vb: InsertAtCapturedPosition(WorldObject, Integer, Integer, Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition(UnmappedIsland.Domain.Runtime.WorldObject, int, int, bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer, Boolean)
-  nameWithType: Slot.InsertAtCapturedPosition(WorldObject, int, int, bool)
-  nameWithType.vb: Slot.InsertAtCapturedPosition(WorldObject, Integer, Integer, Boolean)
-- uid: UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition*
-  name: InsertAtCapturedPosition
-  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertAtCapturedPosition_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertAtCapturedPosition
-  nameWithType: Slot.InsertAtCapturedPosition
 - uid: UnmappedIsland.Domain.Runtime.Slot.InsertNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)
   name: InsertNewStack(ObjectStack)
   href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertNewStack_UnmappedIsland_Domain_Runtime_ObjectStack_
@@ -3591,6 +3537,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.Slot.InsertNewStack
   nameWithType: Slot.InsertNewStack
+- uid: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
+  name: InsertNewStackAt(WorldObject, int)
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertNewStackAt_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)
+  name.vb: InsertNewStackAt(WorldObject, Integer)
+  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject, int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt(UnmappedIsland.Domain.Runtime.WorldObject, Integer)
+  nameWithType: Slot.InsertNewStackAt(WorldObject, int)
+  nameWithType.vb: Slot.InsertNewStackAt(WorldObject, Integer)
+- uid: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt*
+  name: InsertNewStackAt
+  href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_InsertNewStackAt_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.Slot.InsertNewStackAt
+  nameWithType: Slot.InsertNewStackAt
 - uid: UnmappedIsland.Domain.Runtime.Slot.RemoveInternal(UnmappedIsland.Domain.Runtime.WorldObject)
   name: RemoveInternal(WorldObject)
   href: UnmappedIsland.Domain.Runtime.Slot.html#UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -4022,15 +3984,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ApplyActiveEffect
   nameWithType: WorldObject.ApplyActiveEffect
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name: AttachToSlot(WorldObject, int, CapturedPosition?, WellKnownProperties, out string, bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AttachToSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition__UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name.vb: AttachToSlot(WorldObject, Integer, CapturedPosition?, WellKnownProperties, String, Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, int, UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition?, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, Integer, UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition?, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
-  nameWithType: WorldObject.AttachToSlot(WorldObject, int, WorldObject.CapturedPosition?, WellKnownProperties, out string, bool)
-  nameWithType.vb: WorldObject.AttachToSlot(WorldObject, Integer, WorldObject.CapturedPosition?, WellKnownProperties, String, Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{System.Int32},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name: AttachToSlot(WorldObject, int, int?, WellKnownProperties, out string, bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AttachToSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Nullable_System_Int32__UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Nullable{System.Int32},UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name.vb: AttachToSlot(WorldObject, Integer, Integer?, WellKnownProperties, String, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, int, int?, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer?, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
+  nameWithType: WorldObject.AttachToSlot(WorldObject, int, int?, WellKnownProperties, out string, bool)
+  nameWithType.vb: WorldObject.AttachToSlot(WorldObject, Integer, Integer?, WellKnownProperties, String, Boolean)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot*
   name: AttachToSlot
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AttachToSlot_
@@ -4064,49 +4026,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.CaptureRepresentationChain
   nameWithType: WorldObject.CaptureRepresentationChain
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition
-  name: WorldObject.CapturedPosition
-  href: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html
-  commentId: T:UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition
-  nameWithType: WorldObject.CapturedPosition
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.#ctor(System.Int32,System.Int32,System.Boolean)
-  name: CapturedPosition(int, int, bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html#UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition__ctor_System_Int32_System_Int32_System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.#ctor(System.Int32,System.Int32,System.Boolean)
-  name.vb: New(Integer, Integer, Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.CapturedPosition(int, int, bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.New(Integer, Integer, Boolean)
-  nameWithType: WorldObject.CapturedPosition.CapturedPosition(int, int, bool)
-  nameWithType.vb: WorldObject.CapturedPosition.New(Integer, Integer, Boolean)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.#ctor*
-  name: CapturedPosition
-  href: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html#UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition__ctor_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.#ctor
-  isSpec: "True"
-  name.vb: New
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.CapturedPosition
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.New
-  nameWithType: WorldObject.CapturedPosition.CapturedPosition
-  nameWithType.vb: WorldObject.CapturedPosition.New
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.MemberIndex
-  name: MemberIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html#UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition_MemberIndex
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.MemberIndex
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.MemberIndex
-  nameWithType: WorldObject.CapturedPosition.MemberIndex
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.StackIndex
-  name: StackIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html#UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition_StackIndex
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.StackIndex
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.StackIndex
-  nameWithType: WorldObject.CapturedPosition.StackIndex
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.StackWasVacated
-  name: StackWasVacated
-  href: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html#UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition_StackWasVacated
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.StackWasVacated
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.StackWasVacated
-  nameWithType: WorldObject.CapturedPosition.StackWasVacated
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.CopySharedPropertiesTo(UnmappedIsland.Domain.Runtime.WorldObject)
   name: CopySharedPropertiesTo(WorldObject)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_CopySharedPropertiesTo_UnmappedIsland_Domain_Runtime_WorldObject_
@@ -4165,15 +4084,15 @@ references:
   commentId: T:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite
   nameWithType: WorldObject.EffectSite
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
-  name: EffectSite(WorldObject, int, ObjectStack, WorldObject, int, int)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_ObjectStack_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
-  name.vb: New(WorldObject, Integer, ObjectStack, WorldObject, Integer, Integer)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.EffectSite(UnmappedIsland.Domain.Runtime.WorldObject, int, UnmappedIsland.Domain.Runtime.ObjectStack, UnmappedIsland.Domain.Runtime.WorldObject, int, int)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.New(UnmappedIsland.Domain.Runtime.WorldObject, Integer, UnmappedIsland.Domain.Runtime.ObjectStack, UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer)
-  nameWithType: WorldObject.EffectSite.EffectSite(WorldObject, int, ObjectStack, WorldObject, int, int)
-  nameWithType.vb: WorldObject.EffectSite.New(WorldObject, Integer, ObjectStack, WorldObject, Integer, Integer)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,System.Int32)
+  name: EffectSite(WorldObject, int, ObjectStack, int)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_ObjectStack_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,System.Int32)
+  name.vb: New(WorldObject, Integer, ObjectStack, Integer)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.EffectSite(UnmappedIsland.Domain.Runtime.WorldObject, int, UnmappedIsland.Domain.Runtime.ObjectStack, int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.New(UnmappedIsland.Domain.Runtime.WorldObject, Integer, UnmappedIsland.Domain.Runtime.ObjectStack, Integer)
+  nameWithType: WorldObject.EffectSite.EffectSite(WorldObject, int, ObjectStack, int)
+  nameWithType.vb: WorldObject.EffectSite.New(WorldObject, Integer, ObjectStack, Integer)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor*
   name: EffectSite
   href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_
@@ -4222,31 +4141,19 @@ references:
   commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId
   nameWithType: WorldObject.EffectSite.ParentSlotLocalId
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)
-  name: ResolveInsertPosition(Slot)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertPosition_UnmappedIsland_Domain_Runtime_Slot_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)
-  nameWithType: WorldObject.EffectSite.ResolveInsertPosition(Slot)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition*
-  name: ResolveInsertPosition
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertPosition_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex(UnmappedIsland.Domain.Runtime.Slot)
+  name: ResolveInsertStackIndex(Slot)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertStackIndex_UnmappedIsland_Domain_Runtime_Slot_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex(UnmappedIsland.Domain.Runtime.Slot)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex(UnmappedIsland.Domain.Runtime.Slot)
+  nameWithType: WorldObject.EffectSite.ResolveInsertStackIndex(Slot)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex*
+  name: ResolveInsertStackIndex
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertStackIndex_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition
-  nameWithType: WorldObject.EffectSite.ResolveInsertPosition
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture
-  name: memberIndexAtCapture
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_memberIndexAtCapture
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture
-  nameWithType: WorldObject.EffectSite.memberIndexAtCapture
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin
-  name: origin
-  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_origin
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin
-  nameWithType: WorldObject.EffectSite.origin
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertStackIndex
+  nameWithType: WorldObject.EffectSite.ResolveInsertStackIndex
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack
   name: originStack
   href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_originStack
@@ -4381,22 +4288,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.HasRepresentationChain
   nameWithType: WorldObject.HasRepresentationChain
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtIndex(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name: InsertAtIndex(WorldObject, int, CapturedPosition, WellKnownProperties, out string, bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertAtIndex_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_WorldObject_CapturedPosition_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.InsertAtIndex(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
-  name.vb: InsertAtIndex(WorldObject, Integer, CapturedPosition, WellKnownProperties, String, Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtIndex(UnmappedIsland.Domain.Runtime.WorldObject, int, UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtIndex(UnmappedIsland.Domain.Runtime.WorldObject, Integer, UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
-  nameWithType: WorldObject.InsertAtIndex(WorldObject, int, WorldObject.CapturedPosition, WellKnownProperties, out string, bool)
-  nameWithType.vb: WorldObject.InsertAtIndex(WorldObject, Integer, WorldObject.CapturedPosition, WellKnownProperties, String, Boolean)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtIndex*
-  name: InsertAtIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertAtIndex_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.InsertAtIndex
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name: InsertAtStackIndex(WorldObject, int, int, WellKnownProperties, out string, bool)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertAtStackIndex_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String__System_Boolean_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String@,System.Boolean)
+  name.vb: InsertAtStackIndex(WorldObject, Integer, Integer, WellKnownProperties, String, Boolean)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject, int, int, UnmappedIsland.Domain.Defs.WellKnownProperties, out string, bool)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer, UnmappedIsland.Domain.Defs.WellKnownProperties, String, Boolean)
+  nameWithType: WorldObject.InsertAtStackIndex(WorldObject, int, int, WellKnownProperties, out string, bool)
+  nameWithType.vb: WorldObject.InsertAtStackIndex(WorldObject, Integer, Integer, WellKnownProperties, String, Boolean)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex*
+  name: InsertAtStackIndex
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InsertAtStackIndex_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex
   isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtIndex
-  nameWithType: WorldObject.InsertAtIndex
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.InsertAtStackIndex
+  nameWithType: WorldObject.InsertAtStackIndex
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.InstanceId
   name: InstanceId
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_InstanceId

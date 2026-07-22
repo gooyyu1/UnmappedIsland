@@ -656,20 +656,6 @@
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.yml\" sourcestartlinenumber=\"1\">same_slot（非FixedPositions）専用。EffectSite.ResolveInsertPositionが配置時のスロット\nの状態から決めた挿入位置＝元居たObjectStackの外側position(StackIndex)・その中でのメンバー位置\n(MemberIndex)・そのObjectStackが除去済みか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml",
       "output": {
         ".html": {

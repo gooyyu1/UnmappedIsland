@@ -135,11 +135,6 @@ PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAP
     <h3 id="structs">
 Structs
 </h3>
-      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html">WorldObject.CapturedPosition</a></h4>
-      <section><p>same_slot（非FixedPositions）専用。EffectSite.ResolveInsertPositionが配置時のスロット
-の状態から決めた挿入位置＝元居たObjectStackの外側position(StackIndex)・その中でのメンバー位置
-(MemberIndex)・そのObjectStackが除去済みか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>
-</section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html">WorldObject.EffectSite</a></h4>
       <section><p>active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した
 スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。
