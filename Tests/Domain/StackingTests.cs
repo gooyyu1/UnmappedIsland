@@ -99,7 +99,7 @@ object_defs:
             rock1.MoveToSlot(groundInstance, pileSlotId, codex.WellKnown, out _);
 
             groundInstance.TryGetSlot(pileSlotId, out Slot pile);
-            var stacks = pile.GetStacks();
+            var stacks = pile.Cells;
 
             Assert.That(stacks.Count, Is.EqualTo(2));
             Assert.That(stacks[0].Def.Name, Is.EqualTo("wood"));

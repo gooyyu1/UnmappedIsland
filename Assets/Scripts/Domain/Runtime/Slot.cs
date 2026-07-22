@@ -28,8 +28,10 @@ namespace UnmappedIsland.Domain.Runtime
 
         private IEnumerable<ObjectStack> LiveStacks => cells.Where(c => c != null);
 
-        /// <summary>実在するスタックだけ（空セルnullを除く）。位置は GetGridIndex / IndexOfStack で別途得る。</summary>
-        public IReadOnlyList<ObjectStack> Stacks => LiveStacks.ToList();
+        /// <summary>セルの並びそのもの（空セルは null）。位置＝添字。FixedPositionsでは空セルnullを含んだまま
+        /// 番号が安定し、非FixedPositionsでは前詰め済みなのでnullを含まない。「実在スタックだけを位置無視で
+        /// 並べたい」用途は無いため、そのようなビュー（旧Stacks）は提供しない。位置と一緒に扱うのが前提。</summary>
+        public IReadOnlyList<ObjectStack> Cells => cells.ToList();
 
         /// <summary>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。スタックの概念に興味が無い
         /// 呼び出し側（タグ判定・重さ集計・子の一括走査など、ほとんどが内部処理）はこちらを使う。</summary>
@@ -212,7 +214,7 @@ namespace UnmappedIsland.Domain.Runtime
 
         /// <summary>型globalIdに対応するObjectStackの位置（＝FixedPositionsの固定番号、無ければnull）。
         /// represented_byを使わないObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。
-        /// represented_byを使うObjectDefは、GetStacks + IndexOfStack で具体的なスタックから辿ること。</summary>
+        /// represented_byを使うObjectDefは、Cells + IndexOfStack で具体的なスタックから辿ること。</summary>
         public int? GetGridIndex(int objectDefGlobalId)
         {
             int i = cells.FindIndex(c => c != null && c.Def.GlobalId == objectDefGlobalId);
@@ -236,8 +238,5 @@ namespace UnmappedIsland.Domain.Runtime
             cells[cur] = tmp;
             return true;
         }
-
-        /// <summary>表示用: このスロットが持つ実在スタックの一覧（空セルは含まない）。</summary>
-        public IReadOnlyList<ObjectStack> GetStacks() => Stacks;
     }
 }

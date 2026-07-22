@@ -72,7 +72,7 @@ object_defs:
             waterJug.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
 
             bag.TryGetSlot(pileSlotId, out Slot pile);
-            var stacks = pile.GetStacks();
+            var stacks = pile.Cells;
 
             Assert.That(stacks.Count, Is.EqualTo(2), "同じjugでも represented_by 先のObjectDefが違えば別スタックになる");
             Assert.That(stacks[0].Members.Count, Is.EqualTo(2));
@@ -137,7 +137,7 @@ object_defs:
             bottle3.MoveToSlot(bag, pileSlotId, codex.WellKnown, out _);
 
             bag.TryGetSlot(pileSlotId, out Slot pile);
-            var stacks = pile.GetStacks();
+            var stacks = pile.Cells;
 
             Assert.That(stacks.Count, Is.EqualTo(2), "代表の代表まで同じときだけ同じスタックにまとまる");
             Assert.That(stacks[0].Members.Count, Is.EqualTo(2));
@@ -179,7 +179,8 @@ object_defs:
             waterJug.MoveToSlot(hand, handSlotId, codex.WellKnown, out _);
 
             hand.TryGetSlot(handSlotId, out Slot handSlot);
-            var stacks = handSlot.GetStacks();
+            // FixedPositionsなのでCellsには空セル(null)も含まれる。実在スタックだけを見るためnullを除く。
+            var stacks = handSlot.Cells.Where(c => c != null).ToList();
 
             Assert.That(stacks.Count, Is.EqualTo(2));
             Assert.That(stacks.Select(s => handSlot.IndexOfStack(s)), Is.EquivalentTo(new[] { 0, 1 }));
