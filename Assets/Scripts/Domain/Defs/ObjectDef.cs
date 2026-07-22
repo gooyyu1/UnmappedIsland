@@ -34,9 +34,9 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>ローカルindexで並ぶ密配列。SlotLayout と対になる。</summary>
         private readonly IReadOnlyList<SlotDef> slotDefs;
 
-        /// <summary>このObjectDefが宣言する効果（8節）。target(self/parent/child)・kind(modify/accumulate)を
-        /// 問わず1つのリストで持つ。</summary>
-        public IReadOnlyList<PassiveEffect> Passives { get; }
+        /// <summary>このObjectDefが宣言する持続効果（8節）の一式。target(self/parent/child)・kind(modify/accumulate)を
+        /// 問わずまとめて持つ。要素は外へ出さず、登録/解除の一括依頼だけを受ける（PassiveEffects参照）。</summary>
+        public PassiveEffects Passives { get; }
 
         /// <summary>スタック内での並び順（表示専用）。null なら並び順は未定義で、常にスタックの末尾へ
         /// 追加される（新規インスタンス同士の相対順序＝挿入順）。</summary>
@@ -96,7 +96,7 @@ namespace UnmappedIsland.Domain.Defs
             this.propertyDefs = propertyDefs;
             SlotLayout = slotLayout;
             this.slotDefs = slotDefs;
-            Passives = passives;
+            Passives = new PassiveEffects(passives);
             StackOrder = stackOrder;
             Tags = tags ?? Array.Empty<int>();
             Actions = actions ?? Array.Empty<ActionDef>();

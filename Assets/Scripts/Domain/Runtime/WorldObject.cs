@@ -48,8 +48,7 @@ namespace UnmappedIsland.Domain.Runtime
             // 生成時はまだトポロジが無いため、自分自身との関係（Self）だけを伝える。相手はowner自身なので
             // 渡さない（効果がSelfのときだけ自分自身へ登録する）。Parent/Child/AncestorはMoveToSlot以降の
             // エッジ形成/祖先再解決で登録される。
-            foreach (var c in def.Passives)
-                c.RegisterRelation(this, ReferenceRoot.Self, register: true);
+            def.Passives.RegisterRelation(this, ReferenceRoot.Self, register: true);
         }
 
         public bool TryGetProperty(int globalPropertyId, out PropertyValue value)
@@ -369,11 +368,8 @@ namespace UnmappedIsland.Domain.Runtime
         /// 一意に辿れないため、その子thisをRegisterChildへ明示的に渡す）。登録先の解決・登録/解除は効果自身が行う。</summary>
         private void SyncEdgeWith(WorldObject parent, bool register)
         {
-            foreach (var c in Def.Passives)
-                c.RegisterRelation(this, ReferenceRoot.Parent, register);
-
-            foreach (var c in parent.Def.Passives)
-                c.RegisterChild(parent, this, register);
+            Def.Passives.RegisterRelation(this, ReferenceRoot.Parent, register);
+            parent.Def.Passives.RegisterChild(parent, this, register);
         }
 
         /// <summary>
@@ -403,8 +399,7 @@ namespace UnmappedIsland.Domain.Runtime
         /// </summary>
         private void SyncAncestorTargetedRecursively(bool register)
         {
-            foreach (var c in Def.Passives)
-                c.RegisterRelation(this, ReferenceRoot.Ancestor, register);
+            Def.Passives.RegisterRelation(this, ReferenceRoot.Ancestor, register);
 
             foreach (var slot in slots)
                 foreach (var child in slot.Contents.ToArray())
