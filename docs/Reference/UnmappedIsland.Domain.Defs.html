@@ -100,9 +100,10 @@ accumulate用incomingへ登録され、WorldObject.Tickが走査する。</p>
 <p>これらはすべて同じApplyで適用でき、activeとpickが排他であること（どちらか一方のみ）も、
 「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は
 このActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。</p>
-<p>contextは1回の適用（最上位のApply1回）で共有される。same_slot spawnが必要とする「destroyで
-失われる前のselfの位置」を、destroy側とspawn側が同じcontextを通して受け渡すために使う（それ以外の
-効果は無視してよい）。</p>
+<p>effectSiteは、この最上位の適用の入口(WorldObject.ApplyActiveEffect)で先に捕捉した「selfが今
+占めている位置」のスナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ
+同種を保持しているか」を配置時に見て置き換え位置を決める（それ以外の効果は無視してよい）。効果の
+ツリー（合成ActiveEffects・pick）を素通しで伝わるだけなので、destroyが何かを書き込む必要はない。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.ActiveEffects.html">ActiveEffects</a></h4>
       <section><p>一時的な命令の内容（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>、9節）を宣言順にまとめた合成効果。
@@ -133,9 +134,10 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.DestroyEffect.html">DestroyEffect</a></h4>
       <section><p>destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code>destroy: self</code>は要素1つ、
-<code>destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。対象がselfの場合、削除で位置が
-失われる前に、same_slot spawnのための位置アンカーをcontextへ捕捉させてから削除する
-（destroyの後ろに並ぶspawnがその位置を引き継げるようにするため。ActiveEffectsの適用順参照）。</p>
+<code>destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。same_slot spawnとの連携は
+destroyが何かを通知する必要はない（selfの位置アンカーはApplyActiveEffectの入口で先に捕捉済みで、
+「selfが消えたか」ではなく「その位置がまだ同種を保持しているか」を配置時に判断するため。
+EffectSite参照）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.LocalIndexMap.html">LocalIndexMap</a></h4>
       <section><p>特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、

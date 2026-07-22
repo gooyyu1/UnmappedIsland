@@ -50,7 +50,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ActiveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。owner（self）の文脈\n（actor/dragged）を受け取り、「対象を解決して自分を適用する」までを自分で行う（自分のことは\n自分でする、CLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"5\">具象は3種:</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">単一の命令（SetEffect/AddEffect/DestroyEffect/SpawnEffect/TransferEffect、9節）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"7\">それらを宣言順にまとめた合成（ActiveEffects。set/add/destroy/spawn/transferの並び）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"8\">weightで1候補を選んで適用するpick（PickEffect、10節。候補の効果もまたActiveEffectなので再帰しうる）。</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"10\">これらはすべて同じApplyで適用でき、activeとpickが排他であること（どちらか一方のみ）も、\n「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は\nこのActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"14\">contextは1回の適用（最上位のApply1回）で共有される。same_slot spawnが必要とする「destroyで\n失われる前のselfの位置」を、destroy側とspawn側が同じcontextを通して受け渡すために使う（それ以外の\n効果は無視してよい）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。owner（self）の文脈\n（actor/dragged）を受け取り、「対象を解決して自分を適用する」までを自分で行う（自分のことは\n自分でする、CLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"5\">具象は3種:</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">単一の命令（SetEffect/AddEffect/DestroyEffect/SpawnEffect/TransferEffect、9節）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"7\">それらを宣言順にまとめた合成（ActiveEffects。set/add/destroy/spawn/transferの並び）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"8\">weightで1候補を選んで適用するpick（PickEffect、10節。候補の効果もまたActiveEffectなので再帰しうる）。</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"10\">これらはすべて同じApplyで適用でき、activeとpickが排他であること（どちらか一方のみ）も、\n「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は\nこのActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"14\">effectSiteは、この最上位の適用の入口(WorldObject.ApplyActiveEffect)で先に捕捉した「selfが今\n占めている位置」のスナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ\n同種を保持しているか」を配置時に見て置き換え位置を決める（それ以外の効果は無視してよい）。効果の\nツリー（合成ActiveEffects・pick）を素通しで伝わるだけなので、destroyが何かを書き込む必要はない。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -148,7 +148,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.DestroyEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy: self</code>は要素1つ、\n<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"2\">destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。対象がselfの場合、削除で位置が\n失われる前に、same_slot spawnのための位置アンカーをcontextへ捕捉させてから削除する\n（destroyの後ろに並ぶspawnがその位置を引き継げるようにするため。ActiveEffectsの適用順参照）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy: self</code>は要素1つ、\n<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"2\">destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。same_slot spawnとの連携は\ndestroyが何かを通知する必要はない（selfの位置アンカーはApplyActiveEffectの入口で先に捕捉済みで、\n「selfが消えたか」ではなく「その位置がまだ同種を保持しているか」を配置時に判断するため。\nEffectSite参照）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -656,20 +656,6 @@
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.yml",
-      "output": {
-        ".html": {
-          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.yml\" sourcestartlinenumber=\"1\">1回のactive効果適用（最上位のActiveEffect.Apply1回）で共有される文脈。現状の唯一の役割は、\nsame_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで\n一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.yml\" sourcestartlinenumber=\"5\">destroy側（DestroyEffectがselfを消す直前）はNotifyOriginWillBeDestroyedで、spawn側\n（same_slot配置）はSameSlotAnchor取得時に、それぞれ捕捉を要求する。どちらが先でも初回のみ\n実際に捕捉し、以降はキャッシュを返す。selfが消される適用ではdestroyが必ずspawnより前に\n実行される（パーサの並び順）ため、self破棄を織り込んだ位置（memberIndex等）が正しく捕捉される。</p>\n"
-    },
-    {
-      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.yml",
       "output": {
         ".html": {
@@ -680,21 +666,21 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.yml\" sourcestartlinenumber=\"1\">same_slot（非FixedPositions）専用。CaptureSameSlotAnchorが捕捉した、元居たObjectStackの\n外側position(StackIndex)・その中でのメンバー位置(MemberIndex)・そのObjectStackが自分の除去で\n丸ごと消えるか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.yml\" sourcestartlinenumber=\"1\">same_slot（非FixedPositions）専用。EffectSite.ResolveInsertPositionが配置時のスロット\nの状態から決めた挿入位置＝元居たObjectStackの外側position(StackIndex)・その中でのメンバー位置\n(MemberIndex)・そのObjectStackが除去済みか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>\n"
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.yml",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml",
       "output": {
         ".html": {
-          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html"
+          "relative_path": "UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html"
         }
       },
       "version": "",
       "Uid": null,
       "IsMRef": true,
-      "Title": "UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.yml\" sourcestartlinenumber=\"1\">CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット\n（ActiveApplicationがdestroy側とspawn側の間で受け渡す）。</p>\n"
+      "Title": "UnmappedIsland.Domain.Runtime.WorldObject.EffectSite",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"1\">active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した\nスナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。\n「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から\n行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"6\">置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/\n固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、\nまたはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら\n（同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された\nObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。</p>\n"
     },
     {
       "type": "ManagedReference",

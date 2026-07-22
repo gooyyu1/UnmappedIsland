@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Struct WorldObject.EffectSite | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Struct WorldObject.EffectSite | UnmappedIsland API リファレンス ">
+    
+    <meta name="description" content="active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。 「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から 行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。 置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/ 固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、 またはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら （同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された ObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。">
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite">
+
+
+
+  <h1 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite" class="text-break">Struct WorldObject.EffectSite</h1>
+  <div class="markdown level0 summary"><p>active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した
+スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。
+「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から
+行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>
+<p>置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/
+固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、
+またはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら
+（同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された
+ObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.valuetype.equals">ValueType.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.valuetype.gethashcode">ValueType.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.valuetype.tostring">ValueType.ToString()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Runtime.html">Runtime</a></h6>
+  <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
+  <h5 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public readonly struct WorldObject.EffectSite</code></pre>
+  </div>
+  <h3 id="constructors">Constructors
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_ObjectStack_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.%23ctor(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CUnmappedIsland.Domain.Runtime.ObjectStack%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L630">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_ObjectStack_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)">EffectSite(WorldObject, int, ObjectStack, WorldObject, int, int)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public EffectSite(WorldObject parent, int parentSlotLocalId, ObjectStack originStack, WorldObject origin, int stackIndexAtCapture, int memberIndexAtCapture)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">parent</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">parentSlotLocalId</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></td>
+        <td><span class="parametername">originStack</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td><span class="parametername">origin</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">stackIndexAtCapture</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td><span class="parametername">memberIndexAtCapture</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="fields">Fields
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_Parent.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L611">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_Parent" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent">Parent</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public readonly WorldObject Parent</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ParentSlotLocalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L612">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ParentSlotLocalId" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId">ParentSlotLocalId</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public readonly int ParentSlotLocalId</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_memberIndexAtCapture.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L628">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_memberIndexAtCapture" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture">memberIndexAtCapture</h4>
+  <div class="markdown level1 summary"><p>捕捉時のorigin自身のメンバー位置。originだけ消えて同種の兄弟が残る場合の挿入位置に使う
+（その場合originは消えていてIndexOfで引けないため捕捉値が要る）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly int memberIndexAtCapture</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_origin.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L620">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_origin" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin">origin</h4>
+  <div class="markdown level1 summary"><p>この位置を捕捉した張本人（spawnを宣言したself）。配置時にoriginStackへまだ残っているか
+で、「self自身が生き残ったか」を判定する。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly WorldObject origin</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_originStack.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L616">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_originStack" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack">originStack</h4>
+  <div class="markdown level1 summary"><p>捕捉時にself(origin)が属していたObjectStack。配置時にこれがまだSlot.Stacksに残って
+いるか（＝同種を保持しているか）で置き換え位置を分岐する。除去済みでもGridIndexは保持される。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly ObjectStack originStack</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_stackIndexAtCapture.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.stackIndexAtCapture%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L624">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_stackIndexAtCapture" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.stackIndexAtCapture">stackIndexAtCapture</h4>
+  <div class="markdown level1 summary"><p>捕捉時のoriginStackの外側position。originStackごと除去された場合の挿入位置に使う
+（除去後はIndexOfStackで引けないため捕捉値が要る）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private readonly int stackIndexAtCapture</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_GridIndex.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L644">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_GridIndex_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_GridIndex" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex">GridIndex</h4>
+  <div class="markdown level1 summary"><p>FixedPositions用: originStackの固定番号（除去済みでも保持される。FixedPositionsスロット
+では必ず採番済み）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int GridIndex { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellStillOccupied_UnmappedIsland_Domain_Runtime_Slot_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L648">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellStillOccupied_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellStillOccupied_UnmappedIsland_Domain_Runtime_Slot_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)">OriginCellStillOccupied(Slot)</h4>
+  <div class="markdown level1 summary"><p>元の位置(originStack)が今もこのスロットに残って同種を保持しているか。空になって
+除去されているならfalse＝その位置は空き。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool OriginCellStillOccupied(Slot slot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.Slot.html">Slot</a></td>
+        <td><span class="parametername">slot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertPosition_UnmappedIsland_Domain_Runtime_Slot_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L657">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertPosition_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition*"></a>
+  <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertPosition_UnmappedIsland_Domain_Runtime_Slot_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)">ResolveInsertPosition(Slot)</h4>
+  <div class="markdown level1 summary"><p>非FixedPositionsスロット用の挿入位置を、配置時のスロットの状態から決める。</p>
+<ul>
+<li>originStackが除去済み（同種が全て消えた）: 元の外側positionへ新規スタックとして入る(stackWasVacated)。</li>
+<li>originStackが健在で、origin自身もまだ居る（self生き残り）: origin自身の直後(+1)へ。</li>
+<li>originStackが健在だが、originは消えて兄弟が残る: originが居た元のメンバー位置へ（兄弟が繰り上がった
+その位置に割り込むことで、元のoriginの場所をそのまま引き継ぐ）。</li>
+</ul>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public WorldObject.CapturedPosition ResolveInsertPosition(Slot slot)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.Slot.html">Slot</a></td>
+        <td><span class="parametername">slot</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a>.<a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html">CapturedPosition</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.cs/#L609" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

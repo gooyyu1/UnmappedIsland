@@ -125,15 +125,6 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
 （modify/accumulate）の一覧・tick毎の反映・実効値の算出は、対象がプロパティ自身であるため
 PropertyValue が持つ。WorldObjectはローカルID解決とグローバルAPIの提供に専念する。</p>
 </section>
-      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html">WorldObject.ActiveApplication</a></h4>
-      <section><p>1回のactive効果適用（最上位のActiveEffect.Apply1回）で共有される文脈。現状の唯一の役割は、
-same_slot spawnが必要とする「selfの位置アンカー」を、self破棄で失われる前の正しいタイミングで
-一度だけ捕捉し、同じ適用内の複数のspawnで共有すること。</p>
-<p>destroy側（DestroyEffectがselfを消す直前）はNotifyOriginWillBeDestroyedで、spawn側
-（same_slot配置）はSameSlotAnchor取得時に、それぞれ捕捉を要求する。どちらが先でも初回のみ
-実際に捕捉し、以降はキャッシュを返す。selfが消される適用ではdestroyが必ずspawnより前に
-実行される（パーサの並び順）ため、self破棄を織り込んだ位置（memberIndex等）が正しく捕捉される。</p>
-</section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></h4>
       <section><p>実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態
 （WorldCodex.cs のコメントで予告されている「実行時側」の最小実装）。WorldCodex 自体は
@@ -145,13 +136,20 @@ same_slot spawnが必要とする「selfの位置アンカー」を、self破棄
 Structs
 </h3>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html">WorldObject.CapturedPosition</a></h4>
-      <section><p>same_slot（非FixedPositions）専用。CaptureSameSlotAnchorが捕捉した、元居たObjectStackの
-外側position(StackIndex)・その中でのメンバー位置(MemberIndex)・そのObjectStackが自分の除去で
-丸ごと消えるか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>
+      <section><p>same_slot（非FixedPositions）専用。EffectSite.ResolveInsertPositionが配置時のスロット
+の状態から決めた挿入位置＝元居たObjectStackの外側position(StackIndex)・その中でのメンバー位置
+(MemberIndex)・そのObjectStackが除去済みか(StackWasVacated)。Slot.InsertAtCapturedPosition参照。</p>
 </section>
-      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html">WorldObject.SameSlotAnchor</a></h4>
-      <section><p>CaptureSameSlotAnchorが捕捉する、destroy前時点での位置のスナップショット
-（ActiveApplicationがdestroy側とspawn側の間で受け渡す）。</p>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html">WorldObject.EffectSite</a></h4>
+      <section><p>active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した
+スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。
+「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から
+行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>
+<p>置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/
+固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、
+またはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら
+（同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された
+ObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。</p>
 </section>
 
 

@@ -127,12 +127,12 @@ references:
   commentId: T:UnmappedIsland.Domain.Defs.ActiveEffect
   fullName: UnmappedIsland.Domain.Defs.ActiveEffect
   nameWithType: ActiveEffect
-- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: ActiveEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: ActiveEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.ActiveEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.ActiveEffect.html#UnmappedIsland_Domain_Defs_ActiveEffect_Apply_
@@ -165,12 +165,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.ActiveEffects.New
   nameWithType: ActiveEffects.ActiveEffects
   nameWithType.vb: ActiveEffects.New
-- uid: UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: ActiveEffects.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: ActiveEffects.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.ActiveEffects.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.ActiveEffects.html#UnmappedIsland_Domain_Defs_ActiveEffects_Apply_
@@ -209,12 +209,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.AddEffect.New
   nameWithType: AddEffect.AddEffect
   nameWithType.vb: AddEffect.New
-- uid: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: AddEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.AddEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: AddEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.AddEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.AddEffect.html#UnmappedIsland_Domain_Defs_AddEffect_Apply_
@@ -749,12 +749,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.DestroyEffect.New
   nameWithType: DestroyEffect.DestroyEffect
   nameWithType.vb: DestroyEffect.New
-- uid: UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: DestroyEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: DestroyEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.DestroyEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.DestroyEffect.html#UnmappedIsland_Domain_Defs_DestroyEffect_Apply_
@@ -1539,12 +1539,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.PickCandidateDef.New
   nameWithType: PickCandidateDef.PickCandidateDef
   nameWithType.vb: PickCandidateDef.New
-- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: PickCandidateDef.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: PickCandidateDef.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.PickCandidateDef.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.PickCandidateDef.html#UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_
@@ -1602,12 +1602,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.PickEffect.New
   nameWithType: PickEffect.PickEffect
   nameWithType.vb: PickEffect.New
-- uid: UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: PickEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.PickEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: PickEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.PickEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.PickEffect.html#UnmappedIsland_Domain_Defs_PickEffect_Apply_
@@ -2081,12 +2081,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.SetEffect.New
   nameWithType: SetEffect.SetEffect
   nameWithType.vb: SetEffect.New
-- uid: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: SetEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: SetEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.SetEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.SetEffect.html#UnmappedIsland_Domain_Defs_SetEffect_Apply_
@@ -2398,12 +2398,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.SpawnEffect.New
   nameWithType: SpawnEffect.SpawnEffect
   nameWithType.vb: SpawnEffect.New
-- uid: UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.SpawnEffect.html#UnmappedIsland_Domain_Defs_SpawnEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: SpawnEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.SpawnEffect.html#UnmappedIsland_Domain_Defs_SpawnEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: SpawnEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.SpawnEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.SpawnEffect.html#UnmappedIsland_Domain_Defs_SpawnEffect_Apply_
@@ -2537,12 +2537,12 @@ references:
   fullName.vb: UnmappedIsland.Domain.Defs.TransferEffect.New
   nameWithType: TransferEffect.TransferEffect
   nameWithType.vb: TransferEffect.New
-- uid: UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: TransferEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Defs.TransferEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: TransferEffect.Apply(WorldObject, WorldSession, WorldObject, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Defs.TransferEffect.Apply*
   name: Apply
   href: UnmappedIsland.Domain.Defs.TransferEffect.html#UnmappedIsland_Domain_Defs_TransferEffect_Apply_
@@ -3977,91 +3977,6 @@ references:
   fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.New
   nameWithType: WorldObject.WorldObject
   nameWithType.vb: WorldObject.New
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication
-  name: WorldObject.ActiveApplication
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html
-  commentId: T:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication
-  nameWithType: WorldObject.ActiveApplication
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor(UnmappedIsland.Domain.Runtime.WorldObject)
-  name: ActiveApplication(WorldObject)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication__ctor_UnmappedIsland_Domain_Runtime_WorldObject_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor(UnmappedIsland.Domain.Runtime.WorldObject)
-  name.vb: New(WorldObject)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.ActiveApplication(UnmappedIsland.Domain.Runtime.WorldObject)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.New(UnmappedIsland.Domain.Runtime.WorldObject)
-  nameWithType: WorldObject.ActiveApplication.ActiveApplication(WorldObject)
-  nameWithType.vb: WorldObject.ActiveApplication.New(WorldObject)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor*
-  name: ActiveApplication
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication__ctor_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.#ctor
-  isSpec: "True"
-  name.vb: New
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.ActiveApplication
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.New
-  nameWithType: WorldObject.ActiveApplication.ActiveApplication
-  nameWithType.vb: WorldObject.ActiveApplication.New
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(System.Boolean)
-  name: Capture(bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_Capture_System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(System.Boolean)
-  name.vb: Capture(Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture(Boolean)
-  nameWithType: WorldObject.ActiveApplication.Capture(bool)
-  nameWithType.vb: WorldObject.ActiveApplication.Capture(Boolean)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture*
-  name: Capture
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_Capture_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.Capture
-  nameWithType: WorldObject.ActiveApplication.Capture
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
-  name: NotifyOriginWillBeDestroyed()
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_NotifyOriginWillBeDestroyed
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed()
-  nameWithType: WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed()
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed*
-  name: NotifyOriginWillBeDestroyed
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_NotifyOriginWillBeDestroyed_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
-  nameWithType: WorldObject.ActiveApplication.NotifyOriginWillBeDestroyed
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor(UnmappedIsland.Domain.Defs.SpawnTargetRoot)
-  name: SameSlotAnchorFor(SpawnTargetRoot)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_SameSlotAnchorFor_UnmappedIsland_Domain_Defs_SpawnTargetRoot_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor(UnmappedIsland.Domain.Defs.SpawnTargetRoot)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor(UnmappedIsland.Domain.Defs.SpawnTargetRoot)
-  nameWithType: WorldObject.ActiveApplication.SameSlotAnchorFor(SpawnTargetRoot)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor*
-  name: SameSlotAnchorFor
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_SameSlotAnchorFor_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.SameSlotAnchorFor
-  nameWithType: WorldObject.ActiveApplication.SameSlotAnchorFor
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchor
-  name: anchor
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_anchor
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchor
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchor
-  nameWithType: WorldObject.ActiveApplication.anchor
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchorCaptured
-  name: anchorCaptured
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_anchorCaptured
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchorCaptured
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.anchorCaptured
-  nameWithType: WorldObject.ActiveApplication.anchorCaptured
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.origin
-  name: origin
-  href: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.html#UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_origin
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.origin
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication.origin
-  nameWithType: WorldObject.ActiveApplication.origin
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.AddNumber(System.Int32,System.Int32,UnmappedIsland.Domain.Runtime.WorldSession)
   name: AddNumber(int, int, WorldSession)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_AddNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_
@@ -4123,6 +4038,19 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.AttachToSlot
   nameWithType: WorldObject.AttachToSlot
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.CaptureEffectSite
+  name: CaptureEffectSite()
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_CaptureEffectSite
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.CaptureEffectSite
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CaptureEffectSite()
+  nameWithType: WorldObject.CaptureEffectSite()
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.CaptureEffectSite*
+  name: CaptureEffectSite
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_CaptureEffectSite_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.CaptureEffectSite
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CaptureEffectSite
+  nameWithType: WorldObject.CaptureEffectSite
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.CaptureRepresentationChain
   name: CaptureRepresentationChain()
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_CaptureRepresentationChain
@@ -4136,22 +4064,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.CaptureRepresentationChain
   nameWithType: WorldObject.CaptureRepresentationChain
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CaptureSameSlotAnchor(System.Boolean)
-  name: CaptureSameSlotAnchor(bool)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_CaptureSameSlotAnchor_System_Boolean_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.CaptureSameSlotAnchor(System.Boolean)
-  name.vb: CaptureSameSlotAnchor(Boolean)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CaptureSameSlotAnchor(bool)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.CaptureSameSlotAnchor(Boolean)
-  nameWithType: WorldObject.CaptureSameSlotAnchor(bool)
-  nameWithType.vb: WorldObject.CaptureSameSlotAnchor(Boolean)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.CaptureSameSlotAnchor*
-  name: CaptureSameSlotAnchor
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_CaptureSameSlotAnchor_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.CaptureSameSlotAnchor
-  isSpec: "True"
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.CaptureSameSlotAnchor
-  nameWithType: WorldObject.CaptureSameSlotAnchor
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition
   name: WorldObject.CapturedPosition
   href: UnmappedIsland.Domain.Runtime.WorldObject.CapturedPosition.html
@@ -4247,12 +4159,112 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.DetachFromParent
   nameWithType: WorldObject.DetachFromParent
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  name: ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, ActiveApplication)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ExecuteSpawn_UnmappedIsland_Domain_Defs_SpawnEffect_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_ActiveApplication_
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.ActiveApplication)
-  nameWithType: WorldObject.ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, WorldObject.ActiveApplication)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite
+  name: WorldObject.EffectSite
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html
+  commentId: T:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite
+  nameWithType: WorldObject.EffectSite
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
+  name: EffectSite(WorldObject, int, ObjectStack, WorldObject, int, int)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_ObjectStack_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)
+  name.vb: New(WorldObject, Integer, ObjectStack, WorldObject, Integer, Integer)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.EffectSite(UnmappedIsland.Domain.Runtime.WorldObject, int, UnmappedIsland.Domain.Runtime.ObjectStack, UnmappedIsland.Domain.Runtime.WorldObject, int, int)
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.New(UnmappedIsland.Domain.Runtime.WorldObject, Integer, UnmappedIsland.Domain.Runtime.ObjectStack, UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer)
+  nameWithType: WorldObject.EffectSite.EffectSite(WorldObject, int, ObjectStack, WorldObject, int, int)
+  nameWithType.vb: WorldObject.EffectSite.New(WorldObject, Integer, ObjectStack, WorldObject, Integer, Integer)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor*
+  name: EffectSite
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.EffectSite
+  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.New
+  nameWithType: WorldObject.EffectSite.EffectSite
+  nameWithType.vb: WorldObject.EffectSite.New
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
+  name: GridIndex
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_GridIndex
+  commentId: P:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
+  nameWithType: WorldObject.EffectSite.GridIndex
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex*
+  name: GridIndex
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_GridIndex_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.GridIndex
+  nameWithType: WorldObject.EffectSite.GridIndex
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)
+  name: OriginCellStillOccupied(Slot)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellStillOccupied_UnmappedIsland_Domain_Runtime_Slot_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied(UnmappedIsland.Domain.Runtime.Slot)
+  nameWithType: WorldObject.EffectSite.OriginCellStillOccupied(Slot)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied*
+  name: OriginCellStillOccupied
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellStillOccupied_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellStillOccupied
+  nameWithType: WorldObject.EffectSite.OriginCellStillOccupied
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent
+  name: Parent
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_Parent
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent
+  nameWithType: WorldObject.EffectSite.Parent
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId
+  name: ParentSlotLocalId
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ParentSlotLocalId
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId
+  nameWithType: WorldObject.EffectSite.ParentSlotLocalId
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)
+  name: ResolveInsertPosition(Slot)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertPosition_UnmappedIsland_Domain_Runtime_Slot_
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition(UnmappedIsland.Domain.Runtime.Slot)
+  nameWithType: WorldObject.EffectSite.ResolveInsertPosition(Slot)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition*
+  name: ResolveInsertPosition
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ResolveInsertPosition_
+  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition
+  isSpec: "True"
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ResolveInsertPosition
+  nameWithType: WorldObject.EffectSite.ResolveInsertPosition
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture
+  name: memberIndexAtCapture
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_memberIndexAtCapture
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.memberIndexAtCapture
+  nameWithType: WorldObject.EffectSite.memberIndexAtCapture
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin
+  name: origin
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_origin
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.origin
+  nameWithType: WorldObject.EffectSite.origin
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack
+  name: originStack
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_originStack
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack
+  nameWithType: WorldObject.EffectSite.originStack
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.stackIndexAtCapture
+  name: stackIndexAtCapture
+  href: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html#UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_stackIndexAtCapture
+  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.stackIndexAtCapture
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.stackIndexAtCapture
+  nameWithType: WorldObject.EffectSite.stackIndexAtCapture
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ExecuteSpawn_UnmappedIsland_Domain_Defs_SpawnEffect_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn(UnmappedIsland.Domain.Defs.SpawnEffect, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: WorldObject.ExecuteSpawn(SpawnEffect, WorldSession, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.ExecuteSpawn*
   name: ExecuteSpawn
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_ExecuteSpawn_
@@ -4456,12 +4468,12 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ParentSlotLocalId
   nameWithType: WorldObject.ParentSlotLocalId
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.Place(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.SpawnTargetRoot,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor})
-  name: Place(WorldObject, SpawnTargetRoot, WorldSession, WorldObject, SameSlotAnchor?)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_Place_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_SpawnTargetRoot_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor__
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.Place(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.SpawnTargetRoot,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor})
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.Place(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Defs.SpawnTargetRoot, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor?)
-  nameWithType: WorldObject.Place(WorldObject, SpawnTargetRoot, WorldSession, WorldObject, WorldObject.SameSlotAnchor?)
+- uid: UnmappedIsland.Domain.Runtime.WorldObject.Place(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.SpawnTargetRoot,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  name: Place(WorldObject, SpawnTargetRoot, WorldSession, WorldObject, EffectSite?)
+  href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_Place_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_SpawnTargetRoot_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__
+  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.Place(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.SpawnTargetRoot,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})
+  fullName: UnmappedIsland.Domain.Runtime.WorldObject.Place(UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Defs.SpawnTargetRoot, UnmappedIsland.Domain.Runtime.WorldSession, UnmappedIsland.Domain.Runtime.WorldObject, UnmappedIsland.Domain.Runtime.WorldObject.EffectSite?)
+  nameWithType: WorldObject.Place(WorldObject, SpawnTargetRoot, WorldSession, WorldObject, WorldObject.EffectSite?)
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.Place*
   name: Place
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_Place_
@@ -4556,67 +4568,6 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Domain.Runtime.WorldObject.ResolveInteractionTarget
   nameWithType: WorldObject.ResolveInteractionTarget
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor
-  name: WorldObject.SameSlotAnchor
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html
-  commentId: T:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor
-  nameWithType: WorldObject.SameSlotAnchor
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,System.Int32,System.Boolean,System.Nullable{System.Int32})
-  name: SameSlotAnchor(WorldObject, int, int, int, bool, int?)
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_System_Int32_System_Boolean_System_Nullable_System_Int32__
-  commentId: M:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32,System.Int32,System.Boolean,System.Nullable{System.Int32})
-  name.vb: New(WorldObject, Integer, Integer, Integer, Boolean, Integer?)
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.SameSlotAnchor(UnmappedIsland.Domain.Runtime.WorldObject, int, int, int, bool, int?)
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.New(UnmappedIsland.Domain.Runtime.WorldObject, Integer, Integer, Integer, Boolean, Integer?)
-  nameWithType: WorldObject.SameSlotAnchor.SameSlotAnchor(WorldObject, int, int, int, bool, int?)
-  nameWithType.vb: WorldObject.SameSlotAnchor.New(WorldObject, Integer, Integer, Integer, Boolean, Integer?)
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.#ctor*
-  name: SameSlotAnchor
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor__ctor_
-  commentId: Overload:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.#ctor
-  isSpec: "True"
-  name.vb: New
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.SameSlotAnchor
-  fullName.vb: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.New
-  nameWithType: WorldObject.SameSlotAnchor.SameSlotAnchor
-  nameWithType.vb: WorldObject.SameSlotAnchor.New
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.GridCellIndex
-  name: GridCellIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor_GridCellIndex
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.GridCellIndex
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.GridCellIndex
-  nameWithType: WorldObject.SameSlotAnchor.GridCellIndex
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.MemberIndex
-  name: MemberIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor_MemberIndex
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.MemberIndex
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.MemberIndex
-  nameWithType: WorldObject.SameSlotAnchor.MemberIndex
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.Parent
-  name: Parent
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor_Parent
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.Parent
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.Parent
-  nameWithType: WorldObject.SameSlotAnchor.Parent
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.ParentSlotLocalId
-  name: ParentSlotLocalId
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor_ParentSlotLocalId
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.ParentSlotLocalId
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.ParentSlotLocalId
-  nameWithType: WorldObject.SameSlotAnchor.ParentSlotLocalId
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.StackIndex
-  name: StackIndex
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor_StackIndex
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.StackIndex
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.StackIndex
-  nameWithType: WorldObject.SameSlotAnchor.StackIndex
-- uid: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.StackWillBeVacated
-  name: StackWillBeVacated
-  href: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.html#UnmappedIsland_Domain_Runtime_WorldObject_SameSlotAnchor_StackWillBeVacated
-  commentId: F:UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.StackWillBeVacated
-  fullName: UnmappedIsland.Domain.Runtime.WorldObject.SameSlotAnchor.StackWillBeVacated
-  nameWithType: WorldObject.SameSlotAnchor.StackWillBeVacated
 - uid: UnmappedIsland.Domain.Runtime.WorldObject.SetNumber(System.Int32,System.Int32,UnmappedIsland.Domain.Runtime.WorldSession)
   name: SetNumber(int, int, WorldSession)
   href: UnmappedIsland.Domain.Runtime.WorldObject.html#UnmappedIsland_Domain_Runtime_WorldObject_SetNumber_System_Int32_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_
