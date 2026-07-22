@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class SitePlacer | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class SitePlacer | UnmappedIsland API リファレンス ">
+    
+    <meta name="description" content="サイト（Site）の座標配置。半径IslandRadiusの円盤を島とみなし、次の2段で配置する。  外周リング: 島を囲む海岸候補のサイトを、外周の円環（半径85〜95%）へ等間隔+ジッタで置く。 個数は全体の約35%（4〜7個に制限）。島が必ず海岸に囲まれることと、海岸が多くなり すぎないことを、この配置枠の個数制御で同時に保証する（「島なので普通に生成すると海岸が 多くなりすぎる」ことへの対策。円盤への一様散布は面積比で外周が多数になり、凸包だけを 海岸にしても小さなサイト数では凸包が過半になってしまうため、リングを配置の段階で分ける）。 内陸: 残りのサイトをベストキャンディデート法（Mitchell）で内側（半径75%以内）へ散布する。 Poisson-diskサンプリングは結果の個数が半径から決まり「10〜20個ちょうど」を直接指定 できないため、個数を直接指定できるベストキャンディデート法を使う（TerrainGeneration.md 3.5節の「Poisson-disk等」の実装上の置き換え）。interior_biasが高いほど中心へ寄せる。">
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Generation.SitePlacer">
+
+
+
+  <h1 id="UnmappedIsland_Domain_Generation_SitePlacer" data-uid="UnmappedIsland.Domain.Generation.SitePlacer" class="text-break">Class SitePlacer</h1>
+  <div class="markdown level0 summary"><p>サイト（Site）の座標配置。半径IslandRadiusの円盤を島とみなし、次の2段で配置する。</p>
+<ol>
+<li>外周リング: 島を囲む海岸候補のサイトを、外周の円環（半径85〜95%）へ等間隔+ジッタで置く。
+個数は全体の約35%（4〜7個に制限）。島が必ず海岸に囲まれることと、海岸が多くなり
+すぎないことを、この配置枠の個数制御で同時に保証する（「島なので普通に生成すると海岸が
+多くなりすぎる」ことへの対策。円盤への一様散布は面積比で外周が多数になり、凸包だけを
+海岸にしても小さなサイト数では凸包が過半になってしまうため、リングを配置の段階で分ける）。</li>
+<li>内陸: 残りのサイトをベストキャンディデート法（Mitchell）で内側（半径75%以内）へ散布する。
+Poisson-diskサンプリングは結果の個数が半径から決まり「10〜20個ちょうど」を直接指定
+できないため、個数を直接指定できるベストキャンディデート法を使う（TerrainGeneration.md
+3.5節の「Poisson-disk等」の実装上の置き換え）。interior_biasが高いほど中心へ寄せる。</li>
+</ol>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">SitePlacer</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Generation.html">Generation</a></h6>
+  <h6><strong>Assembly</strong>: UnmappedIsland.Core.dll</h6>
+  <h5 id="UnmappedIsland_Domain_Generation_SitePlacer_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class SitePlacer</code></pre>
+  </div>
+  <h3 id="fields">Fields
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Generation_SitePlacer_CandidatesPerSite.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Generation.SitePlacer.CandidatesPerSite%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Generation/SitePlacer.cs/#L34">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Generation_SitePlacer_CandidatesPerSite" data-uid="UnmappedIsland.Domain.Generation.SitePlacer.CandidatesPerSite">CandidatesPerSite</h4>
+  <div class="markdown level1 summary"><p>ベストキャンディデート法の1点あたりの候補数。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private const int CandidatesPerSite = 10</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Generation_SitePlacer_CoastRingMaxRadius.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Generation.SitePlacer.CoastRingMaxRadius%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Generation/SitePlacer.cs/#L27">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Generation_SitePlacer_CoastRingMaxRadius" data-uid="UnmappedIsland.Domain.Generation.SitePlacer.CoastRingMaxRadius">CoastRingMaxRadius</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private const double CoastRingMaxRadius = 0.95</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Generation_SitePlacer_CoastRingMinRadius.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Generation.SitePlacer.CoastRingMinRadius%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Generation/SitePlacer.cs/#L26">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Generation_SitePlacer_CoastRingMinRadius" data-uid="UnmappedIsland.Domain.Generation.SitePlacer.CoastRingMinRadius">CoastRingMinRadius</h4>
+  <div class="markdown level1 summary"><p>外周リングの半径の範囲（IslandRadius比）。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private const double CoastRingMinRadius = 0.85</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Generation_SitePlacer_InteriorMaxRadius.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Generation.SitePlacer.InteriorMaxRadius%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Generation/SitePlacer.cs/#L31">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Generation_SitePlacer_InteriorMaxRadius" data-uid="UnmappedIsland.Domain.Generation.SitePlacer.InteriorMaxRadius">InteriorMaxRadius</h4>
+  <div class="markdown level1 summary"><p>内陸サイトの最大半径（IslandRadius比）。外周リングとの間に必ず隙間を作り、
+内陸サイトが海岸帯（coastal_distanceの下限）へ紛れ込まないようにする。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">private const double InteriorMaxRadius = 0.75</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Generation_SitePlacer_IslandRadius.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Generation.SitePlacer.IslandRadius%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Generation/SitePlacer.cs/#L23">View Source</a>
+  </span>
+  <h4 id="UnmappedIsland_Domain_Generation_SitePlacer_IslandRadius" data-uid="UnmappedIsland.Domain.Generation.SitePlacer.IslandRadius">IslandRadius</h4>
+  <div class="markdown level1 summary"><p>島（抽象座標系）の半径。距離・ノイズ座標の正規化の基準。</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public const double IslandRadius = 100</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.double">double</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Generation_SitePlacer_Place_UnmappedIsland_Domain_Defs_Generation_GenerationScopeDef_UnmappedIsland_Domain_Generation_Pcg32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Generation.SitePlacer.Place(UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef%2CUnmappedIsland.Domain.Generation.Pcg32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Generation/SitePlacer.cs/#L36">View Source</a>
+  </span>
+  <a id="UnmappedIsland_Domain_Generation_SitePlacer_Place_" data-uid="UnmappedIsland.Domain.Generation.SitePlacer.Place*"></a>
+  <h4 id="UnmappedIsland_Domain_Generation_SitePlacer_Place_UnmappedIsland_Domain_Defs_Generation_GenerationScopeDef_UnmappedIsland_Domain_Generation_Pcg32_" data-uid="UnmappedIsland.Domain.Generation.SitePlacer.Place(UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef,UnmappedIsland.Domain.Generation.Pcg32)">Place(GenerationScopeDef, Pcg32)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static List&lt;Site&gt; Place(GenerationScopeDef scope, Pcg32 rng)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef.html">GenerationScopeDef</a></td>
+        <td><span class="parametername">scope</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="UnmappedIsland.Domain.Generation.Pcg32.html">Pcg32</a></td>
+        <td><span class="parametername">rng</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1">List</a>&lt;<a class="xref" href="UnmappedIsland.Domain.Generation.Site.html">Site</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Generation_SitePlacer.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Generation.SitePlacer%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Generation/SitePlacer.cs/#L20" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

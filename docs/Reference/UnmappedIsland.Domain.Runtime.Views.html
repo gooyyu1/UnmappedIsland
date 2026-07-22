@@ -79,11 +79,21 @@
 Classes
 </h3>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Views.Location.html">Location</a></h4>
-      <section><p>ロケーションに対する、UI/ゲームロジック向けの型付きビュー。World/PlayerCharacter と同じ理由で
-継承ではなくラップにしている。</p>
-<p>ロケーションが持つべきプロパティはまだ何も確定していないため、現時点では Instance への
-アクセスのみを提供する。具体的なプロパティが定まり次第、World/PlayerCharacter と同様に
-名前付きアクセサを追加する。</p>
+      <section><p>土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付き
+ビュー。World/PlayerCharacter と同じ理由で継承ではなくラップにしている。</p>
+<p>探索の入口はこのビューのExploreに一本化する: YAML側のexploreアクション（進捗+1と発見物のpick）を
+実行し、成功したら「進捗が必要値に達した道の公開」（RevealDuePaths）まで自分で行う。呼び出し側
+（UI等）は、探索の後に道の公開判定を別途呼ぶ必要があることを知らなくてよい（「値を変更した後に
+これも呼ばないと壊れる」という手順を呼び出し側に持たせない、CLAUDE.md参照）。</p>
+<p>プロパティ名・スロット名の解決はTryGetIdで行い、未登録のcodex（探索の語彙を持たない最小の
+テストフィクスチャ等）でも「単にラップするだけ」のビューとして生成できるようにしている。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Views.Path.html">Path</a></h4>
+      <section><p>道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。
+World/PlayerCharacter/Location と同じ理由で継承ではなくラップにしている。</p>
+<p>travel_minutes/required_progress/destination_idはいずれも生成時（IslandSpawner）にインスタンス
+ごとへ上書きされる値であり、このビューは読み取りとtravelアクションの実行だけを提供する。
+移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクション（move+duration）が担う。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Views.PlayerCharacter.html">PlayerCharacter</a></h4>
       <section><p>actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Namespace UnmappedIsland.Domain.Defs.Generation | UnmappedIsland API リファレンス </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Namespace UnmappedIsland.Domain.Defs.Generation | UnmappedIsland API リファレンス ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.html">
+      <meta property="docfx:tocrel" content="toc.html">
+    
+    <meta property="docfx:rel" content="">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div class="container body-content">
+
+        <div id="search-results">
+          <div class="search-list">Search Results for <span></span></div>
+          <div class="sr-items">
+            <p><i class="glyphicon glyphicon-refresh index-loading"></i></p>
+          </div>
+          <ul id="pagination" data-first=First data-prev=Previous data-next=Next data-last=Last></ul>
+        </div>
+      </div>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="UnmappedIsland.Domain.Defs.Generation">
+
+  <h1 id="UnmappedIsland_Domain_Defs_Generation" data-uid="UnmappedIsland.Domain.Defs.Generation" class="text-break">Namespace UnmappedIsland.Domain.Defs.Generation</h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="markdown level0 remarks"></div>
+    <h3 id="classes">
+Classes
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.AxisDef.html">AxisDef</a></h4>
+      <section><p>軸（Axis）の定義（TerrainGeneration.md 1節・3.1節）。標高・湿り気など、地点（Site）が持つ
+連続値パラメータの1次元。値は整数（通常0〜100の百分率。GameElementDefinition.md 6節の
+「数値は32bit整数のみ」の規約に合わせ、YAML上にfloatは登場させない）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.AxisLimit.html">AxisLimit</a></h4>
+      <section><p>ある軸に対する絶対的な除外条件（hard_limitsの1エントリ）。範囲外のサイトには
+この型が絶対にマッチしない。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.AxisPreference.html">AxisPreference</a></h4>
+      <section><p>ある軸に対する「理想点+許容範囲」（axis_preferencesの1エントリ、TerrainGeneration.md 3.2節）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GenerationDefs.html">GenerationDefs</a></h4>
+      <section><p>地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。
+WorldCodexの一部としてロード後不変。生成ファイルがロードされていない場合、
+WorldCodex.Generationはnullになる。</p>
+<p>軸名・LocationType名・スコープ名は生成時にしか使われず実行時ホットパスに乗らないため、
+NameRegistryでinternせずstringのまま持つ（5種のレジストリを生成専用の名前で汚さない）。
+LocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef.html">GenerationScopeDef</a></h4>
+      <section><p>生成スコープ（TerrainGeneration.md 3.7節）: 島の生成と構造物内部の生成が共有する
+生成ロジックへの、スコープごとのパラメータプリセット。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.html">GeneratorLayer</a></h4>
+      <section><p>軸のジェネレータの1層（<code>generator.blend</code> の1要素）。複数の層のサンプル値をWeightで
+重み付き平均して軸の値になる。値の実際の計算（ノイズ・距離場）はDomain.Generation側の
+サンプラーが担い、この定義は「どう計算するか」のパラメータだけを持つ。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GuaranteeDef.html">GuaranteeDef</a></h4>
+      <section><p>島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への
+実装回答）。軸の分布だけでは「山が必ず1つ」を保証できないため、「指定軸が最大/最小のサイトから
+Count個へ、このLocationTypeを強制割当する」という明示的な保証を、最近傍マッチングの前に行う。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.LocationTypeDef.html">LocationTypeDef</a></h4>
+      <section><p>LocationType（TerrainGeneration.md 1節・3.2節）: 「草原」「洞窟」など、配置の定義。
+プレイヤーには見えない設計者側の語彙で、実体（Location）はObjectDefGlobalIdが指す
+object_def（locations.yaml）のインスタンスとして生成される。</p>
+</section>
+    <h3 id="enums">
+Enums
+</h3>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType.html">GeneratorLayerType</a></h4>
+      <section><p>軸のジェネレータ1層の種類（TerrainGeneration.md 3.1節の汎用プリミティブ）。
+現時点はdistance_field/layered_noiseの2種。blob_scatter・modifiers（合成演算）は
+必要になった時点で追加する。</p>
+</section>
+      <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GuaranteePick.html">GuaranteePick</a></h4>
+      <section><p>guaranteesのpick: 保証対象のサイトを軸値のどちら側から選ぶか。</p>
+</section>
+
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      
+      <span>Generated by <strong>DocFX</strong></span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>

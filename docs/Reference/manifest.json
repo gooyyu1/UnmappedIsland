@@ -152,6 +152,160 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.AxisDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.AxisDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.AxisDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.AxisDef.yml\" sourcestartlinenumber=\"1\">軸（Axis）の定義（TerrainGeneration.md 1節・3.1節）。標高・湿り気など、地点（Site）が持つ\n連続値パラメータの1次元。値は整数（通常0〜100の百分率。GameElementDefinition.md 6節の\n「数値は32bit整数のみ」の規約に合わせ、YAML上にfloatは登場させない）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.AxisLimit.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.AxisLimit.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.AxisLimit",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.AxisLimit.yml\" sourcestartlinenumber=\"1\">ある軸に対する絶対的な除外条件（hard_limitsの1エントリ）。範囲外のサイトには\nこの型が絶対にマッチしない。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.AxisPreference.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.AxisPreference.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.AxisPreference",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.AxisPreference.yml\" sourcestartlinenumber=\"1\">ある軸に対する「理想点+許容範囲」（axis_preferencesの1エントリ、TerrainGeneration.md 3.2節）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.GenerationDefs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.GenerationDefs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.GenerationDefs",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GenerationDefs.yml\" sourcestartlinenumber=\"1\">地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。\nWorldCodexの一部としてロード後不変。生成ファイルがロードされていない場合、\nWorldCodex.Generationはnullになる。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GenerationDefs.yml\" sourcestartlinenumber=\"5\">軸名・LocationType名・スコープ名は生成時にしか使われず実行時ホットパスに乗らないため、\nNameRegistryでinternせずstringのまま持つ（5種のレジストリを生成専用の名前で汚さない）。\nLocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef.yml\" sourcestartlinenumber=\"1\">生成スコープ（TerrainGeneration.md 3.7節）: 島の生成と構造物内部の生成が共有する\n生成ロジックへの、スコープごとのパラメータプリセット。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.GeneratorLayer",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.yml\" sourcestartlinenumber=\"1\">軸のジェネレータの1層（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.yml\" sourcestartlinenumber=\"1\">generator.blend</code> の1要素）。複数の層のサンプル値をWeightで\n重み付き平均して軸の値になる。値の実際の計算（ノイズ・距離場）はDomain.Generation側の\nサンプラーが担い、この定義は「どう計算するか」のパラメータだけを持つ。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType.yml\" sourcestartlinenumber=\"1\">軸のジェネレータ1層の種類（TerrainGeneration.md 3.1節の汎用プリミティブ）。\n現時点はdistance_field/layered_noiseの2種。blob_scatter・modifiers（合成演算）は\n必要になった時点で追加する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.GuaranteeDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.GuaranteeDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.GuaranteeDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GuaranteeDef.yml\" sourcestartlinenumber=\"1\">島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への\n実装回答）。軸の分布だけでは「山が必ず1つ」を保証できないため、「指定軸が最大/最小のサイトから\nCount個へ、このLocationTypeを強制割当する」という明示的な保証を、最近傍マッチングの前に行う。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.GuaranteePick.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.GuaranteePick.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.GuaranteePick",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GuaranteePick.yml\" sourcestartlinenumber=\"1\">guaranteesのpick: 保証対象のサイトを軸値のどちら側から選ぶか。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.LocationTypeDef.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.LocationTypeDef.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation.LocationTypeDef",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.LocationTypeDef.yml\" sourcestartlinenumber=\"1\">LocationType（TerrainGeneration.md 1節・3.2節）: 「草原」「洞窟」など、配置の定義。\nプレイヤーには見えない設計者側の語彙で、実体（Location）はObjectDefGlobalIdが指す\nobject_def（locations.yaml）のインスタンスとして生成される。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.Generation.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.Generation.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.Generation",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml",
       "output": {
         ".html": {
@@ -177,6 +331,20 @@
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ModifyEffect",
       "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ModifyEffect.yml\" sourcestartlinenumber=\"1\">条件が真の間だけ、都度導出される実効値に寄与する持続効果（可逆、8.3節）。実体値そのものは\n書き換えない。PropertyValueのmodify用incomingへ登録され、WorldObject.GetEffectiveValueが走査する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Defs.MoveEffect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Defs.MoveEffect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Defs.MoveEffect",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"1\">move の1命令（対象オブジェクトを、別の場所＝プロパティが指すインスタンスIDのオブジェクトの中へ\n移動する）。道（path）の移動アクションのように「効果を宣言したオブジェクト定義の時点では移動先が\n決まらず、生成時に確定したインスタンスを指したい」ケースを表すため、移動先は object_def 参照ではなく、\nself のプロパティ（to_prop）が保持する WorldObject.InstanceId で指す（インスタンス単位の参照を\nYAML の語彙で表す唯一の手段がプロパティ値であるため）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"7\">YAML: <code sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"7\">move: {object: actor, to_prop: destination_id}</code>（transfer と同じフラットフィールド規約）。\nobject は現時点で actor のみ対応（ロード時に検証）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"10\">移動先の解決は「self からツリーの根（world）へ遡り、根から InstanceId で子孫を探す」ことで行う。\n解決できない（プロパティが無い・該当インスタンスが世界に居ない）、または移動先のどのスロットも\n受け入れない場合は何もしない（「対象が解決できない場合その適用のみ無視」の既存規約に従う）。\n配置自体は mover の MoveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）に委ねる。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -558,6 +726,230 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.AxisSampler.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.AxisSampler.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.AxisSampler",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.AxisSampler.yml\" sourcestartlinenumber=\"1\">各サイトの軸値のサンプリング（TerrainGeneration.md 3.1節）。AxisDefのジェネレータ層\n（distance_field / layered_noise）を[0,1]で計算して重み平均し、AxisDef.Rangeの整数値へ\n量子化してSite.AxisValuesに書き込む。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.DelaunayTriangulator.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.DelaunayTriangulator.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.DelaunayTriangulator",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.DelaunayTriangulator.yml\" sourcestartlinenumber=\"1\">Delaunay三角形分割（Bowyer-Watsonの逐次挿入法）。辺が交差しないという数学的性質を利用して、\n交差なしのパスネットワークの土台を作る（TerrainGeneration.md 3.5節）。サイト数は高々20のため、\n素朴なO(n²)実装で十分。出力は重複のない無向辺（A &lt; B に正規化、(A, B)の辞書順）のリスト。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.IslandEdge.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.IslandEdge.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.IslandEdge",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.IslandEdge.yml\" sourcestartlinenumber=\"1\">土地同士を繋ぐ道1本（無向辺）。TravelMinutesは距離と両端の移動コストから確定済み。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.IslandMap.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.IslandMap.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.IslandMap",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.IslandMap.yml\" sourcestartlinenumber=\"1\">地形生成の結果（サイト・型・命名・パスネットワーク）を表す不変のデータ。\nTerrainGenerator.Generateの出力であり、WorldObjectには一切触れない純粋な計算結果。\n世界への実体化（spawn）はIslandSpawnerがこのデータを読んで行い、その際に\nSiteInstanceIds（サイトIndex→生成されたWorldObject.InstanceId）を書き込む。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.IslandSpawner.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.IslandSpawner.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.IslandSpawner",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.IslandSpawner.yml\" sourcestartlinenumber=\"1\">IslandMap（TerrainGeneratorの純粋な計算結果）を、実際の世界（worldツリー）へ実体化する。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Generation.IslandSpawner.yml\" sourcestartlinenumber=\"3\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.IslandSpawner.yml\" sourcestartlinenumber=\"3\">各SiteのLocationTypeが指すobject_defをspawnし、worldのlocationsスロットへ配置する</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.IslandSpawner.yml\" sourcestartlinenumber=\"4\">各辺（IslandEdge）につき道（path）を両端に1個ずつspawnし、travel_minutes・required_progress・\ndestination_id（相手側LocationのInstanceId）を書き込んで、それぞれの土地の\nundiscovered_paths（隠しスロット）へ配置する</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Generation.IslandSpawner.yml\" sourcestartlinenumber=\"8\">required_progressは土地ごとに [2, 探索上限-1] の範囲へ等間隔に割り当てる。これにより\n「探索の進捗が最大へ達する前に、その土地のすべての道が見つかる」という要求を、\nデータの丸め方ではなく生成の不変条件として保証する（テストで検証する）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.LocationTypeMatcher.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.LocationTypeMatcher.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.LocationTypeMatcher",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.LocationTypeMatcher.yml\" sourcestartlinenumber=\"1\">各サイトへのLocationTypeの割り当て（TerrainGeneration.md 3.2〜3.4節）。</p>\n<ol sourcefile=\"api/UnmappedIsland.Domain.Generation.LocationTypeMatcher.yml\" sourcestartlinenumber=\"3\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.LocationTypeMatcher.yml\" sourcestartlinenumber=\"3\">guarantees（島全体のバランス保証、3.4節）: 「指定軸が最大/最小のサイトへ強制割当」を\n最近傍マッチングより先に行う（例: 最高標高のサイトは必ず山頂）。軸カバレッジの事後検証+\n再生成ではなく、決定的な強制割当で保証する（再生成はシード再現性と停止性を複雑にするため）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.LocationTypeMatcher.yml\" sourcestartlinenumber=\"6\">最近傍マッチング（3.2節）: 正規化した重み付き距離\nD = sqrt( Σ w_i * ((v_i - ideal_i) / tolerance_i)^2 / Σ w_i )\nの最小の型を選ぶ。言及した軸だけをΣw_iで正規化するため、言及軸が少ない型が構造的に\n有利になる次元数バイアスは無い。toleranceは距離のスケールであり、除外はhard_limitsのみが\n担う（ドキュメントで未確定だった意味論の一義化）。同点は宣言順で先の型が勝つ（決定的）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.LocationTypeMatcher.yml\" sourcestartlinenumber=\"11\">フォールバック（3.3節）: hard_limitsで全型が弾かれたサイトは、is_fallbackの型のうち\npriority最大のものが受ける（フォールバックは最後の受け皿のため、自身のhard_limitsも無視する）。</li>\n</ol>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.NameAssigner.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.NameAssigner.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.NameAssigner",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.NameAssigner.yml\" sourcestartlinenumber=\"1\">命名処理（TerrainGeneration.md 3.6節）。島の重心からの方角（8方位）+LocationTypeの表示名で\n「東の草原」のような仮称を作り、重複はフォールバック接尾辞（第一/第二…）で区別する。\nname_pool（固有名詞プール）は今後の課題。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.NewGame.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.NewGame.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.NewGame",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.NewGame.yml\" sourcestartlinenumber=\"1\">新しいゲームの開始一式（world/プレイヤーの生成 → 地形生成 → 島の実体化 → プレイヤー配置）を\n1回の呼び出しに閉じ込める入口。呼び出し側（UnityのGameManager等）は「Codexとシードを渡す」\nだけでよく、生成と配置の手順・順序を知らなくてよい（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.NewGameSession.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.NewGameSession.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.NewGameSession",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.NewGameSession.yml\" sourcestartlinenumber=\"1\">NewGame.Startが組み立てた、開始直後のゲーム一式。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.PathNetworkBuilder.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.PathNetworkBuilder.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.PathNetworkBuilder",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.PathNetworkBuilder.yml\" sourcestartlinenumber=\"1\">パスネットワークの確定（TerrainGeneration.md 3.5節）。Delaunay辺を土台に、</p>\n<ol sourcefile=\"api/UnmappedIsland.Domain.Generation.PathNetworkBuilder.yml\" sourcestartlinenumber=\"3\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.PathNetworkBuilder.yml\" sourcestartlinenumber=\"3\">最小全域木（MST、Kruskal法）を必ず残す — 全土地への到達性の保証</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.PathNetworkBuilder.yml\" sourcestartlinenumber=\"4\">MST以外のDelaunay辺を距離の短い順に走査し、「現在のグラフでの2点間最短距離が\n直結距離のextra_edge_detour_factor%を超える」（＝大回りを強いられている）辺だけを\n近道・分岐として復活させる</li>\n</ol>\n<p sourcefile=\"api/UnmappedIsland.Domain.Generation.PathNetworkBuilder.yml\" sourcestartlinenumber=\"8\">の2段で間引く。復活辺もDelaunay辺の部分集合であるため、グラフは常に交差なし（平面）のまま。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Generation.PathNetworkBuilder.yml\" sourcestartlinenumber=\"10\">各辺のtravel_minutes（移動時間）は\n距離 × base_minutes_per_distance × (両端のmove_costの平均 / 100)\nで確定する。距離と移動難易度は保持せず、移動時間に代表させる。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.Pcg32.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.Pcg32.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.Pcg32",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.Pcg32.yml\" sourcestartlinenumber=\"1\">地形生成専用の決定的な擬似乱数生成器（PCG-XSH-RR 32bit）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Generation.Pcg32.yml\" sourcestartlinenumber=\"3\">System.Randomを使わないのは、(a)実装がランタイム/バージョンに依存し「同じシード→同じ島」の\n再現保証に使えないため、(b)WorldSession.Rng（pickの抽選・初期値ロール）と乱数源を分離する\nことで、他の抽選の消費順序に依らず地形レイアウトが決定的であることを保証するため。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.Site.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.Site.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.Site",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.Site.yml\" sourcestartlinenumber=\"1\">Site（TerrainGeneration.md 1節）: 座標と軸ベクトルを持つ、生成途中のノード。\nパイプラインが進むにつれてLocationType・名前が確定し、最終的にIslandSpawnerが\nLocation（object_defのWorldObjectインスタンス）として実体化する。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.SitePlacer.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.SitePlacer.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.SitePlacer",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.SitePlacer.yml\" sourcestartlinenumber=\"1\">サイト（Site）の座標配置。半径IslandRadiusの円盤を島とみなし、次の2段で配置する。</p>\n<ol sourcefile=\"api/UnmappedIsland.Domain.Generation.SitePlacer.yml\" sourcestartlinenumber=\"3\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.SitePlacer.yml\" sourcestartlinenumber=\"3\">外周リング: 島を囲む海岸候補のサイトを、外周の円環（半径85〜95%）へ等間隔+ジッタで置く。\n個数は全体の約35%（4〜7個に制限）。島が必ず海岸に囲まれることと、海岸が多くなり\nすぎないことを、この配置枠の個数制御で同時に保証する（「島なので普通に生成すると海岸が\n多くなりすぎる」ことへの対策。円盤への一様散布は面積比で外周が多数になり、凸包だけを\n海岸にしても小さなサイト数では凸包が過半になってしまうため、リングを配置の段階で分ける）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Generation.SitePlacer.yml\" sourcestartlinenumber=\"8\">内陸: 残りのサイトをベストキャンディデート法（Mitchell）で内側（半径75%以内）へ散布する。\nPoisson-diskサンプリングは結果の個数が半径から決まり「10〜20個ちょうど」を直接指定\nできないため、個数を直接指定できるベストキャンディデート法を使う（TerrainGeneration.md\n3.5節の「Poisson-disk等」の実装上の置き換え）。interior_biasが高いほど中心へ寄せる。</li>\n</ol>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.TerrainGenerator.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.TerrainGenerator.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.TerrainGenerator",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.TerrainGenerator.yml\" sourcestartlinenumber=\"1\">地形生成パイプラインのオーケストレータ（TerrainGeneration.md 2節）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Generation.TerrainGenerator.yml\" sourcestartlinenumber=\"3\">サイト配置（SitePlacer） → 軸サンプリング（AxisSampler） → LocationTypeマッチング\n（LocationTypeMatcher、guarantees含む） → Delaunay三角形分割 → MST+復活辺の\nパスネットワーク（PathNetworkBuilder） → 命名（NameAssigner）</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Generation.TerrainGenerator.yml\" sourcestartlinenumber=\"7\">を順に実行し、結果をIslandMapとして返す。WorldObjectには一切触れない純粋な計算で、\n乱数はPcg32(seed)だけに依存する（同じ定義+同じシード→常に同じIslandMap）。\n世界への実体化はIslandSpawnerが担う。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Generation.TerrainGenerator.yml\" sourcestartlinenumber=\"11\">生成スコープを差し替えれば同じロジックがそのまま走る（島と構造物内部で生成ロジックを\n共有するという方針、3.7節。structure_interiorスコープの定義・再帰実行は今後の課題）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.ValueNoise.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.ValueNoise.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation.ValueNoise",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Generation.ValueNoise.yml\" sourcestartlinenumber=\"1\">軸のlayered_noiseジェネレータが使う、シード付きの格子値ノイズ（value noise）。\n整数格子点に整数ハッシュで[0,1)の値を置き、その間を滑らかに補間する。状態を持たない純関数で、\n同じ(シード, 座標, パラメータ)は常に同じ値を返す（シード再現性の土台）。外部ライブラリに\n依存しない自前実装（Unity非依存のDomain層で完結させるため）。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Generation.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Generation.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Generation",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/UnmappedIsland.Domain.Runtime.ObjectStack.yml",
       "output": {
         ".html": {
@@ -624,7 +1016,21 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.Views.Location",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"1\">ロケーションに対する、UI/ゲームロジック向けの型付きビュー。World/PlayerCharacter と同じ理由で\n継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"4\">ロケーションが持つべきプロパティはまだ何も確定していないため、現時点では Instance への\nアクセスのみを提供する。具体的なプロパティが定まり次第、World/PlayerCharacter と同様に\n名前付きアクセサを追加する。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"1\">土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付き\nビュー。World/PlayerCharacter と同じ理由で継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"4\">探索の入口はこのビューのExploreに一本化する: YAML側のexploreアクション（進捗+1と発見物のpick）を\n実行し、成功したら「進捗が必要値に達した道の公開」（RevealDuePaths）まで自分で行う。呼び出し側\n（UI等）は、探索の後に道の公開判定を別途呼ぶ必要があることを知らなくてよい（「値を変更した後に\nこれも呼ばないと壊れる」という手順を呼び出し側に持たせない、CLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"9\">プロパティ名・スロット名の解決はTryGetIdで行い、未登録のcodex（探索の語彙を持たない最小の\nテストフィクスチャ等）でも「単にラップするだけ」のビューとして生成できるようにしている。</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/UnmappedIsland.Domain.Runtime.Views.Path.yml",
+      "output": {
+        ".html": {
+          "relative_path": "UnmappedIsland.Domain.Runtime.Views.Path.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "UnmappedIsland.Domain.Runtime.Views.Path",
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Path.yml\" sourcestartlinenumber=\"1\">道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。\nWorld/PlayerCharacter/Location と同じ理由で継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Path.yml\" sourcestartlinenumber=\"4\">travel_minutes/required_progress/destination_idはいずれも生成時（IslandSpawner）にインスタンス\nごとへ上書きされる値であり、このビューは読み取りとtravelアクションの実行だけを提供する。\n移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクション（move+duration）が担う。</p>\n"
     },
     {
       "type": "ManagedReference",
