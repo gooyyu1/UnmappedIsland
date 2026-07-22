@@ -187,17 +187,31 @@ namespace UnmappedIsland.Domain.Runtime
         /// （存在しない配列indexへは置けないため）。
         /// </summary>
         public bool MoveToSlot(WorldObject newParent, int slotGlobalId, WellKnownProperties wellKnown, out string error, bool force = false) =>
-            AttachToSlot(newParent, slotGlobalId, insertStackIndex: null, wellKnown, out error, force);
+            AttachToSlot(newParent, slotGlobalId, sameSlot: null, wellKnown, out error, force);
 
         /// <summary>
-        /// same_slot専用。通常の（同種のObjectStackへソート挿入する）配置ロジックを使わず、置き換えオブジェクトを
-        /// 新規ObjectStackとして、指定した外側position(stackIndex)へそのまま割り込ませる。破棄されたオブジェクトの
-        /// 位置を、新しく生成されたオブジェクトへ引き継がせるために使う（Place参照）。
+        /// same_slot専用。通常の（同種のObjectStackへ合流する）配置ロジックを使わず、置き換えオブジェクトを
+        /// 新規ObjectStackとして、originが居たセルを基準に配置する（Slot.PlaceSameSlot参照）。破棄された
+        /// オブジェクトの位置を、新しく生成されたオブジェクトへ引き継がせるために使う（Place参照）。
+        /// FixedPositionsで空きが作れず配置できない場合はfalse（＝呼び出し側でfallbackへ委ねる）。
         /// </summary>
-        public bool InsertAtStackIndex(WorldObject newParent, int slotGlobalId, int stackIndex, WellKnownProperties wellKnown, out string error, bool force = false) =>
-            AttachToSlot(newParent, slotGlobalId, stackIndex, wellKnown, out error, force);
+        public bool InsertSameSlot(WorldObject newParent, int slotGlobalId, SameSlotPlacement placement, WellKnownProperties wellKnown, out string error, bool force = false) =>
+            AttachToSlot(newParent, slotGlobalId, placement, wellKnown, out error, force);
 
-        private bool AttachToSlot(WorldObject newParent, int slotGlobalId, int? insertStackIndex, WellKnownProperties wellKnown, out string error, bool force)
+        /// <summary>same_slot置き換えの配置指示: originが居たセルの位置と、そのセルに同種が残っているか。</summary>
+        public readonly struct SameSlotPlacement
+        {
+            public readonly int OriginCellIndex;
+            public readonly bool KindRemains;
+
+            public SameSlotPlacement(int originCellIndex, bool kindRemains)
+            {
+                OriginCellIndex = originCellIndex;
+                KindRemains = kindRemains;
+            }
+        }
+
+        private bool AttachToSlot(WorldObject newParent, int slotGlobalId, SameSlotPlacement? sameSlot, WellKnownProperties wellKnown, out string error, bool force)
         {
             int localSlot = newParent.Def.SlotLayout.ToLocal(slotGlobalId);
             if (localSlot == LocalIndexMap.Missing)
@@ -213,10 +227,20 @@ namespace UnmappedIsland.Domain.Runtime
 
             DetachFromParent(wellKnown);
 
-            if (insertStackIndex.HasValue)
-                targetSlot.InsertNewStackAt(this, insertStackIndex.Value);
+            if (sameSlot.HasValue)
+            {
+                if (!targetSlot.PlaceSameSlot(this, sameSlot.Value.OriginCellIndex, sameSlot.Value.KindRemains))
+                {
+                    // FixedPositionsで空きが作れず配置できなかった（呼び出し側でfallbackへ）。既に旧親から
+                    // 切り離し済みのため、この場合は未配置（どこにも属さない）で戻す。
+                    error = $"'{newParent.Def.Name}.{targetSlot.Def.Name}' に置き換えの空きがありません。";
+                    return false;
+                }
+            }
             else
+            {
                 targetSlot.AddInternal(this);
+            }
 
             SetParent(newParent, localSlot);
             newParent.PropagateWeightChange(localSlot, GetNumber(wellKnown.WeightId), wellKnown);
@@ -497,14 +521,9 @@ namespace UnmappedIsland.Domain.Runtime
         /// spawnした側は配置先のスロット名を書かない。SameSlotなら、捕捉しておいた位置（親・スロット・
         /// 元の位置）へそのまま配置する（一意に決まるため走査は行わない）。
         ///
-        /// FixedPositionsスロットでは、新しい型（represented_by込みのStackKey）が既に同じスロットに存在する
-        /// （同種スタックへの合流）場合はそのまま通常配置し、そうでなければ、元の固定番号がまだ同種を
-        /// 保持している場合（OriginCellStillOccupied＝selfが生き残る、またはdestroyされても同種が残る場合）は
-        /// 自分の番号の右側（+1以降）で最初に見つかる隙間へ、他のObjectStackを押し出しながら割り込ませ、
-        /// 保持していない場合（同種が全て消えて番号が空いた場合）はその番号をそのまま引き継ぐ。右側に隙間が
-        /// 無ければ、左側（-1以前）で同様に割り込ませる（「右が空いている限り右に、そうでなければ左に生まれる」、
-        /// Slot.TryMakeRoomAndSeed参照）。どちらの方向にも隙間が見つからなければ配置失敗として扱い、
-        /// 後述のfallbackへ委ねる。
+        /// same_slotの実際の配置は、置き換え先の型が既に同じスロットに存在する（同種スタックへの合流）場合を
+        /// 除き、originが居たセルを基準にSlot.PlaceSameSlotへ委ねる（FixedPositions/非FixedPositionsの差は
+        /// そちらに閉じる）。FixedPositionsで空きが作れず配置できなかった場合はfalseが返り、後述のfallbackへ委ねる。
         ///
         /// それ以外の一般スロットでは、EffectSiteが配置時のスロットの状態から決めた位置（元の位置が
         /// 空いていればそこへ新規スタックとして、健在ならselfの直後・元のメンバー位置へ）へ直接挿入する
@@ -528,33 +547,19 @@ namespace UnmappedIsland.Domain.Runtime
                 primaryTarget = s.Parent;
                 Slot slot = s.Parent.GetSlotByLocalId(s.ParentSlotLocalId);
 
-                if (slot.Def.FixedPositions && slot.FindMatchingStack(spawned) == null)
+                if (slot.Def.FixedPositions && slot.FindMatchingStack(spawned) != null)
                 {
-                    // 元の固定番号が今も同種を保持しているなら（selfが生き残る/同種が残る）その隣へ隙間を作り、
-                    // 空いているなら（同種が消えた）その番号をそのまま引き継ぐ。「selfがdestroyされたか」ではなく
-                    // 「その番号がまだ同種を受け入れているか」で決める。
-                    if (s.OriginCellStillOccupied(slot))
-                    {
-                        placed = slot.TryMakeRoomAndSeed(s.GridIndex);
-                    }
-                    else
-                    {
-                        slot.ReserveGridIndexForNextNewStack(s.GridIndex);
-                        placed = true;
-                    }
-
-                    if (placed)
-                        placed = spawned.MoveToSlot(s.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
-                }
-                else if (slot.Def.FixedPositions)
-                {
-                    // 新しい型が既にこのスロットに存在する（同種スタックへの合流）。番号操作は不要。
+                    // 置き換え先の型が既にこのスロットに存在する（同種スタックへの合流）。位置操作は不要。
                     placed = spawned.MoveToSlot(s.Parent, slot.Def.GlobalId, session.Codex.WellKnown, out _, force: false);
                 }
                 else
                 {
-                    placed = spawned.InsertAtStackIndex(
-                        s.Parent, slot.Def.GlobalId, s.ResolveInsertStackIndex(slot), session.Codex.WellKnown, out _, force: false);
+                    // originが居たセルを基準に置き換えを配置する。同種が残っていれば隣へ、消えていれば元の位置へ
+                    // （FixedPositions/非FixedPositionsの差はSlot.PlaceSameSlotに閉じる）。
+                    placed = spawned.InsertSameSlot(
+                        s.Parent, slot.Def.GlobalId,
+                        new SameSlotPlacement(s.OriginCellIndex(slot), s.OriginKindRemains),
+                        session.Codex.WellKnown, out _, force: false);
                 }
             }
             else
@@ -576,23 +581,25 @@ namespace UnmappedIsland.Domain.Runtime
         /// 「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から
         /// 行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。
         ///
-        /// 置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居た位置(スタック/
-        /// 固定番号)が、今もそのオブジェクトと同種を保持しているか」で決まる。保持しているなら（selfが生き残る、
-        /// またはdestroyされても同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、保持していないなら
-        /// （同種が全て消えてスタックごと除去された）その空いた位置をそのまま引き継ぐ。この判別は、除去された
-        /// ObjectStackがSlot.Stacksから外れる（IndexOfStackが負を返す）ことで配置時に判る。
+        /// 置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居たスタック(固定
+        /// 番号)に、同種がまだ残っているか」で決まる。残っているなら（selfが生き残る、またはdestroyされても
+        /// 同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、残っていないなら（同種が全て消えた）その空いた
+        /// 位置をそのまま引き継ぐ。この判別は在庫（originStack.Members.Count）で行う（OriginKindRemains）——
+        /// 「その位置が同種を受け入れられるか」ではない点に注意。空になったスタックも同種を受け入れ可能だが位置は
+        /// 引き継ぐべきで、固定スロットが空スタックを保持する実装でも在庫判定なら正しい。
         /// </summary>
         public readonly struct EffectSite
         {
             public readonly WorldObject Parent;
             public readonly int ParentSlotLocalId;
 
-            /// <summary>捕捉時にself(origin)が属していたObjectStack。配置時にこれがまだSlot.Stacksに残って
-            /// いるか（＝同種を保持しているか）で置き換え位置を分岐する。除去済みでもGridIndexは保持される。</summary>
+            /// <summary>捕捉時にself(origin)が属していたObjectStack。配置時にこれにoriginと同種が
+            /// まだ残っているか（Members.Count>0）で置き換え位置を分岐する。</summary>
             private readonly ObjectStack originStack;
 
-            /// <summary>捕捉時のoriginStackの外側position。originStackごと除去された場合の挿入位置に使う
-            /// （除去後はIndexOfStackで引けないため捕捉値が要る）。</summary>
+            /// <summary>捕捉時のoriginStackのセル位置。originの同種が全て消えて空いた位置へ引き継ぐときに使う
+            /// （空セルが除去される非FixedPositionsではIndexOfStackで引けなくなるため捕捉値が要る。
+            /// FixedPositionsは空セルを保持するので位置は安定＝この値のまま）。</summary>
             private readonly int stackIndexAtCapture;
 
             public EffectSite(WorldObject parent, int parentSlotLocalId, ObjectStack originStack, int stackIndexAtCapture)
@@ -603,26 +610,21 @@ namespace UnmappedIsland.Domain.Runtime
                 this.stackIndexAtCapture = stackIndexAtCapture;
             }
 
-            /// <summary>FixedPositions用: originStackの固定番号（除去済みでも保持される。FixedPositionsスロット
-            /// では必ず採番済み）。</summary>
-            public int GridIndex => originStack.GridIndex.Value;
-
-            /// <summary>元の位置(originStack)が今もこのスロットに残って同種を保持しているか。空になって
-            /// 除去されているならfalse＝その位置は空き。</summary>
-            public bool OriginCellStillOccupied(Slot slot) => slot.IndexOfStack(originStack) >= 0;
-
             /// <summary>
-            /// 非FixedPositionsスロット用に、置き換えオブジェクトを新規スタックとして入れる外側position。
-            /// スタック内での何番目かは持たない（同種はObjectStack内で自動整列されるため、割り込み位置は意味を
-            /// 持たず、同種の山を割るべきでもない）。
-            /// - originStackが除去済み（同種が全て消えた）: 空いた元の位置(stackIndexAtCapture)へ。
-            /// - originStackが健在（selfが生き残る／同種の兄弟が残る）: その山の直後(+1)へ（山はそのまま保つ）。
+            /// 元のスタックにoriginと同種がまだ残っているか（selfが生き残る／同種の兄弟が残る）。残っていれば
+            /// 置き換えオブジェクト（別の型）は隣へ、残っていなければ（空になった）その位置をそのまま引き継ぐ。
+            ///
+            /// 「その位置がoriginの同種を受け入れられるか」ではない点に注意: 空になったスタック（セル）も同種を
+            /// 受け入れ可能だが、位置は引き継ぐべき。判定は在庫（Members.Count）で行うため、固定スロットが空セルを
+            /// 保持する実装でも正しい（空セルがリストに残っていても、同種が居なければ引き継ぎ側になる）。
             /// </summary>
-            public int ResolveInsertStackIndex(Slot slot)
-            {
-                int liveStackIndex = slot.IndexOfStack(originStack);
-                return liveStackIndex >= 0 ? liveStackIndex + 1 : stackIndexAtCapture;
-            }
+            public bool OriginKindRemains => originStack.Members.Count > 0;
+
+            /// <summary>originが居たセルの位置。同種が残っていればoriginStackの現在位置、消えていれば捕捉時の位置
+            /// （非FixedPositionsは除去で前詰めされるが捕捉値がその位置を指す／FixedPositionsは位置が安定）。
+            /// Slot.PlaceSameSlotがこれを基準に、隣（同種残存）か元の位置（消滅）へ配置する。</summary>
+            public int OriginCellIndex(Slot slot) =>
+                OriginKindRemains ? slot.IndexOfStack(originStack) : stackIndexAtCapture;
         }
 
         /// <summary>targetが持つスロットを宣言順に走査し、最初に配置できたスロットへ入れる。

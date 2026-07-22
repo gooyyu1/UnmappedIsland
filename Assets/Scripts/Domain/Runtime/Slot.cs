@@ -6,39 +6,47 @@ using UnmappedIsland.Domain.Defs;
 namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
-    /// 1つの WorldObject が持つ、1つのスロットの実行時状態。中に入っている WorldObject を、ObjectStack
-    /// （7.6節、「見た目上1つのまとまり」）のリストとして保持する。正の情報源はこちら側（親のスロット配列）
-    /// であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。
+    /// 1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは
+    /// 1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は
+    /// こちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。
     ///
-    /// Stacksの並び順は「表示上のスタック順」そのものを表す実データとして維持する（都度ソートし直す
-    /// 派生ビューではない）。中身の追加・削除は WorldObject.MoveToSlot 経由でのみ行う（両者の整合性を
-    /// 1箇所でのみ保証するため）。
+    /// FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。
+    /// - FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が
+    ///   安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。
+    /// - 非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。
+    /// この差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot
+    /// 置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。
+    ///
+    /// 中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。
     /// </summary>
     public sealed class Slot
     {
         public SlotDef Def { get; }
 
-        private readonly List<ObjectStack> stacks = new List<ObjectStack>();
-        public IReadOnlyList<ObjectStack> Stacks => stacks;
+        /// <summary>セルの並び。要素は ObjectStack か null（空セル、FixedPositionsのみ）。位置＝添字。</summary>
+        private readonly List<ObjectStack> cells = new List<ObjectStack>();
+
+        private IEnumerable<ObjectStack> LiveStacks => cells.Where(c => c != null);
+
+        /// <summary>実在するスタックだけ（空セルnullを除く）。位置は GetGridIndex / IndexOfStack で別途得る。</summary>
+        public IReadOnlyList<ObjectStack> Stacks => LiveStacks.ToList();
 
         /// <summary>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。スタックの概念に興味が無い
-        /// 呼び出し側（タグ判定・重さ集計・子の一括走査など、ほとんどが内部処理）はこちらを使う。実データは
-        /// あくまでStacksであり、Contentsは呼ぶ都度そこから組み立てる派生ビュー。</summary>
-        public IReadOnlyList<WorldObject> Contents => stacks.SelectMany(s => s.Members).ToList();
-
-        /// <summary>same_slot(FixedPositions)専用の一時予約。次にAddInternalで新規スタックが作られる際、
-        /// AssignGridIndexで新規採番する代わりにこの値をそのまま割り当てる（1回のAddInternal呼び出しで
-        /// 必ず消費される）。TryMakeRoomAndSeed/ReserveGridIndexForNextNewStack参照。</summary>
-        private int? pendingGridReservation;
+        /// 呼び出し側（タグ判定・重さ集計・子の一括走査など、ほとんどが内部処理）はこちらを使う。</summary>
+        public IReadOnlyList<WorldObject> Contents => LiveStacks.SelectMany(s => s.Members).ToList();
 
         public Slot(SlotDef def)
         {
             Def = def;
+            // FixedPositionsは固定長のセル配列（全て空=null）として持つ。番号は添字そのもの。
+            if (def.FixedPositions)
+                for (int i = 0; i < def.UnitCapacity.GetValueOrDefault(); i++)
+                    cells.Add(null);
         }
 
         /// <summary>
         /// move_to_slot（7.1節）が候補オブジェクトを受け入れられるかを、この Slot 自身の Def と
-        /// Stacks だけで判定する（accepts制約・capacity・UnitCapacity、7.2〜7.3節）。force=trueの
+        /// 中身だけで判定する（accepts制約・capacity・UnitCapacity、7.2〜7.3節）。force=trueの
         /// 場合はこの判定自体を呼び出し側（WorldObject.AttachToSlot）がスキップする。
         /// </summary>
         public bool CanAccept(WorldObject candidate, WellKnownProperties wellKnown, string ownerName, out string error)
@@ -93,143 +101,143 @@ namespace UnmappedIsland.Domain.Runtime
         {
             if (!Def.UnitCapacity.HasValue) return true;
             if (Def.Stackable && FindMatchingStack(candidate) != null) return true;
-            return stacks.Count < Def.UnitCapacity.Value;
+            return LiveStacks.Count() < Def.UnitCapacity.Value;
         }
 
-        /// <summary>通常の追加。Stackable/FixedPositions/StackOrderに従って正しいObjectStack・位置へ挿入する。</summary>
+        /// <summary>通常の追加。合流できる既存スタックがあればそこへ、無ければ新規スタックとして
+        /// 最初の空きセル（＝FixedPositionsでは最小の空き番号）へ、空きが無ければ末尾へ入れる。</summary>
         public void AddInternal(WorldObject obj)
         {
-            if (!Def.Stackable) { stacks.Add(new ObjectStack(obj)); return; }
+            if (Def.Stackable)
+            {
+                // TryInsertはMatchesを満たさない相手を弾くため、万一合致しないスタックが返っても無理に
+                // 押し込まれず、新規スタック生成へフォールバックする。
+                ObjectStack existing = FindMatchingStack(obj);
+                if (existing != null && existing.TryInsert(obj)) return;
+            }
 
-            // 合流できる既存スタックがあればそこへ。TryInsertはMatchesを満たさない相手を弾くため、
-            // 万一合致しないスタックが返っても無理に押し込まれず、新規スタック生成へフォールバックする。
-            ObjectStack existing = FindMatchingStack(obj);
-            if (existing != null && existing.TryInsert(obj)) return;
-
-            InsertNewStack(new ObjectStack(obj));
+            PlaceNewStack(new ObjectStack(obj));
         }
 
-        private void InsertNewStack(ObjectStack newStack)
+        /// <summary>新規スタックを最初の空きセルへ、無ければ末尾へ。FixedPositionsは空セル(null)を持つので
+        /// 最小の空き番号へ入り、非FixedPositionsは空セルが無いので常に末尾へ追加される。</summary>
+        private void PlaceNewStack(ObjectStack newStack)
         {
-            if (!Def.FixedPositions) { stacks.Add(newStack); return; }
-
-            newStack.GridIndex = AssignGridIndex();
-            int insertAt = stacks.FindIndex(s => s.GridIndex > newStack.GridIndex);
-            stacks.Insert(insertAt == -1 ? stacks.Count : insertAt, newStack);
+            int firstEmpty = cells.IndexOf(null);
+            if (firstEmpty >= 0) cells[firstEmpty] = newStack;
+            else cells.Add(newStack);
         }
-
-        /// <summary>
-        /// same_slotによる置き換え専用（非FixedPositions）。置き換えオブジェクトを新規ObjectStackとして、
-        /// 配置時に決めた外側position(stackIndex)へ自動整列を一切行わず割り込ませる（EffectSite.
-        /// ResolveInsertStackIndex参照）。stackIndexが範囲外（元の位置が末尾だった等）でも末尾へ丸めて入る。
-        /// スタック内での割り込み位置は扱わない（同種はObjectStack内で自動整列されるため意味を持たず、同種の
-        /// 山を割るべきでもない）。
-        /// </summary>
-        public void InsertNewStackAt(WorldObject obj, int stackIndex) =>
-            stacks.Insert(Math.Min(stackIndex, stacks.Count), new ObjectStack(obj));
 
         public void RemoveInternal(WorldObject obj)
         {
-            ObjectStack stack = FindStackContaining(obj);
-            if (stack == null) return;
-            stack.Remove(obj);
-            if (stack.Members.Count == 0) stacks.Remove(stack);
-        }
+            int idx = cells.FindIndex(c => c != null && c.Members.Contains(obj));
+            if (idx < 0) return;
 
-        /// <summary>objが現在属しているObjectStack（無ければnull）。</summary>
-        public ObjectStack FindStackContaining(WorldObject obj) => stacks.FirstOrDefault(s => s.Members.Contains(obj));
+            cells[idx].Remove(obj);
+            if (cells[idx].Members.Count > 0) return;
 
-        /// <summary>candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければnull）。</summary>
-        public ObjectStack FindMatchingStack(WorldObject candidate) => stacks.FirstOrDefault(s => s.Matches(candidate));
-
-        /// <summary>このObjectStackが外側リスト(Stacks)の何番目にあるか。</summary>
-        public int IndexOfStack(ObjectStack stack) => stacks.IndexOf(stack);
-
-        /// <summary>型globalIdに対応するObjectStackの固定番号（無ければnull）。represented_byを使わない
-        /// ObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。represented_byを使う
-        /// ObjectDefについて調べたい場合は、FindStackContaining等で具体的なWorldObjectから辿ること。</summary>
-        public int? GetGridIndex(int objectDefGlobalId) =>
-            stacks.FirstOrDefault(s => s.Def.GlobalId == objectDefGlobalId)?.GridIndex;
-
-        /// <summary>same_slot(FixedPositions)専用の予約。次にAddInternalで新規ObjectStackが作られる際、
-        /// AssignGridIndexで新規採番する代わりにgridIndexをそのまま割り当てる（destroyされた自分自身が
-        /// 同種の最後の1個で、自分の固定番号をそのまま新しい型へ引き継がせたい場合に使う）。</summary>
-        public void ReserveGridIndexForNextNewStack(int gridIndex) => pendingGridReservation = gridIndex;
-
-        private int AssignGridIndex()
-        {
-            if (pendingGridReservation.HasValue)
-            {
-                int reserved = pendingGridReservation.Value;
-                pendingGridReservation = null;
-                return reserved;
-            }
-
-            var used = new HashSet<int>(stacks.Where(s => s.GridIndex.HasValue).Select(s => s.GridIndex.Value));
-            for (int i = 0; i < Def.UnitCapacity.GetValueOrDefault(); i++)
-                if (!used.Contains(i)) return i;
-
-            throw new InvalidOperationException(
-                $"'{Def.Name}' に空いている固定番号がありません（呼び出し側でHasCapacityForを確認していないはずです）。");
+            // セルが空になった。FixedPositionsは位置を保つため空セル(null)として残し、非FixedPositionsは
+            // 前詰めするため削除する（これが両者の唯一の差）。
+            if (Def.FixedPositions) cells[idx] = null;
+            else cells.RemoveAt(idx);
         }
 
         /// <summary>
-        /// same_slot専用。selfIndexの右側（+1以降）で最初に見つかる空き番号へ、無ければ左側（-1以前）で
-        /// 同様に、間にいる他のObjectStackを押し出しながら、次に生成されるObjectStackの固定番号として
-        /// 予約する（実際の生成・挿入は直後のAddInternal→AssignGridIndexが行う。押し出しはObjectStack単位で
-        /// 行うため、押し出されるObjectStackがスタック（同種複数個）であっても中身の相対順序は変わらない）。
-        /// どちらの方向にも空きが見つからなければfalseを返す（呼び出し側でfallbackへ委ねる）。
+        /// same_slotによる置き換え（GameElementDefinition.md 9.4節）。置き換えオブジェクトを新規スタックとして、
+        /// originが居たセル(originCellIndex)を基準に配置する（EffectSite.OriginCellIndex/OriginKindRemains参照）。
+        /// 自動整列は行わない（同種はObjectStack内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
+        ///
+        /// - kindRemains（originの同種がまだ残る＝selfが生き残る/同種の兄弟が残る）: 置き換え先はoriginの隣。
+        ///   非FixedPositionsはその添字へ挿入（後続が右へずれる）。FixedPositionsはoriginの右隣（無ければ左隣）へ、
+        ///   最寄りの空きセルをずらして場所を作って入れる。空きが無ければ配置失敗（false→呼び出し側でfallback）。
+        /// - !kindRemains（originの同種が全て消えた）: 空いた元の位置へ。非FixedPositionsはその添字へ挿入、
+        ///   FixedPositionsは空になったそのセル(null)を埋める。
         /// </summary>
-        public bool TryMakeRoomAndSeed(int selfIndex) =>
-            TryMakeRoomAndSeed(selfIndex, step: 1) || TryMakeRoomAndSeed(selfIndex, step: -1);
-
-        private bool TryMakeRoomAndSeed(int selfIndex, int step)
+        public bool PlaceSameSlot(WorldObject obj, int originCellIndex, bool kindRemains)
         {
-            int targetIndex = selfIndex + step;
-            int capacity = Def.UnitCapacity.GetValueOrDefault();
-            if (targetIndex < 0 || targetIndex >= capacity) return false;
-
-            var occupied = new HashSet<int>(stacks.Where(s => s.GridIndex.HasValue).Select(s => s.GridIndex.Value));
-            int emptyAt = -1;
-            for (int i = targetIndex; i >= 0 && i < capacity; i += step)
+            if (!Def.FixedPositions)
             {
-                if (!occupied.Contains(i)) { emptyAt = i; break; }
+                int at = kindRemains ? originCellIndex + 1 : originCellIndex;
+                cells.Insert(Math.Min(Math.Max(at, 0), cells.Count), new ObjectStack(obj));
+                return true;
             }
-            if (emptyAt == -1) return false;
 
-            int lo = Math.Min(targetIndex, emptyAt);
-            int hi = Math.Max(targetIndex, emptyAt);
-            foreach (var s in stacks)
-                if (s.GridIndex.HasValue && s.GridIndex.Value >= lo && s.GridIndex.Value <= hi)
-                    s.GridIndex += step;
-            stacks.Sort((x, y) => Nullable.Compare(x.GridIndex, y.GridIndex));
+            return kindRemains
+                ? TryPlaceAdjacent(obj, originCellIndex)
+                : TryFillCell(obj, originCellIndex);
+        }
 
-            pendingGridReservation = targetIndex;
+        /// <summary>FixedPositions: 空いているセル(cellIndex)を新規スタックで埋める（埋まっていれば失敗）。</summary>
+        private bool TryFillCell(WorldObject obj, int cellIndex)
+        {
+            if (cellIndex < 0 || cellIndex >= cells.Count || cells[cellIndex] != null) return false;
+            cells[cellIndex] = new ObjectStack(obj);
             return true;
         }
 
+        /// <summary>FixedPositions: originCellIndexの右隣（無ければ左隣）へ、最寄りの空きセルをその方向へずらして
+        /// 場所を作り、新規スタックを入れる。「右が空いている限り右に、そうでなければ左に生まれる」。どちらの
+        /// 方向にも空きが無ければfalse（＝スロットが埋まっている。呼び出し側でfallbackへ委ねる）。</summary>
+        private bool TryPlaceAdjacent(WorldObject obj, int originCellIndex) =>
+            TryPlaceShifted(obj, originCellIndex, step: 1) || TryPlaceShifted(obj, originCellIndex, step: -1);
+
+        private bool TryPlaceShifted(WorldObject obj, int originCellIndex, int step)
+        {
+            int target = originCellIndex + step;
+            if (target < 0 || target >= cells.Count) return false;
+
+            int emptyAt = -1;
+            for (int i = target; i >= 0 && i < cells.Count; i += step)
+                if (cells[i] == null) { emptyAt = i; break; }
+            if (emptyAt == -1) return false;
+
+            // emptyからtargetへ、間のセルをstep方向へ1つずつずらす（targetを空ける）。押し出しはセル単位で
+            // 行うため、押し出されるスタック（同種複数個）の中身の相対順序は変わらない。
+            for (int i = emptyAt; i != target; i -= step)
+                cells[i] = cells[i - step];
+            cells[target] = new ObjectStack(obj);
+            return true;
+        }
+
+        /// <summary>objが現在属しているObjectStack（無ければnull）。</summary>
+        public ObjectStack FindStackContaining(WorldObject obj) =>
+            cells.FirstOrDefault(c => c != null && c.Members.Contains(obj));
+
+        /// <summary>candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければnull）。</summary>
+        public ObjectStack FindMatchingStack(WorldObject candidate) =>
+            cells.FirstOrDefault(c => c != null && c.Matches(candidate));
+
+        /// <summary>このObjectStackがセルの並びの何番目にあるか（＝位置。FixedPositionsでは固定番号）。</summary>
+        public int IndexOfStack(ObjectStack stack) => cells.IndexOf(stack);
+
+        /// <summary>型globalIdに対応するObjectStackの位置（＝FixedPositionsの固定番号、無ければnull）。
+        /// represented_byを使わないObjectDef向けの簡易API（型ごとに高々1つのObjectStackしか存在しない前提）。
+        /// represented_byを使うObjectDefは、GetStacks + IndexOfStack で具体的なスタックから辿ること。</summary>
+        public int? GetGridIndex(int objectDefGlobalId)
+        {
+            int i = cells.FindIndex(c => c != null && c.Def.GlobalId == objectDefGlobalId);
+            return i >= 0 ? i : (int?)null;
+        }
+
         /// <summary>
-        /// プレイヤーによる手動並び替え。対象の型が既に存在する番号と入れ替える（無ければ何もしない）。
-        /// 前詰めしない前提のため、単純な2者間のswapとして表現する。represented_byを使わないObjectDef向けの
-        /// 簡易API（GetGridIndexと同じ理由）。
+        /// プレイヤーによる手動並び替え（FixedPositions専用）。対象の型のセルを、指定した番号のセルと入れ替える
+        /// （相手が空セルなら実質移動になり、元のセルが空く）。前詰めしない前提のため、単純な2者間のswap。
+        /// represented_byを使わないObjectDef向けの簡易API（GetGridIndexと同じ理由）。
         /// </summary>
         public bool TrySetManualPosition(int objectDefGlobalId, int newGridIndex)
         {
             if (!Def.FixedPositions) return false;
-            ObjectStack target = stacks.FirstOrDefault(s => s.Def.GlobalId == objectDefGlobalId);
-            if (target == null || !target.GridIndex.HasValue) return false;
-            if (newGridIndex < 0 || newGridIndex >= Def.UnitCapacity.GetValueOrDefault()) return false;
+            int cur = cells.FindIndex(c => c != null && c.Def.GlobalId == objectDefGlobalId);
+            if (cur < 0) return false;
+            if (newGridIndex < 0 || newGridIndex >= cells.Count) return false;
 
-            ObjectStack occupant = stacks.FirstOrDefault(s => s.GridIndex == newGridIndex);
-            int oldIndex = target.GridIndex.Value;
-            target.GridIndex = newGridIndex;
-            if (occupant != null && occupant != target) occupant.GridIndex = oldIndex;
-
-            stacks.Sort((x, y) => Nullable.Compare(x.GridIndex, y.GridIndex));
+            ObjectStack tmp = cells[newGridIndex];
+            cells[newGridIndex] = cells[cur];
+            cells[cur] = tmp;
             return true;
         }
 
-        /// <summary>表示用: このスロットが持つObjectStackの一覧（既にまとまっているため、走査は不要）。</summary>
-        public IReadOnlyList<ObjectStack> GetStacks() => stacks;
+        /// <summary>表示用: このスロットが持つ実在スタックの一覧（空セルは含まない）。</summary>
+        public IReadOnlyList<ObjectStack> GetStacks() => Stacks;
     }
 }
