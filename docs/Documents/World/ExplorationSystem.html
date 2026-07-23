@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ExplorationSystem</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+  <style>
+    @media (max-width: 600px) {
+      .markdown-body { padding: 1rem !important; }
+    }
+  </style>
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+<header id="title-block-header">
+<h1 class="title">ExplorationSystem</h1>
+</header>
+<h1 id="探索道システム設計">探索・道システム設計</h1>
+<h2 id="概要">概要</h2>
+<p>本ドキュメントは、<a
+href="./TerrainGeneration.html"><code>TerrainGeneration.md</code></a>
+の地形生成パイプラインによって作られた
+<code>Location</code>（土地）が、生成された<strong>あと</strong>にどう振る舞うかをまとめたものです。「島にどんな土地がいくつ、どう
+配置されるか」は <code>TerrainGeneration.md</code>
+の関心事、「1つの土地に立ったプレイヤーが何をできるか（探索する・道を
+見つける・移動する）」は本書の関心事、と役割を分けています。</p>
+<p>文法そのものは <a
+href="../Engine/GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
+に集約されている既存の仕組み
+（<code>traits</code>・<code>slots</code>・<code>props</code>・<code>actions</code>・<code>pick</code>）だけで組み立てており、探索・道専用の新しい文法は導入していません。
+ただし、実装にあたってエンジンへ2つの汎用拡張（<code>duration</code>・<code>move</code>）を追加しています。これらは地形専用ではなく、
+<code>GameElementDefinition.md</code> 11.3 節・9.6
+節に文法として記載されています。</p>
+<p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
+6 節にまとめています。実際のクラス名・
+メソッド名を使った実装の呼び出し関係（<code>IslandSpawner</code>・<code>MoveEffect</code>・<code>Views.Location.Explore</code>
+等）は <a
+href="../Engine/TerrainGenerationImplementation.html"><code>TerrainGenerationImplementation.md</code></a>
+にまとめています。</p>
+<h2 id="location-trait-と-explorable-trait-の役割分担">1.
+<code>location</code> trait と <code>explorable</code> trait
+の役割分担</h2>
+<p>「場所」であるという構造（3種のスロット）と、「探索できる」という性質（進捗・道の発見）は、<strong>別々の
+trait</strong>
+に分けています。両者は独立した軸であり、探索できない場所（例えば、プレイヤーが拠点として使う家・作業小屋の
+ような建造物）も「場所」である以上、木や植物・建築物や家具などの設置物用のスロット・アイテム用のスロット・
+キャラクタ用のスロットは必要です。そのため、これらのスロットは探索の可否に関わらずあらゆる場所が持つべき
+構造として、<code>explorable</code> ではなく <code>location</code>
+trait（<code>core.yaml</code>）側に置いています。</p>
+<ul>
+<li><strong><code>location</code></strong>（<code>core.yaml</code>）:
+あらゆる場所が共通して持つ構造。<strong>3種のスロット</strong>（<code>items</code>/<code>fixtures</code>/
+<code>characters</code>）と、<code>world.locations</code> スロットの
+<code>accepts</code> 判定用のタグ配布。草原のような探索可能な土地も、
+家のような探索を伴わない場所も、場所である以上すべてこの trait
+を実装します。</li>
+<li><strong><code>explorable</code></strong>（<code>locations.yaml</code>）:
+探索<strong>できる</strong>場所だけが追加で持つ構造。探索進捗プロパティと、
+道の発見に使う2スロット（<code>undiscovered_paths</code>/<code>paths</code>）。家のように探索を伴わない場所は、この
+trait を 実装しません（<code>traits: [location]</code>
+のみで成立します）。</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># core.yaml</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">location</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">location</span><span class="kw">]</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> item</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">9999</span><span class="kw">}]</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">fixtures</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> fixture</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">9999</span><span class="kw">}]</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">characters</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> character</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">9999</span><span class="kw">}]</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">unit_capacity</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">fixed_positions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># locations.yaml</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">explorable</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">slots</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">undiscovered_paths</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> path</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">9999</span><span class="kw">}]</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> path</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">9999</span><span class="kw">}]</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">   # valueなし = 実装する側で必須（5節）</span></span></code></pre></div>
+<p>草原などの探索可能な土地は両方を参照します（<code>traits: [location, explorable]</code>）。家のような場所は
+<code>location</code>
+のみを参照すれば、探索の仕組み（進捗・道）を持たずに3種のスロットだけを得られます。</p>
+<h3 id="種のスロットlocation-trait">1.1
+3種のスロット（<code>location</code> trait）</h3>
+<p>すべての場所は次の3種のスロットを持ちます。いずれも
+<code>capacity</code>（サイズの合計制限、7.3
+節）は指定していません。</p>
+<ul>
+<li><strong><code>items</code></strong>:
+アイテムが置かれるスロット。</li>
+<li><strong><code>fixtures</code></strong>:
+木や植物、建築物や家具、洞窟の入口などの設置物が置かれるスロット。</li>
+<li><strong><code>characters</code></strong>:
+キャラクタを入れるスロット。<code>fixed_positions: true</code>・<code>unit_capacity: 1</code>（固定型、
+スタック数1つだけ）。</li>
+</ul>
+<p><code>items</code>/<code>fixtures</code>
+の区別はタグ（<code>item</code>/<code>fixture</code>）だけで行い、探索の発見物（2
+節）を <code>spawn</code> する際、
+どちらのスロットへ入るかは著者がスロット名を指定せずとも自動的に決まります（<code>spawn</code>
+の <code>into</code> が起点の持つ スロットを宣言順に走査する、9.4
+節）。<code>items</code>
+を宣言順の先頭に置いているのは、<code>spawn</code> が配置に失敗した際の
+フォールバック（起点自身の親へ強制配置、9.4
+節）が同じく先頭のスロットへ入るためで、「持ちきれない発見物は
+地面（土地の
+<code>items</code>）に落ちる」という直感的な結果を、追加のルールなしに実現しています。</p>
+<h3 id="道の2スロット隠しスロット方式explorable-trait">1.2
+道の2スロット（隠しスロット方式、<code>explorable</code> trait）</h3>
+<p>要求にあった「土地同士の繋がり方を記述する方法」は、Card Survival
+と同様に<strong>探索によって見つかる <code>path</code> という
+専用オブジェクト</strong>として表現しました。この「発見」を実装する方式として、以下の2案を検討しました。</p>
+<ul>
+<li><strong>隠しスロット方式（採用）</strong>:
+<code>undiscovered_paths</code>（隠し）と
+<code>paths</code>（公開）の2スロットを持ち、生成時点で 道は
+<code>undiscovered_paths</code>
+に置かれます。探索の進捗が道ごとの必要値に達すると、<code>paths</code>
+へ移動して「発見」
+されます。道オブジェクト自体は生成時から実在するため、UI側は「発見済みの
+<code>paths</code> の中身だけを表示する」
+だけでよく、未発見の道を非表示にする特別な処理を持つ必要がありません。</li>
+<li><strong>条件ゲート方式（不採用）</strong>:
+道は最初から1つのスロットに置かれ、移動アクション自体に「親の探索進捗 ≥
+必要な進捗」という条件を持たせて実行を禁止する。YAMLだけで完結しますが、未発見の道をカード一覧から隠す
+処理を UI
+側に別途実装する必要があり、「発見」という状態遷移がどこにも実体を持ちません。</li>
+</ul>
+<p>隠しスロット方式を採用したことで、「発見」は
+<code>undiscovered_paths</code> → <code>paths</code> という既存の
+<code>move_to_slot</code> （唯一の汎用スロット移動操作、7.1
+節）1回で表現でき、UI 側は「パススロットの中身を表示する」という単純な
+規約だけで正しく振る舞います。</p>
+<h2 id="探索explore-アクション">2. 探索（<code>explore</code>
+アクション）</h2>
+<p>要求どおり、「探索で何が見つかるか」は <code>explorable</code> trait
+にも実装せず、土地ごとの <code>object_defs</code>
+（<code>locations.yaml</code>）が個別に定義します。探索できる回数（進捗プロパティの上限）も同様に個別定義です。
+<code>explorable</code> trait
+自身が持つのは、進捗を保持する箱（<code>exploration_progress</code>）と道の発見に使う2スロット
+（1.2 節）という、あらゆる探索可能な土地に共通する器だけです。</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">grassland</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">traits</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">location</span><span class="kw">,</span><span class="at"> explorable</span><span class="kw">]</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">exploration_progress</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">12</span><span class="kw">}</span><span class="co">   # 探索できる回数</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">explore</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> exploration_progress</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">12</span><span class="kw">}</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pick</span><span class="kw">:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}}</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}}</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> water_spinach</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> self</span><span class="kw">}</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">          # ...</span></span></code></pre></div>
+<ul>
+<li><strong>探索可能回数</strong>: <code>exploration_progress</code> の
+<code>range.max</code>（要求どおり 10〜20 の範囲。土地ごとに異なる）。
+<code>explore</code> の <code>conditions</code> は
+<code>value: max</code>
+という参照記法が未対応（<code>GameElementDefinition.md</code> 17
+節）のため、 <code>range.max</code>
+と同じ値をリテラルで重複して書いています。二重管理になる点は、<code>Tests/StreamingAssets/   LocationsYamlTests.cs</code>
+が実際の探索を上限まで回す振る舞いテスト（「max-1では実行でき、maxでは実行できない」）
+で検証しており、値のずれがあれば必ず失敗します。</li>
+<li><strong>発見物</strong>: <code>pick</code>（10
+節）による重み付き抽選です。<code>add</code>（進捗+1）と
+<code>spawn</code>（発見物の生成）は<code>pick</code>の
+同じ候補の中に共存できます（10.1
+節。候補は複数の一時的な命令を持てます）。「ハズレ」（進捗だけが増える
+候補）を必ず用意しています。<code>add</code>/<code>pick</code>
+は排他な兄弟キーという既存文法（<code>ParseActiveEffectBody</code>
+参照）のため、進捗+1は毎回、すべての候補に個別に含めています。</li>
+<li><strong><code>duration</code></strong>:
+1回の探索にかかる時間（分、<code>GameElementDefinition.md</code> 11.3
+節）。見通しの悪い土地 （密林・岸壁など）ほど長く設定しています。</li>
+</ul>
+<h2 id="道path-object_defと移動">3. 道（<code>path</code>
+object_def）と移動</h2>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">path</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tags</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">path</span><span class="kw">]</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">travel_minutes</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span><span class="co">          # 生成時にインスタンスごと上書きされる</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">required_progress</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">           # 同上</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">destination_id</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="co">           # 同上（移動先LocationのインスタンスID）</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">travel</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> paths</span><span class="kw">}</span><span class="co">   # 発見済み（pathsスロット）の間だけ実行できる</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> travel_minutes</span><span class="kw">}</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">move</span><span class="kw">:</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">object</span><span class="kw">:</span><span class="at"> actor</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">to_prop</span><span class="kw">:</span><span class="at"> destination_id</span></span></code></pre></div>
+<ul>
+<li><strong><code>travel_minutes</code>/<code>required_progress</code>/<code>destination_id</code></strong>
+はいずれも <code>path</code> の通常の <code>props</code> で、地形生成
+（<code>Domain/Generation/IslandSpawner</code>）がインスタンス生成の直後に
+<code>SetProperty</code> で書き込みます。<code>object_defs</code>
+レベルの初期値はプレースホルダで、実際に使われるのは常にインスタンスごとの上書き後の値です。</li>
+<li><strong><code>conditions: [{in_slot: paths}]</code></strong>（<code>GameElementDefinition.md</code>
+14.2 節）が「未発見（<code>undiscovered_paths</code>
+側）の間は移動できない」を表します。1
+節の隠しスロット方式と組み合わさり、「発見されていない道は移動も
+できない」が自然に両立します。</li>
+<li><strong><code>move</code></strong>（<code>GameElementDefinition.md</code>
+9.6 節で新設した汎用の active 動詞）が、<code>actor</code> を
+<code>destination_id</code> が指すインスタンスへ移動させます。移動先を
+<code>object_defs</code> の
+id（型）ではなくプロパティ値（インスタンスID） で指しているのは、同じ
+<code>LocationType</code> の土地が1つの島に複数存在しうる（例:
+「東の草原」と「北の草原」）
+ため、型ではなく<strong>生成時に確定した特定の個体</strong>を指す必要があるからです。</li>
+</ul>
+<h3 id="道は辺1本につき両端へ2個">3.1 道は辺1本につき両端へ2個</h3>
+<p>地形生成（<code>TerrainGeneration.md</code> 3.5 節）が確定させる
+<code>Location</code> 間の1本の繋がりに対し、<code>path</code>
+インスタンスを <strong>両端に1個ずつ</strong>生成します。片方は「Aの
+<code>undiscovered_paths</code> に居て、<code>destination_id</code>
+はBを指す」、もう片方は
+その逆です。この非対称な表現により、「Aから探索を進めて先にAB間の道を見つけたが、Bはまだその道を見つけていない」
+という状態を、特別な仕組みなしに自然に表現できます（Bからは、B側の道インスタンスの
+<code>required_progress</code> に
+達するまで、同じ繋がりは見つかりません）。</p>
+<h3
+id="required_progress-の割り当て探索可能回数を使い切る前に道が見つかることの保証">3.2
+required_progress
+の割り当て（探索可能回数を使い切る前に道が見つかることの保証）</h3>
+<p>要求「進捗率最大に達するのに必要な探索回数は10〜20回とし、最大に達する前に道が見つかるようにする」を、
+データの調整ではなく<strong>生成側の不変条件</strong>として保証しています。</p>
+<p>ある土地に接続する道が K 本あるとき、それぞれの
+<code>required_progress</code> を、探索上限を <code>max</code> として
+<code>[2, max − 1]</code>
+の範囲へ均等間隔で割り当てます（<code>Domain/Generation/IslandSpawner</code>）。最初の道が進捗2で
+見つかる（1回目の探索でいきなり道が見つからないようにする）のを最速とし、最後の道は必ず
+<code>max − 1</code> 以前に 見つかります。この不変条件は
+<code>Tests/Generation/IslandSpawnerTests.cs</code>
+が全接続について検証しています。</p>
+<h2 id="エンジン拡張durationmove">4.
+エンジン拡張（<code>duration</code>・<code>move</code>）</h2>
+<p>本システムの実装にあたり、<code>GameElementDefinition.md</code>
+へ2つの汎用拡張を加えました。地形・探索専用の機能では なく、他のどんな
+<code>actions</code>/<code>combinations</code>/<code>pick</code>
+からも使える一般的な文法拡張です。</p>
+<ul>
+<li><strong><code>duration</code></strong>（<code>GameElementDefinition.md</code>
+11.3 節）: アクションの実行にかかるゲーム内時間（分）。 リテラルか
+<code>{object, prop}</code> 参照（<code>weight</code>
+と同じ二択）で指定します。実行結果の適用後に
+<code>WorldSession.AdvanceWorldTime</code>
+で時間を進めます（先に進めると、tick駆動の変化が効果適用前の対象を
+消してしまう事故がありうるため、適用後に進めます）。それまでのエンジンには「アクションの所要時間」という
+概念自体がなく（レシピの <code>duration</code> はレシピの工程専用、13.1
+節）、探索・移動のどちらにも必要だったため 新設しました。</li>
+<li><strong><code>move</code></strong>（<code>GameElementDefinition.md</code>
+9.6 節）: 対象オブジェクトを、<code>self</code> のプロパティが指す
+インスタンスIDのオブジェクトへ移動させる active 動詞。既存の
+<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>
+には
+「既存オブジェクトの所属先そのものを変える」動詞がなく、新設しました。</li>
+</ul>
+<h2 id="カプセル化-探索の入口を1箇所にする">5. カプセル化:
+探索の入口を1箇所にする</h2>
+<p><code>Runtime.Views.Location.Explore(actor, session)</code>
+を、探索の唯一の入口としています。</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">bool</span> <span class="fu">Explore</span><span class="op">(</span>WorldObject actor<span class="op">,</span> WorldSession session<span class="op">)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(!</span>Instance<span class="op">.</span><span class="fu">TryExecuteAction</span><span class="op">(</span><span class="st">&quot;explore&quot;</span><span class="op">,</span> actor<span class="op">,</span> session<span class="op">))</span> <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RevealDuePaths</span><span class="op">(</span>session<span class="op">);</span>   <span class="co">// 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">true</span><span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><code>explore</code>
+アクション（YAML側）の実行と、それに伴う「進捗が必要値に達した道を公開する」という後処理
+（<code>RevealDuePaths</code>）を、呼び出し側（UI等）に分けて呼ばせません。呼び出し側は「探索してほしい」と依頼する
+だけでよく、探索の後に何を判定すべきか（道の公開）を知らなくてよい設計にしています
+（<code>CLAUDE.md</code>
+の「自分のことは自分でする」方針）。<code>RevealDuePaths</code>
+自体は冪等なため、進捗がYAML側の効果 だけで動いた場合に備えて
+<code>Paths</code> アクセサからも呼べるようにしています。</p>
+<h2 id="未決事項今後の検討課題">6. 未決事項・今後の検討課題</h2>
+<ul>
+<li><strong>洞窟内部の生成</strong>:
+<code>cave_entrance</code>（探索で見つかる
+<code>fixture</code>）は、<code>TerrainGeneration.md</code> 3.7
+節が構想する 「内部に子 <code>Location</code> グラフを持つ
+<code>Structure</code>」の入口として先に用意したプレースホルダです。
+<code>structure_interior</code>
+生成スコープの具体的なスキーマと、洞窟内部への遷移アクション（<code>move</code>
+の応用）は 未実装です。</li>
+<li><strong><code>spring</code>（湧き水）の給水アクション</strong>:
+発見されるだけのプレースホルダで、<code>drink</code> 的なアクションは
+<code>ContainerSystem.md</code>
+の液体表現の実装とあわせて今後の課題です。</li>
+<li><strong>発見物の <code>size</code>/<code>weight</code></strong>:
+探索で見つかるアイテム・設置物は、コンテナ容量（<code>ContainerSystem.md</code>）に
+関わる <code>size</code>/<code>weight</code>
+プロパティをまだ持たせていません。</li>
+<li><strong><code>name_pool</code>（固有名詞）</strong>:
+<code>TerrainGeneration.md</code> 3.6
+節が構想する、印象的な地形への固有名詞付与は
+未実装です（現状は「方角+LocationType表示名」、重複時は漢数字の接尾辞のみ）。</li>
+<li><strong>同じ土地への道が3本以上ある場合の分布</strong>:
+現在の等間隔割り当ては K 本すべてに対して機械的に働きますが、
+「最初の道が見つかるまでが長すぎる／短すぎる」といった体験上の調整は今後の課題です。</li>
+</ul>
+</article>
+</body>
+</html>

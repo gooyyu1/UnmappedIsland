@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>TerrainGenerationImplementation</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+  <style>
+    @media (max-width: 600px) {
+      .markdown-body { padding: 1rem !important; }
+    }
+  </style>
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+<header id="title-block-header">
+<h1 class="title">TerrainGenerationImplementation</h1>
+</header>
+<h1 id="地形生成-実装ガイド">地形生成 実装ガイド</h1>
+<h2 id="概要">概要</h2>
+<p>本ドキュメントは、<code>Assets/Scripts/Domain/Generation/</code>（実行）・<code>Assets/Scripts/Domain/Defs/Generation/</code>（定義）・
+<code>Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs</code>（ロード）にまたがる地形生成の実装を、<strong>実際の
+クラス名・メソッド名を使ってトップダウンに</strong>説明するものです。</p>
+<ul>
+<li><strong>「なぜこう設計したか」は本書では説明しません。</strong> <a
+href="../World/TerrainGeneration.html"><code>TerrainGeneration.md</code></a>
+（島の生成アルゴリズムの設計判断）・<a
+href="../World/ExplorationSystem.html"><code>ExplorationSystem.md</code></a>（生成された
+土地の挙動の設計判断）を参照してください。本書はその実装が<strong>コード上どこに・どういう形であるか</strong>だけを扱います。</li>
+<li>ソースコードのXMLドキュメントコメント（<code>///</code>）は、各クラス・各メソッドが<strong>そのクラス単体として</strong>何を
+するかを説明しますが、「どのクラスがどのクラスを、どの順で呼ぶか」という全体の流れは、1つのファイルを
+読むだけでは把握できません。本書はその<strong>呼び出し関係の地図</strong>を提供することを目的とします。</li>
+<li>個々のクラス・メソッドの正確な契約（引数・戻り値・例外）は、常にソースコードとXMLドキュメントコメントを
+正とします。本書は流れを把握するための道しるべであり、詳細な仕様書ではありません。実装が変わった場合、
+本書の更新が追いつかないことがありえます。矛盾を見つけたらソースコードを信じてください。</li>
+</ul>
+<p><strong>読む順番の目安</strong>: 「なぜ」を知りたければ
+<code>TerrainGeneration.md</code>/<code>ExplorationSystem.md</code>
+を先に。「コードの どこを読めばいいか」を知りたければ本書の 1
+節（全体の呼び出し関係）から。個々のクラスの詳細は 2 節以降、
+ファイルを直接開く前のインデックスとして 8
+節（ファイル一覧）を使ってください。</p>
+<h2 id="全体の呼び出し関係">1. 全体の呼び出し関係</h2>
+<p>地形生成は大きく2つの入口を持ちます。<strong>ロード</strong>（YAML →
+<code>WorldCodex.Generation</code>、ゲーム起動時に1回）と、
+<strong>生成・実体化</strong>（<code>WorldCodex.Generation</code> →
+実際の <code>WorldObject</code> の島、ゲーム開始時に1回）です。</p>
+<pre><code>[ロード]
+WorldCodexYamlLoader.Load(label, yamlText)              Assets/Scripts/Loader/WorldCodexYamlLoader.cs
+  └─ LoadGenerationSections(label, root)                 …Generation.cs（axes/location_types/generation_scopesを読む）
+       ├─ ParseAxis / ParseGeneratorLayer                 → generationAxes（フィールド）へ蓄積
+       ├─ ParseLocationType                                → generationLocationTypes へ蓄積
+       └─ ParseGenerationScope                             → generationScopes へ蓄積
+WorldCodexYamlLoader.Build()
+  └─ BuildGenerationDefs(objectDefsByGlobalId)            …object_def/axis/location_type の相互参照を検証
+       └─ new GenerationDefs(axes, locationTypes, scopes)  Assets/Scripts/Domain/Defs/Generation/GenerationDefs.cs
+            → WorldCodex.Generation プロパティへ格納        Assets/Scripts/Domain/Defs/WorldCodex.cs
+
+[生成・実体化]
+NewGame.Start(codex, seed, rng)                          Assets/Scripts/Domain/Generation/NewGame.cs  ← ゲーム開始の入口
+  ├─ world・character の WorldObject を生成（WorldSession.Spawn）
+  ├─ TerrainGenerator.Generate(codex.Generation, &quot;island&quot;, seed) → IslandMap
+  │    │                                                    Assets/Scripts/Domain/Generation/TerrainGenerator.cs
+  │    ├─ 1. SitePlacer.Place(scope, rng)                  → List&lt;Site&gt;（座標のみ）
+  │    ├─ 2. AxisSampler.Sample(defs.Axes, sites, seed, scope)  → Site.AxisValues を埋める
+  │    ├─ 3. LocationTypeMatcher.AssignTypes(defs, scope, sites) → Site.Type を確定
+  │    ├─ 4. DelaunayTriangulator.Triangulate(sites)       → List&lt;(int A, int B)&gt;
+  │    ├─ 5. PathNetworkBuilder.Build(sites, delaunayEdges, scope) → List&lt;IslandEdge&gt;
+  │    └─ 6. NameAssigner.AssignNames(sites)               → Site.Name を確定
+  ├─ IslandSpawner.Populate(session, map)                  → 各SiteをWorldObjectとしてspawnし、道も生成
+  └─ IslandSpawner.PlacePlayer(session, map, character)    → 開始地点へキャラクタを配置、Locationを返す</code></pre>
+<p><code>TerrainGenerator.Generate</code> までは
+<strong><code>WorldObject</code>
+に一切触れない純粋な計算</strong>です（<code>IslandMap</code>/<code>Site</code>/
+<code>IslandEdge</code> はただのデータ）。<code>WorldObject</code>
+の生成・配置が始まるのは <code>IslandSpawner</code> からです。この境界を
+意識すると、「レイアウトのバグ」（<code>Domain.Generation</code>
+側）と「実体化のバグ」（<code>IslandSpawner</code> 以降）の
+どちらを疑うべきかを素早く切り分けられます。</p>
+<h2 id="ロード-yaml-generationdefs">2. ロード: YAML →
+<code>GenerationDefs</code></h2>
+<p><code>WorldCodexYamlLoader</code> は <code>partial class</code>
+で、地形生成関連の処理は
+<code>Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs</code>
+に分離されています（<code>object_defs</code>/<code>traits</code> を
+読む本体ファイル <code>WorldCodexYamlLoader.cs</code>
+とは別ファイル）。</p>
+<ul>
+<li><code>LoadGenerationSections(label, root)</code>:
+<code>Load()</code> の中から呼ばれ、YAMLルートの
+<code>axes</code>/<code>location_types</code>/
+<code>generation_scopes</code> の3キーを読んで、インスタンスフィールド
+<code>generationAxes</code>/<code>generationLocationTypes</code>/
+<code>generationScopes</code>
+へ蓄積します（<code>object_defs</code>/<code>traits</code>
+の蓄積と同じパターン。複数ファイルへ分割しても <code>Load</code>
+を繰り返し呼べば1つに集約されます）。</li>
+<li><code>ParseAxis</code>/<code>ParseGeneratorLayer</code>:
+<code>axes.'name'</code> 1件を
+<code>Defs.Generation.AxisDef</code>（<code>GeneratorLayer</code> の
+リストを持つ）へ変換します。</li>
+<li><code>ParseLocationType</code>: <code>location_types.'name'</code>
+1件を <code>Defs.Generation.LocationTypeDef</code> へ変換します。
+<code>object_def</code> フィールドはこの時点では
+<code>ObjectNames.Intern</code> するだけで、実在検証は行いません（後述の
+<code>BuildGenerationDefs</code> まで遅延）。</li>
+<li><code>ParseGenerationScope</code>:
+<code>generation_scopes.'name'</code> 1件を
+<code>Defs.Generation.GenerationScopeDef</code>
+（<code>guarantees</code> を含む）へ変換します。</li>
+<li><code>BuildGenerationDefs(objectDefsByGlobalId)</code>:
+<code>WorldCodexYamlLoader.Build()</code> の中から、全
+<code>object_defs</code> の
+解決が終わった後に呼ばれます。<code>LocationTypeDef.ObjectDefGlobalId</code>
+が実在するか、<code>axis_preferences</code>/
+<code>hard_limits</code>/<code>guarantees</code>
+が参照する軸名・<code>LocationType</code>
+名が実在するかをここでまとめて検証し、 <code>GenerationDefs</code>
+を組み立てて返します。生成関連のYAMLが1つもロードされていなければ
+<code>null</code> を返します （<code>WorldCodex.Generation</code> が
+<code>null</code> になりうる、という契約はここに由来します）。</li>
+</ul>
+<h2 id="terraingenerator.generate-6ステップの内訳">3.
+<code>TerrainGenerator.Generate</code>: 6ステップの内訳</h2>
+<p><code>TerrainGenerator</code>（静的クラス、<code>Generate</code>
+1メソッドのみ）は、以下の6クラスを順番に呼ぶだけのオーケストレータ
+です。各クラスも静的クラスで、状態を持たず
+<code>Site</code>/<code>IslandEdge</code>
+のリストを受け取って書き換える・新しく作る、
+という素朴な手続きです。</p>
+<h3 id="siteplacer.placegenerationscopedef-scope-pcg32-rng-listsite">3.1
+<code>SitePlacer.Place(GenerationScopeDef scope, Pcg32 rng)</code> →
+<code>List&lt;Site&gt;</code></h3>
+<p>座標だけを決めます（軸値はまだ持ちません）。</p>
+<ul>
+<li>サイト総数を
+<code>rng.NextInt(scope.SiteCountMin, scope.SiteCountMax)</code>
+で抽選。</li>
+<li>外周リング配置:
+<code>coastCount</code>（総数の約35%、4〜7個にクランプ）個のサイトを、半径
+<code>SitePlacer.CoastRingMinRadius</code>〜<code>CoastRingMaxRadius</code>（<code>IslandRadius</code>
+比）の円環へ、角度を均等割りして
+ジッタを加えながら配置（<code>Site.OnCoastRing = true</code>）。</li>
+<li>内陸配置: 残りのサイトを、半径
+<code>SitePlacer.InteriorMaxRadius</code>
+以内へベストキャンディデート法（候補 <code>CandidatesPerSite</code>
+個のうち、既存サイトからの最小距離が最大のものを採用するループ）で配置
+（<code>Site.OnCoastRing = false</code>）。<code>scope.InteriorBias</code>
+が半径分布の指数（<code>radiusExponent</code>）に反映されます。</li>
+</ul>
+<h3 id="axissampler.sampleaxes-sites-seed-scope">3.2
+<code>AxisSampler.Sample(axes, sites, seed, scope)</code></h3>
+<p>各 <code>Site</code> の
+<code>AxisValues</code>（<code>Dictionary&lt;string, int&gt;</code>）を埋めます。</p>
+<ul>
+<li>各 <code>AxisDef</code> の
+<code>Layers</code>（<code>GeneratorLayer</code> のリスト）を、private
+メソッド <code>SampleLayer(layer, site, seed)</code> で
+<code>[0, 1]</code> にサンプルし、<code>layer.Weight</code>
+で重み平均します。
+<ul>
+<li><code>GeneratorLayerType.DistanceField</code> →
+<code>1 - (原点からの距離 / SitePlacer.IslandRadius)</code></li>
+<li><code>GeneratorLayerType.LayeredNoise</code> →
+<code>ValueNoise.Sample(seed + layer.SeedOffset, site.X, site.Y,   layer.Octaves, layer.Frequency)</code></li>
+</ul></li>
+<li>結果を
+<code>axis.Range</code>（<code>PropertyRange</code>）へ量子化して
+<code>Site.AxisValues[axis.Name]</code> に代入。</li>
+<li><code>scope.HullCoast</code> が真なら、<code>Site.OnCoastRing</code>
+なサイトの <code>coastal_distance</code> （定数
+<code>AxisSampler.CoastalDistanceAxisName</code>）を
+<code>scope.CoastBand</code> 以下へクランプします。</li>
+</ul>
+<h3 id="locationtypematcher.assigntypesdefs-scope-sites">3.3
+<code>LocationTypeMatcher.AssignTypes(defs, scope, sites)</code></h3>
+<p>各
+<code>Site.Type</code>（<code>LocationTypeDef</code>）を確定します。</p>
+<ol type="1">
+<li><code>scope.Guarantees</code> を順に処理し、private メソッド
+<code>OrderForGuarantee</code> で軸値の最大/最小順に並べた候補 から
+<code>guarantee.Count</code>
+個へ強制的に型を割り当てます（<code>forced</code> という
+<code>HashSet&lt;Site&gt;</code> へ記録）。</li>
+<li>残る <code>Site</code> を1つずつ private メソッド
+<code>MatchNearest(types, site)</code>
+に渡します。<code>MatchNearest</code> は <code>PassesHardLimits</code>
+を満たす型の中から、<code>public</code> メソッド
+<code>NormalizedDistance(type, site)</code>
+（正規化した重み付き距離）が最小の型を選びます。該当が無ければ
+<code>IsFallback</code> かつ <code>Priority</code> 最大の型に
+フォールバックします（それも無ければ例外）。</li>
+</ol>
+<h3 id="delaunaytriangulator.triangulatesites-listint-a-int-b">3.4
+<code>DelaunayTriangulator.Triangulate(sites)</code> →
+<code>List&lt;(int A, int B)&gt;</code></h3>
+<p>Bowyer-Watson 法によるDelaunay三角形分割です。すべての
+<code>Site</code> を包む仮想の「スーパートライアングル」から
+始め、<code>Site</code> を1点ずつ挿入するたびに外接円判定（private
+メソッド <code>InCircumcircle</code>）で無効化された三角形を
+削除・再分割します。最後にスーパートライアングルの頂点を含む三角形を除いて、無向辺の集合を返します。</p>
+<h3
+id="pathnetworkbuilder.buildsites-delaunayedges-scope-listislandedge">3.5
+<code>PathNetworkBuilder.Build(sites, delaunayEdges, scope)</code> →
+<code>List&lt;IslandEdge&gt;</code></h3>
+<ul>
+<li>Kruskal法で最小全域木（MST）を求めます（<code>unionFind</code> 配列
++ ローカル関数 <code>Find</code>）。</li>
+<li>MSTに含まれなかった辺（<code>rest</code>）を距離順に走査し、private
+メソッド <code>ShortestPathDistance</code>（Dijkstra）で
+求めた「現在のグラフでの2点間最短距離」が、直結距離 ×
+<code>scope.ExtraEdgeDetourFactor / 100</code> を超えていれば
+その辺を復活させます。</li>
+<li>採用した各辺について、private メソッド
+<code>TravelMinutes(sites, a, b, distance, scope)</code>
+で移動時間（分、 15分刻み・下限
+<code>PathNetworkBuilder.MinTravelMinutes</code>）を計算し、<code>IslandEdge</code>
+を作ります。</li>
+</ul>
+<h3 id="nameassigner.assignnamessites">3.6
+<code>NameAssigner.AssignNames(sites)</code></h3>
+<p><code>Site.Name</code> を確定します。全 <code>Site</code>
+の座標の重心を求め、private メソッド <code>DirectionOf(dx, dy)</code>
+で各 <code>Site</code>
+を8方位に丸め、<code>"{方角}の{Site.Type.DisplayName}"</code>
+を仮の名前にします。同じ名前が複数生じた場合は、 private メソッド
+<code>ToKanjiOrdinal(ordinal)</code>
+による接尾辞（「（第一）」等）を付けます。</p>
+<h2 id="実体化-islandspawner">4. 実体化: <code>IslandSpawner</code></h2>
+<p><code>TerrainGenerator.Generate</code>
+の結果（<code>IslandMap</code>、まだ <code>WorldObject</code>
+を含まないデータ）を、実際の世界 （<code>world</code>
+を根とするツリー）へ実体化します。</p>
+<ul>
+<li><strong><code>Populate(session, map)</code></strong>:
+<ol type="1">
+<li><code>map.Sites</code> を1つずつ
+<code>session.Spawn(site.Type.ObjectDefGlobalId)</code>
+し、<code>world.locations</code> スロットへ
+<code>MoveToSlot</code>。生成したインスタンスの <code>InstanceId</code>
+を <code>map.SiteInstanceIds[site.Index]</code> へ書き込みます （これが
+<code>IslandMap</code> を書き換える唯一の箇所です）。</li>
+<li><code>map.Sites</code> を1つずつ、その <code>Site</code> に接続する
+<code>map.Edges</code> を集め（LINQ の
+<code>Where</code>/<code>Select</code>）、
+<code>ObjectDef.GetPropertyDef(progressId).Range.Value.Max</code>
+から探索上限 <code>progressMax</code> を読み、道の本数に 応じて
+<code>required_progress</code> を
+<code>[FirstPathProgress(=2), progressMax - 1]</code>
+へ等間隔割当てする式
+（<code>FirstPathProgress + (lastPathProgress - FirstPathProgress) * i / (touching.Count - 1)</code>）で計算します。
+<code>path</code> を <code>session.Spawn</code>
+し、<code>SetProperty</code> で
+<code>travel_minutes</code>/<code>required_progress</code>/<code>destination_id</code>
+（接続相手の
+<code>InstanceId</code>）を書き込み、<code>undiscovered_paths</code>
+スロットへ <code>MoveToSlot</code> します。</li>
+</ol></li>
+<li><strong><code>PlacePlayer(session, map, character)</code></strong>:
+開始地点を <code>sandy_beach</code> 優先、無ければ
+<code>Site.OnCoastRing</code>、 それも無ければ <code>map.Sites[0]</code>
+の順で選び、<code>WorldObject.FindDescendantByInstanceId</code>（<code>WorldObject.Topology</code>
+側の汎用メソッド）で実体を解決し、<code>characters</code> スロットへ
+<code>MoveToSlot</code> した上で <code>Runtime.Views.Location</code>
+を返します。</li>
+</ul>
+<h2 id="データの流れ型で見る3層">5. データの流れ（型で見る3層）</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>層</th>
+<th>主な型</th>
+<th>特徴</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>定義（ロード後不変）</td>
+<td><code>Defs.Generation.GenerationDefs</code>（<code>AxisDef</code>/<code>LocationTypeDef</code>/<code>GenerationScopeDef</code>）</td>
+<td><code>WorldCodex.Generation</code>
+として1つだけ存在。YAMLの内容そのもの</td>
+</tr>
+<tr class="even">
+<td>生成の中間・最終結果（純粋計算）</td>
+<td><code>Domain.Generation.Site</code>/<code>IslandEdge</code>/<code>IslandMap</code></td>
+<td><code>WorldObject</code>
+を一切含まない。<code>TerrainGenerator.Generate</code>
+が返す。座標・軸値・確定した
+<code>LocationTypeDef</code>・命名・辺を持つだけの、ただのデータ</td>
+</tr>
+<tr class="odd">
+<td>実体化後（実行時状態）</td>
+<td><code>Runtime.WorldObject</code>（<code>Views.Location</code>/<code>Views.Path</code>
+でラップ）</td>
+<td><code>IslandSpawner</code> が
+<code>Site</code>/<code>IslandEdge</code>
+を読んで生成する、実際にゲームが動かす対象</td>
+</tr>
+</tbody>
+</table>
+<p><code>IslandMap</code>（中間層）を経由することで、<code>TerrainGenerator.Generate</code>
+は完全に決定的な純粋関数として単体テスト
+でき（<code>Tests/Generation/TerrainGeneratorTests.cs</code>）、<code>IslandSpawner</code>
+以降の実体化のテスト
+（<code>Tests/Generation/IslandSpawnerTests.cs</code>）と関心事が分離されています。</p>
+<h2 id="決定性の仕組み-2つの乱数源">6. 決定性の仕組み: 2つの乱数源</h2>
+<ul>
+<li><strong><code>Pcg32</code></strong>（<code>Domain.Generation.Pcg32</code>、<code>seed</code>
+から決定的に生成）: <code>SitePlacer.Place</code> の座標決定にのみ
+使われます。<code>AxisSampler</code> のノイズは <code>Pcg32</code>
+を経由せず、<code>seed</code> を直接 <code>ValueNoise.Sample</code>
+へ渡します （<code>ValueNoise</code>
+は状態を持たない純関数のハッシュベースノイズです）。<code>LocationTypeMatcher</code>・
+<code>DelaunayTriangulator</code>・<code>PathNetworkBuilder</code>・<code>NameAssigner</code>
+は乱数を一切使いません（<code>Site</code> の座標・
+軸値が決まった時点で結果は一意に決まります）。</li>
+<li><strong><code>WorldSession.Rng</code></strong>（<code>System.Random</code>）:
+<code>session.Spawn</code> した <code>WorldObject</code>
+の初期値ロール（<code>value:   {min,max}</code>）や、探索の発見物を選ぶ
+<code>pick</code>（<code>explore</code>
+アクション）の抽選に使われます。<strong>島のレイアウト
+（座標・軸値・型・辺・名前）には一切影響しません。</strong></li>
+</ul>
+<p>この2つの乱数源が分離されているため、「同じ <code>seed</code> なら
+<code>WorldSession.Rng</code> に何を渡しても島のレイアウトは
+変わらない」という契約が成り立ちます（<code>Tests/Generation/IslandSpawnerTests.cs</code>
+の <code>Start_SameSeed_ProducesSameIslandLayout</code> が、異なる
+<code>Random</code> を渡しても <code>IslandMap</code> が一致することを
+検証しています）。</p>
+<h2 id="エンジン拡張との接点">7. エンジン拡張との接点</h2>
+<p>地形生成の実装にあわせて <code>GameElementDefinition.md</code>
+へ追加した2つの汎用エンジン拡張（<code>duration</code>/<code>move</code>、
+<code>ExplorationSystem.md</code>
+4節）は、以下のコードに対応します。</p>
+<ul>
+<li><strong><code>duration</code></strong>: <code>Defs.ActionDef</code>
+が <code>WeightSpec? duration</code>
+フィールドを持ちます。<code>ActionDef.TryExecute</code>
+の中で、<code>conditions</code> 判定 → <code>effect</code> の
+<code>WorldObject.ApplyActiveEffect</code> → <code>duration</code>
+を解決して
+<code>session.AdvanceWorldTime(minutes)</code>、の順で処理します（<code>session.World == null</code>
+なら時間進行だけスキップ）。</li>
+<li><strong><code>move</code></strong>:
+<code>Defs.MoveEffect</code>（<code>ActiveEffect</code>
+の一種）です。<code>Apply</code> の中で
+<code>owner.FindRoot().FindDescendantByInstanceId(destinationId)</code>
+で移動先を解決し、
+<code>mover.MoveIntoFirstAcceptingSlot(destination, ...)</code>
+で配置します。<code>FindRoot</code>/
+<code>FindDescendantByInstanceId</code>/<code>MoveIntoFirstAcceptingSlot</code>
+はいずれも <code>Runtime.WorldObject.Topology</code> （partial class
+の1つ）に定義した汎用メソッドです。</li>
+<li><strong>道の発見・移動の入口</strong>:
+<code>Runtime.Views.Location.Explore(actor, session)</code> が
+<code>explore</code> アクションの 実行と
+<code>RevealDuePaths</code>（<code>undiscovered_paths</code> →
+<code>paths</code> の移動）を1回の呼び出しにまとめています。
+<code>Runtime.Views.Path.Travel(actor, session)</code> が
+<code>travel</code> アクションを実行します。</li>
+</ul>
+<h2 id="ファイル一覧索引">8. ファイル一覧（索引）</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>ファイル</th>
+<th>役割</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Defs/Generation/AxisDef.cs</code></td>
+<td><code>AxisDef</code>・<code>GeneratorLayer</code>・<code>GeneratorLayerType</code></td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Defs/Generation/LocationTypeDef.cs</code></td>
+<td><code>LocationTypeDef</code>・<code>AxisPreference</code>・<code>AxisLimit</code></td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Defs/Generation/GenerationScopeDef.cs</code></td>
+<td><code>GenerationScopeDef</code>・<code>GuaranteeDef</code>・<code>GuaranteePick</code></td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Defs/Generation/GenerationDefs.cs</code></td>
+<td><code>GenerationDefs</code>（上記3つの束、<code>WorldCodex.Generation</code>
+の中身）</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs</code></td>
+<td>YAML → 上記Defsのパース（2節）</td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Generation/Pcg32.cs</code></td>
+<td>生成専用の決定的RNG</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Generation/ValueNoise.cs</code></td>
+<td>シード付き格子値ノイズ</td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Generation/IslandMap.cs</code></td>
+<td><code>Site</code>・<code>IslandEdge</code>・<code>IslandMap</code>（生成結果のデータ）</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Generation/SitePlacer.cs</code></td>
+<td>3.1節: 座標配置</td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Generation/AxisSampler.cs</code></td>
+<td>3.2節: 軸値サンプリング</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Generation/LocationTypeMatcher.cs</code></td>
+<td>3.3節: LocationTypeマッチング</td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Generation/DelaunayTriangulator.cs</code></td>
+<td>3.4節: Delaunay三角形分割</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Generation/PathNetworkBuilder.cs</code></td>
+<td>3.5節: MST+辺復活+移動時間</td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Generation/NameAssigner.cs</code></td>
+<td>3.6節: 命名</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Generation/TerrainGenerator.cs</code></td>
+<td>3節全体のオーケストレータ（<code>Generate</code>）</td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Generation/IslandSpawner.cs</code></td>
+<td>4節: 実体化（<code>Populate</code>/<code>PlacePlayer</code>）</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Generation/NewGame.cs</code></td>
+<td>ゲーム開始の入口（<code>NewGame.Start</code>）・<code>NewGameSession</code></td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Defs/MoveEffect.cs</code></td>
+<td>7節: <code>move</code> 効果動詞</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Defs/ActionDef.cs</code></td>
+<td>7節: <code>duration</code> フィールド</td>
+</tr>
+<tr class="even">
+<td><code>Assets/Scripts/Domain/Runtime/Views/Location.cs</code></td>
+<td>7節:
+探索の入口（<code>Explore</code>/<code>RevealDuePaths</code>）</td>
+</tr>
+<tr class="odd">
+<td><code>Assets/Scripts/Domain/Runtime/Views/Path.cs</code></td>
+<td>7節: 道のビュー（<code>Travel</code>）</td>
+</tr>
+</tbody>
+</table>
+<p>対応するテストは以下のとおりです（<code>Tests/README.md</code>
+の「Generation テスト」節も参照）。</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>テストファイル</th>
+<th>対象</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Tests/Loader/GenerationYamlLoaderTests.cs</code></td>
+<td>2節（<code>WorldCodexYamlLoader.Generation.cs</code>）</td>
+</tr>
+<tr class="even">
+<td><code>Tests/StreamingAssets/TerrainGenerationYamlTests.cs</code></td>
+<td>実ファイル <code>terrain_generation.yaml</code> と
+<code>locations.yaml</code> の対応</td>
+</tr>
+<tr class="odd">
+<td><code>Tests/Generation/TerrainGeneratorTests.cs</code></td>
+<td>3節（<code>TerrainGenerator.Generate</code> の不変条件）</td>
+</tr>
+<tr class="even">
+<td><code>Tests/Generation/IslandSpawnerTests.cs</code></td>
+<td>4節・6節（<code>IslandSpawner</code>/<code>NewGame</code>、決定性）</td>
+</tr>
+<tr class="odd">
+<td><code>Tests/Domain/ActionDurationTests.cs</code></td>
+<td>7節（<code>duration</code>）</td>
+</tr>
+<tr class="even">
+<td><code>Tests/Domain/MoveEffectTests.cs</code></td>
+<td>7節（<code>move</code>）</td>
+</tr>
+</tbody>
+</table>
+</article>
+</body>
+</html>

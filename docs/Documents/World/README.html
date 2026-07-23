@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+  <style>
+    @media (max-width: 600px) {
+      .markdown-body { padding: 1rem !important; }
+    }
+  </style>
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+<header id="title-block-header">
+<h1 class="title">README</h1>
+</header>
+<h1
+id="ワールド実際にゲームに登場する内容">ワールド（実際にゲームに登場する内容）</h1>
+<p><code>Engine/</code>
+の文法・汎用サブシステムを使って、<strong>このゲームに実際に登場する具体的な内容</strong>をどう表現するかを
+まとめたドキュメントを格納します。気候、地形の生成、探索、道具・武器・容器といったアイテムなど、
+プレイヤーが実際に目にする世界の中身がここに含まれます。</p>
+<p>文法そのもの（<code>traits</code>/<code>props</code>/<code>slots</code>/<code>actions</code>
+等）や、どんな内容にも適用できる汎用サブシステム
+（レシピ・コンテナ・耐久値）は含みません。そちらは <a
+href="../Engine/README.html"><code>../Engine/</code></a>
+を参照してください。</p>
+<h2 id="収録ドキュメント">収録ドキュメント</h2>
+<ul>
+<li><a href="./ClimateSystem.html">気候システム設計</a></li>
+<li><a href="./TerrainGeneration.html">地形生成システム設計</a> —
+島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム</li>
+<li><a href="./ExplorationSystem.html">探索・道システム設計</a> —
+生成された土地のスロット構成・探索・道の発見と移動</li>
+<li><a href="./SurvivalItems.html">道具・武器・容器・衣類
+アイテム案</a></li>
+</ul>
+<h2 id="含まれるドキュメント例">含まれるドキュメント例</h2>
+<ul>
+<li>気候・季節・天候</li>
+<li>地形生成・マップ構成</li>
+<li>探索・移動などのゲームプレイ挙動</li>
+<li>アイテム・道具・武器・容器・衣類などの内容案</li>
+<li>敵・NPC・生態系（今後追加予定）</li>
+</ul>
+</article>
+</body>
+</html>

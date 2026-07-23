@@ -37,19 +37,19 @@
 <h1 id="unmappedisland-ドキュメント">UnmappedIsland ドキュメント</h1>
 <p>このディレクトリにはゲーム開発に関するすべてのドキュメントが格納されています。</p>
 <h2 id="ディレクトリ構成">ディレクトリ構成</h2>
+<p>企画・設計・仕様という<strong>工程</strong>でフォルダを分けると、検討が進むにつれて「これはもう設計と呼べるのでは」
+「仕様として確定したのでは」という判断のたびにファイルを移動する必要が生じ、境界があいまいになります
+（実際、ほとんどのドキュメントは冒頭に「本ドキュメントは検討結果であり、確定仕様書ではありません」と
+書いており、工程による分類がうまく機能していませんでした）。</p>
+<p>代わりに、<strong>扱っている領域</strong>でフォルダを分けています。領域は検討の進み具合によらず変わらないため、
+ドキュメントの成熟度が上がっても別フォルダへ移す必要がありません。</p>
 <pre><code>Documents/
-├── Planning/       # ゲーム企画書
-│   ├── GameConcept.md
-│   └── README.md
-├── Specification/  # 仕様書
-│   └── README.md
-└── Design/         # 設計書
-    ├── ScreenLayout.md              # 画面レイアウト検討
-    ├── ScreenLayout_Mock.html       # レスポンシブ画面モック
-    ├── screenshot_portrait.png      # 縦型スクリーンショット
-    ├── screenshot_landscape.png     # 横型スクリーンショット
-    ├── GameElementDefinition.md
-    └── README.md</code></pre>
+├── Concept/    # コンセプト（企画の核となる考え方。ターゲット・マネタイズ等を含む）
+├── UI/         # UI/UX（画面レイアウト、モック、スクリーンショット）
+├── Engine/     # ルール・エンジン（WorldCodexのYAML文法そのもの、汎用サブシステム、
+│               #   C#実装のアーキテクチャ・コード構造）
+└── World/      # 実際にゲームに登場する内容（地形・気候・アイテムなど、文法を使って
+                #   表現された具体的なゲーム内容）</code></pre>
 <h2 id="各フォルダの用途">各フォルダの用途</h2>
 <table>
 <colgroup>
@@ -64,16 +64,20 @@
 </thead>
 <tbody>
 <tr class="odd">
-<td><a href="./Planning/README.html">Planning/</a></td>
-<td>ゲームコンセプト、ターゲット、マネタイズ計画など企画段階のドキュメント</td>
+<td><a href="./Concept/README.html">Concept/</a></td>
+<td>ゲームコンセプト、目指す体験、ターゲット、マネタイズ計画など</td>
 </tr>
 <tr class="even">
-<td><a href="./Specification/README.html">Specification/</a></td>
-<td>ゲームルール、機能仕様、UI/UX仕様など詳細な仕様書</td>
+<td><a href="./UI/README.html">UI/</a></td>
+<td>画面レイアウト、モック、UI/UX設計</td>
 </tr>
 <tr class="odd">
-<td><a href="./Design/README.html">Design/</a></td>
-<td>アーキテクチャ設計、クラス設計、データ設計など技術設計書</td>
+<td><a href="./Engine/README.html">Engine/</a></td>
+<td>WorldCodex（YAML）の文法リファレンス、汎用サブシステム（レシピ・コンテナ・耐久値・アクション使い分け）の設計、C#実装のアーキテクチャ・コード構造ガイド</td>
+</tr>
+<tr class="even">
+<td><a href="./World/README.html">World/</a></td>
+<td>気候、地形生成、探索・道、アイテムなど、実際にこのゲームに登場する具体的な内容</td>
 </tr>
 </tbody>
 </table>
