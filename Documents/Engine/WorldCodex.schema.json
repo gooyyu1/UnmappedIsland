@@ -9,7 +9,9 @@
       "description": "型定義（GameElementDefinition.md 4節）。識別子をキーとする辞書。",
       "type": "object",
       "patternProperties": {
-        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/object_def_entry" }
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/object_def_entry"
+        }
       },
       "additionalProperties": false
     },
@@ -17,20 +19,20 @@
       "description": "mixin（GameElementDefinition.md 5節）。識別子をキーとする辞書。多重継承は禁止のため、trait_entry は traits フィールドを持たない。",
       "type": "object",
       "patternProperties": {
-        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/trait_entry" }
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/trait_entry"
+        }
       },
       "additionalProperties": false
     }
   },
   "additionalProperties": false,
-
   "$defs": {
     "identifier": {
       "description": "型名・プロパティ名・トレイト名・アクション名・スロット名に共通の命名規則（GameElementDefinition.md 3.2節）。",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },
-
     "identifier_map": {
       "description": "identifier をキーとする辞書の共通テンプレート。",
       "type": "object",
@@ -39,46 +41,68 @@
       },
       "additionalProperties": false
     },
-
     "range_value": {
-      "description": "min/max のみを持つ範囲。props の value（毎tick再ロール、6.2節）と range（overflowの上下限、6.3節）の両方で使う共通の形。数値プロパティは32bit整数のみを扱うため、min/maxも整数（6節）。",
+      "description": "min/max のみを持つ範囲。props の value（生成時に1回ロールする初期値の範囲、6.2節）と range（overflowの上下限、6.3節）の両方で使う共通の形。数値プロパティは32bit整数のみを扱うため、min/maxも整数（6節）。",
       "type": "object",
       "properties": {
-        "min": { "type": "integer" },
-        "max": { "type": "integer" }
+        "min": {
+          "type": "integer"
+        },
+        "max": {
+          "type": "integer"
+        }
       },
-      "required": ["min", "max"],
+      "required": [
+        "min",
+        "max"
+      ],
       "additionalProperties": false
     },
-
     "prop_value": {
       "description": "props の value。固定値（整数・真偽値）、または {min, max} の範囲値（6.2節、毎tickランダム再ロール）のいずれか。数値は32bit整数のみを扱う（6節）。",
       "oneOf": [
-        { "type": ["integer", "boolean"] },
-        { "$ref": "#/$defs/range_value" }
+        {
+          "type": [
+            "integer",
+            "boolean"
+          ]
+        },
+        {
+          "$ref": "#/$defs/range_value"
+        }
       ]
     },
-
     "stage_def": {
       "description": "props の段階（6.4節）。区間は min のみを指定する半開区間。ヒステリシスは採用しない。ステージのpassivesはレベルトリガーのみであり、一時的な命令の瞬間を持たないためpickは書けない（10節参照）。name/minというstage_def自身の属性を持つため、stage_def自体を配列化することはできない。そのため、オブジェクトレベル・プロパティレベルと同じ`passives:`（常に配列、passive_def参照）キーをname/minと並ぶ兄弟キーとしてネストする。",
       "type": "object",
       "properties": {
-        "name": { "$ref": "#/$defs/identifier" },
+        "name": {
+          "$ref": "#/$defs/identifier"
+        },
         "min": {
           "description": "この段階の下限。最下段は null（省略可）で、それより下の残り全ての値を拾う。",
-          "type": ["integer", "null"]
+          "type": [
+            "integer",
+            "null"
+          ]
         },
-        "passives": { "$ref": "#/$defs/passives_list" }
+        "passives": {
+          "$ref": "#/$defs/passives_list"
+        }
       },
-      "required": ["name", "min"],
+      "required": [
+        "name",
+        "min"
+      ],
       "additionalProperties": false
     },
-
     "prop_def": {
       "description": "props の1エントリ（6節）。trait側では value を省略でき、その場合 object_def側での指定が必須になる（5節）。",
       "type": "object",
       "properties": {
-        "value": { "$ref": "#/$defs/prop_value" },
+        "value": {
+          "$ref": "#/$defs/prop_value"
+        },
         "unit": {
           "type": "string",
           "description": "value を持たない trait 側プロパティに付随する単位表記など（例: shelf_life の unit: days）。"
@@ -97,9 +121,13 @@
         },
         "stages": {
           "type": "array",
-          "items": { "$ref": "#/$defs/stage_def" }
+          "items": {
+            "$ref": "#/$defs/stage_def"
+          }
         },
-        "passives": { "$ref": "#/$defs/passives_list" },
+        "passives": {
+          "$ref": "#/$defs/passives_list"
+        },
         "on_min": {
           "$ref": "#/$defs/active_def",
           "description": "値がrangeの下限以下である間、毎tick実行されるactive内容（6.5節、旧on_zero）。activeと全く同じactive_defを直接持つ（対象は現時点でselfのみ対応）。on_overflow/on_shortfallとは異なり、既定の自動生成は行われない。rangeを使う場合は必須。"
@@ -111,97 +139,156 @@
       },
       "additionalProperties": false
     },
-
     "condition_op": {
       "description": "conditions の葉（プロパティ比較）で使う比較演算子（14.1節）。'between' 等の追加は未決定（17節）。",
-      "enum": ["lt", "lte", "gt", "gte", "eq", "neq", "in", "not_in"]
+      "enum": [
+        "lt",
+        "lte",
+        "gt",
+        "gte",
+        "eq",
+        "neq",
+        "in",
+        "not_in"
+      ]
     },
-
     "condition_object": {
       "description": "conditions/weightのobject参照ルート（14.1節）。self/parent/actor/dragged（dragged はcombinations内のみ、12.2節）。world は実行時追跡が未実装のため未対応（ロード時エラー、本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "type": "string"
     },
-
     "condition_property_leaf": {
       "description": "{object, prop, op, value}形式のプロパティ比較（14.1節）。objectは省略可（既定値self）、opも省略可（既定値eq）。",
       "type": "object",
       "properties": {
-        "object": { "$ref": "#/$defs/condition_object" },
-        "prop": { "type": "string" },
-        "op": { "$ref": "#/$defs/condition_op" },
+        "object": {
+          "$ref": "#/$defs/condition_object"
+        },
+        "prop": {
+          "type": "string"
+        },
+        "op": {
+          "$ref": "#/$defs/condition_op"
+        },
         "value": {}
       },
-      "required": ["prop", "value"],
+      "required": [
+        "prop",
+        "value"
+      ],
       "additionalProperties": false
     },
-
     "condition_slot_leaf": {
       "description": "{object, slot}形式の、objectが指すオブジェクト自身の現在のスロット位置判定（14.2節）。常に等価判定でopは持たない（否定はnotで包む）。propとは独立したフィールドで同時には指定できない。",
       "type": "object",
       "properties": {
-        "object": { "$ref": "#/$defs/condition_object" },
-        "slot": { "type": "string" }
+        "object": {
+          "$ref": "#/$defs/condition_object"
+        },
+        "slot": {
+          "type": "string"
+        }
       },
-      "required": ["slot"],
+      "required": [
+        "slot"
+      ],
       "additionalProperties": false
     },
-
     "condition_node": {
       "description": "conditions（14節）の1ノード。葉（プロパティ比較かスロット判定のいずれか）か、all/any/notによる複合ノードのいずれか。",
       "oneOf": [
-        { "$ref": "#/$defs/condition_property_leaf" },
-        { "$ref": "#/$defs/condition_slot_leaf" },
+        {
+          "$ref": "#/$defs/condition_property_leaf"
+        },
+        {
+          "$ref": "#/$defs/condition_slot_leaf"
+        },
         {
           "type": "object",
-          "properties": { "all": { "type": "array", "items": { "$ref": "#/$defs/condition_node" } } },
-          "required": ["all"],
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition_node"
+              }
+            }
+          },
+          "required": [
+            "all"
+          ],
           "additionalProperties": false
         },
         {
           "type": "object",
-          "properties": { "any": { "type": "array", "items": { "$ref": "#/$defs/condition_node" } } },
-          "required": ["any"],
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition_node"
+              }
+            }
+          },
+          "required": [
+            "any"
+          ],
           "additionalProperties": false
         },
         {
           "type": "object",
-          "properties": { "not": { "$ref": "#/$defs/condition_node" } },
-          "required": ["not"],
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition_node"
+            }
+          },
+          "required": [
+            "not"
+          ],
           "additionalProperties": false
         }
       ]
     },
-
     "conditions_list": {
       "description": "conditionsの値（14節）。常に配列で、暗黙のall（論理積）として扱われる。actions/combinations・passivesのゲート（旧when）の両方がこの同じ形を使う。",
       "type": "array",
-      "items": { "$ref": "#/$defs/condition_node" }
+      "items": {
+        "$ref": "#/$defs/condition_node"
+      }
     },
-
     "target_amount_map": {
       "description": "1つの対象に対する、プロパティ名→数値の割り当て（passiveのmodify/accumulate、activeのset/add全てで共通の形）。数値プロパティは32bit整数のみを扱う（6節）。",
       "type": "object",
-      "patternProperties": { "^[a-z][a-z0-9_.]*$": { "type": "integer" } },
+      "patternProperties": {
+        "^[a-z][a-z0-9_.]*$": {
+          "type": "integer"
+        }
+      },
       "additionalProperties": false
     },
-
     "passive_operation_map": {
       "description": "passiveの1操作(modify/accumulate)が持つ、対象（self/parent/child/actor）をキーとする辞書。ancestor/sibling/descendantの追加は未決定。combinations内の dragged はactiveのみで意味を持ち、passiveには現れない。",
       "type": "object",
       "properties": {
-        "self": { "$ref": "#/$defs/target_amount_map" },
-        "parent": { "$ref": "#/$defs/target_amount_map" },
-        "child": { "$ref": "#/$defs/target_amount_map" },
-        "actor": { "$ref": "#/$defs/target_amount_map" }
+        "self": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "parent": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "child": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "actor": {
+          "$ref": "#/$defs/target_amount_map"
+        }
       },
       "additionalProperties": false
     },
-
     "passive_def": {
       "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/accumulate)が上位、対象(self/parent/child)が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象(self/parent/child)ごとには持たない（self/parent対象は常に同じ実体を指すため）。",
       "type": "object",
       "properties": {
-        "conditions": { "$ref": "#/$defs/conditions_list" },
+        "conditions": {
+          "$ref": "#/$defs/conditions_list"
+        },
         "modify": {
           "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
           "$ref": "#/$defs/passive_operation_map"
@@ -213,21 +300,29 @@
       },
       "additionalProperties": false
     },
-
     "passives_list": {
       "description": "passive_defの配列。オブジェクトレベル・プロパティレベル・stage内のいずれでも常に配列であり、単一マッピングでの省略記法は許可しない（conditions/stages/accepts/pick等、複数形キーは常に配列という規約に合わせる）。",
       "type": "array",
-      "items": { "$ref": "#/$defs/passive_def" }
+      "items": {
+        "$ref": "#/$defs/passive_def"
+      }
     },
-
     "active_operation_map": {
       "description": "activeの1操作(set/add)が持つ、対象（self/parent/child/actor、combinations内はdraggedも）をキーとする辞書。",
       "type": "object",
       "properties": {
-        "self": { "$ref": "#/$defs/target_amount_map" },
-        "parent": { "$ref": "#/$defs/target_amount_map" },
-        "child": { "$ref": "#/$defs/target_amount_map" },
-        "actor": { "$ref": "#/$defs/target_amount_map" },
+        "self": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "parent": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "child": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "actor": {
+          "$ref": "#/$defs/target_amount_map"
+        },
         "dragged": {
           "$ref": "#/$defs/target_amount_map",
           "description": "combinations の中でのみ意味を持つ、ドラッグされてきたカードを指すキー（GameElementDefinition.md 12.2節）。"
@@ -235,35 +330,53 @@
       },
       "additionalProperties": false
     },
-
     "active_target_name": {
-      "enum": ["self", "parent", "child", "actor", "dragged"]
+      "enum": [
+        "self",
+        "parent",
+        "child",
+        "actor",
+        "dragged"
+      ]
     },
-
     "destroy_target_spec": {
       "description": "削除する対象を直接指定する。単一の対象名(`destroy: self`)か、対象名のリスト(`destroy: [self, dragged]`)のいずれか。",
       "oneOf": [
-        { "$ref": "#/$defs/active_target_name" },
-        { "type": "array", "items": { "$ref": "#/$defs/active_target_name" }, "minItems": 1 }
+        {
+          "$ref": "#/$defs/active_target_name"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/active_target_name"
+          },
+          "minItems": 1
+        }
       ]
     },
-
     "spawn_spec": {
       "type": "object",
       "properties": {
-        "object": { "$ref": "#/$defs/identifier" },
+        "object": {
+          "$ref": "#/$defs/identifier"
+        },
         "into": {
-          "enum": ["same_slot", "self", "actor"],
+          "enum": [
+            "same_slot",
+            "self",
+            "actor"
+          ],
           "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。self/actorは、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ解決できる。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、accepts/capacityを無視して強制的に伝播する。"
         }
       },
-      "required": ["object"],
+      "required": [
+        "object"
+      ],
       "additionalProperties": false,
       "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
-
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_min（6.5節）・on_max（6.6節）・on_overflow/on_shortfall（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持つ。actions/combinations/pick（11・12・10節）は、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_min（6.5節）・on_max（6.6節）・on_overflow/on_shortfall（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持ち、activeの代わりにpick（10節、排他）も書ける。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。actions/combinations/pick（11・12・10節）は、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "set": {
@@ -274,113 +387,203 @@
           "description": "対象プロパティの実体値へ、その場で一度だけ不可逆に加減算する。",
           "$ref": "#/$defs/active_operation_map"
         },
-        "destroy": { "$ref": "#/$defs/destroy_target_spec" },
-        "spawn": { "$ref": "#/$defs/spawn_spec" }
+        "destroy": {
+          "$ref": "#/$defs/destroy_target_spec"
+        },
+        "spawn": {
+          "$ref": "#/$defs/spawn_spec"
+        },
+        "pick": {
+          "$ref": "#/$defs/pick_list"
+        }
       },
-      "minProperties": 1,
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$ref": "#/$defs/not_active_verbs_with_pick"
+        }
+      ]
     },
-
     "weight_spec": {
       "description": "pick候補のweight。リテラル定数、または既存propsへの参照（{object, prop}、GameElementDefinition.md 10.2節）。objectは省略可（既定値self）。",
       "oneOf": [
-        { "type": "number" },
+        {
+          "type": "number"
+        },
         {
           "type": "object",
           "properties": {
-            "object": { "$ref": "#/$defs/condition_object" },
-            "prop": { "type": "string" }
+            "object": {
+              "$ref": "#/$defs/condition_object"
+            },
+            "prop": {
+              "type": "string"
+            }
           },
-          "required": ["prop"],
+          "required": [
+            "prop"
+          ],
           "additionalProperties": false
         }
       ]
     },
-
     "not_active_verbs_with_pick": {
       "description": "pickと、set/add/destroy/spawn(activeの実体)のいずれかとの同時指定を禁止する共通の制約。actions/combinations/pickのいずれでも使う。",
       "not": {
         "allOf": [
-          { "required": ["pick"] },
+          {
+            "required": [
+              "pick"
+            ]
+          },
           {
             "anyOf": [
-              { "required": ["set"] },
-              { "required": ["add"] },
-              { "required": ["destroy"] },
-              { "required": ["spawn"] }
+              {
+                "required": [
+                  "set"
+                ]
+              },
+              {
+                "required": [
+                  "add"
+                ]
+              },
+              {
+                "required": [
+                  "destroy"
+                ]
+              },
+              {
+                "required": [
+                  "spawn"
+                ]
+              }
             ]
           }
         ]
       }
     },
-
     "pick_candidate": {
       "description": "pickの1候補（GameElementDefinition.md 10.1節）。専用の`active:`ラップを挟まず、set/add/destroy/spawnをweight/pickと対等な兄弟キーとして直接持つ。候補自身がさらにpickを持つ再帰も構造上排除しない。",
-      "allOf": [{ "$ref": "#/$defs/not_active_verbs_with_pick" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/not_active_verbs_with_pick"
+        }
+      ],
       "type": "object",
       "properties": {
-        "weight": { "$ref": "#/$defs/weight_spec" },
-        "set": { "$ref": "#/$defs/active_operation_map" },
-        "add": { "$ref": "#/$defs/active_operation_map" },
-        "destroy": { "$ref": "#/$defs/destroy_target_spec" },
-        "spawn": { "$ref": "#/$defs/spawn_spec" },
-        "pick": { "$ref": "#/$defs/pick_list" }
+        "weight": {
+          "$ref": "#/$defs/weight_spec"
+        },
+        "set": {
+          "$ref": "#/$defs/active_operation_map"
+        },
+        "add": {
+          "$ref": "#/$defs/active_operation_map"
+        },
+        "destroy": {
+          "$ref": "#/$defs/destroy_target_spec"
+        },
+        "spawn": {
+          "$ref": "#/$defs/spawn_spec"
+        },
+        "pick": {
+          "$ref": "#/$defs/pick_list"
+        }
       },
-      "required": ["weight"],
+      "required": [
+        "weight"
+      ],
       "additionalProperties": false
     },
-
     "pick_list": {
       "description": "重み付き確率分岐（GameElementDefinition.md 10節）。set/add/destroy/spawnを書く場所であれば、その代わりに書ける。候補が1つなら重みに関わらず必ず選ばれる。",
       "type": "array",
-      "items": { "$ref": "#/$defs/pick_candidate" },
+      "items": {
+        "$ref": "#/$defs/pick_candidate"
+      },
       "minItems": 1
     },
-
     "action_def": {
       "description": "メニュー型の宣言的操作（11節）。conditionsと実行結果(set/add/destroy/spawn、またはpick)を1つの定義としてまとめて持つ。専用の`active:`ラップは挟まず、showMenu/conditions/pickと対等な兄弟キーとして直接持つ。",
-      "allOf": [{ "$ref": "#/$defs/not_active_verbs_with_pick" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/not_active_verbs_with_pick"
+        }
+      ],
       "type": "object",
       "properties": {
         "showMenu": {
           "description": "メニューへの表示方法。現時点ではalwaysのみ（11.1節、ActionSystem.md 4節の未決事項）。",
-          "enum": ["always"]
+          "enum": [
+            "always"
+          ]
         },
-        "conditions": { "$ref": "#/$defs/conditions_list" },
-        "set": { "$ref": "#/$defs/active_operation_map" },
-        "add": { "$ref": "#/$defs/active_operation_map" },
-        "destroy": { "$ref": "#/$defs/destroy_target_spec" },
-        "spawn": { "$ref": "#/$defs/spawn_spec" },
-        "pick": { "$ref": "#/$defs/pick_list" }
+        "conditions": {
+          "$ref": "#/$defs/conditions_list"
+        },
+        "set": {
+          "$ref": "#/$defs/active_operation_map"
+        },
+        "add": {
+          "$ref": "#/$defs/active_operation_map"
+        },
+        "destroy": {
+          "$ref": "#/$defs/destroy_target_spec"
+        },
+        "spawn": {
+          "$ref": "#/$defs/spawn_spec"
+        },
+        "pick": {
+          "$ref": "#/$defs/pick_list"
+        }
       },
       "additionalProperties": false
     },
-
     "combination_def": {
       "description": "ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。キーはUIラベル用の名前であり、マッチング対象はwithで別途指定する。専用の`active:`ラップは挟まず、with/conditions/pickと対等な兄弟キーとして直接持つ。",
-      "allOf": [{ "$ref": "#/$defs/not_active_verbs_with_pick" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/not_active_verbs_with_pick"
+        }
+      ],
       "type": "object",
       "properties": {
         "with": {
           "$ref": "#/$defs/identifier",
           "description": "ドラッグされてきたカードとのマッチング条件。object_defのid、またはtraitの名前。"
         },
-        "conditions": { "$ref": "#/$defs/conditions_list" },
-        "set": { "$ref": "#/$defs/active_operation_map" },
-        "add": { "$ref": "#/$defs/active_operation_map" },
-        "destroy": { "$ref": "#/$defs/destroy_target_spec" },
-        "spawn": { "$ref": "#/$defs/spawn_spec" },
-        "pick": { "$ref": "#/$defs/pick_list" }
+        "conditions": {
+          "$ref": "#/$defs/conditions_list"
+        },
+        "set": {
+          "$ref": "#/$defs/active_operation_map"
+        },
+        "add": {
+          "$ref": "#/$defs/active_operation_map"
+        },
+        "destroy": {
+          "$ref": "#/$defs/destroy_target_spec"
+        },
+        "spawn": {
+          "$ref": "#/$defs/spawn_spec"
+        },
+        "pick": {
+          "$ref": "#/$defs/pick_list"
+        }
       },
-      "required": ["with"],
+      "required": [
+        "with"
+      ],
       "additionalProperties": false
     },
-
     "recipe_step_requirement": {
       "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。",
       "type": "object",
       "properties": {
-        "object": { "$ref": "#/$defs/identifier" },
+        "object": {
+          "$ref": "#/$defs/identifier"
+        },
         "quantity": {
           "type": "integer",
           "minimum": 1,
@@ -391,16 +594,20 @@
           "description": "trueなら素材として消費される。falseなら道具として存在確認のみ行う。"
         }
       },
-      "required": ["object", "consume"],
+      "required": [
+        "object",
+        "consume"
+      ],
       "additionalProperties": false
     },
-
     "recipe_step": {
       "type": "object",
       "properties": {
         "requires": {
           "type": "array",
-          "items": { "$ref": "#/$defs/recipe_step_requirement" },
+          "items": {
+            "$ref": "#/$defs/recipe_step_requirement"
+          },
           "minItems": 1
         },
         "duration": {
@@ -408,10 +615,12 @@
           "exclusiveMinimum": 0
         }
       },
-      "required": ["requires", "duration"],
+      "required": [
+        "requires",
+        "duration"
+      ],
       "additionalProperties": false
     },
-
     "recipe_def": {
       "description": "レシピ（GameElementDefinition.md 13節）。成果物のobject_defsに、名前をキーとする辞書として埋め込む。",
       "type": "object",
@@ -422,14 +631,17 @@
         },
         "steps": {
           "type": "array",
-          "items": { "$ref": "#/$defs/recipe_step" },
+          "items": {
+            "$ref": "#/$defs/recipe_step"
+          },
           "minItems": 1
         }
       },
-      "required": ["steps"],
+      "required": [
+        "steps"
+      ],
       "additionalProperties": false
     },
-
     "slot_accept_entry": {
       "description": "slotのaccepts（型・数量の制約、GameElementDefinition.md 7.2節）の1エントリ。",
       "type": "object",
@@ -442,12 +654,16 @@
           "type": "integer",
           "minimum": 1
         },
-        "consume": { "type": "boolean" }
+        "consume": {
+          "type": "boolean"
+        }
       },
-      "required": ["object", "max"],
+      "required": [
+        "object",
+        "max"
+      ],
       "additionalProperties": false
     },
-
     "slot_def": {
       "description": "スロット（7.1節）。accepts省略時は無制限（既存のinventory/equip等と同じ挙動）。",
       "type": "object",
@@ -455,7 +671,9 @@
         "accepts": {
           "description": "型・数量の制約（GameElementDefinition.md 7.2節）。capacityとは独立した仕組みで、両方同時に持てる。",
           "type": "array",
-          "items": { "$ref": "#/$defs/slot_accept_entry" }
+          "items": {
+            "$ref": "#/$defs/slot_accept_entry"
+          }
         },
         "capacity": {
           "description": "合計サイズの上限（GameElementDefinition.md 7.3節）。",
@@ -483,75 +701,105 @@
       },
       "additionalProperties": false
     },
-
     "stack_order": {
       "description": "スタック内での並び順（GameElementDefinition.md 7.6節）。「手前に重ねたいものほどリストの末尾に並ぶ」規約のもとで、ascending: falseは値が小さいものほど末尾、ascending: trueは値が大きいものほど末尾。",
       "type": "object",
       "properties": {
-        "property": { "$ref": "#/$defs/identifier" },
-        "ascending": { "type": "boolean" }
+        "property": {
+          "$ref": "#/$defs/identifier"
+        },
+        "ascending": {
+          "type": "boolean"
+        }
       },
-      "required": ["property", "ascending"],
+      "required": [
+        "property",
+        "ascending"
+      ],
       "additionalProperties": false
     },
-
     "object_defs_map": {
       "type": "object",
       "patternProperties": {
-        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/prop_def" }
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/prop_def"
+        }
       },
       "additionalProperties": false
     },
-
     "actions_map": {
       "type": "object",
       "patternProperties": {
-        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/action_def" }
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/action_def"
+        }
       },
       "additionalProperties": false
     },
-
     "combinations_map": {
       "type": "object",
       "patternProperties": {
-        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/combination_def" }
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/combination_def"
+        }
       },
       "additionalProperties": false
     },
-
     "recipes_map": {
       "type": "object",
       "patternProperties": {
-        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/recipe_def" }
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/recipe_def"
+        }
       },
       "additionalProperties": false
     },
-
     "slots_map": {
       "type": "object",
       "patternProperties": {
-        "^[a-z][a-z0-9_]*$": { "$ref": "#/$defs/slot_def" }
+        "^[a-z][a-z0-9_]*$": {
+          "$ref": "#/$defs/slot_def"
+        }
       },
       "additionalProperties": false
     },
-
     "trait_entry": {
       "description": "traits の1エントリ（5節）。object_def_entry からtraits参照・singletonを除いたもの（多重継承の禁止、singletonの概念がmixinに馴染まないため）。",
       "type": "object",
       "properties": {
-        "covers": { "type": "array", "items": { "type": "string" } },
-        "layer": { "type": "string" },
-        "props": { "$ref": "#/$defs/object_defs_map" },
-        "actions": { "$ref": "#/$defs/actions_map" },
-        "combinations": { "$ref": "#/$defs/combinations_map" },
-        "recipes": { "$ref": "#/$defs/recipes_map" },
-        "slots": { "$ref": "#/$defs/slots_map" },
-        "passives": { "$ref": "#/$defs/passives_list" },
-        "stack_order": { "$ref": "#/$defs/stack_order" }
+        "covers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "layer": {
+          "type": "string"
+        },
+        "props": {
+          "$ref": "#/$defs/object_defs_map"
+        },
+        "actions": {
+          "$ref": "#/$defs/actions_map"
+        },
+        "combinations": {
+          "$ref": "#/$defs/combinations_map"
+        },
+        "recipes": {
+          "$ref": "#/$defs/recipes_map"
+        },
+        "slots": {
+          "$ref": "#/$defs/slots_map"
+        },
+        "passives": {
+          "$ref": "#/$defs/passives_list"
+        },
+        "stack_order": {
+          "$ref": "#/$defs/stack_order"
+        }
       },
       "additionalProperties": false
     },
-
     "object_def_entry": {
       "description": "object_defs の1エントリ（4節）。",
       "type": "object",
@@ -559,7 +807,9 @@
         "traits": {
           "description": "参照するtraitのidリスト。traitはさらに他のtraitを参照できない（多重継承の禁止、5節）。",
           "type": "array",
-          "items": { "$ref": "#/$defs/identifier" }
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
         },
         "singleton": {
           "description": "唯一のインスタンスとして存在すべきオブジェクト（15節。例: world）。",
@@ -568,19 +818,35 @@
         "covers": {
           "description": "装備の排他制御に使う、覆う部位のタグ（7.5節）。",
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "layer": {
           "description": "装備の排他制御に使う、重ね着の階層（7.5節）。",
           "type": "string"
         },
-        "props": { "$ref": "#/$defs/object_defs_map" },
-        "actions": { "$ref": "#/$defs/actions_map" },
-        "combinations": { "$ref": "#/$defs/combinations_map" },
-        "recipes": { "$ref": "#/$defs/recipes_map" },
-        "slots": { "$ref": "#/$defs/slots_map" },
-        "passives": { "$ref": "#/$defs/passives_list" },
-        "stack_order": { "$ref": "#/$defs/stack_order" }
+        "props": {
+          "$ref": "#/$defs/object_defs_map"
+        },
+        "actions": {
+          "$ref": "#/$defs/actions_map"
+        },
+        "combinations": {
+          "$ref": "#/$defs/combinations_map"
+        },
+        "recipes": {
+          "$ref": "#/$defs/recipes_map"
+        },
+        "slots": {
+          "$ref": "#/$defs/slots_map"
+        },
+        "passives": {
+          "$ref": "#/$defs/passives_list"
+        },
+        "stack_order": {
+          "$ref": "#/$defs/stack_order"
+        }
       },
       "additionalProperties": false
     }
