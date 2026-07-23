@@ -16,6 +16,9 @@
 純粋な計算）であるのに対し、後者は「生成された `Location` インスタンスがゲームプレイ中どう振る舞うか」という
 **実行時の挙動**（既存の `traits`/`actions`/`slots` の応用）であり、関心事の性質が異なるためです。
 
+本書は設計判断（なぜこのアルゴリズムか）を扱い、実際のクラス名・メソッド名を使った実装の呼び出し関係は
+`TerrainGenerationImplementation.md` に切り出しています。コードを読む・変更する際はそちらを参照してください。
+
 実装は `Assets/Scripts/Domain/Generation/` 以下（Unity非依存の純粋 C#）、定義データは
 `Assets/StreamingAssets/WorldCodex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
 `object_defs`）にあります。

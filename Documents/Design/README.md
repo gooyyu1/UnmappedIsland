@@ -25,6 +25,11 @@
 - [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
 - [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
 
+### 実装ガイド（コード構造の把握。「なぜ」ではなく「どこに・どう実装されているか」）
+
+- [地形生成 実装ガイド](./TerrainGenerationImplementation.md) — 実際のクラス名・メソッド名でたどる、
+  ロードから島の実体化までの呼び出し関係
+
 ### その他
 
 - [Domain.Defs と Domain.Runtime の統合方針](./DomainDefsRuntimeIntegration.md)

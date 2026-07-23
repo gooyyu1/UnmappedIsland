@@ -12,7 +12,9 @@
 2つの汎用拡張（`duration`・`move`）を追加しています。これらは地形専用ではなく、`GameElementDefinition.md`
 11.3 節・9.6 節に文法として記載されています。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節にまとめています。
+本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節にまとめています。実際のクラス名・
+メソッド名を使った実装の呼び出し関係（`IslandSpawner`・`MoveEffect`・`Views.Location.Explore` 等）は
+`TerrainGenerationImplementation.md` にまとめています。
 
 ## 1. `location` trait と `explorable` trait の役割分担
 
