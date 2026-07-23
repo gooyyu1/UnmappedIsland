@@ -124,8 +124,10 @@ object_defs:
       # storm（暴風雨、heavy_rainより酷い）を最も雨側、sunny・scorching（clearより強い晴れ、2段階）を
       # 最も晴れ側に置いた、cloudyを中心とする7段階とする: storm/heavy_rain/light_rain/cloudy/clear/
       # sunny/scorching。storm・scorchingは、特別な対策が必要な極端な天候として使う想定（対策自体は
-      # 別途、今後の課題）。晴れ→曇り→雨という遷移の仕組み自体（大気水分量による駆動）はClimateSystem.md
-      # で別途検討するため、ここでは値を保持するだけ。
+      # 別途、今後の課題）。遷移の仕組みはClimateSystem.md参照: weather_remainingが0になるたびに、
+      # atmospheric_moistureのstagesが駆動する*_weightを重みとするpickで次の値が選ばれる（遷移先として
+      # 選ばれるのはsunny/cloudy/light_rain/heavy_rain/stormの5値。clearは初期値のみ、scorchingは
+      # 遷移対象外の予約値）。
       #
       # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のstages（6.4節）+WhenOwnStage
       # ゲート（8.2節）のmodifyで与える（もう一方、hourの「時間帯による最低限の寄与」はhour参照）。
@@ -133,17 +135,32 @@ object_defs:
       # 既に「名前の付いた離散値」であるため、ステージ名と比較値を別々に書く理由が無い）。「夜は寄与を
       # 無効化する」という時間帯依存の判定は、weather側ではなくhour側のstagesがsunlightのrangeクランプ
       # 経由で実現する（hour参照）ため、ここでは天候の種類だけを見ればよい。storm・heavy_rainは
-      # passivesを持たず、常に寄与なし。数値はいずれも仮の値。
+      # sunlightへの寄与を持たず、常に寄与なし。数値はいずれも仮の値。
+      #
+      # 降雨中の自己減算（ClimateSystem.md 3節）: 雨系のstage自身が、毎tick atmospheric_moistureを
+      # 減算する（耐久値と同じ「ステージ自身が値を変化させる」パターン）。雨が降り続ければやがて水分が
+      # 尽きて乾いた候補が選ばれやすくなる、という貯水池の循環を成立させる。激しい雨ほど速く消費する。
       weather:
         value: clear
         stages:
           - name: storm
+            passives:
+              - accumulate:
+                  self:
+                    atmospheric_moisture: -400
           - name: heavy_rain
+            passives:
+              - accumulate:
+                  self:
+                    atmospheric_moisture: -300
           - name: light_rain
             passives:
               - modify:
                   self:
                     sunlight: 1
+              - accumulate:
+                  self:
+                    atmospheric_moisture: -200
           - name: cloudy
             passives:
               - modify:
@@ -191,10 +208,344 @@ object_defs:
                   self:
                     ambient_temperature: 3
       # 現在の気温。体温（プレイヤーキャラ等が持つ、別の概念）と区別するためambient_temperatureと命名する
-      # （ClimateSystem.md参照）。具体的な変動の仕組み（季節由来のレート等）はClimateSystem.mdで別途検討する。
-      # 日照による補正はsunlight参照。
+      # （ClimateSystem.md参照）。日照による補正はsunlight参照、季節による補正はthermal_level参照。
       ambient_temperature:
         value: 20
+
+      # ===== 気候システム（ClimateSystem.md） =====
+      # 季節・天気はいずれも専用オブジェクトではなくworld自身のプロパティ（現在値＋残り時間）で表現する。
+
+      # 現在の季節。calm（穏やか）→wet（雨季）→dry（乾季）→calm→…の固定順で巡回する（ClimateSystem.md 2節）。
+      # 各stageは (1)自分が現在の季節であることを示すフラグ（season_is_*、season_remainingの遷移pickの
+      # 重みとして使う）、(2)大気水分量・蓄熱量への季節レート（3節の貯水池モデル）を持つ。
+      # calmのレートは「ほぼ0」ではなく回復方向（水分+10/蓄熱-1）: 乾季で下がりきった水分量が雨季に
+      # ふさわしい水準へじわじわ登り返す途中で3日に1回ほど小雨の閾値（moderate、3000）に触れる、という
+      # 序盤の生命線となる降雨サイクルをこのレートが作る（3.1節・3.2節）。
+      season:
+        value: calm
+        stages:
+          - name: calm
+            passives:
+              - modify:
+                  self:
+                    season_is_calm: 1
+              - accumulate:
+                  self:
+                    atmospheric_moisture: 10
+                    thermal_level: -1
+          - name: wet
+            passives:
+              - modify:
+                  self:
+                    season_is_wet: 1
+              - accumulate:
+                  self:
+                    atmospheric_moisture: 250
+                    thermal_level: -1
+          - name: dry
+            passives:
+              - modify:
+                  self:
+                    season_is_dry: 1
+              - accumulate:
+                  self:
+                    atmospheric_moisture: -100
+                    thermal_level: 1
+      # 「今の季節はどれか」を0/1で表すフラグ。seasonのstageがmodifyで立てる。season_remainingの
+      # 遷移pickが「現在の季節に対応する候補だけが選ばれる」ための重みとして参照する（重みが0の候補は
+      # 選ばれないため、0/1の重みはそのまま決定的な条件分岐になる）。
+      season_is_calm:
+        value: 0
+      season_is_wet:
+        value: 0
+      season_is_dry:
+        value: 0
+      # 季節サイクルの周回数。0始まりで、dry→calm遷移（1周completion）のたびに+1される。
+      # stagesがfirst_cycle_flag/later_cycle_flagを立て、「初回サイクルは30日固定・2周目以降は
+      # ランダム」という持続時間の分岐（ClimateSystem.md 2.3節）の重みとして使われる。
+      season_cycle:
+        value: 0
+        stages:
+          - name: first
+            passives:
+              - modify:
+                  self:
+                    first_cycle_flag: 1
+          - name: later
+            min: 1
+            passives:
+              - modify:
+                  self:
+                    later_cycle_flag: 1
+      first_cycle_flag:
+        value: 0
+      later_cycle_flag:
+        value: 0
+      # 現在の季節の残りtick数。毎tick-1され、0になった瞬間（on_min）に次の季節へ遷移する。
+      # 遷移は3段のpick（10節）: (1)season_is_*の0/1重みで「今の季節」の候補へ決定的に分岐、
+      # (2)first/later_cycle_flagの0/1重みで「初回サイクルか否か」に分岐、(3)初回は30日
+      # （2880tick）固定、2周目以降は24/30/36日（2304/2880/3456tick）の等確率pickでばらつかせる。
+      # dry→calmの遷移（1周が完了する瞬間）だけがseason_cycleを+1する。
+      # on_shortfallは宣言だけして何もしない（既定の「下限へクランプ」だと、万一1tickで下限より
+      # 下まで飛んだ場合にクランプがon_minを再発火させ、1tickで2回遷移してしまうため）。
+      season_remaining:
+        value: 2880
+        range: {min: 0, max: 999999}
+        on_shortfall: {}
+        passives:
+          - accumulate:
+              self:
+                season_remaining: -1
+        on_min:
+          pick:
+            - weight: {prop: season_is_calm}
+              pick:
+                - weight: {prop: first_cycle_flag}
+                  set:
+                    self: {season: wet, season_remaining: 2880}
+                - weight: {prop: later_cycle_flag}
+                  pick:
+                    - weight: 1
+                      set:
+                        self: {season: wet, season_remaining: 2304}
+                    - weight: 1
+                      set:
+                        self: {season: wet, season_remaining: 2880}
+                    - weight: 1
+                      set:
+                        self: {season: wet, season_remaining: 3456}
+            - weight: {prop: season_is_wet}
+              pick:
+                - weight: {prop: first_cycle_flag}
+                  set:
+                    self: {season: dry, season_remaining: 2880}
+                - weight: {prop: later_cycle_flag}
+                  pick:
+                    - weight: 1
+                      set:
+                        self: {season: dry, season_remaining: 2304}
+                    - weight: 1
+                      set:
+                        self: {season: dry, season_remaining: 2880}
+                    - weight: 1
+                      set:
+                        self: {season: dry, season_remaining: 3456}
+            - weight: {prop: season_is_dry}
+              pick:
+                - weight: {prop: first_cycle_flag}
+                  set:
+                    self: {season: calm, season_remaining: 2880}
+                  add:
+                    self: {season_cycle: 1}
+                - weight: {prop: later_cycle_flag}
+                  pick:
+                    - weight: 1
+                      set:
+                        self: {season: calm, season_remaining: 2304}
+                      add:
+                        self: {season_cycle: 1}
+                    - weight: 1
+                      set:
+                        self: {season: calm, season_remaining: 2880}
+                      add:
+                        self: {season_cycle: 1}
+                    - weight: 1
+                      set:
+                        self: {season: calm, season_remaining: 3456}
+                      add:
+                        self: {season_cycle: 1}
+      # 大気水分量（ClimateSystem.md 3節の貯水池）。季節レート＋降雨中の自己減算（weather参照）で駆動される。
+      # 0-10000のスケールは、calmの遅いレート（+10/tick、moderate閾値3000まで約3日）を整数のまま表現する
+      # ためのもの。stagesは天気そのものではなく（4.1節）、天気候補ごとの重み専用プロパティ（*_weight）を
+      # modifyで駆動する（4.3節）。乾き系（sunny/cloudy）の重みも固定定数にせず段階に連動させることで、
+      # saturated（雨季後半）では「まず晴れない」（sunny_weight: 0）を、dry（乾ききった状態）では
+      # 「大雨・嵐が原理的に起こらない」（heavy_rain_weight/storm_weight: 0）を表現する。
+      # moderateまでのcalmの雨は必ずlight_rain（heavy/stormの重みが0）: 「3日に1回くらい、大雨には
+      # ならない雨」という序盤の要件（3.2節）をこの重み構成が満たす。
+      atmospheric_moisture:
+        value: 0
+        range: {min: 0, max: 10000}
+        stages:
+          - name: dry
+            passives:
+              - modify:
+                  self:
+                    sunny_weight: 50
+                    cloudy_weight: 20
+                    light_rain_weight: 2
+          - name: moderate
+            min: 3000
+            passives:
+              - modify:
+                  self:
+                    sunny_weight: 20
+                    cloudy_weight: 35
+                    light_rain_weight: 40
+          - name: humid
+            min: 6000
+            passives:
+              - modify:
+                  self:
+                    sunny_weight: 5
+                    cloudy_weight: 20
+                    light_rain_weight: 40
+                    heavy_rain_weight: 30
+                    storm_weight: 10
+          - name: saturated
+            min: 8500
+            passives:
+              - modify:
+                  self:
+                    cloudy_weight: 5
+                    light_rain_weight: 20
+                    heavy_rain_weight: 40
+                    storm_weight: 40
+      # 天気候補ごとの重み。著者が直接setするのではなく、atmospheric_moistureのstagesがmodifyで維持する
+      # （ベース値0のため、どのstageもmodifyしない候補の重みは0=選ばれない）。
+      sunny_weight:
+        value: 0
+      cloudy_weight:
+        value: 0
+      light_rain_weight:
+        value: 0
+      heavy_rain_weight:
+        value: 0
+      storm_weight:
+        value: 0
+      # 現在の天気の残りtick数。毎tick-1され、0になった瞬間（on_min）に次の天気をpickで選ぶ
+      # （ClimateSystem.md 4節）。外側のpickが*_weightを重みに天気を選び、内側のpickが持続時間
+      # 4/5/6時間（16/20/24tick）を等確率で選ぶ。同じ天気が連続で選ばれれば6時間超の継続も自然に表現
+      # される（4.4節）。初期値20（5時間）は day1 の最初の遷移までの猶予。on_shortfallの空宣言は
+      # season_remainingと同じ理由。
+      weather_remaining:
+        value: 20
+        range: {min: 0, max: 999999}
+        on_shortfall: {}
+        passives:
+          - accumulate:
+              self:
+                weather_remaining: -1
+        on_min:
+          pick:
+            - weight: {prop: sunny_weight}
+              pick:
+                - weight: 1
+                  set:
+                    self: {weather: sunny, weather_remaining: 16}
+                - weight: 1
+                  set:
+                    self: {weather: sunny, weather_remaining: 20}
+                - weight: 1
+                  set:
+                    self: {weather: sunny, weather_remaining: 24}
+            - weight: {prop: cloudy_weight}
+              pick:
+                - weight: 1
+                  set:
+                    self: {weather: cloudy, weather_remaining: 16}
+                - weight: 1
+                  set:
+                    self: {weather: cloudy, weather_remaining: 20}
+                - weight: 1
+                  set:
+                    self: {weather: cloudy, weather_remaining: 24}
+            - weight: {prop: light_rain_weight}
+              pick:
+                - weight: 1
+                  set:
+                    self: {weather: light_rain, weather_remaining: 16}
+                - weight: 1
+                  set:
+                    self: {weather: light_rain, weather_remaining: 20}
+                - weight: 1
+                  set:
+                    self: {weather: light_rain, weather_remaining: 24}
+            - weight: {prop: heavy_rain_weight}
+              pick:
+                - weight: 1
+                  set:
+                    self: {weather: heavy_rain, weather_remaining: 16}
+                - weight: 1
+                  set:
+                    self: {weather: heavy_rain, weather_remaining: 20}
+                - weight: 1
+                  set:
+                    self: {weather: heavy_rain, weather_remaining: 24}
+            - weight: {prop: storm_weight}
+              pick:
+                - weight: 1
+                  set:
+                    self: {weather: storm, weather_remaining: 16}
+                - weight: 1
+                  set:
+                    self: {weather: storm, weather_remaining: 20}
+                - weight: 1
+                  set:
+                    self: {weather: storm, weather_remaining: 24}
+      # 蓄熱量（ClimateSystem.md 3節のもう一つの貯水池）。ambient_temperatureへ季節レートを直接加算すると
+      # 整数レート最小の±1/tickでも1季節で±2880になってしまうため、atmospheric_moistureと同じ
+      # 「スケールした貯水池のstagesが表向きの値をmodifyする」パターンで段階的な暑さ・涼しさに変換する。
+      # dryで+1/tick（30日で0→2880、乾季後半ほど暑い）、calm/wetで-1/tick（calmは乾季の暑さから
+      # じわじわ涼しくなる回復区間、wetは下限0=coolに張り付く）。初期値1000は「ゲーム開始時は補正なし
+      # （mild帯）」のため。
+      thermal_level:
+        value: 1000
+        range: {min: 0, max: 2880}
+        stages:
+          - name: cool
+            passives:
+              - modify:
+                  self:
+                    ambient_temperature: -5
+          - name: mild
+            min: 960
+          - name: hot
+            min: 1920
+            passives:
+              - modify:
+                  self:
+                    ambient_temperature: 8
+      # 難易度の初期補正1: ゲーム開始2日目に高確率で雨を降らせる（ClimateSystem.md 5.1節）。
+      # ゲーム開始からの経過tickを数えるだけの専用カウンタで、2日目（tick 96-191）の間だけ
+      # atmospheric_moistureへ追加加算し、天気の抽選を雨系へ大きく傾ける。天気そのものを固定で
+      # 雨にはしない（5.3節）ため、それでも晴れる可能性はゼロではない。
+      early_rain_calibration:
+        value: 0
+        passives:
+          - accumulate:
+              self:
+                early_rain_calibration: 1
+        stages:
+          - name: idle
+          - name: boosting
+            min: 96
+            passives:
+              - accumulate:
+                  self:
+                    atmospheric_moisture: 60
+          - name: done
+            min: 192
+      # 難易度の初期補正2: 最初の乾季の10日目前後（絶対71日目）に高確率で雨を降らせる（5.2節）。
+      # 初回サイクルは各季節30日固定のため、最初のdryは61日目開始・その10日目は71日目
+      # （tick 6720-6815）と、ゲーム開始前から確定している。dryの-100/tickを上回る+200/tickを
+      # 窓の間だけ加算する。この6720/6816はseason_remainingの「初回サイクル30日固定」に依存した
+      # 導出値であり、そちらを変えたらこちらも再計算が必要。
+      first_dry_rain_calibration:
+        value: 0
+        passives:
+          - accumulate:
+              self:
+                first_dry_rain_calibration: 1
+        stages:
+          - name: idle
+          - name: boosting
+            min: 6720
+            passives:
+              - accumulate:
+                  self:
+                    atmospheric_moisture: 200
+          - name: done
+            min: 6816
     slots:
       locations:
         # locationタグを持つobject_defのみを受け入れる（種類数の上限は設けない想定のため、
