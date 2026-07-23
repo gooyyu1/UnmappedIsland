@@ -13,6 +13,10 @@
 - [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
 - [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
 - [道具・武器・容器・衣類 アイテム案](./SurvivalItems.md)
+- [WorldCodex データベースビューア](./WorldCodexViewer.html) — 実際のゲームデータ
+  （`Assets/StreamingAssets/WorldCodex/*.yaml`）を表示のたびにGitHubから直接取得・解釈して一覧・詳細表示する、
+  人間用の閲覧ツール（ビルド不要、YAMLの変更内容がそのまま反映される）。文法そのもの（YAML文法リファレンス）は
+  [`../Engine/GameElementDefinition.md`](../Engine/GameElementDefinition.md) を参照
 
 ## 含まれるドキュメント例
 
