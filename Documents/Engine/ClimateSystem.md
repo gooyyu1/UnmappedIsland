@@ -105,18 +105,110 @@
   未決事項とします。
 - `weather_remaining`: 残り tick 数。4〜6 時間（tick 換算で 16〜24 tick）の範囲で、遷移のたびに `pick`
   （10 節。離散候補からの等確率選択）でロールし直す。
+- `sunny_weight`/`cloudy_weight`/`light_rain_weight`/`heavy_rain_weight`/`storm_weight`: `weather` の各候補に
+  1 つずつ対応する、ただの数値プロパティ。値は著者が直接 `set` するのではなく、4.3 節の通り
+  `atmospheric_moisture` の `stages` が常時 `modify` して維持します。
 
-### 4.3 遷移先: 大気水分量で重み付けした `pick`
+### 4.3 遷移先: 天気ごとの重みプロパティを大気水分量の `stages` が `modify` する
 
 `weather_remaining` の `on_min`（`self`）で `pick`（GameElementDefinition.md 10 節）を実行し、次の天気を選びます。
+各候補の `weight` は、対応する `*_weight` プロパティへの参照です（10.2 節の「既存プロパティへの参照」）。
 
-- 乾き寄りの候補（`sunny`/`cloudy`）は固定の重み定数を持つ。
-- 湿り寄りの候補（`light_rain`/`heavy_rain`/`storm`）は `atmospheric_moisture` 自身を重みとして直接参照する
-  （10 節の重み参照。プロパティの現在値をそのまま重みとして使う方式で、`weight * 2` のような式は組めません）。
+```yaml
+props:
+  weather_remaining:
+    value: 20
+    range: {min: 0}
+    passives:
+      - accumulate:
+          self:
+            weather_remaining: -1
+    on_min:
+      pick:
+        - weight: {prop: sunny_weight}
+          set: {weather: sunny}
+        - weight: {prop: cloudy_weight}
+          set: {weather: cloudy}
+        - weight: {prop: light_rain_weight}
+          set: {weather: light_rain}
+        - weight: {prop: heavy_rain_weight}
+          set: {weather: heavy_rain}
+        - weight: {prop: storm_weight}
+          set: {weather: storm}
+```
 
-この結果、大気水分量が高いほど雨系候補の合計重みが相対的に増し、雨が降りやすくなります。逆に大気水分量が
-低ければ乾き寄り候補の固定重みが相対的に勝ち、晴れやすくなります。湿り寄り候補どうしの重みは現状すべて
-`atmospheric_moisture` の同じ値になるため均等になる点は 7 節の未決事項とします。
+`weather_remaining` 自体を 4〜6 時間（16〜24 tick）の範囲で遷移のたびにロールし直す部分は、この `pick` の
+中には含めていません（各候補の `set` に加えて `weather_remaining` 自体をどう再ロールするかは 2.3 節と同じ
+「離散候補からの `pick`」を想定していますが、具体値は 7 節の未決事項です）。上のサンプルは `value: 20`
+（初期値、tick換算で 5 時間相当）を固定で示しており、天気ごとの重み付けという本節の主題を明確にするための
+簡略化です。
+
+`*_weight` プロパティ自身の値は、`atmospheric_moisture` の `stages`（数値の半開区間。GameElementDefinition.md
+6.4 節）が `passives` の `modify` として常時上書きすることで決まります（`weather` の `stages` が `sunlight` を
+`modify` しているのと同じパターンの使い回しで、新しいエンジン機能は不要です）。
+
+```yaml
+props:
+  atmospheric_moisture:
+    value: 0
+    range: {min: 0, max: 100}
+    stages:
+      - name: dry
+        min: 0
+        passives:
+          - modify:
+              self:
+                sunny_weight: 50
+                cloudy_weight: 20
+                light_rain_weight: 5
+                heavy_rain_weight: 0
+                storm_weight: 0
+      - name: moderate
+        min: 30
+        passives:
+          - modify:
+              self:
+                sunny_weight: 20
+                cloudy_weight: 30
+                light_rain_weight: 40
+                heavy_rain_weight: 5
+                storm_weight: 0
+      - name: humid
+        min: 60
+        passives:
+          - modify:
+              self:
+                sunny_weight: 5
+                cloudy_weight: 20
+                light_rain_weight: 40
+                heavy_rain_weight: 30
+                storm_weight: 10
+      - name: saturated
+        min: 85
+        passives:
+          - modify:
+              self:
+                sunny_weight: 0
+                cloudy_weight: 5
+                light_rain_weight: 20
+                heavy_rain_weight: 40
+                storm_weight: 40
+  sunny_weight: {value: 0}
+  cloudy_weight: {value: 0}
+  light_rain_weight: {value: 0}
+  heavy_rain_weight: {value: 0}
+  storm_weight: {value: 0}
+```
+
+`sunny`/`cloudy` 側の重みも `light_rain`/`heavy_rain`/`storm` 側と同じく `atmospheric_moisture` の段階に
+連動させ、固定の重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」
+という下限が原理的に外れなくなり、`saturated` 段階（雨季後半）で「まず晴れない」を表現できなくなるためです。
+上のサンプルでは `saturated` 段階で `sunny_weight: 0` とすることで、それを表現しています（同様に `dry` 段階の
+`heavy_rain_weight`/`storm_weight` を `0` にすれば、乾ききっている間は大雨・嵐が原理的に起こらない、という
+逆方向の下限も表現できます）。
+
+段階の境界（`min`）を跨いだ瞬間に重みが階段状に飛ぶ点は、`weather_remaining` の遷移自体が 4〜6 時間に 1 回
+（4.2 節）しか起きないため、体感上の不自然さにはならないと考えます。
 
 ### 4.4 二回連続で同じ天気になった場合
 
@@ -156,8 +248,10 @@
   値そのものからは直接決まらない
 - 天気・大気水分量・気温はいずれも「独立変数への tick ごとの加減算」のみで表現し、`derived`（計算式による
   導出）は使わない
-- 大気水分量は、天気の遷移先を決める `pick` の重みとして使われる。天気そのものの stages 閾値としては
-  使わない（4.1 節）
+- 大気水分量は、天気そのものの stages 閾値としては使わず（4.1 節）、天気候補ごとの重み専用プロパティを
+  `stages`/`modify` 経由で駆動する入力としてのみ使う（4.3 節）。乾き系・湿り系のどちらの重みも大気水分量に
+  連動させ、固定の重み定数にはしない（極端な条件下で「絶対に晴れない」「絶対に嵐にならない」を表現できるよう
+  にするため）
 - 「季節後半ほど過酷になる」は貯水池モデルの単調な積み上がりから自動的に生まれ、追加の経過度計算を要しない
   （3 節末尾）
 - 難易度の初期補正は、天気を固定せず大気水分量という抽選の元データだけを操作することで実現し、不確実性を
@@ -168,9 +262,8 @@
 
 - `weather` の symbol 値セット（`sunny`/`cloudy`/`light_rain`/`heavy_rain`/`storm`）と、`core.yaml` に既にある
   暫定 `stages`（`scorching` を含む 7 値）との整合（4.2 節）
-- 湿り寄り候補（`light_rain`/`heavy_rain`/`storm`）の重みが現状すべて `atmospheric_moisture` の同値になり
-  均等になってしまう点。候補間で相対比率を変えたい場合の表現方法（`pick` の重みが定数倍等の式を持てないため。
-  4.3 節）
+- `atmospheric_moisture` の `stages` の区切り（`dry`/`moderate`/`humid`/`saturated` 等、段階数も含め）と、
+  各段階が `*_weight` に `modify` する具体的な数値（4.3 節のサンプルは一例に過ぎない）
 - 季節・天気のランダム持続時間を `pick` の離散候補で表現する場合の、具体的な候補値と重み（2.3 節・4.2 節）
 - `season_cycle` に応じた「固定 30 日 / ランダム」の分岐を、既存の `on_min`/`pick` の語彙でどう具体的に書くか
   （2.3 節）
