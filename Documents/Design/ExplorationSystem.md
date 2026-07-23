@@ -14,22 +14,26 @@
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節にまとめています。
 
-## 1. 土地の共通構造（`explorable` trait）
+## 1. `location` trait と `explorable` trait の役割分担
 
-要求（すべての土地が持つべき3種のスロット・探索の仕組み）を、`locations.yaml` で新設した `explorable` trait
-にまとめています。`location` trait（`core.yaml`。`location` タグを配るだけの、中身を持たない trait）とは
-役割が分かれており、すべての土地は `traits: [location, explorable]` の両方を参照します。
+「場所」であるという構造（3種のスロット）と、「探索できる」という性質（進捗・道の発見）は、**別々の trait**
+に分けています。両者は独立した軸であり、探索できない場所（例えば、プレイヤーが拠点として使う家・作業小屋の
+ような建造物）も「場所」である以上、木や植物・建築物や家具などの設置物用のスロット・アイテム用のスロット・
+キャラクタ用のスロットは必要です。そのため、これらのスロットは探索の可否に関わらずあらゆる場所が持つべき
+構造として、`explorable` ではなく `location` trait（`core.yaml`）側に置いています。
 
-- `location`: `world.locations` スロットの `accepts` 判定用のタグ配布のみ（既存）。
-- `explorable`: 土地としての構造（スロット5つ・探索進捗プロパティ）を持つ、本書が新設した trait。
-
-同一 id の定義をファイル間で再定義することはできない（`GameElementDefinition.md` 3.3 節）ため、`location` trait
-自体を `locations.yaml` 側で拡張することはできません。既存の空の trait はそのままに、新しい trait を追加して
-組み合わせる方針を採りました。
+- **`location`**（`core.yaml`）: あらゆる場所が共通して持つ構造。**3種のスロット**（`items`/`fixtures`/
+  `characters`）と、`world.locations` スロットの `accepts` 判定用のタグ配布。草原のような探索可能な土地も、
+  家のような探索を伴わない場所も、場所である以上すべてこの trait を実装します。
+- **`explorable`**（`locations.yaml`）: 探索**できる**場所だけが追加で持つ構造。探索進捗プロパティと、
+  道の発見に使う2スロット（`undiscovered_paths`/`paths`）。家のように探索を伴わない場所は、この trait を
+  実装しません（`traits: [location]` のみで成立します）。
 
 ```yaml
+# core.yaml
 traits:
-  explorable:
+  location:
+    tags: [location]
     slots:
       items:
         accepts: [{tag: item, max: 9999}]
@@ -39,22 +43,31 @@ traits:
         accepts: [{tag: character, max: 9999}]
         unit_capacity: 1
         fixed_positions: true
+```
+
+```yaml
+# locations.yaml
+traits:
+  explorable:
+    slots:
       undiscovered_paths:
         accepts: [{tag: path, max: 9999}]
       paths:
         accepts: [{tag: path, max: 9999}]
     props:
-      exploration_progress: {}   # valueなし = 各土地で必須（5節）
+      exploration_progress: {}   # valueなし = 実装する側で必須（5節）
 ```
 
-### 1.1 3種のスロット
+草原などの探索可能な土地は両方を参照します（`traits: [location, explorable]`）。家のような場所は
+`location` のみを参照すれば、探索の仕組み（進捗・道）を持たずに3種のスロットだけを得られます。
 
-要求どおり、すべての土地は次の3種のスロットを持ちます。いずれも `capacity`（サイズの合計制限、7.3 節）は
-指定していません。
+### 1.1 3種のスロット（`location` trait）
+
+すべての場所は次の3種のスロットを持ちます。いずれも `capacity`（サイズの合計制限、7.3 節）は指定していません。
 
 - **`items`**: アイテムが置かれるスロット。
 - **`fixtures`**: 木や植物、建築物や家具、洞窟の入口などの設置物が置かれるスロット。
-- **`characters`**: キャラクタを入れるスロット。要求どおり `fixed_positions: true`・`unit_capacity: 1`（固定型、
+- **`characters`**: キャラクタを入れるスロット。`fixed_positions: true`・`unit_capacity: 1`（固定型、
   スタック数1つだけ）。
 
 `items`/`fixtures` の区別はタグ（`item`/`fixture`）だけで行い、探索の発見物（2 節）を `spawn` する際、
@@ -63,7 +76,7 @@ traits:
 フォールバック（起点自身の親へ強制配置、9.4 節）が同じく先頭のスロットへ入るためで、「持ちきれない発見物は
 地面（土地の `items`）に落ちる」という直感的な結果を、追加のルールなしに実現しています。
 
-### 1.2 道の2スロット（隠しスロット方式）
+### 1.2 道の2スロット（隠しスロット方式、`explorable` trait）
 
 要求にあった「土地同士の繋がり方を記述する方法」は、Card Survival と同様に**探索によって見つかる `path` という
 専用オブジェクト**として表現しました。この「発見」を実装する方式として、以下の2案を検討しました。
@@ -82,8 +95,10 @@ traits:
 
 ## 2. 探索（`explore` アクション）
 
-要求どおり、「探索で何が見つかるか」は `location` trait には実装せず、土地ごとの `object_defs`
+要求どおり、「探索で何が見つかるか」は `explorable` trait にも実装せず、土地ごとの `object_defs`
 （`locations.yaml`）が個別に定義します。探索できる回数（進捗プロパティの上限）も同様に個別定義です。
+`explorable` trait 自身が持つのは、進捗を保持する箱（`exploration_progress`）と道の発見に使う2スロット
+（1.2 節）という、あらゆる探索可能な土地に共通する器だけです。
 
 ```yaml
 object_defs:

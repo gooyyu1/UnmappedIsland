@@ -4,10 +4,36 @@
 # 地形生成の定義（軸・LocationType・生成スコープ）はterrain_generation.yamlが持つ。
 
 traits:
-  # worldのlocationsスロットの受け入れ判定専用のタグ（4節のtags・7.2節のaccepts参照）。中身を持たず、
-  # これを参照するobject_defへ`location`タグを配るためだけに存在する。
+  # あらゆる「場所」が共通して持つ構造（ExplorationSystem.md参照）。探索できるかどうか
+  # （locations.yamlのexplorable trait）に関わらず、草原のような探索可能な土地も、家のような
+  # 探索を伴わない場所も、場所である以上すべてこのtraitを実装する。3種のスロット（木や植物・
+  # 建築物や家具などの設置物用のfixtures、アイテム用のitems、キャラクタ用のcharacters）は
+  # 「場所」という概念そのものに付随するものであり、探索の可否には依存しないため、ここに置く。
+  # worldのlocationsスロットの受け入れ判定用のタグ（4節のtags・7.2節のaccepts参照）も、
+  # このtraitが配る。
+  #
+  # スロットの宣言順には意味がある: spawn（9.4節）は配置先スロットを宣言順に走査するため、
+  # itemタグ/fixtureタグのオブジェクトはaccepts判定でitems/fixturesへ自然に振り分けられる。
+  # 配置失敗時のフォールバック（親へ強制配置）は先頭スロットへ入るため、itemsを先頭に置く
+  # （「持ちきれない物は地面に落ちる」を自然に実現する）。
   location:
     tags: [location]
+    slots:
+      # アイテムが置かれるスロット。サイズ制限なし。
+      items:
+        accepts:
+          - {tag: item, max: 9999}
+      # 木や植物、建築物や家具、洞窟の入口などの設置物スロット。サイズ制限なし。
+      fixtures:
+        accepts:
+          - {tag: fixture, max: 9999}
+      # キャラクタを入れるスロット。固定型（fixed_positions）で、スタック数は1つだけ
+      # （unit_capacity: 1。stackableは既定true=同種はスタックにまとまるため、枠は1つ）。
+      characters:
+        accepts:
+          - {tag: character, max: 9999}
+        unit_capacity: 1
+        fixed_positions: true
 
 object_defs:
   world:
