@@ -43,9 +43,10 @@ UnmappedIsland/
 │   │   └── UI/           # UIスプライト
 │   └── Settings/         # Input System, Render Pipeline などの設定アセット
 ├── Documents/
-│   ├── Planning/         # 企画書
-│   ├── Specification/    # 仕様書
-│   └── Design/           # 設計書
+│   ├── Concept/          # コンセプト
+│   ├── UI/               # UI/UX
+│   ├── Engine/           # ルール・エンジン（YAML文法・汎用サブシステム・実装ガイド）
+│   └── World/            # ワールド（地形・気候・アイテムなど実際にゲームに登場する内容）
 ├── docs/                 # GitHub Pages 用 HTML（Documents/ から自動生成・直接編集不可）
 ├── Packages/             # Unityパッケージ設定
 └── ProjectSettings/      # Unityプロジェクト設定
@@ -54,7 +55,7 @@ UnmappedIsland/
 ## ドキュメント
 
 開発ドキュメントは [`Documents/`](./Documents/README.md) フォルダで管理します。
-ゲームコンセプトは [`Documents/Planning/GameConcept.md`](./Documents/Planning/GameConcept.md) にまとめています。
+ゲームコンセプトは [`Documents/Concept/GameConcept.md`](./Documents/Concept/GameConcept.md) にまとめています。
 ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装します。
 
 ## ライセンス

@@ -6,8 +6,8 @@
 `slots`/`passives`/`active`/`pick`/`actions`/`combinations`/`recipes` 等の文法をすべて集約したもの）をもとに、
 `WorldCodex` の YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-schema.org/) Draft 2020-12、
 `WorldCodex.schema.json`）を作成した結果をまとめたものです。個別の世界描写（`ClimateSystem.md`・`RecipeSystem.md`・
-`ContainerSystem.md`・`ActionSystem.md`・`TerrainGeneration.md`）の内容そのものはスキーマの対象外で、それらが使う
-文法の妥当性のみを検証します。
+`ContainerSystem.md`・`ActionSystem.md`・`TerrainGeneration.md`・`ExplorationSystem.md`）の内容そのものはスキーマの
+対象外で、それらが使う文法の妥当性のみを検証します。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。スキーマ自体も、`GameElementDefinition.md` に残る
 未決事項がそのまま反映された、現時点のスナップショットです。
@@ -53,11 +53,12 @@
 
 ### 2.2 意図的に対象外としたもの
 
-- **地形生成（`Axis`/`LocationType`/`StructureType`/`generation_scope`、`TerrainGeneration.md`）**: サンプルの表記は
-  `object_defs`/`traits`/`actions`/`combinations`/`recipes` と同じ「識別子をキーとする辞書」形式に統一済みです（3節）が、
-  `TerrainGeneration.md` 自体が「実装・詳細スキーマ化は本書を土台に別途進める」と明記している検討中の段階であり、
-  フィールド名・型・軸空間マッチングの詳細などがまだ確定していません。この状態で無理にスキーマ化すると、他の部分
-  より不確かな内容に過剰な確からしさを与えてしまうため、今回は対象外としました。
+- **地形生成（`axes`/`location_types`/`generation_scopes`、`TerrainGeneration.md`）**: `object_defs`/`traits` と
+  同じ「識別子をキーとする辞書」形式で、`WorldCodexYamlLoader.Generation.cs`（`Assets/Scripts/Loader/`）により
+  実装・ロード済みです（`terrain_generation.yaml` 参照）。本 JSON Schema（`WorldCodex.schema.json`）はこの
+  3ルートキーへまだ追随できておらず、対象外のままです。追随作業は今後の課題とします。
+- **土地・道の実行時挙動（`explorable` trait・`move`/`duration`、`ExplorationSystem.md`）**: `move`/`duration`
+  自体は `GameElementDefinition.md` 9.6 節・11.3 節の一般文法として実装済みですが、本スキーマは未追随です。
 - **`derived`（導出値、16節・17節）**: 採否そのものが未決定のため含めていません。
 - **`ancestor`/`sibling`/`descendant`（対象キーの拡張、8.1節・9.1節・17節）**: 必要性が生じた時点で改めて検討する
   とされているため含めていません。

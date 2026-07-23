@@ -1,36 +1,21 @@
-# 土地（location）と道（path）の定義（TerrainGeneration.md・GameElementDefinition.md参照）。
-# 個々の土地種別はcore.yamlのコメントで予告されていた「別ファイルで追加する地形定義」にあたる。
-# 地形生成そのもの（どの土地がいくつ・どう繋がって生成されるか）はterrain_generation.yamlの
-# axes/location_types/generation_scopesと、Domain/Generationの生成パイプラインが担う。
+# 土地（location）と道（path）の定義（TerrainGeneration.md・ExplorationSystem.md・
+# GameElementDefinition.md参照）。個々の土地種別はcore.yamlのコメントで予告されていた
+# 「別ファイルで追加する地形定義」にあたる。地形生成そのもの（どの土地がいくつ・どう繋がって
+# 生成されるか）はterrain_generation.yamlのaxes/location_types/generation_scopesと、
+# Domain/Generationの生成パイプラインが担う。
 #
-# すべての土地は location trait（core.yaml、タグ配布専用）と、この
-# ファイルで定義する explorable trait（土地共通の構造: スロット5つ+探索進捗）を実装する。
-# 「探索で何が見つかるか」「探索できる回数（進捗の上限）」は地形ごとに異なるため、
-# explorable traitには持たせず、各土地のobject_defが探索アクション（explore）として個別に定義する。
+# すべての土地は location trait（core.yaml。items/fixtures/charactersの3スロット。
+# 場所である以上、探索の可否によらず持つ構造）と、この
+# ファイルで定義する explorable trait（探索できる場所だけが追加で持つ構造: 道の2スロット+
+# 探索進捗）を実装する。「探索で何が見つかるか」「探索できる回数（進捗の上限）」は地形ごとに
+# 異なるため、explorable traitには持たせず、各土地のobject_defが探索アクション（explore）
+# として個別に定義する。
 
 traits:
-  # 土地共通の構造。スロットの宣言順には意味がある:
-  # - spawn（9.4節）は配置先スロットを宣言順に走査するため、探索の発見物（into: self）は
-  #   タグ（item/fixture）のacceptsによってitems/fixturesへ自然に振り分けられる。
-  # - 配置失敗時のフォールバック（親へ強制配置）は先頭スロットへ入るため、itemsを先頭に置く
-  #   （「持ちきれない発見物は地面に落ちる」を自然に実現する）。
+  # 探索できる場所だけが追加で持つ構造（items/fixtures/charactersはlocation trait、
+  # core.yaml参照）。
   explorable:
     slots:
-      # アイテムが置かれるスロット。サイズ制限なし。
-      items:
-        accepts:
-          - {tag: item, max: 9999}
-      # 木や植物、建築物や家具、洞窟の入口などの設置物スロット。サイズ制限なし。
-      fixtures:
-        accepts:
-          - {tag: fixture, max: 9999}
-      # キャラクタを入れるスロット。固定型（fixed_positions）で、スタック数は1つだけ
-      # （unit_capacity: 1。stackableは既定true=同種はスタックにまとまるため、枠は1つ）。
-      characters:
-        accepts:
-          - {tag: character, max: 9999}
-        unit_capacity: 1
-        fixed_positions: true
       # 生成時に道（path）を隠しておくスロット。探索の進捗が道のrequired_progressへ達すると、
       # Location（Views）がpathsスロットへ移して「発見」させる。UI側はこのスロットを表示しない想定。
       undiscovered_paths:

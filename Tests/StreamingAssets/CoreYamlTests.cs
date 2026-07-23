@@ -226,6 +226,38 @@ object_defs:
                 "locationタグを持たないオブジェクトは拒否される");
         }
 
+        [Test]
+        public void LocationTrait_AloneProvidesItemsFixturesAndCharacterSlots_WithoutExploration()
+        {
+            // location trait（本ファイル）は「場所である」ことに付随する構造（items/fixtures/
+            // charactersの3スロット）だけを配る。探索（exploration_progressプロパティ・
+            // undiscovered_paths/pathsスロット）はexplorable trait（locations.yaml）側の役割であり、
+            // location単体を実装するオブジェクト（家のような、探索を伴わない場所）はそれらを持たない
+            // （ExplorationSystem.md参照）。
+            const string yaml = @"
+object_defs:
+  test_hut:
+    traits: [location]
+";
+            var testCodex = new WorldCodexYamlLoader()
+                .LoadFromFile(FindRepoFile("Assets/StreamingAssets/WorldCodex/core.yaml"))
+                .Load("hut.yaml", yaml)
+                .Build();
+
+            ObjectDef hut = testCodex.Objects.Get(testCodex.ObjectNames.GetId("test_hut"));
+
+            Assert.That(hut.GetSlotDef(testCodex.SlotNames.GetId("items")), Is.Not.Null);
+            Assert.That(hut.GetSlotDef(testCodex.SlotNames.GetId("fixtures")), Is.Not.Null);
+
+            SlotDef characters = hut.GetSlotDef(testCodex.SlotNames.GetId("characters"));
+            Assert.That(characters, Is.Not.Null);
+            Assert.That(characters.FixedPositions, Is.True, "キャラクタスロットは固定型");
+            Assert.That(characters.UnitCapacity, Is.EqualTo(1), "キャラクタスロットのスタック数は1");
+
+            Assert.That(testCodex.PropertyNames.TryGetId("exploration_progress", out _), Is.False,
+                "explorableを実装していないため、探索進捗プロパティはこのCodexに一切登場しない");
+        }
+
         private PropertyDef PropOf(ObjectDef def, string propertyName)
         {
             return def.GetPropertyDef(codex.PropertyNames.GetId(propertyName));

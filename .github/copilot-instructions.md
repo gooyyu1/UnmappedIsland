@@ -58,11 +58,11 @@ const browser = await puppeteer.launch({
 
 ### 日本語フォントについて
 
-HTML モック (`Documents/Design/ScreenLayout_*.html`) には以下のフォント設定が含まれている:
+HTML モック (`Documents/UI/ScreenLayout_*.html`) には以下のフォント設定が含まれている:
 
 - **Google Fonts**: `Noto Sans JP`（ブラウザでの表示用・オンライン時のみ）
 - **システムフォント**: `Noto Sans CJK JP`（`fonts-noto-cjk` パッケージ、オフライン環境用）
 
 スクリーンショット生成の前に `fonts-noto-cjk` を必ずインストールすること。
 
-生成したスクリーンショットは `Documents/Design/screenshot_portrait.png` と `Documents/Design/screenshot_landscape.png` に上書きして保存する。GitHub Actions ワークフローはこれらをそのまま `docs/` にコピーする。
+生成したスクリーンショットは `Documents/UI/screenshot_portrait.png` と `Documents/UI/screenshot_landscape.png` に上書きして保存する。GitHub Actions ワークフローはこれらをそのまま `docs/` にコピーする。
