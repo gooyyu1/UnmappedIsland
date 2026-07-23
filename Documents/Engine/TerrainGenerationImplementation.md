@@ -6,8 +6,8 @@
 `Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs`（ロード）にまたがる地形生成の実装を、**実際の
 クラス名・メソッド名を使ってトップダウンに**説明するものです。
 
-- **「なぜこう設計したか」は本書では説明しません。** [`TerrainGeneration.md`](../World/TerrainGeneration.md)
-  （島の生成アルゴリズムの設計判断）・[`ExplorationSystem.md`](../World/ExplorationSystem.md)（生成された
+- **「なぜこう設計したか」は本書では説明しません。** [`TerrainGeneration.md`](./TerrainGeneration.md)
+  （島の生成アルゴリズムの設計判断）・[`ExplorationSystem.md`](./ExplorationSystem.md)（生成された
   土地の挙動の設計判断）を参照してください。本書はその実装が**コード上どこに・どういう形であるか**だけを扱います。
 - ソースコードのXMLドキュメントコメント（`///`）は、各クラス・各メソッドが**そのクラス単体として**何を
   するかを説明しますが、「どのクラスがどのクラスを、どの順で呼ぶか」という全体の流れは、1つのファイルを

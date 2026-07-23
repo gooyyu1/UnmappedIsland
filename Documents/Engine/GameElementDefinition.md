@@ -13,9 +13,9 @@
 - [`RecipeSystem.md`](./RecipeSystem.md) — アイテムの製作
 - [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ
 - [`ActionSystem.md`](./ActionSystem.md) — カード間相互作用（`actions`/`combinations`）の使い分け方針
-- [`ClimateSystem.md`](../World/ClimateSystem.md) — 季節・天候
-- [`TerrainGeneration.md`](../World/TerrainGeneration.md) — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
-- [`ExplorationSystem.md`](../World/ExplorationSystem.md) — 生成された土地の構造と挙動（スロット・探索・道の発見と移動）
+- [`ClimateSystem.md`](./ClimateSystem.md) — 季節・天候
+- [`TerrainGeneration.md`](./TerrainGeneration.md) — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
+- [`ExplorationSystem.md`](./ExplorationSystem.md) — 生成された土地の構造と挙動（スロット・探索・道の発見と移動）
 
 形式的なスキーマ定義（[JSON Schema](https://json-schema.org/)）は [`WorldCodex.schema.json`](./WorldCodex.schema.json)
 （メタ情報は [`WorldCodexSchema.md`](./WorldCodexSchema.md)）を参照してください。本書はスキーマの人間向け解説を
@@ -1321,8 +1321,8 @@ object_defs:
 
 - **地形生成**（`axes`/`location_types`/`generation_scopes`）: 記法自体は本書と同じ「識別子をキーとする辞書」を
   採用し実装済みですが、フィールドの意味・軸空間マッチングのアルゴリズムは地形生成固有の内容であるため、
-  本書には含めず [`TerrainGeneration.md`](../World/TerrainGeneration.md) に委ねます。地形生成によって作られた
-  `Location` 自身の構造（スロット・探索・道の発見と移動）は [`ExplorationSystem.md`](../World/ExplorationSystem.md)
+  本書には含めず [`TerrainGeneration.md`](./TerrainGeneration.md) に委ねます。地形生成によって作られた
+  `Location` 自身の構造（スロット・探索・道の発見と移動）は [`ExplorationSystem.md`](./ExplorationSystem.md)
   を参照してください（そちらは本書の `slots`・`props`・`actions`・`move`・`duration` の応用例です）。
 - **`derived`（導出値）**: 「他の props から計算される値」という概念自体、採否がまだ決まっていません（17 節）。
 

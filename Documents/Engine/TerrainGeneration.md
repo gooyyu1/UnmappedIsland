@@ -3,7 +3,7 @@
 ## 概要
 
 本ドキュメントは、島の地形生成システムに関する設計と実装をまとめたものです。
-[`GameElementDefinition.md`](../Engine/GameElementDefinition.md) が掲げる「ハードコードしない」「汎用エンジンに
+[`GameElementDefinition.md`](./GameElementDefinition.md) が掲げる「ハードコードしない」「汎用エンジンに
 任せる」「ファイル追加だけで拡張できる」という設計方針（2.4 節）に準拠し、以下を目的とします。
 
 - シード値ありのランダム生成で無人島の地形を生成する
@@ -17,7 +17,7 @@
 という**実行時の挙動**（既存の `traits`/`actions`/`slots` の応用）であり、関心事の性質が異なるためです。
 
 本書は設計判断（なぜこのアルゴリズムか）を扱い、実際のクラス名・メソッド名を使った実装の呼び出し関係は
-[`TerrainGenerationImplementation.md`](../Engine/TerrainGenerationImplementation.md) に切り出しています。
+[`TerrainGenerationImplementation.md`](./TerrainGenerationImplementation.md) に切り出しています。
 コードを読む・変更する際はそちらを参照してください。
 
 実装は `Assets/Scripts/Domain/Generation/` 以下（Unity非依存の純粋 C#）、定義データは
@@ -293,7 +293,7 @@ generation_scopes:
 
 ## 7. 参考: 既存プロジェクト方針との整合性
 
-[`GameElementDefinition.md`](../Engine/GameElementDefinition.md) に示されている以下の原則と、本設計は整合しています。
+[`GameElementDefinition.md`](./GameElementDefinition.md) に示されている以下の原則と、本設計は整合しています。
 
 - すべての概念を YAML で定義し、複数ファイル分割・MOD 追加は別ディレクトリへのファイル追加のみで実現する
   （3.3 節）。地形生成の3つのルートキー（`axes`/`location_types`/`generation_scopes`）は、`object_defs`/

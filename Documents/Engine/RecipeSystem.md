@@ -10,8 +10,9 @@
 
 ## 1. 製作中オブジェクトは、完成品とは別オブジェクト
 
-「未完成の斧」は、斧自身とは**別の、製作中の状態専用オブジェクト**として扱います。`infection`（`ClimateSystem.md`
-の季節と同型の「独立した条件・プロセスオブジェクト」パターン）と同じ考え方です。製作中オブジェクトは `progress`
+「未完成の斧」は、斧自身とは**別の、製作中の状態専用オブジェクト**として扱います。感染度・発熱のような
+「進行度を表す `progress` プロパティに `stages` を持たせる」既存パターン（`GameElementDefinition.md` 6.4 節の
+`progress`/`feverish` サンプル）と同じ考え方です。製作中オブジェクトは `progress`
 プロパティに、工程に対応する半開区間の `stages`（`GameElementDefinition.md` 6.4 節）を持ち、最終工程の効果として
 `spawn: {object: axe}` と `destroy: self`（`into` を省略することで自分がいたのと同じスロットに完成品を生成し、自分自身は
 破棄する、`GameElementDefinition.md` 9.4 節）を発火させます。
