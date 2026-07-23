@@ -16,9 +16,9 @@
   `combinations`/`recipes` 等、文法をここに集約
 - [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)） — 上記文法の
   機械的な検証
-- [WorldCodex データベースビューア](./WorldCodexViewer.html) — `Assets/StreamingAssets/WorldCodex/*.yaml`を表示の
-  たびにGitHubから直接取得・解釈して一覧・詳細表示する、人間用の閲覧ツール（ビルド不要、YAMLの変更内容が
-  そのまま反映される）
+
+実際のゲームデータ（`Assets/StreamingAssets/WorldCodex/*.yaml`）を閲覧するツールは
+[`../World/WorldCodexViewer.html`](../World/WorldCodexViewer.html) を参照してください。
 
 ### 汎用サブシステム（文法を使って、どんな内容にも適用できる仕組みの設計）
 
