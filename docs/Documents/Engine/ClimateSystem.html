@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ClimateSystem</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+  <style>
+    @media (max-width: 600px) {
+      .markdown-body { padding: 1rem !important; }
+    }
+  </style>
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+<header id="title-block-header">
+<h1 class="title">ClimateSystem</h1>
+</header>
+<h1 id="気候システム設計">気候システム設計</h1>
+<h2 id="概要">概要</h2>
+<p>本ドキュメントは、ゲーム内の気候（季節・天気）に関する設計を検討した結果をまとめたものです。
+<code>GameElementDefinition.md</code> が掲げる、tick
+駆動・値域による状態決定・「ハードコードしない」「汎用エンジンに任せる」という
+設計方針（2 節）に準拠します。</p>
+<p>本書の前バージョンはエンジンの詳細が固まる前に書かれたため、実装の実態（<code>world</code>
+シングルトンが既に
+<code>day</code>/<code>hour</code>/<code>minute</code>/<code>weather</code>
+などのプロパティを直接持っていること、<code>value: {min, max}</code>
+が「毎 tick 再ロール」では なく「生成時に 1
+回だけロール」であること等）と乖離していました。本改訂はその乖離を解消し、あわせて天気を
+大気水分量から独立させる、季節・天気を専用オブジェクトではなく
+<code>world</code> 自身のプロパティとして扱う、という
+方針転換を反映します。</p>
+<p>本ドキュメントは検討結果であり、確定仕様書ではありません。具体的なレート・閾値などの数値は
+本書ではまだ確定させず、7 節に未決事項として整理しています。</p>
+<h2 id="基本方針">1. 基本方針</h2>
+<p>気候は次の 2 層で構成します。いずれも
+<code>world</code>（<code>GameElementDefinition.md</code> 15 節の
+<code>singleton: true</code> オブジェクト。 <code>core.yaml</code>
+で既に
+<code>tick</code>/<code>minute</code>/<code>hour</code>/<code>day</code>/<code>weather</code>/<code>sunlight</code>/<code>ambient_temperature</code>
+を直接プロパティとして 持っている、まさにその
+<code>world</code>）自身のプロパティとして表現し、専用の
+<code>WorldObject</code> インスタンスは作りません。</p>
+<ul>
+<li><strong>季節（長期サイクル）</strong>: 穏やか・雨季・乾季の 3
+状態を固定順で巡回する。滞在期間は初回サイクルのみ固定、 2
+周目以降はランダムに決まる（3 節）。</li>
+<li><strong>天気（短期変動）</strong>:
+晴れ・曇り・小雨・大雨・嵐。季節が育てる大気水分量に重み付けされた抽選で決まる、
+季節から独立したプロパティ（4 節）。</li>
+</ul>
+<p>季節・天気とも、「現在の値」と「残り時間」の 2
+プロパティの組で表現し、残り時間が 0 になった瞬間に次の値へ
+遷移します。個別の現象を条件分岐やイベントとして作り込むのではなく、<strong>独立したパラメータ同士が
+tick ごとに
+加算・減算し合う「数値積分」によって駆動します</strong>。<code>derived</code>（導出値。GameElementDefinition.md
+16 節・17 節、 採否未確定）のような計算式は使いません。この方針は
+<code>GameConcept.md</code> の「遅れて表面化するサバイバル」節で
+述べている設計思想そのものであり、本書はその具体的な適用例です。</p>
+<h2 id="季節-worldプロパティとしての3サイクル">2. 季節:
+worldプロパティとしての3サイクル</h2>
+<h3 id="状態固定順の巡回">2.1 3状態・固定順の巡回</h3>
+<p>季節は「穏やか（<code>calm</code>）→雨季（<code>wet</code>）→乾季（<code>dry</code>）→穏やか→…」という固定順の
+3 状態サイクルです。天気（4 節）とは
+異なり、次に来る季節がどれかは確率で決まるものではなく、常に同じ順で巡回します。それぞれの季節が基本
+30 日 （tick 換算は <code>DurabilitySystem.md</code> が前提とする
+<code>tick = 15 分・1 日 = 96 tick</code> に従うと 2,880
+tick）続きます。</p>
+<h3 id="プロパティ構成">2.2 プロパティ構成</h3>
+<ul>
+<li><code>season</code>: 現在の季節を表す symbol
+プロパティ（<code>calm</code>/<code>wet</code>/<code>dry</code>。GameElementDefinition.md
+6.8 節）。<code>stages</code> は季節ごとに 1 つずつ、<code>eq</code>
+は値名から自動導出されます（6.4 節）。</li>
+<li><code>season_remaining</code>: 残り tick 数。毎 tick <code>-1</code>
+される蓄積型プロパティ。</li>
+<li><code>season_cycle</code>: 3
+状態を何周したかを表すカウンタ。<code>0</code> から始まり、1
+周（<code>calm</code>→<code>wet</code>→<code>dry</code>→<code>calm</code>）ごとに
+<code>+1</code> される（2.3 節の固定/ランダム分岐に使う）。</li>
+</ul>
+<h3 id="遷移の実装-season_remaining-の-on_min">2.3 遷移の実装:
+<code>season_remaining</code> の <code>on_min</code></h3>
+<p><code>season_remaining</code> の
+<code>on_min</code>（GameElementDefinition.md 6.5
+節。<code>range: {min: 0}</code> 以下である間、毎 tick 実行）で、 次の 2
+つを同時に行います。<code>on_min</code> の対象は <code>self</code>
+のみ許可されていますが、すべて <code>world</code> 自身のプロパティなので
+制約になりません。</p>
+<ol type="1">
+<li><code>season</code> を巡回順の次の値へ <code>set</code> する（3
+状態の固定巡回であり、天気のような確率分岐ではないため <code>pick</code>
+（10 節）は不要）。</li>
+<li><code>season_remaining</code> を次の期間の tick 数へ
+<code>set</code> する。<code>season_cycle</code> が <code>0</code>（まだ
+1 周目）の間は常に固定 30 日 （2,880 tick）。<code>1</code>
+以上になった後は、複数の候補日数から等確率で 1 つを選ぶ
+<code>pick</code>（10 節。候補と重みの 具体値は 7
+節で未決）でばらつかせる。</li>
+<li><code>dry</code>→<code>calm</code>
+への遷移（＝<code>calm</code>→<code>wet</code>→<code>dry</code>と巡って1周が完了し、次の周の<code>calm</code>に入る瞬間）でのみ、
+<code>season_cycle</code> を <code>+1</code> する。</li>
+</ol>
+<h2 id="大気水分量気温-季節が駆動する2つの貯水池">3. 大気水分量・気温:
+季節が駆動する2つの貯水池</h2>
+<p>天気（4
+節）を決める材料として、天気とは別に「大気水分量」「気温」という 2
+つの連続値プロパティを
+引き続き維持します。前バージョンと同じく、<code>derived</code>
+を使わず、季節由来のレート＋ノイズを毎 tick 加算する
+「貯水池モデル」です。</p>
+<ul>
+<li><code>atmospheric_moisture</code>（<code>world</code>
+の蓄積型プロパティ）: <code>season</code> の現在値が持つレートを毎 tick
+加算する。 加えて
+<code>layered_noise</code>（<code>TerrainGeneration.md</code> 3.1
+節の汎用ジェネレータプリミティブを時間軸に適用したもの）
+による小さなランダム変動を加算する。</li>
+<li><code>ambient_temperature</code>（同じく <code>world</code>
+の蓄積型プロパティ）: 同じく <code>season</code>
+の現在値が持つレートを毎 tick 加算する。</li>
+<li>降雨中の自己減算: 天気（4 節）が
+<code>light_rain</code>/<code>heavy_rain</code>/<code>storm</code>
+のいずれかである間、その <code>weather</code> の <code>stages</code>
+自身が持つ <code>passive</code> の <code>accumulate</code> として、毎
+tick <code>atmospheric_moisture</code> を減算する（耐久値や
+<code>GameElementDefinition.md</code> 6.4 節の
+<code>progress</code>/<code>feverish</code>
+例と同じ、ステージ自身が自分の値を変化させる
+パターン）。雨が降り続ければやがて水分が尽きて乾いた候補が選ばれやすくなる、という循環がこれで自然に成立します。</li>
+<li>上限・下限は既存ルール通り、プロパティ側の
+<code>min</code>/<code>max</code> でクランプする。</li>
+</ul>
+<p><strong>「季節後半ほど過酷になる」は、この貯水池モデルだけで自動的に成立します。</strong>
+<code>dry</code>/<code>wet</code> はそれぞれの季節が 進むほど
+<code>ambient_temperature</code>/<code>atmospheric_moisture</code>
+が単調に積み上がるため、追加の「経過度」計算をしなくても、
+その季節の後半には値が最大に近づきます。乾季後半は
+<code>ambient_temperature</code> が最大化して暑くなり、雨季後半は
+<code>atmospheric_moisture</code> が最大化して 4.3
+節の重み付けにより嵐・大雨の相対確率が上がります。<code>calm</code>
+だけは この「後半ほど過酷」から意図的に外れます。<code>calm</code>
+のレートは 3.1 節の通り <code>dry</code>/<code>wet</code>
+とは逆向き（回復方向）
+であり、後半に向かうほど過酷から遠ざかっていく（＝穏やかになっていく）季節として設計しているためです。</p>
+<h3 id="calm-のレートをほぼ0にしない理由">3.1 <code>calm</code>
+のレートを「ほぼ0」にしない理由</h3>
+<p>巡回順（2.1 節）は <code>calm</code> が常に <code>dry</code>
+の直後に来ます。<code>dry</code> は 30
+日間ずっと大気水分量を減らし気温を上げ続ける ため、<code>calm</code>
+が始まる瞬間、大気水分量は乾季で最も低い水準に、気温は乾季で最も高い水準に達しています。ここで
+<code>calm</code> のレートを「ほぼ 0」にすると、この極端な水準のまま 30
+日間ほとんど動かなくなり、4.3 節の重みが
+「乾き寄り」に張り付いたまま固定されてしまい、<code>calm</code>
+の間ずっと晴れ・曇りしか起きなくなります。</p>
+<p>そこで <code>calm</code> にも <code>dry</code>/<code>wet</code>
+と同じように、意味のある向きを持ったレートを与えます。</p>
+<ul>
+<li>大気水分量: <code>dry</code> はマイナス、<code>calm</code>
+は<strong>プラス</strong>（乾季で下がりきった水準から、雨季にふさわしい水準へ
+じわじわ回復していく）、<code>wet</code> はさらにプラス。</li>
+<li>気温: <code>dry</code> はプラス、<code>calm</code>
+は<strong>マイナス</strong>（乾季の暑さから、雨季にふさわしい涼しさへじわじわ下がっていく）、
+<code>wet</code> はさらにマイナス。</li>
+</ul>
+<p>これにより、大気水分量・気温はどちらも 3 季節を通じて 1
+つの連続した波（谷→回復→頂点→下降→谷…）を描きます。 <code>calm</code>
+はちょうど谷から中腹への回復区間にあたるため、4.3
+節の重みが「乾き寄り」から「湿り寄り」へ連続的に
+変化していく途中を過ごすことになり、結果として晴れの日も雨の日もある、という
+3.2 節で述べる挙動が自然に
+生まれます。「季節ごとに固定のレートを持たせる」という 3
+節冒頭の設計自体は変えていません。</p>
+<h3 id="calm-での降雨頻度の狙い-3日に1回くらい大雨にはならない雨">3.2
+<code>calm</code> での降雨頻度の狙い:
+「3日に1回くらい、大雨にはならない」雨</h3>
+<p><code>calm</code>
+はゲーム開始直後に来る最初の季節でもあり、プレイヤーは蓋のない容器（例:
+ココナッツの殻）だけで水を
+確保しなければならない序盤です。渇水で詰まないよう、<code>calm</code>
+の間はおおよそ 3 日に 1 回程度、大雨・嵐ではない
+軽い雨（<code>light_rain</code>）が降ってほしい、という具体的な狙いがあります。</p>
+<p>この頻度は新しい仕組みを必要とせず、既存の 2
+つのレートの<strong>バランス</strong>だけで決まります。</p>
+<ul>
+<li><strong>上昇側</strong>: <code>calm</code> の大気水分量レート（3.1
+節）が、雨が降った直後の低い水準から、4.3 節の <code>moderate</code>
+段階 （<code>light_rain_weight</code>
+が初めて意味のある値を持つ段階）の閾値まで登り切るのにかかる日数。</li>
+<li><strong>下降側</strong>: 降雨中の自己減算（3 節）が、一度
+<code>light_rain</code> が選ばれてから大気水分量を <code>moderate</code>
+の閾値より 下まで押し戻すのにかかる時間。</li>
+</ul>
+<p><code>calm</code> の上昇レートを、「<code>moderate</code>
+の閾値まで登るのに平均 3
+日程度かかる」大きさに調整し、自己減算のレートを
+「<code>weather_remaining</code> 1 回分（4〜6 時間、4.2 節）以内には
+<code>moderate</code> を割り込む」大きさに調整すれば、大気水分量
+は「ゆっくり登って <code>moderate</code> に触れる→
+<code>light_rain</code> が選ばれて速やかに下がる→また 3
+日かけて登る」という
+充放電（谷から山へ緩やかに充電し、雨で一気に放電する）を繰り返します。<code>humid</code>/<code>saturated</code>
+まで登り切る前に
+自己減算で引き戻されるため、「大雨にはならない」という要件も、<code>heavy_rain</code>/<code>storm</code>
+の重みが <code>moderate</code> 段階では まだ低い（4.3
+節のサンプル参照）ことと合わせて自然に満たされます。具体的なレート・閾値の数値は
+7 節の未決事項 とします。</p>
+<h3 id="固定レートによる天気の単調さについて">3.3
+固定レートによる天気の単調さについて</h3>
+<p>3 節・3.1 節のレートは
+<code>accumulate</code>（<code>GameElementDefinition.md</code> 8.4
+節）で表現しており、<code>accumulate</code> の加算量は
+宣言時に決まるリテラル定数です（他のプロパティの現在値を参照して動的に変えることはできません）。そのため
+「同じ季節に入るたびに、大気水分量が毎回ほぼ同じ軌跡をたどる」という意味での単調さが生じる可能性があります。
+これを崩す手段は、既存の語彙の範囲で 2 段階あります。</p>
+<ul>
+<li><strong>まず <code>layered_noise</code> の振幅を確保する</strong>:
+軌跡そのものは同じでも、<code>moderate</code> の閾値をいつ跨ぐか（＝いつ
+雨が降るか）がノイズによって毎回ずれるため、体感上の単調さはこれだけでもかなり緩和されます。追加の仕組みは
+不要で、既に 7 節で振幅・頻度が未決事項として挙がっています。</li>
+<li><strong>それでも単調さが気になる場合</strong>:
+レート自体を、季節が始まるたびに複数の候補から選び直す方式にできます。
+2.3 節・4.2 節で季節・天気の持続時間を <code>pick</code>
+で選び直しているのと同じ考え方で、季節の遷移（2.3 節の
+<code>on_min</code>）で「今回のレート区分」を表す専用プロパティを
+<code>pick</code> で <code>set</code>
+し、<code>calm</code>/<code>wet</code>/<code>dry</code> それぞれの
+<code>stages</code> に、その区分ごとの <code>conditions</code>
+で切り替わる複数の <code>accumulate</code>
+ブロックを用意する形になります。 どちらを採用するか、また具体的な数値は
+7 節の未決事項とします。</li>
+</ul>
+<h2 id="天気-worldプロパティとしての短期変動">4. 天気:
+worldプロパティとしての短期変動</h2>
+<h3 id="大気水分量から独立させる理由">4.1
+大気水分量から独立させる理由</h3>
+<p>前バージョンは天気を <code>atmospheric_moisture</code> の
+<code>stages</code>（閾値）として表現していましたが、この方式では
+「大気水分量の値が 1 つ決まれば天気も 1
+つに決まる」ため、大雨と嵐のように同程度の大気水分量でも降り方が
+変わりうる現象を表現できません。そこで天気は季節と同じ形の、大気水分量からは独立した
+<code>world</code> プロパティとし、
+大気水分量は「天気がどちらに転びやすいか」の重み（4.3
+節）としてのみ関与させます。</p>
+<h3 id="プロパティ構成-1">4.2 プロパティ構成</h3>
+<ul>
+<li><code>weather</code>: 現在の天気を表す symbol
+プロパティ（<code>sunny</code>/<code>cloudy</code>/<code>light_rain</code>/<code>heavy_rain</code>/<code>storm</code>）。<code>core.yaml</code>
+には既に <code>weather</code> プロパティと暫定の
+<code>stages</code>（<code>storm</code>/<code>heavy_rain</code>/<code>light_rain</code>/<code>cloudy</code>/<code>clear</code>/<code>sunny</code>/
+<code>scorching</code>）が存在しますが、これは本設計が確定する前の仮置きであり、本書の値セットへの整合は
+7 節の 未決事項とします。</li>
+<li><code>weather_remaining</code>: 残り tick 数。4〜6 時間（tick 換算で
+16〜24 tick）の範囲で、遷移のたびに <code>pick</code> （10
+節。離散候補からの等確率選択）でロールし直す。</li>
+<li><code>sunny_weight</code>/<code>cloudy_weight</code>/<code>light_rain_weight</code>/<code>heavy_rain_weight</code>/<code>storm_weight</code>:
+<code>weather</code> の各候補に 1
+つずつ対応する、ただの数値プロパティ。値は著者が直接 <code>set</code>
+するのではなく、4.3 節の通り <code>atmospheric_moisture</code> の
+<code>stages</code> が常時 <code>modify</code> して維持します。</li>
+</ul>
+<h3
+id="遷移先-天気ごとの重みプロパティを大気水分量の-stages-が-modify-する">4.3
+遷移先: 天気ごとの重みプロパティを大気水分量の <code>stages</code> が
+<code>modify</code> する</h3>
+<p><code>weather_remaining</code> の
+<code>on_min</code>（<code>self</code>）で
+<code>pick</code>（GameElementDefinition.md 10
+節）を実行し、次の天気を選びます。 各候補の <code>weight</code>
+は、対応する <code>*_weight</code> プロパティへの参照です（10.2
+節の「既存プロパティへの参照」）。</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">weather_remaining</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">weather_remaining</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">on_min</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">pick</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> sunny_weight</span><span class="kw">}</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">set</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">weather</span><span class="kw">:</span><span class="at"> sunny</span><span class="kw">}</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> cloudy_weight</span><span class="kw">}</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">set</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">weather</span><span class="kw">:</span><span class="at"> cloudy</span><span class="kw">}</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> light_rain_weight</span><span class="kw">}</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">set</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">weather</span><span class="kw">:</span><span class="at"> light_rain</span><span class="kw">}</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> heavy_rain_weight</span><span class="kw">}</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">set</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">weather</span><span class="kw">:</span><span class="at"> heavy_rain</span><span class="kw">}</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> storm_weight</span><span class="kw">}</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">set</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">weather</span><span class="kw">:</span><span class="at"> storm</span><span class="kw">}</span></span></code></pre></div>
+<p><code>weather_remaining</code> 自体を 4〜6 時間（16〜24
+tick）の範囲で遷移のたびにロールし直す部分は、この <code>pick</code> の
+中には含めていません（各候補の <code>set</code> に加えて
+<code>weather_remaining</code> 自体をどう再ロールするかは 2.3 節と同じ
+「離散候補からの <code>pick</code>」を想定していますが、具体値は 7
+節の未決事項です）。上のサンプルは <code>value: 20</code>
+（初期値、tick換算で 5
+時間相当）を固定で示しており、天気ごとの重み付けという本節の主題を明確にするための
+簡略化です。</p>
+<p><code>*_weight</code>
+プロパティ自身の値は、<code>atmospheric_moisture</code> の
+<code>stages</code>（数値の半開区間。GameElementDefinition.md 6.4 節）が
+<code>passives</code> の <code>modify</code>
+として常時上書きすることで決まります（<code>weather</code> の
+<code>stages</code> が <code>sunlight</code> を <code>modify</code>
+しているのと同じパターンの使い回しで、新しいエンジン機能は不要です）。</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">atmospheric_moisture</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span><span class="kw">}</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dry</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">sunny_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> moderate</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">sunny_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> humid</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">sunny_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> saturated</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">85</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">sunny_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sunny_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">}</span></span></code></pre></div>
+<p><code>sunny</code>/<code>cloudy</code> 側の重みも
+<code>light_rain</code>/<code>heavy_rain</code>/<code>storm</code>
+側と同じく <code>atmospheric_moisture</code> の段階に
+連動させ、固定の重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」
+という下限が原理的に外れなくなり、<code>saturated</code>
+段階（雨季後半）で「まず晴れない」を表現できなくなるためです。
+上のサンプルでは <code>saturated</code> 段階で
+<code>sunny_weight: 0</code> とすることで、それを表現しています（同様に
+<code>dry</code> 段階の
+<code>heavy_rain_weight</code>/<code>storm_weight</code> を
+<code>0</code>
+にすれば、乾ききっている間は大雨・嵐が原理的に起こらない、という
+逆方向の下限も表現できます）。</p>
+<p>段階の境界（<code>min</code>）を跨いだ瞬間に重みが階段状に飛ぶ点は、<code>weather_remaining</code>
+の遷移自体が 4〜6 時間に 1 回 （4.2
+節）しか起きないため、体感上の不自然さにはならないと考えます。</p>
+<h3 id="二回連続で同じ天気になった場合">4.4
+二回連続で同じ天気になった場合</h3>
+<p><code>weather_remaining</code> は遷移のたびに 4〜6 時間の範囲で改めて
+<code>pick</code> されるため、たまたま同じ天気が連続して
+選ばれることがあります。この場合プレイヤーからは天気が変わらないまま 6
+時間を超えて継続しているように
+見えますが、これは狙って作り込む特別なルールではなく、独立試行の結果として自然に起こる、1
+節で述べた ノイズによる不確実性と同じ考え方です。</p>
+<h2
+id="難易度の初期補正-専用カウンタのstagesによる大気水分量の底上げ">5.
+難易度の初期補正:
+専用カウンタの<code>stages</code>による大気水分量の底上げ</h2>
+<p>序盤の理不尽な過酷さを避けるため、ゲーム開始から特定の期間だけ大気水分量を底上げし、天気（4
+節）が雨に
+転びやすい状態を作ります。<strong>天気そのものを固定で雨にするのではなく</strong>、あくまで抽選の元になる
+<code>atmospheric_moisture</code>
+の値を操作するだけであり、それでも晴れる可能性はゼロではありません（5.3
+節）。</p>
+<p>大気水分量そのものが季節由来のレート＋ノイズを毎 tick
+加算する「積分値」（3 節）である以上、この補正も 「瞬間に 1
+回だけ発火する」仕組みではなく、「特定の期間中ずっと、通常より高いレートで水分を積み増し続ける」
+という、3 節と同種の継続的な加算として素直に表現できます。これは
+<code>stages</code>（現在値がその区間内にある間ずっと
+<code>passives</code> が有効。GameElementDefinition.md 6.4
+節）の典型的な用法そのものであり、<code>weather</code> の
+<code>stages</code> が <code>sunlight</code>
+を、<code>atmospheric_moisture</code> の <code>stages</code> が
+<code>*_weight</code>（4.3 節）を、それぞれ区間内で継続的に
+<code>modify</code>/<code>accumulate</code>
+しているのと同じパターンです。</p>
+<p>2 つの補正（ゲーム開始 2 日目、最初の乾季 10
+日目前後）は無関係な別々の意図によるものなので、1 つのプロパティに
+両方の <code>stages</code>
+をまとめず、それぞれ専用の「ゲーム開始からの経過 tick
+を数えるだけの」プロパティを 1 つずつ 用意します。</p>
+<h3 id="ゲーム開始2日目">5.1 ゲーム開始2日目</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">early_rain_calibration</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">early_rain_calibration</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> idle</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> boosting</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">96</span><span class="co">     # 2日目の開始（1日 = 96 tick）</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">atmospheric_moisture</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">}</span><span class="co">   # 加算量は仮の値、7節で未決</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> done</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">192</span><span class="co">    # 3日目の開始でオフに戻る</span></span></code></pre></div>
+<p><code>early_rain_calibration</code> はゲーム開始と同時に毎 tick
+<code>+1</code> されるだけの、他に何の意味も持たない専用カウンタです。
+<code>boosting</code> 区間（2 日目の 96 tick 分）にいる間だけ
+<code>atmospheric_moisture</code> への追加加算が有効になり、3 日目に
+入ると自動的にオフへ戻ります（<code>stages</code>
+は現在値だけで区間を決めるため、明示的なリセットや発火済みフラグは
+不要です）。</p>
+<h3 id="最初の乾季10日目前後">5.2 最初の乾季、10日目前後</h3>
+<p>季節の巡回順は
+<code>calm</code>→<code>wet</code>→<code>dry</code>→<code>calm</code>（2.1
+節）で、初回サイクルは各季節が固定 30 日（2.3 節）なので、
+「最初の乾季に入ってから 10
+日目前後」が絶対で何日目かはゲーム開始前から確定します。<code>calm</code>（1〜30
+日目）・ <code>wet</code>（31〜60 日目）に続き、最初の <code>dry</code>
+は 61 日目に始まるため、その 10 日目前後は絶対 71 日目 （tick 換算で
+<code>(71-1) × 96 = 6,720</code> tick）です。</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">first_dry_rain_calibration</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">first_dry_rain_calibration</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stages</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> idle</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> boosting</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">6720</span><span class="co">   # 71日目の開始（最初の乾季開始=61日目 + 10日）</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">accumulate</span><span class="kw">:</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">atmospheric_moisture</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="kw">}</span><span class="co">   # 加算量は仮の値、7節で未決</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> done</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">6816</span><span class="co">   # 72日目の開始でオフに戻る</span></span></code></pre></div>
+<p>5.1
+節と全く同じパターンで、<code>season</code>/<code>season_cycle</code>
+を実行時に参照する必要はありません。ただしこの <code>6720</code>/
+<code>6816</code> という具体的な tick 数は、「初回サイクルは固定 30
+日」という 2.3 節の前提にそのまま依存しています。
+季節の巡回順や初回サイクルの日数が変われば、この数値も再計算が必要です。</p>
+<h3 id="なぜ天気を直接固定しないか">5.3 なぜ天気を直接固定しないか</h3>
+<p>5.1・5.2 とも、天気を強制的に <code>light_rain</code> 等へ
+<code>set</code> するのではなく <code>atmospheric_moisture</code>
+を操作するだけに 留めています。これは 1 節・4.4
+節で述べた「ノイズによる不確実性を常に持たせる」という設計原則を、難易度補正の
+場面でも崩さないためです。補正はあくまで確率を傾けるだけであり、絶対に雨が降ると保証するものではありません。</p>
+<h2 id="設計原則のまとめ">6. 設計原則のまとめ</h2>
+<ul>
+<li>季節・天気とも、専用の <code>WorldObject</code> インスタンスではなく
+<code>world</code> 自身のプロパティ（現在値＋残り時間）として
+表現する</li>
+<li>季節は穏やか/雨季/乾季の 3
+状態を固定順で巡回する。天気は季節から独立した symbol
+プロパティであり、季節の 値そのものからは直接決まらない</li>
+<li>天気・大気水分量・気温はいずれも「独立変数への tick
+ごとの加減算」のみで表現し、<code>derived</code>（計算式による
+導出）は使わない</li>
+<li>大気水分量は、天気そのものの stages 閾値としては使わず（4.1
+節）、天気候補ごとの重み専用プロパティを
+<code>stages</code>/<code>modify</code>
+経由で駆動する入力としてのみ使う（4.3
+節）。乾き系・湿り系のどちらの重みも大気水分量に
+連動させ、固定の重み定数にはしない（極端な条件下で「絶対に晴れない」「絶対に嵐にならない」を表現できるよう
+にするため）</li>
+<li>「季節後半ほど過酷になる」は貯水池モデルの単調な積み上がりから自動的に生まれ、追加の経過度計算を要しない
+（3 節末尾）。<code>calm</code> は <code>dry</code>/<code>wet</code>
+と逆向きのレート（回復方向）を持たせることで、この法則から意図的に
+外れる（3.1 節）</li>
+<li><code>calm</code>
+の大気水分量レートは「ほぼ0」にせず、<code>dry</code>
+で下がりきった水準から <code>wet</code> にふさわしい水準へ回復する
+向きのレートを持たせる。これにより大気水分量・気温は3季節を通じた1つの連続した波になり、<code>calm</code>
+の間にも 晴れ・雨の両方が起こる（3.1 節）。さらに <code>calm</code>
+では上昇レートと降雨の自己減算レートのバランスにより、
+「3日に1回程度、大雨にはならない軽い雨」という具体的な頻度を狙う（3.2
+節）</li>
+<li>難易度の初期補正は、天気を固定せず大気水分量という抽選の元データだけを操作することで実現し、不確実性を
+保つ。大気水分量自体が積分値であることを踏まえ、瞬間的な1回発火ではなく、専用カウンタの
+<code>stages</code> による 期間中の継続加算として表現する（5 節）</li>
+<li>季節の持続時間は初回サイクルのみ固定 30 日、2
+周目以降はランダム化する（2.3 節）</li>
+</ul>
+<h2 id="未決事項今後の検討課題">7. 未決事項・今後の検討課題</h2>
+<ul>
+<li><code>weather</code> の symbol
+値セット（<code>sunny</code>/<code>cloudy</code>/<code>light_rain</code>/<code>heavy_rain</code>/<code>storm</code>）と、<code>core.yaml</code>
+に既にある 暫定 <code>stages</code>（<code>scorching</code> を含む 7
+値）との整合（4.2 節）</li>
+<li><code>atmospheric_moisture</code> の <code>stages</code>
+の区切り（<code>dry</code>/<code>moderate</code>/<code>humid</code>/<code>saturated</code>
+等、段階数も含め）と、 各段階が <code>*_weight</code> に
+<code>modify</code> する具体的な数値（4.3
+節のサンプルは一例に過ぎない）</li>
+<li>季節・天気のランダム持続時間を <code>pick</code>
+の離散候補で表現する場合の、具体的な候補値と重み（2.3 節・4.2 節）</li>
+<li><code>season_cycle</code> に応じた「固定 30 日 /
+ランダム」の分岐を、既存の <code>on_min</code>/<code>pick</code>
+の語彙でどう具体的に書くか （2.3 節）</li>
+<li>5.1・5.2 節の <code>boosting</code> 区間での
+<code>atmospheric_moisture</code> への具体的な加算レート</li>
+<li>5.2 節の <code>6720</code>/<code>6816</code> という tick 数は 2.3
+節の「初回サイクル固定 30 日」に依存する導出値であり、2.3 節の
+前提が変わった場合はこの節も再計算が必要</li>
+<li>各季節（<code>calm</code>/<code>wet</code>/<code>dry</code>）の
+<code>moisture_rate</code>/<code>temperature_rate</code>
+の具体的な数値。特に <code>calm</code> は「<code>moderate</code>
+段階の閾値まで平均 3 日程度で登る」という 3.2
+節の目標から逆算する必要がある</li>
+<li>降雨中の自己減算（3 節）の具体的なレート。3.2
+節の「<code>weather_remaining</code> 1 回分以内に <code>moderate</code>
+を割り込む」
+という目標を満たすかどうかは、実際の閾値・レート次第で変わるため要検証</li>
+<li>ノイズの振幅・頻度。3.3
+節で述べた通り、固定レートによる軌跡の単調さを緩和する主な手段でもある</li>
+<li>3.3 節で挙げた「季節開始のたびにレートを <code>pick</code>
+で選び直す」方式を採用するかどうか、採用する場合の具体的な 候補レートと
+<code>conditions</code> の書き方</li>
+<li><code>GameElementDefinition.md</code> 6.2
+節の「<code>value: {min, max}</code> は毎 tick
+再ロール」という記述は、現在のコード実装 （生成時に 1 回だけロールする
+<code>initialValueRange</code>）と食い違っており、本書とは別に修正が必要</li>
+</ul>
+<h2 id="参考-既存プロジェクト方針との整合性">8. 参考:
+既存プロジェクト方針との整合性</h2>
+<ul>
+<li><code>world</code> が
+<code>day</code>/<code>hour</code>/<code>minute</code>/<code>weather</code>
+を直接プロパティとして持つことは <code>core.yaml</code>
+で既に実装済みであり、 本書の「季節・天気を <code>world</code>
+のプロパティとして表現する」という方針は、その延長線上にあります （1
+節・2 節・4 節）。</li>
+<li>天気の遷移先をプロパティの現在値で重み付けした <code>pick</code>
+で決める設計（4.3 節）は、<code>GameElementDefinition.md</code> 17
+節に残っている「天候遷移自体のランダム性の仕組みは未検討」という未決事項に対する、既存語彙のみを使った
+具体的な解決案になっています。新しいエンジン機能は必要としません。</li>
+<li><code>object: world</code>
+を他オブジェクトから条件・重みとして参照する仕組みは未実装です（<code>GameElementDefinition.md</code>
+14.1 節・15 節・17 節）。ただし本書の季節・天気遷移ロジックはすべて
+<code>world</code> 自身の <code>on_min</code>（対象は常に
+<code>self</code>）として完結するため、この制約の影響を受けません。将来、天気に反応する別オブジェクト（例:
+装備の 防水性）を作る場合は <code>ancestor</code>
+経由での参照が必要になります。</li>
+<li>本書全体を通じて <code>derived</code>（GameElementDefinition.md 16
+節・17 節）を一切使用していません。</li>
+</ul>
+</article>
+</body>
+</html>

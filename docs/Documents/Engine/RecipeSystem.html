@@ -110,9 +110,12 @@
 5 節に整理しています。</p>
 <h2 id="製作中オブジェクトは完成品とは別オブジェクト">1.
 製作中オブジェクトは、完成品とは別オブジェクト</h2>
-<p>「未完成の斧」は、斧自身とは<strong>別の、製作中の状態専用オブジェクト</strong>として扱います。<code>infection</code>（<code>ClimateSystem.md</code>
-の季節と同型の「独立した条件・プロセスオブジェクト」パターン）と同じ考え方です。製作中オブジェクトは
-<code>progress</code> プロパティに、工程に対応する半開区間の
+<p>「未完成の斧」は、斧自身とは<strong>別の、製作中の状態専用オブジェクト</strong>として扱います。感染度・発熱のような
+「進行度を表す <code>progress</code> プロパティに <code>stages</code>
+を持たせる」既存パターン（<code>GameElementDefinition.md</code> 6.4 節の
+<code>progress</code>/<code>feverish</code>
+サンプル）と同じ考え方です。製作中オブジェクトは <code>progress</code>
+プロパティに、工程に対応する半開区間の
 <code>stages</code>（<code>GameElementDefinition.md</code> 6.4
 節）を持ち、最終工程の効果として <code>spawn: {object: axe}</code> と
 <code>destroy: self</code>（<code>into</code>

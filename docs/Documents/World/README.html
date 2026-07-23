@@ -35,23 +35,18 @@
 <h1 class="title">README</h1>
 </header>
 <h1
-id="ワールド実際にゲームに登場する内容">ワールド（実際にゲームに登場する内容）</h1>
+id="ワールド実際にゲームに登場するモノ">ワールド（実際にゲームに登場するモノ）</h1>
 <p><code>Engine/</code>
-の文法・汎用サブシステムを使って、<strong>このゲームに実際に登場する具体的な内容</strong>をどう表現するかを
-まとめたドキュメントを格納します。気候、地形の生成、探索、道具・武器・容器といったアイテムなど、
-プレイヤーが実際に目にする世界の中身がここに含まれます。</p>
-<p>文法そのもの（<code>traits</code>/<code>props</code>/<code>slots</code>/<code>actions</code>
-等）や、どんな内容にも適用できる汎用サブシステム
-（レシピ・コンテナ・耐久値）は含みません。そちらは <a
+の文法・仕組みを使って、<strong>石・斧・防具・容器など、プレイヤーが実際に手に取り目にする具体的な
+モノ</strong>をどう表現するかをまとめたドキュメントを格納します。</p>
+<p>気候・地形生成・探索といった<strong>仕組み</strong>（プレイヤーの目に触れるモノではなく、それらを成り立たせている
+メカニズム）は含みません。そちらは <a
 href="../Engine/README.html"><code>../Engine/</code></a>
-を参照してください。</p>
+を参照してください。文法そのもの
+（<code>traits</code>/<code>props</code>/<code>slots</code>/<code>actions</code>
+等）も同様に <code>Engine/</code> を参照してください。</p>
 <h2 id="収録ドキュメント">収録ドキュメント</h2>
 <ul>
-<li><a href="./ClimateSystem.html">気候システム設計</a></li>
-<li><a href="./TerrainGeneration.html">地形生成システム設計</a> —
-島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム</li>
-<li><a href="./ExplorationSystem.html">探索・道システム設計</a> —
-生成された土地のスロット構成・探索・道の発見と移動</li>
 <li><a href="./SurvivalItems.html">道具・武器・容器・衣類
 アイテム案</a></li>
 <li><a href="./WorldCodexViewer.html">WorldCodex
@@ -64,9 +59,6 @@ href="../Engine/GameElementDefinition.html"><code>../Engine/GameElementDefinitio
 </ul>
 <h2 id="含まれるドキュメント例">含まれるドキュメント例</h2>
 <ul>
-<li>気候・季節・天候</li>
-<li>地形生成・マップ構成</li>
-<li>探索・移動などのゲームプレイ挙動</li>
 <li>アイテム・道具・武器・容器・衣類などの内容案</li>
 <li>敵・NPC・生態系（今後追加予定）</li>
 </ul>
