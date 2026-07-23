@@ -3,21 +3,22 @@
 ## 概要
 
 本ドキュメントは、島の地形生成システムに関する設計と実装をまとめたものです。
-`GameElementDefinition.md` が掲げる「ハードコードしない」「汎用エンジンに任せる」「ファイル追加だけで拡張できる」という
-設計方針（2.4 節）に準拠し、以下を目的とします。
+[`GameElementDefinition.md`](../Engine/GameElementDefinition.md) が掲げる「ハードコードしない」「汎用エンジンに
+任せる」「ファイル追加だけで拡張できる」という設計方針（2.4 節）に準拠し、以下を目的とします。
 
 - シード値ありのランダム生成で無人島の地形を生成する
 - 地形・構造物はすべて YAML でオブジェクト定義し、MOD 作成者がコードに触れずに拡張できる状態を保つ
 
 本書が扱うのは、**島の座標・軸・LocationType・パスネットワークを生成するアルゴリズムそのもの**です。生成された
 `Location`（土地）が生成された**あと**にどう振る舞うか（スロット構成・探索・道の発見・移動）は
-`ExplorationSystem.md` に切り出しています。両者を分けているのは、前者が「どんな島が、どんなレイアウトで
-生成されるか」という**生成時点だけの計算**（`Domain.Generation` 名前空間、`WorldObject` には一切触れない
-純粋な計算）であるのに対し、後者は「生成された `Location` インスタンスがゲームプレイ中どう振る舞うか」という
-**実行時の挙動**（既存の `traits`/`actions`/`slots` の応用）であり、関心事の性質が異なるためです。
+[`ExplorationSystem.md`](./ExplorationSystem.md) に切り出しています。両者を分けているのは、前者が「どんな島が、
+どんなレイアウトで生成されるか」という**生成時点だけの計算**（`Domain.Generation` 名前空間、`WorldObject` には
+一切触れない純粋な計算）であるのに対し、後者は「生成された `Location` インスタンスがゲームプレイ中どう振る舞うか」
+という**実行時の挙動**（既存の `traits`/`actions`/`slots` の応用）であり、関心事の性質が異なるためです。
 
 本書は設計判断（なぜこのアルゴリズムか）を扱い、実際のクラス名・メソッド名を使った実装の呼び出し関係は
-`TerrainGenerationImplementation.md` に切り出しています。コードを読む・変更する際はそちらを参照してください。
+[`TerrainGenerationImplementation.md`](../Engine/TerrainGenerationImplementation.md) に切り出しています。
+コードを読む・変更する際はそちらを参照してください。
 
 実装は `Assets/Scripts/Domain/Generation/` 以下（Unity非依存の純粋 C#）、定義データは
 `Assets/StreamingAssets/WorldCodex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
@@ -227,7 +228,7 @@ generation_scopes:
 解決していただけであり、実際には解くべき問題が存在しないと判断し、実装から落としています。将来、Delaunay
 に含まれない任意のショートカット辺を追加したいという要求が具体的に出てきた場合は、その時点で改めて設計します。
 
-道オブジェクト自体（`path` object_def）の生成・探索による発見・移動アクションは `ExplorationSystem.md` を
+道オブジェクト自体（`path` object_def）の生成・探索による発見・移動アクションは [`ExplorationSystem.md`](./ExplorationSystem.md) を
 参照してください。
 
 ### 3.6 命名処理
@@ -269,8 +270,8 @@ generation_scopes:
 
 本書が扱うのは Axis 定義から `Location` の実体化・命名までの地形生成パイプラインそのものです。生成された
 `Location` に対する探索アクション・道の発見・移動、キャラクタ・アイテム・設置物のスロット構成は
-`ExplorationSystem.md` で扱います（当初「範囲外」としていましたが、実装が進んだため専用ドキュメントを
-新設しました）。`Structure`（洞窟等）内部の生成は 3.7 節のとおり未実装で、範囲外のままです。
+[`ExplorationSystem.md`](./ExplorationSystem.md) で扱います（当初「範囲外」としていましたが、実装が進んだため
+専用ドキュメントを新設しました）。`Structure`（洞窟等）内部の生成は 3.7 節のとおり未実装で、範囲外のままです。
 
 ## 6. 未決事項・今後の検討課題
 
@@ -292,7 +293,7 @@ generation_scopes:
 
 ## 7. 参考: 既存プロジェクト方針との整合性
 
-`Documents/Design/GameElementDefinition.md` に示されている以下の原則と、本設計は整合しています。
+[`GameElementDefinition.md`](../Engine/GameElementDefinition.md) に示されている以下の原則と、本設計は整合しています。
 
 - すべての概念を YAML で定義し、複数ファイル分割・MOD 追加は別ディレクトリへのファイル追加のみで実現する
   （3.3 節）。地形生成の3つのルートキー（`axes`/`location_types`/`generation_scopes`）は、`object_defs`/

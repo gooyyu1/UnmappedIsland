@@ -1,4 +1,4 @@
-# ゲーム全体の最も基本的な定義（Documents/Design/GameElementDefinition.md参照）。
+# ゲーム全体の最も基本的な定義（Documents/Engine/GameElementDefinition.md参照）。
 # 唯一のシングルトンであるworldと、それが束ねるlocationsスロット・locationトレイトのみを含む。
 # 個々のlocation種別（草原・砂浜など地形の具体的な種類）と道はlocations.yamlが、
 # 地形生成の定義（軸・LocationType・生成スコープ）はterrain_generation.yamlが持つ。

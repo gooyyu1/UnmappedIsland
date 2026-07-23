@@ -29,8 +29,10 @@ jobs:
 
       - name: Prepare docs output directories
         run: |
+          # サブフォルダごとの出力先は後続の変換ループが`mkdir -p "$out_dir"`で都度作成するため、
+          # ここではDocuments/配下のフォルダ名をハードコードしない（フォルダ構成が変わっても壊れない）。
           rm -rf docs
-          mkdir -p docs/Documents/Design docs/Documents/Planning docs/Documents/Specification
+          mkdir -p docs/Documents
 
       - name: Convert markdown files to HTML
         run: |
@@ -54,7 +56,7 @@ jobs:
           )
 
           find Documents -name '*.md' | while read md_file; do
-            # Derive output path: Documents/Design/Foo.md -> docs/Documents/Design/Foo.html
+            # Derive output path: Documents/Engine/Foo.md -> docs/Documents/Engine/Foo.html
             rel="${md_file#Documents/}"          # strip leading "Documents/"
             out_dir="docs/Documents/$(dirname "$rel")"
             out_file="docs/Documents/${rel%.md}.html"

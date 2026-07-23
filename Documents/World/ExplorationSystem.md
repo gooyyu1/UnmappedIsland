@@ -2,19 +2,19 @@
 
 ## 概要
 
-本ドキュメントは、`TerrainGeneration.md` の地形生成パイプラインによって作られた `Location`（土地）が、生成された
-**あと**にどう振る舞うかをまとめたものです。「島にどんな土地がいくつ、どう配置されるか」は `TerrainGeneration.md`
-の関心事、「1つの土地に立ったプレイヤーが何をできるか（探索する・道を見つける・移動する）」は本書の関心事、
-と役割を分けています。
+本ドキュメントは、[`TerrainGeneration.md`](./TerrainGeneration.md) の地形生成パイプラインによって作られた
+`Location`（土地）が、生成された**あと**にどう振る舞うかをまとめたものです。「島にどんな土地がいくつ、どう
+配置されるか」は `TerrainGeneration.md` の関心事、「1つの土地に立ったプレイヤーが何をできるか（探索する・道を
+見つける・移動する）」は本書の関心事、と役割を分けています。
 
-文法そのものは `GameElementDefinition.md` に集約されている既存の仕組み（`traits`・`slots`・`props`・`actions`・
-`pick`）だけで組み立てており、探索・道専用の新しい文法は導入していません。ただし、実装にあたってエンジンへ
-2つの汎用拡張（`duration`・`move`）を追加しています。これらは地形専用ではなく、`GameElementDefinition.md`
-11.3 節・9.6 節に文法として記載されています。
+文法そのものは [`GameElementDefinition.md`](../Engine/GameElementDefinition.md) に集約されている既存の仕組み
+（`traits`・`slots`・`props`・`actions`・`pick`）だけで組み立てており、探索・道専用の新しい文法は導入していません。
+ただし、実装にあたってエンジンへ2つの汎用拡張（`duration`・`move`）を追加しています。これらは地形専用ではなく、
+`GameElementDefinition.md` 11.3 節・9.6 節に文法として記載されています。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節にまとめています。実際のクラス名・
 メソッド名を使った実装の呼び出し関係（`IslandSpawner`・`MoveEffect`・`Views.Location.Explore` 等）は
-`TerrainGenerationImplementation.md` にまとめています。
+[`TerrainGenerationImplementation.md`](../Engine/TerrainGenerationImplementation.md) にまとめています。
 
 ## 1. `location` trait と `explorable` trait の役割分担
 

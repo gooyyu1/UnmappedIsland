@@ -10,15 +10,16 @@
 本書が定めるのは**文法**だけです。その文法を使って気候・レシピ・重さ・カード間の相互作用といった**具体的なゲーム内容を
 どう表現するか**は、以下の別ドキュメントに切り出しています。
 
-- `ClimateSystem.md` — 季節・天候
-- `RecipeSystem.md` — アイテムの製作
-- `ContainerSystem.md` — コンテナの容量・重さ
-- `ActionSystem.md` — カード間相互作用（`actions`/`combinations`）の使い分け方針
-- `TerrainGeneration.md` — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
-- `ExplorationSystem.md` — 生成された土地の構造と挙動（スロット・探索・道の発見と移動）
+- [`RecipeSystem.md`](./RecipeSystem.md) — アイテムの製作
+- [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ
+- [`ActionSystem.md`](./ActionSystem.md) — カード間相互作用（`actions`/`combinations`）の使い分け方針
+- [`ClimateSystem.md`](../World/ClimateSystem.md) — 季節・天候
+- [`TerrainGeneration.md`](../World/TerrainGeneration.md) — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
+- [`ExplorationSystem.md`](../World/ExplorationSystem.md) — 生成された土地の構造と挙動（スロット・探索・道の発見と移動）
 
-形式的なスキーマ定義（[JSON Schema](https://json-schema.org/)）は `WorldCodex.schema.json`（メタ情報は
-`WorldCodexSchema.md`）を参照してください。本書はスキーマの人間向け解説を兼ねますが、機械的な検証はスキーマ側が担います。
+形式的なスキーマ定義（[JSON Schema](https://json-schema.org/)）は [`WorldCodex.schema.json`](./WorldCodex.schema.json)
+（メタ情報は [`WorldCodexSchema.md`](./WorldCodexSchema.md)）を参照してください。本書はスキーマの人間向け解説を
+兼ねますが、機械的な検証はスキーマ側が担います。
 
 本書は現時点の確定した文法を記述します。未決定の論点は個別に触れず、17 節にまとめています。
 
@@ -1320,9 +1321,9 @@ object_defs:
 
 - **地形生成**（`axes`/`location_types`/`generation_scopes`）: 記法自体は本書と同じ「識別子をキーとする辞書」を
   採用し実装済みですが、フィールドの意味・軸空間マッチングのアルゴリズムは地形生成固有の内容であるため、
-  本書には含めず `TerrainGeneration.md` に委ねます。地形生成によって作られた `Location` 自身の構造
-  （スロット・探索・道の発見と移動）は `ExplorationSystem.md` を参照してください（そちらは本書の `slots`・
-  `props`・`actions`・`move`・`duration` の応用例です）。
+  本書には含めず [`TerrainGeneration.md`](../World/TerrainGeneration.md) に委ねます。地形生成によって作られた
+  `Location` 自身の構造（スロット・探索・道の発見と移動）は [`ExplorationSystem.md`](../World/ExplorationSystem.md)
+  を参照してください（そちらは本書の `slots`・`props`・`actions`・`move`・`duration` の応用例です）。
 - **`derived`（導出値）**: 「他の props から計算される値」という概念自体、採否がまだ決まっていません（17 節）。
 
 ## 17. 今後の検討課題
