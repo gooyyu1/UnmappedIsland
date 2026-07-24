@@ -106,8 +106,8 @@
 8節。いずれも <a
 href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>）の組み合わせ
 だけで実現しています。定義本体は
-<code>Assets/StreamingAssets/WorldCodex/containers.yaml</code>、 検証は
-<code>Tests/StreamingAssets/ContainersYamlTests.cs</code>。</p>
+<code>public/world-codex/containers.yaml</code>、 検証は
+<code>tests/worldCodex/containersYaml.test.ts</code>。</p>
 <h2 id="役割分担-量は容器種類と振る舞いは中身">1. 役割分担:
 量は容器、種類と振る舞いは中身</h2>
 <p>液体入り容器は「容器本体」と「中身の液体カード」の親子2オブジェクトで表す。</p>
@@ -136,7 +136,7 @@ href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>）
 <li><strong>操作</strong>: 容器カードへの
 <code>actions</code>/<code>combinations</code>
 は、実行前に代表（中身の液体カード）へ
-リダイレクトされる（<code>WorldObject.ResolveInteractionTarget</code>、<code>ActionSystem.md</code>
+リダイレクトされる（<code>WorldObject.resolveInteractionTarget</code>、<code>ActionSystem.md</code>
 1節）。 「水筒を選ぶと『飲む』が出る」のは、水筒ではなく中の
 <code>water_liquid</code> の action。</li>
 <li><strong>スタック判定</strong>: 代表チェーンの <code>ObjectDef</code>

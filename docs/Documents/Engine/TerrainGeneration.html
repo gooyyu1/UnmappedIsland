@@ -112,7 +112,7 @@ href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
 作成者がコードに触れずに拡張できる状態を保つ</li>
 </ul>
 <p>本書が扱うのは、<strong>島の座標・軸・LocationType・パスネットワークを生成するアルゴリズムそのもの</strong>
-（<code>Domain.Generation</code> 名前空間、<code>WorldObject</code>
+（<code>Domain.Generation</code>、<code>WorldObject</code>
 に一切触れない生成時点だけの純粋な計算）です。生成された
 <code>Location</code>（土地）が生成された<strong>あと</strong>にどう振る舞うか（スロット構成・探索・道の発見・移動）は
 <a href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a>
@@ -122,9 +122,8 @@ href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
 href="./TerrainGenerationImplementation.html"><code>TerrainGenerationImplementation.md</code></a>
 に切り出しています。
 コードを読む・変更する際はそちらを参照してください。</p>
-<p>実装は <code>Assets/Scripts/Domain/Generation/</code>
-以下（Unity非依存の純粋 C#）、定義データは
-<code>Assets/StreamingAssets/WorldCodex/terrain_generation.yaml</code>（生成パラメータ）・<code>locations.yaml</code>（土地・道の
+<p>実装は <code>src/domain/generation/</code> 以下、定義データは
+<code>public/world-codex/terrain_generation.yaml</code>（生成パラメータ）・<code>locations.yaml</code>（土地・道の
 <code>object_defs</code>）にあります。</p>
 <h2 id="用語定義">1. 用語定義</h2>
 <table>
@@ -233,7 +232,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 「言及した軸だけ気にする」設計にすることで、軸の増減に対して
 <code>LocationType</code> 定義が壊れないようにします （3.2
 節参照）。実際の定義は
-<code>Assets/StreamingAssets/WorldCodex/terrain_generation.yaml</code>（<code>elevation</code>・
+<code>public/world-codex/terrain_generation.yaml</code>（<code>elevation</code>・
 <code>humidity</code>・<code>coastal_distance</code>・<code>ruggedness</code>
 の4軸）を参照してください。</p>
 <h3 id="locationtypeマッチング軸ベース">3.2
@@ -484,7 +483,7 @@ href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
 追加は別ディレクトリへのファイル追加のみで実現する （3.3
 節）。地形生成の3つのルートキー（<code>axes</code>/<code>location_types</code>/<code>generation_scopes</code>）は、<code>object_defs</code>/
 <code>traits</code> と対等なトップレベルキーとして
-<code>WorldCodexYamlLoader.Generation.cs</code> が実際にロードします
+<code>parseGeneration.ts</code>（<code>loadGenerationSections</code>）が実際にロードします
 （<code>GameElementDefinition.md</code> 16 節参照）。</li>
 <li><code>Location</code>/<code>LocationType</code>
 も、他のあらゆる要素と同じ <code>object_defs</code>

@@ -108,7 +108,9 @@ Schema</a> Draft 2020-12、
 <code>WorldCodex.schema.json</code>）の保守方針をまとめたものです。個別の世界描写（<code>ClimateSystem.md</code>・<code>RecipeSystem.md</code>・
 <code>ContainerSystem.md</code>・<code>ActionSystem.md</code>・<code>TerrainGeneration.md</code>・<code>ExplorationSystem.md</code>）の内容そのものは
 スキーマの対象外で、それらが使う文法の妥当性のみを検証します。</p>
-<p>スキーマの正は<strong>ローダーの実装</strong>（<code>Assets/Scripts/Loader/WorldCodexYamlLoader.*.cs</code>）です。本スキーマはローダーが
+<p>スキーマの正は<strong>ローダーの実装</strong>（<code>src/loader/WorldCodexYamlLoader.ts</code>
+と関連する <code>parse*.ts</code>
+モジュール群）です。本スキーマはローダーが
 受け付ける文法の機械的な近似であり、乖離を見つけたらローダーに合わせてスキーマを直します。</p>
 <h2 id="検証方法">1. 検証方法</h2>
 <p><code>WorldCodex.schema.json</code> は以下の観点で検証済みです。</p>
@@ -117,7 +119,7 @@ Schema</a> Draft 2020-12、
 ライブラリの <code>Draft202012Validator.check_schema</code>
 により、Draft 2020-12として 構文的に正しいスキーマであることを確認</li>
 <li><strong>実データ全ファイルの受理</strong>:
-<code>Assets/StreamingAssets/WorldCodex/</code>
+<code>public/world-codex/</code>
 の全YAMLファイル（<code>core.yaml</code>・<code>locations.yaml</code>・
 <code>containers.yaml</code>・<code>foods.yaml</code>・<code>characters.yaml</code>・<code>terrain_generation.yaml</code>）が、実際にゲームがロードしている
 ままの内容でスキーマを満たすことを確認（ローダーで読み込めるファイルはスキーマも通る、が維持基準）</li>
@@ -150,7 +152,7 @@ Schema</a> Draft 2020-12、
 <ul>
 <li><strong>地形生成（<code>axes</code>/<code>location_types</code>/<code>generation_scopes</code>、<code>TerrainGeneration.md</code>）</strong>:
 ローダーは実装・ロード済み
-（<code>WorldCodexYamlLoader.Generation.cs</code>、<code>terrain_generation.yaml</code>）。本スキーマはこの3ルートキーを<strong>許容するが
+（<code>parseGeneration.ts</code>、<code>terrain_generation.yaml</code>）。本スキーマはこの3ルートキーを<strong>許容するが
 中身は検証しない</strong>（<code>true</code>
 スキーマ）。詳細スキーマ化は今後の課題。</li>
 <li><strong><code>covers</code>/<code>layer</code>/<code>recipes</code>（object_def直下）・<code>unit</code>（prop直下）</strong>:
@@ -207,7 +209,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="st">import json, yaml, jsonschema</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="st">schema = json.load(open(&#39;Documents/Engine/WorldCodex.schema.json&#39;))</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="st">v = jsonschema.Draft202012Validator(schema)</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="st">for e in v.iter_errors(yaml.safe_load(open(&#39;Assets/StreamingAssets/WorldCodex/core.yaml&#39;))):</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="st">for e in v.iter_errors(yaml.safe_load(open(&#39;public/world-codex/core.yaml&#39;))):</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="st">    print(list(e.absolute_path), e.message)</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span></span></code></pre></div>
 <h2 id="未決事項今後の検討課題">5. 未決事項・今後の検討課題</h2>

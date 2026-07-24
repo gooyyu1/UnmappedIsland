@@ -106,8 +106,8 @@
 節）に準拠します。</p>
 <p>本書の設計は <code>core.yaml</code> の <code>world</code>
 プロパティとして<strong>実装済み</strong>であり、複数の乱数シードによる統計テスト
-（<code>Tests/StreamingAssets/ClimateSystemTests.cs</code>。「calm
-は概ね 2 日に 1 回軽い雨が降る」「wet はほとんど雨だが
+（<code>tests/worldCodex/climateSystem.test.ts</code>。「calm は概ね 2
+日に 1 回軽い雨が降る」「wet はほとんど雨だが
 稀に止み、後半ほど嵐・大雨が増える」「dry
 はほとんど晴れで雨はごく稀」等の要件を、95% 以上のシードで
 満たすことを検証）で確認されています。本書に載せる具体的な数値は実装と同期した現在の値ですが、バランス調整で
@@ -539,9 +539,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 生き、嵐・大雨の名残が自然に表現されます。実測（20 シード×3,600
 日）では、<code>wet</code> を 3 等分した嵐・大雨の tick 比率は序盤
 31%→中盤 38%→終盤 42%、嵐だけでは 4%→6%→18%
-と後半に向かって単調に増えます （統計テスト
-<code>WetSeason_HeavyRainAndStorms_IncreaseTowardTheEnd</code>
-が回帰検知します）。</p>
+と後半に向かって単調に増えます
+（統計テスト「雨季(wet)は後半ほど嵐・大雨が増える」（<code>tests/worldCodex/climateSystem.test.ts</code>）が回帰検知します）。</p>
 <p>ただし<strong>名残の振る舞いは意図的に非対称</strong>です。嵐には名残があります（雨季末の高い水分が消費し尽くされる
 までの乾季序盤には嵐・大雨が残る）が、炎天には名残（残暑）がありません（蓄熱量の上限
 = <code>hot</code> 閾値のため、 calm に入った瞬間に炎天は消える。3
@@ -708,7 +707,7 @@ dry帯のlight_rain_weightを最小(1)にし、 雨季の名残と序盤補正�
 <h2 id="未決事項今後の検討課題">7. 未決事項・今後の検討課題</h2>
 <ul>
 <li>各レート・閾値・重みの数値は統計テストを満たす初期値であり、実プレイでの体感に基づくバランス調整は今後の
-課題（数値を変えたら <code>ClimateSystemTests</code>
+課題（数値を変えたら <code>tests/worldCodex/climateSystem.test.ts</code>
 が要件を満たし続けるかで回帰を検知できる）</li>
 <li>3.3 節で挙げた単調さ対策（レートへのノイズ /
 季節開始ごとのレート選び直し）を採用するかどうか</li>

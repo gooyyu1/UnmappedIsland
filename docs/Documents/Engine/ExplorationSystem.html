@@ -115,7 +115,7 @@ href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
 新しい文法は導入していません。</p>
 <p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
 6 節にまとめています。実際のクラス名・
-メソッド名を使った実装の呼び出し関係（<code>IslandSpawner</code>・<code>MoveEffect</code>・<code>Views.Location.Explore</code>
+メソッド名を使った実装の呼び出し関係（<code>IslandSpawner</code>・<code>MoveEffect</code>・<code>Location.explore</code>
 等）は <a
 href="./TerrainGenerationImplementation.html"><code>TerrainGenerationImplementation.md</code></a>
 にまとめています。</p>
@@ -238,7 +238,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 という参照記法が未対応（<code>GameElementDefinition.md</code> 17
 節）のため、 <code>range.max</code>
 と同じ値をリテラルで重複して書いています。この二重管理は
-<code>Tests/StreamingAssets/   LocationsYamlTests.cs</code>
+<code>tests/worldCodex/   locationsYaml.test.ts</code>
 の振る舞いテスト（「max-1では実行でき、maxでは実行できない」）が検証しており、
 値のずれがあれば必ず失敗します。</li>
 <li><strong>発見物</strong>: <code>pick</code>（10
@@ -276,8 +276,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 <ul>
 <li><strong><code>travel_minutes</code>/<code>required_progress</code>/<code>destination_id</code></strong>
 はいずれも <code>path</code> の通常の <code>props</code> で、地形生成
-（<code>Domain/Generation/IslandSpawner</code>）がインスタンス生成の直後に
-<code>SetProperty</code> で書き込みます。<code>object_defs</code>
+（<code>src/domain/generation/IslandSpawner.ts</code>）がインスタンス生成の直後に
+<code>setProperty</code> で書き込みます。<code>object_defs</code>
 レベルの初期値はプレースホルダで、実際に使われるのは常にインスタンスごとの上書き後の値です。</li>
 <li><strong><code>conditions: [{in_slot: paths}]</code></strong>（<code>GameElementDefinition.md</code>
 14.2 節）が「未発見（<code>undiscovered_paths</code>
@@ -312,10 +312,10 @@ required_progress
 <p>ある土地に接続する道が K 本あるとき、それぞれの
 <code>required_progress</code> を、探索上限を <code>max</code> として
 <code>[2, max − 1]</code>
-の範囲へ均等間隔で割り当てます（<code>Domain/Generation/IslandSpawner</code>）。最初の道が進捗2で
+の範囲へ均等間隔で割り当てます（<code>src/domain/generation/IslandSpawner.ts</code>）。最初の道が進捗2で
 見つかる（1回目の探索でいきなり道が見つからないようにする）のを最速とし、最後の道は必ず
 <code>max − 1</code> 以前に 見つかります。この不変条件は
-<code>Tests/Generation/IslandSpawnerTests.cs</code>
+<code>tests/generation/islandSpawner.test.ts</code>
 が全接続について検証しています。</p>
 <h2 id="エンジン拡張durationmove">4.
 エンジン拡張（<code>duration</code>・<code>move</code>）</h2>
@@ -328,7 +328,7 @@ required_progress
 11.3 節）: アクションの実行にかかるゲーム内時間（分）。 リテラルか
 <code>{object, prop}</code> 参照（<code>weight</code>
 と同じ二択）で指定します。時間は実行結果の適用<strong>後</strong>に
-<code>WorldSession.AdvanceWorldTime</code>
+<code>WorldSession.advanceWorldTime</code>
 で進めます（先に進めると、tick駆動の変化が効果適用前の対象を消してしまう
 事故がありうるため）。</li>
 <li><strong><code>move</code></strong>（<code>GameElementDefinition.md</code>
@@ -337,21 +337,19 @@ required_progress
 </ul>
 <h2 id="カプセル化-探索の入口を1箇所にする">5. カプセル化:
 探索の入口を1箇所にする</h2>
-<p><code>Runtime.Views.Location.Explore(actor, session)</code>
-を、探索の唯一の入口としています。</p>
+<p><code>Location.explore(actor, session)</code>（<code>src/domain/runtime/views/Location.ts</code>）を、探索の唯一の入口としています。</p>
 <div class="sourceCode" id="cb5"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">bool</span> <span class="fu">Explore</span><span class="op">(</span>WorldObject actor<span class="op">,</span> WorldSession session<span class="op">)</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">if</span> <span class="op">(!</span>Instance<span class="op">.</span><span class="fu">TryExecuteAction</span><span class="op">(</span><span class="st">&quot;explore&quot;</span><span class="op">,</span> actor<span class="op">,</span> session<span class="op">))</span> <span class="kw">return</span> <span class="kw">false</span><span class="op">;</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RevealDuePaths</span><span class="op">(</span>session<span class="op">);</span>   <span class="co">// 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">true</span><span class="op">;</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">explore</span>(actor<span class="op">:</span> WorldObject <span class="op">|</span> <span class="dt">undefined</span><span class="op">,</span> session<span class="op">:</span> WorldSession)<span class="op">:</span> <span class="dt">boolean</span> {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span><span class="kw">this</span><span class="op">.</span><span class="at">instance</span><span class="op">.</span><span class="fu">tryExecuteAction</span>(<span class="st">&#39;explore&#39;</span><span class="op">,</span> actor<span class="op">,</span> session)) <span class="cf">return</span> <span class="kw">false</span><span class="op">;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="fu">revealDuePaths</span>(session)<span class="op">;</span>   <span class="co">// 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">true</span><span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p><code>explore</code> アクション（YAML側）の実行と、後処理の
-<code>RevealDuePaths</code> を呼び出し側（UI等）に分けて呼ばせません
+<code>revealDuePaths</code> を呼び出し側（UI等）に分けて呼ばせません
 （<code>CLAUDE.md</code>
-の「自分のことは自分でする」方針）。<code>RevealDuePaths</code>
+の「自分のことは自分でする」方針）。<code>revealDuePaths</code>
 自体は冪等なため、進捗がYAML側の効果 だけで動いた場合に備えて
-<code>Paths</code> アクセサからも呼べるようにしています。</p>
+<code>paths</code> アクセサからも呼べるようにしています。</p>
 <h2 id="未決事項今後の検討課題">6. 未決事項・今後の検討課題</h2>
 <ul>
 <li><strong>洞窟内部の生成</strong>:

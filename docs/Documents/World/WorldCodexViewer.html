@@ -132,7 +132,7 @@
 "use strict";
 
 /*
- * WorldCodex YAML（Assets/StreamingAssets/WorldCodex/*.yaml）を、ページ表示のたびにGitHubから
+ * WorldCodex YAML（public/world-codex/*.yaml）を、ページ表示のたびにGitHubから
  * 直接取得・解釈して表示する、人間用のデータベースビューア。ビルド・生成ステップを持たず、
  * このHTMLファイル1つで完結する（Documents/以下に置くと、既存のdocs.yml（.github/workflows/）が
  * docs/へ自動コピーするため、GitHub Pages公開のために追加の作業は不要）。
@@ -152,7 +152,7 @@
 var OWNER = "gooyyu1";
 var REPO = "UnmappedIsland";
 var BRANCH = "main";
-var YAML_DIR = "Assets/StreamingAssets/WorldCodex";
+var YAML_DIR = "public/world-codex";
 
 var DB = null; // { objectDefs: {name: ResolvedObjectDef}, traits: {name: RawTrait} }
 

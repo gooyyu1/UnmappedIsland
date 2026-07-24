@@ -38,7 +38,6 @@
 <p><code>WorldCodex</code>（ゲーム内のあらゆる要素を定義するYAML）の文法そのもの、その文法を使ってどんな内容にも
 適用できる汎用サブシステム（レシピ・コンテナ・耐久値・アクションの使い分け）、気候・地形生成・探索といった
 <strong>仕組み</strong>（プレイヤーの目に触れるモノそのものではなく、それらを成り立たせているメカニズム）、および
-C#
 実装のアーキテクチャ・コード構造に関するドキュメントを格納します。</p>
 <p>石・斧・防具・容器など、「実際にこのゲームに登場する具体的なモノ」は含みません。そちらは
 <a href="../World/README.html"><code>../World/</code></a>
@@ -56,7 +55,7 @@ id="yaml文法worldcodexの書き方そのもの">YAML文法（WorldCodexの書�
 href="./WorldCodex.schema.json">JSON Schema本体</a>） — 上記文法の
 機械的な検証</li>
 </ul>
-<p>実際のゲームデータ（<code>Assets/StreamingAssets/WorldCodex/*.yaml</code>）を閲覧するツールは
+<p>実際のゲームデータ（<code>public/world-codex/*.yaml</code>）を閲覧するツールは
 <a
 href="../World/WorldCodexViewer.html"><code>../World/WorldCodexViewer.html</code></a>
 を参照してください。</p>
@@ -79,7 +78,7 @@ combinations の実行時の仕組み</li>
 生成された土地のスロット構成・探索・道の発見と移動</li>
 </ul>
 <h3
-id="実装ガイドcコード構造の把握なぜではなくどこにどう実装されているか">実装ガイド（C#コード構造の把握。「なぜ」ではなく「どこに・どう実装されているか」）</h3>
+id="実装ガイドコード構造の把握なぜではなくどこにどう実装されているか">実装ガイド（コード構造の把握。「なぜ」ではなく「どこに・どう実装されているか」）</h3>
 <ul>
 <li><a href="./DomainDefsRuntimeIntegration.html">Domain.Defs と
 Domain.Runtime の統合方針</a></li>

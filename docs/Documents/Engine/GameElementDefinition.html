@@ -260,7 +260,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 に持たせると、<strong>インスタンスの生成（spawn）時に 1 回だけ、
 範囲内の一様乱数で初期値をロール</strong>します。以後は固定値と同じ扱いで、tick
 ごとの再ロールは行いません
-（<code>Domain.Defs.PropertyDef.CreateValue</code> 参照）。</p>
+（<code>Domain.Defs.PropertyDef.createValue</code> 参照）。</p>
 <div class="sourceCode" id="cb5"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_durability</span><span class="kw">:</span></span>
@@ -382,10 +382,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">sunlight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
 <p>数値型の「最下段（min省略）＝フォールバック」という概念は、シンボル型には存在しません。<code>stages</code>
 に
-書かなかった値は単に「該当する段階が無い」となり、<code>ResolveStage</code>
-は <code>null</code> を返します。呼び出し側 （<code>WhenOwnStage</code>
-ゲートを含む）は必ず <code>null</code>
-チェックを行います（<code>Runtime.WorldObject.IsInStage</code> 参照）。
+書かなかった値は単に「該当する段階が無い」となり、<code>resolveStage</code>
+は <code>undefined</code> を返します。呼び出し側
+（<code>WhenOwnStage</code> ゲートを含む）は必ず <code>undefined</code>
+チェックを行います（<code>Runtime.WorldObject.isInStage</code> 参照）。
 複数のシンボル値を1つの段階名にまとめたい場合は、<code>stages</code>
 ではなく利用側の <code>conditions</code> の <code>in</code> （14.1
 節）で表現します。<code>stages</code>
@@ -1518,8 +1518,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb46-1"><a href=
 <span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">on_overflow</span><span class="kw">:</span></span>
 <span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb46-18"><a href="#cb46-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">accumulate</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">minute</span><span class="kw">:</span><span class="at"> </span><span class="dv">-60</span><span class="kw">,</span><span class="at"> </span><span class="fu">hour</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}</span></span></code></pre></div>
-<p>（実際の定義は
-<code>Assets/StreamingAssets/WorldCodex/core.yaml</code>
+<p>（実際の定義は <code>public/world-codex/core.yaml</code>
 参照。<code>day</code>/<code>hour</code>/<code>minute</code>
 に加え、累積 tick 数を表す <code>tick</code> も持つ。）</p>
 <p>日時・天候はオブジェクトから直接参照されるのではなく、<strong>環境がオブジェクトに影響を与える</strong>という位置づけです

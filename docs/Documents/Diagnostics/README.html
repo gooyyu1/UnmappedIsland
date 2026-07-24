@@ -110,13 +110,13 @@
 変えれば結果も変わるため、内容を手で書き換えるのではなく、対応するテストを再実行して<strong>再生成</strong>します。
 バランス調整のたびに上書きしてよく、Git履歴が変化の記録になります。</p>
 <h2 id="生成方法">生成方法</h2>
-<p>各レポートは、<code>Tests/Diagnostics/</code>
-に置かれた対応するテスト（NUnitの <code>[Explicit]</code>。通常の
-<code>dotnet test</code>
-では実行されず、フィルタ指定時のみ動く）を実行して生成します。生成元テストと出力先は
+<p>各レポートは、<code>tests/diagnostics/</code>
+に置かれた対応するテスト（<code>RUN_CLIMATE_STATS</code>
+環境変数が立っている ときだけ実行され、通常の <code>npm test</code>
+では実行されない）を実行して生成します。生成元テストと出力先は
 レポート冒頭にコメントで記載しています。</p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dotnet</span> test Tests/Tests.csproj <span class="at">--filter</span> FullyQualifiedName~<span class="op">&lt;</span>対応するテストクラス名<span class="op">&gt;</span></span></code></pre></div>
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> run stats:climate</span></code></pre></div>
 <h2 id="収録レポート">収録レポート</h2>
 <ul>
 <li><a href="./ClimateSystemStats.html">気候システム統計レポート</a> —
@@ -124,7 +124,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="
 連続降雨/未降雨時間の平均/最小/最大/標準偏差（<a
 href="../Engine/ClimateSystem.html"><code>ClimateSystem.md</code></a>
 参照）。 生成元:
-<code>Tests/Diagnostics/ClimateStatsReportTests.cs</code></li>
+<code>tests/diagnostics/climateStatsReport.test.ts</code></li>
 </ul>
 </article>
 </body>
