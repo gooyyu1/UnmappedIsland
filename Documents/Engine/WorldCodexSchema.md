@@ -2,12 +2,11 @@
 
 ## 概要
 
-本ドキュメントは、YAML文法の唯一のリファレンスである `GameElementDefinition.md`（`traits`/`object_defs`/`props`/
-`slots`/`passives`/`active`/`pick`/`actions`/`combinations`/`recipes` 等の文法をすべて集約したもの)をもとに、
-`WorldCodex` の YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-schema.org/) Draft 2020-12、
-`WorldCodex.schema.json`）を作成・保守した結果をまとめたものです。個別の世界描写（`ClimateSystem.md`・`RecipeSystem.md`・
-`ContainerSystem.md`・`ActionSystem.md`・`TerrainGeneration.md`・`ExplorationSystem.md`）の内容そのものはスキーマの
-対象外で、それらが使う文法の妥当性のみを検証します。
+本ドキュメントは、YAML文法の唯一のリファレンスである `GameElementDefinition.md` をもとにした、`WorldCodex` の
+YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-schema.org/) Draft 2020-12、
+`WorldCodex.schema.json`）の保守方針をまとめたものです。個別の世界描写（`ClimateSystem.md`・`RecipeSystem.md`・
+`ContainerSystem.md`・`ActionSystem.md`・`TerrainGeneration.md`・`ExplorationSystem.md`）の内容そのものは
+スキーマの対象外で、それらが使う文法の妥当性のみを検証します。
 
 スキーマの正は**ローダーの実装**（`Assets/Scripts/Loader/WorldCodexYamlLoader.*.cs`）です。本スキーマはローダーが
 受け付ける文法の機械的な近似であり、乖離を見つけたらローダーに合わせてスキーマを直します。
@@ -69,20 +68,9 @@
 
 ## 3. スキーマ化にあたって見つけた既存ドキュメントとの矛盾・気づき（修正済み）
 
-スキーマ化・刷新の過程で以下の矛盾が見つかり、いずれもドキュメント側を修正して解消済みです。
-
-- **タグ判定の葉が文法リファレンス未記載**: `conditions` の葉のうち `{object, tag}`（オブジェクト自身のタグ判定）は
-  ローダー（`ConditionNode.ObjectTag`）に実装済みでしたが、`GameElementDefinition.md` 14節に記載がありませんでした。
-  刷新時に 14.4節として追記しました（複合ノードは 14.5節へ繰り下げ）。
-
-- **防具サンプルの `item:` フィールド**: `GameElementDefinition.md` 8.1節の防具サンプルには、`object_defs` のキーとは
-  別に `item: armor_leather` というフィールドが残っていました。これは 4節で確定している「識別子は `object_defs` の
-  キーとして表現する（値ではない）」という規約より前の記法の名残でした。サンプルを `object_defs: { armor_leather: {...} }`
-  という形に修正し、規約と一致させました。
-- **地形生成の `id` フィールド方式**: `TerrainGeneration.md` の `Axis`/`LocationType`/`generation_scope` サンプルは
-  「配列＋`id`フィールド」で書かれており、他の概念すべてが採用している「識別子をキーとする辞書」とは異なる形式でした。
-  3.1節・3.2節・4.7節のサンプルを、それぞれ `axes:`/`location_types:`/`generation_scopes:` という識別子キーの辞書形式に
-  修正し、他の概念と表記を統一しました。
+スキーマ化・刷新の過程で見つかった文法リファレンスとの矛盾（`conditions` のタグ判定の葉 `{object, tag}` の
+記載漏れ、旧記法のまま残っていたサンプル、地形生成サンプルの「配列＋`id`フィールド」形式）は、いずれも
+ドキュメント側を修正して解消済みです。
 
 ## 4. スキーマ化にあたって判断した細部（ドキュメント上は未確定・省略されていた点）
 

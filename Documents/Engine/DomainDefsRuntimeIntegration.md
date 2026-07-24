@@ -27,8 +27,7 @@
 - `ActionDef.Active` / `ActionDef.Pick` を見て効果を解決する
 - `CombinationDef.With` / `CombinationDef.Conditions` も同様に外側から読む
 
-つまり、アクションや組み合わせの「意味」は `ActionDef` / `CombinationDef` 自身ではなく、外部の
-`InteractionExecutor` が知っています。Defs 側は多くの情報を public に公開するだけになっており、
+アクションや組み合わせの「意味」を定義自身ではなく外部の `InteractionExecutor` が知っており、
 「この定義をどう実行するか」という知識が所有者の外へ漏れています。
 
 ### 2.2 条件木の評価規則が ConditionNode 自身にない
@@ -37,29 +36,17 @@
 `ConditionEvaluator` にあります。`PassiveEffectGate` も `ConditionNode` を保持するだけで、
 実際の判定は `RegisteredPassiveEffect.IsActive()` から外部評価器へ委譲しています。
 
-これも「定義を持つ側が、自分の意味を自分で説明できていない」状態です。
-
 ### 2.3 public 公開範囲が広がりやすい
 
-Defs と Runtime を厳密に分けようとすると、Runtime から参照したい情報を Defs 側で広く公開せざるを得ません。
-`Tags`、`Passives`、`Actions`、`Combinations`、`PropertyLayout`、`SlotLayout` などが典型です。
-
-もちろん一部の公開は必要ですが、現在の分割は「Runtime が外から組み立てる」前提なので、公開が構造的に増えます。
-その結果、Defs 側の不変条件を Defs 自身で守りにくくなります。
+「Runtime が外から組み立てる」前提のため、Runtime から参照したい情報（`Tags`、`Passives`、`Actions`、
+`Combinations`、`PropertyLayout`、`SlotLayout` など）を Defs 側で広く公開せざるを得ず、
+Defs 側の不変条件を Defs 自身で守りにくくなります。
 
 ## 3. それでも完全分離に見える利点
 
-現在の構成には、次の分かりやすさがあります。
-
-- `Defs` はロード後不変の定義
-- `Runtime` は実行時の状態と処理
-- 依存方向も概ね `Runtime -> Defs` に揃っている
-
-ただし、この分かりやすさで得られているのは主に**見た目の整理**です。実際には 2 節の通り、
-処理の本体が Runtime 側へ流れ込み、Defs 側は「公開された生データ」に近づいています。
-
-このコストは、`InteractionExecutor` や `ConditionEvaluator` のような「Defs の意味を外部が代行しているクラス」として
-既にコード上へ現れており、単なる抽象的な懸念ではありません。
+現在の構成には「`Defs` はロード後不変の定義、`Runtime` は実行時の状態と処理、依存方向は概ね
+`Runtime -> Defs`」という分かりやすさがあります。ただし、これで得られているのは主に**見た目の整理**です。
+実際には 2 節の通り処理の本体が Runtime 側へ流れ込み、Defs 側は「公開された生データ」に近づいています。
 
 ## 4. 採用する統合方針
 

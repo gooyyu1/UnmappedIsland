@@ -36,3 +36,7 @@ C# 実装のアーキテクチャ・コード構造に関するドキュメン�
 - [Domain.Defs と Domain.Runtime の統合方針](./DomainDefsRuntimeIntegration.md)
 - [地形生成 実装ガイド](./TerrainGenerationImplementation.md) — 実際のクラス名・メソッド名でたどる、
   ロードから島の実体化までの呼び出し関係
+
+### その他
+
+- [設計の経緯・教訓集](./DesignNotes.md) — 再発防止のために残す過去の失敗・不採用の決定（本文には経緯を書かない）
