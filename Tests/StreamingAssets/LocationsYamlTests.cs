@@ -11,10 +11,8 @@ using Path = UnmappedIsland.Domain.Runtime.Views.Path;
 namespace UnmappedIsland.StreamingAssets
 {
     /// <summary>
-    /// Assets/StreamingAssets/WorldCodex/locations.yaml（土地と道の定義）が、他の実ファイル
-    /// （core/characters/foods/containers）と一緒に正しくロードでき、要求仕様（全土地がlocation trait実装・
-    /// 3種+道2種のスロット・キャラクタスロットは固定型でスタック1・探索回数10〜20・探索上限・
-    /// 隠しスロット経由の道の発見・移動）を満たすことを確認する自動テスト。
+    /// Assets/StreamingAssets/WorldCodex/locations.yaml（土地と道の定義）が、他の実ファイルと一緒に
+    /// 正しくロードでき、要求仕様（スロット構成・探索回数・道の発見・移動）を満たすことを確認する自動テスト。
     /// </summary>
     [TestFixture]
     public class LocationsYamlTests

@@ -10,7 +10,7 @@ namespace UnmappedIsland.StreamingAssets
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/containers.yaml が、represented_by で中身オブジェクトへ委譲する
-    /// 新しい液体容器モデルを正しく表現できているかを確認する自動テスト。
+    /// 液体容器モデルを正しく表現できているかを確認する自動テスト。
     /// </summary>
     [TestFixture]
     public class ContainersYamlTests

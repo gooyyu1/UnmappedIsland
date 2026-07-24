@@ -8,10 +8,8 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain
 {
     /// <summary>
-    /// modify/accumulate（GameElementDefinition.md 8節）の実行時集計（WorldObject.GetEffectiveValue/
-    /// Tick、WorldObject.MoveToSlot での登録）と、on_min/on_max（6節、値がRange境界に達している間
-    /// 毎回実行されるactive内容）に対する自動テスト。YAML文字列をWorldCodexYamlLoader経由でパースして
-    /// 検証する（YamlLoaderTests.csと同じ方針）。
+    /// modify/accumulate（GameElementDefinition.md 8節）の実行時集計と、on_min/on_max（6節、値がRange境界に
+    /// 達している間毎回実行されるactive内容）に対する自動テスト。
     /// </summary>
     [TestFixture]
     public class PassiveEffectTests
@@ -61,9 +59,8 @@ object_defs:
         [Test]
         public void Spawn_MultipleInstancesOfSameObjectDef_HaveIndependentPropertyState()
         {
-            // PropertyDef.DefaultValueは全WorldObjectで共有される1つのテンプレートであり、
-            // WorldObjectのコンストラクタがClone()し忘れると、片方への加算・効果登録がもう片方にも
-            // 漏れてしまう。同じ"torch"から2体spawnし、互いに影響しないことを確認する。
+            // PropertyDef.DefaultValueは全WorldObjectで共有されるテンプレートのため、Clone()し忘れると
+            // 片方への加算・効果登録がもう片方へ漏れる。2体spawnし、互いに影響しないことを確認する。
             const string yaml = @"
 object_defs:
   torch:
@@ -559,15 +556,7 @@ object_defs:
         }
 
         // ------------------------------------------------------------------
-        // on_min / destroy / spawn: 「プロパティが0以下である間、毎回実行されるactive内容」を、
-        // 値が変わった直後にプロパティ自身がTickの中で判定・実行する（PropertyValue.CheckOverflowAndZero
-        // 参照。以前はTickとは別のPostTickパスだったが、現在はTickに統合されている）。すべてのオブジェクトは
-        // 必ずworldの下にぶら下がるため、別途「世界に存在するすべてのオブジェクト」一覧は持たず、
-        // destroyは親スロットからの切り離し、spawnは生成+move_to_slotとして表現する。
-        // ------------------------------------------------------------------
-
-        // ------------------------------------------------------------------
-        // on_max: on_minの上限側の鏡像。値がRange.Max以上である間、毎tick実行されるactive内容。
+        // on_min / on_max / destroy / spawn: 値がRange境界に達している間、毎tick実行されるactive内容。
         // ------------------------------------------------------------------
 
         [Test]

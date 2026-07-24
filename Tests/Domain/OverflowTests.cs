@@ -6,11 +6,8 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain
 {
     /// <summary>
-    /// on_overflow（GameElementDefinition.md 6.3節: rangeの上限を超えたプロパティについて、on_minと全く
-    /// 同じActiveEffect・ApplyActiveEffectの経路で、著者が指定したadd/setを適用する）に対する自動テスト。
-    /// WorldObject.AddNumber/SetNumberは値が変わった直後にsession経由でCheckRangeEventsを再評価するため、
-    /// on_overflowの補正自体が別のプロパティ（またはrangeが残っている自分自身）を書き換えた場合、
-    /// 同じTick()呼び出しの中で連鎖的に解決される（宣言順やTickの回数に依存しない）。
+    /// on_overflow（GameElementDefinition.md 6.3節）に対する自動テスト。値が変わった直後にCheckRangeEventsが
+    /// 再評価されるため、補正の連鎖は宣言順やTickの回数に依存せず同じTick()内で解決される。
     /// YAMLパーサ経由のテストはYamlLoaderTests.csを参照。
     /// </summary>
     [TestFixture]
