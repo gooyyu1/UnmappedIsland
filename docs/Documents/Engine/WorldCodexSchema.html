@@ -141,40 +141,10 @@ Schema</a> Draft 2020-12、
 </ul>
 <h2 id="スキーマの範囲">2. スキーマの範囲</h2>
 <h3 id="含めたもの">2.1 含めたもの</h3>
-<ul>
-<li>ルート構造（<code>object_defs</code>/<code>traits</code>。地形生成の3ルートキーは2.2節参照）</li>
-<li><code>object_defs</code>/<code>traits</code>（3〜5節。<code>tags</code>・<code>singleton</code>・<code>represented_by</code>・<code>stack_order</code>
-を含む）</li>
-<li><code>props</code>（固定値・シンボル値・生成時1回ロールの範囲値・<code>range</code>とoverflow/shortfall・<code>stages</code>・<code>on_min</code>・<code>on_max</code>、
-6節。シンボル型プロパティの <code>stages</code> は <code>min</code>
-を持たず <code>name</code> 自体が比較対象になるため、<code>min</code>
-は任意項目）</li>
-<li>rangeイベント（<code>on_min</code>/<code>on_max</code>/<code>on_overflow</code>/<code>on_shortfall</code>）の中身:
-active動詞、またはその代わりの <code>pick</code>
-（9.7節・10節）、または空のmapping（<code>on_shortfall: {}</code>
-の「宣言だけして何もしない」、6.3節）</li>
-<li><code>passives</code>（<code>conditions</code>/<code>modify</code>/<code>accumulate</code>を上位、対象（<code>self</code>/<code>parent</code>/<code>child</code>/<code>ancestor</code>）を下位に持つ辞書の
-配列、8節。常に配列で単一マッピングでの省略記法はなし。オブジェクトレベル・プロパティレベル・stage内の3箇所）</li>
-<li><code>conditions</code>（プロパティ比較
-<code>{object, prop, op, value}</code>・スロット位置判定
-<code>{object, in_slot}</code>・スロット中身判定
-<code>{object, slot, tag}</code>・タグ判定 <code>{object, tag}</code>
-の4種の葉を持ち、<code>all</code>/<code>any</code>/<code>not</code>で入れ子にできる条件木、14節。
-<code>value</code> はリテラル・<code>in</code>/<code>not_in</code>
-用の配列・<code>{object, prop}</code> 参照の三択）</li>
-<li><code>active</code>（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>/<code>move</code>
-を上位、対象を下位に持つ辞書、9節。<code>set</code> の値は
-リテラル（整数・真偽値・シンボル名）か <code>{object, prop}</code>
-参照）</li>
-<li><code>pick</code>（重み付き確率分岐、active動詞の代替キー、10節。<code>weight</code>
-はリテラルかプロパティ参照。候補のネスト可）</li>
-<li><code>actions</code>（<code>showMenu</code>・<code>conditions</code>・<code>duration</code>・active動詞・<code>pick</code>、11節）</li>
-<li><code>combinations</code>（<code>with</code>・<code>conditions</code>・active動詞・<code>pick</code>、12節。使い分け方針は<code>ActionSystem.md</code>）</li>
-<li><code>recipes</code>（<code>steps</code>/<code>requires</code>/<code>duration</code>、13節。内部設計は<code>RecipeSystem.md</code>）</li>
-<li><code>slots</code>（<code>accepts</code>（<code>tag</code> または
-<code>object</code>）・<code>capacity</code>・<code>weight_rate</code>・<code>stackable</code>・<code>unit_capacity</code>・
-<code>fixed_positions</code>、7節）</li>
-</ul>
+<p><code>GameElementDefinition.md</code>
+の3〜14節が定める文法全体（ルート構造・<code>object_defs</code>/<code>traits</code>・<code>props</code>・rangeイベント・
+<code>passives</code>・<code>conditions</code>・<code>active</code>・<code>pick</code>・<code>actions</code>・<code>combinations</code>・<code>recipes</code>・<code>slots</code>）。
+例外は2.2節を参照。</p>
 <h3 id="対象だが中身を検証しないものローダー未実装のもの">2.2
 対象だが中身を検証しないもの・ローダー未実装のもの</h3>
 <ul>
@@ -199,14 +169,7 @@ combinations 内のみ、 passivesのゲートの <code>object</code> は
 ファイル横断の整合性（参照先idの実在等）はロード時の検証に相当し、対象外です。</li>
 </ul>
 <h2
-id="スキーマ化にあたって見つけた既存ドキュメントとの矛盾気づき修正済み">3.
-スキーマ化にあたって見つけた既存ドキュメントとの矛盾・気づき（修正済み）</h2>
-<p>スキーマ化・刷新の過程で見つかった文法リファレンスとの矛盾（<code>conditions</code>
-のタグ判定の葉 <code>{object, tag}</code> の
-記載漏れ、旧記法のまま残っていたサンプル、地形生成サンプルの「配列＋<code>id</code>フィールド」形式）は、いずれも
-ドキュメント側を修正して解消済みです。</p>
-<h2
-id="スキーマ化にあたって判断した細部ドキュメント上は未確定省略されていた点">4.
+id="スキーマ化にあたって判断した細部ドキュメント上は未確定省略されていた点">3.
 スキーマ化にあたって判断した細部（ドキュメント上は未確定・省略されていた点）</h2>
 <p>以下は、各ドキュメントの記述からは一意に決まらなかったものの、スキーマとして形にするために暫定的に判断した点です。
 実装時に見直してください。</p>
@@ -233,7 +196,7 @@ id="スキーマ化にあたって判断した細部ドキュメント上は未�
 にシンボルは書けない」といったプロパティ単位の整合はスキーマでは
 検証できず、ロード時チェックに委ねています（2.2節の文脈依存制約と同じ扱い）。</li>
 </ul>
-<h2 id="使い方">5. 使い方</h2>
+<h2 id="使い方">4. 使い方</h2>
 <p><code>WorldCodex.schema.json</code> は JSON Schema Draft 2020-12
 準拠です。YAML ファイルをパースして得られるオブジェクトに対して、
 一般的な JSON Schema バリデータ（Python の
@@ -247,7 +210,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="st">for e in v.iter_errors(yaml.safe_load(open(&#39;Assets/StreamingAssets/WorldCodex/core.yaml&#39;))):</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="st">    print(list(e.absolute_path), e.message)</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;</span></span></code></pre></div>
-<h2 id="未決事項今後の検討課題">6. 未決事項・今後の検討課題</h2>
+<h2 id="未決事項今後の検討課題">5. 未決事項・今後の検討課題</h2>
 <ul>
 <li>地形生成（<code>axes</code>/<code>location_types</code>/<code>generation_scopes</code>）の中身の詳細スキーマ化（2.2節。現在はキーの許容のみ）</li>
 <li>スキーマ検証をCI（テストスイート）へ組み込み、ローダーとスキーマの乖離を自動検知するかどうか</li>

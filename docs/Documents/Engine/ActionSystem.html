@@ -34,78 +34,245 @@
 <header id="title-block-header">
 <h1 class="title">ActionSystem</h1>
 </header>
-<h1
-id="カード間の相互作用actions-combinations-の使い分け">カード間の相互作用（actions
-/ combinations の使い分け）</h1>
+<h1 id="アクションシステム設計">アクションシステム設計</h1>
 <h2 id="概要">概要</h2>
-<p>本ドキュメントは、プレイヤーがカードに対して行う操作を、<code>actions</code>（メニュー型）と
-<code>combinations</code>（ドラッグ型）の
-どちらで表現すべきかの判断指針をまとめたものです。両者の文法自体は
-<code>GameElementDefinition.md</code> 11 節・12 節を
-参照してください。</p>
-<p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
-4 節に整理しています。</p>
-<h2 id="使い分けの基準">1. 使い分けの基準</h2>
-<p>すべてのアクション・組み合わせには、<code>actor</code>（プレイヤーキャラクター）が暗黙的に参加します。そのため
-「2つの参加者が要るように見える操作」でも、もう一方が常に
-<code>actor</code> であれば
-<code>actions</code>（メニュー型）で表現できます。
-<code>eat</code>（食べ物 self ＋ actor）だけでなく
-<code>attack</code>（攻撃対象の敵 self ＋
-actor）もこれに当たります。</p>
-<p><code>combinations</code>（ドラッグ型）が必要になるのは、<code>actor</code>
-とは別の、道具や素材など<strong>特定のカードそのものを指定する
-必要がある</strong>場合（「斧で木を切る」）に限られます。</p>
+<p>プレイヤーがカードに対して行う操作が、実行時にどう実装されているかを記述する設計ドキュメントです。
+YAML上の文法そのものは <a
+href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>（<code>actions</code>
+は 11 節、 <code>combinations</code> は 12 節、<code>active</code> は 9
+節、<code>pick</code> は 10 節、<code>conditions</code> は 14
+節）を参照してください。</p>
+<h2 id="つの入口-actions-と-combinations">1. 2つの入口: actions と
+combinations</h2>
+<p>プレイヤー操作の入口は2種類だけで、どちらも <code>object_def</code>
+に宣言的に定義される。</p>
 <ul>
-<li><strong>メニュー型（<code>actions</code>）</strong>:
-1枚のカードだけで完結する操作。カードを選択すると実行可能なアクションがボタンで
-表示され、クリックすると実行できます。ロケーションカード限定の「探索」ボタンも、この特殊なケースです。</li>
-<li><strong>ドラッグ型（<code>combinations</code>）</strong>:
-カードを、<code>actor</code>
-ではない別の特定のカードにドラッグ＆ドロップして行う操作。</li>
+<li><strong><code>actions</code>（メニュー型、<code>Domain.Defs.ActionDef</code>）</strong>:
+1枚のカード（<code>self</code>）だけで完結する操作。
+カード選択時にボタンとして表示され、クリックで実行される。<code>actor</code>（プレイヤーキャラクター）は
+常に暗黙的に参加する。</li>
+<li><strong><code>combinations</code>（ドラッグ型、<code>Domain.Defs.CombinationDef</code>）</strong>:
+カードを別のカードへ
+ドラッグ＆ドロップする操作。<strong>ドロップされた側（受け側）</strong>
+の <code>object_def</code> に定義され、
+<code>with</code>（タグのグローバルID）がドラッグされてきたカードとのマッチング条件になる。
+対称的な組み合わせは両側のカードに定義する（12.3節）。</li>
 </ul>
-<h2 id="combinations-のキー設計">2. combinations のキー設計</h2>
-<p><code>combinations</code>
-の<strong>キーはマッチング対象ではなく、このドラッグ操作自体に付ける名前</strong>です。マッチング対象は
-<code>with</code>
-で別途指定します（<code>GameElementDefinition.md</code> 12.1
-節）。そのため同じ <code>with</code> を指す複数のキーを書けてしまい
-（例: <code>wood</code> に対して <code>with: axe_tool</code> の
-<code>chop</code> と <code>hack</code>
-を両方定義する）、その場合にどちらが選ばれるかの 解決規則は未決定です（4
-節）。</p>
-<h2 id="対称的な組み合わせ">3. 対称的な組み合わせ</h2>
-<p>「棒とロープを組み合わせて槍を作る」のように、どちらのカードをどちらにドラッグしても成立してほしい、方向が
-自明でない組み合わせは、両方のカードに <code>combinations</code>
-を書きます（<code>GameElementDefinition.md</code> 12.3 節）。
-片方にしか書かなければ、その向きにドラッグしたときしか成立しません。</p>
-<h2 id="未決事項今後の検討課題">4. 未決事項・今後の検討課題</h2>
+<p>実行時の入口は <code>Runtime.WorldObject</code> の3メソッド。</p>
 <ul>
-<li>実行エンジン（<code>Assets/Scripts/Runtime/InteractionExecutor.cs</code>）は、<code>with</code>
-に一致する <code>combinations</code> を 宣言順にすべて列挙する
+<li><code>TryExecuteAction(actionName, actor, session)</code></li>
+<li><code>TryExecuteCombination(dragged, actor, combinationName, session)</code></li>
+<li><code>FindMatchingCombinations(dragged)</code> —
+ドラッグ中のハイライト等のために、<code>with</code> にマッチする
+<code>combinations</code>
+を宣言順に列挙する。複数マッチした場合にどれを実行するかの解決はUI層に委ねる（5節）。</li>
+</ul>
+<p>いずれも実行前に <code>ResolveInteractionTarget()</code> で
+<strong>代表（<code>represented_by</code>）</strong> を解決する:
+代表スロットを持つカード（液体容器など）への操作は、そのスロットの中身（代表チェーンの末端）へ
+リダイレクトされる。<code>self</code> と <code>dragged</code>
+の両方が対象。</p>
+<h2 id="実行パイプライン">2. 実行パイプライン</h2>
+<p><code>TryExecute</code> は次の順に進み、途中で失敗すると
+<code>false</code> を返して何も適用しない。</p>
+<ol type="1">
+<li><code>with</code> マッチング（combinations のみ）:
+<code>dragged</code> の <code>ObjectDef.Tags</code> に <code>with</code>
+タグが含まれるか。</li>
+<li><code>conditions</code> 評価（3節）: 省略時は常に真。</li>
+<li><code>duration</code> の解決（actions のみ）: 参照
+<code>duration</code> は適用前の <code>self</code>
+から読む必要があるため、 効果適用の前に分数だけ確定させる。</li>
+<li>効果の適用:
+<code>self.ApplyActiveEffect(effect, session, actor, dragged)</code>（4節）。</li>
+<li>時間進行（actions のみ、6節）:
+効果適用の後に進める（先に進めると、tick 中の destroy 等が
+<code>self</code> を破棄してから効果を適用する事故になる）。</li>
+</ol>
+<h2 id="実行可能条件conditions">3. 実行可能条件（conditions）</h2>
+<p><code>Domain.Defs.ConditionNode</code> の木。葉は4種、複合は
+<code>all</code> / <code>any</code> / <code>not</code> の3種で、
+actions/combinations
+の一度きりの判定と、passives（8節）の持続的なゲートが同じ木を共用する。</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>葉</th>
+<th>形</th>
+<th>判定</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Property</td>
+<td><code>{object, prop, op, value}</code></td>
+<td>参照先プロパティの<strong>実効値</strong>（modify・inherit込み）との比較</td>
+</tr>
+<tr class="even">
+<td>SlotPosition</td>
+<td><code>{object, in_slot}</code></td>
+<td>object が今、親のそのスロットに入っているか（外から見た位置）</td>
+</tr>
+<tr class="odd">
+<td>SlotContent</td>
+<td><code>{object, slot, tag}</code></td>
+<td>object
+自身のスロットの中に、タグを持つ子が1つでもあるか（内側の中身）</td>
+</tr>
+<tr class="even">
+<td>ObjectTag</td>
+<td><code>{object, tag}</code></td>
+<td>object 自身がタグを持つか</td>
+</tr>
+</tbody>
+</table>
+<p><code>value</code>
+はリテラル・配列（<code>in</code>/<code>not_in</code>）・<code>{object, prop}</code>
+参照の三択。参照先が解決できない場合
+（親が無い等）、その葉は偽になる。</p>
+<h2 id="条件効果から参照できるオブジェクト">4.
+条件・効果から参照できるオブジェクト</h2>
+<p><code>conditions</code> の
+<code>object</code>、効果の対象キー、<code>{object, prop}</code>
+参照はすべて共通の起点 <code>Domain.Defs.ReferenceRoot</code>
+を使う。<code>self.prop</code>
+のような1階層の参照のみで、パス連結はない。</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>起点</th>
+<th>解決先</th>
+<th>使える文脈</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>self</code></td>
+<td>操作対象のカード自身</td>
+<td>すべて</td>
+</tr>
+<tr class="even">
+<td><code>parent</code></td>
+<td>self の直接の親</td>
+<td>すべて</td>
+</tr>
+<tr class="odd">
+<td><code>actor</code></td>
+<td>プレイヤーキャラクター</td>
+<td>actions / combinations（rangeイベントには存在しない）</td>
+</tr>
+<tr class="even">
+<td><code>dragged</code></td>
+<td>ドラッグされてきたカード</td>
+<td>combinations のみ</td>
+</tr>
+<tr class="odd">
+<td><code>dragged_parent</code></td>
+<td>dragged の直接の親</td>
+<td>combinations のみ（液体容器の中身→容器参照）</td>
+</tr>
+<tr class="even">
+<td><code>ancestor</code></td>
+<td>self の親から遡り、参照プロパティを定義する最初の祖先</td>
+<td>プロパティ参照のみ（位置判定では不可）</td>
+</tr>
+</tbody>
+</table>
+<p><code>world</code>
+は起点として未対応（ロード時エラー）。すべてのオブジェクトは world
+の下にぶら下がるため、 world 固有プロパティの参照は
+<code>ancestor</code> で代替できる。<code>child</code> は passives の
+target 専用で、
+この文脈では使えない。<strong>解決できない対象への適用は、その命令だけ無視される</strong>（実行全体は失敗しない）。</p>
+<h2 id="効果activeeffect">5. 効果（ActiveEffect）</h2>
+<p>効果はポリモーフィックな <code>Domain.Defs.ActiveEffect</code>
+で、3形態を再帰的に組み合わせる。</p>
+<ul>
+<li><strong>単一命令</strong>: <code>set</code> / <code>add</code> /
+<code>destroy</code> / <code>spawn</code> / <code>transfer</code> /
+<code>move</code>（9節）。</li>
+<li><strong>宣言順合成（<code>ActiveEffects</code>）</strong>: パーサが
+set → add → transfer → destroy → spawn の順に並べる （同一プロパティへの
+set 後の add、destroy で空いた位置への spawn
+という依存関係のため）。</li>
+<li><strong><code>pick</code>（<code>PickEffect</code>、10節）</strong>:
+<code>weight</code>（リテラルかプロパティ参照）による重み付き抽選で
+1候補を選んで適用する。候補の効果も <code>ActiveEffect</code>
+なので、pick のネストができる。</li>
+</ul>
+<p>設計上の要点:</p>
+<ul>
+<li><code>set</code>/<code>add</code> の値・<code>pick</code> の
+<code>weight</code> は「リテラルか <code>{object, prop}</code>
+参照か」の二択で統一されている。</li>
+<li><code>spawn</code> の配置先は <code>same_slot</code>（既定）/
+<code>self</code> / <code>actor</code>。<code>same_slot</code>
+は、適用の入口で捕捉した 「self
+が占めていた位置」のスナップショット（<code>WorldObject.EffectSite</code>）を使い、destroy
+で self が
+消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親へ伝播し、accepts/capacity
+を
+無視して強制配置する（オブジェクトは必ずどこかに属す必要があるため）。</li>
+<li><code>transfer</code>（9.5節）は「出せる量」と（<code>allow_overflow: false</code>
+なら）「受け取れる量」で実移動量を決め、 <code>linked_add</code>
+を実移動量に比例スケールして適用する。</li>
+<li><code>move</code> は、<code>self</code>
+のプロパティ（<code>to_prop</code>）が保持する
+<strong>インスタンスID</strong> のオブジェクトの中へ <code>actor</code>
+を移動する。移動先が定義時点で決まらず生成時に確定する（道の移動アクション）ため、
+<code>object_def</code> 参照ではなくインスタンスIDで指す。</li>
+<li>プロパティの
+rangeイベント（<code>on_min</code>/<code>on_max</code>/<code>on_overflow</code>/<code>on_shortfall</code>、6節）も<strong>同じ</strong>
+<code>ActiveEffect</code>
+と適用経路（<code>WorldObject.ApplyActiveEffect</code>）を使う。その文脈では
+actor/dragged が null で、対象は <code>self</code>
+のみ（ロード時に強制）。</li>
+</ul>
+<h2 id="時間の経過duration">6. 時間の経過（duration）</h2>
+<ul>
+<li><code>actions</code> の <code>duration</code>
+はゲーム内の<strong>分</strong>。リテラルか <code>{object, prop}</code>
+参照（<code>weight</code> と同じ二択）で、
+省略時は時間を消費しない。<code>combinations</code> は現状
+<code>duration</code> を持たない。</li>
+<li>時間進行は <code>ActionDef.TryExecute</code> 自身が
+<code>WorldSession.AdvanceWorldTime(minutes)</code> を呼んで完結させる。
+呼び出し側（UI層）が実行後に別途時間を進める必要はない。</li>
+<li><code>AdvanceWorldTime</code> は分を進めながら、tick 境界（world の
+<code>minutes_per_tick</code> プロパティ、 現状15分）を跨ぐたびに world
+ツリー全体の <code>Tick()</code> を1回実行する。長い
+<code>duration</code> の action は、 その間の
+accumulate・rangeイベントをすべて経験する。</li>
+<li><code>World</code>
+を持たないセッション（時間の概念が無い単体テスト等）では時間進行をスキップする。</li>
+</ul>
+<h2 id="未決事項今後の検討課題">7. 未決事項・今後の検討課題</h2>
+<ul>
+<li>同じオブジェクト内で複数のキーが同じ <code>with</code>
+にマッチした場合の解決規則 （現状は
 <code>FindMatchingCombinations</code>
-を提供するのみで、複数が一致した場合にどれを実際に
-実行するかは呼び出し側（UI層）に委ねている。以下の「解決規則」自体は未解決のまま。</li>
-<li>同じオブジェクト内で、複数のキーが同じ <code>with</code>
-にマッチしてしまった場合の解決規則（優先順位、条件の排他性を
-著者の責任に委ねるだけで良いか、など。2 節参照）</li>
-<li><code>combinations</code>（斧で木を切る、など）を、<code>actor</code>
-の装備スロットを経由したパス参照（例: <code>actor.equip.tool</code>）を
-使う <code>actions</code> の条件・効果として書き換えられないか</li>
-<li><code>with</code> で、複数の trait /
-条件の組み合わせ（AND条件）を指定する必要があるか</li>
-<li>対称的な組み合わせ（3
-節）で両側に同じ内容を書く冗長さを、将来的に軽減する余地を残すか</li>
-<li>同一 id
-の定義がファイル間で重複した場合の、新しいキーの追記のマージセマンティクス
-（<code>GameElementDefinition.md</code> 3.3 節との関連）</li>
+が宣言順に列挙し、選択はUI層に委ねている）</li>
+<li><code>combinations</code> を、<code>actor</code>
+の装備スロットを経由したパス参照（例:
+<code>actor.equip.tool</code>）を使う <code>actions</code>
+の条件・効果として書き換えられないか</li>
+<li><code>with</code> で複数タグのAND条件を指定する必要があるか</li>
+<li>対称的な組み合わせ（12.3節）で両側に同じ内容を書く冗長さの軽減</li>
+<li><code>combinations</code> への <code>duration</code> の導入</li>
 <li><code>showMenu</code> の値が <code>always</code>
-以外に増える場合の具体的な用途・記法</li>
-<li>ドラッグ中に他のカードをハイライトする際、全カードに対して
-<code>combinations</code> の <code>conditions</code> を評価するコストを
-どう抑えるか</li>
-<li>素材側が「どの道具で操作されたか」を細かく区別したい場合、道具ごとに別々のキーを書き分ける以外の効率的な記法が
-必要か</li>
+以外に増える場合の用途・記法</li>
+<li>ドラッグ中のハイライトで全カードの <code>conditions</code>
+を評価するコストの抑制</li>
 </ul>
 </article>
 </body>

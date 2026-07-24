@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>SlotSystem</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+  <style>
+    @media (max-width: 600px) {
+      .markdown-body { padding: 1rem !important; }
+    }
+  </style>
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+<header id="title-block-header">
+<h1 class="title">SlotSystem</h1>
+</header>
+<h1 id="スロットシステム設計">スロットシステム設計</h1>
+<h2 id="概要">概要</h2>
+<p>スロット（親子関係とコンテナ、<a
+href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
+7節）が
+実行時にどう実装されているかを記述する設計ドキュメントです。定義は
+<code>Domain.Defs.SlotDef</code>、 実行時状態は
+<code>Domain.Runtime.Slot</code> と
+<code>Domain.Runtime.ObjectStack</code>。重さの伝播は <a
+href="./ContainerSystem.html"><code>ContainerSystem.md</code></a>、<code>represented_by</code>
+を使う代表例は <a
+href="./LiquidContainerSystem.html"><code>LiquidContainerSystem.md</code></a>
+を参照してください。</p>
+<h2 id="データ構造-セルの並びとスタックの2階層">1. データ構造:
+セルの並びとスタックの2階層</h2>
+<p>スロットの中身は「<strong>セルの並び</strong>」として持つ（<code>Slot.cells</code>）。</p>
+<ul>
+<li>セル = 1つの
+<code>ObjectStack</code>（同種のまとまり）か、空（null）。<strong>位置 =
+セルの添字</strong>。</li>
+<li><code>ObjectStack</code> =
+見た目上1単位として積み重なる同種インスタンスのリスト（7.6節）。</li>
+<li>親子関係の正の情報源は親側のスロット配列で、子側の
+<code>WorldObject.Parent</code> は逆引きキャッシュ（7.1節）。</li>
+</ul>
+<p>出入りは唯一の汎用操作
+<code>move_to_slot</code>（<code>WorldObject.MoveToSlot</code> →
+<code>AttachToSlot</code>）経由のみ。 親子整合・weight 伝播・passive
+エッジの登録・代表チェーン再判定という副作用を1箇所に集約する。
+<code>force: true</code>（spawn
+の強制配置フォールバック専用、9.4節）は受け入れ検証だけを飛ばす。</p>
+<h2 id="受け入れ判定-3つの独立した制約">2. 受け入れ判定:
+3つの独立した制約</h2>
+<p><code>Slot.CanAccept</code>
+は次の3つを順に検証する。いずれも定義が無ければ無制限。</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>制約</th>
+<th>単位</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>accepts</code>（7.2節）</td>
+<td>ルールごとの個数</td>
+<td>型の制約。各ルールは <code>tag</code>（タグ保持）か
+<code>object</code>（型そのもの）でマッチし、そのルールにマッチする在中個数が
+<code>max</code> 未満なら受け入れ</td>
+</tr>
+<tr class="even">
+<td><code>capacity</code>（7.3節）</td>
+<td><code>size</code> の合計</td>
+<td>中身の <code>size</code> プロパティ合計 + 候補の <code>size</code>
+が上限以下</td>
+</tr>
+<tr class="odd">
+<td><code>unit_capacity</code></td>
+<td>単位数</td>
+<td>セルを占める「単位」の数。単位の意味は <code>stackable</code>
+に従う（4節）。既存スタックへ合流できる場合は新しい枠を消費しない</td>
+</tr>
+</tbody>
+</table>
+<h2 id="固定位置スロットと前詰めスロットfixed_positions">3.
+固定位置スロットと前詰めスロット（fixed_positions）</h2>
+<p>両者の違いは「<strong>空になったセルを残すか、詰めるか</strong>」の1点だけで、他のロジックは共通。</p>
+<ul>
+<li><strong><code>fixed_positions: true</code></strong>（例:
+プレイヤー手持ちの6枠）: セル配列は常に <code>unit_capacity</code>
+長で、 空セルを null
+として保持する。位置（固定番号）が安定し、プレイヤーによる手動並び替え
+（<code>Slot.TrySetManualPosition</code>、空セルまたは他スタックとの単純
+swap）ができる。</li>
+<li><strong>非 fixed_positions</strong>:
+空になったセルは削除して前詰めする（null を含まない）。</li>
+</ul>
+<p><code>same_slot</code> spawn
+の置き換え配置（元の位置の引き継ぎ・「隣に生まれる」・押し出し）は
+7.6節の 規定どおり <code>Slot.PlaceSameSlot</code>
+が実装する。置き換え位置の基準（元のセル・同種が残っているか）は
+効果適用の入口で捕捉した <code>EffectSite</code>
+から渡される（<code>ActionSystem.md</code> 5節）。</p>
+<h2 id="スタック可否stackable">4. スタック可否（stackable）</h2>
+<ul>
+<li><strong><code>stackable: true</code></strong>（既定）:
+同一性（5節）が一致する既存スタックへ合流する。
+<code>unit_capacity</code> の「単位」は種類数（= スタック数）。</li>
+<li><strong><code>stackable: false</code></strong>（例:
+かまどの投入口）: 同種でも常に個体ごとに別スタック。
+「単位」は個体数そのものになり、同じ燃料を2つ入れると2枠消費する。</li>
+</ul>
+<h2 id="スタックの同一性-容器の中身まで見る">5. スタックの同一性:
+容器の中身まで見る</h2>
+<p>同じスタックにまとまる条件は「外側の <code>ObjectDef</code>
+が同じ」だけではない。<code>ObjectStack</code> は生成時に、 seed
+の<strong>代表チェーン</strong>（自分の <code>ObjectDef</code>
+を先頭に、<code>represented_by</code> で辿った代表、さらにその 代表…の
+<code>ObjectDef</code>
+列）をスナップショットし（<code>WorldObject.CaptureRepresentationChain</code>）、
+合流判定（<code>Matches</code>）はこの列の<strong>完全一致</strong>を要求する。これにより、水入り水筒と茶入り水筒は
+外側が同じ <code>canteen</code> でも別スタックになる。</p>
+<ul>
+<li>チェーンは生成後不変。中身が入れ替わって列に合致しなくなったとき動くのは<strong>メンバーの側</strong>:
+<code>move_to_slot</code> が代表スロットの出入りを検知して
+<code>OnRepresentationChanged</code> を呼び、所属スタックの
+<code>Restack</code>（抜いて入れ直し）で「同種は1スタックにまとまる」不変条件を回復する。親方向への伝播は
+<code>represented_by</code> のネスト分だけで有界。</li>
+<li>「同種のみが積み重なる」は <code>ObjectStack.TryInsert</code>
+自身が保証し、呼び出し側の事前確認に 依存しない。</li>
+<li>セルの位置を型（<code>ObjectDef</code>）で引くことはしない:
+代表チェーンが絡むと同じ外側の型でも複数
+スタックが並びうるため、位置は常に具体的な <code>ObjectStack</code>
+で特定する（<code>Slot.IndexOfStack</code>）。</li>
+</ul>
+<h2 id="スタック内の並び順stack_order">6.
+スタック内の並び順（stack_order）</h2>
+<p>型ごとの表示専用の並び順（<code>Domain.Defs.StackOrderDef</code>、7.6節）。指定プロパティの値で、新規
+メンバーの<strong>挿入位置を決めるだけ</strong>で、挿入後の値の変化に追従した再ソートは行わない
+（<code>accumulate</code>
+は同種で同じ速度で変化するため、挿入時点の相対順序が保たれる前提）。
+同値は既存メンバーの後ろ（挿入順維持）。<code>ascending</code>
+は「値が大きいほどリストの後ろ = 手前」で、
+残量・鮮度のような「少ないほど手前に出したい」値は
+<code>ascending: false</code> にする。</p>
+<h2 id="未決事項今後の検討課題">7. 未決事項・今後の検討課題</h2>
+<ul>
+<li><code>set</code> など accumulate
+以外の値の変化で「同種は同じ速度で変化する」前提が崩れた場合も再ソート
+しない、という割り切りのままでよいか</li>
+<li><code>Restack</code>
+で入れ直されたスタックは元のセル位置を保たない（最初の空きセル/末尾へ入る）。
+中身の入れ替わった容器の表示位置を保持する必要があるか</li>
+<li>手動並び替え（<code>fixed_positions</code>）と
+<code>stack_order</code> の関係（並び替え対象はスタック単位であり
+スタック内はstack_order順のまま、が現状の挙動）</li>
+</ul>
+</article>
+</body>
+</html>

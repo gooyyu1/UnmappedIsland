@@ -568,7 +568,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ShowMenuMode",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ShowMenuMode.yml\" sourcestartlinenumber=\"1\">showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 4節）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ShowMenuMode.yml\" sourcestartlinenumber=\"1\">showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 7節）。</p>\n"
     },
     {
       "type": "ManagedReference",

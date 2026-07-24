@@ -111,10 +111,16 @@ YAML）の<strong>文法そのもの</strong>を体系的にまとめた、唯�
 <ul>
 <li><a href="./RecipeSystem.html"><code>RecipeSystem.md</code></a> —
 アイテムの製作</li>
+<li><a href="./SlotSystem.html"><code>SlotSystem.md</code></a> —
+スロットの実行時実装（固定位置・受け入れ判定・スタック）</li>
 <li><a href="./ContainerSystem.html"><code>ContainerSystem.md</code></a> —
 コンテナの容量・重さ</li>
+<li><a
+href="./LiquidContainerSystem.html"><code>LiquidContainerSystem.md</code></a>
+— 液体容器（量・飲用・注ぎ移し・蒸発）</li>
 <li><a href="./ActionSystem.html"><code>ActionSystem.md</code></a> —
-カード間相互作用（<code>actions</code>/<code>combinations</code>）の使い分け方針</li>
+アクション実行の設計（<code>actions</code>/<code>combinations</code>
+の実行時の仕組み）</li>
 <li><a href="./ClimateSystem.html"><code>ClimateSystem.md</code></a> —
 季節・天候</li>
 <li><a
@@ -1314,7 +1320,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb37-1"><a href=
 <span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">self</span><span class="kw">,</span><span class="at"> dragged</span><span class="kw">]</span></span>
 <span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> spear</span><span class="kw">}</span></span></code></pre></div>
 <p><code>combinations</code>
-の使い分け方針（メニュー型との比較、キーの衝突の扱いなど）は
+の実行時の設計（マッチングの解決、キーの衝突の扱いなど）は
 <code>ActionSystem.md</code> を参照してください。</p>
 <h2 id="recipesレシピ">13. recipes（レシピ）</h2>
 <p>レシピは、成果物の <code>object_defs</code>
