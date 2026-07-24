@@ -12,7 +12,7 @@ using IOPath = System.IO.Path;
 namespace UnmappedIsland.Diagnostics
 {
     /// <summary>
-    /// 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの持続時間・
+    /// 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
     /// 連続未降雨/降雨時間の統計（平均/最小/最大/標準偏差）を計測し、`Documents/Diagnostics/ClimateSystemStats.md`
     /// へ書き出す。診断用レポートのテストは`Tests/Diagnostics/`に、生成されるレポート本体は
     /// `Documents/Diagnostics/`に集約する（設計ドキュメントの各領域フォルダとは別枠。README参照）。
@@ -74,15 +74,17 @@ namespace UnmappedIsland.Diagnostics
         private int sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId, scorchingId;
         private int seasonId, weatherId, temperatureId;
         private int[] seasonKinds;
+        private int[] weatherKinds;
 
         // 季節ごとの持続日数
         private readonly Dictionary<int, Stat> seasonDuration = new Dictionary<int, Stat>();
         // 気温: 季節ごと(全体) / 季節+序盤中盤終盤ごと
         private readonly Dictionary<int, Stat> temperatureOverall = new Dictionary<int, Stat>();
         private readonly Dictionary<(int season, int third), Stat> temperatureThird = new Dictionary<(int, int), Stat>();
-        // 天気ごとの持続時間: (天気, 季節)ごと(全体) / (天気, 季節, 序盤中盤終盤)ごと
-        private readonly Dictionary<(int weather, int season), Stat> weatherDurationOverall = new Dictionary<(int, int), Stat>();
-        private readonly Dictionary<(int weather, int season, int third), Stat> weatherDurationThird = new Dictionary<(int, int, int), Stat>();
+        // 天気ごとの発生時間（その期間の間にその天気であった合計時間。標本単位は季節インスタンス/その3等分区間で、
+        // 一度も発生しなかった期間は0時間の標本として計上する）: (天気, 季節)ごと / (天気, 季節, 序盤中盤終盤)ごと
+        private readonly Dictionary<(int weather, int season), Stat> weatherTimeOverall = new Dictionary<(int, int), Stat>();
+        private readonly Dictionary<(int weather, int season, int third), Stat> weatherTimeThird = new Dictionary<(int, int, int), Stat>();
         // 連続降雨/連続未降雨時間: 季節ごと(全体) / 季節+序盤中盤終盤ごと
         private readonly Dictionary<int, Stat> rainStreak = new Dictionary<int, Stat>();
         private readonly Dictionary<(int season, int third), Stat> rainStreakThird = new Dictionary<(int, int), Stat>();
@@ -111,6 +113,7 @@ namespace UnmappedIsland.Diagnostics
             weatherId = codex.PropertyNames.GetId("weather");
             temperatureId = codex.PropertyNames.GetId("ambient_temperature");
             seasonKinds = new[] { calmId, wetId, dryId };
+            weatherKinds = new[] { scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId };
 
             foreach (int s in seasonKinds)
             {
@@ -124,11 +127,11 @@ namespace UnmappedIsland.Diagnostics
                     rainStreakThird[(s, third)] = new Stat();
                     nonRainStreakThird[(s, third)] = new Stat();
                 }
-                foreach (int w in new[] { scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId })
+                foreach (int w in weatherKinds)
                 {
-                    weatherDurationOverall[(w, s)] = new Stat();
+                    weatherTimeOverall[(w, s)] = new Stat();
                     for (int third = 0; third < 3; third++)
-                        weatherDurationThird[(w, s, third)] = new Stat();
+                        weatherTimeThird[(w, s, third)] = new Stat();
                 }
             }
 
@@ -194,25 +197,32 @@ namespace UnmappedIsland.Diagnostics
                 temperatureThird[(seasonSymbolId, third)].Add(temps[i]);
             }
 
-            // 天気ごとの持続時間（同じ天気値が連続する区間の長さ。時間単位=tick*0.25h）
-            int runStart = 0;
-            for (int i = 1; i <= len; i++)
+            // 天気ごとの発生時間: この季節インスタンス（と、その3等分区間）の間に各天気であった合計時間。
+            // 「その天気になった1回ごとの連続時間」ではない点に注意（そちらの考え方は連続降雨/未降雨時間だけが使う）。
+            // 一度も発生しなかった天気も0時間の標本として必ず計上するため、nは全天気で共通
+            // （=季節インスタンス数/区間数）になる。
+            var occupiedTicks = new Dictionary<int, int>();
+            var occupiedTicksByThird = new Dictionary<(int, int), int>();
+            foreach (int w in weatherKinds)
             {
-                if (i < len && weathers[i] == weathers[runStart]) continue;
-                int runLen = i - runStart;
-                int third = Math.Min(2, runStart * 3 / len);
-                int w = weathers[runStart];
-                double hours = runLen * 0.25;
-                if (weatherDurationOverall.TryGetValue((w, seasonSymbolId), out Stat st))
-                {
-                    st.Add(hours);
-                    weatherDurationThird[(w, seasonSymbolId, third)].Add(hours);
-                }
-                runStart = i;
+                occupiedTicks[w] = 0;
+                for (int third = 0; third < 3; third++) occupiedTicksByThird[(w, third)] = 0;
+            }
+            for (int i = 0; i < len; i++)
+            {
+                int third = Math.Min(2, i * 3 / len);
+                occupiedTicks[weathers[i]]++;
+                occupiedTicksByThird[(weathers[i], third)]++;
+            }
+            foreach (int w in weatherKinds)
+            {
+                weatherTimeOverall[(w, seasonSymbolId)].Add(occupiedTicks[w] * 0.25);
+                for (int third = 0; third < 3; third++)
+                    weatherTimeThird[(w, seasonSymbolId, third)].Add(occupiedTicksByThird[(w, third)] * 0.25);
             }
 
             // 連続降雨/連続未降雨の時間（日単位）
-            runStart = 0;
+            int runStart = 0;
             for (int i = 1; i <= len; i++)
             {
                 if (i < len && IsRain(weathers[i]) == IsRain(weathers[runStart])) continue;
@@ -257,8 +267,12 @@ namespace UnmappedIsland.Diagnostics
             sb.AppendLine("  （そのため気温には日照による日内変動も反映されている）。");
             sb.AppendLine("- 各シードの最初のセグメント（開始点が不明瞭）と末尾の未完了セグメントは統計から除外。");
             sb.AppendLine("- 「序盤/中盤/終盤」は、各季節インスタンス（毎回の実際の持続日数）を3等分した区間。");
-            sb.AppendLine("  天気の持続時間・連続降雨/未降雨時間は、区間の**開始tick**が属する序盤/中盤/終盤に割り当てる");
-            sb.AppendLine("  （季節の境界をまたぐ区間は境界で打ち切り、両側で計上しない）。");
+            sb.AppendLine("- 天気ごとの発生時間は「その期間の間にその天気であった合計時間」。標本単位は季節インスタンス");
+            sb.AppendLine("  （序盤/中盤/終盤はその3等分区間）で、一度も発生しなかった期間は**0時間の標本として計上**する。");
+            sb.AppendLine("  そのためnは全天気で共通（=完了した季節インスタンス数）になる。");
+            sb.AppendLine("- 連続降雨/未降雨時間は「同じ状態が連続した1回ごとの長さ」を標本とする（発生時間とは考え方が異なる）。");
+            sb.AppendLine("  連続区間は、その**開始tick**が属する序盤/中盤/終盤に割り当てる（季節の境界をまたぐ区間は");
+            sb.AppendLine("  境界で打ち切り、両側で計上しない）。");
             sb.AppendLine("- 標準偏差は標本標準偏差（n-1）。");
             sb.AppendLine();
 
@@ -271,7 +285,7 @@ namespace UnmappedIsland.Diagnostics
                 sb.AppendLine($"- **{SeasonName(s)}**: {seasonDuration[s].Format("日")}");
             sb.AppendLine();
 
-            var weatherOrder = new[] { scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId };
+            var weatherOrder = weatherKinds;
 
             foreach (int s in seasonKinds)
             {
@@ -286,15 +300,15 @@ namespace UnmappedIsland.Diagnostics
                 sb.AppendLine($"- 終盤: {temperatureThird[(s, 2)].Format("")}");
                 sb.AppendLine();
 
-                sb.AppendLine("### 天気ごとの持続時間（時間）");
+                sb.AppendLine("### 天気ごとの発生時間（時間/期間）");
                 sb.AppendLine();
                 foreach (int w in weatherOrder)
                 {
                     sb.AppendLine($"**{WeatherName(w)}**");
-                    sb.AppendLine($"- 全体: {weatherDurationOverall[(w, s)].Format("h")}");
-                    sb.AppendLine($"- 序盤: {weatherDurationThird[(w, s, 0)].Format("h")}");
-                    sb.AppendLine($"- 中盤: {weatherDurationThird[(w, s, 1)].Format("h")}");
-                    sb.AppendLine($"- 終盤: {weatherDurationThird[(w, s, 2)].Format("h")}");
+                    sb.AppendLine($"- 全体: {weatherTimeOverall[(w, s)].Format("h")}");
+                    sb.AppendLine($"- 序盤: {weatherTimeThird[(w, s, 0)].Format("h")}");
+                    sb.AppendLine($"- 中盤: {weatherTimeThird[(w, s, 1)].Format("h")}");
+                    sb.AppendLine($"- 終盤: {weatherTimeThird[(w, s, 2)].Format("h")}");
                     sb.AppendLine();
                 }
 
