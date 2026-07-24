@@ -304,7 +304,10 @@ namespace UnmappedIsland.Diagnostics
                 sb.AppendLine();
                 foreach (int w in weatherOrder)
                 {
-                    sb.AppendLine($"**{WeatherName(w)}**");
+                    // 見出しとリストの間に空行を挟まないとPandoc等のMarkdown変換で箇条書きとして
+                    // 解釈されないため、天気名は太字の段落ではなく見出しにする
+                    sb.AppendLine($"#### {WeatherName(w)}");
+                    sb.AppendLine();
                     sb.AppendLine($"- 全体: {weatherTimeOverall[(w, s)].Format("h")}");
                     sb.AppendLine($"- 序盤: {weatherTimeThird[(w, s, 0)].Format("h")}");
                     sb.AppendLine($"- 中盤: {weatherTimeThird[(w, s, 1)].Format("h")}");
