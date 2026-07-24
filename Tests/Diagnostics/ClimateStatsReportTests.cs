@@ -72,7 +72,7 @@ namespace UnmappedIsland.Diagnostics
         private WorldCodex codex;
         private int calmId, wetId, dryId;
         private int sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId, scorchingId;
-        private int seasonId, weatherId, temperatureId;
+        private int seasonId, weatherId, temperatureId, moistureId;
         private int[] seasonKinds;
         private int[] weatherKinds;
 
@@ -90,6 +90,11 @@ namespace UnmappedIsland.Diagnostics
         private readonly Dictionary<(int season, int third), Stat> rainStreakThird = new Dictionary<(int, int), Stat>();
         private readonly Dictionary<int, Stat> nonRainStreak = new Dictionary<int, Stat>();
         private readonly Dictionary<(int season, int third), Stat> nonRainStreakThird = new Dictionary<(int, int), Stat>();
+        // 試験条件（core.yamlの値そのものだが、手打ちの転記で乖離しないよう実測して求める）:
+        // 季節ごとの大気水分量レート（非雨天tickでの1tickあたりの変化量）と、雨系天気ごとの自己減算量
+        // （その天気のtickでの正味変化量から、その季節のレート分を差し引いたもの）。
+        private readonly Dictionary<int, Stat> seasonMoistureRate = new Dictionary<int, Stat>();
+        private readonly Dictionary<(int weather, int season), Stat> rainWeatherNetMoistureDelta = new Dictionary<(int, int), Stat>();
 
         private bool IsRain(int w) => w == lightRainId || w == heavyRainId || w == stormId;
 
@@ -112,6 +117,7 @@ namespace UnmappedIsland.Diagnostics
             seasonId = codex.PropertyNames.GetId("season");
             weatherId = codex.PropertyNames.GetId("weather");
             temperatureId = codex.PropertyNames.GetId("ambient_temperature");
+            moistureId = codex.PropertyNames.GetId("atmospheric_moisture");
             seasonKinds = new[] { calmId, wetId, dryId };
             weatherKinds = new[] { scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId };
 
@@ -121,6 +127,7 @@ namespace UnmappedIsland.Diagnostics
                 temperatureOverall[s] = new Stat();
                 rainStreak[s] = new Stat();
                 nonRainStreak[s] = new Stat();
+                seasonMoistureRate[s] = new Stat();
                 for (int third = 0; third < 3; third++)
                 {
                     temperatureThird[(s, third)] = new Stat();
@@ -134,6 +141,9 @@ namespace UnmappedIsland.Diagnostics
                         weatherTimeThird[(w, s, third)] = new Stat();
                 }
             }
+            foreach (int w in new[] { lightRainId, heavyRainId, stormId })
+                foreach (int s in seasonKinds)
+                    rainWeatherNetMoistureDelta[(w, s)] = new Stat();
 
             ObjectDef worldDef = codex.Objects.Get(codex.ObjectNames.GetId("world"));
             int totalTicks = SimDays * 96;
@@ -148,12 +158,14 @@ namespace UnmappedIsland.Diagnostics
                 int segSeason = worldInstance.GetNumber(seasonId);
                 var segTemps = new List<double>();
                 var segWeathers = new List<int>();
+                var segMoistures = new List<int>();
 
                 void FlushSegment(bool isFirst)
                 {
-                    if (!isFirst) ProcessCompletedSegment(segSeason, segTemps, segWeathers);
+                    if (!isFirst) ProcessCompletedSegment(segSeason, segTemps, segWeathers, segMoistures);
                     segTemps.Clear();
                     segWeathers.Clear();
+                    segMoistures.Clear();
                 }
 
                 bool isFirstSegment = true;
@@ -171,6 +183,7 @@ namespace UnmappedIsland.Diagnostics
 
                     segTemps.Add(worldInstance.GetEffectiveValue(temperatureId));
                     segWeathers.Add(worldInstance.GetNumber(weatherId));
+                    segMoistures.Add(worldInstance.GetNumber(moistureId));
                 }
                 // 末尾の未完了セグメントは破棄（FlushSegmentを呼ばない）
             }
@@ -183,7 +196,7 @@ namespace UnmappedIsland.Diagnostics
             Assert.Pass($"統計レポートを {outPath} に書き出しました。");
         }
 
-        private void ProcessCompletedSegment(int seasonSymbolId, List<double> temps, List<int> weathers)
+        private void ProcessCompletedSegment(int seasonSymbolId, List<double> temps, List<int> weathers, List<int> moistures)
         {
             int len = temps.Count;
             if (len == 0) return;
@@ -241,6 +254,41 @@ namespace UnmappedIsland.Diagnostics
                 }
                 runStart = i;
             }
+
+            // 大気水分量レート・自己減算の実測: tickごとの変化量を、直前tickの天気（そのtickの間
+            // ずっと効いていた天気）で仕分ける。境界でのクランプ（0/10000への張り付き）は変化量を
+            // 真の値より小さく見せてしまうため、前後どちらかがクランプ値に達しているtickは除外する。
+            for (int i = 1; i < len; i++)
+            {
+                int prev = moistures[i - 1];
+                int curr = moistures[i];
+                if (prev <= 0 || prev >= 10000 || curr <= 0 || curr >= 10000) continue;
+
+                int delta = curr - prev;
+                int governingWeather = weathers[i - 1];
+                if (IsRain(governingWeather))
+                    rainWeatherNetMoistureDelta[(governingWeather, seasonSymbolId)].Add(delta);
+                else
+                    seasonMoistureRate[seasonSymbolId].Add(delta);
+            }
+        }
+
+        /// <summary>天気wの自己減算を、複数季節での(正味変化量-季節レート)をその季節での標本数で重み付け
+        /// 平均して推定する。天気自身の自己減算は季節に依らない単一の値のはずなので、どの季節から
+        /// 推定しても本来は同じ値になる。</summary>
+        private double DeriveWeatherMoistureDecrement(int weather)
+        {
+            double weightedSum = 0;
+            long totalCount = 0;
+            foreach (int s in seasonKinds)
+            {
+                var net = rainWeatherNetMoistureDelta[(weather, s)];
+                var rate = seasonMoistureRate[s];
+                if (net.Count == 0 || rate.Count == 0) continue;
+                weightedSum += (net.Mean - rate.Mean) * net.Count;
+                totalCount += net.Count;
+            }
+            return totalCount > 0 ? weightedSum / totalCount : double.NaN;
         }
 
         private string BuildReport()
@@ -278,6 +326,44 @@ namespace UnmappedIsland.Diagnostics
 
             string SeasonName(int id) => codex.SymbolNames.GetName(id);
             string WeatherName(int id) => codex.SymbolNames.GetName(id);
+
+            sb.AppendLine("## 試験条件: 大気水分量のレート・自己減算");
+            sb.AppendLine();
+            sb.AppendLine("以下の統計を解釈する際の前提条件。`core.yaml`の値を手で転記するのではなく、本レポートと");
+            sb.AppendLine("同じシミュレーションのtickごとの変化量から実測して求めている（バランス調整のたびに");
+            sb.AppendLine("転記し直す手間と、転記漏れによる`core.yaml`との乖離を避けるため）。前後どちらかのtickで");
+            sb.AppendLine("大気水分量が範囲端（0/10,000）に達しているサンプルはクランプにより真の値より小さく");
+            sb.AppendLine("見えるため除外している。");
+            sb.AppendLine();
+            sb.AppendLine("### 季節ごとの大気水分量レート（1tickあたり、非雨天時）");
+            sb.AppendLine();
+            foreach (int s in seasonKinds)
+                sb.AppendLine($"- **{SeasonName(s)}**: {seasonMoistureRate[s].Format("")}");
+            sb.AppendLine();
+            sb.AppendLine("`dry`だけ標準偏差が0にならないのは測定の誤りではなく、最初の`dry`季節の10日目前後に");
+            sb.AppendLine("難易度の初期補正（`ClimateSystem.md` 5.2節、+200/tickを1日間上乗せ）が重なるため");
+            sb.AppendLine("（最初の`calm`季節にも同種の補正=5.1節があるが、そちらは各シードの最初のセグメントとして");
+            sb.AppendLine("統計から除外されるサンプルに含まれるため表に出ない）。");
+            sb.AppendLine();
+            sb.AppendLine("### 天気ごとの自己減算（1tickあたり、降雨中のみ）");
+            sb.AppendLine();
+            sb.AppendLine("推定自己減算は、その天気の間の正味変化量（季節レート＋自己減算）から、その季節のレートを");
+            sb.AppendLine("差し引いた値。天気ごとの自己減算はどの季節でも同じ値のはずなので、複数季節で推定できる");
+            sb.AppendLine("場合は季節をまたいで一致することも確認できる。");
+            sb.AppendLine();
+            foreach (int w in new[] { lightRainId, heavyRainId, stormId })
+            {
+                sb.AppendLine($"#### {WeatherName(w)}");
+                sb.AppendLine();
+                sb.AppendLine($"- 推定自己減算: {DeriveWeatherMoistureDecrement(w):F1}");
+                foreach (int s in seasonKinds)
+                {
+                    var net = rainWeatherNetMoistureDelta[(w, s)];
+                    if (net.Count > 0)
+                        sb.AppendLine($"  - {SeasonName(s)}中の正味変化量: {net.Format("")}");
+                }
+                sb.AppendLine();
+            }
 
             sb.AppendLine("## 季節の持続日数");
             sb.AppendLine();
