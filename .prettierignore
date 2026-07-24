@@ -1,0 +1,9 @@
+dist/
+node_modules/
+docs/
+Assets/
+Tests/
+Library/
+Documents/
+*.md
+package-lock.json

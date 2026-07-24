@@ -114,3 +114,7 @@ Tests/**/obj/
 # DocFX の中間生成ファイル（docfx.json の metadata.dest が生成するYAMLスタブ）。
 # ワークフロー実行中にのみ存在する一時ディレクトリ。
 /api/
+
+# Node
+node_modules/
+dist/
