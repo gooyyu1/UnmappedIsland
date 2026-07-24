@@ -1,6 +1,7 @@
 import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
 import { IslandEdge } from './IslandMap';
 import type { Site } from './IslandMap';
+import { roundHalfToEven } from '../../util/math';
 
 type WeightedEdge = { readonly a: number; readonly b: number; readonly distance: number };
 
@@ -114,13 +115,4 @@ function shortestPathDistance(
   }
 
   return best[to];
-}
-
-/** C#のMath.Round(double)（既定: 偶数への丸め）と結果を一致させるための丸め。 */
-function roundHalfToEven(value: number): number {
-  const floor = Math.floor(value);
-  const diff = value - floor;
-  if (diff < 0.5) return floor;
-  if (diff > 0.5) return floor + 1;
-  return floor % 2 === 0 ? floor : floor + 1;
 }

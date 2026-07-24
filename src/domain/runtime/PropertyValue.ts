@@ -124,7 +124,7 @@ export class PropertyValue {
   }
 
   /**
-   * accumulate（Kind.Accumulate）を実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節・6.5節・6.6節）を
+   * accumulateを実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節・6.5節・6.6節）を
    * 判定する。1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
    */
   tick(session: WorldSession): void {

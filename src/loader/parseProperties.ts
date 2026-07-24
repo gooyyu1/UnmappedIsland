@@ -1,0 +1,208 @@
+import type { YAMLMap } from 'yaml';
+import { isMap } from 'yaml';
+import {
+  asMap,
+  asScalarText,
+  entriesInOrder,
+  requireInt,
+  requireScalar,
+  tryGetBool,
+  tryGetInt,
+  tryGetMap,
+  tryGetSeq,
+} from './yamlMapping';
+import type { YamlNode } from './yamlMapping';
+import { YamlLoadError } from './YamlLoadError';
+import { hasActiveContent, parseScalarNumber, tryGetNode } from './parseCommon';
+import { parseActiveEffectBody } from './parseActiveEffects';
+import { parsePickList } from './parseActionsAndCombinations';
+import { parsePassive } from './parsePassives';
+import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
+import { ActiveEffects, SetEffect } from '../domain/defs/ActiveEffect';
+import type { ActiveEffect } from '../domain/defs/ActiveEffect';
+import { PickEffect } from '../domain/defs/PickEffect';
+import { PropertyDef, PropertyRange, PropertyStage } from '../domain/defs/PropertyDef';
+import type { PassiveEffect } from '../domain/defs/PassiveEffect';
+
+/** props.'propName'エントリを1つ読む（GameElementDefinition.md 6節）。
+ * trait合成済みのノードを渡すこと。 */
+export function parseProp(
+  loader: WorldCodexYamlLoader,
+  objectDefName: string,
+  propName: string,
+  node: YAMLMap,
+  passives: PassiveEffect[],
+): PropertyDef {
+  const context = `'${objectDefName}'.props.'${propName}'`;
+  const propertyGlobalId = loader.propertyNames.intern(propName);
+
+  const valueNode = tryGetNode(node, 'value');
+  if (valueNode === undefined)
+    throw new YamlLoadError(
+      `${context}: 必須フィールド 'value' がありません（traitの継承先で指定してください）。`,
+    );
+
+  let initialValueRange: PropertyRange | undefined;
+  let initialValue: number;
+  let isSymbolProperty: boolean;
+  if (isMap(valueNode)) {
+    const initRange = new PropertyRange(
+      requireInt(valueNode, 'min', context),
+      requireInt(valueNode, 'max', context),
+    );
+    initialValueRange = initRange;
+    // 初期値はspawn時に[min,max]の一様乱数で決まる（PropertyDef.createValue）。
+    // sessionを渡さない直接生成では決定的にminを使う。
+    initialValue = initRange.min;
+    isSymbolProperty = false;
+  } else {
+    [initialValue, isSymbolProperty] = parseScalarNumber(loader, context, asScalarText(valueNode, context));
+  }
+
+  let range: PropertyRange | undefined;
+  const rangeSpec = tryGetMap(node, 'range', context);
+  if (rangeSpec !== undefined)
+    range = new PropertyRange(requireInt(rangeSpec, 'min', context), requireInt(rangeSpec, 'max', context));
+
+  let onOverflow: ActiveEffect | undefined;
+  const onOverflowNode = tryGetMap(node, 'on_overflow', context);
+  if (onOverflowNode !== undefined) {
+    if (range === undefined) throw new YamlLoadError(`${context}: on_overflowを使うには'range'が必須です。`);
+    onOverflow = parseRangeEventEffect(loader, `${context}.on_overflow`, onOverflowNode);
+  } else {
+    onOverflow = range !== undefined ? buildDefaultOverflowEffect(range, propertyGlobalId, true) : undefined;
+  }
+
+  let onShortfall: ActiveEffect | undefined;
+  const onShortfallNode = tryGetMap(node, 'on_shortfall', context);
+  if (onShortfallNode !== undefined) {
+    if (range === undefined) throw new YamlLoadError(`${context}: on_shortfallを使うには'range'が必須です。`);
+    onShortfall = parseRangeEventEffect(loader, `${context}.on_shortfall`, onShortfallNode);
+  } else {
+    onShortfall =
+      range !== undefined ? buildDefaultOverflowEffect(range, propertyGlobalId, false) : undefined;
+  }
+
+  const stages: PropertyStage[] = [];
+  const stagesNode = tryGetSeq(node, 'stages', context);
+  if (stagesNode !== undefined)
+    for (const stageNode of stagesNode.items as YamlNode[])
+      stages.push(
+        parseStage(
+          loader,
+          objectDefName,
+          propName,
+          context,
+          isSymbolProperty,
+          passives,
+          asMap(stageNode, context),
+        ),
+      );
+
+  const propPassives = tryGetSeq(node, 'passives', context);
+  if (propPassives !== undefined)
+    for (const passiveNode of propPassives.items as YamlNode[])
+      parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), undefined, undefined);
+
+  let onMin: ActiveEffect | undefined;
+  const onMinNode = tryGetMap(node, 'on_min', context);
+  if (onMinNode !== undefined) {
+    if (range === undefined) throw new YamlLoadError(`${context}: on_minを使うには'range'が必須です。`);
+    onMin = parseRangeEventEffect(loader, `${context}.on_min`, onMinNode);
+  }
+
+  let onMax: ActiveEffect | undefined;
+  const onMaxNode = tryGetMap(node, 'on_max', context);
+  if (onMaxNode !== undefined) {
+    if (range === undefined) throw new YamlLoadError(`${context}: on_maxを使うには'range'が必須です。`);
+    onMax = parseRangeEventEffect(loader, `${context}.on_max`, onMaxNode);
+  }
+
+  const inherit = tryGetBool(node, 'inherit', context, false);
+
+  return new PropertyDef(
+    propertyGlobalId,
+    propName,
+    initialValue,
+    initialValueRange,
+    range,
+    onOverflow,
+    stages,
+    onMin,
+    onShortfall,
+    onMax,
+    inherit,
+  );
+}
+
+/**
+ * rangeイベント（on_min・on_max・on_overflow・on_shortfall、6節）の中身を読む。activeとpickは
+ * 排他（9.7節・10節）。対象はselfのみ（6.5節）で、pick候補の中の効果にも引き継ぐ。
+ * 空のmapping（`on_shortfall: {}`）は「宣言だけして何もしない」（既定のクランプを打ち消す）を
+ * 意味し、空のActiveEffectsになる。
+ */
+function parseRangeEventEffect(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): ActiveEffect {
+  const hasActive = hasActiveContent(node);
+  const pickList = tryGetSeq(node, 'pick', context);
+  if (hasActive && pickList !== undefined)
+    throw new YamlLoadError(`${context}: set/add/destroy/spawnとpickは同時に指定できません。`);
+
+  if (pickList !== undefined) {
+    const unknownKeys = entriesInOrder(node)
+      .map(([key]) => key)
+      .filter((key) => key !== 'pick');
+    if (unknownKeys.length > 0)
+      throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+    return new PickEffect(parsePickList(loader, context, pickList, false, true));
+  }
+
+  return parseActiveEffectBody(loader, context, node, false, true, ['pick']);
+}
+
+/** 1つのstagesエントリを解釈する（6.4節）。数値型はmin（半開区間）、シンボル型はeq
+ * （nameが比較対象そのもの）を使う。stage内のpassivesも併せて解釈しpassivesへ追記する。 */
+function parseStage(
+  loader: WorldCodexYamlLoader,
+  objectDefName: string,
+  propName: string,
+  context: string,
+  isSymbolProperty: boolean,
+  passives: PassiveEffect[],
+  stageMap: YAMLMap,
+): PropertyStage {
+  const stageName = requireScalar(stageMap, 'name', context);
+  let stage: PropertyStage;
+
+  if (isSymbolProperty) {
+    if (tryGetNode(stageMap, 'min') !== undefined)
+      throw new YamlLoadError(
+        `${context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。`,
+      );
+    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName));
+  } else {
+    const min = tryGetInt(stageMap, 'min', context);
+    stage = new PropertyStage(stageName, min);
+  }
+
+  // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。
+  const stagePassives = tryGetSeq(stageMap, 'passives', context);
+  if (stagePassives !== undefined)
+    for (const passiveNode of stagePassives.items as YamlNode[])
+      parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), propName, stageName);
+
+  return stage;
+}
+
+/**
+ * on_overflow/on_shortfall未指定時の既定動作として、「自分自身をrangeの境界（isMax指定側）へ
+ * setする」ActiveEffectを合成する。著者は`range`を書くだけでクランプが得られ、特別な挙動が
+ * 要る場合だけon_overflow/on_shortfallを明示すればよい。
+ */
+function buildDefaultOverflowEffect(
+  range: PropertyRange,
+  propertyGlobalId: number,
+  isMax: boolean,
+): ActiveEffects {
+  const operations: ActiveEffect[] = [new SetEffect('self', propertyGlobalId, isMax ? range.max : range.min)];
+  return new ActiveEffects(operations);
+}

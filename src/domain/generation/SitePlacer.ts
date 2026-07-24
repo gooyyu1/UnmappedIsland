@@ -1,6 +1,7 @@
 import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
 import type { Pcg32 } from './Pcg32';
 import { Site } from './IslandMap';
+import { roundHalfToEven } from '../../util/math';
 
 /**
  * サイト（Site）の座標配置。半径ISLAND_RADIUSの円盤を島とみなし、次の2段で配置する。
@@ -83,13 +84,4 @@ export function place(scope: GenerationScopeDef, rng: Pcg32): Site[] {
   }
 
   return sites;
-}
-
-/** C#のMath.Round(double)（既定: 偶数への丸め）と結果を一致させるための丸め。 */
-function roundHalfToEven(value: number): number {
-  const floor = Math.floor(value);
-  const diff = value - floor;
-  if (diff < 0.5) return floor;
-  if (diff > 0.5) return floor + 1;
-  return floor % 2 === 0 ? floor : floor + 1;
 }

@@ -3,6 +3,7 @@ import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
 import type { Site } from './IslandMap';
 import { sample as sampleNoise } from './ValueNoise';
 import { ISLAND_RADIUS } from './SitePlacer';
+import { roundHalfToEven } from '../../util/math';
 
 /**
  * 各サイトの軸値のサンプリング（TerrainGeneration.md 3.1節）。AxisDefのジェネレータ層
@@ -59,13 +60,4 @@ function sampleLayer(layer: GeneratorLayer, site: Site, seed: number): number {
     default:
       throw new Error(`未知のジェネレータ層: ${layer.type as string}`);
   }
-}
-
-/** C#のMath.Round(double)（既定: 偶数への丸め）と結果を一致させるための丸め。 */
-function roundHalfToEven(value: number): number {
-  const floor = Math.floor(value);
-  const diff = value - floor;
-  if (diff < 0.5) return floor;
-  if (diff > 0.5) return floor + 1;
-  return floor % 2 === 0 ? floor : floor + 1;
 }
