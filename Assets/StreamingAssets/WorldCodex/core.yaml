@@ -518,16 +518,21 @@ object_defs:
       # 蓄熱量（ClimateSystem.md 3節のもう一つの貯水池）。ambient_temperatureへ季節レートを直接加算すると
       # 整数レート最小の±1/tickでも1季節で±2880になってしまうため、atmospheric_moistureと同じ
       # 「スケールした貯水池のstagesが表向きの値をmodifyする」パターンで段階的な暑さ・涼しさに変換する。
-      # dryで+1/tick（30日で0→2880、乾季後半ほど暑い）、calm/wetで-1/tick（calmは乾季の暑さから
+      # dryで+1/tick（25日で0→上限2400、乾季後半ほど暑い）、calm/wetで-1/tick（calmは乾季の暑さから
       # じわじわ涼しくなる回復区間、wetは下限0=coolに張り付く）。初期値1000は「ゲーム開始時は補正なし
       # （mild帯）」のため。
       #
       # hot stageはscorching_weightも駆動する: 蓄熱量が溜まりきった乾季後半（と、その名残が抜けるまでの
       # calm序盤）だけ、炎天（scorching）が天気の抽選に加わる。atmospheric_moistureのsaturated帯が
       # stormを駆動する（雨季後半＋名残の乾季序盤に嵐）のと対称の関係（ClimateSystem.md 4.3節）。
+      #
+      # 上限2400は残暑（calmへ持ち越される熱）の上限を絞るためのもの: 残暑日数 = (上限-1920)/96 = 最大5日で、
+      # 最短のcalm（24日）の序盤（3等分の最初の8日）に必ず収まる。乾季がどれだけ長引いても（蓄熱が上限で
+      # 切り捨てられるため）残暑が中盤へ食い込むことはない。乾季中の挙動（scorching開始=乾季20日目、
+      # 気温+8、重み50）はすべてhot閾値1920側で決まるため、この上限には依存しない。
       thermal_level:
         value: 1000
-        range: {min: 0, max: 2880}
+        range: {min: 0, max: 2400}
         stages:
           - name: cool
             passives:
