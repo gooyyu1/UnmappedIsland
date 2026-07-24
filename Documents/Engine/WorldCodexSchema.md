@@ -32,25 +32,9 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 
 ### 2.1 含めたもの
 
-- ルート構造（`object_defs`/`traits`。地形生成の3ルートキーは2.2節参照）
-- `object_defs`/`traits`（3〜5節。`tags`・`singleton`・`represented_by`・`stack_order` を含む）
-- `props`（固定値・シンボル値・生成時1回ロールの範囲値・`range`とoverflow/shortfall・`stages`・`on_min`・`on_max`、
-  6節。シンボル型プロパティの `stages` は `min` を持たず `name` 自体が比較対象になるため、`min` は任意項目）
-- rangeイベント（`on_min`/`on_max`/`on_overflow`/`on_shortfall`）の中身: active動詞、またはその代わりの `pick`
-  （9.7節・10節）、または空のmapping（`on_shortfall: {}` の「宣言だけして何もしない」、6.3節）
-- `passives`（`conditions`/`modify`/`accumulate`を上位、対象（`self`/`parent`/`child`/`ancestor`）を下位に持つ辞書の
-  配列、8節。常に配列で単一マッピングでの省略記法はなし。オブジェクトレベル・プロパティレベル・stage内の3箇所）
-- `conditions`（プロパティ比較 `{object, prop, op, value}`・スロット位置判定 `{object, in_slot}`・スロット中身判定
-  `{object, slot, tag}`・タグ判定 `{object, tag}` の4種の葉を持ち、`all`/`any`/`not`で入れ子にできる条件木、14節。
-  `value` はリテラル・`in`/`not_in` 用の配列・`{object, prop}` 参照の三択）
-- `active`（`set`/`add`/`destroy`/`spawn`/`transfer`/`move` を上位、対象を下位に持つ辞書、9節。`set` の値は
-  リテラル（整数・真偽値・シンボル名）か `{object, prop}` 参照）
-- `pick`（重み付き確率分岐、active動詞の代替キー、10節。`weight` はリテラルかプロパティ参照。候補のネスト可）
-- `actions`（`showMenu`・`conditions`・`duration`・active動詞・`pick`、11節）
-- `combinations`（`with`・`conditions`・active動詞・`pick`、12節。使い分け方針は`ActionSystem.md`）
-- `recipes`（`steps`/`requires`/`duration`、13節。内部設計は`RecipeSystem.md`）
-- `slots`（`accepts`（`tag` または `object`）・`capacity`・`weight_rate`・`stackable`・`unit_capacity`・
-  `fixed_positions`、7節）
+`GameElementDefinition.md` の3〜14節が定める文法全体（ルート構造・`object_defs`/`traits`・`props`・rangeイベント・
+`passives`・`conditions`・`active`・`pick`・`actions`・`combinations`・`recipes`・`slots`）。
+例外は2.2節を参照。
 
 ### 2.2 対象だが中身を検証しないもの・ローダー未実装のもの
 
@@ -66,13 +50,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 - **YAML定義のマージ・上書き規則（3.3節・5節）**: 本スキーマは単一ファイルの構造のみを検証します。trait合成・
   ファイル横断の整合性（参照先idの実在等）はロード時の検証に相当し、対象外です。
 
-## 3. スキーマ化にあたって見つけた既存ドキュメントとの矛盾・気づき（修正済み）
-
-スキーマ化・刷新の過程で見つかった文法リファレンスとの矛盾（`conditions` のタグ判定の葉 `{object, tag}` の
-記載漏れ、旧記法のまま残っていたサンプル、地形生成サンプルの「配列＋`id`フィールド」形式）は、いずれも
-ドキュメント側を修正して解消済みです。
-
-## 4. スキーマ化にあたって判断した細部（ドキュメント上は未確定・省略されていた点）
+## 3. スキーマ化にあたって判断した細部（ドキュメント上は未確定・省略されていた点）
 
 以下は、各ドキュメントの記述からは一意に決まらなかったものの、スキーマとして形にするために暫定的に判断した点です。
 実装時に見直してください。
@@ -88,7 +66,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   `min` を書いたらエラー」「数値型の `value` にシンボルは書けない」といったプロパティ単位の整合はスキーマでは
   検証できず、ロード時チェックに委ねています（2.2節の文脈依存制約と同じ扱い）。
 
-## 5. 使い方
+## 4. 使い方
 
 `WorldCodex.schema.json` は JSON Schema Draft 2020-12 準拠です。YAML ファイルをパースして得られるオブジェクトに対して、
 一般的な JSON Schema バリデータ（Python の `jsonschema`、Node.js の `ajv` 等）でそのまま検証できます。
@@ -103,7 +81,7 @@ for e in v.iter_errors(yaml.safe_load(open('Assets/StreamingAssets/WorldCodex/co
 "
 ```
 
-## 6. 未決事項・今後の検討課題
+## 5. 未決事項・今後の検討課題
 
 - 地形生成（`axes`/`location_types`/`generation_scopes`）の中身の詳細スキーマ化（2.2節。現在はキーの許容のみ）
 - スキーマ検証をCI（テストスイート）へ組み込み、ローダーとスキーマの乖離を自動検知するかどうか
