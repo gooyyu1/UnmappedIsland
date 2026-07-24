@@ -57,6 +57,9 @@
 連続区間は、その<strong>開始tick</strong>が属する序盤/中盤/終盤に割り当てる（季節の境界をまたぐ区間は
 境界で打ち切り、両側で計上しない）。</li>
 <li>標準偏差は標本標準偏差（n-1）。</li>
+<li>5%ile/95%ileは最近隣法（nearest-rank）:
+昇順に並べたときceil(0.05×n)/ceil(0.95×n)番目の標本値。
+最小/最大が数個の外れ値に引きずられる場合でも、分布の実質的な広がりをこの2値で読み取れる。</li>
 </ul>
 <h2 id="試験条件-大気水分量のレート自己減算">試験条件:
 大気水分量のレート・自己減算</h2>
@@ -67,14 +70,52 @@
 見えるため除外している。</p>
 <h3
 id="季節ごとの大気水分量レート1tickあたり非雨天時">季節ごとの大気水分量レート（1tickあたり、非雨天時）</h3>
-<ul>
-<li><strong>calm</strong>: 平均 10.00 / 最小 10.00 / 最大 10.00 /
-標準偏差 0.00 (n=2050873)</li>
-<li><strong>wet</strong>: 平均 250.00 / 最小 250.00 / 最大 250.00 /
-標準偏差 0.00 (n=179888)</li>
-<li><strong>dry</strong>: 平均 -85.07 / 最小 -100.00 / 最大 100.00 /
-標準偏差 52.57 (n=17307)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>季節</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>calm</td>
+<td>10.00</td>
+<td>10.00</td>
+<td>10.00</td>
+<td>10.00</td>
+<td>10.00</td>
+<td>0.00</td>
+<td>2050873</td>
+</tr>
+<tr class="even">
+<td>wet</td>
+<td>250.00</td>
+<td>250.00</td>
+<td>250.00</td>
+<td>250.00</td>
+<td>250.00</td>
+<td>0.00</td>
+<td>179888</td>
+</tr>
+<tr class="odd">
+<td>dry</td>
+<td>-85.07</td>
+<td>-100.00</td>
+<td>-100.00</td>
+<td>100.00</td>
+<td>100.00</td>
+<td>52.57</td>
+<td>17307</td>
+</tr>
+</tbody>
+</table>
 <p><code>dry</code>だけ標準偏差が0にならないのは測定の誤りではなく、最初の<code>dry</code>季節の10日目前後に
 難易度の初期補正（<code>ClimateSystem.md</code>
 5.2節、+200/tickを1日間上乗せ）が重なるため
@@ -86,386 +127,1914 @@ id="天気ごとの自己減算1tickあたり降雨中のみ">天気ごとの自
 差し引いた値。天気ごとの自己減算はどの季節でも同じ値のはずなので、複数季節で推定できる
 場合は季節をまたいで一致することも確認できる。</p>
 <h4 id="light_rain">light_rain</h4>
-<ul>
-<li>推定自己減算: -100.0
-<ul>
-<li>calm中の正味変化量: 平均 -90.00 / 最小 -90.00 / 最大 -90.00 /
-標準偏差 0.00 (n=207035)</li>
-<li>wet中の正味変化量: 平均 150.00 / 最小 150.00 / 最大 150.00 /
-標準偏差 0.00 (n=416398)</li>
-<li>dry中の正味変化量: 平均 -188.06 / 最小 -200.00 / 最大 0.00 /
-標準偏差 47.40 (n=8037)</li>
-</ul></li>
-</ul>
+<p>推定自己減算: <strong>-100.0</strong>。季節ごとの正味変化量:</p>
+<table>
+<thead>
+<tr class="header">
+<th>季節</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>calm</td>
+<td>-90.00</td>
+<td>-90.00</td>
+<td>-90.00</td>
+<td>-90.00</td>
+<td>-90.00</td>
+<td>0.00</td>
+<td>207035</td>
+</tr>
+<tr class="even">
+<td>wet</td>
+<td>150.00</td>
+<td>150.00</td>
+<td>150.00</td>
+<td>150.00</td>
+<td>150.00</td>
+<td>0.00</td>
+<td>416398</td>
+</tr>
+<tr class="odd">
+<td>dry</td>
+<td>-188.06</td>
+<td>-200.00</td>
+<td>-200.00</td>
+<td>0.00</td>
+<td>0.00</td>
+<td>47.40</td>
+<td>8037</td>
+</tr>
+</tbody>
+</table>
 <h4 id="heavy_rain">heavy_rain</h4>
-<ul>
-<li>推定自己減算: -280.1
-<ul>
-<li>calm中の正味変化量: 平均 -270.00 / 最小 -270.00 / 最大 -270.00 /
-標準偏差 0.00 (n=38)</li>
-<li>wet中の正味変化量: 平均 -30.00 / 最小 -30.00 / 最大 -30.00 /
-標準偏差 0.00 (n=729097)</li>
-<li>dry中の正味変化量: 平均 -376.53 / 最小 -380.00 / 最大 -180.00 /
-標準偏差 26.11 (n=4615)</li>
-</ul></li>
-</ul>
+<p>推定自己減算: <strong>-280.1</strong>。季節ごとの正味変化量:</p>
+<table>
+<thead>
+<tr class="header">
+<th>季節</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>calm</td>
+<td>-270.00</td>
+<td>-270.00</td>
+<td>-270.00</td>
+<td>-270.00</td>
+<td>-270.00</td>
+<td>0.00</td>
+<td>38</td>
+</tr>
+<tr class="even">
+<td>wet</td>
+<td>-30.00</td>
+<td>-30.00</td>
+<td>-30.00</td>
+<td>-30.00</td>
+<td>-30.00</td>
+<td>0.00</td>
+<td>729097</td>
+</tr>
+<tr class="odd">
+<td>dry</td>
+<td>-376.53</td>
+<td>-380.00</td>
+<td>-380.00</td>
+<td>-380.00</td>
+<td>-180.00</td>
+<td>26.11</td>
+<td>4615</td>
+</tr>
+</tbody>
+</table>
 <h4 id="storm">storm</h4>
-<ul>
-<li>推定自己減算: -395.1
-<ul>
-<li>wet中の正味変化量: 平均 -145.00 / 最小 -145.00 / 最大 -145.00 /
-標準偏差 0.00 (n=560483)</li>
-<li>dry中の正味変化量: 平均 -492.91 / 最小 -495.00 / 最大 -295.00 /
-標準偏差 20.33 (n=3066)</li>
-</ul></li>
-</ul>
+<p>推定自己減算: <strong>-395.1</strong>。季節ごとの正味変化量:</p>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>季節</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>wet</td>
+<td>-145.00</td>
+<td>-145.00</td>
+<td>-145.00</td>
+<td>-145.00</td>
+<td>-145.00</td>
+<td>0.00</td>
+<td>560483</td>
+</tr>
+<tr class="even">
+<td>dry</td>
+<td>-492.91</td>
+<td>-495.00</td>
+<td>-495.00</td>
+<td>-495.00</td>
+<td>-295.00</td>
+<td>20.33</td>
+<td>3066</td>
+</tr>
+</tbody>
+</table>
 <h2 id="季節の持続日数">季節の持続日数</h2>
-<ul>
-<li><strong>calm</strong>: 平均 30.30日 / 最小 24.00日 / 最大 36.00日 /
-標準偏差 4.83 (n=779)</li>
-<li><strong>wet</strong>: 平均 29.90日 / 最小 24.00日 / 最大 36.00日 /
-標準偏差 4.85 (n=794)</li>
-<li><strong>dry</strong>: 平均 30.27日 / 最小 24.00日 / 最大 36.00日 /
-標準偏差 4.80 (n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>季節</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>calm</td>
+<td>30.30日</td>
+<td>24.00日</td>
+<td>24.00日</td>
+<td>36.00日</td>
+<td>36.00日</td>
+<td>4.83</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>wet</td>
+<td>29.90日</td>
+<td>24.00日</td>
+<td>24.00日</td>
+<td>36.00日</td>
+<td>36.00日</td>
+<td>4.85</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>dry</td>
+<td>30.27日</td>
+<td>24.00日</td>
+<td>24.00日</td>
+<td>36.00日</td>
+<td>36.00日</td>
+<td>4.80</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h2 id="calm">calm</h2>
 <h3 id="気温内部値">気温（内部値）</h3>
-<ul>
-<li>全体: 平均 17.24 / 最小 12.00 / 最大 23.00 / 標準偏差 3.61
-(n=2265984)</li>
-<li>序盤: 平均 20.27 / 最小 12.00 / 最大 23.00 / 標準偏差 3.02
-(n=755328)</li>
-<li>中盤: 平均 15.88 / 最小 12.00 / 最大 23.00 / 標準偏差 2.97
-(n=755328)</li>
-<li>終盤: 平均 15.57 / 最小 12.00 / 最大 18.00 / 標準偏差 2.72
-(n=755328)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>17.24</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>23.00</td>
+<td>23.00</td>
+<td>3.61</td>
+<td>2265984</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>20.27</td>
+<td>12.00</td>
+<td>17.00</td>
+<td>23.00</td>
+<td>23.00</td>
+<td>3.02</td>
+<td>755328</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>15.88</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>18.00</td>
+<td>23.00</td>
+<td>2.97</td>
+<td>755328</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>15.57</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>18.00</td>
+<td>18.00</td>
+<td>2.72</td>
+<td>755328</td>
+</tr>
+</tbody>
+</table>
 <h3 id="天気ごとの発生時間時間期間">天気ごとの発生時間（時間/期間）</h3>
 <h4 id="scorching">scorching</h4>
-<ul>
-<li>全体: 平均 1.16h / 最小 0.00h / 最大 6.00h / 標準偏差 1.77
-(n=779)</li>
-<li>序盤: 平均 1.16h / 最小 0.00h / 最大 6.00h / 標準偏差 1.77
-(n=779)</li>
-<li>中盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=779)</li>
-<li>終盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=779)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>1.16h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>5.00h</td>
+<td>6.00h</td>
+<td>1.77</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>1.16h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>5.00h</td>
+<td>6.00h</td>
+<td>1.77</td>
+<td>779</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>779</td>
+</tr>
+</tbody>
+</table>
 <h4 id="sunny">sunny</h4>
-<ul>
-<li>全体: 平均 173.57h / 最小 86.00h / 最大 276.00h / 標準偏差 37.15
-(n=779)</li>
-<li>序盤: 平均 59.12h / 最小 17.00h / 最大 113.00h / 標準偏差 17.65
-(n=779)</li>
-<li>中盤: 平均 57.08h / 最小 14.00h / 最大 103.00h / 標準偏差 16.74
-(n=779)</li>
-<li>終盤: 平均 57.37h / 最小 16.00h / 最大 106.00h / 標準偏差 17.20
-(n=779)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>173.57h</td>
+<td>86.00h</td>
+<td>115.00h</td>
+<td>238.00h</td>
+<td>276.00h</td>
+<td>37.15</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>59.12h</td>
+<td>17.00h</td>
+<td>32.00h</td>
+<td>91.00h</td>
+<td>113.00h</td>
+<td>17.65</td>
+<td>779</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>57.08h</td>
+<td>14.00h</td>
+<td>30.00h</td>
+<td>86.00h</td>
+<td>103.00h</td>
+<td>16.74</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>57.37h</td>
+<td>16.00h</td>
+<td>29.00h</td>
+<td>88.00h</td>
+<td>106.00h</td>
+<td>17.20</td>
+<td>779</td>
+</tr>
+</tbody>
+</table>
 <h4 id="clear">clear</h4>
-<ul>
-<li>全体: 平均 324.49h / 最小 179.00h / 最大 452.00h / 標準偏差 59.43
-(n=779)</li>
-<li>序盤: 平均 109.98h / 最小 47.00h / 最大 169.00h / 標準偏差 23.91
-(n=779)</li>
-<li>中盤: 平均 107.49h / 最小 42.00h / 最大 179.00h / 標準偏差 23.99
-(n=779)</li>
-<li>終盤: 平均 107.02h / 最小 45.00h / 最大 185.00h / 標準偏差 23.91
-(n=779)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>324.49h</td>
+<td>179.00h</td>
+<td>229.00h</td>
+<td>418.00h</td>
+<td>452.00h</td>
+<td>59.43</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>109.98h</td>
+<td>47.00h</td>
+<td>70.00h</td>
+<td>150.00h</td>
+<td>169.00h</td>
+<td>23.91</td>
+<td>779</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>107.49h</td>
+<td>42.00h</td>
+<td>70.00h</td>
+<td>146.00h</td>
+<td>179.00h</td>
+<td>23.99</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>107.02h</td>
+<td>45.00h</td>
+<td>70.00h</td>
+<td>148.00h</td>
+<td>185.00h</td>
+<td>23.91</td>
+<td>779</td>
+</tr>
+</tbody>
+</table>
 <h4 id="cloudy">cloudy</h4>
-<ul>
-<li>全体: 平均 159.43h / 最小 63.00h / 最大 269.00h / 標準偏差 36.17
-(n=779)</li>
-<li>序盤: 平均 52.53h / 最小 4.00h / 最大 106.00h / 標準偏差 16.48
-(n=779)</li>
-<li>中盤: 平均 53.54h / 最小 10.00h / 最大 117.00h / 標準偏差 17.35
-(n=779)</li>
-<li>終盤: 平均 53.36h / 最小 10.00h / 最大 111.00h / 標準偏差 17.40
-(n=779)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>159.43h</td>
+<td>63.00h</td>
+<td>103.00h</td>
+<td>220.00h</td>
+<td>269.00h</td>
+<td>36.17</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>52.53h</td>
+<td>4.00h</td>
+<td>26.00h</td>
+<td>80.00h</td>
+<td>106.00h</td>
+<td>16.48</td>
+<td>779</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>53.54h</td>
+<td>10.00h</td>
+<td>26.00h</td>
+<td>82.00h</td>
+<td>117.00h</td>
+<td>17.35</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>53.36h</td>
+<td>10.00h</td>
+<td>26.00h</td>
+<td>83.00h</td>
+<td>111.00h</td>
+<td>17.40</td>
+<td>779</td>
+</tr>
+</tbody>
+</table>
 <h4 id="light_rain-1">light_rain</h4>
-<ul>
-<li>全体: 平均 68.54h / 最小 45.00h / 最大 94.00h / 標準偏差 12.29
-(n=779)</li>
-<li>序盤: 平均 19.60h / 最小 9.00h / 最大 34.00h / 標準偏差 4.83
-(n=779)</li>
-<li>中盤: 平均 24.30h / 最小 10.00h / 最大 43.00h / 標準偏差 5.17
-(n=779)</li>
-<li>終盤: 平均 24.65h / 最小 10.00h / 最大 41.00h / 標準偏差 5.14
-(n=779)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>68.54h</td>
+<td>45.00h</td>
+<td>50.00h</td>
+<td>87.00h</td>
+<td>94.00h</td>
+<td>12.29</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>19.60h</td>
+<td>9.00h</td>
+<td>12.00h</td>
+<td>27.00h</td>
+<td>34.00h</td>
+<td>4.83</td>
+<td>779</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>24.30h</td>
+<td>10.00h</td>
+<td>16.00h</td>
+<td>33.00h</td>
+<td>43.00h</td>
+<td>5.17</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>24.65h</td>
+<td>10.00h</td>
+<td>16.00h</td>
+<td>33.00h</td>
+<td>41.00h</td>
+<td>5.14</td>
+<td>779</td>
+</tr>
+</tbody>
+</table>
 <h4 id="heavy_rain-1">heavy_rain</h4>
-<ul>
-<li>全体: 平均 0.01h / 最小 0.00h / 最大 6.00h / 標準偏差 0.26
-(n=779)</li>
-<li>序盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=779)</li>
-<li>中盤: 平均 0.01h / 最小 0.00h / 最大 4.00h / 標準偏差 0.14
-(n=779)</li>
-<li>終盤: 平均 0.01h / 最小 0.00h / 最大 6.00h / 標準偏差 0.21
-(n=779)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>0.01h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>6.00h</td>
+<td>0.26</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>779</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.01h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>4.00h</td>
+<td>0.14</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.01h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>6.00h</td>
+<td>0.21</td>
+<td>779</td>
+</tr>
+</tbody>
+</table>
 <h4 id="storm-1">storm</h4>
-<ul>
-<li>全体: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=779)</li>
-<li>序盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=779)</li>
-<li>中盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=779)</li>
-<li>終盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=779)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>779</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>779</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>779</td>
+</tr>
+</tbody>
+</table>
 <h3 id="連続未降雨時間日">連続未降雨時間（日）</h3>
-<ul>
-<li>全体: 平均 1.92日 / 最小 0.04日 / 最大 5.71日 / 標準偏差 0.94
-(n=11133)</li>
-<li>序盤: 平均 2.18日 / 最小 0.04日 / 最大 5.71日 / 標準偏差 1.02
-(n=3696)</li>
-<li>中盤: 平均 1.90日 / 最小 0.17日 / 最大 5.62日 / 標準偏差 0.86
-(n=3703)</li>
-<li>終盤: 平均 1.69日 / 最小 0.04日 / 最大 5.17日 / 標準偏差 0.87
-(n=3734)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>1.92日</td>
+<td>0.04日</td>
+<td>0.42日</td>
+<td>3.54日</td>
+<td>5.71日</td>
+<td>0.94</td>
+<td>11133</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>2.18日</td>
+<td>0.04日</td>
+<td>0.46日</td>
+<td>3.83日</td>
+<td>5.71日</td>
+<td>1.02</td>
+<td>3696</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>1.90日</td>
+<td>0.17日</td>
+<td>0.46日</td>
+<td>3.38日</td>
+<td>5.62日</td>
+<td>0.86</td>
+<td>3703</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>1.69日</td>
+<td>0.04日</td>
+<td>0.25日</td>
+<td>3.25日</td>
+<td>5.17日</td>
+<td>0.87</td>
+<td>3734</td>
+</tr>
+</tbody>
+</table>
 <h3 id="連続降雨時間日">連続降雨時間（日）</h3>
-<ul>
-<li>全体: 平均 0.21日 / 最小 0.04日 / 最大 0.75日 / 標準偏差 0.05
-(n=10439)</li>
-<li>序盤: 平均 0.21日 / 最小 0.04日 / 最大 0.71日 / 標準偏差 0.05
-(n=3023)</li>
-<li>中盤: 平均 0.21日 / 最小 0.17日 / 最大 0.75日 / 標準偏差 0.05
-(n=3676)</li>
-<li>終盤: 平均 0.21日 / 最小 0.04日 / 最大 0.75日 / 標準偏差 0.05
-(n=3740)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>0.21日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>0.25日</td>
+<td>0.75日</td>
+<td>0.05</td>
+<td>10439</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>0.21日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>0.25日</td>
+<td>0.71日</td>
+<td>0.05</td>
+<td>3023</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.21日</td>
+<td>0.17日</td>
+<td>0.17日</td>
+<td>0.25日</td>
+<td>0.75日</td>
+<td>0.05</td>
+<td>3676</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.21日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>0.25日</td>
+<td>0.75日</td>
+<td>0.05</td>
+<td>3740</td>
+</tr>
+</tbody>
+</table>
 <h2 id="wet">wet</h2>
 <h3 id="気温内部値-1">気温（内部値）</h3>
-<ul>
-<li>全体: 平均 14.18 / 最小 12.00 / 最大 18.00 / 標準偏差 1.69
-(n=2279232)</li>
-<li>序盤: 平均 14.17 / 最小 12.00 / 最大 18.00 / 標準偏差 1.68
-(n=759744)</li>
-<li>中盤: 平均 14.18 / 最小 12.00 / 最大 18.00 / 標準偏差 1.69
-(n=759744)</li>
-<li>終盤: 平均 14.18 / 最小 12.00 / 最大 18.00 / 標準偏差 1.69
-(n=759744)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>14.18</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>18.00</td>
+<td>18.00</td>
+<td>1.69</td>
+<td>2279232</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>14.17</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>18.00</td>
+<td>18.00</td>
+<td>1.68</td>
+<td>759744</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>14.18</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>18.00</td>
+<td>18.00</td>
+<td>1.69</td>
+<td>759744</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>14.18</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>18.00</td>
+<td>18.00</td>
+<td>1.69</td>
+<td>759744</td>
+</tr>
+</tbody>
+</table>
 <h3
 id="天気ごとの発生時間時間期間-1">天気ごとの発生時間（時間/期間）</h3>
 <h4 id="scorching-1">scorching</h4>
-<ul>
-<li>全体: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=794)</li>
-<li>序盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=794)</li>
-<li>中盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=794)</li>
-<li>終盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=794)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>794</td>
+</tr>
+</tbody>
+</table>
 <h4 id="sunny-1">sunny</h4>
-<ul>
-<li>全体: 平均 8.19h / 最小 0.00h / 最大 31.00h / 標準偏差 6.52
-(n=794)</li>
-<li>序盤: 平均 3.33h / 最小 0.00h / 最大 22.00h / 標準偏差 3.86
-(n=794)</li>
-<li>中盤: 平均 2.39h / 最小 0.00h / 最大 17.00h / 標準偏差 3.57
-(n=794)</li>
-<li>終盤: 平均 2.47h / 最小 0.00h / 最大 21.00h / 標準偏差 3.38
-(n=794)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>8.19h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>21.00h</td>
+<td>31.00h</td>
+<td>6.52</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>3.33h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>11.00h</td>
+<td>22.00h</td>
+<td>3.86</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>2.39h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>10.00h</td>
+<td>17.00h</td>
+<td>3.57</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>2.47h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>10.00h</td>
+<td>21.00h</td>
+<td>3.38</td>
+<td>794</td>
+</tr>
+</tbody>
+</table>
 <h4 id="clear-1">clear</h4>
-<ul>
-<li>全体: 平均 34.49h / 最小 0.00h / 最大 76.00h / 標準偏差 13.33
-(n=794)</li>
-<li>序盤: 平均 12.48h / 最小 0.00h / 最大 46.00h / 標準偏差 7.43
-(n=794)</li>
-<li>中盤: 平均 10.99h / 最小 0.00h / 最大 35.00h / 標準偏差 7.03
-(n=794)</li>
-<li>終盤: 平均 11.01h / 最小 0.00h / 最大 36.00h / 標準偏差 7.05
-(n=794)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>34.49h</td>
+<td>0.00h</td>
+<td>14.00h</td>
+<td>58.00h</td>
+<td>76.00h</td>
+<td>13.33</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>12.48h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>26.00h</td>
+<td>46.00h</td>
+<td>7.43</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>10.99h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>24.00h</td>
+<td>35.00h</td>
+<td>7.03</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>11.01h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>24.00h</td>
+<td>36.00h</td>
+<td>7.05</td>
+<td>794</td>
+</tr>
+</tbody>
+</table>
 <h4 id="cloudy-1">cloudy</h4>
-<ul>
-<li>全体: 平均 46.68h / 最小 8.00h / 最大 97.00h / 標準偏差 16.06
-(n=794)</li>
-<li>序盤: 平均 16.45h / 最小 0.00h / 最大 47.00h / 標準偏差 8.99
-(n=794)</li>
-<li>中盤: 平均 15.38h / 最小 0.00h / 最大 50.00h / 標準偏差 8.80
-(n=794)</li>
-<li>終盤: 平均 14.85h / 最小 0.00h / 最大 42.00h / 標準偏差 8.09
-(n=794)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>46.68h</td>
+<td>8.00h</td>
+<td>23.00h</td>
+<td>75.00h</td>
+<td>97.00h</td>
+<td>16.06</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>16.45h</td>
+<td>0.00h</td>
+<td>4.00h</td>
+<td>34.00h</td>
+<td>47.00h</td>
+<td>8.99</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>15.38h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>30.00h</td>
+<td>50.00h</td>
+<td>8.80</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>14.85h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>29.00h</td>
+<td>42.00h</td>
+<td>8.09</td>
+<td>794</td>
+</tr>
+</tbody>
+</table>
 <h4 id="light_rain-2">light_rain</h4>
-<ul>
-<li>全体: 平均 214.46h / 最小 114.00h / 最大 344.00h / 標準偏差 42.23
-(n=794)</li>
-<li>序盤: 平均 71.67h / 最小 29.00h / 最大 127.00h / 標準偏差 18.64
-(n=794)</li>
-<li>中盤: 平均 71.21h / 最小 21.00h / 最大 127.00h / 標準偏差 18.45
-(n=794)</li>
-<li>終盤: 平均 71.58h / 最小 25.00h / 最大 143.00h / 標準偏差 17.69
-(n=794)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>214.46h</td>
+<td>114.00h</td>
+<td>148.00h</td>
+<td>286.00h</td>
+<td>344.00h</td>
+<td>42.23</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>71.67h</td>
+<td>29.00h</td>
+<td>42.00h</td>
+<td>105.00h</td>
+<td>127.00h</td>
+<td>18.64</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>71.21h</td>
+<td>21.00h</td>
+<td>42.00h</td>
+<td>103.00h</td>
+<td>127.00h</td>
+<td>18.45</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>71.58h</td>
+<td>25.00h</td>
+<td>45.00h</td>
+<td>104.00h</td>
+<td>143.00h</td>
+<td>17.69</td>
+<td>794</td>
+</tr>
+</tbody>
+</table>
 <h4 id="heavy_rain-2">heavy_rain</h4>
-<ul>
-<li>全体: 平均 233.44h / 最小 128.00h / 最大 377.00h / 標準偏差 47.45
-(n=794)</li>
-<li>序盤: 平均 76.62h / 最小 24.00h / 最大 146.00h / 標準偏差 20.18
-(n=794)</li>
-<li>中盤: 平均 78.40h / 最小 29.00h / 最大 139.00h / 標準偏差 20.31
-(n=794)</li>
-<li>終盤: 平均 78.42h / 最小 27.00h / 最大 147.00h / 標準偏差 20.57
-(n=794)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>233.44h</td>
+<td>128.00h</td>
+<td>158.00h</td>
+<td>308.00h</td>
+<td>377.00h</td>
+<td>47.45</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>76.62h</td>
+<td>24.00h</td>
+<td>44.00h</td>
+<td>109.00h</td>
+<td>146.00h</td>
+<td>20.18</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>78.40h</td>
+<td>29.00h</td>
+<td>47.00h</td>
+<td>114.00h</td>
+<td>139.00h</td>
+<td>20.31</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>78.42h</td>
+<td>27.00h</td>
+<td>47.00h</td>
+<td>115.00h</td>
+<td>147.00h</td>
+<td>20.57</td>
+<td>794</td>
+</tr>
+</tbody>
+</table>
 <h4 id="storm-2">storm</h4>
-<ul>
-<li>全体: 平均 180.39h / 最小 96.00h / 最大 285.00h / 標準偏差 34.76
-(n=794)</li>
-<li>序盤: 平均 58.66h / 最小 22.00h / 最大 106.00h / 標準偏差 14.84
-(n=794)</li>
-<li>中盤: 平均 60.85h / 最小 24.00h / 最大 110.00h / 標準偏差 14.44
-(n=794)</li>
-<li>終盤: 平均 60.89h / 最小 9.00h / 最大 103.00h / 標準偏差 14.66
-(n=794)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>180.39h</td>
+<td>96.00h</td>
+<td>128.00h</td>
+<td>238.00h</td>
+<td>285.00h</td>
+<td>34.76</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>58.66h</td>
+<td>22.00h</td>
+<td>35.00h</td>
+<td>84.00h</td>
+<td>106.00h</td>
+<td>14.84</td>
+<td>794</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>60.85h</td>
+<td>24.00h</td>
+<td>37.00h</td>
+<td>84.00h</td>
+<td>110.00h</td>
+<td>14.44</td>
+<td>794</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>60.89h</td>
+<td>9.00h</td>
+<td>38.00h</td>
+<td>86.00h</td>
+<td>103.00h</td>
+<td>14.66</td>
+<td>794</td>
+</tr>
+</tbody>
+</table>
 <h3 id="連続未降雨時間日-1">連続未降雨時間（日）</h3>
-<ul>
-<li>全体: 平均 0.22日 / 最小 0.04日 / 最大 0.92日 / 標準偏差 0.06
-(n=13518)</li>
-<li>序盤: 平均 0.22日 / 最小 0.04日 / 最大 0.92日 / 標準偏差 0.07
-(n=4907)</li>
-<li>中盤: 平均 0.22日 / 最小 0.17日 / 最大 0.71日 / 標準偏差 0.06
-(n=4327)</li>
-<li>終盤: 平均 0.22日 / 最小 0.04日 / 最大 0.71日 / 標準偏差 0.06
-(n=4284)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>0.22日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>0.33日</td>
+<td>0.92日</td>
+<td>0.06</td>
+<td>13518</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>0.22日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>0.33日</td>
+<td>0.92日</td>
+<td>0.07</td>
+<td>4907</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.22日</td>
+<td>0.17日</td>
+<td>0.17日</td>
+<td>0.33日</td>
+<td>0.71日</td>
+<td>0.06</td>
+<td>4327</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.22日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>0.33日</td>
+<td>0.71日</td>
+<td>0.06</td>
+<td>4284</td>
+</tr>
+</tbody>
+</table>
 <h3 id="連続降雨時間日-1">連続降雨時間（日）</h3>
-<ul>
-<li>全体: 平均 1.54日 / 最小 0.04日 / 最大 12.29日 / 標準偏差 1.35
-(n=13499)</li>
-<li>序盤: 平均 1.61日 / 最小 0.04日 / 最大 12.00日 / 標準偏差 1.44
-(n=4914)</li>
-<li>中盤: 平均 1.60日 / 最小 0.17日 / 最大 12.29日 / 標準偏差 1.39
-(n=4314)</li>
-<li>終盤: 平均 1.40日 / 最小 0.04日 / 最大 11.88日 / 標準偏差 1.16
-(n=4271)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>1.54日</td>
+<td>0.04日</td>
+<td>0.21日</td>
+<td>4.21日</td>
+<td>12.29日</td>
+<td>1.35</td>
+<td>13499</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>1.61日</td>
+<td>0.04日</td>
+<td>0.21日</td>
+<td>4.50日</td>
+<td>12.00日</td>
+<td>1.44</td>
+<td>4914</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>1.60日</td>
+<td>0.17日</td>
+<td>0.25日</td>
+<td>4.42日</td>
+<td>12.29日</td>
+<td>1.39</td>
+<td>4314</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>1.40日</td>
+<td>0.04日</td>
+<td>0.21日</td>
+<td>3.71日</td>
+<td>11.88日</td>
+<td>1.16</td>
+<td>4271</td>
+</tr>
+</tbody>
+</table>
 <h2 id="dry">dry</h2>
 <h3 id="気温内部値-2">気温（内部値）</h3>
-<ul>
-<li>全体: 平均 21.83 / 最小 12.00 / 最大 31.00 / 標準偏差 6.08
-(n=2286720)</li>
-<li>序盤: 平均 16.07 / 最小 12.00 / 最大 23.00 / 標準偏差 3.04
-(n=762240)</li>
-<li>中盤: 平均 21.55 / 最小 12.00 / 最大 31.00 / 標準偏差 4.17
-(n=762240)</li>
-<li>終盤: 平均 27.88 / 最小 17.00 / 最大 31.00 / 標準偏差 3.82
-(n=762240)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>21.83</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>31.00</td>
+<td>31.00</td>
+<td>6.08</td>
+<td>2286720</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>16.07</td>
+<td>12.00</td>
+<td>12.00</td>
+<td>18.00</td>
+<td>23.00</td>
+<td>3.04</td>
+<td>762240</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>21.55</td>
+<td>12.00</td>
+<td>17.00</td>
+<td>31.00</td>
+<td>31.00</td>
+<td>4.17</td>
+<td>762240</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>27.88</td>
+<td>17.00</td>
+<td>23.00</td>
+<td>31.00</td>
+<td>31.00</td>
+<td>3.82</td>
+<td>762240</td>
+</tr>
+</tbody>
+</table>
 <h3
 id="天気ごとの発生時間時間期間-2">天気ごとの発生時間（時間/期間）</h3>
 <h4 id="scorching-2">scorching</h4>
-<ul>
-<li>全体: 平均 85.83h / 最小 9.00h / 最大 210.00h / 標準偏差 43.15
-(n=787)</li>
-<li>序盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=787)</li>
-<li>中盤: 平均 10.68h / 最小 0.00h / 最大 66.00h / 標準偏差 16.02
-(n=787)</li>
-<li>終盤: 平均 75.15h / 最小 9.00h / 最大 160.00h / 標準偏差 32.20
-(n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>85.83h</td>
+<td>9.00h</td>
+<td>24.00h</td>
+<td>156.00h</td>
+<td>210.00h</td>
+<td>43.15</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>787</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>10.68h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>43.00h</td>
+<td>66.00h</td>
+<td>16.02</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>75.15h</td>
+<td>9.00h</td>
+<td>24.00h</td>
+<td>124.00h</td>
+<td>160.00h</td>
+<td>32.20</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h4 id="sunny-2">sunny</h4>
-<ul>
-<li>全体: 平均 172.80h / 最小 88.00h / 最大 271.00h / 標準偏差 32.84
-(n=787)</li>
-<li>序盤: 平均 64.38h / 最小 14.00h / 最大 120.00h / 標準偏差 18.47
-(n=787)</li>
-<li>中盤: 平均 62.83h / 最小 9.00h / 最大 114.00h / 標準偏差 17.38
-(n=787)</li>
-<li>終盤: 平均 45.58h / 最小 8.00h / 最大 108.00h / 標準偏差 13.71
-(n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>172.80h</td>
+<td>88.00h</td>
+<td>119.00h</td>
+<td>225.00h</td>
+<td>271.00h</td>
+<td>32.84</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>64.38h</td>
+<td>14.00h</td>
+<td>35.00h</td>
+<td>95.00h</td>
+<td>120.00h</td>
+<td>18.47</td>
+<td>787</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>62.83h</td>
+<td>9.00h</td>
+<td>36.00h</td>
+<td>93.00h</td>
+<td>114.00h</td>
+<td>17.38</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>45.58h</td>
+<td>8.00h</td>
+<td>25.00h</td>
+<td>69.00h</td>
+<td>108.00h</td>
+<td>13.71</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h4 id="clear-2">clear</h4>
-<ul>
-<li>全体: 平均 310.88h / 最小 191.00h / 最大 449.00h / 標準偏差 47.92
-(n=787)</li>
-<li>序盤: 平均 115.88h / 最小 44.00h / 最大 207.00h / 標準偏差 26.17
-(n=787)</li>
-<li>中盤: 平均 113.25h / 最小 59.00h / 最大 185.00h / 標準偏差 21.55
-(n=787)</li>
-<li>終盤: 平均 81.75h / 最小 21.00h / 最大 140.00h / 標準偏差 18.75
-(n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>310.88h</td>
+<td>191.00h</td>
+<td>239.00h</td>
+<td>388.00h</td>
+<td>449.00h</td>
+<td>47.92</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>115.88h</td>
+<td>44.00h</td>
+<td>77.00h</td>
+<td>159.00h</td>
+<td>207.00h</td>
+<td>26.17</td>
+<td>787</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>113.25h</td>
+<td>59.00h</td>
+<td>78.00h</td>
+<td>149.00h</td>
+<td>185.00h</td>
+<td>21.55</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>81.75h</td>
+<td>21.00h</td>
+<td>53.00h</td>
+<td>114.00h</td>
+<td>140.00h</td>
+<td>18.75</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h4 id="cloudy-2">cloudy</h4>
-<ul>
-<li>全体: 平均 137.95h / 最小 65.00h / 最大 227.00h / 標準偏差 28.54
-(n=787)</li>
-<li>序盤: 平均 51.72h / 最小 12.00h / 最大 124.00h / 標準偏差 16.77
-(n=787)</li>
-<li>中盤: 平均 50.14h / 最小 9.00h / 最大 94.00h / 標準偏差 14.95
-(n=787)</li>
-<li>終盤: 平均 36.10h / 最小 6.00h / 最大 93.00h / 標準偏差 13.08
-(n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>137.95h</td>
+<td>65.00h</td>
+<td>93.00h</td>
+<td>187.00h</td>
+<td>227.00h</td>
+<td>28.54</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>51.72h</td>
+<td>12.00h</td>
+<td>25.00h</td>
+<td>80.00h</td>
+<td>124.00h</td>
+<td>16.77</td>
+<td>787</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>50.14h</td>
+<td>9.00h</td>
+<td>27.00h</td>
+<td>76.00h</td>
+<td>94.00h</td>
+<td>14.95</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>36.10h</td>
+<td>6.00h</td>
+<td>17.00h</td>
+<td>60.00h</td>
+<td>93.00h</td>
+<td>13.08</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h4 id="light_rain-3">light_rain</h4>
-<ul>
-<li>全体: 平均 16.25h / 最小 0.00h / 最大 61.00h / 標準偏差 9.49
-(n=787)</li>
-<li>序盤: 平均 7.52h / 最小 0.00h / 最大 33.00h / 標準偏差 5.85
-(n=787)</li>
-<li>中盤: 平均 5.18h / 最小 0.00h / 最大 29.00h / 標準偏差 5.39
-(n=787)</li>
-<li>終盤: 平均 3.56h / 最小 0.00h / 最大 26.00h / 標準偏差 4.23
-(n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>16.25h</td>
+<td>0.00h</td>
+<td>4.00h</td>
+<td>33.00h</td>
+<td>61.00h</td>
+<td>9.49</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>7.52h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>18.00h</td>
+<td>33.00h</td>
+<td>5.85</td>
+<td>787</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>5.18h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>16.00h</td>
+<td>29.00h</td>
+<td>5.39</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>3.56h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>12.00h</td>
+<td>26.00h</td>
+<td>4.23</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h4 id="heavy_rain-3">heavy_rain</h4>
-<ul>
-<li>全体: 平均 1.56h / 最小 0.00h / 最大 9.00h / 標準偏差 2.17
-(n=787)</li>
-<li>序盤: 平均 1.52h / 最小 0.00h / 最大 8.00h / 標準偏差 2.13
-(n=787)</li>
-<li>中盤: 平均 0.04h / 最小 0.00h / 最大 6.00h / 標準偏差 0.47
-(n=787)</li>
-<li>終盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>1.56h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>6.00h</td>
+<td>9.00h</td>
+<td>2.17</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>1.52h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>6.00h</td>
+<td>8.00h</td>
+<td>2.13</td>
+<td>787</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.04h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>6.00h</td>
+<td>0.47</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h4 id="storm-3">storm</h4>
-<ul>
-<li>全体: 平均 1.13h / 最小 0.00h / 最大 6.00h / 標準偏差 1.89
-(n=787)</li>
-<li>序盤: 平均 1.12h / 最小 0.00h / 最大 6.00h / 標準偏差 1.88
-(n=787)</li>
-<li>中盤: 平均 0.01h / 最小 0.00h / 最大 5.00h / 標準偏差 0.23
-(n=787)</li>
-<li>終盤: 平均 0.00h / 最小 0.00h / 最大 0.00h / 標準偏差 0.00
-(n=787)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>1.13h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>5.00h</td>
+<td>6.00h</td>
+<td>1.89</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>1.12h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>5.00h</td>
+<td>6.00h</td>
+<td>1.88</td>
+<td>787</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.01h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>5.00h</td>
+<td>0.23</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00h</td>
+<td>0.00</td>
+<td>787</td>
+</tr>
+</tbody>
+</table>
 <h3 id="連続未降雨時間日-2">連続未降雨時間（日）</h3>
-<ul>
-<li>全体: 平均 7.72日 / 最小 0.04日 / 最大 35.88日 / 標準偏差 7.07
-(n=3004)</li>
-<li>序盤: 平均 8.56日 / 最小 0.04日 / 最大 35.88日 / 標準偏差 8.10
-(n=1661)</li>
-<li>中盤: 平均 8.23日 / 最小 0.17日 / 最大 24.00日 / 標準偏差 6.06
-(n=787)</li>
-<li>終盤: 平均 4.52日 / 最小 0.08日 / 最大 11.79日 / 標準偏差 3.03
-(n=556)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>7.72日</td>
+<td>0.04日</td>
+<td>0.25日</td>
+<td>22.38日</td>
+<td>35.88日</td>
+<td>7.07</td>
+<td>3004</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>8.56日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>25.50日</td>
+<td>35.88日</td>
+<td>8.10</td>
+<td>1661</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>8.23日</td>
+<td>0.17日</td>
+<td>0.46日</td>
+<td>18.88日</td>
+<td>24.00日</td>
+<td>6.06</td>
+<td>787</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>4.52日</td>
+<td>0.08日</td>
+<td>0.38日</td>
+<td>10.12日</td>
+<td>11.79日</td>
+<td>3.03</td>
+<td>556</td>
+</tr>
+</tbody>
+</table>
 <h3 id="連続降雨時間日-2">連続降雨時間（日）</h3>
-<ul>
-<li>全体: 平均 0.21日 / 最小 0.04日 / 最大 0.83日 / 標準偏差 0.07
-(n=2910)</li>
-<li>序盤: 平均 0.21日 / 最小 0.04日 / 最大 0.67日 / 標準偏差 0.08
-(n=1579)</li>
-<li>中盤: 平均 0.22日 / 最小 0.17日 / 最大 0.83日 / 標準偏差 0.06
-(n=784)</li>
-<li>終盤: 平均 0.21日 / 最小 0.04日 / 最大 0.62日 / 標準偏差 0.05
-(n=547)</li>
-</ul>
+<table>
+<thead>
+<tr class="header">
+<th>区間</th>
+<th>平均</th>
+<th>最小</th>
+<th>5%ile</th>
+<th>95%ile</th>
+<th>最大</th>
+<th>標準偏差</th>
+<th>n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>全体</td>
+<td>0.21日</td>
+<td>0.04日</td>
+<td>0.12日</td>
+<td>0.33日</td>
+<td>0.83日</td>
+<td>0.07</td>
+<td>2910</td>
+</tr>
+<tr class="even">
+<td>序盤</td>
+<td>0.21日</td>
+<td>0.04日</td>
+<td>0.08日</td>
+<td>0.38日</td>
+<td>0.67日</td>
+<td>0.08</td>
+<td>1579</td>
+</tr>
+<tr class="odd">
+<td>中盤</td>
+<td>0.22日</td>
+<td>0.17日</td>
+<td>0.17日</td>
+<td>0.25日</td>
+<td>0.83日</td>
+<td>0.06</td>
+<td>784</td>
+</tr>
+<tr class="even">
+<td>終盤</td>
+<td>0.21日</td>
+<td>0.04日</td>
+<td>0.17日</td>
+<td>0.25日</td>
+<td>0.62日</td>
+<td>0.05</td>
+<td>547</td>
+</tr>
+</tbody>
+</table>
 </article>
 </body>
 </html>
