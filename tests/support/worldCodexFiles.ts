@@ -1,0 +1,35 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { extname, join } from 'node:path';
+import type { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+
+/** ゲーム本体に同梱されるWorldCodex定義YAMLの置き場所（テストはリポジトリルートで実行される前提）。 */
+export const WORLD_CODEX_DIR = 'public/world-codex';
+
+/** WORLD_CODEX_DIR内の1ファイルへのパス。 */
+export function worldCodexPath(fileName: string): string {
+  return join(WORLD_CODEX_DIR, fileName);
+}
+
+/** 1つのYAMLファイルを読み込んでローダーへ渡す。 */
+export function loadYamlFile(loader: WorldCodexYamlLoader, path: string): WorldCodexYamlLoader {
+  return loader.load(path, readFileSync(path, 'utf8'));
+}
+
+/**
+ * 1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的にすべて読み込む。
+ * 読み込み順はフルパスの辞書順（コードポイント昇順）で決定的にする。
+ */
+export function loadYamlDirectory(loader: WorldCodexYamlLoader, directory: string): WorldCodexYamlLoader {
+  for (const path of findYamlFiles(directory)) loadYamlFile(loader, path);
+  return loader;
+}
+
+function findYamlFiles(directory: string): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true, recursive: true })) {
+    const extension = extname(entry.name).toLowerCase();
+    if (entry.isFile() && (extension === '.yaml' || extension === '.yml'))
+      found.push(join(entry.parentPath, entry.name));
+  }
+  return found.sort();
+}
