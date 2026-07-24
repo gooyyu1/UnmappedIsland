@@ -71,7 +71,7 @@ namespace UnmappedIsland.Diagnostics
 
         private WorldCodex codex;
         private int calmId, wetId, dryId;
-        private int sunnyId, cloudyId, lightRainId, heavyRainId, stormId;
+        private int sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId, scorchingId;
         private int seasonId, weatherId, temperatureId;
         private int[] seasonKinds;
 
@@ -101,7 +101,9 @@ namespace UnmappedIsland.Diagnostics
             wetId = codex.SymbolNames.Intern("wet");
             dryId = codex.SymbolNames.Intern("dry");
             sunnyId = codex.SymbolNames.Intern("sunny");
+            clearId = codex.SymbolNames.Intern("clear");
             cloudyId = codex.SymbolNames.Intern("cloudy");
+            scorchingId = codex.SymbolNames.Intern("scorching");
             lightRainId = codex.SymbolNames.Intern("light_rain");
             heavyRainId = codex.SymbolNames.Intern("heavy_rain");
             stormId = codex.SymbolNames.Intern("storm");
@@ -122,7 +124,7 @@ namespace UnmappedIsland.Diagnostics
                     rainStreakThird[(s, third)] = new Stat();
                     nonRainStreakThird[(s, third)] = new Stat();
                 }
-                foreach (int w in new[] { sunnyId, cloudyId, lightRainId, heavyRainId, stormId })
+                foreach (int w in new[] { scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId })
                 {
                     weatherDurationOverall[(w, s)] = new Stat();
                     for (int third = 0; third < 3; third++)
@@ -269,7 +271,7 @@ namespace UnmappedIsland.Diagnostics
                 sb.AppendLine($"- **{SeasonName(s)}**: {seasonDuration[s].Format("日")}");
             sb.AppendLine();
 
-            var weatherOrder = new[] { sunnyId, cloudyId, lightRainId, heavyRainId, stormId };
+            var weatherOrder = new[] { scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId };
 
             foreach (int s in seasonKinds)
             {

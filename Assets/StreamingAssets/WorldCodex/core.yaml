@@ -120,14 +120,15 @@ object_defs:
       # 現在の日（1始まり）。上限は未定のため無制限に加算し続ける（GameElementDefinition.md 17節）。
       day:
         value: 1
-      # 現在の天気。シンボル型プロパティ（6.8節）。雨のひどさ・晴れの強さの両方向へ段階を持たせ、
-      # storm（暴風雨、heavy_rainより酷い）を最も雨側、sunny・scorching（clearより強い晴れ、2段階）を
-      # 最も晴れ側に置いた、cloudyを中心とする7段階とする: storm/heavy_rain/light_rain/cloudy/clear/
-      # sunny/scorching。storm・scorchingは、特別な対策が必要な極端な天候として使う想定（対策自体は
-      # 別途、今後の課題）。遷移の仕組みはClimateSystem.md参照: weather_remainingが0になるたびに、
-      # atmospheric_moistureのstagesが駆動する*_weightを重みとするpickで次の値が選ばれる（遷移先として
-      # 選ばれるのはsunny/cloudy/light_rain/heavy_rain/stormの5値。clearは初期値のみ、scorchingは
-      # 遷移対象外の予約値）。
+      # 現在の天気。シンボル型プロパティ（6.8節）。雨のひどさ・晴れの強さの両方向へ段階を持たせた、
+      # cloudyを中心とする7段階とする: storm（暴風雨、heavy_rainより酷い）/heavy_rain（大雨）/
+      # light_rain（小雨）/cloudy（曇り）/clear（穏やかで過ごしやすい普通の晴れ。最も頻度が高い、
+      # この島の標準的な天気）/sunny（日差しが強い晴れ）/scorching（炎天。sunnyより酷い、特別な対策が
+      # 必要な極端な暑さ）。storm・scorchingは両極の極端な天候で、ゲームプレイ上の対策は別途、今後の課題。
+      # 遷移の仕組みはClimateSystem.md参照: weather_remainingが0になるたびに、atmospheric_moistureの
+      # stages（と、scorchingのみthermal_levelのhot stage）が駆動する*_weightを重みとするpickで
+      # 次の値が選ばれる。7値のうちclearを含む全てが遷移先候補（scorchingは蓄熱量がhot帯=乾季後半と
+      # その名残の間だけ重みを持つ。stormが雨季後半のsaturated帯で重みを持つのと対称）。
       #
       # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のstages（6.4節）+WhenOwnStage
       # ゲート（8.2節）のmodifyで与える（もう一方、hourの「時間帯による最低限の寄与」はhour参照）。
@@ -357,11 +358,13 @@ object_defs:
       # 大気水分量（ClimateSystem.md 3節の貯水池）。季節レート＋降雨中の自己減算（weather参照）で駆動される。
       # 0-10000のスケールは、calmの遅いレート（+10/tick、moderate閾値3000まで約3日）を整数のまま表現する
       # ためのもの。stagesは天気そのものではなく（4.1節）、天気候補ごとの重み専用プロパティ（*_weight）を
-      # modifyで駆動する（4.3節）。乾き系（sunny/cloudy）の重みも固定定数にせず段階に連動させることで、
-      # saturated（雨季後半）では「まず晴れない」（sunny_weight: 0）を、dry（乾ききった状態）では
+      # modifyで駆動する（4.3節）。乾き系（sunny/clear/cloudy）の重みも固定定数にせず段階に連動させることで、
+      # saturated（雨季後半）では「まず晴れない」（晴れ系の重みなし）を、dry（乾ききった状態）では
       # 「大雨・嵐が原理的に起こらない」（heavy_rain_weight/storm_weight: 0）を表現する。
+      # 晴れ系の中ではclear（穏やかで過ごしやすい普通の晴れ）を最も重くし、この島の標準的な天気にする。
       # moderateまでのcalmの雨は必ずlight_rain（heavy/stormの重みが0）: 「3日に1回くらい、大雨には
       # ならない雨」という序盤の要件（3.2節）をこの重み構成が満たす。
+      # scorching_weightだけはここではなくthermal_levelのhot stageが駆動する（乾季後半の炎天。thermal_level参照）。
       atmospheric_moisture:
         value: 0
         range: {min: 0, max: 10000}
@@ -370,7 +373,8 @@ object_defs:
             passives:
               - modify:
                   self:
-                    sunny_weight: 50
+                    sunny_weight: 25
+                    clear_weight: 45
                     cloudy_weight: 20
                     light_rain_weight: 2
           - name: moderate
@@ -378,8 +382,9 @@ object_defs:
             passives:
               - modify:
                   self:
-                    sunny_weight: 20
-                    cloudy_weight: 35
+                    sunny_weight: 10
+                    clear_weight: 30
+                    cloudy_weight: 25
                     light_rain_weight: 40
           - name: humid
             min: 6000
@@ -387,7 +392,8 @@ object_defs:
               - modify:
                   self:
                     sunny_weight: 5
-                    cloudy_weight: 20
+                    clear_weight: 10
+                    cloudy_weight: 15
                     light_rain_weight: 40
                     heavy_rain_weight: 30
                     storm_weight: 10
@@ -400,9 +406,12 @@ object_defs:
                     light_rain_weight: 20
                     heavy_rain_weight: 40
                     storm_weight: 40
-      # 天気候補ごとの重み。著者が直接setするのではなく、atmospheric_moistureのstagesがmodifyで維持する
+      # 天気候補ごとの重み。著者が直接setするのではなく、atmospheric_moistureのstages
+      # （scorching_weightのみthermal_levelのhot stage）がmodifyで維持する
       # （ベース値0のため、どのstageもmodifyしない候補の重みは0=選ばれない）。
       sunny_weight:
+        value: 0
+      clear_weight:
         value: 0
       cloudy_weight:
         value: 0
@@ -411,6 +420,8 @@ object_defs:
       heavy_rain_weight:
         value: 0
       storm_weight:
+        value: 0
+      scorching_weight:
         value: 0
       # 現在の天気の残りtick数。毎tick-1され、0になった瞬間（on_min）に次の天気をpickで選ぶ
       # （ClimateSystem.md 4節）。外側のpickが*_weightを重みに天気を選び、内側のpickが持続時間
@@ -438,6 +449,17 @@ object_defs:
                 - weight: 1
                   set:
                     self: {weather: sunny, weather_remaining: 24}
+            - weight: {prop: clear_weight}
+              pick:
+                - weight: 1
+                  set:
+                    self: {weather: clear, weather_remaining: 16}
+                - weight: 1
+                  set:
+                    self: {weather: clear, weather_remaining: 20}
+                - weight: 1
+                  set:
+                    self: {weather: clear, weather_remaining: 24}
             - weight: {prop: cloudy_weight}
               pick:
                 - weight: 1
@@ -482,12 +504,27 @@ object_defs:
                 - weight: 1
                   set:
                     self: {weather: storm, weather_remaining: 24}
+            - weight: {prop: scorching_weight}
+              pick:
+                - weight: 1
+                  set:
+                    self: {weather: scorching, weather_remaining: 16}
+                - weight: 1
+                  set:
+                    self: {weather: scorching, weather_remaining: 20}
+                - weight: 1
+                  set:
+                    self: {weather: scorching, weather_remaining: 24}
       # 蓄熱量（ClimateSystem.md 3節のもう一つの貯水池）。ambient_temperatureへ季節レートを直接加算すると
       # 整数レート最小の±1/tickでも1季節で±2880になってしまうため、atmospheric_moistureと同じ
       # 「スケールした貯水池のstagesが表向きの値をmodifyする」パターンで段階的な暑さ・涼しさに変換する。
       # dryで+1/tick（30日で0→2880、乾季後半ほど暑い）、calm/wetで-1/tick（calmは乾季の暑さから
       # じわじわ涼しくなる回復区間、wetは下限0=coolに張り付く）。初期値1000は「ゲーム開始時は補正なし
       # （mild帯）」のため。
+      #
+      # hot stageはscorching_weightも駆動する: 蓄熱量が溜まりきった乾季後半（と、その名残が抜けるまでの
+      # calm序盤）だけ、炎天（scorching）が天気の抽選に加わる。atmospheric_moistureのsaturated帯が
+      # stormを駆動する（雨季後半＋名残の乾季序盤に嵐）のと対称の関係（ClimateSystem.md 4.3節）。
       thermal_level:
         value: 1000
         range: {min: 0, max: 2880}
@@ -505,6 +542,7 @@ object_defs:
               - modify:
                   self:
                     ambient_temperature: 8
+                    scorching_weight: 50
       # 難易度の初期補正1: ゲーム開始2日目に高確率で雨を降らせる（ClimateSystem.md 5.1節）。
       # ゲーム開始からの経過tickを数えるだけの専用カウンタで、2日目（tick 96-191）の間だけ
       # atmospheric_moistureへ追加加算し、天気の抽選を雨系へ大きく傾ける。天気そのものを固定で

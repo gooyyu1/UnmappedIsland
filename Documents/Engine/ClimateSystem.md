@@ -26,8 +26,8 @@
 
 - **季節（長期サイクル）**: 穏やか・雨季・乾季の 3 状態を固定順で巡回する。滞在期間は初回サイクルのみ固定、
   2 周目以降はランダムに決まる（3 節）。
-- **天気（短期変動）**: 晴れ・曇り・小雨・大雨・嵐。季節が育てる大気水分量に重み付けされた抽選で決まる、
-  季節から独立したプロパティ（4 節）。
+- **天気（短期変動）**: 炎天・強い日差し・晴れ・曇り・小雨・大雨・嵐の 7 段階。季節が育てる貯水池
+  （大気水分量・蓄熱量）に重み付けされた抽選で決まる、季節から独立したプロパティ（4 節)。
 
 季節・天気とも、「現在の値」と「残り時間」の 2 プロパティの組で表現し、残り時間が 0 になった瞬間に次の値へ
 遷移します。個別の現象を条件分岐やイベントとして作り込むのではなく、**独立したパラメータ同士が tick ごとに
@@ -94,6 +94,7 @@
   使う: `thermal_level` の `stages`（`cool`: 〜959 / `mild`: 960〜1,919 / `hot`: 1,920〜）が
   `ambient_temperature` を -5 / ±0 / +8 する。dry は 30 日かけて 0→2,880 と登り「乾季後半ほど暑い」を、
   calm は乾季の 2,880 から 30 日かけて 0 へ下り「乾季の暑さからじわじわ涼しくなる」を、それぞれ表現する。
+  `hot` stage は炎天（`scorching`）の抽選重み `scorching_weight` も駆動する（4.3 節）。
 - 降雨中の自己減算: 天気（4 節）が `light_rain`/`heavy_rain`/`storm` のいずれかである間、その `weather` の
   `stages` 自身が持つ `passive` の `accumulate` として、毎 tick `atmospheric_moisture` を減算する
   （-200 / -300 / -400。激しい雨ほど速く消費する。耐久値や `GameElementDefinition.md` 6.4 節の
@@ -183,18 +184,20 @@
 
 ### 4.2 プロパティ構成
 
-- `weather`: 現在の天気を表す symbol プロパティ。`core.yaml` の既存 7 値（`storm`/`heavy_rain`/`light_rain`/
-  `cloudy`/`clear`/`sunny`/`scorching`）はそのまま維持し、**遷移先として選ばれるのは `sunny`/`cloudy`/
-  `light_rain`/`heavy_rain`/`storm` の 5 値**とします。`clear` は初期値（最初の遷移までの間だけ）、
-  `scorching` は遷移対象外の予約値（極端な晴れの演出が必要になったときのために stage 定義だけ残す）です。
+- `weather`: 現在の天気を表す symbol プロパティ。`core.yaml` の 7 値すべてが遷移先候補です。強度順に、
+  `storm`（暴風雨）/`heavy_rain`（大雨）/`light_rain`（小雨）/`cloudy`（曇り）/**`clear`（穏やかで
+  過ごしやすい普通の晴れ。この島の標準的な天気で、晴れ系の中で最も高頻度）**/`sunny`（日差しが強い晴れ）/
+  `scorching`（炎天。`sunny` より酷い、特別な対策が必要な極端な暑さ。乾季後半にのみ発生する 4.3 節参照）。
+  `storm` と `scorching` は両極の「極端な天候」で、それぞれ雨季後半・乾季後半の風物詩として対称に扱います。
 - `weather_remaining`: 残り tick 数。4〜6 時間（16/20/24 tick の等確率 `pick`）で、遷移のたびに
   ロールし直す（再ロールは 4.3 節の遷移 `pick` の葉が天気の `set` と同時に行う）。
-- `sunny_weight`/`cloudy_weight`/`light_rain_weight`/`heavy_rain_weight`/`storm_weight`: `weather` の各候補に
-  1 つずつ対応する、ただの数値プロパティ。値は著者が直接 `set` するのではなく、4.3 節の通り
-  `atmospheric_moisture` の `stages` が常時 `modify` して維持します（ベース値 0 のため、どの stage も
-  `modify` しない候補の重みは 0 ＝選ばれません）。
+- `sunny_weight`/`clear_weight`/`cloudy_weight`/`light_rain_weight`/`heavy_rain_weight`/`storm_weight`/
+  `scorching_weight`: `weather` の各候補に 1 つずつ対応する、ただの数値プロパティ。値は著者が直接 `set`
+  するのではなく、4.3 節の通り `atmospheric_moisture` の `stages`（`scorching_weight` のみ `thermal_level`
+  の `hot` stage）が常時 `modify` して維持します（ベース値 0 のため、どの stage も `modify` しない候補の
+  重みは 0 ＝選ばれません）。
 
-### 4.3 遷移先: 天気ごとの重みプロパティを大気水分量の `stages` が `modify` する
+### 4.3 遷移先: 天気ごとの重みプロパティを貯水池（大気水分量・蓄熱量）の `stages` が `modify` する
 
 `weather_remaining` の `on_min`（`self`）で `pick`（GameElementDefinition.md 10 節）を実行し、次の天気を選びます。
 外側の `pick` の各候補は対応する `*_weight` プロパティを重みとして参照し（10.2 節の「既存プロパティへの参照」）、
@@ -236,11 +239,12 @@ atmospheric_moisture:
   value: 0
   range: {min: 0, max: 10000}
   stages:
-    - name: dry            # 〜2999: ほぼ晴れ。雨はlight_rainのみ稀に（乾季の「稀に降る」を担う）
+    - name: dry            # 〜2999: ほぼ晴れ（clearが最多）。雨はlight_rainのみ稀に（乾季の「稀に降る」を担う）
       passives:
         - modify:
             self:
-              sunny_weight: 50
+              sunny_weight: 25
+              clear_weight: 45
               cloudy_weight: 20
               light_rain_weight: 2
     - name: moderate       # 3000〜5999: 小雨が現実的な選択肢に。大雨・嵐は重み0のまま
@@ -248,8 +252,9 @@ atmospheric_moisture:
       passives:
         - modify:
             self:
-              sunny_weight: 20
-              cloudy_weight: 35
+              sunny_weight: 10
+              clear_weight: 30
+              cloudy_weight: 25
               light_rain_weight: 40
     - name: humid          # 6000〜8499: 雨が優勢になり、大雨・嵐も現れ始める
       min: 6000
@@ -257,11 +262,12 @@ atmospheric_moisture:
         - modify:
             self:
               sunny_weight: 5
-              cloudy_weight: 20
+              clear_weight: 10
+              cloudy_weight: 15
               light_rain_weight: 40
               heavy_rain_weight: 30
               storm_weight: 10
-    - name: saturated      # 8500〜: まず晴れない（sunny_weightを立てない=0）。嵐・大雨が中心
+    - name: saturated      # 8500〜: まず晴れない（晴れ系の重みを立てない=0）。嵐・大雨が中心
       min: 8500
       passives:
         - modify:
@@ -272,12 +278,22 @@ atmospheric_moisture:
               storm_weight: 40
 ```
 
-`sunny`/`cloudy` 側の重みも `light_rain`/`heavy_rain`/`storm` 側と同じく `atmospheric_moisture` の段階に
-連動させ、固定の重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」
-という下限が原理的に外れなくなり、`saturated` 段階（雨季後半）で「まず晴れない」を表現できなくなるためです。
-上の実装では `saturated` 段階が `sunny_weight` を立てない（＝0 のまま）ことでそれを表現し、対称に `dry`/
-`moderate` 段階は `heavy_rain_weight`/`storm_weight` を立てないことで「乾いている間・穏やかな季節の小雨は
-大雨・嵐にならない」という逆方向の下限を表現しています（3.2 節の「大雨にはならない」はここで保証されます）。
+晴れ系（`sunny`/`clear`/`cloudy`）の重みも雨系と同じく `atmospheric_moisture` の段階に連動させ、固定の
+重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」という下限が
+原理的に外れなくなり、`saturated` 段階（雨季後半）で「まず晴れない」を表現できなくなるためです。上の実装では
+`saturated` 段階が晴れ系の重みを立てない（＝0 のまま）ことでそれを表現し、対称に `dry`/`moderate` 段階は
+`heavy_rain_weight`/`storm_weight` を立てないことで「乾いている間・穏やかな季節の小雨は大雨・嵐にならない」
+という逆方向の下限を表現しています（3.2 節の「大雨にはならない」はここで保証されます）。晴れ系の中では、
+どの段階でも `clear`（穏やかで過ごしやすい普通の晴れ）の重みを最も大きくし、この島の標準的な天気にしています。
+
+**`scorching_weight` だけは大気水分量ではなく、もう一つの貯水池である蓄熱量（`thermal_level`、3 節）の
+`hot` stage（1,920 以上）が `modify` で駆動します**（`ambient_temperature: +8` と同じブロックで
+`scorching_weight: 50` を立てる）。蓄熱量が `hot` に達するのは乾季開始から 20 日後（30 日固定の初回
+サイクルなら絶対 81 日目）以降であり、炎天は**乾季後半の天気**になります。これは `storm` が
+`atmospheric_moisture` の `saturated` 帯（雨季後半）で重みを持つのと対称の関係です。対称性は名残の
+振る舞いにも及びます: 雨季の名残の水分が抜けるまでの**乾季序盤に嵐が残る**のと同じように、乾季の名残の
+蓄熱が抜けるまでの**穏やかな季節の序盤（最初の約 10 日、残暑）に炎天が残ります**。ゲーム開始直後の
+最初の calm だけは、蓄熱量の初期値が中立（1,000 = `mild`）のため炎天は発生しません。
 
 段階の境界（`min`）を跨いだ瞬間に重みが階段状に飛ぶ点は、`weather_remaining` の遷移自体が 4〜6 時間に 1 回
 （4.2 節）しか起きないため、体感上の不自然さにはならないと考えます。
@@ -383,9 +399,12 @@ first_dry_rain_calibration:
 - 状態遷移の条件分岐（今の季節・初回サイクルか否か）は、0/1 の重みプロパティを参照する `pick` として表現する
   （2.3 節。確率のための仕組みを確率 0/100% の極として使う）
 - 大気水分量は、天気そのものの stages 閾値としては使わず（4.1 節）、天気候補ごとの重み専用プロパティを
-  `stages`/`modify` 経由で駆動する入力としてのみ使う（4.3 節）。乾き系・湿り系のどちらの重みも大気水分量に
+  `stages`/`modify` 経由で駆動する入力としてのみ使う（4.3 節）。晴れ系・雨系のどちらの重みも大気水分量に
   連動させ、固定の重み定数にはしない（極端な条件下で「絶対に晴れない」「絶対に嵐にならない」を表現できるよう
-  にするため）
+  にするため）。晴れ系では `clear`（穏やかで過ごしやすい普通の晴れ）を最も重くし、この島の標準的な天気にする
+- 両極の極端な天候は貯水池の飽和帯が駆動する: `storm`（嵐）は大気水分量の `saturated` 帯（雨季後半）が、
+  `scorching`（炎天）は蓄熱量の `hot` 帯（乾季後半）が、それぞれ対称に重みを立てる（4.3 節）。どちらも
+  貯水池の名残が抜けるまで次の季節の序盤に持ち越される（乾季序盤の嵐、穏やかな季節の序盤の残暑）
 - 「季節後半ほど過酷になる」は貯水池モデルの単調な積み上がりから自動的に生まれ、追加の経過度計算を要しない
   （3 節末尾）。`calm` は `dry`/`wet` と逆向きのレート（回復方向）を持たせることで、この法則から意図的に
   外れる（3.1 節）
@@ -403,8 +422,6 @@ first_dry_rain_calibration:
 
 - 各レート・閾値・重みの数値は統計テストを満たす初期値であり、実プレイでの体感に基づくバランス調整は今後の
   課題（数値を変えたら `ClimateSystemTests` が要件を満たし続けるかで回帰を検知できる）
-- `weather` の `scorching`（遷移対象外の予約値、4.2 節）を正式に使うかどうか。使う場合、乾季の `thermal_level`
-  や `sunny` の連続などからどう遷移させるか
 - 3.3 節で挙げた単調さ対策（レートへのノイズ / 季節開始ごとのレート選び直し）を採用するかどうか
 - 5.2 節の `6720`/`6816` という tick 数は 2.3 節の「初回サイクル固定 30 日」に依存する導出値であり、2.3 節の
   前提が変わった場合はこの節も再計算が必要

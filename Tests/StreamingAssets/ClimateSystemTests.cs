@@ -30,7 +30,7 @@ namespace UnmappedIsland.StreamingAssets
 
         private WorldCodex codex;
         private int calmId, wetId, dryId;
-        private int sunnyId, cloudyId, clearId, lightRainId, heavyRainId, stormId;
+        private int sunnyId, cloudyId, clearId, lightRainId, heavyRainId, stormId, scorchingId;
 
         /// <summary>シードごとの全tickの記録。配列のインデックスiは「i+1回目のTick直後」の観測値。</summary>
         private sealed class Trace
@@ -56,6 +56,7 @@ namespace UnmappedIsland.StreamingAssets
             sunnyId = codex.SymbolNames.Intern("sunny");
             cloudyId = codex.SymbolNames.Intern("cloudy");
             clearId = codex.SymbolNames.Intern("clear");
+            scorchingId = codex.SymbolNames.Intern("scorching");
             lightRainId = codex.SymbolNames.Intern("light_rain");
             heavyRainId = codex.SymbolNames.Intern("heavy_rain");
             stormId = codex.SymbolNames.Intern("storm");
@@ -267,7 +268,8 @@ namespace UnmappedIsland.StreamingAssets
                 for (int t = first; t <= last; t++)
                 {
                     if (IsRain(trace.Weather[t])) rainTicks++;
-                    else if (trace.Weather[t] == sunnyId || trace.Weather[t] == cloudyId || trace.Weather[t] == clearId) fairTicks++;
+                    else if (trace.Weather[t] == sunnyId || trace.Weather[t] == cloudyId || trace.Weather[t] == clearId
+                             || trace.Weather[t] == scorchingId) fairTicks++;
                 }
 
                 double rainRatio = (double)rainTicks / total;
@@ -327,6 +329,64 @@ namespace UnmappedIsland.StreamingAssets
 
                 Assert.That(dryEndAvg, Is.GreaterThanOrEqualTo(wetEndAvg + 8),
                     $"seed {trace.Seed}: 乾季の終わり({dryEndAvg:F1})は雨季の終わり({wetEndAvg:F1})より十分暑いこと");
+            }
+        }
+
+        [Test]
+        public void ClearWeather_IsTheMostCommonFairWeather()
+        {
+            // clearは「穏やかで過ごしやすい普通の晴れ」であり、この島の標準的な天気として高頻度で
+            // 出現する（ClimateSystem.md 4.3節: 晴れ系の中でclearの重みが最も大きい）。
+            // 初回calm（4-30日目）と初回dry（61-90日目）で、clearが十分な割合を占めることを確認する。
+            var (calmFirst, calmLast) = DayRange(4, 30);
+            var (dryFirst, dryLast) = DayRange(61, 90);
+
+            AssertSuccessRate("clearが穏やかな季節・乾季で最も多い晴れ系の天気になる", trace =>
+            {
+                double ClearRatio(int first, int last)
+                {
+                    int clearTicks = 0;
+                    for (int t = first; t <= last; t++)
+                        if (trace.Weather[t] == clearId) clearTicks++;
+                    return (double)clearTicks / (last - first + 1);
+                }
+
+                double calmRatio = ClearRatio(calmFirst, calmLast);
+                double dryRatio = ClearRatio(dryFirst, dryLast);
+                if (calmRatio < 0.15)
+                    return $"calm(4-30日目)のclear比率が{calmRatio:P0}（期待: 15%以上）";
+                if (dryRatio < 0.15)
+                    return $"dry(61-90日目)のclear比率が{dryRatio:P0}（期待: 15%以上）";
+
+                return null;
+            });
+        }
+
+        [Test]
+        public void ScorchingWeather_AppearsInLateDrySeason_AndNeverInWet()
+        {
+            // scorching（炎天）は蓄熱量（thermal_level）がhot帯に達した乾季後半にだけ抽選へ加わる
+            // （雨季後半のstormと対称の扱い、ClimateSystem.md 4.3節）。初回サイクルでは、thermal_levelが
+            // hot閾値(1920)へ達するのはdry開始から20日後=絶対81日目。
+            var (lateFirst, lateLast) = DayRange(81, 90);
+
+            AssertSuccessRate("scorchingが乾季後半（81-90日目）に発生する", trace =>
+            {
+                for (int t = lateFirst; t <= lateLast; t++)
+                    if (trace.Weather[t] == scorchingId) return null;
+                return "81〜90日目にscorchingが一度も発生しなかった";
+            });
+
+            // 蓄熱量が乾季後半とその名残の期間以外で hot に達することはないため、
+            // 初回calm（初期値1000=mild以下）と初回wet（0=cool）でのscorchingは構造的に不可能。
+            // これは乱数に依存しないため全シードで成立を要求する。
+            var (calmFirst, calmLast) = DayRange(1, 30);
+            var (wetFirst, wetLast) = DayRange(31, 60);
+            foreach (Trace trace in traces)
+            {
+                for (int t = calmFirst; t <= wetLast; t++)
+                    Assert.That(trace.Weather[t], Is.Not.EqualTo(scorchingId),
+                        $"seed {trace.Seed}: {t / TicksPerDay + 1}日目（初回calm/wet）にscorchingは発生し得ないはず");
             }
         }
     }
