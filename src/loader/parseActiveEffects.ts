@@ -1,0 +1,400 @@
+import type { YAMLMap } from 'yaml';
+import { isMap, isSeq } from 'yaml';
+import {
+  asMap,
+  asScalarText,
+  entriesInOrder,
+  requireInt,
+  requireScalar,
+  tryGetBool,
+  tryGetMap,
+  tryGetScalar,
+} from './yamlMapping';
+import type { YamlNode } from './yamlMapping';
+import { YamlLoadError } from './YamlLoadError';
+import { ACTIVE_VERB_KEYS, parseIntLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
+import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
+import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
+import { PropertyPath } from '../domain/defs/ReferenceRoot';
+import {
+  ActiveEffects,
+  AddEffect,
+  DestroyEffect,
+  SetEffect,
+  SpawnEffect,
+  TransferEffect,
+} from '../domain/defs/ActiveEffect';
+import type { ActiveEffect, SpawnTargetRoot } from '../domain/defs/ActiveEffect';
+import { MoveEffect } from '../domain/defs/MoveEffect';
+
+/**
+ * active内容（9節）を読む。文法は「操作(set/add)が上位、対象(self/parent/actor/dragged)が下位」
+ * （例: `add: {self: {hour: 1}}`）。bodyNodeにはactive以外の兄弟キーも同居しうるため、
+ * reservedKeysに「呼び出し側がすでに読み終えている兄弟キー」を渡して未知キー判定から除外する。
+ * spawnは常にselfが実行するものとみなすため対象キーを持たない。
+ */
+export function parseActiveEffectBody(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  bodyNode: YAMLMap,
+  allowDragged: boolean,
+  selfOnly: boolean,
+  reservedKeys?: ReadonlyArray<string>,
+): ActiveEffects {
+  // 適用順はset→add→transfer→move→destroy→spawnで固定（set後add、destroyで空いた位置への
+  // spawn(same_slot)、moveはdestroyで対象が消える前、という依存関係のため。
+  // ActiveEffects.applyはこのリスト順にそのまま適用する）。
+  const operations: ActiveEffect[] = [];
+
+  const setMap = tryGetMap(bodyNode, 'set', context);
+  if (setMap !== undefined)
+    operations.push(...parseSets(loader, `${context}.set`, setMap, allowDragged, selfOnly));
+
+  const addMap = tryGetMap(bodyNode, 'add', context);
+  if (addMap !== undefined)
+    operations.push(...parseAdds(loader, `${context}.add`, addMap, allowDragged, selfOnly));
+
+  const transferNode = tryGetNode(bodyNode, 'transfer');
+  if (transferNode !== undefined)
+    operations.push(...parseTransfers(loader, `${context}.transfer`, transferNode, allowDragged, selfOnly));
+
+  const moveNode = tryGetMap(bodyNode, 'move', context);
+  if (moveNode !== undefined) operations.push(parseMove(loader, `${context}.move`, moveNode, selfOnly));
+
+  const destroyNode = tryGetNode(bodyNode, 'destroy');
+  if (destroyNode !== undefined)
+    for (const target of parseDestroyTargets(`${context}.destroy`, destroyNode, allowDragged, selfOnly))
+      operations.push(new DestroyEffect(target));
+
+  const spawnNode = tryGetNode(bodyNode, 'spawn');
+  if (spawnNode !== undefined) operations.push(...parseSpawns(loader, `${context}.spawn`, spawnNode));
+
+  const knownKeys = new Set<string>(ACTIVE_VERB_KEYS);
+  if (reservedKeys !== undefined) for (const key of reservedKeys) knownKeys.add(key);
+
+  const unknownKeys = entriesInOrder(bodyNode)
+    .map(([key]) => key)
+    .filter((key) => !knownKeys.has(key));
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  return new ActiveEffects(operations);
+}
+
+/**
+ * setの1エントリの値。スカラーならリテラル（整数・真偽値・シンボル名）、マッピングなら
+ * {object, prop}参照（他のプロパティの現在値のコピー、9.2節）。参照先のobjectはset自身の
+ * 対象キーと同じ制約（selfOnly・allowDragged）を共有する。
+ */
+function parseSetEffect(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  target: ReferenceRoot,
+  propertyGlobalId: number,
+  valueNode: YamlNode,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): SetEffect {
+  if (isMap(valueNode)) {
+    const objectName = tryGetScalar(valueNode, 'object', context);
+    const root =
+      objectName !== undefined ? parseActiveTargetKey(context, objectName, allowDragged, selfOnly) : 'self';
+    const propName = requireScalar(valueNode, 'prop', context);
+
+    const unknownKeys = entriesInOrder(valueNode)
+      .map(([key]) => key)
+      .filter((key) => key !== 'object' && key !== 'prop');
+    if (unknownKeys.length > 0)
+      throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+    return new SetEffect(
+      target,
+      propertyGlobalId,
+      new PropertyPath(root, loader.propertyNames.intern(propName)),
+    );
+  }
+
+  const [value] = parseScalarNumber(loader, context, asScalarText(valueNode, context));
+  return new SetEffect(target, propertyGlobalId, value);
+}
+
+/**
+ * transfer（9.5節）。from/toの参照はフラットな2フィールド（from_object/from_prop,
+ * to_object/to_prop）で表し、from_object/to_objectは省略時self。対象ルートはset/add/destroyと
+ * 同じ制約（selfOnly・allowDragged）を共有する。linked_add（省略可）はaddと同じ構造で、
+ * 実際の移動量に比例してスケールされる副効果。
+ */
+function parseTransfer(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): TransferEffect {
+  const fromObjectRaw = tryGetScalar(map, 'from_object', context);
+  const fromObject =
+    fromObjectRaw !== undefined
+      ? parseActiveTargetKey(context, fromObjectRaw, allowDragged, selfOnly)
+      : 'self';
+  const fromProp = loader.propertyNames.intern(requireScalar(map, 'from_prop', context));
+
+  const toObjectRaw = tryGetScalar(map, 'to_object', context);
+  const toObject =
+    toObjectRaw !== undefined ? parseActiveTargetKey(context, toObjectRaw, allowDragged, selfOnly) : 'self';
+  const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
+
+  const amount = requireInt(map, 'amount', context);
+  const allowOverflow = tryGetBool(map, 'allow_overflow', context, false);
+
+  const linkedAddMap = tryGetMap(map, 'linked_add', context);
+  const linkedAdd =
+    linkedAddMap !== undefined
+      ? parseAdds(loader, `${context}.linked_add`, linkedAddMap, allowDragged, selfOnly)
+      : [];
+
+  const unknownKeys = entriesInOrder(map)
+    .map(([key]) => key)
+    .filter(
+      (key) =>
+        key !== 'from_object' &&
+        key !== 'from_prop' &&
+        key !== 'to_object' &&
+        key !== 'to_prop' &&
+        key !== 'amount' &&
+        key !== 'allow_overflow' &&
+        key !== 'linked_add',
+    );
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd);
+}
+
+/** setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む。 */
+function parseSets(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): SetEffect[] {
+  const sets: SetEffect[] = [];
+  for (const [targetName, targetBody] of entriesInOrder(map)) {
+    const target = parseActiveTargetKey(context, targetName, allowDragged, selfOnly);
+    for (const [propName, valueNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
+      sets.push(
+        parseSetEffect(
+          loader,
+          `${context}.'${targetName}'.'${propName}'`,
+          target,
+          loader.propertyNames.intern(propName),
+          valueNode,
+          allowDragged,
+          selfOnly,
+        ),
+      );
+  }
+
+  return sets;
+}
+
+/** addを「対象付きの1操作(AddEffect)」の宣言順フラットリストへ読む。 */
+function parseAdds(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): AddEffect[] {
+  const adds: AddEffect[] = [];
+  for (const [targetName, targetBody] of entriesInOrder(map)) {
+    const target = parseActiveTargetKey(context, targetName, allowDragged, selfOnly);
+    for (const [propName, amountNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
+      adds.push(
+        new AddEffect(
+          target,
+          loader.propertyNames.intern(propName),
+          parseIntLiteral(context, asScalarText(amountNode, context)),
+        ),
+      );
+  }
+
+  return adds;
+}
+
+function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNode): SpawnEffect[] {
+  if (isMap(node)) return [parseSpawn(loader, context, node)];
+
+  if (isSeq(node)) {
+    const result: SpawnEffect[] = [];
+    const items = node.items as YamlNode[];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!isMap(item)) throw new YamlLoadError(`${context}[${i}]: 各要素はmappingである必要があります。`);
+      result.push(parseSpawn(loader, `${context}[${i}]`, item));
+    }
+    return result;
+  }
+
+  throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
+}
+
+function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnEffect {
+  const into = tryGetScalar(map, 'into', context);
+
+  const unknownKeys = entriesInOrder(map)
+    .map(([key]) => key)
+    .filter((key) => key !== 'object' && key !== 'into');
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  return new SpawnEffect(
+    loader.objectNames.intern(requireScalar(map, 'object', context)),
+    parseSpawnTargetRoot(context, into),
+  );
+}
+
+function parseTransfers(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): TransferEffect[] {
+  if (isMap(node)) return [parseTransfer(loader, context, node, allowDragged, selfOnly)];
+
+  if (isSeq(node)) {
+    const result: TransferEffect[] = [];
+    const items = node.items as YamlNode[];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!isMap(item)) throw new YamlLoadError(`${context}[${i}]: 各要素はmappingである必要があります。`);
+      result.push(parseTransfer(loader, `${context}[${i}]`, item, allowDragged, selfOnly));
+    }
+    return result;
+  }
+
+  throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
+}
+
+/**
+ * move（対象を、to_propが指すインスタンスIDのオブジェクトの中へ移動する。MoveEffect参照）。
+ * transferと同じフラットフィールド規約（`move: {object: actor, to_prop: destination_id}`）。
+ * objectは現時点でactorのみ対応（それ以外の対象には「どの子か」等の未確定な意味論が伴うため）。
+ * selfOnly文脈（rangeイベント）にはactorが存在しないため使えない。
+ */
+function parseMove(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  selfOnly: boolean,
+): MoveEffect {
+  if (selfOnly)
+    throw new YamlLoadError(
+      `${context}: moveはon_min/on_max/on_overflow/on_shortfallでは使えません（actorが存在しないため）。`,
+    );
+
+  const objectRaw = requireScalar(map, 'object', context);
+  if (objectRaw !== 'actor')
+    throw new YamlLoadError(
+      `${context}: moveのobjectは現時点で'actor'のみ対応しています（値: '${objectRaw}'）。`,
+    );
+
+  const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
+
+  const unknownKeys = entriesInOrder(map)
+    .map(([key]) => key)
+    .filter((key) => key !== 'object' && key !== 'to_prop');
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  return new MoveEffect('actor', toProp);
+}
+
+/**
+ * activeの対象キー（self/parent/ancestor/actor、combinations内はdraggedも）を解決する。
+ * childは「どの子か」を一意に絞る規約が無いため未対応。selfOnly（rangeイベント）は
+ * self以外を一律エラーにする。
+ */
+function parseActiveTargetKey(
+  context: string,
+  key: string,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): ReferenceRoot {
+  if (selfOnly && key !== 'self')
+    throw new YamlLoadError(`${context}: 現時点でselfのみ対応しています（未対応: '${key}'）。`);
+
+  switch (key) {
+    case 'self':
+      return 'self';
+    case 'parent':
+      return 'parent';
+    case 'ancestor':
+      return 'ancestor';
+    case 'actor':
+      return 'actor';
+    case 'dragged':
+      if (!allowDragged) throw new YamlLoadError(`${context}: 'dragged'はcombinationsの中でのみ使えます。`);
+      return 'dragged';
+    case 'dragged_parent':
+      if (!allowDragged)
+        throw new YamlLoadError(`${context}: 'dragged_parent'はcombinationsの中でのみ使えます。`);
+      return 'dragged_parent';
+    case 'child':
+      throw new YamlLoadError(
+        `${context}: activeの対象'child'は未対応です（一度きりの命令に対して『どの子か』の意味が確定していないため）。`,
+      );
+    default:
+      throw new YamlLoadError(`${context}: 未知の対象キー '${key}' です。`);
+  }
+}
+
+/** destroy（削除対象の直接指定）を読む。単一の対象名か対象名のリストを許容する。
+ * ancestorはプロパティ名が無いと解決できないため、destroyの対象としては未対応。 */
+function parseDestroyTargets(
+  context: string,
+  node: YamlNode,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): ReferenceRoot[] {
+  if (isMap(node))
+    throw new YamlLoadError(`${context}: destroyは対象名か、対象名のリストのいずれかである必要があります。`);
+
+  if (isSeq(node))
+    return (node.items as YamlNode[]).map((n) =>
+      parseDestroyTargetKey(context, asScalarText(n, context), allowDragged, selfOnly),
+    );
+
+  return [parseDestroyTargetKey(context, asScalarText(node, context), allowDragged, selfOnly)];
+}
+
+function parseDestroyTargetKey(
+  context: string,
+  key: string,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): ReferenceRoot {
+  const root = parseActiveTargetKey(context, key, allowDragged, selfOnly);
+  if (root === 'ancestor')
+    throw new YamlLoadError(
+      `${context}: destroyの対象'ancestor'は未対応です（destroyはプロパティではなくオブジェクトそのものを指すため）。`,
+    );
+  return root;
+}
+
+function parseSpawnTargetRoot(context: string, raw: string | undefined): SpawnTargetRoot {
+  switch (raw) {
+    case undefined:
+    case 'same_slot':
+      return 'same_slot';
+    case 'self':
+      return 'self';
+    case 'actor':
+      return 'actor';
+    default:
+      throw new YamlLoadError(
+        `${context}: spawn.intoは 'same_slot'/'self'/'actor' のいずれかである必要があります（値: '${raw}'）。`,
+      );
+  }
+}

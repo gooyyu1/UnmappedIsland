@@ -13,16 +13,16 @@
 
 ## 生成方法
 
-各レポートは、`Tests/Diagnostics/` に置かれた対応するテスト（NUnitの `[Explicit]`。通常の
-`dotnet test` では実行されず、フィルタ指定時のみ動く）を実行して生成します。生成元テストと出力先は
+各レポートは、`tests/diagnostics/` に置かれた対応するテスト（`RUN_CLIMATE_STATS` 環境変数が立っている
+ときだけ実行され、通常の `npm test` では実行されない）を実行して生成します。生成元テストと出力先は
 レポート冒頭にコメントで記載しています。
 
 ```bash
-dotnet test Tests/Tests.csproj --filter FullyQualifiedName~<対応するテストクラス名>
+npm run stats:climate
 ```
 
 ## 収録レポート
 
 - [気候システム統計レポート](./ClimateSystemStats.md) — 季節の持続日数・気温・天気ごとの持続時間・
   連続降雨/未降雨時間の平均/最小/最大/標準偏差（[`ClimateSystem.md`](../Engine/ClimateSystem.md) 参照）。
-  生成元: `Tests/Diagnostics/ClimateStatsReportTests.cs`
+  生成元: `tests/diagnostics/climateStatsReport.test.ts`

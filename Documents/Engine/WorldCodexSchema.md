@@ -8,7 +8,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 `ContainerSystem.md`・`ActionSystem.md`・`TerrainGeneration.md`・`ExplorationSystem.md`）の内容そのものは
 スキーマの対象外で、それらが使う文法の妥当性のみを検証します。
 
-スキーマの正は**ローダーの実装**（`Assets/Scripts/Loader/WorldCodexYamlLoader.*.cs`）です。本スキーマはローダーが
+スキーマの正は**ローダーの実装**（`src/loader/WorldCodexYamlLoader.ts` と関連する `parse*.ts` モジュール群）です。本スキーマはローダーが
 受け付ける文法の機械的な近似であり、乖離を見つけたらローダーに合わせてスキーマを直します。
 
 ## 1. 検証方法
@@ -17,7 +17,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 
 - **スキーマ自体の妥当性**: `jsonschema` ライブラリの `Draft202012Validator.check_schema` により、Draft 2020-12として
   構文的に正しいスキーマであることを確認
-- **実データ全ファイルの受理**: `Assets/StreamingAssets/WorldCodex/` の全YAMLファイル（`core.yaml`・`locations.yaml`・
+- **実データ全ファイルの受理**: `public/world-codex/` の全YAMLファイル（`core.yaml`・`locations.yaml`・
   `containers.yaml`・`foods.yaml`・`characters.yaml`・`terrain_generation.yaml`）が、実際にゲームがロードしている
   ままの内容でスキーマを満たすことを確認（ローダーで読み込めるファイルはスキーマも通る、が維持基準）
 - **不正な記述の拒否**: `set`/`add`/`destroy`/`spawn`/`transfer`/`move` と `pick` を同時に指定する、identifier の
@@ -39,7 +39,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 ### 2.2 対象だが中身を検証しないもの・ローダー未実装のもの
 
 - **地形生成（`axes`/`location_types`/`generation_scopes`、`TerrainGeneration.md`）**: ローダーは実装・ロード済み
-  （`WorldCodexYamlLoader.Generation.cs`、`terrain_generation.yaml`）。本スキーマはこの3ルートキーを**許容するが
+  （`parseGeneration.ts`、`terrain_generation.yaml`）。本スキーマはこの3ルートキーを**許容するが
   中身は検証しない**（`true` スキーマ）。詳細スキーマ化は今後の課題。
 - **`covers`/`layer`/`recipes`（object_def直下）・`unit`（prop直下）**: 文法として文書化済みでスキーマにも
   含めているが、ローダーは現時点でこれらのキーを解釈しない（読み飛ばす）。
@@ -76,7 +76,7 @@ python3 -c "
 import json, yaml, jsonschema
 schema = json.load(open('Documents/Engine/WorldCodex.schema.json'))
 v = jsonschema.Draft202012Validator(schema)
-for e in v.iter_errors(yaml.safe_load(open('Assets/StreamingAssets/WorldCodex/core.yaml'))):
+for e in v.iter_errors(yaml.safe_load(open('public/world-codex/core.yaml'))):
     print(list(e.absolute_path), e.message)
 "
 ```

@@ -1,0 +1,421 @@
+import { describe, expect, it } from 'vitest';
+import { WorldObject } from '../../src/domain/runtime/WorldObject';
+import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+
+// on_overflow（GameElementDefinition.md 6.3節）に対する自動テスト。値が変わった直後にcheckRangeEventsが
+// 再評価されるため、補正の連鎖は宣言順やTickの回数に依存せず同じtick()内で解決される。
+// YAMLパーサ経由のテストはyamlLoader.test.tsを参照。
+describe('OverflowTests', () => {
+  function load(yaml: string) {
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+  }
+
+  it('sessionを渡してAddNumberを呼ぶと、Tick()を待たずにその場でoverflowが補正される', () => {
+    // Tick()を待たず、addNumberにsessionを渡した瞬間にon_overflowが判定・適用されることを確認する。
+    // これにより、値がrangeの外側（この例では60）にある状態が外部から観測される瞬間は生じない。
+    const yaml = `
+object_defs:
+  clock_immediate:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+`;
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock_immediate')), session);
+
+    instance.addNumber(minuteId, 15, session); // 45+15=60 > 59。Tick()は一度も呼んでいない
+
+    expect(instance.getNumber(minuteId), 'Tick()を呼んでいなくても、その場で折り返る').toBe(0);
+    expect(instance.getNumber(hourId)).toBe(1);
+  });
+
+  it('sessionを渡さないAddNumberは、明示的にTick()を呼ぶまでoverflowを判定しない', () => {
+    // sessionを渡さない呼び出し（既存の呼び出し方との後方互換）は、値がrangeの外側のままでも
+    // 即座には補正されず、明示的にTick()を呼ぶまで持ち越されることを確認する。
+    const yaml = `
+object_defs:
+  clock_deferred:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+`;
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock_deferred')), session);
+
+    instance.addNumber(minuteId, 15); // sessionを渡さない
+
+    expect(instance.getNumber(minuteId), 'sessionを渡さない間はrange外のまま').toBe(60);
+    expect(instance.getNumber(hourId)).toBe(0);
+
+    instance.tick(session);
+
+    expect(instance.getNumber(minuteId), '明示的にTick()を呼ぶと折り返る').toBe(0);
+    expect(instance.getNumber(hourId)).toBe(1);
+  });
+
+  it('on_overflow省略時の既定合成（自身をrange.maxへset）は無限再帰を起こさない', () => {
+    // on_overflowを省略した場合の既定合成（「自分自身をrange.maxへset」）は、値がちょうど境界に
+    // 着地した後は同じ値への再setになる（差分0）。addNumberが差分0を何もしないことで、
+    // checkRangeEvents→applyActiveEffect→setNumber→addNumberという無限再帰を防いでいることを確認する。
+    const yaml = `
+object_defs:
+  tank_immediate:
+    props:
+      pressure:
+        value: 5
+        range: {min: 0, max: 10}
+        # on_overflowを指定しない: YAMLコンバータが「自分自身をrange.maxへset」を既定合成する
+`;
+    const codex = load(yaml);
+    const pressureId = codex.propertyNames.getId('pressure');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('tank_immediate')), session);
+
+    instance.addNumber(pressureId, 5, session); // 5+5=10 >= max(10)。例外・制御不能なスタックオーバーフローを起こさなければ成功
+
+    expect(instance.getNumber(pressureId)).toBe(10);
+  });
+
+  it('range上限を超えるとTick()でプロパティが折り返り、繰り上げ先へ伝播する', () => {
+    const yaml = `
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+`;
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock')), session);
+
+    instance.tick(session); // 45 + 15 = 60 > 59 なので折り返す
+
+    expect(instance.getNumber(minuteId)).toBe(0);
+    expect(instance.getNumber(hourId)).toBe(1);
+  });
+
+  it('on_overflowでsetとaddを併用すると、setで自身が絶対値に戻りaddで繰り上げ先へ伝播する', () => {
+    // set: {self: {minute: 0}} + add: {self: {hour: 1}} という、core.yamlが実際に使っている文法
+    // （accumulateの"-60"のような差分指定ではなく、setで絶対値へ戻す）を検証する。
+    const yaml = `
+object_defs:
+  clock_set:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          set: {self: {minute: 0}}
+          add: {self: {hour: 1}}
+      hour:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+`;
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock_set')), session);
+
+    instance.tick(session); // 45 + 15 = 60 > 59 なので折り返す
+
+    expect(instance.getNumber(minuteId), 'setにより絶対値0へ戻る（差分ではなく代入）').toBe(0);
+    expect(instance.getNumber(hourId)).toBe(1);
+  });
+
+  it('値がrange内に収まっていればTick()で折り返らない', () => {
+    const yaml = `
+object_defs:
+  clock2:
+    props:
+      minute:
+        value: 10
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+`;
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock2')), session);
+
+    instance.tick(session); // 10 + 15 = 25、59以下なので折り返さない
+
+    expect(instance.getNumber(minuteId)).toBe(25);
+    expect(instance.getNumber(hourId)).toBe(0);
+  });
+
+  it('on_overflowの補正が連鎖し、1回のTick()の中でrange幅の複数span分が解決する', () => {
+    // on_overflowの補正自体(add: {self: {minute: -10}}})がaddNumberを通るため、その場でもう一度
+    // checkRangeEventsが評価される。1tickでrangeの幅を複数回分飛び越えていても、この連鎖により
+    // 1回のTick()呼び出しの中だけで完全に解決される。
+    const yaml = `
+object_defs:
+  clock3:
+    props:
+      minute:
+        value: 35
+        range: {min: 0, max: 9}
+        on_overflow:
+          add: {self: {minute: -10, hour: 1}}
+      hour:
+        value: 0
+`;
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock3')), session);
+
+    instance.tick(session);
+    expect(instance.getNumber(minuteId), '3span分の補正が1回のTick()の中で連鎖的に解決される').toBe(5);
+    expect(instance.getNumber(hourId)).toBe(3);
+
+    instance.tick(session);
+    expect(instance.getNumber(minuteId), '範囲内に収まった後は何もしない').toBe(5);
+    expect(instance.getNumber(hourId)).toBe(3);
+  });
+
+  it('宣言順で後にあるプロパティへの繰り上げも、同じTick()の中で連鎖して解決する', () => {
+    // minuteがhourより先に宣言されていれば、minute.tickが先に走り繰り上げを適用した直後に
+    // hour.tickが走るため、hour自身の溢れも同じtick内で連鎖して解決する
+    // （ループは無いが、宣言順どおりに1回ずつ処理が進むだけで足りる）。
+    const yaml = `
+object_defs:
+  clock4:
+    props:
+      minute:
+        value: 50
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+      hour:
+        value: 23
+        range: {min: 0, max: 23}
+        on_overflow:
+          add: {self: {hour: -24, day: 1}}
+      day:
+        value: 1
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+`;
+    // 50+15=65 -> minute=5, hour+1(23->24, さらに折り返す)
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const dayId = codex.propertyNames.getId('day');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock4')), session);
+
+    instance.tick(session);
+
+    expect(instance.getNumber(minuteId)).toBe(5);
+    expect(instance.getNumber(hourId), '23+1=24は範囲(0-23)を超えるため、同じtick内でhour自身も折り返す').toBe(0);
+    expect(instance.getNumber(dayId), 'hourの繰り上げでdayも+1される').toBe(2);
+  });
+
+  it('宣言順に関わらず、先に宣言されたプロパティへの繰り上げも同じTick()の中で連鎖して解決する', () => {
+    // hourがminuteより先に宣言されていても、minuteのon_overflowが行うadd: {self: {hour: 1}}}が
+    // addNumberを通るため、その場でhour自身のcheckRangeEventsも即座に評価される。宣言順に関わらず
+    // 同じTick()呼び出しの中で連鎖的に解決される。
+    const yaml = `
+object_defs:
+  clock5:
+    props:
+      hour:
+        value: 23
+        range: {min: 0, max: 23}
+        on_overflow:
+          add: {self: {hour: -24, day: 1}}
+      day:
+        value: 1
+      minute:
+        value: 50
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+`;
+    // 50+15=65 -> minute=5, hour+1(23->24)
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const hourId = codex.propertyNames.getId('hour');
+    const dayId = codex.propertyNames.getId('day');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock5')), session);
+
+    instance.tick(session);
+
+    expect(instance.getNumber(minuteId)).toBe(5);
+    expect(instance.getNumber(hourId), 'hourがminuteより先に宣言されていても、即座に連鎖して折り返る').toBe(0);
+    expect(instance.getNumber(dayId), 'hourの繰り上げでdayも同じTick()内で+1される').toBe(2);
+  });
+
+  it('overflow補正の加算先プロパティをこのobject_defが持たない場合は黙って無視される', () => {
+    // on_minのadd（WorldObject.addNumber）と同じ規約: このobject_defが持たないプロパティへの
+    // 加算は、たとえ同名のプロパティを別のobject_defが持っていて名前自体は登録されていても、
+    // 黙って無視される（エラーにしない）。
+    const yaml = `
+object_defs:
+  a_clock2:
+    props:
+      minute:
+        value: 45
+        range: {min: 0, max: 59}
+        on_overflow:
+          add: {self: {minute: -60, hour: 1}}
+    passives:
+      - accumulate:
+          self:
+            minute: 15
+  b_something2:
+    props:
+      hour:
+        value: 0
+`;
+    // a_clock2はhourを持たない。b_something2が同名プロパティを持つ(名前だけは登録される)
+    const codex = load(yaml);
+    const minuteId = codex.propertyNames.getId('minute');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('a_clock2')), session);
+
+    instance.tick(session); // 例外を投げればテスト自体が失敗する
+
+    expect(instance.getNumber(minuteId)).toBe(0);
+  });
+
+  // ------------------------------------------------------------------
+  // on_max/on_minとon_overflow/on_shortfallの評価順: 循環する(自身をラップして戻す)
+  // カスタムon_overflow/on_shortfallを持つプロパティが、1tickでrangeをいきなり飛び越えた場合でも、
+  // on_max/on_minのレベルトリガーが「その瞬間、境界に達していたこと」を見逃さないことを確認する。
+  // ------------------------------------------------------------------
+
+  it('カスタムon_overflowが同じTick()内でmaxを超えて折り返しても、on_maxは境界到達を検知する', () => {
+    // gaugeは0-100を循環するプロパティ(on_overflowが自分自身を-100して折り返す、時計のminuteと同じ
+    // パターン)。1tickでの加算(+150)がrangeの幅(100)を超えるため、on_overflow適用後のgaugeは
+    // 50(range内)に収まってしまい、on_maxの判定(>=100)をon_overflowの後に行うと見逃してしまう。
+    const yaml = `
+object_defs:
+  tank2:
+    props:
+      gauge:
+        value: 0
+        range: {min: 0, max: 100}
+        on_overflow:
+          add: {self: {gauge: -100}}
+        on_max:
+          add: {self: {alarm_count: 1}}
+      alarm_count:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            gauge: 150
+`;
+    const codex = load(yaml);
+    const gaugeId = codex.propertyNames.getId('gauge');
+    const alarmId = codex.propertyNames.getId('alarm_count');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('tank2')), session);
+
+    instance.tick(session); // 0 + 150 = 150 > 100 なので折り返す
+
+    expect(instance.getNumber(gaugeId), 'on_overflowにより50へ折り返される').toBe(50);
+    expect(
+      instance.getNumber(alarmId),
+      'on_overflowで折り返される前に、gaugeが確かにmax(100)以上に達していたことをon_maxが検知できているはず',
+    ).toBe(1);
+  });
+
+  it('カスタムon_shortfallが同じTick()内でminを下回って折り返しても、on_minは境界到達を検知する', () => {
+    // on_maxのテストの下限側の鏡像。gaugeが1tickでrangeの下限をいきなり下回った場合でも、
+    // on_shortfallによる折り返しの前に、on_minのレベルトリガーがその瞬間を検知できることを確認する。
+    const yaml = `
+object_defs:
+  tank3:
+    props:
+      gauge:
+        value: 50
+        range: {min: 0, max: 100}
+        on_shortfall:
+          add: {self: {gauge: 150}}
+        on_min:
+          add: {self: {alarm_count: 1}}
+      alarm_count:
+        value: 0
+    passives:
+      - accumulate:
+          self:
+            gauge: -150
+`;
+    const codex = load(yaml);
+    const gaugeId = codex.propertyNames.getId('gauge');
+    const alarmId = codex.propertyNames.getId('alarm_count');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('tank3')), session);
+
+    instance.tick(session); // 50 - 150 = -100 < 0 なので折り返す。折り返し量(+150)はmin(0)ちょうどには
+    // 着地させない(50に着地させる)ことで、「折り返し後の値がたまたま境界と一致する」ケースと区別する。
+
+    expect(instance.getNumber(gaugeId), 'on_shortfallにより50へ折り返される(0ちょうどには着地しない)').toBe(50);
+    expect(
+      instance.getNumber(alarmId),
+      'on_shortfallで折り返される前に、gaugeが確かにmin(0)以下に達していたことをon_minが検知できているはず',
+    ).toBe(1);
+  });
+});

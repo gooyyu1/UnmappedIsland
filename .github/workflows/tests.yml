@@ -5,190 +5,55 @@ on:
     branches:
       - main
     paths:
-      - 'Assets/Scripts/Codex/**'
-      - 'Assets/Scripts/Runtime/**'
-      - 'Assets/Scripts/Loader/**'
-      - 'Assets/StreamingAssets/WorldCodex/**'
-      - 'Tests/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'public/world-codex/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'eslint.config.js'
       - '.github/workflows/tests.yml'
   pull_request:
     paths:
-      - 'Assets/Scripts/Codex/**'
-      - 'Assets/Scripts/Runtime/**'
-      - 'Assets/Scripts/Loader/**'
-      - 'Assets/StreamingAssets/WorldCodex/**'
-      - 'Tests/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'public/world-codex/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'eslint.config.js'
       - '.github/workflows/tests.yml'
   workflow_dispatch:
 
 jobs:
   test:
-    name: dotnet test
+    name: lint / build / vitest
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: '8.0.x'
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Build (typecheck + bundle)
+        run: npm run build
 
       - name: Run tests
-        id: run_tests
-        continue-on-error: true
-        run: |
-          dotnet test Tests/Tests.csproj \
-            --configuration Release \
-            --logger "trx;LogFileName=test-results.trx" \
-            --results-directory Tests/TestResults
-
-      - name: Generate test report markdown
-        if: always()
-        run: |
-          python3 - <<'PY'
-          import glob
-          import re
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-
-          trx_files = sorted(glob.glob("Tests/TestResults/*.trx"))
-          report_path = Path("Tests/TestResults/test-report.md")
-          report_path.parent.mkdir(parents=True, exist_ok=True)
-
-          lines = ["# dotnet test report", ""]
-
-          if not trx_files:
-            lines.append("TRX file was not found.")
-          else:
-            total = passed = failed = skipped = 0
-            cases_by_class = {}
-
-            def split_test_name(test_name: str):
-              name_without_args = test_name.split("(", 1)[0]
-              if "." in name_without_args:
-                class_name, method_name = name_without_args.rsplit(".", 1)
-                return class_name, method_name
-              return "(unknown)", name_without_args
-
-            def classify_outcome(outcome: str):
-              normalized = (outcome or "").lower()
-              if normalized == "passed":
-                return "passed"
-              if normalized == "failed":
-                return "failed"
-              if normalized in {"notexecuted", "skipped"}:
-                return "skipped"
-              return "other"
-
-            def to_anchor(text: str):
-              anchor = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-              return anchor or "class"
-
-            for trx_file in trx_files:
-              root = ET.parse(trx_file).getroot()
-              ns_uri = root.tag.split("}")[0].strip("{") if "}" in root.tag else ""
-              ns = {"t": ns_uri} if ns_uri else {}
-              prefix = "t:" if ns else ""
-
-              counters = root.find(f".//{prefix}Counters", ns)
-              if counters is not None:
-                total += int(counters.attrib.get("total", 0))
-                passed += int(counters.attrib.get("passed", 0))
-                failed += int(counters.attrib.get("failed", 0))
-                skipped += int(counters.attrib.get("notExecuted", 0))
-
-              class_by_test_id = {}
-              for unit_test in root.findall(f".//{prefix}UnitTest", ns):
-                test_id = unit_test.attrib.get("id")
-                test_method = unit_test.find(f"{prefix}TestMethod", ns)
-                if not test_id:
-                  continue
-                if test_method is not None:
-                  class_name = test_method.attrib.get("className")
-                  method_name = test_method.attrib.get("name")
-                  if class_name and method_name:
-                    class_by_test_id[test_id] = (class_name, method_name)
-
-              for result in root.findall(f".//{prefix}UnitTestResult", ns):
-                test_name = result.attrib.get("testName", "")
-                outcome = result.attrib.get("outcome", "")
-                test_id = result.attrib.get("testId", "")
-                class_name, method_name = class_by_test_id.get(test_id, split_test_name(test_name))
-                cases_by_class.setdefault(class_name, []).append((outcome, method_name))
-
-            lines.extend(
-              [
-                f"- Total: **{total}**",
-                f"- Passed: **{passed}**",
-                f"- Failed: **{failed}**",
-                f"- Skipped: **{skipped}**",
-                "",
-                "## Class summary",
-                "",
-                "| Class | Total | Passed | Failed | Skipped | Details |",
-                "| --- | ---: | ---: | ---: | ---: | --- |",
-              ]
-            )
-
-            used_anchors = set()
-            class_sections = []
-            for class_name in sorted(cases_by_class):
-              class_cases = cases_by_class[class_name]
-              class_total = len(class_cases)
-              class_passed = sum(1 for outcome, _ in class_cases if classify_outcome(outcome) == "passed")
-              class_failed = sum(1 for outcome, _ in class_cases if classify_outcome(outcome) == "failed")
-              class_skipped = sum(1 for outcome, _ in class_cases if classify_outcome(outcome) == "skipped")
-
-              base_anchor = f"class-{to_anchor(class_name)}"
-              anchor = base_anchor
-              suffix = 2
-              while anchor in used_anchors:
-                anchor = f"{base_anchor}-{suffix}"
-                suffix += 1
-              used_anchors.add(anchor)
-
-              safe_class_name = class_name.replace("|", "\\|")
-              lines.append(
-                f"| `{safe_class_name}` | {class_total} | {class_passed} | {class_failed} | {class_skipped} | [Details](#{anchor}) |"
-              )
-              class_sections.append((class_name, class_cases, anchor))
-
-            lines.extend(["", "## Class details", ""])
-
-            for class_name, class_cases, anchor in class_sections:
-              safe_class_name = class_name.replace("|", "\\|")
-              lines.extend(
-                [
-                  f'<a id="{anchor}"></a>',
-                  f"### `{safe_class_name}`",
-                  "",
-                  "| Outcome | Test method |",
-                  "| --- | --- |",
-                ]
-              )
-
-              for outcome, method_name in sorted(class_cases, key=lambda x: (x[0], x[1])):
-                safe_method_name = method_name.replace("|", "\\|")
-                lines.append(f"| {outcome} | `{safe_method_name}` |")
-
-              lines.append("")
-
-          report_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-          PY
-
-      - name: Publish test report to workflow summary
-        if: always()
-        run: cat Tests/TestResults/test-report.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload test report artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dotnet-test-report
-          path: Tests/TestResults/
-          if-no-files-found: error
-
-      - name: Fail workflow when tests fail
-        if: steps.run_tests.outcome == 'failure'
-        run: exit 1
+        run: npx vitest run --reporter=default --reporter=github-actions

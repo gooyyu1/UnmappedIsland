@@ -1,16 +1,19 @@
 # 実装スタイル
 
+TypeScriptのコーディング規約は [`Documents/Engine/CodingConventions.md`](Documents/Engine/CodingConventions.md)
+に従う。変更後は `npm run lint` / `npm run typecheck` / `npm test` がすべて成功することを確認する。
+
 ## 自分のことは自分でする（カプセル化の徹底）
 
 あるクラスの内部状態（値・不変条件）に関する処理は、そのクラス自身が行う。呼び出し側（他のクラス）が
 「値を変更した後にこれとこれを判定する」といった手順を代わりに引き受けてはいけない。
 
 - 悪い例: `WorldObject` が `PropertyValue` の値を変更した後、`WorldObject` 側で
-  `CheckRangeEvents` を呼んで range 超過を判定する。
-- 良い例: `PropertyValue.Add`/`SetNumber` 自身が、値を変更した直後に自分の `CheckRangeEvents` を
+  `checkRangeEvents` を呼んで range 超過を判定する。
+- 良い例: `PropertyValue.add`/`setNumber` 自身が、値を変更した直後に自分の `checkRangeEvents` を
   呼ぶ。呼び出し側は「値を変えてほしい」と依頼するだけで、変更後に何を判定すべきかは一切知らない。
 
-判断基準: あるクラスのpublic/internalメソッドを呼んだ後、呼び出し側が「この後、あのメソッドも
+判断基準: あるクラスの公開メソッドを呼んだ後、呼び出し側が「この後、あのメソッドも
 呼ばないと壊れる」という手順を覚えておく必要があるなら、その手順は呼ばれる側のクラス自身に
 移すべきサイン。
 

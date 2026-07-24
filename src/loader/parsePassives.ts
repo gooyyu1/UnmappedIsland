@@ -1,0 +1,132 @@
+import type { YAMLMap } from 'yaml';
+import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetSeq } from './yamlMapping';
+import { YamlLoadError } from './YamlLoadError';
+import { parseIntLiteral } from './parseCommon';
+import { parseConditionsField, PASSIVE_CONDITION_ROOTS } from './parseConditions';
+import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
+import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
+import type { ConditionNode } from '../domain/defs/ConditionNode';
+import { AccumulateEffect, ModifyEffect, PassiveEffectGate } from '../domain/defs/PassiveEffect';
+import type { PassiveEffect } from '../domain/defs/PassiveEffect';
+
+/**
+ * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/accumulateのみを持つ）を読み、
+ * PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非undefinedならstage内）と
+ * "conditions"は独立に併用できる（例:「装備している間、かつ耐久値がintactステージの間だけ」）。
+ * conditionsはブロック全体で1つ（対象ごとには持たない。RegisteredPassiveEffect参照）。
+ * RawObjectDef.resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。
+ */
+export function parsePassive(
+  loader: WorldCodexYamlLoader,
+  output: PassiveEffect[],
+  objectDefName: string,
+  passiveMap: YAMLMap,
+  forcedStageProperty: string | undefined,
+  forcedStageName: string | undefined,
+): void {
+  const context = `'${objectDefName}'.passives`;
+
+  const conditionsNode = tryGetSeq(passiveMap, 'conditions', context);
+  const conditions = parseConditionsField(loader, context, conditionsNode, PASSIVE_CONDITION_ROOTS);
+  const gate = buildGate(loader, conditions, forcedStageProperty, forcedStageName);
+
+  parsePassiveOperationInto(
+    loader,
+    output,
+    context,
+    passiveMap,
+    'modify',
+    (target, propId, amount, g) => new ModifyEffect(target, propId, amount, g),
+    gate,
+  );
+  parsePassiveOperationInto(
+    loader,
+    output,
+    context,
+    passiveMap,
+    'accumulate',
+    (target, propId, amount, g) => new AccumulateEffect(target, propId, amount, g),
+    gate,
+  );
+
+  const knownKeys = new Set<string>(['conditions', 'modify', 'accumulate']);
+
+  const unknownKeys = entriesInOrder(passiveMap)
+    .map(([key]) => key)
+    .filter((key) => !knownKeys.has(key));
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+}
+
+/**
+ * ゲートを組み立てる。stagePropertyNameとconditionsの両方が指定されていれば、両方を満たす間
+ * だけ有効になる（PassiveEffect.activeAmount参照）。ゲートはグローバルIDのまま持ち、評価時に
+ * ローカルIDへ変換する（WorldObject.isInStage参照）。
+ */
+function buildGate(
+  loader: WorldCodexYamlLoader,
+  conditions: ConditionNode | undefined,
+  stagePropertyName: string | undefined,
+  stageName: string | undefined,
+): PassiveEffectGate {
+  let propertyGlobalId: number | undefined;
+  if (stagePropertyName !== undefined) propertyGlobalId = loader.propertyNames.intern(stagePropertyName);
+
+  return new PassiveEffectGate(conditions, propertyGlobalId, stageName);
+}
+
+/**
+ * passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
+ * スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。具象型はmakeEffectファクトリで受け取り、
+ * 同じpassiveブロック内のgateを全効果で共有する。
+ */
+function parsePassiveOperationInto(
+  loader: WorldCodexYamlLoader,
+  output: PassiveEffect[],
+  context: string,
+  passiveMap: YAMLMap,
+  operationKey: string,
+  makeEffect: (
+    target: ReferenceRoot,
+    propertyGlobalId: number,
+    amount: number,
+    gate: PassiveEffectGate,
+  ) => PassiveEffect,
+  gate: PassiveEffectGate,
+): void {
+  const operationMap = tryGetMap(passiveMap, operationKey, context);
+  if (operationMap === undefined) return;
+
+  for (const [targetName, bodyNode] of entriesInOrder(operationMap)) {
+    if (targetName === 'actor') continue; // 未対応（passiveのtargetにactorは無いため）
+
+    let target: ReferenceRoot;
+    switch (targetName) {
+      case 'self':
+        target = 'self';
+        break;
+      case 'parent':
+        target = 'parent';
+        break;
+      case 'child':
+        target = 'child';
+        break;
+      case 'ancestor':
+        target = 'ancestor';
+        break;
+      default:
+        throw new YamlLoadError(`${context}.${operationKey}: 未知の対象キー '${targetName}' です。`);
+    }
+
+    const body = asMap(bodyNode, context);
+    for (const [propName, amountNode] of entriesInOrder(body))
+      output.push(
+        makeEffect(
+          target,
+          loader.propertyNames.intern(propName),
+          parseIntLiteral(context, asScalarText(amountNode, context)),
+          gate,
+        ),
+      );
+  }
+}

@@ -1,6 +1,7 @@
 # Copilot Agent Instructions
 
-ドキュメント・コメントの書き方は [`CLAUDE.md`](../CLAUDE.md) の「ドキュメント・コメントのスタイル」に従うこと。
+設計方針・コメントの書き方は [`CLAUDE.md`](../CLAUDE.md)、TypeScriptのコーディング規約は
+[`Documents/Engine/CodingConventions.md`](../Documents/Engine/CodingConventions.md) に従うこと。
 
 ## docs/ フォルダについて
 
@@ -21,50 +22,12 @@
 
 ---
 
-## フォルダ名と名前空間の対応ルール
+## 検証コマンド
 
-`Assets/Scripts/` および `Tests/` 以下では、**フォルダ名と名前空間を必ず一致させること**。
-
-- `Assets/Scripts/<FolderPath>/` に置かれたファイルの名前空間は `UnmappedIsland.<FolderPath>` とする。
-  - 例: `Assets/Scripts/Domain/Runtime/` → `namespace UnmappedIsland.Domain.Runtime`
-  - 例: `Assets/Scripts/Loader/` → `namespace UnmappedIsland.Loader`
-- `Tests/<FolderPath>/` に置かれたファイルの名前空間は `UnmappedIsland.<FolderPath>` とする。
-  - 例: `Tests/Domain/` → `namespace UnmappedIsland.Domain`
-  - 例: `Tests/StreamingAssets/` → `namespace UnmappedIsland.StreamingAssets`
-  - 例: `Tests/Loader/` → `namespace UnmappedIsland.Loader`
-
-名前空間がフォルダと一致しない場合は、ファイルを正しいフォルダへ移動するか、名前空間を修正すること。
-
----
-
-## スクリーンショット取得について
-
-このエージェント環境では **Playwright MCP ツールは動作しない**（タイムアウト／OAuth エラーが発生する）。
-
-スクリーンショットが必要な場合は、代わりに **Puppeteer + システム Chrome** を使用すること。
+変更後は以下がすべて成功することを確認すること。
 
 ```bash
-# 日本語フォントのインストール（文字化け防止）
-sudo apt-get install -y fonts-noto-cjk
-
-cd /tmp && npm install puppeteer
+npm run lint
+npm run typecheck
+npm test
 ```
-
-Node.js スクリプトでは以下のオプションを指定する:
-
-```js
-const browser = await puppeteer.launch({
-  args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-});
-```
-
-### 日本語フォントについて
-
-HTML モック (`Documents/UI/ScreenLayout_*.html`) には以下のフォント設定が含まれている:
-
-- **Google Fonts**: `Noto Sans JP`（ブラウザでの表示用・オンライン時のみ）
-- **システムフォント**: `Noto Sans CJK JP`（`fonts-noto-cjk` パッケージ、オフライン環境用）
-
-スクリーンショット生成の前に `fonts-noto-cjk` を必ずインストールすること。
-
-生成したスクリーンショットは `Documents/UI/screenshot_portrait.png` と `Documents/UI/screenshot_landscape.png` に上書きして保存する。GitHub Actions ワークフローはこれらをそのまま `docs/` にコピーする。

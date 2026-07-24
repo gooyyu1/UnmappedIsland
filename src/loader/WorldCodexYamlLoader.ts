@@ -1,0 +1,215 @@
+import { parseDocument } from 'yaml';
+import type { YAMLMap } from 'yaml';
+import type { YamlNode } from './yamlMapping';
+import {
+  asMap,
+  asScalarText,
+  entriesInOrder,
+  tryGetBool,
+  tryGetMap,
+  tryGetScalar,
+  tryGetSeq,
+} from './yamlMapping';
+import { YamlLoadError } from './YamlLoadError';
+import { RawObjectDef } from './RawObjectDef';
+import { RawTrait } from './RawTrait';
+import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './parseGeneration';
+import { NameRegistry } from '../domain/defs/NameRegistry';
+import type { ObjectDef } from '../domain/defs/ObjectDef';
+import { ObjectDefTable } from '../domain/defs/ObjectDef';
+import { WellKnownProperties } from '../domain/defs/WellKnownProperties';
+import { WorldCodex } from '../domain/defs/WorldCodex';
+import type { AxisDef } from '../domain/defs/generation/AxisDef';
+import type { GenerationScopeDef } from '../domain/defs/generation/GenerationScopeDef';
+import type { LocationTypeDef } from '../domain/defs/generation/LocationTypeDef';
+
+/**
+ * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
+ *
+ * パース全般をこのクラスが担い、5種のNameRegistryを保持する。「trait解決込みでobject_defを
+ * 組み立てる」責務はRawObjectDef.resolveが担う。props/slots/actions/combinationsはフィールド
+ * 単位のtrait上書きマージ対象のため、深い意味解釈とprop/slot名等のInternはload時点ではなく
+ * resolveまで遅延する。object_def自身のglobalIdのみtrait解決に依存しないため、parseObjectDefの
+ * 時点で確定する。
+ *
+ * load系メソッドは何度でも呼べ、呼ぶたびにこのインスタンスへ追記する（thisを返すため
+ * `new WorldCodexYamlLoader().load(label, text).build()`と書ける）。
+ *
+ * object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラー（3.3節の
+ * 厳格モード）。「後勝ちで上書き」の規則は一切持たない（MODによる差し替えは専用のpatch文法で
+ * 表現する想定）。
+ *
+ * buildは蓄積内容から不変のWorldCodexを組み立てて返し、このインスタンスの蓄積状態を初期化する。
+ */
+export class WorldCodexYamlLoader {
+  /** load系メソッドで蓄積した、パース済みだがtrait未解決のobject_defs/traits。 */
+  private readonly globalObjectDefs = new Map<string, RawObjectDef>();
+  private readonly globalTraits = new Map<string, RawTrait>();
+
+  private _objectNames = new NameRegistry();
+  private _propertyNames = new NameRegistry();
+  private _slotNames = new NameRegistry();
+  private _tagNames = new NameRegistry();
+  private _symbolNames = new NameRegistry();
+
+  /** 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。 */
+  get objectNames(): NameRegistry {
+    return this._objectNames;
+  }
+  get propertyNames(): NameRegistry {
+    return this._propertyNames;
+  }
+  get slotNames(): NameRegistry {
+    return this._slotNames;
+  }
+  get tagNames(): NameRegistry {
+    return this._tagNames;
+  }
+  get symbolNames(): NameRegistry {
+    return this._symbolNames;
+  }
+
+  /** load系メソッドで蓄積した地形生成定義（axes/location_types/generation_scopes）。
+   * parseGeneration.tsの関数群だけが読み書きする。 */
+  readonly generationAxes = new Map<string, AxisDef>();
+  readonly generationLocationTypes: LocationTypeDef[] = [];
+  readonly generationScopes = new Map<string, GenerationScopeDef>();
+
+  /** テキストとして渡された1つのYAMLを読み込む（labelはエラーメッセージ用の出所表示）。 */
+  load(label: string, yamlText: string): this {
+    const doc = parseDocument(yamlText);
+    if (doc.errors.length > 0) throw new YamlLoadError(`${label}: YAML構文エラー: ${doc.errors[0].message}`);
+    if (doc.contents === null) return this;
+
+    const root = asMap(doc.contents, label);
+
+    const objectDefs = tryGetMap(root, 'object_defs', label);
+    if (objectDefs !== undefined)
+      for (const [name, node] of entriesInOrder(objectDefs))
+        addUnique(
+          this.globalObjectDefs,
+          name,
+          this.parseObjectDef(name, asMap(node, `object_defs.'${name}'`), label),
+          'object_defs',
+        );
+
+    const traits = tryGetMap(root, 'traits', label);
+    if (traits !== undefined)
+      for (const [name, node] of entriesInOrder(traits))
+        addUnique(
+          this.globalTraits,
+          name,
+          this.parseTrait(name, asMap(node, `traits.'${name}'`), label),
+          'traits',
+        );
+
+    // 地形生成の3ルートキー（axes/location_types/generation_scopes。parseGeneration.ts）。
+    loadGenerationSections(this, label, root);
+
+    return this;
+  }
+
+  /** 蓄積したobject_defs/traitsから不変のWorldCodexを組み立てて返す。呼び終わると
+   * このインスタンスの蓄積状態は初期化される。 */
+  build(): WorldCodex {
+    const objectDefsByGlobalId = new Map<number, ObjectDef>();
+    for (const raw of this.globalObjectDefs.values()) {
+      const def = raw.resolve(this.globalTraits, this);
+      objectDefsByGlobalId.set(def.globalId, def);
+    }
+
+    // 全object_defの走査が終わったこの時点で、objectNames.countが最終値として確定する。
+    const defsByGlobalId = new Array<ObjectDef>(this.objectNames.count);
+    for (const [globalId, def] of objectDefsByGlobalId) defsByGlobalId[globalId] = def;
+
+    const wellKnown = new WellKnownProperties(this.propertyNames);
+    const generation = buildGenerationDefs(this, objectDefsByGlobalId);
+    const codex = new WorldCodex(
+      this.objectNames,
+      this.propertyNames,
+      this.slotNames,
+      this.tagNames,
+      this.symbolNames,
+      new ObjectDefTable(defsByGlobalId),
+      wellKnown,
+      generation,
+    );
+
+    this.reset();
+    return codex;
+  }
+
+  private reset(): void {
+    this.globalObjectDefs.clear();
+    this.globalTraits.clear();
+    resetGeneration(this);
+    this._objectNames = new NameRegistry();
+    this._propertyNames = new NameRegistry();
+    this._slotNames = new NameRegistry();
+    this._tagNames = new NameRegistry();
+    this._symbolNames = new NameRegistry();
+  }
+
+  /** object_defs.'name'の1エントリを浅く抽出する。trait合成（RawObjectDef.resolve）が
+   * まだ起こりうるフィールドは生YAMLノードのまま持つ。globalIdのみここで確定させる。 */
+  private parseObjectDef(name: string, node: YAMLMap, source: string): RawObjectDef {
+    const context = `object_defs.'${name}'`;
+
+    const raw = new RawObjectDef(
+      name,
+      source,
+      this.objectNames.intern(name),
+      tryGetBool(node, 'singleton', context, false),
+    );
+    raw.props = tryGetMap(node, 'props', context);
+    raw.slots = tryGetMap(node, 'slots', context);
+    raw.passives = tryGetSeq(node, 'passives', context);
+    raw.stackOrder = tryGetMap(node, 'stack_order', context);
+    raw.representedBy = tryGetScalar(node, 'represented_by', context);
+    raw.actions = tryGetMap(node, 'actions', context);
+    raw.combinations = tryGetMap(node, 'combinations', context);
+
+    const traits = tryGetSeq(node, 'traits', context);
+    if (traits !== undefined)
+      for (const t of traits.items as YamlNode[]) raw.traitNames.push(asScalarText(t, context));
+
+    const tags = tryGetSeq(node, 'tags', context);
+    if (tags !== undefined) for (const t of tags.items as YamlNode[]) raw.tags.push(asScalarText(t, context));
+
+    return raw;
+  }
+
+  /** traits.'name'の1エントリを浅く抽出する（parseObjectDefと同じく生YAMLノードのまま持つ）。
+   * traitは実行時に識別されないため、interning対象の識別子を持たない。 */
+  private parseTrait(name: string, node: YAMLMap, source: string): RawTrait {
+    const context = `traits.'${name}'`;
+
+    const raw = new RawTrait(name, source);
+    raw.props = tryGetMap(node, 'props', context);
+    raw.slots = tryGetMap(node, 'slots', context);
+    raw.passives = tryGetSeq(node, 'passives', context);
+    raw.stackOrder = tryGetMap(node, 'stack_order', context);
+    raw.representedBy = tryGetScalar(node, 'represented_by', context);
+    raw.actions = tryGetMap(node, 'actions', context);
+    raw.combinations = tryGetMap(node, 'combinations', context);
+
+    const tags = tryGetSeq(node, 'tags', context);
+    if (tags !== undefined) for (const t of tags.items as YamlNode[]) raw.tags.push(asScalarText(t, context));
+
+    return raw;
+  }
+}
+
+function addUnique<T extends { source: string }>(
+  map: Map<string, T>,
+  name: string,
+  raw: T,
+  kindLabel: string,
+): void {
+  const existing = map.get(name);
+  if (existing !== undefined)
+    throw new YamlLoadError(
+      `${kindLabel} '${name}' が重複しています（'${existing.source}' と '${raw.source}'）。`,
+    );
+  map.set(name, raw);
+}
