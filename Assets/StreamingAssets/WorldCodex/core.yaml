@@ -128,7 +128,7 @@ object_defs:
       # 遷移の仕組みはClimateSystem.md参照: weather_remainingが0になるたびに、atmospheric_moistureの
       # stages（と、scorchingのみthermal_levelのhot stage）が駆動する*_weightを重みとするpickで
       # 次の値が選ばれる。7値のうちclearを含む全てが遷移先候補（scorchingは蓄熱量がhot帯=乾季後半と
-      # その名残の間だけ重みを持つ。stormが雨季後半のsaturated帯で重みを持つのと対称）。
+      # その名残の間だけ重みを持つ。stormが水分の高いhumid/saturated帯=雨季の間だけ重みを持つのと対応）。
       #
       # sunlightへ「晴れているほど追加で明るくなる」寄与を、weather自身のstages（6.4節）+WhenOwnStage
       # ゲート（8.2節）のmodifyで与える（もう一方、hourの「時間帯による最低限の寄与」はhour参照）。
@@ -140,10 +140,10 @@ object_defs:
       #
       # 降雨中の自己減算（ClimateSystem.md 3節）: 雨系のstage自身が、毎tick atmospheric_moistureを
       # 減算する（耐久値と同じ「ステージ自身が値を変化させる」パターン）。雨が降り続ければやがて水分が
-      # 尽きて乾いた候補が選ばれやすくなる、という貯水池の循環を成立させる。激しい雨ほど速く消費するが、
-      # wetの季節レート(+250/tick)を大きく下回るほど強くはしない: 連続降雨の途中でheavy_rain/stormが
-      # 続けて選ばれても、humid/saturated帯（雨が優勢な帯）を割り込んでmoderate帯（雨がほぼ選ばれない
-      # 帯）まで一気に押し下げてしまうと、そこでほぼ確実に連続降雨が途切れてしまうため。
+      # 尽きて乾いた候補が選ばれやすくなる、という貯水池の循環を成立させる。減算量とwetの季節レート
+      # （+60/tick）との大小関係が雨季の降雨の止み方を決める: light_rain（-50）だけは季節レートを
+      # 下回るため、小雨は雨季の水分を自力では使い尽くせず降り続き、heavy_rain（-100）・storm（-200）は
+      # 季節レートを上回るため、大雨・嵐のあとには晴れ間が来うる（4.3節）。
       weather:
         value: clear
         stages:
@@ -151,12 +151,12 @@ object_defs:
             passives:
               - accumulate:
                   self:
-                    atmospheric_moisture: -395
+                    atmospheric_moisture: -200
           - name: heavy_rain
             passives:
               - accumulate:
                   self:
-                    atmospheric_moisture: -280
+                    atmospheric_moisture: -100
           - name: light_rain
             passives:
               - modify:
@@ -164,7 +164,7 @@ object_defs:
                     sunlight: 1
               - accumulate:
                   self:
-                    atmospheric_moisture: -100
+                    atmospheric_moisture: -50
           - name: cloudy
             passives:
               - modify:
@@ -222,9 +222,9 @@ object_defs:
       # 現在の季節。calm（穏やか）→wet（雨季）→dry（乾季）→calm→…の固定順で巡回する（ClimateSystem.md 2節）。
       # 各stageは (1)自分が現在の季節であることを示すフラグ（season_is_*、season_remainingの遷移pickの
       # 重みとして使う）、(2)大気水分量・蓄熱量への季節レート（3節の貯水池モデル）を持つ。
-      # calmのレートは「ほぼ0」ではなく回復方向（水分+10/蓄熱-1）: 乾季で下がりきった水分量が雨季に
-      # ふさわしい水準へじわじわ登り返す途中で3日に1回ほど小雨の閾値（moderate、3000）に触れる、という
-      # 序盤の生命線となる降雨サイクルをこのレートが作る（3.1節・3.2節）。
+      # calmのレートは「ほぼ0」ではなく回復方向（水分+10/蓄熱-1）: 乾季で下がりきった水分量が
+      # 小雨の閾値（moderate、3000）まで登り返し、以後は閾値付近を上下しながら1日1回前後の軽い雨を
+      # 降らせる、という序盤の生命線となる降雨サイクルをこのレートが作る（3.1節・3.2節）。
       season:
         value: calm
         stages:
@@ -244,7 +244,7 @@ object_defs:
                     season_is_wet: 1
               - accumulate:
                   self:
-                    atmospheric_moisture: 250
+                    atmospheric_moisture: 60
                     thermal_level: -1
           - name: dry
             passives:
@@ -253,7 +253,7 @@ object_defs:
                     season_is_dry: 1
               - accumulate:
                   self:
-                    atmospheric_moisture: -100
+                    atmospheric_moisture: -20
                     thermal_level: 1
       # 「今の季節はどれか」を0/1で表すフラグ。seasonのstageがmodifyで立てる。season_remainingの
       # 遷移pickが「現在の季節に対応する候補だけが選ばれる」ための重みとして参照する（重みが0の候補は
@@ -365,8 +365,9 @@ object_defs:
       # saturated（雨季後半）では「まず晴れない」（晴れ系の重みなし）を、dry（乾ききった状態）では
       # 「大雨・嵐が原理的に起こらない」（heavy_rain_weight/storm_weight: 0）を表現する。
       # 晴れ系の中ではclear（穏やかで過ごしやすい普通の晴れ）を最も重くし、この島の標準的な天気にする。
-      # moderateまでのcalmの雨は必ずlight_rain（heavy/stormの重みが0）: 「3日に1回くらい、大雨には
-      # ならない雨」という序盤の要件（3.2節）をこの重み構成が満たす。
+      # moderateまでのcalmの雨は必ずlight_rain（heavy/stormの重みが0）: 「連続未降雨時間が長くなり
+      # すぎない、軽めの雨」という序盤の要件（3.2節）をこの重み構成が満たす。calmでも水分が稀に
+      # humid（6000）へ届けばheavy_rain・stormも起こりうるが、ごく稀（tick比で0.1%未満）に留まる。
       # scorching_weightだけはここではなくthermal_levelのhot stageが駆動する（乾季後半の炎天。thermal_level参照）。
       atmospheric_moisture:
         value: 0
@@ -530,8 +531,8 @@ object_defs:
       # 上限をhot閾値1920と同値にすることで、残暑（calmへ持ち越される炎天）を廃止している: calmに入った
       # 最初のtickで蓄熱が1919へ下がりmildになるため、炎天と気温+8は乾季の終了と同時に消える。
       # 「暑さ=乾季」という対応をプレイヤーの体感と一致させるための意図的な設計で、乾季の暑さの長さは
-      # 季節の持続日数のランダム性（season_remaining）だけが表現する。なお雨季後半のstorm（大気水分量の
-      # saturated帯が駆動）には乾季序盤への名残があるが、これは雨自身が水分を消費し尽くすまでの過渡であり、
+      # 季節の持続日数のランダム性（season_remaining）だけが表現する。なお雨季のstorm（大気水分量の
+      # humid/saturated帯が駆動）には乾季序盤への名残があるが、これは雨自身が水分を消費し尽くすまでの過渡であり、
       # 現実でも雨は大気の水分を消費する一方、晴れは大気の熱を消費しない（せいぜい放射冷却）ため、
       # 熱側に対応する名残・自己減算が無いこの非対称は意図したもの。
       thermal_level:
@@ -574,7 +575,7 @@ object_defs:
             min: 192
       # 難易度の初期補正2: 最初の乾季の10日目前後（絶対71日目）に高確率で雨を降らせる（5.2節）。
       # 初回サイクルは各季節30日固定のため、最初のdryは61日目開始・その10日目は71日目
-      # （tick 6720-6815）と、ゲーム開始前から確定している。dryの-100/tickを上回る+200/tickを
+      # （tick 6720-6815）と、ゲーム開始前から確定している。dryの-20/tickを大きく上回る+200/tickを
       # 窓の間だけ加算する。この6720/6816はseason_remainingの「初回サイクル30日固定」に依存した
       # 導出値であり、そちらを変えたらこちらも再計算が必要。
       first_dry_rain_calibration:

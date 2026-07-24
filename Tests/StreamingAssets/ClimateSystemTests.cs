@@ -193,25 +193,29 @@ namespace UnmappedIsland.StreamingAssets
         }
 
         [Test]
-        public void CalmSeason_RainsRoughlyEveryFewDays_AndNeverStorms()
+        public void CalmSeason_RainsFrequentlyWithShortGaps_AndNeverStorms()
         {
-            // 「穏やかな季節は数日間隔で雨が降る」（概ね3日に1回、大雨にはならない）。
-            // 序盤補正（2日目）の影響が抜けた4日目以降の初回calm（4-30日目）で判定する。
+            // 「穏やかな季節は連続未降雨時間が長くなりすぎない」（晴れが続くと蓋のない容器の水が
+            // 蒸発してしまうため。ClimateSystem.md 3.2節)。現行バランスでは晴れと雨の比率が概ね4:1で、
+            // 1日1回前後の軽い雨が降る。大気水分量が稀にhumid帯（6000）へ届くとheavy_rain・stormも
+            // 原理的には起こりうるが、heavy_rainは許容し、より稀なstorm（humidでの重み10はheavy_rainの
+            // 30より小さい）は序盤補正の影響が抜けた初回calmの判定窓では発生しないことを、95%閾値の
+            // 統計的保証として要求する。判定窓は4日目以降の初回calm（4-30日目）。
             var (first, last) = DayRange(4, 30);
 
-            AssertSuccessRate("calmは数日間隔で雨が降り、嵐・大雨にならない", trace =>
+            AssertSuccessRate("calmは短い間隔で雨が降り、嵐にならない", trace =>
             {
                 var rainStartTicks = new List<int>();
                 for (int t = first; t <= last; t++)
                 {
                     if (IsRain(trace.Weather[t]) && (t == first || !IsRain(trace.Weather[t - 1])))
                         rainStartTicks.Add(t);
-                    if (trace.Weather[t] == heavyRainId || trace.Weather[t] == stormId)
-                        return $"{(t / TicksPerDay) + 1}日目に大雨/嵐が発生した";
+                    if (trace.Weather[t] == stormId)
+                        return $"{(t / TicksPerDay) + 1}日目に嵐が発生した";
                 }
 
-                if (rainStartTicks.Count < 3 || rainStartTicks.Count > 15)
-                    return $"雨イベント数が{rainStartTicks.Count}回（期待: 3〜15回、27日間で概ね3日に1回）";
+                if (rainStartTicks.Count < 12 || rainStartTicks.Count > 40)
+                    return $"雨イベント数が{rainStartTicks.Count}回（期待: 12〜40回、27日間で概ね1日1回前後）";
 
                 int maxGap = 0;
                 int previous = first;
@@ -220,8 +224,8 @@ namespace UnmappedIsland.StreamingAssets
                     maxGap = Math.Max(maxGap, t - previous);
                     previous = t;
                 }
-                if (maxGap > 8 * TicksPerDay)
-                    return $"雨の間隔が最大{maxGap / (double)TicksPerDay:F1}日空いた（期待: 8日以内）";
+                if (maxGap > 6 * TicksPerDay)
+                    return $"雨の間隔が最大{maxGap / (double)TicksPerDay:F1}日空いた（期待: 6日以内）";
 
                 return null;
             });
