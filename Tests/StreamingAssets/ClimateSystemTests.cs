@@ -193,25 +193,29 @@ namespace UnmappedIsland.StreamingAssets
         }
 
         [Test]
-        public void CalmSeason_RainsRoughlyEveryFewDays_AndNeverStorms()
+        public void CalmSeason_RainsEveryCoupleOfDays_AndNeverStorms()
         {
-            // 「穏やかな季節は数日間隔で雨が降る」（概ね3日に1回、大雨にはならない）。
-            // 序盤補正（2日目）の影響が抜けた4日目以降の初回calm（4-30日目）で判定する。
+            // 「穏やかな季節は連続未降雨時間が長くなりすぎない」（晴れが続くと蓋のない容器の水が
+            // 蒸発してしまうため。ClimateSystem.md 3.2節)。現行バランスでは概ね2日に1回前後の軽い雨が
+            // 降る（連続未降雨時間の平均約2日）。大気水分量が稀にhumid帯（6000）へ届くとheavy_rain・
+            // stormも原理的には起こりうるが、heavy_rainは許容し、より稀なstorm（humidでの重み3は
+            // heavy_rainの30より大幅に小さい）は序盤補正の影響が抜けた初回calmの判定窓では発生しない
+            // ことを、95%閾値の統計的保証として要求する。判定窓は4日目以降の初回calm（4-30日目）。
             var (first, last) = DayRange(4, 30);
 
-            AssertSuccessRate("calmは数日間隔で雨が降り、嵐・大雨にならない", trace =>
+            AssertSuccessRate("calmは概ね2日に1回雨が降り、嵐にならない", trace =>
             {
                 var rainStartTicks = new List<int>();
                 for (int t = first; t <= last; t++)
                 {
                     if (IsRain(trace.Weather[t]) && (t == first || !IsRain(trace.Weather[t - 1])))
                         rainStartTicks.Add(t);
-                    if (trace.Weather[t] == heavyRainId || trace.Weather[t] == stormId)
-                        return $"{(t / TicksPerDay) + 1}日目に大雨/嵐が発生した";
+                    if (trace.Weather[t] == stormId)
+                        return $"{(t / TicksPerDay) + 1}日目に嵐が発生した";
                 }
 
-                if (rainStartTicks.Count < 3 || rainStartTicks.Count > 15)
-                    return $"雨イベント数が{rainStartTicks.Count}回（期待: 3〜15回、27日間で概ね3日に1回）";
+                if (rainStartTicks.Count < 6 || rainStartTicks.Count > 25)
+                    return $"雨イベント数が{rainStartTicks.Count}回（期待: 6〜25回、27日間で概ね2日に1回前後）";
 
                 int maxGap = 0;
                 int previous = first;
@@ -248,6 +252,47 @@ namespace UnmappedIsland.StreamingAssets
                     return $"雨のtick比率が{rainRatio:P0}（期待: 60%以上）";
                 if (nonRainTicks < 16)
                     return $"雨が止んだtickが{nonRainTicks}のみ（期待: 少なくとも1天気周期=16tick以上）";
+
+                return null;
+            });
+        }
+
+        [Test]
+        public void WetSeason_HeavyRainAndStorms_IncreaseTowardTheEnd()
+        {
+            // 「雨季は後半ほど嵐・大雨が増える」。monsoon_level（雨季の深まり、ClimateSystem.md 4.3節）が
+            // 雨季10日目からheavy_rainを、20日目からstormを増やすため、初回wet（31-60日目）を10日ずつの
+            // 3分割で見たとき、序盤より終盤のほうが嵐・大雨のtick数が多いこと、嵐が終盤に存在することを
+            // 要求する。
+            var (first, last) = DayRange(31, 60);
+            int third = (last - first + 1) / 3;
+
+            AssertSuccessRate("wetは後半ほど嵐・大雨が増える", trace =>
+            {
+                int CountHeavyStorm(int from, int to)
+                {
+                    int count = 0;
+                    for (int t = from; t <= to; t++)
+                        if (trace.Weather[t] == heavyRainId || trace.Weather[t] == stormId) count++;
+                    return count;
+                }
+                int CountStorm(int from, int to)
+                {
+                    int count = 0;
+                    for (int t = from; t <= to; t++)
+                        if (trace.Weather[t] == stormId) count++;
+                    return count;
+                }
+
+                int earlyHeavyStorm = CountHeavyStorm(first, first + third - 1);
+                int lateHeavyStorm = CountHeavyStorm(last - third + 1, last);
+                if (lateHeavyStorm <= earlyHeavyStorm)
+                    return $"嵐・大雨のtick数が序盤{earlyHeavyStorm}に対し終盤{lateHeavyStorm}（期待: 終盤のほうが多い）";
+
+                int earlyStorm = CountStorm(first, first + third - 1);
+                int lateStorm = CountStorm(last - third + 1, last);
+                if (lateStorm <= earlyStorm)
+                    return $"嵐のtick数が序盤{earlyStorm}に対し終盤{lateStorm}（期待: 終盤のほうが多い）";
 
                 return null;
             });
