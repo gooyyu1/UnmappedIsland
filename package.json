@@ -16,7 +16,7 @@
     "stats:climate": "RUN_CLIMATE_STATS=1 vitest run tests/diagnostics/climateStatsReport.test.ts"
   },
   "dependencies": {
-    "phaser": "^3.90.0",
+    "phaser": "^4.2.1",
     "yaml": "^2.7.0"
   },
   "devDependencies": {
