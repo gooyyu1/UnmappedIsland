@@ -59,9 +59,7 @@ namespace UnmappedIsland.Loader
                 if (!hasActive && nestedPick == null)
                     throw new YamlLoadException($"{candidateContext}: set/add/destroy/spawnのいずれか、またはpickが必要です。");
 
-                // activeとpickは排他。この候補が選ばれたときに適用する効果を、単一のActiveEffect
-                // （合成ActiveEffects、またはネストしたpickのPickEffect）として持たせる。selfOnly
-                // （on_min等のrangeイベント内のpick）は、ネストした候補の効果対象にもそのまま引き継ぐ。
+                // selfOnly（on_min等のrangeイベント内のpick）は、ネストした候補にもそのまま引き継ぐ。
                 ActiveEffect effect = hasActive
                     ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly, PickCandidateReservedKeys)
                     : new PickEffect(ParsePickList(candidateContext, nestedPick, allowDragged, selfOnly));
@@ -72,10 +70,8 @@ namespace UnmappedIsland.Loader
             return result;
         }
 
-        /// <summary>set/add/destroy/spawn（active）とpickは排他。条件成立時に適用する効果を、単一の
-        /// ActiveEffect（合成ActiveEffects、またはpickのPickEffect）として返す。両方あればエラー、どちらも
-        /// 無ければnull（条件成立時に何も起きない）。action/combination共通の解釈（pick候補は必ず
-        /// いずれかを要求するため、この共通ヘルパーは使わずParsePickList側で個別に検証する）。</summary>
+        /// <summary>active（set/add/destroy/spawn）またはpickを単一のActiveEffectとして返す。
+        /// どちらも無ければnull（条件成立時に何も起きない）。</summary>
         private ActiveEffect ParseEffect(string context, YamlMappingNode map, bool allowDragged, string[] reservedKeys)
         {
             bool hasActive = HasActiveContent(map);
@@ -94,8 +90,8 @@ namespace UnmappedIsland.Loader
         /// <summary>combinationエントリが持つ、with/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
         private static readonly string[] CombinationReservedKeys = { "with", "conditions", "pick" };
 
-        /// <summary>actions_map（11節）を読む。dragged対象はメニュー型操作では意味を持たないため不可。
-        /// RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれる。</summary>
+        /// <summary>actions_map（11節）を読む。trait合成済みのノードを渡すこと。
+        /// dragged対象はメニュー型操作では意味を持たないため不可。</summary>
         public List<ActionDef> ParseActions(string objectDefName, YamlMappingNode actionsNode)
         {
             var result = new List<ActionDef>();
@@ -113,8 +109,7 @@ namespace UnmappedIsland.Loader
                 ConditionNode conditions = ParseConditionsField(context, map.TryGetSequence("conditions", context), ActionConditionRoots);
                 ActiveEffect effect = ParseEffect(context, map, allowDragged: false, ActionReservedKeys);
 
-                // duration（実行にかかるゲーム内時間・分）。weightと同じ「リテラルか{object, prop}参照か」の
-                // 二択（WeightSpecを流用）。省略時は時間を消費しない。
+                // duration: 実行にかかるゲーム内時間（分）。省略時は時間を消費しない。
                 YamlNode durationNode = map.TryGet("duration");
                 WeightSpec? duration = durationNode != null
                     ? ParseWeight($"{context}.duration", durationNode, allowDragged: false, fieldName: "duration")
@@ -126,8 +121,7 @@ namespace UnmappedIsland.Loader
             return result;
         }
 
-        /// <summary>combinations_map（12節）を読む。dragged対象を使える。RawObjectDef.Resolveから、
-        /// trait合成済みのノードに対して呼ばれる。</summary>
+        /// <summary>combinations_map（12節）を読む。trait合成済みのノードを渡すこと。dragged対象を使える。</summary>
         public List<CombinationDef> ParseCombinations(string objectDefName, YamlMappingNode combinationsNode)
         {
             var result = new List<CombinationDef>();

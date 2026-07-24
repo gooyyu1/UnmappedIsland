@@ -4,9 +4,6 @@ using TMPro;
 
 namespace UnmappedIsland.UI
 {
-    /// <summary>
-    /// プレイヤーのステータスをUIに表示するクラス
-    /// </summary>
     public class StatusUI : MonoBehaviour
     {
         [SerializeField] private Slider foodBar;

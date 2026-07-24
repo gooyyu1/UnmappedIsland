@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace UnmappedIsland.Managers
 {
-    /// <summary>
-    /// ゲーム全体を管理するシングルトンクラス
-    /// </summary>
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance { get; private set; }

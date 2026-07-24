@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace UnmappedIsland.Managers
 {
-    /// <summary>
-    /// BGMとSEのサウンド再生を管理するクラス
-    /// </summary>
     public class SoundManager : MonoBehaviour
     {
         public static SoundManager Instance { get; private set; }

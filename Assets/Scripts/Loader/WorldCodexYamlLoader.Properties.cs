@@ -9,8 +9,8 @@ namespace UnmappedIsland.Loader
 {
     public sealed partial class WorldCodexYamlLoader
     {
-        /// <summary>1つのprops.'propName'エントリを解釈し、PropertyDefを組み立てる（GameElementDefinition.md
-        /// 6節）。RawObjectDef.Resolveからtrait合成済みのノードに対して呼ばれる。</summary>
+        /// <summary>props.'propName'エントリを1つ読む（GameElementDefinition.md 6節）。
+        /// trait合成済みのノードを渡すこと。</summary>
         public PropertyDef ParseProp(string objectDefName, string propName, YamlMappingNode node, List<PassiveEffect> passives)
         {
             string context = $"'{objectDefName}'.props.'{propName}'";
