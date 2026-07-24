@@ -3,9 +3,6 @@ using UnityEngine;
 
 namespace UnmappedIsland.Managers
 {
-    /// <summary>
-    /// セーブデータの読み書きを管理するクラス
-    /// </summary>
     public class SaveDataManager : MonoBehaviour
     {
         public static SaveDataManager Instance { get; private set; }

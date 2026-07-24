@@ -7,14 +7,10 @@ using UnmappedIsland.Loader;
 namespace UnmappedIsland.UnityAdapter
 {
     /// <summary>
-    /// UnmappedIsland.Loaderを、実際のUnityランタイムから呼び出すための薄い橋渡し。
-    /// Application.streamingAssetsPath/persistentDataPathの解決など、Unity依存の処理はここだけに閉じ込め、
-    /// Codex/Runtime/Loaderの3つはUnityEngineに一切依存しないままにする。
-    ///
-    /// ゲーム本体のYAML（core/terrains/foods/toolsなど）はStreamingAssets配下に置き、
-    /// ユーザーが追加できる外部定義はpersistentDataPath配下の別ディレクトリに置く。
-    /// 後者のディレクトリは、存在しなくても自動生成する（ユーザーがファイルを置く場所を
-    /// 見つけやすくするため）。
+    /// UnmappedIsland.LoaderをUnityランタイムから呼び出す薄い橋渡し。Unity依存の処理（パス解決など）は
+    /// ここだけに閉じ込め、Codex/Runtime/LoaderはUnityEngineに依存しないままにする。
+    /// ユーザー定義ディレクトリ（persistentDataPath配下）は、ファイルを置く場所を見つけやすいよう
+    /// 無ければ自動生成する。
     /// </summary>
     public static class WorldCodexUnityLoader
     {

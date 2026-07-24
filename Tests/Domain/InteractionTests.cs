@@ -7,9 +7,8 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain
 {
     /// <summary>
-    /// actions/combinations（GameElementDefinition.md 11節・12節）を Defs 側の実行ロジックを通して呼ぶ
-    /// WorldObject API に対する自動テスト。core.yamlと同じ形のYAMLフィクスチャをWorldCodexYamlLoader経由でパースして
-    /// 検証する（YamlLoaderTests.csと同じ方針）。
+    /// actions/combinations（GameElementDefinition.md 11節・12節）を実行する WorldObject API に対する
+    /// 自動テスト。
     /// </summary>
     [TestFixture]
     public class InteractionTests

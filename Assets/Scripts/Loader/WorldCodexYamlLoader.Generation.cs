@@ -8,15 +8,12 @@ namespace UnmappedIsland.Loader
 {
     public sealed partial class WorldCodexYamlLoader
     {
-        /// <summary>Load系メソッドで蓄積した地形生成定義（terrain_generation.yamlのaxes/location_types/
-        /// generation_scopes）。object_defs/traitsと違いtrait合成が無いためパース済みのDefで持ち、
-        /// 他ファイルとの相互参照（location_types→object_defs、preferences→axes）の検証だけを
-        /// Buildまで遅延する。</summary>
+        /// <summary>Load系メソッドで蓄積した地形生成定義。trait合成が無いためパース済みのDefで持ち、
+        /// 他ファイルとの相互参照の検証だけをBuildまで遅延する。</summary>
         private readonly Dictionary<string, AxisDef> generationAxes = new Dictionary<string, AxisDef>();
         private readonly List<LocationTypeDef> generationLocationTypes = new List<LocationTypeDef>();
         private readonly Dictionary<string, GenerationScopeDef> generationScopes = new Dictionary<string, GenerationScopeDef>();
 
-        /// <summary>Loadの中から呼ばれ、地形生成の3ルートキーをこのインスタンスへ追記する。</summary>
         private void LoadGenerationSections(string label, YamlMappingNode root)
         {
             YamlMappingNode axes = root.TryGetMapping("axes", label);
@@ -234,11 +231,8 @@ namespace UnmappedIsland.Loader
             return scope;
         }
 
-        /// <summary>
-        /// Buildの中から呼ばれ、蓄積した生成定義の相互参照（location_types→object_defs、
-        /// preferences/hard_limits/guarantees→axes、guarantees→location_types）を検証してから
-        /// GenerationDefsを組み立てる。生成定義が1つも無ければnull（生成ファイル無しのCodex）。
-        /// </summary>
+        /// <summary>蓄積した生成定義の相互参照を検証してGenerationDefsを組み立てる。
+        /// 生成定義が1つも無ければnull（生成ファイル無しのCodex）。</summary>
         private GenerationDefs BuildGenerationDefs(IReadOnlyDictionary<int, ObjectDef> objectDefsByGlobalId)
         {
             if (generationAxes.Count == 0 && generationLocationTypes.Count == 0 && generationScopes.Count == 0)

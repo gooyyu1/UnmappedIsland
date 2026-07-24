@@ -7,8 +7,7 @@ namespace UnmappedIsland.Domain
 {
     /// <summary>
     /// transfer（GameElementDefinition.md 9.5節）の実行エンジン（WorldObject.ApplyActiveEffect）に対する
-    /// 自動テスト。core.yamlと同じ形のYAMLフィクスチャをWorldCodexYamlLoader経由でパースして検証する
-    /// （InteractionTests.csと同じ方針）。
+    /// 自動テスト。
     /// </summary>
     [TestFixture]
     public class TransferTests

@@ -8,32 +8,25 @@ namespace UnmappedIsland.Loader
 {
     public sealed partial class WorldCodexYamlLoader
     {
-        /// <summary>activeの内容(set/add/destroy/spawn/transfer/move)のキー集合。actions/combinations/pickの
-        /// 各エントリは、専用の"active"キーを介さずshowMenu/conditions/with/weight/pickと対等な兄弟キーとして
-        /// これらを直接持つため、「activeとして何か書かれているか」をこのキー群の有無で判定する。</summary>
+        /// <summary>activeの内容のキー集合。actions/combinations/pickの各エントリはこれらを兄弟キーとして
+        /// 直接持つため、「activeとして何か書かれているか」をこのキー群の有無で判定する。</summary>
         private static readonly string[] ActiveVerbKeys = { "set", "add", "destroy", "spawn", "transfer", "move" };
 
         private static bool HasActiveContent(YamlMappingNode map) =>
             ActiveVerbKeys.Any(key => map.TryGet(key) != null);
 
         /// <summary>
-        /// active内容（9節: set/add/destroy/spawn）を読む。文法は「操作(set/add)が上位、対象
-        /// (self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。on_min・on_max・on_overflow・
-        /// on_shortfall（6節、selfOnly: true）は専用キー配下でこの形をそのまま持つ。actions/combinations/pick
-        /// （selfOnly: false）は"active"というラップを挟まず、showMenu/conditions/with/weight/pickと対等な
-        /// 兄弟キーとしてこの形を直接持つため、bodyNodeにはそれら他のキーも同居する。reservedKeysには、
-        /// そうした「activeとは無関係な、呼び出し側がすでに読み終えている兄弟キー」を渡し、未知キー判定から除外する。
-        ///
-        /// destroyは削除対象を直接指す（`destroy: self`、または複数対象なら`destroy: [self, dragged]`）。
-        /// spawnは常にselfが実行するものとみなすため対象キーを持たない（対象別のラップを挟まない）。
+        /// active内容（9節）を読む。文法は「操作(set/add)が上位、対象(self/parent/actor/dragged)が下位」
+        /// （例: `add: {self: {hour: 1}}`）。bodyNodeにはactive以外の兄弟キーも同居しうるため、
+        /// reservedKeysに「呼び出し側がすでに読み終えている兄弟キー」を渡して未知キー判定から除外する。
+        /// spawnは常にselfが実行するものとみなすため対象キーを持たない。
         /// </summary>
         private ActiveEffects ParseActiveEffectBody(
             string context, YamlMappingNode bodyNode, bool allowDragged, bool selfOnly,
             IReadOnlyCollection<string> reservedKeys = null)
         {
-            // 単一命令(ActiveEffect)の宣言順フラットリストを1本組み立てる。適用順はset→add→transfer→
-            // move→destroy→spawn（同一プロパティへのset後add、destroyで空いた位置へのspawn(same_slot)という
-            // 依存関係のため。moveはdestroyより前＝移動対象・参照プロパティが消える前に解決する。
+            // 適用順はset→add→transfer→move→destroy→spawnで固定（set後add、destroyで空いた位置への
+            // spawn(same_slot)、moveはdestroyで対象が消える前、という依存関係のため。
             // ActiveEffects.Applyはこのリスト順にそのまま適用する）。
             var operations = new List<ActiveEffect>();
 
@@ -74,10 +67,9 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// setの1エントリの値。YAMLスカラーならリテラル（整数・真偽値・シンボル名、ParseScalarNumber）、
-        /// YAMLマッピングなら{object, prop}参照（他のプロパティの現在値をそのままコピーする、9.2節）の
-        /// いずれか。参照先のobjectは、set自身の対象キー（self/parent/ancestor/actor/[dragged]）と全く同じ
-        /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
+        /// setの1エントリの値。スカラーならリテラル（整数・真偽値・シンボル名）、マッピングなら
+        /// {object, prop}参照（他のプロパティの現在値のコピー、9.2節）。参照先のobjectはset自身の
+        /// 対象キーと同じ制約（selfOnly・allowDragged）を共有する。
         /// </summary>
         private SetEffect ParseSetEffect(
             string context, ReferenceRoot target, int propertyGlobalId, YamlNode valueNode, bool allowDragged, bool selfOnly)
@@ -102,12 +94,10 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// transfer（9.5節）。conditions（14節）と同じくfrom/toの参照をフラットな2フィールド
-        /// （from_object/from_prop, to_object/to_prop）で表す。from_object/to_objectは省略時self
-        /// （conditionsのobject省略時と同じ規約）。対象ルートの妥当性判定は、set/add/destroyと全く同じ
-        /// 制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。
-        ///
-        /// linked_add（省略可）はaddと同じ構造を持ち、実際の移動量に比例してスケールされる副効果を表す。
+        /// transfer（9.5節）。from/toの参照はフラットな2フィールド（from_object/from_prop,
+        /// to_object/to_prop）で表し、from_object/to_objectは省略時self。対象ルートはset/add/destroyと
+        /// 同じ制約（selfOnly・allowDragged）を共有する。linked_add（省略可）はaddと同じ構造で、
+        /// 実際の移動量に比例してスケールされる副効果。
         /// </summary>
         private TransferEffect ParseTransfer(string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
         {
@@ -141,9 +131,7 @@ namespace UnmappedIsland.Loader
             return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd);
         }
 
-        /// <summary>setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む（対象別の入れ子は
-        /// 各SetEffectがTargetとして自分で持つため、辞書グループ化ではなくフラットに展開する。passiveの
-        /// ParsePassiveOperationIntoがModifyEffect/AccumulateEffectのリストを作るのと対称）。</summary>
+        /// <summary>setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む。</summary>
         private List<SetEffect> ParseSets(
             string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
         {
@@ -160,8 +148,7 @@ namespace UnmappedIsland.Loader
             return sets;
         }
 
-        /// <summary>addを「対象付きの1操作(AddEffect)」の宣言順フラットリストへ読む（ParseSetsと同じく、
-        /// 対象は各AddEffectがTargetとして自分で持つ）。</summary>
+        /// <summary>addを「対象付きの1操作(AddEffect)」の宣言順フラットリストへ読む。</summary>
         private List<AddEffect> ParseAdds(
             string context, YamlMappingNode map, bool allowDragged, bool selfOnly)
         {
@@ -236,11 +223,10 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// move（対象オブジェクトを、to_propが指すインスタンスIDのオブジェクトの中へ移動する。MoveEffect参照）。
+        /// move（対象を、to_propが指すインスタンスIDのオブジェクトの中へ移動する。MoveEffect参照）。
         /// transferと同じフラットフィールド規約（`move: {object: actor, to_prop: destination_id}`）。
-        /// objectは現時点でactorのみ対応（移動の主語として今必要なのがプレイヤーだけであり、それ以外の
-        /// 対象の移動には「どの子か」等の未確定な意味論が伴うため）。on_min/on_overflow/on_shortfall/on_max
-        /// （selfOnly）にはactorが存在しないため使えない。
+        /// objectは現時点でactorのみ対応（それ以外の対象には「どの子か」等の未確定な意味論が伴うため）。
+        /// selfOnly文脈（rangeイベント）にはactorが存在しないため使えない。
         /// </summary>
         private MoveEffect ParseMove(string context, YamlMappingNode map, bool selfOnly)
         {
@@ -262,10 +248,9 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// set/add/destroyの対象キー（self/parent/ancestor/actor、combinations内はdraggedも）を解決する。
-        /// childは、一度きりの命令に対して「どの子か」の意味がまだ確定していないため未対応（passiveのchild
-        /// 寄与とは異なり、activeのchildには関係とゲートに基づく登録の仕組みが無いため、対象を一意に絞る
-        /// 規約が無い）。selfOnlyの場合（on_min・on_max・on_overflow・on_shortfall）はself以外を一律エラーにする。
+        /// activeの対象キー（self/parent/ancestor/actor、combinations内はdraggedも）を解決する。
+        /// childは「どの子か」を一意に絞る規約が無いため未対応。selfOnly（rangeイベント）は
+        /// self以外を一律エラーにする。
         /// </summary>
         private static ReferenceRoot ParseActiveTargetKey(string context, string key, bool allowDragged, bool selfOnly)
         {
@@ -294,10 +279,8 @@ namespace UnmappedIsland.Loader
             }
         }
 
-        /// <summary>destroy（削除対象の直接指定）を読む。単一の対象名(`destroy: self`)か、
-        /// 対象名のリスト(`destroy: [self, dragged]`)のいずれかを許容する。ancestorは「どのプロパティを
-        /// 探すか」が無ければ解決しようがなく、destroyはオブジェクトそのものを指すためプロパティを
-        /// 持たない。よってdestroyの対象としては未対応。</summary>
+        /// <summary>destroy（削除対象の直接指定）を読む。単一の対象名か対象名のリストを許容する。
+        /// ancestorはプロパティ名が無いと解決できないため、destroyの対象としては未対応。</summary>
         private static List<ReferenceRoot> ParseDestroyTargets(string context, YamlNode node, bool allowDragged, bool selfOnly)
         {
             if (node is YamlScalarNode scalar)

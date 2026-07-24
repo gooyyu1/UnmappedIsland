@@ -8,8 +8,7 @@ namespace UnmappedIsland.Domain
 {
     /// <summary>
     /// アイテムのスタック表示（Slot.Contentsの並び順・SlotDefのStackable/UnitCapacity/FixedPositions・
-    /// ObjectDef.StackOrder・same_slotとの相互作用）に対する自動テスト。YAMLパーサ経由でWorldCodexを
-    /// 組み立てて検証する（YamlLoaderTests.csと同じ方針）。
+    /// ObjectDef.StackOrder・same_slotとの相互作用）に対する自動テスト。
     /// </summary>
     [TestFixture]
     public class StackingTests

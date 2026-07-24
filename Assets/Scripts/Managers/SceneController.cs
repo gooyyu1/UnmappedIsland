@@ -3,9 +3,6 @@ using UnityEngine.SceneManagement;
 
 namespace UnmappedIsland.Managers
 {
-    /// <summary>
-    /// シーン遷移を管理するクラス
-    /// </summary>
     public class SceneController : MonoBehaviour
     {
         public static SceneController Instance { get; private set; }

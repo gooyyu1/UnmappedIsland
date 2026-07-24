@@ -1,46 +1,38 @@
 # 土地（location）と道（path）の定義（TerrainGeneration.md・ExplorationSystem.md・
-# GameElementDefinition.md参照）。個々の土地種別はcore.yamlのコメントで予告されていた
-# 「別ファイルで追加する地形定義」にあたる。地形生成そのもの（どの土地がいくつ・どう繋がって
-# 生成されるか）はterrain_generation.yamlのaxes/location_types/generation_scopesと、
-# Domain/Generationの生成パイプラインが担う。
+# GameElementDefinition.md参照）。地形生成そのもの（どの土地がいくつ・どう繋がって生成されるか）は
+# terrain_generation.yamlとDomain/Generationの生成パイプラインが担う。
 #
-# すべての土地は location trait（core.yaml。items/fixtures/charactersの3スロット。
-# 場所である以上、探索の可否によらず持つ構造）と、この
-# ファイルで定義する explorable trait（探索できる場所だけが追加で持つ構造: 道の2スロット+
-# 探索進捗）を実装する。「探索で何が見つかるか」「探索できる回数（進捗の上限）」は地形ごとに
-# 異なるため、explorable traitには持たせず、各土地のobject_defが探索アクション（explore）
-# として個別に定義する。
+# すべての土地は location trait（core.yaml参照）と、このファイルで定義する explorable trait を
+# 実装する。「探索で何が見つかるか」「探索できる回数」は地形ごとに異なるため、explorable traitには
+# 持たせず、各土地のobject_defが探索アクション（explore）として個別に定義する。
 
 traits:
-  # 探索できる場所だけが追加で持つ構造（items/fixtures/charactersはlocation trait、
-  # core.yaml参照）。
+  # 探索できる場所だけが追加で持つ構造。
   explorable:
     slots:
-      # 生成時に道（path）を隠しておくスロット。探索の進捗が道のrequired_progressへ達すると、
-      # Location（Views）がpathsスロットへ移して「発見」させる。UI側はこのスロットを表示しない想定。
+      # 生成時に道を隠しておくスロット。探索の進捗が道のrequired_progressへ達すると、
+      # Location（Views）がpathsスロットへ移して「発見」させる。UI側は表示しない。
       undiscovered_paths:
         accepts:
           - {tag: path, max: 9999}
-      # 発見済みの道のスロット。道のtravel（移動）アクションはin_slot: pathsを条件に持つため、
-      # このスロットに居る間だけ実行できる。
+      # 発見済みの道のスロット。
       paths:
         accepts:
           - {tag: path, max: 9999}
     props:
-      # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索できる回数=range.max、
-      # 10〜20回）を必ず与える（5節の「traitでvalueなし=継承先で必須」の規約）。
+      # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索できる回数=range.max）
+      # を必ず与える（5節の「traitでvalueなし=継承先で必須」の規約）。
       exploration_progress: {}
 
 object_defs:
   # ------------------------------------------------------------------
-  # 道（path）。土地と土地の繋がり1本の片方向分を表し、地形生成が辺1本につき両端へ1個ずつ
-  # 生成する（それぞれdestination_idが相手側を指す。片方の土地だけ先に探索が進み、
-  # 非対称に発見される状態も自然に表現できる）。
+  # 道（path）。土地と土地の繋がり1本の片方向分。地形生成が辺1本につき両端へ1個ずつ生成し、
+  # destination_idが相手側を指す（発見の進み方は両端で非対称になりうる）。
   # - travel_minutes: 移動時間（分）。距離と移動難易度から生成時に計算され、インスタンスごとに
-  #   上書きされる（TerrainGeneration.md 3.5節のdistance/difficultyを時間に代表させたもの）。
+  #   上書きされる（TerrainGeneration.md 3.5節）。
   # - required_progress: 親の土地のexploration_progressがこの値に達すると発見される。
-  # - destination_id: 移動先LocationのインスタンスID。定義時点では決まらない、生成時に確定する
-  #   個体への参照のため、object_def参照ではなくインスタンスIDのプロパティで持つ（moveの規約）。
+  # - destination_id: 移動先LocationのインスタンスID。生成時に確定する個体への参照のため、
+  #   object_def参照ではなくインスタンスIDのプロパティで持つ（moveの規約）。
   # ------------------------------------------------------------------
   path:
     tags: [path]
@@ -63,9 +55,10 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 探索で見つかる発見物（アイテム）。itemタグによって土地のitemsスロットへ振り分けられる。
+  # driftwood/stone/branchは工作・燃料などの素材の想定（レシピは今後の課題）。
   # ------------------------------------------------------------------
 
-  # ヤシの実。果肉と汁で、満腹と水分の両方をわずかに回復できる。
+  # ヤシの実。
   coconut:
     tags: [item]
     actions:
@@ -77,22 +70,21 @@ object_defs:
             vegetable_nutrition: 5000
         destroy: self
 
-  # 流木。乾いた木材として、焚き火や工作の素材になる想定（レシピは今後の課題）。
+  # 流木。
   driftwood:
     tags: [item]
 
-  # 石。道具や炉の素材になる想定（レシピは今後の課題）。
+  # 石。
   stone:
     tags: [item]
 
-  # 枝。燃料や工作の素材になる想定（レシピは今後の課題）。
+  # 枝。
   branch:
     tags: [item]
 
   # ------------------------------------------------------------------
-  # 探索で見つかる設置物（植物・構造物）。fixtureタグによって土地のfixturesスロットへ
-  # 振り分けられる。いずれも現時点では発見されるだけのプレースホルダで、採取・内部生成などの
-  # 振る舞いは今後の課題。
+  # 探索で見つかる設置物。fixtureタグによって土地のfixturesスロットへ振り分けられる。
+  # いずれも発見されるだけのプレースホルダ（採取・内部生成などの振る舞いは今後の課題）。
   # ------------------------------------------------------------------
 
   # ヤシの木。定期的にヤシの実を落とす採取ポイントになる想定。
@@ -103,13 +95,11 @@ object_defs:
   berry_bush:
     tags: [fixture]
 
-  # 洞窟の入口。TerrainGeneration.md 3.7節の構造物（内部に子Locationグラフを持つStructure）の
-  # 入口となる想定。内部の再帰生成はstructure_interiorスコープの実装とあわせて今後の課題。
+  # 洞窟の入口。内部に子Locationグラフを持つ構造物（TerrainGeneration.md 3.7節）の入口となる想定。
   cave_entrance:
     tags: [fixture]
 
-  # 湧き水。飲用・補水ポイントになる想定（drinkアクションはContainerSystem.mdの液体表現と
-  # あわせて今後の課題）。
+  # 湧き水。飲用・補水ポイントになる想定。
   spring:
     tags: [fixture]
 
@@ -375,8 +365,7 @@ object_defs:
             add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
 
-  # 山頂。島で最も高い場所。風が強く得られるものは少ないが、島全体を見渡せる
-  # （見渡しによる地図公開などの効果は今後の課題）。
+  # 山頂。島で最も高い場所。風が強く得られるものは少ない（島を見渡す効果は今後の課題）。
   mountain_peak:
     traits: [location, explorable]
     props:

@@ -9,8 +9,7 @@ namespace UnmappedIsland.StreamingAssets
 {
     /// <summary>
     /// Assets/StreamingAssets/WorldCodex/characters.yaml（プレイヤーキャラクターの定義）が、core.yamlと
-    /// 同じディレクトリ内の複数ファイルとして実際に正しくロードできることを確認する自動テスト
-    /// （CoreYamlTests参照、同じ方針）。
+    /// 併せて実ファイルとして正しくロードできることを確認する自動テスト。
     /// </summary>
     [TestFixture]
     public class CharactersYamlTests

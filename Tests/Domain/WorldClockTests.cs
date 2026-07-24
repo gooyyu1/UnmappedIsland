@@ -7,11 +7,7 @@ using UnmappedIsland.Domain.Runtime.Views;
 namespace UnmappedIsland.Domain
 {
     /// <summary>
-    /// WorldSession.AdvanceWorldTime（core.yamlのtick=15分という時間モデルに対する、ゲーム側の時間進行ロジック）に対する
-    /// 自動テスト。core.yamlのworld object_defと同じ形のYAMLフィクスチャをWorldCodexYamlLoader経由で
-    /// パースして検証する（YamlLoaderTests.csと同じ方針）。プロパティ名の解決はRuntime.Views.Worldに
-    /// 委ね、WorldSession自体は文字列のプロパティ名を一切知らない（テスト側の確認もWorld越しに行う）。
-    ///
+    /// WorldSession.AdvanceWorldTime（tick=15分の時間モデルに対する時間進行ロジック）に対する自動テスト。
     /// minuteはtick駆動のaccumulateを持たない（YAML側の自動加算とWorldSessionの加算が二重にならないように
     /// するため）。minuteへの加算はすべてWorldSessionが、常にminutes_per_tick以下の小さな量ずつ行う。
     /// </summary>
@@ -75,7 +71,7 @@ object_defs:
         [Test]
         public void Advance_CrossingTickBoundary_FiresExactlyOneTickAndEndsAtCorrectMinute()
         {
-            // ユーザー提示の具体例: tick内経過分(minute % minutes_per_tick)が5の状態で20分進めると、
+            // tick内経過分(minute % minutes_per_tick)が5の状態で20分進めると、
             // Tickが1回実行され、tick内経過分は10になる。
             var (codex, world) = BuildWorld();
             var session = new WorldSession(codex, world);

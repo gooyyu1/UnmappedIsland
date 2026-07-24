@@ -20,9 +20,7 @@ namespace UnmappedIsland.Domain.Runtime
 
         /// <summary>stack判定用の代表ObjectDef列を、現在のrepresented_byチェーンからスナップショットする。
         /// 先頭は自分自身のObjectDefで、続いて代表・代表の代表…を深さ順に並べる（外側オブジェクトも同種判定の
-        /// 対象に含める。例: 水入りボウルと水入り瓶は先頭のObjectDefが違うので別スタックになる）。
-        /// スナップショット作成時のみ列を組み立てる。合流判定の突き合わせはMatchesRepresentationが辿りながら
-        /// 行うため、候補側で毎回この列を作り直すことはしない。</summary>
+        /// 対象。例: 水入りボウルと水入り瓶は先頭のObjectDefが違うので別スタック）。</summary>
         public IReadOnlyList<int> CaptureRepresentationChain()
         {
             var chain = new List<int>();
@@ -30,9 +28,8 @@ namespace UnmappedIsland.Domain.Runtime
             return chain;
         }
 
-        /// <summary>自分の代表チェーン（自分自身＋represented_by先…）が、スナップショット済みのexpectedと
-        /// 完全に一致するか。expectedと突き合わせながらチェーンを辿り、値の食い違い・長さ違いを見つけ次第
-        /// 打ち切る（合流判定は頻繁に呼ばれるため、候補側のList生成を伴わない）。</summary>
+        /// <summary>自分の代表チェーンが、スナップショット済みのexpectedと完全に一致するか。
+        /// 頻繁に呼ばれるため、候補側のList生成を伴わずに突き合わせる。</summary>
         public bool MatchesRepresentation(IReadOnlyList<int> expected) =>
             MatchRepresentationFrom(expected, 0) == expected.Count;
 
@@ -61,12 +58,9 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>
-        /// 自分の代表チェーン（represented_byで畳んだ同種判定の識別子）が変わった直後の後始末。represented_by先
-        /// スロットの中身が入れ替わったときに呼ばれる。まず自分自身が今の所属スタックの固定識別子にまだ合致するかを
-        /// スロットへ再判定させ（合致しなければ抜けて適切なスタックへ移る＝同種の別スタックへ合流／無ければ新規）、
-        /// 次に自分を代表として使っている一つ上（親）があれば、その親の代表チェーンも連鎖的に変わったので同じ後始末を
-        /// 親へ伝える。各段は「自分を再判定し、自分を代表に使う一つ上へ同じ依頼を渡す」だけの局所処理で、上りは
-        /// represented_byのネスト分だけ有界（自分のことは自分でする、CLAUDE.md参照）。
+        /// 自分の代表チェーンが変わった直後の後始末（represented_by先スロットの中身が入れ替わったときに呼ばれる）。
+        /// 自分の所属スタックをスロットへ再判定させ（Restack）、自分を代表に使う親があれば同じ後始末を親へ伝える。
+        /// 上りの連鎖はrepresented_byのネスト分だけ有界。
         /// </summary>
         private void OnRepresentationChanged()
         {
@@ -79,8 +73,7 @@ namespace UnmappedIsland.Domain.Runtime
                 Parent.OnRepresentationChanged();
         }
 
-        /// <summary>slotLocalIdが、このオブジェクトの代表を採るスロット（represented_by先）か。中身が入れ替わった
-        /// スロットがこれなら、自分の代表チェーンが変わったということ。</summary>
+        /// <summary>slotLocalIdが、このオブジェクトの代表を採るスロット（represented_by先）か。</summary>
         private bool IsRepresentedBySlot(int slotLocalId)
         {
             if (!Def.RepresentedBySlotGlobalId.HasValue) return false;

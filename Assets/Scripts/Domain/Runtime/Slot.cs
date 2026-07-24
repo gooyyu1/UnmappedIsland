@@ -7,17 +7,14 @@ namespace UnmappedIsland.Domain.Runtime
 {
     /// <summary>
     /// 1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは
-    /// 1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は
-    /// こちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。
+    /// 1つの ObjectStack（7.6節）か、空（null）。位置＝セルの添字。正の情報源はこちら側（親のスロット配列）
+    /// であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。
     ///
-    /// FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。
-    /// - FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が
-    ///   安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。
+    /// FixedPositions と非FixedPositions の違いは「空になったセルを残すか、詰めるか」の1点のみ:
+    /// - FixedPositions: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が安定する。
     /// - 非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。
-    /// この差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot
-    /// 置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。
     ///
-    /// 中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。
+    /// 中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（親子の整合性を1箇所でのみ保証するため）。
     /// </summary>
     public sealed class Slot
     {
@@ -28,29 +25,23 @@ namespace UnmappedIsland.Domain.Runtime
 
         private IEnumerable<ObjectStack> LiveStacks => cells.Where(c => c != null);
 
-        /// <summary>セルの並びそのもの（空セルは null）。位置＝添字。FixedPositionsでは空セルnullを含んだまま
-        /// 番号が安定し、非FixedPositionsでは前詰め済みなのでnullを含まない。「実在スタックだけを位置無視で
-        /// 並べたい」用途は無いため、そのようなビュー（旧Stacks）は提供しない。位置と一緒に扱うのが前提。</summary>
+        /// <summary>セルの並びそのもの（空セルは null）。位置＝添字。</summary>
         public IReadOnlyList<ObjectStack> Cells => cells.ToList();
 
-        /// <summary>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。スタックの概念に興味が無い
-        /// 呼び出し側（タグ判定・重さ集計・子の一括走査など、ほとんどが内部処理）はこちらを使う。</summary>
+        /// <summary>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。</summary>
         public IReadOnlyList<WorldObject> Contents => LiveStacks.SelectMany(s => s.Members).ToList();
 
         public Slot(SlotDef def)
         {
             Def = def;
-            // FixedPositionsは固定長のセル配列（全て空=null）として持つ。番号は添字そのもの。
+            // FixedPositionsは固定長のセル配列（全て空=null）として持つ。
             if (def.FixedPositions)
                 for (int i = 0; i < def.UnitCapacity.GetValueOrDefault(); i++)
                     cells.Add(null);
         }
 
-        /// <summary>
-        /// move_to_slot（7.1節）が候補オブジェクトを受け入れられるかを、この Slot 自身の Def と
-        /// 中身だけで判定する（accepts制約・capacity・UnitCapacity、7.2〜7.3節）。force=trueの
-        /// 場合はこの判定自体を呼び出し側（WorldObject.AttachToSlot）がスキップする。
-        /// </summary>
+        /// <summary>move_to_slot（7.1節）が候補オブジェクトを受け入れられるか（accepts制約・capacity・
+        /// UnitCapacity、7.2〜7.3節）。force=trueの場合は呼び出し側がこの判定自体をスキップする。</summary>
         public bool CanAccept(WorldObject candidate, WellKnownProperties wellKnown, string ownerName, out string error)
         {
             if (!AcceptsRule(candidate))
@@ -96,9 +87,8 @@ namespace UnmappedIsland.Domain.Runtime
 
         private int SumSize(int sizePropertyGlobalId) => Contents.Sum(o => o.GetNumber(sizePropertyGlobalId));
 
-        /// <summary>UnitCapacity（種類数/個数の上限）に、candidateを新たに加える余地があるか。Stackableなら
-        /// 既存のObjectStackへ合流できる場合は新しい枠を消費しない（この場合に限りDef.Stackableを見る。
-        /// 非Stackableは同種でも常に個体ごとに新しいObjectStackを作るため、合流によるタダ乗りは無い）。</summary>
+        /// <summary>UnitCapacityにcandidateを新たに加える余地があるか。Stackableで既存のObjectStackへ合流
+        /// できる場合は新しい枠を消費しない（非Stackableは同種でも常に個体ごとに別スタック）。</summary>
         private bool HasCapacityFor(WorldObject candidate)
         {
             if (!Def.UnitCapacity.HasValue) return true;
@@ -107,13 +97,12 @@ namespace UnmappedIsland.Domain.Runtime
         }
 
         /// <summary>通常の追加。合流できる既存スタックがあればそこへ、無ければ新規スタックとして
-        /// 最初の空きセル（＝FixedPositionsでは最小の空き番号）へ、空きが無ければ末尾へ入れる。</summary>
+        /// 最初の空きセルへ、空きが無ければ末尾へ入れる。</summary>
         public void AddInternal(WorldObject obj)
         {
             if (Def.Stackable)
             {
-                // TryInsertはMatchesを満たさない相手を弾くため、万一合致しないスタックが返っても無理に
-                // 押し込まれず、新規スタック生成へフォールバックする。
+                // TryInsertはMatchesを満たさない相手を弾くため、その場合は新規スタック生成へフォールバックする。
                 ObjectStack existing = FindMatchingStack(obj);
                 if (existing != null && existing.TryInsert(obj)) return;
             }
@@ -121,8 +110,7 @@ namespace UnmappedIsland.Domain.Runtime
             PlaceNewStack(new ObjectStack(obj));
         }
 
-        /// <summary>新規スタックを最初の空きセルへ、無ければ末尾へ。FixedPositionsは空セル(null)を持つので
-        /// 最小の空き番号へ入り、非FixedPositionsは空セルが無いので常に末尾へ追加される。</summary>
+        /// <summary>新規スタックを最初の空きセルへ、無ければ末尾へ。</summary>
         private void PlaceNewStack(ObjectStack newStack)
         {
             int firstEmpty = cells.IndexOf(null);
@@ -138,20 +126,16 @@ namespace UnmappedIsland.Domain.Runtime
             cells[idx].Remove(obj);
             if (cells[idx].Members.Count > 0) return;
 
-            // セルが空になった。FixedPositionsは位置を保つため空セル(null)として残し、非FixedPositionsは
-            // 前詰めするため削除する（これが両者の唯一の差）。
+            // 空になったセル: FixedPositionsは空セル(null)として残し、非FixedPositionsは前詰めする。
             if (Def.FixedPositions) cells[idx] = null;
             else cells.RemoveAt(idx);
         }
 
         /// <summary>
-        /// objの代表チェーン（represented_byで畳んだ同種の識別子）が変わったかもしれないとき、objが今の所属
-        /// スタックの固定識別子にまだ合致するかを判定し、合致しなくなっていれば抜いて入れ直す（同種の既存
-        /// スタックがあれば合流、無ければ新規スタック。抜けた跡が空になれば固定は空セル化・前詰めは除去）。
-        /// これによりスロットの「同種は1スタックにまとまる」という不変条件を、中身の変化後も保つ。
-        ///
-        /// 非Stackableは同種でも常に個体ごとの別スタックで、合流もしなければ並びも保ちたいので対象外
-        /// （識別子が古くなっても、その識別子で合流判定される相手が居ないため実害が無い）。
+        /// objの代表チェーンが変わったかもしれないとき、今の所属スタックの固定識別子に合致しなくなって
+        /// いれば抜いて入れ直し（既存スタックへ合流／新規スタック）、「同種は1スタックにまとまる」という
+        /// 不変条件を中身の変化後も保つ。非Stackableは対象外（個体ごとの別スタックで、合流判定の相手が
+        /// 居ないため実害が無い）。
         /// </summary>
         public void Restack(WorldObject obj)
         {

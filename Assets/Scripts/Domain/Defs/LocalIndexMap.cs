@@ -5,11 +5,9 @@ namespace UnmappedIsland.Domain.Defs
 {
     /// <summary>
     /// 特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、
-    /// ゲーム全体で共有されるグローバルID空間とを対応付ける表。
-    ///
-    /// ObjectDefごとに「持っているプロパティ／スロット」は異なるため、グローバルID空間全体を
-    /// そのままインデックスに使うと大半が未使用の疎な配列になってしまう。そこで ObjectDef 側は
-    /// 自分が実際に持つものだけを詰めた密なローカル配列を持ち、この表がその変換を担う。
+    /// ゲーム全体で共有されるグローバルID空間とを対応付ける表。ObjectDef側は自分が実際に持つ
+    /// ものだけを詰めた密なローカル配列を持ち（グローバルID直インデックスでは疎になるため）、
+    /// この表がその変換を担う。
     /// </summary>
     public sealed class LocalIndexMap
     {

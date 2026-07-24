@@ -192,8 +192,7 @@ namespace UnmappedIsland.StreamingAssets
             Assert.That(locations.Accepts.Count, Is.EqualTo(1));
 
             // locationタグを、traitを経由して持つobject_defと、traitを介さず直接tagsで持つobject_def、
-            // どちらも同じように受け入れられることを確認する（同一traitでなくても同じタグを共有していれば
-            // 受け入れたい、という設計意図。CLAUDE.md参照ではなく本タスクの意図そのもの）。
+            // どちらも同じように受け入れられることを確認する。
             const string yaml = @"
 traits:
   location: {tags: [location]}

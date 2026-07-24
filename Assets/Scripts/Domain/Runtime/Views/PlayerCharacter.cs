@@ -23,9 +23,8 @@ namespace UnmappedIsland.Domain.Runtime.Views
             satietyId = IdOrMissing(propertyNames, "satiety");
         }
 
-        /// <summary>未登録の名前は-1（LocalIndexMap.Missing扱い）にする。実際のcharacters.yamlが
-        /// このビューの知る全プロパティを持つとは限らない（例: hpは未定義）ため、GetIdの例外ではなく
-        /// 「持っていなければ0を読む」という他のビューと同じ姿勢に合わせる。</summary>
+        /// <summary>未登録の名前は-1（LocalIndexMap.Missing扱い）にする。characters.yamlがこのビューの知る
+        /// 全プロパティを持つとは限らないため、「持っていなければ0を読む」姿勢に合わせる。</summary>
         private static int IdOrMissing(NameRegistry names, string name) =>
             names.TryGetId(name, out int id) ? id : -1;
 

@@ -5,9 +5,7 @@ namespace UnmappedIsland.Domain.Defs
 {
     /// <summary>
     /// ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の
-    /// object_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。
-    /// conditionsと条件成立時に適用する効果（ActiveEffect＝active/pickのどちらか一方。排他なので単一の
-    /// ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。
+    /// object_defに定義する。withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。
     /// </summary>
     public sealed class CombinationDef
     {
@@ -17,8 +15,7 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>nullなら常に真（conditions省略）。</summary>
         private readonly ConditionNode conditions;
 
-        /// <summary>条件成立時に適用する効果。nullなら何も起きない。pickの抽選もActiveEffect（PickEffect）
-        /// 自身が適用時に行うため、ここは適用を依頼するだけでよい。</summary>
+        /// <summary>条件成立時に適用する効果。nullなら何も起きない。</summary>
         private readonly ActiveEffect effect;
 
         public CombinationDef(

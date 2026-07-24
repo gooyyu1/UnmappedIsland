@@ -11,8 +11,8 @@
 
 - [道具・武器・容器・衣類 アイテム案](./SurvivalItems.md)
 - [WorldCodex データベースビューア](./WorldCodexViewer.html) — 実際のゲームデータ
-  （`Assets/StreamingAssets/WorldCodex/*.yaml`）を表示のたびにGitHubから直接取得・解釈して一覧・詳細表示する、
-  人間用の閲覧ツール（ビルド不要、YAMLの変更内容がそのまま反映される）。文法そのもの（YAML文法リファレンス）は
+  （`Assets/StreamingAssets/WorldCodex/*.yaml`）を表示のたびにGitHubから直接取得して一覧・詳細表示する
+  閲覧ツール（ビルド不要）。YAML文法リファレンスは
   [`../Engine/GameElementDefinition.md`](../Engine/GameElementDefinition.md) を参照
 
 ## 含まれるドキュメント例

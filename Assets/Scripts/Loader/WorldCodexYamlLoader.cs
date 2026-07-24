@@ -7,68 +7,41 @@ using YamlDotNet.RepresentationModel;
 namespace UnmappedIsland.Loader
 {
     /// <summary>
-    /// YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。
-    /// Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に
-    /// System.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、
-    /// 実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す
-    /// Load経由で使う）。
+    /// YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
+    /// UnityEngineには依存しない（プラットフォーム固有のファイルI/Oが必要な場合は、呼び出し元が
+    /// テキストを取得してLoadへ渡す）。
     ///
-    /// YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの
-    /// ParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/
-    /// ParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース
-    /// メソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。
-    /// 一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の
-    /// フィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。
-    /// RawObjectDef.cs参照）。
+    /// パース全般をこのクラスが担い、5種のNameRegistryを保持する。「trait解決込みでobject_defを
+    /// 組み立てる」責務はRawObjectDef.Resolveが担う。props/slots/actions/combinationsはフィールド
+    /// 単位のtrait上書きマージ対象のため、深い意味解釈とprop/slot名等のInternはLoad時点ではなく
+    /// Resolveまで遅延する。object_def自身のGlobalIdのみtrait解決に依存しないため、ParseObjectDefの
+    /// 時点で確定する。
     ///
-    /// props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり
-    /// （RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う
-    /// （プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、
-    /// これらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および
-    /// ParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて
-    /// 呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、
-    /// shallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし
-    /// object_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。
+    /// Load系メソッドは何度でも呼べ、呼ぶたびにこのインスタンスへ追記する（thisを返すため
+    /// `new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()`と書ける）。
     ///
-    /// インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという
-    /// ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という
-    /// だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに
-    /// object_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて
-    /// 書ける（例: `new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()`）。
+    /// object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラー（3.3節の
+    /// 厳格モード）。「後勝ちで上書き」の規則は一切持たない（MODによる差し替えは専用のpatch文法で
+    /// 表現する想定）。
     ///
-    /// object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の
-    /// 厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの
-    /// patch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため
-    /// このローダー自身は「後勝ちで上書き」という規則を一切持たない。
-    ///
-    /// Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で
-    /// このインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、
-    /// 初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて
-    /// 困る理由も無いため）。
+    /// Buildは蓄積内容から不変のWorldCodexを組み立てて返し、このインスタンスの蓄積状態を初期化する。
     /// </summary>
     public sealed partial class WorldCodexYamlLoader
     {
         private static readonly string[] YamlExtensions = { ".yaml", ".yml" };
 
-        /// <summary>Load系メソッドで蓄積した、パース済みだがtrait未解決のobject_defs/traits。Buildが
-        /// 呼ばれるまでの「組み立て途中の世界」の中身そのもの。</summary>
+        /// <summary>Load系メソッドで蓄積した、パース済みだがtrait未解決のobject_defs/traits。</summary>
         private readonly Dictionary<string, RawObjectDef> globalObjectDefs = new Dictionary<string, RawObjectDef>();
         private readonly Dictionary<string, RawTrait> globalTraits = new Dictionary<string, RawTrait>();
 
-        /// <summary>
-        /// 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。他のpartialファイルの各パース
-        /// メソッドが、このインスタンス自身から必要な名前空間を読む。
-        /// </summary>
+        /// <summary>5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。</summary>
         public NameRegistry ObjectNames { get; private set; } = new NameRegistry();
         public NameRegistry PropertyNames { get; private set; } = new NameRegistry();
         public NameRegistry SlotNames { get; private set; } = new NameRegistry();
         public NameRegistry TagNames { get; private set; } = new NameRegistry();
         public NameRegistry SymbolNames { get; private set; } = new NameRegistry();
 
-        /// <summary>
-        /// 1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込み、
-        /// object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。
-        /// </summary>
+        /// <summary>1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込む。</summary>
         public WorldCodexYamlLoader LoadFromDirectory(string directory)
         {
             foreach (string path in FindYamlFiles(directory))
@@ -76,14 +49,10 @@ namespace UnmappedIsland.Loader
             return this;
         }
 
-        /// <summary>1つのファイルを読み込み、object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。</summary>
+        /// <summary>1つのファイルを読み込む。</summary>
         public WorldCodexYamlLoader LoadFromFile(string path) => Load(path, File.ReadAllText(path));
 
-        /// <summary>
-        /// 既にテキストとして読み込まれた1つのYAML（labelはエラーメッセージ用の出所表示）を読み込み、
-        /// object_defs/traitsをこのインスタンスへ追記する（Unity依存のファイルI/Oを呼び出し元に委ねたい
-        /// 場合や、テストでファイルを介さず直接YAML文字列を渡したい場合に使う）。何度でも呼べる。
-        /// </summary>
+        /// <summary>テキストとして渡された1つのYAMLを読み込む（labelはエラーメッセージ用の出所表示）。</summary>
         public WorldCodexYamlLoader Load(string label, string yamlText)
         {
             YamlMappingNode root;
@@ -109,18 +78,14 @@ namespace UnmappedIsland.Loader
                 foreach (var (name, node) in traits.EntriesInOrder())
                     AddUnique(globalTraits, name, ParseTrait(name, (YamlMappingNode)node, label), "traits");
 
-            // 地形生成の3ルートキー（axes/location_types/generation_scopes）。object_defs/traitsと対等な
-            // トップレベルキーで、terrain_generation.yaml等に置かれる（WorldCodexYamlLoader.Generation.cs）。
+            // 地形生成の3ルートキー（axes/location_types/generation_scopes。WorldCodexYamlLoader.Generation.cs）。
             LoadGenerationSections(label, root);
 
             return this;
         }
 
-        /// <summary>
-        /// これまでLoad系メソッドで蓄積したobject_defs/traitsから、最終的な不変のWorldCodexを1つ組み立てて
-        /// 返す。呼び終わると、このインスタンスの蓄積状態（object_defs/traits・5種のNameRegistry）は
-        /// 初期化される。
-        /// </summary>
+        /// <summary>蓄積したobject_defs/traitsから不変のWorldCodexを組み立てて返す。呼び終わると
+        /// このインスタンスの蓄積状態は初期化される。</summary>
         public WorldCodex Build()
         {
             var objectDefsByGlobalId = new Dictionary<int, ObjectDef>();
@@ -130,8 +95,7 @@ namespace UnmappedIsland.Loader
                 objectDefsByGlobalId[def.GlobalId] = def;
             }
 
-            // ここで初めて全object_defを走査し終えるため、ObjectNames.Countが最終値として確定する
-            // （個々のObjectDef自体はInternの都度、その時点までの登録状況だけを見て組み立てられている）。
+            // 全object_defの走査が終わったこの時点で、ObjectNames.Countが最終値として確定する。
             var defsByGlobalId = new ObjectDef[ObjectNames.Count];
             foreach (var kv in objectDefsByGlobalId) defsByGlobalId[kv.Key] = kv.Value;
 
@@ -155,10 +119,8 @@ namespace UnmappedIsland.Loader
             SymbolNames = new NameRegistry();
         }
 
-        /// <summary>object_defs.'name'の1エントリを浅く抽出する。props/slots/passives/stack_order/
-        /// actions/combinationsはtrait合成（RawObjectDef.Resolve）がまだ起こりうるため、意味解釈前の
-        /// 生YAMLノードのまま持つ。自分自身の識別性（GlobalId）はtrait解決に依存しないため、ここで
-        /// ObjectNames.Internを呼んで確定させる。</summary>
+        /// <summary>object_defs.'name'の1エントリを浅く抽出する。trait合成（RawObjectDef.Resolve）が
+        /// まだ起こりうるフィールドは生YAMLノードのまま持つ。GlobalIdのみここで確定させる。</summary>
         private RawObjectDef ParseObjectDef(string name, YamlMappingNode node, string source)
         {
             string context = $"object_defs.'{name}'";
@@ -191,10 +153,8 @@ namespace UnmappedIsland.Loader
             return raw;
         }
 
-        /// <summary>traits.'name'の1エントリを浅く抽出する。ParseObjectDefと同じ理由で、props/slots/
-        /// passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。traitはそれ自体が
-        /// インスタンス化されることも、実行時に識別されることも無いため、interning対象の識別子を
-        /// 持たない。</summary>
+        /// <summary>traits.'name'の1エントリを浅く抽出する（ParseObjectDefと同じく生YAMLノードのまま持つ）。
+        /// traitは実行時に識別されないため、interning対象の識別子を持たない。</summary>
         private RawTrait ParseTrait(string name, YamlMappingNode node, string source)
         {
             string context = $"traits.'{name}'";

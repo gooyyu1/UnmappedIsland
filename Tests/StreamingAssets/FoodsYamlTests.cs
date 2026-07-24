@@ -8,10 +8,8 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.StreamingAssets
 {
     /// <summary>
-    /// Assets/StreamingAssets/WorldCodex/foods.yaml（サンプル食料の定義）が、core.yaml・
-    /// characters.yamlと同じディレクトリ内の複数ファイルとして実際に正しくロードでき、
-    /// eatアクションがactor（プレイヤーキャラ）のsatiety・該当する栄養カテゴリを正しく
-    /// 加算することを確認する自動テスト（CoreYamlTests/CharactersYamlTests参照、同じ方針）。
+    /// Assets/StreamingAssets/WorldCodex/foods.yaml（サンプル食料の定義）が実ファイルとして正しくロードでき、
+    /// eatアクションがactorのsatiety・該当する栄養カテゴリを正しく加算することを確認する自動テスト。
     /// </summary>
     [TestFixture]
     public class FoodsYamlTests

@@ -96,7 +96,6 @@ namespace UnmappedIsland.Domain.Defs.Generation
             HardLimits = hardLimits;
         }
 
-        /// <summary>このLocationTypeが指定スコープに適用されるか（空なら全スコープ）。</summary>
         public bool AppliesTo(string scopeName)
         {
             if (ApplicableScopes.Count == 0) return true;

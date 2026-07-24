@@ -6,11 +6,8 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain.Defs
 {
     /// <summary>
-    /// pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。自分もまたActiveEffectであり
-    /// （activeと排他な選択肢の一方）、選ばれた候補の効果もまたActiveEffect（さらにpickなら再帰する）。
-    ///
-    /// 抽選（weight按分）と適用を自分で完結させる。候補が無ければ何もしない（条件成立時に何も起きない）。
-    /// 選択に使うRNGはsessionから、weightの解決に使う文脈はApplyの引数(owner=self/actor/dragged)から得る。
+    /// pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。候補の効果もActiveEffect
+    /// （さらにpickなら再帰する）。候補が無ければ何もしない。
     /// </summary>
     public sealed class PickEffect : ActiveEffect
     {
@@ -30,8 +27,7 @@ namespace UnmappedIsland.Domain.Defs
             chosen.Apply(owner, session, actor, dragged, effectSite);
         }
 
-        /// <summary>候補群を、それぞれのweightで重み付き抽選して1つ選ぶ。候補が非空であることは
-        /// Applyが事前に保証してから呼ぶ。</summary>
+        /// <summary>weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。</summary>
         private PickCandidateDef SelectWeighted(WorldObject self, WorldObject actor, WorldObject dragged, WorldSession session)
         {
             if (candidates.Count == 1) return candidates[0];
@@ -81,17 +77,14 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに
-    /// 適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、
-    /// ActiveEffectのポリモーフィズムでそのまま許容する）を持つ。
+    /// pickの1候補（GameElementDefinition.md 10節)。抽選の重み（weight）と、選ばれたときに適用する効果を持つ。
     /// </summary>
     public sealed class PickCandidateDef
     {
-        /// <summary>抽選の重み（10.2節）。ResolveWeight越しにPickEffectが読むだけのため公開しない。</summary>
+        /// <summary>抽選の重み（10.2節）。</summary>
         private readonly WeightSpec weight;
 
-        /// <summary>この候補が選ばれたときに適用する効果（さらにpickを持てば再帰する）。nullなら何も
-        /// 起きない。PickEffectがこの候補を選んだときにApplyへ委ねる。</summary>
+        /// <summary>この候補が選ばれたときに適用する効果。nullなら何も起きない。</summary>
         private readonly ActiveEffect effect;
 
         public PickCandidateDef(WeightSpec weight, ActiveEffect effect)
