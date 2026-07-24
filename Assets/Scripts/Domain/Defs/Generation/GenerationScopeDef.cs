@@ -10,9 +10,9 @@ namespace UnmappedIsland.Domain.Defs.Generation
     }
 
     /// <summary>
-    /// 島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への
-    /// 実装回答）。軸の分布だけでは「山が必ず1つ」を保証できないため、「指定軸が最大/最小のサイトから
-    /// Count個へ、このLocationTypeを強制割当する」という明示的な保証を、最近傍マッチングの前に行う。
+    /// 島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」）。
+    /// 指定軸が最大/最小のサイトからCount個へ、このLocationTypeを最近傍マッチングの前に強制割当する
+    /// （軸の分布だけでは「山が必ず1つ」の類を保証できないため）。
     /// </summary>
     public sealed class GuaranteeDef
     {

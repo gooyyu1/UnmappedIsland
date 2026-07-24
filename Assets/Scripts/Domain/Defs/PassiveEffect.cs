@@ -3,15 +3,11 @@ using UnmappedIsland.Domain.Runtime;
 namespace UnmappedIsland.Domain.Defs
 {
     /// <summary>
-    /// 効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を
-    /// 表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら
-    /// 両方を満たす間だけ有効=AND、両方nullなら常時有効。PassiveEffect.ActiveAmountから呼ばれる）。
+    /// 効果の発動条件。判別子は持たず、各フィールドの有無が「何をチェックすべきか」を表す
+    /// （StageName非null→WhenOwnStage判定、Conditions非null→conditions判定、両方非null=AND、両方null=常時有効）。
     ///
-    /// ConditionsもPropertyGlobalId/StageNameも、ロード時にローカルIDへ変換せずグローバルIDのまま持つ
-    /// （評価のたびにDeclarer自身がRuntime.WorldObject.IsInStageでローカル化する）。グローバルID→ローカルID
-    /// の変換コストは、1 tick=15分というこのゲームの時間スケールに対して無視できるほど小さいため、
-    /// Declarer自身のPropertyDefがすべて出来上がるまで解決を待つビルド時の2段階パースは不要（かつては
-    /// PropertyLocalId/PropertyStage参照をビルド時に確定させていたが、この理由により撤去した）。
+    /// 参照はグローバルIDのまま持ち、評価のたびにローカル化する（変換コストは1 tick=15分の時間スケールに
+    /// 対して無視できるため、ビルド時の2段階パースを避ける）。
     /// </summary>
     public sealed class PassiveEffectGate
     {
@@ -52,24 +48,17 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// 1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは
-    /// 「どのオブジェクトのどのプロパティへ紐付くか（target/targetPropertyGlobalId）」と「ゲートが有効な間だけ
-    /// いくら効くか（ActiveAmount）」。
+    /// 1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。
     ///
-    /// modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ
-    /// 加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに
-    /// 分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の
-    /// 唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。
+    /// modify（条件が真の間だけ実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ加減算＝不可逆）は
+    /// 別クラスで表し、判別enumは持たない。唯一の差は「PropertyValueのどちらのincomingへ登録されるか」で、
+    /// RegisterIntoの実装で表現する。
     ///
-    /// 「どこへ紐付くか」（target/targetPropertyGlobalId）も「今いくら効いているか」（amount/gate）も、この効果
-    /// 自身の内部事情である。登録先の解決と登録/解除は、targetの種別に応じて自分で行う（RegisterRelation、
-    /// 自分のことは自分でする、CLAUDE.md参照）。呼び出し側（WorldObject）は生成・エッジ形成/解消・トポロジ変化と
-    /// いったライフサイクルの契機で「登録してほしい/解除してほしい」と依頼するだけで、どのtargetがどこへ
-    /// 紐付くかは一切知らない。target=Ancestorも、ツリー構造が変わる前に解除・変わった後に登録するという順序を
-    /// 呼び出し側が守るため、「今この瞬間の祖先」を毎回ownerから辿るだけでよく、前回の登録先を憶える必要はない。
+    /// 登録先の解決と登録/解除はtargetの種別に応じて自分で行い、呼び出し側（WorldObject）はライフサイクルの
+    /// 契機で登録/解除を依頼するだけで、どのtargetがどこへ紐付くかは知らない。
     ///
-    /// アクション/combination/pickの効果として書かれる一時的な `add`（実行された瞬間に1回だけ効く）は、
-    /// この登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。
+    /// アクション/combination/pickの一時的な `add`（実行の瞬間に1回だけ効く）は、持続するゲート判定が不要な
+    /// ため、この登録の仕組みには乗らない。
     /// </summary>
     public abstract class PassiveEffect
     {
@@ -90,28 +79,24 @@ namespace UnmappedIsland.Domain.Defs
             this.gate = gate;
         }
 
-        /// <summary>この効果（registration）を、対象プロパティ値（target）の適切なincomingへ登録する。
-        /// modify用かaccumulate用かは具象クラスが決める（判別子は型そのもの）。</summary>
+        /// <summary>この効果（registration）を、対象プロパティ値（target）のmodify用/accumulate用incomingの
+        /// うち具象クラスに応じた側へ登録する。</summary>
         public abstract void RegisterInto(PropertyValue target, RegisteredPassiveEffect registration);
 
         /// <summary>declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならAmountを、無効なら0を返す。
-        /// 「今この効果はいくら効いているか」をAmountとゲート判定込みで自分で答えるため、Amount/Gateを外へ
-        /// 出す必要がない。modify（実効値へ合算）でもaccumulate（tick時に実体値へ加算）でも同じ量。</summary>
+        /// modifyでもaccumulateでも同じ量。</summary>
         public int ActiveAmount(WorldObject declarer, WorldObject slotBearer) =>
             gate.IsSatisfied(declarer, slotBearer) ? amount : 0;
 
         /// <summary>
-        /// 相手（related）がownerから直接辿れる関係（Self/Parent/Ancestor）の登録/解除。相手をowner自身から
-        /// 解決してから内部の共通処理へ委譲するので、呼び出し側はrelatedを渡さなくてよい（relationとrelatedに
-        /// 矛盾した組を渡す余地が無く、常に整合する）。Self→owner自身、Parent→owner.Parent、
-        /// Ancestor→対象プロパティを持つ最初の祖先。
+        /// 相手（related）がownerから直接辿れる関係（Self/Parent/Ancestor）の登録/解除。相手はowner自身から
+        /// 解決するため、呼び出し側がrelationとrelatedに矛盾した組を渡す余地が無い。
         ///
-        /// Ancestorも「今この瞬間の祖先」はownerから辿れるためここで扱える。登録/解除は必ず、ツリー構造が
-        /// 変わる前（＝解除、旧祖先が辿れるうち）と変わった後（＝登録、新祖先が辿れる）に分けて呼ばれるため、
-        /// 「前回どこへ登録したか」を憶えておく必要がない（呼び出し側WorldObject.RegisterAncestorTargetedRecursively）。
+        /// Ancestorは、ツリー構造が変わる前に解除・変わった後に登録という順序を呼び出し側
+        /// （WorldObject.RegisterAncestorTargetedRecursively）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
+        /// よく、前回の登録先を憶えない。
         ///
-        /// Childは相手（どの子か）がownerから一意に辿れない（親は複数の子を持ち、契機はその1人が付いた/離れた
-        /// こと）ため、ここでは扱わない。専用のRegisterChildを使う。
+        /// Childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずRegisterChildを使う。
         /// </summary>
         public void RegisterRelation(WorldObject owner, ReferenceRoot relation, bool register)
         {
@@ -125,20 +110,15 @@ namespace UnmappedIsland.Domain.Defs
 
         /// <summary>
         /// childがparentに付く/離れる際に、parent（owner）側のtarget=Child効果を、その付いた/離れた子(child)へ
-        /// 登録/解除する。Childは相手（どの子か）がownerから一意に辿れない唯一の関係のため、相手childを明示的に
-        /// 受け取る専用の入口を設ける（Self/Parent/AncestorはRegisterRelationのowner版でrelatedを渡さない）。
+        /// 登録/解除する。Childは相手がownerから一意に辿れない唯一の関係のため、childを明示的に受け取る。
         /// </summary>
         public void RegisterChild(WorldObject owner, WorldObject child, bool register) =>
             RegisterRelation(owner, ReferenceRoot.Child, child, register);
 
         /// <summary>
-        /// 内部共通処理: 相手(related)を確定させたうえで、この効果の対象がrelationと一致するときだけrelatedの
-        /// 対象プロパティへ登録／解除する（一致しなければ無関係な契機なので何もしない）。登録先＝related、
-        /// declarer＝owner（効果の宣言者）、gateのself（＝slotBearer）＝エッジの子側（Child対象なら子=related、
-        /// それ以外はowner）。
-        ///
-        /// relationとrelatedに矛盾した組を外部から渡せないよう非公開にし、相手を確定させる責務を持つowner版
-        /// （Self/Parent/Ancestor）とRegisterChild（Child）だけがここへ委譲する。
+        /// 内部共通処理: この効果の対象がrelationと一致するときだけrelatedの対象プロパティへ登録/解除する。
+        /// gateのself（＝slotBearer）はエッジの子側（Child対象なら子=related、それ以外はowner）。
+        /// relationとrelatedに矛盾した組を外部から渡せないよう非公開。
         /// </summary>
         private void RegisterRelation(WorldObject owner, ReferenceRoot relation, WorldObject related, bool register)
         {
@@ -148,8 +128,8 @@ namespace UnmappedIsland.Domain.Defs
             else Unregister(related, declarer: owner);
         }
 
-        /// <summary>この効果を、targetOwnerの対象プロパティへ1件登録する（targetOwnerがそのプロパティを
-        /// 持たなければ何もしない。判定はWorldObject.RegisterPassiveEffectに閉じる）。</summary>
+        /// <summary>この効果を、targetOwnerの対象プロパティへ1件登録する（そのプロパティを持たなければ
+        /// 何もしない）。</summary>
         private void Register(WorldObject targetOwner, WorldObject declarer, WorldObject slotBearer)
         {
             if (targetOwner == null) return;

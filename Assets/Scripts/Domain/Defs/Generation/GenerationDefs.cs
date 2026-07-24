@@ -7,9 +7,8 @@ namespace UnmappedIsland.Domain.Defs.Generation
     /// WorldCodexの一部としてロード後不変。生成ファイルがロードされていない場合、
     /// WorldCodex.Generationはnullになる。
     ///
-    /// 軸名・LocationType名・スコープ名は生成時にしか使われず実行時ホットパスに乗らないため、
-    /// NameRegistryでinternせずstringのまま持つ（5種のレジストリを生成専用の名前で汚さない）。
-    /// LocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。
+    /// 軸名・LocationType名・スコープ名は生成時にしか使われないため、NameRegistryでinternせず
+    /// stringのまま持つ。LocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。
     /// </summary>
     public sealed class GenerationDefs
     {

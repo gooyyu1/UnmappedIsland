@@ -34,18 +34,16 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>ローカルindexで並ぶ密配列。SlotLayout と対になる。</summary>
         private readonly IReadOnlyList<SlotDef> slotDefs;
 
-        /// <summary>このObjectDefが宣言する持続効果（8節）の一式。target(self/parent/child)・kind(modify/accumulate)を
-        /// 問わずまとめて持つ。要素は外へ出さず、登録/解除の一括依頼だけを受ける（PassiveEffects参照）。</summary>
+        /// <summary>このObjectDefが宣言する持続効果（8節）の一式（PassiveEffects参照）。</summary>
         public PassiveEffects Passives { get; }
 
         /// <summary>スタック内での並び順（表示専用）。null なら並び順は未定義で、常にスタックの末尾へ
         /// 追加される（新規インスタンス同士の相対順序＝挿入順）。</summary>
         public StackOrderDef StackOrder { get; }
 
-        /// <summary>このobject_defがinteraction/stack判定を、どのスロット内の代表オブジェクトへ委譲するか
-        /// を表すスロットのグローバルID（7.6節）。nullなら常に自分自身を代表とする。指定されていれば、
-        /// そのスロットに現在入っている最初の1個が interaction の実行対象になり、stack判定でも
-        /// その代表オブジェクト（さらにその代表…）のObjectDef列を使って区別する。</summary>
+        /// <summary>interaction/stack判定を委譲する代表オブジェクトが入っているスロットのグローバルID（7.6節）。
+        /// nullなら常に自分自身が代表。指定時は、そのスロットの先頭の1個（さらにその代表…）が
+        /// interactionの実行対象・stack判定の識別に使われる。</summary>
         public int? RepresentedBySlotGlobalId { get; }
 
         /// <summary>このObjectDefが持つメニュー型操作（11節）。</summary>
