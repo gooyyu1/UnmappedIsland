@@ -11,8 +11,10 @@
 参照してください。
 
 - [`RecipeSystem.md`](./RecipeSystem.md) — アイテムの製作
+- [`SlotSystem.md`](./SlotSystem.md) — スロットの実行時実装（固定位置・受け入れ判定・スタック）
 - [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ
-- [`ActionSystem.md`](./ActionSystem.md) — カード間相互作用（`actions`/`combinations`）の使い分け方針
+- [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) — 液体容器（量・飲用・注ぎ移し・蒸発）
+- [`ActionSystem.md`](./ActionSystem.md) — アクション実行の設計（`actions`/`combinations` の実行時の仕組み）
 - [`ClimateSystem.md`](./ClimateSystem.md) — 季節・天候
 - [`TerrainGeneration.md`](./TerrainGeneration.md) — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
 - [`ExplorationSystem.md`](./ExplorationSystem.md) — 生成された土地の構造と挙動（スロット・探索・道の発見と移動）
@@ -1058,7 +1060,7 @@ object_defs:
         spawn: {object: spear}
 ```
 
-`combinations` の使い分け方針（メニュー型との比較、キーの衝突の扱いなど）は `ActionSystem.md` を参照してください。
+`combinations` の実行時の設計（マッチングの解決、キーの衝突の扱いなど）は `ActionSystem.md` を参照してください。
 
 ## 13. recipes（レシピ）
 

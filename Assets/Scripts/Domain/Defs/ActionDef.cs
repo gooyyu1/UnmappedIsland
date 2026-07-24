@@ -2,7 +2,7 @@ using UnmappedIsland.Domain.Runtime;
 
 namespace UnmappedIsland.Domain.Defs
 {
-    /// <summary>showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 4節）。</summary>
+    /// <summary>showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 7節）。</summary>
     public enum ShowMenuMode
     {
         Always,

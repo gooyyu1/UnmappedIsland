@@ -24,9 +24,11 @@ C# 実装のアーキテクチャ・コード構造に関するドキュメン�
 ### 汎用サブシステム（文法を使って、どんな内容にも適用できる仕組みの設計）
 
 - [レシピシステム設計](./RecipeSystem.md)
+- [スロットシステム設計](./SlotSystem.md) — 固定位置・受け入れ制約・スタックのまとまりと並び順
 - [コンテナの容量と重さ](./ContainerSystem.md)
+- [液体容器システム設計](./LiquidContainerSystem.md) — 量・飲用・注ぎ移し・蒸発の実現方法
 - [耐久値システム設計](./DurabilitySystem.md)
-- [カード間の相互作用（actions / combinations の使い分け）](./ActionSystem.md)
+- [アクションシステム設計](./ActionSystem.md) — actions / combinations の実行時の仕組み
 - [気候システム設計](./ClimateSystem.md)
 - [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
 - [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
