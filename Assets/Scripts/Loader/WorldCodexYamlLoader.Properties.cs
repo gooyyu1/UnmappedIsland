@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using UnmappedIsland.Domain.Defs;
 using UnmappedIsland.Domain.Runtime;
@@ -47,7 +48,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_overflowを使うには'range'が必須です。");
-                onOverflow = ParseActiveEffectBody($"{context}.on_overflow", onOverflowNode, allowDragged: false, selfOnly: true);
+                onOverflow = ParseRangeEventEffect($"{context}.on_overflow", onOverflowNode);
             }
             else
             {
@@ -60,7 +61,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_shortfallを使うには'range'が必須です。");
-                onShortfall = ParseActiveEffectBody($"{context}.on_shortfall", onShortfallNode, allowDragged: false, selfOnly: true);
+                onShortfall = ParseRangeEventEffect($"{context}.on_shortfall", onShortfallNode);
             }
             else
             {
@@ -85,7 +86,7 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_minを使うには'range'が必須です。");
-                onMin = ParseActiveEffectBody($"{context}.on_min", onMinNode, allowDragged: false, selfOnly: true);
+                onMin = ParseRangeEventEffect($"{context}.on_min", onMinNode);
             }
 
             ActiveEffect onMax = null;
@@ -94,12 +95,37 @@ namespace UnmappedIsland.Loader
             {
                 if (range == null)
                     throw new YamlLoadException($"{context}: on_maxを使うには'range'が必須です。");
-                onMax = ParseActiveEffectBody($"{context}.on_max", onMaxNode, allowDragged: false, selfOnly: true);
+                onMax = ParseRangeEventEffect($"{context}.on_max", onMaxNode);
             }
 
             bool inherit = node.TryGetBool("inherit", context, fallback: false);
 
             return new PropertyDef(propertyGlobalId, propName, initialValue, initialValueRange, range, onOverflow, stages, onMin, onShortfall, onMax, inherit);
+        }
+
+        /// <summary>
+        /// rangeイベント（on_min・on_max・on_overflow・on_shortfall、6節）の中身を読む。actions/combinations
+        /// と同じく、set/add/destroy/spawn/transfer（active）とpickは排他（9.7節・10節: pickはactiveを直接
+        /// 書ける場所であればどこでもその代わりに書ける）。対象はselfのみ（6.5節）で、pick候補の中の効果に
+        /// もそのまま引き継ぐ。どちらも書かれていない空のmapping（`on_shortfall: {}`）は「宣言だけして
+        /// 何もしない」（既定のクランプを打ち消す）を意味し、空のActiveEffectsになる。
+        /// </summary>
+        private ActiveEffect ParseRangeEventEffect(string context, YamlMappingNode node)
+        {
+            bool hasActive = HasActiveContent(node);
+            YamlSequenceNode pickList = node.TryGetSequence("pick", context);
+            if (hasActive && pickList != null)
+                throw new YamlLoadException($"{context}: set/add/destroy/spawnとpickは同時に指定できません。");
+
+            if (pickList != null)
+            {
+                var unknownKeys = node.EntriesInOrder().Select(e => e.Key).Where(k => k != "pick").ToList();
+                if (unknownKeys.Count > 0)
+                    throw new YamlLoadException($"{context}: 未知のキー '{string.Join(", ", unknownKeys)}' です。");
+                return new PickEffect(ParsePickList(context, pickList, allowDragged: false, selfOnly: true));
+            }
+
+            return ParseActiveEffectBody(context, node, allowDragged: false, selfOnly: true, new[] { "pick" });
         }
 
         /// <summary>1つのstagesエントリを解釈する（GameElementDefinition.md 6.4節）。プロパティ自身が

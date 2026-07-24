@@ -37,7 +37,7 @@ namespace UnmappedIsland.Loader
         /// <summary>pick候補が持つ、weight/pick以外の兄弟キー（set/add/destroy/spawn）。</summary>
         private static readonly string[] PickCandidateReservedKeys = { "weight", "pick" };
 
-        private List<PickCandidateDef> ParsePickList(string context, YamlSequenceNode pickNode, bool allowDragged)
+        private List<PickCandidateDef> ParsePickList(string context, YamlSequenceNode pickNode, bool allowDragged, bool selfOnly = false)
         {
             var result = new List<PickCandidateDef>();
 
@@ -60,10 +60,11 @@ namespace UnmappedIsland.Loader
                     throw new YamlLoadException($"{candidateContext}: set/add/destroy/spawnのいずれか、またはpickが必要です。");
 
                 // activeとpickは排他。この候補が選ばれたときに適用する効果を、単一のActiveEffect
-                // （合成ActiveEffects、またはネストしたpickのPickEffect）として持たせる。
+                // （合成ActiveEffects、またはネストしたpickのPickEffect）として持たせる。selfOnly
+                // （on_min等のrangeイベント内のpick）は、ネストした候補の効果対象にもそのまま引き継ぐ。
                 ActiveEffect effect = hasActive
-                    ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly: false, PickCandidateReservedKeys)
-                    : new PickEffect(ParsePickList(candidateContext, nestedPick, allowDragged));
+                    ? ParseActiveEffectBody(candidateContext, map, allowDragged, selfOnly, PickCandidateReservedKeys)
+                    : new PickEffect(ParsePickList(candidateContext, nestedPick, allowDragged, selfOnly));
 
                 result.Add(new PickCandidateDef(weight, effect));
             }

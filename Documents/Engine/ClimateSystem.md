@@ -12,8 +12,11 @@
 大気水分量から独立させる、季節・天気を専用オブジェクトではなく `world` 自身のプロパティとして扱う、という
 方針転換を反映します。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。具体的なレート・閾値などの数値は
-本書ではまだ確定させず、7 節に未決事項として整理しています。
+本書の設計は `core.yaml` の `world` プロパティとして**実装済み**であり、複数の乱数シードによる統計テスト
+（`Tests/StreamingAssets/ClimateSystemTests.cs`。「calm はおおよそ 3 日に 1 回雨が降る」「wet はほとんど雨だが
+稀に止む」「dry はほとんど晴れだが稀に降る」等の要件を、95% 以上のシードで満たすことを検証）で確認されています。
+本書に載せる具体的な数値は実装と同期した現在の値ですが、バランス調整で変わりうる初期値であり、確定仕様では
+ありません。残る未決事項は 7 節に整理しています。
 
 ## 1. 基本方針
 
@@ -23,8 +26,8 @@
 
 - **季節（長期サイクル）**: 穏やか・雨季・乾季の 3 状態を固定順で巡回する。滞在期間は初回サイクルのみ固定、
   2 周目以降はランダムに決まる（3 節）。
-- **天気（短期変動）**: 晴れ・曇り・小雨・大雨・嵐。季節が育てる大気水分量に重み付けされた抽選で決まる、
-  季節から独立したプロパティ（4 節）。
+- **天気（短期変動）**: 炎天・強い日差し・晴れ・曇り・小雨・大雨・嵐の 7 段階。季節が育てる貯水池
+  （大気水分量・蓄熱量）に重み付けされた抽選で決まる、季節から独立したプロパティ（4 節)。
 
 季節・天気とも、「現在の値」と「残り時間」の 2 プロパティの組で表現し、残り時間が 0 になった瞬間に次の値へ
 遷移します。個別の現象を条件分岐やイベントとして作り込むのではなく、**独立したパラメータ同士が tick ごとに
@@ -43,45 +46,70 @@
 ### 2.2 プロパティ構成
 
 - `season`: 現在の季節を表す symbol プロパティ（`calm`/`wet`/`dry`。GameElementDefinition.md 6.8 節）。`stages`
-  は季節ごとに 1 つずつ、`eq` は値名から自動導出されます（6.4 節）。
+  は季節ごとに 1 つずつ、`eq` は値名から自動導出されます（6.4 節）。各 stage は (1) 貯水池への季節レート
+  （3 節）と、(2) 自分が現在の季節であることを示すフラグ（次項）の `modify` を持ちます。
+- `season_is_calm`/`season_is_wet`/`season_is_dry`: 「今の季節はどれか」を 0/1 で表すフラグ。`season` の
+  各 stage が `modify` で立てる。2.3 節の遷移 `pick` の重みとして参照される。
 - `season_remaining`: 残り tick 数。毎 tick `-1` される蓄積型プロパティ。
 - `season_cycle`: 3 状態を何周したかを表すカウンタ。`0` から始まり、1 周（`calm`→`wet`→`dry`→`calm`）ごとに
-  `+1` される（2.3 節の固定/ランダム分岐に使う）。
+  `+1` される。`stages`（`first`: 0 / `later`: 1 以上）が `first_cycle_flag`/`later_cycle_flag` を `modify` で
+  立て、2.3 節の固定/ランダム分岐の重みとして参照される。
 
-### 2.3 遷移の実装: `season_remaining` の `on_min`
+### 2.3 遷移の実装: `season_remaining` の `on_min` と 0/1 重みの `pick`
 
-`season_remaining` の `on_min`（GameElementDefinition.md 6.5 節。`range: {min: 0}` 以下である間、毎 tick 実行）で、
-次の 2 つを同時に行います。`on_min` の対象は `self` のみ許可されていますが、すべて `world` 自身のプロパティなので
-制約になりません。
+`season_remaining` の `on_min`（GameElementDefinition.md 6.5 節）で、次の季節への遷移を行います。`on_min` の
+対象は `self` のみ許可されていますが、すべて `world` 自身のプロパティなので制約になりません。
 
-1. `season` を巡回順の次の値へ `set` する（3 状態の固定巡回であり、天気のような確率分岐ではないため `pick`
-   （10 節）は不要）。
-2. `season_remaining` を次の期間の tick 数へ `set` する。`season_cycle` が `0`（まだ 1 周目）の間は常に固定 30 日
-   （2,880 tick）。`1` 以上になった後は、複数の候補日数から等確率で 1 つを選ぶ `pick`（10 節。候補と重みの
-   具体値は 7 節で未決）でばらつかせる。
-3. `dry`→`calm` への遷移（＝`calm`→`wet`→`dry`と巡って1周が完了し、次の周の`calm`に入る瞬間）でのみ、
-   `season_cycle` を `+1` する。
+エンジンの `active` には「現在の値によって `set` の内容を変える」条件分岐の記法がないため、遷移は
+**0/1 の重みプロパティを参照する `pick`（10 節）**で表現します。重みが 0 の候補は選ばれないため、0/1 の重みは
+そのまま決定的な条件分岐として機能します（確率のための仕組みを、確率 0/100% の極として使う形です）。
+`pick` は 3 段の入れ子になります。
 
-## 3. 大気水分量・気温: 季節が駆動する2つの貯水池
+1. **どの季節から遷移するか**: `season_is_calm`/`season_is_wet`/`season_is_dry` を重みとする 3 候補。現在の
+   季節に対応する候補だけが重み 1、他は 0。
+2. **初回サイクルか否か**: `first_cycle_flag`/`later_cycle_flag` を重みとする 2 候補。
+3. **持続時間**: 初回サイクル側は固定 30 日（2,880 tick）を `set` するだけ。2 周目以降側は 24/30/36 日
+   （2,304/2,880/3,456 tick）の 3 候補を等確率で選ぶ。
 
-天気（4 節）を決める材料として、天気とは別に「大気水分量」「気温」という 2 つの連続値プロパティを
-引き続き維持します。前バージョンと同じく、`derived` を使わず、季節由来のレート＋ノイズを毎 tick 加算する
-「貯水池モデル」です。
+葉の候補はいずれも `set` で「次の季節」と「新しい `season_remaining`」を同時に設定し、`dry`→`calm` の葉
+（＝1 周が完了する瞬間）だけがさらに `add` で `season_cycle` を `+1` します。
 
-- `atmospheric_moisture`（`world` の蓄積型プロパティ）: `season` の現在値が持つレートを毎 tick 加算する。
-  加えて `layered_noise`（`TerrainGeneration.md` 3.1 節の汎用ジェネレータプリミティブを時間軸に適用したもの）
-  による小さなランダム変動を加算する。
-- `ambient_temperature`（同じく `world` の蓄積型プロパティ）: 同じく `season` の現在値が持つレートを毎 tick
-  加算する。
+なお `season_remaining` は `on_shortfall: {}`（宣言だけして何もしない。GameElementDefinition.md 6.3 節）を
+持ちます。既定の下限クランプは「`on_min` の再設定後に、範囲イベント判定時の古い値に基づいて値を下限へ
+引き戻し、`on_min` を再発火させて 1 tick に 2 回遷移させてしまう」経路が理論上ありうるため、これを
+打ち消しておくものです（`weather_remaining` も同様）。
+
+## 3. 大気水分量・蓄熱量: 季節が駆動する2つの貯水池
+
+天気（4 節）を決める材料として、天気とは別に「大気水分量」「蓄熱量」という 2 つの連続値プロパティを
+維持します。前バージョンと同じく、`derived` を使わず、季節由来のレートを毎 tick 加算する「貯水池モデル」です。
+
+- `atmospheric_moisture`（`world` の蓄積型プロパティ、range 0〜10,000）: `season` の各 stage が持つレートを
+  毎 tick 加算する（calm: +10 / wet: +250 / dry: -100）。0〜10,000 というスケールは、calm の遅いレート
+  （moderate 閾値 3,000 まで約 3 日）を整数の `accumulate` のまま表現するためのもの。
+- `thermal_level`（蓄熱量。同じく `world` の蓄積型プロパティ、range 0〜2,880）: `season` の各 stage が
+  毎 tick 加算する（dry: +1 / calm・wet: -1）。気温そのもの（`ambient_temperature`）へ季節レートを直接
+  加算すると、整数レートの最小値 ±1/tick でも 1 季節（2,880 tick）で ±2,880 になってしまうため、
+  `atmospheric_moisture` と同じ「スケールした貯水池の `stages` が表向きの値を `modify` する」パターンを
+  使う: `thermal_level` の `stages`（`cool`: 〜959 / `mild`: 960〜1,919 / `hot`: 1,920〜）が
+  `ambient_temperature` を -5 / ±0 / +8 する。dry は 30 日かけて 0→2,880 と登り「乾季後半ほど暑い」を、
+  calm は乾季の 2,880 から 30 日かけて 0 へ下り「乾季の暑さからじわじわ涼しくなる」を、それぞれ表現する。
+  `hot` stage は炎天（`scorching`）の抽選重み `scorching_weight` も駆動する（4.3 節）。
 - 降雨中の自己減算: 天気（4 節）が `light_rain`/`heavy_rain`/`storm` のいずれかである間、その `weather` の
-  `stages` 自身が持つ `passive` の `accumulate` として、毎 tick `atmospheric_moisture` を減算する（耐久値や
-  `GameElementDefinition.md` 6.4 節の `progress`/`feverish` 例と同じ、ステージ自身が自分の値を変化させる
-  パターン）。雨が降り続ければやがて水分が尽きて乾いた候補が選ばれやすくなる、という循環がこれで自然に成立します。
-- 上限・下限は既存ルール通り、プロパティ側の `min`/`max` でクランプする。
+  `stages` 自身が持つ `passive` の `accumulate` として、毎 tick `atmospheric_moisture` を減算する
+  （-200 / -300 / -400。激しい雨ほど速く消費する。耐久値や `GameElementDefinition.md` 6.4 節の
+  `progress`/`feverish` 例と同じ、ステージ自身が値を変化させるパターン）。雨が降り続ければやがて水分が
+  尽きて乾いた候補が選ばれやすくなる、という循環がこれで自然に成立します。
+- 上限・下限は既存ルール通り、プロパティ側の `range` でクランプする。
+
+前バージョンで挙げていた `layered_noise`（時間軸のノイズ）による変動は、**現時点では実装していません**。
+天気の遷移自体が 4〜6 時間ごとの `pick`（4 節）という確率過程であるため、雨がいつ降るかは十分に
+ばらつくことを統計テストで確認済みです。レートそのものへのノイズは、3.3 節の単調さ対策の将来オプション
+として 7 節に残します。
 
 **「季節後半ほど過酷になる」は、この貯水池モデルだけで自動的に成立します。** `dry`/`wet` はそれぞれの季節が
-進むほど `ambient_temperature`/`atmospheric_moisture` が単調に積み上がるため、追加の「経過度」計算をしなくても、
-その季節の後半には値が最大に近づきます。乾季後半は `ambient_temperature` が最大化して暑くなり、雨季後半は
+進むほど `thermal_level`/`atmospheric_moisture` が単調に積み上がるため、追加の「経過度」計算をしなくても、
+その季節の後半には値が最大に近づきます。乾季後半は `thermal_level` が `hot` 帯に達して暑くなり、雨季後半は
 `atmospheric_moisture` が最大化して 4.3 節の重み付けにより嵐・大雨の相対確率が上がります。`calm` だけは
 この「後半ほど過酷」から意図的に外れます。`calm` のレートは 3.1 節の通り `dry`/`wet` とは逆向き（回復方向）
 であり、後半に向かうほど過酷から遠ざかっていく（＝穏やかになっていく）季節として設計しているためです。
@@ -95,10 +123,10 @@
 
 そこで `calm` にも `dry`/`wet` と同じように、意味のある向きを持ったレートを与えます。
 
-- 大気水分量: `dry` はマイナス、`calm` は**プラス**（乾季で下がりきった水準から、雨季にふさわしい水準へ
-  じわじわ回復していく）、`wet` はさらにプラス。
-- 気温: `dry` はプラス、`calm` は**マイナス**（乾季の暑さから、雨季にふさわしい涼しさへじわじわ下がっていく）、
-  `wet` はさらにマイナス。
+- 大気水分量: `dry` はマイナス（-100）、`calm` は**プラス**（+10。乾季で下がりきった水準から、雨季にふさわしい
+  水準へじわじわ回復していく）、`wet` はさらにプラス（+250）。
+- 蓄熱量: `dry` はプラス（+1）、`calm` は**マイナス**（-1。乾季の暑さから、雨季にふさわしい涼しさへじわじわ
+  下がっていく）、`wet` もマイナス（-1、下限 0 の `cool` 帯に張り付く）。
 
 これにより、大気水分量・気温はどちらも 3 季節を通じて 1 つの連続した波（谷→回復→頂点→下降→谷…）を描きます。
 `calm` はちょうど谷から中腹への回復区間にあたるため、4.3 節の重みが「乾き寄り」から「湿り寄り」へ連続的に
@@ -118,29 +146,32 @@
 - **下降側**: 降雨中の自己減算（3 節）が、一度 `light_rain` が選ばれてから大気水分量を `moderate` の閾値より
   下まで押し戻すのにかかる時間。
 
-`calm` の上昇レートを、「`moderate` の閾値まで登るのに平均 3 日程度かかる」大きさに調整し、自己減算のレートを
-「`weather_remaining` 1 回分（4〜6 時間、4.2 節）以内には `moderate` を割り込む」大きさに調整すれば、大気水分量
-は「ゆっくり登って `moderate` に触れる→ `light_rain` が選ばれて速やかに下がる→また 3 日かけて登る」という
-充放電（谷から山へ緩やかに充電し、雨で一気に放電する）を繰り返します。`humid`/`saturated` まで登り切る前に
-自己減算で引き戻されるため、「大雨にはならない」という要件も、`heavy_rain`/`storm` の重みが `moderate` 段階では
-まだ低い（4.3 節のサンプル参照）ことと合わせて自然に満たされます。具体的なレート・閾値の数値は 7 節の未決事項
-とします。
+実装値では、`calm` の上昇レート +10/tick は `moderate` 閾値 3,000 まで 300 tick（約 3.1 日）で登り、
+`light_rain` の自己減算 -200/tick は `weather_remaining` 1 回分（16〜24 tick、4.2 節）で 3,200〜4,800 を
+消費して水分量を底（0 付近）まで押し戻します。結果、大気水分量は「約 3 日かけて登って `moderate` に触れる→
+`light_rain` が選ばれて速やかに底へ戻る→また 3 日かけて登る」という充放電（谷から山へ緩やかに充電し、
+雨で一気に放電する）を繰り返します。`humid`/`saturated` まで登り切る前に自己減算で引き戻されるため、
+「大雨にはならない」という要件も、`heavy_rain`/`storm` の重みが `moderate` 段階では 0 である（4.3 節）ことと
+合わせて満たされます。統計テストでは 30 シード平均で 27 日間に 9.1 回（約 3.0 日に 1 回）の雨イベント、
+雨の最大間隔は平均 4.1 日・最悪 5.8 日でした。
 
 ### 3.3 固定レートによる天気の単調さについて
 
 3 節・3.1 節のレートは `accumulate`（`GameElementDefinition.md` 8.4 節）で表現しており、`accumulate` の加算量は
 宣言時に決まるリテラル定数です（他のプロパティの現在値を参照して動的に変えることはできません）。そのため
 「同じ季節に入るたびに、大気水分量が毎回ほぼ同じ軌跡をたどる」という意味での単調さが生じる可能性があります。
-これを崩す手段は、既存の語彙の範囲で 2 段階あります。
 
-- **まず `layered_noise` の振幅を確保する**: 軌跡そのものは同じでも、`moderate` の閾値をいつ跨ぐか（＝いつ
-  雨が降るか）がノイズによって毎回ずれるため、体感上の単調さはこれだけでもかなり緩和されます。追加の仕組みは
-  不要で、既に 7 節で振幅・頻度が未決事項として挙がっています。
-- **それでも単調さが気になる場合**: レート自体を、季節が始まるたびに複数の候補から選び直す方式にできます。
-  2.3 節・4.2 節で季節・天気の持続時間を `pick` で選び直しているのと同じ考え方で、季節の遷移（2.3 節の
-  `on_min`）で「今回のレート区分」を表す専用プロパティを `pick` で `set` し、`calm`/`wet`/`dry` それぞれの
-  `stages` に、その区分ごとの `conditions` で切り替わる複数の `accumulate` ブロックを用意する形になります。
-  どちらを採用するか、また具体的な数値は 7 節の未決事項とします。
+現時点の実装は、天気遷移そのもののランダム性（4〜6 時間ごとの `pick` 抽選と、それによる降雨タイミング・
+放電量のばらつき）だけでこの単調さを崩しており、統計テストでも雨の間隔・回数に十分な分散が出ています
+（3.2 節）。それでも将来単調さが気になった場合の追加手段を、既存の語彙の範囲で 2 つ挙げておきます。
+
+- **レートへのノイズ**: `layered_noise`（`TerrainGeneration.md` 3.1 節）を時間軸に適用し、毎 tick の加算量へ
+  小さなランダム変動を加える。エンジンへの新機能追加（ノイズ駆動の `accumulate`）が必要になる。
+- **季節開始ごとのレート選び直し**: 季節の遷移（2.3 節の `on_min`）で「今回のレート区分」を表す専用プロパティを
+  `pick` で `set` し、`calm`/`wet`/`dry` それぞれの `stages` に、その区分ごとの `conditions` で切り替わる複数の
+  `accumulate` ブロックを用意する。新しいエンジン機能は不要。
+
+どちらを（あるいは両方を）採用するかは 7 節の未決事項とします。
 
 ## 4. 天気: worldプロパティとしての短期変動
 
@@ -153,113 +184,116 @@
 
 ### 4.2 プロパティ構成
 
-- `weather`: 現在の天気を表す symbol プロパティ（`sunny`/`cloudy`/`light_rain`/`heavy_rain`/`storm`）。`core.yaml`
-  には既に `weather` プロパティと暫定の `stages`（`storm`/`heavy_rain`/`light_rain`/`cloudy`/`clear`/`sunny`/
-  `scorching`）が存在しますが、これは本設計が確定する前の仮置きであり、本書の値セットへの整合は 7 節の
-  未決事項とします。
-- `weather_remaining`: 残り tick 数。4〜6 時間（tick 換算で 16〜24 tick）の範囲で、遷移のたびに `pick`
-  （10 節。離散候補からの等確率選択）でロールし直す。
-- `sunny_weight`/`cloudy_weight`/`light_rain_weight`/`heavy_rain_weight`/`storm_weight`: `weather` の各候補に
-  1 つずつ対応する、ただの数値プロパティ。値は著者が直接 `set` するのではなく、4.3 節の通り
-  `atmospheric_moisture` の `stages` が常時 `modify` して維持します。
+- `weather`: 現在の天気を表す symbol プロパティ。`core.yaml` の 7 値すべてが遷移先候補です。強度順に、
+  `storm`（暴風雨）/`heavy_rain`（大雨）/`light_rain`（小雨）/`cloudy`（曇り）/**`clear`（穏やかで
+  過ごしやすい普通の晴れ。この島の標準的な天気で、晴れ系の中で最も高頻度）**/`sunny`（日差しが強い晴れ）/
+  `scorching`（炎天。`sunny` より酷い、特別な対策が必要な極端な暑さ。乾季後半にのみ発生する 4.3 節参照）。
+  `storm` と `scorching` は両極の「極端な天候」で、それぞれ雨季後半・乾季後半の風物詩として対称に扱います。
+- `weather_remaining`: 残り tick 数。4〜6 時間（16/20/24 tick の等確率 `pick`）で、遷移のたびに
+  ロールし直す（再ロールは 4.3 節の遷移 `pick` の葉が天気の `set` と同時に行う）。
+- `sunny_weight`/`clear_weight`/`cloudy_weight`/`light_rain_weight`/`heavy_rain_weight`/`storm_weight`/
+  `scorching_weight`: `weather` の各候補に 1 つずつ対応する、ただの数値プロパティ。値は著者が直接 `set`
+  するのではなく、4.3 節の通り `atmospheric_moisture` の `stages`（`scorching_weight` のみ `thermal_level`
+  の `hot` stage）が常時 `modify` して維持します（ベース値 0 のため、どの stage も `modify` しない候補の
+  重みは 0 ＝選ばれません）。
 
-### 4.3 遷移先: 天気ごとの重みプロパティを大気水分量の `stages` が `modify` する
+### 4.3 遷移先: 天気ごとの重みプロパティを貯水池（大気水分量・蓄熱量）の `stages` が `modify` する
 
 `weather_remaining` の `on_min`（`self`）で `pick`（GameElementDefinition.md 10 節）を実行し、次の天気を選びます。
-各候補の `weight` は、対応する `*_weight` プロパティへの参照です（10.2 節の「既存プロパティへの参照」）。
+外側の `pick` の各候補は対応する `*_weight` プロパティを重みとして参照し（10.2 節の「既存プロパティへの参照」）、
+選ばれた候補の内側の `pick` が持続時間（16/20/24 tick）を等確率で選び、葉の `set` が「次の天気」と
+「新しい `weather_remaining`」を同時に設定します（構造は 2.3 節の季節遷移と同型。完全な定義は `core.yaml` 参照）。
 
 ```yaml
-props:
-  weather_remaining:
-    value: 20
-    range: {min: 0}
-    passives:
-      - accumulate:
-          self:
-            weather_remaining: -1
-    on_min:
-      pick:
-        - weight: {prop: sunny_weight}
-          set: {weather: sunny}
-        - weight: {prop: cloudy_weight}
-          set: {weather: cloudy}
-        - weight: {prop: light_rain_weight}
-          set: {weather: light_rain}
-        - weight: {prop: heavy_rain_weight}
-          set: {weather: heavy_rain}
-        - weight: {prop: storm_weight}
-          set: {weather: storm}
+weather_remaining:
+  value: 20                        # 初期値5時間: day1の最初の遷移までの猶予
+  range: {min: 0, max: 999999}
+  on_shortfall: {}                 # 2.3節と同じ理由の空宣言
+  passives:
+    - accumulate:
+        self:
+          weather_remaining: -1
+  on_min:
+    pick:
+      - weight: {prop: sunny_weight}
+        pick:
+          - weight: 1
+            set:
+              self: {weather: sunny, weather_remaining: 16}
+          - weight: 1
+            set:
+              self: {weather: sunny, weather_remaining: 20}
+          - weight: 1
+            set:
+              self: {weather: sunny, weather_remaining: 24}
+      - weight: {prop: cloudy_weight}
+        # ... 以下、light_rain/heavy_rain/stormも同じ形（core.yaml参照）
 ```
-
-`weather_remaining` 自体を 4〜6 時間（16〜24 tick）の範囲で遷移のたびにロールし直す部分は、この `pick` の
-中には含めていません（各候補の `set` に加えて `weather_remaining` 自体をどう再ロールするかは 2.3 節と同じ
-「離散候補からの `pick`」を想定していますが、具体値は 7 節の未決事項です）。上のサンプルは `value: 20`
-（初期値、tick換算で 5 時間相当）を固定で示しており、天気ごとの重み付けという本節の主題を明確にするための
-簡略化です。
 
 `*_weight` プロパティ自身の値は、`atmospheric_moisture` の `stages`（数値の半開区間。GameElementDefinition.md
 6.4 節）が `passives` の `modify` として常時上書きすることで決まります（`weather` の `stages` が `sunlight` を
-`modify` しているのと同じパターンの使い回しで、新しいエンジン機能は不要です）。
+`modify` しているのと同じパターンの使い回しで、新しいエンジン機能は不要です）。実装値は以下の通りです。
 
 ```yaml
-props:
-  atmospheric_moisture:
-    value: 0
-    range: {min: 0, max: 100}
-    stages:
-      - name: dry
-        min: 0
-        passives:
-          - modify:
-              self:
-                sunny_weight: 50
-                cloudy_weight: 20
-                light_rain_weight: 5
-                heavy_rain_weight: 0
-                storm_weight: 0
-      - name: moderate
-        min: 30
-        passives:
-          - modify:
-              self:
-                sunny_weight: 20
-                cloudy_weight: 30
-                light_rain_weight: 40
-                heavy_rain_weight: 5
-                storm_weight: 0
-      - name: humid
-        min: 60
-        passives:
-          - modify:
-              self:
-                sunny_weight: 5
-                cloudy_weight: 20
-                light_rain_weight: 40
-                heavy_rain_weight: 30
-                storm_weight: 10
-      - name: saturated
-        min: 85
-        passives:
-          - modify:
-              self:
-                sunny_weight: 0
-                cloudy_weight: 5
-                light_rain_weight: 20
-                heavy_rain_weight: 40
-                storm_weight: 40
-  sunny_weight: {value: 0}
-  cloudy_weight: {value: 0}
-  light_rain_weight: {value: 0}
-  heavy_rain_weight: {value: 0}
-  storm_weight: {value: 0}
+atmospheric_moisture:
+  value: 0
+  range: {min: 0, max: 10000}
+  stages:
+    - name: dry            # 〜2999: ほぼ晴れ（clearが最多）。雨はlight_rainのみ稀に（乾季の「稀に降る」を担う）
+      passives:
+        - modify:
+            self:
+              sunny_weight: 25
+              clear_weight: 45
+              cloudy_weight: 20
+              light_rain_weight: 2
+    - name: moderate       # 3000〜5999: 小雨が現実的な選択肢に。大雨・嵐は重み0のまま
+      min: 3000
+      passives:
+        - modify:
+            self:
+              sunny_weight: 10
+              clear_weight: 30
+              cloudy_weight: 25
+              light_rain_weight: 40
+    - name: humid          # 6000〜8499: 雨が優勢になり、大雨・嵐も現れ始める
+      min: 6000
+      passives:
+        - modify:
+            self:
+              sunny_weight: 5
+              clear_weight: 10
+              cloudy_weight: 15
+              light_rain_weight: 40
+              heavy_rain_weight: 30
+              storm_weight: 10
+    - name: saturated      # 8500〜: まず晴れない（晴れ系の重みを立てない=0）。嵐・大雨が中心
+      min: 8500
+      passives:
+        - modify:
+            self:
+              cloudy_weight: 5
+              light_rain_weight: 20
+              heavy_rain_weight: 40
+              storm_weight: 40
 ```
 
-`sunny`/`cloudy` 側の重みも `light_rain`/`heavy_rain`/`storm` 側と同じく `atmospheric_moisture` の段階に
-連動させ、固定の重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」
-という下限が原理的に外れなくなり、`saturated` 段階（雨季後半）で「まず晴れない」を表現できなくなるためです。
-上のサンプルでは `saturated` 段階で `sunny_weight: 0` とすることで、それを表現しています（同様に `dry` 段階の
-`heavy_rain_weight`/`storm_weight` を `0` にすれば、乾ききっている間は大雨・嵐が原理的に起こらない、という
-逆方向の下限も表現できます）。
+晴れ系（`sunny`/`clear`/`cloudy`）の重みも雨系と同じく `atmospheric_moisture` の段階に連動させ、固定の
+重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」という下限が
+原理的に外れなくなり、`saturated` 段階（雨季後半）で「まず晴れない」を表現できなくなるためです。上の実装では
+`saturated` 段階が晴れ系の重みを立てない（＝0 のまま）ことでそれを表現し、対称に `dry`/`moderate` 段階は
+`heavy_rain_weight`/`storm_weight` を立てないことで「乾いている間・穏やかな季節の小雨は大雨・嵐にならない」
+という逆方向の下限を表現しています（3.2 節の「大雨にはならない」はここで保証されます）。晴れ系の中では、
+どの段階でも `clear`（穏やかで過ごしやすい普通の晴れ）の重みを最も大きくし、この島の標準的な天気にしています。
+
+**`scorching_weight` だけは大気水分量ではなく、もう一つの貯水池である蓄熱量（`thermal_level`、3 節）の
+`hot` stage（1,920 以上）が `modify` で駆動します**（`ambient_temperature: +8` と同じブロックで
+`scorching_weight: 50` を立てる）。蓄熱量が `hot` に達するのは乾季開始から 20 日後（30 日固定の初回
+サイクルなら絶対 81 日目）以降であり、炎天は**乾季後半の天気**になります。これは `storm` が
+`atmospheric_moisture` の `saturated` 帯（雨季後半）で重みを持つのと対称の関係です。対称性は名残の
+振る舞いにも及びます: 雨季の名残の水分が抜けるまでの**乾季序盤に嵐が残る**のと同じように、乾季の名残の
+蓄熱が抜けるまでの**穏やかな季節の序盤（最初の約 10 日、残暑）に炎天が残ります**。ゲーム開始直後の
+最初の calm だけは、蓄熱量の初期値が中立（1,000 = `mild`）のため炎天は発生しません。
 
 段階の境界（`min`）を跨いだ瞬間に重みが階段状に飛ぶ点は、`weather_remaining` の遷移自体が 4〜6 時間に 1 回
 （4.2 節）しか起きないため、体感上の不自然さにはならないと考えます。
@@ -268,8 +302,8 @@ props:
 
 `weather_remaining` は遷移のたびに 4〜6 時間の範囲で改めて `pick` されるため、たまたま同じ天気が連続して
 選ばれることがあります。この場合プレイヤーからは天気が変わらないまま 6 時間を超えて継続しているように
-見えますが、これは狙って作り込む特別なルールではなく、独立試行の結果として自然に起こる、1 節で述べた
-ノイズによる不確実性と同じ考え方です。
+見えますが、これは狙って作り込む特別なルールではなく、独立試行の結果として自然に起こる不確実性であり、
+「個別の現象を作り込まず、単純な仕組みの重なりから複雑な挙動が立ち上がる」という 1 節の方針の一例です。
 
 ## 5. 難易度の初期補正: 専用カウンタの`stages`による大気水分量の底上げ
 
@@ -277,7 +311,7 @@ props:
 転びやすい状態を作ります。**天気そのものを固定で雨にするのではなく**、あくまで抽選の元になる
 `atmospheric_moisture` の値を操作するだけであり、それでも晴れる可能性はゼロではありません（5.3 節）。
 
-大気水分量そのものが季節由来のレート＋ノイズを毎 tick 加算する「積分値」（3 節）である以上、この補正も
+大気水分量そのものが季節由来のレートを毎 tick 加算する「積分値」（3 節）である以上、この補正も
 「瞬間に 1 回だけ発火する」仕組みではなく、「特定の期間中ずっと、通常より高いレートで水分を積み増し続ける」
 という、3 節と同種の継続的な加算として素直に表現できます。これは `stages`（現在値がその区間内にある間ずっと
 `passives` が有効。GameElementDefinition.md 6.4 節）の典型的な用法そのものであり、`weather` の `stages` が
@@ -291,28 +325,29 @@ props:
 ### 5.1 ゲーム開始2日目
 
 ```yaml
-props:
-  early_rain_calibration:
-    value: 0
-    passives:
-      - accumulate:
-          self: {early_rain_calibration: 1}
-    stages:
-      - name: idle
-        min: 0
-      - name: boosting
-        min: 96     # 2日目の開始（1日 = 96 tick）
-        passives:
-          - accumulate:
-              self: {atmospheric_moisture: 2}   # 加算量は仮の値、7節で未決
-      - name: done
-        min: 192    # 3日目の開始でオフに戻る
+early_rain_calibration:
+  value: 0
+  passives:
+    - accumulate:
+        self:
+          early_rain_calibration: 1
+  stages:
+    - name: idle
+    - name: boosting
+      min: 96     # 2日目の開始（1日 = 96 tick）
+      passives:
+        - accumulate:
+            self:
+              atmospheric_moisture: 60
+    - name: done
+      min: 192    # 3日目の開始でオフに戻る
 ```
 
 `early_rain_calibration` はゲーム開始と同時に毎 tick `+1` されるだけの、他に何の意味も持たない専用カウンタです。
-`boosting` 区間（2 日目の 96 tick 分）にいる間だけ `atmospheric_moisture` への追加加算が有効になり、3 日目に
-入ると自動的にオフへ戻ります（`stages` は現在値だけで区間を決めるため、明示的なリセットや発火済みフラグは
-不要です）。
+`boosting` 区間（2 日目の 96 tick 分）にいる間だけ `atmospheric_moisture` への追加加算（+60/tick。calm の
++10 と合わせて +70/tick）が有効になり、3 日目に入ると自動的にオフへ戻ります（`stages` は現在値だけで区間を
+決めるため、明示的なリセットや発火済みフラグは不要です）。2 日目の朝には `moderate` を超えて雨の抽選が
+現実的になり、夕方までに `humid` に達してさらに傾きます。統計テストでは全シードで 2〜3 日目に雨が降りました。
 
 ### 5.2 最初の乾季、10日目前後
 
@@ -322,32 +357,34 @@ props:
 （tick 換算で `(71-1) × 96 = 6,720` tick）です。
 
 ```yaml
-props:
-  first_dry_rain_calibration:
-    value: 0
-    passives:
-      - accumulate:
-          self: {first_dry_rain_calibration: 1}
-    stages:
-      - name: idle
-        min: 0
-      - name: boosting
-        min: 6720   # 71日目の開始（最初の乾季開始=61日目 + 10日）
-        passives:
-          - accumulate:
-              self: {atmospheric_moisture: 3}   # 加算量は仮の値、7節で未決
-      - name: done
-        min: 6816   # 72日目の開始でオフに戻る
+first_dry_rain_calibration:
+  value: 0
+  passives:
+    - accumulate:
+        self:
+          first_dry_rain_calibration: 1
+  stages:
+    - name: idle
+    - name: boosting
+      min: 6720   # 71日目の開始（最初の乾季開始=61日目 + 10日）
+      passives:
+        - accumulate:
+            self:
+              atmospheric_moisture: 200
+    - name: done
+      min: 6816   # 72日目の開始でオフに戻る
 ```
 
-5.1 節と全く同じパターンで、`season`/`season_cycle` を実行時に参照する必要はありません。ただしこの `6720`/
-`6816` という具体的な tick 数は、「初回サイクルは固定 30 日」という 2.3 節の前提にそのまま依存しています。
-季節の巡回順や初回サイクルの日数が変われば、この数値も再計算が必要です。
+`boosting` の +200/tick は dry の -100/tick を上回るため、正味 +100/tick で乾ききった水分量が 1 日かけて
+登っていき、71 日目のうちに `moderate`→`humid` へ達して雨の抽選が大きく傾きます（統計テストでは全シードで
+71〜73 日目に雨が降りました）。5.1 節と全く同じパターンで、`season`/`season_cycle` を実行時に参照する必要は
+ありません。ただしこの `6720`/`6816` という具体的な tick 数は、「初回サイクルは固定 30 日」という 2.3 節の
+前提にそのまま依存しています。季節の巡回順や初回サイクルの日数が変われば、この数値も再計算が必要です。
 
 ### 5.3 なぜ天気を直接固定しないか
 
 5.1・5.2 とも、天気を強制的に `light_rain` 等へ `set` するのではなく `atmospheric_moisture` を操作するだけに
-留めています。これは 1 節・4.4 節で述べた「ノイズによる不確実性を常に持たせる」という設計原則を、難易度補正の
+留めています。これは「天気は常に抽選で決まり、不確実性を持つ」という 4 節の設計原則を、難易度補正の
 場面でも崩さないためです。補正はあくまで確率を傾けるだけであり、絶対に雨が降ると保証するものではありません。
 
 ## 6. 設計原則のまとめ
@@ -356,45 +393,40 @@ props:
   表現する
 - 季節は穏やか/雨季/乾季の 3 状態を固定順で巡回する。天気は季節から独立した symbol プロパティであり、季節の
   値そのものからは直接決まらない
-- 天気・大気水分量・気温はいずれも「独立変数への tick ごとの加減算」のみで表現し、`derived`（計算式による
-  導出）は使わない
+- 天気・大気水分量・蓄熱量はいずれも「独立変数への tick ごとの加減算」のみで表現し、`derived`（計算式による
+  導出）は使わない。気温・天気の重みのような「表向きの値」は、スケールした貯水池の `stages` が `modify` で
+  駆動する（3 節・4.3 節）
+- 状態遷移の条件分岐（今の季節・初回サイクルか否か）は、0/1 の重みプロパティを参照する `pick` として表現する
+  （2.3 節。確率のための仕組みを確率 0/100% の極として使う）
 - 大気水分量は、天気そのものの stages 閾値としては使わず（4.1 節）、天気候補ごとの重み専用プロパティを
-  `stages`/`modify` 経由で駆動する入力としてのみ使う（4.3 節）。乾き系・湿り系のどちらの重みも大気水分量に
+  `stages`/`modify` 経由で駆動する入力としてのみ使う（4.3 節）。晴れ系・雨系のどちらの重みも大気水分量に
   連動させ、固定の重み定数にはしない（極端な条件下で「絶対に晴れない」「絶対に嵐にならない」を表現できるよう
-  にするため）
+  にするため）。晴れ系では `clear`（穏やかで過ごしやすい普通の晴れ）を最も重くし、この島の標準的な天気にする
+- 両極の極端な天候は貯水池の飽和帯が駆動する: `storm`（嵐）は大気水分量の `saturated` 帯（雨季後半）が、
+  `scorching`（炎天）は蓄熱量の `hot` 帯（乾季後半）が、それぞれ対称に重みを立てる（4.3 節）。どちらも
+  貯水池の名残が抜けるまで次の季節の序盤に持ち越される（乾季序盤の嵐、穏やかな季節の序盤の残暑）
 - 「季節後半ほど過酷になる」は貯水池モデルの単調な積み上がりから自動的に生まれ、追加の経過度計算を要しない
   （3 節末尾）。`calm` は `dry`/`wet` と逆向きのレート（回復方向）を持たせることで、この法則から意図的に
   外れる（3.1 節）
 - `calm` の大気水分量レートは「ほぼ0」にせず、`dry` で下がりきった水準から `wet` にふさわしい水準へ回復する
-  向きのレートを持たせる。これにより大気水分量・気温は3季節を通じた1つの連続した波になり、`calm` の間にも
+  向きのレートを持たせる。これにより大気水分量・蓄熱量は3季節を通じた1つの連続した波になり、`calm` の間にも
   晴れ・雨の両方が起こる（3.1 節）。さらに `calm` では上昇レートと降雨の自己減算レートのバランスにより、
-  「3日に1回程度、大雨にはならない軽い雨」という具体的な頻度を狙う（3.2 節）
+  「3日に1回程度、大雨にはならない軽い雨」という具体的な頻度を実現している（3.2 節）
 - 難易度の初期補正は、天気を固定せず大気水分量という抽選の元データだけを操作することで実現し、不確実性を
   保つ。大気水分量自体が積分値であることを踏まえ、瞬間的な1回発火ではなく、専用カウンタの `stages` による
   期間中の継続加算として表現する（5 節）
 - 季節の持続時間は初回サイクルのみ固定 30 日、2 周目以降はランダム化する（2.3 節）
+- 要件が乱数に依存する部分は、複数シードのシミュレーションによる統計テストで検証する（概要参照）
 
 ## 7. 未決事項・今後の検討課題
 
-- `weather` の symbol 値セット（`sunny`/`cloudy`/`light_rain`/`heavy_rain`/`storm`）と、`core.yaml` に既にある
-  暫定 `stages`（`scorching` を含む 7 値）との整合（4.2 節）
-- `atmospheric_moisture` の `stages` の区切り（`dry`/`moderate`/`humid`/`saturated` 等、段階数も含め）と、
-  各段階が `*_weight` に `modify` する具体的な数値（4.3 節のサンプルは一例に過ぎない）
-- 季節・天気のランダム持続時間を `pick` の離散候補で表現する場合の、具体的な候補値と重み（2.3 節・4.2 節）
-- `season_cycle` に応じた「固定 30 日 / ランダム」の分岐を、既存の `on_min`/`pick` の語彙でどう具体的に書くか
-  （2.3 節）
-- 5.1・5.2 節の `boosting` 区間での `atmospheric_moisture` への具体的な加算レート
+- 各レート・閾値・重みの数値は統計テストを満たす初期値であり、実プレイでの体感に基づくバランス調整は今後の
+  課題（数値を変えたら `ClimateSystemTests` が要件を満たし続けるかで回帰を検知できる）
+- 3.3 節で挙げた単調さ対策（レートへのノイズ / 季節開始ごとのレート選び直し）を採用するかどうか
 - 5.2 節の `6720`/`6816` という tick 数は 2.3 節の「初回サイクル固定 30 日」に依存する導出値であり、2.3 節の
   前提が変わった場合はこの節も再計算が必要
-- 各季節（`calm`/`wet`/`dry`）の `moisture_rate`/`temperature_rate` の具体的な数値。特に `calm` は「`moderate`
-  段階の閾値まで平均 3 日程度で登る」という 3.2 節の目標から逆算する必要がある
-- 降雨中の自己減算（3 節）の具体的なレート。3.2 節の「`weather_remaining` 1 回分以内に `moderate` を割り込む」
-  という目標を満たすかどうかは、実際の閾値・レート次第で変わるため要検証
-- ノイズの振幅・頻度。3.3 節で述べた通り、固定レートによる軌跡の単調さを緩和する主な手段でもある
-- 3.3 節で挙げた「季節開始のたびにレートを `pick` で選び直す」方式を採用するかどうか、採用する場合の具体的な
-  候補レートと `conditions` の書き方
-- `GameElementDefinition.md` 6.2 節の「`value: {min, max}` は毎 tick 再ロール」という記述は、現在のコード実装
-  （生成時に 1 回だけロールする `initialValueRange`）と食い違っており、本書とは別に修正が必要
+- storm・scorching への「特別な対策が必要な極端な天候」としてのゲームプレイ上の意味づけ（現状は天気の値が
+  変わるだけで、sunlight 以外への影響は未実装）
 
 ## 8. 参考: 既存プロジェクト方針との整合性
 
@@ -402,8 +434,10 @@ props:
   本書の「季節・天気を `world` のプロパティとして表現する」という方針は、その延長線上にあります
   （1 節・2 節・4 節）。
 - 天気の遷移先をプロパティの現在値で重み付けした `pick` で決める設計（4.3 節）は、`GameElementDefinition.md`
-  17 節に残っている「天候遷移自体のランダム性の仕組みは未検討」という未決事項に対する、既存語彙のみを使った
-  具体的な解決案になっています。新しいエンジン機能は必要としません。
+  17 節に長く残っていた「天候遷移自体のランダム性の仕組みは未検討」という未決事項を解決したものです。
+  文法上は既存語彙（`on_min` 直下の `pick`、9.7 節・10 節）のみを使いますが、ローダーが `on_min` 等の
+  rangeイベント直下の `pick` を実際に受け付けるようになったのは本実装からです（それまで文法リファレンス
+  だけが先行していました）。
 - `object: world` を他オブジェクトから条件・重みとして参照する仕組みは未実装です（`GameElementDefinition.md`
   14.1 節・15 節・17 節）。ただし本書の季節・天気遷移ロジックはすべて `world` 自身の `on_min`（対象は常に
   `self`）として完結するため、この制約の影響を受けません。将来、天気に反応する別オブジェクト（例: 装備の
