@@ -156,7 +156,7 @@ object_defs:
             passives:
               - accumulate:
                   self:
-                    atmospheric_moisture: -100
+                    atmospheric_moisture: -130
           - name: light_rain
             passives:
               - modify:
@@ -164,7 +164,7 @@ object_defs:
                     sunlight: 1
               - accumulate:
                   self:
-                    atmospheric_moisture: -50
+                    atmospheric_moisture: -110
           - name: cloudy
             passives:
               - modify:
@@ -237,6 +237,7 @@ object_defs:
                   self:
                     atmospheric_moisture: 10
                     thermal_level: -1
+                    monsoon_level: -1
           - name: wet
             passives:
               - modify:
@@ -244,8 +245,9 @@ object_defs:
                     season_is_wet: 1
               - accumulate:
                   self:
-                    atmospheric_moisture: 60
+                    atmospheric_moisture: 90
                     thermal_level: -1
+                    monsoon_level: 1
           - name: dry
             passives:
               - modify:
@@ -255,6 +257,7 @@ object_defs:
                   self:
                     atmospheric_moisture: -20
                     thermal_level: 1
+                    monsoon_level: -1
       # 「今の季節はどれか」を0/1で表すフラグ。seasonのstageがmodifyで立てる。season_remainingの
       # 遷移pickが「現在の季節に対応する候補だけが選ばれる」ための重みとして参照する（重みが0の候補は
       # 選ばれないため、0/1の重みはそのまま決定的な条件分岐になる）。
@@ -380,7 +383,7 @@ object_defs:
                     sunny_weight: 25
                     clear_weight: 45
                     cloudy_weight: 20
-                    light_rain_weight: 2
+                    light_rain_weight: 1
           - name: moderate
             min: 3000
             passives:
@@ -389,7 +392,7 @@ object_defs:
                     sunny_weight: 10
                     clear_weight: 30
                     cloudy_weight: 25
-                    light_rain_weight: 40
+                    light_rain_weight: 20
           - name: humid
             min: 6000
             passives:
@@ -399,7 +402,7 @@ object_defs:
                     cloudy_weight: 3
                     light_rain_weight: 40
                     heavy_rain_weight: 30
-                    storm_weight: 10
+                    storm_weight: 3
           - name: saturated
             min: 8500
             passives:
@@ -553,6 +556,38 @@ object_defs:
                   self:
                     ambient_temperature: 8
                     scorching_weight: 50
+      # 雨季の深まり（ClimateSystem.md 4.3節）。thermal_levelと対称の「雨季側の季節内進行度」を表す
+      # 貯水池で、wetで+1/tick（20日で0→上限1920、雨季後半ほど深い）、calm/dryで-1/tickで減衰する。
+      # thermal_levelのhot帯が乾季後半の炎天（scorching_weight）を駆動するのと対称に、deepening帯
+      # （雨季10日目〜）・peak帯（雨季20日目〜）がheavy_rain_weight/storm_weightへ上乗せし、
+      # 「雨季後半ほど嵐・大雨が増える」を大気水分量の細かい増減とは独立に保証する。
+      #
+      # 上乗せはconditionsで「大気水分量がhumid帯（6000以上）にあるとき」に限定する: 上乗せを無条件に
+      # すると、雨季の深まりが残っている乾季序盤に、水分が尽きた後まで大雨の重みが残ってしまうため。
+      # 逆にこのconditionsのおかげで、乾季序盤に水分がまだ高い間（雨自身が消費し尽くすまでの過渡）は
+      # 上乗せが生きて、嵐の名残が自然に表現される。
+      monsoon_level:
+        value: 0
+        range: {min: 0, max: 1920}
+        stages:
+          - name: early
+          - name: deepening
+            min: 960
+            passives:
+              - modify:
+                  self:
+                    heavy_rain_weight: 15
+                conditions:
+                  - {object: self, prop: atmospheric_moisture, op: gte, value: 6000}
+          - name: peak
+            min: 1920
+            passives:
+              - modify:
+                  self:
+                    heavy_rain_weight: 30
+                    storm_weight: 40
+                conditions:
+                  - {object: self, prop: atmospheric_moisture, op: gte, value: 4500}
       # 難易度の初期補正1: ゲーム開始2日目に高確率で雨を降らせる（ClimateSystem.md 5.1節）。
       # ゲーム開始からの経過tickを数えるだけの専用カウンタで、2日目（tick 96-191）の間だけ
       # atmospheric_moistureへ追加加算し、天気の抽選を雨系へ大きく傾ける。天気そのものを固定で
