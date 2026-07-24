@@ -7931,15 +7931,15 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto
   nameWithType: WorldCodexYamlLoader.ParsePassiveOperationInto
-- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(System.String,YamlDotNet.RepresentationModel.YamlSequenceNode,System.Boolean)
-  name: ParsePickList(string, YamlSequenceNode, bool)
-  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePickList_System_String_YamlDotNet_RepresentationModel_YamlSequenceNode_System_Boolean_
-  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(System.String,YamlDotNet.RepresentationModel.YamlSequenceNode,System.Boolean)
-  name.vb: ParsePickList(String, YamlSequenceNode, Boolean)
-  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(string, YamlDotNet.RepresentationModel.YamlSequenceNode, bool)
-  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(String, YamlDotNet.RepresentationModel.YamlSequenceNode, Boolean)
-  nameWithType: WorldCodexYamlLoader.ParsePickList(string, YamlSequenceNode, bool)
-  nameWithType.vb: WorldCodexYamlLoader.ParsePickList(String, YamlSequenceNode, Boolean)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(System.String,YamlDotNet.RepresentationModel.YamlSequenceNode,System.Boolean,System.Boolean)
+  name: ParsePickList(string, YamlSequenceNode, bool, bool)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePickList_System_String_YamlDotNet_RepresentationModel_YamlSequenceNode_System_Boolean_System_Boolean_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(System.String,YamlDotNet.RepresentationModel.YamlSequenceNode,System.Boolean,System.Boolean)
+  name.vb: ParsePickList(String, YamlSequenceNode, Boolean, Boolean)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(string, YamlDotNet.RepresentationModel.YamlSequenceNode, bool, bool)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList(String, YamlDotNet.RepresentationModel.YamlSequenceNode, Boolean, Boolean)
+  nameWithType: WorldCodexYamlLoader.ParsePickList(string, YamlSequenceNode, bool, bool)
+  nameWithType.vb: WorldCodexYamlLoader.ParsePickList(String, YamlSequenceNode, Boolean, Boolean)
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePickList*
   name: ParsePickList
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePickList_
@@ -7963,6 +7963,22 @@ references:
   isSpec: "True"
   fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseProp
   nameWithType: WorldCodexYamlLoader.ParseProp
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)
+  name: ParseRangeEventEffect(string, YamlMappingNode)
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseRangeEventEffect_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_
+  commentId: M:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)
+  name.vb: ParseRangeEventEffect(String, YamlMappingNode)
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect(string, YamlDotNet.RepresentationModel.YamlMappingNode)
+  fullName.vb: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect(String, YamlDotNet.RepresentationModel.YamlMappingNode)
+  nameWithType: WorldCodexYamlLoader.ParseRangeEventEffect(string, YamlMappingNode)
+  nameWithType.vb: WorldCodexYamlLoader.ParseRangeEventEffect(String, YamlMappingNode)
+- uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect*
+  name: ParseRangeEventEffect
+  href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseRangeEventEffect_
+  commentId: Overload:UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect
+  isSpec: "True"
+  fullName: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect
+  nameWithType: WorldCodexYamlLoader.ParseRangeEventEffect
 - uid: UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber(System.String,System.String)
   name: ParseScalarNumber(string, string)
   href: UnmappedIsland.Loader.WorldCodexYamlLoader.html#UnmappedIsland_Loader_WorldCodexYamlLoader_ParseScalarNumber_System_String_System_String_
