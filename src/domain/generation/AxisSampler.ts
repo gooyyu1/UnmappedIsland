@@ -3,7 +3,6 @@ import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
 import type { Site } from './IslandMap';
 import { sample as sampleNoise } from './ValueNoise';
 import { ISLAND_RADIUS } from './SitePlacer';
-import { roundHalfToEven } from '../../util/math';
 
 /**
  * 各サイトの軸値のサンプリング（TerrainGeneration.md 3.1節）。AxisDefのジェネレータ層
@@ -32,7 +31,7 @@ export function sample(
       }
 
       const normalized = weightSum > 0 ? weighted / weightSum : 0;
-      const value = axis.range.min + roundHalfToEven(normalized * (axis.range.max - axis.range.min));
+      const value = axis.range.min + Math.round(normalized * (axis.range.max - axis.range.min));
       site.axisValues.set(axis.name, axis.range.clamp(value));
     }
 

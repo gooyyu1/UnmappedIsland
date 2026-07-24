@@ -16,7 +16,7 @@
     "stats:climate": "RUN_CLIMATE_STATS=1 vitest run tests/diagnostics/climateStatsReport.test.ts"
   },
   "dependencies": {
-    "phaser": "^3.90.0",
+    "phaser": "^4.2.1",
     "yaml": "^2.7.0"
   },
   "devDependencies": {
@@ -24,6 +24,7 @@
     "@types/node": "^26.1.1",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.0.0",
+    "globals": "^17.7.0",
     "prettier": "^3.5.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.24.0",

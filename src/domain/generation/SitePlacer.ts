@@ -1,7 +1,6 @@
 import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
 import type { Pcg32 } from './Pcg32';
 import { Site } from './IslandMap';
-import { roundHalfToEven } from '../../util/math';
 
 /**
  * サイト（Site）の座標配置。半径ISLAND_RADIUSの円盤を島とみなし、次の2段で配置する。
@@ -36,7 +35,7 @@ export function place(scope: GenerationScopeDef, rng: Pcg32): Site[] {
 
   // 海岸（外周リング）の個数: 全体の約35%、ただし「島を囲める最低限」として4個以上、
   // 「多くなりすぎない」上限として7個以下。内陸にも最低3個は残す（山+内陸2種の余地）。
-  let coastCount = Math.min(Math.max(roundHalfToEven(total * 0.35), 4), 7);
+  let coastCount = Math.min(Math.max(Math.round(total * 0.35), 4), 7);
   coastCount = Math.min(coastCount, total - 3);
 
   const sites: Site[] = [];

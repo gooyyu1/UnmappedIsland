@@ -31,3 +31,9 @@ npm run lint
 npm run typecheck
 npm test
 ```
+
+## Phaserの画面をスクリーンショットで確認する
+
+[`run` skill](../.claude/skills/run/SKILL.md) を使うこと。このプロジェクトは
+`playwright`/`@playwright/test` に依存していないため素朴な起動方法では失敗する、という
+環境固有の落とし穴と、その回避手順（スクリプト付き）をskill側にまとめてある。
