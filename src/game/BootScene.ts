@@ -30,7 +30,9 @@ export class BootScene extends Phaser.Scene {
     try {
       codex = this.buildCodex();
     } catch (error) {
-      this.showMessage(`WorldCodexのロードに失敗しました:\n${error instanceof Error ? error.message : error}`);
+      this.showMessage(
+        `WorldCodexのロードに失敗しました:\n${error instanceof Error ? error.message : error}`,
+      );
       throw error;
     }
 
