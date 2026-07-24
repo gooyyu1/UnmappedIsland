@@ -10,19 +10,10 @@ namespace UnmappedIsland.Loader
     public sealed partial class WorldCodexYamlLoader
     {
         /// <summary>
-        /// passivesの1ブロック（self/parent/child/ancestor、actorは未対応のためスキップ）を読み、
-        /// PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非nullならstage内、nullなら
-        /// オブジェクト/プロパティレベル）と、このブロックの"conditions"は独立に併用できる（例:「装備している
-        /// 間、かつ耐久値がintactステージの間だけ」）。ゲートはグローバルIDのまま持つため（BuildGate参照）、
-        /// このobject_def自身のPropertyDefが出来上がっているかどうかに関わらず、その場でPassiveEffectを
-        /// 組み上げられる。
-        ///
-        /// オブジェクトレベル・プロパティレベル・stage内のいずれも、"passives:"は常に配列であり、
-        /// この関数はその配列の1要素（conditions/modify/accumulateのみを持つ、他のキーとは同居しない
-        /// 独立したマッピング）に対して呼ばれる。conditionsはブロック全体で1つ（対象ごとには持たない。
-        /// self対象・parent対象は常に同じSlotBearerを指すため、対象ごとに持たせても意味が重複するだけ。
-        /// Runtime.RegisteredPassiveEffect参照）。
-        ///
+        /// passivesの1ブロック（"passives:"配列の1要素。conditions/modify/accumulateのみを持つ）を読み、
+        /// PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非nullならstage内）と
+        /// "conditions"は独立に併用できる（例:「装備している間、かつ耐久値がintactステージの間だけ」）。
+        /// conditionsはブロック全体で1つ（対象ごとには持たない。Runtime.RegisteredPassiveEffect参照）。
         /// RawObjectDef.Resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。
         /// </summary>
         public void ParsePassive(
@@ -49,10 +40,9 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// ゲートを組み立てる。stagePropertyName（forcedStageProperty）が非nullならWhenOwnStage
-        /// （プロパティのグローバルIDとstage名をそのまま持つ。Runtime.WorldObject.IsInStageが評価時に
-        /// ローカルIDへ変換する）。conditionsと両方指定されていれば、両方を満たす間だけ有効になる
-        /// （例:「装備している間、かつ耐久値がintactステージの間だけ」。PassiveEffect.ActiveAmount参照）。
+        /// ゲートを組み立てる。stagePropertyNameとconditionsの両方が指定されていれば、両方を満たす間
+        /// だけ有効になる（PassiveEffect.ActiveAmount参照）。ゲートはグローバルIDのまま持ち、評価時に
+        /// ローカルIDへ変換する（Runtime.WorldObject.IsInStage参照）。
         /// </summary>
         private PassiveEffectGate BuildGate(ConditionNode conditions, string stagePropertyName, string stageName)
         {
@@ -65,9 +55,8 @@ namespace UnmappedIsland.Loader
 
         /// <summary>
         /// passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
-        /// スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。どの具象型（ModifyEffect/AccumulateEffect）
-        /// を作るかはmakeEffectファクトリで受け取る（判別enumは持たない）。同じpassiveブロック内のgateを
-        /// そのまま共有する（対象・プロパティが違っても、ゲートの意味は同じであるため）。
+        /// スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。具象型はmakeEffectファクトリで受け取り、
+        /// 同じpassiveブロック内のgateを全効果で共有する。
         /// </summary>
         private void ParsePassiveOperationInto(
             List<PassiveEffect> output, string context, YamlMappingNode passiveMap,

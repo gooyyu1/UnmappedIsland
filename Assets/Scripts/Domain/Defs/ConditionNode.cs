@@ -23,19 +23,15 @@ namespace UnmappedIsland.Domain.Defs
         /// <summary>{object, prop, op, value}形式のプロパティ比較。</summary>
         Property,
 
-        /// <summary>{object, in_slot}形式の、objectが指すオブジェクト自身が、今まさに親のin_slotに
-        /// 入っているかのチェック（常に等価判定。opは持たない。否定したい場合はNotで包む）。「objectが
-        /// 外から見てどこに位置するか」を見る（objectの直接の親の中の位置）。</summary>
+        /// <summary>{object, in_slot}形式。objectが今まさに親のin_slotに入っているか（常に等価判定でopは
+        /// 持たない。否定はNotで包む）。「objectが外から見てどこに位置するか」を見る。</summary>
         SlotPosition,
 
-        /// <summary>{object, slot, tag}形式の、objectが指すオブジェクト自身が持つslot（自分のスロット）の
-        /// 中に、tagを持つ子オブジェクトが1つでもあるかのチェック（存在判定。常に真偽で、opは持たない）。
-        /// SlotPositionとは向きが逆で、「objectの内側、自分のスロットの中身」を見る。
-        /// 液体容器のような「中身の種類」の判定に使う（案3、コンテナ設計の検討参照）。</summary>
+        /// <summary>{object, slot, tag}形式。object自身が持つslotの中に、tagを持つ子が1つでもあるか
+        /// （存在判定でopは持たない）。SlotPositionとは向きが逆で「objectの内側、自分のスロットの中身」を見る。</summary>
         SlotContent,
 
-        /// <summary>{object, tag}形式の、objectが指すオブジェクト自身がtagを持つかのチェック（存在判定）。
-        /// 親オブジェクトのタグで分岐するpassiveなど、「オブジェクト自身の種類」を見たい条件で使う。</summary>
+        /// <summary>{object, tag}形式。object自身がtagを持つか（存在判定）。</summary>
         ObjectTag,
 
         /// <summary>子ノードすべての論理積。</summary>
@@ -49,13 +45,9 @@ namespace UnmappedIsland.Domain.Defs
     }
 
     /// <summary>
-    /// conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート
-    /// （旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけが呼び出し側にある）。
-    ///
-    /// 葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて
-    /// 使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の
-    /// 慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に
-    /// 関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。
+    /// conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲートが
+    /// 同じ木を共用する。葉はProperty・SlotPosition・SlotContent・ObjectTagの4種、複合はAll/Any/Notの3種で、
+    /// Kindに応じて使うフィールドが変わる（単一クラス+Kind enum）。
     /// </summary>
     public sealed class ConditionNode
     {
@@ -74,15 +66,13 @@ namespace UnmappedIsland.Domain.Defs
         /// in/not_inは複数要素になりうる。</summary>
         private readonly IReadOnlyList<int> values;
 
-        /// <summary>Property葉のみ有効。非nullなら、YAML上のリテラルvalue（Values）の代わりに、この
-        /// {object, prop}参照先の現在の実効値と比較する（weightのpath参照、10.2節と同じ「リテラルか
-        /// 参照か」の二択をconditionsにも広げたもの）。in/not_inでは意味を持たない（複数値との比較に
-        /// なるため。ロード時エラー）。</summary>
+        /// <summary>Property葉のみ有効。非nullなら、リテラルvalue（Values）の代わりに{object, prop}参照先の
+        /// 現在の実効値と比較する（10.2節と同じ「リテラルか参照か」の二択）。in/not_inでは意味を持たない
+        /// （ロード時エラー）。</summary>
         private readonly PropertyPath? valueRef;
 
         /// <summary>SlotPosition/SlotContent葉のみ有効。SlotPositionではobjectの親の中の位置、
-        /// SlotContentではobject自身が持つスロットを指す（同じ「スロットのグローバルID」というデータ型
-        /// だが、参照する木構造上の向きが異なる）。</summary>
+        /// SlotContentではobject自身が持つスロットを指す（向きが異なる）。</summary>
         private readonly int slotGlobalId;
 
         /// <summary>SlotContent/ObjectTag葉のみ有効。</summary>

@@ -7,10 +7,8 @@ namespace UnmappedIsland.Loader
 {
     public sealed partial class WorldCodexYamlLoader
     {
-        /// <summary>conditions（14節）・passivesのゲート（旧when、8節）が共通で使うobject参照キー。
-        /// worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため未対応
-        /// （ancestorが「見つからなければworldまで遡る」ことを自然に含むため、世界固有の概念を
-        /// 参照したい場合はancestorで代替できる）。</summary>
+        /// <summary>conditions（14節）・passivesのゲート（8節）が共通で使うobject参照キー。
+        /// worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。</summary>
         private static ReferenceRoot ParseConditionObject(string context, string raw, IReadOnlyCollection<ReferenceRoot> allowedRoots)
         {
             ReferenceRoot root;
@@ -40,10 +38,10 @@ namespace UnmappedIsland.Loader
         private static readonly HashSet<ReferenceRoot> CombinationConditionRoots =
             new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor, ReferenceRoot.Actor, ReferenceRoot.Dragged };
 
-        /// <summary>passivesのゲート（旧when）で使えるobject。selfはSlotBearer（8節の効果を宣言した側の
-        /// スロット位置）、parentはその1つ上（Runtime.RegisteredPassiveEffect参照）。ancestorはselfの
-        /// 直接の親から遡った祖先探索（Runtime.WorldObject.FindAncestorWithProperty参照）。actor/draggedは
-        /// 持続的な関係に紐づかないため未対応。</summary>
+        /// <summary>passivesのゲートで使えるobject。selfはSlotBearer、parentはその1つ上
+        /// （Runtime.RegisteredPassiveEffect参照）、ancestorは祖先探索
+        /// （Runtime.WorldObject.FindAncestorWithProperty参照）。actor/draggedは持続的な関係に
+        /// 紐づかないため未対応。</summary>
         private static readonly HashSet<ReferenceRoot> PassiveConditionRoots =
             new HashSet<ReferenceRoot> { ReferenceRoot.Self, ReferenceRoot.Parent, ReferenceRoot.Ancestor };
 
@@ -104,13 +102,10 @@ namespace UnmappedIsland.Loader
 
         /// <summary>
         /// 条件木の葉。objectは省略時self。{object, prop, op(省略時eq), value}のプロパティ比較、
-        /// {object, in_slot}のスロット位置判定（常に等価判定。opは持たない）、{object, slot, tag}の
-        /// スロット中身判定（objectの自分のslotの中に、tagを持つ子がいるかの存在判定）、
-        /// {object, tag}のオブジェクト自身のタグ判定のいずれかで、
-        /// 同時には指定できない。in_slot（外から見た位置）とslot（内側の中身）はキー名自体を分けており、
-        /// 混同の余地はない。プロパティ比較のvalueは、リテラル（整数・真偽値・シンボル名）か、
-        /// {object, prop}参照（weightのpath参照、10.2節と同じ二択）のいずれか。参照はlt/lte/gt/gte/eq/neqの
-        /// みで使える（in/not_inは複数値との比較のため、参照とは噛み合わない）。
+        /// {object, in_slot}のスロット位置判定、{object, slot, tag}のスロット中身判定、
+        /// {object, tag}のタグ判定のいずれかで、同時には指定できない。プロパティ比較のvalueは
+        /// リテラルか{object, prop}参照（10.2節と同じ二択）。参照はlt/lte/gt/gte/eq/neqのみで使える
+        /// （in/not_inは複数値との比較のため噛み合わない）。
         /// </summary>
         private ConditionNode ParseConditionLeaf(
             string context, YamlMappingNode map, IReadOnlyCollection<ReferenceRoot> allowedRoots)

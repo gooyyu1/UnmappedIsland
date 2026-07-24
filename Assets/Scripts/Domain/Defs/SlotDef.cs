@@ -17,9 +17,8 @@ namespace UnmappedIsland.Domain.Defs
 
     /// <summary>
     /// GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、
-    /// Withをタグ（4節）のグローバルIDか、object_defそのもののグローバルIDのどちらかとして解釈する
-    /// （Matches参照）。trait名では直接マッチングしない: traitはmixin合成後に消えてしまう外部から
-    /// 参照すべきでない存在であり、trait経由でタグ付けしたければtags（4節）を使う。
+    /// withをタグ（4節）かobject_defのグローバルIDとして解釈する（Matches参照）。trait名では直接
+    /// マッチングしない（traitはmixin合成後に消える。trait経由のタグ付けはtags（4節）を使う）。
     /// </summary>
     public sealed class SlotAcceptRule
     {
@@ -36,8 +35,7 @@ namespace UnmappedIsland.Domain.Defs
             Consume = consume;
         }
 
-        /// <summary>TargetKind.Tagならcandidateがそのタグを持っていれば真、TargetKind.Objectならcandidate
-        /// がまさにそのobject_defそのものであれば真（CombinationDef.Matchesとはタグ側のみ同じ規約）。</summary>
+        /// <summary>Tagならcandidateがそのタグを持てば真、Objectならまさにそのobject_defであれば真。</summary>
         public bool Matches(ObjectDef candidateDef) => TargetKind == SlotAcceptTargetKind.Tag
             ? candidateDef.Tags.Contains(with)
             : candidateDef.GlobalId == with;

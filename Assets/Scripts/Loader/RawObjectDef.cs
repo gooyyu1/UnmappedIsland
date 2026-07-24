@@ -8,24 +8,18 @@ namespace UnmappedIsland.Loader
 {
     /// <summary>
     /// object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。
-    /// props/slots/passives/stack_order/actions/combinationsは、フィールド単位の上書きマージ
-    /// （props/slots/actions/combinationsの4つ全てが対象。Resolve参照）がまだ起こりうるため、あえて
-    /// 意味解釈済みの型にせずYamlMappingNode/YamlSequenceNodeのまま持つ。
-    ///
-    /// 自分自身の識別性（GlobalId）はtrait解決に依存しないため、パース時点（Loader.
-    /// WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slot名等は、trait側からも
-    /// 追加されうる・shallow-overrideで中身が変わりうるため、Resolveの中で初めて確定する。
+    /// trait上書きマージ（Resolve参照）がまだ起こりうるフィールドは、意味解釈済みの型にせず
+    /// 生YAMLノードのまま持つ。GlobalIdのみパース時点で確定し、tags・prop/slot名等はResolveで
+    /// 初めて確定する。
     /// </summary>
     public sealed class RawObjectDef
     {
         public string Name;
 
-        /// <summary>このobject_defが最初に（どのファイル／どのLoad呼び出しから）読み込まれたか。重複
-        /// エラーメッセージの出所表示にのみ使う。</summary>
+        /// <summary>読み込み元。重複エラーメッセージの出所表示にのみ使う。</summary>
         public string Source;
 
-        /// <summary>ObjectNames.Internによるこのobject_def自身のグローバルID。trait解決を待たず、
-        /// パース時点で確定する（自分自身の識別性はtrait解決に依存しないため）。</summary>
+        /// <summary>ObjectNames.InternによるグローバルID。trait解決を待たずパース時点で確定する。</summary>
         public int GlobalId;
 
         public bool IsSingleton;
@@ -43,20 +37,16 @@ namespace UnmappedIsland.Loader
         public YamlMappingNode Combinations;
 
         /// <summary>
-        /// このobject_defが参照するtraitを合成し（フェーズ1: YAMLノードレベルのマージ）、そこから最終的な
-        /// ObjectDefを組み立てる（フェーズ2: loaderのParseProp/ParseSlot/ParsePassive/ParseActions/
-        /// ParseCombinationsによる意味解釈）。
+        /// 参照するtraitを合成し（フェーズ1: YAMLノードレベルのマージ）、そこから最終的なObjectDefを
+        /// 組み立てる（フェーズ2: loaderの各Parseメソッドによる意味解釈）。
         ///
         /// 合成規則（フェーズ1）:
-        /// - props/slots/actions/combinations は識別子をキーとする辞書のため、同名エントリが複数のtraitに
-        ///   存在する場合はエラー（5節: 「プロパティ衝突はエラー」）。object_def自身が同名エントリを持つ
-        ///   場合は、フィールド単位で上書きする（object_def側で指定した属性だけが上書きされ、残りはtrait側
-        ///   の値を引き継ぐ）。
-        /// - passives は識別子を持たない（when/modify/accumulateブロックの配列）ため、単純に連結する
-        ///   （trait由来→自分自身の順、各traitの配列要素もそのままフラットに展開する）。
-        /// - stack_order は単一の値なので、自分自身の指定があればそれを優先し、無ければ参照traitのうち
-        ///   ちょうど1つが指定している必要がある（複数のtraitが指定していればエラー）。
-        /// 未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）: recipes/covers/layer。
+        /// - props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー（5節）。
+        ///   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
+        /// - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
+        /// - stack_order/represented_by: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
+        ///   いる必要がある（複数ならエラー）。
+        /// 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: recipes/covers/layer。
         /// </summary>
         public ObjectDef Resolve(IReadOnlyDictionary<string, RawTrait> traitsByName, WorldCodexYamlLoader loader)
         {
@@ -198,8 +188,7 @@ namespace UnmappedIsland.Loader
             return result;
         }
 
-        /// <summary>baseNodeのフィールドをそのまま持ちつつ、overlayNodeにあるフィールドで上書き・追加する
-        /// （object_def自身がtraitの一部の属性だけを上書きし、残りはtrait側を引き継ぐ、5節）。</summary>
+        /// <summary>baseNodeのフィールドを持ちつつ、overlayNodeにあるフィールドで上書き・追加する（5節）。</summary>
         private static YamlMappingNode ShallowMergeFields(YamlMappingNode baseNode, YamlMappingNode overlayNode)
         {
             var order = new List<string>();

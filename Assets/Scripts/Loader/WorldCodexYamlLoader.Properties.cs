@@ -10,7 +10,7 @@ namespace UnmappedIsland.Loader
     public sealed partial class WorldCodexYamlLoader
     {
         /// <summary>1つのprops.'propName'エントリを解釈し、PropertyDefを組み立てる（GameElementDefinition.md
-        /// 6節）。RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれる。</summary>
+        /// 6節）。RawObjectDef.Resolveからtrait合成済みのノードに対して呼ばれる。</summary>
         public PropertyDef ParseProp(string objectDefName, string propName, YamlMappingNode node, List<PassiveEffect> passives)
         {
             string context = $"'{objectDefName}'.props.'{propName}'";
@@ -27,8 +27,8 @@ namespace UnmappedIsland.Loader
             {
                 var initRange = new PropertyRange(rangeValueNode.RequireInt("min", context), rangeValueNode.RequireInt("max", context));
                 initialValueRange = initRange;
-                // 初期値はspawn時（sessionあり）に[min,max]の一様乱数で決まる（PropertyDef.CreateValue）。
-                // sessionを渡さない直接生成では決定的にminをフォールバックとして使う。
+                // 初期値はspawn時に[min,max]の一様乱数で決まる（PropertyDef.CreateValue）。
+                // sessionを渡さない直接生成では決定的にminを使う。
                 initialValue = initRange.Min;
                 isSymbolProperty = false;
             }
@@ -104,11 +104,10 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// rangeイベント（on_min・on_max・on_overflow・on_shortfall、6節）の中身を読む。actions/combinations
-        /// と同じく、set/add/destroy/spawn/transfer（active）とpickは排他（9.7節・10節: pickはactiveを直接
-        /// 書ける場所であればどこでもその代わりに書ける）。対象はselfのみ（6.5節）で、pick候補の中の効果に
-        /// もそのまま引き継ぐ。どちらも書かれていない空のmapping（`on_shortfall: {}`）は「宣言だけして
-        /// 何もしない」（既定のクランプを打ち消す）を意味し、空のActiveEffectsになる。
+        /// rangeイベント（on_min・on_max・on_overflow・on_shortfall、6節）の中身を読む。activeとpickは
+        /// 排他（9.7節・10節）。対象はselfのみ（6.5節）で、pick候補の中の効果にも引き継ぐ。
+        /// 空のmapping（`on_shortfall: {}`）は「宣言だけして何もしない」（既定のクランプを打ち消す）を
+        /// 意味し、空のActiveEffectsになる。
         /// </summary>
         private ActiveEffect ParseRangeEventEffect(string context, YamlMappingNode node)
         {
@@ -128,9 +127,8 @@ namespace UnmappedIsland.Loader
             return ParseActiveEffectBody(context, node, allowDragged: false, selfOnly: true, new[] { "pick" });
         }
 
-        /// <summary>1つのstagesエントリを解釈する（GameElementDefinition.md 6.4節）。プロパティ自身が
-        /// シンボル型かどうかで、min（数値型、半開区間）とeq（シンボル型、nameが比較対象そのもの）の
-        /// どちらを使うかが変わる。stage内のpassivesもここで併せて解釈し、passivesへ追記する。</summary>
+        /// <summary>1つのstagesエントリを解釈する（6.4節）。数値型はmin（半開区間）、シンボル型はeq
+        /// （nameが比較対象そのもの）を使う。stage内のpassivesも併せて解釈しpassivesへ追記する。</summary>
         private PropertyStage ParseStage(
             string objectDefName, string propName, string context, bool isSymbolProperty,
             List<PassiveEffect> passives, YamlMappingNode stageMap)
@@ -151,8 +149,7 @@ namespace UnmappedIsland.Loader
                 stage = new PropertyStage(stageName, min);
             }
 
-            // stage自身がname/minという固有の属性を持つため配列にできず、passivesは専用の
-            // ネストしたキーのまま持つ（when違いの複数ブロックを書けるようにするため常に配列）。
+            // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。
             YamlSequenceNode stagePassives = stageMap.TryGetSequence("passives", context);
             if (stagePassives != null)
                 foreach (YamlNode passiveNode in stagePassives)
@@ -162,21 +159,18 @@ namespace UnmappedIsland.Loader
             return stage;
         }
 
-        /// <summary>シンボル型の値（整数・真偽値のいずれにもならない識別子）を許容する識別子の形。
-        /// 3.2節の命名規則と同じ。</summary>
+        /// <summary>シンボル型の値として許容する識別子の形（3.2節の命名規則と同じ）。</summary>
         private static readonly Regex SymbolPattern = new Regex(@"^[a-z][a-z0-9_]*$");
 
         /// <summary>
-        /// 整数・真偽値・シンボル名（識別子）のいずれかとして値を解釈する。整数・真偽値としてパースできない
-        /// 識別子形の文字列は、SymbolNamesへ登録してそのグローバルIDを返す（シンボル型のprops、6節）。
-        /// これにより、シンボル型のpropsは専用の宣言（`symbol: true`等）を必要とせず、`value`の形だけで
-        /// 自動的に判別できる。boolより先にsymbolを試すと"true"/"false"もシンボルとして解釈されてしまう
-        /// ため、判定順は整数→真偽値→シンボルで固定する。
+        /// 整数・真偽値・シンボル名（識別子）のいずれかとして値を解釈する。識別子形の文字列は
+        /// SymbolNamesへ登録してグローバルIDを返す（シンボル型のprops、6節。専用の宣言は不要で
+        /// `value`の形だけで判別する）。"true"/"false"がシンボルとして解釈されないよう、判定順は
+        /// 整数→真偽値→シンボルで固定する。
         /// </summary>
         private int ParseScalarNumber(string context, string raw) => ParseScalarNumber(context, raw, out _);
 
-        /// <summary>isSymbolは、rawが整数・真偽値としてパースできず、シンボル名として登録された場合にtrue
-        /// になる（propsのstages、6.4節が、プロパティ自身がシンボル型かどうかで解釈を変えるために使う）。</summary>
+        /// <summary>isSymbolは、rawがシンボル名として登録された場合にtrueになる（stagesの解釈分岐、6.4節）。</summary>
         private int ParseScalarNumber(string context, string raw, out bool isSymbol)
         {
             isSymbol = false;
@@ -191,10 +185,9 @@ namespace UnmappedIsland.Loader
         }
 
         /// <summary>
-        /// on_overflow/on_shortfallを著者が明示的に書かなかった場合の既定動作。「自分自身をRangeの境界
-        /// （isMax指定側）へsetする」というActiveEffectを合成する。これにより、著者はレンジ型プロパティの
-        /// クランプを`range`を書くだけで実現でき、繰り上げ等の特別な挙動が要る場合だけon_overflow/
-        /// on_shortfallを明示すればよい。
+        /// on_overflow/on_shortfall未指定時の既定動作として、「自分自身をrangeの境界（isMax指定側）へ
+        /// setする」ActiveEffectを合成する。著者は`range`を書くだけでクランプが得られ、特別な挙動が
+        /// 要る場合だけon_overflow/on_shortfallを明示すればよい。
         /// </summary>
         private static ActiveEffects BuildDefaultOverflowEffect(PropertyRange range, int propertyGlobalId, bool isMax)
         {
