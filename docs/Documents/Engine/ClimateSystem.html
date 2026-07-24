@@ -261,12 +261,20 @@ tick）を <code>set</code> するだけ。2 周目以降側は 24/30/36 日
 <code>light_rain</code>/<code>heavy_rain</code>/<code>storm</code>
 のいずれかである間、その <code>weather</code> の <code>stages</code>
 自身が持つ <code>passive</code> の <code>accumulate</code> として、毎
-tick <code>atmospheric_moisture</code> を減算する （-200 / -300 /
--400。激しい雨ほど速く消費する。耐久値や
-<code>GameElementDefinition.md</code> 6.4 節の
-<code>progress</code>/<code>feverish</code>
-例と同じ、ステージ自身が値を変化させるパターン）。雨が降り続ければやがて水分が
-尽きて乾いた候補が選ばれやすくなる、という循環がこれで自然に成立します。</li>
+tick <code>atmospheric_moisture</code> を減算する （-100 / -280 /
+-395。耐久値や <code>GameElementDefinition.md</code> 6.4 節の
+<code>progress</code>/<code>feverish</code> 例と同じ、
+ステージ自身が値を変化させるパターン）。雨が降り続ければやがて水分が尽きて乾いた候補が選ばれやすくなる、
+という循環がこれで自然に成立します。3
+つの減算量は「激しい雨ほど速く消費する」という単純な比例には
+なっていません。<code>light_rain</code>
+の減算量だけ突出して小さいのは、<code>heavy_rain</code>/<code>storm</code>
+は <code>wet</code> の季節レート
+（+250/tick）と拮抗・凌駕させて「降り続ければ尽きる」循環を成立させる一方、<code>light_rain</code>
+は現実の小雨が
+そこまで大気の水分を奪わないという想定と、<code>calm</code>
+の降雨頻度（3.2 節）を左右する下降側のパラメータで
+あることを踏まえ、意図的に弱く設定しているためです（4.3 節参照）。</li>
 <li>上限・下限は既存ルール通り、プロパティ側の <code>range</code>
 でクランプする。</li>
 </ul>
@@ -319,42 +327,55 @@ tick <code>atmospheric_moisture</code> を減算する （-200 / -300 /
 3.2 節で述べる挙動が自然に
 生まれます。「季節ごとに固定のレートを持たせる」という 3
 節冒頭の設計自体は変えていません。</p>
-<h3 id="calm-での降雨頻度の狙い-3日に1回くらい大雨にはならない雨">3.2
+<h3 id="calm-での降雨頻度の狙い-連続未降雨時間を長くしすぎない雨">3.2
 <code>calm</code> での降雨頻度の狙い:
-「3日に1回くらい、大雨にはならない」雨</h3>
+「連続未降雨時間を長くしすぎない」雨</h3>
 <p><code>calm</code>
 はゲーム開始直後に来る最初の季節でもあり、プレイヤーは蓋のない容器（例:
 ココナッツの殻）だけで水を
-確保しなければならない序盤です。渇水で詰まないよう、<code>calm</code>
-の間はおおよそ 3 日に 1 回程度、大雨・嵐ではない
-軽い雨（<code>light_rain</code>）が降ってほしい、という具体的な狙いがあります。</p>
+確保しなければならない序盤です。晴れが続くと蓋のない容器の水は蒸発してしまうため、渇水で詰まないよう、
+<code>calm</code>
+の<strong>連続未降雨時間</strong>（雨が止んでから次の雨までの長さ）が長くなりすぎないでほしい、という狙いが
+あります。「概ね 3 日に 1
+回くらい、大雨・嵐ではない軽い雨（<code>light_rain</code>）」という言い方は、この連続未降雨
+時間に対する目安であって、雨が一定周期で規則正しく降ることを求めているわけではありません（一定周期性は
+そもそも 3.3
+節が扱う「固定レートによる単調さ」の一種であり、望ましくありません）。</p>
 <p>この頻度は新しい仕組みを必要とせず、既存の 2
 つのレートの<strong>バランス</strong>だけで決まります。</p>
 <ul>
 <li><strong>上昇側</strong>: <code>calm</code> の大気水分量レート（3.1
-節）が、雨が降った直後の低い水準から、4.3 節の <code>moderate</code>
-段階 （<code>light_rain_weight</code>
-が初めて意味のある値を持つ段階）の閾値まで登り切るのにかかる日数。</li>
+節）が、雨が止んだ直後の水準から、4.3 節の <code>moderate</code> 段階
+（<code>light_rain_weight</code>
+が初めて意味のある値を持つ段階）の閾値まで登り切るのにかかる日数。これが
+連続未降雨時間の実体です。</li>
 <li><strong>下降側</strong>: 降雨中の自己減算（3 節）が、一度
-<code>light_rain</code> が選ばれてから大気水分量を <code>moderate</code>
-の閾値より 下まで押し戻すのにかかる時間。</li>
+<code>light_rain</code> が選ばれてから大気水分量をどこまで押し戻すか。
+ここが深いほど、次の上昇側にかかる日数（＝連続未降雨時間）は長くなります。</li>
 </ul>
 <p>実装値では、<code>calm</code> の上昇レート +10/tick は
-<code>moderate</code> 閾値 3,000 まで 300 tick（約 3.1 日）で登り、
-<code>light_rain</code> の自己減算 -200/tick は
+<code>moderate</code> 閾値 3,000 まで 300 tick（約 3.1 日）で登ります。
+<code>light_rain</code> の自己減算 -100/tick は
 <code>weather_remaining</code> 1 回分（16〜24 tick、4.2 節）で
-3,200〜4,800 を 消費して水分量を底（0
-付近）まで押し戻します。結果、大気水分量は「約 3 日かけて登って
+1,600〜2,400 を 消費するため、<code>moderate</code>
+帯に入ってすぐ選ばれた場合でも水分量は谷（0
+付近）までは落ちきらず、途中で 折り返します。結果、大気水分量は「登って
 <code>moderate</code> に触れる→ <code>light_rain</code>
-が選ばれて速やかに底へ戻る→また 3
-日かけて登る」という充放電（谷から山へ緩やかに充電し、
-雨で一気に放電する）を繰り返します。<code>humid</code>/<code>saturated</code>
-まで登り切る前に自己減算で引き戻されるため、
-「大雨にはならない」という要件も、<code>heavy_rain</code>/<code>storm</code>
-の重みが <code>moderate</code> 段階では 0 である（4.3 節）ことと
-合わせて満たされます。統計テストでは 30 シード平均で 27 日間に 9.1
-回（約 3.0 日に 1 回）の雨イベント、 雨の最大間隔は平均 4.1 日・最悪 5.8
-日でした。</p>
+が選ばれて部分的に放電する→ また登って <code>moderate</code>
+に触れる」という充放電を、谷から山へ緩やかに充電し雨のたびに一部だけ放電する形で
+繰り返します。<code>humid</code>/<code>saturated</code>
+まで登り切る前に自己減算で引き戻されるため、「大雨にはならない」という
+要件も、<code>heavy_rain</code>/<code>storm</code> の重みが
+<code>moderate</code> 段階では 0 である（4.3
+節）ことと合わせて満たされます。 統計テストでは 30 シード平均で 27
+日間に 13.0 回の雨イベント、雨の最大間隔は平均 3.7 日・最悪 5.3
+日でした。 より長い期間（20 シード×3,600
+日）の診断（<code>Documents/Diagnostics/ClimateSystemStats.md</code>）では、<code>calm</code>
+の 連続未降雨時間は平均 1.92 日でした。</p>
+<p>自己減算を弱めると「谷まで押し戻す」度合いが浅くなり、次の上昇にかかる日数（＝連続未降雨時間）はむしろ
+<strong>短くなります</strong>。自己減算の大きさと連続未降雨時間の長さは独立ではなく、直結しています。これは、
+降雨中の自己減算を軽くする調整が雨季の連続降雨時間（4.3
+節）にも影響するのと対になる関係です。</p>
 <h3 id="固定レートによる天気の単調さについて">3.3
 固定レートによる天気の単調さについて</h3>
 <p>3 節・3.1 節のレートは
@@ -486,26 +507,25 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">clear_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> humid</span><span class="co">          # 6000〜8499: 雨が優勢になり、大雨・嵐も現れ始める</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> humid</span><span class="co">          # 6000〜8499: 雨が優勢になり、大雨・嵐も現れ始める（晴れ系はclearのみ、僅かに）</span></span>
 <span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">6000</span></span>
 <span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">passives</span><span class="kw">:</span></span>
 <span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
 <span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">sunny_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">clear_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> saturated</span><span class="co">      # 8500〜: まず晴れない（晴れ系の重みを立てない=0）。嵐・大雨が中心</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">8500</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">passives</span><span class="kw">:</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">self</span><span class="kw">:</span></span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span></code></pre></div>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">clear_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> saturated</span><span class="co">      # 8500〜: まず晴れない（晴れ系の重みを立てない=0）。嵐・大雨が中心</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">8500</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">passives</span><span class="kw">:</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">self</span><span class="kw">:</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">cloudy_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">light_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">heavy_rain_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span></code></pre></div>
 <p>晴れ系（<code>sunny</code>/<code>clear</code>/<code>cloudy</code>）の重みも雨系と同じく
 <code>atmospheric_moisture</code> の段階に連動させ、固定の
 重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」という下限が
@@ -547,8 +567,58 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <p>段階の境界（<code>min</code>）を跨いだ瞬間に重みが階段状に飛ぶ点は、<code>weather_remaining</code>
 の遷移自体が 4〜6 時間に 1 回 （4.2
 節）しか起きないため、体感上の不自然さにはならないと考えます。</p>
-<h3 id="二回連続で同じ天気になった場合">4.4
-二回連続で同じ天気になった場合</h3>
+<p><strong><code>wet</code>
+の連続降雨時間を伸ばすには、重みの比率よりも自己減算の大きさが本質的でした。</strong>
+雨季（<code>wet</code>）で
+「まとまった雨が降り続く」体感を強めるため、<code>humid</code>
+段階の晴れ系の重みを縮小した （<code>sunny_weight</code> を廃止し
+<code>clear</code>/<code>cloudy</code>
+も小さくした）だけでなく、<code>heavy_rain</code>/<code>storm</code>
+の自己減算 （3 節）を当初値（-300/-400）から -280/-365
+へ弱めています（<code>storm</code> はこの後 4.3 節後段でさらに -395 まで
+調整）。後者がより本質的な調整です。</p>
+<p>天気の遷移ごとに「連続降雨がそこで終わるかどうか」は
+<code>weather_remaining</code> の <code>on_min</code> が引く
+<code>pick</code> の 瞬間の大気水分量の段階だけで決まるため、素朴には
+<code>humid</code>/<code>saturated</code>
+段階の重み比率だけを見れば十分に
+思えます。しかし実際にシミュレーションで、連続降雨が終わる直前の大気水分量の段階を計測したところ、
+弱める前は<strong>約 65% が <code>moderate</code>
+段階（雨がほぼ選ばれない段階）まで水分が落ちきってから終わっていました</strong>。
+<code>heavy_rain</code>/<code>storm</code> の自己減算が <code>wet</code>
+の季節レート（+250/tick）を大きく上回っていたため、連続降雨の 途中で
+<code>heavy_rain</code>/<code>storm</code> が続けて選ばれるたびに水分が
+<code>humid</code>/<code>saturated</code>（雨が優勢な段階）を割り込み、
+<code>moderate</code>（晴れ系が優勢な段階）まで押し下げてしまっていたのが実態です。<code>humid</code>
+段階の重み比率をどれだけ 雨寄りに調整しても、水分自体が
+<code>humid</code> の外まで落ちてしまえばその調整は効きません。</p>
+<p>そこで自己減算を、<code>wet</code>
+の季節レートをわずかに下回る程度（-280/-365、正味 -30/tick
+前後）まで弱めました。 これにより連続降雨の途中で水分が
+<code>moderate</code> まで落ちきる前に、多くの場合次の雨（多くは
+<code>humid</code>/<code>saturated</code>
+段階のまま）へつながるようになります。自己減算自体はなくしていない（雨は依然として水分を消費し続け、
+いずれは尽きる）ため、「雨が降り続ければやがて水分が尽きる」という 3
+節の循環そのものは保っています。 統計テストでは、この調整で
+<code>wet</code> の連続降雨時間の平均が約 0.78 日から約 1.52 日（約 2
+倍）に伸びました。</p>
+<p><strong><code>light_rain</code>
+の自己減算を弱めると、<code>wet</code> の連続降雨時間と
+<code>calm</code> の連続未降雨時間の両方が動きます。</strong>
+<code>light_rain</code> の自己減算を -200 から -100 へ弱めたところ（3
+節・3.2 節参照）、直接の目的である <code>calm</code> の 連続未降雨時間は
+2.74 日から 1.92 日へ<strong>短くなりました</strong>（3.2
+節で述べた通り、自己減算が浅くなり折り返し
+までの上昇にかかる日数が減るため）。同時に <code>wet</code> では
+<code>light_rain</code> 中の正味レート（+250 の季節レート に対し自己減算
+-100 なので正味 +150/tick）が強く上向きになり、連続降雨時間が 1.52
+日から 2.00 日まで 伸びてしまいました（4.3 節前段で確立した約 1.5〜1.6
+日の目安から外れる）。この副作用を打ち消すため、 <code>storm</code>
+の自己減算の絶対値を -365 から -395 へさらに強め、<code>wet</code>
+の連続降雨時間を 1.54 日まで戻しています
+（<code>Documents/Diagnostics/ClimateSystemStats.md</code>、20
+シード×3,600 日の実測値）。 <code>heavy_rain</code>
+の自己減算（-280）はこのラウンドでは変更していません。</p>
 <p><code>weather_remaining</code> は遷移のたびに 4〜6 時間の範囲で改めて
 <code>pick</code> されるため、たまたま同じ天気が連続して
 選ばれることがあります。この場合プレイヤーからは天気が変わらないまま 6
@@ -699,8 +769,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 向きのレートを持たせる。これにより大気水分量・蓄熱量は3季節を通じた1つの連続した波になり、<code>calm</code>
 の間にも 晴れ・雨の両方が起こる（3.1 節）。さらに <code>calm</code>
 では上昇レートと降雨の自己減算レートのバランスにより、
-「3日に1回程度、大雨にはならない軽い雨」という具体的な頻度を実現している（3.2
-節）</li>
+連続未降雨時間が長くなりすぎない（＝概ね3日に1回程度、大雨にはならない軽い雨が挟まる）ようにしている
+（3.2 節）</li>
 <li>難易度の初期補正は、天気を固定せず大気水分量という抽選の元データだけを操作することで実現し、不確実性を
 保つ。大気水分量自体が積分値であることを踏まえ、瞬間的な1回発火ではなく、専用カウンタの
 <code>stages</code> による 期間中の継続加算として表現する（5 節）</li>
