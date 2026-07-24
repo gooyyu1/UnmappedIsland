@@ -151,7 +151,7 @@ object_defs:
             passives:
               - accumulate:
                   self:
-                    atmospheric_moisture: -365
+                    atmospheric_moisture: -395
           - name: heavy_rain
             passives:
               - accumulate:
@@ -164,7 +164,7 @@ object_defs:
                     sunlight: 1
               - accumulate:
                   self:
-                    atmospheric_moisture: -200
+                    atmospheric_moisture: -100
           - name: cloudy
             passives:
               - modify:
