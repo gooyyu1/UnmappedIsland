@@ -13,48 +13,51 @@ Card Survivalの影響を受けた、無人島を舞台にしたサバイバル�
 
 ## 動作環境
 
-- **プラットフォーム**: Android (API Level 28 以上)
-- **Unity バージョン**: 2022.3.20f1 (LTS)
+- **プラットフォーム**: Webブラウザ（モバイルブラウザを含む）
+- **技術スタック**: TypeScript + Phaser 3 + Vite
+- **開発環境**: Node.js 22 以上
+
+## 開発コマンド
+
+```bash
+npm install            # 依存パッケージのインストール
+npm run dev            # 開発サーバー起動
+npm test               # テスト実行（Vitest）
+npm run lint           # ESLint
+npm run typecheck      # 型チェック（tsc --noEmit）
+npm run build          # 型チェック + プロダクションビルド
+npm run stats:climate  # 気候システムの統計レポート再生成（Documents/Diagnostics/）
+```
 
 ## プロジェクト構成
 
 ```
 UnmappedIsland/
-├── Assets/
-│   ├── Animations/       # アニメーションクリップ・コントローラー
-│   ├── Audio/
-│   │   ├── BGM/          # バックグラウンドミュージック
-│   │   └── SE/           # サウンドエフェクト
-│   ├── Fonts/            # フォントアセット
-│   ├── Materials/        # マテリアル
-│   ├── Prefabs/          # プレハブ
-│   ├── Scenes/           # シーンファイル
-│   ├── Scripts/
-│   │   ├── Core/         # GameManager, SoundManager, SceneController など
-│   │   ├── Data/         # ScriptableObject定義, セーブデータ構造体
-│   │   ├── Gameplay/     # ゲームロジック (カード, プレイヤーステータスなど)
-│   │   ├── UI/           # UIコントロール
-│   │   └── Utilities/    # 汎用ユーティリティ
-│   ├── Sprites/
-│   │   ├── Cards/        # カードイラスト
-│   │   ├── Characters/   # キャラクタースプライト
-│   │   ├── Environment/  # 背景・環境スプライト
-│   │   └── UI/           # UIスプライト
-│   └── Settings/         # Input System, Render Pipeline などの設定アセット
+├── src/
+│   ├── domain/
+│   │   ├── defs/         # ロード済みのゲーム定義（ロード後は不変）
+│   │   ├── runtime/      # 実行時状態（WorldObject・セッション・ビュー）
+│   │   └── generation/   # 地形生成（決定的な島レイアウト）
+│   ├── loader/           # WorldCodex YAMLローダー
+│   ├── game/             # Phaserシーン
+│   └── util/             # 汎用ユーティリティ
+├── public/
+│   └── world-codex/      # ゲーム定義YAML（そのまま配信される）
+├── tests/                # テスト（Vitest）
 ├── Documents/
 │   ├── Concept/          # コンセプト
 │   ├── UI/               # UI/UX
 │   ├── Engine/           # ルール・エンジン（YAML文法・汎用サブシステム・実装ガイド）
-│   └── World/            # ワールド（地形・気候・アイテムなど実際にゲームに登場する内容）
-├── docs/                 # GitHub Pages 用 HTML（Documents/ から自動生成・直接編集不可）
-├── Packages/             # Unityパッケージ設定
-└── ProjectSettings/      # Unityプロジェクト設定
+│   ├── World/            # ワールド（地形・気候・アイテムなど実際にゲームに登場する内容）
+│   └── Diagnostics/      # 計測レポート（気候統計など）
+└── docs/                 # GitHub Pages 用 HTML（Documents/ から自動生成・直接編集不可）
 ```
 
 ## ドキュメント
 
 開発ドキュメントは [`Documents/`](./Documents/README.md) フォルダで管理します。
 ゲームコンセプトは [`Documents/Concept/GameConcept.md`](./Documents/Concept/GameConcept.md) にまとめています。
+コーディング規約は [`Documents/Engine/CodingConventions.md`](./Documents/Engine/CodingConventions.md) を参照してください。
 ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装します。
 
 ## ライセンス
