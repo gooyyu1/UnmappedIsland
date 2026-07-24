@@ -1,7 +1,6 @@
 import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
 import { IslandEdge } from './IslandMap';
 import type { Site } from './IslandMap';
-import { roundHalfToEven } from '../../util/math';
 
 type WeightedEdge = { readonly a: number; readonly b: number; readonly distance: number };
 
@@ -76,9 +75,9 @@ function travelMinutes(
   scope: GenerationScopeDef,
 ): number {
   const moveCostAverage = (sites[a].type!.moveCost + sites[b].type!.moveCost) / 2;
-  let minutes = roundHalfToEven((distance * scope.baseMinutesPerDistance * moveCostAverage) / 100);
+  let minutes = Math.round((distance * scope.baseMinutesPerDistance * moveCostAverage) / 100);
   // tick（minutes_per_tick）単位の粗い時間経過と噛み合うよう、15分刻みへ丸める。
-  minutes = Math.max(MIN_TRAVEL_MINUTES, roundHalfToEven(minutes / 15) * 15);
+  minutes = Math.max(MIN_TRAVEL_MINUTES, Math.round(minutes / 15) * 15);
   return minutes;
 }
 
