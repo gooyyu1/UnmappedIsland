@@ -1,23 +1,21 @@
 # 地形生成の定義（TerrainGeneration.md参照）。土地・道そのもののobject_defsはlocations.yamlが持ち、
-# このファイルは「島がどう生成されるか」（軸・LocationType・生成スコープ）だけを定義する。
-# ルートキー axes / location_types / generation_scopes は object_defs / traits と対等な、
-# 地形生成専用のトップレベルキー（ローダーのWorldCodexYamlLoader.Generation.cs が解釈する）。
+# このファイルは軸・LocationType・生成スコープだけを定義する。ルートキー axes / location_types /
+# generation_scopes は地形生成専用のトップレベルキー（WorldCodexYamlLoader.Generation.cs が解釈する）。
 #
-# 数値の規約: 軸の値は 0〜100 の整数（百分率）。エンジン全体の「プロパティ値は32bit整数のみ・
-# 小数は登場しない」という規約（GameElementDefinition.md 6節）に合わせ、YAMLにfloatを書かせない。
-# ノイズ等の計算の内部だけ実数を使い、サイトへ値を与える時点で整数へ量子化する。
-# weight・move_cost も整数（100=等倍）。
+# 数値の規約: 軸の値は 0〜100 の整数（百分率）。「プロパティ値は32bit整数のみ」の規約
+# （GameElementDefinition.md 6節）に合わせ、YAMLにfloatを書かせない。ノイズ等の計算の内部だけ
+# 実数を使い、サイトへ値を与える時点で整数へ量子化する。weight・move_cost も整数（100=等倍）。
 
 # ------------------------------------------------------------------
 # axes: 地点が持つ連続値パラメータ（TerrainGeneration.md 3.1節）。
 # generatorは汎用プリミティブの重み合成（blend）:
 # - distance_field: 島の縁からの距離（reference: edge。中心=100、縁=0）
 # - layered_noise: シード付き格子値ノイズ（octaves/frequency/seed_offset）
-# 現時点のプリミティブはこの2種のみ。blob_scatter・modifiers（3.1節）は必要になった時点で追加する。
+# blob_scatter・modifiers（3.1節）は未実装。
 # ------------------------------------------------------------------
 axes:
-  # 標高。縁から遠い（内陸である）ほど高くなる距離場を主成分に、ノイズで起伏を加える。
-  # 「海岸に囲まれた島で、内陸に山がある」という島の基本形はこの軸が作る。
+  # 標高。内陸ほど高くなる距離場を主成分に、ノイズで起伏を加える。「海岸に囲まれた島で、
+  # 内陸に山がある」という島の基本形はこの軸が作る。
   elevation:
     range: {min: 0, max: 100}
     generator:
@@ -25,16 +23,15 @@ axes:
         - {type: distance_field, reference: edge, weight: 70}
         - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 30}
 
-  # 湿り気（乾燥度の逆）。純粋なノイズで、島のどこが湿りどこが乾くかをシードごとに変える。
-  # 草原（中庸）・密林（高湿）・荒野（乾燥）の配置を分ける追加の地形生成パラメータ。
+  # 湿り気。純粋なノイズで、島のどこが湿りどこが乾くかをシードごとに変える。
+  # 草原（中庸）・密林（高湿）・荒野（乾燥）の配置を分ける。
   humidity:
     range: {min: 0, max: 100}
     generator:
       blend:
         - {type: layered_noise, octaves: 2, frequency: 3, seed_offset: 23, weight: 100}
 
-  # 海岸からの距離（縁=0、中心=100）。海岸帯の判定（generation_scopes.island.coast_band）と、
-  # 「海岸にしか出ない/海岸には出ない」のhard_limitsに使う。
+  # 海岸からの距離（縁=0、中心=100）。海岸帯の判定（coast_band）とhard_limitsに使う。
   coastal_distance:
     range: {min: 0, max: 100}
     generator:
@@ -52,20 +49,19 @@ axes:
 # location_types: 軸空間上の「理想点+許容範囲」としてのLocationType定義
 # （TerrainGeneration.md 3.2節）。マッチングは正規化した重み付き距離の最近傍探索:
 #   D = sqrt( Σ w_i * ((v_i - ideal_i) / tolerance_i)^2 / Σ w_i )
-# 言及した軸だけで正規化（Σw_iで割る）するため、言及軸が少ない型が構造的に有利になる
-# 次元数バイアスは生じない。toleranceは距離のスケール（1 tolerance分のずれ=単位距離1）であり、
-# 超えたら除外というゲートではない。絶対的な除外はhard_limitsだけが担う（3.2〜3.3節の
-# tolerance/hard_limitsの役割を実装で一義化したもの）。
+# 言及した軸だけで正規化するため、言及軸が少ない型が有利になる次元数バイアスは生じない。
+# toleranceは距離のスケールであり、超えたら除外というゲートではない。絶対的な除外は
+# hard_limitsだけが担う（3.2〜3.3節）。
 #
 # - object_def: この型が実体化するときのobject_defs（locations.yaml）のid。Build時に存在検証する。
 # - display_name: 命名処理（「東の草原」等）に使う表示名。
 # - move_cost: 移動コスト（100=等倍）。道のtravel_minutes = 距離 × base_minutes_per_distance ×
-#   両端move_costの平均/100 で決まる（3.5節のdifficultyを時間に代表させる）。
+#   両端move_costの平均/100 で決まる（3.5節）。
 # - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（3.3節）。
 #   priorityが最も高いfallbackが選ばれる。
 # - 海岸過多の防止: 海岸3種はhard_limits(coastal_distance.max=coast_band)で海岸帯にしか出ず、
-#   内陸型はmin=coast_band+1で海岸帯に出ない。海岸帯のサイト数自体を絞る工夫はサイト配置側
-#   （generation_scopes.island.interior_bias と hull_coast）が担う。
+#   内陸型はmin=coast_band+1で海岸帯に出ない。海岸帯のサイト数自体を絞るのはサイト配置側
+#   （generation_scopes.island.interior_bias と hull_coast）。
 # ------------------------------------------------------------------
 location_types:
   sandy_beach:
@@ -185,9 +181,8 @@ location_types:
 
 # ------------------------------------------------------------------
 # generation_scopes: 生成スコープごとのパラメータプリセット（TerrainGeneration.md 3.7節）。
-# 島の生成と構造物内部の生成は同一の生成ロジックを共有し、違いはこのプリセットの差だけにする、
-# という方針のための器。現時点ではislandスコープのみ定義する（structure_interiorは
-# 洞窟内部の再帰生成とあわせて今後の課題）。
+# 島の生成と構造物内部の生成は同一の生成ロジックを共有し、違いはこのプリセットの差だけにする。
+# structure_interiorは洞窟内部の再帰生成とあわせて今後の課題。
 # ------------------------------------------------------------------
 generation_scopes:
   island:
@@ -207,8 +202,8 @@ generation_scopes:
     # 抽象座標の距離1あたりの基準移動時間（分）。島の直径=200単位を想定
     # （隣接する土地の典型的な距離は40前後 → 移動コスト等倍でおよそ45分）。
     base_minutes_per_distance: 1
-    # 島全体のバランス保証（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への実装回答）。
-    # 軸の分布だけでは個数を保証できないため、「指定軸が最大/最小のサイトへ、この型を強制割当する」
-    # という明示的な保証をマッチングの前に行う。島には必ず山がひとつある。
+    # カバレッジ保証（TerrainGeneration.md 3.4節・6節）。軸の分布だけでは個数を保証できないため、
+    # 「指定軸が最大/最小のサイトへこの型を強制割当する」処理をマッチングの前に行う。
+    # 島には必ず山がひとつある。
     guarantees:
       - {location_type: mountain_peak, count: 1, axis: elevation, pick: max}
