@@ -5,8 +5,8 @@
 液体（水・茶・油）を容器で保持し、飲用・注ぎ移し・蒸発させる仕組みの設計ドキュメントです。
 液体専用のエンジン機構は持たず、汎用文法（`represented_by` = 7.6節、`transfer` = 9.5節、
 `passives` = 8節。いずれも [`GameElementDefinition.md`](./GameElementDefinition.md)）の組み合わせ
-だけで実現しています。定義本体は `Assets/StreamingAssets/WorldCodex/containers.yaml`、
-検証は `Tests/StreamingAssets/ContainersYamlTests.cs`。
+だけで実現しています。定義本体は `public/world-codex/containers.yaml`、
+検証は `tests/worldCodex/containersYaml.test.ts`。
 
 ## 1. 役割分担: 量は容器、種類と振る舞いは中身
 
@@ -28,7 +28,7 @@
 容器本体は `represented_by: content` により、操作もスタック判定も中身へ委譲する（7.6節）。
 
 - **操作**: 容器カードへの `actions`/`combinations` は、実行前に代表（中身の液体カード）へ
-  リダイレクトされる（`WorldObject.ResolveInteractionTarget`、`ActionSystem.md` 1節）。
+  リダイレクトされる（`WorldObject.resolveInteractionTarget`、`ActionSystem.md` 1節）。
   「水筒を選ぶと『飲む』が出る」のは、水筒ではなく中の `water_liquid` の action。
 - **スタック判定**: 代表チェーンの `ObjectDef` 列の完全一致を要求するため、水入り水筒と
   茶入り水筒、水入り水筒と水入りボウルは、それぞれ別スタックになる。

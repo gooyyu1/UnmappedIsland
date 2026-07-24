@@ -12,7 +12,7 @@
 新しい文法は導入していません。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節にまとめています。実際のクラス名・
-メソッド名を使った実装の呼び出し関係（`IslandSpawner`・`MoveEffect`・`Views.Location.Explore` 等）は
+メソッド名を使った実装の呼び出し関係（`IslandSpawner`・`MoveEffect`・`Location.explore` 等）は
 [`TerrainGenerationImplementation.md`](./TerrainGenerationImplementation.md) にまとめています。
 
 ## 1. `location` trait と `explorable` trait の役割分担
@@ -113,8 +113,8 @@ object_defs:
 
 - **探索可能回数**: `exploration_progress` の `range.max`（10〜20 の範囲、土地ごとに異なる）。
   `explore` の `conditions` は `value: max` という参照記法が未対応（`GameElementDefinition.md` 17 節）のため、
-  `range.max` と同じ値をリテラルで重複して書いています。この二重管理は `Tests/StreamingAssets/
-  LocationsYamlTests.cs` の振る舞いテスト（「max-1では実行でき、maxでは実行できない」）が検証しており、
+  `range.max` と同じ値をリテラルで重複して書いています。この二重管理は `tests/worldCodex/
+  locationsYaml.test.ts` の振る舞いテスト（「max-1では実行でき、maxでは実行できない」）が検証しており、
   値のずれがあれば必ず失敗します。
 - **発見物**: `pick`（10 節）による重み付き抽選です。「ハズレ」（進捗だけが増える候補）を必ず用意しています。
   `add`/`pick` は排他な兄弟キーのため、進捗+1（`add`）は `pick` の各候補に個別に含めています（`add` と
@@ -147,7 +147,7 @@ object_defs:
 ```
 
 - **`travel_minutes`/`required_progress`/`destination_id`** はいずれも `path` の通常の `props` で、地形生成
-  （`Domain/Generation/IslandSpawner`）がインスタンス生成の直後に `SetProperty` で書き込みます。`object_defs`
+  （`src/domain/generation/IslandSpawner.ts`）がインスタンス生成の直後に `setProperty` で書き込みます。`object_defs`
   レベルの初期値はプレースホルダで、実際に使われるのは常にインスタンスごとの上書き後の値です。
 - **`conditions: [{in_slot: paths}]`**（`GameElementDefinition.md` 14.2 節）が「未発見（`undiscovered_paths`
   側）の間は移動できない」を表します。1 節の隠しスロット方式と組み合わさり、「発見されていない道は移動も
@@ -171,9 +171,9 @@ object_defs:
 保証しています。
 
 ある土地に接続する道が K 本あるとき、それぞれの `required_progress` を、探索上限を `max` として
-`[2, max − 1]` の範囲へ均等間隔で割り当てます（`Domain/Generation/IslandSpawner`）。最初の道が進捗2で
+`[2, max − 1]` の範囲へ均等間隔で割り当てます（`src/domain/generation/IslandSpawner.ts`）。最初の道が進捗2で
 見つかる（1回目の探索でいきなり道が見つからないようにする）のを最速とし、最後の道は必ず `max − 1` 以前に
-見つかります。この不変条件は `Tests/Generation/IslandSpawnerTests.cs` が全接続について検証しています。
+見つかります。この不変条件は `tests/generation/islandSpawner.test.ts` が全接続について検証しています。
 
 ## 4. エンジン拡張（`duration`・`move`）
 
@@ -182,27 +182,26 @@ object_defs:
 
 - **`duration`**（`GameElementDefinition.md` 11.3 節）: アクションの実行にかかるゲーム内時間（分）。
   リテラルか `{object, prop}` 参照（`weight` と同じ二択）で指定します。時間は実行結果の適用**後**に
-  `WorldSession.AdvanceWorldTime` で進めます（先に進めると、tick駆動の変化が効果適用前の対象を消してしまう
+  `WorldSession.advanceWorldTime` で進めます（先に進めると、tick駆動の変化が効果適用前の対象を消してしまう
   事故がありうるため）。
 - **`move`**（`GameElementDefinition.md` 9.6 節）: 対象オブジェクトを、`self` のプロパティが指す
   インスタンスIDのオブジェクトへ移動させる active 動詞。
 
 ## 5. カプセル化: 探索の入口を1箇所にする
 
-`Runtime.Views.Location.Explore(actor, session)` を、探索の唯一の入口としています。
+`Location.explore(actor, session)`（`src/domain/runtime/views/Location.ts`）を、探索の唯一の入口としています。
 
-```csharp
-public bool Explore(WorldObject actor, WorldSession session)
-{
-    if (!Instance.TryExecuteAction("explore", actor, session)) return false;
-    RevealDuePaths(session);   // 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す
-    return true;
+```typescript
+explore(actor: WorldObject | undefined, session: WorldSession): boolean {
+  if (!this.instance.tryExecuteAction('explore', actor, session)) return false;
+  this.revealDuePaths(session);   // 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す
+  return true;
 }
 ```
 
-`explore` アクション（YAML側）の実行と、後処理の `RevealDuePaths` を呼び出し側（UI等）に分けて呼ばせません
-（`CLAUDE.md` の「自分のことは自分でする」方針）。`RevealDuePaths` 自体は冪等なため、進捗がYAML側の効果
-だけで動いた場合に備えて `Paths` アクセサからも呼べるようにしています。
+`explore` アクション（YAML側）の実行と、後処理の `revealDuePaths` を呼び出し側（UI等）に分けて呼ばせません
+（`CLAUDE.md` の「自分のことは自分でする」方針）。`revealDuePaths` 自体は冪等なため、進捗がYAML側の効果
+だけで動いた場合に備えて `paths` アクセサからも呼べるようにしています。
 
 ## 6. 未決事項・今後の検討課題
 

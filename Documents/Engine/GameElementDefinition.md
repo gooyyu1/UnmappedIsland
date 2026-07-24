@@ -137,7 +137,7 @@ object_defs:
 
 固定値の代わりに `{min, max}` の範囲を `value` に持たせると、**インスタンスの生成（spawn）時に 1 回だけ、
 範囲内の一様乱数で初期値をロール**します。以後は固定値と同じ扱いで、tick ごとの再ロールは行いません
-（`Domain.Defs.PropertyDef.CreateValue` 参照）。
+（`Domain.Defs.PropertyDef.createValue` 参照）。
 
 ```yaml
 props:
@@ -230,8 +230,8 @@ props:
   ```
 
   数値型の「最下段（min省略）＝フォールバック」という概念は、シンボル型には存在しません。`stages` に
-  書かなかった値は単に「該当する段階が無い」となり、`ResolveStage` は `null` を返します。呼び出し側
-  （`WhenOwnStage` ゲートを含む）は必ず `null` チェックを行います（`Runtime.WorldObject.IsInStage` 参照）。
+  書かなかった値は単に「該当する段階が無い」となり、`resolveStage` は `undefined` を返します。呼び出し側
+  （`WhenOwnStage` ゲートを含む）は必ず `undefined` チェックを行います（`Runtime.WorldObject.isInStage` 参照）。
   複数のシンボル値を1つの段階名にまとめたい場合は、`stages` ではなく利用側の `conditions` の `in`
   （14.1 節）で表現します。`stages` は1つのプロパティ自身の値と段階名を1対1で対応させる仕組みです。
 - 現在値に基づいて常に一意に段階を決定します。ヒステリシス（上昇時・下降時で閾値をずらす仕組み）は採用しません。
@@ -1250,7 +1250,7 @@ object_defs:
             accumulate: {minute: -60, hour: 1}
 ```
 
-（実際の定義は `Assets/StreamingAssets/WorldCodex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す
+（実際の定義は `public/world-codex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す
 `tick` も持つ。）
 
 日時・天候はオブジェクトから直接参照されるのではなく、**環境がオブジェクトに影響を与える**という位置づけです

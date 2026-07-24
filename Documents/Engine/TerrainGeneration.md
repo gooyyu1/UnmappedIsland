@@ -10,7 +10,7 @@
 - 地形・構造物はすべて YAML でオブジェクト定義し、MOD 作成者がコードに触れずに拡張できる状態を保つ
 
 本書が扱うのは、**島の座標・軸・LocationType・パスネットワークを生成するアルゴリズムそのもの**
-（`Domain.Generation` 名前空間、`WorldObject` に一切触れない生成時点だけの純粋な計算）です。生成された
+（`Domain.Generation`、`WorldObject` に一切触れない生成時点だけの純粋な計算）です。生成された
 `Location`（土地）が生成された**あと**にどう振る舞うか（スロット構成・探索・道の発見・移動）は
 [`ExplorationSystem.md`](./ExplorationSystem.md) が扱います。
 
@@ -18,8 +18,8 @@
 [`TerrainGenerationImplementation.md`](./TerrainGenerationImplementation.md) に切り出しています。
 コードを読む・変更する際はそちらを参照してください。
 
-実装は `Assets/Scripts/Domain/Generation/` 以下（Unity非依存の純粋 C#）、定義データは
-`Assets/StreamingAssets/WorldCodex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
+実装は `src/domain/generation/` 以下、定義データは
+`public/world-codex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
 `object_defs`）にあります。
 
 ## 1. 用語定義
@@ -90,7 +90,7 @@ axes:
 
 **設計上の注意**: 軸の種類・数はハードコードしません。`Axis` 定義自体が YAML で完結し、`LocationType` 側は
 「言及した軸だけ気にする」設計にすることで、軸の増減に対して `LocationType` 定義が壊れないようにします
-（3.2 節参照）。実際の定義は `Assets/StreamingAssets/WorldCodex/terrain_generation.yaml`（`elevation`・
+（3.2 節参照）。実際の定義は `public/world-codex/terrain_generation.yaml`（`elevation`・
 `humidity`・`coastal_distance`・`ruggedness` の4軸）を参照してください。
 
 ### 3.2 LocationTypeマッチング（軸ベース）
@@ -277,7 +277,7 @@ generation_scopes:
 
 - すべての概念を YAML で定義し、複数ファイル分割・MOD 追加は別ディレクトリへのファイル追加のみで実現する
   （3.3 節）。地形生成の3つのルートキー（`axes`/`location_types`/`generation_scopes`）は、`object_defs`/
-  `traits` と対等なトップレベルキーとして `WorldCodexYamlLoader.Generation.cs` が実際にロードします
+  `traits` と対等なトップレベルキーとして `parseGeneration.ts`（`loadGenerationSections`）が実際にロードします
   （`GameElementDefinition.md` 16 節参照）。
 - `Location`/`LocationType` も、他のあらゆる要素と同じ `object_defs` として表現されます（`location_types` の
   各エントリは `object_def` フィールドで、実体化に使う `locations.yaml` の `object_defs` の id を指します）。
