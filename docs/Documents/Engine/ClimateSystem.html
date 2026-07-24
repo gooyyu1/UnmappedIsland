@@ -234,7 +234,7 @@ tick）を <code>set</code> するだけ。2 周目以降側は 24/30/36 日
 3,000 まで約 3 日）を整数の <code>accumulate</code>
 のまま表現するためのもの。</li>
 <li><code>thermal_level</code>（蓄熱量。同じく <code>world</code>
-の蓄積型プロパティ、range 0〜2,880）: <code>season</code> の各 stage が
+の蓄積型プロパティ、range 0〜1,920）: <code>season</code> の各 stage が
 毎 tick 加算する（dry: +1 / calm・wet:
 -1）。気温そのもの（<code>ambient_temperature</code>）へ季節レートを直接
 加算すると、整数レートの最小値 ±1/tick でも 1 季節（2,880 tick）で
@@ -243,12 +243,20 @@ tick）を <code>set</code> するだけ。2 周目以降側は 24/30/36 日
 <code>modify</code> する」パターンを 使う: <code>thermal_level</code> の
 <code>stages</code>（<code>cool</code>: 〜959 / <code>mild</code>:
 960〜1,919 / <code>hot</code>: 1,920〜）が
-<code>ambient_temperature</code> を -5 / ±0 / +8 する。dry は 30
-日かけて 0→2,880 と登り「乾季後半ほど暑い」を、 calm は乾季の 2,880 から
-30 日かけて 0
+<code>ambient_temperature</code> を -5 / ±0 / +8 する。dry は 20
+日かけて 0→上限 1,920 と登り「乾季後半ほど暑い」を、 calm は乾季の 1,920
+から 20 日かけて 0
 へ下り「乾季の暑さからじわじわ涼しくなる」を、それぞれ表現する。
 <code>hot</code> stage は炎天（<code>scorching</code>）の抽選重み
-<code>scorching_weight</code> も駆動する（4.3 節）。</li>
+<code>scorching_weight</code> も駆動する（4.3 節）。 <strong>上限は
+<code>hot</code> 閾値 1,920 と同値</strong>とし、残暑（calm
+へ持ち越される炎天）を廃止している: calm に入った最初の tick で蓄熱が
+1,919 へ下がって <code>mild</code> になるため、炎天と気温 +8
+は乾季の終了と同時に消える（stage の <code>min</code>
+は「その値を含む」判定のため、上限に張り付いている間も <code>hot</code>
+は有効）。「暑さ = 乾季」という対応を
+プレイヤーの体感と素直に一致させるための意図的な設計で、暑さの長さの揺らぎは季節の持続日数のランダム性
+（2.3 節）だけが表現する。</li>
 <li>降雨中の自己減算: 天気（4 節）が
 <code>light_rain</code>/<code>heavy_rain</code>/<code>storm</code>
 のいずれかである間、その <code>weather</code> の <code>stages</code>
@@ -522,13 +530,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 日目）以降であり、炎天は<strong>乾季後半の天気</strong>になります。これは
 <code>storm</code> が <code>atmospheric_moisture</code> の
 <code>saturated</code>
-帯（雨季後半）で重みを持つのと対称の関係です。対称性は名残の
-振る舞いにも及びます:
-雨季の名残の水分が抜けるまでの<strong>乾季序盤に嵐が残る</strong>のと同じように、乾季の名残の
-蓄熱が抜けるまでの<strong>穏やかな季節の序盤（最初の約 10
-日、残暑）に炎天が残ります</strong>。ゲーム開始直後の 最初の calm
-だけは、蓄熱量の初期値が中立（1,000 =
-<code>mild</code>）のため炎天は発生しません。</p>
+帯（雨季後半）で重みを持つのと対応する関係です。</p>
+<p>ただし<strong>名残の振る舞いは意図的に非対称</strong>です。嵐には名残があります:
+雨季末の飽和した水分が雨自身の
+自己減算で消費し尽くされるまでの乾季序盤には、嵐・大雨が残ります。一方、炎天には名残（残暑）が
+ありません: 蓄熱量の上限を <code>hot</code>
+閾値と同値（1,920）にしているため、calm に入った瞬間に <code>hot</code>
+から 外れ、炎天は乾季の終了と同時に消えます（3
+節）。この非対称は現実の物理とも整合します——雨は降ること
+自体が大気の水分を消費しますが、晴れることは大気の熱を消費しません（せいぜい放射冷却の程度）。
+熱が「使われて減る」対応物が無い以上、雨側の自己減算・名残に対応する仕組みを熱側へ導入しない、
+という判断です。プレイヤーから見た「乾季の暑さが長い年」は、残暑ではなく季節の持続日数のランダム性
+（2.3 節）が表現します。ゲーム開始直後の最初の calm
+は、蓄熱量の初期値が中立（1,000 = <code>mild</code>）のため
+炎天は発生しません。</p>
 <p>段階の境界（<code>min</code>）を跨いだ瞬間に重みが階段状に飛ぶ点は、<code>weather_remaining</code>
 の遷移自体が 4〜6 時間に 1 回 （4.2
 節）しか起きないため、体感上の不自然さにはならないと考えます。</p>
@@ -667,9 +682,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 <li>両極の極端な天候は貯水池の飽和帯が駆動する:
 <code>storm</code>（嵐）は大気水分量の <code>saturated</code>
 帯（雨季後半）が、 <code>scorching</code>（炎天）は蓄熱量の
-<code>hot</code> 帯（乾季後半）が、それぞれ対称に重みを立てる（4.3
-節）。どちらも
-貯水池の名残が抜けるまで次の季節の序盤に持ち越される（乾季序盤の嵐、穏やかな季節の序盤の残暑）</li>
+<code>hot</code> 帯（乾季後半）が、それぞれ重みを立てる（4.3
+節）。ただし名残は 意図的に非対称:
+嵐は雨自身が水分を消費し尽くすまで乾季序盤に残るが、炎天は蓄熱量の上限 =
+<code>hot</code> 閾値に
+より乾季の終了と同時に消える（残暑なし。雨は大気の水分を消費するが、晴れは大気の熱を消費しないという
+現実の物理と整合させ、「暑さ =
+乾季」をプレイヤーの体感と一致させる）</li>
 <li>「季節後半ほど過酷になる」は貯水池モデルの単調な積み上がりから自動的に生まれ、追加の経過度計算を要しない
 （3 節末尾）。<code>calm</code> は <code>dry</code>/<code>wet</code>
 と逆向きのレート（回復方向）を持たせることで、この法則から意図的に
