@@ -31,3 +31,31 @@ npm run lint
 npm run typecheck
 npm test
 ```
+
+## Phaserの画面をスクリーンショットで確認する
+
+このプロジェクトは `playwright`/`@playwright/test` に依存していないため、`playwright-core` を
+別途（プロジェクト外、例えばスクラッチパッド）にインストールし、環境に事前インストール済みの
+Chromiumを直接指定して起動する。
+
+```bash
+npm install playwright-core   # プロジェクト外（スクラッチパッド等）で実行
+ls /opt/pw-browsers/          # 現在のバージョン付きディレクトリ名（例: chromium-1194）を確認する
+```
+
+`chromium.launch()` の `executablePath` には、上記で確認した**バージョン番号付きディレクトリ**を
+使うこと。`/opt/pw-browsers/chromium/chrome-linux/chrome`（バージョン番号なし）は存在せず失敗する。
+
+```js
+const { chromium } = require('/path/to/scratchpad/node_modules/playwright-core');
+const browser = await chromium.launch({
+  executablePath: '/opt/pw-browsers/chromium-XXXX/chrome-linux/chrome', // XXXXは実際のバージョン
+});
+```
+
+開発サーバーの起動・待機・スクリーンショット取得を1回の複数行コマンドにまとめると
+バックグラウンドジョブが不安定になることがある。次のように**ツール呼び出しを分ける**こと。
+
+1. `nohup npx vite --port <port> > server.log 2>&1 & disown` でサーバーを起動し、`sleep` してから
+   ログを確認する（これで1回のBash呼び出し）。
+2. 起動を確認できたら、**別のBash呼び出しで** Playwright スクリプトを実行してスクリーンショットを撮る。
