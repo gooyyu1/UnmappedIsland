@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using UnmappedIsland.Domain.Defs;
@@ -13,9 +14,9 @@ namespace UnmappedIsland.Diagnostics
 {
     /// <summary>
     /// 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
-    /// 連続未降雨/降雨時間の統計（平均/最小/最大/標準偏差）を計測し、`Documents/Diagnostics/ClimateSystemStats.md`
-    /// へ書き出す。診断用レポートのテストは`Tests/Diagnostics/`に、生成されるレポート本体は
-    /// `Documents/Diagnostics/`に集約する（設計ドキュメントの各領域フォルダとは別枠。README参照）。
+    /// 連続未降雨/降雨時間の統計（平均/最小/5%ile/95%ile/最大/標準偏差）を計測し、
+    /// `Documents/Diagnostics/ClimateSystemStats.md`へ書き出す。診断用レポートのテストは`Tests/Diagnostics/`に、
+    /// 生成されるレポート本体は`Documents/Diagnostics/`に集約する（設計ドキュメントの各領域フォルダとは別枠。README参照）。
     ///
     /// 通常のテストスイート（CIの`dotnet test`）には含めない: 20シード×3600日のシミュレーションに約1分半
     /// かかり、かつ合否判定を目的とした回帰テストではなく統計の再計測が目的のため、[Explicit]を付けて
@@ -38,6 +39,10 @@ namespace UnmappedIsland.Diagnostics
             private double sumSq;
             private double min = double.PositiveInfinity;
             private double max = double.NegativeInfinity;
+            // パーセンタイル計算用の分布。標本値は全て離散的（気温は整数、水分量の変化量は定数の組み合わせ、
+            // 持続時間はtick数の倍数）で相異なる値の数が高々数千に収まるため、全標本を保持する代わりに
+            // 値→出現回数のヒストグラムで持つ（標本数は季節あたり数百万件に達するため）。
+            private readonly Dictionary<double, long> histogram = new Dictionary<double, long>();
 
             public void Add(double v)
             {
@@ -46,6 +51,7 @@ namespace UnmappedIsland.Diagnostics
                 sumSq += v * v;
                 if (v < min) min = v;
                 if (v > max) max = v;
+                histogram[v] = histogram.GetValueOrDefault(v) + 1;
             }
 
             public long Count => count;
@@ -63,10 +69,25 @@ namespace UnmappedIsland.Diagnostics
                 }
             }
 
-            public string Format(string unit) =>
+            /// <summary>最近隣法（nearest-rank）のpパーセンタイル: 昇順に並べたときceil(p×n)番目の標本値。</summary>
+            public double Percentile(double p)
+            {
+                if (count == 0) return double.NaN;
+                long rank = Math.Max(1, (long)Math.Ceiling(p * count));
+                long cumulative = 0;
+                foreach (var kv in histogram.OrderBy(kv => kv.Key))
+                {
+                    cumulative += kv.Value;
+                    if (cumulative >= rank) return kv.Key;
+                }
+                return max;
+            }
+
+            public string TableRow(string label, string unit) =>
                 count == 0
-                    ? "(サンプルなし)"
-                    : $"平均 {Mean:F2}{unit} / 最小 {Min:F2}{unit} / 最大 {Max:F2}{unit} / 標準偏差 {StdDev:F2} (n={count})";
+                    ? $"| {label} | - | - | - | - | - | - | 0 |"
+                    : $"| {label} | {Mean:F2}{unit} | {Min:F2}{unit} | {Percentile(0.05):F2}{unit} | " +
+                      $"{Percentile(0.95):F2}{unit} | {Max:F2}{unit} | {StdDev:F2} | {count} |";
         }
 
         private WorldCodex codex;
@@ -322,10 +343,26 @@ namespace UnmappedIsland.Diagnostics
             sb.AppendLine("  連続区間は、その**開始tick**が属する序盤/中盤/終盤に割り当てる（季節の境界をまたぐ区間は");
             sb.AppendLine("  境界で打ち切り、両側で計上しない）。");
             sb.AppendLine("- 標準偏差は標本標準偏差（n-1）。");
+            sb.AppendLine("- 5%ile/95%ileは最近隣法（nearest-rank）: 昇順に並べたときceil(0.05×n)/ceil(0.95×n)番目の標本値。");
+            sb.AppendLine("  最小/最大が数個の外れ値に引きずられる場合でも、分布の実質的な広がりをこの2値で読み取れる。");
             sb.AppendLine();
 
             string SeasonName(int id) => codex.SymbolNames.GetName(id);
             string WeatherName(int id) => codex.SymbolNames.GetName(id);
+
+            void AppendStatTable(string firstColumn, string unit, IEnumerable<(string label, Stat stat)> rows)
+            {
+                sb.AppendLine($"| {firstColumn} | 平均 | 最小 | 5%ile | 95%ile | 最大 | 標準偏差 | n |");
+                sb.AppendLine("| --- | --- | --- | --- | --- | --- | --- | --- |");
+                foreach (var (label, stat) in rows)
+                    sb.AppendLine(stat.TableRow(label, unit));
+                sb.AppendLine();
+            }
+
+            (string, Stat)[] ThirdRows(Stat overall, Func<int, Stat> byThird) => new[]
+            {
+                ("全体", overall), ("序盤", byThird(0)), ("中盤", byThird(1)), ("終盤", byThird(2)),
+            };
 
             sb.AppendLine("## 試験条件: 大気水分量のレート・自己減算");
             sb.AppendLine();
@@ -337,9 +374,7 @@ namespace UnmappedIsland.Diagnostics
             sb.AppendLine();
             sb.AppendLine("### 季節ごとの大気水分量レート（1tickあたり、非雨天時）");
             sb.AppendLine();
-            foreach (int s in seasonKinds)
-                sb.AppendLine($"- **{SeasonName(s)}**: {seasonMoistureRate[s].Format("")}");
-            sb.AppendLine();
+            AppendStatTable("季節", "", seasonKinds.Select(s => (SeasonName(s), seasonMoistureRate[s])));
             sb.AppendLine("`dry`だけ標準偏差が0にならないのは測定の誤りではなく、最初の`dry`季節の10日目前後に");
             sb.AppendLine("難易度の初期補正（`ClimateSystem.md` 5.2節、+200/tickを1日間上乗せ）が重なるため");
             sb.AppendLine("（最初の`calm`季節にも同種の補正=5.1節があるが、そちらは各シードの最初のセグメントとして");
@@ -355,21 +390,16 @@ namespace UnmappedIsland.Diagnostics
             {
                 sb.AppendLine($"#### {WeatherName(w)}");
                 sb.AppendLine();
-                sb.AppendLine($"- 推定自己減算: {DeriveWeatherMoistureDecrement(w):F1}");
-                foreach (int s in seasonKinds)
-                {
-                    var net = rainWeatherNetMoistureDelta[(w, s)];
-                    if (net.Count > 0)
-                        sb.AppendLine($"  - {SeasonName(s)}中の正味変化量: {net.Format("")}");
-                }
+                sb.AppendLine($"推定自己減算: **{DeriveWeatherMoistureDecrement(w):F1}**。季節ごとの正味変化量:");
                 sb.AppendLine();
+                AppendStatTable("季節", "", seasonKinds
+                    .Where(s => rainWeatherNetMoistureDelta[(w, s)].Count > 0)
+                    .Select(s => (SeasonName(s), rainWeatherNetMoistureDelta[(w, s)])));
             }
 
             sb.AppendLine("## 季節の持続日数");
             sb.AppendLine();
-            foreach (int s in seasonKinds)
-                sb.AppendLine($"- **{SeasonName(s)}**: {seasonDuration[s].Format("日")}");
-            sb.AppendLine();
+            AppendStatTable("季節", "日", seasonKinds.Select(s => (SeasonName(s), seasonDuration[s])));
 
             var weatherOrder = weatherKinds;
 
@@ -380,42 +410,27 @@ namespace UnmappedIsland.Diagnostics
 
                 sb.AppendLine("### 気温（内部値）");
                 sb.AppendLine();
-                sb.AppendLine($"- 全体: {temperatureOverall[s].Format("")}");
-                sb.AppendLine($"- 序盤: {temperatureThird[(s, 0)].Format("")}");
-                sb.AppendLine($"- 中盤: {temperatureThird[(s, 1)].Format("")}");
-                sb.AppendLine($"- 終盤: {temperatureThird[(s, 2)].Format("")}");
-                sb.AppendLine();
+                AppendStatTable("区間", "", ThirdRows(temperatureOverall[s], third => temperatureThird[(s, third)]));
 
                 sb.AppendLine("### 天気ごとの発生時間（時間/期間）");
                 sb.AppendLine();
                 foreach (int w in weatherOrder)
                 {
-                    // 見出しとリストの間に空行を挟まないとPandoc等のMarkdown変換で箇条書きとして
-                    // 解釈されないため、天気名は太字の段落ではなく見出しにする
+                    // 見出しと表の間に空行を挟まないとPandoc等のMarkdown変換で表として解釈されないため、
+                    // 天気名は太字の段落ではなく見出しにする
                     sb.AppendLine($"#### {WeatherName(w)}");
                     sb.AppendLine();
-                    sb.AppendLine($"- 全体: {weatherTimeOverall[(w, s)].Format("h")}");
-                    sb.AppendLine($"- 序盤: {weatherTimeThird[(w, s, 0)].Format("h")}");
-                    sb.AppendLine($"- 中盤: {weatherTimeThird[(w, s, 1)].Format("h")}");
-                    sb.AppendLine($"- 終盤: {weatherTimeThird[(w, s, 2)].Format("h")}");
-                    sb.AppendLine();
+                    AppendStatTable("区間", "h", ThirdRows(
+                        weatherTimeOverall[(w, s)], third => weatherTimeThird[(w, s, third)]));
                 }
 
                 sb.AppendLine("### 連続未降雨時間（日）");
                 sb.AppendLine();
-                sb.AppendLine($"- 全体: {nonRainStreak[s].Format("日")}");
-                sb.AppendLine($"- 序盤: {nonRainStreakThird[(s, 0)].Format("日")}");
-                sb.AppendLine($"- 中盤: {nonRainStreakThird[(s, 1)].Format("日")}");
-                sb.AppendLine($"- 終盤: {nonRainStreakThird[(s, 2)].Format("日")}");
-                sb.AppendLine();
+                AppendStatTable("区間", "日", ThirdRows(nonRainStreak[s], third => nonRainStreakThird[(s, third)]));
 
                 sb.AppendLine("### 連続降雨時間（日）");
                 sb.AppendLine();
-                sb.AppendLine($"- 全体: {rainStreak[s].Format("日")}");
-                sb.AppendLine($"- 序盤: {rainStreakThird[(s, 0)].Format("日")}");
-                sb.AppendLine($"- 中盤: {rainStreakThird[(s, 1)].Format("日")}");
-                sb.AppendLine($"- 終盤: {rainStreakThird[(s, 2)].Format("日")}");
-                sb.AppendLine();
+                AppendStatTable("区間", "日", ThirdRows(rainStreak[s], third => rainStreakThird[(s, third)]));
             }
 
             return sb.ToString();
