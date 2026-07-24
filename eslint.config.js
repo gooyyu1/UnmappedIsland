@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default tseslint.config(
   { ignores: ['dist/', 'node_modules/', 'docs/', 'Assets/', 'Tests/', 'Library/', 'obj/'] },
@@ -18,5 +19,10 @@ export default tseslint.config(
       ],
       eqeqeq: 'error',
     },
+  },
+  {
+    // skill付属のNode.js CLIスクリプト。ブラウザ向けdomain/gameコードとは実行環境が異なる。
+    files: ['.claude/skills/**/*.mjs'],
+    languageOptions: { globals: globals.node },
   },
 );
