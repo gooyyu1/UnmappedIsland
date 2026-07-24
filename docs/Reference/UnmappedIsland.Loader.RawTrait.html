@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class RawTrait | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="traits（GameElementDefinition.md 5節、mixin）の1エントリの、まだtrait解決（object_defへの合成）を 経ていない生の形。props/slots/passives/stack_order/actions/combinationsは、フィールド単位の 上書きマージ（RawObjectDef.Resolve参照）がまだ起こりうるため、あえて意味解釈済みの型にせず YamlMappingNode/YamlSequenceNodeのまま持つ。 1つのtraitは複数のobject_defから参照されうり、参照するobject_defごとに異なるフィールドだけを 上書きされうるため、trait自身の内容を「一度きり確定する完成品」にはできない（参照されるたびに 新しいマージが起こる）。この点がRawObjectDef（常にちょうど1回だけ解決される）と本質的に異なり、 RawTraitがRawObjectDefとは別に存在する理由そのものになっている。">
+    <meta name="description" content="traits（GameElementDefinition.md 5節、mixin）の1エントリの生の形。上書きマージ （RawObjectDef.Resolve参照）がまだ起こりうるフィールドは生YAMLノードのまま持つ。 1つのtraitは複数のobject_defから参照され、参照ごとに異なるマージが起こるため、 「一度きり確定する完成品」にはできない（1回だけ解決されるRawObjectDefとの本質的な違い）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,14 +74,10 @@
 
 
   <h1 id="UnmappedIsland_Loader_RawTrait" data-uid="UnmappedIsland.Loader.RawTrait" class="text-break">Class RawTrait</h1>
-  <div class="markdown level0 summary"><p>traits（GameElementDefinition.md 5節、mixin）の1エントリの、まだtrait解決（object_defへの合成）を
-経ていない生の形。props/slots/passives/stack_order/actions/combinationsは、フィールド単位の
-上書きマージ（RawObjectDef.Resolve参照）がまだ起こりうるため、あえて意味解釈済みの型にせず
-YamlMappingNode/YamlSequenceNodeのまま持つ。</p>
-<p>1つのtraitは複数のobject_defから参照されうり、参照するobject_defごとに異なるフィールドだけを
-上書きされうるため、trait自身の内容を「一度きり確定する完成品」にはできない（参照されるたびに
-新しいマージが起こる）。この点がRawObjectDef（常にちょうど1回だけ解決される）と本質的に異なり、
-RawTraitがRawObjectDefとは別に存在する理由そのものになっている。</p>
+  <div class="markdown level0 summary"><p>traits（GameElementDefinition.md 5節、mixin）の1エントリの生の形。上書きマージ
+（RawObjectDef.Resolve参照）がまだ起こりうるフィールドは生YAMLノードのまま持つ。
+1つのtraitは複数のobject_defから参照され、参照ごとに異なるマージが起こるため、
+「一度きり確定する完成品」にはできない（1回だけ解決されるRawObjectDefとの本質的な違い）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -123,7 +119,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Actions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Actions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L34">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L28">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Actions" data-uid="UnmappedIsland.Loader.RawTrait.Actions">Actions</h4>
   <div class="markdown level1 summary"></div>
@@ -152,7 +148,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Combinations.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Combinations%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L35">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L29">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Combinations" data-uid="UnmappedIsland.Loader.RawTrait.Combinations">Combinations</h4>
   <div class="markdown level1 summary"></div>
@@ -181,7 +177,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Name.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Name%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L19">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L14">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Name" data-uid="UnmappedIsland.Loader.RawTrait.Name">Name</h4>
   <div class="markdown level1 summary"></div>
@@ -210,7 +206,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Passives.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Passives%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L28">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L22">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Passives" data-uid="UnmappedIsland.Loader.RawTrait.Passives">Passives</h4>
   <div class="markdown level1 summary"></div>
@@ -239,7 +235,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Props.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Props%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L26">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L20">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Props" data-uid="UnmappedIsland.Loader.RawTrait.Props">Props</h4>
   <div class="markdown level1 summary"></div>
@@ -268,7 +264,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_RepresentedBy.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.RepresentedBy%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L32">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L26">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_RepresentedBy" data-uid="UnmappedIsland.Loader.RawTrait.RepresentedBy">RepresentedBy</h4>
   <div class="markdown level1 summary"><p>represented_by（7.6節）で指定されたスロット名。未指定ならnull。</p>
@@ -298,7 +294,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Slots.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Slots%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L27">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L21">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Slots" data-uid="UnmappedIsland.Loader.RawTrait.Slots">Slots</h4>
   <div class="markdown level1 summary"></div>
@@ -327,11 +323,10 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Source.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Source%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L23">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L17">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Source" data-uid="UnmappedIsland.Loader.RawTrait.Source">Source</h4>
-  <div class="markdown level1 summary"><p>このtraitが最初に（どのファイル／どのLoad呼び出しから）読み込まれたか。重複エラー
-メッセージの出所表示にのみ使う。</p>
+  <div class="markdown level1 summary"><p>読み込み元。重複エラーメッセージの出所表示にのみ使う。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -358,7 +353,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_StackOrder.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.StackOrder%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L29">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L23">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_StackOrder" data-uid="UnmappedIsland.Loader.RawTrait.StackOrder">StackOrder</h4>
   <div class="markdown level1 summary"></div>
@@ -387,7 +382,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait_Tags.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait.Tags%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L25">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L19">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawTrait_Tags" data-uid="UnmappedIsland.Loader.RawTrait.Tags">Tags</h4>
   <div class="markdown level1 summary"></div>
@@ -423,7 +418,7 @@ RawTraitがRawObjectDefとは別に存在する理由そのものになってい
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawTrait.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawTrait%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L17" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawTrait.cs/#L12" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

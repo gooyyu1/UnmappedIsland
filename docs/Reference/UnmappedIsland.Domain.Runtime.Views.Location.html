@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class Location | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付き ビュー。World/PlayerCharacter と同じ理由で継承ではなくラップにしている。 探索の入口はこのビューのExploreに一本化する: YAML側のexploreアクション（進捗+1と発見物のpick）を 実行し、成功したら「進捗が必要値に達した道の公開」（RevealDuePaths）まで自分で行う。呼び出し側 （UI等）は、探索の後に道の公開判定を別途呼ぶ必要があることを知らなくてよい（「値を変更した後に これも呼ばないと壊れる」という手順を呼び出し側に持たせない、CLAUDE.md参照）。 プロパティ名・スロット名の解決はTryGetIdで行い、未登録のcodex（探索の語彙を持たない最小の テストフィクスチャ等）でも「単にラップするだけ」のビューとして生成できるようにしている。">
+    <meta name="description" content="土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付き ビュー。World と同じ理由で継承ではなくラップにしている。 探索の入口はExploreに一本化: exploreアクションの実行に加え、道の公開（RevealDuePaths）まで 自分で行い、呼び出し側に後続手順を持たせない。 名前解決はTryGetIdで行い、探索の語彙を持たないcodex（最小のテストフィクスチャ等）でも 生成できるようにしている。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,13 +75,11 @@
 
   <h1 id="UnmappedIsland_Domain_Runtime_Views_Location" data-uid="UnmappedIsland.Domain.Runtime.Views.Location" class="text-break">Class Location</h1>
   <div class="markdown level0 summary"><p>土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付き
-ビュー。World/PlayerCharacter と同じ理由で継承ではなくラップにしている。</p>
-<p>探索の入口はこのビューのExploreに一本化する: YAML側のexploreアクション（進捗+1と発見物のpick）を
-実行し、成功したら「進捗が必要値に達した道の公開」（RevealDuePaths）まで自分で行う。呼び出し側
-（UI等）は、探索の後に道の公開判定を別途呼ぶ必要があることを知らなくてよい（「値を変更した後に
-これも呼ばないと壊れる」という手順を呼び出し側に持たせない、CLAUDE.md参照）。</p>
-<p>プロパティ名・スロット名の解決はTryGetIdで行い、未登録のcodex（探索の語彙を持たない最小の
-テストフィクスチャ等）でも「単にラップするだけ」のビューとして生成できるようにしている。</p>
+ビュー。World と同じ理由で継承ではなくラップにしている。</p>
+<p>探索の入口はExploreに一本化: exploreアクションの実行に加え、道の公開（RevealDuePaths）まで
+自分で行い、呼び出し側に後続手順を持たせない。</p>
+<p>名前解決はTryGetIdで行い、探索の語彙を持たないcodex（最小のテストフィクスチャ等）でも
+生成できるようにしている。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -123,7 +121,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location__ctor_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.%23ctor(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L31">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L29">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location__ctor_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location__ctor_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.#ctor(UnmappedIsland.Domain.Runtime.WorldObject)">Location(WorldObject)</h4>
@@ -155,7 +153,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_WorldCodex_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.%23ctor(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Defs.WorldCodex)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L36">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L34">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location__ctor_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_WorldCodex_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.WorldCodex)">Location(WorldObject, WorldCodex)</h4>
@@ -194,7 +192,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_charactersSlotId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.charactersSlotId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L27">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L25">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_charactersSlotId" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.charactersSlotId">charactersSlotId</h4>
   <div class="markdown level1 summary"></div>
@@ -223,7 +221,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_explorationProgressId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.explorationProgressId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L23">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L21">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_explorationProgressId" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.explorationProgressId">explorationProgressId</h4>
   <div class="markdown level1 summary"></div>
@@ -252,7 +250,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_fixturesSlotId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.fixturesSlotId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L26">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L24">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_fixturesSlotId" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.fixturesSlotId">fixturesSlotId</h4>
   <div class="markdown level1 summary"></div>
@@ -281,7 +279,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_itemsSlotId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.itemsSlotId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L25">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L23">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_itemsSlotId" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.itemsSlotId">itemsSlotId</h4>
   <div class="markdown level1 summary"></div>
@@ -310,7 +308,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_pathsSlotId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.pathsSlotId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L29">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L27">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_pathsSlotId" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.pathsSlotId">pathsSlotId</h4>
   <div class="markdown level1 summary"></div>
@@ -339,7 +337,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_requiredProgressId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.requiredProgressId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L24">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L22">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_requiredProgressId" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.requiredProgressId">requiredProgressId</h4>
   <div class="markdown level1 summary"></div>
@@ -368,7 +366,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_undiscoveredPathsSlotId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.undiscoveredPathsSlotId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L28">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L26">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_undiscoveredPathsSlotId" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.undiscoveredPathsSlotId">undiscoveredPathsSlotId</h4>
   <div class="markdown level1 summary"></div>
@@ -399,7 +397,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_Characters.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.Characters%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L67">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L65">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_Characters_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Characters*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_Characters" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Characters">Characters</h4>
@@ -430,7 +428,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_ExplorationProgress.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.ExplorationProgress%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L54">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L52">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_ExplorationProgress_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.ExplorationProgress*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_ExplorationProgress" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.ExplorationProgress">ExplorationProgress</h4>
@@ -461,7 +459,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_ExplorationProgressMax.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.ExplorationProgressMax%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L57">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L55">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_ExplorationProgressMax_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.ExplorationProgressMax*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_ExplorationProgressMax" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.ExplorationProgressMax">ExplorationProgressMax</h4>
@@ -492,7 +490,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_Fixtures.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.Fixtures%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L64">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L62">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_Fixtures_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Fixtures*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_Fixtures" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Fixtures">Fixtures</h4>
@@ -523,7 +521,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_Instance.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.Instance%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L21">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L19">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_Instance_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Instance*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_Instance" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Instance">Instance</h4>
@@ -553,7 +551,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_Items.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.Items%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L61">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L59">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_Items_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Items*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_Items" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Items">Items</h4>
@@ -584,7 +582,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_Paths.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.Paths%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L70">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L68">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_Paths_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Paths*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_Paths" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Paths">Paths</h4>
@@ -617,13 +615,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_Explore_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.Explore(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L77">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L72">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_Explore_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Explore*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_Explore_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.Explore(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)">Explore(WorldObject, WorldSession)</h4>
-  <div class="markdown level1 summary"><p>この土地を1回探索する。YAML側のexploreアクション（duration・進捗+1・発見物のpick）を実行し、
-成功したら進捗が必要値に達した道の公開（RevealDuePaths）までを自分で行う。進捗が上限に達して
-いる（exploreのconditionsが不成立）ならfalse。</p>
+  <div class="markdown level1 summary"><p>この土地を1回探索する（exploreアクション＋RevealDuePaths）。進捗が上限に達している
+（exploreのconditionsが不成立）ならfalse。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -672,12 +669,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_IdOrMissing_UnmappedIsland_Domain_Defs_NameRegistry_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.IdOrMissing(UnmappedIsland.Domain.Defs.NameRegistry%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L50">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L48">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_IdOrMissing_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.IdOrMissing*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_IdOrMissing_UnmappedIsland_Domain_Defs_NameRegistry_System_String_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.IdOrMissing(UnmappedIsland.Domain.Defs.NameRegistry,System.String)">IdOrMissing(NameRegistry, string)</h4>
-  <div class="markdown level1 summary"><p>未登録の名前は-1（LocalIndexMap.Missing扱い＝どのWorldObjectも持たないID）にする
-（TryGetIdのout値は失敗時0＝別の名前の有効なIDになってしまうため、そのままでは使えない）。</p>
+  <div class="markdown level1 summary"><p>未登録の名前は-1（LocalIndexMap.Missing扱い）にする。TryGetId失敗時のout値0は
+別の名前の有効なIDになりうるため、そのままでは使えない。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -726,13 +723,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_RevealDuePaths_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.RevealDuePaths(UnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L89">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L83">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_RevealDuePaths_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.RevealDuePaths*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_RevealDuePaths_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.RevealDuePaths(UnmappedIsland.Domain.Runtime.WorldSession)">RevealDuePaths(WorldSession)</h4>
-  <div class="markdown level1 summary"><p>undiscovered_pathsスロットの中の道のうち、required_progressが現在の探索進捗以下のものを
-pathsスロットへ移して「発見」させる。冪等（既に公開済みの道には何もしない）。進捗がYAML側の
-効果だけで動いた場合に備えて、Exploreを介さず単独でも呼べる。</p>
+  <div class="markdown level1 summary"><p>undiscovered_pathsの道のうち、required_progressが現在の探索進捗以下のものをpathsへ移して
+「発見」させる。冪等。進捗がYAML側の効果だけで動いた場合に備え、Exploreを介さず単独でも呼べる。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -761,7 +757,7 @@ pathsスロットへ移して「発見」させる。冪等（既に公開済み
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location_SlotContents_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location.SlotContents(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L101">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L95">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Location_SlotContents_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.SlotContents*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Location_SlotContents_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Views.Location.SlotContents(System.Int32)">SlotContents(int)</h4>
@@ -815,7 +811,7 @@ pathsスロットへ移して「発見」させる。冪等（既に公開済み
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Location.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Location%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L19" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Location.cs/#L17" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

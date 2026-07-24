@@ -79,49 +79,36 @@
 Classes
 </h3>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.ObjectStack.html">ObjectStack</a></h4>
-      <section><p>Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり（GameElementDefinition.md
-7.6節）。ObjectDefが同じで、かつ represented_by が指定されていれば、その代表オブジェクト
-（さらにその代表…）のObjectDef列も一致するインスタンス同士だけが同じObjectStackにまとまる
-（例: 同じ液体容器でも中身のObjectDefが違えば別々のObjectStackになる）。</p>
-<p>「このオブジェクトは自分に合流できるか」「自分の中のどこへ挿入すべきか」の判断は、呼び出し側
-（Slot）に代わりこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。</p>
+      <section><p>Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり
+（GameElementDefinition.md 7.6節）。ObjectDefと、represented_byで辿った代表ObjectDef列が一致する
+インスタンス同士だけがまとまる（例: 同じ液体容器でも中身のObjectDefが違えば別スタック）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.PropertyValue.html">PropertyValue</a></h4>
-      <section><p>props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値として使う。
-PassiveEffectの影響先は
-「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、
-いずれもWorldObjectではなくこの値自身が持つ。</p>
-<p>値の変更（Add/SetNumber）はこのクラス自身が完結して行い、値が変わった直後に、自分のPropertyDefへ
-rangeイベントの判定を委譲する（def.CheckRangeEvents）。どのon_*をいつ発火するかという規則はrange・
-on_*の定義を持つPropertyDef本人の責務であり、こちらは「値が変わった」とだけ通知する（自分のことは
-自分でする、というOOPの原則。CLAUDE.md参照）。WorldObjectはローカルID解決のみを担い、値の変更に
-伴って何を判定・実行すべきかには一切関与しない。判定の委譲先である自分自身のPropertyDefと、その適用先
-となるWorldObjectは、いずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに
-引数で受け取り直すことはしない。</p>
+      <section><p>props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」で
+あるため、登録済み効果の一覧・tick毎の反映・実効値の算出はWorldObjectではなくこの値自身が持つ。
+値の変更後のrangeイベント判定（どのon_*をいつ発火するか）は自分のPropertyDef（CheckRangeEvents）へ
+委譲し、呼び出し側は変更後に何を判定すべきかを知らなくてよい。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.html">RegisteredPassiveEffect</a></h4>
       <section><p>登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。</p>
 <ul>
 <li>Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る</li>
-<li>SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditions（旧when）ゲートのselfはこれを指す</li>
+<li>SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditionsゲートのselfはこれを指す</li>
 </ul>
 <p>self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、
-child対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、
-読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。</p>
+child対象（親→子）なら Declarer が親・SlotBearer が子。この2つを登録時に確定させることで、
+読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を区別せずに済む。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.Slot.html">Slot</a></h4>
       <section><p>1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは
-1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は
-こちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>
-<p>FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。</p>
+1つの ObjectStack（7.6節）か、空（null）。位置＝セルの添字。正の情報源はこちら側（親のスロット配列）
+であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>
+<p>FixedPositions と非FixedPositions の違いは「空になったセルを残すか、詰めるか」の1点のみ:</p>
 <ul>
-<li>FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が
-安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。</li>
-<li>非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。
-この差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot
-置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。</li>
+<li>FixedPositions: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が安定する。</li>
+<li>非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。</li>
 </ul>
-<p>中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。</p>
+<p>中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（親子の整合性を1箇所でのみ保証するため）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.html">WorldObject</a></h4>
       <section><p>WorldObject の一部（能動効果 set/add/destroy/spawn/transfer・actions/combinations・tick）。
@@ -129,26 +116,17 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
 値の変更そのものは対象の PropertyValue へ、条件判定・抽選は Def 側の効果へ委ねる。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldSession.html">WorldSession</a></h4>
-      <section><p>実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態
-（WorldCodex.cs のコメントで予告されている「実行時側」の最小実装）。WorldCodex 自体は
-ロード後不変な定義の集合であり続けるため、instance ID の発行という可変な状態はここに持たせる。
-スロット移動（move_to_slot）自体は WorldObject.MoveToSlot が自分自身の責務として行うため、
-ここでは仲介しない（WellKnownPropertiesは Codex.WellKnown からその都度渡す）。</p>
+      <section><p>1セッション分の実行時状態。WorldCodex はロード後不変な定義の集合であり続けるため、
+instance ID の発行という可変な状態はここに持たせる。スロット移動は WorldObject.MoveToSlot が
+自分自身の責務として行うため、ここでは仲介しない。</p>
 </section>
     <h3 id="structs">
 Structs
 </h3>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.html">WorldObject.EffectSite</a></h4>
-      <section><p>active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した
-スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。
-「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から
-行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>
-<p>置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居たスタック(固定
-番号)に、同種がまだ残っているか」で決まる。残っているなら（selfが生き残る、またはdestroyされても
-同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、残っていないなら（同種が全て消えた）その空いた
-位置をそのまま引き継ぐ。この判別は在庫（originStack.Members.Count）で行う（OriginKindRemains）——
-「その位置が同種を受け入れられるか」ではない点に注意。空になったスタックも同種を受け入れ可能だが位置は
-引き継ぐべきで、固定スロットが空スタックを保持する実装でも在庫判定なら正しい。</p>
+      <section><p>ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉したスナップショット。
+same_slot spawnだけがこれを使い、置き換え先を決める。「これからselfが消えるか」は捕捉時には
+織り込まず、置き換え位置の判断は配置時のスロットの状態から行う（OriginKindRemains参照）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Runtime.WorldObject.SameSlotPlacement.html">WorldObject.SameSlotPlacement</a></h4>
       <section><p>same_slot置き換えの配置指示: originが居たセルの位置と、そのセルに同種が残っているか。</p>

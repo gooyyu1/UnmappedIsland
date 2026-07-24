@@ -107,13 +107,12 @@ href="./TerrainGeneration.html"><code>TerrainGeneration.md</code></a>
 配置されるか」は <code>TerrainGeneration.md</code>
 の関心事、「1つの土地に立ったプレイヤーが何をできるか（探索する・道を
 見つける・移動する）」は本書の関心事、と役割を分けています。</p>
-<p>文法そのものは <a
+<p><a
 href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
-に集約されている既存の仕組み
-（<code>traits</code>・<code>slots</code>・<code>props</code>・<code>actions</code>・<code>pick</code>）だけで組み立てており、探索・道専用の新しい文法は導入していません。
-ただし、実装にあたってエンジンへ2つの汎用拡張（<code>duration</code>・<code>move</code>）を追加しています。これらは地形専用ではなく、
-<code>GameElementDefinition.md</code> 11.3 節・9.6
-節に文法として記載されています。</p>
+の既存文法（<code>traits</code>・<code>slots</code>・<code>props</code>・<code>actions</code>・
+<code>pick</code>）と、汎用拡張 <code>duration</code>（同 11.3
+節）・<code>move</code>（同 9.6 節）だけで組み立てており、探索・道専用の
+新しい文法は導入していません。</p>
 <p>本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は
 6 節にまとめています。実際のクラス名・
 メソッド名を使った実装の呼び出し関係（<code>IslandSpawner</code>・<code>MoveEffect</code>・<code>Views.Location.Explore</code>
@@ -125,23 +124,17 @@ href="./TerrainGenerationImplementation.html"><code>TerrainGenerationImplementat
 の役割分担</h2>
 <p>「場所」であるという構造（3種のスロット）と、「探索できる」という性質（進捗・道の発見）は、<strong>別々の
 trait</strong>
-に分けています。両者は独立した軸であり、探索できない場所（例えば、プレイヤーが拠点として使う家・作業小屋の
-ような建造物）も「場所」である以上、木や植物・建築物や家具などの設置物用のスロット・アイテム用のスロット・
-キャラクタ用のスロットは必要です。そのため、これらのスロットは探索の可否に関わらずあらゆる場所が持つべき
-構造として、<code>explorable</code> ではなく <code>location</code>
+に分けています。家・作業小屋のような探索できない場所も3種のスロットは必要なため、スロットは
+<code>explorable</code> では なく <code>location</code>
 trait（<code>core.yaml</code>）側に置いています。</p>
 <ul>
 <li><strong><code>location</code></strong>（<code>core.yaml</code>）:
 あらゆる場所が共通して持つ構造。<strong>3種のスロット</strong>（<code>items</code>/<code>fixtures</code>/
 <code>characters</code>）と、<code>world.locations</code> スロットの
-<code>accepts</code> 判定用のタグ配布。草原のような探索可能な土地も、
-家のような探索を伴わない場所も、場所である以上すべてこの trait
-を実装します。</li>
+<code>accepts</code> 判定用のタグ配布。</li>
 <li><strong><code>explorable</code></strong>（<code>locations.yaml</code>）:
 探索<strong>できる</strong>場所だけが追加で持つ構造。探索進捗プロパティと、
-道の発見に使う2スロット（<code>undiscovered_paths</code>/<code>paths</code>）。家のように探索を伴わない場所は、この
-trait を 実装しません（<code>traits: [location]</code>
-のみで成立します）。</li>
+道の発見に使う2スロット（<code>undiscovered_paths</code>/<code>paths</code>）。</li>
 </ul>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># core.yaml</span></span>
@@ -168,9 +161,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accepts</span><span class="kw">:</span><span class="at"> </span><span class="kw">[{</span><span class="fu">tag</span><span class="kw">:</span><span class="at"> path</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">9999</span><span class="kw">}]</span></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">   # valueなし = 実装する側で必須（5節）</span></span></code></pre></div>
-<p>草原などの探索可能な土地は両方を参照します（<code>traits: [location, explorable]</code>）。家のような場所は
-<code>location</code>
-のみを参照すれば、探索の仕組み（進捗・道）を持たずに3種のスロットだけを得られます。</p>
+<p>草原などの探索可能な土地は両方（<code>traits: [location, explorable]</code>）、家のような場所は
+<code>location</code> のみを 参照します。</p>
 <h3 id="種のスロットlocation-trait">1.1
 3種のスロット（<code>location</code> trait）</h3>
 <p>すべての場所は次の3種のスロットを持ちます。いずれも
@@ -198,38 +190,25 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <code>items</code>）に落ちる」という直感的な結果を、追加のルールなしに実現しています。</p>
 <h3 id="道の2スロット隠しスロット方式explorable-trait">1.2
 道の2スロット（隠しスロット方式、<code>explorable</code> trait）</h3>
-<p>要求にあった「土地同士の繋がり方を記述する方法」は、Card Survival
-と同様に<strong>探索によって見つかる <code>path</code> という
-専用オブジェクト</strong>として表現しました。この「発見」を実装する方式として、以下の2案を検討しました。</p>
-<ul>
-<li><strong>隠しスロット方式（採用）</strong>:
-<code>undiscovered_paths</code>（隠し）と
-<code>paths</code>（公開）の2スロットを持ち、生成時点で 道は
-<code>undiscovered_paths</code>
-に置かれます。探索の進捗が道ごとの必要値に達すると、<code>paths</code>
-へ移動して「発見」
-されます。道オブジェクト自体は生成時から実在するため、UI側は「発見済みの
-<code>paths</code> の中身だけを表示する」
-だけでよく、未発見の道を非表示にする特別な処理を持つ必要がありません。</li>
-<li><strong>条件ゲート方式（不採用）</strong>:
-道は最初から1つのスロットに置かれ、移動アクション自体に「親の探索進捗 ≥
-必要な進捗」という条件を持たせて実行を禁止する。YAMLだけで完結しますが、未発見の道をカード一覧から隠す
-処理を UI
-側に別途実装する必要があり、「発見」という状態遷移がどこにも実体を持ちません。</li>
-</ul>
-<p>隠しスロット方式を採用したことで、「発見」は
-<code>undiscovered_paths</code> → <code>paths</code> という既存の
-<code>move_to_slot</code> （唯一の汎用スロット移動操作、7.1
-節）1回で表現でき、UI 側は「パススロットの中身を表示する」という単純な
-規約だけで正しく振る舞います。</p>
+<p>土地同士の繋がりは、<strong>探索によって見つかる <code>path</code>
+という専用オブジェクト</strong>として表現します。「発見」は
+隠しスロット方式で実装しています。生成時点で道は
+<code>undiscovered_paths</code>（隠し）に置かれ、探索の進捗が道ごとの
+必要値に達すると
+<code>paths</code>（公開）へ移動して「発見」されます。この移動は既存の
+<code>move_to_slot</code>（唯一の汎用 スロット移動操作、7.1
+節）1回で表現でき、UI 側は「発見済みの <code>paths</code>
+の中身だけを表示する」という単純な
+規約だけでよく、未発見の道を非表示にする特別な処理を持ちません（道を1スロットに置き移動アクションの条件で
+実行だけ禁止する方式は、UI側に隠す処理が別途必要になり「発見」が実体を持たないため不採用）。</p>
 <h2 id="探索explore-アクション">2. 探索（<code>explore</code>
 アクション）</h2>
-<p>要求どおり、「探索で何が見つかるか」は <code>explorable</code> trait
-にも実装せず、土地ごとの <code>object_defs</code>
-（<code>locations.yaml</code>）が個別に定義します。探索できる回数（進捗プロパティの上限）も同様に個別定義です。
-<code>explorable</code> trait
-自身が持つのは、進捗を保持する箱（<code>exploration_progress</code>）と道の発見に使う2スロット
-（1.2 節）という、あらゆる探索可能な土地に共通する器だけです。</p>
+<p>「探索で何が見つかるか」と探索できる回数（進捗プロパティの上限）は、<code>explorable</code>
+trait ではなく土地ごとの
+<code>object_defs</code>（<code>locations.yaml</code>）が個別に定義します。<code>explorable</code>
+trait 自身が持つのは、進捗を保持する箱
+（<code>exploration_progress</code>）と道の発見に使う2スロット（1.2
+節）という共通の器だけです。</p>
 <div class="sourceCode" id="cb3"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">grassland</span><span class="kw">:</span></span>
@@ -253,22 +232,21 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">          # ...</span></span></code></pre></div>
 <ul>
 <li><strong>探索可能回数</strong>: <code>exploration_progress</code> の
-<code>range.max</code>（要求どおり 10〜20 の範囲。土地ごとに異なる）。
+<code>range.max</code>（10〜20 の範囲、土地ごとに異なる）。
 <code>explore</code> の <code>conditions</code> は
 <code>value: max</code>
 という参照記法が未対応（<code>GameElementDefinition.md</code> 17
 節）のため、 <code>range.max</code>
-と同じ値をリテラルで重複して書いています。二重管理になる点は、<code>Tests/StreamingAssets/   LocationsYamlTests.cs</code>
-が実際の探索を上限まで回す振る舞いテスト（「max-1では実行でき、maxでは実行できない」）
-で検証しており、値のずれがあれば必ず失敗します。</li>
+と同じ値をリテラルで重複して書いています。この二重管理は
+<code>Tests/StreamingAssets/   LocationsYamlTests.cs</code>
+の振る舞いテスト（「max-1では実行でき、maxでは実行できない」）が検証しており、
+値のずれがあれば必ず失敗します。</li>
 <li><strong>発見物</strong>: <code>pick</code>（10
-節）による重み付き抽選です。<code>add</code>（進捗+1）と
-<code>spawn</code>（発見物の生成）は<code>pick</code>の
-同じ候補の中に共存できます（10.1
-節。候補は複数の一時的な命令を持てます）。「ハズレ」（進捗だけが増える
-候補）を必ず用意しています。<code>add</code>/<code>pick</code>
-は排他な兄弟キーという既存文法（<code>ParseActiveEffectBody</code>
-参照）のため、進捗+1は毎回、すべての候補に個別に含めています。</li>
+節）による重み付き抽選です。「ハズレ」（進捗だけが増える候補）を必ず用意しています。
+<code>add</code>/<code>pick</code>
+は排他な兄弟キーのため、進捗+1（<code>add</code>）は <code>pick</code>
+の各候補に個別に含めています（<code>add</code> と <code>spawn</code>
+は同じ候補内に共存できます、10.1 節）。</li>
 <li><strong><code>duration</code></strong>:
 1回の探索にかかる時間（分、<code>GameElementDefinition.md</code> 11.3
 節）。見通しの悪い土地 （密林・岸壁など）ほど長く設定しています。</li>
@@ -329,8 +307,8 @@ id（型）ではなくプロパティ値（インスタンスID） で指して
 id="required_progress-の割り当て探索可能回数を使い切る前に道が見つかることの保証">3.2
 required_progress
 の割り当て（探索可能回数を使い切る前に道が見つかることの保証）</h3>
-<p>要求「進捗率最大に達するのに必要な探索回数は10〜20回とし、最大に達する前に道が見つかるようにする」を、
-データの調整ではなく<strong>生成側の不変条件</strong>として保証しています。</p>
+<p>「探索上限に達する前にすべての道が見つかる」ことを、データの調整ではなく<strong>生成側の不変条件</strong>として
+保証しています。</p>
 <p>ある土地に接続する道が K 本あるとき、それぞれの
 <code>required_progress</code> を、探索上限を <code>max</code> として
 <code>[2, max − 1]</code>
@@ -341,26 +319,21 @@ required_progress
 が全接続について検証しています。</p>
 <h2 id="エンジン拡張durationmove">4.
 エンジン拡張（<code>duration</code>・<code>move</code>）</h2>
-<p>本システムの実装にあたり、<code>GameElementDefinition.md</code>
-へ2つの汎用拡張を加えました。地形・探索専用の機能では なく、他のどんな
+<p><code>duration</code>・<code>move</code>
+は地形・探索専用ではなく、どんな
 <code>actions</code>/<code>combinations</code>/<code>pick</code>
-からも使える一般的な文法拡張です。</p>
+からも使える汎用の 文法拡張です。</p>
 <ul>
 <li><strong><code>duration</code></strong>（<code>GameElementDefinition.md</code>
 11.3 節）: アクションの実行にかかるゲーム内時間（分）。 リテラルか
 <code>{object, prop}</code> 参照（<code>weight</code>
-と同じ二択）で指定します。実行結果の適用後に
+と同じ二択）で指定します。時間は実行結果の適用<strong>後</strong>に
 <code>WorldSession.AdvanceWorldTime</code>
-で時間を進めます（先に進めると、tick駆動の変化が効果適用前の対象を
-消してしまう事故がありうるため、適用後に進めます）。それまでのエンジンには「アクションの所要時間」という
-概念自体がなく（レシピの <code>duration</code> はレシピの工程専用、13.1
-節）、探索・移動のどちらにも必要だったため 新設しました。</li>
+で進めます（先に進めると、tick駆動の変化が効果適用前の対象を消してしまう
+事故がありうるため）。</li>
 <li><strong><code>move</code></strong>（<code>GameElementDefinition.md</code>
 9.6 節）: 対象オブジェクトを、<code>self</code> のプロパティが指す
-インスタンスIDのオブジェクトへ移動させる active 動詞。既存の
-<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>
-には
-「既存オブジェクトの所属先そのものを変える」動詞がなく、新設しました。</li>
+インスタンスIDのオブジェクトへ移動させる active 動詞。</li>
 </ul>
 <h2 id="カプセル化-探索の入口を1箇所にする">5. カプセル化:
 探索の入口を1箇所にする</h2>
@@ -373,10 +346,8 @@ class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">RevealDuePaths</span><span class="op">(</span>session<span class="op">);</span>   <span class="co">// 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">return</span> <span class="kw">true</span><span class="op">;</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p><code>explore</code>
-アクション（YAML側）の実行と、それに伴う「進捗が必要値に達した道を公開する」という後処理
-（<code>RevealDuePaths</code>）を、呼び出し側（UI等）に分けて呼ばせません。呼び出し側は「探索してほしい」と依頼する
-だけでよく、探索の後に何を判定すべきか（道の公開）を知らなくてよい設計にしています
+<p><code>explore</code> アクション（YAML側）の実行と、後処理の
+<code>RevealDuePaths</code> を呼び出し側（UI等）に分けて呼ばせません
 （<code>CLAUDE.md</code>
 の「自分のことは自分でする」方針）。<code>RevealDuePaths</code>
 自体は冪等なため、進捗がYAML側の効果 だけで動いた場合に備えて

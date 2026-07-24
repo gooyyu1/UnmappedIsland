@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class PassiveEffects | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="1つの ObjectDef が宣言する持続効果（8節）の一式。target(self/parent/child/ancestor)・ kind(modify/accumulate)を問わず1つにまとめて持つ。 これらは常に「まとめて」扱われる——生成・エッジ形成/解消・トポロジ変化といった契機のたびに、 全effectへ同じ登録/解除を依頼する——ため、要素リストを外へ見せず、まとめて依頼を受ける操作 （RegisterRelation/RegisterChild）だけを公開する。呼び出し側（WorldObject）は個々のPassiveEffectを foreachで回す必要がなく、「この関係が変わったので登録/解除してほしい」と一式へ依頼するだけでよい （自分のことは自分でする、CLAUDE.md参照）。">
+    <meta name="description" content="1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず1つにまとめて持ち、 要素リストは公開せず、登録/解除の一括依頼（RegisterRelation/RegisterChild）だけを受ける。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,13 +74,8 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_PassiveEffects" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects" class="text-break">Class PassiveEffects</h1>
-  <div class="markdown level0 summary"><p>1つの ObjectDef が宣言する持続効果（8節）の一式。target(self/parent/child/ancestor)・
-kind(modify/accumulate)を問わず1つにまとめて持つ。</p>
-<p>これらは常に「まとめて」扱われる——生成・エッジ形成/解消・トポロジ変化といった契機のたびに、
-全effectへ同じ登録/解除を依頼する——ため、要素リストを外へ見せず、まとめて依頼を受ける操作
-（RegisterRelation/RegisterChild）だけを公開する。呼び出し側（WorldObject）は個々のPassiveEffectを
-foreachで回す必要がなく、「この関係が変わったので登録/解除してほしい」と一式へ依頼するだけでよい
-（自分のことは自分でする、CLAUDE.md参照）。</p>
+  <div class="markdown level0 summary"><p>1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず1つにまとめて持ち、
+要素リストは公開せず、登録/解除の一括依頼（RegisterRelation/RegisterChild）だけを受ける。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -122,7 +117,7 @@ foreachで回す必要がなく、「この関係が変わったので登録/解
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffects__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PassiveEffect__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffects.%23ctor(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.PassiveEffect%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L20">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L14">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PassiveEffects__ctor_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PassiveEffects__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_PassiveEffect__" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.PassiveEffect})">PassiveEffects(IReadOnlyList&lt;PassiveEffect&gt;)</h4>
@@ -156,7 +151,7 @@ foreachで回す必要がなく、「この関係が変わったので登録/解
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffects_effects.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffects.effects%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L18">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L12">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_PassiveEffects_effects" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects.effects">effects</h4>
   <div class="markdown level1 summary"></div>
@@ -187,12 +182,11 @@ foreachで回す必要がなく、「この関係が変わったので登録/解
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffects_RegisterChild_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffects.RegisterChild(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L35">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L28">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PassiveEffects_RegisterChild_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects.RegisterChild*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PassiveEffects_RegisterChild_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Boolean_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects.RegisterChild(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Boolean)">RegisterChild(WorldObject, WorldObject, bool)</h4>
-  <div class="markdown level1 summary"><p>childがowner（親）に付く/離れる契機を、全effectへまとめて伝える（各effectはtarget=Childの
-ものだけ、その子へ登録/解除する）。</p>
+  <div class="markdown level1 summary"><p>childがowner（親）に付く/離れる契機を全effectへ伝える（target=Childのものだけが反応する）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -231,12 +225,12 @@ foreachで回す必要がなく、「この関係が変わったので登録/解
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffects_RegisterRelation_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffects.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L27">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L21">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PassiveEffects_RegisterRelation_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects.RegisterRelation*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PassiveEffects_RegisterRelation_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Boolean_" data-uid="UnmappedIsland.Domain.Defs.PassiveEffects.RegisterRelation(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Boolean)">RegisterRelation(WorldObject, ReferenceRoot, bool)</h4>
-  <div class="markdown level1 summary"><p>owner自身から辿れる関係（Self/Parent/Ancestor）が変わった契機を、全effectへまとめて伝える
-（各effectはtargetが一致するものだけ、ownerから相手を解決して登録/解除する。PassiveEffect参照）。</p>
+  <div class="markdown level1 summary"><p>owner自身から辿れる関係（Self/Parent/Ancestor）が変わった契機を全effectへ伝える
+（PassiveEffect.RegisterRelation参照）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -282,7 +276,7 @@ foreachで回す必要がなく、「この関係が変わったので登録/解
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PassiveEffects.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PassiveEffects%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L16" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PassiveEffects.cs/#L10" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

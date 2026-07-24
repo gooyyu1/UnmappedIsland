@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class RegisteredPassiveEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。  Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditions（旧when）ゲートのselfはこれを指す  self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、 child対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、 読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。">
+    <meta name="description" content="登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。  Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditionsゲートのselfはこれを指す  self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、 child対象（親→子）なら Declarer が親・SlotBearer が子。この2つを登録時に確定させることで、 読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を区別せずに済む。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -77,11 +77,11 @@
   <div class="markdown level0 summary"><p>登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。</p>
 <ul>
 <li>Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る</li>
-<li>SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditions（旧when）ゲートのselfはこれを指す</li>
+<li>SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditionsゲートのselfはこれを指す</li>
 </ul>
 <p>self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、
-child対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、
-読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。</p>
+child対象（親→子）なら Declarer が親・SlotBearer が子。この2つを登録時に確定させることで、
+読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を区別せずに済む。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -123,7 +123,7 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_PassiveEffect_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.%23ctor(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Defs.PassiveEffect)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L26">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L24">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect__ctor_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_PassiveEffect_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.PassiveEffect)">RegisteredPassiveEffect(WorldObject, WorldObject, PassiveEffect)</h4>
@@ -167,7 +167,7 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_def.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.def%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L24">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L22">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_def" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.def">def</h4>
   <div class="markdown level1 summary"></div>
@@ -196,7 +196,7 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_slotBearer.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.slotBearer%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L23">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L21">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_slotBearer" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.slotBearer">slotBearer</h4>
   <div class="markdown level1 summary"></div>
@@ -231,8 +231,8 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
   </span>
   <a id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_Declarer_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Declarer*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_Declarer" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.Declarer">Declarer</h4>
-  <div class="markdown level1 summary"><p>この効果を宣言したオブジェクト。解除時の同定（誰の登録を外すか）と、
-「このプロパティに何が効いているか（誰から）」を見せるUI（GetIncomingPassiveEffects）で読むため公開する。</p>
+  <div class="markdown level1 summary"><p>この効果を宣言したオブジェクト。解除時の同定と、「このプロパティに何が効いているか」の
+UI表示（GetIncomingPassiveEffects）のため公開する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -261,12 +261,11 @@ child対象（親→子）なら Declarer が親・SlotBearer が子になる。
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ActiveAmount.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ActiveAmount%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L39">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L35">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ActiveAmount_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ActiveAmount*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_ActiveAmount" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.ActiveAmount">ActiveAmount()</h4>
-  <div class="markdown level1 summary"><p>この効果が現在の文脈（Declarer/slotBearer）で寄与している量。ゲート（8.2節）が有効なら
-Amount、無効なら0。判定と量はいずれもdef自身が持つため、こちらはDeclarer/slotBearerを渡して委ねる。</p>
+  <div class="markdown level1 summary"><p>この効果が現在寄与している量。ゲート（8.2節）が有効ならAmount、無効なら0。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -293,12 +292,11 @@ Amount、無効なら0。判定と量はいずれもdef自身が持つため、�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L35">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/RegisteredPassiveEffect.cs/#L32">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_RegisterInto_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_RegisteredPassiveEffect_RegisterInto_UnmappedIsland_Domain_Runtime_PropertyValue_" data-uid="UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.RegisterInto(UnmappedIsland.Domain.Runtime.PropertyValue)">RegisterInto(PropertyValue)</h4>
-  <div class="markdown level1 summary"><p>この登録をdef（PassiveEffect）自身に頼んで、対象プロパティ値の適切なincoming
-（modify用/accumulate用）へ登録させる。どちらのバケツに入るかはdefが決める。</p>
+  <div class="markdown level1 summary"><p>対象プロパティ値のincoming（modify用/accumulate用）へこの登録を入れる。どちらに入るかはdefが決める。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>

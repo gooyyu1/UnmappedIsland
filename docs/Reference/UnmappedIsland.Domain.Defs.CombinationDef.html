@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class CombinationDef | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の object_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。 conditionsと条件成立時に適用する効果（ActiveEffect＝active/pickのどちらか一方。排他なので単一の ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。">
+    <meta name="description" content="ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の object_defに定義する。withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,9 +75,7 @@
 
   <h1 id="UnmappedIsland_Domain_Defs_CombinationDef" data-uid="UnmappedIsland.Domain.Defs.CombinationDef" class="text-break">Class CombinationDef</h1>
   <div class="markdown level0 summary"><p>ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の
-object_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。
-conditionsと条件成立時に適用する効果（ActiveEffect＝active/pickのどちらか一方。排他なので単一の
-ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。</p>
+object_defに定義する。withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -119,7 +117,7 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef__ctor_System_String_System_Int32_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_ActiveEffect_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.%23ctor(System.String%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.ConditionNode%2CUnmappedIsland.Domain.Defs.ActiveEffect)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L24">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L21">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_CombinationDef__ctor_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef__ctor_System_String_System_Int32_UnmappedIsland_Domain_Defs_ConditionNode_UnmappedIsland_Domain_Defs_ActiveEffect_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.#ctor(System.String,System.Int32,UnmappedIsland.Domain.Defs.ConditionNode,UnmappedIsland.Domain.Defs.ActiveEffect)">CombinationDef(string, int, ConditionNode, ActiveEffect)</h4>
@@ -168,7 +166,7 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_conditions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.conditions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L18">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L16">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_conditions" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.conditions">conditions</h4>
   <div class="markdown level1 summary"><p>nullなら常に真（conditions省略）。</p>
@@ -198,11 +196,10 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_effect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.effect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L22">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L19">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_effect" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.effect">effect</h4>
-  <div class="markdown level1 summary"><p>条件成立時に適用する効果。nullなら何も起きない。pickの抽選もActiveEffect（PickEffect）
-自身が適用時に行うため、ここは適用を依頼するだけでよい。</p>
+  <div class="markdown level1 summary"><p>条件成立時に適用する効果。nullなら何も起きない。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -229,7 +226,7 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_with.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.with%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L15">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L13">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_with" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.with">with</h4>
   <div class="markdown level1 summary"></div>
@@ -260,7 +257,7 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_Name.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.Name%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L14">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L12">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_CombinationDef_Name_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Name*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_Name" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Name">Name</h4>
@@ -292,7 +289,7 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_Matches_UnmappedIsland_Domain_Defs_ObjectDef_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.Matches(UnmappedIsland.Domain.Defs.ObjectDef)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L37">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L34">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_CombinationDef_Matches_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Matches*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_Matches_UnmappedIsland_Domain_Defs_ObjectDef_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.Matches(UnmappedIsland.Domain.Defs.ObjectDef)">Matches(ObjectDef)</h4>
@@ -340,7 +337,7 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L39">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L36">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.TryExecute*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_CombinationDef_TryExecute_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Defs.CombinationDef.TryExecute(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)">TryExecute(WorldObject, WorldObject, WorldObject, WorldSession)</h4>
@@ -409,7 +406,7 @@ ActiveEffect変数で表せる）を1つの定義としてまとめて持つ。<
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_CombinationDef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.CombinationDef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L12" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/CombinationDef.cs/#L10" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

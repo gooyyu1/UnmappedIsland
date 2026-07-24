@@ -110,18 +110,15 @@
 5 節に整理しています。</p>
 <h2 id="製作中オブジェクトは完成品とは別オブジェクト">1.
 製作中オブジェクトは、完成品とは別オブジェクト</h2>
-<p>「未完成の斧」は、斧自身とは<strong>別の、製作中の状態専用オブジェクト</strong>として扱います。感染度・発熱のような
-「進行度を表す <code>progress</code> プロパティに <code>stages</code>
-を持たせる」既存パターン（<code>GameElementDefinition.md</code> 6.4 節の
+<p>「未完成の斧」は、斧自身とは<strong>別の、製作中の状態専用オブジェクト</strong>として扱います。製作中オブジェクトは
+<code>progress</code> プロパティに、工程に対応する半開区間の
+<code>stages</code>（<code>GameElementDefinition.md</code> 6.4 節の
 <code>progress</code>/<code>feverish</code>
-サンプル）と同じ考え方です。製作中オブジェクトは <code>progress</code>
-プロパティに、工程に対応する半開区間の
-<code>stages</code>（<code>GameElementDefinition.md</code> 6.4
-節）を持ち、最終工程の効果として <code>spawn: {object: axe}</code> と
+サンプルと同じパターン）を持ち、最終工程の効果として
+<code>spawn: {object: axe}</code> と
 <code>destroy: self</code>（<code>into</code>
-を省略することで自分がいたのと同じスロットに完成品を生成し、自分自身は
-破棄する、<code>GameElementDefinition.md</code> 9.4
-節）を発火させます。</p>
+省略により、自分がいたスロットへ完成品を生成して自分自身を破棄する、同
+9.4 節）を 発火させます。</p>
 <p>製作中オブジェクトの型は、レシピの内容（工程数・各工程の要求・時間）から、決まった変換規則で自動的に導出します。
 人間も MOD
 作成者も、この型を直接書きません。アイコンなど完成品ごとに変えたい情報は、レシピ自身の
@@ -129,15 +126,13 @@
 節）として著者が指定し、自動生成時にその情報を型へ引き継がせます。</p>
 <h2 id="材料道具の要求は専用スキーマsteps-requires">2.
 材料・道具の要求は専用スキーマ（steps / requires）</h2>
-<p>工程ごとの材料・道具の要求は、既存の
+<p>既存の
 <code>conditions</code>/<code>passive</code>/<code>active</code>
-の語彙には当てはまりません。<code>conditions</code> には
-工程ごとに異なる要求内容を表現する仕組みがなく、<code>passive</code>/<code>active</code>
-にも「在庫を確認し、指定数量だけ消費し、
-足りなければ何もしない」という条件チェック＋消費の複合動作を表す語彙がないためです。そのため
-<code>steps</code>/<code>requires</code>
-という専用のスキーマを設けています（<code>GameElementDefinition.md</code>
-13.1 節）。</p>
+には「工程ごとに異なる要求について在庫を確認し、指定数量だけ消費し、
+足りなければ何もしない」という条件チェック＋消費の複合動作を表す語彙がないため、<code>steps</code>/<code>requires</code>
+という
+専用のスキーマを設けています（<code>GameElementDefinition.md</code> 13.1
+節）。</p>
 <p>進捗は既存の <code>stages</code>
 をそのまま流用します。専用の進捗表現は設けません。</p>
 <h2 id="箱は-slots-の-accepts-をそのまま使う">3. 「箱」は slots の

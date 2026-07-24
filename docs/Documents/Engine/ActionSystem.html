@@ -65,17 +65,15 @@ actor）もこれに当たります。</p>
 ではない別の特定のカードにドラッグ＆ドロップして行う操作。</li>
 </ul>
 <h2 id="combinations-のキー設計">2. combinations のキー設計</h2>
-<p><code>combinations</code> は
-<code>object_defs</code>/<code>traits</code>/<code>props</code>/<code>actions</code>
-と同様、識別子をキーとする辞書型ですが、
-<strong>キーはマッチング対象ではなく、このドラッグ操作自体に付ける名前</strong>です。マッチング対象は
-<code>with</code> で別途指定します
-（<code>GameElementDefinition.md</code> 12.1
-節）。キーを名前として自由にした結果、同じ <code>with</code>
-を指す複数のキーを書けてしまう 余地が残ります（例: <code>wood</code>
-に対して <code>with: axe_tool</code> の <code>chop</code> と
-<code>hack</code> を両方定義する）。この場合にどちらが実際に
-選ばれるかの解決規則は未決定です（4 節）。</p>
+<p><code>combinations</code>
+の<strong>キーはマッチング対象ではなく、このドラッグ操作自体に付ける名前</strong>です。マッチング対象は
+<code>with</code>
+で別途指定します（<code>GameElementDefinition.md</code> 12.1
+節）。そのため同じ <code>with</code> を指す複数のキーを書けてしまい
+（例: <code>wood</code> に対して <code>with: axe_tool</code> の
+<code>chop</code> と <code>hack</code>
+を両方定義する）、その場合にどちらが選ばれるかの 解決規則は未決定です（4
+節）。</p>
 <h2 id="対称的な組み合わせ">3. 対称的な組み合わせ</h2>
 <p>「棒とロープを組み合わせて槍を作る」のように、どちらのカードをどちらにドラッグしても成立してほしい、方向が
 自明でない組み合わせは、両方のカードに <code>combinations</code>

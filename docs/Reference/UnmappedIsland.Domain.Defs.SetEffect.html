@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class SetEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、 その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、 conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。対象の解決は owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別解決も含めて任せる）。">
+    <meta name="description" content="set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullなら、リテラルの代わりに その{object, prop}参照先の現在の実効値を代入する（「リテラルか参照か」の二択、9.2節）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,10 +74,8 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_SetEffect" data-uid="UnmappedIsland.Domain.Defs.SetEffect" class="text-break">Class SetEffect</h1>
-  <div class="markdown level0 summary"><p>set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、
-その{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、
-conditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。対象の解決は
-owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別解決も含めて任せる）。</p>
+  <div class="markdown level0 summary"><p>set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullなら、リテラルの代わりに
+その{object, prop}参照先の現在の実効値を代入する（「リテラルか参照か」の二択、9.2節）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -120,7 +118,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L77">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L60">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SetEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32)">SetEffect(ReferenceRoot, int, int)</h4>
@@ -162,7 +160,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.PropertyPath)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L85">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L68">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SetEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_UnmappedIsland_Domain_Defs_PropertyPath_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,UnmappedIsland.Domain.Defs.PropertyPath)">SetEffect(ReferenceRoot, int, PropertyPath)</h4>
@@ -206,7 +204,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_propertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.propertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L73">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L56">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect_propertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.SetEffect.propertyGlobalId">propertyGlobalId</h4>
   <div class="markdown level1 summary"></div>
@@ -235,7 +233,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_target.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.target%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L72">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L55">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect_target" data-uid="UnmappedIsland.Domain.Defs.SetEffect.target">target</h4>
   <div class="markdown level1 summary"></div>
@@ -264,7 +262,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_value.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.value%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L74">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L57">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect_value" data-uid="UnmappedIsland.Domain.Defs.SetEffect.value">value</h4>
   <div class="markdown level1 summary"></div>
@@ -293,7 +291,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_valueRef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.valueRef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L75">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L58">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect_valueRef" data-uid="UnmappedIsland.Domain.Defs.SetEffect.valueRef">valueRef</h4>
   <div class="markdown level1 summary"></div>
@@ -324,7 +322,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Nullable%7BUnmappedIsland.Domain.Runtime.WorldObject.EffectSite%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L93">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L76">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SetEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.Apply*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__" data-uid="UnmappedIsland.Domain.Defs.SetEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})">Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)</h4>
@@ -378,12 +376,11 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect.ResolveValue(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L103">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L85">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.ResolveValue*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SetEffect_ResolveValue_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.SetEffect.ResolveValue(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ResolveValue(WorldObject, WorldObject, WorldObject)</h4>
-  <div class="markdown level1 summary"><p>実際に代入する値。valueRefが無ければリテラル、あればその参照先の現在の実効値
-（解決できなければ0）。</p>
+  <div class="markdown level1 summary"><p>valueRefが無ければリテラル、あれば参照先の現在の実効値（解決できなければ0）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -444,7 +441,7 @@ owner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SetEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SetEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L70" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L53" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

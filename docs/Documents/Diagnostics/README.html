@@ -103,17 +103,12 @@
 （<code>Concept/</code>/<code>UI/</code>/<code>Engine/</code>/<code>World/</code>）とは性質が異なり、「今の実装をシミュレーションした結果こうなった」
 という<strong>測定値</strong>であり、設計判断や仕様を記述するものではありません。</p>
 <h2 id="他のフォルダとの違い">他のフォルダとの違い</h2>
-<ul>
-<li><code>Concept/</code>/<code>UI/</code>/<code>Engine/</code>/<code>World/</code>
-は、扱う<strong>領域</strong>でフォルダを分けています（ルートの <a
-href="../README.html"><code>../README.md</code></a>
-参照）。ドキュメントの内容は「こう設計する」という判断であり、
-実装が変わってもドキュメント自身は書き換えて追随させます。</li>
-<li><code>Diagnostics/</code>
-のレポートは、特定時点の実装に対する<strong>測定結果</strong>です。実装（レート・閾値等の数値）を
-変えれば結果も変わるため、内容そのものを手で書き換えるのではなく、対応するテストを再実行して
-<strong>再生成</strong>します。バランス調整のたびに上書きしてよく、Git履歴が変化の記録になります。</li>
-</ul>
+<p>他のフォルダ（<a href="../README.html"><code>../README.md</code></a>
+参照）が「こう設計する」という判断を記すのに対し、
+<code>Diagnostics/</code>
+のレポートは特定時点の実装に対する<strong>測定結果</strong>です。実装（レート・閾値等の数値）を
+変えれば結果も変わるため、内容を手で書き換えるのではなく、対応するテストを再実行して<strong>再生成</strong>します。
+バランス調整のたびに上書きしてよく、Git履歴が変化の記録になります。</p>
 <h2 id="生成方法">生成方法</h2>
 <p>各レポートは、<code>Tests/Diagnostics/</code>
 に置かれた対応するテスト（NUnitの <code>[Explicit]</code>。通常の

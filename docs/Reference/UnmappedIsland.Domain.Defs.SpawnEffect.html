@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class SpawnEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="spawn（9.4節）の1命令。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は 一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、 accepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ ならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。 伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない まま消える（何も起きなかったのと同じ扱い）。 実際の配置（スロット・スタックの操作、same_slotの位置引き継ぎ）はowner（self）とそのスロット/ スタックの領分であるため、ExecuteSpawnへ委ねる（配置先の在庫や隙間を知っているのは配置先自身）。">
+    <meta name="description" content="spawn（9.4節）の1命令。Into への配置に失敗した場合は必ず起点の親へ伝播し、accepts/capacityを無視して 強制配置する（オブジェクトは必ずどこかの親に属す必要があるため。YAML側に選択の余地はない）。 伝播先の親も無い場合、spawnしたオブジェクトは配置されないまま消える。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,14 +74,9 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_SpawnEffect" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect" class="text-break">Class SpawnEffect</h1>
-  <div class="markdown level0 summary"><p>spawn（9.4節）の1命令。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は
-一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、
-accepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ
-ならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。</p>
-<p>伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない
-まま消える（何も起きなかったのと同じ扱い）。</p>
-<p>実際の配置（スロット・スタックの操作、same_slotの位置引き継ぎ）はowner（self）とそのスロット/
-スタックの領分であるため、ExecuteSpawnへ委ねる（配置先の在庫や隙間を知っているのは配置先自身）。</p>
+  <div class="markdown level0 summary"><p>spawn（9.4節）の1命令。Into への配置に失敗した場合は必ず起点の親へ伝播し、accepts/capacityを無視して
+強制配置する（オブジェクトは必ずどこかの親に属す必要があるため。YAML側に選択の余地はない）。
+伝播先の親も無い場合、spawnしたオブジェクトは配置されないまま消える。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -124,7 +119,7 @@ accepts/capacityを無視して強制的に配置する（すべてのオブジ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SpawnEffect__ctor_System_Int32_UnmappedIsland_Domain_Defs_SpawnTargetRoot_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SpawnEffect.%23ctor(System.Int32%2CUnmappedIsland.Domain.Defs.SpawnTargetRoot)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L212">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L178">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SpawnEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SpawnEffect__ctor_System_Int32_UnmappedIsland_Domain_Defs_SpawnTargetRoot_" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.#ctor(System.Int32,UnmappedIsland.Domain.Defs.SpawnTargetRoot)">SpawnEffect(int, SpawnTargetRoot)</h4>
@@ -163,7 +158,7 @@ accepts/capacityを無視して強制的に配置する（すべてのオブジ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SpawnEffect_Into.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SpawnEffect.Into%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L210">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L176">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SpawnEffect_Into_" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.Into*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SpawnEffect_Into" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.Into">Into</h4>
@@ -193,7 +188,7 @@ accepts/capacityを無視して強制的に配置する（すべてのオブジ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SpawnEffect_ObjectGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SpawnEffect.ObjectGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L208">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L174">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SpawnEffect_ObjectGlobalId_" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.ObjectGlobalId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SpawnEffect_ObjectGlobalId" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.ObjectGlobalId">ObjectGlobalId</h4>
@@ -225,7 +220,7 @@ accepts/capacityを無視して強制的に配置する（すべてのオブジ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SpawnEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Nullable%7BUnmappedIsland.Domain.Runtime.WorldObject.EffectSite%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L218">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L184">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SpawnEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.Apply*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SpawnEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__" data-uid="UnmappedIsland.Domain.Defs.SpawnEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})">Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)</h4>
@@ -286,7 +281,7 @@ accepts/capacityを無視して強制的に配置する（すべてのオブジ�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SpawnEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SpawnEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L206" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L172" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

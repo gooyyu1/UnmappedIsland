@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class RawObjectDef | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。 props/slots/passives/stack_order/actions/combinationsは、フィールド単位の上書きマージ （props/slots/actions/combinationsの4つ全てが対象。Resolve参照）がまだ起こりうるため、あえて 意味解釈済みの型にせずYamlMappingNode/YamlSequenceNodeのまま持つ。 自分自身の識別性（GlobalId）はtrait解決に依存しないため、パース時点（Loader. WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slot名等は、trait側からも 追加されうる・shallow-overrideで中身が変わりうるため、Resolveの中で初めて確定する。">
+    <meta name="description" content="object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。 trait上書きマージ（Resolve参照）がまだ起こりうるフィールドは、意味解釈済みの型にせず 生YAMLノードのまま持つ。GlobalIdのみパース時点で確定し、tags・prop/slot名等はResolveで 初めて確定する。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,12 +75,9 @@
 
   <h1 id="UnmappedIsland_Loader_RawObjectDef" data-uid="UnmappedIsland.Loader.RawObjectDef" class="text-break">Class RawObjectDef</h1>
   <div class="markdown level0 summary"><p>object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。
-props/slots/passives/stack_order/actions/combinationsは、フィールド単位の上書きマージ
-（props/slots/actions/combinationsの4つ全てが対象。Resolve参照）がまだ起こりうるため、あえて
-意味解釈済みの型にせずYamlMappingNode/YamlSequenceNodeのまま持つ。</p>
-<p>自分自身の識別性（GlobalId）はtrait解決に依存しないため、パース時点（Loader.
-WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slot名等は、trait側からも
-追加されうる・shallow-overrideで中身が変わりうるため、Resolveの中で初めて確定する。</p>
+trait上書きマージ（Resolve参照）がまだ起こりうるフィールドは、意味解釈済みの型にせず
+生YAMLノードのまま持つ。GlobalIdのみパース時点で確定し、tags・prop/slot名等はResolveで
+初めて確定する。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -122,7 +119,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Actions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Actions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L42">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L36">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Actions" data-uid="UnmappedIsland.Loader.RawObjectDef.Actions">Actions</h4>
   <div class="markdown level1 summary"></div>
@@ -151,7 +148,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Combinations.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Combinations%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L43">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L37">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Combinations" data-uid="UnmappedIsland.Loader.RawObjectDef.Combinations">Combinations</h4>
   <div class="markdown level1 summary"></div>
@@ -180,11 +177,10 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_GlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.GlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L29">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L23">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_GlobalId" data-uid="UnmappedIsland.Loader.RawObjectDef.GlobalId">GlobalId</h4>
-  <div class="markdown level1 summary"><p>ObjectNames.Internによるこのobject_def自身のグローバルID。trait解決を待たず、
-パース時点で確定する（自分自身の識別性はtrait解決に依存しないため）。</p>
+  <div class="markdown level1 summary"><p>ObjectNames.InternによるグローバルID。trait解決を待たずパース時点で確定する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -211,7 +207,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_IsSingleton.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.IsSingleton%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L31">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L25">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_IsSingleton" data-uid="UnmappedIsland.Loader.RawObjectDef.IsSingleton">IsSingleton</h4>
   <div class="markdown level1 summary"></div>
@@ -240,7 +236,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Name.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Name%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L21">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L17">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Name" data-uid="UnmappedIsland.Loader.RawObjectDef.Name">Name</h4>
   <div class="markdown level1 summary"></div>
@@ -269,7 +265,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Passives.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Passives%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L36">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L30">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Passives" data-uid="UnmappedIsland.Loader.RawObjectDef.Passives">Passives</h4>
   <div class="markdown level1 summary"></div>
@@ -298,7 +294,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Props.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Props%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L34">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L28">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Props" data-uid="UnmappedIsland.Loader.RawObjectDef.Props">Props</h4>
   <div class="markdown level1 summary"></div>
@@ -327,7 +323,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_RepresentedBy.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.RepresentedBy%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L40">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L34">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_RepresentedBy" data-uid="UnmappedIsland.Loader.RawObjectDef.RepresentedBy">RepresentedBy</h4>
   <div class="markdown level1 summary"><p>represented_by（7.6節）で指定されたスロット名。未指定ならnull。</p>
@@ -357,7 +353,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Slots.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Slots%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L35">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L29">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Slots" data-uid="UnmappedIsland.Loader.RawObjectDef.Slots">Slots</h4>
   <div class="markdown level1 summary"></div>
@@ -386,11 +382,10 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Source.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Source%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L25">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L20">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Source" data-uid="UnmappedIsland.Loader.RawObjectDef.Source">Source</h4>
-  <div class="markdown level1 summary"><p>このobject_defが最初に（どのファイル／どのLoad呼び出しから）読み込まれたか。重複
-エラーメッセージの出所表示にのみ使う。</p>
+  <div class="markdown level1 summary"><p>読み込み元。重複エラーメッセージの出所表示にのみ使う。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -417,7 +412,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_StackOrder.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.StackOrder%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L37">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L31">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_StackOrder" data-uid="UnmappedIsland.Loader.RawObjectDef.StackOrder">StackOrder</h4>
   <div class="markdown level1 summary"></div>
@@ -446,7 +441,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Tags.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Tags%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L33">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L27">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Tags" data-uid="UnmappedIsland.Loader.RawObjectDef.Tags">Tags</h4>
   <div class="markdown level1 summary"></div>
@@ -475,7 +470,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_TraitNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.TraitNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L32">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L26">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_TraitNames" data-uid="UnmappedIsland.Loader.RawObjectDef.TraitNames">TraitNames</h4>
   <div class="markdown level1 summary"></div>
@@ -506,7 +501,7 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_MergeIdentifierMaps_System_Collections_Generic_IReadOnlyList_System_ValueTuple_System_String_YamlDotNet_RepresentationModel_YamlMappingNode___YamlDotNet_RepresentationModel_YamlMappingNode_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.MergeIdentifierMaps(System.Collections.Generic.IReadOnlyList%7BSystem.ValueTuple%7BSystem.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%7D%7D%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L157">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L147">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_RawObjectDef_MergeIdentifierMaps_" data-uid="UnmappedIsland.Loader.RawObjectDef.MergeIdentifierMaps*"></a>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_MergeIdentifierMaps_System_Collections_Generic_IReadOnlyList_System_ValueTuple_System_String_YamlDotNet_RepresentationModel_YamlMappingNode___YamlDotNet_RepresentationModel_YamlMappingNode_System_String_" data-uid="UnmappedIsland.Loader.RawObjectDef.MergeIdentifierMaps(System.Collections.Generic.IReadOnlyList{System.ValueTuple{System.String,YamlDotNet.RepresentationModel.YamlMappingNode}},YamlDotNet.RepresentationModel.YamlMappingNode,System.String)">MergeIdentifierMaps(IReadOnlyList&lt;(string TraitName, YamlMappingNode Map)&gt;, YamlMappingNode, string)</h4>
@@ -563,24 +558,20 @@ WorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_Resolve_System_Collections_Generic_IReadOnlyDictionary_System_String_UnmappedIsland_Loader_RawTrait__UnmappedIsland_Loader_WorldCodexYamlLoader_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.Resolve(System.Collections.Generic.IReadOnlyDictionary%7BSystem.String%2CUnmappedIsland.Loader.RawTrait%7D%2CUnmappedIsland.Loader.WorldCodexYamlLoader)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L61">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L51">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_RawObjectDef_Resolve_" data-uid="UnmappedIsland.Loader.RawObjectDef.Resolve*"></a>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_Resolve_System_Collections_Generic_IReadOnlyDictionary_System_String_UnmappedIsland_Loader_RawTrait__UnmappedIsland_Loader_WorldCodexYamlLoader_" data-uid="UnmappedIsland.Loader.RawObjectDef.Resolve(System.Collections.Generic.IReadOnlyDictionary{System.String,UnmappedIsland.Loader.RawTrait},UnmappedIsland.Loader.WorldCodexYamlLoader)">Resolve(IReadOnlyDictionary&lt;string, RawTrait&gt;, WorldCodexYamlLoader)</h4>
-  <div class="markdown level1 summary"><p>このobject_defが参照するtraitを合成し（フェーズ1: YAMLノードレベルのマージ）、そこから最終的な
-ObjectDefを組み立てる（フェーズ2: loaderのParseProp/ParseSlot/ParsePassive/ParseActions/
-ParseCombinationsによる意味解釈）。</p>
+  <div class="markdown level1 summary"><p>参照するtraitを合成し（フェーズ1: YAMLノードレベルのマージ）、そこから最終的なObjectDefを
+組み立てる（フェーズ2: loaderの各Parseメソッドによる意味解釈）。</p>
 <p>合成規則（フェーズ1）:</p>
 <ul>
-<li>props/slots/actions/combinations は識別子をキーとする辞書のため、同名エントリが複数のtraitに
-存在する場合はエラー（5節: 「プロパティ衝突はエラー」）。object_def自身が同名エントリを持つ
-場合は、フィールド単位で上書きする（object_def側で指定した属性だけが上書きされ、残りはtrait側
-の値を引き継ぐ）。</li>
-<li>passives は識別子を持たない（when/modify/accumulateブロックの配列）ため、単純に連結する
-（trait由来→自分自身の順、各traitの配列要素もそのままフラットに展開する）。</li>
-<li>stack_order は単一の値なので、自分自身の指定があればそれを優先し、無ければ参照traitのうち
-ちょうど1つが指定している必要がある（複数のtraitが指定していればエラー）。
-未対応（現時点ではCodex側にビルド先の型が無いため意図的にスキップする）: recipes/covers/layer。</li>
+<li>props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー（5節）。
+object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。</li>
+<li>passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。</li>
+<li>stack_order/represented_by: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
+いる必要がある（複数ならエラー）。
+未対応（Codex側にビルド先の型が無いため意図的にスキップ）: recipes/covers/layer。</li>
 </ul>
 </div>
   <div class="markdown level1 conceptual"></div>
@@ -630,12 +621,11 @@ ParseCombinationsによる意味解釈）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef_ShallowMergeFields_YamlDotNet_RepresentationModel_YamlMappingNode_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef.ShallowMergeFields(YamlDotNet.RepresentationModel.YamlMappingNode%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L203">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L192">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_RawObjectDef_ShallowMergeFields_" data-uid="UnmappedIsland.Loader.RawObjectDef.ShallowMergeFields*"></a>
   <h4 id="UnmappedIsland_Loader_RawObjectDef_ShallowMergeFields_YamlDotNet_RepresentationModel_YamlMappingNode_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.RawObjectDef.ShallowMergeFields(YamlDotNet.RepresentationModel.YamlMappingNode,YamlDotNet.RepresentationModel.YamlMappingNode)">ShallowMergeFields(YamlMappingNode, YamlMappingNode)</h4>
-  <div class="markdown level1 summary"><p>baseNodeのフィールドをそのまま持ちつつ、overlayNodeにあるフィールドで上書き・追加する
-（object_def自身がtraitの一部の属性だけを上書きし、残りはtrait側を引き継ぐ、5節）。</p>
+  <div class="markdown level1 summary"><p>baseNodeのフィールドを持ちつつ、overlayNodeにあるフィールドで上書き・追加する（5節）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -691,7 +681,7 @@ ParseCombinationsによる意味解釈）。</p>
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_RawObjectDef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.RawObjectDef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L19" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/RawObjectDef.cs/#L15" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

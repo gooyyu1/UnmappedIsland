@@ -81,7 +81,7 @@ Classes
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.AxisDef.html">AxisDef</a></h4>
       <section><p>軸（Axis）の定義（TerrainGeneration.md 1節・3.1節）。標高・湿り気など、地点（Site）が持つ
 連続値パラメータの1次元。値は整数（通常0〜100の百分率。GameElementDefinition.md 6節の
-「数値は32bit整数のみ」の規約に合わせ、YAML上にfloatは登場させない）。</p>
+「数値は32bit整数のみ」の規約により、YAML上にfloatは登場させない）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.AxisLimit.html">AxisLimit</a></h4>
       <section><p>ある軸に対する絶対的な除外条件（hard_limitsの1エントリ）。範囲外のサイトには
@@ -94,9 +94,8 @@ Classes
       <section><p>地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。
 WorldCodexの一部としてロード後不変。生成ファイルがロードされていない場合、
 WorldCodex.Generationはnullになる。</p>
-<p>軸名・LocationType名・スコープ名は生成時にしか使われず実行時ホットパスに乗らないため、
-NameRegistryでinternせずstringのまま持つ（5種のレジストリを生成専用の名前で汚さない）。
-LocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。</p>
+<p>軸名・LocationType名・スコープ名は生成時にしか使われないため、NameRegistryでinternせず
+stringのまま持つ。LocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GenerationScopeDef.html">GenerationScopeDef</a></h4>
       <section><p>生成スコープ（TerrainGeneration.md 3.7節）: 島の生成と構造物内部の生成が共有する
@@ -104,13 +103,12 @@ LocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.html">GeneratorLayer</a></h4>
       <section><p>軸のジェネレータの1層（<code>generator.blend</code> の1要素）。複数の層のサンプル値をWeightで
-重み付き平均して軸の値になる。値の実際の計算（ノイズ・距離場）はDomain.Generation側の
-サンプラーが担い、この定義は「どう計算するか」のパラメータだけを持つ。</p>
+重み付き平均して軸の値になる。値の計算はDomain.Generation側のサンプラーが担う。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GuaranteeDef.html">GuaranteeDef</a></h4>
-      <section><p>島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への
-実装回答）。軸の分布だけでは「山が必ず1つ」を保証できないため、「指定軸が最大/最小のサイトから
-Count個へ、このLocationTypeを強制割当する」という明示的な保証を、最近傍マッチングの前に行う。</p>
+      <section><p>島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」）。
+指定軸が最大/最小のサイトからCount個へ、このLocationTypeを最近傍マッチングの前に強制割当する
+（軸の分布だけでは「山が必ず1つ」の類を保証できないため）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.LocationTypeDef.html">LocationTypeDef</a></h4>
       <section><p>LocationType（TerrainGeneration.md 1節・3.2節）: 「草原」「洞窟」など、配置の定義。
@@ -121,9 +119,7 @@ object_def（locations.yaml）のインスタンスとして生成される。</
 Enums
 </h3>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType.html">GeneratorLayerType</a></h4>
-      <section><p>軸のジェネレータ1層の種類（TerrainGeneration.md 3.1節の汎用プリミティブ）。
-現時点はdistance_field/layered_noiseの2種。blob_scatter・modifiers（合成演算）は
-必要になった時点で追加する。</p>
+      <section><p>軸のジェネレータ1層の種類（TerrainGeneration.md 3.1節の汎用プリミティブ）。</p>
 </section>
       <h4><a class="xref" href="UnmappedIsland.Domain.Defs.Generation.GuaranteePick.html">GuaranteePick</a></h4>
       <section><p>guaranteesのpick: 保証対象のサイトを軸値のどちら側から選ぶか。</p>

@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class DestroyEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。destroy: selfは要素1つ、 destroy: [self, dragged]は要素2つのDestroyEffectとして表す。same_slot spawnとの連携は destroyが何かを通知する必要はない（selfの位置アンカーはApplyActiveEffectの入口で先に捕捉済みで、 「selfが消えたか」ではなく「その位置がまだ同種を保持しているか」を配置時に判断するため。 EffectSite参照）。">
+    <meta name="description" content="destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。destroy: [self, dragged]は 要素2つのDestroyEffectとして表す。same_slot spawnとの連携はeffectSite（ActiveEffect参照）が担う。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,11 +74,8 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_DestroyEffect" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect" class="text-break">Class DestroyEffect</h1>
-  <div class="markdown level0 summary"><p>destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code>destroy: self</code>は要素1つ、
-<code>destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。same_slot spawnとの連携は
-destroyが何かを通知する必要はない（selfの位置アンカーはApplyActiveEffectの入口で先に捕捉済みで、
-「selfが消えたか」ではなく「その位置がまだ同種を保持しているか」を配置時に判断するため。
-EffectSite参照）。</p>
+  <div class="markdown level0 summary"><p>destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code>destroy: [self, dragged]</code>は
+要素2つのDestroyEffectとして表す。same_slot spawnとの連携はeffectSite（ActiveEffect参照）が担う。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -121,7 +118,7 @@ EffectSite参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L155">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L132">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_DestroyEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_DestroyEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot)">DestroyEffect(ReferenceRoot)</h4>
@@ -155,7 +152,7 @@ EffectSite参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect_target.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect.target%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L153">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L130">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_DestroyEffect_target" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.target">target</h4>
   <div class="markdown level1 summary"></div>
@@ -186,7 +183,7 @@ EffectSite参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Nullable%7BUnmappedIsland.Domain.Runtime.WorldObject.EffectSite%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L160">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L137">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_DestroyEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.Apply*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_DestroyEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__" data-uid="UnmappedIsland.Domain.Defs.DestroyEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})">Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)</h4>
@@ -247,7 +244,7 @@ EffectSite参照）。</p>
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_DestroyEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.DestroyEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L151" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L128" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

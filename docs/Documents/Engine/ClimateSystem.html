@@ -100,36 +100,26 @@
 </header>
 <h1 id="気候システム設計">気候システム設計</h1>
 <h2 id="概要">概要</h2>
-<p>本ドキュメントは、ゲーム内の気候（季節・天気）に関する設計を検討した結果をまとめたものです。
-<code>GameElementDefinition.md</code> が掲げる、tick
-駆動・値域による状態決定・「ハードコードしない」「汎用エンジンに任せる」という
-設計方針（2 節）に準拠します。</p>
-<p>本書の前バージョンはエンジンの詳細が固まる前に書かれたため、実装の実態（<code>world</code>
-シングルトンが既に
-<code>day</code>/<code>hour</code>/<code>minute</code>/<code>weather</code>
-などのプロパティを直接持っていること、<code>value: {min, max}</code>
-が「毎 tick 再ロール」では なく「生成時に 1
-回だけロール」であること等）と乖離していました。本改訂はその乖離を解消し、あわせて天気を
-大気水分量から独立させる、季節・天気を専用オブジェクトではなく
-<code>world</code> 自身のプロパティとして扱う、という
-方針転換を反映します。</p>
+<p>本ドキュメントは、ゲーム内の気候（季節・天気）の設計をまとめたものです。<code>GameElementDefinition.md</code>
+が掲げる tick
+駆動・値域による状態決定・「ハードコードしない」「汎用エンジンに任せる」という設計方針（2
+節）に準拠します。</p>
 <p>本書の設計は <code>core.yaml</code> の <code>world</code>
 プロパティとして<strong>実装済み</strong>であり、複数の乱数シードによる統計テスト
 （<code>Tests/StreamingAssets/ClimateSystemTests.cs</code>。「calm
 は概ね 2 日に 1 回軽い雨が降る」「wet はほとんど雨だが
 稀に止み、後半ほど嵐・大雨が増える」「dry
 はほとんど晴れで雨はごく稀」等の要件を、95% 以上のシードで
-満たすことを検証）で確認されています。
-本書に載せる具体的な数値は実装と同期した現在の値ですが、バランス調整で変わりうる初期値であり、確定仕様では
-ありません。残る未決事項は 7 節に整理しています。</p>
+満たすことを検証）で確認されています。本書に載せる具体的な数値は実装と同期した現在の値ですが、バランス調整で
+変わりうる初期値であり、確定仕様ではありません。残る未決事項は 7
+節に整理しています。</p>
 <h2 id="基本方針">1. 基本方針</h2>
 <p>気候は次の 2 層で構成します。いずれも
 <code>world</code>（<code>GameElementDefinition.md</code> 15 節の
 <code>singleton: true</code> オブジェクト。 <code>core.yaml</code>
 で既に
 <code>tick</code>/<code>minute</code>/<code>hour</code>/<code>day</code>/<code>weather</code>/<code>sunlight</code>/<code>ambient_temperature</code>
-を直接プロパティとして 持っている、まさにその
-<code>world</code>）自身のプロパティとして表現し、専用の
+を直接プロパティとして 持つ）自身のプロパティとして表現し、専用の
 <code>WorldObject</code> インスタンスは作りません。</p>
 <ul>
 <li><strong>季節（長期サイクル）</strong>: 穏やか・雨季・乾季の 3
@@ -146,9 +136,7 @@
 遷移します。個別の現象を条件分岐やイベントとして作り込むのではなく、<strong>独立したパラメータ同士が
 tick ごとに
 加算・減算し合う「数値積分」によって駆動します</strong>。<code>derived</code>（導出値。GameElementDefinition.md
-16 節・17 節、 採否未確定）のような計算式は使いません。この方針は
-<code>GameConcept.md</code> の「遅れて表面化するサバイバル」節で
-述べている設計思想そのものであり、本書はその具体的な適用例です。</p>
+16 節・17 節、 採否未確定）のような計算式は使いません。</p>
 <h2 id="季節-worldプロパティとしての3サイクル">2. 季節:
 worldプロパティとしての3サイクル</h2>
 <h3 id="状態固定順の巡回">2.1 3状態・固定順の巡回</h3>
@@ -224,8 +212,7 @@ tick）を <code>set</code> するだけ。2 周目以降側は 24/30/36 日
 大気水分量・蓄熱量: 季節が駆動する2つの貯水池</h2>
 <p>天気（4
 節）を決める材料として、天気とは別に「大気水分量」「蓄熱量」という 2
-つの連続値プロパティを
-維持します。前バージョンと同じく、<code>derived</code>
+つの連続値プロパティを 維持します。<code>derived</code>
 を使わず、季節由来のレートを毎 tick 加算する「貯水池モデル」です。</p>
 <ul>
 <li><code>atmospheric_moisture</code>（<code>world</code>
@@ -234,11 +221,8 @@ tick）を <code>set</code> するだけ。2 周目以降側は 24/30/36 日
 -20）。0〜10,000 というスケールは、calm の遅いレート （moderate 閾値
 3,000 まで約 3 日）を整数の <code>accumulate</code>
 のまま表現するためのもの。
-季節レートは意図的に控えめな値に抑えている。特に <code>dry</code>
-のマイナスを大きくしないのは、大気水分量には
-雨自身の自己減算（後述）という減少要因が既にあり、かつ一度下がれば増加要因がなく晴れ続けるため、
-季節レートで強く引き下げなくても乾季は自然に乾くから。季節ごとの天気の対比は、レートの絶対値の
-大きさではなく、自己減算との<strong>大小関係</strong>（正味でどちらへ動くか）が作る。</li>
+季節レートは意図的に控えめな値に抑えており、季節ごとの天気の対比は、レートの絶対値の大きさではなく、
+自己減算（後述）との<strong>大小関係</strong>（正味でどちらへ動くか）が作る。</li>
 <li><code>thermal_level</code>（蓄熱量。同じく <code>world</code>
 の蓄積型プロパティ、range 0〜1,920）: <code>season</code> の各 stage が
 毎 tick 加算する（dry: +1 / calm・wet:
@@ -250,103 +234,86 @@ tick）を <code>set</code> するだけ。2 周目以降側は 24/30/36 日
 <code>stages</code>（<code>cool</code>: 〜959 / <code>mild</code>:
 960〜1,919 / <code>hot</code>: 1,920〜）が
 <code>ambient_temperature</code> を -5 / ±0 / +8 する。dry は 20
-日かけて 0→上限 1,920 と登り「乾季後半ほど暑い」を、 calm は乾季の 1,920
-から 20 日かけて 0
-へ下り「乾季の暑さからじわじわ涼しくなる」を、それぞれ表現する。
+日かけて 0→上限 1,920 と登り「乾季後半ほど暑い」を、 calm は 20 日かけて
+0 へ下り「乾季の暑さからじわじわ涼しくなる」を表現する。
 <code>hot</code> stage は炎天（<code>scorching</code>）の抽選重み
 <code>scorching_weight</code> も駆動する（4.3 節）。 <strong>上限は
 <code>hot</code> 閾値 1,920 と同値</strong>とし、残暑（calm
-へ持ち越される炎天）を廃止している: calm に入った最初の tick で蓄熱が
-1,919 へ下がって <code>mild</code> になるため、炎天と気温 +8
+へ持ち越される炎天）は無い: calm に入った最初の tick で蓄熱が 1,919
+へ下がって <code>mild</code> になるため、炎天と気温 +8
 は乾季の終了と同時に消える（stage の <code>min</code>
 は「その値を含む」判定のため、上限に張り付いている間も <code>hot</code>
 は有効）。「暑さ = 乾季」という対応を
-プレイヤーの体感と素直に一致させるための意図的な設計で、暑さの長さの揺らぎは季節の持続日数のランダム性
+プレイヤーの体感と一致させる意図的な設計で、暑さの長さの揺らぎは季節の持続日数のランダム性
 （2.3 節）だけが表現する。</li>
 <li>降雨中の自己減算: 天気（4 節）が
 <code>light_rain</code>/<code>heavy_rain</code>/<code>storm</code>
 のいずれかである間、その <code>weather</code> の <code>stages</code>
 自身が持つ <code>passive</code> の <code>accumulate</code> として、毎
 tick <code>atmospheric_moisture</code> を減算する （-110 / -130 /
--200。激しい雨ほど速く消費する。耐久値や
-<code>GameElementDefinition.md</code> 6.4 節の
-<code>progress</code>/<code>feverish</code>
-例と同じ、ステージ自身が値を変化させるパターン）。雨が降り続ければやがて水分が
-尽きて乾いた候補が選ばれやすくなる、という循環がこれで自然に成立します。
-どの減算量も <code>wet</code> の季節レート（+90/tick）をやや上回る（正味
--20 / -40 / -110）ため、雨季でも
-降り続けた雨はいずれ水分を減らして晴れ間を呼び込みます。<code>light_rain</code>
-の減算量は <code>calm</code> の 連続未降雨時間（3.2
+-200。激しい雨ほど速く消費する。<code>GameElementDefinition.md</code>
+6.4 節の <code>progress</code>/<code>feverish</code>
+例と同じ、ステージ自身が値を変化させるパターン）。どの減算量も
+<code>wet</code> の季節レート（+90/tick）をやや上回る （正味 -20 / -40 /
+-110）ため、降り続けた雨はいずれ水分を減らして晴れ間を呼び込みます。<code>light_rain</code>
+の 減算量は <code>calm</code> の連続未降雨時間（3.2
 節）を決める主要パラメータでもあります。</li>
 <li>雨季の「後半ほど嵐・大雨」は、この大気水分量とは別の季節内進行度
 <code>monsoon_level</code>（4.3 節）が保証する。</li>
 <li>上限・下限は既存ルール通り、プロパティ側の <code>range</code>
 でクランプする。</li>
 </ul>
-<p>前バージョンで挙げていた
-<code>layered_noise</code>（時間軸のノイズ）による変動は、<strong>現時点では実装していません</strong>。
-天気の遷移自体が 4〜6 時間ごとの <code>pick</code>（4
-節）という確率過程であるため、雨がいつ降るかは十分に
-ばらつくことを統計テストで確認済みです。レートそのものへのノイズは、3.3
-節の単調さ対策の将来オプション として 7 節に残します。</p>
+<p><code>layered_noise</code>（時間軸のノイズ）によるレート変動は実装していません。天気の遷移自体が
+4〜6 時間ごとの <code>pick</code>（4
+節）という確率過程であるため、雨がいつ降るかは十分にばらつくことを統計テストで確認済みです
+（将来オプションは 3.3 節・7 節）。</p>
 <p><strong>「季節後半ほど過酷になる」は、消費要因を持たない単調な積分値が表現します。</strong>
-<code>thermal_level</code> には
-自己減算に相当する消費要因がないため、<code>dry</code>
-の間は単調に積み上がり、追加の「経過度」計算をしなくても 乾季後半に
-<code>hot</code>
-帯へ達して暑くなります。一方、大気水分量は雨自身の自己減算という消費要因を持つため
-単調には積み上がらず、<code>wet</code>
+<code>thermal_level</code> には 消費要因がないため、<code>dry</code>
+の間は単調に積み上がり、追加の「経過度」計算をしなくても乾季後半に
+<code>hot</code> 帯へ
+達して暑くなります。一方、大気水分量は雨自身の自己減算という消費要因を持つため単調には積み上がらず、
+<code>wet</code>
 の間は各天気の正味レートが釣り合う水準（<code>humid</code> 閾値付近、4.3
-節）を
-上下し続けます。そこで雨季側の「後半ほど嵐・大雨」は、大気水分量ではなく、<code>thermal_level</code>
-と対称の もう 1 つの単調な積分値
-<code>monsoon_level</code>（雨季の深まり、4.3
+節）を上下し続けます。そこで雨季側の
+「後半ほど嵐・大雨」は、<code>thermal_level</code> と対称のもう 1
+つの単調な積分値 <code>monsoon_level</code>（雨季の深まり、 4.3
 節）が保証します。<code>calm</code> は 3.1 節の通り
 <code>dry</code>/<code>wet</code>
-とは逆向き（回復方向）のレートを持ち、後半に向かうほど穏やかになっていく季節として
-設計しています。</p>
+とは逆向き（回復方向）のレートを持ち、後半に
+向かうほど穏やかになっていく季節です。</p>
 <h3 id="calm-のレートをほぼ0にしない理由">3.1 <code>calm</code>
 のレートを「ほぼ0」にしない理由</h3>
 <p>巡回順（2.1 節）は <code>calm</code> が常に <code>dry</code>
-の直後に来ます。<code>dry</code> は 30
-日間ずっと大気水分量を減らし気温を上げ続ける ため、<code>calm</code>
-が始まる瞬間、大気水分量は乾季で最も低い水準に、気温は乾季で最も高い水準に達しています。ここで
-<code>calm</code> のレートを「ほぼ 0」にすると、この極端な水準のまま 30
-日間ほとんど動かなくなり、4.3 節の重みが
-「乾き寄り」に張り付いたまま固定されてしまい、<code>calm</code>
-の間ずっと晴れ・曇りしか起きなくなります。</p>
-<p>そこで <code>calm</code> にも <code>dry</code>/<code>wet</code>
-と同じように、意味のある向きを持ったレートを与えます。</p>
+の直後に来ます。<code>dry</code>
+の終わり、大気水分量は最も低く気温は最も高い
+水準にあるため、<code>calm</code> のレートを「ほぼ
+0」にするとこの極端な水準のまま 30 日間ほとんど動かず、4.3 節の
+重みが「乾き寄り」に張り付いて <code>calm</code>
+の間ずっと晴れ・曇りしか起きなくなります。そこで <code>calm</code> にも
+意味のある向きを持ったレートを与えます。</p>
 <ul>
 <li>大気水分量: <code>dry</code> はマイナス（-20）、<code>calm</code>
 は<strong>プラス</strong>（+10。乾季で下がりきった水準から、雨季にふさわしい
-水準へじわじわ回復していく）、<code>wet</code>
-はさらにプラス（+90）。</li>
+水準へじわじわ回復）、<code>wet</code> はさらにプラス（+90）。</li>
 <li>蓄熱量: <code>dry</code> はプラス（+1）、<code>calm</code>
-は<strong>マイナス</strong>（-1。乾季の暑さから、雨季にふさわしい涼しさへじわじわ
-下がっていく）、<code>wet</code> もマイナス（-1、下限 0 の
-<code>cool</code> 帯に張り付く）。</li>
+は<strong>マイナス</strong>（-1。乾季の暑さから涼しさへじわじわ下降）、<code>wet</code>
+も マイナス（-1、下限 0 の <code>cool</code> 帯に張り付く）。</li>
 </ul>
 <p>これにより、大気水分量・気温はどちらも 3 季節を通じて 1
 つの連続した波（谷→回復→頂点→下降→谷…）を描きます。 <code>calm</code>
-はちょうど谷から中腹への回復区間にあたるため、4.3
-節の重みが「乾き寄り」から「湿り寄り」へ連続的に
-変化していく途中を過ごすことになり、結果として晴れの日も雨の日もある、という
-3.2 節で述べる挙動が自然に
-生まれます。「季節ごとに固定のレートを持たせる」という 3
-節冒頭の設計自体は変えていません。</p>
+は谷から中腹への回復区間にあたり、4.3
+節の重みが「乾き寄り」から「湿り寄り」へ連続的に変化していく
+途中を過ごすため、晴れの日も雨の日もあるという 3.2
+節の挙動が自然に生まれます。</p>
 <h3 id="calm-での降雨頻度の狙い-連続未降雨時間を長くしすぎない雨">3.2
 <code>calm</code> での降雨頻度の狙い:
 「連続未降雨時間を長くしすぎない」雨</h3>
 <p><code>calm</code>
-はゲーム開始直後に来る最初の季節でもあり、プレイヤーは蓋のない容器（例:
-ココナッツの殻）だけで水を
-確保しなければならない序盤です。晴れが続くと蓋のない容器の水は蒸発してしまうため、渇水で詰まないよう、
-<code>calm</code>
-の<strong>連続未降雨時間</strong>（雨が止んでから次の雨までの長さ）が長くなりすぎないでほしい、という狙いが
-あります。これは雨が一定周期で規則正しく降ることを求めるものではありません（一定周期性はそもそも
-3.3
-節が扱う「固定レートによる単調さ」の一種であり、望ましくありません）。</p>
+はゲーム開始直後に来る最初の季節であり、プレイヤーは蓋のない容器だけで水を確保する序盤です。晴れが
+続くと蓋のない容器の水は蒸発してしまうため、渇水で詰まないよう、<code>calm</code>
+の<strong>連続未降雨時間</strong>（雨が止んでから
+次の雨までの長さ）が長くなりすぎないことを狙います（雨が一定周期で規則正しく降ることを求めるものでは
+ありません）。</p>
 <p>この頻度は新しい仕組みを必要とせず、既存の 2
 つのレートの<strong>バランス</strong>だけで決まります。</p>
 <ul>
@@ -364,39 +331,33 @@ tick <code>atmospheric_moisture</code> を減算する （-110 / -130 /
 <code>weather_remaining</code> 1 回分（16〜24 tick、4.2 節）の放電は
 1,600〜2,400 に達します。この放電を +10/tick で登り返すのに 160〜240
 tick（1.7〜2.5 日）かかるため、<strong>連続未降雨時間は平均およそ 2
-日</strong>に なります（雨のたびにほぼ底まで放電し、約 2 日かけて
-<code>moderate</code> 閾値 3,000 へ登り返す充放電サイクル）。
-<code>moderate</code> 帯の <code>light_rain_weight</code> は 20（晴れ系
-65 に対し約 24%）に抑えており、閾値に触れてから
+日</strong>に なります。<code>moderate</code> 帯の
+<code>light_rain_weight</code> は 20（晴れ系 65 に対し約
+24%）に抑えており、閾値に触れてから
 実際に雨が選ばれるまでの待ち時間も間隔に上乗せされます。閾値のすぐ上では
 <code>heavy_rain</code>/<code>storm</code> の 重みが
 0（<code>moderate</code> 段階、4.3 節）のため雨はほぼ
 <code>light_rain</code> で、水分が稀に <code>humid</code>（6,000）まで
 登り切った場合にのみ大雨が起こりえます（実測で <code>calm</code> の tick
-比 0.1% 前後。「calm にもごく稀に
-大雨が来る」という揺らぎとして許容します）。実測（20 シード×3,600 日、
-<code>Documents/Diagnostics/ClimateSystemStats.md</code>）では、<code>calm</code>
-の連続未降雨時間は平均 2.17 日・ 95%ile 4.21 日・最大 6.62 日で、「概ね
-2 日に 1 回の軽い雨」と蒸発への安全余裕を両立しています。</p>
-<p>自己減算を弱めると「押し戻す」度合いが浅くなり、次の上昇にかかる日数（＝連続未降雨時間）は
-<strong>短くなります</strong>。自己減算の大きさと連続未降雨時間の長さは独立ではなく、直結しています。逆に
-連続降雨時間を伸ばす方向には自己減算はあまり効きません:
-<code>moderate</code> 帯では雨が続けて選ばれる確率自体が
-重み比で頭打ちのため、<code>calm</code> の雨は 1〜2 周期（実測で平均
-0.21 日、95%ile 0.25 日）で 止むのが基本形です。</p>
+比 0.1% 前後。許容する揺らぎ）。 実測（20 シード×3,600
+日、<code>Documents/Diagnostics/ClimateSystemStats.md</code>）では、<code>calm</code>
+の連続未降雨時間は 平均 2.17 日・95%ile 4.21 日・最大 6.62 日です。</p>
+<p>自己減算を弱めると「押し戻す」度合いが浅くなり、連続未降雨時間は<strong>短くなります</strong>（両者は独立ではなく
+直結しています）。逆に連続降雨時間を伸ばす方向には自己減算はあまり効きません:
+<code>moderate</code> 帯では雨が
+続けて選ばれる確率自体が重み比で頭打ちのため、<code>calm</code> の雨は
+1〜2 周期（実測で平均 0.21 日、 95%ile 0.25
+日）で止むのが基本形です。</p>
 <h3 id="固定レートによる天気の単調さについて">3.3
 固定レートによる天気の単調さについて</h3>
 <p>3 節・3.1 節のレートは
 <code>accumulate</code>（<code>GameElementDefinition.md</code> 8.4
-節）で表現しており、<code>accumulate</code> の加算量は
-宣言時に決まるリテラル定数です（他のプロパティの現在値を参照して動的に変えることはできません）。そのため
-「同じ季節に入るたびに、大気水分量が毎回ほぼ同じ軌跡をたどる」という意味での単調さが生じる可能性があります。</p>
-<p>現時点の実装は、天気遷移そのもののランダム性（4〜6 時間ごとの
-<code>pick</code> 抽選と、それによる降雨タイミング・
-放電量のばらつき）だけでこの単調さを崩しており、統計テストでも雨の間隔・回数に十分な分散が出ています
-（3.2
-節）。それでも将来単調さが気になった場合の追加手段を、既存の語彙の範囲で
-2 つ挙げておきます。</p>
+節）のリテラル定数であり、他のプロパティの
+現在値を参照して動的に変えることはできません。そのため「同じ季節に入るたびに、大気水分量が毎回ほぼ同じ軌跡を
+たどる」という単調さが生じえます。現時点の実装は、天気遷移そのもののランダム性だけでこの単調さを崩しており、
+統計テストでも雨の間隔・回数に十分な分散が出ています（3.2
+節）。将来単調さが気になった場合の追加手段を、 既存の語彙の範囲で 2
+つ挙げておきます（採否は 7 節の未決事項）。</p>
 <ul>
 <li><strong>レートへのノイズ</strong>:
 <code>layered_noise</code>（<code>TerrainGeneration.md</code> 3.1
@@ -411,18 +372,16 @@ tick（1.7〜2.5 日）かかるため、<strong>連続未降雨時間は平均�
 で切り替わる複数の <code>accumulate</code>
 ブロックを用意する。新しいエンジン機能は不要。</li>
 </ul>
-<p>どちらを（あるいは両方を）採用するかは 7 節の未決事項とします。</p>
 <h2 id="天気-worldプロパティとしての短期変動">4. 天気:
 worldプロパティとしての短期変動</h2>
 <h3 id="大気水分量から独立させる理由">4.1
 大気水分量から独立させる理由</h3>
-<p>前バージョンは天気を <code>atmospheric_moisture</code> の
-<code>stages</code>（閾値）として表現していましたが、この方式では
-「大気水分量の値が 1 つ決まれば天気も 1
-つに決まる」ため、大雨と嵐のように同程度の大気水分量でも降り方が
-変わりうる現象を表現できません。そこで天気は季節と同じ形の、大気水分量からは独立した
-<code>world</code> プロパティとし、
-大気水分量は「天気がどちらに転びやすいか」の重み（4.3
+<p>天気を <code>atmospheric_moisture</code> の
+<code>stages</code>（閾値）として表現すると、「大気水分量の値が 1
+つ決まれば天気も 1
+つに決まる」ため、大雨と嵐のように同程度の大気水分量でも降り方が変わりうる現象を表現できません。そこで
+天気は大気水分量から独立した <code>world</code>
+プロパティとし、大気水分量は「天気がどちらに転びやすいか」の重み （4.3
 節）としてのみ関与させます。</p>
 <h3 id="プロパティ構成-1">4.2 プロパティ構成</h3>
 <ul>
@@ -496,7 +455,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="
 <code>passives</code> の <code>modify</code>
 として常時上書きすることで決まります（<code>weather</code> の
 <code>stages</code> が <code>sunlight</code> を <code>modify</code>
-しているのと同じパターンの使い回しで、新しいエンジン機能は不要です）。実装値は以下の通りです。</p>
+しているのと同じパターンで、新しいエンジン機能は不要です）。実装値は以下の通りです。</p>
 <div class="sourceCode" id="cb2"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">atmospheric_moisture</span><span class="kw">:</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
@@ -540,18 +499,16 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">storm_weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span></span></code></pre></div>
 <p>晴れ系（<code>sunny</code>/<code>clear</code>/<code>cloudy</code>）の重みも雨系と同じく
 <code>atmospheric_moisture</code> の段階に連動させ、固定の
-重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」という下限が
-原理的に外れなくなり、<code>saturated</code>
-段階（雨季の水分が最も高まった状態）で「まず晴れない」を表現できなく
-なるためです。上の実装では <code>saturated</code>
-段階が晴れ系の重みを立てない（＝0 のまま）ことでそれを表現し、対称に
-<code>dry</code>/<code>moderate</code> 段階は
+重み定数にはしません。固定にすると「大気水分量がどれだけ高くても晴れが一定確率で残り続ける」下限が
+原理的に外れなくなるためです。上の実装では <code>saturated</code>
+段階が晴れ系の重みを立てない（＝0 のまま）ことで
+「まず晴れない」を、対称に <code>dry</code>/<code>moderate</code> 段階が
 <code>heavy_rain_weight</code>/<code>storm_weight</code>
-を立てないことで「乾いている間・穏やかな季節の小雨は大雨・嵐にならない」
-という逆方向の下限を表現しています（3.2
-節の「大雨にはならない」はここで保証されます）。晴れ系の中では、
-どの段階でも
-<code>clear</code>（穏やかで過ごしやすい普通の晴れ）の重みを最も大きくし、この島の標準的な天気にしています。</p>
+を立てないことで
+「乾いている間・穏やかな季節の小雨は大雨・嵐にならない」（3.2
+節の保証）を表現しています。晴れ系の中では、 どの段階でも
+<code>clear</code>
+の重みを最も大きくし、この島の標準的な天気にしています。</p>
 <p><strong><code>scorching_weight</code>
 だけは大気水分量ではなく、もう一つの貯水池である蓄熱量（<code>thermal_level</code>、3
 節）の <code>hot</code> stage（1,920 以上）が <code>modify</code>
@@ -570,37 +527,28 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <code>heavy_rain_weight</code> +15 を、<code>peak</code>（1,920 = 雨季
 20 日目〜）が <code>heavy_rain_weight</code> +30 と
 <code>storm_weight</code> +40
-を立てます。大気水分量は雨自身の自己減算のため季節内で 単調に増えず（3
-節）、水分の帯だけでは「後半ほど」を表現できないので、消費要因を持たない単調な
-積分値を別に持つ、という
-<code>thermal_level</code>（乾季後半の炎天）と同じ解法です。</p>
+を立てます（大気水分量は雨自身の自己減算のため季節内で
+単調に増えず「後半ほど」を表現できない。3 節末尾と同じ解法）。</p>
 <p>この上乗せには <strong><code>conditions</code>（14
 節）で「大気水分量が閾値以上のとき」というゲート</strong>が付いています
 （<code>deepening</code> は 6,000 以上、<code>peak</code> は 4,500
 以上。stage の WhenOwnStage ゲートと <code>conditions</code> は AND で
 重なる、8.2 節）。無条件に上乗せすると、<code>monsoon_level</code>
 の減衰が終わらない乾季序盤に、水分が尽きた
-砂漠のような空からも大雨が降ってしまうためです。逆にこのゲートのおかげで、乾季に入っても水分がまだ
-高い間（雨自身が消費し尽くすまでの過渡）は上乗せが生き、嵐・大雨の名残が自然に表現されます。
-実測（20 シード×3,600 日）では、<code>wet</code> を 3 等分した嵐・大雨の
-tick 比率は序盤 31%→中盤 38%→終盤 42%、 嵐だけでは 4%→6%→18%
-と、後半に向かって単調に増えます（大雨単独は嵐に置き換わられて終盤にやや減るが、
-「嵐・大雨」の合計と嵐単独はどちらも単調増加。統計テスト
+空からも大雨が降ってしまうためです。逆にこのゲートのおかげで、乾季に入っても水分がまだ高い間は上乗せが
+生き、嵐・大雨の名残が自然に表現されます。実測（20 シード×3,600
+日）では、<code>wet</code> を 3 等分した嵐・大雨の tick 比率は序盤
+31%→中盤 38%→終盤 42%、嵐だけでは 4%→6%→18%
+と後半に向かって単調に増えます （統計テスト
 <code>WetSeason_HeavyRainAndStorms_IncreaseTowardTheEnd</code>
-がこの性質を回帰検知します）。</p>
-<p>ただし<strong>名残の振る舞いは意図的に非対称</strong>です。嵐には名残があります:
-雨季末の高い水分が雨自身の
-自己減算で消費し尽くされるまでの乾季序盤には、嵐・大雨が残ります。一方、炎天には名残（残暑）が
-ありません: 蓄熱量の上限を <code>hot</code>
-閾値と同値（1,920）にしているため、calm に入った瞬間に <code>hot</code>
-から 外れ、炎天は乾季の終了と同時に消えます（3
-節）。この非対称は現実の物理とも整合します——雨は降ること
-自体が大気の水分を消費しますが、晴れることは大気の熱を消費しません（せいぜい放射冷却の程度）。
-熱が「使われて減る」対応物が無い以上、雨側の自己減算・名残に対応する仕組みを熱側へ導入しない、
-という判断です。プレイヤーから見た「乾季の暑さが長い年」は、残暑ではなく季節の持続日数のランダム性
-（2.3 節）が表現します。ゲーム開始直後の最初の calm
-は、蓄熱量の初期値が中立（1,000 = <code>mild</code>）のため
-炎天は発生しません。</p>
+が回帰検知します）。</p>
+<p>ただし<strong>名残の振る舞いは意図的に非対称</strong>です。嵐には名残があります（雨季末の高い水分が消費し尽くされる
+までの乾季序盤には嵐・大雨が残る）が、炎天には名残（残暑）がありません（蓄熱量の上限
+= <code>hot</code> 閾値のため、 calm に入った瞬間に炎天は消える。3
+節）。プレイヤーから見た「乾季の暑さが長い年」は、残暑ではなく季節の
+持続日数のランダム性（2.3 節）が表現します。ゲーム開始直後の最初の calm
+は、蓄熱量の初期値が中立 （1,000 =
+<code>mild</code>）のため炎天は発生しません。</p>
 <p>段階の境界（<code>min</code>）を跨いだ瞬間に重みが階段状に飛ぶ点は、<code>weather_remaining</code>
 の遷移自体が 4〜6 時間に 1 回 （4.2
 節）しか起きないため、体感上の不自然さにはならないと考えます。</p>
@@ -608,29 +556,27 @@ tick 比率は序盤 31%→中盤 38%→終盤 42%、 嵐だけでは 4%→6%→
 <code>wet</code> 中の各天気の正味レートは、 <code>light_rain</code>
 -20/tick（季節レート +90 － 自己減算 110）、<code>heavy_rain</code>
 -40/tick、<code>storm</code> -110/tick、 非降雨時 +90/tick
-です。どの雨も正味マイナスのため降り続けばいずれ水分が減って晴れ間を呼び込み、
-非降雨時の +90
-が素早く水分を回復させて次の雨へつなぐ——という充放電の往復が、<code>humid</code>
-閾値（6,000）
-付近を上下しながら「ほとんど雨だが、まとまった雨と晴れ間が交互に来る」という雨季の体感を作ります。
-実測では <code>wet</code> の雨 tick 比率は約 68%（うち大雨・嵐が約
-36%）、連続降雨時間は平均 0.54 日、 連続未降雨時間は平均 0.25
-日でした（<code>Documents/Diagnostics/ClimateSystemStats.md</code>、20
-シード×3,600 日）。 なお <code>light_rain</code>
-の自己減算（-110）は雨季のためではなく、<code>calm</code>
-の連続未降雨時間を約 2 日にする （3.2
-節）ことから決まっている点に注意してください。1
-つの定数が複数の季節の挙動に効くため、 変更時は 3.2
-節の充放電サイクルと本節の正味レートの両方を確認する必要があります。</p>
+です。どの雨も正味マイナスのため降り続けばいずれ晴れ間を呼び込み、非降雨時の
++90 が
+素早く水分を回復させて次の雨へつなぐ——という充放電の往復が、<code>humid</code>
+閾値（6,000）付近を上下しながら
+「ほとんど雨だが、まとまった雨と晴れ間が交互に来る」という雨季の体感を作ります。実測では
+<code>wet</code> の 雨 tick 比率は約 68%（うち大雨・嵐が約
+36%）、連続降雨時間は平均 0.54 日、連続未降雨時間は平均 0.25 日
+でした（<code>Documents/Diagnostics/ClimateSystemStats.md</code>、20
+シード×3,600 日）。なお <code>light_rain</code> の
+自己減算（-110）は雨季のためではなく、<code>calm</code>
+の連続未降雨時間を約 2 日にする（3.2 節）ことから決まって います。1
+つの定数が複数の季節の挙動に効くため、変更時は 3.2
+節の充放電サイクルと本節の正味レートの
+両方を確認する必要があります。</p>
 <h3 id="二回連続で同じ天気になった場合">4.4
 二回連続で同じ天気になった場合</h3>
 <p><code>weather_remaining</code> は遷移のたびに 4〜6 時間の範囲で改めて
 <code>pick</code> されるため、たまたま同じ天気が連続して
-選ばれることがあります。この場合プレイヤーからは天気が変わらないまま 6
-時間を超えて継続しているように
-見えますが、これは狙って作り込む特別なルールではなく、独立試行の結果として自然に起こる不確実性であり、
-「個別の現象を作り込まず、単純な仕組みの重なりから複雑な挙動が立ち上がる」という
-1 節の方針の一例です。</p>
+選ばれ、プレイヤーからは天気が変わらないまま 6
+時間を超えて継続しているように見えることがあります。これは
+独立試行の結果として自然に起こる不確実性であり、狙って作り込んだ特別なルールではありません。</p>
 <h2
 id="難易度の初期補正-専用カウンタのstagesによる大気水分量の底上げ">5.
 難易度の初期補正:
@@ -640,19 +586,11 @@ id="難易度の初期補正-専用カウンタのstagesによる大気水分量
 転びやすい状態を作ります。<strong>天気そのものを固定で雨にするのではなく</strong>、あくまで抽選の元になる
 <code>atmospheric_moisture</code>
 の値を操作するだけであり、それでも晴れる可能性はゼロではありません（5.3
-節）。</p>
-<p>大気水分量そのものが季節由来のレートを毎 tick 加算する「積分値」（3
-節）である以上、この補正も 「瞬間に 1
-回だけ発火する」仕組みではなく、「特定の期間中ずっと、通常より高いレートで水分を積み増し続ける」
-という、3 節と同種の継続的な加算として素直に表現できます。これは
-<code>stages</code>（現在値がその区間内にある間ずっと
-<code>passives</code> が有効。GameElementDefinition.md 6.4
-節）の典型的な用法そのものであり、<code>weather</code> の
-<code>stages</code> が <code>sunlight</code>
-を、<code>atmospheric_moisture</code> の <code>stages</code> が
-<code>*_weight</code>（4.3 節）を、それぞれ区間内で継続的に
-<code>modify</code>/<code>accumulate</code>
-しているのと同じパターンです。</p>
+節）。 補正は「瞬間に 1
+回だけ発火する」仕組みではなく、「特定の期間中ずっと、通常より高いレートで水分を
+積み増し続ける」継続的な加算として、<code>stages</code>（現在値がその区間内にある間ずっと
+<code>passives</code> が有効。 GameElementDefinition.md 6.4
+節）で表現します。</p>
 <p>2 つの補正（ゲーム開始 2 日目、最初の乾季 10
 日目前後）は無関係な別々の意図によるものなので、1 つのプロパティに
 両方の <code>stages</code>
@@ -677,25 +615,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> done</span></span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">192</span><span class="co">    # 3日目の開始でオフに戻る</span></span></code></pre></div>
 <p><code>early_rain_calibration</code> はゲーム開始と同時に毎 tick
-<code>+1</code> されるだけの、他に何の意味も持たない専用カウンタです。
-<code>boosting</code> 区間（2 日目の 96 tick 分）にいる間だけ
-<code>atmospheric_moisture</code> への追加加算（+60/tick。calm の +10
-と合わせて +70/tick）が有効になり、3
+<code>+1</code> されるだけの専用カウンタです。<code>boosting</code> 区間
+（2 日目の 96 tick 分）にいる間だけ <code>atmospheric_moisture</code>
+への追加加算（+60/tick。calm の +10 と合わせて +70/tick）が有効になり、3
 日目に入ると自動的にオフへ戻ります（<code>stages</code>
-は現在値だけで区間を
-決めるため、明示的なリセットや発火済みフラグは不要です）。2 日目の朝には
-<code>moderate</code> を超えて雨の抽選が 現実的になり、夕方までに
-<code>humid</code> に達してさらに傾きます。統計テストでは全シードで 2〜3
+は現在値だけで区間を決めるため、
+明示的なリセットや発火済みフラグは不要です）。2 日目の朝には
+<code>moderate</code> を超えて雨の抽選が現実的になり、 夕方までに
+<code>humid</code> に達します。統計テストでは全シードで 2〜3
 日目に雨が降りました。</p>
 <h3 id="最初の乾季10日目前後">5.2 最初の乾季、10日目前後</h3>
-<p>季節の巡回順は
-<code>calm</code>→<code>wet</code>→<code>dry</code>→<code>calm</code>（2.1
-節）で、初回サイクルは各季節が固定 30 日（2.3 節）なので、
-「最初の乾季に入ってから 10
-日目前後」が絶対で何日目かはゲーム開始前から確定します。<code>calm</code>（1〜30
-日目）・ <code>wet</code>（31〜60 日目）に続き、最初の <code>dry</code>
-は 61 日目に始まるため、その 10 日目前後は絶対 71 日目 （tick 換算で
-<code>(71-1) × 96 = 6,720</code> tick）です。</p>
+<p>季節の巡回順（2.1 節）と初回サイクル固定 30 日（2.3
+節）により、最初の <code>dry</code> は 61 日目に始まり、その 10
+日目前後は絶対 71 日目（tick 換算で <code>(71-1) × 96 = 6,720</code>
+tick）と、ゲーム開始前から確定します。</p>
 <div class="sourceCode" id="cb4"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">first_dry_rain_calibration</span><span class="kw">:</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
@@ -714,22 +647,21 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> done</span></span>
 <span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">6816</span><span class="co">   # 72日目の開始でオフに戻る</span></span></code></pre></div>
 <p><code>boosting</code> の +200/tick は dry の -20/tick
-を大きく上回るため、正味 +180/tick で乾ききった水分量が 71 日目のうちに
+を大きく上回る（正味 +180/tick）ため、乾ききった水分量が 71 日目のうちに
 <code>moderate</code>→<code>humid</code>
 へ達して雨の抽選が大きく傾きます（統計テストでは全シードで 71〜73
 日目に雨が降りました）。5.1
 節と全く同じパターンで、<code>season</code>/<code>season_cycle</code>
-を実行時に参照する必要は ありません。ただしこの
+を実行時に参照する 必要はありません。ただし
 <code>6720</code>/<code>6816</code> という具体的な tick
-数は、「初回サイクルは固定 30 日」という 2.3 節の
-前提にそのまま依存しています。季節の巡回順や初回サイクルの日数が変われば、この数値も再計算が必要です。</p>
+数は「初回サイクルは固定 30 日」という 2.3
+節の前提に依存しており、季節の巡回順や初回サイクルの日数が変われば再計算が必要です。</p>
 <h3 id="なぜ天気を直接固定しないか">5.3 なぜ天気を直接固定しないか</h3>
 <p>5.1・5.2 とも、天気を強制的に <code>light_rain</code> 等へ
 <code>set</code> するのではなく <code>atmospheric_moisture</code>
-を操作するだけに
-留めています。これは「天気は常に抽選で決まり、不確実性を持つ」という 4
-節の設計原則を、難易度補正の
-場面でも崩さないためです。補正はあくまで確率を傾けるだけであり、絶対に雨が降ると保証するものではありません。</p>
+を操作するだけに 留め、「天気は常に抽選で決まり、不確実性を持つ」という
+4 節の設計原則を難易度補正でも崩しません。補正は
+あくまで確率を傾けるだけであり、絶対に雨が降ると保証するものではありません。</p>
 <h2 id="設計原則のまとめ">6. 設計原則のまとめ</h2>
 <ul>
 <li>季節・天気とも、専用の <code>WorldObject</code> インスタンスではなく
@@ -739,56 +671,36 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 状態を固定順で巡回する。天気は季節から独立した symbol
 プロパティであり、季節の 値そのものからは直接決まらない</li>
 <li>天気・大気水分量・蓄熱量はいずれも「独立変数への tick
-ごとの加減算」のみで表現し、<code>derived</code>（計算式による
-導出）は使わない。気温・天気の重みのような「表向きの値」は、スケールした貯水池の
-<code>stages</code> が <code>modify</code> で 駆動する（3 節・4.3
+ごとの加減算」のみで表現し、<code>derived</code> は使わない。
+気温・天気の重みのような「表向きの値」は、スケールした貯水池の
+<code>stages</code> が <code>modify</code> で駆動する （3 節・4.3
 節）</li>
 <li>状態遷移の条件分岐（今の季節・初回サイクルか否か）は、0/1
 の重みプロパティを参照する <code>pick</code> として表現する （2.3
-節。確率のための仕組みを確率 0/100% の極として使う）</li>
-<li>大気水分量は、天気そのものの stages 閾値としては使わず（4.1
-節）、天気候補ごとの重み専用プロパティを
-<code>stages</code>/<code>modify</code>
-経由で駆動する入力としてのみ使う（4.3
-節）。晴れ系・雨系のどちらの重みも大気水分量に
-連動させ、固定の重み定数にはしない（極端な条件下で「絶対に晴れない」「絶対に嵐にならない」を表現できるよう
-にするため）。晴れ系では
-<code>clear</code>（穏やかで過ごしやすい普通の晴れ）を最も重くし、この島の標準的な天気にする</li>
-<li>両極の極端な天候は、消費要因を持たない単調な季節内進行度が駆動する:
-<code>storm</code>（嵐）・後半の大雨は
-<code>monsoon_level</code>（雨季の深まり）の高水位帯が、<code>scorching</code>（炎天）は
-<code>thermal_level</code>（蓄熱量）の <code>hot</code>
-帯（乾季後半）が、それぞれ重みを立て、「雨季後半ほど嵐・大雨」「乾季後半ほど炎天」を対称に
-表現する（4.3 節）。ただし名残は意図的に非対称:
-嵐・大雨の上乗せは大気水分量のconditionsゲート越し
-のため、雨自身が水分を消費し尽くすまでの乾季序盤には名残が残るが、炎天は蓄熱量の上限
-= <code>hot</code> 閾値に
-より乾季の終了と同時に消える（残暑なし。雨は大気の水分を消費するが、晴れは大気の熱を消費しないという
-現実の物理と整合させ、「暑さ =
-乾季」をプレイヤーの体感と一致させる）</li>
-<li>「季節後半ほど過酷になる」は、消費要因を持たない単調な積分値（<code>thermal_level</code>/<code>monsoon_level</code>）から
-生まれ、追加の経過度計算を要しない（3 節末尾）。<code>calm</code> は
-<code>dry</code>/<code>wet</code> と逆向きのレート（回復方向）を
-持たせることで、この法則から意図的に外れる（3.1 節）</li>
-<li><code>calm</code>
-の大気水分量レートは「ほぼ0」にせず、<code>dry</code>
-で下がりきった水準から <code>wet</code> にふさわしい水準へ回復する
-向きのレートを持たせる。これにより大気水分量・蓄熱量は3季節を通じた1つの連続した波になり、<code>calm</code>
-の間にも 晴れ・雨の両方が起こる（3.1 節）。さらに <code>calm</code>
-では上昇レートと降雨の自己減算レートのバランスにより、
-連続未降雨時間が長くなりすぎない（＝概ね2日に1回、軽めの雨が挟まる）ようにしている（3.2
 節）</li>
-<li>季節レートは控えめな値に抑え、季節ごとの天気の対比はレートの絶対値ではなく自己減算との大小関係で作る。
-<code>wet</code>
-ではどの雨も正味マイナスのため降り続けば晴れ間を呼び込み、非降雨時の回復が次の雨へつなぐ
+<li>大気水分量は、天気そのものの stages 閾値としては使わず（4.1
+節）、天気候補ごとの重み専用プロパティを 駆動する入力としてのみ使う（4.3
+節）。晴れ系・雨系のどちらの重みも大気水分量に連動させ、固定の重み定数には
+しない（極端な条件下で「絶対に晴れない」「絶対に嵐にならない」を表現できるようにするため）。晴れ系では
+<code>clear</code> を最も重くし、この島の標準的な天気にする</li>
+<li>両極の極端な天候は、消費要因を持たない単調な季節内進行度が駆動する:
+嵐・後半の大雨は <code>monsoon_level</code> が、 炎天は
+<code>thermal_level</code> の <code>hot</code>
+帯（乾季後半）が重みを立てる（4.3 節）。名残は意図的に非対称: 嵐・大雨は
+乾季序盤に名残が残るが、炎天は蓄熱量の上限 = <code>hot</code>
+閾値により乾季の終了と同時に消える（残暑なし）</li>
+<li><code>calm</code> は <code>dry</code>/<code>wet</code>
+と逆向き（回復方向）のレートを持たせ、大気水分量・蓄熱量を 3
+季節を通じた 1 つの 連続した波にする（3.1 節）。<code>calm</code>
+では上昇レートと自己減算のバランスにより、連続未降雨時間を概ね 2 日に
+抑える（3.2 節）</li>
+<li>季節レートは控えめな値に抑え、季節ごとの天気の対比はレートの絶対値ではなく自己減算との大小関係で作る
 （3 節・4.3 節）</li>
 <li><code>dry</code> の雨は「一度も降らないか、多くても2〜3回」に抑える:
-dry帯のlight_rain_weightを最小(1)にし、
-雨季の名残（水分が高い間の嵐・大雨）と序盤補正（5.2
+dry帯のlight_rain_weightを最小(1)にし、 雨季の名残と序盤補正（5.2
 節）だけが乾季の数少ない雨を担う（4.3 節）</li>
-<li>難易度の初期補正は、天気を固定せず大気水分量という抽選の元データだけを操作することで実現し、不確実性を
-保つ。大気水分量自体が積分値であることを踏まえ、瞬間的な1回発火ではなく、専用カウンタの
-<code>stages</code> による 期間中の継続加算として表現する（5 節）</li>
+<li>難易度の初期補正は、天気を固定せず大気水分量という抽選の元データだけを操作し、専用カウンタの
+<code>stages</code> に よる期間中の継続加算として表現する（5 節）</li>
 <li>季節の持続時間は初回サイクルのみ固定 30 日、2
 周目以降はランダム化する（2.3 節）</li>
 <li>要件が乱数に依存する部分は、複数シードのシミュレーションによる統計テストで検証する（概要参照）</li>
@@ -812,27 +724,18 @@ dry帯のlight_rain_weightを最小(1)にし、
 <ul>
 <li><code>world</code> が
 <code>day</code>/<code>hour</code>/<code>minute</code>/<code>weather</code>
-を直接プロパティとして持つことは <code>core.yaml</code>
-で既に実装済みであり、 本書の「季節・天気を <code>world</code>
-のプロパティとして表現する」という方針は、その延長線上にあります （1
-節・2 節・4 節）。</li>
-<li>天気の遷移先をプロパティの現在値で重み付けした <code>pick</code>
-で決める設計（4.3 節）は、<code>GameElementDefinition.md</code> 17
-節に長く残っていた「天候遷移自体のランダム性の仕組みは未検討」という未決事項を解決したものです。
-文法上は既存語彙（<code>on_min</code> 直下の <code>pick</code>、9.7
-節・10 節）のみを使いますが、ローダーが <code>on_min</code> 等の
-rangeイベント直下の <code>pick</code>
-を実際に受け付けるようになったのは本実装からです（それまで文法リファレンス
-だけが先行していました）。</li>
+を直接プロパティとして持つ <code>core.yaml</code>
+の既存実装の延長線上に、 季節・天気のプロパティを追加している。</li>
 <li><code>object: world</code>
-を他オブジェクトから条件・重みとして参照する仕組みは未実装です（<code>GameElementDefinition.md</code>
-14.1 節・15 節・17 節）。ただし本書の季節・天気遷移ロジックはすべて
+を他オブジェクトから条件・重みとして参照する仕組みは未実装（<code>GameElementDefinition.md</code>
+14.1 節・15 節・17 節）。本書の季節・天気遷移ロジックはすべて
 <code>world</code> 自身の <code>on_min</code>（対象は常に
-<code>self</code>）として完結するため、この制約の影響を受けません。将来、天気に反応する別オブジェクト（例:
-装備の 防水性）を作る場合は <code>ancestor</code>
-経由での参照が必要になります。</li>
+<code>self</code>）
+として完結するため影響を受けないが、将来、天気に反応する別オブジェクト（例:
+装備の防水性）を作る場合は <code>ancestor</code>
+経由での参照が必要になる。</li>
 <li>本書全体を通じて <code>derived</code>（GameElementDefinition.md 16
-節・17 節）を一切使用していません。</li>
+節・17 節）を一切使用していない。</li>
 </ul>
 </article>
 </body>

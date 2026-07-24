@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class Path | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。 World/PlayerCharacter/Location と同じ理由で継承ではなくラップにしている。 travel_minutes/required_progress/destination_idはいずれも生成時（IslandSpawner）にインスタンス ごとへ上書きされる値であり、このビューは読み取りとtravelアクションの実行だけを提供する。 移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクション（move+duration）が担う。">
+    <meta name="description" content="道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。 World と同じ理由で継承ではなくラップにしている。 travel_minutes/required_progress/destination_idは生成時（IslandSpawner）にインスタンスごとへ 上書きされる値。移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクションが担う。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,10 +75,9 @@
 
   <h1 id="UnmappedIsland_Domain_Runtime_Views_Path" data-uid="UnmappedIsland.Domain.Runtime.Views.Path" class="text-break">Class Path</h1>
   <div class="markdown level0 summary"><p>道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。
-World/PlayerCharacter/Location と同じ理由で継承ではなくラップにしている。</p>
-<p>travel_minutes/required_progress/destination_idはいずれも生成時（IslandSpawner）にインスタンス
-ごとへ上書きされる値であり、このビューは読み取りとtravelアクションの実行だけを提供する。
-移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクション（move+duration）が担う。</p>
+World と同じ理由で継承ではなくラップにしている。</p>
+<p>travel_minutes/required_progress/destination_idは生成時（IslandSpawner）にインスタンスごとへ
+上書きされる値。移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクションが担う。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -120,7 +119,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_NameRegistry_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.%23ctor(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Defs.NameRegistry)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L21">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L20">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Path__ctor_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_NameRegistry_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.NameRegistry)">Path(WorldObject, NameRegistry)</h4>
@@ -159,7 +158,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_destinationIdId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.destinationIdId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L19">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L18">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_destinationIdId" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.destinationIdId">destinationIdId</h4>
   <div class="markdown level1 summary"></div>
@@ -188,7 +187,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_requiredProgressId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.requiredProgressId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L18">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L17">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_requiredProgressId" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.requiredProgressId">requiredProgressId</h4>
   <div class="markdown level1 summary"></div>
@@ -217,7 +216,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_travelMinutesId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.travelMinutesId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L17">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L16">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_travelMinutesId" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.travelMinutesId">travelMinutesId</h4>
   <div class="markdown level1 summary"></div>
@@ -248,7 +247,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_DestinationInstanceId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.DestinationInstanceId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L41">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L39">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Path_DestinationInstanceId_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.DestinationInstanceId*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_DestinationInstanceId" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.DestinationInstanceId">DestinationInstanceId</h4>
@@ -279,7 +278,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_Instance.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.Instance%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L15">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L14">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Path_Instance_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.Instance*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_Instance" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.Instance">Instance</h4>
@@ -309,7 +308,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_RequiredProgress.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.RequiredProgress%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L38">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L36">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Path_RequiredProgress_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.RequiredProgress*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_RequiredProgress" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.RequiredProgress">RequiredProgress</h4>
@@ -340,7 +339,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_TravelMinutes.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.TravelMinutes%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L35">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L33">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Path_TravelMinutes_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.TravelMinutes*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_TravelMinutes" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.TravelMinutes">TravelMinutes</h4>
@@ -373,12 +372,11 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_IdOrMissing_UnmappedIsland_Domain_Defs_NameRegistry_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.IdOrMissing(UnmappedIsland.Domain.Defs.NameRegistry%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L31">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L29">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Path_IdOrMissing_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.IdOrMissing*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_IdOrMissing_UnmappedIsland_Domain_Defs_NameRegistry_System_String_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.IdOrMissing(UnmappedIsland.Domain.Defs.NameRegistry,System.String)">IdOrMissing(NameRegistry, string)</h4>
-  <div class="markdown level1 summary"><p>未登録の名前は-1（LocalIndexMap.Missing扱い）にする（TryGetIdのout値は失敗時0＝
-別の名前の有効なIDになってしまうため、そのままでは使えない）。</p>
+  <div class="markdown level1 summary"><p>未登録の名前は-1（LocalIndexMap.Missing扱い）にする（理由はLocation.IdOrMissing参照）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -427,7 +425,7 @@ World/PlayerCharacter/Location と同じ理由で継承ではなくラップに�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path_Travel_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path.Travel(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L45">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L43">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_Path_Travel_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.Travel*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_Path_Travel_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.Views.Path.Travel(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession)">Travel(WorldObject, WorldSession)</h4>
@@ -488,7 +486,7 @@ actorが移動先へ移り、travel_minutes分の時間が進む）。</p>
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_Path.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.Path%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L13" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/Path.cs/#L12" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

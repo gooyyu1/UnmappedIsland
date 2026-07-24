@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class WellKnownProperties | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。 props 自体はどの ObjectDef も自由に追加できる汎用機構だが、&amp;quot;size&amp;quot;/&amp;quot;weight&amp;quot; という2つの名前だけは move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直接読みに行く。 ロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。">
+    <meta name="description" content="エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。 &amp;quot;size&amp;quot;/&amp;quot;weight&amp;quot; の2つだけは move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が 直接読みに行く。ロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,9 +75,8 @@
 
   <h1 id="UnmappedIsland_Domain_Defs_WellKnownProperties" data-uid="UnmappedIsland.Domain.Defs.WellKnownProperties" class="text-break">Class WellKnownProperties</h1>
   <div class="markdown level0 summary"><p>エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。
-props 自体はどの ObjectDef も自由に追加できる汎用機構だが、&quot;size&quot;/&quot;weight&quot; という2つの名前だけは
-move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直接読みに行く。
-ロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。</p>
+&quot;size&quot;/&quot;weight&quot; の2つだけは move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が
+直接読みに行く。ロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -119,7 +118,7 @@ move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WellKnownProperties__ctor_UnmappedIsland_Domain_Defs_NameRegistry_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WellKnownProperties.%23ctor(UnmappedIsland.Domain.Defs.NameRegistry)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L14">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L13">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WellKnownProperties__ctor_" data-uid="UnmappedIsland.Domain.Defs.WellKnownProperties.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WellKnownProperties__ctor_UnmappedIsland_Domain_Defs_NameRegistry_" data-uid="UnmappedIsland.Domain.Defs.WellKnownProperties.#ctor(UnmappedIsland.Domain.Defs.NameRegistry)">WellKnownProperties(NameRegistry)</h4>
@@ -153,7 +152,7 @@ move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WellKnownProperties_SizeId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WellKnownProperties.SizeId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L11">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L10">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WellKnownProperties_SizeId_" data-uid="UnmappedIsland.Domain.Defs.WellKnownProperties.SizeId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WellKnownProperties_SizeId" data-uid="UnmappedIsland.Domain.Defs.WellKnownProperties.SizeId">SizeId</h4>
@@ -183,7 +182,7 @@ move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WellKnownProperties_WeightId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WellKnownProperties.WeightId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L12">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L11">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WellKnownProperties_WeightId_" data-uid="UnmappedIsland.Domain.Defs.WellKnownProperties.WeightId*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WellKnownProperties_WeightId" data-uid="UnmappedIsland.Domain.Defs.WellKnownProperties.WeightId">WeightId</h4>
@@ -220,7 +219,7 @@ move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WellKnownProperties.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WellKnownProperties%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L9" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WellKnownProperties.cs/#L8" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

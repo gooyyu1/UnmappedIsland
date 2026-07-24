@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class SlotAcceptRule | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、 Withをタグ（4節）のグローバルIDか、object_defそのもののグローバルIDのどちらかとして解釈する （Matches参照）。trait名では直接マッチングしない: traitはmixin合成後に消えてしまう外部から 参照すべきでない存在であり、trait経由でタグ付けしたければtags（4節）を使う。">
+    <meta name="description" content="GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、 withをタグ（4節）かobject_defのグローバルIDとして解釈する（Matches参照）。trait名では直接 マッチングしない（traitはmixin合成後に消える。trait経由のタグ付けはtags（4節）を使う）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,9 +75,8 @@
 
   <h1 id="UnmappedIsland_Domain_Defs_SlotAcceptRule" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule" class="text-break">Class SlotAcceptRule</h1>
   <div class="markdown level0 summary"><p>GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、
-Withをタグ（4節）のグローバルIDか、object_defそのもののグローバルIDのどちらかとして解釈する
-（Matches参照）。trait名では直接マッチングしない: traitはmixin合成後に消えてしまう外部から
-参照すべきでない存在であり、trait経由でタグ付けしたければtags（4節）を使う。</p>
+withをタグ（4節）かobject_defのグローバルIDとして解釈する（Matches参照）。trait名では直接
+マッチングしない（traitはmixin合成後に消える。trait経由のタグ付けはtags（4節）を使う）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -119,7 +118,7 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SlotAcceptRule__ctor_UnmappedIsland_Domain_Defs_SlotAcceptTargetKind_System_Int32_System_Int32_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SlotAcceptRule.%23ctor(UnmappedIsland.Domain.Defs.SlotAcceptTargetKind%2CSystem.Int32%2CSystem.Int32%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L31">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L30">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SlotAcceptRule__ctor_" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SlotAcceptRule__ctor_UnmappedIsland_Domain_Defs_SlotAcceptTargetKind_System_Int32_System_Int32_System_Boolean_" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.#ctor(UnmappedIsland.Domain.Defs.SlotAcceptTargetKind,System.Int32,System.Int32,System.Boolean)">SlotAcceptRule(SlotAcceptTargetKind, int, int, bool)</h4>
@@ -168,7 +167,7 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SlotAcceptRule_with.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SlotAcceptRule.with%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L27">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L26">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_SlotAcceptRule_with" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.with">with</h4>
   <div class="markdown level1 summary"></div>
@@ -199,7 +198,7 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SlotAcceptRule_Consume.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SlotAcceptRule.Consume%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L29">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L28">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SlotAcceptRule_Consume_" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.Consume*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SlotAcceptRule_Consume" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.Consume">Consume</h4>
@@ -229,7 +228,7 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SlotAcceptRule_Max.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SlotAcceptRule.Max%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L28">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L27">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SlotAcceptRule_Max_" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.Max*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SlotAcceptRule_Max" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.Max">Max</h4>
@@ -259,7 +258,7 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SlotAcceptRule_TargetKind.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SlotAcceptRule.TargetKind%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L26">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L25">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SlotAcceptRule_TargetKind_" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.TargetKind*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SlotAcceptRule_TargetKind" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.TargetKind">TargetKind</h4>
@@ -291,12 +290,11 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SlotAcceptRule_Matches_UnmappedIsland_Domain_Defs_ObjectDef_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SlotAcceptRule.Matches(UnmappedIsland.Domain.Defs.ObjectDef)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L41">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L39">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_SlotAcceptRule_Matches_" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.Matches*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_SlotAcceptRule_Matches_UnmappedIsland_Domain_Defs_ObjectDef_" data-uid="UnmappedIsland.Domain.Defs.SlotAcceptRule.Matches(UnmappedIsland.Domain.Defs.ObjectDef)">Matches(ObjectDef)</h4>
-  <div class="markdown level1 summary"><p>TargetKind.Tagならcandidateがそのタグを持っていれば真、TargetKind.Objectならcandidate
-がまさにそのobject_defそのものであれば真（CombinationDef.Matchesとはタグ側のみ同じ規約）。</p>
+  <div class="markdown level1 summary"><p>Tagならcandidateがそのタグを持てば真、Objectならまさにそのobject_defであれば真。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -347,7 +345,7 @@ Withをタグ（4節）のグローバルIDか、object_defそのもののグロ
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_SlotAcceptRule.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.SlotAcceptRule%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L24" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/SlotDef.cs/#L23" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

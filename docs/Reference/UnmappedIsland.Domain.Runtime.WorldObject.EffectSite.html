@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Struct WorldObject.EffectSite | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。 「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から 行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。 置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居たスタック(固定 番号)に、同種がまだ残っているか」で決まる。残っているなら（selfが生き残る、またはdestroyされても 同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、残っていないなら（同種が全て消えた）その空いた 位置をそのまま引き継ぐ。この判別は在庫（originStack.Members.Count）で行う（OriginKindRemains）—— 「その位置が同種を受け入れられるか」ではない点に注意。空になったスタックも同種を受け入れ可能だが位置は 引き継ぐべきで、固定スロットが空スタックを保持する実装でも在庫判定なら正しい。">
+    <meta name="description" content="ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉したスナップショット。 same_slot spawnだけがこれを使い、置き換え先を決める。「これからselfが消えるか」は捕捉時には 織り込まず、置き換え位置の判断は配置時のスロットの状態から行う（OriginKindRemains参照）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,16 +74,9 @@
 
 
   <h1 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite" class="text-break">Struct WorldObject.EffectSite</h1>
-  <div class="markdown level0 summary"><p>active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した
-スナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。
-「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から
-行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>
-<p>置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居たスタック(固定
-番号)に、同種がまだ残っているか」で決まる。残っているなら（selfが生き残る、またはdestroyされても
-同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、残っていないなら（同種が全て消えた）その空いた
-位置をそのまま引き継ぐ。この判別は在庫（originStack.Members.Count）で行う（OriginKindRemains）——
-「その位置が同種を受け入れられるか」ではない点に注意。空になったスタックも同種を受け入れ可能だが位置は
-引き継ぐべきで、固定スロットが空スタックを保持する実装でも在庫判定なら正しい。</p>
+  <div class="markdown level0 summary"><p>ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉したスナップショット。
+same_slot spawnだけがこれを使い、置き換え先を決める。「これからselfが消えるか」は捕捉時には
+織り込まず、置き換え位置の判断は配置時のスロットの状態から行う（OriginKindRemains参照）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritedMembers">
@@ -120,7 +113,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_ObjectStack_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.%23ctor(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CUnmappedIsland.Domain.Runtime.ObjectStack%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L223">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L175">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__ctor_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_UnmappedIsland_Domain_Runtime_ObjectStack_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,UnmappedIsland.Domain.Runtime.ObjectStack,System.Int32)">EffectSite(WorldObject, int, ObjectStack, int)</h4>
@@ -169,7 +162,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_Parent.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L211">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L165">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_Parent" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.Parent">Parent</h4>
   <div class="markdown level1 summary"></div>
@@ -198,7 +191,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ParentSlotLocalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L212">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L166">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_ParentSlotLocalId" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.ParentSlotLocalId">ParentSlotLocalId</h4>
   <div class="markdown level1 summary"></div>
@@ -227,11 +220,10 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_originStack.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L216">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L169">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_originStack" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.originStack">originStack</h4>
-  <div class="markdown level1 summary"><p>捕捉時にself(origin)が属していたObjectStack。配置時にこれにoriginと同種が
-まだ残っているか（Members.Count&gt;0）で置き換え位置を分岐する。</p>
+  <div class="markdown level1 summary"><p>捕捉時にself(origin)が属していたObjectStack。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -258,12 +250,11 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_stackIndexAtCapture.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.stackIndexAtCapture%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L221">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L173">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_stackIndexAtCapture" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.stackIndexAtCapture">stackIndexAtCapture</h4>
-  <div class="markdown level1 summary"><p>捕捉時のoriginStackのセル位置。originの同種が全て消えて空いた位置へ引き継ぐときに使う
-（空セルが除去される非FixedPositionsではIndexOfStackで引けなくなるため捕捉値が要る。
-FixedPositionsは空セルを保持するので位置は安定＝この値のまま）。</p>
+  <div class="markdown level1 summary"><p>捕捉時のoriginStackのセル位置。空セルが除去される非FixedPositionsでは、同種が消えた後は
+IndexOfStackで引けなくなるため捕捉値が要る。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -292,15 +283,14 @@ FixedPositionsは空セルを保持するので位置は安定＝この値のま
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginKindRemains.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L239">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L189">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginKindRemains_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginKindRemains" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginKindRemains">OriginKindRemains</h4>
   <div class="markdown level1 summary"><p>元のスタックにoriginと同種がまだ残っているか（selfが生き残る／同種の兄弟が残る）。残っていれば
-置き換えオブジェクト（別の型）は隣へ、残っていなければ（空になった）その位置をそのまま引き継ぐ。</p>
-<p>「その位置がoriginの同種を受け入れられるか」ではない点に注意: 空になったスタック（セル）も同種を
-受け入れ可能だが、位置は引き継ぐべき。判定は在庫（Members.Count）で行うため、固定スロットが空セルを
-保持する実装でも正しい（空セルがリストに残っていても、同種が居なければ引き継ぎ側になる）。</p>
+置き換えオブジェクトは隣へ、残っていなければ空いたその位置をそのまま引き継ぐ。
+判定は在庫（Members.Count）で行う——「その位置が同種を受け入れられるか」ではない。空になった
+セルも同種を受け入れ可能だが、位置は引き継ぐべきだから。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -329,13 +319,12 @@ FixedPositionsは空セルを保持するので位置は安定＝この値のま
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellIndex_UnmappedIsland_Domain_Runtime_Slot_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex(UnmappedIsland.Domain.Runtime.Slot)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L244">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L193">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellIndex_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldObject_EffectSite_OriginCellIndex_UnmappedIsland_Domain_Runtime_Slot_" data-uid="UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.OriginCellIndex(UnmappedIsland.Domain.Runtime.Slot)">OriginCellIndex(Slot)</h4>
-  <div class="markdown level1 summary"><p>originが居たセルの位置。同種が残っていればoriginStackの現在位置、消えていれば捕捉時の位置
-（非FixedPositionsは除去で前詰めされるが捕捉値がその位置を指す／FixedPositionsは位置が安定）。
-Slot.PlaceSameSlotがこれを基準に、隣（同種残存）か元の位置（消滅）へ配置する。</p>
+  <div class="markdown level1 summary"><p>originが居たセルの位置。同種が残っていればoriginStackの現在位置、消えていれば捕捉時の位置。
+Slot.PlaceSameSlotがこれを基準に配置する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -386,7 +375,7 @@ Slot.PlaceSameSlotがこれを基準に、隣（同種残存）か元の位置�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldObject_EffectSite.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldObject.EffectSite%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L209" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldObject.ActiveEffects.cs/#L163" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class WorldSession | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態 （WorldCodex.cs のコメントで予告されている「実行時側」の最小実装）。WorldCodex 自体は ロード後不変な定義の集合であり続けるため、instance ID の発行という可変な状態はここに持たせる。 スロット移動（move_to_slot）自体は WorldObject.MoveToSlot が自分自身の責務として行うため、 ここでは仲介しない（WellKnownPropertiesは Codex.WellKnown からその都度渡す）。">
+    <meta name="description" content="1セッション分の実行時状態。WorldCodex はロード後不変な定義の集合であり続けるため、 instance ID の発行という可変な状態はここに持たせる。スロット移動は WorldObject.MoveToSlot が 自分自身の責務として行うため、ここでは仲介しない。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,11 +74,9 @@
 
 
   <h1 id="UnmappedIsland_Domain_Runtime_WorldSession" data-uid="UnmappedIsland.Domain.Runtime.WorldSession" class="text-break">Class WorldSession</h1>
-  <div class="markdown level0 summary"><p>実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態
-（WorldCodex.cs のコメントで予告されている「実行時側」の最小実装）。WorldCodex 自体は
-ロード後不変な定義の集合であり続けるため、instance ID の発行という可変な状態はここに持たせる。
-スロット移動（move_to_slot）自体は WorldObject.MoveToSlot が自分自身の責務として行うため、
-ここでは仲介しない（WellKnownPropertiesは Codex.WellKnown からその都度渡す）。</p>
+  <div class="markdown level0 summary"><p>1セッション分の実行時状態。WorldCodex はロード後不変な定義の集合であり続けるため、
+instance ID の発行という可変な状態はここに持たせる。スロット移動は WorldObject.MoveToSlot が
+自分自身の責務として行うため、ここでは仲介しない。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -120,7 +118,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession__ctor_UnmappedIsland_Domain_Defs_WorldCodex_System_Random_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.%23ctor(UnmappedIsland.Domain.Defs.WorldCodex%2CSystem.Random)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L25">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L23">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldSession__ctor_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession__ctor_UnmappedIsland_Domain_Defs_WorldCodex_System_Random_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.#ctor(UnmappedIsland.Domain.Defs.WorldCodex,System.Random)">WorldSession(WorldCodex, Random)</h4>
@@ -157,7 +155,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession__ctor_UnmappedIsland_Domain_Defs_WorldCodex_UnmappedIsland_Domain_Runtime_Views_World_System_Random_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.%23ctor(UnmappedIsland.Domain.Defs.WorldCodex%2CUnmappedIsland.Domain.Runtime.Views.World%2CSystem.Random)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L31">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L29">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldSession__ctor_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession__ctor_UnmappedIsland_Domain_Defs_WorldCodex_UnmappedIsland_Domain_Runtime_Views_World_System_Random_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.#ctor(UnmappedIsland.Domain.Defs.WorldCodex,UnmappedIsland.Domain.Runtime.Views.World,System.Random)">WorldSession(WorldCodex, World, Random)</h4>
@@ -201,7 +199,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession_nextInstanceId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.nextInstanceId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L23">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L21">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession_nextInstanceId" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.nextInstanceId">nextInstanceId</h4>
   <div class="markdown level1 summary"></div>
@@ -232,7 +230,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession_Codex.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.Codex%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L16">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L14">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldSession_Codex_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.Codex*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession_Codex" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.Codex">Codex</h4>
@@ -262,12 +260,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession_Rng.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.Rng%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L21">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L19">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldSession_Rng_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.Rng*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession_Rng" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.Rng">Rng</h4>
-  <div class="markdown level1 summary"><p>pick（10節）の重み付き抽選に使う乱数源。テストで決定的に振る舞わせたい場合は、
-シード固定の Random を渡せるようにコンストラクタで差し替え可能にしている。</p>
+  <div class="markdown level1 summary"><p>pick（10節）の重み付き抽選に使う乱数源。テストで決定的に振る舞わせられるよう、
+コンストラクタで差し替え可能。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -294,7 +292,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession_World.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.World%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L17">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L15">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldSession_World_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.World*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession_World" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.World">World</h4>
@@ -326,7 +324,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession_AdvanceWorldTime_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.AdvanceWorldTime(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L51">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L47">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldSession_AdvanceWorldTime_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.AdvanceWorldTime*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession_AdvanceWorldTime_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.AdvanceWorldTime(System.Int32)">AdvanceWorldTime(int)</h4>
@@ -360,12 +358,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession_Spawn_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession.Spawn(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L41">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L37">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_WorldSession_Spawn_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.Spawn*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_WorldSession_Spawn_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.WorldSession.Spawn(System.Int32)">Spawn(int)</h4>
-  <div class="markdown level1 summary"><p>指定した ObjectDef の新しい WorldObject を生成する（spawn、9.4節）。まだどこにも配置されて
-いないため、呼び出し側が生成された WorldObject.MoveToSlot で配置する。</p>
+  <div class="markdown level1 summary"><p>指定した ObjectDef の新しい WorldObject を生成する（spawn、9.4節）。まだどこにも
+配置されていないため、呼び出し側が MoveToSlot で配置する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -416,7 +414,7 @@
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_WorldSession.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.WorldSession%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L14" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/WorldSession.cs/#L12" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

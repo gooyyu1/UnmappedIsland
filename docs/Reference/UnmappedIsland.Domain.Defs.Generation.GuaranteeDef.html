@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class GuaranteeDef | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への 実装回答）。軸の分布だけでは「山が必ず1つ」を保証できないため、「指定軸が最大/最小のサイトから Count個へ、このLocationTypeを強制割当する」という明示的な保証を、最近傍マッチングの前に行う。">
+    <meta name="description" content="島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」）。 指定軸が最大/最小のサイトからCount個へ、このLocationTypeを最近傍マッチングの前に強制割当する （軸の分布だけでは「山が必ず1つ」の類を保証できないため）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,9 +74,9 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_Generation_GuaranteeDef" data-uid="UnmappedIsland.Domain.Defs.Generation.GuaranteeDef" class="text-break">Class GuaranteeDef</h1>
-  <div class="markdown level0 summary"><p>島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への
-実装回答）。軸の分布だけでは「山が必ず1つ」を保証できないため、「指定軸が最大/最小のサイトから
-Count個へ、このLocationTypeを強制割当する」という明示的な保証を、最近傍マッチングの前に行う。</p>
+  <div class="markdown level0 summary"><p>島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」）。
+指定軸が最大/最小のサイトからCount個へ、このLocationTypeを最近傍マッチングの前に強制割当する
+（軸の分布だけでは「山が必ず1つ」の類を保証できないため）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">

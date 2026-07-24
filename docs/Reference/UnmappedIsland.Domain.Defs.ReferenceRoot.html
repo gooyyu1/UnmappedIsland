@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Enum ReferenceRoot | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の 対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層の パスは現状の用例に存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する 仕組みがまだ無いため、起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが 「見つからなければworldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。">
+    <meta name="description" content="conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の 対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみ対応。 worldは起点として未対応（ロード時エラー、14.1節）。Ancestorは見つからなければworldまで遡るため、 世界固有の概念の参照はAncestorで代替できる。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -76,10 +76,9 @@
 
   <h1 id="UnmappedIsland_Domain_Defs_ReferenceRoot" data-uid="UnmappedIsland.Domain.Defs.ReferenceRoot" class="text-break">Enum ReferenceRoot</h1>
   <div class="markdown level0 summary"><p>conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の
-対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層の
-パスは現状の用例に存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する
-仕組みがまだ無いため、起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが
-「見つからなければworldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。</p>
+対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみ対応。
+worldは起点として未対応（ロード時エラー、14.1節）。Ancestorは見つからなければworldまで遡るため、
+世界固有の概念の参照はAncestorで代替できる。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <h6><strong>Namespace</strong>: <a class="xref" href="UnmappedIsland.html">UnmappedIsland</a>.<a class="xref" href="UnmappedIsland.Domain.html">Domain</a>.<a class="xref" href="UnmappedIsland.Domain.Defs.html">Defs</a></h6>
@@ -104,17 +103,16 @@
       </tr>
       <tr>
         <td id="UnmappedIsland_Domain_Defs_ReferenceRoot_Ancestor">Ancestor</td>
-        <td><p>selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（Runtime.
-WorldObject.FindAncestorWithProperty参照）。「どのオブジェクトが定義しているか」に依存しない、
-木構造上の実効的な参照のための起点。SlotPosition判定（{in_slot: ...}）では意味を持たないため
-未対応（ロード時エラー）。</p>
+        <td><p>selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先
+（WorldObject.FindAncestorWithProperty参照）。SlotPosition判定（{in_slot: ...}）では意味を
+持たないため未対応（ロード時エラー）。</p>
 </td>
       </tr>
       <tr>
         <td id="UnmappedIsland_Domain_Defs_ReferenceRoot_Child">Child</td>
         <td><p>passiveのtarget専用（8.1節）。親が宣言した効果を、そのスロットに入った各子へ
-ブロードキャスト登録するために使う（WorldObject.RegisterEdgeWith参照）。単一の参照先へ解決される
-conditions/active/weight/transferの文脈では意味を持たない（それらの許可rootには含めない）。</p>
+ブロードキャスト登録するために使う。単一の参照先へ解決されるconditions/active/weight/transferの
+文脈では意味を持たない（それらの許可rootには含めない）。</p>
 </td>
       </tr>
       <tr>
@@ -124,9 +122,8 @@ conditions/active/weight/transferの文脈では意味を持たない（それ�
       </tr>
       <tr>
         <td id="UnmappedIsland_Domain_Defs_ReferenceRoot_DraggedParent">DraggedParent</td>
-        <td><p>combinations内でのみ意味を持つ、ドラッグされてきたカードの直接の親。
-液体容器のような「中身のオブジェクトがコンテナ親のプロパティを参照する」ケース
-（液体マーカーのpour_in/pour_*が、dragged容器のliquid_amountへ移送する）で使う。</p>
+        <td><p>combinations内でのみ意味を持つ、ドラッグされてきたカードの直接の親
+（液体容器のように「中身がコンテナ親のプロパティを参照する」ケースで使う）。</p>
 </td>
       </tr>
       <tr>
@@ -150,7 +147,7 @@ conditions/active/weight/transferの文脈では意味を持たない（それ�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ReferenceRoot.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ReferenceRoot%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ReferenceRoot.cs/#L12" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ReferenceRoot.cs/#L11" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

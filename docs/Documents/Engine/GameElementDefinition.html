@@ -106,8 +106,8 @@ YAML）の<strong>文法そのもの</strong>を体系的にまとめた、唯�
 リファレンスです。<code>traits</code>・<code>object_defs</code>・<code>props</code>・<code>stages</code>・<code>slots</code>・<code>combinations</code>・<code>recipes</code>・<code>passives</code>・<code>active</code>・
 <code>modify</code>・<code>accumulate</code>・<code>add</code>・<code>destroy</code>・<code>spawn</code>・<code>move</code>・<code>pick</code>・<code>actions</code>・<code>duration</code>・<code>conditions</code>
 など、YAML 上のキーワードの意味と 書き方はすべてここに集約します。</p>
-<p>本書が定めるのは<strong>文法</strong>だけです。その文法を使って気候・レシピ・重さ・カード間の相互作用といった<strong>具体的なゲーム内容を
-どう表現するか</strong>は、以下の別ドキュメントに切り出しています。</p>
+<p>本書が定めるのは<strong>文法</strong>だけです。その文法で<strong>具体的なゲーム内容をどう表現するか</strong>は、以下の別ドキュメントを
+参照してください。</p>
 <ul>
 <li><a href="./RecipeSystem.html"><code>RecipeSystem.md</code></a> —
 アイテムの製作</li>
@@ -128,17 +128,15 @@ href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a> —
 Schema</a>）は <a
 href="./WorldCodex.schema.json"><code>WorldCodex.schema.json</code></a>
 （メタ情報は <a
-href="./WorldCodexSchema.html"><code>WorldCodexSchema.md</code></a>）を参照してください。本書はスキーマの人間向け解説を
-兼ねますが、機械的な検証はスキーマ側が担います。</p>
-<p>本書は現時点の確定した文法を記述します。未決定の論点は個別に触れず、17
+href="./WorldCodexSchema.html"><code>WorldCodexSchema.md</code></a>）を参照してください。機械的な検証はスキーマ側が担います。</p>
+<p>本書は確定した文法のみを記述します。未決定の論点は 17
 節にまとめています。</p>
 <h2 id="設計原則">2. 設計原則</h2>
 <ul>
 <li><strong>統一的な実行エンジン</strong>:
 あらゆる概念を共通の枠組み・単一の汎用エンジンで表現し、概念ごとの専用ロジックを増やしません。</li>
 <li><strong>tick 駆動</strong>: 時間経過にともなう変化は、すべて tick
-ごとの独立変数への加減算（<code>accumulate</code>）で表現します。計算式による
-導出（<code>derived</code>）は採用していません（17 節）。</li>
+ごとの独立変数への加減算（<code>accumulate</code>）で表現します。</li>
 <li><strong>範囲による状態決定</strong>:
 数値プロパティの値域から状態（<code>stages</code>）を決定する仕組みを型定義レベルで共通化します。</li>
 <li><strong>ハードコードしない／ファイル追加だけで拡張できる</strong>:
@@ -162,22 +160,15 @@ href="./WorldCodexSchema.html"><code>WorldCodexSchema.md</code></a>）を参照�
 <ul>
 <li>YAML
 ファイルは所定のディレクトリ以下のすべてのファイルが自動的に読み込まれます。ゲーム本体の定義と
-MOD の定義は 別ディレクトリに配置し、双方を混在させずに管理します（例:
-ゲーム本体は
-<code>core</code>/<code>terrains</code>/<code>foods</code>/<code>tools</code>
-など
-複数ファイルに分割し、ユーザー定義は別途の外部ディレクトリに置く）。</li>
+MOD の定義は 別ディレクトリに分けて管理します。</li>
 <li>マッピングキーの重複は、ローダーの<strong>厳格モード</strong>でエラーにします（多くの
-YAML パーサはデフォルトで重複キーを
-後勝ちで黙って上書きするため、明示的な安全策として必要です）。</li>
+YAML パーサは重複キーを後勝ちで 黙って上書きするため）。</li>
 <li>ロード後に別途<strong>バリデーションステップ</strong>を設けます。</li>
 <li>同じ ID
 を持つ定義が複数のファイルに存在する場合、ファイル・ディレクトリ・読み込みのタイミングを問わず
-<strong>常にエラー</strong>とします（後勝ちで黙って上書きする、という規則は持ちません）。「追加のつもりだったのに
-既存の定義を誤って上書きしていた」という事故を防ぐためです。MOD
-による既存定義の意図的な差し替えは、
-この「追加」の文法とは別に、専用の「既存 object_def への
-patch」文法を用意して表現します（詳細は別途）。</li>
+<strong>常にエラー</strong>とします（意図しない上書き事故の防止のため、後勝ちの上書き規則は持ちません）。MOD
+による 既存定義の意図的な差し替えは、専用の「既存 object_def への
+patch」文法で表現します（詳細は別途）。</li>
 </ul>
 <h2 id="object_defs型定義">4. object_defs（型定義）</h2>
 <p>型定義は <code>object_defs</code>
@@ -193,10 +184,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 <code>object_def</code>
 にタグを付けられます。<code>traits</code>（5節）も同じ <code>tags</code>
 フィールドを 持て、その trait を参照するあらゆる <code>object_def</code>
-へタグが合成されます（tags 自体は <code>props</code>/<code>slots</code>
-のような 識別子をキーとする構造ではなく単純な集合なので、複数の trait
-間・trait と object_def 自身の間で同じタグが
-重複しても衝突エラーにはなりません）。</p>
+へタグが合成されます。tags は単純な集合なので、trait 間・ trait と
+object_def 自身の間で同じタグが重複しても衝突エラーにはなりません。</p>
 <div class="sourceCode" id="cb3"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">traits</span><span class="kw">:</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">location</span><span class="kw">:</span></span>
@@ -209,13 +198,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <p>タグは、<code>slots.accepts</code>（7.2節）・<code>combinations.with</code>（12.1節）が型・グループを指定する唯一の手段です。
 <code>object_defs</code> の id や trait
 名では直接マッチングしません（trait
-は合成後に消えてしまう存在であり、外部から
-参照すべきではないため）。同一の trait を参照していない
-<code>object_def</code> 同士でも、同じタグさえ共有していれば
-同じように受け入れられます（<code>beach</code>
-の例のように、<code>location</code> trait を経由しなくても
-<code>tags: [location]</code> を 直接書けば <code>forest</code>
-と同じ扱いを受けられます）。</p>
+は合成後に消える存在であり、外部から参照
+すべきではないため）。<code>beach</code> の例のように trait
+を経由せず直接 <code>tags</code> を書いても、同じタグを共有していれば
+同じ扱いを受けます。</p>
 <h2 id="traitsmixin">5. traits（mixin）</h2>
 <p>複数の <code>object_def</code> で共有するプロパティ・アクション等を
 <code>traits</code> として定義します。</p>
@@ -268,9 +254,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="
 に持たせると、<strong>インスタンスの生成（spawn）時に 1 回だけ、
 範囲内の一様乱数で初期値をロール</strong>します。以後は固定値と同じ扱いで、tick
 ごとの再ロールは行いません
-（<code>Domain.Defs.PropertyDef.CreateValue</code> 参照。かつては毎 tick
-再ロールの意味でしたが、 「開始時に 1
-回引いて以後固定」へ変更されています）。</p>
+（<code>Domain.Defs.PropertyDef.CreateValue</code> 参照）。</p>
 <div class="sourceCode" id="cb5"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_durability</span><span class="kw">:</span></span>
@@ -282,31 +266,26 @@ on_overflow / on_shortfall（周回・上下限）</h3>
 の下限側の鏡像）を持たせます。<code>value</code> の
 <code>{min, max}</code>（6.2 節、生成時に 1
 回ロールする初期値の範囲）とは別の仕組みです。</p>
-<p><code>on_overflow</code>/<code>on_shortfall</code> は
+<p><code>on_overflow</code>/<code>on_shortfall</code> の中身は
 <code>on_min</code>（6.5 節）と全く同じ型の <code>active</code>（9
-節）内容をそのまま流用しますが、 対象は現時点で <code>self</code>
-のみに限定されます（未対応:
+節）内容ですが、対象は 現時点で <code>self</code> のみです（未対応:
 <code>parent</code>/<code>actor</code>/<code>dragged</code>、ロード時にエラー）。</p>
 <ul>
-<li><code>on_overflow</code> は、値が <code>range</code>
-の上限を超えた瞬間に、著者が指定した内容を一度だけ適用します。</li>
-<li><code>on_shortfall</code> は、値が <code>range</code>
-の下限を下回った瞬間に、著者が指定した内容を一度だけ適用します。</li>
-<li>どちらも <code>range</code>
+<li><code>on_overflow</code> は値が <code>range</code>
+の上限を超えた瞬間、<code>on_shortfall</code>
+は下限を下回った瞬間に、指定した内容を 一度だけ適用します。</li>
+<li>どちらも、<code>range</code>
 が定義されていて著者が明示的に書かなかった場合、<strong>自分自身を境界値（<code>on_overflow</code>
 なら <code>range.max</code>、<code>on_shortfall</code> なら
 <code>range.min</code>）へ <code>set</code>
-する</strong>という既定の内容が自動的に補われます。これにより、 著者は
-<code>range</code>
-を書くだけで、レンジ型プロパティの上限・下限のクランプを実装できます（<code>on_overflow</code>/
-<code>on_shortfall</code>
-を明示するのは、繰り上げ・繰り下げのような特別な挙動が要る場合だけで構いません）。</li>
+する</strong>既定の内容が自動的に補われます。<code>range</code> を書く
+だけで上下限のクランプになり、明示するのは繰り上げ・繰り下げのような特別な挙動が要る場合だけです。</li>
 <li><strong>空のmappingを書く（<code>on_shortfall: {}</code>）と、「宣言だけして何もしない」</strong>、つまり既定のクランプを打ち消して
 範囲外の値をそのまま許容する、という意味になります。<code>on_min</code>（6.5
 節）で値を再設定するプロパティ （気候の <code>season_remaining</code>
 等、core.yaml参照）では、既定のクランプが <code>on_min</code>
-の再設定後に走って 値を境界へ引き戻す（結果 <code>on_min</code>
-を二重発火させうる）ことを避けるため、この形を使います。</li>
+の再設定後に走って <code>on_min</code>
+を二重発火させうるため、この形を使います。</li>
 </ul>
 <div class="sourceCode" id="cb6"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
@@ -336,57 +315,37 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="
 <li><code>add</code>
 に書けるプロパティは、自分自身（折り返し）に限らず、同じ object_def
 内の他のプロパティ
-（繰り上げ・繰り下げ先）も指定できます。存在しないプロパティ名を書いた場合は
-<code>on_min</code>/<code>add</code> と同様に 黙って無視されます。</li>
-<li>自分自身の折り返し・繰り下げには、絶対値を代入する
-<code>set</code>（9.2 節）ではなく <code>add</code>
-を使ってください。後述の 通り
+（繰り上げ・繰り下げ先）も指定できます。存在しないプロパティ名は
+<code>on_min</code>/<code>add</code> と同様に黙って無視されます。</li>
+<li>自分自身の折り返し・繰り下げには <code>set</code>（9.2 節）ではなく
+<code>add</code> を使ってください。後述の通り
 <code>on_overflow</code>/<code>on_shortfall</code> はループしないため、1
 tick で <code>range</code> の幅を複数回分飛び越えることがあります。
 <code>set</code>
 で固定値へ代入するとその超過分を失いますが、<code>add</code>
-なら差分を保ったまま反映されるため、こちらのほうが
-堅牢です（<code>set</code>
-は、超過分を気にせず絶対値へ揃えたい別の用途向けの機能で、既定のクランプ動作自体もこの
-<code>set</code> を使っています）。</li>
+なら差分を保ったまま反映されます。</li>
 <li><code>on_overflow</code>/<code>on_shortfall</code>
 はループしません。1 tick につき、条件を満たしたプロパティ 1 つあたり最大
 1 回 だけ適用されます（<code>accumulate</code>
 の通常の反映・<code>on_min</code> と同じ扱いです）。そのため:
 <ul>
 <li>1 tick で <code>range</code> の幅を複数回分飛び越えた場合、1
-回の適用では収まりきらず、残りは次回以降の tick に 持ち越されます（例:
-通常より大きい <code>add</code> が1回だけ発生した場合）。</li>
-<li>繰り上げ・繰り下げ先自身がさらに範囲外へ出る場合（分→時→日のように連鎖する場合）、同じ
-tick 内で解決 されるかどうかは <code>props</code>
-の宣言順に依存します。あるプロパティの
-<code>on_overflow</code>/<code>on_shortfall</code> が加算する
-繰り上げ・繰り下げ先が、それより後に宣言されていれば、そのプロパティも同じ
-tick 内で正しく折り返されます。 先に宣言されている場合は、次の tick
-まで持ち越されます。そのため、繰り上げ・繰り下げの連鎖がある
-<code>props</code> は、繰り上げ・繰り下げ元→先の順（例:
+回の適用では収まりきらず、残りは次回以降の tick に 持ち越されます。</li>
+<li>繰り上げ・繰り下げ先自身がさらに範囲外へ出る連鎖（分→時→日）が同じ
+tick 内で解決されるかどうかは、 <code>props</code>
+の宣言順に依存します。繰り上げ・繰り下げ先が自分より後に宣言されていれば同じ
+tick 内で正しく 折り返され、先に宣言されていれば次の tick
+へ持ち越されます。連鎖がある <code>props</code> は、繰り上げ・繰り下げの
+元→先の順（例:
 <code>minute</code>→<code>hour</code>→<code>day</code>）で宣言することを推奨します。</li>
 </ul></li>
 <li>1 回の判定内での適用順は <code>on_max</code>（6.6 節）→
 <code>on_min</code>（6.5 節）→ <code>on_overflow</code> →
-<code>on_shortfall</code> です。 <code>on_max</code>/<code>on_min</code>
-は値を書き換えない「観測者」（境界に達しているという事実をそのまま報告するだけ）、
-<code>on_overflow</code>/<code>on_shortfall</code>
-は値を書き換える「補正者」（circular
-に折り返すプロパティの後始末）という
-役割の違いがあるため、観測者を先に、補正者を後に評価します。
-この順序が重要なのは、circular（自身を折り返す）プロパティが 1 tick で
-<code>range</code> の幅を一気に飛び越えた
-場合です。<code>on_overflow</code>/<code>on_shortfall</code>
-の折り返しは境界ちょうどには着地しないことが多く（例: 0-100
-を循環するプロパティが 150 まで加算された場合、折り返し後は 50
-に着地し、100 ちょうどにはなりません）、 もし
-<code>on_max</code>/<code>on_min</code>
-を補正の<strong>後</strong>に判定すると、値はすでに <code>range</code>
-内へ戻ってしまっており、「この瞬間
-確かに境界へ到達していた」という事実そのものを見逃してしまいます。観測者を先に評価することで、折り返しの
-有無や着地点によらず、<code>on_max</code>/<code>on_min</code>
-は境界へ到達した瞬間を必ず捉えます。</li>
+<code>on_shortfall</code> です。
+値を書き換えない「観測者」（<code>on_max</code>/<code>on_min</code>）を、値を書き換える「補正者」（<code>on_overflow</code>/<code>on_shortfall</code>）
+より先に評価します。折り返しは境界ちょうどには着地しないことが多いため（例:
+0-100 循環で 150 まで加算 されると折り返し後は
+50）、補正の後に判定すると「境界へ到達した瞬間」を見逃してしまうからです。</li>
 </ul>
 <h3 id="stages段階">6.4 stages（段階）</h3>
 <p>数値プロパティは <code>stages</code>
@@ -400,14 +359,10 @@ tick 内で正しく折り返されます。 先に宣言されている場合�
 <li><p>最下段の段階は
 <code>min: null</code>（または省略）とし、それより下の残り全ての値を拾います。</p></li>
 <li><p><strong>シンボル型プロパティ（6.8 節）の場合は <code>min</code>
-を書きません。</strong> シンボル型の値は <code>NameRegistry</code>
-への登録順で
-決まるだけの整数であり、大小関係そのものに意味が無いため、<code>min</code>（半開区間、大小関係が前提）は使えません
-（書いた場合はロード時エラー）。代わりに、<strong>段階の
-<code>name</code> 自体がそのまま比較対象の値になります</strong>（値が
-<code>name</code>
-と完全一致する場合だけその段階、というシンボル名同士の比較）。シンボル値自体が既に「名前の付いた
-離散値」であるため、ステージ名と比較値を別々に書く理由がありません。</p>
+を書きません</strong>（書いた場合はロード時エラー。シンボル値の
+大小関係に意味が無いため）。代わりに、<strong>段階の <code>name</code>
+自体がそのまま比較対象の値になります</strong>（値が <code>name</code>
+と完全一致する場合だけその段階になる、シンボル名同士の比較）。</p>
 <div class="sourceCode" id="cb7"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">weather</span><span class="kw">:</span></span>
@@ -419,44 +374,32 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">modify</span><span class="kw">:</span></span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">sunlight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
-<p>数値プロパティの「最下段（min省略）＝フォールバック」という概念は、シンボル型プロパティには存在しません。
-シンボル値は列挙可能な有限集合であり、著者が <code>stages</code>
-に書かなかった値は単に「該当する段階が無い」 （<code>ResolveStage</code>
-が <code>null</code>
-を返す）だけで、“それ以外の残り全部を拾う段”という受け皿は不要だからです。
-数値型と同じ受け皿を用意する新たな語彙（フォールバック専用のキー等）を追加するほどのニーズが無い以上、
-シンボル型プロパティにはフォールバックという概念自体を持ち込みません。そのため
-<code>ResolveStage</code> は シンボル型プロパティに対して
-<code>null</code>
-を返すことがあり、呼び出し側（<code>WhenOwnStage</code> ゲートを含む）は
-必ず <code>null</code>
-チェックを行う前提とします（<code>Runtime.WorldObject.IsInStage</code>
-参照）。 複数のシンボル値を1つの段階名にまとめたい（例:「雨」として
-storm/heavy_rain/light_rain をひとまとめに
-したい）場合は、<code>stages</code> ではなく利用側の
-<code>conditions</code> の <code>in</code>（14.1
-節）で表現します。<code>stages</code> はあくまで
-1つのプロパティ自身の値と段階名を1対1で対応させる仕組みであり、複数値のグルーピングは対象外です。</p></li>
+<p>数値型の「最下段（min省略）＝フォールバック」という概念は、シンボル型には存在しません。<code>stages</code>
+に
+書かなかった値は単に「該当する段階が無い」となり、<code>ResolveStage</code>
+は <code>null</code> を返します。呼び出し側 （<code>WhenOwnStage</code>
+ゲートを含む）は必ず <code>null</code>
+チェックを行います（<code>Runtime.WorldObject.IsInStage</code> 参照）。
+複数のシンボル値を1つの段階名にまとめたい場合は、<code>stages</code>
+ではなく利用側の <code>conditions</code> の <code>in</code> （14.1
+節）で表現します。<code>stages</code>
+は1つのプロパティ自身の値と段階名を1対1で対応させる仕組みです。</p></li>
 <li><p>現在値に基づいて常に一意に段階を決定します。ヒステリシス（上昇時・下降時で閾値をずらす仕組み）は採用しません。</p></li>
 <li><p>ステージの <code>passives</code>
 はレベルトリガー（そのステージにいる間ずっと有効）のみです。ステージ切替の瞬間だけ発火する
 edge-triggered な仕組み（<code>on_enter</code>/<code>on_exit</code>
-的なもの）は導入していません。「下限に達した瞬間」という実際に
-必要なケースは、専用の <code>on_min</code>（6.5
-節）で表現します。</p></li>
+的なもの）は導入していません（17 節）。「下限に達した瞬間」は 専用の
+<code>on_min</code>（6.5 節）で表現します。</p></li>
 <li><p>ステージは <code>name</code>/<code>min</code>
-という固有の属性を持つため、ステージ自体を配列の要素にはできません。そのため
-<code>passives:</code> は <code>name</code>/<code>min</code>
-と対等な兄弟キーとして、専用にネストしたキーのまま持ちます（オブジェクトレベル・
-プロパティレベルの <code>passives:</code> と同じく常に配列です、8
-節）。</p></li>
+という固有の属性を持つため、ステージ自体を配列の要素にはできません。<code>passives:</code>
+は <code>name</code>/<code>min</code>
+と対等な兄弟キーとして、専用にネストしたキーのまま持ちます（他のレベルの
+<code>passives:</code> と同じく 常に配列です、8 節）。</p></li>
 <li><p>ステージの <code>passives</code> ブロックには
 <code>conditions</code>
 も併記できます。この場合、「現在値がこの段階の区間内に
 あること」（<code>WhenOwnStage</code>）と <code>conditions</code>
-の両方を満たす間だけ有効になります（AND、8.2 節）。例えば
-「装備している間、かつ耐久値が intact
-ステージの間だけ」のような組み合わせ条件を表現できます。</p></li>
+の両方を満たす間だけ有効になります（AND、8.2 節）。</p></li>
 </ul>
 <div class="sourceCode" id="cb8"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
@@ -481,36 +424,29 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="
 on_min（下限以下である間、毎tick実行される内容）</h3>
 <p><code>on_min</code> は、プロパティが<strong><code>range</code>
 の下限以下である間、毎 tick 実行される <code>active</code>（9
-節）内容</strong>です（旧称 <code>on_zero</code>。比較対象を固定の 0
-ではなく <code>range.min</code> へ一般化し、0
-以外の下限を持つプロパティにも「底を突いた」
-判定を使えるようにしたものです）。<code>passives</code> の
-<code>modify</code>/<code>accumulate</code>
-と同じレベルトリガーの考え方を、
-<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>（一時的な命令）に適用したものです。「跨いだ瞬間だけ」を検出する仕組み（前
-tick との比較）は持たず、現在値だけで判定します。</p>
+節）内容</strong>です。 「跨いだ瞬間だけ」を検出する仕組み（前 tick
+との比較）は持たず、現在値だけで判定します（<code>passives</code> と同じ
+レベルトリガーの考え方を、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>
+という一時的な命令に適用したもの）。</p>
 <ul>
 <li>毎 tick
 実行されても安全なのは、典型的な用途が自己終端するためです。<code>destroy</code>
-は既に破棄済みのオブジェクトに
-対して繰り返し実行しても安全（冪等）です。<code>spawn</code>
-を伴う場合は、同じ <code>on_min</code> 内で <code>destroy</code>
-と組み合わせるのが 基本形であり、破棄後はそのオブジェクト自体が tick
-の対象でなくなるため、2回目以降の実行は起こりません。<code>destroy</code>
-を伴わずに <code>spawn</code> だけを書くと、下限以下である間 tick
-毎に生成し続けてしまう点に注意してください。</li>
-<li><code>on_min</code> の中身は <code>active</code>（9
-節）と全く同じ型をそのまま持ちますが、対象は現時点で <code>self</code>
-のみに限定されます （未対応:
-<code>parent</code>/<code>actor</code>/<code>dragged</code>、ロード時にエラー）。<code>range.min</code>
-を参照するため、<code>range</code> は <code>on_min</code> を
-使う場合に必須です（<code>on_overflow</code>/<code>on_shortfall</code>
-と同じ制約）。</li>
+は冪等であり、<code>spawn</code> を伴う 場合は同じ <code>on_min</code>
+内で <code>destroy</code> と組み合わせるのが基本形です（破棄後は tick
+の対象でなくなるため、
+2回目以降の実行は起こりません）。<code>destroy</code> を伴わずに
+<code>spawn</code> だけを書くと、下限以下である間 tick 毎に
+生成し続けてしまう点に注意してください。</li>
+<li>中身は <code>active</code>（9 節）と全く同じ型ですが、対象は現時点で
+<code>self</code> のみです（未対応:
+<code>parent</code>/<code>actor</code>/
+<code>dragged</code>、ロード時にエラー）。<code>range.min</code>
+を参照するため、<code>range</code> は <code>on_min</code>
+を使う場合に必須です
+（<code>on_overflow</code>/<code>on_shortfall</code> と同じ制約）。</li>
 <li><code>on_overflow</code>/<code>on_shortfall</code>（6.3
-節）とは異なり、<code>on_min</code>
-は著者が明示的に書かない限り既定の自動生成は
-行われません。「底を突いたら破棄する」のような挙動は用途ごとに大きく異なるため、単純なクランプを前提にした
-既定値がなじまないからです。</li>
+節）とは異なり、著者が明示的に書かない限り既定の自動生成は行われません
+（「底を突いたら」の挙動は用途ごとに大きく異なり、クランプを前提にした既定値がなじまないため）。</li>
 </ul>
 <div class="sourceCode" id="cb9"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
@@ -533,26 +469,11 @@ on_max（上限以上である間、毎tick実行される内容）</h3>
 <p><code>on_max</code> は、プロパティが<strong><code>range</code>
 の上限以上である間、毎 tick 実行される <code>active</code>（9
 節）内容</strong>です。<code>on_min</code> （6.5
-節）の上限側の鏡像です。「跨いだ瞬間だけ」を検出する仕組み（前 tick
-との比較）は持たず、現在値だけで 判定します。</p>
-<ul>
-<li><code>on_min</code> と同様に、毎 tick
-実行されても安全な用途（自己終端する <code>destroy</code> や
-<code>spawn</code>＋<code>destroy</code> の組み合わせ）
-が基本形です。<code>destroy</code> を伴わずに <code>spawn</code>
-だけを書くと、上限以上である間 tick 毎に生成し続けてしまう点に
-注意してください。</li>
-<li><code>on_max</code> の中身は <code>active</code>（9
-節）と全く同じ型をそのまま持ちますが、対象は現時点で <code>self</code>
-のみに限定されます （未対応:
-<code>parent</code>/<code>actor</code>/<code>dragged</code>、ロード時にエラー）。<code>range.max</code>
-を参照するため、<code>range</code> は <code>on_max</code> を
-使う場合に必須です（<code>on_overflow</code>/<code>on_shortfall</code>/<code>on_min</code>
-と同じ制約）。</li>
-<li><code>on_overflow</code>/<code>on_shortfall</code>（6.3
-節）とは異なり、<code>on_max</code>
-は著者が明示的に書かない限り既定の自動生成は 行われません。</li>
-</ul>
+節）の上限側の鏡像で、制約もすべて同じです:
+現在値だけで判定するレベルトリガーであること、自己終端しない
+<code>spawn</code> 単独の使用に注意が要ること、対象が <code>self</code>
+のみであること、<code>range</code> が必須であること、既定の自動生成が
+無いこと。</p>
 <div class="sourceCode" id="cb10"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pressure</span><span class="kw">:</span></span>
@@ -570,21 +491,18 @@ inherit（祖先からの値の継承）</h3>
 を指定すると、<strong>自分の直接の親から遡り、この名前のプロパティを定義している最初の祖先</strong>
 （8.6 節の <code>ancestor</code>
 と同じ探索ロジック）の実効値を、自分の実効値へ加算します（<code>GetEffectiveValue</code>、
-可逆）。該当する祖先が最後まで見つからない場合、寄与は 0
-です（見つからない場合の既定「寄与0/常に0」と 同じ規約）。</p>
+可逆）。該当する祖先が最後まで見つからない場合、寄与は 0 です。</p>
 <ul>
-<li>直接の親（<code>parent</code>）固定ではなく、祖先を遡る（<code>ancestor</code>）固定である理由:
-直接の親がこのプロパティを 持たない場合に対応するためです（例:
+<li>探索が直接の親（<code>parent</code>）固定でなく祖先を遡るのは、直接の親がこのプロパティを持たない場合に対応するため
+です（例:
 アイテムの直接の親はプレイヤーだが、<code>ambient_temperature</code>
-は部屋が
-持つ）。途中の親がこのプロパティを定義していれば、そこで探索が止まり、そこより上（例えば部屋）までは
-遡りません。これにより、断熱容器のように「途中で値を変えて中継する」表現も、<code>inherit</code>
-とは別に、その 容器自身が<code>range</code>・<code>modify</code>
+は部屋が持つ）。途中の親が定義して
+いればそこで探索が止まるため、断熱容器のように「途中で値を変えて中継する」表現も、その容器自身が
+<code>range</code>・<code>modify</code>
 等で自分の値を作ればそのまま実現できます。</li>
-<li>worldは唯一のシングルトンであり、すべてのオブジェクトは最終的にworldの子孫であるため（7.1
-節）、
-途中に誰も定義していなければ必ずworldまで遡ります。「本当に世界固有の概念かどうか」を著者が事前に
-区別する必要はありません。</li>
+<li>すべてのオブジェクトは唯一のシングルトンである world
+の子孫であるため（7.1 節）、途中に誰も定義していなければ 必ず world
+まで遡ります。「本当に世界固有の概念かどうか」を著者が事前に区別する必要はありません。</li>
 </ul>
 <div class="sourceCode" id="cb11"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
@@ -600,20 +518,17 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href=
 <h3 id="シンボル型の値">6.8 シンボル型の値</h3>
 <p>数値プロパティの値は 32bit 整数ですが、<code>value</code>
 に整数にも真偽値にもならない識別子（<code>^[a-z][a-z0-9_]*$</code>、 3.2
-節と同じ命名規則）を書くと、その識別子を<strong>シンボル名</strong>として自動的に整数へ変換します（<code>object_defs</code>/
-<code>props</code>/<code>slots</code>/<code>tags</code>
-の名前と同じ、文字列↔︎整数の相互変換の仕組みを、シンボル名専用にもう1つ用意した
-だけです）。専用の宣言（<code>symbol: true</code>
-等）は不要で、<code>value</code> の書き方だけで区別できます。</p>
+節と同じ命名規則）を書くと、その識別子を<strong>シンボル名</strong>として自動的に整数へ変換します。専用の宣言
+（<code>symbol: true</code> 等）は不要で、<code>value</code>
+の書き方だけで区別できます。液体の種類のような「離散した状態」を、 enum
+型等を新設せず既存の
+<code>props</code>/<code>conditions</code>/<code>set</code>
+の語彙だけで表現するための仕組みです。値の比較・代入は 9.2 節・14.1
+節の通り、他の数値プロパティと全く同じように書けます。</p>
 <div class="sourceCode" id="cb12"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">content</span><span class="kw">:</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> water</span><span class="co">   # 整数にも真偽値にもならないため、シンボル名として登録される</span></span></code></pre></div>
-<p>液体の種類のような「離散した状態」を、専用の仕組み（enum
-型・タグ付きの子オブジェクト等）を新設せず、 既存の
-<code>props</code>/<code>conditions</code>/<code>set</code>
-の語彙だけで表現するために導入しました。値の比較・代入は 9.2 節・14.1
-節の 通り、他の数値プロパティと全く同じように書けます。</p>
 <ul>
 <li>シンボル名同士の大小関係（<code>lt</code>/<code>gt</code>
 等）は、登録順に依存する恣意的なものであり意味を持ちません。
@@ -639,10 +554,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href=
 <li>すべてのオブジェクトは、唯一のシングルトンである
 <code>world</code>（15
 節）を根とするこのツリーのどこかに、必ず所属します。
-そのため「世界に存在するすべてのオブジェクト」を別途一覧として管理する必要はなく、<strong>このツリーに繋がっている
-こと自体が「世界に存在すること」を意味します</strong>。<code>destroy</code>（9.3
-節）は親スロットからの切り離し、<code>spawn</code>（9.4 節）
-は生成とこのツリーへの接続として表現できるのはこの前提のためです。</li>
+<strong>このツリーに繋がっていること自体が「世界に存在すること」を意味します</strong>（別途の一覧管理はしません）。
+<code>destroy</code>（9.3
+節）は親スロットからの切り離し、<code>spawn</code>（9.4
+節）は生成とこのツリーへの接続として表現できるのは
+この前提のためです。</li>
 </ul>
 <div class="sourceCode" id="cb13"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
@@ -682,17 +598,12 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href=
 <ul>
 <li><code>tag</code>: <code>tags</code>（4.1
 節）で宣言したタグ名を指定します。そのタグを持つあらゆる型（MOD
-追加分も含む）を まとめて受け入れられます（例:
-<code>{tag: location, max: 9999}</code> で、<code>location</code>
-タグを持つあらゆる場所オブジェクトを 受け入れる。<code>location</code>
-タグは trait 経由で配っても、object_def 自身に直接書いてもよい）。</li>
+追加分も含む）を まとめて受け入れられます。</li>
 <li><code>object</code>: <code>object_defs</code> の id
 そのものを指定します。まさにその型だけを受け入れたい場合（例:
 レシピ制作中
 オブジェクトが特定の素材の型だけを受け入れたい場合）に、そのためだけの単発タグを新設せずに書けます。
-trait 名では直接マッチングしません（trait
-は合成後に消えてしまう存在であり、外部から参照すべきではないため。 trait
-経由でタグ付けしたい場合は <code>tags</code> を使います）。</li>
+trait 名では直接マッチングしません（4.1 節）。</li>
 <li>1 つの <code>slots.accepts</code> の中で <code>tag</code> と
 <code>object</code> のエントリを混在させられます。</li>
 </ul>
@@ -767,13 +678,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href=
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">covers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">torso</span><span class="kw">]</span></span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">layer</span><span class="kw">:</span><span class="at"> base</span></span></code></pre></div>
 <h3 id="スタック表示">7.6 スタック表示</h3>
-<p>同種オブジェクトをまとめて1つの視覚的なまとまり（スタック）として表示するための設定です。ほとんどの場合、
-これは単なる表示上の見た目の話であり、世界の実体（<code>slots</code>の中身が個々のオブジェクトの集まりであること）
-そのものは変わりません。<code>Slot</code>は中身を<code>ObjectStack</code>（1つのスタックにまとまるオブジェクトの集まり）の列として
-保持し、常に「表示上の並び順」そのものを表す実データとして維持されます。個々の<code>ObjectStack</code>の中は次で説明する
-<code>stack_order</code>（無ければ挿入順）で並びます。スタックの区別を畳み込んだ「このスロットの中身全部」のビュー
-（<code>Slot.Contents</code>）も提供されますが、これは内部処理（タグ判定・重さ集計など、スタックの区別に興味が無い
-ほとんどの処理）向けの派生ビューであり、正の情報源はあくまで<code>ObjectStack</code>の列です。</p>
+<p>同種オブジェクトをまとめて1つの視覚的なまとまり（スタック）として表示するための設定です。世界の実体
+（<code>slots</code>の中身が個々のオブジェクトの集まりであること）は変わりません。<code>Slot</code>は中身を<code>ObjectStack</code>
+（1つのスタックにまとまるオブジェクトの集まり）の列として保持し、これが「表示上の並び順」の正の情報源です。
+個々の<code>ObjectStack</code>の中は<code>stack_order</code>（無ければ挿入順）で並びます。スタックの区別を畳み込んだビュー
+（<code>Slot.Contents</code>）も提供されますが、これは内部処理（タグ判定・重さ集計など）向けの派生ビューです。</p>
 <p><strong>スロット側</strong>（<code>slots</code>の各エントリに指定）:</p>
 <ul>
 <li><strong><code>stackable</code></strong>（既定<code>true</code>）:
@@ -785,12 +694,12 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href=
 <code>stackable</code>に従う（<code>true</code>なら異なる型の種類数、<code>false</code>なら個体数そのもの）。<code>capacity</code>（7.3節、サイズ合計）
 とは独立した、種類数/個数ベースの別軸の制約です。</li>
 <li><strong><code>fixed_positions</code></strong>（既定<code>false</code>）:
-前詰めしないか。<code>true</code>の場合、型ごとに固定番号（0始まり、
-<code>unit_capacity</code>個まで）が割り当てられ、空いた番号を保持したまま詰めません。新しい型が（<code>same_slot</code>経由の
-spawnではなく）通常の手段で初めて登場した際は、空いている最小番号へ自動的に割り当てられます。プレイヤーは
-手動で番号を入れ替えられます（例: プレイヤー手持ちの6枠。Card
-Survivalの手持ちUIと同じ、前詰めしない
-固定枠の挙動）。<code>same_slot</code>経由での新規登場は、下記「<code>spawn</code>との関係」で説明する別の割り当てルールに従います。</li>
+<code>true</code>の場合、型ごとに固定番号（0始まり、<code>unit_capacity</code>個まで）が
+割り当てられ、空いた番号を保持したまま前詰めしません。新しい型が（<code>same_slot</code>経由のspawnではなく）通常の
+手段で初めて登場した際は、空いている最小番号へ自動的に割り当てられます。プレイヤーは手動で番号を
+入れ替えられます（例:
+プレイヤー手持ちの6枠）。<code>same_slot</code>経由での新規登場は、下記「<code>spawn</code>との関係」の
+割り当てルールに従います。</li>
 </ul>
 <div class="sourceCode" id="cb19"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
@@ -808,10 +717,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href=
 <li><strong><code>stack_order</code></strong>:
 <code>{property, ascending}</code>。スタック内での並び順を、指定したプロパティの値で決めます。
 「手前に重ねたいものほどリストの末尾に並ぶ」という規約のもとで、<code>ascending: false</code>は値が小さいものほど
-末尾（劣化アイテムなら寿命が短いものほど手前に）、<code>ascending: true</code>は値が大きいものほど末尾（液体容器なら
-中身が少ないものほど手前に、というよりも中身の量に対する扱いは今後要検討）を表します。省略時は並び順が
-未定義で、新規インスタンスは常にスタックの末尾（挿入順）へ追加されます。劣化する液体など、複数のプロパティが
-絡む並び順のパターンは今後の検討課題です（12.1節参照）。</li>
+末尾（劣化アイテムなら寿命が短いものほど手前に）、<code>ascending: true</code>は値が大きいものほど末尾を表します。
+省略時は並び順が未定義で、新規インスタンスは常にスタックの末尾（挿入順）へ追加されます。劣化する液体など、
+複数のプロパティが絡む並び順のパターンは今後の検討課題です（12.1節参照）。</li>
 </ul>
 <div class="sourceCode" id="cb20"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
@@ -821,9 +729,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href=
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stack_order</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">property</span><span class="kw">:</span><span class="at"> freshness</span><span class="kw">,</span><span class="at"> </span><span class="fu">ascending</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="kw">}</span></span></code></pre></div>
 <ul>
-<li><p><code>stack_order</code>は、この<code>ObjectDef</code>の新規インスタンスがスタックへ加わる際の並び位置決定にのみ使います。
-一度並んだ後、値の変化に追従した再ソートは行いません。これは、同種は同じ速度で変化する（<code>accumulate</code>は
-<code>ObjectDef</code>ごとに一定量、8.4節）という前提のもとでのみ正しく、挿入時点の相対順序がその後も保たれます。</p></li>
+<li><p><code>stack_order</code>は、新規インスタンスがスタックへ加わる際の並び位置決定にのみ使います。一度並んだ後、値の変化に
+追従した再ソートは行いません。同種は同じ速度で変化する（<code>accumulate</code>は<code>ObjectDef</code>ごとに一定量、8.4節）
+前提のもとで、挿入時点の相対順序がその後も保たれるためです。</p></li>
 <li><p><strong><code>represented_by</code></strong>:
 スロット名。指定すると、そのスロットに現在入っている最初の1個を、このオブジェクトの
 <strong>代表</strong>として扱います。代表が存在する間、<code>actions</code>/<code>combinations</code>の実行対象はこのオブジェクト自身ではなく
@@ -843,23 +751,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href=
 <code>stack_order</code>と同じく、スタックへ加わるかどうかの判定は挿入時に1度だけ行い、その後の中身の変化を追って
 自動的に別スタックへ移し替えることはしません。<code>fixed_positions</code>の固定番号も<code>ObjectStack</code>単位で
 割り当てられるため、代表オブジェクトが違う容器同士は同じ固定番号を共有しません。<code>traits</code>側（5節）でも
-宣言でき、<code>stack_order</code>と同じ規則（自身の宣言が優先、複数の<code>trait</code>が重複宣言していればエラー）で
-マージされます。</p>
+宣言でき、<code>stack_order</code>と同じ規則（自身の宣言が優先、複数の<code>trait</code>の重複宣言はエラー）でマージされます。</p>
 <p><strong><code>spawn</code>（9.4節）との関係</strong>:
 <code>into</code>を省略（<code>same_slot</code>）した置き換えは、<code>destroy</code>を<code>spawn</code>より先に実行し
-（9.3節・9.4節参照）、破棄されたオブジェクトが占めていた位置を新しいオブジェクトへそのまま引き継がせます。
-一般のスロットではリストの位置、<code>fixed_positions</code>のスロットでは固定番号がこれにあたります。これにより、種類が
-変わるアイテムが、周囲のスタックの並び順を崩したり、<code>fixed_positions</code>のスロットで新しい枠にはみ出したりする
-ことなく、同じ位置で置き換わります。<code>destroy</code>を伴わない場合（生き残ったまま増やす場合）は、新しいオブジェクトは
-自分の直後へ挿入されます。</p>
-<p>新しい型を挿入する必要があり（合流できる既存スタックが無く）、かつ自分自身の位置をそのまま再利用できない場合
+（9.3節・9.4節参照）、破棄されたオブジェクトが占めていた位置（一般のスロットではリストの位置、
+<code>fixed_positions</code>のスロットでは固定番号）を新しいオブジェクトへそのまま引き継がせます。これにより、種類が
+変わるアイテムが、周囲の並び順を崩したり新しい枠にはみ出したりせず、同じ位置で置き換わります。<code>destroy</code>を
+伴わない場合（生き残ったまま増やす場合）は、新しいオブジェクトは自分の直後へ挿入されます。</p>
+<p>新しい型を挿入する必要があり（合流できる既存スタックが無く）、かつ自分自身の位置を再利用できない場合
 （<code>destroy</code>しない、または<code>destroy</code>しても同種が残る場合）、挿入位置は「自分の隣」です。一般のスロットでは
-これは単純な挿入（自分の直後）で済みますが、<code>fixed_positions</code>のスロットでは、<strong>まず自分の固定番号+1の位置
-（右側）から空いている番号を探し</strong>、間にいる他の型をすべて+1して押し出してから割り込ませます。右側に空きが
-見つからなければ、<strong>今度は自分の固定番号-1の位置（左側）から空いている番号を探し</strong>、間にいる他の型をすべて
--1して押し出してから割り込ませます（「右が空いている限り右に、そうでなければ左に生まれる」）。いずれの方向も
-前詰めはせず、押し出された型同士の相対順序は変わりません（押し出しは型単位で行うため、押し出される型が
-スタック（同種複数個）であっても中身がバラけることはありません）。どちらの方向にも空きが見つからない場合
+単純に自分の直後へ挿入します。<code>fixed_positions</code>のスロットでは、<strong>まず自分の固定番号+1の位置（右側）から
+空いている番号を探し</strong>、間にいる他の型をすべて+1して押し出してから割り込ませます。右側に空きが無ければ、
+<strong>自分の固定番号-1の位置（左側）から空いている番号を探し</strong>、間にいる他の型をすべて-1して押し出してから
+割り込ませます。いずれの方向も前詰めはせず、押し出された型同士の相対順序は変わりません（押し出しは型単位で
+行うため、押し出される型がスタックであっても中身はバラけません）。どちらの方向にも空きが無い場合
 （<code>unit_capacity</code>分すべてが埋まっている場合）は配置に失敗し、必ず起点自身の親へ強制的に伝播します
 （<code>fallback</code>が無いのと同じ扱い）。</p>
 <p>例（<code>unit_capacity: 4</code>、<code>_</code>は空き番号）:
@@ -867,26 +772,22 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href=
 <code>C</code> が生まれると（<code>destroy</code>
 なし）、空いている1番へそのまま入り <code>A C B _</code>
 になります。続けて <code>A</code> から <code>D</code>
-が生まれると、1番は<code>C</code>で
-埋まっているため、2番以降で最初に空いている3番までの間（<code>C</code>・<code>B</code>）を+1して押し出し、<code>A D C B</code>
-になります
-（<code>C</code>と<code>B</code>の相対順序は変わりません）。さらに
-<code>A</code> から <code>E</code>
-が生まれても、4枠すべてが埋まっており押し出す先が
-無いため配置に失敗し、起点自身の親へ強制的に伝播します。なお、生まれた側が元々のスタックと合流できる型
-（例: <code>A</code> から <code>A</code>
-が生まれる場合）は、新しい固定番号を消費せず既存のスタックへそのまま加わるため、
-このあふれの心配はありません。</p>
+が生まれると、空いている3番
+までの間（<code>C</code>・<code>B</code>）を+1して押し出し、<code>A D C B</code>
+になります。さらに <code>A</code> から <code>E</code>
+が生まれても、4枠すべてが
+埋まっているため配置に失敗し、起点自身の親へ強制的に伝播します。なお、生まれた側が元のスタックと合流できる型
+（例: <code>A</code> から
+<code>A</code>）は、新しい固定番号を消費せず既存のスタックへそのまま加わるため、このあふれの心配は
+ありません。</p>
 <p>右側に空きが無い場合の例: <code>_(0) _(1) A(2) B(3)</code> の状態で
 <code>A</code> から <code>C</code>
 が生まれると、右側（3番以降）は<code>B</code>で
-埋まっているため、左側（1番以前）を探し、空いている1番へそのまま入って
+埋まっているため左側を探し、空いている1番へそのまま入って
 <code>_ C A B</code> になります。続けて <code>B</code> から
-<code>D</code>
-が生まれると、右側（4番）はスロットの外なので即座に左側を探すことになり、2番（<code>A</code>）は埋まっている
-ため1番以前を探し、空いている0番までの間（<code>C</code>・<code>A</code>）を-1して押し出し、<code>C A D B</code>
-になります
-（<code>C</code>と<code>A</code>の相対順序は変わりません）。</p>
+<code>D</code> が
+生まれると、右側（4番）はスロットの外なので左側を探し、空いている0番までの間（<code>C</code>・<code>A</code>）を-1して押し出し、
+<code>C A D B</code> になります。</p>
 <h2 id="passives持続する影響">8. passives（持続する影響）</h2>
 <p><code>passives</code>
 は、<code>self</code>/<code>parent</code>/<code>child</code>
@@ -937,14 +838,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href=
 <li><code>conditions</code>
 を省略すれば「常時（無条件）」を意味します。</li>
 <li><code>self</code>/<code>parent</code>
-対象の効果は、両方とも「このブロックを宣言したオブジェクト自身が今どのスロットに入っている
-か」という同じ物理的な実体を指すため、<code>conditions</code> の
-<code>object</code> を省略（既定値
-<code>self</code>）して書くのが自然です （例:
+対象の効果は、どちらも「このブロックを宣言したオブジェクト自身が今どのスロットに入っているか」
+という同じ実体を指すため、<code>conditions</code> の <code>object</code>
+は省略（既定値 <code>self</code>）して書くのが自然です（例:
 <code>{in_slot: equip}</code> は「自分自身が親の <code>equip</code>
-スロットに入っている間」を意味します）。<code>child</code> 対象の効果
-（親がdeclareし、子がゲート対象になるケース）では、<code>object: child</code>
-を使って子自身のスロット位置やプロパティを 参照できます。</li>
+スロットに入っている間」）。<code>child</code> 対象の効果では、
+<code>object: child</code>
+で子自身のスロット位置やプロパティを参照できます。</li>
 </ul>
 <h3 id="modify">8.3 modify</h3>
 <p>条件が真である間だけ計算式に寄与する、<strong>可逆的な</strong>修飾子です。条件が偽になった瞬間に寄与は自動的に消えます。値
@@ -980,12 +880,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href=
 <span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
 <span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">parent</span><span class="kw">:</span></span>
 <span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">attack</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
-<p>各ブロックは独立して登録・評価されます。同じ対象・同じプロパティに対して複数のブロックが同時に有効になった
-場合（例えば <code>conditions</code>
-を持たない=常時有効なブロックと、<code>conditions</code>
-付きのブロックが両方成立する場合）、 <code>modify</code> は 8.3
-節の通り単純加算で合成されます。<code>accumulate</code>
-も同様に、有効な全ブロックの量がそれぞれ tick 毎に 反映されます。</p>
+<p>各ブロックは独立して登録・評価されます。同じ対象・同じプロパティに対して複数のブロックが同時に有効になった場合、
+<code>modify</code> は 8.3
+節の通り単純加算で合成され、<code>accumulate</code>
+も有効な全ブロックの量がそれぞれ tick 毎に反映されます。</p>
 <h3 id="ancestor祖先を辿る対象">8.6 ancestor（祖先を辿る対象）</h3>
 <p><code>ancestor</code>
 は、<strong>このpassivesを宣言したオブジェクト自身の直接の親から遡り、対象プロパティを定義している
@@ -1001,13 +899,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href=
 <span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">modify</span><span class="kw">:</span></span>
 <span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ancestor</span><span class="kw">:</span></span>
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">ambient_temperature</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
-<p>暖炉自身がカート等（<code>ambient_temperature</code>
-を持たない容器）の中に置かれていても、その容器を素通りして、実際に
-<code>ambient_temperature</code>
-を持つ部屋（あるいはさらに上の祖先）に効果が届きます。祖先を辿った先のオブジェクトが後で
-移動した場合（例えば暖炉を運ぶカート自身が別の部屋へ移動した場合）、その移動をきっかけに再解決され、
-新しい祖先へ効果が自動的に切り替わります。</p>
-<p><code>ancestor</code> はconditions（14 節）の <code>object</code>
+<p>暖炉自身が <code>ambient_temperature</code>
+を持たない容器の中に置かれていても、その容器を素通りして、実際に定義している
+祖先に効果が届きます。祖先を辿った先が後で移動した場合は再解決され、新しい祖先へ効果が自動的に切り替わります。</p>
+<p><code>ancestor</code> は conditions（14 節）の <code>object</code>
 としても、<code>inherit</code>（6.7 節）の探索ロジックとしても使われる、
 共通の1つの祖先探索です。</p>
 <h2 id="active一時的な命令">9. active（一時的な命令）</h2>
@@ -1020,16 +915,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href=
 上の専用キーとしては書きません。この節で説明する
 <code>set</code>・<code>add</code>・<code>destroy</code>・
 <code>spawn</code>・<code>transfer</code>・<code>move</code>
-を、それが書ける場所（9.7 節:
-<code>actions</code>/<code>combinations</code>
-の各エントリ、<code>pick</code> の各候補、<code>props</code> の
-<code>on_min</code>/<code>on_overflow</code>/<code>on_shortfall</code>/<code>on_max</code>）の中に、<code>showMenu</code>/<code>conditions</code>/<code>with</code>/<code>weight</code>/<code>pick</code>
-と
-対等な兄弟キーとして直接書きます。専用のラップを挟まないことで、動詞（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>move</code>）が
-<code>pick</code>
-と並列に並び、「実行結果は直接書くか、<code>pick</code>
-で確率分岐するかのどちらか」という構造がそのまま YAML
-の見た目に表れます。</p>
+を、それが書ける場所（9.7
+節）の中に、<code>showMenu</code>/<code>conditions</code>/<code>with</code>/<code>weight</code>/<code>pick</code>
+と 対等な兄弟キーとして直接書きます。動詞が <code>pick</code>
+と並列に並ぶことで、「実行結果は直接書くか、<code>pick</code> で確率分岐
+するかのどちらか」という構造がそのまま YAML の見た目に表れます。</p>
 <h3 id="文法-操作が上位対象が下位-1">9.1 文法:
 操作が上位、対象が下位</h3>
 <p><code>set</code>・<code>add</code>・<code>destroy</code>・<code>spawn</code>
@@ -1066,15 +956,14 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href=
 節）か、<strong><code>{object, prop}</code> 参照</strong>
 （<code>conditions</code> の値参照・<code>weight</code> の path
 参照と同じ二択）のいずれかです。参照の場合、その参照先の現在の
-実効値をそのままコピーします（他のプロパティの値を、値を知らないまま複製する用途、例:
-別の容器から 注がれた液体の種類をそのまま引き継ぐ）。</p>
+実効値をそのままコピーします（例:
+別の容器から注がれた液体の種類をそのまま引き継ぐ）。</p>
 <div class="sourceCode" id="cb26"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set</span><span class="kw">:</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">self</span><span class="kw">:</span></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">content</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> dragged</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> content</span><span class="kw">}</span><span class="co">   # draggedの現在のcontentをそのままselfへコピーする</span></span></code></pre></div>
 <p><code>add</code>
-は加減算量が常に量そのもの（差分）であり、他のプロパティの値をそのままコピーする用途に当てはまらない
-ため、参照はまだ用意していません。</p>
+は加減算量が常に量そのもの（差分）であり、値をコピーする用途に当てはまらないため、参照は用意していません。</p>
 <h3 id="destroy">9.3 destroy</h3>
 <p>削除したい対象を直接指定します。単一の対象なら
 <code>destroy: self</code>
@@ -1092,21 +981,19 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href=
 は常に <strong><code>self</code> （この <code>active</code>
 を宣言したオブジェクト自身）が実行するもの</strong>とみなすため、<code>set</code>/<code>add</code>/<code>destroy</code>
 のような対象 キーのラップを挟みません。<code>destroy</code>
-と同時に指定でき（<code>{spawn: {...}, destroy: self}</code>）、「新しいオブジェクトを
-生成しつつ、自分自身は消滅させる」という組み合わせを1つのエントリで表現できます。この場合、<code>destroy</code>が先に
-実行されます。破棄によって実際に位置が空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが
-素直に実現できるためです。</p>
-<p>挿入先の<strong>スロット名を書く必要はありません</strong>。生成物を受け取るオブジェクト（後述の<code>into</code>が指す起点）が持つ
-スロットを<strong>宣言順に走査し、最初に配置できたスロットへ入れます</strong>。型ごとに用意されたスロット（アイテム用・
-設備用など）へ自然に振り分けられるため、著者はスロット名を知る必要がありません。</p>
+と同時に指定でき（<code>{spawn: {...}, destroy: self}</code>）、この場合
+<code>destroy</code> が
+先に実行されます（破棄によって位置が空いてから配置することで、スタック表示（7.6節）における位置の引き継ぎが
+素直に実現できるため）。</p>
+<p>挿入先の<strong>スロット名は書きません</strong>。生成物を受け取るオブジェクト（<code>into</code>が指す起点）が持つスロットを
+<strong>宣言順に走査し、最初に配置できたスロットへ入れます</strong>。著者はスロット名を知る必要がありません。</p>
 <p><strong><code>into</code>（配置先の起点）</strong>
 は、以下のいずれかです。</p>
 <ul>
 <li><strong>省略、または<code>same_slot</code></strong>:
-この<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>を宣言したオブジェクト（<code>self</code>）が今いる、
-まさにその場所（親と、<code>self</code>が現在占めているのと同じスロット）へそのまま配置します。クラフト・腐敗など、
-「同じ場所で別の物に置き換わる」場合に使う既定動作です。スロットの走査は行いません（<code>self</code>の現在の所属先が
-一意に決まるため）。<code>same_slot</code>は省略時と全く同じ意味を持つ、明示したい場合のためのキーワードです。</li>
+<code>self</code>が今いる、まさにその場所（親と、<code>self</code>が現在占めているのと同じスロット）へ
+そのまま配置します。クラフト・腐敗など「同じ場所で別の物に置き換わる」場合に使う既定動作です。スロットの
+走査は行いません。<code>same_slot</code>は省略時と全く同じ意味を持つ、明示したい場合のためのキーワードです。</li>
 <li><strong><code>self</code>/<code>actor</code></strong>:
 このいずれかを起点に、その対象が持つスロットを宣言順に走査します。<code>actor</code>
 （アクション実行者）は、アクション実行文脈でのみ解決できます。<code>on_min</code>/<code>on_overflow</code>/<code>on_shortfall</code>/<code>on_max</code>
@@ -1119,14 +1006,12 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href=
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> item_coconut</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> actor</span><span class="kw">}</span></span></code></pre></div>
 <p><code>into</code>が指す起点のどのスロットにも<code>accepts</code>/<code>capacity</code>が合わず配置できなかった場合、<strong><code>fallback</code>はYAML上に
 存在せず</strong>、必ずその起点自身の親へ伝播します。伝播先では<code>accepts</code>/<code>capacity</code>を無視し、先頭のスロットへ強制的に
-配置します（すべてのオブジェクトは必ずどこかの親に属さなければならないため）。スロットの指定が不要になった
-ことで、配置パターンは「起点を1つ選べば、そこに入らなければ自動的にその親へ」という単一のルールで尽くせます。
-たとえば上の<code>into: actor</code>の例は、収穫したアイテムをまずプレイヤーの手持ち（<code>actor</code>）へ入れようとし、手持ちの
-スロットがすべて埋まっていれば、actorが今いる場所（<code>actor</code>の親）へ必ず配置する、という「取得アイテムの
-置き場所」パターンを、著者が親を明示することなく表現します。</p>
-<p>伝播先の親も存在しない場合（起点が<code>world</code>直下など）、<code>into</code>への配置に失敗すると、そのオブジェクトはどこにも
-配置されないまま消えます（生成自体はされますが、worldツリーに繋がらないため、存在しなかったのと同じ扱いに
-なります。7.1 節参照）。</p>
+配置します（すべてのオブジェクトは必ずどこかの親に属さなければならないため）。たとえば上の<code>into: actor</code>の例は、
+収穫したアイテムをまずプレイヤーの手持ちへ入れようとし、埋まっていればactorが今いる場所（<code>actor</code>の親）へ必ず
+配置する、という「取得アイテムの置き場所」パターンになります。</p>
+<p>伝播先の親も存在しない場合（起点が<code>world</code>直下など）、<code>into</code>への配置に失敗すると、そのオブジェクトはworldツリーに
+繋がらないまま消えます（存在しなかったのと同じ扱いになります。7.1
+節参照）。</p>
 <h3 id="transfer">9.5 transfer</h3>
 <p><code>set</code>/<code>add</code>
 は固定の値・量しか書けないため、「在庫に応じて実際に動く量が変わる」移送（例:
@@ -1161,20 +1046,17 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb29-1"><a href=
 に残ります＝液体を無駄にしません）。<code>true</code>
 にすると、<code>from</code> の残量と <code>amount</code> だけで
 移動量が決まり、<code>to</code> の <code>range</code> を超えた分は
-<code>to</code> の <code>on_overflow</code>（未指定なら
-<code>range.max</code> へ自動でクランプ する既定動作、6.3
-節）に委ねます（あふれた分は失われます）。</li>
+<code>to</code> の
+<code>on_overflow</code>（未指定なら既定のクランプ、6.3 節）に
+委ねます（あふれた分は失われます）。</li>
 <li><strong><code>linked_add</code></strong>（省略可）:
 <code>add</code>（9.1
 節）と同じ構造で、実際に移動した量に比例してスケールされる
 追加の加減算を表します。各プロパティへの加減算量は
 <code>宣言値 × 実際に移動した量 / amount</code>（整数除算、
-切り捨て）で確定します。たとえば <code>amount: 1200</code> のうち実際に
-<code>600</code> しか移動しなかった場合、 <code>linked_add</code>
-で宣言した <code>200</code> は <code>200 × 600 / 1200 = 100</code>
-になります。固定の <code>add</code> では表現できない
-「飲んだ量に比例した副効果」（例:
-お茶の眠気改善）を表すために使います。</li>
+切り捨て）で確定します。固定の <code>add</code>
+では表現できない「飲んだ量に比例した副効果」（例: お茶の眠気改善）を
+表すために使います。</li>
 </ul>
 <div class="sourceCode" id="cb30"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
@@ -1189,12 +1071,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href=
 <span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">actor</span><span class="kw">:</span></span>
 <span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">wakefulness</span><span class="kw">:</span><span class="at"> </span><span class="dv">200</span><span class="co">   # 実際に移送された量に比例: 1200 飲めば +200、600 飲めば +100</span></span></code></pre></div>
 <p><code>from_object</code>/<code>from_prop</code>/<code>to_object</code>/<code>to_prop</code>
-を、<code>modify</code>/<code>set</code>/<code>add</code>
-と同じ「対象がキー、内容が値」という
-規約に合わせずフラットな4フィールドにしているのは、<code>conditions</code>（14.1
-節）の <code>object</code>/<code>prop</code> と同じ理由です。
-<code>from</code>・<code>to</code>
-それぞれ参照は常に1組であり、複数プロパティの入れ物としてネストする必要がありません。</p>
+をフラットな4フィールドにしているのは、<code>conditions</code>（14.1
+節）の <code>object</code>/<code>prop</code>
+と同じ理由です（<code>from</code>・<code>to</code>
+それぞれ参照は常に1組であり、ネストする必要がないため）。</p>
 <h3 id="move">9.6 move</h3>
 <p><code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>
 は、対象の所属先（どの親のどのスロットに入っているか）そのものは
@@ -1202,8 +1082,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href=
 は、既に世界に存在するオブジェクトを、<strong>別の場所（生成時に確定した特定のインスタンス）
 の中へ移動させる</strong>専用の動詞です。<code>transfer</code>（9.5
 節）が連続量（プロパティの値）を移すのに対し、<code>move</code> は
-オブジェクト自身の所属を移す、という対になる関係にあります。典型例は、土地と土地を繋ぐ道の移動アクション
-（<code>actor</code> を移動先の土地へ移す）です。</p>
+オブジェクト自身の所属を移します。典型例は、土地と土地を繋ぐ道の移動アクション（<code>actor</code>
+を移動先の土地へ移す）です。</p>
 <div class="sourceCode" id="cb31"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">travel</span><span class="kw">:</span></span>
@@ -1214,10 +1094,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href=
 <li><strong><code>object</code></strong>: 移動させる対象。現時点で
 <code>actor</code>
 のみ対応です（<code>self</code>/<code>parent</code>/<code>dragged</code>
-等、他の対象は
-「一度きりの命令に対してどれを動かすか」の意味論がまだ確定していないため未対応・ロード時エラー。9.1
-節で <code>active</code> の対象キー <code>child</code>
-が未対応なのと同じ理由）。</li>
+等は「一度きりの命令に
+対してどれを動かすか」の意味論が未確定のため未対応・ロード時エラー。9.1
+節で <code>active</code> の対象キー <code>child</code> が
+未対応なのと同じ理由）。</li>
 <li><strong><code>to_prop</code></strong>:
 <code>self</code>（<code>move</code>
 を宣言したオブジェクト自身）が持つプロパティ名。その実効値を
@@ -1225,26 +1105,22 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href=
 のインスタンスID（生成時に発行される、実行時限りの識別子）として解釈し、移動先とみなします。</li>
 </ul>
 <p>移動先を <code>object_defs</code> の
-id（型）ではなくプロパティ値（インスタンスID）で指すのは、<code>move</code>
-が使われる典型例
-（生成された特定の道が指す、生成された特定の移動先）が、<strong>定義時点では決まらず、実行時に初めて確定する
-個体</strong>を指す必要があるためです。<code>spawn</code>（9.4 節）の
-<code>object</code> のような型参照では、この個体を一意に指せません。
+id（型）ではなくプロパティ値（インスタンスID）で指すのは、典型例（生成された特定の
+道が指す特定の移動先）が、<strong>定義時点では決まらず、実行時に初めて確定する個体</strong>を指す必要があるためです。
 実際の解決は、<code>self</code>
-から所属ツリーの根（<code>world</code>、15
-節。すべてのオブジェクトは必ずここへ辿り着きます、 7.1
-節）まで遡り、そこから <code>InstanceId</code>
-が一致する子孫を探すことで行います。解決できない場合（<code>to_prop</code>
-を
-持たない、該当インスタンスが世界のどこにも存在しない）は、他の対象解決の失敗（9.1
-節）と同じく、何も 起きません。</p>
-<p>配置先の<strong>スロット名を書く必要はありません</strong>。<code>spawn</code>
-の <code>into</code>（9.4 節）と同様、移動先が持つスロットを
-宣言順に走査し、最初に配置できたスロットへ入れます。ただし
-<code>spawn</code> と異なり、<code>move</code> には
-<code>accepts</code>/<code>capacity</code>
-を無視した強制配置（親への伝播フォールバック）は<strong>ありません</strong>。移動対象は既に世界のどこかに存在しており
-「配置先が見つからなければ消える」わけにはいかないため、配置に失敗した場合は単に元の場所に留まります。</p>
+から所属ツリーの根（<code>world</code>、15 節）まで遡り、そこから
+<code>InstanceId</code> が一致する子孫を探す
+ことで行います。解決できない場合（<code>to_prop</code>
+を持たない、該当インスタンスが世界のどこにも存在しない）は、他の
+対象解決の失敗（9.1 節）と同じく、何も起きません。</p>
+<p>配置先の<strong>スロット名は書きません</strong>。<code>spawn</code>
+の <code>into</code>（9.4
+節）と同様、移動先が持つスロットを宣言順に走査し、
+最初に配置できたスロットへ入れます。ただし <code>spawn</code>
+と異なり、<code>move</code> には
+<code>accepts</code>/<code>capacity</code> を無視した
+強制配置（親への伝播フォールバック）は<strong>ありません</strong>。移動対象は既に世界に存在しており「配置先が見つからなければ
+消える」わけにはいかないため、配置に失敗した場合は単に元の場所に留まります。</p>
 <p><code>move</code> は
 <code>actions</code>/<code>combinations</code>/<code>pick</code>
 の各候補のいずれでも書けますが、<code>on_min</code>/<code>on_overflow</code>/
@@ -1267,15 +1143,15 @@ set/add/destroy/spawn/transfer/move が書ける場所</h3>
 <li><code>props</code> の <code>on_min</code>（6.5
 節）・<code>on_overflow</code>/<code>on_shortfall</code>（6.3
 節）・<code>on_max</code>（6.6 節）— これらは専用の
-キーの直下にそのまま書きます（元々ラップを挟んでいなかったため変更なし）</li>
+キーの直下にそのまま書きます</li>
 </ul>
 <h2 id="pick重み付き確率分岐">10. pick（重み付き確率分岐）</h2>
 <p><code>pick</code>
 は、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>/<code>move</code>（9
 節）を直接書ける場所であればどこでも、<strong>その代わりに</strong>書ける、
-重み付き候補のリストです。新しいトリガー体系は必要とせず、<code>passives</code>（無条件／<code>conditions</code>／stage
-内）には 書けません。<code>passives</code>
-は「いつ振るか」という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。</p>
+重み付き候補のリストです。<code>passives</code>（無条件／<code>conditions</code>／stage
+内）には書けません。<code>passives</code> は「いつ振るか」
+という瞬間を持たない、関係とゲートに基づく継続的な評価だからです。</p>
 <h3 id="基本構造-1">10.1 基本構造</h3>
 <p>各候補は <code>weight</code>
 に加えて、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>/<code>move</code>（9
@@ -1292,12 +1168,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href=
 <span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">destroy</span><span class="kw">:</span><span class="at"> actor</span></span></code></pre></div>
 <p>候補ごとに影響を受ける対象（<code>self</code>/<code>actor</code>
 など）そのものが異なるケースも、このように表現できます。<code>pick</code>
-の 入れ子は再帰的であり、候補の
-<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>/<code>move</code>
-の代わりにさらに別の <code>pick</code> を書くこともできます。</p>
+の 入れ子は再帰的であり、候補の動詞の代わりにさらに別の
+<code>pick</code> を書くこともできます。</p>
 <p>各候補に書ける内容は、一時的な命令（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>/<code>move</code>）に限られます。<code>modify</code>/<code>accumulate</code>
-は関係とゲートに基づいて登録され、その関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて
-終わる <code>pick</code> の候補に書く意味がありません。</p>
+は関係が続く限り評価され続けることに意味がある仕組みのため、1回選ばれて終わる
+<code>pick</code> の候補に書く意味がありません。</p>
 <h3 id="weight">10.2 weight</h3>
 <p><code>weight</code>
 は、専用の計算式（base値＋条件付き補正）を新設せず、以下のいずれかとして表現します。</p>
@@ -1305,11 +1180,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href=
 <li><strong>リテラル定数</strong>:
 外部からの干渉を想定しない候補向け。</li>
 <li><strong>既存プロパティへの参照</strong>（<code>{object, prop}</code>、14
-節の条件式の葉と同じ <code>object</code>/<code>prop</code>
-の書き方。<code>object</code>は
-省略可で既定値は<code>self</code>、<code>ancestor</code>（8.6
-節）も指定できる）: 外部から干渉させたい候補向け。参照先は、 通常の
-<code>props</code> として定義された値です。</li>
+節の条件式の葉と同じ書き方。<code>object</code>は省略可で既定値は
+<code>self</code>、<code>ancestor</code>（8.6 節）も指定できる）:
+外部から干渉させたい候補向け。参照先は通常の <code>props</code> として
+定義された値です。</li>
 </ul>
 <div class="sourceCode" id="cb33"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pick</span><span class="kw">:</span></span>
@@ -1365,13 +1239,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href=
 <span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a><span class="at">    ...</span></span></code></pre></div>
 <p>値は、<code>weight</code>（10.2
 節）と同じ<strong>リテラル数値</strong>か<strong><code>{object, prop}</code>
-参照</strong>のいずれかです。参照は<code>self</code>の
-プロパティを指す使い方（移動時間が道ごとに異なる、上の<code>travel</code>の例）を主に想定していますが、10.2節と同じ
-<code>object</code>省略時の既定（<code>self</code>）・<code>ancestor</code>を含む解決規則をそのまま共有します。</p>
+参照</strong>のいずれかで、10.2節と同じ解決規則
+（<code>object</code>省略時は<code>self</code>、<code>ancestor</code>も可）を共有します。</p>
 <p>条件（<code>conditions</code>）が不成立でアクション自体が実行されなかった場合、<code>duration</code>は消費されません。時間の消費は
-<strong>実行結果（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>/<code>move</code>、または<code>pick</code>）が適用された後</strong>に行われます
-（先に時間を進めてしまうと、時間経過にともなう<code>tick</code>駆動の変化——腐敗による<code>destroy</code>など——が、まだ効果を
-適用していない対象を先に消してしまう事故が起こりうるため）。</p>
+<strong>実行結果が適用された後</strong>に行われます（先に時間を進めると、tick駆動の変化——腐敗による<code>destroy</code>など——が、
+まだ効果を適用していない対象を先に消してしまう事故が起こりうるため）。</p>
 <h3 id="setadddestroyspawntransfermoveactive-pick">11.4
 set/add/destroy/spawn/transfer/move（active） / pick</h3>
 <p>このアクションが実行された瞬間に、<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>/<code>move</code>（9
@@ -1411,9 +1283,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb36-1"><a href=
 <h3 id="with">12.1 with</h3>
 <p>マッチング対象を、タグ（4.1
 節）で指定します。<code>object_defs</code> の id や trait
-名では直接マッチングしません （trait
-は合成後に消えてしまう存在であり、外部から参照すべきではないため）。そのタグを持つあらゆるカード
-（MOD 追加分・trait
+名では直接マッチングしません （4.1
+節）。そのタグを持つあらゆるカード（MOD 追加分・trait
 を介さず直接タグを宣言したカードも含む）と一致します。</p>
 <h3 id="dragged">12.2 dragged</h3>
 <p><code>set</code>/<code>add</code>/<code>destroy</code>/<code>transfer</code>（9
@@ -1495,11 +1366,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb39-1"><a href=
 節と同じ探索
 ロジック）・<code>actor</code>（実行しているプレイヤーキャラクター。actions/combinations
 のみ）・<code>dragged</code> （<code>combinations</code> 内のみ、12.2
-節）のいずれか。<code>world</code>（9
-節のシングルトン）は実行時追跡の仕組みがまだ無い
-ため未対応（ロード時エラー）だが、<code>ancestor</code>
-は見つからなければ自然にworldまで遡るため、世界固有と
-思われる概念を参照したい場合は<code>ancestor</code>で代替できる。</li>
+節）のいずれか。<code>world</code>（15
+節のシングルトン）は未対応（ロード時エラー、 17
+節）だが、<code>ancestor</code>
+は見つからなければ自然にworldまで遡るため、世界固有と思われる概念の参照は
+<code>ancestor</code>で代替できる。</li>
 <li><strong><code>prop</code></strong>: 参照するプロパティ名。</li>
 <li><strong><code>op</code></strong>（省略可、既定値 <code>eq</code>）:
 比較演算子。<code>lt</code> / <code>lte</code> / <code>gt</code> /
@@ -1518,24 +1389,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb39-1"><a href=
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
 <span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> content</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> eq</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> dragged</span><span class="kw">,</span><span class="at"> </span><span class="fu">prop</span><span class="kw">:</span><span class="at"> content</span><span class="kw">}}</span><span class="co">   # 2つの動的な値同士を比較する</span></span></code></pre></div>
 <p><code>object</code>/<code>prop</code>
-を、他の場所（<code>modify</code>/<code>set</code>/<code>add</code>
-等）と同じ「対象がキー、内容が値」という規約に合わせず
-あえてフラットな2フィールドにしているのは、対象1つ・プロパティ1つの単純な参照であり、ネストする必要が無い
-ためです。</p>
+をフラットな2フィールドにしているのは、対象1つ・プロパティ1つの単純な参照であり、ネストする
+必要が無いためです。</p>
 <p><code>prop</code>
 が参照する値は、実体値（生の値）ではなく<strong>実効値</strong>（8.3
 節の <code>modify</code> を加味した値）です。これにより、
-<code>modify</code>
-だけで決まる派生プロパティ（実体値自体は変化しない値。例:
+<code>modify</code> だけで決まる派生プロパティ（例:
 天候と時間から決まる日照）も、他の <code>conditions</code>
-から参照できます。<code>value</code> が <code>{object, prop}</code>
-参照の場合も同様に実効値を読みます。ただし、 あるプロパティの
-<code>modify</code>
-のゲートが、直接・間接を問わず自分自身の実効値に依存する（循環参照）と、実行時に
-例外を送出します（<code>PropertyValue.GetEffectiveValue</code>
-参照）。生の値と異なり実効値は計算結果そのものに
-依存しうるため、この種の循環はエンジン側では防げず、YAML
-の書き方で避ける必要があります。</p>
+から参照できます。 <code>value</code> が <code>{object, prop}</code>
+参照の場合も同様に実効値を読みます。ただし、あるプロパティの
+<code>modify</code> のゲートが、
+直接・間接を問わず自分自身の実効値に依存する（循環参照）と、実行時に例外を送出します
+（<code>PropertyValue.GetEffectiveValue</code>
+参照）。この種の循環はエンジン側では防げず、YAML の書き方で避ける必要が
+あります。</p>
 <h3 id="葉-スロット位置判定">14.2 葉: スロット位置判定</h3>
 <p><code>object</code>
 が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します（<strong>外側から見た
@@ -1546,15 +1413,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb40-1"><a href=
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conditions</span><span class="kw">:</span></span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> self</span><span class="kw">,</span><span class="at"> </span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> equip</span><span class="kw">}</span></span></code></pre></div>
 <p><code>in_slot</code> は <code>prop</code>
-とは独立したフィールドで、同時には指定できません。あえて
-<code>prop</code> の仮想的な特殊値に していないのは、(a)
-スロット判定には <code>lt</code>/<code>gt</code>
-等の比較演算子が意味を持たないため、<code>op</code> を伴う
-<code>prop</code> と
-同じ形にすると無意味な組み合わせを許してしまうこと、(b)
-プロパティ名とスロット名は本来別の名前空間であり、
-同じ識別子が偶然重なった場合に区別できなくなることの2点によります。フィールド名を分けることで、両者は
-文字列が一致しても衝突しません。</p>
+とは独立したフィールドで、同時には指定できません。フィールドを分けるのは、スロット判定に
+比較演算子が意味を持たないことと、プロパティ名とスロット名は別の名前空間であり、同じ識別子でも衝突させない
+ためです。</p>
 <p><code>ancestor</code> は「<code>prop</code>
 が指すプロパティ名で祖先を探す」という仕組みのため、探すプロパティを持たないスロット
 位置判定では <code>object</code>
@@ -1576,16 +1437,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb42-1"><a href=
 そのスロットの中身が持つべきタグ。</li>
 </ul>
 <p><code>slot</code> は 14.2 節の <code>in_slot</code>
-とは別フィールドです。同じ「スロットのグローバルID」を指しますが、
-<code>in_slot</code> は「<code>object</code>
-が親の中でどこにいるか」、<code>slot</code> は「<code>object</code>
-自身の中に何が入っているか」という、
-参照する木構造上の向きが逆であるため、キー名自体を分けて区別しています（同じキー名で向きだけが異なると、
-<code>{object, slot}</code>
-という同じ形が2通りの意味を持ってしまい、区別できなくなるため）。</p>
+とは別フィールドです。<code>in_slot</code> は「<code>object</code>
+が親の中でどこにいるか」、<code>slot</code> は 「<code>object</code>
+自身の中に何が入っているか」という、参照する木構造上の向きが逆であるため、キー名自体を分けて
+区別しています。</p>
 <p>液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
-スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します（コンテナ設計の検討、
-<code>ContainerSystem.md</code> 参照）。</p>
+スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します（<code>ContainerSystem.md</code>
+参照）。</p>
 <div class="sourceCode" id="cb43"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">canteen</span><span class="kw">:</span></span>
@@ -1629,8 +1487,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb45-1"><a href=
 <span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> main_hand</span><span class="kw">}</span></span>
 <span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">in_slot</span><span class="kw">:</span><span class="at"> off_hand</span><span class="kw">}</span></span></code></pre></div>
 <p>トップレベルの配列自体が暗黙の <code>all</code> であるため、単純な
-AND 条件（従来通り）は複合ノードを使わず、葉を並べる
-だけで書けます。</p>
+AND 条件は複合ノードを使わず、葉を並べるだけで書けます。</p>
 <h2 id="singleton唯一のインスタンス">15.
 singleton（唯一のインスタンス）</h2>
 <p>「インスタンスが1つだけ存在すべき」という制約は、<code>object_defs</code>

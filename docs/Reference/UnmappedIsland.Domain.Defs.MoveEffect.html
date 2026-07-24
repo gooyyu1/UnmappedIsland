@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class MoveEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="move の1命令（対象オブジェクトを、別の場所＝プロパティが指すインスタンスIDのオブジェクトの中へ 移動する）。道（path）の移動アクションのように「効果を宣言したオブジェクト定義の時点では移動先が 決まらず、生成時に確定したインスタンスを指したい」ケースを表すため、移動先は object_def 参照ではなく、 self のプロパティ（to_prop）が保持する WorldObject.InstanceId で指す（インスタンス単位の参照を YAML の語彙で表す唯一の手段がプロパティ値であるため）。 YAML: move: {object: actor, to_prop: destination_id}（transfer と同じフラットフィールド規約）。 object は現時点で actor のみ対応（ロード時に検証）。 移動先の解決は「self からツリーの根（world）へ遡り、根から InstanceId で子孫を探す」ことで行う。 解決できない（プロパティが無い・該当インスタンスが世界に居ない）、または移動先のどのスロットも 受け入れない場合は何もしない（「対象が解決できない場合その適用のみ無視」の既存規約に従う）。 配置自体は mover の MoveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）に委ねる。">
+    <meta name="description" content="move の1命令。対象を、self のプロパティ（to_prop）が保持する WorldObject.InstanceId のオブジェクトの中へ 移動する。移動先が定義時点で決まらず生成時に確定するケース（道の移動アクション等）のため、 object_def 参照ではなくインスタンスIDのプロパティ値で指す。 YAML: move: {object: actor, to_prop: destination_id}（transfer と同じフラットフィールド規約）。 object は現時点で actor のみ（ロード時に検証）。移動先の解決は「ツリーの根から InstanceId で子孫を探す」。 解決できない・どのスロットも受け入れない場合は何もしない（「解決できない適用は無視」の既存規約）。 配置は MoveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,17 +74,13 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_MoveEffect" data-uid="UnmappedIsland.Domain.Defs.MoveEffect" class="text-break">Class MoveEffect</h1>
-  <div class="markdown level0 summary"><p>move の1命令（対象オブジェクトを、別の場所＝プロパティが指すインスタンスIDのオブジェクトの中へ
-移動する）。道（path）の移動アクションのように「効果を宣言したオブジェクト定義の時点では移動先が
-決まらず、生成時に確定したインスタンスを指したい」ケースを表すため、移動先は object_def 参照ではなく、
-self のプロパティ（to_prop）が保持する WorldObject.InstanceId で指す（インスタンス単位の参照を
-YAML の語彙で表す唯一の手段がプロパティ値であるため）。</p>
+  <div class="markdown level0 summary"><p>move の1命令。対象を、self のプロパティ（to_prop）が保持する WorldObject.InstanceId のオブジェクトの中へ
+移動する。移動先が定義時点で決まらず生成時に確定するケース（道の移動アクション等）のため、
+object_def 参照ではなくインスタンスIDのプロパティ値で指す。</p>
 <p>YAML: <code>move: {object: actor, to_prop: destination_id}</code>（transfer と同じフラットフィールド規約）。
-object は現時点で actor のみ対応（ロード時に検証）。</p>
-<p>移動先の解決は「self からツリーの根（world）へ遡り、根から InstanceId で子孫を探す」ことで行う。
-解決できない（プロパティが無い・該当インスタンスが世界に居ない）、または移動先のどのスロットも
-受け入れない場合は何もしない（「対象が解決できない場合その適用のみ無視」の既存規約に従う）。
-配置自体は mover の MoveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）に委ねる。</p>
+object は現時点で actor のみ（ロード時に検証）。移動先の解決は「ツリーの根から InstanceId で子孫を探す」。
+解決できない・どのスロットも受け入れない場合は何もしない（「解決できない適用は無視」の既存規約）。
+配置は MoveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -127,7 +123,7 @@ object は現時点で actor のみ対応（ロード時に検証）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_MoveEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.MoveEffect.%23ctor(UnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L28">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L23">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_MoveEffect__ctor_" data-uid="UnmappedIsland.Domain.Defs.MoveEffect.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_MoveEffect__ctor_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.MoveEffect.#ctor(UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32)">MoveEffect(ReferenceRoot, int)</h4>
@@ -166,7 +162,7 @@ object は現時点で actor のみ対応（ロード時に検証）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_MoveEffect_target.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.MoveEffect.target%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L23">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L18">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_MoveEffect_target" data-uid="UnmappedIsland.Domain.Defs.MoveEffect.target">target</h4>
   <div class="markdown level1 summary"><p>移動するオブジェクト。現時点で Actor のみ（ローダーが強制する）。</p>
@@ -196,7 +192,7 @@ object は現時点で actor のみ対応（ロード時に検証）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_MoveEffect_toPropertyGlobalId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.MoveEffect.toPropertyGlobalId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L26">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L21">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_MoveEffect_toPropertyGlobalId" data-uid="UnmappedIsland.Domain.Defs.MoveEffect.toPropertyGlobalId">toPropertyGlobalId</h4>
   <div class="markdown level1 summary"><p>self が持つ、移動先 WorldObject.InstanceId を保持するプロパティ。</p>
@@ -228,7 +224,7 @@ object は現時点で actor のみ対応（ロード時に検証）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_MoveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.MoveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Nullable%7BUnmappedIsland.Domain.Runtime.WorldObject.EffectSite%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L34">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L29">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_MoveEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.MoveEffect.Apply*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_MoveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__" data-uid="UnmappedIsland.Domain.Defs.MoveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})">Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)</h4>
@@ -289,7 +285,7 @@ object は現時点で actor のみ対応（ロード時に検証）。</p>
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_MoveEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.MoveEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L20" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/MoveEffect.cs/#L15" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

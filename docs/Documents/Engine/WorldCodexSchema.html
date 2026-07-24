@@ -101,14 +101,13 @@
 <h1 id="worldcodex-yamlスキーマ定義">WorldCodex YAMLスキーマ定義</h1>
 <h2 id="概要">概要</h2>
 <p>本ドキュメントは、YAML文法の唯一のリファレンスである
-<code>GameElementDefinition.md</code>（<code>traits</code>/<code>object_defs</code>/<code>props</code>/
-<code>slots</code>/<code>passives</code>/<code>active</code>/<code>pick</code>/<code>actions</code>/<code>combinations</code>/<code>recipes</code>
-等の文法をすべて集約したもの)をもとに、 <code>WorldCodex</code> の YAML
+<code>GameElementDefinition.md</code>
+をもとにした、<code>WorldCodex</code> の YAML
 ファイルの形式的なスキーマ定義（<a href="https://json-schema.org/">JSON
 Schema</a> Draft 2020-12、
-<code>WorldCodex.schema.json</code>）を作成・保守した結果をまとめたものです。個別の世界描写（<code>ClimateSystem.md</code>・<code>RecipeSystem.md</code>・
-<code>ContainerSystem.md</code>・<code>ActionSystem.md</code>・<code>TerrainGeneration.md</code>・<code>ExplorationSystem.md</code>）の内容そのものはスキーマの
-対象外で、それらが使う文法の妥当性のみを検証します。</p>
+<code>WorldCodex.schema.json</code>）の保守方針をまとめたものです。個別の世界描写（<code>ClimateSystem.md</code>・<code>RecipeSystem.md</code>・
+<code>ContainerSystem.md</code>・<code>ActionSystem.md</code>・<code>TerrainGeneration.md</code>・<code>ExplorationSystem.md</code>）の内容そのものは
+スキーマの対象外で、それらが使う文法の妥当性のみを検証します。</p>
 <p>スキーマの正は<strong>ローダーの実装</strong>（<code>Assets/Scripts/Loader/WorldCodexYamlLoader.*.cs</code>）です。本スキーマはローダーが
 受け付ける文法の機械的な近似であり、乖離を見つけたらローダーに合わせてスキーマを直します。</p>
 <h2 id="検証方法">1. 検証方法</h2>
@@ -202,33 +201,10 @@ combinations 内のみ、 passivesのゲートの <code>object</code> は
 <h2
 id="スキーマ化にあたって見つけた既存ドキュメントとの矛盾気づき修正済み">3.
 スキーマ化にあたって見つけた既存ドキュメントとの矛盾・気づき（修正済み）</h2>
-<p>スキーマ化・刷新の過程で以下の矛盾が見つかり、いずれもドキュメント側を修正して解消済みです。</p>
-<ul>
-<li><p><strong>タグ判定の葉が文法リファレンス未記載</strong>:
-<code>conditions</code> の葉のうち
-<code>{object, tag}</code>（オブジェクト自身のタグ判定）は
-ローダー（<code>ConditionNode.ObjectTag</code>）に実装済みでしたが、<code>GameElementDefinition.md</code>
-14節に記載がありませんでした。 刷新時に
-14.4節として追記しました（複合ノードは 14.5節へ繰り下げ）。</p></li>
-<li><p><strong>防具サンプルの <code>item:</code> フィールド</strong>:
-<code>GameElementDefinition.md</code>
-8.1節の防具サンプルには、<code>object_defs</code> のキーとは 別に
-<code>item: armor_leather</code>
-というフィールドが残っていました。これは 4節で確定している「識別子は
-<code>object_defs</code> の
-キーとして表現する（値ではない）」という規約より前の記法の名残でした。サンプルを
-<code>object_defs: { armor_leather: {...} }</code>
-という形に修正し、規約と一致させました。</p></li>
-<li><p><strong>地形生成の <code>id</code> フィールド方式</strong>:
-<code>TerrainGeneration.md</code> の
-<code>Axis</code>/<code>LocationType</code>/<code>generation_scope</code>
-サンプルは
-「配列＋<code>id</code>フィールド」で書かれており、他の概念すべてが採用している「識別子をキーとする辞書」とは異なる形式でした。
-3.1節・3.2節・4.7節のサンプルを、それぞれ
-<code>axes:</code>/<code>location_types:</code>/<code>generation_scopes:</code>
-という識別子キーの辞書形式に
-修正し、他の概念と表記を統一しました。</p></li>
-</ul>
+<p>スキーマ化・刷新の過程で見つかった文法リファレンスとの矛盾（<code>conditions</code>
+のタグ判定の葉 <code>{object, tag}</code> の
+記載漏れ、旧記法のまま残っていたサンプル、地形生成サンプルの「配列＋<code>id</code>フィールド」形式）は、いずれも
+ドキュメント側を修正して解消済みです。</p>
 <h2
 id="スキーマ化にあたって判断した細部ドキュメント上は未確定省略されていた点">4.
 スキーマ化にあたって判断した細部（ドキュメント上は未確定・省略されていた点）</h2>

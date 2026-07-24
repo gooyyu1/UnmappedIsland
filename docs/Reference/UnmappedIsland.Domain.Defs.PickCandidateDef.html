@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class PickCandidateDef | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに 適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、 ActiveEffectのポリモーフィズムでそのまま許容する）を持つ。">
+    <meta name="description" content="pickの1候補（GameElementDefinition.md 10節)。抽選の重み（weight）と、選ばれたときに適用する効果を持つ。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,9 +74,7 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_PickCandidateDef" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef" class="text-break">Class PickCandidateDef</h1>
-  <div class="markdown level0 summary"><p>pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに
-適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、
-ActiveEffectのポリモーフィズムでそのまま許容する）を持つ。</p>
+  <div class="markdown level0 summary"><p>pickの1候補（GameElementDefinition.md 10節)。抽選の重み（weight）と、選ばれたときに適用する効果を持つ。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -118,7 +116,7 @@ ActiveEffectのポリモーフィズムでそのまま許容する）を持つ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_ActiveEffect_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.%23ctor(UnmappedIsland.Domain.Defs.WeightSpec%2CUnmappedIsland.Domain.Defs.ActiveEffect)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L97">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L90">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef__ctor_UnmappedIsland_Domain_Defs_WeightSpec_UnmappedIsland_Domain_Defs_ActiveEffect_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.#ctor(UnmappedIsland.Domain.Defs.WeightSpec,UnmappedIsland.Domain.Defs.ActiveEffect)">PickCandidateDef(WeightSpec, ActiveEffect)</h4>
@@ -157,11 +155,10 @@ ActiveEffectのポリモーフィズムでそのまま許容する）を持つ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_effect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.effect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L95">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L88">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_effect" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.effect">effect</h4>
-  <div class="markdown level1 summary"><p>この候補が選ばれたときに適用する効果（さらにpickを持てば再帰する）。nullなら何も
-起きない。PickEffectがこの候補を選んだときにApplyへ委ねる。</p>
+  <div class="markdown level1 summary"><p>この候補が選ばれたときに適用する効果。nullなら何も起きない。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -188,10 +185,10 @@ ActiveEffectのポリモーフィズムでそのまま許容する）を持つ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_weight.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.weight%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L91">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L85">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_weight" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.weight">weight</h4>
-  <div class="markdown level1 summary"><p>抽選の重み（10.2節）。ResolveWeight越しにPickEffectが読むだけのため公開しない。</p>
+  <div class="markdown level1 summary"><p>抽選の重み（10.2節）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -220,7 +217,7 @@ ActiveEffectのポリモーフィズムでそのまま許容する）を持つ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Nullable%7BUnmappedIsland.Domain.Runtime.WorldObject.EffectSite%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L108">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L101">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Apply*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})">Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)</h4>
@@ -273,7 +270,7 @@ ActiveEffectのポリモーフィズムでそのまま許容する）を持つ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveWeight_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L104">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L97">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveWeight_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PickCandidateDef_ResolveWeight_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Defs.PickCandidateDef.ResolveWeight(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject)">ResolveWeight(WorldObject, WorldObject, WorldObject)</h4>
@@ -338,7 +335,7 @@ ActiveEffectのポリモーフィズムでそのまま許容する）を持つ�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PickCandidateDef.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PickCandidateDef%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L88" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PickEffect.cs/#L82" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class World | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの 型付きビュー。継承（class World : WorldObject）ではなくラップにしているのは、WorldCodex が traitによる合成モデルを採用しており、C#側のクラス階層と噛み合わないため。 コンストラクタで解決するのはプロパティ名→グローバルIDだけで、グローバル→ローカルの変換は 毎回 WorldObject 側の配列引きに任せる（軽量なため、事前キャッシュはしない）。 world がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの ものだけを実装している。">
+    <meta name="description" content="world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの 型付きビュー。継承（class World : WorldObject）ではなくラップにしているのは、WorldCodex が traitによる合成モデルを採用しており、C#側のクラス階層と噛み合わないため。 world がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの ものだけを実装している。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -77,9 +77,7 @@
   <div class="markdown level0 summary"><p>world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの
 型付きビュー。継承（class World : WorldObject）ではなくラップにしているのは、WorldCodex が
 traitによる合成モデルを採用しており、C#側のクラス階層と噛み合わないため。</p>
-<p>コンストラクタで解決するのはプロパティ名→グローバルIDだけで、グローバル→ローカルの変換は
-毎回 WorldObject 側の配列引きに任せる（軽量なため、事前キャッシュはしない）。
-world がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの
+<p>world がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの
 ものだけを実装している。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
@@ -122,7 +120,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_NameRegistry_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.%23ctor(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Defs.NameRegistry)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L25">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L23">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_World__ctor_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World__ctor_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_NameRegistry_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.#ctor(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.NameRegistry)">World(WorldObject, NameRegistry)</h4>
@@ -161,7 +159,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_dayId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.dayId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L20">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L18">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_dayId" data-uid="UnmappedIsland.Domain.Runtime.Views.World.dayId">dayId</h4>
   <div class="markdown level1 summary"></div>
@@ -190,7 +188,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_hourId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.hourId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L21">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L19">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_hourId" data-uid="UnmappedIsland.Domain.Runtime.Views.World.hourId">hourId</h4>
   <div class="markdown level1 summary"></div>
@@ -219,7 +217,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_minuteId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.minuteId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L22">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L20">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_minuteId" data-uid="UnmappedIsland.Domain.Runtime.Views.World.minuteId">minuteId</h4>
   <div class="markdown level1 summary"></div>
@@ -248,7 +246,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_minutesPerTickId.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.minutesPerTickId%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L23">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L21">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_minutesPerTickId" data-uid="UnmappedIsland.Domain.Runtime.Views.World.minutesPerTickId">minutesPerTickId</h4>
   <div class="markdown level1 summary"></div>
@@ -279,7 +277,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_Day.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.Day%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L34">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L32">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_World_Day_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Day*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_Day" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Day">Day</h4>
@@ -309,7 +307,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_Hour.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.Hour%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L35">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L33">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_World_Hour_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Hour*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_Hour" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Hour">Hour</h4>
@@ -339,7 +337,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_Instance.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.Instance%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L18">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L16">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_World_Instance_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Instance*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_Instance" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Instance">Instance</h4>
@@ -369,7 +367,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_Minute.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.Minute%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L36">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L34">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_World_Minute_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Minute*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_Minute" data-uid="UnmappedIsland.Domain.Runtime.Views.World.Minute">Minute</h4>
@@ -399,7 +397,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_MinutesPerTick.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.MinutesPerTick%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L39">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L37">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_World_MinutesPerTick_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.MinutesPerTick*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_MinutesPerTick" data-uid="UnmappedIsland.Domain.Runtime.Views.World.MinutesPerTick">MinutesPerTick</h4>
@@ -432,7 +430,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World_AddMinutes_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World.AddMinutes(System.Int32%2CUnmappedIsland.Domain.Runtime.WorldSession)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L43">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L41">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Views_World_AddMinutes_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.AddMinutes*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Views_World_AddMinutes_System_Int32_UnmappedIsland_Domain_Runtime_WorldSession_" data-uid="UnmappedIsland.Domain.Runtime.Views.World.AddMinutes(System.Int32,UnmappedIsland.Domain.Runtime.WorldSession)">AddMinutes(int, WorldSession)</h4>
@@ -478,7 +476,7 @@ world がどのプロパティを持つべきかはまだ確定していない�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Views_World.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Views.World%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L16" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Views/World.cs/#L14" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

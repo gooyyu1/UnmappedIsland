@@ -36,7 +36,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ActionDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActionDef.yml\" sourcestartlinenumber=\"1\">メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと条件成立時に適用する効果\n（ActiveEffect＝active/pickのどちらか一方。排他なので単一のActiveEffect変数で表せる）を1つの定義\nとしてまとめて持つ。object_defs/traitsの中に、識別子をキーとする辞書として配置される。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActionDef.yml\" sourcestartlinenumber=\"1\">メニュー型の宣言的操作（GameElementDefinition.md 11節）。conditionsと条件成立時の効果を1つの定義として持つ。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -50,7 +50,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ActiveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。owner（self）の文脈\n（actor/dragged）を受け取り、「対象を解決して自分を適用する」までを自分で行う（自分のことは\n自分でする、CLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"5\">具象は3種:</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">単一の命令（SetEffect/AddEffect/DestroyEffect/SpawnEffect/TransferEffect、9節）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"7\">それらを宣言順にまとめた合成（ActiveEffects。set/add/destroy/spawn/transferの並び）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"8\">weightで1候補を選んで適用するpick（PickEffect、10節。候補の効果もまたActiveEffectなので再帰しうる）。</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"10\">これらはすべて同じApplyで適用でき、activeとpickが排他であること（どちらか一方のみ）も、\n「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は\nこのActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"14\">effectSiteは、この最上位の適用の入口(WorldObject.ApplyActiveEffect)で先に捕捉した「selfが今\n占めている位置」のスナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ\n同種を保持しているか」を配置時に見て置き換え位置を決める（それ以外の効果は無視してよい）。効果の\nツリー（合成ActiveEffects・pick）を素通しで伝わるだけなので、destroyが何かを書き込む必要はない。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"1\">「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。\n具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffects）、\nweightで1候補を選ぶpick（PickEffect、10節。候補もActiveEffectなので再帰しうる）の3種。\nactiveとpickの排他は「ActiveEffect型の変数が1つ」というだけで表せる（判別子不要）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffect.yml\" sourcestartlinenumber=\"6\">effectSiteは、適用の入口（WorldObject.ApplyActiveEffect）で捕捉した「selfが今占めている位置」の\nスナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を\n配置時に見て置き換え位置を決める（他の効果は無視してよく、destroyが何かを書き込む必要もない）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -64,7 +64,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ActiveEffects",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">一時的な命令の内容（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">add</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">destroy</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">spawn</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">transfer</code>、9節）を宣言順にまとめた合成効果。\non_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）のすべてから\n共用する。中身は「単一の命令(ActiveEffect)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/\nspawn/transferはすべてApplyを持つActiveEffectの具象型で、対象の解決も適用も各命令自身が行う。\npassiveのmodify/accumulateがPassiveEffectのリストなのと対称）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"7\">自分もまたActiveEffectであり（合成もまた1つの効果）、適用は各要素を宣言順にApplyしていくだけ。\non_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">一時的な命令（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">add</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">destroy</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">spawn</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.ActiveEffects.yml\" sourcestartlinenumber=\"1\">transfer</code>、9節）を宣言順にまとめた合成効果。\non_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）が共用する。\non_min/on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -78,7 +78,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.AddEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AddEffect.yml\" sourcestartlinenumber=\"1\">add の1命令（対象プロパティへ加減算する）。対象の解決はowner.ResolveEffectTargetOrAncestorに\n委ねる（Ancestorのプロパティ別解決も含めて任せる）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.AddEffect.yml\" sourcestartlinenumber=\"1\">add の1命令（対象プロパティへ加減算する）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -92,7 +92,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.CombinationDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.CombinationDef.yml\" sourcestartlinenumber=\"1\">ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の\nobject_defに定義する。Withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。\nconditionsと条件成立時に適用する効果（ActiveEffect＝active/pickのどちらか一方。排他なので単一の\nActiveEffect変数で表せる）を1つの定義としてまとめて持つ。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.CombinationDef.yml\" sourcestartlinenumber=\"1\">ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の\nobject_defに定義する。withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -106,7 +106,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ConditionNode",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"1\">conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲート\n（旧when）の両方が、この同じ木を共用する（評価タイミングの違いだけが呼び出し側にある）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"4\">葉はProperty・SlotPosition・SlotContent・ObjectTagの4種類、複合ノードはAll/Any/Notの3種類で、Kindに応じて\n使うフィールドが変わる（PassiveEffectGate等、本コードベースの既存の「単一クラス+Kind enum」の\n慣習に合わせる）。SlotPosition（{in_slot}）とSlotContent（{slot, tag}）はどちらも「スロット」に\n関わるが向きが逆（外から見た位置か、内側の中身か）であるため、キー名自体を別にして衝突を避けている。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ConditionNode.yml\" sourcestartlinenumber=\"1\">conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲートが\n同じ木を共用する。葉はProperty・SlotPosition・SlotContent・ObjectTagの4種、複合はAll/Any/Notの3種で、\nKindに応じて使うフィールドが変わる（単一クラス+Kind enum）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -148,7 +148,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.DestroyEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy: self</code>は要素1つ、\n<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"2\">destroy: [self, dragged]</code>は要素2つのDestroyEffectとして表す。same_slot spawnとの連携は\ndestroyが何かを通知する必要はない（selfの位置アンカーはApplyActiveEffectの入口で先に捕捉済みで、\n「selfが消えたか」ではなく「その位置がまだ同種を保持しているか」を配置時に判断するため。\nEffectSite参照）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。<code sourcefile=\"api/UnmappedIsland.Domain.Defs.DestroyEffect.yml\" sourcestartlinenumber=\"1\">destroy: [self, dragged]</code>は\n要素2つのDestroyEffectとして表す。same_slot spawnとの連携はeffectSite（ActiveEffect参照）が担う。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -162,7 +162,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.Generation.AxisDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.AxisDef.yml\" sourcestartlinenumber=\"1\">軸（Axis）の定義（TerrainGeneration.md 1節・3.1節）。標高・湿り気など、地点（Site）が持つ\n連続値パラメータの1次元。値は整数（通常0〜100の百分率。GameElementDefinition.md 6節の\n「数値は32bit整数のみ」の規約に合わせ、YAML上にfloatは登場させない）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.AxisDef.yml\" sourcestartlinenumber=\"1\">軸（Axis）の定義（TerrainGeneration.md 1節・3.1節）。標高・湿り気など、地点（Site）が持つ\n連続値パラメータの1次元。値は整数（通常0〜100の百分率。GameElementDefinition.md 6節の\n「数値は32bit整数のみ」の規約により、YAML上にfloatは登場させない）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -204,7 +204,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.Generation.GenerationDefs",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GenerationDefs.yml\" sourcestartlinenumber=\"1\">地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。\nWorldCodexの一部としてロード後不変。生成ファイルがロードされていない場合、\nWorldCodex.Generationはnullになる。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GenerationDefs.yml\" sourcestartlinenumber=\"5\">軸名・LocationType名・スコープ名は生成時にしか使われず実行時ホットパスに乗らないため、\nNameRegistryでinternせずstringのまま持つ（5種のレジストリを生成専用の名前で汚さない）。\nLocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GenerationDefs.yml\" sourcestartlinenumber=\"1\">地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。\nWorldCodexの一部としてロード後不変。生成ファイルがロードされていない場合、\nWorldCodex.Generationはnullになる。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GenerationDefs.yml\" sourcestartlinenumber=\"5\">軸名・LocationType名・スコープ名は生成時にしか使われないため、NameRegistryでinternせず\nstringのまま持つ。LocationTypesの並びはYAMLの宣言順（マッチングの同点解決を決定的にするため）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -232,7 +232,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.Generation.GeneratorLayer",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.yml\" sourcestartlinenumber=\"1\">軸のジェネレータの1層（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.yml\" sourcestartlinenumber=\"1\">generator.blend</code> の1要素）。複数の層のサンプル値をWeightで\n重み付き平均して軸の値になる。値の実際の計算（ノイズ・距離場）はDomain.Generation側の\nサンプラーが担い、この定義は「どう計算するか」のパラメータだけを持つ。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.yml\" sourcestartlinenumber=\"1\">軸のジェネレータの1層（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.yml\" sourcestartlinenumber=\"1\">generator.blend</code> の1要素）。複数の層のサンプル値をWeightで\n重み付き平均して軸の値になる。値の計算はDomain.Generation側のサンプラーが担う。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -246,7 +246,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType.yml\" sourcestartlinenumber=\"1\">軸のジェネレータ1層の種類（TerrainGeneration.md 3.1節の汎用プリミティブ）。\n現時点はdistance_field/layered_noiseの2種。blob_scatter・modifiers（合成演算）は\n必要になった時点で追加する。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType.yml\" sourcestartlinenumber=\"1\">軸のジェネレータ1層の種類（TerrainGeneration.md 3.1節の汎用プリミティブ）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -260,7 +260,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.Generation.GuaranteeDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GuaranteeDef.yml\" sourcestartlinenumber=\"1\">島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」への\n実装回答）。軸の分布だけでは「山が必ず1つ」を保証できないため、「指定軸が最大/最小のサイトから\nCount個へ、このLocationTypeを強制割当する」という明示的な保証を、最近傍マッチングの前に行う。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.Generation.GuaranteeDef.yml\" sourcestartlinenumber=\"1\">島全体のバランス保証の1エントリ（TerrainGeneration.md 3.4節・6節の「カバレッジ保証」）。\n指定軸が最大/最小のサイトからCount個へ、このLocationTypeを最近傍マッチングの前に強制割当する\n（軸の分布だけでは「山が必ず1つ」の類を保証できないため）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -316,7 +316,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.LocalIndexMap",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml\" sourcestartlinenumber=\"1\">特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、\nゲーム全体で共有されるグローバルID空間とを対応付ける表。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml\" sourcestartlinenumber=\"4\">ObjectDefごとに「持っているプロパティ／スロット」は異なるため、グローバルID空間全体を\nそのままインデックスに使うと大半が未使用の疎な配列になってしまう。そこで ObjectDef 側は\n自分が実際に持つものだけを詰めた密なローカル配列を持ち、この表がその変換を担う。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.LocalIndexMap.yml\" sourcestartlinenumber=\"1\">特定の ObjectDef に閉じたローカル配列（PropertyDef[] / SlotDef[] など）と、\nゲーム全体で共有されるグローバルID空間とを対応付ける表。ObjectDef側は自分が実際に持つ\nものだけを詰めた密なローカル配列を持ち（グローバルID直インデックスでは疎になるため）、\nこの表がその変換を担う。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -344,7 +344,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.MoveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"1\">move の1命令（対象オブジェクトを、別の場所＝プロパティが指すインスタンスIDのオブジェクトの中へ\n移動する）。道（path）の移動アクションのように「効果を宣言したオブジェクト定義の時点では移動先が\n決まらず、生成時に確定したインスタンスを指したい」ケースを表すため、移動先は object_def 参照ではなく、\nself のプロパティ（to_prop）が保持する WorldObject.InstanceId で指す（インスタンス単位の参照を\nYAML の語彙で表す唯一の手段がプロパティ値であるため）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"7\">YAML: <code sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"7\">move: {object: actor, to_prop: destination_id}</code>（transfer と同じフラットフィールド規約）。\nobject は現時点で actor のみ対応（ロード時に検証）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"10\">移動先の解決は「self からツリーの根（world）へ遡り、根から InstanceId で子孫を探す」ことで行う。\n解決できない（プロパティが無い・該当インスタンスが世界に居ない）、または移動先のどのスロットも\n受け入れない場合は何もしない（「対象が解決できない場合その適用のみ無視」の既存規約に従う）。\n配置自体は mover の MoveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）に委ねる。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"1\">move の1命令。対象を、self のプロパティ（to_prop）が保持する WorldObject.InstanceId のオブジェクトの中へ\n移動する。移動先が定義時点で決まらず生成時に確定するケース（道の移動アクション等）のため、\nobject_def 参照ではなくインスタンスIDのプロパティ値で指す。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"5\">YAML: <code sourcefile=\"api/UnmappedIsland.Domain.Defs.MoveEffect.yml\" sourcestartlinenumber=\"5\">move: {object: actor, to_prop: destination_id}</code>（transfer と同じフラットフィールド規約）。\nobject は現時点で actor のみ（ロード時に検証）。移動先の解決は「ツリーの根から InstanceId で子孫を探す」。\n解決できない・どのスロットも受け入れない場合は何もしない（「解決できない適用は無視」の既存規約）。\n配置は MoveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -400,7 +400,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PassiveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。共通するのは\n「どのオブジェクトのどのプロパティへ紐付くか（target/targetPropertyGlobalId）」と「ゲートが有効な間だけ\nいくら効くか（ActiveAmount）」。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"5\">modify（条件が真の間だけ都度導出される実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ\n加減算＝不可逆）は、消費のされ方が本質的に異なる別物である。set/addがSetEffect/AddEffectに\n分かれているのと同じく、ModifyEffect/AccumulateEffectという別クラスで表す（判別enumは持たない）。両者の\n唯一の差は「自分がPropertyValueのどちらのincomingへ登録されるか」で、それをRegisterIntoの実装で表現する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"10\">「どこへ紐付くか」（target/targetPropertyGlobalId）も「今いくら効いているか」（amount/gate）も、この効果\n自身の内部事情である。登録先の解決と登録/解除は、targetの種別に応じて自分で行う（RegisterRelation、\n自分のことは自分でする、CLAUDE.md参照）。呼び出し側（WorldObject）は生成・エッジ形成/解消・トポロジ変化と\nいったライフサイクルの契機で「登録してほしい/解除してほしい」と依頼するだけで、どのtargetがどこへ\n紐付くかは一切知らない。target=Ancestorも、ツリー構造が変わる前に解除・変わった後に登録するという順序を\n呼び出し側が守るため、「今この瞬間の祖先」を毎回ownerから辿るだけでよく、前回の登録先を憶える必要はない。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"17\">アクション/combination/pickの効果として書かれる一時的な <code sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"17\">add</code>（実行された瞬間に1回だけ効く）は、\nこの登録の仕組みには乗らないため、ここには含まれない（持続する条件のゲート判定が不要なため）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.Passives の要素。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"3\">modify（条件が真の間だけ実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ加減算＝不可逆）は\n別クラスで表し、判別enumは持たない。唯一の差は「PropertyValueのどちらのincomingへ登録されるか」で、\nRegisterIntoの実装で表現する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"7\">登録先の解決と登録/解除はtargetの種別に応じて自分で行い、呼び出し側（WorldObject）はライフサイクルの\n契機で登録/解除を依頼するだけで、どのtargetがどこへ紐付くかは知らない。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"10\">アクション/combination/pickの一時的な <code sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffect.yml\" sourcestartlinenumber=\"10\">add</code>（実行の瞬間に1回だけ効く）は、持続するゲート判定が不要な\nため、この登録の仕組みには乗らない。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -414,7 +414,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PassiveEffectGate",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"1\">効果の発動条件。種別を表す判別子は持たず、各フィールドの有無そのものが「何をチェックすべきか」を\n表す（StageNameが非nullならWhenOwnStage判定、Conditionsが非nullならconditions判定。両方非nullなら\n両方を満たす間だけ有効=AND、両方nullなら常時有効。PassiveEffect.ActiveAmountから呼ばれる）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"5\">ConditionsもPropertyGlobalId/StageNameも、ロード時にローカルIDへ変換せずグローバルIDのまま持つ\n（評価のたびにDeclarer自身がRuntime.WorldObject.IsInStageでローカル化する）。グローバルID→ローカルID\nの変換コストは、1 tick=15分というこのゲームの時間スケールに対して無視できるほど小さいため、\nDeclarer自身のPropertyDefがすべて出来上がるまで解決を待つビルド時の2段階パースは不要（かつては\nPropertyLocalId/PropertyStage参照をビルド時に確定させていたが、この理由により撤去した）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"1\">効果の発動条件。判別子は持たず、各フィールドの有無が「何をチェックすべきか」を表す\n（StageName非null→WhenOwnStage判定、Conditions非null→conditions判定、両方非null=AND、両方null=常時有効）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffectGate.yml\" sourcestartlinenumber=\"4\">参照はグローバルIDのまま持ち、評価のたびにローカル化する（変換コストは1 tick=15分の時間スケールに\n対して無視できるため、ビルド時の2段階パースを避ける）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -428,7 +428,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PassiveEffects",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffects.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する持続効果（8節）の一式。target(self/parent/child/ancestor)・\nkind(modify/accumulate)を問わず1つにまとめて持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffects.yml\" sourcestartlinenumber=\"4\">これらは常に「まとめて」扱われる——生成・エッジ形成/解消・トポロジ変化といった契機のたびに、\n全effectへ同じ登録/解除を依頼する——ため、要素リストを外へ見せず、まとめて依頼を受ける操作\n（RegisterRelation/RegisterChild）だけを公開する。呼び出し側（WorldObject）は個々のPassiveEffectを\nforeachで回す必要がなく、「この関係が変わったので登録/解除してほしい」と一式へ依頼するだけでよい\n（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PassiveEffects.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず1つにまとめて持ち、\n要素リストは公開せず、登録/解除の一括依頼（RegisterRelation/RegisterChild）だけを受ける。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -442,7 +442,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PickCandidateDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml\" sourcestartlinenumber=\"1\">pickの1候補（GameElementDefinition.md 10節）。抽選の重み（weight）と、この候補が選ばれたときに\n適用する効果（ActiveEffect＝active/pickのどちらか一方。候補自身がさらにpickを持つ再帰も、\nActiveEffectのポリモーフィズムでそのまま許容する）を持つ。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickCandidateDef.yml\" sourcestartlinenumber=\"1\">pickの1候補（GameElementDefinition.md 10節)。抽選の重み（weight）と、選ばれたときに適用する効果を持つ。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -456,7 +456,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PickEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickEffect.yml\" sourcestartlinenumber=\"1\">pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。自分もまたActiveEffectであり\n（activeと排他な選択肢の一方）、選ばれた候補の効果もまたActiveEffect（さらにpickなら再帰する）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickEffect.yml\" sourcestartlinenumber=\"4\">抽選（weight按分）と適用を自分で完結させる。候補が無ければ何もしない（条件成立時に何も起きない）。\n選択に使うRNGはsessionから、weightの解決に使う文脈はApplyの引数(owner=self/actor/dragged)から得る。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PickEffect.yml\" sourcestartlinenumber=\"1\">pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。候補の効果もActiveEffect\n（さらにpickなら再帰する）。候補が無ければ何もしない。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -470,7 +470,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PropertyDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、\nローカルIDをそのままindexとする密配列に格納される。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"4\">同名のプロパティ（例: &quot;durability&quot;）でも ObjectDef ごとに range/stages/デフォルト値が異なりうるため、\n定義はプロパティ名に対してグローバルに1つではなく、ObjectDefごとに個別に持つ。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyDef.yml\" sourcestartlinenumber=\"1\">1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、\nローカルIDをそのままindexとする密配列に格納される。同名プロパティでも ObjectDef ごとに\nrange/stages/デフォルト値が異なりうるため、定義はObjectDefごとに個別に持つ。\nrange系イベント（on_*）の発火判定・stages判定・初期値決定はこのPropertyDef自身の責務で、\nPropertyValueは値の変更を通知するだけ。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -512,7 +512,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.PropertyStage",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyStage.yml\" sourcestartlinenumber=\"1\">6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyStage.yml\" sourcestartlinenumber=\"3\">Min: 区間は下限のみで表す半開区間。値の大小関係を前提にした数値プロパティ向け。\nEq: 完全一致判定。シンボル型プロパティ（6.8節）のように、内部で保持する整数値の大小関係が\n著者にとって意味を持たない（NameRegistryへの登録順で決まるだけの）値に対して使う。\nどちらも未指定なら最下段（それ以外のどの段にも該当しない場合のフォールバック、6.4節）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.PropertyStage.yml\" sourcestartlinenumber=\"1\">6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。\nMin: 下限のみの半開区間（数値プロパティ向け）。Eq: 完全一致判定（シンボル型プロパティ（6.8節）向け）。\nどちらも未指定ならフォールバック段（どの段にも該当しない場合の受け皿、6.4節）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -526,7 +526,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ReferenceRoot",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRoot.yml\" sourcestartlinenumber=\"1\">conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の\n対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみを対象とする（複数階層の\nパスは現状の用例に存在しないため未対応）。worldは唯一のシングルトンインスタンスを実行時に追跡する\n仕組みがまだ無いため、起点としては未対応（14.1節参照。ロード時にエラーとする）。ただしAncestorが\n「見つからなければworldまで遡る」ことを自然に含むため、世界固有の概念を参照したい場合はAncestorで代替できる。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRoot.yml\" sourcestartlinenumber=\"1\">conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の\n対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみ対応。\nworldは起点として未対応（ロード時エラー、14.1節）。Ancestorは見つからなければworldまで遡るため、\n世界固有の概念の参照はAncestorで代替できる。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -540,7 +540,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ReferenceRootResolver",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRootResolver.yml\" sourcestartlinenumber=\"1\">ReferenceRoot（self/parent/actor/dragged/dragged_parent）を、実行時のWorldObjectへ解決する。\nAncestorはプロパティごとに解決先が変わりうるため、ここでは扱わず各利用側がFindAncestorWithPropertyを\n併用する（default→null）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ReferenceRootResolver.yml\" sourcestartlinenumber=\"1\">ReferenceRootを実行時のWorldObjectへ解決する。Ancestorはプロパティごとに解決先が\n変わりうるため扱わず、各利用側がFindAncestorWithPropertyを併用する（default→null）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -554,7 +554,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SetEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SetEffect.yml\" sourcestartlinenumber=\"1\">set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullの場合、リテラル値の代わりに、\nその{object, prop}参照先の現在の実効値を代入する（他のプロパティの値をそのままコピーする、\nconditionsのvalue参照・weightのpath参照と同じ「リテラルか参照か」の二択、9.2節）。対象の解決は\nowner.ResolveEffectTargetOrAncestorに委ねる（Ancestorのプロパティ別解決も含めて任せる）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SetEffect.yml\" sourcestartlinenumber=\"1\">set の1命令（対象プロパティへ絶対値を代入する）。valueRefが非nullなら、リテラルの代わりに\nその{object, prop}参照先の現在の実効値を代入する（「リテラルか参照か」の二択、9.2節）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -568,7 +568,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.ShowMenuMode",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ShowMenuMode.yml\" sourcestartlinenumber=\"1\">showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 4節: 他の値の要否は未決定）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.ShowMenuMode.yml\" sourcestartlinenumber=\"1\">showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 4節）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -582,7 +582,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SlotAcceptRule",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SlotAcceptRule.yml\" sourcestartlinenumber=\"1\">GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、\nWithをタグ（4節）のグローバルIDか、object_defそのもののグローバルIDのどちらかとして解釈する\n（Matches参照）。trait名では直接マッチングしない: traitはmixin合成後に消えてしまう外部から\n参照すべきでない存在であり、trait経由でタグ付けしたければtags（4節）を使う。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SlotAcceptRule.yml\" sourcestartlinenumber=\"1\">GameElementDefinition.md 7.2節の accepts の1エントリ（型・個数の制約）。TargetKindに応じて、\nwithをタグ（4節）かobject_defのグローバルIDとして解釈する（Matches参照）。trait名では直接\nマッチングしない（traitはmixin合成後に消える。trait経由のタグ付けはtags（4節）を使う）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -624,7 +624,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SpawnEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"1\">spawn（9.4節）の1命令。Into への配置（起点が持つスロットの宣言順走査、または SameSlot の場合は\n一意に決まる1スロットへの直接配置）に失敗した場合、必ずその起点自身の親へ伝播し、\naccepts/capacityを無視して強制的に配置する（すべてのオブジェクトは必ずどこかの親に属さなければ\nならないため）。この伝播はYAML側で選択の余地がなく、常に同じルールで行われる。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"6\">伝播先の親も存在しない場合（起点がworld直下など）、spawn したオブジェクトはどこにも配置されない\nまま消える（何も起きなかったのと同じ扱い）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"9\">実際の配置（スロット・スタックの操作、same_slotの位置引き継ぎ）はowner（self）とそのスロット/\nスタックの領分であるため、ExecuteSpawnへ委ねる（配置先の在庫や隙間を知っているのは配置先自身）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnEffect.yml\" sourcestartlinenumber=\"1\">spawn（9.4節）の1命令。Into への配置に失敗した場合は必ず起点の親へ伝播し、accepts/capacityを無視して\n強制配置する（オブジェクトは必ずどこかの親に属す必要があるため。YAML側に選択の余地はない）。\n伝播先の親も無い場合、spawnしたオブジェクトは配置されないまま消える。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -638,7 +638,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.SpawnTargetRoot",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnTargetRoot.yml\" sourcestartlinenumber=\"1\">spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定しない。対象オブジェクトが持つ\nスロットを宣言順に走査し、最初に配置できたスロットへ入れる（型ごとに用意されたスロットへ\n自然に振り分けられるため、著者がスロット名を知っている必要がない）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnTargetRoot.yml\" sourcestartlinenumber=\"5\">fallback はYAML上に存在しない。配置に失敗した場合は必ず、解決した起点自身の親へ伝播する\n（WorldObject.Place参照）。Actor はアクション実行文脈でのみ解決できる。on_min/on_overflow/\non_shortfallにはactorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.SpawnTargetRoot.yml\" sourcestartlinenumber=\"1\">spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定せず、起点が持つスロットを宣言順に\n走査して最初に配置できた所へ入れる（著者がスロット名を知らなくてよい）。fallbackはYAML上に存在せず、\n配置失敗時は必ず起点自身の親へ伝播する（WorldObject.Place参照）。on_min/on_overflow/on_shortfallには\nactorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -652,7 +652,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.StackOrderDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"1\">同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（例: 劣化アイテムは寿命が短いものほど、\n液体容器は中身が少ないものほど「手前＝一番上に重なる」）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"4\">ascendingは「プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか」を表す。「手前に重ねたい\nものほどリストの末尾に置く」という規約（Slot参照）のもとでは、寿命・残量など「小さいほど手前」に\nしたい値は ascending=false（値が小さいものほど末尾）を指定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"8\">このObjectDefの新規インスタンスがスタックへ加わる際の並び位置決定にのみ使う（表示専用の概念）。\n一度並んだ後、値の変化に追従した再ソートは行わない（同種は同じ速度で変化する前提のため、\n挿入時点の相対順序がその後も保たれる、8.4節のaccumulateのような一定速度の変化を想定）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"12\">「どのプロパティで・どちら向きに並べるか」はこの定義自身の内部事情なので外へ出さず、挿入位置を\n求める処理もこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"1\">同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（表示専用）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"3\">ascendingは「プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか」。「手前に重ねたいものほど\nリストの末尾に置く」という規約（Slot参照）のもと、寿命・残量など「小さいほど手前」にしたい値は\nascending=false を指定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.StackOrderDef.yml\" sourcestartlinenumber=\"7\">新規インスタンスがスタックへ加わる際の並び位置決定にのみ使い、値の変化に追従した再ソートは行わない\n（8.4節のaccumulateのような一定速度の変化を想定し、同種は同じ速度で変化する前提のため、\n挿入時点の相対順序が保たれる）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -666,7 +666,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.TransferEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"1\">transfer（9.5節）の1命令。fromが指すプロパティの実体値から、実際に出せる量とAmountの小さい方だけを\ntoが指すプロパティへ移す（連続量の液体のような、setの固定値でもaddの無条件加減算でも表現できない\n「在庫に応じて実際に動く量が変わる」移送を表す）。「実際にいくら動かせるか」の判断はfrom/to自身の\nPropertyValueに委ね、この命令は対象解決と移動量の確定・実行のみを行う（自分のことは自分でする、\nCLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">from/toの参照は、他の場所（<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">modify</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">set</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"7\">add</code>等）と同じ「対象がキー、内容が値」という規約に\n合わせず、conditions（14節）と同じくフラットな<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">from_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">from_prop</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">to_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"8\">to_prop</code>の\n4フィールドで表す。fromとtoの組は常に1組であり、複数プロパティの入れ物としてネストする理由が\n無いため。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"1\">transfer（9.5節）の1命令。fromプロパティの実体値から、実際に出せる量とAmountの小さい方だけを\ntoプロパティへ移す（「在庫に応じて実際に動く量が変わる」移送）。YAMLはフラットな\n<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"3\">from_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"3\">from_prop</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"3\">to_object</code>/<code sourcefile=\"api/UnmappedIsland.Domain.Defs.TransferEffect.yml\" sourcestartlinenumber=\"3\">to_prop</code>の4フィールドで表す。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -694,7 +694,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.WellKnownProperties",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WellKnownProperties.yml\" sourcestartlinenumber=\"1\">エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。\nprops 自体はどの ObjectDef も自由に追加できる汎用機構だが、&quot;size&quot;/&quot;weight&quot; という2つの名前だけは\nmove_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が直接読みに行く。\nロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WellKnownProperties.yml\" sourcestartlinenumber=\"1\">エンジン側の汎用ロジック（容量・重さ伝播、ContainerSystem.md）が規約として直接参照するプロパティ名。\n&quot;size&quot;/&quot;weight&quot; の2つだけは move_to_slot の不変条件（Slot.CanAccept / WorldObject.MoveToSlot）が\n直接読みに行く。ロード処理の最後、他の全プロパティ名の Intern が終わったタイミングで1回構築する。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -708,7 +708,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Defs.WorldCodex",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WorldCodex.yml\" sourcestartlinenumber=\"1\">ロードされたYAMLファイル全体（GameElementDefinition.md 3.1節: 「ファイル全体が1つの WorldCodex を\n表します」）を表す、唯一の集約オブジェクト。名前空間ではなくこのクラスが「WorldCodex」そのもの。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WorldCodex.yml\" sourcestartlinenumber=\"4\">中身は本体データ（ObjectDefTable）と、それを読むために必要な5種の名前空間\n（object/property/slot/tag/symbol）の NameRegistry、および汎用エンジンが規約として直接参照する\nWellKnownProperties。ロード完了後は不変として扱う（Intern は Loader.WorldCodexYamlLoader の中でしか\n呼ばれない）。SymbolNamesは、シンボル型のprops（6節）の値（整数にも真偽値にもならない識別子）が\n登録される名前空間で、他の4種とは独立（同じ文字列が別の名前空間で使われていても衝突しない）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WorldCodex.yml\" sourcestartlinenumber=\"10\">実行中に生成される WorldObject（可変な実行時状態）はここには含まれない。WorldCodex はあくまで\n「定義」の集合であり、生成されたインスタンスの管理は別の場所（実行時側、UnmappedIsland.Domain.Runtime）が\n担う想定。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Defs.WorldCodex.yml\" sourcestartlinenumber=\"1\">ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。\n本体データ（ObjectDefTable）、5種の独立した名前空間（object/property/slot/tag/symbol）の\nNameRegistry、およびWellKnownPropertiesを持つ。ロード完了後は不変として扱う。\nSymbolNamesはシンボル型props（6節）の値の名前空間。実行時状態（WorldObject）は含まない\n（UnmappedIsland.Domain.Runtimeが担う）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -960,7 +960,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.ObjectStack",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ObjectStack.yml\" sourcestartlinenumber=\"1\">Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり（GameElementDefinition.md\n7.6節）。ObjectDefが同じで、かつ represented_by が指定されていれば、その代表オブジェクト\n（さらにその代表…）のObjectDef列も一致するインスタンス同士だけが同じObjectStackにまとまる\n（例: 同じ液体容器でも中身のObjectDefが違えば別々のObjectStackになる）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ObjectStack.yml\" sourcestartlinenumber=\"6\">「このオブジェクトは自分に合流できるか」「自分の中のどこへ挿入すべきか」の判断は、呼び出し側\n（Slot）に代わりこのクラス自身が持つ（自分のことは自分でする、CLAUDE.md参照）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.ObjectStack.yml\" sourcestartlinenumber=\"1\">Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり\n（GameElementDefinition.md 7.6節）。ObjectDefと、represented_byで辿った代表ObjectDef列が一致する\nインスタンス同士だけがまとまる（例: 同じ液体容器でも中身のObjectDefが違えば別スタック）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -974,7 +974,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.PropertyValue",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"1\">props の実行時の値。数値（32bit整数、6節）のみを扱う。WorldObjectが保持する現在値として使う。\nPassiveEffectの影響先は\n「オブジェクト」ではなく「プロパティ」であるため、登録済み効果の一覧・tick毎の反映・実効値の算出は、\nいずれもWorldObjectではなくこの値自身が持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"6\">値の変更（Add/SetNumber）はこのクラス自身が完結して行い、値が変わった直後に、自分のPropertyDefへ\nrangeイベントの判定を委譲する（def.CheckRangeEvents）。どのon_*をいつ発火するかという規則はrange・\non_*の定義を持つPropertyDef本人の責務であり、こちらは「値が変わった」とだけ通知する（自分のことは\n自分でする、というOOPの原則。CLAUDE.md参照）。WorldObjectはローカルID解決のみを担い、値の変更に\n伴って何を判定・実行すべきかには一切関与しない。判定の委譲先である自分自身のPropertyDefと、その適用先\nとなるWorldObjectは、いずれもこのインスタンス自身が保持し（Create時に紐付ける）、呼び出しのたびに\n引数で受け取り直すことはしない。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.PropertyValue.yml\" sourcestartlinenumber=\"1\">props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」で\nあるため、登録済み効果の一覧・tick毎の反映・実効値の算出はWorldObjectではなくこの値自身が持つ。\n値の変更後のrangeイベント判定（どのon_*をいつ発火するか）は自分のPropertyDef（CheckRangeEvents）へ\n委譲し、呼び出し側は変更後に何を判定すべきかを知らなくてよい。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -988,7 +988,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"1\">登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"3\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"3\">Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"4\">SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditions（旧when）ゲートのselfはこれを指す</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"6\">self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、\nchild対象（親→子）なら Declarer が親・SlotBearer が子になる。この2つを登録時に確定させておくことで、\n読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を一切気にせず1本のロジックで済む。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"1\">登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"3\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"3\">Declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"4\">SlotBearer: 親子関係で「子」側にあたるオブジェクト。conditionsゲートのselfはこれを指す</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.RegisteredPassiveEffect.yml\" sourcestartlinenumber=\"6\">self対象なら Declarer == SlotBearer == 登録先の自分自身、parent対象（子→親）なら両方とも子、\nchild対象（親→子）なら Declarer が親・SlotBearer が子。この2つを登録時に確定させることで、\n読み取り側(PropertyValue.GetEffectiveValue/Tick)はtargetの種類を区別せずに済む。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1002,7 +1002,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.Slot",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"1\">1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは\n1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は\nこちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"5\">FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"6\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"6\">FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が\n安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"8\">非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。\nこの差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot\n置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"12\">中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"1\">1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは\n1つの ObjectStack（7.6節）か、空（null）。位置＝セルの添字。正の情報源はこちら側（親のスロット配列）\nであり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"5\">FixedPositions と非FixedPositions の違いは「空になったセルを残すか、詰めるか」の1点のみ:</p>\n<ul sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"6\">\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"6\">FixedPositions: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が安定する。</li>\n<li sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"7\">非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。</li>\n</ul>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Slot.yml\" sourcestartlinenumber=\"9\">中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（親子の整合性を1箇所でのみ保証するため）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1016,7 +1016,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.Views.Location",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"1\">土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付き\nビュー。World/PlayerCharacter と同じ理由で継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"4\">探索の入口はこのビューのExploreに一本化する: YAML側のexploreアクション（進捗+1と発見物のpick）を\n実行し、成功したら「進捗が必要値に達した道の公開」（RevealDuePaths）まで自分で行う。呼び出し側\n（UI等）は、探索の後に道の公開判定を別途呼ぶ必要があることを知らなくてよい（「値を変更した後に\nこれも呼ばないと壊れる」という手順を呼び出し側に持たせない、CLAUDE.md参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"9\">プロパティ名・スロット名の解決はTryGetIdで行い、未登録のcodex（探索の語彙を持たない最小の\nテストフィクスチャ等）でも「単にラップするだけ」のビューとして生成できるようにしている。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"1\">土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付き\nビュー。World と同じ理由で継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"4\">探索の入口はExploreに一本化: exploreアクションの実行に加え、道の公開（RevealDuePaths）まで\n自分で行い、呼び出し側に後続手順を持たせない。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Location.yml\" sourcestartlinenumber=\"7\">名前解決はTryGetIdで行い、探索の語彙を持たないcodex（最小のテストフィクスチャ等）でも\n生成できるようにしている。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1030,7 +1030,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.Views.Path",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Path.yml\" sourcestartlinenumber=\"1\">道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。\nWorld/PlayerCharacter/Location と同じ理由で継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Path.yml\" sourcestartlinenumber=\"4\">travel_minutes/required_progress/destination_idはいずれも生成時（IslandSpawner）にインスタンス\nごとへ上書きされる値であり、このビューは読み取りとtravelアクションの実行だけを提供する。\n移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクション（move+duration）が担う。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Path.yml\" sourcestartlinenumber=\"1\">道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。\nWorld と同じ理由で継承ではなくラップにしている。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.Path.yml\" sourcestartlinenumber=\"4\">travel_minutes/required_progress/destination_idは生成時（IslandSpawner）にインスタンスごとへ\n上書きされる値。移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクションが担う。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1058,7 +1058,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.Views.World",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.World.yml\" sourcestartlinenumber=\"1\">world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの\n型付きビュー。継承（class World : WorldObject）ではなくラップにしているのは、WorldCodex が\ntraitによる合成モデルを採用しており、C#側のクラス階層と噛み合わないため。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.World.yml\" sourcestartlinenumber=\"5\">コンストラクタで解決するのはプロパティ名→グローバルIDだけで、グローバル→ローカルの変換は\n毎回 WorldObject 側の配列引きに任せる（軽量なため、事前キャッシュはしない）。\nworld がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの\nものだけを実装している。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.World.yml\" sourcestartlinenumber=\"1\">world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの\n型付きビュー。継承（class World : WorldObject）ではなくラップにしているのは、WorldCodex が\ntraitによる合成モデルを採用しており、C#側のクラス階層と噛み合わないため。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.Views.World.yml\" sourcestartlinenumber=\"5\">world がどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みの\nものだけを実装している。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1086,7 +1086,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.WorldObject.EffectSite",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"1\">active効果が起きている場所＝ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉した\nスナップショット。same_slot spawnだけがこれを使い、置き換え先を決める。\n「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時のスロットの状態から\n行う（destroyが後で走っていても、そのときの実際の状態を見るだけでよい）。</p>\n<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"6\">置き換え位置は「元のオブジェクトがdestroyされたか」ではなく「元のオブジェクトが居たスタック(固定\n番号)に、同種がまだ残っているか」で決まる。残っているなら（selfが生き残る、またはdestroyされても\n同種の兄弟が残る）新オブジェクトはその隣（+1側）へ、残っていないなら（同種が全て消えた）その空いた\n位置をそのまま引き継ぐ。この判別は在庫（originStack.Members.Count）で行う（OriginKindRemains）——\n「その位置が同種を受け入れられるか」ではない点に注意。空になったスタックも同種を受け入れ可能だが位置は\n引き継ぐべきで、固定スロットが空スタックを保持する実装でも在庫判定なら正しい。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldObject.EffectSite.yml\" sourcestartlinenumber=\"1\">ApplyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉したスナップショット。\nsame_slot spawnだけがこれを使い、置き換え先を決める。「これからselfが消えるか」は捕捉時には\n織り込まず、置き換え位置の判断は配置時のスロットの状態から行う（OriginKindRemains参照）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1128,7 +1128,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Domain.Runtime.WorldSession",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldSession.yml\" sourcestartlinenumber=\"1\">実行中に生成される WorldObject の instance ID 発行をまとめて持つ、1セッション分の実行時状態\n（WorldCodex.cs のコメントで予告されている「実行時側」の最小実装）。WorldCodex 自体は\nロード後不変な定義の集合であり続けるため、instance ID の発行という可変な状態はここに持たせる。\nスロット移動（move_to_slot）自体は WorldObject.MoveToSlot が自分自身の責務として行うため、\nここでは仲介しない（WellKnownPropertiesは Codex.WellKnown からその都度渡す）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Domain.Runtime.WorldSession.yml\" sourcestartlinenumber=\"1\">1セッション分の実行時状態。WorldCodex はロード後不変な定義の集合であり続けるため、\ninstance ID の発行という可変な状態はここに持たせる。スロット移動は WorldObject.MoveToSlot が\n自分自身の責務として行うため、ここでは仲介しない。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1156,7 +1156,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Loader.RawObjectDef",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.RawObjectDef.yml\" sourcestartlinenumber=\"1\">object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。\nprops/slots/passives/stack_order/actions/combinationsは、フィールド単位の上書きマージ\n（props/slots/actions/combinationsの4つ全てが対象。Resolve参照）がまだ起こりうるため、あえて\n意味解釈済みの型にせずYamlMappingNode/YamlSequenceNodeのまま持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.RawObjectDef.yml\" sourcestartlinenumber=\"6\">自分自身の識別性（GlobalId）はtrait解決に依存しないため、パース時点（Loader.\nWorldCodexYamlLoader.ParseObjectDef）で確定する。一方、tags・prop/slot名等は、trait側からも\n追加されうる・shallow-overrideで中身が変わりうるため、Resolveの中で初めて確定する。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.RawObjectDef.yml\" sourcestartlinenumber=\"1\">object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。\ntrait上書きマージ（Resolve参照）がまだ起こりうるフィールドは、意味解釈済みの型にせず\n生YAMLノードのまま持つ。GlobalIdのみパース時点で確定し、tags・prop/slot名等はResolveで\n初めて確定する。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1170,7 +1170,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Loader.RawTrait",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.RawTrait.yml\" sourcestartlinenumber=\"1\">traits（GameElementDefinition.md 5節、mixin）の1エントリの、まだtrait解決（object_defへの合成）を\n経ていない生の形。props/slots/passives/stack_order/actions/combinationsは、フィールド単位の\n上書きマージ（RawObjectDef.Resolve参照）がまだ起こりうるため、あえて意味解釈済みの型にせず\nYamlMappingNode/YamlSequenceNodeのまま持つ。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.RawTrait.yml\" sourcestartlinenumber=\"6\">1つのtraitは複数のobject_defから参照されうり、参照するobject_defごとに異なるフィールドだけを\n上書きされうるため、trait自身の内容を「一度きり確定する完成品」にはできない（参照されるたびに\n新しいマージが起こる）。この点がRawObjectDef（常にちょうど1回だけ解決される）と本質的に異なり、\nRawTraitがRawObjectDefとは別に存在する理由そのものになっている。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.RawTrait.yml\" sourcestartlinenumber=\"1\">traits（GameElementDefinition.md 5節、mixin）の1エントリの生の形。上書きマージ\n（RawObjectDef.Resolve参照）がまだ起こりうるフィールドは生YAMLノードのまま持つ。\n1つのtraitは複数のobject_defから参照され、参照ごとに異なるマージが起こるため、\n「一度きり確定する完成品」にはできない（1回だけ解決されるRawObjectDefとの本質的な違い）。</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -1184,7 +1184,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "UnmappedIsland.Loader.WorldCodexYamlLoader",
-      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"1\">YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。\nCodex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に\nSystem.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、\n実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す\nLoad経由で使う）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"7\">YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの\nParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/\nParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース\nメソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。\n一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の\nフィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。\nRawObjectDef.cs参照）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"15\">props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり\n（RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う\n（プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、\nこれらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および\nParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて\n呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、\nshallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし\nobject_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"24\">インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという\nニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という\nだけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに\nobject_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて\n書ける（例: <code sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"28\">new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()</code>）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"30\">object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の\n厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの\npatch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため\nこのローダー自身は「後勝ちで上書き」という規則を一切持たない。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"35\">Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で\nこのインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、\n初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて\n困る理由も無いため）。</p>\n"
+      "Summary": "<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"1\">YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。\nUnityEngineには依存しない（プラットフォーム固有のファイルI/Oが必要な場合は、呼び出し元が\nテキストを取得してLoadへ渡す）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"5\">パース全般をこのクラスが担い、5種のNameRegistryを保持する。「trait解決込みでobject_defを\n組み立てる」責務はRawObjectDef.Resolveが担う。props/slots/actions/combinationsはフィールド\n単位のtrait上書きマージ対象のため、深い意味解釈とprop/slot名等のInternはLoad時点ではなく\nResolveまで遅延する。object_def自身のGlobalIdのみtrait解決に依存しないため、ParseObjectDefの\n時点で確定する。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"11\">Load系メソッドは何度でも呼べ、呼ぶたびにこのインスタンスへ追記する（thisを返すため\n<code sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"12\">new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()</code>と書ける）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"14\">object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラー（3.3節の\n厳格モード）。「後勝ちで上書き」の規則は一切持たない（MODによる差し替えは専用のpatch文法で\n表現する想定）。</p>\n<p sourcefile=\"api/UnmappedIsland.Loader.WorldCodexYamlLoader.yml\" sourcestartlinenumber=\"18\">Buildは蓄積内容から不変のWorldCodexを組み立てて返し、このインスタンスの蓄積状態を初期化する。</p>\n"
     },
     {
       "type": "ManagedReference",

@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class Slot | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは 1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は こちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。 FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。  FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が 安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。 非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。 この差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot 置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。  中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。">
+    <meta name="description" content="1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは 1つの ObjectStack（7.6節）か、空（null）。位置＝セルの添字。正の情報源はこちら側（親のスロット配列） であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。 FixedPositions と非FixedPositions の違いは「空になったセルを残すか、詰めるか」の1点のみ:  FixedPositions: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が安定する。 非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。  中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（親子の整合性を1箇所でのみ保証するため）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,17 +75,14 @@
 
   <h1 id="UnmappedIsland_Domain_Runtime_Slot" data-uid="UnmappedIsland.Domain.Runtime.Slot" class="text-break">Class Slot</h1>
   <div class="markdown level0 summary"><p>1つの WorldObject が持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは
-1つの ObjectStack（7.6節、「見た目上1つのまとまり」）か、空（null）。位置＝セルの添字。正の情報源は
-こちら側（親のスロット配列）であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>
-<p>FixedPositions と非FixedPositions の違いは1点だけ:「空になったセルを残すか、詰めるか」。</p>
+1つの ObjectStack（7.6節）か、空（null）。位置＝セルの添字。正の情報源はこちら側（親のスロット配列）
+であり、子側の WorldObject.Parent は逆引き用のキャッシュ（7.1節）。</p>
+<p>FixedPositions と非FixedPositions の違いは「空になったセルを残すか、詰めるか」の1点のみ:</p>
 <ul>
-<li>FixedPositions（番号が固定）: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が
-安定する（オブジェクトが消えても番号は空くだけで前詰めされない）。</li>
-<li>非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。
-この差だけで、新規追加（最初の空きセル＝最小の空き番号／末尾へ）・削除（空き化／前詰め）・same_slot
-置き換えのすべてが両対応できる（固定番号を別フィールドで二重管理する必要は無い＝ObjectStack.GridIndex撤廃）。</li>
+<li>FixedPositions: セル配列は常に UnitCapacity 長で、空セルは null として保持され位置が安定する。</li>
+<li>非FixedPositions: 空になったセルは削除して前詰めする（null を含まない）。</li>
 </ul>
-<p>中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（両者の整合性を1箇所でのみ保証するため）。</p>
+<p>中身の追加・削除は WorldObject.MoveToSlot 系経由でのみ行う（親子の整合性を1箇所でのみ保証するため）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -127,7 +124,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot__ctor_UnmappedIsland_Domain_Defs_SlotDef_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.%23ctor(UnmappedIsland.Domain.Defs.SlotDef)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L40">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L34">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot__ctor_" data-uid="UnmappedIsland.Domain.Runtime.Slot.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot__ctor_UnmappedIsland_Domain_Defs_SlotDef_" data-uid="UnmappedIsland.Domain.Runtime.Slot.#ctor(UnmappedIsland.Domain.Defs.SlotDef)">Slot(SlotDef)</h4>
@@ -161,7 +158,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_cells.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.cells%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L27">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L24">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_cells" data-uid="UnmappedIsland.Domain.Runtime.Slot.cells">cells</h4>
   <div class="markdown level1 summary"><p>セルの並び。要素は ObjectStack か null（空セル、FixedPositionsのみ）。位置＝添字。</p>
@@ -193,13 +190,11 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_Cells.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.Cells%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L34">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L29">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_Cells_" data-uid="UnmappedIsland.Domain.Runtime.Slot.Cells*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_Cells" data-uid="UnmappedIsland.Domain.Runtime.Slot.Cells">Cells</h4>
-  <div class="markdown level1 summary"><p>セルの並びそのもの（空セルは null）。位置＝添字。FixedPositionsでは空セルnullを含んだまま
-番号が安定し、非FixedPositionsでは前詰め済みなのでnullを含まない。「実在スタックだけを位置無視で
-並べたい」用途は無いため、そのようなビュー（旧Stacks）は提供しない。位置と一緒に扱うのが前提。</p>
+  <div class="markdown level1 summary"><p>セルの並びそのもの（空セルは null）。位置＝添字。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -226,12 +221,11 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_Contents.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.Contents%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L38">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L32">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_Contents_" data-uid="UnmappedIsland.Domain.Runtime.Slot.Contents*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_Contents" data-uid="UnmappedIsland.Domain.Runtime.Slot.Contents">Contents</h4>
-  <div class="markdown level1 summary"><p>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。スタックの概念に興味が無い
-呼び出し側（タグ判定・重さ集計・子の一括走査など、ほとんどが内部処理）はこちらを使う。</p>
+  <div class="markdown level1 summary"><p>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -258,7 +252,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_Def.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.Def%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L24">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L21">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_Def_" data-uid="UnmappedIsland.Domain.Runtime.Slot.Def*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_Def" data-uid="UnmappedIsland.Domain.Runtime.Slot.Def">Def</h4>
@@ -288,7 +282,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_LiveStacks.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.LiveStacks%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L29">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L26">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_LiveStacks_" data-uid="UnmappedIsland.Domain.Runtime.Slot.LiveStacks*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_LiveStacks" data-uid="UnmappedIsland.Domain.Runtime.Slot.LiveStacks">LiveStacks</h4>
@@ -320,7 +314,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_AcceptsRule_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.AcceptsRule(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L83">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L74">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_AcceptsRule_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AcceptsRule*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_AcceptsRule_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AcceptsRule(UnmappedIsland.Domain.Runtime.WorldObject)">AcceptsRule(WorldObject)</h4>
@@ -367,12 +361,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_AddInternal_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.AddInternal(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L111">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L101">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_AddInternal_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AddInternal*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_AddInternal_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.AddInternal(UnmappedIsland.Domain.Runtime.WorldObject)">AddInternal(WorldObject)</h4>
   <div class="markdown level1 summary"><p>通常の追加。合流できる既存スタックがあればそこへ、無ければ新規スタックとして
-最初の空きセル（＝FixedPositionsでは最小の空き番号）へ、空きが無ければ末尾へ入れる。</p>
+最初の空きセルへ、空きが無ければ末尾へ入れる。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -401,13 +395,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_CanAccept_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String_System_String__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.CanAccept(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Defs.WellKnownProperties%2CSystem.String%2CSystem.String%40)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L54">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L45">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_CanAccept_" data-uid="UnmappedIsland.Domain.Runtime.Slot.CanAccept*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_CanAccept_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Defs_WellKnownProperties_System_String_System_String__" data-uid="UnmappedIsland.Domain.Runtime.Slot.CanAccept(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Defs.WellKnownProperties,System.String,System.String@)">CanAccept(WorldObject, WellKnownProperties, string, out string)</h4>
-  <div class="markdown level1 summary"><p>move_to_slot（7.1節）が候補オブジェクトを受け入れられるかを、この Slot 自身の Def と
-中身だけで判定する（accepts制約・capacity・UnitCapacity、7.2〜7.3節）。force=trueの
-場合はこの判定自体を呼び出し側（WorldObject.AttachToSlot）がスキップする。</p>
+  <div class="markdown level1 summary"><p>move_to_slot（7.1節）が候補オブジェクトを受け入れられるか（accepts制約・capacity・
+UnitCapacity、7.2〜7.3節）。force=trueの場合は呼び出し側がこの判定自体をスキップする。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -466,7 +459,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_FindMatchingStack_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.FindMatchingStack(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L238">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L222">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_FindMatchingStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindMatchingStack*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_FindMatchingStack_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindMatchingStack(UnmappedIsland.Domain.Runtime.WorldObject)">FindMatchingStack(WorldObject)</h4>
@@ -514,7 +507,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_FindStackContaining_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.FindStackContaining(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L234">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L218">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_FindStackContaining_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindStackContaining*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_FindStackContaining_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.FindStackContaining(UnmappedIsland.Domain.Runtime.WorldObject)">FindStackContaining(WorldObject)</h4>
@@ -562,13 +555,12 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_HasCapacityFor_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.HasCapacityFor(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L102">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L92">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_HasCapacityFor_" data-uid="UnmappedIsland.Domain.Runtime.Slot.HasCapacityFor*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_HasCapacityFor_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.HasCapacityFor(UnmappedIsland.Domain.Runtime.WorldObject)">HasCapacityFor(WorldObject)</h4>
-  <div class="markdown level1 summary"><p>UnitCapacity（種類数/個数の上限）に、candidateを新たに加える余地があるか。Stackableなら
-既存のObjectStackへ合流できる場合は新しい枠を消費しない（この場合に限りDef.Stackableを見る。
-非Stackableは同種でも常に個体ごとに新しいObjectStackを作るため、合流によるタダ乗りは無い）。</p>
+  <div class="markdown level1 summary"><p>UnitCapacityにcandidateを新たに加える余地があるか。Stackableで既存のObjectStackへ合流
+できる場合は新しい枠を消費しない（非Stackableは同種でも常に個体ごとに別スタック）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -612,7 +604,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_IndexOfStack_UnmappedIsland_Domain_Runtime_ObjectStack_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.IndexOfStack(UnmappedIsland.Domain.Runtime.ObjectStack)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L245">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L229">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_IndexOfStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.IndexOfStack*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_IndexOfStack_UnmappedIsland_Domain_Runtime_ObjectStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.IndexOfStack(UnmappedIsland.Domain.Runtime.ObjectStack)">IndexOfStack(ObjectStack)</h4>
@@ -663,12 +655,11 @@ represented_byが絡むと同じ外側Defでも別スタックが並びうるた
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_PlaceNewStack_UnmappedIsland_Domain_Runtime_ObjectStack_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L126">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L114">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_PlaceNewStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_PlaceNewStack_UnmappedIsland_Domain_Runtime_ObjectStack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.PlaceNewStack(UnmappedIsland.Domain.Runtime.ObjectStack)">PlaceNewStack(ObjectStack)</h4>
-  <div class="markdown level1 summary"><p>新規スタックを最初の空きセルへ、無ければ末尾へ。FixedPositionsは空セル(null)を持つので
-最小の空き番号へ入り、非FixedPositionsは空セルが無いので常に末尾へ追加される。</p>
+  <div class="markdown level1 summary"><p>新規スタックを最初の空きセルへ、無ければ末尾へ。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -697,7 +688,7 @@ represented_byが絡むと同じ外側Defでも別スタックが並びうるた
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_PlaceSameSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L187">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L171">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_PlaceSameSlot_" data-uid="UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_PlaceSameSlot_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Boolean_" data-uid="UnmappedIsland.Domain.Runtime.Slot.PlaceSameSlot(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Boolean)">PlaceSameSlot(WorldObject, int, bool)</h4>
@@ -764,7 +755,7 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.RemoveInternal(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L133">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L121">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_" data-uid="UnmappedIsland.Domain.Runtime.Slot.RemoveInternal*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_RemoveInternal_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.RemoveInternal(UnmappedIsland.Domain.Runtime.WorldObject)">RemoveInternal(WorldObject)</h4>
@@ -796,16 +787,14 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_Restack_UnmappedIsland_Domain_Runtime_WorldObject_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.Restack(UnmappedIsland.Domain.Runtime.WorldObject)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L156">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L140">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_Restack_" data-uid="UnmappedIsland.Domain.Runtime.Slot.Restack*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_Restack_UnmappedIsland_Domain_Runtime_WorldObject_" data-uid="UnmappedIsland.Domain.Runtime.Slot.Restack(UnmappedIsland.Domain.Runtime.WorldObject)">Restack(WorldObject)</h4>
-  <div class="markdown level1 summary"><p>objの代表チェーン（represented_byで畳んだ同種の識別子）が変わったかもしれないとき、objが今の所属
-スタックの固定識別子にまだ合致するかを判定し、合致しなくなっていれば抜いて入れ直す（同種の既存
-スタックがあれば合流、無ければ新規スタック。抜けた跡が空になれば固定は空セル化・前詰めは除去）。
-これによりスロットの「同種は1スタックにまとまる」という不変条件を、中身の変化後も保つ。</p>
-<p>非Stackableは同種でも常に個体ごとの別スタックで、合流もしなければ並びも保ちたいので対象外
-（識別子が古くなっても、その識別子で合流判定される相手が居ないため実害が無い）。</p>
+  <div class="markdown level1 summary"><p>objの代表チェーンが変わったかもしれないとき、今の所属スタックの固定識別子に合致しなくなって
+いれば抜いて入れ直し（既存スタックへ合流／新規スタック）、「同種は1スタックにまとまる」という
+不変条件を中身の変化後も保つ。非Stackableは対象外（個体ごとの別スタックで、合流判定の相手が
+居ないため実害が無い）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -834,7 +823,7 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_SumSize_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.SumSize(System.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L97">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L88">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_SumSize_" data-uid="UnmappedIsland.Domain.Runtime.Slot.SumSize*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_SumSize_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.SumSize(System.Int32)">SumSize(int)</h4>
@@ -881,7 +870,7 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_TryFillCell_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.TryFillCell(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L202">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L186">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_TryFillCell_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryFillCell*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_TryFillCell_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryFillCell(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)">TryFillCell(WorldObject, int)</h4>
@@ -934,7 +923,7 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_TryPlaceAdjacent_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L212">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L196">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_TryPlaceAdjacent_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_TryPlaceAdjacent_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryPlaceAdjacent(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32)">TryPlaceAdjacent(WorldObject, int)</h4>
@@ -989,7 +978,7 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_TryPlaceShifted_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted(UnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L215">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L199">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_TryPlaceShifted_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_TryPlaceShifted_UnmappedIsland_Domain_Runtime_WorldObject_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TryPlaceShifted(UnmappedIsland.Domain.Runtime.WorldObject,System.Int32,System.Int32)">TryPlaceShifted(WorldObject, int, int)</h4>
@@ -1046,7 +1035,7 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot_TrySetManualPosition_UnmappedIsland_Domain_Runtime_ObjectStack_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot.TrySetManualPosition(UnmappedIsland.Domain.Runtime.ObjectStack%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L252">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L236">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Runtime_Slot_TrySetManualPosition_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TrySetManualPosition*"></a>
   <h4 id="UnmappedIsland_Domain_Runtime_Slot_TrySetManualPosition_UnmappedIsland_Domain_Runtime_ObjectStack_System_Int32_" data-uid="UnmappedIsland.Domain.Runtime.Slot.TrySetManualPosition(UnmappedIsland.Domain.Runtime.ObjectStack,System.Int32)">TrySetManualPosition(ObjectStack, int)</h4>
@@ -1108,7 +1097,7 @@ FixedPositionsは空になったそのセル(null)を埋める。</li>
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Runtime_Slot.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Runtime.Slot%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L22" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Runtime/Slot.cs/#L19" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

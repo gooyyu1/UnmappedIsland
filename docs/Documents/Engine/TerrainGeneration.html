@@ -111,17 +111,12 @@ href="./GameElementDefinition.html"><code>GameElementDefinition.md</code></a>
 <li>地形・構造物はすべて YAML でオブジェクト定義し、MOD
 作成者がコードに触れずに拡張できる状態を保つ</li>
 </ul>
-<p>本書が扱うのは、<strong>島の座標・軸・LocationType・パスネットワークを生成するアルゴリズムそのもの</strong>です。生成された
+<p>本書が扱うのは、<strong>島の座標・軸・LocationType・パスネットワークを生成するアルゴリズムそのもの</strong>
+（<code>Domain.Generation</code> 名前空間、<code>WorldObject</code>
+に一切触れない生成時点だけの純粋な計算）です。生成された
 <code>Location</code>（土地）が生成された<strong>あと</strong>にどう振る舞うか（スロット構成・探索・道の発見・移動）は
 <a href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a>
-に切り出しています。両者を分けているのは、前者が「どんな島が、
-どんなレイアウトで生成されるか」という<strong>生成時点だけの計算</strong>（<code>Domain.Generation</code>
-名前空間、<code>WorldObject</code> には
-一切触れない純粋な計算）であるのに対し、後者は「生成された
-<code>Location</code> インスタンスがゲームプレイ中どう振る舞うか」
-という<strong>実行時の挙動</strong>（既存の
-<code>traits</code>/<code>actions</code>/<code>slots</code>
-の応用）であり、関心事の性質が異なるためです。</p>
+が扱います。</p>
 <p>本書は設計判断（なぜこのアルゴリズムか）を扱い、実際のクラス名・メソッド名を使った実装の呼び出し関係は
 <a
 href="./TerrainGenerationImplementation.html"><code>TerrainGenerationImplementation.md</code></a>
@@ -198,17 +193,11 @@ YAML 定義を持たない）。<code>Site</code>
    ↓ IslandSpawner が object_defs を spawn し、world.locations へ配置
    ↓ 辺ごとに path を両端へ生成し、undiscovered_paths（隠しスロット）へ配置（ExplorationSystem.md）
 [実体化済みの島]</code></pre>
-<p>座標決定（サイト配置）を軸のサンプリングより先に行う点が、当初の構想（概念設計段階の草案）からの変更点です。
-<code>Site</code>
-は座標を先に持たなければ、座標に依存する軸のジェネレータ（距離場・座標ベースのノイズ）を評価できない
-ため、パイプラインの順序を「座標決定が最上流」に統一しています。</p>
-<p><strong>構造物内部の生成は未実装です</strong>（6
-節参照）。「島の生成と構造物内部の生成は同一の生成ロジックを共有する」
-という設計方針自体は維持しており、<code>generation_scopes</code>
-にスコープ（現状は <code>island</code> のみ）ごとのパラメータ
-プリセットを持たせる形で実装済みです。<code>structure_interior</code>
-スコープを追加すれば、同じ <code>TerrainGenerator</code> が
-そのまま再帰的に使える設計になっています。</p>
+<p>座標に依存する軸のジェネレータ（距離場・座標ベースのノイズ）は座標なしでは評価できないため、
+パイプラインの順序は「座標決定が最上流」に統一しています。</p>
+<p><strong>構造物内部の生成は未実装です</strong>（3.7 節・6
+節）。島の生成と構造物内部の生成は、同一の生成ロジックを
+スコープ別パラメータ（<code>generation_scopes</code>）で共有する設計です。</p>
 <h2 id="各ステップの詳細仕様">3. 各ステップの詳細仕様</h2>
 <h3 id="axis定義とジェネレータプリミティブ">3.1
 Axis定義とジェネレータプリミティブ</h3>
@@ -268,31 +257,24 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <p>（<code>i</code> は <code>type</code> が
 <code>axis_preferences</code> に持つ軸のみを走る。<code>v_i</code> は
 <code>site</code> の軸値）</p>
-<p>この式の設計判断（実装により確定した事項）:</p>
+<p>この式の設計判断:</p>
 <ul>
 <li><strong><code>tolerance</code>
 は距離の</strong>スケール<strong>であり、閾値ではありません</strong>。「<code>tolerance</code>
-を超えたら除外」という
-ゲートの意味は持たせていません（絶対的な除外は下記の
+を超えたら除外」という ゲートの意味は持たせていません（絶対的な除外は
 <code>hard_limits</code> だけが担います）。1つの軸で
-<code>tolerance</code> 分ずれると正規化距離に 1
+<code>tolerance</code> 分 ずれると正規化距離に 1
 単位分寄与する、というスケール変換だけを行います。</li>
 <li><strong><code>Σw_i</code>
-による正規化</strong>により、言及する軸の数が異なる
-<code>LocationType</code> 同士でも公平に比較できます。
-正規化しない単純な加重和では、言及する軸が少ない型ほど和の項数が減って距離が構造的に小さくなり、
-常に有利になってしまいます（軸を1つだけ言及する型が、島全体を侵食してしまう類の事故）。<code>Σw_i</code>
-で割る ことで、この次元数バイアスを取り除いています。</li>
+による正規化</strong>がないと、言及する軸が少ない型ほど和の項数が減って距離が構造的に小さくなり常に
+有利になる（軸を1つだけ言及する型が島全体を侵食する類の事故）ため、<code>Σw_i</code>
+で割って次元数バイアスを 取り除いています。</li>
 <li>同点（同じ距離）の場合は、<code>location_types</code>
 の宣言順で先に書かれた型が採用されます（決定的な挙動のため）。</li>
 </ul>
-<p><code>GameElementDefinition.md</code>
-が定義する「範囲による状態の決定」パターン（<code>stages</code>、6
-節）と同様、値域に基づいて
-分類を決める発想は共通していますが、<code>stages</code>
-は1つのプロパティの1次元の区間判定である一方、こちらは
-複数軸にまたがる多次元の最近傍探索であるため、専用のマッチング処理（<code>Domain.Generation.LocationTypeMatcher</code>）
-として実装しています。</p>
+<p><code>stages</code>（<code>GameElementDefinition.md</code> 6
+節）は1次元の区間判定である一方、こちらは複数軸にまたがる多次元の
+最近傍探索であるため、専用のマッチング処理（<code>Domain.Generation.LocationTypeMatcher</code>）として実装しています。</p>
 <h3 id="マッチできない場合の処理フォールバック">3.3
 マッチできない場合の処理（フォールバック）</h3>
 <ul>
@@ -307,18 +289,13 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 はこれが受けます（自身の <code>hard_limits</code>
 も無視する、最後の受け皿）。複数の <code>is_fallback</code>
 型がある場合、 <code>priority</code> が最大のものが選ばれます。</li>
-<li><strong>フォールバックの機能化</strong>（設計方針として維持）:
+<li><strong>フォールバックの機能化</strong>:
 特定の軸にのみ強くマッチする専用 <code>LocationType</code> を MOD
-側で追加すれば、フォールバックに落ちていた領域へ自動的に誘導できます。「マッチしない領域」は不具合ではなく
-「新しい <code>LocationType</code>
-を定義すべき場所」というシグナルとして扱う、という考え方は維持しています。</li>
+側で追加すれば、
+フォールバックに落ちていた領域へ自動的に誘導できます。「マッチしない領域」は不具合ではなく「新しい
+<code>LocationType</code>
+を定義すべき場所」というシグナルとして扱います。</li>
 </ul>
-<p>（概念設計段階の草案にあった「<code>tolerance</code>
-を超えたら最も合っていない軸を無視して段階的に緩和する」という
-3段目の処理は実装していません。<code>tolerance</code>
-を閾値ではなくスケールとして扱うと定めたことで、そもそも
-「<code>tolerance</code>
-を超えた」という状態自体を判定する意味がなくなったためです。）</p>
 <h3 id="出現数についてguaranteesによる明示的な保証">3.4
 出現数について（guaranteesによる明示的な保証）</h3>
 <p><strong>個別の <code>LocationType</code>
@@ -343,9 +320,9 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="
 （<code>hard_limits</code> を満たす <code>Site</code>
 を優先し、足りなければ満たさない <code>Site</code>
 からも補います。保証は絶対のため）。
-これにより、確率的な再生成（軸のヒストグラムを見て不足していれば作り直す、という当初の草案にあった方式）を
-使わずに済み、<strong>決定性</strong>（同じシード →
-同じ島）と<strong>停止性</strong>（無限に再生成しない）の両方を保っています。</p>
+確率的な再生成を使わないため、<strong>決定性</strong>（同じシード →
+同じ島）と<strong>停止性</strong>（無限に再生成しない）の両方を
+保っています。</p>
 <h3 id="座標配置とパスネットワーク生成">3.5
 座標配置とパスネットワーク生成</h3>
 <h4 id="座標配置海岸に囲まれかつ海岸過多にならない配置">3.5.1
@@ -356,21 +333,20 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="
 面積比の関係で外周付近のサイトが多数を占めてしまい、単純な後処理だけでは制御しづらいため、配置そのものを
 2種類に分けています）。</p>
 <ol type="1">
-<li><p><strong>外周リング</strong>:
+<li><strong>外周リング</strong>:
 島を囲む海岸候補を、半径85%〜95%の円環上へ、等間隔+ジッタで配置します。個数は
 <code>generation_scopes.island</code>
 の想定サイト数の約35%（ただし4〜7個にクランプ）です。この個数の上限・下限が、
-「島を囲むのに十分な数」と「海岸が多くなりすぎない」の両方を同時に満たす調整弁になっています。</p></li>
-<li><p><strong>内陸</strong>:
+「島を囲むのに十分な数」と「海岸が多くなりすぎない」の両方を同時に満たす調整弁になっています。</li>
+<li><strong>内陸</strong>:
 残りのサイトを、半径75%以内へベストキャンディデート法（Mitchell’s
 best-candidate algorithm）で
 散布します。既存のどのサイトからも最も離れた候補を毎回選ぶことで、サイト同士が均等に散らばります。
 <code>generation_scopes.island.interior_bias</code>
-が高いほど中心寄りに配置されます。</p>
-<p>概念設計段階の草案では「Poisson-disk
-sampling」を挙げていましたが、Poisson-disk は半径と面積から
-結果的な個数が決まるサンプラであり、「10〜20個ちょうど」という要求される個数を直接指定できません。
-個数を直接指定できるベストキャンディデート法に置き換えています。</p></li>
+が高いほど中心寄りに配置されます。Poisson-disk sampling では
+なくこの方式なのは、生成するサイト数を直接指定できるためです（Poisson-disk
+は半径と面積から結果的な
+個数が決まるサンプラで、個数を指定できません）。</li>
 </ol>
 <p>外周リングに配置されたサイトは、<code>coastal_distance</code>
 軸のサンプリング後に <code>generation_scopes.island.coast_band</code>
@@ -401,17 +377,12 @@ Delaunay 辺の部分集合であるため、
 <code>travel_minutes</code>（移動時間、分）を持たせます。</p>
 <pre><code>travel_minutes = round_to_15( distance × base_minutes_per_distance × (moveCostA + moveCostB) / 200 )</code></pre>
 <p>（15分単位に丸め、<code>minutes_per_tick</code>
-に対して粗すぎない粒度に揃えます。最低15分。）
-概念設計段階の草案にあった「距離」と「移動難易度」を別々に保持する案は採らず、最初からこの1本の式で
-<code>travel_minutes</code> に代表させています。</p></li>
+に対して粗すぎない粒度に揃えます。最低15分。）</p></li>
 </ul>
-<p><strong>「交差する代わりに新しい地区を生成する」処理は実装していません。</strong>
-Delaunay 三角形分割を使う限り、
-選ばれた辺同士が交差することは数学的に起こりません（交差しうるのは、Delaunay
-の枠外で任意のショートカットを
-無理に追加しようとした場合だけです）。概念設計段階の草案にあったこの処理は、自分で作った例外を自分で
-解決していただけであり、実際には解くべき問題が存在しないと判断し、実装から落としています。将来、Delaunay
-に含まれない任意のショートカット辺を追加したいという要求が具体的に出てきた場合は、その時点で改めて設計します。</p>
+<p>辺同士の交差を解決する処理はありません。採用する辺は常に Delaunay
+辺の部分集合であるため、交差は数学的に 起こりません。Delaunay
+に含まれない任意のショートカット辺を追加したい要求が出てきた場合に、その時点で
+改めて設計します。</p>
 <p>道オブジェクト自体（<code>path</code>
 object_def）の生成・探索による発見・移動アクションは <a
 href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a> を
@@ -432,28 +403,25 @@ href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a> を
 <h3 id="構造物structure生成">3.7 構造物（Structure）生成</h3>
 <p><strong>未実装です。</strong> <code>generation_scopes</code>
 にスコープごとのパラメータプリセットを持たせる仕組み自体は実装済み
-（現状 <code>island</code> のみ定義）で、同じ
-<code>TerrainGenerator</code>/<code>SitePlacer</code>/<code>AxisSampler</code>/<code>LocationTypeMatcher</code>
-を <code>structure_interior</code>
-のようなスコープ名で呼び出せば、同一ロジックのまま再帰生成できる設計になっています。
-探索の発見物として <code>cave_entrance</code>（<code>fixture</code>
-タグ）だけは先に用意していますが、これは洞窟の入口という
-プレースホルダで、内部の子 <code>Location</code>
+（現状 <code>island</code> のみ定義）で、<code>structure_interior</code>
+のようなスコープを追加すれば、同じ <code>TerrainGenerator</code>
+一式が同一ロジックのまま再帰生成できる設計です。探索の発見物
+<code>cave_entrance</code>（<code>fixture</code> タグ）は洞窟の
+入口というプレースホルダで、内部の子 <code>Location</code>
 グラフの生成は今後の課題です。</p>
 <h2 id="これまでに合意し実装した設計原則">4.
 これまでに合意し、実装した設計原則</h2>
 <ul>
 <li>地形定義（<code>LocationType</code>）と実体（<code>Location</code>）は必ず呼び分けます。裸の名詞＝実体、<code>〜Type</code>
 サフィックス＝定義、 という命名規則を全概念で徹底します。</li>
-<li>「似た環境が隣り合う」は、隣接しやすさテーブル（affinity）ではなく、<strong>軸の空間的連続性そのもの</strong>
+<li>「似た環境が隣り合う」は、隣接しやすさテーブル（affinity、不採用）ではなく、<strong>軸の空間的連続性そのもの</strong>
 （<code>layered_noise</code>
-が空間的に連続な値を返すこと自体）によって自然に実現しています（affinity
-方式は不採用）。</li>
-<li>ハードコーディングを避けるため、Axis
-の生成ロジックは汎用プリミティブ（<code>distance_field</code>/<code>layered_noise</code>）の
-組み合わせに還元しています。新しい軸・新しい <code>LocationType</code>
-は YAML の追加だけで導入できます （<code>Domain.Generation</code>
-側の生成ロジック自体はコードを変更せずに済みます）。</li>
+が空間的に連続な値を返すこと自体）によって自然に実現しています。</li>
+<li>Axis
+の生成ロジックは汎用プリミティブ（<code>distance_field</code>/<code>layered_noise</code>）の組み合わせに還元しています。
+新しい軸・新しい <code>LocationType</code> は YAML
+の追加だけで導入でき、<code>Domain.Generation</code>
+側のコード変更は不要です。</li>
 <li>島全体の生成と構造物内部の生成は、<strong>同一の生成ロジック</strong>をスコープ別パラメータで使い分ける設計です
 （構造物内部スコープの追加自体は未実装、3.7 節）。</li>
 <li>軸の値は 0〜100
@@ -461,9 +429,9 @@ href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a> を
 節）。</li>
 </ul>
 <p><strong>稀な極端環境</strong>（<code>weirdness</code>
-軸）は未実装です。概念設計段階の草案は「高周波ノイズで稀な異常環境を作る」と
-していましたが、高周波ノイズは本質的に「多数の小さな異常点」を作るものであり「稀」にはならないという矛盾が
-あるため、実装方針を保留にしています（6 節）。</p>
+軸）は未実装です。「高周波ノイズで稀な異常環境を作る」という当初案は、
+高周波ノイズが本質的に「多数の小さな異常点」を作るもので「稀」にはならないという矛盾を含むため、
+実装方針を保留にしています（6 節）。</p>
 <h2 id="生成パイプラインの前段後段範囲外の確認事項">5.
 生成パイプラインの前段・後段（範囲外の確認事項）</h2>
 <p>本書が扱うのは Axis 定義から <code>Location</code>
@@ -471,9 +439,8 @@ href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a> を
 <code>Location</code>
 に対する探索アクション・道の発見・移動、キャラクタ・アイテム・設置物のスロット構成は
 <a href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a>
-で扱います（当初「範囲外」としていましたが、実装が進んだため
-専用ドキュメントを新設しました）。<code>Structure</code>（洞窟等）内部の生成は
-3.7 節のとおり未実装で、範囲外のままです。</p>
+で扱います。<code>Structure</code>（洞窟等）内部の生成は 3.7 節の
+とおり未実装で、範囲外です。</p>
 <h2 id="未決事項今後の検討課題">6. 未決事項・今後の検討課題</h2>
 <ul>
 <li><strong><code>weirdness</code> 軸の具体設計</strong>:

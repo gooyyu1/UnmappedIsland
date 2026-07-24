@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class WorldCodexYamlLoader | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。 Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に System.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、 実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す Load経由で使う）。 YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの ParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/ ParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース メソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。 一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の フィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。 RawObjectDef.cs参照）。 props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり （RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う （プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、 これらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および ParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて 呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、 shallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし object_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。 インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに object_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて 書ける（例: new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()）。 object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の 厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの patch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため このローダー自身は「後勝ちで上書き」という規則を一切持たない。 Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で このインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、 初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて 困る理由も無いため）。">
+    <meta name="description" content="YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。 UnityEngineには依存しない（プラットフォーム固有のファイルI/Oが必要な場合は、呼び出し元が テキストを取得してLoadへ渡す）。 パース全般をこのクラスが担い、5種のNameRegistryを保持する。「trait解決込みでobject_defを 組み立てる」責務はRawObjectDef.Resolveが担う。props/slots/actions/combinationsはフィールド 単位のtrait上書きマージ対象のため、深い意味解釈とprop/slot名等のInternはLoad時点ではなく Resolveまで遅延する。object_def自身のGlobalIdのみtrait解決に依存しないため、ParseObjectDefの 時点で確定する。 Load系メソッドは何度でも呼べ、呼ぶたびにこのインスタンスへ追記する（thisを返すため new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()と書ける）。 object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラー（3.3節の 厳格モード）。「後勝ちで上書き」の規則は一切持たない（MODによる差し替えは専用のpatch文法で 表現する想定）。 Buildは蓄積内容から不変のWorldCodexを組み立てて返し、このインスタンスの蓄積状態を初期化する。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,39 +74,20 @@
 
 
   <h1 id="UnmappedIsland_Loader_WorldCodexYamlLoader" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader" class="text-break">Class WorldCodexYamlLoader</h1>
-  <div class="markdown level0 summary"><p>YAMLファイル群からWorldCodexを組み立てる、ロード処理の入口（GameElementDefinition.md 3節）。
-Codex/Runtimeとは異なりUnityEngineには依存しないが、実際のファイルI/Oには素朴に
-System.IO.Fileを使う（StreamingAssets等プラットフォーム固有の読み出しが必要な場合、
-実際のパス解決・バイト列取得はUnity側の薄い呼び出し元で行い、ここへはテキストとして渡す
-Load経由で使う）。</p>
-<p>YAMLの構造をそのまま辿って解釈する「パース」全般をこのクラス自身が担う（このファイルの
-ParseObjectDef/ParseTraitという浅い抽出から、他のpartialファイルのParseProp/ParseStage/
-ParsePassive等の深い意味解釈まで）。5種のNameRegistryを自分自身で持つため、これらのパース
-メソッドは全てインスタンスメソッドになる（NameRegistryをバラバラの引数として渡し回さない）。
-一方、「trait解決込みでobject_defを組み立てる」責務はRawObjectDef.Resolveが担う（自分自身の
-フィールドと、渡されたtraitsByName・このローダーを使って、自分から最終的なObjectDefを組み立てる。
-RawObjectDef.cs参照）。</p>
-<p>props/slots/actions/combinationsの4つは、フィールド単位のtrait上書きマージ対象であり
-（RawObjectDef.Resolve参照）、このマージは意味解釈前の生YAMLノードに対して汎用的に行う
-（プロパティかスロットかアクションかを区別しない1つのマージ処理を再利用するため）。そのため、
-これらの深い意味解釈（ParseProp/ParseSlot/ParseActions/ParseCombinations、および
-ParsePassive）は、Load時点ではなく、trait合成が終わった後のRawObjectDef.Resolveの中で初めて
-呼ばれる。prop/slot名等のInternも同様にResolveまで遅延する（traitからも名前が追加されうる、
-shallow-overrideで中身が変わりうる、という2つの理由でLoad時点では確定しないため）。ただし
-object_def自身の識別性（GlobalId）はtrait解決に依存しないため、ParseObjectDefの時点で確定する。</p>
-<p>インスタンス化して使う（staticではない）。ロード対象は基本的に使い捨てだが、再利用したいという
-ニーズがあるわけではなく、単に「組み立て途中の世界」を表すオブジェクトとして自然にそうなる、という
-だけの理由。Load系メソッド（LoadFromDirectory/LoadFromFile/Load）は何度でも呼べ、呼ぶたびに
-object_defs/traitsをこのインスタンス自身へ追記する。いずれもthisを返すため、Buildまで式をつなげて
-書ける（例: <code>new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()</code>）。</p>
-<p>object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラーとする（3.3節の
-厳格モード）。MODによる既存定義の差し替えは、この「追加」の文法とは別に、専用の「既存object_defへの
-patch」文法を用意して表現する想定（追加のつもりが誤って上書きしてしまう事故を防ぐため）。そのため
-このローダー自身は「後勝ちで上書き」という規則を一切持たない。</p>
-<p>Buildを呼ぶと、それまでに蓄積した内容から最終的な不変のWorldCodexを1つ組み立てて返し、その時点で
-このインスタンスの蓄積状態は初期化される（再利用したいという積極的なニーズがあるわけではないが、
-初期化しておくこと自体に特にコストが無く、同じインスタンスを次の別のロードにそのまま使い回せて
-困る理由も無いため）。</p>
+  <div class="markdown level0 summary"><p>YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
+UnityEngineには依存しない（プラットフォーム固有のファイルI/Oが必要な場合は、呼び出し元が
+テキストを取得してLoadへ渡す）。</p>
+<p>パース全般をこのクラスが担い、5種のNameRegistryを保持する。「trait解決込みでobject_defを
+組み立てる」責務はRawObjectDef.Resolveが担う。props/slots/actions/combinationsはフィールド
+単位のtrait上書きマージ対象のため、深い意味解釈とprop/slot名等のInternはLoad時点ではなく
+Resolveまで遅延する。object_def自身のGlobalIdのみtrait解決に依存しないため、ParseObjectDefの
+時点で確定する。</p>
+<p>Load系メソッドは何度でも呼べ、呼ぶたびにこのインスタンスへ追記する（thisを返すため
+<code>new WorldCodexYamlLoader().LoadFromDirectory(dir).Build()</code>と書ける）。</p>
+<p>object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラー（3.3節の
+厳格モード）。「後勝ちで上書き」の規則は一切持たない（MODによる差し替えは専用のpatch文法で
+表現する想定）。</p>
+<p>Buildは蓄積内容から不変のWorldCodexを組み立てて返し、このインスタンスの蓄積状態を初期化する。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -148,7 +129,7 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ActionConditionRoots.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ActionConditionRoots%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L37">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L35">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ActionConditionRoots" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ActionConditionRoots">ActionConditionRoots</h4>
   <div class="markdown level1 summary"></div>
@@ -177,7 +158,7 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ActionReservedKeys.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ActionReservedKeys%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L92">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L88">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ActionReservedKeys" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ActionReservedKeys">ActionReservedKeys</h4>
   <div class="markdown level1 summary"><p>actionエントリが持つ、showMenu/conditions/duration/pick以外の兄弟キー（set/add/destroy/spawn）。</p>
@@ -207,12 +188,11 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ActiveVerbKeys.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ActiveVerbKeys%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L14">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L13">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ActiveVerbKeys" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ActiveVerbKeys">ActiveVerbKeys</h4>
-  <div class="markdown level1 summary"><p>activeの内容(set/add/destroy/spawn/transfer/move)のキー集合。actions/combinations/pickの
-各エントリは、専用の&quot;active&quot;キーを介さずshowMenu/conditions/with/weight/pickと対等な兄弟キーとして
-これらを直接持つため、「activeとして何か書かれているか」をこのキー群の有無で判定する。</p>
+  <div class="markdown level1 summary"><p>activeの内容のキー集合。actions/combinations/pickの各エントリはこれらを兄弟キーとして
+直接持つため、「activeとして何か書かれているか」をこのキー群の有無で判定する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -239,7 +219,7 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_CombinationConditionRoots.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.CombinationConditionRoots%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L40">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L38">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_CombinationConditionRoots" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.CombinationConditionRoots">CombinationConditionRoots</h4>
   <div class="markdown level1 summary"></div>
@@ -268,7 +248,7 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_CombinationReservedKeys.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.CombinationReservedKeys%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L95">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L91">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_CombinationReservedKeys" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.CombinationReservedKeys">CombinationReservedKeys</h4>
   <div class="markdown level1 summary"><p>combinationエントリが持つ、with/conditions/pick以外の兄弟キー（set/add/destroy/spawn）。</p>
@@ -298,13 +278,13 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_PassiveConditionRoots.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.PassiveConditionRoots%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L47">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L45">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_PassiveConditionRoots" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.PassiveConditionRoots">PassiveConditionRoots</h4>
-  <div class="markdown level1 summary"><p>passivesのゲート（旧when）で使えるobject。selfはSlotBearer（8節の効果を宣言した側の
-スロット位置）、parentはその1つ上（Runtime.RegisteredPassiveEffect参照）。ancestorはselfの
-直接の親から遡った祖先探索（Runtime.WorldObject.FindAncestorWithProperty参照）。actor/draggedは
-持続的な関係に紐づかないため未対応。</p>
+  <div class="markdown level1 summary"><p>passivesのゲートで使えるobject。selfはSlotBearer、parentはその1つ上
+（Runtime.RegisteredPassiveEffect参照）、ancestorは祖先探索
+（Runtime.WorldObject.FindAncestorWithProperty参照）。actor/draggedは持続的な関係に
+紐づかないため未対応。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -361,11 +341,10 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_SymbolPattern.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.SymbolPattern%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L167">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L163">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_SymbolPattern" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.SymbolPattern">SymbolPattern</h4>
-  <div class="markdown level1 summary"><p>シンボル型の値（整数・真偽値のいずれにもならない識別子）を許容する識別子の形。
-3.2節の命名規則と同じ。</p>
+  <div class="markdown level1 summary"><p>シンボル型の値として許容する識別子の形（3.2節の命名規則と同じ）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -392,7 +371,7 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_YamlExtensions.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.YamlExtensions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L51">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L31">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_YamlExtensions" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.YamlExtensions">YamlExtensions</h4>
   <div class="markdown level1 summary"></div>
@@ -421,13 +400,11 @@ patch」文法を用意して表現する想定（追加のつもりが誤って
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_generationAxes.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.generationAxes%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L15">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L13">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_generationAxes" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.generationAxes">generationAxes</h4>
-  <div class="markdown level1 summary"><p>Load系メソッドで蓄積した地形生成定義（terrain_generation.yamlのaxes/location_types/
-generation_scopes）。object_defs/traitsと違いtrait合成が無いためパース済みのDefで持ち、
-他ファイルとの相互参照（location_types→object_defs、preferences→axes）の検証だけを
-Buildまで遅延する。</p>
+  <div class="markdown level1 summary"><p>Load系メソッドで蓄積した地形生成定義。trait合成が無いためパース済みのDefで持ち、
+他ファイルとの相互参照の検証だけをBuildまで遅延する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -454,7 +431,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_generationLocationTypes.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.generationLocationTypes%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L16">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L14">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_generationLocationTypes" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.generationLocationTypes">generationLocationTypes</h4>
   <div class="markdown level1 summary"></div>
@@ -483,7 +460,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_generationScopes.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.generationScopes%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L17">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L15">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_generationScopes" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.generationScopes">generationScopes</h4>
   <div class="markdown level1 summary"></div>
@@ -512,11 +489,10 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_globalObjectDefs.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.globalObjectDefs%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L55">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L34">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_globalObjectDefs" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.globalObjectDefs">globalObjectDefs</h4>
-  <div class="markdown level1 summary"><p>Load系メソッドで蓄積した、パース済みだがtrait未解決のobject_defs/traits。Buildが
-呼ばれるまでの「組み立て途中の世界」の中身そのもの。</p>
+  <div class="markdown level1 summary"><p>Load系メソッドで蓄積した、パース済みだがtrait未解決のobject_defs/traits。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -543,7 +519,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_globalTraits.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.globalTraits%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L56">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L35">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_globalTraits" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.globalTraits">globalTraits</h4>
   <div class="markdown level1 summary"></div>
@@ -574,12 +550,11 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ObjectNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ObjectNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L62">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L38">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ObjectNames_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ObjectNames*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ObjectNames" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ObjectNames">ObjectNames</h4>
-  <div class="markdown level1 summary"><p>5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。他のpartialファイルの各パース
-メソッドが、このインスタンス自身から必要な名前空間を読む。</p>
+  <div class="markdown level1 summary"><p>5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -606,7 +581,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_PropertyNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.PropertyNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L63">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L39">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_PropertyNames_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.PropertyNames*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_PropertyNames" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.PropertyNames">PropertyNames</h4>
@@ -636,7 +611,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_SlotNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.SlotNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L64">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L40">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_SlotNames_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.SlotNames*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_SlotNames" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.SlotNames">SlotNames</h4>
@@ -666,7 +641,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_SymbolNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.SymbolNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L66">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L42">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_SymbolNames_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.SymbolNames*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_SymbolNames" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.SymbolNames">SymbolNames</h4>
@@ -696,7 +671,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_TagNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.TagNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L65">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L41">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_TagNames_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.TagNames*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_TagNames" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.TagNames">TagNames</h4>
@@ -728,7 +703,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_AddUnique_System_Collections_Generic_Dictionary_System_String_UnmappedIsland_Loader_RawObjectDef__System_String_UnmappedIsland_Loader_RawObjectDef_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.AddUnique(System.Collections.Generic.Dictionary%7BSystem.String%2CUnmappedIsland.Loader.RawObjectDef%7D%2CSystem.String%2CUnmappedIsland.Loader.RawObjectDef%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L223">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L183">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_AddUnique_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.AddUnique*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_AddUnique_System_Collections_Generic_Dictionary_System_String_UnmappedIsland_Loader_RawObjectDef__System_String_UnmappedIsland_Loader_RawObjectDef_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.AddUnique(System.Collections.Generic.Dictionary{System.String,UnmappedIsland.Loader.RawObjectDef},System.String,UnmappedIsland.Loader.RawObjectDef,System.String)">AddUnique(Dictionary&lt;string, RawObjectDef&gt;, string, RawObjectDef, string)</h4>
@@ -775,7 +750,7 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_AddUnique_System_Collections_Generic_Dictionary_System_String_UnmappedIsland_Loader_RawTrait__System_String_UnmappedIsland_Loader_RawTrait_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.AddUnique(System.Collections.Generic.Dictionary%7BSystem.String%2CUnmappedIsland.Loader.RawTrait%7D%2CSystem.String%2CUnmappedIsland.Loader.RawTrait%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L231">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L191">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_AddUnique_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.AddUnique*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_AddUnique_System_Collections_Generic_Dictionary_System_String_UnmappedIsland_Loader_RawTrait__System_String_UnmappedIsland_Loader_RawTrait_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.AddUnique(System.Collections.Generic.Dictionary{System.String,UnmappedIsland.Loader.RawTrait},System.String,UnmappedIsland.Loader.RawTrait,System.String)">AddUnique(Dictionary&lt;string, RawTrait&gt;, string, RawTrait, string)</h4>
@@ -822,13 +797,12 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_Build.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.Build%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L124">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L89">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_Build_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Build*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_Build" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Build">Build()</h4>
-  <div class="markdown level1 summary"><p>これまでLoad系メソッドで蓄積したobject_defs/traitsから、最終的な不変のWorldCodexを1つ組み立てて
-返す。呼び終わると、このインスタンスの蓄積状態（object_defs/traits・5種のNameRegistry）は
-初期化される。</p>
+  <div class="markdown level1 summary"><p>蓄積したobject_defs/traitsから不変のWorldCodexを組み立てて返す。呼び終わると
+このインスタンスの蓄積状態は初期化される。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -855,14 +829,13 @@ Buildまで遅延する。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_BuildDefaultOverflowEffect_UnmappedIsland_Domain_Defs_PropertyRange_System_Int32_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.BuildDefaultOverflowEffect(UnmappedIsland.Domain.Defs.PropertyRange%2CSystem.Int32%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L199">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L192">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_BuildDefaultOverflowEffect_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.BuildDefaultOverflowEffect*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_BuildDefaultOverflowEffect_UnmappedIsland_Domain_Defs_PropertyRange_System_Int32_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.BuildDefaultOverflowEffect(UnmappedIsland.Domain.Defs.PropertyRange,System.Int32,System.Boolean)">BuildDefaultOverflowEffect(PropertyRange, int, bool)</h4>
-  <div class="markdown level1 summary"><p>on_overflow/on_shortfallを著者が明示的に書かなかった場合の既定動作。「自分自身をRangeの境界
-（isMax指定側）へsetする」というActiveEffectを合成する。これにより、著者はレンジ型プロパティの
-クランプを<code>range</code>を書くだけで実現でき、繰り上げ等の特別な挙動が要る場合だけon_overflow/
-on_shortfallを明示すればよい。</p>
+  <div class="markdown level1 summary"><p>on_overflow/on_shortfall未指定時の既定動作として、「自分自身をrangeの境界（isMax指定側）へ
+setする」ActiveEffectを合成する。著者は<code>range</code>を書くだけでクランプが得られ、特別な挙動が
+要る場合だけon_overflow/on_shortfallを明示すればよい。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -916,14 +889,13 @@ on_shortfallを明示すればよい。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_BuildGate_UnmappedIsland_Domain_Defs_ConditionNode_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.BuildGate(UnmappedIsland.Domain.Defs.ConditionNode%2CSystem.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Passives.cs/#L57">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Passives.cs/#L47">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_BuildGate_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.BuildGate*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_BuildGate_UnmappedIsland_Domain_Defs_ConditionNode_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.BuildGate(UnmappedIsland.Domain.Defs.ConditionNode,System.String,System.String)">BuildGate(ConditionNode, string, string)</h4>
-  <div class="markdown level1 summary"><p>ゲートを組み立てる。stagePropertyName（forcedStageProperty）が非nullならWhenOwnStage
-（プロパティのグローバルIDとstage名をそのまま持つ。Runtime.WorldObject.IsInStageが評価時に
-ローカルIDへ変換する）。conditionsと両方指定されていれば、両方を満たす間だけ有効になる
-（例:「装備している間、かつ耐久値がintactステージの間だけ」。PassiveEffect.ActiveAmount参照）。</p>
+  <div class="markdown level1 summary"><p>ゲートを組み立てる。stagePropertyNameとconditionsの両方が指定されていれば、両方を満たす間
+だけ有効になる（PassiveEffect.ActiveAmount参照）。ゲートはグローバルIDのまま持ち、評価時に
+ローカルIDへ変換する（Runtime.WorldObject.IsInStage参照）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -977,13 +949,12 @@ on_shortfallを明示すればよい。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_BuildGenerationDefs_System_Collections_Generic_IReadOnlyDictionary_System_Int32_UnmappedIsland_Domain_Defs_ObjectDef__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.BuildGenerationDefs(System.Collections.Generic.IReadOnlyDictionary%7BSystem.Int32%2CUnmappedIsland.Domain.Defs.ObjectDef%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L242">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L236">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_BuildGenerationDefs_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.BuildGenerationDefs*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_BuildGenerationDefs_System_Collections_Generic_IReadOnlyDictionary_System_Int32_UnmappedIsland_Domain_Defs_ObjectDef__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.BuildGenerationDefs(System.Collections.Generic.IReadOnlyDictionary{System.Int32,UnmappedIsland.Domain.Defs.ObjectDef})">BuildGenerationDefs(IReadOnlyDictionary&lt;int, ObjectDef&gt;)</h4>
-  <div class="markdown level1 summary"><p>Buildの中から呼ばれ、蓄積した生成定義の相互参照（location_types→object_defs、
-preferences/hard_limits/guarantees→axes、guarantees→location_types）を検証してから
-GenerationDefsを組み立てる。生成定義が1つも無ければnull（生成ファイル無しのCodex）。</p>
+  <div class="markdown level1 summary"><p>蓄積した生成定義の相互参照を検証してGenerationDefsを組み立てる。
+生成定義が1つも無ければnull（生成ファイル無しのCodex）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1027,7 +998,7 @@ GenerationDefsを組み立てる。生成定義が1つも無ければnull（生�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_CheckUnknownKeys_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String___.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.CheckUnknownKeys(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String%5B%5D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L288">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L282">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_CheckUnknownKeys_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.CheckUnknownKeys*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_CheckUnknownKeys_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String___" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.CheckUnknownKeys(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String[])">CheckUnknownKeys(string, YamlMappingNode, params string[])</h4>
@@ -1069,7 +1040,7 @@ GenerationDefsを組み立てる。生成定義が1つも無ければnull（生�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_FindYamlFiles_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.FindYamlFiles(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L239">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L199">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_FindYamlFiles_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.FindYamlFiles*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_FindYamlFiles_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.FindYamlFiles(System.String)">FindYamlFiles(string)</h4>
@@ -1116,7 +1087,7 @@ GenerationDefsを組み立てる。生成定義が1つも無ければnull（生�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_HasActiveContent_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.HasActiveContent(YamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L16">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L15">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_HasActiveContent_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.HasActiveContent*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_HasActiveContent_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.HasActiveContent(YamlDotNet.RepresentationModel.YamlMappingNode)">HasActiveContent(YamlMappingNode)</h4>
@@ -1163,13 +1134,11 @@ GenerationDefsを組み立てる。生成定義が1つも無ければnull（生�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_Load_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.Load(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L87">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L56">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_Load_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Load*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_Load_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Load(System.String,System.String)">Load(string, string)</h4>
-  <div class="markdown level1 summary"><p>既にテキストとして読み込まれた1つのYAML（labelはエラーメッセージ用の出所表示）を読み込み、
-object_defs/traitsをこのインスタンスへ追記する（Unity依存のファイルI/Oを呼び出し元に委ねたい
-場合や、テストでファイルを介さず直接YAML文字列を渡したい場合に使う）。何度でも呼べる。</p>
+  <div class="markdown level1 summary"><p>テキストとして渡された1つのYAMLを読み込む（labelはエラーメッセージ用の出所表示）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1218,12 +1187,11 @@ object_defs/traitsをこのインスタンスへ追記する（Unity依存のフ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromDirectory_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromDirectory(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L72">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L45">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromDirectory_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromDirectory*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromDirectory_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromDirectory(System.String)">LoadFromDirectory(string)</h4>
-  <div class="markdown level1 summary"><p>1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込み、
-object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。</p>
+  <div class="markdown level1 summary"><p>1つのディレクトリ以下の*.yaml/*.ymlファイルを再帰的に（決定的な順序で）すべて読み込む。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1267,11 +1235,11 @@ object_defs/traitsをこのインスタンスへ追記する。何度でも呼�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromFile_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromFile(System.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L80">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L53">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromFile_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromFile*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadFromFile_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadFromFile(System.String)">LoadFromFile(string)</h4>
-  <div class="markdown level1 summary"><p>1つのファイルを読み込み、object_defs/traitsをこのインスタンスへ追記する。何度でも呼べる。</p>
+  <div class="markdown level1 summary"><p>1つのファイルを読み込む。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1315,12 +1283,11 @@ object_defs/traitsをこのインスタンスへ追記する。何度でも呼�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_LoadGenerationSections_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.LoadGenerationSections(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L20">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L17">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadGenerationSections_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadGenerationSections*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_LoadGenerationSections_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.LoadGenerationSections(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">LoadGenerationSections(string, YamlMappingNode)</h4>
-  <div class="markdown level1 summary"><p>Loadの中から呼ばれ、地形生成の3ルートキーをこのインスタンスへ追記する。</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
@@ -1353,12 +1320,12 @@ object_defs/traitsをこのインスタンスへ追記する。何度でも呼�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActions_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActions(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L99">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L95">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActions_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActions*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActions_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActions(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseActions(string, YamlMappingNode)</h4>
-  <div class="markdown level1 summary"><p>actions_map（11節）を読む。dragged対象はメニュー型操作では意味を持たないため不可。
-RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれる。</p>
+  <div class="markdown level1 summary"><p>actions_map（11節）を読む。trait合成済みのノードを渡すこと。
+dragged対象はメニュー型操作では意味を持たないため不可。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1407,18 +1374,14 @@ RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれ�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveEffectBody_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_System_Collections_Generic_IReadOnlyCollection_System_String__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveEffectBody(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean%2CSystem.Boolean%2CSystem.Collections.Generic.IReadOnlyCollection%7BSystem.String%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L30">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L24">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveEffectBody_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveEffectBody*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveEffectBody_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_System_Collections_Generic_IReadOnlyCollection_System_String__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveEffectBody(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean,System.Collections.Generic.IReadOnlyCollection{System.String})">ParseActiveEffectBody(string, YamlMappingNode, bool, bool, IReadOnlyCollection&lt;string&gt;)</h4>
-  <div class="markdown level1 summary"><p>active内容（9節: set/add/destroy/spawn）を読む。文法は「操作(set/add)が上位、対象
-(self/parent/actor/dragged)が下位」（例: <code>add: {self: {hour: 1}}</code>）。on_min・on_max・on_overflow・
-on_shortfall（6節、selfOnly: true）は専用キー配下でこの形をそのまま持つ。actions/combinations/pick
-（selfOnly: false）は&quot;active&quot;というラップを挟まず、showMenu/conditions/with/weight/pickと対等な
-兄弟キーとしてこの形を直接持つため、bodyNodeにはそれら他のキーも同居する。reservedKeysには、
-そうした「activeとは無関係な、呼び出し側がすでに読み終えている兄弟キー」を渡し、未知キー判定から除外する。</p>
-<p>destroyは削除対象を直接指す（<code>destroy: self</code>、または複数対象なら<code>destroy: [self, dragged]</code>）。
-spawnは常にselfが実行するものとみなすため対象キーを持たない（対象別のラップを挟まない）。</p>
+  <div class="markdown level1 summary"><p>active内容（9節）を読む。文法は「操作(set/add)が上位、対象(self/parent/actor/dragged)が下位」
+（例: <code>add: {self: {hour: 1}}</code>）。bodyNodeにはactive以外の兄弟キーも同居しうるため、
+reservedKeysに「呼び出し側がすでに読み終えている兄弟キー」を渡して未知キー判定から除外する。
+spawnは常にselfが実行するものとみなすため対象キーを持たない。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1482,14 +1445,13 @@ spawnは常にselfが実行するものとみなすため対象キーを持た�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveTargetKey_System_String_System_String_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveTargetKey(System.String%2CSystem.String%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L270">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L255">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveTargetKey_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveTargetKey*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseActiveTargetKey_System_String_System_String_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseActiveTargetKey(System.String,System.String,System.Boolean,System.Boolean)">ParseActiveTargetKey(string, string, bool, bool)</h4>
-  <div class="markdown level1 summary"><p>set/add/destroyの対象キー（self/parent/ancestor/actor、combinations内はdraggedも）を解決する。
-childは、一度きりの命令に対して「どの子か」の意味がまだ確定していないため未対応（passiveのchild
-寄与とは異なり、activeのchildには関係とゲートに基づく登録の仕組みが無いため、対象を一意に絞る
-規約が無い）。selfOnlyの場合（on_min・on_max・on_overflow・on_shortfall）はself以外を一律エラーにする。</p>
+  <div class="markdown level1 summary"><p>activeの対象キー（self/parent/ancestor/actor、combinations内はdraggedも）を解決する。
+childは「どの子か」を一意に絞る規約が無いため未対応。selfOnly（rangeイベント）は
+self以外を一律エラーにする。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1548,12 +1510,11 @@ childは、一度きりの命令に対して「どの子か」の意味がまだ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L165">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L152">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAdds_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAdds(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)">ParseAdds(string, YamlMappingNode, bool, bool)</h4>
-  <div class="markdown level1 summary"><p>addを「対象付きの1操作(AddEffect)」の宣言順フラットリストへ読む（ParseSetsと同じく、
-対象は各AddEffectがTargetとして自分で持つ）。</p>
+  <div class="markdown level1 summary"><p>addを「対象付きの1操作(AddEffect)」の宣言順フラットリストへ読む。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1612,7 +1573,7 @@ childは、一度きりの命令に対して「どの子か」の意味がまだ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAxis_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAxis(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L50">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L47">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAxis_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAxis*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseAxis_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseAxis(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseAxis(string, YamlMappingNode)</h4>
@@ -1664,12 +1625,11 @@ childは、一度きりの命令に対して「どの子か」の意味がまだ
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseCombinations_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseCombinations(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L131">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L125">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseCombinations_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseCombinations*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseCombinations_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseCombinations(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseCombinations(string, YamlMappingNode)</h4>
-  <div class="markdown level1 summary"><p>combinations_map（12節）を読む。dragged対象を使える。RawObjectDef.Resolveから、
-trait合成済みのノードに対して呼ばれる。</p>
+  <div class="markdown level1 summary"><p>combinations_map（12節）を読む。trait合成済みのノードを渡すこと。dragged対象を使える。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1718,7 +1678,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseCombinatorChildren_System_String_System_String_YamlDotNet_RepresentationModel_YamlSequenceNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseCombinatorChildren(System.String%2CSystem.String%2CYamlDotNet.RepresentationModel.YamlSequenceNode%2CSystem.Collections.Generic.IReadOnlyCollection%7BUnmappedIsland.Domain.Defs.ReferenceRoot%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L96">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L94">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseCombinatorChildren_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseCombinatorChildren*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseCombinatorChildren_System_String_System_String_YamlDotNet_RepresentationModel_YamlSequenceNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseCombinatorChildren(System.String,System.String,YamlDotNet.RepresentationModel.YamlSequenceNode,System.Collections.Generic.IReadOnlyCollection{UnmappedIsland.Domain.Defs.ReferenceRoot})">ParseCombinatorChildren(string, string, YamlSequenceNode, IReadOnlyCollection&lt;ReferenceRoot&gt;)</h4>
@@ -1780,18 +1740,15 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionLeaf_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionLeaf(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Collections.Generic.IReadOnlyCollection%7BUnmappedIsland.Domain.Defs.ReferenceRoot%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L115">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L110">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionLeaf_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionLeaf*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionLeaf_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionLeaf(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Collections.Generic.IReadOnlyCollection{UnmappedIsland.Domain.Defs.ReferenceRoot})">ParseConditionLeaf(string, YamlMappingNode, IReadOnlyCollection&lt;ReferenceRoot&gt;)</h4>
   <div class="markdown level1 summary"><p>条件木の葉。objectは省略時self。{object, prop, op(省略時eq), value}のプロパティ比較、
-{object, in_slot}のスロット位置判定（常に等価判定。opは持たない）、{object, slot, tag}の
-スロット中身判定（objectの自分のslotの中に、tagを持つ子がいるかの存在判定）、
-{object, tag}のオブジェクト自身のタグ判定のいずれかで、
-同時には指定できない。in_slot（外から見た位置）とslot（内側の中身）はキー名自体を分けており、
-混同の余地はない。プロパティ比較のvalueは、リテラル（整数・真偽値・シンボル名）か、
-{object, prop}参照（weightのpath参照、10.2節と同じ二択）のいずれか。参照はlt/lte/gt/gte/eq/neqの
-みで使える（in/not_inは複数値との比較のため、参照とは噛み合わない）。</p>
+{object, in_slot}のスロット位置判定、{object, slot, tag}のスロット中身判定、
+{object, tag}のタグ判定のいずれかで、同時には指定できない。プロパティ比較のvalueは
+リテラルか{object, prop}参照（10.2節と同じ二択）。参照はlt/lte/gt/gte/eq/neqのみで使える
+（in/not_inは複数値との比較のため噛み合わない）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1845,7 +1802,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionNode_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionNode(System.String%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Collections.Generic.IReadOnlyCollection%7BUnmappedIsland.Domain.Defs.ReferenceRoot%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L68">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L66">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionNode*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionNode_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionNode(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Collections.Generic.IReadOnlyCollection{UnmappedIsland.Domain.Defs.ReferenceRoot})">ParseConditionNode(string, YamlNode, IReadOnlyCollection&lt;ReferenceRoot&gt;)</h4>
@@ -1904,14 +1861,12 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionObject_System_String_System_String_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionObject(System.String%2CSystem.String%2CSystem.Collections.Generic.IReadOnlyCollection%7BUnmappedIsland.Domain.Defs.ReferenceRoot%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L14">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L12">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionObject_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionObject*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionObject_System_String_System_String_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionObject(System.String,System.String,System.Collections.Generic.IReadOnlyCollection{UnmappedIsland.Domain.Defs.ReferenceRoot})">ParseConditionObject(string, string, IReadOnlyCollection&lt;ReferenceRoot&gt;)</h4>
-  <div class="markdown level1 summary"><p>conditions（14節）・passivesのゲート（旧when、8節）が共通で使うobject参照キー。
-worldは唯一のシングルトンインスタンスを実行時に追跡する仕組みがまだ無いため未対応
-（ancestorが「見つからなければworldまで遡る」ことを自然に含むため、世界固有の概念を
-参照したい場合はancestorで代替できる）。</p>
+  <div class="markdown level1 summary"><p>conditions（14節）・passivesのゲート（8節）が共通で使うobject参照キー。
+worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -1965,7 +1920,7 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionOp_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionOp(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L212">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L207">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionOp_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionOp*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionOp_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionOp(System.String,System.String)">ParseConditionOp(string, string)</h4>
@@ -2017,7 +1972,7 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionScalar_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionScalar(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L245">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L240">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionScalar_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionScalar*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionScalar_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionScalar(System.String,System.String)">ParseConditionScalar(string, string)</h4>
@@ -2069,7 +2024,7 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionValues_System_String_UnmappedIsland_Domain_Defs_ConditionOp_YamlDotNet_RepresentationModel_YamlNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionValues(System.String%2CUnmappedIsland.Domain.Defs.ConditionOp%2CYamlDotNet.RepresentationModel.YamlNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L228">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L223">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionValues_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionValues*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionValues_System_String_UnmappedIsland_Domain_Defs_ConditionOp_YamlDotNet_RepresentationModel_YamlNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionValues(System.String,UnmappedIsland.Domain.Defs.ConditionOp,YamlDotNet.RepresentationModel.YamlNode)">ParseConditionValues(string, ConditionOp, YamlNode)</h4>
@@ -2126,7 +2081,7 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionsField_System_String_YamlDotNet_RepresentationModel_YamlSequenceNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionsField(System.String%2CYamlDotNet.RepresentationModel.YamlSequenceNode%2CSystem.Collections.Generic.IReadOnlyCollection%7BUnmappedIsland.Domain.Defs.ReferenceRoot%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L54">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Conditions.cs/#L52">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionsField_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionsField*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseConditionsField_System_String_YamlDotNet_RepresentationModel_YamlSequenceNode_System_Collections_Generic_IReadOnlyCollection_UnmappedIsland_Domain_Defs_ReferenceRoot__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseConditionsField(System.String,YamlDotNet.RepresentationModel.YamlSequenceNode,System.Collections.Generic.IReadOnlyCollection{UnmappedIsland.Domain.Defs.ReferenceRoot})">ParseConditionsField(string, YamlSequenceNode, IReadOnlyCollection&lt;ReferenceRoot&gt;)</h4>
@@ -2185,7 +2140,7 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargetKey_System_String_System_String_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargetKey(System.String%2CSystem.String%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L312">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L295">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargetKey_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargetKey*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargetKey_System_String_System_String_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargetKey(System.String,System.String,System.Boolean,System.Boolean)">ParseDestroyTargetKey(string, string, bool, bool)</h4>
@@ -2247,14 +2202,12 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargets_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargets(System.String%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L301">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L284">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargets_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargets*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseDestroyTargets_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseDestroyTargets(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)">ParseDestroyTargets(string, YamlNode, bool, bool)</h4>
-  <div class="markdown level1 summary"><p>destroy（削除対象の直接指定）を読む。単一の対象名(<code>destroy: self</code>)か、
-対象名のリスト(<code>destroy: [self, dragged]</code>)のいずれかを許容する。ancestorは「どのプロパティを
-探すか」が無ければ解決しようがなく、destroyはオブジェクトそのものを指すためプロパティを
-持たない。よってdestroyの対象としては未対応。</p>
+  <div class="markdown level1 summary"><p>destroy（削除対象の直接指定）を読む。単一の対象名か対象名のリストを許容する。
+ancestorはプロパティ名が無いと解決できないため、destroyの対象としては未対応。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2313,14 +2266,12 @@ worldは唯一のシングルトンインスタンスを実行時に追跡する
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseEffect_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_String___.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean%2CSystem.String%5B%5D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L79">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActionsAndCombinations.cs/#L75">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseEffect_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseEffect_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_String___" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseEffect(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.String[])">ParseEffect(string, YamlMappingNode, bool, string[])</h4>
-  <div class="markdown level1 summary"><p>set/add/destroy/spawn（active）とpickは排他。条件成立時に適用する効果を、単一の
-ActiveEffect（合成ActiveEffects、またはpickのPickEffect）として返す。両方あればエラー、どちらも
-無ければnull（条件成立時に何も起きない）。action/combination共通の解釈（pick候補は必ず
-いずれかを要求するため、この共通ヘルパーは使わずParsePickList側で個別に検証する）。</p>
+  <div class="markdown level1 summary"><p>active（set/add/destroy/spawn）またはpickを単一のActiveEffectとして返す。
+どちらも無ければnull（条件成立時に何も起きない）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2379,7 +2330,7 @@ ActiveEffect（合成ActiveEffects、またはpickのPickEffect）として返�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseGenerationScope_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseGenerationScope(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L176">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L173">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseGenerationScope_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseGenerationScope*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseGenerationScope_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseGenerationScope(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseGenerationScope(string, YamlMappingNode)</h4>
@@ -2431,7 +2382,7 @@ ActiveEffect（合成ActiveEffects、またはpickのPickEffect）として返�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseGeneratorLayer_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseGeneratorLayer(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L78">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L75">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseGeneratorLayer_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseGeneratorLayer*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseGeneratorLayer_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseGeneratorLayer(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseGeneratorLayer(string, YamlMappingNode)</h4>
@@ -2483,7 +2434,7 @@ ActiveEffect（合成ActiveEffects、またはpickのPickEffect）として返�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseLocationType_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseLocationType(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L110">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L107">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseLocationType_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseLocationType*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseLocationType_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseLocationType(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseLocationType(string, YamlMappingNode)</h4>
@@ -2535,15 +2486,14 @@ ActiveEffect（合成ActiveEffects、またはpickのPickEffect）として返�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseMove_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseMove(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L245">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L231">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseMove_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseMove*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseMove_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseMove(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean)">ParseMove(string, YamlMappingNode, bool)</h4>
-  <div class="markdown level1 summary"><p>move（対象オブジェクトを、to_propが指すインスタンスIDのオブジェクトの中へ移動する。MoveEffect参照）。
+  <div class="markdown level1 summary"><p>move（対象を、to_propが指すインスタンスIDのオブジェクトの中へ移動する。MoveEffect参照）。
 transferと同じフラットフィールド規約（<code>move: {object: actor, to_prop: destination_id}</code>）。
-objectは現時点でactorのみ対応（移動の主語として今必要なのがプレイヤーだけであり、それ以外の
-対象の移動には「どの子か」等の未確定な意味論が伴うため）。on_min/on_overflow/on_shortfall/on_max
-（selfOnly）にはactorが存在しないため使えない。</p>
+objectは現時点でactorのみ対応（それ以外の対象には「どの子か」等の未確定な意味論が伴うため）。
+selfOnly文脈（rangeイベント）にはactorが存在しないため使えない。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2597,14 +2547,12 @@ objectは現時点でactorのみ対応（移動の主語として今必要なの
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseObjectDef_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseObjectDef(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L162">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L124">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseObjectDef_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseObjectDef*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseObjectDef_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseObjectDef(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String)">ParseObjectDef(string, YamlMappingNode, string)</h4>
-  <div class="markdown level1 summary"><p>object_defs.'name'の1エントリを浅く抽出する。props/slots/passives/stack_order/
-actions/combinationsはtrait合成（RawObjectDef.Resolve）がまだ起こりうるため、意味解釈前の
-生YAMLノードのまま持つ。自分自身の識別性（GlobalId）はtrait解決に依存しないため、ここで
-ObjectNames.Internを呼んで確定させる。</p>
+  <div class="markdown level1 summary"><p>object_defs.'name'の1エントリを浅く抽出する。trait合成（RawObjectDef.Resolve）が
+まだ起こりうるフィールドは生YAMLノードのまま持つ。GlobalIdのみここで確定させる。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2658,22 +2606,15 @@ ObjectNames.Internを呼んで確定させる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassive_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassive(System.Collections.Generic.List%7BUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CSystem.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Passives.cs/#L28">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Passives.cs/#L19">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassive_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassive*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassive_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassive(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.String)">ParsePassive(List&lt;PassiveEffect&gt;, string, YamlMappingNode, string, string)</h4>
-  <div class="markdown level1 summary"><p>passivesの1ブロック（self/parent/child/ancestor、actorは未対応のためスキップ）を読み、
-PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非nullならstage内、nullなら
-オブジェクト/プロパティレベル）と、このブロックの&quot;conditions&quot;は独立に併用できる（例:「装備している
-間、かつ耐久値がintactステージの間だけ」）。ゲートはグローバルIDのまま持つため（BuildGate参照）、
-このobject_def自身のPropertyDefが出来上がっているかどうかに関わらず、その場でPassiveEffectを
-組み上げられる。</p>
-<p>オブジェクトレベル・プロパティレベル・stage内のいずれも、&quot;passives:&quot;は常に配列であり、
-この関数はその配列の1要素（conditions/modify/accumulateのみを持つ、他のキーとは同居しない
-独立したマッピング）に対して呼ばれる。conditionsはブロック全体で1つ（対象ごとには持たない。
-self対象・parent対象は常に同じSlotBearerを指すため、対象ごとに持たせても意味が重複するだけ。
-Runtime.RegisteredPassiveEffect参照）。</p>
-<p>RawObjectDef.Resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。</p>
+  <div class="markdown level1 summary"><p>passivesの1ブロック（&quot;passives:&quot;配列の1要素。conditions/modify/accumulateのみを持つ）を読み、
+PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非nullならstage内）と
+&quot;conditions&quot;は独立に併用できる（例:「装備している間、かつ耐久値がintactステージの間だけ」）。
+conditionsはブロック全体で1つ（対象ごとには持たない。Runtime.RegisteredPassiveEffect参照）。
+RawObjectDef.Resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2722,14 +2663,13 @@ Runtime.RegisteredPassiveEffect参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List%7BUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CSystem.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String%2CSystem.Func%7BUnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CSystem.Int32%2CUnmappedIsland.Domain.Defs.PassiveEffectGate%2CUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CUnmappedIsland.Domain.Defs.PassiveEffectGate)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Passives.cs/#L72">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Passives.cs/#L61">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParsePassiveOperationInto_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_System_Func_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_System_Int32_UnmappedIsland_Domain_Defs_PassiveEffectGate_UnmappedIsland_Domain_Defs_PassiveEffect__UnmappedIsland_Domain_Defs_PassiveEffectGate_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParsePassiveOperationInto(System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String,System.Func{UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,System.Int32,UnmappedIsland.Domain.Defs.PassiveEffectGate,UnmappedIsland.Domain.Defs.PassiveEffect},UnmappedIsland.Domain.Defs.PassiveEffectGate)">ParsePassiveOperationInto(List&lt;PassiveEffect&gt;, string, YamlMappingNode, string, Func&lt;ReferenceRoot, int, int, PassiveEffectGate, PassiveEffect&gt;, PassiveEffectGate)</h4>
   <div class="markdown level1 summary"><p>passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
-スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。どの具象型（ModifyEffect/AccumulateEffect）
-を作るかはmakeEffectファクトリで受け取る（判別enumは持たない）。同じpassiveブロック内のgateを
-そのまま共有する（対象・プロパティが違っても、ゲートの意味は同じであるため）。</p>
+スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。具象型はmakeEffectファクトリで受け取り、
+同じpassiveブロック内のgateを全効果で共有する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2849,8 +2789,8 @@ Runtime.RegisteredPassiveEffect参照）。</p>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseProp_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseProp*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseProp_System_String_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseProp(System.String,System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect})">ParseProp(string, string, YamlMappingNode, List&lt;PassiveEffect&gt;)</h4>
-  <div class="markdown level1 summary"><p>1つのprops.'propName'エントリを解釈し、PropertyDefを組み立てる（GameElementDefinition.md
-6節）。RawObjectDef.Resolveから、trait合成済みのノードに対して呼ばれる。</p>
+  <div class="markdown level1 summary"><p>props.'propName'エントリを1つ読む（GameElementDefinition.md 6節）。
+trait合成済みのノードを渡すこと。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2909,15 +2849,14 @@ Runtime.RegisteredPassiveEffect参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseRangeEventEffect_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L113">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L112">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseRangeEventEffect_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseRangeEventEffect_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseRangeEventEffect(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseRangeEventEffect(string, YamlMappingNode)</h4>
-  <div class="markdown level1 summary"><p>rangeイベント（on_min・on_max・on_overflow・on_shortfall、6節）の中身を読む。actions/combinations
-と同じく、set/add/destroy/spawn/transfer（active）とpickは排他（9.7節・10節: pickはactiveを直接
-書ける場所であればどこでもその代わりに書ける）。対象はselfのみ（6.5節）で、pick候補の中の効果に
-もそのまま引き継ぐ。どちらも書かれていない空のmapping（<code>on_shortfall: {}</code>）は「宣言だけして
-何もしない」（既定のクランプを打ち消す）を意味し、空のActiveEffectsになる。</p>
+  <div class="markdown level1 summary"><p>rangeイベント（on_min・on_max・on_overflow・on_shortfall、6節）の中身を読む。activeとpickは
+排他（9.7節・10節）。対象はselfのみ（6.5節）で、pick候補の中の効果にも引き継ぐ。
+空のmapping（<code>on_shortfall: {}</code>）は「宣言だけして何もしない」（既定のクランプを打ち消す）を
+意味し、空のActiveEffectsになる。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -2966,15 +2905,14 @@ Runtime.RegisteredPassiveEffect参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseScalarNumber_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L176">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L171">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseScalarNumber_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseScalarNumber_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber(System.String,System.String)">ParseScalarNumber(string, string)</h4>
-  <div class="markdown level1 summary"><p>整数・真偽値・シンボル名（識別子）のいずれかとして値を解釈する。整数・真偽値としてパースできない
-識別子形の文字列は、SymbolNamesへ登録してそのグローバルIDを返す（シンボル型のprops、6節）。
-これにより、シンボル型のpropsは専用の宣言（<code>symbol: true</code>等）を必要とせず、<code>value</code>の形だけで
-自動的に判別できる。boolより先にsymbolを試すと&quot;true&quot;/&quot;false&quot;もシンボルとして解釈されてしまう
-ため、判定順は整数→真偽値→シンボルで固定する。</p>
+  <div class="markdown level1 summary"><p>整数・真偽値・シンボル名（識別子）のいずれかとして値を解釈する。識別子形の文字列は
+SymbolNamesへ登録してグローバルIDを返す（シンボル型のprops、6節。専用の宣言は不要で
+<code>value</code>の形だけで判別する）。&quot;true&quot;/&quot;false&quot;がシンボルとして解釈されないよう、判定順は
+整数→真偽値→シンボルで固定する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3023,12 +2961,11 @@ Runtime.RegisteredPassiveEffect参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseScalarNumber_System_String_System_String_System_Boolean__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber(System.String%2CSystem.String%2CSystem.Boolean%40)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L180">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L174">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseScalarNumber_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseScalarNumber_System_String_System_String_System_Boolean__" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseScalarNumber(System.String,System.String,System.Boolean@)">ParseScalarNumber(string, string, out bool)</h4>
-  <div class="markdown level1 summary"><p>isSymbolは、rawが整数・真偽値としてパースできず、シンボル名として登録された場合にtrue
-になる（propsのstages、6.4節が、プロパティ自身がシンボル型かどうかで解釈を変えるために使う）。</p>
+  <div class="markdown level1 summary"><p>isSymbolは、rawがシンボル名として登録された場合にtrueになる（stagesの解釈分岐、6.4節）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3082,14 +3019,13 @@ Runtime.RegisteredPassiveEffect参照）。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String%2CUnmappedIsland.Domain.Defs.ReferenceRoot%2CSystem.Int32%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L82">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L74">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSetEffect_System_String_UnmappedIsland_Domain_Defs_ReferenceRoot_System_Int32_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSetEffect(System.String,UnmappedIsland.Domain.Defs.ReferenceRoot,System.Int32,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)">ParseSetEffect(string, ReferenceRoot, int, YamlNode, bool, bool)</h4>
-  <div class="markdown level1 summary"><p>setの1エントリの値。YAMLスカラーならリテラル（整数・真偽値・シンボル名、ParseScalarNumber）、
-YAMLマッピングなら{object, prop}参照（他のプロパティの現在値をそのままコピーする、9.2節）の
-いずれか。参照先のobjectは、set自身の対象キー（self/parent/ancestor/actor/[dragged]）と全く同じ
-制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。</p>
+  <div class="markdown level1 summary"><p>setの1エントリの値。スカラーならリテラル（整数・真偽値・シンボル名）、マッピングなら
+{object, prop}参照（他のプロパティの現在値のコピー、9.2節）。参照先のobjectはset自身の
+対象キーと同じ制約（selfOnly・allowDragged）を共有する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3158,13 +3094,11 @@ YAMLマッピングなら{object, prop}参照（他のプロパティの現在�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L147">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L135">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSets_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSets(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)">ParseSets(string, YamlMappingNode, bool, bool)</h4>
-  <div class="markdown level1 summary"><p>setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む（対象別の入れ子は
-各SetEffectがTargetとして自分で持つため、辞書グループ化ではなくフラットに展開する。passiveの
-ParsePassiveOperationIntoがModifyEffect/AccumulateEffectのリストを作るのと対称）。</p>
+  <div class="markdown level1 summary"><p>setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3223,12 +3157,11 @@ ParsePassiveOperationIntoがModifyEffect/AccumulateEffectのリストを作る�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSlot_System_String_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSlot(System.String%2CSystem.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Slots.cs/#L11">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Slots.cs/#L10">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSlot_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSlot*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSlot_System_String_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSlot(System.String,System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseSlot(string, string, YamlMappingNode)</h4>
-  <div class="markdown level1 summary"><p>1つのslots.'slotName'エントリを解釈し、SlotDefを組み立てる。RawObjectDef.Resolveから、
-trait合成済みのノードに対して呼ばれる。</p>
+  <div class="markdown level1 summary"><p>slots.'slotName'エントリを1つ読む。trait合成済みのノードを渡すこと。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3282,7 +3215,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L202">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L189">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawn_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawn(System.String,YamlDotNet.RepresentationModel.YamlMappingNode)">ParseSpawn(string, YamlMappingNode)</h4>
@@ -3334,7 +3267,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawnTargetRoot_System_String_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot(System.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L321">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L304">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawnTargetRoot_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawnTargetRoot_System_String_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawnTargetRoot(System.String,System.String)">ParseSpawnTargetRoot(string, string)</h4>
@@ -3386,7 +3319,7 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_System_String_YamlDotNet_RepresentationModel_YamlNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(System.String%2CYamlDotNet.RepresentationModel.YamlNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L180">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L167">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseSpawns_System_String_YamlDotNet_RepresentationModel_YamlNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseSpawns(System.String,YamlDotNet.RepresentationModel.YamlNode)">ParseSpawns(string, YamlNode)</h4>
@@ -3438,13 +3371,12 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseStage_System_String_System_String_System_String_System_Boolean_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__YamlDotNet_RepresentationModel_YamlMappingNode_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseStage(System.String%2CSystem.String%2CSystem.String%2CSystem.Boolean%2CSystem.Collections.Generic.List%7BUnmappedIsland.Domain.Defs.PassiveEffect%7D%2CYamlDotNet.RepresentationModel.YamlMappingNode)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L134">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Properties.cs/#L132">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseStage_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseStage*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseStage_System_String_System_String_System_String_System_Boolean_System_Collections_Generic_List_UnmappedIsland_Domain_Defs_PassiveEffect__YamlDotNet_RepresentationModel_YamlMappingNode_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseStage(System.String,System.String,System.String,System.Boolean,System.Collections.Generic.List{UnmappedIsland.Domain.Defs.PassiveEffect},YamlDotNet.RepresentationModel.YamlMappingNode)">ParseStage(string, string, string, bool, List&lt;PassiveEffect&gt;, YamlMappingNode)</h4>
-  <div class="markdown level1 summary"><p>1つのstagesエントリを解釈する（GameElementDefinition.md 6.4節）。プロパティ自身が
-シンボル型かどうかで、min（数値型、半開区間）とeq（シンボル型、nameが比較対象そのもの）の
-どちらを使うかが変わる。stage内のpassivesもここで併せて解釈し、passivesへ追記する。</p>
+  <div class="markdown level1 summary"><p>1つのstagesエントリを解釈する（6.4節）。数値型はmin（半開区間）、シンボル型はeq
+（nameが比較対象そのもの）を使う。stage内のpassivesも併せて解釈しpassivesへ追記する。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3513,14 +3445,12 @@ trait合成済みのノードに対して呼ばれる。</p>
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTrait_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTrait(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L198">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L158">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTrait_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTrait*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTrait_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_String_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTrait(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.String)">ParseTrait(string, YamlMappingNode, string)</h4>
-  <div class="markdown level1 summary"><p>traits.'name'の1エントリを浅く抽出する。ParseObjectDefと同じ理由で、props/slots/
-passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。traitはそれ自体が
-インスタンス化されることも、実行時に識別されることも無いため、interning対象の識別子を
-持たない。</p>
+  <div class="markdown level1 summary"><p>traits.'name'の1エントリを浅く抽出する（ParseObjectDefと同じく生YAMLノードのまま持つ）。
+traitは実行時に識別されないため、interning対象の識別子を持たない。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3574,15 +3504,14 @@ passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。tr
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfer_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfer(System.String%2CYamlDotNet.RepresentationModel.YamlMappingNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L112">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L102">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfer_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfer*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfer_System_String_YamlDotNet_RepresentationModel_YamlMappingNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfer(System.String,YamlDotNet.RepresentationModel.YamlMappingNode,System.Boolean,System.Boolean)">ParseTransfer(string, YamlMappingNode, bool, bool)</h4>
-  <div class="markdown level1 summary"><p>transfer（9.5節）。conditions（14節）と同じくfrom/toの参照をフラットな2フィールド
-（from_object/from_prop, to_object/to_prop）で表す。from_object/to_objectは省略時self
-（conditionsのobject省略時と同じ規約）。対象ルートの妥当性判定は、set/add/destroyと全く同じ
-制約（selfOnly・allowDragged）を共有するため、ParseActiveTargetKeyをそのまま使う。</p>
-<p>linked_add（省略可）はaddと同じ構造を持ち、実際の移動量に比例してスケールされる副効果を表す。</p>
+  <div class="markdown level1 summary"><p>transfer（9.5節）。from/toの参照はフラットな2フィールド（from_object/from_prop,
+to_object/to_prop）で表し、from_object/to_objectは省略時self。対象ルートはset/add/destroyと
+同じ制約（selfOnly・allowDragged）を共有する。linked_add（省略可）はaddと同じ構造で、
+実際の移動量に比例してスケールされる副効果。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -3641,7 +3570,7 @@ passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。tr
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(System.String%2CYamlDotNet.RepresentationModel.YamlNode%2CSystem.Boolean%2CSystem.Boolean)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L216">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.ActiveEffects.cs/#L203">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ParseTransfers_System_String_YamlDotNet_RepresentationModel_YamlNode_System_Boolean_System_Boolean_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ParseTransfers(System.String,YamlDotNet.RepresentationModel.YamlNode,System.Boolean,System.Boolean)">ParseTransfers(string, YamlNode, bool, bool)</h4>
@@ -3765,7 +3694,7 @@ passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。tr
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_Reset.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.Reset%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L146">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.cs/#L110">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_Reset_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Reset*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_Reset" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.Reset">Reset()</h4>
@@ -3780,7 +3709,7 @@ passives/stack_order/actions/combinationsは生YAMLノードのまま持つ。tr
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Loader_WorldCodexYamlLoader_ResetGeneration.md&amp;value=---%0Auid%3A%20UnmappedIsland.Loader.WorldCodexYamlLoader.ResetGeneration%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L281">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Loader/WorldCodexYamlLoader.Generation.cs/#L275">View Source</a>
   </span>
   <a id="UnmappedIsland_Loader_WorldCodexYamlLoader_ResetGeneration_" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ResetGeneration*"></a>
   <h4 id="UnmappedIsland_Loader_WorldCodexYamlLoader_ResetGeneration" data-uid="UnmappedIsland.Loader.WorldCodexYamlLoader.ResetGeneration">ResetGeneration()</h4>

@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class ActiveEffects | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="一時的な命令の内容（set/add/destroy/spawn/transfer、9節）を宣言順にまとめた合成効果。 on_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）のすべてから 共用する。中身は「単一の命令(ActiveEffect)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/ spawn/transferはすべてApplyを持つActiveEffectの具象型で、対象の解決も適用も各命令自身が行う。 passiveのmodify/accumulateがPassiveEffectのリストなのと対称）。 自分もまたActiveEffectであり（合成もまた1つの効果）、適用は各要素を宣言順にApplyしていくだけ。 on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。">
+    <meta name="description" content="一時的な命令（set/add/destroy/spawn/transfer、9節）を宣言順にまとめた合成効果。 on_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）が共用する。 on_min/on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,13 +74,9 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_ActiveEffects" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects" class="text-break">Class ActiveEffects</h1>
-  <div class="markdown level0 summary"><p>一時的な命令の内容（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>、9節）を宣言順にまとめた合成効果。
-on_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）のすべてから
-共用する。中身は「単一の命令(ActiveEffect)」の宣言順フラットリスト1本だけを持つ（set/add/destroy/
-spawn/transferはすべてApplyを持つActiveEffectの具象型で、対象の解決も適用も各命令自身が行う。
-passiveのmodify/accumulateがPassiveEffectのリストなのと対称）。</p>
-<p>自分もまたActiveEffectであり（合成もまた1つの効果）、適用は各要素を宣言順にApplyしていくだけ。
-on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側・パーサ側で強制する）。</p>
+  <div class="markdown level0 summary"><p>一時的な命令（<code>set</code>/<code>add</code>/<code>destroy</code>/<code>spawn</code>/<code>transfer</code>、9節）を宣言順にまとめた合成効果。
+on_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）が共用する。
+on_min/on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -123,7 +119,7 @@ on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveEffect__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects.%23ctor(System.Collections.Generic.IReadOnlyList%7BUnmappedIsland.Domain.Defs.ActiveEffect%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L50">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L35">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ActiveEffects__ctor_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ActiveEffects__ctor_System_Collections_Generic_IReadOnlyList_UnmappedIsland_Domain_Defs_ActiveEffect__" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.#ctor(System.Collections.Generic.IReadOnlyList{UnmappedIsland.Domain.Defs.ActiveEffect})">ActiveEffects(IReadOnlyList&lt;ActiveEffect&gt;)</h4>
@@ -157,12 +153,11 @@ on_min/on_overflow/on_shortfallはselfのみが有効な対象（呼び出し側
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects_operations.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects.operations%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L48">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L33">View Source</a>
   </span>
   <h4 id="UnmappedIsland_Domain_Defs_ActiveEffects_operations" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.operations">operations</h4>
-  <div class="markdown level1 summary"><p>set/add/destroy/spawn/transferを区別しない、単一命令の宣言順リスト。適用順は
-リスト順（パーサがset→add→transfer→destroy→spawnの順で並べる。同一プロパティへのset後add、
-destroyで空いた位置へのspawn（same_slot）という依存関係のため）。</p>
+  <div class="markdown level1 summary"><p>単一命令の宣言順リスト。適用順はリスト順（パーサがset→add→transfer→destroy→spawnの順で
+並べる。同一プロパティへのset後add、destroyで空いた位置へのspawn（same_slot）という依存関係のため）。</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -191,7 +186,7 @@ destroyで空いた位置へのspawn（same_slot）という依存関係のた�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Nullable%7BUnmappedIsland.Domain.Runtime.WorldObject.EffectSite%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L55">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L40">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ActiveEffects_Apply_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.Apply*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ActiveEffects_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__" data-uid="UnmappedIsland.Domain.Defs.ActiveEffects.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})">Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)</h4>
@@ -252,7 +247,7 @@ destroyで空いた位置へのspawn（same_slot）という依存関係のた�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffects.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffects%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L43" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L29" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

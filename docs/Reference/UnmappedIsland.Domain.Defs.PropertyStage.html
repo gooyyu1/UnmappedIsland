@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class PropertyStage | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。 Min: 区間は下限のみで表す半開区間。値の大小関係を前提にした数値プロパティ向け。 Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように、内部で保持する整数値の大小関係が 著者にとって意味を持たない（NameRegistryへの登録順で決まるだけの）値に対して使う。 どちらも未指定なら最下段（それ以外のどの段にも該当しない場合のフォールバック、6.4節）。">
+    <meta name="description" content="6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。 Min: 下限のみの半開区間（数値プロパティ向け）。Eq: 完全一致判定（シンボル型プロパティ（6.8節）向け）。 どちらも未指定ならフォールバック段（どの段にも該当しない場合の受け皿、6.4節）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,11 +74,9 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_PropertyStage" data-uid="UnmappedIsland.Domain.Defs.PropertyStage" class="text-break">Class PropertyStage</h1>
-  <div class="markdown level0 summary"><p>6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。</p>
-<p>Min: 区間は下限のみで表す半開区間。値の大小関係を前提にした数値プロパティ向け。
-Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように、内部で保持する整数値の大小関係が
-著者にとって意味を持たない（NameRegistryへの登録順で決まるだけの）値に対して使う。
-どちらも未指定なら最下段（それ以外のどの段にも該当しない場合のフォールバック、6.4節）。</p>
+  <div class="markdown level0 summary"><p>6.4節の stages の1段。MinとEqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。
+Min: 下限のみの半開区間（数値プロパティ向け）。Eq: 完全一致判定（シンボル型プロパティ（6.8節）向け）。
+どちらも未指定ならフォールバック段（どの段にも該当しない場合の受け皿、6.4節）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -120,7 +118,7 @@ Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyStage__ctor_System_String_System_Nullable_System_Int32__System_Nullable_System_Int32__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyStage.%23ctor(System.String%2CSystem.Nullable%7BSystem.Int32%7D%2CSystem.Nullable%7BSystem.Int32%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L44">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L41">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PropertyStage__ctor_" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PropertyStage__ctor_System_String_System_Nullable_System_Int32__System_Nullable_System_Int32__" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.#ctor(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">PropertyStage(string, int?, int?)</h4>
@@ -164,7 +162,7 @@ Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyStage_Eq.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyStage.Eq%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L42">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L39">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PropertyStage_Eq_" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.Eq*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PropertyStage_Eq" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.Eq">Eq</h4>
@@ -195,7 +193,7 @@ Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyStage_Min.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyStage.Min%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L39">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L36">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PropertyStage_Min_" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.Min*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PropertyStage_Min" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.Min">Min</h4>
@@ -226,7 +224,7 @@ Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように�
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyStage_Name.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyStage.Name%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L36">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L33">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_PropertyStage_Name_" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.Name*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_PropertyStage_Name" data-uid="UnmappedIsland.Domain.Defs.PropertyStage.Name">Name</h4>
@@ -263,7 +261,7 @@ Eq: 完全一致判定。シンボル型プロパティ（6.8節）のように�
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_PropertyStage.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.PropertyStage%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L34" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/PropertyDef.cs/#L31" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

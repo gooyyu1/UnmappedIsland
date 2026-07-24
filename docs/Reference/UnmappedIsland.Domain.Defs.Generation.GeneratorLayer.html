@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class GeneratorLayer | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="軸のジェネレータの1層（generator.blend の1要素）。複数の層のサンプル値をWeightで 重み付き平均して軸の値になる。値の実際の計算（ノイズ・距離場）はDomain.Generation側の サンプラーが担い、この定義は「どう計算するか」のパラメータだけを持つ。">
+    <meta name="description" content="軸のジェネレータの1層（generator.blend の1要素）。複数の層のサンプル値をWeightで 重み付き平均して軸の値になる。値の計算はDomain.Generation側のサンプラーが担う。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -75,8 +75,7 @@
 
   <h1 id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer" class="text-break">Class GeneratorLayer</h1>
   <div class="markdown level0 summary"><p>軸のジェネレータの1層（<code>generator.blend</code> の1要素）。複数の層のサンプル値をWeightで
-重み付き平均して軸の値になる。値の実際の計算（ノイズ・距離場）はDomain.Generation側の
-サンプラーが担い、この定義は「どう計算するか」のパラメータだけを持つ。</p>
+重み付き平均して軸の値になる。値の計算はDomain.Generation側のサンプラーが担う。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -118,7 +117,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_Generation_GeneratorLayer__ctor_UnmappedIsland_Domain_Defs_Generation_GeneratorLayerType_System_Int32_System_Int32_System_Int32_System_Int32_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.%23ctor(UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType%2CSystem.Int32%2CSystem.Int32%2CSystem.Int32%2CSystem.Int32)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L39">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L36">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer__ctor_" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer__ctor_UnmappedIsland_Domain_Defs_Generation_GeneratorLayerType_System_Int32_System_Int32_System_Int32_System_Int32_" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.#ctor(UnmappedIsland.Domain.Defs.Generation.GeneratorLayerType,System.Int32,System.Int32,System.Int32,System.Int32)">GeneratorLayer(GeneratorLayerType, int, int, int, int)</h4>
@@ -172,7 +171,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Frequency.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Frequency%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L33">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L30">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Frequency_" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Frequency*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Frequency" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Frequency">Frequency</h4>
@@ -203,7 +202,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Octaves.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Octaves%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L30">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L27">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Octaves_" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Octaves*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Octaves" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Octaves">Octaves</h4>
@@ -234,7 +233,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_SeedOffset.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.SeedOffset%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L37">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L34">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_SeedOffset_" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.SeedOffset*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_SeedOffset" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.SeedOffset">SeedOffset</h4>
@@ -266,7 +265,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Type.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Type%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L24">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L21">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Type_" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Type*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Type" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Type">Type</h4>
@@ -296,7 +295,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Weight.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Weight%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L27">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L24">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Weight_" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Weight*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_Generation_GeneratorLayer_Weight" data-uid="UnmappedIsland.Domain.Defs.Generation.GeneratorLayer.Weight">Weight</h4>
@@ -334,7 +333,7 @@
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_Generation_GeneratorLayer.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.Generation.GeneratorLayer%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L22" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/Generation/AxisDef.cs/#L19" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

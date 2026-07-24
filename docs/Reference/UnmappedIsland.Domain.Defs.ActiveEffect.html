@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class ActiveEffect | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。owner（self）の文脈 （actor/dragged）を受け取り、「対象を解決して自分を適用する」までを自分で行う（自分のことは 自分でする、CLAUDE.md参照）。 具象は3種:  単一の命令（SetEffect/AddEffect/DestroyEffect/SpawnEffect/TransferEffect、9節）。 それらを宣言順にまとめた合成（ActiveEffects。set/add/destroy/spawn/transferの並び）。 weightで1候補を選んで適用するpick（PickEffect、10節。候補の効果もまたActiveEffectなので再帰しうる）。  これらはすべて同じApplyで適用でき、activeとpickが排他であること（どちらか一方のみ）も、 「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は このActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。 effectSiteは、この最上位の適用の入口(WorldObject.ApplyActiveEffect)で先に捕捉した「selfが今 占めている位置」のスナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ 同種を保持しているか」を配置時に見て置き換え位置を決める（それ以外の効果は無視してよい）。効果の ツリー（合成ActiveEffects・pick）を素通しで伝わるだけなので、destroyが何かを書き込む必要はない。">
+    <meta name="description" content="「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。 具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffects）、 weightで1候補を選ぶpick（PickEffect、10節。候補もActiveEffectなので再帰しうる）の3種。 activeとpickの排他は「ActiveEffect型の変数が1つ」というだけで表せる（判別子不要）。 effectSiteは、適用の入口（WorldObject.ApplyActiveEffect）で捕捉した「selfが今占めている位置」の スナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を 配置時に見て置き換え位置を決める（他の効果は無視してよく、destroyが何かを書き込む必要もない）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,22 +74,13 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_ActiveEffect" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect" class="text-break">Class ActiveEffect</h1>
-  <div class="markdown level0 summary"><p>「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。owner（self）の文脈
-（actor/dragged）を受け取り、「対象を解決して自分を適用する」までを自分で行う（自分のことは
-自分でする、CLAUDE.md参照）。</p>
-<p>具象は3種:</p>
-<ul>
-<li>単一の命令（SetEffect/AddEffect/DestroyEffect/SpawnEffect/TransferEffect、9節）。</li>
-<li>それらを宣言順にまとめた合成（ActiveEffects。set/add/destroy/spawn/transferの並び）。</li>
-<li>weightで1候補を選んで適用するpick（PickEffect、10節。候補の効果もまたActiveEffectなので再帰しうる）。</li>
-</ul>
-<p>これらはすべて同じApplyで適用でき、activeとpickが排他であること（どちらか一方のみ）も、
-「ActiveEffect型の変数が1つ」というだけで表せる（判別子も入れ物も要らない。適用先のActionDef等は
-このActiveEffectを1つ持ち、Applyを呼ぶだけでよい）。</p>
-<p>effectSiteは、この最上位の適用の入口(WorldObject.ApplyActiveEffect)で先に捕捉した「selfが今
-占めている位置」のスナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ
-同種を保持しているか」を配置時に見て置き換え位置を決める（それ以外の効果は無視してよい）。効果の
-ツリー（合成ActiveEffects・pick）を素通しで伝わるだけなので、destroyが何かを書き込む必要はない。</p>
+  <div class="markdown level0 summary"><p>「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
+具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffects）、
+weightで1候補を選ぶpick（PickEffect、10節。候補もActiveEffectなので再帰しうる）の3種。
+activeとpickの排他は「ActiveEffect型の変数が1つ」というだけで表せる（判別子不要）。</p>
+<p>effectSiteは、適用の入口（WorldObject.ApplyActiveEffect）で捕捉した「selfが今占めている位置」の
+スナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を
+配置時に見て置き換え位置を決める（他の効果は無視してよく、destroyが何かを書き込む必要もない）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -142,7 +133,7 @@
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldSession%2CUnmappedIsland.Domain.Runtime.WorldObject%2CUnmappedIsland.Domain.Runtime.WorldObject%2CSystem.Nullable%7BUnmappedIsland.Domain.Runtime.WorldObject.EffectSite%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L28">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L19">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_ActiveEffect_Apply_" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Apply*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_ActiveEffect_Apply_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldSession_UnmappedIsland_Domain_Runtime_WorldObject_UnmappedIsland_Domain_Runtime_WorldObject_System_Nullable_UnmappedIsland_Domain_Runtime_WorldObject_EffectSite__" data-uid="UnmappedIsland.Domain.Defs.ActiveEffect.Apply(UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldSession,UnmappedIsland.Domain.Runtime.WorldObject,UnmappedIsland.Domain.Runtime.WorldObject,System.Nullable{UnmappedIsland.Domain.Runtime.WorldObject.EffectSite})">Apply(WorldObject, WorldSession, WorldObject, WorldObject, EffectSite?)</h4>
@@ -201,7 +192,7 @@
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_ActiveEffect.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.ActiveEffect%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L26" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/ActiveEffect.cs/#L17" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

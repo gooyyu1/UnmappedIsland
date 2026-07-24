@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class WorldCodex | UnmappedIsland API リファレンス ">
     
-    <meta name="description" content="ロードされたYAMLファイル全体（GameElementDefinition.md 3.1節: 「ファイル全体が1つの WorldCodex を 表します」）を表す、唯一の集約オブジェクト。名前空間ではなくこのクラスが「WorldCodex」そのもの。 中身は本体データ（ObjectDefTable）と、それを読むために必要な5種の名前空間 （object/property/slot/tag/symbol）の NameRegistry、および汎用エンジンが規約として直接参照する WellKnownProperties。ロード完了後は不変として扱う（Intern は Loader.WorldCodexYamlLoader の中でしか 呼ばれない）。SymbolNamesは、シンボル型のprops（6節）の値（整数にも真偽値にもならない識別子）が 登録される名前空間で、他の4種とは独立（同じ文字列が別の名前空間で使われていても衝突しない）。 実行中に生成される WorldObject（可変な実行時状態）はここには含まれない。WorldCodex はあくまで 「定義」の集合であり、生成されたインスタンスの管理は別の場所（実行時側、UnmappedIsland.Domain.Runtime）が 担う想定。">
+    <meta name="description" content="ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。 本体データ（ObjectDefTable）、5種の独立した名前空間（object/property/slot/tag/symbol）の NameRegistry、およびWellKnownPropertiesを持つ。ロード完了後は不変として扱う。 SymbolNamesはシンボル型props（6節）の値の名前空間。実行時状態（WorldObject）は含まない （UnmappedIsland.Domain.Runtimeが担う）。">
       <link rel="shortcut icon" href="favicon.ico">
       <link rel="stylesheet" href="styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="styles/docfx.css">
@@ -74,16 +74,11 @@
 
 
   <h1 id="UnmappedIsland_Domain_Defs_WorldCodex" data-uid="UnmappedIsland.Domain.Defs.WorldCodex" class="text-break">Class WorldCodex</h1>
-  <div class="markdown level0 summary"><p>ロードされたYAMLファイル全体（GameElementDefinition.md 3.1節: 「ファイル全体が1つの WorldCodex を
-表します」）を表す、唯一の集約オブジェクト。名前空間ではなくこのクラスが「WorldCodex」そのもの。</p>
-<p>中身は本体データ（ObjectDefTable）と、それを読むために必要な5種の名前空間
-（object/property/slot/tag/symbol）の NameRegistry、および汎用エンジンが規約として直接参照する
-WellKnownProperties。ロード完了後は不変として扱う（Intern は Loader.WorldCodexYamlLoader の中でしか
-呼ばれない）。SymbolNamesは、シンボル型のprops（6節）の値（整数にも真偽値にもならない識別子）が
-登録される名前空間で、他の4種とは独立（同じ文字列が別の名前空間で使われていても衝突しない）。</p>
-<p>実行中に生成される WorldObject（可変な実行時状態）はここには含まれない。WorldCodex はあくまで
-「定義」の集合であり、生成されたインスタンスの管理は別の場所（実行時側、UnmappedIsland.Domain.Runtime）が
-担う想定。</p>
+  <div class="markdown level0 summary"><p>ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。
+本体データ（ObjectDefTable）、5種の独立した名前空間（object/property/slot/tag/symbol）の
+NameRegistry、およびWellKnownPropertiesを持つ。ロード完了後は不変として扱う。
+SymbolNamesはシンボル型props（6節）の値の名前空間。実行時状態（WorldObject）は含まない
+（UnmappedIsland.Domain.Runtimeが担う）。</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -125,7 +120,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex__ctor_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_ObjectDefTable_UnmappedIsland_Domain_Defs_WellKnownProperties_UnmappedIsland_Domain_Defs_Generation_GenerationDefs_.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.%23ctor(UnmappedIsland.Domain.Defs.NameRegistry%2CUnmappedIsland.Domain.Defs.NameRegistry%2CUnmappedIsland.Domain.Defs.NameRegistry%2CUnmappedIsland.Domain.Defs.NameRegistry%2CUnmappedIsland.Domain.Defs.NameRegistry%2CUnmappedIsland.Domain.Defs.ObjectDefTable%2CUnmappedIsland.Domain.Defs.WellKnownProperties%2CUnmappedIsland.Domain.Defs.Generation.GenerationDefs)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L32">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L25">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex__ctor_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.#ctor*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex__ctor_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_NameRegistry_UnmappedIsland_Domain_Defs_ObjectDefTable_UnmappedIsland_Domain_Defs_WellKnownProperties_UnmappedIsland_Domain_Defs_Generation_GenerationDefs_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.#ctor(UnmappedIsland.Domain.Defs.NameRegistry,UnmappedIsland.Domain.Defs.NameRegistry,UnmappedIsland.Domain.Defs.NameRegistry,UnmappedIsland.Domain.Defs.NameRegistry,UnmappedIsland.Domain.Defs.NameRegistry,UnmappedIsland.Domain.Defs.ObjectDefTable,UnmappedIsland.Domain.Defs.WellKnownProperties,UnmappedIsland.Domain.Defs.Generation.GenerationDefs)">WorldCodex(NameRegistry, NameRegistry, NameRegistry, NameRegistry, NameRegistry, ObjectDefTable, WellKnownProperties, GenerationDefs)</h4>
@@ -194,7 +189,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_Generation.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.Generation%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L30">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L23">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_Generation_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.Generation*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_Generation" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.Generation">Generation</h4>
@@ -226,7 +221,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_ObjectNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.ObjectNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L19">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L12">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_ObjectNames_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.ObjectNames*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_ObjectNames" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.ObjectNames">ObjectNames</h4>
@@ -256,7 +251,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_Objects.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.Objects%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L25">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L18">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_Objects_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.Objects*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_Objects" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.Objects">Objects</h4>
@@ -286,7 +281,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_PropertyNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.PropertyNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L20">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L13">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_PropertyNames_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.PropertyNames*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_PropertyNames" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.PropertyNames">PropertyNames</h4>
@@ -316,7 +311,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_SlotNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.SlotNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L21">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L14">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_SlotNames_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.SlotNames*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_SlotNames" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.SlotNames">SlotNames</h4>
@@ -346,7 +341,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_SymbolNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.SymbolNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L23">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L16">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_SymbolNames_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.SymbolNames*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_SymbolNames" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.SymbolNames">SymbolNames</h4>
@@ -376,7 +371,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_TagNames.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.TagNames%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L22">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L15">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_TagNames_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.TagNames*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_TagNames" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.TagNames">TagNames</h4>
@@ -406,7 +401,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex_WellKnown.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex.WellKnown%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L26">View Source</a>
+    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L19">View Source</a>
   </span>
   <a id="UnmappedIsland_Domain_Defs_WorldCodex_WellKnown_" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.WellKnown*"></a>
   <h4 id="UnmappedIsland_Domain_Defs_WorldCodex_WellKnown" data-uid="UnmappedIsland.Domain.Defs.WorldCodex.WellKnown">WellKnown</h4>
@@ -443,7 +438,7 @@ WellKnownProperties。ロード完了後は不変として扱う（Intern は Lo
                     <a href="https://github.com/gooyyu1/UnmappedIsland/new/main/apiSpec/new?filename=UnmappedIsland_Domain_Defs_WorldCodex.md&amp;value=---%0Auid%3A%20UnmappedIsland.Domain.Defs.WorldCodex%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L17" class="contribution-link">View Source</a>
+                    <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/Assets/Scripts/Domain/Defs/WorldCodex.cs/#L10" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>

@@ -41,23 +41,16 @@
 クラス名・メソッド名を使ってトップダウンに</strong>説明するものです。</p>
 <ul>
 <li><strong>「なぜこう設計したか」は本書では説明しません。</strong> <a
-href="./TerrainGeneration.html"><code>TerrainGeneration.md</code></a>
-（島の生成アルゴリズムの設計判断）・<a
-href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a>（生成された
-土地の挙動の設計判断）を参照してください。本書はその実装が<strong>コード上どこに・どういう形であるか</strong>だけを扱います。</li>
-<li>ソースコードのXMLドキュメントコメント（<code>///</code>）は、各クラス・各メソッドが<strong>そのクラス単体として</strong>何を
-するかを説明しますが、「どのクラスがどのクラスを、どの順で呼ぶか」という全体の流れは、1つのファイルを
-読むだけでは把握できません。本書はその<strong>呼び出し関係の地図</strong>を提供することを目的とします。</li>
+href="./TerrainGeneration.html"><code>TerrainGeneration.md</code></a>・ <a
+href="./ExplorationSystem.html"><code>ExplorationSystem.md</code></a>
+を参照してください。本書は、1つのファイルを読むだけでは
+把握できない<strong>呼び出し関係の地図</strong>を提供します。</li>
 <li>個々のクラス・メソッドの正確な契約（引数・戻り値・例外）は、常にソースコードとXMLドキュメントコメントを
-正とします。本書は流れを把握するための道しるべであり、詳細な仕様書ではありません。実装が変わった場合、
-本書の更新が追いつかないことがありえます。矛盾を見つけたらソースコードを信じてください。</li>
+正とします。本書と矛盾を見つけたらソースコードを信じてください。</li>
 </ul>
-<p><strong>読む順番の目安</strong>: 「なぜ」を知りたければ
-<code>TerrainGeneration.md</code>/<code>ExplorationSystem.md</code>
-を先に。「コードの どこを読めばいいか」を知りたければ本書の 1
-節（全体の呼び出し関係）から。個々のクラスの詳細は 2 節以降、
-ファイルを直接開く前のインデックスとして 8
-節（ファイル一覧）を使ってください。</p>
+<p><strong>読む順番の目安</strong>: 全体の呼び出し関係は 1
+節、個々のクラスの詳細は 2 節以降、ファイルを直接開く前の インデックスは
+8 節（ファイル一覧）。</p>
 <h2 id="全体の呼び出し関係">1. 全体の呼び出し関係</h2>
 <p>地形生成は大きく2つの入口を持ちます。<strong>ロード</strong>（YAML →
 <code>WorldCodex.Generation</code>、ゲーム起動時に1回）と、

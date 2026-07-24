@@ -110,8 +110,7 @@
       </tr>
       <tr>
         <td id="UnmappedIsland_Domain_Defs_ConditionNodeKind_ObjectTag">ObjectTag</td>
-        <td><p>{object, tag}形式の、objectが指すオブジェクト自身がtagを持つかのチェック（存在判定）。
-親オブジェクトのタグで分岐するpassiveなど、「オブジェクト自身の種類」を見たい条件で使う。</p>
+        <td><p>{object, tag}形式。object自身がtagを持つか（存在判定）。</p>
 </td>
       </tr>
       <tr>
@@ -121,17 +120,14 @@
       </tr>
       <tr>
         <td id="UnmappedIsland_Domain_Defs_ConditionNodeKind_SlotContent">SlotContent</td>
-        <td><p>{object, slot, tag}形式の、objectが指すオブジェクト自身が持つslot（自分のスロット）の
-中に、tagを持つ子オブジェクトが1つでもあるかのチェック（存在判定。常に真偽で、opは持たない）。
-SlotPositionとは向きが逆で、「objectの内側、自分のスロットの中身」を見る。
-液体容器のような「中身の種類」の判定に使う（案3、コンテナ設計の検討参照）。</p>
+        <td><p>{object, slot, tag}形式。object自身が持つslotの中に、tagを持つ子が1つでもあるか
+（存在判定でopは持たない）。SlotPositionとは向きが逆で「objectの内側、自分のスロットの中身」を見る。</p>
 </td>
       </tr>
       <tr>
         <td id="UnmappedIsland_Domain_Defs_ConditionNodeKind_SlotPosition">SlotPosition</td>
-        <td><p>{object, in_slot}形式の、objectが指すオブジェクト自身が、今まさに親のin_slotに
-入っているかのチェック（常に等価判定。opは持たない。否定したい場合はNotで包む）。「objectが
-外から見てどこに位置するか」を見る（objectの直接の親の中の位置）。</p>
+        <td><p>{object, in_slot}形式。objectが今まさに親のin_slotに入っているか（常に等価判定でopは
+持たない。否定はNotで包む）。「objectが外から見てどこに位置するか」を見る。</p>
 </td>
       </tr>
     </tbody>
