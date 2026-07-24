@@ -12,6 +12,7 @@
 
 - [`RecipeSystem.md`](./RecipeSystem.md) — アイテムの製作
 - [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ
+- [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) — 液体容器（量・飲用・注ぎ移し・蒸発）
 - [`ActionSystem.md`](./ActionSystem.md) — アクション実行の設計（`actions`/`combinations` の実行時の仕組み）
 - [`ClimateSystem.md`](./ClimateSystem.md) — 季節・天候
 - [`TerrainGeneration.md`](./TerrainGeneration.md) — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）

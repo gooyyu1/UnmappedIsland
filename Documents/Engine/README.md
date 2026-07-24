@@ -25,6 +25,7 @@ C# 実装のアーキテクチャ・コード構造に関するドキュメン�
 
 - [レシピシステム設計](./RecipeSystem.md)
 - [コンテナの容量と重さ](./ContainerSystem.md)
+- [液体容器システム設計](./LiquidContainerSystem.md) — 量・飲用・注ぎ移し・蒸発の実現方法
 - [耐久値システム設計](./DurabilitySystem.md)
 - [アクションシステム設計](./ActionSystem.md) — actions / combinations の実行時の仕組み
 - [気候システム設計](./ClimateSystem.md)
