@@ -140,7 +140,10 @@ object_defs:
       #
       # 降雨中の自己減算（ClimateSystem.md 3節）: 雨系のstage自身が、毎tick atmospheric_moistureを
       # 減算する（耐久値と同じ「ステージ自身が値を変化させる」パターン）。雨が降り続ければやがて水分が
-      # 尽きて乾いた候補が選ばれやすくなる、という貯水池の循環を成立させる。激しい雨ほど速く消費する。
+      # 尽きて乾いた候補が選ばれやすくなる、という貯水池の循環を成立させる。激しい雨ほど速く消費するが、
+      # wetの季節レート(+250/tick)を大きく下回るほど強くはしない: 連続降雨の途中でheavy_rain/stormが
+      # 続けて選ばれても、humid/saturated帯（雨が優勢な帯）を割り込んでmoderate帯（雨がほぼ選ばれない
+      # 帯）まで一気に押し下げてしまうと、そこでほぼ確実に連続降雨が途切れてしまうため。
       weather:
         value: clear
         stages:
@@ -148,12 +151,12 @@ object_defs:
             passives:
               - accumulate:
                   self:
-                    atmospheric_moisture: -400
+                    atmospheric_moisture: -365
           - name: heavy_rain
             passives:
               - accumulate:
                   self:
-                    atmospheric_moisture: -300
+                    atmospheric_moisture: -280
           - name: light_rain
             passives:
               - modify:
@@ -391,9 +394,8 @@ object_defs:
             passives:
               - modify:
                   self:
-                    sunny_weight: 5
-                    clear_weight: 10
-                    cloudy_weight: 15
+                    clear_weight: 4
+                    cloudy_weight: 3
                     light_rain_weight: 40
                     heavy_rain_weight: 30
                     storm_weight: 10
