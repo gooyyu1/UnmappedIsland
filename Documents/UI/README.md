@@ -7,6 +7,8 @@
 - [画面レイアウト検討](./ScreenLayout.md)
 - [レスポンシブ画面モック](./ScreenLayout_Mock.html)（HTML、ブラウザで直接開ける）
 - [縦型スクリーンショット](./screenshot_portrait.png) / [横型スクリーンショット](./screenshot_landscape.png)
+- [スタート画面・セーブ選択画面](./StartScreen.md)
+- [スタート・セーブ選択モック](./StartScreen_Mock.html)（HTML、ブラウザで直接開ける）
 
 ## 含まれるドキュメント例
 
