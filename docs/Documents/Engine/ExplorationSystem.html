@@ -203,11 +203,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 実行だけ禁止する方式は、UI側に隠す処理が別途必要になり「発見」が実体を持たないため不採用）。</p>
 <h2 id="探索explore-アクション">2. 探索（<code>explore</code>
 アクション）</h2>
-<p>「探索で何が見つかるか」と探索できる回数（進捗プロパティの上限）は、<code>explorable</code>
-trait ではなく土地ごとの
+<p>「探索で何が見つかるか」と探索率100%までの探索回数（進捗プロパティの上限）は、<code>explorable</code>
+trait ではなく 土地ごとの
 <code>object_defs</code>（<code>locations.yaml</code>）が個別に定義します。<code>explorable</code>
-trait 自身が持つのは、進捗を保持する箱
-（<code>exploration_progress</code>）と道の発見に使う2スロット（1.2
+trait 自身が持つのは、進捗を
+保持する箱（<code>exploration_progress</code>）と道の発見に使う2スロット（1.2
 節）という共通の器だけです。</p>
 <div class="sourceCode" id="cb3"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">object_defs</span><span class="kw">:</span></span>
@@ -216,31 +216,31 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">props</span><span class="kw">:</span></span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">exploration_progress</span><span class="kw">:</span></span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">12</span><span class="kw">}</span><span class="co">   # 探索できる回数</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">range</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">min</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="kw">,</span><span class="at"> </span><span class="fu">max</span><span class="kw">:</span><span class="at"> </span><span class="dv">12</span><span class="kw">}</span><span class="co">   # 探索率100%に達するまでの探索回数</span></span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">explore</span><span class="kw">:</span></span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">prop</span><span class="kw">:</span><span class="at"> exploration_progress</span><span class="kw">,</span><span class="at"> </span><span class="fu">op</span><span class="kw">:</span><span class="at"> lt</span><span class="kw">,</span><span class="at"> </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">12</span><span class="kw">}</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pick</span><span class="kw">:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pick</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}}</span></span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}}</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}}</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> water_spinach</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> self</span><span class="kw">}</span></span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">          # ...</span></span></code></pre></div>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">spawn</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">object</span><span class="kw">:</span><span class="at"> water_spinach</span><span class="kw">,</span><span class="at"> </span><span class="fu">into</span><span class="kw">:</span><span class="at"> self</span><span class="kw">}</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">          # ...</span></span></code></pre></div>
 <ul>
-<li><strong>探索可能回数</strong>: <code>exploration_progress</code> の
-<code>range.max</code>（10〜20 の範囲、土地ごとに異なる）。
-<code>explore</code> の <code>conditions</code> は
-<code>value: max</code>
-という参照記法が未対応（<code>GameElementDefinition.md</code> 17
-節）のため、 <code>range.max</code>
-と同じ値をリテラルで重複して書いています。この二重管理は
-<code>tests/worldCodex/   locationsYaml.test.ts</code>
-の振る舞いテスト（「max-1では実行でき、maxでは実行できない」）が検証しており、
-値のずれがあれば必ず失敗します。</li>
+<li><strong>探索率100%までの回数</strong>:
+<code>exploration_progress</code> の <code>range.max</code>（10〜20
+の範囲、土地ごとに異なる）。</li>
+<li><strong>100%に達しても探索は続けられます</strong>。<code>explore</code>
+に進捗の上限を見る <code>conditions</code> は置いていません。
+上限を超えた進捗は <code>range</code>
+の既定のクランプ（<code>GameElementDefinition.md</code> 6.3 節）で
+<code>range.max</code> に
+張り付くため、探索率は100%のまま、<code>pick</code>
+による発見物だけが増え続けます。100%到達で変わるのは、
+生成時に仕込まれた道（3.2
+節）がそれ以上見つからなくなることだけです。</li>
 <li><strong>発見物</strong>: <code>pick</code>（10
 節）による重み付き抽選です。「ハズレ」（進捗だけが増える候補）を必ず用意しています。
 <code>add</code>/<code>pick</code>
@@ -304,19 +304,22 @@ id（型）ではなくプロパティ値（インスタンスID） で指して
 <code>required_progress</code> に
 達するまで、同じ繋がりは見つかりません）。</p>
 <h3
-id="required_progress-の割り当て探索可能回数を使い切る前に道が見つかることの保証">3.2
+id="required_progress-の割り当て探索率100に達する前に道が見つかることの保証">3.2
 required_progress
-の割り当て（探索可能回数を使い切る前に道が見つかることの保証）</h3>
-<p>「探索上限に達する前にすべての道が見つかる」ことを、データの調整ではなく<strong>生成側の不変条件</strong>として
+の割り当て（探索率100%に達する前に道が見つかることの保証）</h3>
+<p>「探索率が100%に達する前にすべての道が見つかる」ことを、データの調整ではなく<strong>生成側の不変条件</strong>として
 保証しています。</p>
 <p>ある土地に接続する道が K 本あるとき、それぞれの
-<code>required_progress</code> を、探索上限を <code>max</code> として
+<code>required_progress</code> を、探索の上限を <code>max</code> として
 <code>[2, max − 1]</code>
 の範囲へ均等間隔で割り当てます（<code>src/domain/generation/IslandSpawner.ts</code>）。最初の道が進捗2で
 見つかる（1回目の探索でいきなり道が見つからないようにする）のを最速とし、最後の道は必ず
 <code>max − 1</code> 以前に 見つかります。この不変条件は
 <code>tests/generation/islandSpawner.test.ts</code>
 が全接続について検証しています。</p>
+<p>100%到達後も探索は続けられますが（2 節）、進捗は <code>max</code>
+に張り付くため、新たに条件を満たす道はもう
+現れません。「探索率100%＝この土地の道は出尽くした」という保証は、この割り当てが与えています。</p>
 <h2 id="エンジン拡張durationmove">4.
 エンジン拡張（<code>duration</code>・<code>move</code>）</h2>
 <p><code>duration</code>・<code>move</code>
@@ -344,6 +347,10 @@ class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb5-
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">this</span><span class="op">.</span><span class="fu">revealDuePaths</span>(session)<span class="op">;</span>   <span class="co">// 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="kw">true</span><span class="op">;</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>プレイヤー側の入口も同じく1箇所です。<code>PlayerCharacter.explore(session)</code>（<code>views/PlayerCharacter.ts</code>）が
+「今いる土地に自分を actor として渡す」という手順を引き受けるため、UI
+は自分の居場所を知らなくてよく、 探索できない場所に居る場合は
+<code>false</code> が返ります。</p>
 <p><code>explore</code> アクション（YAML側）の実行と、後処理の
 <code>revealDuePaths</code> を呼び出し側（UI等）に分けて呼ばせません
 （<code>CLAUDE.md</code>
