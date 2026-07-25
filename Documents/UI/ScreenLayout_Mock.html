@@ -147,6 +147,11 @@
 
     .portrait-wrap { position: relative; }
 
+    /* 縦型: display:contents で自身を消し、子（条件セル・装備・怪我）を
+       character-display の2×2グリッドへそのまま参加させる。
+       横型ではこのラッパー自体が縦並びの列になる（横型メディアクエリ参照） */
+    .info-column { display: contents; }
+
     .portrait-card {
       width: var(--portrait-w);
       height: var(--portrait-h);
@@ -183,10 +188,23 @@
       font-size: calc(36 * var(--u));
     }
 
+    /* 装備・怪我は種別が分かるよう「装備」「怪我」の固定ラベルをアイコンの右に付ける
+       （アイテム名は表示せず、タップ先の子ウィンドウで確認する想定）。
+       正方形ではなく横長のボタンにするため、幅はセル・列いっぱいに広げる */
     .icon-button--equipment,
     .icon-button--injury {
-      justify-self: center;
-      align-self: center;
+      width: 100%;
+      justify-content: flex-start;
+      gap: calc(12 * var(--u));
+      padding: 0 calc(18 * var(--u));
+    }
+
+    .icon-button-icon { font-size: calc(44 * var(--u)); line-height: 1; }
+
+    .icon-button-label {
+      font-size: calc(24 * var(--u));
+      font-weight: 700;
+      line-height: 1;
     }
 
     .icon-button--equipment { background: #d6fff0; }
@@ -419,7 +437,8 @@
     @media (orientation: landscape) {
       /* 天候を日時から切り離し、状況エリアを日時だけの幅で済ませることで
          ダッシュボード列を絞り、浮いた横幅をフィールドエリアに回す。
-         キャラクター表示エリアは縦型と同じグリッド構造をそのまま使う */
+         キャラクター表示エリアは左にポートレイトカード、右の列に条件セル・
+         装備・怪我を縦に並べる構成に変える（縦型は2×2グリッドのまま） */
       .screen { flex-direction: row; }
 
       /* 天候が抜けて日時だけになった分、状況エリアの高さも内容に合わせて縮める。
@@ -444,8 +463,20 @@
 
       .character-display {
         width: 100%;
-        justify-content: center;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
       }
+
+      .info-column {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+        gap: var(--gap);
+      }
+
+      .condition-cell { justify-content: flex-start; }
 
       .status-area {
         flex: 1;
@@ -478,14 +509,20 @@
           <div class="portrait-wrap">
             <div class="card portrait-card"><span class="card-name">主人公</span></div>
           </div>
-          <div class="condition-cell">
-            <button class="icon-button icon-button--condition" type="button" aria-label="高揚" title="高揚">💭</button>
-            <button class="icon-button icon-button--condition" type="button" aria-label="寒気" title="寒気">🥶</button>
-            <button class="icon-button icon-button--condition" type="button" aria-label="疲労" title="疲労">😪</button>
-            <button class="icon-button icon-button--condition" type="button" aria-label="空腹" title="空腹">🍽️</button>
+          <div class="info-column">
+            <div class="condition-cell">
+              <button class="icon-button icon-button--condition" type="button" aria-label="高揚" title="高揚">💭</button>
+              <button class="icon-button icon-button--condition" type="button" aria-label="寒気" title="寒気">🥶</button>
+              <button class="icon-button icon-button--condition" type="button" aria-label="疲労" title="疲労">😪</button>
+              <button class="icon-button icon-button--condition" type="button" aria-label="空腹" title="空腹">🍽️</button>
+            </div>
+            <button class="icon-button icon-button--equipment" type="button" aria-label="折りたたみ椅子" title="折りたたみ椅子">
+              <span class="icon-button-icon">🪑</span><span class="icon-button-label">装備</span>
+            </button>
+            <button class="icon-button icon-button--injury" type="button" aria-label="擦り傷" title="擦り傷">
+              <span class="icon-button-icon">🩹</span><span class="icon-button-label">怪我</span>
+            </button>
           </div>
-          <button class="icon-button icon-button--equipment" type="button" aria-label="折りたたみ椅子" title="折りたたみ椅子">🪑</button>
-          <button class="icon-button icon-button--injury" type="button" aria-label="擦り傷" title="擦り傷">🩹</button>
         </div>
         <div class="status-area">
           <div class="label">ステータスエリア</div>
