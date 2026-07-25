@@ -50,6 +50,16 @@ export class PlayerCharacter {
     return slot === undefined ? [] : slot.cells.map((cell) => cell?.members.at(0));
   }
 
+  /** アイテムを手持ちスロットへ入れる。手持ちが受け入れられなければ（accepts制約・6枠の上限）false。 */
+  take(item: WorldObject, session: WorldSession): boolean {
+    return item.moveToSlot(this.instance, this.handSlotId, session.codex.wellKnown) === undefined;
+  }
+
+  /** 手持ちのアイテムを今いる土地へ置く。土地に居ない・土地が受け入れられないならfalse。 */
+  drop(item: WorldObject, session: WorldSession): boolean {
+    return this.location?.receiveItem(item, session) ?? false;
+  }
+
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */
   get location(): Location | undefined {
     const parent = this.instance.parent;
