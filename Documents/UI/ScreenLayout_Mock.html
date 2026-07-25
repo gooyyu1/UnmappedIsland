@@ -17,7 +17,7 @@
       --lane-h: calc(352 * var(--u));
       --gap: calc(12 * var(--u));
       --margin: calc(6 * var(--u));
-      --bar-h: calc(96 * var(--u));
+      --bar-gap: calc(20 * var(--u));
       --portrait-w: var(--card-w);
       --portrait-h: var(--card-h);
       --icon-button-size: calc(88 * var(--u));
@@ -397,13 +397,12 @@
     .options-bar {
       grid-area: options;
       position: relative;
-      height: var(--bar-h);
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: var(--gap);
-      padding: 0 calc(24 * var(--u));
+      gap: var(--bar-gap);
+      padding: calc(16 * var(--u)) calc(24 * var(--u));
       background: #f5e9d5;
     }
 
@@ -417,7 +416,7 @@
       position: relative;
       display: flex;
       align-items: center;
-      gap: var(--gap);
+      gap: var(--bar-gap);
       padding: calc(16 * var(--u)) calc(20 * var(--u));
       overflow-x: auto;
       min-width: 0;
@@ -500,7 +499,7 @@
          キャラクター表示エリアは左にポートレイトカード、右の列に条件セル・
          装備・怪我を縦に並べる構成に変える（縦型は2×2グリッドのまま） */
       .screen {
-        grid-template-columns: calc(540 * var(--u)) 1fr calc(172 * var(--u));
+        grid-template-columns: calc(540 * var(--u)) 1fr calc(120 * var(--u));
         grid-template-rows: auto 1fr;
         grid-template-areas:
           "dashboard field options"
