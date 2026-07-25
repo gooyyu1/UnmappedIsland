@@ -132,23 +132,25 @@
       background: #ffe5d1;
     }
 
-    /* キャラクターカード｜条件 / 装備｜怪我 の2×2グリッド。縦型・横型共通の構造で、
-       character-display の幅・高さだけを向きごとに変える */
+    /* 縦型: 上段（キャラクターカード｜条件）と下段（装備｜怪我）は独立したレイアウト。
+       上段はグリッドの1行目、下段は grid-column:1/-1 で両列にまたがる独立の行とし、
+       上段の列幅（ポートレイト幅）に下段が引きずられないようにする。
+       横型では character-display の幅・高さだけを向きごとに変える */
     .character-display {
       position: relative;
       width: calc(460 * var(--u));
       flex-shrink: 0;
       display: grid;
       grid-template-columns: var(--portrait-w) 1fr;
-      grid-template-rows: var(--portrait-h) auto;
+      grid-auto-rows: auto;
       gap: var(--gap);
       background: #d9f6ff;
     }
 
     .portrait-wrap { position: relative; }
 
-    /* 縦型: display:contents で自身を消し、子（条件セル・装備・怪我）を
-       character-display の2×2グリッドへそのまま参加させる。
+    /* 縦型: display:contents で自身を消し、子（条件セル・装備/怪我の行）を
+       character-display のグリッドへそのまま参加させる。
        横型ではこのラッパー自体が縦並びの列になる（横型メディアクエリ参照） */
     .info-column { display: contents; }
 
@@ -158,13 +160,26 @@
     }
 
     /* 条件は複数同時に付き得るため、アイコンボタンを2列のグリッドで並べる。
-       個数が変わっても自動的に折り返される */
+       個数が変わっても自動的に折り返される（横型は1行に並べる。横型メディアクエリ参照） */
     .condition-cell {
       display: grid;
       grid-template-columns: repeat(2, auto);
       gap: calc(8 * var(--u));
       place-content: center;
     }
+
+    /* 装備・怪我の行。縦型ではグリッドの両列にまたがる独立の行にし、
+       ポートレイト幅に関係なく2個で幅を均等に分け合う（横型は縦並びに切り替える。
+       横型メディアクエリ参照） */
+    .equip-injury-row {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: row;
+      gap: var(--gap);
+      width: 100%;
+    }
+
+    .equip-injury-row .icon-button { flex: 1; }
 
     /* ラベルなしのアイコンのみボタン。装備・怪我はタップで子ウィンドウを開くための
        最小タップ領域として --icon-button-size（88u）を確保する。条件は一回り小さい */
@@ -193,7 +208,6 @@
        正方形ではなく横長のボタンにするため、幅はセル・列いっぱいに広げる */
     .icon-button--equipment,
     .icon-button--injury {
-      width: 100%;
       justify-content: flex-start;
       gap: calc(12 * var(--u));
       padding: 0 calc(18 * var(--u));
@@ -476,7 +490,17 @@
         gap: var(--gap);
       }
 
-      .condition-cell { justify-content: flex-start; }
+      /* 横型は条件アイコンを1行に並べる（縦型は2列で折り返す） */
+      .condition-cell {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      /* 横型は装備・怪我を縦並びに切り替え、幅は列いっぱいに広げる
+         （縦型は grid-column:1/-1 の行で横並び・flex:1 の均等幅） */
+      .equip-injury-row { flex-direction: column; }
+      .equip-injury-row .icon-button { flex: none; width: 100%; }
 
       .status-area {
         flex: 1;
@@ -516,12 +540,14 @@
               <button class="icon-button icon-button--condition" type="button" aria-label="疲労" title="疲労">😪</button>
               <button class="icon-button icon-button--condition" type="button" aria-label="空腹" title="空腹">🍽️</button>
             </div>
-            <button class="icon-button icon-button--equipment" type="button" aria-label="折りたたみ椅子" title="折りたたみ椅子">
-              <span class="icon-button-icon">🪑</span><span class="icon-button-label">装備</span>
-            </button>
-            <button class="icon-button icon-button--injury" type="button" aria-label="擦り傷" title="擦り傷">
-              <span class="icon-button-icon">🩹</span><span class="icon-button-label">怪我</span>
-            </button>
+            <div class="equip-injury-row">
+              <button class="icon-button icon-button--equipment" type="button" aria-label="折りたたみ椅子" title="折りたたみ椅子">
+                <span class="icon-button-icon">🪑</span><span class="icon-button-label">装備</span>
+              </button>
+              <button class="icon-button icon-button--injury" type="button" aria-label="擦り傷" title="擦り傷">
+                <span class="icon-button-icon">🩹</span><span class="icon-button-label">怪我</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="status-area">
