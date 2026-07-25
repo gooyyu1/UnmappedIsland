@@ -111,9 +111,15 @@ href="./LiquidContainerSystem.html"><code>LiquidContainerSystem.md</code></a>
 <li><strong><code>fixed_positions: true</code></strong>（例:
 プレイヤー手持ちの6枠）: セル配列は常に <code>unit_capacity</code>
 長で、 空セルを null
-として保持する。位置（固定番号）が安定し、プレイヤーによる手動並び替え
-（<code>Slot.TrySetManualPosition</code>、空セルまたは他スタックとの単純
-swap）ができる。</li>
+として保持する。位置（固定番号）が安定し、プレイヤーによる手動配置ができる。
+<ul>
+<li><code>Slot.TrySetManualPosition</code>: 指定した番号のセルとの単純
+swap（並び替え）。</li>
+<li><code>Slot.TryInsertAtGap</code>:
+セルとセルの<strong>隙間</strong>へ入れる（カードを隙間へドラッグ＆ドロップしたとき）。
+まず右方向へ、それが無理なら左方向へ既存のセルをずらして場所を作る。合流できる既存スタックが
+あるときは、指定された位置より「同種は1スタック」（4〜5節）を優先してそちらへ入れる。</li>
+</ul></li>
 <li><strong>非 fixed_positions</strong>:
 空になったセルは削除して前詰めする（null を含まない）。</li>
 </ul>
