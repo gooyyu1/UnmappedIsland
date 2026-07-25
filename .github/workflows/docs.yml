@@ -12,6 +12,11 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  # game.ymlと同じグループ。どちらもdocs/へコミットしてmainへpushするため、同時に走らせない。
+  group: pages-publish
+  cancel-in-progress: false
+
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
@@ -29,7 +34,9 @@ jobs:
         run: |
           # サブフォルダごとの出力先は後続の変換ループが`mkdir -p "$out_dir"`で都度作成するため、
           # ここではDocuments/配下のフォルダ名をハードコードしない（フォルダ構成が変わっても壊れない）。
-          rm -rf docs
+          # docs/Gameはgame.ymlがビルドしたゲーム本体なので、このワークフローでは消さない。
+          mkdir -p docs
+          find docs -mindepth 1 -maxdepth 1 ! -name 'Game' -exec rm -rf {} +
           mkdir -p docs/Documents
 
       - name: Convert markdown files to HTML
@@ -135,7 +142,9 @@ jobs:
             echo "Generated: $dir/index.html"
           }
 
-          find docs -type d | sort | while read -r d; do
+          # docs/Game配下はViteのビルド成果物なので、索引ページを混ぜない
+          # （docs直下のindex.htmlからは、他のフォルダと同じくGame/へのリンクが張られる）。
+          find docs -type d -not -path 'docs/Game' -not -path 'docs/Game/*' | sort | while read -r d; do
             generate_index "$d"
           done
 
@@ -148,5 +157,7 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "docs: auto-generate HTML from Documents markdown [skip ci]"
+            # game.ymlも同じくmainへpushするため、待たされている間に進んだ分を取り込んでから押し上げる。
+            git pull --rebase origin main
             git push
           fi

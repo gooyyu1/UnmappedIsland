@@ -1,0 +1,68 @@
+name: Publish game to GitHub Pages
+
+# ビルドしたゲームをdocs/Gameへコミットする。GitHub Pagesはmainブランチの/docsを配信する設定
+# （docs.ymlが出力するドキュメントと同じ場所）なので、コミットした時点で公開される。
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - '.github/workflows/game.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # docs.ymlと同じグループ。どちらもdocs/へコミットしてmainへpushするため、同時に走らせない。
+  group: pages-publish
+  cancel-in-progress: false
+
+jobs:
+  publish-game:
+    name: build / publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26.5.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # viteのビルドは型エラーを無視するため、壊れたものを公開しないよう先に型検査する。
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build game into docs/Game
+        # baseを相対パスにすると、リポジトリ名・サブフォルダ名を成果物へ埋め込まずに済む
+        # （https://<user>.github.io/<repo>/Game/ でそのまま動く）。
+        run: npx vite build --base=./ --outDir=docs/Game --emptyOutDir
+
+      - name: Commit built game
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A docs/Game
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: build game for GitHub Pages [skip ci]"
+            # docs.ymlも同じくmainへpushするため、待たされている間に進んだ分を取り込んでから押し上げる。
+            git pull --rebase origin main
+            git push
+          fi
