@@ -127,7 +127,6 @@ traits:
 
 object_defs:
   canteen:
-    display_name: 水筒
     traits: [liquid_container, sealed_container]
     props:
       liquid_amount:
@@ -135,7 +134,6 @@ object_defs:
         range: {min: 0, max: 4800}
 
   pot:
-    display_name: 鍋
     traits: [liquid_container, sealed_container]
     props:
       liquid_amount:
@@ -143,7 +141,6 @@ object_defs:
         range: {min: 0, max: 4800}
 
   bottle:
-    display_name: 瓶
     traits: [liquid_container, sealed_container]
     props:
       liquid_amount:
@@ -151,7 +148,6 @@ object_defs:
         range: {min: 0, max: 9600}
 
   jar:
-    display_name: 甕
     traits: [liquid_container, narrow_open_container]
     props:
       liquid_amount:
@@ -159,7 +155,6 @@ object_defs:
         range: {min: 0, max: 19200}
 
   coconut_bowl:
-    display_name: ヤシの実の器
     traits: [liquid_container, wide_open_container]
     props:
       liquid_amount:
@@ -167,7 +162,6 @@ object_defs:
         range: {min: 0, max: 1200}
 
   empty_liquid:
-    display_name: 空
     tags: [liquid, empty_liquid]
     combinations:
       pour_water:
@@ -205,13 +199,10 @@ object_defs:
           object: oil_liquid
 
   water_liquid:
-    display_name: 水
     traits: [water_liquid, evaporating_liquid]
 
   tea_liquid:
-    display_name: お茶
     traits: [tea_liquid, evaporating_liquid]
 
   oil_liquid:
-    display_name: 油
     traits: [oil_liquid, evaporating_liquid]

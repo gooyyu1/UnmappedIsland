@@ -93,24 +93,6 @@ object_defs:
 すべきではないため）。`beach` の例のように trait を経由せず直接 `tags` を書いても、同じタグを共有していれば
 同じ扱いを受けます。
 
-### 4.2 display_name
-
-`display_name` に、UI へ出す表示名を書けます。省略すると識別子がそのまま表示名になります。
-識別子は snake_case の英数字に限られる（3.2 節）一方、画面に出す名前は日本語の自由な文字列なので、
-両者を分けています。
-
-```yaml
-object_defs:
-  coconut:
-    display_name: ヤシの実
-```
-
-`traits` には書けません（表示名は型ごとに固有であり、mixin で配るものではないため）。土地
-（`location`）の表示名は例外で、`display_name` ではなく地形生成側が決めます。同じ型でも
-インスタンスごとに違う名前（「東の草原」「西の草原」）になるためで、型としての名前は
-`location_types` の `display_name`（[TerrainGeneration.md](./TerrainGeneration.md) 3.6 節）、
-インスタンスの名前は `IslandMap` が持ちます。
-
 ## 5. traits（mixin）
 
 複数の `object_def` で共有するプロパティ・アクション等を `traits` として定義します。
@@ -1282,6 +1264,8 @@ object_defs:
   `Location` 自身の構造（スロット・探索・道の発見と移動）は [`ExplorationSystem.md`](./ExplorationSystem.md)
   を参照してください（そちらは本書の `slots`・`props`・`actions`・`move`・`duration` の応用例です）。
 - **`derived`（導出値）**: 「他の props から計算される値」という概念自体、採否がまだ決まっていません（17 節）。
+- **表示文字列**: 画面に出す名前・説明文は WorldCodex に持たせません。`object_defs` のキーはあくまで
+  識別子であり、表示名は言語ごとの対応表から引きます（[`Localization.md`](./Localization.md)）。
 
 ## 17. 今後の検討課題
 

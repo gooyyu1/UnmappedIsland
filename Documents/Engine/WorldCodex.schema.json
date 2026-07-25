@@ -918,10 +918,6 @@
           "description": "唯一のインスタンスとして存在すべきオブジェクト（15節。例: world）。",
           "type": "boolean"
         },
-        "display_name": {
-          "description": "UIに出す表示名（4.2節）。省略するとidがそのまま表示名になる。",
-          "type": "string"
-        },
         "covers": {
           "description": "装備の排他制御に使う、覆う部位のタグ（7.5節）。 ローダーは現時点でこのキーを解釈しない（文法として文書化済み・実装は今後）。",
           "type": "array",

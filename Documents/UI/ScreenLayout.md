@@ -241,10 +241,10 @@ Phaser 側の実装は `src/game/PlayScene.ts`（エリアの寸法計算は `sr
 
 表示する内容は `src/game/PlayScreenView.ts` が供給します。3 レーンと日時は実際のワールド状態
 （現在地とそのスロットの中身・キャラクターの手持ちスロット・`world` の日時）から作ります。
-アイテムの画像がまだ無いため、カードのアイコンは種別ごとの絵文字を仮に使い、名前は
-`object_def` の `display_name`（[GameElementDefinition.md](../Engine/GameElementDefinition.md)
-4.2 節）を表示します。天候・条件・装備・怪我・ステータスはドメイン側に表示できる形がまだ
-無いため、モックと同じ固定値を返すプレースホルダーのままです。
+アイテムの画像がまだ無いため、カードのアイコンは種別ごとの絵文字を仮に使っています。名前は
+言語ごとの対応表（[Localization.md](../Engine/Localization.md)）から引きます。天候・条件・装備・
+怪我・ステータスはドメイン側に表示できる形がまだ無いため、モックと同じ固定値を返す
+プレースホルダーのままです。
 
 ワールド状態そのものの保存はまだ無いため、プレイ画面はセーブデータのシードから世界を作り直して
 表示します（[SaveDataManagement.md](../Engine/SaveDataManagement.md)）。

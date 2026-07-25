@@ -161,7 +161,6 @@ export class WorldCodexYamlLoader {
       this.objectNames.intern(name),
       tryGetBool(node, 'singleton', context, false),
     );
-    raw.displayName = tryGetScalar(node, 'display_name', context);
     raw.props = tryGetMap(node, 'props', context);
     raw.slots = tryGetMap(node, 'slots', context);
     raw.passives = tryGetSeq(node, 'passives', context);

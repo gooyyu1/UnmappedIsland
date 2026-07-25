@@ -1,10 +1,11 @@
 import type { Rect } from './layout/ScreenMetrics';
 import { PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
-import { WORLD_CODEX_KEY } from './BootScene';
+import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import { start } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/runtime/Rng';
+import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
 import type { PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
@@ -69,7 +70,8 @@ export class PlayScene extends ResponsiveScene {
    */
   init(data: PlaySceneData): void {
     const codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
-    this.view = fromGameSession(start(codex, data.save.seed, seededRng(data.save.seed)), codex);
+    const locale = this.registry.get(LOCALIZATION_KEY) as Localization;
+    this.view = fromGameSession(start(codex, data.save.seed, seededRng(data.save.seed)), codex, locale);
   }
 
   protected build(): void {

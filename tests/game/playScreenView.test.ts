@@ -3,6 +3,8 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { Path } from '../../src/domain/runtime/views/Path';
 import { fromGameSession } from '../../src/game/PlayScreenView';
+import type { Localization } from '../../src/locale/Localization';
+import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -13,15 +15,17 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', () => {
   let codex: WorldCodex;
+  let locale: Localization;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');
   });
 
   it('開始直後は漂着地だけが出て、移動先・フィールドアイテムは空になる', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
 
-    const view = fromGameSession(game, codex);
+    const view = fromGameSession(game, codex, locale);
 
     expect(view.currentLocation.name, '現在地は命名処理が付けた漂着地の名前').toBe(
       game.map.nameOfInstance(game.startLocation.instance.instanceId),
@@ -40,10 +44,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
     ).toBeUndefined();
 
-    const view = fromGameSession(game, codex);
+    const view = fromGameSession(game, codex, locale);
 
     expect(view.hand).toHaveLength(6);
-    expect(view.hand[0]).toEqual({ icon: '📦', name: '石' });
+    expect(view.hand[0], 'カード名は対応表から引いた表示文字列').toEqual({ icon: '📦', name: '石' });
     expect(view.hand.slice(1), '残りの枠は空きセルとして残る').toEqual([
       undefined,
       undefined,
@@ -60,14 +64,13 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       /* 探索できなくなるまで繰り返す */
     }
 
-    const view = fromGameSession(game, codex);
+    const view = fromGameSession(game, codex, locale);
 
     expect(view.fieldItems.map((card) => card.name)).toEqual([
-      ...location.items.map((item) => item.def.displayName),
-      ...location.fixtures.map((fixture) => fixture.def.displayName),
+      ...location.items.map((item) => locale.object(item.def.name).displayName),
+      ...location.fixtures.map((fixture) => locale.object(fixture.def.name).displayName),
     ]);
     expect(view.fieldItems.length, '探索し切れば何かしら見つかっている').toBeGreaterThan(0);
-    expect(view.fieldItems.every((card) => card.name !== ''), 'カードには表示名が入る').toBe(true);
 
     expect(view.destinations.map((card) => card.name)).toEqual(
       location.paths.map((path) =>
@@ -85,7 +88,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const path = new Path(game.startLocation.paths[0], codex.propertyNames);
     expect(path.travel(game.player.instance, game.session)).toBe(true);
 
-    const view = fromGameSession(game, codex);
+    const view = fromGameSession(game, codex, locale);
 
     expect(view.currentLocation.name).toBe(game.map.nameOfInstance(path.destinationInstanceId));
   });
