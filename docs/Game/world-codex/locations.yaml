@@ -3,8 +3,8 @@
 # terrain_generation.yamlとDomain/Generationの生成パイプラインが担う。
 #
 # すべての土地は location trait（core.yaml参照）と、このファイルで定義する explorable trait を
-# 実装する。「探索で何が見つかるか」「探索できる回数」は地形ごとに異なるため、explorable traitには
-# 持たせず、各土地のobject_defが探索アクション（explore）として個別に定義する。
+# 実装する。「探索で何が見つかるか」「探索率100%までの探索回数」は地形ごとに異なるため、explorable
+# traitには持たせず、各土地のobject_defが探索アクション（explore）として個別に定義する。
 
 traits:
   # 探索できる場所だけが追加で持つ構造。
@@ -20,7 +20,7 @@ traits:
         accepts:
           - {tag: path, max: 9999}
     props:
-      # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索できる回数=range.max）
+      # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索率100%=range.max）
       # を必ず与える（5節の「traitでvalueなし=継承先で必須」の規約）。
       exploration_progress: {}
 
@@ -105,9 +105,8 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 土地。すべて traits: [location, explorable]。
-  # - exploration_progress.range.max = 探索できる回数（10〜20）。
-  # - exploreのconditionsの値はrange.maxと同じ値のリテラル（`value: max`記法は未対応のため。
-  #   二重管理になる点はStreamingAssetsテストで一致を検証する）。
+  # - exploration_progress.range.max = 探索率100%に達するまでの探索回数（10〜20）。100%に達しても
+  #   探索は続けられ（進捗はrangeの上限に張り付く）、生成時に仕込まれた道がそれ以上見つからなくなるだけ。
   # - exploreのpickは「その土地で何が見つかるか」の確率テーブル。進捗+1（add self）は
   #   addとpickが排他という文法上、全候補に含める（10節）。
   # - durationは1回の探索にかかる時間（分）。見通しが悪い・足場が悪い土地ほど長い。
@@ -124,8 +123,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 30
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 10}
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -153,8 +150,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 45
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 12}
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -182,8 +177,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 60
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 10}
         pick:
           - weight: 40
             add: {self: {exploration_progress: 1}}
@@ -208,8 +201,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 30
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 12}
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -237,8 +228,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 45
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 15}
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -266,8 +255,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 60
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 18}
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -298,8 +285,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 45
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 12}
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -324,8 +309,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 30
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 10}
         pick:
           - weight: 50
             add: {self: {exploration_progress: 1}}
@@ -347,8 +330,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 60
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 15}
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -376,8 +357,6 @@ object_defs:
       explore:
         showMenu: always
         duration: 45
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 10}
         pick:
           - weight: 50
             add: {self: {exploration_progress: 1}}
