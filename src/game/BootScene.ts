@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { WorldCodexYamlLoader } from '../loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
+import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 
 /** ゲーム本体に同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。 */
 const WORLD_CODEX_FILES = [
@@ -12,9 +13,12 @@ const WORLD_CODEX_FILES = [
   'terrain_generation.yaml',
 ];
 
+/** 組み立て済みWorldCodexをレジストリへ置くときのキー。 */
+export const WORLD_CODEX_KEY = 'worldCodex';
+
 /**
- * 起動シーン。WorldCodexのYAMLを読み込んで組み立てるところまでを担い、
- * 以降のシーン（未実装）へcodexを引き渡す。
+ * 起動シーン。WorldCodexのYAMLを読み込んで組み立て、レジストリ経由で以降のシーンへ引き渡してから
+ * タイトル画面を開く。
  */
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -36,14 +40,8 @@ export class BootScene extends Phaser.Scene {
       throw error;
     }
 
-    this.showMessage(
-      [
-        'UnmappedIsland',
-        '',
-        `object defs: ${codex.objects.count}`,
-        `properties: ${codex.propertyNames.count}`,
-      ].join('\n'),
-    );
+    this.registry.set(WORLD_CODEX_KEY, codex);
+    this.scene.start('title');
   }
 
   private buildCodex(): WorldCodex {
@@ -55,8 +53,9 @@ export class BootScene extends Phaser.Scene {
   private showMessage(text: string): void {
     this.add
       .text(this.scale.width / 2, this.scale.height / 2, text, {
+        fontFamily: FONT_FAMILY,
         fontSize: '20px',
-        color: '#e0e0e0',
+        color: cssColor(COLOR.textOnDark),
         align: 'center',
       })
       .setOrigin(0.5);
