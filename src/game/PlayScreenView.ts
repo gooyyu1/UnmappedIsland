@@ -56,11 +56,11 @@ export function fromGameSession(
   const location = game.player.location ?? game.startLocation;
   const cardOf = (instance: WorldObject, icon: string): LaneCard => ({
     icon,
-    name: locale.objectName(instance.def.name),
+    name: locale.object(instance.def.name).displayName,
   });
 
   return {
-    characterName: locale.objectName(game.player.instance.def.name),
+    characterName: locale.object(game.player.instance.def.name).displayName,
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '🪑',
     injuryIcon: '🩹',

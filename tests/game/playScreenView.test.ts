@@ -19,7 +19,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-    locale = parseLocale('ja.yaml', 'object_defs:\n  stone: 石\n');
+    locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');
   });
 
   it('開始直後は漂着地だけが出て、移動先・フィールドアイテムは空になる', () => {
@@ -67,8 +67,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.fieldItems.map((card) => card.name)).toEqual([
-      ...location.items.map((item) => locale.objectName(item.def.name)),
-      ...location.fixtures.map((fixture) => locale.objectName(fixture.def.name)),
+      ...location.items.map((item) => locale.object(item.def.name).displayName),
+      ...location.fixtures.map((fixture) => locale.object(fixture.def.name).displayName),
     ]);
     expect(view.fieldItems.length, '探索し切れば何かしら見つかっている').toBeGreaterThan(0);
 
