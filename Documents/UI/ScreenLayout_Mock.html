@@ -19,8 +19,8 @@
       --margin: calc(6 * var(--u));
       --bar-h: calc(96 * var(--u));
       --situation-h: calc(176 * var(--u));
-      --portrait-w: calc(260 * var(--u));
-      --portrait-h: calc(399 * var(--u));
+      --portrait-w: calc(170 * var(--u));
+      --portrait-h: calc(261 * var(--u));
       --small-card-w: calc(146 * var(--u));
       --small-card-h: calc(224 * var(--u));
       --radius: calc(12 * var(--u));
@@ -144,7 +144,6 @@
       align-items: center;
       justify-content: center;
       gap: var(--gap);
-      padding-top: calc(28 * var(--u));
       background: #d9f6ff;
     }
 
@@ -157,11 +156,11 @@
 
     .condition-chips {
       position: absolute;
-      top: calc(48 * var(--u));
-      left: calc(-40 * var(--u));
+      top: calc(44 * var(--u));
+      left: calc(-50 * var(--u));
       display: flex;
       flex-direction: column;
-      gap: calc(8 * var(--u));
+      gap: calc(6 * var(--u));
       z-index: 1;
     }
 
@@ -169,12 +168,12 @@
       display: flex;
       align-items: center;
       gap: calc(4 * var(--u));
-      height: calc(56 * var(--u));
-      padding: 0 calc(12 * var(--u));
+      height: calc(40 * var(--u));
+      padding: 0 calc(10 * var(--u));
       border: 1px solid #000;
-      border-radius: calc(28 * var(--u));
+      border-radius: calc(20 * var(--u));
       background: #fff;
-      font-size: calc(26 * var(--u));
+      font-size: calc(20 * var(--u));
       font-weight: 700;
       white-space: nowrap;
     }
@@ -203,13 +202,6 @@
       gap: calc(16 * var(--u));
       padding: calc(24 * var(--u));
       background: #e3ffe0;
-    }
-
-    .status-options {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--gap);
-      margin-bottom: calc(8 * var(--u));
     }
 
     .icon-button {
@@ -353,15 +345,19 @@
       white-space: nowrap;
     }
 
-    /* ---- オプションバー（横型のみ表示） ---- */
+    /* ---- オプションバー ---- */
+    /* 縦型: 画面上部に固定（order:-1）。横型: 画面下部（order は横型メディアクエリで上書き） */
 
     .options-bar {
       position: relative;
-      display: none;
+      order: -1;
       height: var(--bar-h);
       flex-shrink: 0;
+      display: flex;
       align-items: center;
-      justify-content: space-evenly;
+      justify-content: flex-end;
+      gap: var(--gap);
+      padding: 0 calc(24 * var(--u));
       background: #f5e9d5;
     }
 
@@ -424,6 +420,12 @@
     /* ---- 横型 ---- */
 
     @media (orientation: landscape) {
+      /* 横型はオプションバーが最下段のため、縦型より縦の余裕がある */
+      :root {
+        --portrait-w: calc(260 * var(--u));
+        --portrait-h: calc(399 * var(--u));
+      }
+
       .screen { flex-direction: row; }
 
       .situation-area { order: -1; }
@@ -445,13 +447,16 @@
       .status-area {
         flex: 1;
         min-height: 0;
+        justify-content: center;
         gap: calc(10 * var(--u));
-        padding: calc(32 * var(--u)) calc(24 * var(--u)) calc(16 * var(--u));
+        padding: calc(24 * var(--u));
       }
 
-      .status-options { display: none; }
-
-      .options-bar { display: flex; }
+      .options-bar {
+        order: 1;
+        justify-content: space-evenly;
+        padding: 0;
+      }
 
       .field-area { width: calc(1350 * var(--u)); height: auto; }
     }
@@ -479,12 +484,6 @@
         </div>
         <div class="status-area">
           <div class="label">ステータスエリア</div>
-          <div class="status-options">
-            <button class="icon-button" type="button" aria-label="設定" title="設定">⚙️</button>
-            <button class="icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button>
-            <button class="icon-button" type="button" aria-label="日記" title="日記">📓</button>
-            <button class="icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button>
-          </div>
           <div class="status-item">
             <div class="status-name">HP</div>
             <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
@@ -515,6 +514,7 @@
         <div class="label">状況エリア</div>
         <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
           <span class="calendar-row calendar-row-day">
+            <span class="flip-digit">0</span>
             <span class="flip-digit">1</span>
             <span class="flip-digit">1</span>
             <span class="calendar-day-unit">日目</span>
