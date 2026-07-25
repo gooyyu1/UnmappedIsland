@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>SaveDataManagement</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />
+  <style>
+    @media (max-width: 600px) {
+      .markdown-body { padding: 1rem !important; }
+    }
+  </style>
+</head>
+<body>
+<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">
+<header id="title-block-header">
+<h1 class="title">SaveDataManagement</h1>
+</header>
+<h1 id="セーブデータ管理">セーブデータ管理</h1>
+<p><a
+href="../UI/StartScreen.html">スタート画面・セーブ選択画面</a>のモックを作る過程で、単なる画面設計を
+超えてセーブデータの持ち方自体に関わる決定が必要になったため、ここに集約する。
+画面構成そのものは <a href="../UI/StartScreen.html">StartScreen.md</a>
+を参照。</p>
+<h2 id="保存先">保存先</h2>
+<p>ブラウザの <code>localStorage</code>
+を採用する。本作はサーバーを持たないブラウザ単体のゲームであり
+（<code>package.json</code> の依存に見るとおり Phaser + Vite
+の静的ビルドのみ）、複数端末間の同期や
+クラウド保存は現時点でスコープ外（詳細は「スコープ外」節）。</p>
+<ul>
+<li>キーは
+<code>unmapped-island:save:{slotIndex}</code>（<code>slotIndex</code> は
+<code>0</code>〜<code>3</code>）。スロット数は4固定のため、
+スロット一覧を得るための別キー（インデックス／サマリー一覧）は持たない。4つのキーを
+直接読み、値が存在しない（<code>null</code>）スロットを空きスロットとして扱う。</li>
+<li>一覧表示専用のサマリーをスロット本体と別に持たない。持ってしまうと「セーブ本体を更新したら
+サマリーも更新する」という手順を呼び出し側が覚える必要が生じ、 <a
+href="../../CLAUDE.html">CLAUDE.md
+のカプセル化方針</a>が禁じる状態になる。スロット一覧画面は
+4件のセーブ本体を直接読んで表示に必要な項目（後述）を取り出すだけで十分に軽量なため、
+サマリーの複製を持つ動機がない。</li>
+</ul>
+<h2 id="セーブデータのスキーマ">セーブデータのスキーマ</h2>
+<p>セーブデータ本体は概ね次の項目を持つ JSON
+とする（実際のワールド状態のスキーマは別途検討）。</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>フィールド</th>
+<th>型</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>schemaVersion</code></td>
+<td>number</td>
+<td>セーブデータの形式バージョン。将来のフィールド追加・変更をマイグレーションで吸収するための起点（マイグレーション処理自体は本ドキュメントの対象外）。</td>
+</tr>
+<tr class="even">
+<td><code>islandName</code></td>
+<td>string</td>
+<td>新規ゲーム作成時に入力した島の名前。1〜20文字。</td>
+</tr>
+<tr class="odd">
+<td><code>seed</code></td>
+<td>number</td>
+<td>乱数シード。地形生成が消費する <code>Pcg32</code>
+の実装（<code>seed &gt;&gt;&gt; 0</code>）に合わせ、<code>0</code> 以上
+<code>2^32 - 1</code>
+以下の符号なし32bit整数の範囲で扱う（詳細は後述）。</td>
+</tr>
+<tr class="even">
+<td><code>characterId</code></td>
+<td>string</td>
+<td>選択したキャラクターを識別するID。現状のドメインモデルは1種類のキャラクター（シングルトン）しか持たないため、当面は固定値になる（詳細は後述）。</td>
+</tr>
+<tr class="odd">
+<td><code>createdAt</code></td>
+<td>number</td>
+<td>作成日時（UNIX時間・ミリ秒）。</td>
+</tr>
+<tr class="even">
+<td><code>elapsedDays</code></td>
+<td>number</td>
+<td>生存日数。ワールドの経過ゲーム内時間から求まる値で、セーブスロット一覧の表示のためだけに</td>
+</tr>
+<tr class="odd">
+<td>別途複製した値ではなく、セーブ本体（ワールド状態）が持つ経過時間をそのまま読む。</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>elapsedDays</code>
+を「表示専用の複製」にしないのは、上記のサマリー非保持の方針と同じ理由による
+（更新のたびに複数箇所を同期させる手順を呼び出し側に持たせない）。</p>
+<h2
+id="新規ゲーム作成時の入力とランダム生成">新規ゲーム作成時の入力とランダム生成</h2>
+<ul>
+<li><strong>島の名前</strong>:
+自由入力（1〜20文字、空文字は不可）。ランダムボタンは形容語＋名詞の2語を
+組み合わせて生成する（例: 「霧深い」＋「孤島」）。一意性は保証しない
+（スロットごとの識別は名前ではなく <code>slotIndex</code>
+で行うため、島名の重複を禁止する理由がない）。</li>
+<li><strong>乱数シード</strong>:
+数字のみの自由入力、またはランダムボタンで生成する。<code>NewGame.start</code>
+（<code>src/domain/generation/NewGame.ts</code>）はすでに
+<code>seed: number</code> を受け取り、地形生成
+（<code>TerrainGenerator.generate</code> →
+<code>Pcg32</code>）が「同じシード→同じ島」を決定的に再現する。
+<code>Pcg32</code> のコンストラクタは <code>seed &gt;&gt;&gt; 0</code>
+で符号なし32bit値として消費するため、シードの 値域は <code>0</code> 以上
+<code>2^32 - 1</code>（4294967295）以下として扱う。ただし決定的なのは地形レイアウトのみで、
+<code>WorldSession.rng</code>（pick抽選・初期値ロール用）は
+<code>NewGame.start</code> の <code>rng</code> 引数を省略すると
+非決定的な既定実装（<code>randomRng</code>、<code>src/domain/runtime/Rng.ts</code>）になる。そのため「同じシード→
+完全に同じ開始状態の再現」まで保証するには、シードから作った決定的な
+<code>Rng</code> 実装を <code>rng</code>
+引数へ別途渡す仕組みが必要になる（本ドキュメントの対象外。現状はマップ生成のみ再現される）。</li>
+<li><strong>キャラクター選択</strong>: <code>characters.yaml</code> の
+<code>character</code> object_def は <code>singleton: true</code>
+（常に1体だけ存在する前提）であり、現状のドメインモデルには複数キャラクターから選ぶ仕組みが
+まだ存在しない。本モックのキャラクター選択は、複数キャラクターに対応する将来のドメインモデルを
+見越した画面上の入り口であり、実際に選択肢を出し分けるにはキャラクター定義自体を
+シングルトンから複数選択可能な形へ拡張する作業が別途必要になる（本ドキュメントの対象外）。</li>
+</ul>
+<h2 id="スロットの空き削除">スロットの空き・削除</h2>
+<ul>
+<li>空き判定はキーの不在（<code>localStorage.getItem</code> が
+<code>null</code>）のみで行い、別途「空きフラグ」は持たない。</li>
+<li>削除は該当スロットのキーを消すだけで、他スロットに影響しない。</li>
+<li>削除は確認操作を必須とする（画面設計は <a
+href="../UI/StartScreen.html">StartScreen.md</a> 参照）。
+誤タップで進行データを失う事故を防ぐための最低限の防御であり、取り消し（アンドゥ）は
+スコープ外（「スコープ外」節）。</li>
+</ul>
+<h2 id="スコープ外">スコープ外</h2>
+<ul>
+<li>クラウド同期・複数端末間の共有</li>
+<li>セーブデータの暗号化・改ざん防止（ローカル単体プレイのみを想定するため）</li>
+<li>削除の取り消し（アンドゥ）</li>
+<li>スキーマバージョン間のマイグレーション処理そのものの実装（<code>schemaVersion</code>
+フィールドの用意まで）</li>
+</ul>
+</article>
+</body>
+</html>
