@@ -61,11 +61,5 @@ export function start(codex: WorldCodex, seed: number, rng?: Rng): NewGameSessio
   populate(session, map);
   const startLocation = placePlayer(session, map, character);
 
-  return new NewGameSession(
-    session,
-    world,
-    new PlayerCharacter(character, codex.propertyNames),
-    startLocation,
-    map,
-  );
+  return new NewGameSession(session, world, new PlayerCharacter(character, codex), startLocation, map);
 }

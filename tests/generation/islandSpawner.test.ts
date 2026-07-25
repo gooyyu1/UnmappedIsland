@@ -122,6 +122,16 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     ).toBe(path.travelMinutes);
   });
 
+  it('IslandMapは実体化された土地のinstanceIdから命名処理の付けた名前を引ける', () => {
+    const game = startNewGame(codex, 13, new SeededRng(99));
+
+    for (const site of game.map.sites)
+      expect(game.map.nameOfInstance(game.map.siteInstanceIds[site.index])).toBe(site.name);
+
+    expect(game.map.nameOfInstance(0), '未実体化を表す0は該当なし').toBeUndefined();
+    expect(game.map.nameOfInstance(-1), '未知のinstanceIdは該当なし').toBeUndefined();
+  });
+
   it('同じシードなら、WorldSession.rngのシードが異なっても同じ島レイアウトになる', () => {
     // 地形レイアウト(IslandMap)はシードのみに依存し、WorldSession.rng（pick抽選など）には
     // 依存しない: rngのシードを変えても同じ島になる。

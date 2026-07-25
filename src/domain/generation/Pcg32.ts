@@ -3,10 +3,11 @@ const INCREMENT = 1442695040888963407n;
 const MASK_64 = 0xffffffffffffffffn;
 
 /**
- * 地形生成専用の決定的な擬似乱数生成器（PCG-XSH-RR 32bit）。
+ * 決定的な擬似乱数生成器（PCG-XSH-RR 32bit）。地形生成と、シードから作るWorldSession.rng
+ * （Rng.seededRng）が、それぞれ別インスタンスとして使う。
  *
  * 実行環境に依存しない自前実装なのは、(a)「同じシード→同じ島」の再現を将来にわたって保証するため、
- * (b)WorldSession.rng（pickの抽選・初期値ロール）と乱数源を分離することで、他の抽選の消費順序に
+ * (b)WorldSession.rng（pickの抽選・初期値ロール）とインスタンスを分離することで、他の抽選の消費順序に
  * 依らず地形レイアウトが決定的であることを保証するため。
  */
 export class Pcg32 {

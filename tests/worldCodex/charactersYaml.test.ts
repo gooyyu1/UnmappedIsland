@@ -40,6 +40,16 @@ describe('characters.yamlのcharacter定義', () => {
     expect(instance.getNumber(codex.propertyNames.getId('stamina'))).toBe(100);
   });
 
+  it('characterは固定6枠の手持ちスロットを持ち、itemタグのものだけを受け入れる', () => {
+    const character = codex.objects.get(codex.objectNames.getId('character'));
+    const hand = character.getSlotDef(codex.slotNames.getId('hand'));
+
+    expect(hand, 'characterはhandスロットを持つ').toBeDefined();
+    expect(hand?.fixedPositions, '手持ちは枠の位置が動かない固定型').toBe(true);
+    expect(hand?.unitCapacity, '手持ちは6枠').toBe(6);
+    expect(hand?.accepts.map((rule) => rule.targetKind)).toEqual(['tag']);
+  });
+
   it.each([
     ['satiety', 0, 9600],
     ['hydration', 0, 28800],

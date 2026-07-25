@@ -35,6 +35,7 @@ object_defs:
   #   object_def参照ではなくインスタンスIDのプロパティで持つ（moveの規約）。
   # ------------------------------------------------------------------
   path:
+    display_name: 道
     tags: [path]
     props:
       travel_minutes:
@@ -60,6 +61,7 @@ object_defs:
 
   # ヤシの実。
   coconut:
+    display_name: ヤシの実
     tags: [item]
     actions:
       eat:
@@ -72,14 +74,17 @@ object_defs:
 
   # 流木。
   driftwood:
+    display_name: 流木
     tags: [item]
 
   # 石。
   stone:
+    display_name: 石
     tags: [item]
 
   # 枝。
   branch:
+    display_name: 枝
     tags: [item]
 
   # ------------------------------------------------------------------
@@ -89,18 +94,22 @@ object_defs:
 
   # ヤシの木。定期的にヤシの実を落とす採取ポイントになる想定。
   palm_tree:
+    display_name: ヤシの木
     tags: [fixture]
 
   # ベリーの茂み。定期的に実を付ける採取ポイントになる想定。
   berry_bush:
+    display_name: ベリーの茂み
     tags: [fixture]
 
   # 洞窟の入口。内部に子Locationグラフを持つ構造物（TerrainGeneration.md 3.7節）の入口となる想定。
   cave_entrance:
+    display_name: 洞窟の入口
     tags: [fixture]
 
   # 湧き水。飲用・補水ポイントになる想定。
   spring:
+    display_name: 湧き水
     tags: [fixture]
 
   # ------------------------------------------------------------------

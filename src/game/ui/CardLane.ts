@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import { Card } from './Card';
+import { Card, EmptyCard } from './Card';
 import { COLOR, SIZE } from './theme';
 import { addPanel } from './shapes';
 
@@ -15,6 +15,8 @@ export interface LaneCard {
  *
  * レーンからはみ出したカードは切り抜かず、隣接エリアの背景板が上から覆って隠す。
  * ロケーションレーンの現在地カードも同様に、スクロール領域より後に描いて上へ重ねる。
+ *
+ * cardsのundefinedは空きセルを表し、EmptyCard（枠だけの破線カード）として並べる。
  */
 export class CardLane {
   private readonly strip: Phaser.GameObjects.Container;
@@ -32,7 +34,7 @@ export class CardLane {
     metrics: ScreenMetrics,
     rect: Rect,
     background: number,
-    cards: readonly LaneCard[],
+    cards: readonly (LaneCard | undefined)[],
     pinned?: LaneCard,
   ) {
     const margin = metrics.px(SIZE.margin);
@@ -50,7 +52,12 @@ export class CardLane {
     this.originX = stripX;
     this.strip = scene.add.container(stripX, cardY);
     cards.forEach((card, index) => {
-      this.strip.add(new Card(scene, metrics, index * (cardWidth + gap), 0, card.icon, card.name));
+      const x = index * (cardWidth + gap);
+      this.strip.add(
+        card === undefined
+          ? new EmptyCard(scene, metrics, x, 0)
+          : new Card(scene, metrics, x, 0, card.icon, card.name),
+      );
     });
 
     const contentWidth = cards.length === 0 ? 0 : cards.length * (cardWidth + gap) - gap;

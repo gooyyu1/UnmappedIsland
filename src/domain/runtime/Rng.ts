@@ -1,3 +1,5 @@
+import { Pcg32 } from '../generation/Pcg32';
+
 /**
  * pickの重み付き抽選（10節）と初期値ロール（6.2節）に使う乱数源。
  * テストで決定的に振る舞わせられるよう、WorldSessionのコンストラクタで差し替え可能。
@@ -16,5 +18,18 @@ export function randomRng(): Rng {
     nextDouble: () => Math.random(),
     nextInt: (minInclusive, maxExclusive) =>
       minInclusive + Math.floor(Math.random() * (maxExclusive - minInclusive)),
+  };
+}
+
+/**
+ * シードから作る決定的な乱数源。地形生成のPcg32とは別インスタンスのため、地形レイアウトは
+ * こちらの消費順序に影響されない（Pcg32のクラスコメント参照）。
+ */
+export function seededRng(seed: number): Rng {
+  const pcg = new Pcg32(seed);
+  return {
+    nextDouble: () => pcg.nextDouble(),
+    nextInt: (minInclusive, maxExclusive) =>
+      minInclusive + Math.trunc(pcg.nextDouble() * (maxExclusive - minInclusive)),
   };
 }

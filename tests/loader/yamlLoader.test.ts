@@ -25,6 +25,19 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/シンボル名/);
   });
 
+  it('display_nameは指定すればそのまま、省略すれば識別子がObjectDefの表示名になる', () => {
+    const yaml = `
+object_defs:
+  coconut:
+    display_name: ヤシの実
+  driftwood: {}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+
+    expect(codex.objects.get(codex.objectNames.getId('coconut')).displayName).toBe('ヤシの実');
+    expect(codex.objects.get(codex.objectNames.getId('driftwood')).displayName).toBe('driftwood');
+  });
+
   // ------------------------------------------------------------------
   // 複数ファイル・複数回のload呼び出し: 分割してもまとめて読める
   // ------------------------------------------------------------------

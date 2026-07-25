@@ -32,6 +32,10 @@ export class RawObjectDef {
   readonly globalId: number;
 
   readonly isSingleton: boolean;
+
+  /** display_name（4.2節）。未指定ならundefinedで、ObjectDefにはnameがそのまま入る。 */
+  displayName: string | undefined;
+
   readonly traitNames: string[] = [];
   readonly tags: string[] = [];
   props: YAMLMap | undefined;
@@ -176,6 +180,7 @@ export class RawObjectDef {
     return new ObjectDef(
       this.globalId,
       this.name,
+      this.displayName ?? this.name,
       this.isSingleton,
       propertyLayout,
       propertyDefs,

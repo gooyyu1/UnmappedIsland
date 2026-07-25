@@ -74,4 +74,17 @@ export class IslandMap {
     this.edges = edges;
     this.siteInstanceIds = new Array<number>(sites.length).fill(0);
   }
+
+  /**
+   * 実体化されたLocationのinstanceIdから、命名処理（NameAssigner）が付けた名前を引く。
+   * 土地の名前はインスタンスごとに決まる（同じobject_defでも「東の草原」「西の草原」）ため、
+   * ObjectDef.displayNameではなくこちらが唯一の出所になる。未実体化・未知のIDならundefined。
+   */
+  nameOfInstance(instanceId: number): string | undefined {
+    // 未実体化のsiteInstanceIdsは0のまま。instanceIdの発行は1始まりなので、0は必ず「該当なし」。
+    if (instanceId === 0) return undefined;
+
+    const index = this.siteInstanceIds.indexOf(instanceId);
+    return index < 0 ? undefined : this.sites[index].name;
+  }
 }
