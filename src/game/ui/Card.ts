@@ -34,6 +34,8 @@ export interface CardContent {
   readonly onTap?: () => void;
   /** 端だけを押したときの動作。端ではカード全体の動作より優先される。 */
   readonly edge?: CardEdgeAction;
+  /** 掴んで他のカード・レーンへ落とせるカードか。ドラッグ中の扱いはCardDragController。 */
+  readonly draggable?: boolean;
 }
 
 /**
@@ -41,12 +43,21 @@ export interface CardContent {
  * 大きなアイコンを中央に敷き、名前を左上へ重ねる（ScreenLayout.md デザインメモ）。
  */
 export class Card extends Phaser.GameObjects.Container {
+  readonly content: CardContent;
+
+  /** カードの実寸。ドラッグ中の分身やドロップ先の枠を同じ大きさで描くために公開する。 */
+  readonly cardWidth: number;
+  readonly cardHeight: number;
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, content: CardContent) {
     super(scene, x, y);
     const { icon, name } = content;
 
     const width = metrics.px(SIZE.cardWidth);
     const height = metrics.px(SIZE.cardHeight);
+    this.content = content;
+    this.cardWidth = width;
+    this.cardHeight = height;
 
     const face = scene.add.graphics();
     drawBox(
@@ -83,14 +94,22 @@ export class Card extends Phaser.GameObjects.Container {
     nameText.setWordWrapCallback(wrapByCharacter(width - inset * 2));
 
     this.add([face, iconText, nameText]);
-    if (content.onTap !== undefined) this.makeTappable(width, height, content.onTap);
+    if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
+    if (content.onTap !== undefined) this.makeTappable(content.onTap);
+    // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
+    // 入力を受け取る（InputPlugin.topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
+    // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
+    if (content.draggable === true) scene.input.setDraggable(this);
     if (content.edge !== undefined) this.addEdge(scene, metrics, width, height, content.edge);
     scene.add.existing(this);
   }
 
   /** Containerのdisplay originによるヒット領域のずれを避ける理由はButtonと同じ（サイズを設定しない）。 */
-  private makeTappable(width: number, height: number, onTap: () => void): void {
+  private makeInteractive(width: number, height: number): void {
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
+  }
+
+  private makeTappable(onTap: () => void): void {
     this.on('pointerdown', () => this.setAlpha(PRESSED_ALPHA));
     this.on('pointerout', () => this.setAlpha(1));
     this.on('pointerup', () => {
@@ -103,8 +122,8 @@ export class Card extends Phaser.GameObjects.Container {
    * 隣のレーンへ移すための端の操作エリア。押している間だけ半透明のオーバーレイと矢印を出し、
    * どちら向きの操作なのかを示す。
    *
-   * ヒット領域はカード本体の後に足す。Phaserは重なった対象を描画順の後ろから拾うため、これで
-   * 端ではカード全体の操作より先に反応し、stopPropagationで本体側へは渡さない。透明でも描画される
+   * ヒット領域はカード本体の後に足す。重なった対象のうち描画順が最前面の1つだけが入力を受け取る
+   * （InputPlugin.topOnly）ため、これで端はカード全体の操作もドラッグも横取りする。透明でも描画される
    * Rectangleを使うのは、Zoneが描画リストへ載らず前後関係が決まらないため。
    */
   private addEdge(
@@ -141,30 +160,15 @@ export class Card extends Phaser.GameObjects.Container {
     const feedback = scene.add.container(0, 0, [overlay, arrow]).setVisible(false);
     const hitArea = scene.add.rectangle(0, top, width, edgeHeight).setOrigin(0, 0).setInteractive();
 
-    onEdgePointer(hitArea, 'pointerdown', () => feedback.setVisible(true));
-    onEdgePointer(hitArea, 'pointerup', () => {
+    hitArea.on('pointerdown', () => feedback.setVisible(true));
+    hitArea.on('pointerout', () => feedback.setVisible(false));
+    hitArea.on('pointerup', () => {
       feedback.setVisible(false);
       edge.onTap();
     });
-    hitArea.on('pointerout', () => feedback.setVisible(false));
 
     this.add([feedback, hitArea]);
   }
-}
-
-/** カード本体へイベントを渡さずに、端のヒット領域だけで処理する。 */
-function onEdgePointer(
-  hitArea: Phaser.GameObjects.Rectangle,
-  event: 'pointerdown' | 'pointerup',
-  handle: () => void,
-): void {
-  hitArea.on(
-    event,
-    (_pointer: Phaser.Input.Pointer, _x: number, _y: number, data: Phaser.Types.Input.EventData) => {
-      data.stopPropagation();
-      handle();
-    },
-  );
 }
 
 /**

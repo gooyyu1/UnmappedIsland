@@ -33,6 +33,8 @@ export const COLOR = {
   cardBorder: 0x000000,
   /** カードの端を押している間だけ被せる、移動操作のオーバーレイ。 */
   cardEdgeOverlay: 0x1b3a4b,
+  /** ドラッグ中に、落とせる先を示す枠。 */
+  cardDropTarget: 0x1b7a5c,
   laneDivider: 0x000000,
 
   button: 0xffffff,
