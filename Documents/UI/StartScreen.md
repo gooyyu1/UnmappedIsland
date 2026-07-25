@@ -34,6 +34,15 @@
   キャラクター選択）とまとまった量になるため、モーダルではなく専用画面として「もどる」で
   スロット選択へ戻れるようにする。
 
+## 実装
+
+Phaser 側の実装は `src/game/TitleScene.ts` / `SlotSelectScene.ts` / `NewGameScene.ts`。
+セーブデータの読み書きは `src/save/SaveSlots.ts` が localStorage に対して行います。
+
+モックと1点だけ挙動が異なります。モックはプレイ画面が範囲外だったため新規作成後に
+スロット選択画面へ戻りますが、実装ではそのままプレイ画面
+（[画面レイアウト検討](./ScreenLayout.md)）を開きます。
+
 ## HTML モック
 
 - [スタート・セーブ選択モック](./StartScreen_Mock.html)

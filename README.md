@@ -14,8 +14,8 @@ Card Survivalの影響を受けた、無人島を舞台にしたサバイバル�
 ## 動作環境
 
 - **プラットフォーム**: Webブラウザ（モバイルブラウザを含む）
-- **技術スタック**: TypeScript + Phaser 3 + Vite
-- **開発環境**: Node.js 22 以上
+- **技術スタック**: TypeScript + Phaser 4 + Vite
+- **開発環境**: Node.js 26.5.0 以上
 
 ## 開発コマンド
 
@@ -40,6 +40,9 @@ UnmappedIsland/
 │   │   └── generation/   # 地形生成（決定的な島レイアウト）
 │   ├── loader/           # WorldCodex YAMLローダー
 │   ├── game/             # Phaserシーン
+│   │   ├── layout/       # 画面寸法（u単位）とエリア配置の計算
+│   │   └── ui/           # 画面共通の部品（カード・ボタン・モーダルなど）
+│   ├── save/             # セーブデータ（localStorage、4スロット固定）
 │   └── util/             # 汎用ユーティリティ
 ├── public/
 │   └── world-codex/      # ゲーム定義YAML（そのまま配信される）
