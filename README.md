@@ -6,6 +6,12 @@ Card Survivalの影響を受けた、無人島を舞台にしたサバイバル�
 
 プレイヤーは無人島に漂着したサバイバーとして、カードを駆使して食料・水・資材を集め、生き残りを目指す2Dカードゲームです。
 
+## 遊ぶ
+
+<https://gooyyu1.github.io/UnmappedIsland/Game/>
+
+`main` への変更を GitHub Actions がビルドし、GitHub Pages で公開します（開発中のため内容は随時変わります）。
+
 ## プロジェクトコンセプト
 
 制作者自身がシミュレーション表現と AI 活用を学ぶための個人プロジェクトで、一般販売は想定していません。
@@ -53,7 +59,9 @@ UnmappedIsland/
 │   ├── Engine/           # ルール・エンジン（YAML文法・汎用サブシステム・実装ガイド）
 │   ├── World/            # ワールド（地形・気候・アイテムなど実際にゲームに登場する内容）
 │   └── Diagnostics/      # 計測レポート（気候統計など）
-└── docs/                 # GitHub Pages 用 HTML（Documents/ から自動生成・直接編集不可）
+└── docs/                 # GitHub Pages の配信元（自動生成・直接編集不可）
+    ├── Documents/        # Documents/ から生成したHTML
+    └── Game/             # ビルド済みのゲーム本体
 ```
 
 ## ドキュメント
