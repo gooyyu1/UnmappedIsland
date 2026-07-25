@@ -60,22 +60,21 @@ describe('locations.yamlの土地・道定義', () => {
     }
   });
 
-  it('すべての土地の探索可能回数は10〜20の範囲に収まる', () => {
+  it('すべての土地の探索率100%までの回数は10〜20の範囲に収まる', () => {
     const progressId = codex.propertyNames.getId('exploration_progress');
     for (const name of LAND_NAMES) {
       const progress = def(name).getPropertyDef(progressId);
       expect(progress, `${name} は探索進捗プロパティを持つ`).toBeDefined();
       expect(progress?.range, `${name} の探索進捗はrangeを持つ`).toBeDefined();
       const max = progress?.range?.max ?? 0;
-      expect(max, `${name} の探索可能回数は10〜20`).toBeGreaterThanOrEqual(10);
-      expect(max, `${name} の探索可能回数は10〜20`).toBeLessThanOrEqual(20);
+      expect(max, `${name} の探索率100%までの回数は10〜20`).toBeGreaterThanOrEqual(10);
+      expect(max, `${name} の探索率100%までの回数は10〜20`).toBeLessThanOrEqual(20);
     }
   });
 
-  it('すべての土地は探索のたびに進捗が+1され、上限でちょうど止まる', () => {
-    // exploreのconditionsのリテラル値がrange.maxと一致していること（value: max記法が未対応のための
-    // 二重管理）を、値の照合ではなく振る舞いで検証する: max-1では実行でき（実行後ちょうどmaxになる）、
-    // maxでは実行できない。リテラルがmaxよりずれていれば、このどちらかが必ず破れる。
+  it('すべての土地は探索のたびに進捗が+1され、100%到達後も探索を続けられる', () => {
+    // 探索率100%（進捗=range.max）で探索が止まらないこと（ExplorationSystem.md 2節）を振る舞いで
+    // 検証する。上限を超えた分はrangeの既定のクランプで吸収され、進捗はmaxに張り付く。
     const progressId = codex.propertyNames.getId('exploration_progress');
     const session = new WorldSession(codex, undefined, new SeededRng(1));
 
@@ -84,14 +83,14 @@ describe('locations.yamlの土地・道定義', () => {
       const max = land.def.getPropertyDef(progressId)?.range?.max ?? 0;
 
       land.setProperty(progressId, max - 1);
-      expect(land.tryExecuteAction('explore', undefined, session), `${name}: 進捗max-1ではまだ探索できる`).toBe(
-        true,
-      );
+      expect(land.tryExecuteAction('explore', undefined, session), `${name}: 探索できる`).toBe(true);
       expect(land.getNumber(progressId), `${name}: 探索1回で進捗が+1される（どの抽選候補でも）`).toBe(max);
 
-      expect(land.tryExecuteAction('explore', undefined, session), `${name}: 進捗maxに達したらもう探索できない`).toBe(
-        false,
-      );
+      expect(
+        land.tryExecuteAction('explore', undefined, session),
+        `${name}: 探索率100%でも探索は続けられる`,
+      ).toBe(true);
+      expect(land.getNumber(progressId), `${name}: 100%を超えた進捗は上限に張り付く`).toBe(max);
     }
   });
 
@@ -102,9 +101,8 @@ describe('locations.yamlの土地・道定義', () => {
     const land = session.spawn(codex.objectNames.getId('grassland'));
     const view = new Location(land, codex);
 
-    while (view.explore(undefined, session)) {
-      /* 探索できなくなるまで繰り返す */
-    }
+    // 100%到達後も探索は続けられるため、回数を数えて探索率100%で止める。
+    for (let i = 0; i < view.explorationProgressMax; i++) view.explore(undefined, session);
 
     expect(view.explorationProgress).toBe(view.explorationProgressMax);
     const itemTag = codex.tagNames.getId('item');

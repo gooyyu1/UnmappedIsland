@@ -3,6 +3,7 @@ import { PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { NewGameSession } from '../domain/generation/NewGame';
 import { start } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/runtime/Rng';
 import type { Localization } from '../locale/Localization';
@@ -12,6 +13,7 @@ import { fromGameSession } from './PlayScreenView';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { CardLane } from './ui/CardLane';
+import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
 import { ModalDialog } from './ui/ModalDialog';
 import { StatusBar } from './ui/StatusBar';
@@ -53,11 +55,17 @@ export interface PlaySceneData {
  * 組み立ての順序（フィールドエリア → ダッシュボード列 → オプション／フィルターバー）に意味がある。
  */
 export class PlayScene extends ResponsiveScene {
-  /** initで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
+  /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
+  private codex!: WorldCodex;
+  private locale!: Localization;
+  private gameSession!: NewGameSession;
   private view!: PlayScreenView;
 
   private selectedFilter = 0;
   private filterButtons: Button[] = [];
+
+  /** 探索の子ウィンドウが開いているか。画面の作り直しをまたいで開いたままにするために持つ。 */
+  private exploring = false;
 
   constructor() {
     super('play');
@@ -69,9 +77,10 @@ export class PlayScene extends ResponsiveScene {
    * 同じ開始状態を組み立てて表示する。
    */
   init(data: PlaySceneData): void {
-    const codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
-    const locale = this.registry.get(LOCALIZATION_KEY) as Localization;
-    this.view = fromGameSession(start(codex, data.save.seed, seededRng(data.save.seed)), codex, locale);
+    this.codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
+    this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
+    this.gameSession = start(this.codex, data.save.seed, seededRng(data.save.seed));
+    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
   }
 
   protected build(): void {
@@ -81,22 +90,43 @@ export class PlayScene extends ResponsiveScene {
     this.buildDashboard(layout);
     this.buildOptionsBar(layout.optionsBar);
     this.buildFilterBar(layout.filterBar);
+    if (this.exploring) this.openExplorationWindow(layout.fieldArea.width);
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
     addPanel(this, layout.fieldArea, COLOR.fieldArea);
     const [locationLane, fieldItemLane, handLane] = layout.lanes;
 
-    new CardLane(
-      this,
-      this.metrics,
-      locationLane,
-      COLOR.locationLane,
-      this.view.destinations,
-      this.view.currentLocation,
-    );
+    new CardLane(this, this.metrics, locationLane, COLOR.locationLane, this.view.destinations, {
+      ...this.view.currentLocation,
+      onTap: () => this.openExplorationWindow(layout.fieldArea.width),
+    });
     new CardLane(this, this.metrics, fieldItemLane, COLOR.fieldItemLane, this.view.fieldItems);
     new CardLane(this, this.metrics, handLane, COLOR.handLane, this.view.hand);
+  }
+
+  /** 現在地のロケーションカードから開く探索の子ウィンドウ。幅はフィールドエリアに合わせる。 */
+  private openExplorationWindow(width: number): void {
+    this.exploring = true;
+    new ExplorationWindow(this, this.metrics, {
+      locationName: this.view.currentLocation.name,
+      ratio: this.view.explorationRatio,
+      width,
+      onExplore: () => this.explore(),
+      onClose: () => {
+        this.exploring = false;
+      },
+    });
+  }
+
+  /**
+   * 現在地を1回探索し、結果（発見物・見つかった道・経過した時間）を画面へ反映する。
+   * 探索の子ウィンドウは開いたまま、更新後の探索率で組み立て直される（buildの末尾）。
+   */
+  private explore(): void {
+    this.gameSession.player.explore(this.gameSession.session);
+    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.rebuild();
   }
 
   private buildDashboard(layout: PlayScreenLayout): void {

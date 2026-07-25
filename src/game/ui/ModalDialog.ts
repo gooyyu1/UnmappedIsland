@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { Button } from './Button';
+import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Button } from './Button';
+import { addTextButton } from './Button';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
@@ -92,34 +93,22 @@ export class ModalDialog {
     this.objects.length = 0;
   }
 
-  private addAction(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    action: DialogAction,
-    rect: { x: number; y: number; width: number; height: number },
-  ): Button {
+  private addAction(scene: Phaser.Scene, metrics: ScreenMetrics, action: DialogAction, rect: Rect): Button {
     const danger = action.style === 'danger';
-    const button = new Button(
+    return addTextButton(
       scene,
+      metrics,
       rect,
+      action.label,
       {
         fill: danger ? COLOR.dangerButton : action.style === 'primary' ? COLOR.primaryButton : COLOR.button,
-        border: danger ? COLOR.dangerButton : COLOR.buttonBorder,
-        borderWidth: Math.max(1, metrics.px(2)),
-        radius: metrics.px(SIZE.radius),
+        border: danger ? COLOR.dangerButton : undefined,
+        textColor: danger ? COLOR.textOnDark : undefined,
       },
       () => {
         this.close();
         action.onTap?.();
       },
     );
-    button.addContent(
-      addLabel(scene, metrics, rect.width / 2, rect.height / 2, action.label, {
-        size: 26,
-        bold: true,
-        color: danger ? COLOR.textOnDark : COLOR.text,
-      }).setOrigin(0.5),
-    );
-    return button;
   }
 }

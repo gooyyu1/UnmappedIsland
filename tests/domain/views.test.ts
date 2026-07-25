@@ -159,6 +159,41 @@ object_defs:
     expect(actor.location?.instance).toBe(clearing);
   });
 
+  it('PlayerCharacterのexploreは今いる土地を探索する', () => {
+    const yaml = `
+object_defs:
+  character:
+    tags: [character]
+  clearing:
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 2}
+    slots:
+      characters:
+        accepts:
+          - {tag: character, max: 1}
+    actions:
+      explore:
+        showMenu: always
+        add:
+          self:
+            exploration_progress: 1
+`;
+    const codex = load(yaml);
+    const session = new WorldSession(codex);
+    const clearing = session.spawn(codex.objectNames.getId('clearing'));
+    const instance = session.spawn(codex.objectNames.getId('character'));
+    const actor = new PlayerCharacter(instance, codex);
+
+    expect(actor.explore(session), '土地に居なければ探索できない').toBe(false);
+
+    instance.moveToSlot(clearing, codex.slotNames.getId('characters'), codex.wellKnown);
+
+    expect(actor.explore(session)).toBe(true);
+    expect(new Location(clearing, codex).explorationProgress, '今いる土地の進捗が進む').toBe(1);
+  });
+
   it('Locationはどのプロパティも要求せずinstanceをラップする', () => {
     const yaml = `
 object_defs:

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { Path } from '../../src/domain/runtime/views/Path';
 import { fromGameSession } from '../../src/game/PlayScreenView';
@@ -16,6 +17,12 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', () => {
   let codex: WorldCodex;
   let locale: Localization;
+
+  /** 現在地を探索率100%まで探索する。100%到達後も探索は続けられるため、回数で止める。 */
+  function exploreToFull(game: NewGameSession): void {
+    const location = game.player.location ?? game.startLocation;
+    for (let i = 0; i < location.explorationProgressMax; i++) game.player.explore(game.session);
+  }
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
@@ -60,9 +67,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('探索で見つかった発見物と道が、そのままレーンの内容になる', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const location = game.startLocation;
-    while (location.explore(game.player.instance, game.session)) {
-      /* 探索できなくなるまで繰り返す */
-    }
+    exploreToFull(game);
 
     const view = fromGameSession(game, codex, locale);
 
@@ -80,11 +85,22 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.destinations.length, '探索し切れば全ての道が見つかっている').toBeGreaterThan(0);
   });
 
+  it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+
+    expect(fromGameSession(game, codex, locale).explorationRatio, '開始直後は未探索').toBe(0);
+
+    exploreToFull(game);
+    expect(fromGameSession(game, codex, locale).explorationRatio, '探索し切れば100%').toBe(1);
+
+    // 100%到達後も探索は続けられる（ExplorationSystem.md 2節）が、探索率は100%のまま。
+    expect(game.player.explore(game.session)).toBe(true);
+    expect(fromGameSession(game, codex, locale).explorationRatio).toBe(1);
+  });
+
   it('現在地は移動に追従する', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
-    while (game.startLocation.explore(game.player.instance, game.session)) {
-      /* 道が見つかるまで探索する */
-    }
+    exploreToFull(game);
     const path = new Path(game.startLocation.paths[0], codex.propertyNames);
     expect(path.travel(game.player.instance, game.session)).toBe(true);
 

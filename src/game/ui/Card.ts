@@ -7,12 +7,25 @@ import { wrapByCharacter } from './textLayout';
 /** カード名の最大行数。これを超える分は表示しない（モックの-webkit-line-clamp: 3に対応）。 */
 const NAME_MAX_LINES = 3;
 
+/** 押下中の沈み込み表現（Buttonと同じ）。 */
+const PRESSED_ALPHA = 0.6;
+
 /**
  * フィールド・ハンド・ポートレイトに共通のカード。
  * 大きなアイコンを中央に敷き、名前を左上へ重ねる（ScreenLayout.md デザインメモ）。
+ *
+ * onTapを渡したカードだけが押せる（押すと子ウィンドウを開くロケーションカード等）。
  */
 export class Card extends Phaser.GameObjects.Container {
-  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, icon: string, name: string) {
+  constructor(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    x: number,
+    y: number,
+    icon: string,
+    name: string,
+    onTap?: () => void,
+  ) {
     super(scene, x, y);
 
     const width = metrics.px(SIZE.cardWidth);
@@ -53,7 +66,19 @@ export class Card extends Phaser.GameObjects.Container {
     nameText.setWordWrapCallback(wrapByCharacter(width - inset * 2));
 
     this.add([face, iconText, nameText]);
+    if (onTap !== undefined) this.makeTappable(width, height, onTap);
     scene.add.existing(this);
+  }
+
+  /** Containerのdisplay originによるヒット領域のずれを避ける理由はButtonと同じ（サイズを設定しない）。 */
+  private makeTappable(width: number, height: number, onTap: () => void): void {
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
+    this.on('pointerdown', () => this.setAlpha(PRESSED_ALPHA));
+    this.on('pointerout', () => this.setAlpha(1));
+    this.on('pointerup', () => {
+      this.setAlpha(1);
+      onTap();
+    });
   }
 }
 
