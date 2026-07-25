@@ -31,6 +31,8 @@ export const COLOR = {
 
   cardFace: 0xffffff,
   cardBorder: 0x000000,
+  /** カードの端を押している間だけ被せる、移動操作のオーバーレイ。 */
+  cardEdgeOverlay: 0x1b3a4b,
   laneDivider: 0x000000,
 
   button: 0xffffff,

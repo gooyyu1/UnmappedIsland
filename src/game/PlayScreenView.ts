@@ -3,12 +3,22 @@ import type { NewGameSession } from '../domain/generation/NewGame';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { Localization } from '../locale/Localization';
-import type { LaneCard } from './ui/CardLane';
+import type { CardContent } from './ui/Card';
 
 /** ステータスエリアに出す1件。ratioは0〜1。 */
 export interface StatusEntry {
   readonly name: string;
   readonly ratio: number;
+}
+
+/**
+ * アイテムのカード1枚。moveを持つカードだけがフィールドと手持ちの間を移せる（設置物は移せない）。
+ * 手持ちが埋まっている等で移せなかった場合は何も起きない。
+ *
+ * moveはワールドを変えるだけで、画面への反映（表示内容の作り直し）は呼び出し側の責務。
+ */
+export interface ItemCard extends CardContent {
+  readonly move?: () => void;
 }
 
 /**
@@ -29,13 +39,13 @@ export interface PlayScreenView {
   readonly hour: number;
   readonly minute: number;
   readonly weather: string;
-  readonly currentLocation: LaneCard;
+  readonly currentLocation: CardContent;
   /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
   readonly explorationRatio: number;
-  readonly destinations: readonly LaneCard[];
-  readonly fieldItems: readonly LaneCard[];
+  readonly destinations: readonly CardContent[];
+  readonly fieldItems: readonly ItemCard[];
   /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
-  readonly hand: readonly (LaneCard | undefined)[];
+  readonly hand: readonly (ItemCard | undefined)[];
 }
 
 /** アイテムの画像がまだ無いため、種別ごとの絵文字を仮のアイコンとして使う。 */
@@ -58,7 +68,7 @@ export function fromGameSession(
   locale: Localization,
 ): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
-  const cardOf = (instance: WorldObject, icon: string): LaneCard => ({
+  const cardOf = (instance: WorldObject, icon: string): CardContent => ({
     icon,
     name: locale.object(instance.def.name).displayName,
   });
@@ -95,9 +105,23 @@ export function fromGameSession(
         UNNAMED_LOCATION,
     })),
     fieldItems: [
-      ...location.items.map((item) => cardOf(item, ITEM_ICON)),
+      ...location.items.map((item) => ({
+        ...cardOf(item, ITEM_ICON),
+        move: () => {
+          game.player.take(item, game.session);
+        },
+      })),
       ...location.fixtures.map((fixture) => cardOf(fixture, FIXTURE_ICON)),
     ],
-    hand: game.player.hand.map((item) => (item === undefined ? undefined : cardOf(item, ITEM_ICON))),
+    hand: game.player.hand.map((item) =>
+      item === undefined
+        ? undefined
+        : {
+            ...cardOf(item, ITEM_ICON),
+            move: () => {
+              game.player.drop(item, game.session);
+            },
+          },
+    ),
   };
 }

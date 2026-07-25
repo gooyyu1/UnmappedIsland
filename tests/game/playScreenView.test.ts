@@ -54,7 +54,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.hand).toHaveLength(6);
-    expect(view.hand[0], 'カード名は対応表から引いた表示文字列').toEqual({ icon: '📦', name: '石' });
+    expect(view.hand[0], 'カード名は対応表から引いた表示文字列').toMatchObject({
+      icon: '📦',
+      name: '石',
+    });
     expect(view.hand.slice(1), '残りの枠は空きセルとして残る').toEqual([
       undefined,
       undefined,
@@ -96,6 +99,50 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 100%到達後も探索は続けられる（ExplorationSystem.md 2節）が、探索率は100%のまま。
     expect(game.player.explore(game.session)).toBe(true);
     expect(fromGameSession(game, codex, locale).explorationRatio).toBe(1);
+  });
+
+  it('フィールドアイテムのmoveで手持ちへ移り、手持ちのmoveでフィールドへ戻る', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const picked = game.startLocation.items[0];
+
+    fromGameSession(game, codex, locale).fieldItems[0].move?.();
+
+    expect(game.player.hand[0], '押したアイテムが手持ちの先頭の枠に入る').toBe(picked);
+    expect(game.startLocation.items, 'フィールドからは無くなる').not.toContain(picked);
+
+    fromGameSession(game, codex, locale).hand[0]?.move?.();
+
+    expect(game.player.hand[0], '手持ちの枠は空く').toBeUndefined();
+    expect(game.startLocation.items, 'フィールドへ戻る').toContain(picked);
+  });
+
+  it('設置物のカードは移せない', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
+    expect(
+      tree.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'), codex.wellKnown),
+    ).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.fieldItems.map((card) => card.move)).toEqual([undefined]);
+  });
+
+  it('手持ちが6枠とも埋まっていると、フィールドアイテムのmoveは何も起こさない', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
+    const handSlotId = codex.slotNames.getId('hand');
+    for (const name of ['stone', 'branch', 'driftwood', 'coconut', 'taro', 'water_spinach']) {
+      const item = game.session.spawn(codex.objectNames.getId(name));
+      expect(item.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
+    }
+    exploreToFull(game);
+    const items = [...game.startLocation.items];
+
+    fromGameSession(game, codex, locale).fieldItems[0].move?.();
+
+    expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });
 
   it('現在地は移動に追従する', () => {

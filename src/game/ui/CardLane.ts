@@ -1,15 +1,9 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { CardContent } from './Card';
 import { Card, EmptyCard } from './Card';
 import { COLOR, SIZE } from './theme';
 import { addPanel } from './shapes';
-
-/** レーンに並べる1枚分の内容。onTapを持つカードだけが押せる。 */
-export interface LaneCard {
-  readonly icon: string;
-  readonly name: string;
-  readonly onTap?: () => void;
-}
 
 /**
  * フィールドエリアの1レーン。カードは横スクロールで送る（ScreenLayout.md フィールドエリア節）。
@@ -35,8 +29,8 @@ export class CardLane {
     metrics: ScreenMetrics,
     rect: Rect,
     background: number,
-    cards: readonly (LaneCard | undefined)[],
-    pinned?: LaneCard,
+    cards: readonly (CardContent | undefined)[],
+    pinned?: CardContent,
   ) {
     const margin = metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
@@ -55,9 +49,7 @@ export class CardLane {
     cards.forEach((card, index) => {
       const x = index * (cardWidth + gap);
       this.strip.add(
-        card === undefined
-          ? new EmptyCard(scene, metrics, x, 0)
-          : new Card(scene, metrics, x, 0, card.icon, card.name, card.onTap),
+        card === undefined ? new EmptyCard(scene, metrics, x, 0) : new Card(scene, metrics, x, 0, card),
       );
     });
 
@@ -95,7 +87,7 @@ export class CardLane {
     rect: Rect,
     background: number,
     cardY: number,
-    pinned: LaneCard,
+    pinned: CardContent,
   ): Phaser.GameObjects.Rectangle {
     const margin = metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
@@ -103,7 +95,7 @@ export class CardLane {
     const dividerWidth = metrics.px(4);
 
     const panel = addPanel(scene, { ...rect, width: margin + cardWidth + gap + dividerWidth }, background);
-    new Card(scene, metrics, rect.x + margin, cardY, pinned.icon, pinned.name, pinned.onTap);
+    new Card(scene, metrics, rect.x + margin, cardY, pinned);
 
     const cardHeight = metrics.px(SIZE.cardHeight);
     scene.add.rectangle(

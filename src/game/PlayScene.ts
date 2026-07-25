@@ -8,9 +8,10 @@ import { start } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/runtime/Rng';
 import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
-import type { PlayScreenView } from './PlayScreenView';
+import type { ItemCard, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
 import { Button } from './ui/Button';
+import type { CardContent, CardEdgeDirection } from './ui/Card';
 import { Card } from './ui/Card';
 import { CardLane } from './ui/CardLane';
 import { ExplorationWindow } from './ui/ExplorationWindow';
@@ -101,8 +102,29 @@ export class PlayScene extends ResponsiveScene {
       ...this.view.currentLocation,
       onTap: () => this.openExplorationWindow(layout.fieldArea.width),
     });
-    new CardLane(this, this.metrics, fieldItemLane, COLOR.fieldItemLane, this.view.fieldItems);
-    new CardLane(this, this.metrics, handLane, COLOR.handLane, this.view.hand);
+    new CardLane(
+      this,
+      this.metrics,
+      fieldItemLane,
+      COLOR.fieldItemLane,
+      this.movableCards(this.view.fieldItems, 'down'),
+    );
+    new CardLane(this, this.metrics, handLane, COLOR.handLane, this.movableCards(this.view.hand, 'up'));
+  }
+
+  /**
+   * アイテムのカードに、隣のレーンへ移すための端の操作を付ける。ハンドレーンはフィールド
+   * アイテムレーンの下にあるので、フィールド側は下端（▼）、手持ち側は上端（▲）が移動先を指す。
+   */
+  private movableCards(
+    cards: readonly (ItemCard | undefined)[],
+    direction: CardEdgeDirection,
+  ): readonly (CardContent | undefined)[] {
+    return cards.map((card) => {
+      const move = card?.move;
+      if (card === undefined || move === undefined) return card;
+      return { ...card, edge: { direction, onTap: () => this.applyToWorld(move) } };
+    });
   }
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。幅はフィールドエリアに合わせる。 */
@@ -120,11 +142,18 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 現在地を1回探索し、結果（発見物・見つかった道・経過した時間）を画面へ反映する。
-   * 探索の子ウィンドウは開いたまま、更新後の探索率で組み立て直される（buildの末尾）。
+   * 現在地を1回探索する。探索の子ウィンドウは開いたまま、更新後の探索率で組み立て直される
+   * （buildの末尾）。
    */
   private explore(): void {
-    this.gameSession.player.explore(this.gameSession.session);
+    this.applyToWorld(() => {
+      this.gameSession.player.explore(this.gameSession.session);
+    });
+  }
+
+  /** ワールドを変える操作を実行し、その結果を画面へ反映する。 */
+  private applyToWorld(change: () => void): void {
+    change();
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.rebuild();
   }
@@ -149,7 +178,10 @@ export class PlayScene extends ResponsiveScene {
     const portraitWidth = this.metrics.px(SIZE.cardWidth);
     const portraitHeight = this.metrics.px(SIZE.cardHeight);
     const portraitBottom = area.y + padding + portraitHeight;
-    new Card(this, this.metrics, area.x + padding, area.y + padding, '🧍', this.view.characterName);
+    new Card(this, this.metrics, area.x + padding, area.y + padding, {
+      icon: '🧍',
+      name: this.view.characterName,
+    });
 
     const infoX = area.x + padding + portraitWidth + gap;
     const infoWidth = area.x + area.width - padding - infoX;

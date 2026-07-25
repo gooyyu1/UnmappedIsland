@@ -59,6 +59,11 @@ export class Location {
     return this.slotContents(this.itemsSlotId);
   }
 
+  /** アイテムスロットへ受け入れる。受け入れられなければ（accepts制約・容量）false。 */
+  receiveItem(item: WorldObject, session: WorldSession): boolean {
+    return item.moveToSlot(this.instance, this.itemsSlotId, session.codex.wellKnown) === undefined;
+  }
+
   /** 設置物（木・植物・建築物・家具・洞窟入口など）スロットの中身。 */
   get fixtures(): readonly WorldObject[] {
     return this.slotContents(this.fixturesSlotId);
