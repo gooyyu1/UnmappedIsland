@@ -14,7 +14,7 @@ object_texts:
     props:
       exploration_progress:
         display_name: 探索の進み具合
-        description: この土地をどれだけ調べ尽くしたか。上限に達するとこれ以上は探索できない。
+        description: この土地をどれだけ調べ尽くしたか。100%に達しても探索は続けられるが、隠された道はもう見つからない。
       liquid_amount:
         display_name: 中身の量
       travel_minutes:
@@ -24,7 +24,7 @@ object_texts:
     actions:
       explore:
         display_name: 探索する
-        description: あたりを調べて、アイテム・設置物・他の土地へ続く道を探す。
+        description: あたりを調べて、アイテム・設置物・他の土地へ続く道を探す。何度でも続けられる。
       travel:
         display_name: 移動する
         description: この道を通って、繋がっている土地へ向かう。

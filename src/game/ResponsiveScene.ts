@@ -23,7 +23,11 @@ export abstract class ResponsiveScene extends Phaser.Scene {
   /** 画面を組み立てる。作り直しのたびに呼ばれるので、前回の状態は残っていない前提で書く。 */
   protected abstract build(): void;
 
-  private rebuild(): void {
+  /**
+   * 画面を作り直す。リサイズのほか、表示内容が変わったとき（プレイ画面のアクション実行後など）にも
+   * 呼ぶ。開いている子ウィンドウも消えるため、buildは「今開いているもの」を毎回組み立て直す。
+   */
+  protected rebuild(): void {
     this.children.removeAll(true);
     this.cameras.resize(this.scale.width, this.scale.height);
     this.metrics = new ScreenMetrics(this.scale.width, this.scale.height);

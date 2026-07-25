@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
+import { ProgressBar } from './ProgressBar';
 import { COLOR, FONT_FAMILY, cssColor } from './theme';
-import { drawBox } from './shapes';
 
 /** 名前欄の幅とバーの高さ（ScreenLayout_Mock.htmlの.status-name/.status-bar-container）。 */
 const NAME_WIDTH = 140;
@@ -27,7 +27,6 @@ export class StatusBar extends Phaser.GameObjects.Container {
     const height = metrics.px(BAR_HEIGHT);
     const nameWidth = metrics.px(NAME_WIDTH);
     const barX = nameWidth + metrics.px(12);
-    const barWidth = Math.max(0, width - barX);
 
     const label = scene.add
       .text(0, height / 2, name, {
@@ -38,20 +37,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
       })
       .setOrigin(0, 0.5);
 
-    const bar = scene.add.graphics();
-    const radius = metrics.px(8);
-    drawBox(bar, { x: barX, y: 0, width: barWidth, height }, { fill: COLOR.statusBarTrack, radius });
-    const fillWidth = barWidth * Phaser.Math.Clamp(ratio, 0, 1);
-    if (fillWidth > 0) {
-      drawBox(bar, { x: barX, y: 0, width: fillWidth, height }, { fill: COLOR.statusBarFill, radius });
-    }
-    drawBox(
-      bar,
-      { x: barX, y: 0, width: barWidth, height },
-      { border: COLOR.statusBarTrackBorder, borderWidth: Math.max(1, metrics.px(2)), radius },
-    );
-
-    this.add([label, bar]);
+    this.add([label, new ProgressBar(scene, metrics, barX, 0, Math.max(0, width - barX), height, ratio)]);
     scene.add.existing(this);
   }
 }

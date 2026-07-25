@@ -30,6 +30,8 @@ export interface PlayScreenView {
   readonly minute: number;
   readonly weather: string;
   readonly currentLocation: LaneCard;
+  /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
+  readonly explorationRatio: number;
   readonly destinations: readonly LaneCard[];
   readonly fieldItems: readonly LaneCard[];
   /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
@@ -47,6 +49,8 @@ const UNNAMED_LOCATION = '名もなき土地';
 /**
  * 生成済みのゲーム一式から画面の表示内容を作る。ロケーションレーン・フィールドアイテムレーン・
  * ハンドレーンは現在地とキャラクターのスロットの中身をそのまま映す。
+ *
+ * ワールドの状態を写し取るだけなので、アクションでワールドが変わったら作り直す（PlayScene参照）。
  */
 export function fromGameSession(
   game: NewGameSession,
@@ -79,6 +83,11 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: game.map.nameOfInstance(location.instance.instanceId) ?? UNNAMED_LOCATION,
     },
+    // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
+    explorationRatio:
+      location.explorationProgressMax === 0
+        ? 0
+        : location.explorationProgress / location.explorationProgressMax,
     destinations: location.paths.map((path) => ({
       icon: LOCATION_ICON,
       name:

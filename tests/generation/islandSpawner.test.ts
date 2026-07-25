@@ -99,11 +99,11 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const degree = game.map.edges.filter((e) => e.a === startIndex || e.b === startIndex).length;
     expect(degree, '開始地点にも必ず道がある(MSTの連結性)').toBeGreaterThanOrEqual(1);
 
-    // 探索を上限まで繰り返す。途中(上限-1以前)ですべての道が見つかる。
-    let explorations = 0;
-    while (start.explore(actor, session)) explorations++;
+    // 探索率100%まで繰り返す。途中(上限-1以前)ですべての道が見つかる。
+    for (let i = 0; i < start.explorationProgressMax; i++)
+      expect(start.explore(actor, session), '探索できる土地なので毎回成立する').toBe(true);
 
-    expect(explorations, '上限回数だけ探索できる').toBe(start.explorationProgressMax);
+    expect(start.explorationProgress, '探索率100%に達している').toBe(start.explorationProgressMax);
     expect(start.paths.length, '探索でこの土地のすべての道が見つかる').toBe(degree);
 
     // 見つかった道で移動する。

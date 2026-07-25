@@ -46,7 +46,10 @@ export class Location {
     return this.instance.getEffectiveValue(this.explorationProgressId);
   }
 
-  /** 探索できる回数（=exploration_progressのrange.max、土地ごとにYAMLで定義）。 */
+  /**
+   * 探索率100%に当たる進捗（=exploration_progressのrange.max、土地ごとにYAMLで定義）。
+   * ここに達した後も探索は続けられる（ExplorationSystem.md 2節）。
+   */
   get explorationProgressMax(): number {
     return this.instance.def.getPropertyDef(this.explorationProgressId)?.range?.max ?? 0;
   }
@@ -71,7 +74,11 @@ export class Location {
     return this.slotContents(this.pathsSlotId);
   }
 
-  /** この土地を1回探索する（exploreアクション＋revealDuePaths）。進捗が上限に達している（exploreのconditionsが不成立）ならfalse。 */
+  /**
+   * この土地を1回探索する（exploreアクション＋revealDuePaths）。探索できない土地（exploreアクションを
+   * 持たない・条件を満たさない）ならfalse。探索率100%に達した後も探索は続けられる
+   * （ExplorationSystem.md 2節）。
+   */
   explore(actor: WorldObject | undefined, session: WorldSession): boolean {
     if (!this.instance.tryExecuteAction('explore', actor, session)) return false;
     this.revealDuePaths(session);

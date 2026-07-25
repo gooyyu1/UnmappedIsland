@@ -4,10 +4,11 @@ import { Card, EmptyCard } from './Card';
 import { COLOR, SIZE } from './theme';
 import { addPanel } from './shapes';
 
-/** レーンに並べる1枚分の内容。 */
+/** レーンに並べる1枚分の内容。onTapを持つカードだけが押せる。 */
 export interface LaneCard {
   readonly icon: string;
   readonly name: string;
+  readonly onTap?: () => void;
 }
 
 /**
@@ -56,7 +57,7 @@ export class CardLane {
       this.strip.add(
         card === undefined
           ? new EmptyCard(scene, metrics, x, 0)
-          : new Card(scene, metrics, x, 0, card.icon, card.name),
+          : new Card(scene, metrics, x, 0, card.icon, card.name, card.onTap),
       );
     });
 
@@ -102,7 +103,7 @@ export class CardLane {
     const dividerWidth = metrics.px(4);
 
     const panel = addPanel(scene, { ...rect, width: margin + cardWidth + gap + dividerWidth }, background);
-    new Card(scene, metrics, rect.x + margin, cardY, pinned.icon, pinned.name);
+    new Card(scene, metrics, rect.x + margin, cardY, pinned.icon, pinned.name, pinned.onTap);
 
     const cardHeight = metrics.px(SIZE.cardHeight);
     scene.add.rectangle(

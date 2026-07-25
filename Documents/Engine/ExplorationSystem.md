@@ -84,9 +84,9 @@ traits:
 
 ## 2. 探索（`explore` アクション）
 
-「探索で何が見つかるか」と探索できる回数（進捗プロパティの上限）は、`explorable` trait ではなく土地ごとの
-`object_defs`（`locations.yaml`）が個別に定義します。`explorable` trait 自身が持つのは、進捗を保持する箱
-（`exploration_progress`）と道の発見に使う2スロット（1.2 節）という共通の器だけです。
+「探索で何が見つかるか」と探索率100%までの探索回数（進捗プロパティの上限）は、`explorable` trait ではなく
+土地ごとの `object_defs`（`locations.yaml`）が個別に定義します。`explorable` trait 自身が持つのは、進捗を
+保持する箱（`exploration_progress`）と道の発見に使う2スロット（1.2 節）という共通の器だけです。
 
 ```yaml
 object_defs:
@@ -95,13 +95,11 @@ object_defs:
     props:
       exploration_progress:
         value: 0
-        range: {min: 0, max: 12}   # 探索できる回数
+        range: {min: 0, max: 12}   # 探索率100%に達するまでの探索回数
     actions:
       explore:
         showMenu: always
         duration: 30
-        conditions:
-          - {prop: exploration_progress, op: lt, value: 12}
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -111,11 +109,11 @@ object_defs:
           # ...
 ```
 
-- **探索可能回数**: `exploration_progress` の `range.max`（10〜20 の範囲、土地ごとに異なる）。
-  `explore` の `conditions` は `value: max` という参照記法が未対応（`GameElementDefinition.md` 17 節）のため、
-  `range.max` と同じ値をリテラルで重複して書いています。この二重管理は `tests/worldCodex/
-  locationsYaml.test.ts` の振る舞いテスト（「max-1では実行でき、maxでは実行できない」）が検証しており、
-  値のずれがあれば必ず失敗します。
+- **探索率100%までの回数**: `exploration_progress` の `range.max`（10〜20 の範囲、土地ごとに異なる）。
+- **100%に達しても探索は続けられます**。`explore` に進捗の上限を見る `conditions` は置いていません。
+  上限を超えた進捗は `range` の既定のクランプ（`GameElementDefinition.md` 6.3 節）で `range.max` に
+  張り付くため、探索率は100%のまま、`pick` による発見物だけが増え続けます。100%到達で変わるのは、
+  生成時に仕込まれた道（3.2 節）がそれ以上見つからなくなることだけです。
 - **発見物**: `pick`（10 節）による重み付き抽選です。「ハズレ」（進捗だけが増える候補）を必ず用意しています。
   `add`/`pick` は排他な兄弟キーのため、進捗+1（`add`）は `pick` の各候補に個別に含めています（`add` と
   `spawn` は同じ候補内に共存できます、10.1 節）。
@@ -165,15 +163,18 @@ object_defs:
 という状態を、特別な仕組みなしに自然に表現できます（Bからは、B側の道インスタンスの `required_progress` に
 達するまで、同じ繋がりは見つかりません）。
 
-### 3.2 required_progress の割り当て（探索可能回数を使い切る前に道が見つかることの保証）
+### 3.2 required_progress の割り当て（探索率100%に達する前に道が見つかることの保証）
 
-「探索上限に達する前にすべての道が見つかる」ことを、データの調整ではなく**生成側の不変条件**として
+「探索率が100%に達する前にすべての道が見つかる」ことを、データの調整ではなく**生成側の不変条件**として
 保証しています。
 
-ある土地に接続する道が K 本あるとき、それぞれの `required_progress` を、探索上限を `max` として
+ある土地に接続する道が K 本あるとき、それぞれの `required_progress` を、探索の上限を `max` として
 `[2, max − 1]` の範囲へ均等間隔で割り当てます（`src/domain/generation/IslandSpawner.ts`）。最初の道が進捗2で
 見つかる（1回目の探索でいきなり道が見つからないようにする）のを最速とし、最後の道は必ず `max − 1` 以前に
 見つかります。この不変条件は `tests/generation/islandSpawner.test.ts` が全接続について検証しています。
+
+100%到達後も探索は続けられますが（2 節）、進捗は `max` に張り付くため、新たに条件を満たす道はもう
+現れません。「探索率100%＝この土地の道は出尽くした」という保証は、この割り当てが与えています。
 
 ## 4. エンジン拡張（`duration`・`move`）
 
@@ -198,6 +199,10 @@ explore(actor: WorldObject | undefined, session: WorldSession): boolean {
   return true;
 }
 ```
+
+プレイヤー側の入口も同じく1箇所です。`PlayerCharacter.explore(session)`（`views/PlayerCharacter.ts`）が
+「今いる土地に自分を actor として渡す」という手順を引き受けるため、UI は自分の居場所を知らなくてよく、
+探索できない場所に居る場合は `false` が返ります。
 
 `explore` アクション（YAML側）の実行と、後処理の `revealDuePaths` を呼び出し側（UI等）に分けて呼ばせません
 （`CLAUDE.md` の「自分のことは自分でする」方針）。`revealDuePaths` 自体は冪等なため、進捗がYAML側の効果

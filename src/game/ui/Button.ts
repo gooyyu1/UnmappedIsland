@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
-import type { Rect } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import { addLabel } from './labels';
 import type { BoxStyle } from './shapes';
 import { drawBox } from './shapes';
+import { COLOR, SIZE } from './theme';
 
 /** 押下中の沈み込み表現。実装が絵を持たないため、透過で押されたことを示す。 */
 const PRESSED_ALPHA = 0.6;
@@ -53,4 +55,41 @@ export class Button extends Phaser.GameObjects.Container {
   addContent(...children: Phaser.GameObjects.GameObject[]): void {
     this.add(children);
   }
+}
+
+/** ラベル1つを中央に置いたボタンの見た目。枠線・文字色は省略すると画面共通の色になる。 */
+export interface TextButtonStyle {
+  readonly fill: number;
+  readonly border?: number;
+  readonly textColor?: number;
+}
+
+/** ラベルを中央に置いた押しボタン。ダイアログ・子ウィンドウの操作ボタンはこの形で揃える。 */
+export function addTextButton(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  rect: Rect,
+  label: string,
+  style: TextButtonStyle,
+  onTap: () => void,
+): Button {
+  const button = new Button(
+    scene,
+    rect,
+    {
+      fill: style.fill,
+      border: style.border ?? COLOR.buttonBorder,
+      borderWidth: Math.max(1, metrics.px(2)),
+      radius: metrics.px(SIZE.radius),
+    },
+    onTap,
+  );
+  button.addContent(
+    addLabel(scene, metrics, rect.width / 2, rect.height / 2, label, {
+      size: 26,
+      bold: true,
+      color: style.textColor,
+    }).setOrigin(0.5),
+  );
+  return button;
 }
