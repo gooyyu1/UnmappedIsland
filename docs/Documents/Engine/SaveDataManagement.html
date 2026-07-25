@@ -135,13 +135,11 @@ id="新規ゲーム作成時の入力とランダム生成">新規ゲーム作�
 <code>Pcg32</code>）が「同じシード→同じ島」を決定的に再現する。
 <code>Pcg32</code> のコンストラクタは <code>seed &gt;&gt;&gt; 0</code>
 で符号なし32bit値として消費するため、シードの 値域は <code>0</code> 以上
-<code>2^32 - 1</code>（4294967295）以下として扱う。ただし決定的なのは地形レイアウトのみで、
-<code>WorldSession.rng</code>（pick抽選・初期値ロール用）は
-<code>NewGame.start</code> の <code>rng</code> 引数を省略すると
-非決定的な既定実装（<code>randomRng</code>、<code>src/domain/runtime/Rng.ts</code>）になる。そのため「同じシード→
-完全に同じ開始状態の再現」まで保証するには、シードから作った決定的な
-<code>Rng</code> 実装を <code>rng</code>
-引数へ別途渡す仕組みが必要になる（本ドキュメントの対象外。現状はマップ生成のみ再現される）。</li>
+<code>2^32 - 1</code>（4294967295）以下として扱う。<code>WorldSession.rng</code>（pick抽選・
+初期値ロール用）にも同じシードから作った決定的な実装（<code>seededRng</code>、
+<code>src/domain/runtime/Rng.ts</code>）を渡すため、開始状態は地形レイアウトを含めてシードだけで決まる。
+地形生成とは別インスタンスの <code>Pcg32</code>
+を使うので、pick抽選の消費順序は地形に影響しない。</li>
 <li><strong>キャラクター選択</strong>: <code>characters.yaml</code> の
 <code>character</code> object_def は <code>singleton: true</code>
 （常に1体だけ存在する前提）であり、現状のドメインモデルには複数キャラクターから選ぶ仕組みが
@@ -149,6 +147,13 @@ id="新規ゲーム作成時の入力とランダム生成">新規ゲーム作�
 見越した画面上の入り口であり、実際に選択肢を出し分けるにはキャラクター定義自体を
 シングルトンから複数選択可能な形へ拡張する作業が別途必要になる（本ドキュメントの対象外）。</li>
 </ul>
+<h2 id="ワールド状態の保存">ワールド状態の保存</h2>
+<p>ワールド状態（<code>WorldObject</code>
+のツリー）そのものを保存する仕組みはまだ無い。プレイ画面
+（<code>src/game/PlayScene.ts</code>）は、新規作成でも既存スロットを開いた場合でも、セーブデータの
+<code>seed</code>
+から世界を作り直して表示する。上記のとおり開始状態はシードだけで決まるため、
+同じスロットを開き直せば常に同じ島・同じ漂着地になる（進行の保存は今後の課題）。</p>
 <h2 id="スロットの空き削除">スロットの空き・削除</h2>
 <ul>
 <li>空き判定はキーの不在（<code>localStorage.getItem</code> が
