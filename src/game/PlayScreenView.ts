@@ -1,6 +1,8 @@
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
 import { Path } from '../domain/runtime/views/Path';
+import type { WorldObject } from '../domain/runtime/WorldObject';
+import type { Localization } from '../locale/Localization';
 import type { LaneCard } from './ui/CardLane';
 
 /** ステータスエリアに出す1件。ratioは0〜1。 */
@@ -46,11 +48,19 @@ const UNNAMED_LOCATION = '名もなき土地';
  * 生成済みのゲーム一式から画面の表示内容を作る。ロケーションレーン・フィールドアイテムレーン・
  * ハンドレーンは現在地とキャラクターのスロットの中身をそのまま映す。
  */
-export function fromGameSession(game: NewGameSession, codex: WorldCodex): PlayScreenView {
+export function fromGameSession(
+  game: NewGameSession,
+  codex: WorldCodex,
+  locale: Localization,
+): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
+  const cardOf = (instance: WorldObject, icon: string): LaneCard => ({
+    icon,
+    name: locale.objectName(instance.def.name),
+  });
 
   return {
-    characterName: game.player.instance.def.displayName,
+    characterName: locale.objectName(game.player.instance.def.name),
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '🪑',
     injuryIcon: '🩹',
@@ -76,11 +86,9 @@ export function fromGameSession(game: NewGameSession, codex: WorldCodex): PlaySc
         UNNAMED_LOCATION,
     })),
     fieldItems: [
-      ...location.items.map((item) => ({ icon: ITEM_ICON, name: item.def.displayName })),
-      ...location.fixtures.map((fixture) => ({ icon: FIXTURE_ICON, name: fixture.def.displayName })),
+      ...location.items.map((item) => cardOf(item, ITEM_ICON)),
+      ...location.fixtures.map((fixture) => cardOf(fixture, FIXTURE_ICON)),
     ],
-    hand: game.player.hand.map((item) =>
-      item === undefined ? undefined : { icon: ITEM_ICON, name: item.def.displayName },
-    ),
+    hand: game.player.hand.map((item) => (item === undefined ? undefined : cardOf(item, ITEM_ICON))),
   };
 }

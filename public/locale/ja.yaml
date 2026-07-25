@@ -1,0 +1,36 @@
+# 日本語の表示文字列（Documents/Engine/Localization.md 参照）。
+#
+# キーはWorldCodexの識別子で、値が画面に出す文字列。WorldCodex側は識別子だけを持ち、
+# 表示文字列はこのファイルにだけ書く。ここに無い識別子は、そのまま識別子が表示される。
+
+object_defs:
+  character: 主人公
+
+  # 道（locations.yaml）。
+  path: 道
+
+  # 探索で見つかるアイテム（locations.yaml・foods.yaml）。
+  coconut: ヤシの実
+  driftwood: 流木
+  stone: 石
+  branch: 枝
+  water_spinach: 空心菜
+  coconut_crab: ヤシガニ
+  taro: タロイモ
+
+  # 探索で見つかる設置物（locations.yaml）。
+  palm_tree: ヤシの木
+  berry_bush: ベリーの茂み
+  cave_entrance: 洞窟の入口
+  spring: 湧き水
+
+  # 液体容器とその中身（containers.yaml）。
+  canteen: 水筒
+  pot: 鍋
+  bottle: 瓶
+  jar: 甕
+  coconut_bowl: ヤシの実の器
+  empty_liquid: 空
+  water_liquid: 水
+  tea_liquid: お茶
+  oil_liquid: 油

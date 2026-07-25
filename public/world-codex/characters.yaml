@@ -5,7 +5,6 @@
 object_defs:
   character:
     singleton: true
-    display_name: 主人公
     # 土地のcharactersスロットのaccepts判定用。将来のNPC・動物も同じタグで同じスロットへ入れる。
     tags: [character]
     slots:
