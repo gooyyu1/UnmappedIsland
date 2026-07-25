@@ -125,7 +125,9 @@ export class Card extends Phaser.GameObjects.Container {
       top,
       width,
       edgeHeight,
-      edge.direction === 'up' ? { tl: radius, tr: radius, bl: 0, br: 0 } : { tl: 0, tr: 0, bl: radius, br: radius },
+      edge.direction === 'up'
+        ? { tl: radius, tr: radius, bl: 0, br: 0 }
+        : { tl: 0, tr: 0, bl: radius, br: radius },
     );
 
     const arrow = scene.add
