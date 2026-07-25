@@ -19,6 +19,9 @@ export interface LaneCard {
 export class CardLane {
   private readonly strip: Phaser.GameObjects.Container;
 
+  /** スクロール量0のときのstripの位置。 */
+  private readonly originX: number;
+
   /** スクロールできる下限（コンテンツが可視域に収まるなら0）。 */
   private readonly minScrollX: number;
 
@@ -44,6 +47,7 @@ export class CardLane {
     const stripX = rect.x + margin + pinnedWidth;
     const stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
 
+    this.originX = stripX;
     this.strip = scene.add.container(stripX, cardY);
     cards.forEach((card, index) => {
       this.strip.add(new Card(scene, metrics, index * (cardWidth + gap), 0, card.icon, card.name));
@@ -52,16 +56,28 @@ export class CardLane {
     const contentWidth = cards.length === 0 ? 0 : cards.length * (cardWidth + gap) - gap;
     this.minScrollX = Math.min(0, stripWidth - contentWidth);
 
-    if (pinned !== undefined) this.addPinnedSlot(scene, metrics, rect, background, cardY, pinned);
+    const pinnedPanel =
+      pinned === undefined ? undefined : this.addPinnedSlot(scene, metrics, rect, background, cardY, pinned);
 
     scene.input.setDraggable(panel);
     panel.on('dragstart', () => {
-      this.dragStartScrollX = this.strip.x - stripX;
+      this.dragStartScrollX = this.strip.x - this.originX;
     });
     panel.on('drag', (pointer: Phaser.Input.Pointer) => {
-      const scrollX = this.dragStartScrollX + (pointer.x - pointer.downX);
-      this.strip.x = stripX + Phaser.Math.Clamp(scrollX, this.minScrollX, 0);
+      this.scrollTo(this.dragStartScrollX + (pointer.x - pointer.downX));
     });
+
+    // ピン留め部分は背景板が上に重なりレーン本体がホイールを受け取れないので、そちらにも同じ操作を付ける。
+    for (const target of [panel, pinnedPanel]) {
+      target?.on('wheel', (pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number) => {
+        this.scrollTo(this.strip.x - this.originX - wheelPixels(pointer, deltaX, deltaY));
+      });
+    }
+  }
+
+  /** スクロール量を可動範囲へ収めて反映する。 */
+  private scrollTo(scrollX: number): void {
+    this.strip.x = this.originX + Phaser.Math.Clamp(scrollX, this.minScrollX, 0);
   }
 
   /** 現在地カードはレーン左端に固定し、区切り線を挟んで右にスクロール領域を置く。 */
@@ -72,13 +88,13 @@ export class CardLane {
     background: number,
     cardY: number,
     pinned: LaneCard,
-  ): void {
+  ): Phaser.GameObjects.Rectangle {
     const margin = metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
     const cardWidth = metrics.px(SIZE.cardWidth);
     const dividerWidth = metrics.px(4);
 
-    addPanel(scene, { ...rect, width: margin + cardWidth + gap + dividerWidth }, background);
+    const panel = addPanel(scene, { ...rect, width: margin + cardWidth + gap + dividerWidth }, background);
     new Card(scene, metrics, rect.x + margin, cardY, pinned.icon, pinned.name);
 
     const cardHeight = metrics.px(SIZE.cardHeight);
@@ -90,5 +106,21 @@ export class CardLane {
       COLOR.laneDivider,
       0.35,
     );
+    return panel;
   }
+}
+
+/** deltaModeがピクセル・行・ページのときの、delta1あたりのピクセル数。 */
+const WHEEL_DELTA_PIXELS = [1, 16, 400];
+
+/**
+ * ホイールの回転量をスクロールするピクセル数に直す。
+ *
+ * 縦ホイールしか無いマウスでも送れるよう、横方向の回転が無ければ縦方向の回転を横スクロールに使う。
+ * ブラウザによってdeltaの単位が行・ページになるため（Phaserは正規化しない）、ピクセルへ揃える。
+ */
+function wheelPixels(pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number): number {
+  const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+  const mode = pointer.event instanceof WheelEvent ? pointer.event.deltaMode : 0;
+  return delta * (WHEEL_DELTA_PIXELS[mode] ?? 1);
 }
