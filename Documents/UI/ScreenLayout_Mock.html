@@ -19,9 +19,9 @@
       --margin: calc(6 * var(--u));
       --bar-h: calc(96 * var(--u));
       --situation-h: calc(176 * var(--u));
-      --portrait-w: calc(189 * var(--u));
-      --portrait-h: calc(290 * var(--u));
-      --tile-h: calc(80 * var(--u));
+      --portrait-w: var(--card-w);
+      --portrait-h: var(--card-h);
+      --icon-button-size: calc(88 * var(--u));
       --radius: calc(12 * var(--u));
     }
 
@@ -132,14 +132,15 @@
       background: #ffe5d1;
     }
 
+    /* キャラクターカード｜条件 / 装備｜怪我 の2×2グリッド。縦型・横型共通の構造で、
+       character-display の幅・高さだけを向きごとに変える */
     .character-display {
       position: relative;
       width: calc(460 * var(--u));
       flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: var(--portrait-w) 1fr;
+      grid-template-rows: var(--portrait-h) auto;
       gap: var(--gap);
       background: #d9f6ff;
     }
@@ -151,73 +152,45 @@
       height: var(--portrait-h);
     }
 
-    /* 条件チップ・装備/怪我タイルをまとめる列。ポートレイトカードには重ねない */
-    .side-info {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--gap);
-      width: 100%;
+    /* 条件は複数同時に付き得るため、アイコンボタンを2列のグリッドで並べる。
+       個数が変わっても自動的に折り返される */
+    .condition-cell {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      gap: calc(8 * var(--u));
+      place-content: center;
     }
 
-    .condition-row {
+    /* ラベルなしのアイコンのみボタン。装備・怪我はタップで子ウィンドウを開くための
+       最小タップ領域として --icon-button-size（88u）を確保する。条件は一回り小さい */
+    .icon-button {
+      width: var(--icon-button-size);
+      height: var(--icon-button-size);
+      flex-shrink: 0;
+      border: 1px solid #000;
+      border-radius: var(--radius);
+      background: #ffffff;
+      font-size: calc(52 * var(--u));
+      line-height: 1;
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: center;
-      gap: calc(8 * var(--u));
+      padding: 0;
     }
 
-    .condition-chip {
-      display: flex;
-      align-items: center;
-      gap: calc(6 * var(--u));
-      height: calc(48 * var(--u));
-      padding: 0 calc(14 * var(--u));
-      border: 1px solid #000;
-      border-radius: calc(24 * var(--u));
-      background: #fff;
-      font-size: calc(22 * var(--u));
-      font-weight: 700;
-      white-space: nowrap;
+    .icon-button--condition {
+      --icon-button-size: calc(64 * var(--u));
+      font-size: calc(36 * var(--u));
     }
 
-    .equip-injury-row {
-      display: flex;
-      gap: var(--gap);
-      width: 100%;
-      padding: 0 calc(12 * var(--u));
+    .icon-button--equipment,
+    .icon-button--injury {
+      justify-self: center;
+      align-self: center;
     }
 
-    /* 装備・怪我はカードではなくタップ可能なタイル。子ウィンドウを開くための
-       タップ領域として --tile-h を最小高さに保つ */
-    .equip-injury-row .tile { flex: 1; }
-
-    .tile {
-      display: flex;
-      align-items: center;
-      gap: calc(8 * var(--u));
-      height: var(--tile-h);
-      padding: 0 calc(14 * var(--u));
-      border: 1px solid #000;
-      border-radius: calc(12 * var(--u));
-      font: inherit;
-      text-align: left;
-    }
-
-    .tile-icon { font-size: calc(40 * var(--u)); line-height: 1; flex-shrink: 0; }
-
-    .tile-name {
-      font-size: calc(22 * var(--u));
-      font-weight: 700;
-      line-height: 1.15;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      overflow: hidden;
-    }
-
-    .equipment-tile { background: #d6fff0; }
-    .injury-tile { background: #ffe0d6; }
+    .icon-button--equipment { background: #d6fff0; }
+    .icon-button--injury { background: #ffe0d6; }
 
     .status-area {
       position: relative;
@@ -229,21 +202,6 @@
       gap: calc(16 * var(--u));
       padding: calc(24 * var(--u));
       background: #e3ffe0;
-    }
-
-    .icon-button {
-      width: calc(88 * var(--u));
-      height: calc(88 * var(--u));
-      flex-shrink: 0;
-      border: 1px solid #000;
-      border-radius: var(--radius);
-      background: #ffffff;
-      font-size: calc(52 * var(--u));
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
     }
 
     .status-item {
@@ -372,9 +330,17 @@
       white-space: nowrap;
     }
 
-    /* 横型では状況エリアの横幅を日時に譲るため、天候はキャラクター表示エリアの
-       側列（side-info）へ移す。縦型は状況エリアに横幅の余裕があるため据え置き */
-    .weather-chip--side { display: none; }
+    /* 横型は状況エリアの横幅を日時だけに絞ってフィールドエリアへ回すため、天候は
+       状況エリア（日時）とキャラクターエリアの間の専用の帯へ移す。
+       縦型は状況エリアに横幅の余裕があるため据え置き */
+    .weather-row {
+      position: relative;
+      display: none;
+      flex-shrink: 0;
+      align-items: center;
+      padding: calc(12 * var(--u)) calc(20 * var(--u));
+      background: #e8e2d4;
+    }
 
     /* ---- オプションバー ---- */
     /* 縦型: 画面上部に固定（order:-1）。横型: 画面下部（order は横型メディアクエリで上書き） */
@@ -451,41 +417,26 @@
     /* ---- 横型 ---- */
 
     @media (orientation: landscape) {
-      /* ダッシュボード列を絞り、浮いた横幅をフィールドエリアへ渡してカード7枚分にする。
-         側列に余裕を持たせるため、横型専用の小さめポートレイトカードを使う */
-      :root {
-        --portrait-w: calc(140 * var(--u));
-        --portrait-h: calc(215 * var(--u));
-      }
-
+      /* 天候を日時から切り離し、状況エリアを日時だけの幅で済ませることで
+         ダッシュボード列を絞り、浮いた横幅をフィールドエリアに回す。
+         キャラクター表示エリアは縦型と同じグリッド構造をそのまま使う */
       .screen { flex-direction: row; }
 
+      /* 天候が抜けて日時だけになった分、状況エリアの高さも内容に合わせて縮める。
+         浮いた高さはステータスエリアに回る */
       .situation-area {
-        order: -1;
+        order: -2;
         height: auto;
-        padding: calc(16 * var(--u)) calc(20 * var(--u));
+        justify-content: flex-start;
+        padding: calc(12 * var(--u)) calc(20 * var(--u));
       }
 
-      .situation-area .weather-chip:not(.weather-chip--side) { display: none; }
+      .situation-area .weather-chip { display: none; }
 
-      .flip-calendar { gap: calc(16 * var(--u)); }
-
-      .calendar-row-day .flip-digit {
-        width: calc(44 * var(--u));
-        height: calc(60 * var(--u));
-        font-size: calc(38 * var(--u));
-      }
-
-      .calendar-row-time .flip-digit {
-        width: calc(30 * var(--u));
-        height: calc(40 * var(--u));
-        font-size: calc(24 * var(--u));
-      }
-
-      .calendar-day-unit { font-size: calc(20 * var(--u)); }
-      .calendar-colon { font-size: calc(22 * var(--u)); }
+      .weather-row { order: -1; display: flex; }
 
       .character-area {
+        order: 0;
         flex-direction: column;
         flex: 1;
         min-height: 0;
@@ -493,43 +444,8 @@
 
       .character-display {
         width: 100%;
-        height: calc(460 * var(--u));
-        flex-direction: row;
         justify-content: center;
-        align-items: center;
       }
-
-      .side-info {
-        width: calc(224 * var(--u));
-        flex: none;
-        align-items: stretch;
-      }
-
-      .weather-chip--side {
-        display: flex;
-        width: 100%;
-        height: calc(48 * var(--u));
-        padding: 0 calc(14 * var(--u));
-        font-size: calc(22 * var(--u));
-        justify-content: flex-start;
-      }
-
-      .condition-row {
-        flex-direction: column;
-        flex-wrap: nowrap;
-        align-items: stretch;
-        gap: calc(6 * var(--u));
-      }
-
-      .condition-chip { justify-content: flex-start; }
-
-      .equip-injury-row {
-        flex-direction: column;
-        width: 100%;
-        padding: 0;
-      }
-
-      .equip-injury-row .tile { flex: none; width: 100%; }
 
       .status-area {
         flex: 1;
@@ -545,7 +461,11 @@
         padding: 0;
       }
 
-      .field-area { width: calc(1542 * var(--u)); height: auto; }
+      /* flex:1 のダッシュボード列がキャラクター表示エリアの min-content 幅で
+         突っ張らないようにし、field-area に指定した横幅を実際に反映させる */
+      .dashboard-column { min-width: 0; }
+
+      .field-area { width: calc(1380 * var(--u)); height: auto; }
     }
   </style>
 </head>
@@ -558,19 +478,14 @@
           <div class="portrait-wrap">
             <div class="card portrait-card"><span class="card-name">主人公</span></div>
           </div>
-          <div class="side-info">
-            <div class="weather-chip weather-chip--side">☀️ 灼熱の快晴</div>
-            <div class="condition-row">
-              <div class="condition-chip">💭 高揚</div>
-              <div class="condition-chip">🥶 寒気</div>
-              <div class="condition-chip">😪 疲労</div>
-              <div class="condition-chip">🍽️ 空腹</div>
-            </div>
-            <div class="equip-injury-row">
-              <button class="tile equipment-tile" type="button"><span class="tile-icon">🪑</span><span class="tile-name">折りたたみ椅子</span></button>
-              <button class="tile injury-tile" type="button"><span class="tile-icon">🩹</span><span class="tile-name">擦り傷</span></button>
-            </div>
+          <div class="condition-cell">
+            <button class="icon-button icon-button--condition" type="button" aria-label="高揚" title="高揚">💭</button>
+            <button class="icon-button icon-button--condition" type="button" aria-label="寒気" title="寒気">🥶</button>
+            <button class="icon-button icon-button--condition" type="button" aria-label="疲労" title="疲労">😪</button>
+            <button class="icon-button icon-button--condition" type="button" aria-label="空腹" title="空腹">🍽️</button>
           </div>
+          <button class="icon-button icon-button--equipment" type="button" aria-label="折りたたみ椅子" title="折りたたみ椅子">🪑</button>
+          <button class="icon-button icon-button--injury" type="button" aria-label="擦り傷" title="擦り傷">🩹</button>
         </div>
         <div class="status-area">
           <div class="label">ステータスエリア</div>
@@ -617,6 +532,10 @@
             <span class="flip-digit">5</span>
           </span>
         </button>
+        <div class="weather-chip">☀️ 灼熱の快晴</div>
+      </section>
+      <section class="weather-row">
+        <div class="label">天候</div>
         <div class="weather-chip">☀️ 灼熱の快晴</div>
       </section>
       <section class="options-bar">
