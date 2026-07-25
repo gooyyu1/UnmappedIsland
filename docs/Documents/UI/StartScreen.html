@@ -80,6 +80,14 @@ href="./ScreenLayout.html">画面レイアウト検討</a>のグリッド切り�
 キャラクター選択）とまとまった量になるため、モーダルではなく専用画面として「もどる」で
 スロット選択へ戻れるようにする。</li>
 </ul>
+<h2 id="実装">実装</h2>
+<p>Phaser 側の実装は <code>src/game/TitleScene.ts</code> /
+<code>SlotSelectScene.ts</code> / <code>NewGameScene.ts</code>。
+セーブデータの読み書きは <code>src/save/SaveSlots.ts</code> が
+localStorage に対して行います。</p>
+<p>モックと1点だけ挙動が異なります。モックはプレイ画面が範囲外だったため新規作成後に
+スロット選択画面へ戻りますが、実装ではそのままプレイ画面 （<a
+href="./ScreenLayout.html">画面レイアウト検討</a>）を開きます。</p>
 <h2 id="html-モック">HTML モック</h2>
 <ul>
 <li><a
