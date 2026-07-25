@@ -19,8 +19,8 @@
       --margin: calc(6 * var(--u));
       --bar-h: calc(96 * var(--u));
       --situation-h: calc(176 * var(--u));
-      --portrait-w: calc(260 * var(--u));
-      --portrait-h: calc(399 * var(--u));
+      --portrait-w: calc(189 * var(--u));
+      --portrait-h: calc(290 * var(--u));
       --tile-h: calc(80 * var(--u));
       --radius: calc(12 * var(--u));
     }
@@ -190,20 +190,21 @@
 
     /* 装備・怪我はカードではなくタップ可能なタイル。子ウィンドウを開くための
        タップ領域として --tile-h を最小高さに保つ */
+    .equip-injury-row .tile { flex: 1; }
+
     .tile {
-      flex: 1;
       display: flex;
       align-items: center;
-      gap: calc(10 * var(--u));
+      gap: calc(8 * var(--u));
       height: var(--tile-h);
-      padding: 0 calc(16 * var(--u));
+      padding: 0 calc(14 * var(--u));
       border: 1px solid #000;
       border-radius: calc(12 * var(--u));
       font: inherit;
       text-align: left;
     }
 
-    .tile-icon { font-size: calc(44 * var(--u)); line-height: 1; flex-shrink: 0; }
+    .tile-icon { font-size: calc(40 * var(--u)); line-height: 1; flex-shrink: 0; }
 
     .tile-name {
       font-size: calc(22 * var(--u));
@@ -371,6 +372,10 @@
       white-space: nowrap;
     }
 
+    /* 横型では状況エリアの横幅を日時に譲るため、天候はキャラクター表示エリアの
+       側列（side-info）へ移す。縦型は状況エリアに横幅の余裕があるため据え置き */
+    .weather-chip--side { display: none; }
+
     /* ---- オプションバー ---- */
     /* 縦型: 画面上部に固定（order:-1）。横型: 画面下部（order は横型メディアクエリで上書き） */
 
@@ -446,9 +451,39 @@
     /* ---- 横型 ---- */
 
     @media (orientation: landscape) {
+      /* ダッシュボード列を絞り、浮いた横幅をフィールドエリアへ渡してカード7枚分にする。
+         側列に余裕を持たせるため、横型専用の小さめポートレイトカードを使う */
+      :root {
+        --portrait-w: calc(140 * var(--u));
+        --portrait-h: calc(215 * var(--u));
+      }
+
       .screen { flex-direction: row; }
 
-      .situation-area { order: -1; }
+      .situation-area {
+        order: -1;
+        height: auto;
+        padding: calc(16 * var(--u)) calc(20 * var(--u));
+      }
+
+      .situation-area .weather-chip:not(.weather-chip--side) { display: none; }
+
+      .flip-calendar { gap: calc(16 * var(--u)); }
+
+      .calendar-row-day .flip-digit {
+        width: calc(44 * var(--u));
+        height: calc(60 * var(--u));
+        font-size: calc(38 * var(--u));
+      }
+
+      .calendar-row-time .flip-digit {
+        width: calc(30 * var(--u));
+        height: calc(40 * var(--u));
+        font-size: calc(24 * var(--u));
+      }
+
+      .calendar-day-unit { font-size: calc(20 * var(--u)); }
+      .calendar-colon { font-size: calc(22 * var(--u)); }
 
       .character-area {
         flex-direction: column;
@@ -458,18 +493,43 @@
 
       .character-display {
         width: 100%;
-        height: calc(488 * var(--u));
+        height: calc(460 * var(--u));
         flex-direction: row;
         justify-content: center;
+        align-items: center;
       }
 
       .side-info {
-        width: auto;
-        flex: 1;
-        align-items: flex-start;
+        width: calc(224 * var(--u));
+        flex: none;
+        align-items: stretch;
       }
 
-      .condition-row { justify-content: flex-start; }
+      .weather-chip--side {
+        display: flex;
+        width: 100%;
+        height: calc(48 * var(--u));
+        padding: 0 calc(14 * var(--u));
+        font-size: calc(22 * var(--u));
+        justify-content: flex-start;
+      }
+
+      .condition-row {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        gap: calc(6 * var(--u));
+      }
+
+      .condition-chip { justify-content: flex-start; }
+
+      .equip-injury-row {
+        flex-direction: column;
+        width: 100%;
+        padding: 0;
+      }
+
+      .equip-injury-row .tile { flex: none; width: 100%; }
 
       .status-area {
         flex: 1;
@@ -485,7 +545,7 @@
         padding: 0;
       }
 
-      .field-area { width: calc(1350 * var(--u)); height: auto; }
+      .field-area { width: calc(1542 * var(--u)); height: auto; }
     }
   </style>
 </head>
@@ -499,6 +559,7 @@
             <div class="card portrait-card"><span class="card-name">主人公</span></div>
           </div>
           <div class="side-info">
+            <div class="weather-chip weather-chip--side">☀️ 灼熱の快晴</div>
             <div class="condition-row">
               <div class="condition-chip">💭 高揚</div>
               <div class="condition-chip">🥶 寒気</div>
@@ -591,6 +652,7 @@
           <div class="card"><span class="card-name">雨水を集めた竹筒</span></div>
           <div class="card"><span class="card-name">ロープ</span></div>
           <div class="card"><span class="card-name">割れたコンパス</span></div>
+          <div class="card"><span class="card-name">枯れ枝の束</span></div>
         </div>
       </div>
       <div class="lane hand-lane">
@@ -602,8 +664,6 @@
           <div class="card"><span class="card-name">果実串</span></div>
           <div class="card"><span class="card-name">貝の蒸し焼き</span></div>
           <div class="card"><span class="card-name">塩ゆで芋</span></div>
-          <div class="card"><span class="card-name">木の実の盛り合わせ</span></div>
-          <div class="card"><span class="card-name">海藻サラダ</span></div>
         </div>
       </div>
     </main>
