@@ -5,6 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>UnmappedIsland 画面モック</title>
   <style>
+    /*
+      レイアウト単位: 1u = 画面短辺 / 1080（CSS では vmin ベース）。
+      縦型・横型どちらでも短辺を基準にするため、同一端末ならカードの実寸が向きによらず一致する。
+      各寸法の根拠は ScreenLayout.md を参照。
+    */
+    :root {
+      --u: calc(100vmin / 1080);
+      --card-w: calc(210 * var(--u));
+      --card-h: calc(322 * var(--u));
+      --lane-h: calc(352 * var(--u));
+      --gap: calc(12 * var(--u));
+      --margin: calc(6 * var(--u));
+      --bar-gap: calc(20 * var(--u));
+      --portrait-w: var(--card-w);
+      --portrait-h: var(--card-h);
+      --icon-button-size: calc(88 * var(--u));
+      --radius: calc(12 * var(--u));
+    }
+
     @font-face {
       font-family: "Noto Sans JP";
       src: local("Noto Sans CJK JP");
@@ -16,319 +35,244 @@
       font-weight: 700;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
       font-family: "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
-    }
-
-    .screen {
-      display: grid;
-      width: 100%;
-      height: 100%;
-      grid-template-columns: 1080fr;
-      grid-template-rows: 840fr 1080fr;
-      grid-template-areas:
-        "dashboard"
-        "field";
-    }
-
-    .area,
-    .lane {
-      position: relative;
       overflow: hidden;
-      border: 1px solid #000;
     }
 
     .label {
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 1;
-      font-size: 14px;
+      z-index: 2;
+      font-size: calc(20 * var(--u));
       line-height: 1.2;
       color: #000;
       background: rgba(255, 255, 255, 0.8);
+      pointer-events: none;
     }
 
-    .card {
-        --card-icon: "🃏";
-        aspect-ratio: 58 / 89;
-        border: 1px solid #000;
-        background: rgba(255, 255, 255, 0.7);
-        position: relative;
-        overflow: hidden;
-        color: #111;
-      }
-
-      .card::before {
-        content: var(--card-icon);
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: clamp(20px, 7vw, 120px);
-        line-height: 1;
-        opacity: 0.95;
-        z-index: 0;
-      }
-
-      .card-name {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        right: 3px;
-        z-index: 1;
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 1.1;
-        text-align: left;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 3;
-        overflow: hidden;
-        text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
-      }
-
-      .card-name-large {
-        font-size: 24px;
-        line-height: 1.05;
-      }
-
-      .weather-area .card { --card-icon: "☀️"; }
-      .status-location-area .card { --card-icon: "🧭"; }
-      .location-lane .card { --card-icon: "🗺️"; }
-      .field-item-lane .card { --card-icon: "🪓"; }
-      .hand-lane .card { --card-icon: "🍲"; }
-      .portrait-center-area .card { --card-icon: "🧍"; }
-      .portrait-side-area .card { --card-icon: "💭"; }
-      .equipment-area .card { --card-icon: "🪑"; }
-      .injury-area .card { --card-icon: "🩹"; }
-      .status-item .card { --card-icon: "📊"; }
-      .datetime-area .card { --card-icon: "🕒"; }
-
-    .dashboard-area {
-      grid-area: dashboard;
+    /* 画面全体は4つの領域（オプション・ダッシュボード・フィールド・フィルター）を
+       持つグリッド。各領域は grid-area で名指しし、向きが変わっても同じ要素を
+       使い回せるようにする。縦型/横型の配置差は grid-template-areas の違いだけで表現する。
+       縦型: オプション上部→ダッシュボード→フィールド→フィルター下部の縦積み。
+       横型: ダッシュボード｜フィールド｜オプション+フィルターの縦列（右上/右下）の3列。 */
+    .screen {
       display: grid;
-      grid-template-columns: 840fr 240fr;
+      width: 100%;
+      height: 100%;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr calc(1080 * var(--u)) auto;
+      grid-template-areas:
+        "options"
+        "dashboard"
+        "field"
+        "filter";
       background: #f6f6f6;
     }
 
-    .info-area {
-      display: grid;
-      grid-template-rows: 280fr 560fr;
-      background: #dceeff;
+    .dashboard-column {
+      grid-area: dashboard;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      min-width: 0;
     }
 
-    .status-area {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      background: #d8ffd8;
+    /* ---- カード ---- */
+
+    .card {
+      --card-icon: "🃏";
+      width: var(--card-w);
+      height: var(--card-h);
+      flex-shrink: 0;
+      border: 1px solid #000;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.85);
+      position: relative;
+      overflow: hidden;
+      color: #111;
     }
 
-    .weather-area { background: #ffe3e3; }
-    .status-location-area { background: #d5ffe8; }
-    .datetime-area { background: #f0dcff; }
+    .card::before {
+      content: var(--card-icon);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(96 * var(--u));
+      line-height: 1;
+      opacity: 0.95;
+      z-index: 0;
+    }
+
+    .card-name {
+      position: absolute;
+      top: calc(6 * var(--u));
+      left: calc(8 * var(--u));
+      right: calc(8 * var(--u));
+      z-index: 1;
+      font-size: calc(30 * var(--u));
+      font-weight: 700;
+      line-height: 1.15;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
+      text-shadow: 0 0 calc(3 * var(--u)) rgba(255, 255, 255, 0.9);
+    }
+
+    .location-lane .card { --card-icon: "🗺️"; }
+    .field-item-lane .card { --card-icon: "🪓"; }
+    .hand-lane .card { --card-icon: "🍲"; }
+    .portrait-card { --card-icon: "🧍"; }
+
+    /* ---- キャラクターエリア ---- */
 
     .character-area {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
       background: #ffe5d1;
     }
 
-    .character-display-area {
+    /* 縦型: 上段（キャラクターカード｜条件）と下段（装備｜怪我）は独立したレイアウト。
+       上段はグリッドの1行目、下段は grid-column:1/-1 で両列にまたがる独立の行とし、
+       上段の列幅（ポートレイト幅）に下段が引きずられないようにする。
+       横型では character-display の幅・高さだけを向きごとに変える */
+    .character-display {
+      position: relative;
+      width: calc(460 * var(--u));
+      flex-shrink: 0;
       display: grid;
-      grid-template-rows: 1fr 1fr;
+      grid-template-columns: var(--portrait-w) 1fr;
+      grid-auto-rows: auto;
+      gap: var(--gap);
+      padding: calc(16 * var(--u));
       background: #d9f6ff;
     }
 
-    .portrait-status-area {
-      display: grid;
-      grid-template-columns: 105px 210px 105px;
-      background: #ffd7ef;
+    .portrait-wrap { position: relative; }
+
+    /* 縦型: display:contents で自身を消し、子（条件セル・装備/怪我の行）を
+       character-display のグリッドへそのまま参加させる。
+       横型ではこのラッパー自体が縦並びの列になる（横型メディアクエリ参照） */
+    .info-column { display: contents; }
+
+    .portrait-card {
+      width: var(--portrait-w);
+      height: var(--portrait-h);
     }
 
-    .portrait-side-area { background: #f7c8e8; }
-    .portrait-center-area { background: #ffd7ef; }
+    /* 条件は複数同時に付き得るため、アイコンボタンを2列のグリッドで並べる。
+       個数が変わっても自動的に折り返される（横型は1行に並べる。横型メディアクエリ参照）。
+       行の下端に揃え、装備・怪我のボタン列と隣接させる。余白はポートレイト上部側に集約し、
+       ボタン群が離れて浮いて見えないようにする */
+    .condition-cell {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      gap: calc(8 * var(--u));
+      align-content: end;
+      justify-content: center;
+    }
 
-    .side-status-cards {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
+    /* 装備・怪我の行。縦型ではグリッドの両列にまたがる独立の行にし、
+       ポートレイト幅に関係なく2個で幅を均等に分け合う（横型は縦並びに切り替える。
+       横型メディアクエリ参照） */
+    .equip-injury-row {
+      grid-column: 1 / -1;
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .side-status-cards .card {
+      flex-direction: row;
+      gap: var(--gap);
       width: 100%;
-      height: auto;
     }
 
-    .equipment-injury-area {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: #d8e8ff;
-    }
+    .equip-injury-row .icon-button { flex: 1; }
 
-    .equipment-area { background: #d6fff0; }
-    .injury-area { background: #ffe0d6; }
-    .status-display-area { background: #e3ffe0; }
-
-    .options-area {
-      display: grid;
-      grid-template-columns: 1fr;
-      grid-template-rows: repeat(4, 1fr);
-      background: #f5e9d5;
-    }
-
-    .option-button {
-      width: 100%;
-      height: 100%;
+    /* ラベルなしのアイコンのみボタン。装備・怪我はタップで子ウィンドウを開くための
+       最小タップ領域として --icon-button-size（88u）を確保する。条件は一回り小さい */
+    .icon-button {
+      width: var(--icon-button-size);
+      height: var(--icon-button-size);
+      flex-shrink: 0;
       border: 1px solid #000;
-      background: #fff;
-      font: inherit;
-      font-size: 20px;
-      position: relative;
-      padding: 20px;
-      overflow: hidden;
-    }
-
-    .option-icon-button {
-      width: 100%;
-      height: 100%;
-      border: 1px solid #000;
-      background: #f8f8f8;
-      font: inherit;
-      font-size: clamp(20px, 7vw, 120px);
+      border-radius: var(--radius);
+      background: #ffffff;
+      font-size: calc(52 * var(--u));
       line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
     }
 
-    .field-area {
-      grid-area: field;
-      display: grid;
-      grid-template-rows: repeat(3, 1fr);
-      background: #d6d6ff;
+    .icon-button--condition {
+      --icon-button-size: calc(64 * var(--u));
+      font-size: calc(36 * var(--u));
     }
 
-    .location-lane { background: #ffe1b3; }
-    .field-item-lane { background: #d9ffd5; }
-    .hand-lane { background: #e1dbff; }
-
-    .lane-cards {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      left: 20px;
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 8px;
-      align-items: start;
+    /* 装備・怪我は種別が分かるよう「装備」「怪我」の固定ラベルをアイコンの右に付ける
+       （アイテム名は表示せず、タップ先の子ウィンドウで確認する想定）。
+       正方形ではなく横長のボタンにするため、幅はセル・列いっぱいに広げる */
+    .icon-button--equipment,
+    .icon-button--injury {
+      justify-content: flex-start;
+      gap: calc(12 * var(--u));
+      padding: 0 calc(18 * var(--u));
     }
 
-    .lane-cards .card {
-      width: 100%;
-      height: auto;
+    .icon-button-icon { font-size: calc(44 * var(--u)); line-height: 1; }
+
+    .icon-button-label {
+      font-size: calc(24 * var(--u));
+      font-weight: 700;
+      line-height: 1;
     }
 
-    .single-card-slot {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      bottom: 20px;
-      left: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+    .icon-button--equipment { background: #d6fff0; }
+    .icon-button--injury { background: #ffe0d6; }
 
-    .single-card-slot .card {
-      width: auto;
-      height: 100%;
-    }
-
-    .condition-cards {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      bottom: 20px;
-      left: 20px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      gap: 8px;
-      align-items: center;
-      justify-items: center;
-    }
-
-    .condition-cards .card {
-      height: 100%;
-      width: auto;
-    }
-
-    .datetime-cards {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      bottom: 20px;
-      left: 20px;
+    /* 表示するステータスの数は可変（変化があったもの・要注意なもの・ユーザーが固定した
+       ものだけを表示する想定）なので、中央寄せにはせず上端に揃える。
+       件数が変わってもレイアウトが飛ばないようにするため */
+    .status-area {
+      position: relative;
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .datetime-row {
-      display: flex;
-      gap: 4px;
-    }
-
-    .datetime-row .card {
-      height: 108px;
-      width: auto;
-    }
-
-    .status-list {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      justify-content: flex-start;
+      gap: calc(16 * var(--u));
+      padding: calc(24 * var(--u));
+      background: #e3ffe0;
     }
 
     .status-item {
-      height: 80px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: calc(12 * var(--u));
     }
 
-    .status-item .card {
-      height: 100%;
-      width: auto;
+    .status-name {
+      width: calc(140 * var(--u));
       flex-shrink: 0;
+      font-size: calc(30 * var(--u));
+      font-weight: 700;
     }
 
     .status-bar-container {
       flex: 1;
-      height: 28px;
+      height: calc(36 * var(--u));
       background: #ddd;
       border: 1px solid #999;
-      border-radius: 4px;
+      border-radius: calc(8 * var(--u));
       overflow: hidden;
     }
 
@@ -337,183 +281,437 @@
       background: #4caf50;
     }
 
+    /* ---- 状況エリア（日めくりカレンダー・天候） ---- */
+
+    .situation-area {
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: calc(24 * var(--u));
+      padding: calc(20 * var(--u)) calc(32 * var(--u));
+      background: #e8e2d4;
+    }
+
+    .flip-calendar {
+      flex-shrink: 0;
+      border: none;
+      background: none;
+      padding: 0;
+      font: inherit;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: calc(28 * var(--u));
+      line-height: 1;
+    }
+
+    .calendar-row {
+      display: flex;
+      align-items: center;
+      gap: calc(8 * var(--u));
+    }
+
+    /* 各桁のフリップカード。上部の留具（リング）だけで吊り下がる */
+    .flip-digit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #3a3a3a;
+      color: #fff;
+      border-radius: calc(6 * var(--u));
+      font-weight: 700;
+      position: relative;
+      box-shadow: 0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, 0.3);
+    }
+
+    .flip-digit::before,
+    .flip-digit::after {
+      content: "";
+      position: absolute;
+      top: calc(-8 * var(--u));
+      width: calc(14 * var(--u));
+      height: calc(14 * var(--u));
+      border-radius: 50%;
+      border: calc(3 * var(--u)) solid #6b6b6b;
+      box-sizing: border-box;
+    }
+
+    .flip-digit::before { left: calc(6 * var(--u)); }
+    .flip-digit::after { right: calc(6 * var(--u)); }
+
+    .calendar-row-day .flip-digit {
+      width: calc(64 * var(--u));
+      height: calc(88 * var(--u));
+      font-size: calc(56 * var(--u));
+    }
+
+    .calendar-row-time .flip-digit {
+      width: calc(44 * var(--u));
+      height: calc(60 * var(--u));
+      font-size: calc(36 * var(--u));
+    }
+
+    .calendar-day-unit {
+      font-size: calc(26 * var(--u));
+      font-weight: 700;
+      color: #333;
+    }
+
+    .calendar-colon {
+      font-size: calc(32 * var(--u));
+      font-weight: 700;
+      color: #333;
+    }
+
+    .weather-chip {
+      display: flex;
+      align-items: center;
+      gap: calc(10 * var(--u));
+      height: calc(88 * var(--u));
+      padding: 0 calc(24 * var(--u));
+      border: 1px solid #000;
+      border-radius: calc(44 * var(--u));
+      background: #fff2e0;
+      font-size: calc(36 * var(--u));
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* 横型は状況エリアの横幅を日時だけに絞ってフィールドエリアへ回すため、天候は
+       状況エリア（日時）とキャラクターエリアの間の専用の帯へ移す。
+       縦型は状況エリアに横幅の余裕があるため据え置き */
+    .weather-row {
+      position: relative;
+      display: none;
+      flex-shrink: 0;
+      align-items: center;
+      padding: calc(12 * var(--u)) calc(20 * var(--u));
+      background: #e8e2d4;
+    }
+
+    /* ---- オプションバー ---- */
+    /* 縦型: 画面最上部の横長バー。横型: 画面右上の縦積み列（横型メディアクエリ参照） */
+
+    .options-bar {
+      grid-area: options;
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--bar-gap);
+      padding: calc(16 * var(--u)) calc(24 * var(--u));
+      background: #f5e9d5;
+    }
+
+    /* ---- フィルターバー ---- */
+    /* フィールドエリアに表示するカードをタグで絞り込むボタン列。ラベルなしのアイコンのみで、
+       オプションボタンと同じ最小タップ領域（icon-button）を共有する。
+       縦型: フィールドエリア下部の横スクロール行。横型: 画面右下の縦積み列
+       （横型メディアクエリ参照）。選択中のタグは filter-button--active で強調する */
+    .filter-bar {
+      grid-area: filter;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: var(--bar-gap);
+      padding: calc(16 * var(--u)) calc(20 * var(--u));
+      overflow-x: auto;
+      min-width: 0;
+      background: #e6dcf5;
+      scrollbar-width: none;
+    }
+
+    .filter-bar::-webkit-scrollbar { display: none; }
+
+    .filter-button--active {
+      background: #3a3a3a;
+      color: #fff;
+    }
+
+    /* ---- フィールドエリア ---- */
+
+    .field-area {
+      grid-area: field;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: var(--margin);
+      padding: var(--margin) 0;
+      background: #d6d6ff;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .lane {
+      position: relative;
+      height: var(--lane-h);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 var(--margin);
+    }
+
+    .location-lane { background: #ffe1b3; }
+    .field-item-lane { background: #d9ffd5; }
+    .hand-lane { background: #e1dbff; }
+
+    .pinned-slot {
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      flex-shrink: 0;
+    }
+
+    .lane-divider {
+      width: calc(4 * var(--u));
+      height: var(--card-h);
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: calc(2 * var(--u));
+    }
+
+    .lane-scroll {
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      overflow-x: auto;
+      min-width: 0;
+      height: 100%;
+      padding-left: var(--gap);
+      scrollbar-width: none;
+    }
+
+    .lane-scroll::-webkit-scrollbar { display: none; }
+
+    .field-item-lane .lane-scroll,
+    .hand-lane .lane-scroll { padding-left: 0; }
+
+    /* ---- 横型 ---- */
+
     @media (orientation: landscape) {
+      /* 3列グリッドに変える: ダッシュボード｜フィールド｜オプション+フィルターの縦列。
+         右列は上下2行（オプション=画面右上、フィルター=画面右下）で、
+         ダッシュボード・フィールドはその2行にまたがる（縦型は1列の縦積み）。
+         天候を日時から切り離し、状況エリアを日時だけの幅で済ませることで
+         ダッシュボード列を絞り、浮いた横幅をフィールドエリアに回す。
+         キャラクター表示エリアは左にポートレイトカード、右の列に条件セル・
+         装備・怪我を縦に並べる構成に変える（縦型は2×2グリッドのまま） */
       .screen {
-        grid-template-columns: 840fr 1080fr;
-        grid-template-rows: 1080fr;
-        grid-template-areas: "dashboard field";
+        grid-template-columns: calc(540 * var(--u)) 1fr calc(120 * var(--u));
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
+          "dashboard field options"
+          "dashboard field filter";
       }
 
-      .dashboard-area {
-        grid-template-columns: 840fr;
-        grid-template-rows: 840fr 240fr;
+      /* 天候が抜けて日時だけになった分、状況エリアの高さも内容に合わせて縮める。
+         浮いた高さはステータスエリアに回る */
+      .situation-area {
+        order: -2;
+        height: auto;
+        justify-content: flex-start;
+        padding: calc(12 * var(--u)) calc(20 * var(--u));
       }
 
-      .options-area {
-        grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: 1fr;
+      .situation-area .weather-chip { display: none; }
+
+      .weather-row { order: -1; display: flex; }
+
+      .character-area {
+        order: 0;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* 右列（条件・装備・怪我）をポートレイトの下端に揃える。右列の内容量は
+         ポートレイトの高さより短いため、余白はポートレイト上部側（頭部側）に集約され、
+         ボタン群同士が離れて浮いて見えることを防ぐ */
+      .character-display {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+      }
+
+      .info-column {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+        gap: var(--gap);
+      }
+
+      /* 横型は条件アイコンを1行に並べる（縦型は2列で折り返す） */
+      .condition-cell {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      /* 横型は装備・怪我を縦並びに切り替え、幅は列いっぱいに広げる
+         （縦型は grid-column:1/-1 の行で横並び・flex:1 の均等幅） */
+      .equip-injury-row { flex-direction: column; }
+      .equip-injury-row .icon-button { flex: none; width: 100%; }
+
+      .status-area {
+        flex: 1;
+        min-height: 0;
+        justify-content: flex-start;
+        gap: calc(10 * var(--u));
+        padding: calc(24 * var(--u));
+      }
+
+      /* オプションは画面右上の縦積み列に切り替える */
+      .options-bar {
+        flex-direction: column;
+        height: auto;
+        width: 100%;
+        justify-content: center;
+        padding: calc(16 * var(--u));
+      }
+
+      /* フィルターも画面右下の縦積み列に切り替える（ボタン自体はオプションボタンと
+         同じ正方形サイズのまま、並び方向だけ変える） */
+      .filter-bar {
+        flex-direction: column;
+        justify-content: flex-start;
+        overflow-x: visible;
+        overflow-y: auto;
+        padding: calc(16 * var(--u));
       }
     }
   </style>
 </head>
 <body>
   <div class="screen">
-    <div class="area dashboard-area">
-      <div class="label">ダッシュボードエリア 840×1080</div>
-      <div class="area info-area">
-        <div class="label">情報エリア 840×840</div>
-        <div class="area status-area">
-          <div class="label">状況エリア 840×280</div>
-          <div class="area datetime-area">
-            <div class="label">日時エリア 280×280</div>
-            <div class="datetime-cards">
-              <div class="datetime-row">
-                <div class="card"><span class="card-name">D</span></div>
-                <div class="card"><span class="card-name"></span></div>
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">0</span></div>
-              </div>
-              <div class="datetime-row">
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">0</span></div>
-                <div class="card"><span class="card-name">:</span></div>
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">5</span></div>
-              </div>
-            </div>
+    <div class="dashboard-column">
+      <section class="character-area">
+        <div class="character-display">
+          <div class="label">キャラクター表示エリア</div>
+          <div class="portrait-wrap">
+            <div class="card portrait-card"><span class="card-name">主人公</span></div>
           </div>
-          <div class="area weather-area">
-            <div class="label">天候エリア 280×280</div>
-            <div class="single-card-slot">
-              <div class="card"><span class="card-name card-name-large">灼熱の快晴</span></div>
+          <div class="info-column">
+            <div class="condition-cell">
+              <button class="icon-button icon-button--condition" type="button" aria-label="高揚" title="高揚">💭</button>
+              <button class="icon-button icon-button--condition" type="button" aria-label="寒気" title="寒気">🥶</button>
+              <button class="icon-button icon-button--condition" type="button" aria-label="疲労" title="疲労">😪</button>
+              <button class="icon-button icon-button--condition" type="button" aria-label="空腹" title="空腹">🍽️</button>
             </div>
-          </div>
-          <div class="area status-location-area">
-            <div class="label">ロケーションエリア 280×280</div>
-            <div class="single-card-slot">
-              <div class="card"><span class="card-name card-name-large">流木だらけの海岸線</span></div>
+            <div class="equip-injury-row">
+              <button class="icon-button icon-button--equipment" type="button" aria-label="折りたたみ椅子" title="折りたたみ椅子">
+                <span class="icon-button-icon">🪑</span><span class="icon-button-label">装備</span>
+              </button>
+              <button class="icon-button icon-button--injury" type="button" aria-label="擦り傷" title="擦り傷">
+                <span class="icon-button-icon">🩹</span><span class="icon-button-label">怪我</span>
+              </button>
             </div>
           </div>
         </div>
-        <div class="area character-area">
-          <div class="label">キャラクターエリア 840×560</div>
-          <div class="area character-display-area">
-            <div class="label">キャラクター表示エリア 420×560</div>
-            <div class="area portrait-status-area">
-              <div class="label">ポートレイト・状況エリア 420×280</div>
-              <div class="area portrait-side-area">
-                <div class="label">条件エリア1 105×280</div>
-                <div class="side-status-cards">
-                  <div class="card"><span class="card-name">高揚</span></div>
-                  <div class="card"><span class="card-name">寒気</span></div>
-                </div>
-              </div>
-              <div class="area portrait-center-area">
-                <div class="label">ポートレイトエリア 210×280</div>
-                <div class="single-card-slot">
-                  <div class="card"><span class="card-name">主人公</span></div>
-                </div>
-              </div>
-              <div class="area portrait-side-area">
-                <div class="label">条件エリア2 105×280</div>
-                <div class="side-status-cards">
-                  <div class="card"><span class="card-name">疲労</span></div>
-                  <div class="card"><span class="card-name">空腹</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="area equipment-injury-area">
-              <div class="label">装備・怪我エリア 420×280</div>
-              <div class="area equipment-area">
-                <div class="label">装備エリア 210×280</div>
-                <div class="single-card-slot">
-                  <div class="card"><span class="card-name">折りたたみ椅子</span></div>
-                </div>
-              </div>
-              <div class="area injury-area">
-                <div class="label">怪我エリア 210×280</div>
-                <div class="single-card-slot">
-                  <div class="card"><span class="card-name">擦り傷</span></div>
-                </div>
-              </div>
-            </div>
+        <!-- 表示するステータスの数は可変（変化があった／要注意／ユーザー固定のみ表示）想定。
+             ここでは6項目中4項目だけが該当し表示されている状態を例示する -->
+        <div class="status-area">
+          <div class="label">ステータスエリア</div>
+          <div class="status-item">
+            <div class="status-name">HP</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
           </div>
-          <div class="area status-display-area">
-            <div class="label">ステータスエリア 420×560</div>
-            <div class="status-list">
-              <div class="status-item">
-                <div class="card"><span class="card-name">HP</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">スタ<br>ミナ</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:65%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">水分</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:45%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">食料</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:30%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">体温</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:70%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">精神</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
-              </div>
-            </div>
+          <div class="status-item">
+            <div class="status-name">スタミナ</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:65%"></div></div>
+          </div>
+          <div class="status-item">
+            <div class="status-name">食料</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:30%"></div></div>
+          </div>
+          <div class="status-item">
+            <div class="status-name">精神</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
           </div>
         </div>
-      </div>
-      <div class="area options-area">
-        <div class="label">オプションエリア 840×240</div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="設定" title="設定">⚙️</button></div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button></div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="日記" title="日記">📓</button></div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button></div>
-      </div>
+      </section>
+      <section class="situation-area">
+        <div class="label">状況エリア</div>
+        <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
+          <span class="calendar-row calendar-row-day">
+            <span class="flip-digit">0</span>
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">1</span>
+            <span class="calendar-day-unit">日目</span>
+          </span>
+          <span class="calendar-row calendar-row-time">
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">0</span>
+            <span class="calendar-colon">:</span>
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">5</span>
+          </span>
+        </button>
+        <div class="weather-chip">☀️ 灼熱の快晴</div>
+      </section>
+      <section class="weather-row">
+        <div class="label">天候</div>
+        <div class="weather-chip">☀️ 灼熱の快晴</div>
+      </section>
     </div>
-    <div class="area field-area">
-      <div class="label">フィールドエリア 1080×1080</div>
+    <section class="options-bar">
+      <div class="label">オプションバー</div>
+      <button class="icon-button" type="button" aria-label="設定" title="設定">⚙️</button>
+      <button class="icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button>
+      <button class="icon-button" type="button" aria-label="日記" title="日記">📓</button>
+      <button class="icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button>
+    </section>
+    <main class="field-area">
       <div class="lane location-lane">
-        <div class="label">ロケーションレーン 1080×360</div>
-        <div class="lane-cards">
-          <div class="card"><span class="card-name card-name-large">白砂の浜</span></div>
-          <div class="card"><span class="card-name card-name-large">崩れかけた岩場の洞窟入口</span></div>
-          <div class="card"><span class="card-name card-name-large">浅瀬</span></div>
-          <div class="card"><span class="card-name card-name-large">ヤシ林</span></div>
-          <div class="card"><span class="card-name card-name-large">潮だまり</span></div>
-          <div class="card"><span class="card-name card-name-large">濃霧の湿地帯</span></div>
+        <div class="label">ロケーションレーン</div>
+        <div class="pinned-slot">
+          <div class="card"><span class="card-name">流木だらけの海岸線</span></div>
+          <div class="lane-divider"></div>
+        </div>
+        <div class="lane-scroll">
+          <div class="card"><span class="card-name">白砂の浜</span></div>
+          <div class="card"><span class="card-name">崩れかけた岩場の洞窟入口</span></div>
+          <div class="card"><span class="card-name">浅瀬</span></div>
+          <div class="card"><span class="card-name">ヤシ林</span></div>
+          <div class="card"><span class="card-name">潮だまり</span></div>
+          <div class="card"><span class="card-name">濃霧の湿地帯</span></div>
         </div>
       </div>
       <div class="lane field-item-lane">
-        <div class="label">フィールドアイテムレーン 1080×360</div>
-        <div class="lane-cards">
-          <div class="card"><span class="card-name card-name-large">石斧</span></div>
-          <div class="card"><span class="card-name card-name-large">未調理のヤギ肉のシチュー</span></div>
-          <div class="card"><span class="card-name card-name-large">火打ち石</span></div>
-          <div class="card"><span class="card-name card-name-large">雨水を集めた竹筒</span></div>
-          <div class="card"><span class="card-name card-name-large">ロープ</span></div>
-          <div class="card"><span class="card-name card-name-large">割れたコンパス</span></div>
+        <div class="label">フィールドアイテムレーン</div>
+        <div class="lane-scroll">
+          <div class="card"><span class="card-name">石斧</span></div>
+          <div class="card"><span class="card-name">未調理のヤギ肉のシチュー</span></div>
+          <div class="card"><span class="card-name">火打ち石</span></div>
+          <div class="card"><span class="card-name">雨水を集めた竹筒</span></div>
+          <div class="card"><span class="card-name">ロープ</span></div>
+          <div class="card"><span class="card-name">割れたコンパス</span></div>
+          <div class="card"><span class="card-name">枯れ枝の束</span></div>
         </div>
       </div>
       <div class="lane hand-lane">
-        <div class="label">ハンドレーン 1080×360</div>
-        <div class="lane-cards">
-          <div class="card"><span class="card-name card-name-large">焼き魚</span></div>
-          <div class="card"><span class="card-name card-name-large">椰子の実スープ</span></div>
-          <div class="card"><span class="card-name card-name-large">干し肉</span></div>
-          <div class="card"><span class="card-name card-name-large">果実串</span></div>
-          <div class="card"><span class="card-name card-name-large">貝の蒸し焼き</span></div>
-          <div class="card"><span class="card-name card-name-large">塩ゆで芋</span></div>
+        <div class="label">ハンドレーン</div>
+        <div class="lane-scroll">
+          <div class="card"><span class="card-name">焼き魚</span></div>
+          <div class="card"><span class="card-name">椰子の実スープ</span></div>
+          <div class="card"><span class="card-name">干し肉</span></div>
+          <div class="card"><span class="card-name">果実串</span></div>
+          <div class="card"><span class="card-name">貝の蒸し焼き</span></div>
+          <div class="card"><span class="card-name">塩ゆで芋</span></div>
         </div>
       </div>
-    </div>
+    </main>
+    <section class="filter-bar">
+      <div class="label">フィルターバー</div>
+      <button class="icon-button filter-button filter-button--active" type="button" aria-label="すべて" title="すべて">🗂️</button>
+      <button class="icon-button filter-button" type="button" aria-label="料理" title="料理">🍳</button>
+      <button class="icon-button filter-button" type="button" aria-label="水" title="水">💧</button>
+      <button class="icon-button filter-button" type="button" aria-label="クラフティング" title="クラフティング">🔨</button>
+      <button class="icon-button filter-button" type="button" aria-label="娯楽" title="娯楽">🎲</button>
+    </section>
   </div>
 </body>
 </html>
