@@ -57,9 +57,7 @@ export class CardLane {
     this.minScrollX = Math.min(0, stripWidth - contentWidth);
 
     const pinnedPanel =
-      pinned === undefined
-        ? undefined
-        : this.addPinnedSlot(scene, metrics, rect, background, cardY, pinned);
+      pinned === undefined ? undefined : this.addPinnedSlot(scene, metrics, rect, background, cardY, pinned);
 
     scene.input.setDraggable(panel);
     panel.on('dragstart', () => {
@@ -96,11 +94,7 @@ export class CardLane {
     const cardWidth = metrics.px(SIZE.cardWidth);
     const dividerWidth = metrics.px(4);
 
-    const panel = addPanel(
-      scene,
-      { ...rect, width: margin + cardWidth + gap + dividerWidth },
-      background,
-    );
+    const panel = addPanel(scene, { ...rect, width: margin + cardWidth + gap + dividerWidth }, background);
     new Card(scene, metrics, rect.x + margin, cardY, pinned.icon, pinned.name);
 
     const cardHeight = metrics.px(SIZE.cardHeight);
