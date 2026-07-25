@@ -17,6 +17,9 @@ export class ObjectDef {
   readonly globalId: number;
   readonly name: string;
 
+  /** UIに出す表示名（4.2節）。YAMLで未指定なら識別子（name）をそのまま使う。 */
+  readonly displayName: string;
+
   /** 唯一のインスタンスしか存在しない想定(9節、例: world)。 */
   readonly isSingleton: boolean;
 
@@ -58,6 +61,7 @@ export class ObjectDef {
   constructor(
     globalId: number,
     name: string,
+    displayName: string,
     isSingleton: boolean,
     propertyLayout: LocalIndexMap,
     propertyDefs: readonly PropertyDef[],
@@ -72,6 +76,7 @@ export class ObjectDef {
   ) {
     this.globalId = globalId;
     this.name = name;
+    this.displayName = displayName;
     this.isSingleton = isSingleton;
     this.propertyLayout = propertyLayout;
     this.propertyDefs = propertyDefs;

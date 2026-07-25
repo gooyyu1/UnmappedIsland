@@ -5,6 +5,7 @@
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
   water_spinach:
+    display_name: 空心菜
     tags: [item]
     actions:
       eat:
@@ -16,6 +17,7 @@ object_defs:
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
   coconut_crab:
+    display_name: ヤシガニ
     tags: [item]
     actions:
       eat:
@@ -27,6 +29,7 @@ object_defs:
 
   # タロイモ。太平洋の島々で主食とされてきた塊茎作物。自生しているものを採取できる。
   taro:
+    display_name: タロイモ
     tags: [item]
     actions:
       eat:

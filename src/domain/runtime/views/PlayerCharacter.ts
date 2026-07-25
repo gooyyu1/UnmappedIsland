@@ -1,5 +1,7 @@
 import type { NameRegistry } from '../../defs/NameRegistry';
+import type { WorldCodex } from '../../defs/WorldCodex';
 import type { WorldObject } from '../WorldObject';
+import { Location } from './Location';
 
 /**
  * actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
@@ -10,16 +12,21 @@ import type { WorldObject } from '../WorldObject';
 export class PlayerCharacter {
   readonly instance: WorldObject;
 
+  private readonly codex: WorldCodex;
+
   private readonly hpId: number;
   private readonly satietyId: number;
+  private readonly handSlotId: number;
 
-  constructor(instance: WorldObject, propertyNames: NameRegistry) {
+  constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
-    this.hpId = PlayerCharacter.idOrMissing(propertyNames, 'hp');
-    this.satietyId = PlayerCharacter.idOrMissing(propertyNames, 'satiety');
+    this.codex = codex;
+    this.hpId = PlayerCharacter.idOrMissing(codex.propertyNames, 'hp');
+    this.satietyId = PlayerCharacter.idOrMissing(codex.propertyNames, 'satiety');
+    this.handSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'hand');
   }
 
-  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする。characters.yamlがこのビューの知る全プロパティを持つとは限らないため、「持っていなければ0を読む」姿勢に合わせる。 */
+  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする。characters.yamlがこのビューの知る全プロパティ・スロットを持つとは限らないため、「持っていなければ空として読む」姿勢に合わせる。 */
   private static idOrMissing(names: NameRegistry, name: string): number {
     return names.tryGetId(name) ?? -1;
   }
@@ -30,5 +37,21 @@ export class PlayerCharacter {
 
   get satiety(): number {
     return this.instance.getEffectiveValue(this.satietyId);
+  }
+
+  /**
+   * 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。固定枠スロットのため、
+   * 配列長は常にunit_capacityと等しく、位置＝添字が安定する（SlotSystem.md 3節）。
+   * スロット自体を持たないcodexでは空配列。
+   */
+  get hand(): readonly (WorldObject | undefined)[] {
+    const slot = this.instance.tryGetSlot(this.handSlotId);
+    return slot === undefined ? [] : slot.cells.map((cell) => cell?.members.at(0));
+  }
+
+  /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */
+  get location(): Location | undefined {
+    const parent = this.instance.parent;
+    return parent === undefined ? undefined : new Location(parent, this.codex);
   }
 }

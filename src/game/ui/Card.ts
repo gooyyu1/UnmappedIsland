@@ -56,3 +56,30 @@ export class Card extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 }
+
+/**
+ * 中身の無い固定枠を示すカード。固定枠スロット（fixed_positions、SlotSystem.md 3節）は空でも位置を
+ * 保つため、枠だけを破線で描いて「ここは空いている」と分かるようにする。
+ */
+export class EmptyCard extends Phaser.GameObjects.Container {
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number) {
+    super(scene, x, y);
+
+    const face = scene.add.graphics();
+    drawBox(
+      face,
+      { x: 0, y: 0, width: metrics.px(SIZE.cardWidth), height: metrics.px(SIZE.cardHeight) },
+      {
+        fill: COLOR.cardFace,
+        fillAlpha: 0.35,
+        border: COLOR.cardBorder,
+        borderWidth: Math.max(1, metrics.px(2)),
+        radius: metrics.px(SIZE.radius),
+        dashed: true,
+      },
+    );
+
+    this.add(face);
+    scene.add.existing(this);
+  }
+}

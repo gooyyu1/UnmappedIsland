@@ -86,10 +86,77 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const actor = new PlayerCharacter(instance, codex.propertyNames);
+    const actor = new PlayerCharacter(instance, codex);
 
     expect(actor.hp).toBe(100);
     expect(actor.satiety).toBe(50);
+  });
+
+  it('PlayerCharacterのhandは固定枠の空きセルをundefinedとして並べる', () => {
+    const yaml = `
+object_defs:
+  stone:
+    tags: [item]
+  character:
+    slots:
+      hand:
+        accepts:
+          - {tag: item, max: 9999}
+        unit_capacity: 3
+        fixed_positions: true
+`;
+    const codex = load(yaml);
+    const session = new WorldSession(codex);
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('character')),
+      session,
+    );
+    const stone = session.spawn(codex.objectNames.getId('stone'));
+    stone.moveToSlot(instance, codex.slotNames.getId('hand'), codex.wellKnown);
+
+    const actor = new PlayerCharacter(instance, codex);
+
+    expect(actor.hand).toEqual([stone, undefined, undefined]);
+  });
+
+  it('PlayerCharacterのhandはhandスロットを持たないCodexでも空配列を返す', () => {
+    const yaml = `
+object_defs:
+  character: {}
+`;
+    const codex = load(yaml);
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('character')),
+      new WorldSession(codex),
+    );
+
+    expect(new PlayerCharacter(instance, codex).hand).toEqual([]);
+  });
+
+  it('PlayerCharacterのlocationは自分が入っている土地を返す', () => {
+    const yaml = `
+object_defs:
+  character:
+    tags: [character]
+  clearing:
+    slots:
+      characters:
+        accepts:
+          - {tag: character, max: 1}
+`;
+    const codex = load(yaml);
+    const session = new WorldSession(codex);
+    const clearing = session.spawn(codex.objectNames.getId('clearing'));
+    const instance = session.spawn(codex.objectNames.getId('character'));
+    const actor = new PlayerCharacter(instance, codex);
+
+    expect(actor.location).toBeUndefined();
+
+    instance.moveToSlot(clearing, codex.slotNames.getId('characters'), codex.wellKnown);
+
+    expect(actor.location?.instance).toBe(clearing);
   });
 
   it('Locationはどのプロパティも要求せずinstanceをラップする', () => {

@@ -60,6 +60,18 @@ describe('locations.yamlの土地・道定義', () => {
     }
   });
 
+  it('カードに並ぶ発見物（item/fixture）はすべてdisplay_nameを持つ', () => {
+    // 表示名が無いと識別子（driftwood等）がそのままカードに出るため、UIに出る型には必須とする。
+    const itemTag = codex.tagNames.getId('item');
+    const fixtureTag = codex.tagNames.getId('fixture');
+
+    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+      const objectDef = codex.objects.get(globalId);
+      if (!objectDef.tags.includes(itemTag) && !objectDef.tags.includes(fixtureTag)) continue;
+      expect(objectDef.displayName, `${objectDef.name} にはdisplay_nameが必要`).not.toBe(objectDef.name);
+    }
+  });
+
   it('すべての土地の探索可能回数は10〜20の範囲に収まる', () => {
     const progressId = codex.propertyNames.getId('exploration_progress');
     for (const name of LAND_NAMES) {

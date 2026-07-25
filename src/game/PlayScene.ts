@@ -1,9 +1,13 @@
 import type { Rect } from './layout/ScreenMetrics';
 import { PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
+import { WORLD_CODEX_KEY } from './BootScene';
+import type { WorldCodex } from '../domain/defs/WorldCodex';
+import { start } from '../domain/generation/NewGame';
+import { seededRng } from '../domain/runtime/Rng';
 import type { SaveData } from '../save/SaveData';
 import type { PlayScreenView } from './PlayScreenView';
-import { placeholderPlayScreenView } from './PlayScreenView';
+import { fromGameSession } from './PlayScreenView';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { CardLane } from './ui/CardLane';
@@ -58,8 +62,14 @@ export class PlayScene extends ResponsiveScene {
     super('play');
   }
 
+  /**
+   * セーブデータのシードから世界を作り直す。ワールド状態そのものの保存はまだ無いため
+   * （SaveDataManagement.md）、新規作成でも既存スロットを開いた場合でも、同じシードから
+   * 同じ開始状態を組み立てて表示する。
+   */
   init(data: PlaySceneData): void {
-    this.view = placeholderPlayScreenView(data.save);
+    const codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
+    this.view = fromGameSession(start(codex, data.save.seed, seededRng(data.save.seed)), codex);
   }
 
   protected build(): void {
