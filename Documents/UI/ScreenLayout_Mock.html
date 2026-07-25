@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>UnmappedIsland 画面モック</title>
   <style>
+    /*
+      レイアウト単位: 1u = 画面短辺 / 1080（CSS では vmin ベース）。
+      縦型・横型どちらでも短辺を基準にするため、同一端末ならカードの実寸が向きによらず一致する。
+      各寸法の根拠は ScreenLayout.md を参照。
+    */
+    :root {
+      --u: calc(100vmin / 1080);
+      --card-w: calc(210 * var(--u));
+      --card-h: calc(322 * var(--u));
+      --lane-h: calc(352 * var(--u));
+      --gap: calc(12 * var(--u));
+      --margin: calc(6 * var(--u));
+      --bar-h: calc(96 * var(--u));
+      --portrait-w: calc(300 * var(--u));
+      --portrait-h: calc(460 * var(--u));
+      --small-card-w: calc(146 * var(--u));
+      --small-card-h: calc(224 * var(--u));
+      --radius: calc(12 * var(--u));
+    }
+
     @font-face {
       font-family: "Noto Sans JP";
       src: local("Noto Sans CJK JP");
@@ -16,319 +36,236 @@
       font-weight: 700;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
       font-family: "Noto Sans JP", "Noto Sans CJK JP", sans-serif;
-    }
-
-    .screen {
-      display: grid;
-      width: 100%;
-      height: 100%;
-      grid-template-columns: 1080fr;
-      grid-template-rows: 840fr 1080fr;
-      grid-template-areas:
-        "dashboard"
-        "field";
-    }
-
-    .area,
-    .lane {
-      position: relative;
       overflow: hidden;
-      border: 1px solid #000;
     }
 
     .label {
       position: absolute;
       top: 0;
       left: 0;
-      z-index: 1;
-      font-size: 14px;
+      z-index: 2;
+      font-size: calc(20 * var(--u));
       line-height: 1.2;
       color: #000;
       background: rgba(255, 255, 255, 0.8);
+      pointer-events: none;
     }
 
-    .card {
-        --card-icon: "🃏";
-        aspect-ratio: 58 / 89;
-        border: 1px solid #000;
-        background: rgba(255, 255, 255, 0.7);
-        position: relative;
-        overflow: hidden;
-        color: #111;
-      }
-
-      .card::before {
-        content: var(--card-icon);
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: clamp(20px, 7vw, 120px);
-        line-height: 1;
-        opacity: 0.95;
-        z-index: 0;
-      }
-
-      .card-name {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        right: 3px;
-        z-index: 1;
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 1.1;
-        text-align: left;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 3;
-        overflow: hidden;
-        text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
-      }
-
-      .card-name-large {
-        font-size: 24px;
-        line-height: 1.05;
-      }
-
-      .weather-area .card { --card-icon: "☀️"; }
-      .status-location-area .card { --card-icon: "🧭"; }
-      .location-lane .card { --card-icon: "🗺️"; }
-      .field-item-lane .card { --card-icon: "🪓"; }
-      .hand-lane .card { --card-icon: "🍲"; }
-      .portrait-center-area .card { --card-icon: "🧍"; }
-      .portrait-side-area .card { --card-icon: "💭"; }
-      .equipment-area .card { --card-icon: "🪑"; }
-      .injury-area .card { --card-icon: "🩹"; }
-      .status-item .card { --card-icon: "📊"; }
-      .datetime-area .card { --card-icon: "🕒"; }
-
-    .dashboard-area {
-      grid-area: dashboard;
-      display: grid;
-      grid-template-columns: 840fr 240fr;
+    .screen {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
       background: #f6f6f6;
     }
 
-    .info-area {
-      display: grid;
-      grid-template-rows: 280fr 560fr;
-      background: #dceeff;
-    }
+    /* ---- カード ---- */
 
-    .status-area {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      background: #d8ffd8;
-    }
-
-    .weather-area { background: #ffe3e3; }
-    .status-location-area { background: #d5ffe8; }
-    .datetime-area { background: #f0dcff; }
-
-    .character-area {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: #ffe5d1;
-    }
-
-    .character-display-area {
-      display: grid;
-      grid-template-rows: 1fr 1fr;
-      background: #d9f6ff;
-    }
-
-    .portrait-status-area {
-      display: grid;
-      grid-template-columns: 105px 210px 105px;
-      background: #ffd7ef;
-    }
-
-    .portrait-side-area { background: #f7c8e8; }
-    .portrait-center-area { background: #ffd7ef; }
-
-    .side-status-cards {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .side-status-cards .card {
-      width: 100%;
-      height: auto;
-    }
-
-    .equipment-injury-area {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: #d8e8ff;
-    }
-
-    .equipment-area { background: #d6fff0; }
-    .injury-area { background: #ffe0d6; }
-    .status-display-area { background: #e3ffe0; }
-
-    .options-area {
-      display: grid;
-      grid-template-columns: 1fr;
-      grid-template-rows: repeat(4, 1fr);
-      background: #f5e9d5;
-    }
-
-    .option-button {
-      width: 100%;
-      height: 100%;
+    .card {
+      --card-icon: "🃏";
+      width: var(--card-w);
+      height: var(--card-h);
+      flex-shrink: 0;
       border: 1px solid #000;
-      background: #fff;
-      font: inherit;
-      font-size: 20px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.85);
       position: relative;
-      padding: 20px;
       overflow: hidden;
+      color: #111;
     }
 
-    .option-icon-button {
-      width: 100%;
-      height: 100%;
+    .card::before {
+      content: var(--card-icon);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(96 * var(--u));
+      line-height: 1;
+      opacity: 0.95;
+      z-index: 0;
+    }
+
+    .card-name {
+      position: absolute;
+      top: calc(6 * var(--u));
+      left: calc(8 * var(--u));
+      right: calc(8 * var(--u));
+      z-index: 1;
+      font-size: calc(30 * var(--u));
+      font-weight: 700;
+      line-height: 1.15;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
+      text-shadow: 0 0 calc(3 * var(--u)) rgba(255, 255, 255, 0.9);
+    }
+
+    .location-lane .card { --card-icon: "🗺️"; }
+    .field-item-lane .card { --card-icon: "🪓"; }
+    .hand-lane .card { --card-icon: "🍲"; }
+    .portrait-card { --card-icon: "🧍"; }
+    .equipment-card { --card-icon: "🪑"; }
+    .injury-card { --card-icon: "🩹"; }
+
+    /* ---- システムバー ---- */
+
+    .system-bar {
+      position: relative;
+      height: var(--bar-h);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      padding: 0 calc(15 * var(--u));
+      background: #e8e2d4;
+    }
+
+    .datetime {
+      font-size: calc(40 * var(--u));
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .weather-chip {
+      display: flex;
+      align-items: center;
+      gap: calc(8 * var(--u));
+      height: calc(76 * var(--u));
+      padding: 0 calc(18 * var(--u));
       border: 1px solid #000;
-      background: #f8f8f8;
-      font: inherit;
-      font-size: clamp(20px, 7vw, 120px);
+      border-radius: calc(38 * var(--u));
+      background: #fff2e0;
+      font-size: calc(32 * var(--u));
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .system-bar .spacer { flex: 1; }
+
+    .icon-button {
+      width: calc(88 * var(--u));
+      height: calc(88 * var(--u));
+      flex-shrink: 0;
+      border: 1px solid #000;
+      border-radius: var(--radius);
+      background: #ffffff;
+      font-size: calc(52 * var(--u));
       line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
     }
 
-    .field-area {
-      grid-area: field;
-      display: grid;
-      grid-template-rows: repeat(3, 1fr);
-      background: #d6d6ff;
-    }
+    /* ---- キャラクターエリア ---- */
 
-    .location-lane { background: #ffe1b3; }
-    .field-item-lane { background: #d9ffd5; }
-    .hand-lane { background: #e1dbff; }
-
-    .lane-cards {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      left: 20px;
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 8px;
-      align-items: start;
-    }
-
-    .lane-cards .card {
-      width: 100%;
-      height: auto;
-    }
-
-    .single-card-slot {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      bottom: 20px;
-      left: 20px;
+    .character-area {
+      position: relative;
+      flex: 1;
+      min-height: 0;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      background: #ffe5d1;
     }
 
-    .single-card-slot .card {
-      width: auto;
-      height: 100%;
-    }
-
-    .condition-cards {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      bottom: 20px;
-      left: 20px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      gap: 8px;
-      align-items: center;
-      justify-items: center;
-    }
-
-    .condition-cards .card {
-      height: 100%;
-      width: auto;
-    }
-
-    .datetime-cards {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      bottom: 20px;
-      left: 20px;
+    .character-display {
+      position: relative;
+      width: calc(460 * var(--u));
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: var(--gap);
+      padding-top: calc(28 * var(--u));
+      background: #d9f6ff;
     }
 
-    .datetime-row {
-      display: flex;
-      gap: 4px;
+    .portrait-wrap { position: relative; }
+
+    .portrait-card {
+      width: var(--portrait-w);
+      height: var(--portrait-h);
     }
 
-    .datetime-row .card {
-      height: 108px;
-      width: auto;
-    }
-
-    .status-list {
+    .condition-chips {
       position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
+      top: calc(48 * var(--u));
+      left: calc(-40 * var(--u));
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: calc(8 * var(--u));
+      z-index: 1;
+    }
+
+    .condition-chip {
+      display: flex;
+      align-items: center;
+      gap: calc(4 * var(--u));
+      height: calc(56 * var(--u));
+      padding: 0 calc(12 * var(--u));
+      border: 1px solid #000;
+      border-radius: calc(28 * var(--u));
+      background: #fff;
+      font-size: calc(26 * var(--u));
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .equip-injury {
+      display: flex;
+      gap: var(--gap);
+    }
+
+    .equipment-card, .injury-card {
+      width: var(--small-card-w);
+      height: var(--small-card-h);
+    }
+
+    .equipment-card::before, .injury-card::before {
+      font-size: calc(64 * var(--u));
+    }
+
+    .status-area {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: calc(16 * var(--u));
+      padding: calc(48 * var(--u)) calc(24 * var(--u)) calc(24 * var(--u));
+      background: #e3ffe0;
     }
 
     .status-item {
-      height: 80px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: calc(12 * var(--u));
     }
 
-    .status-item .card {
-      height: 100%;
-      width: auto;
+    .status-name {
+      width: calc(140 * var(--u));
       flex-shrink: 0;
+      font-size: calc(30 * var(--u));
+      font-weight: 700;
     }
 
     .status-bar-container {
       flex: 1;
-      height: 28px;
+      height: calc(36 * var(--u));
       background: #ddd;
       border: 1px solid #999;
-      border-radius: 4px;
+      border-radius: calc(8 * var(--u));
       overflow: hidden;
     }
 
@@ -337,183 +274,226 @@
       background: #4caf50;
     }
 
+    /* ---- オプションバー（横型のみ表示） ---- */
+
+    .options-bar {
+      position: relative;
+      display: none;
+      height: var(--bar-h);
+      flex-shrink: 0;
+      align-items: center;
+      justify-content: space-evenly;
+      background: #f5e9d5;
+    }
+
+    /* ---- フィールドエリア ---- */
+
+    .field-area {
+      position: relative;
+      height: calc(1080 * var(--u));
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--margin);
+      padding: var(--margin) 0;
+      background: #d6d6ff;
+    }
+
+    .lane {
+      position: relative;
+      height: var(--lane-h);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 var(--margin);
+    }
+
+    .location-lane { background: #ffe1b3; }
+    .field-item-lane { background: #d9ffd5; }
+    .hand-lane { background: #e1dbff; }
+
+    .pinned-slot {
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      flex-shrink: 0;
+    }
+
+    .lane-divider {
+      width: calc(4 * var(--u));
+      height: var(--card-h);
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: calc(2 * var(--u));
+    }
+
+    .lane-scroll {
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      overflow-x: auto;
+      min-width: 0;
+      height: 100%;
+      padding-left: var(--gap);
+      scrollbar-width: none;
+    }
+
+    .lane-scroll::-webkit-scrollbar { display: none; }
+
+    .field-item-lane .lane-scroll,
+    .hand-lane .lane-scroll { padding-left: 0; }
+
+    /* ---- 横型 ---- */
+
     @media (orientation: landscape) {
-      .screen {
-        grid-template-columns: 840fr 1080fr;
-        grid-template-rows: 1080fr;
-        grid-template-areas: "dashboard field";
+      .screen { flex-direction: row; }
+
+      .dashboard-column {
+        flex: 1;
+        min-width: calc(570 * var(--u));
+        display: flex;
+        flex-direction: column;
       }
 
-      .dashboard-area {
-        grid-template-columns: 840fr;
-        grid-template-rows: 840fr 240fr;
+      .character-area {
+        flex-direction: column;
+        flex: none;
+        height: auto;
       }
 
-      .options-area {
-        grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: 1fr;
+      .character-display {
+        width: 100%;
+        height: calc(488 * var(--u));
+        flex-direction: row;
+      }
+
+      .equip-injury { flex-direction: column; }
+
+      .status-area { flex: 1; min-height: 0; }
+
+      .options-bar { display: flex; }
+
+      .system-bar .icon-button { display: none; }
+
+      .field-area { width: calc(1350 * var(--u)); height: auto; }
+    }
+
+    @media (orientation: portrait) {
+      .dashboard-column {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
       }
     }
   </style>
 </head>
 <body>
   <div class="screen">
-    <div class="area dashboard-area">
-      <div class="label">ダッシュボードエリア 840×1080</div>
-      <div class="area info-area">
-        <div class="label">情報エリア 840×840</div>
-        <div class="area status-area">
-          <div class="label">状況エリア 840×280</div>
-          <div class="area datetime-area">
-            <div class="label">日時エリア 280×280</div>
-            <div class="datetime-cards">
-              <div class="datetime-row">
-                <div class="card"><span class="card-name">D</span></div>
-                <div class="card"><span class="card-name"></span></div>
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">0</span></div>
-              </div>
-              <div class="datetime-row">
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">0</span></div>
-                <div class="card"><span class="card-name">:</span></div>
-                <div class="card"><span class="card-name">1</span></div>
-                <div class="card"><span class="card-name">5</span></div>
-              </div>
+    <div class="dashboard-column">
+      <header class="system-bar">
+        <div class="label">システムバー</div>
+        <div class="datetime">🕒 11日目 10:15</div>
+        <div class="weather-chip">☀️ 灼熱の快晴</div>
+        <div class="spacer"></div>
+        <button class="icon-button" type="button" aria-label="設定" title="設定">⚙️</button>
+        <button class="icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button>
+        <button class="icon-button" type="button" aria-label="日記" title="日記">📓</button>
+        <button class="icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button>
+      </header>
+      <section class="character-area">
+        <div class="character-display">
+          <div class="label">キャラクター表示エリア</div>
+          <div class="portrait-wrap">
+            <div class="card portrait-card"><span class="card-name">主人公</span></div>
+            <div class="condition-chips">
+              <div class="condition-chip">💭 高揚</div>
+              <div class="condition-chip">🥶 寒気</div>
+              <div class="condition-chip">😪 疲労</div>
+              <div class="condition-chip">🍽️ 空腹</div>
             </div>
           </div>
-          <div class="area weather-area">
-            <div class="label">天候エリア 280×280</div>
-            <div class="single-card-slot">
-              <div class="card"><span class="card-name card-name-large">灼熱の快晴</span></div>
-            </div>
-          </div>
-          <div class="area status-location-area">
-            <div class="label">ロケーションエリア 280×280</div>
-            <div class="single-card-slot">
-              <div class="card"><span class="card-name card-name-large">流木だらけの海岸線</span></div>
-            </div>
+          <div class="equip-injury">
+            <div class="card equipment-card"><span class="card-name">折りたたみ椅子</span></div>
+            <div class="card injury-card"><span class="card-name">擦り傷</span></div>
           </div>
         </div>
-        <div class="area character-area">
-          <div class="label">キャラクターエリア 840×560</div>
-          <div class="area character-display-area">
-            <div class="label">キャラクター表示エリア 420×560</div>
-            <div class="area portrait-status-area">
-              <div class="label">ポートレイト・状況エリア 420×280</div>
-              <div class="area portrait-side-area">
-                <div class="label">条件エリア1 105×280</div>
-                <div class="side-status-cards">
-                  <div class="card"><span class="card-name">高揚</span></div>
-                  <div class="card"><span class="card-name">寒気</span></div>
-                </div>
-              </div>
-              <div class="area portrait-center-area">
-                <div class="label">ポートレイトエリア 210×280</div>
-                <div class="single-card-slot">
-                  <div class="card"><span class="card-name">主人公</span></div>
-                </div>
-              </div>
-              <div class="area portrait-side-area">
-                <div class="label">条件エリア2 105×280</div>
-                <div class="side-status-cards">
-                  <div class="card"><span class="card-name">疲労</span></div>
-                  <div class="card"><span class="card-name">空腹</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="area equipment-injury-area">
-              <div class="label">装備・怪我エリア 420×280</div>
-              <div class="area equipment-area">
-                <div class="label">装備エリア 210×280</div>
-                <div class="single-card-slot">
-                  <div class="card"><span class="card-name">折りたたみ椅子</span></div>
-                </div>
-              </div>
-              <div class="area injury-area">
-                <div class="label">怪我エリア 210×280</div>
-                <div class="single-card-slot">
-                  <div class="card"><span class="card-name">擦り傷</span></div>
-                </div>
-              </div>
-            </div>
+        <div class="status-area">
+          <div class="label">ステータスエリア</div>
+          <div class="status-item">
+            <div class="status-name">HP</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
           </div>
-          <div class="area status-display-area">
-            <div class="label">ステータスエリア 420×560</div>
-            <div class="status-list">
-              <div class="status-item">
-                <div class="card"><span class="card-name">HP</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">スタ<br>ミナ</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:65%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">水分</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:45%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">食料</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:30%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">体温</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:70%"></div></div>
-              </div>
-              <div class="status-item">
-                <div class="card"><span class="card-name">精神</span></div>
-                <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
-              </div>
-            </div>
+          <div class="status-item">
+            <div class="status-name">スタミナ</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:65%"></div></div>
+          </div>
+          <div class="status-item">
+            <div class="status-name">水分</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:45%"></div></div>
+          </div>
+          <div class="status-item">
+            <div class="status-name">食料</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:30%"></div></div>
+          </div>
+          <div class="status-item">
+            <div class="status-name">体温</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:70%"></div></div>
+          </div>
+          <div class="status-item">
+            <div class="status-name">精神</div>
+            <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
           </div>
         </div>
-      </div>
-      <div class="area options-area">
-        <div class="label">オプションエリア 840×240</div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="設定" title="設定">⚙️</button></div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button></div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="日記" title="日記">📓</button></div>
-        <div class="option-button"><button class="option-icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button></div>
-      </div>
+      </section>
+      <section class="options-bar">
+        <div class="label">オプションバー</div>
+        <button class="icon-button" type="button" aria-label="設定" title="設定">⚙️</button>
+        <button class="icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button>
+        <button class="icon-button" type="button" aria-label="日記" title="日記">📓</button>
+        <button class="icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button>
+      </section>
     </div>
-    <div class="area field-area">
-      <div class="label">フィールドエリア 1080×1080</div>
+    <main class="field-area">
       <div class="lane location-lane">
-        <div class="label">ロケーションレーン 1080×360</div>
-        <div class="lane-cards">
-          <div class="card"><span class="card-name card-name-large">白砂の浜</span></div>
-          <div class="card"><span class="card-name card-name-large">崩れかけた岩場の洞窟入口</span></div>
-          <div class="card"><span class="card-name card-name-large">浅瀬</span></div>
-          <div class="card"><span class="card-name card-name-large">ヤシ林</span></div>
-          <div class="card"><span class="card-name card-name-large">潮だまり</span></div>
-          <div class="card"><span class="card-name card-name-large">濃霧の湿地帯</span></div>
+        <div class="label">ロケーションレーン</div>
+        <div class="pinned-slot">
+          <div class="card"><span class="card-name">流木だらけの海岸線</span></div>
+          <div class="lane-divider"></div>
+        </div>
+        <div class="lane-scroll">
+          <div class="card"><span class="card-name">白砂の浜</span></div>
+          <div class="card"><span class="card-name">崩れかけた岩場の洞窟入口</span></div>
+          <div class="card"><span class="card-name">浅瀬</span></div>
+          <div class="card"><span class="card-name">ヤシ林</span></div>
+          <div class="card"><span class="card-name">潮だまり</span></div>
+          <div class="card"><span class="card-name">濃霧の湿地帯</span></div>
         </div>
       </div>
       <div class="lane field-item-lane">
-        <div class="label">フィールドアイテムレーン 1080×360</div>
-        <div class="lane-cards">
-          <div class="card"><span class="card-name card-name-large">石斧</span></div>
-          <div class="card"><span class="card-name card-name-large">未調理のヤギ肉のシチュー</span></div>
-          <div class="card"><span class="card-name card-name-large">火打ち石</span></div>
-          <div class="card"><span class="card-name card-name-large">雨水を集めた竹筒</span></div>
-          <div class="card"><span class="card-name card-name-large">ロープ</span></div>
-          <div class="card"><span class="card-name card-name-large">割れたコンパス</span></div>
+        <div class="label">フィールドアイテムレーン</div>
+        <div class="lane-scroll">
+          <div class="card"><span class="card-name">石斧</span></div>
+          <div class="card"><span class="card-name">未調理のヤギ肉のシチュー</span></div>
+          <div class="card"><span class="card-name">火打ち石</span></div>
+          <div class="card"><span class="card-name">雨水を集めた竹筒</span></div>
+          <div class="card"><span class="card-name">ロープ</span></div>
+          <div class="card"><span class="card-name">割れたコンパス</span></div>
         </div>
       </div>
       <div class="lane hand-lane">
-        <div class="label">ハンドレーン 1080×360</div>
-        <div class="lane-cards">
-          <div class="card"><span class="card-name card-name-large">焼き魚</span></div>
-          <div class="card"><span class="card-name card-name-large">椰子の実スープ</span></div>
-          <div class="card"><span class="card-name card-name-large">干し肉</span></div>
-          <div class="card"><span class="card-name card-name-large">果実串</span></div>
-          <div class="card"><span class="card-name card-name-large">貝の蒸し焼き</span></div>
-          <div class="card"><span class="card-name card-name-large">塩ゆで芋</span></div>
+        <div class="label">ハンドレーン</div>
+        <div class="lane-scroll">
+          <div class="card"><span class="card-name">焼き魚</span></div>
+          <div class="card"><span class="card-name">椰子の実スープ</span></div>
+          <div class="card"><span class="card-name">干し肉</span></div>
+          <div class="card"><span class="card-name">果実串</span></div>
+          <div class="card"><span class="card-name">貝の蒸し焼き</span></div>
+          <div class="card"><span class="card-name">塩ゆで芋</span></div>
+          <div class="card"><span class="card-name">木の実の盛り合わせ</span></div>
+          <div class="card"><span class="card-name">海藻サラダ</span></div>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 </body>
 </html>
