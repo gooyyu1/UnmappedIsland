@@ -18,8 +18,9 @@
       --gap: calc(12 * var(--u));
       --margin: calc(6 * var(--u));
       --bar-h: calc(96 * var(--u));
-      --portrait-w: calc(300 * var(--u));
-      --portrait-h: calc(460 * var(--u));
+      --situation-h: calc(176 * var(--u));
+      --portrait-w: calc(260 * var(--u));
+      --portrait-h: calc(399 * var(--u));
       --small-card-w: calc(146 * var(--u));
       --small-card-h: calc(224 * var(--u));
       --radius: calc(12 * var(--u));
@@ -64,6 +65,13 @@
       width: 100%;
       height: 100%;
       background: #f6f6f6;
+    }
+
+    .dashboard-column {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
     }
 
     /* ---- カード ---- */
@@ -116,56 +124,6 @@
     .portrait-card { --card-icon: "🧍"; }
     .equipment-card { --card-icon: "🪑"; }
     .injury-card { --card-icon: "🩹"; }
-
-    /* ---- システムバー ---- */
-
-    .system-bar {
-      position: relative;
-      height: var(--bar-h);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      gap: var(--gap);
-      padding: 0 calc(15 * var(--u));
-      background: #e8e2d4;
-    }
-
-    .datetime {
-      font-size: calc(40 * var(--u));
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .weather-chip {
-      display: flex;
-      align-items: center;
-      gap: calc(8 * var(--u));
-      height: calc(76 * var(--u));
-      padding: 0 calc(18 * var(--u));
-      border: 1px solid #000;
-      border-radius: calc(38 * var(--u));
-      background: #fff2e0;
-      font-size: calc(32 * var(--u));
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .system-bar .spacer { flex: 1; }
-
-    .icon-button {
-      width: calc(88 * var(--u));
-      height: calc(88 * var(--u));
-      flex-shrink: 0;
-      border: 1px solid #000;
-      border-radius: var(--radius);
-      background: #ffffff;
-      font-size: calc(52 * var(--u));
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-    }
 
     /* ---- キャラクターエリア ---- */
 
@@ -243,8 +201,30 @@
       flex-direction: column;
       justify-content: center;
       gap: calc(16 * var(--u));
-      padding: calc(48 * var(--u)) calc(24 * var(--u)) calc(24 * var(--u));
+      padding: calc(24 * var(--u));
       background: #e3ffe0;
+    }
+
+    .status-options {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--gap);
+      margin-bottom: calc(8 * var(--u));
+    }
+
+    .icon-button {
+      width: calc(88 * var(--u));
+      height: calc(88 * var(--u));
+      flex-shrink: 0;
+      border: 1px solid #000;
+      border-radius: var(--radius);
+      background: #ffffff;
+      font-size: calc(52 * var(--u));
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
     }
 
     .status-item {
@@ -272,6 +252,127 @@
     .status-bar {
       height: 100%;
       background: #4caf50;
+    }
+
+    /* ---- 状況エリア（日めくりカレンダー・天候） ---- */
+
+    .situation-area {
+      position: relative;
+      height: var(--situation-h);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: calc(24 * var(--u));
+      padding: 0 calc(24 * var(--u));
+      background: #e8e2d4;
+    }
+
+    .flip-calendar {
+      width: calc(190 * var(--u));
+      height: calc(164 * var(--u));
+      flex-shrink: 0;
+      border: 1px solid #000;
+      border-radius: calc(8 * var(--u));
+      background: #fff;
+      padding: 0;
+      font: inherit;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .calendar-binding {
+      height: calc(30 * var(--u));
+      flex-shrink: 0;
+      background: #5a5a5a;
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+    }
+
+    .calendar-ring {
+      width: calc(14 * var(--u));
+      height: calc(14 * var(--u));
+      border-radius: 50%;
+      background: #fff;
+      border: calc(2 * var(--u)) solid #333;
+    }
+
+    .calendar-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: calc(6 * var(--u));
+      line-height: 1;
+    }
+
+    .calendar-row {
+      display: flex;
+      align-items: center;
+      gap: calc(4 * var(--u));
+    }
+
+    .flip-digit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #3a3a3a;
+      color: #fff;
+      border-radius: calc(6 * var(--u));
+      font-weight: 700;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flip-digit::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      border-top: calc(2 * var(--u)) solid rgba(0, 0, 0, 0.6);
+    }
+
+    .calendar-row-day .flip-digit {
+      width: calc(50 * var(--u));
+      height: calc(66 * var(--u));
+      font-size: calc(44 * var(--u));
+    }
+
+    .calendar-row-time .flip-digit {
+      width: calc(34 * var(--u));
+      height: calc(44 * var(--u));
+      font-size: calc(28 * var(--u));
+    }
+
+    .calendar-day-unit {
+      font-size: calc(22 * var(--u));
+      font-weight: 700;
+      color: #333;
+    }
+
+    .calendar-colon {
+      font-size: calc(28 * var(--u));
+      font-weight: 700;
+      color: #333;
+    }
+
+    .weather-chip {
+      display: flex;
+      align-items: center;
+      gap: calc(8 * var(--u));
+      height: calc(76 * var(--u));
+      padding: 0 calc(18 * var(--u));
+      border: 1px solid #000;
+      border-radius: calc(38 * var(--u));
+      background: #fff2e0;
+      font-size: calc(32 * var(--u));
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     /* ---- オプションバー（横型のみ表示） ---- */
@@ -347,17 +448,12 @@
     @media (orientation: landscape) {
       .screen { flex-direction: row; }
 
-      .dashboard-column {
-        flex: 1;
-        min-width: calc(570 * var(--u));
-        display: flex;
-        flex-direction: column;
-      }
+      .situation-area { order: -1; }
 
       .character-area {
         flex-direction: column;
-        flex: none;
-        height: auto;
+        flex: 1;
+        min-height: 0;
       }
 
       .character-display {
@@ -368,38 +464,24 @@
 
       .equip-injury { flex-direction: column; }
 
-      .status-area { flex: 1; min-height: 0; }
+      .status-area {
+        flex: 1;
+        min-height: 0;
+        gap: calc(10 * var(--u));
+        padding: calc(32 * var(--u)) calc(24 * var(--u)) calc(16 * var(--u));
+      }
+
+      .status-options { display: none; }
 
       .options-bar { display: flex; }
 
-      .system-bar .icon-button { display: none; }
-
       .field-area { width: calc(1350 * var(--u)); height: auto; }
-    }
-
-    @media (orientation: portrait) {
-      .dashboard-column {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-height: 0;
-      }
     }
   </style>
 </head>
 <body>
   <div class="screen">
     <div class="dashboard-column">
-      <header class="system-bar">
-        <div class="label">システムバー</div>
-        <div class="datetime">🕒 11日目 10:15</div>
-        <div class="weather-chip">☀️ 灼熱の快晴</div>
-        <div class="spacer"></div>
-        <button class="icon-button" type="button" aria-label="設定" title="設定">⚙️</button>
-        <button class="icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button>
-        <button class="icon-button" type="button" aria-label="日記" title="日記">📓</button>
-        <button class="icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button>
-      </header>
       <section class="character-area">
         <div class="character-display">
           <div class="label">キャラクター表示エリア</div>
@@ -419,6 +501,12 @@
         </div>
         <div class="status-area">
           <div class="label">ステータスエリア</div>
+          <div class="status-options">
+            <button class="icon-button" type="button" aria-label="設定" title="設定">⚙️</button>
+            <button class="icon-button" type="button" aria-label="図鑑" title="図鑑">📖</button>
+            <button class="icon-button" type="button" aria-label="日記" title="日記">📓</button>
+            <button class="icon-button" type="button" aria-label="メニュー" title="メニュー">☰</button>
+          </div>
           <div class="status-item">
             <div class="status-name">HP</div>
             <div class="status-bar-container"><div class="status-bar" style="width:80%"></div></div>
@@ -444,6 +532,30 @@
             <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
           </div>
         </div>
+      </section>
+      <section class="situation-area">
+        <div class="label">状況エリア</div>
+        <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
+          <span class="calendar-binding">
+            <span class="calendar-ring"></span>
+            <span class="calendar-ring"></span>
+          </span>
+          <span class="calendar-body">
+            <span class="calendar-row calendar-row-day">
+              <span class="flip-digit">1</span>
+              <span class="flip-digit">1</span>
+              <span class="calendar-day-unit">日目</span>
+            </span>
+            <span class="calendar-row calendar-row-time">
+              <span class="flip-digit">1</span>
+              <span class="flip-digit">0</span>
+              <span class="calendar-colon">:</span>
+              <span class="flip-digit">1</span>
+              <span class="flip-digit">5</span>
+            </span>
+          </span>
+        </button>
+        <div class="weather-chip">☀️ 灼熱の快晴</div>
       </section>
       <section class="options-bar">
         <div class="label">オプションバー</div>
