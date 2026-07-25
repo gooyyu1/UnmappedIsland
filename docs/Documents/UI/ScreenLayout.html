@@ -395,12 +395,11 @@ id="フィールドアイテムレーン-field-item-lane">フィールドアイ�
 が供給します。3 レーンと日時は実際のワールド状態
 （現在地とそのスロットの中身・キャラクターの手持ちスロット・<code>world</code>
 の日時）から作ります。
-アイテムの画像がまだ無いため、カードのアイコンは種別ごとの絵文字を仮に使い、名前は
-<code>object_def</code> の <code>display_name</code>（<a
-href="../Engine/GameElementDefinition.html">GameElementDefinition.md</a>
-4.2
-節）を表示します。天候・条件・装備・怪我・ステータスはドメイン側に表示できる形がまだ
-無いため、モックと同じ固定値を返すプレースホルダーのままです。</p>
+アイテムの画像がまだ無いため、カードのアイコンは種別ごとの絵文字を仮に使っています。名前は
+言語ごとの対応表（<a
+href="../Engine/Localization.html">Localization.md</a>）から引きます。天候・条件・装備・
+怪我・ステータスはドメイン側に表示できる形がまだ無いため、モックと同じ固定値を返す
+プレースホルダーのままです。</p>
 <p>ワールド状態そのものの保存はまだ無いため、プレイ画面はセーブデータのシードから世界を作り直して
 表示します（<a
 href="../Engine/SaveDataManagement.html">SaveDataManagement.md</a>）。</p>
