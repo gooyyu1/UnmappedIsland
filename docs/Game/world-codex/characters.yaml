@@ -5,8 +5,17 @@
 object_defs:
   character:
     singleton: true
+    display_name: 主人公
     # 土地のcharactersスロットのaccepts判定用。将来のNPC・動物も同じタグで同じスロットへ入れる。
     tags: [character]
+    slots:
+      # 手持ち。枠の位置が持ち替えのたびに動かないよう固定型（fixed_positions）の6枠にする
+      # （ScreenLayout.md ハンドレーン・SlotSystem.md 3節）。
+      hand:
+        accepts:
+          - {tag: item, max: 9999}
+        unit_capacity: 6
+        fixed_positions: true
     props:
       # 満腹度。0でも即死せず体調不良につながる想定（未実装。致死性はbody_fat参照）。
       # 満腹から1日（96 tick）で空になる。桁の余裕のため-100/tickで減衰し、max=96*100=9600。
