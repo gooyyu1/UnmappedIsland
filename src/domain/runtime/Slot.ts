@@ -208,6 +208,25 @@ export class Slot {
     return true;
   }
 
+  /**
+   * プレイヤーが位置を指定して入れる手動配置（fixedPositions専用）。gapIndexはセルとセルの隙間の番号で、
+   * 0が先頭のセルの前、cells.lengthが末尾のセルの後ろ。まず右方向へ、それが無理なら左方向へ既存のセルを
+   * ずらして場所を作る（tryPlaceShifted）。どちらへもずらせなければfalse。
+   *
+   * 合流できる既存スタックがあるときは、指定された位置よりも「同種は1スタックにまとまる」という不変条件を
+   * 優先してそちらへ入れる（addInternalと同じ扱い）。
+   */
+  tryInsertAtGap(obj: WorldObject, gapIndex: number): boolean {
+    if (!this.def.fixedPositions) return false;
+
+    if (this.def.stackable) {
+      const existing = this.findMatchingStack(obj);
+      if (existing !== undefined && existing.tryInsert(obj)) return true;
+    }
+
+    return this.tryPlaceShifted(obj, gapIndex - 1, 1) || this.tryPlaceShifted(obj, gapIndex, -1);
+  }
+
   /** objが現在属しているObjectStack（無ければundefined）。 */
   findStackContaining(obj: WorldObject): ObjectStack | undefined {
     return this._cells.find((c) => c !== undefined && c.members.includes(obj));

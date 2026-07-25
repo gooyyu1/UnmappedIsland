@@ -145,6 +145,21 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });
 
+  it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const view = fromGameSession(game, codex, locale);
+    // water_liquidはwith: water_liquidのpour_inを持つ（containers.yaml）。
+    const cardOf = (name: string) => ({
+      icon: '',
+      name,
+      object: game.session.spawn(codex.objectNames.getId(name)),
+    });
+    const water = cardOf('water_liquid');
+
+    expect(view.combinationOf(water, cardOf('water_liquid'))).toBeTypeOf('function');
+    expect(view.combinationOf(water, cardOf('stone')), '受け側にマッチする組み合わせが無い').toBeUndefined();
+  });
+
   it('現在地は移動に追従する', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);

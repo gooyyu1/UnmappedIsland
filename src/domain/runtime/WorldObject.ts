@@ -222,13 +222,39 @@ export class WorldObject {
     wellKnown: WellKnownProperties,
     force = false,
   ): string | undefined {
-    return this.attachToSlot(newParent, slotGlobalId, placement, wellKnown, force);
+    return this.attachToSlot(
+      newParent,
+      slotGlobalId,
+      (slot) => slot.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
+      wellKnown,
+      force,
+    );
   }
 
+  /**
+   * プレイヤーが位置を指定して入れる手動配置（Slot.tryInsertAtGap参照）。fixedPositionsのスロット専用で、
+   * 既存のセルをずらして場所を作れない場合はエラーを返す。
+   */
+  moveToSlotAtGap(
+    newParent: WorldObject,
+    slotGlobalId: number,
+    gapIndex: number,
+    wellKnown: WellKnownProperties,
+  ): string | undefined {
+    return this.attachToSlot(
+      newParent,
+      slotGlobalId,
+      (slot) => slot.tryInsertAtGap(this, gapIndex),
+      wellKnown,
+      false,
+    );
+  }
+
+  /** placeは位置を指定する配置（同上の2つ）専用。省略すると通常の追加（Slot.addInternal）になる。 */
   private attachToSlot(
     newParent: WorldObject,
     slotGlobalId: number,
-    sameSlot: SameSlotPlacement | undefined,
+    place: ((slot: Slot) => boolean) | undefined,
     wellKnown: WellKnownProperties,
     force: boolean,
   ): string | undefined {
@@ -246,11 +272,11 @@ export class WorldObject {
 
     this.detachFromParent(wellKnown);
 
-    if (sameSlot !== undefined) {
-      if (!targetSlot.placeSameSlot(this, sameSlot.originCellIndex, sameSlot.kindRemains)) {
+    if (place !== undefined) {
+      if (!place(targetSlot)) {
         // fixedPositionsで空きが作れず配置できなかった（呼び出し側でfallbackへ）。既に旧親から切り離し済みの
         // ため、この場合は未配置（どこにも属さない）で戻す。
-        return `'${newParent.def.name}.${targetSlot.def.name}' に置き換えの空きがありません。`;
+        return `'${newParent.def.name}.${targetSlot.def.name}' に指定した位置の空きがありません。`;
       }
     } else {
       targetSlot.addInternal(this);

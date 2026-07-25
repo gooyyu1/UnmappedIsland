@@ -13,6 +13,8 @@ import { fromGameSession } from './PlayScreenView';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeDirection } from './ui/Card';
 import { Card } from './ui/Card';
+import type { CardDrop } from './ui/CardDragController';
+import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
@@ -62,6 +64,10 @@ export class PlayScene extends ResponsiveScene {
   private gameSession!: NewGameSession;
   private view!: PlayScreenView;
 
+  /** ドラッグ＆ドロップの対象になる2レーン。buildのたびに作り直される。 */
+  private fieldItemLane!: CardLane;
+  private handLane!: CardLane;
+
   private selectedFilter = 0;
   private filterButtons: Button[] = [];
 
@@ -96,35 +102,83 @@ export class PlayScene extends ResponsiveScene {
 
   private buildFieldArea(layout: PlayScreenLayout): void {
     addPanel(this, layout.fieldArea, COLOR.fieldArea);
-    const [locationLane, fieldItemLane, handLane] = layout.lanes;
+    const [locationLane, fieldItems, hand] = layout.lanes;
 
     new CardLane(this, this.metrics, locationLane, COLOR.locationLane, this.view.destinations, {
       ...this.view.currentLocation,
       onTap: () => this.openExplorationWindow(layout.fieldArea.width),
     });
-    new CardLane(
+    this.fieldItemLane = new CardLane(
       this,
       this.metrics,
-      fieldItemLane,
+      fieldItems,
       COLOR.fieldItemLane,
-      this.movableCards(this.view.fieldItems, 'down'),
+      this.laneCards(this.view.fieldItems, 'down'),
     );
-    new CardLane(this, this.metrics, handLane, COLOR.handLane, this.movableCards(this.view.hand, 'up'));
+    this.handLane = new CardLane(
+      this,
+      this.metrics,
+      hand,
+      COLOR.handLane,
+      this.laneCards(this.view.hand, 'up'),
+    );
+
+    const drag = new CardDragController(this, this.metrics, {
+      canDrop: (drop) => this.dropAction(drop) !== undefined,
+      onDrop: (drop) => {
+        const action = this.dropAction(drop);
+        if (action !== undefined) this.applyToWorld(action);
+      },
+    });
+    drag.addLane(this.fieldItemLane);
+    drag.addLane(this.handLane);
   }
 
   /**
-   * アイテムのカードに、隣のレーンへ移すための端の操作を付ける。ハンドレーンはフィールド
-   * アイテムレーンの下にあるので、フィールド側は下端（▼）、手持ち側は上端（▲）が移動先を指す。
+   * アイテムのカードに、レーン間の操作（端を押しての移動と、掴んでのドラッグ）を付ける。ハンドレーンは
+   * フィールドアイテムレーンの下にあるので、フィールド側は下端（▼）、手持ち側は上端（▲）が移動先を指す。
+   *
+   * 移せない設置物にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
    */
-  private movableCards(
+  private laneCards(
     cards: readonly (ItemCard | undefined)[],
     direction: CardEdgeDirection,
   ): readonly (CardContent | undefined)[] {
     return cards.map((card) => {
-      const move = card?.move;
-      if (card === undefined || move === undefined) return card;
-      return { ...card, edge: { direction, onTap: () => this.applyToWorld(move) } };
+      if (card === undefined) return undefined;
+      const move = card.move;
+      return {
+        ...card,
+        draggable: true,
+        edge: move === undefined ? undefined : { direction, onTap: () => this.applyToWorld(move) },
+      };
     });
+  }
+
+  /**
+   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、隙間へ落としたら
+   * 隣のレーンへの移動。同じレーンの隙間へ落とす並べ替えは扱わない。
+   */
+  private dropAction(drop: CardDrop): (() => void) | undefined {
+    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
+    if (dragged === undefined) return undefined;
+
+    if (drop.target.kind === 'combine') {
+      const target = this.cardsOf(drop.to)[drop.target.index];
+      if (target === undefined || target === dragged) return undefined;
+      return this.view.combinationOf(dragged, target);
+    }
+
+    const move = dragged.move;
+    if (drop.to === drop.from || move === undefined) return undefined;
+
+    // 手持ちは枠の位置が固定なので落とした隙間へ入れる。フィールド側は並び順を持たない。
+    const gapIndex = drop.to === this.handLane ? drop.target.gapIndex : undefined;
+    return () => move(gapIndex);
+  }
+
+  private cardsOf(lane: CardLane): readonly (ItemCard | undefined)[] {
+    return lane === this.handLane ? this.view.hand : this.view.fieldItems;
   }
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。幅はフィールドエリアに合わせる。 */

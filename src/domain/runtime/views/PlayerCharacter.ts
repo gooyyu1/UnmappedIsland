@@ -50,9 +50,19 @@ export class PlayerCharacter {
     return slot === undefined ? [] : slot.cells.map((cell) => cell?.members.at(0));
   }
 
-  /** アイテムを手持ちスロットへ入れる。手持ちが受け入れられなければ（accepts制約・6枠の上限）false。 */
-  take(item: WorldObject, session: WorldSession): boolean {
-    return item.moveToSlot(this.instance, this.handSlotId, session.codex.wellKnown) === undefined;
+  /**
+   * アイテムを手持ちスロットへ入れる。手持ちが受け入れられなければ（accepts制約・6枠の上限）false。
+   *
+   * gapIndexは枠と枠の隙間の番号（0=先頭の枠の前）で、渡すとその位置へ既存の枠を押し出して入れる
+   * （Slot.tryInsertAtGap）。省略すると最初の空き枠へ入る。
+   */
+  take(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
+    const wellKnown = session.codex.wellKnown;
+    const failure =
+      gapIndex === undefined
+        ? item.moveToSlot(this.instance, this.handSlotId, wellKnown)
+        : item.moveToSlotAtGap(this.instance, this.handSlotId, gapIndex, wellKnown);
+    return failure === undefined;
   }
 
   /** 手持ちのアイテムを今いる土地へ置く。土地に居ない・土地が受け入れられないならfalse。 */
