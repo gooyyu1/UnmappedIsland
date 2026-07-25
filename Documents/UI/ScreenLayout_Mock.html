@@ -268,54 +268,25 @@
     }
 
     .flip-calendar {
-      width: calc(190 * var(--u));
-      height: calc(164 * var(--u));
       flex-shrink: 0;
-      border: 1px solid #000;
-      border-radius: calc(8 * var(--u));
-      background: #fff;
+      border: none;
+      background: none;
       padding: 0;
       font: inherit;
-      position: relative;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 calc(3 * var(--u)) 0 rgba(0, 0, 0, 0.25);
-    }
-
-    .calendar-binding {
-      height: calc(30 * var(--u));
-      flex-shrink: 0;
-      background: #5a5a5a;
-      display: flex;
-      align-items: center;
-      justify-content: space-evenly;
-    }
-
-    .calendar-ring {
-      width: calc(14 * var(--u));
-      height: calc(14 * var(--u));
-      border-radius: 50%;
-      background: #fff;
-      border: calc(2 * var(--u)) solid #333;
-    }
-
-    .calendar-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: calc(6 * var(--u));
+      align-items: flex-start;
+      gap: calc(16 * var(--u));
       line-height: 1;
     }
 
     .calendar-row {
       display: flex;
       align-items: center;
-      gap: calc(4 * var(--u));
+      gap: calc(6 * var(--u));
     }
 
+    /* 各桁のフリップカード。上部の留具（リング）だけで吊り下がる */
     .flip-digit {
       display: flex;
       align-items: center;
@@ -325,17 +296,23 @@
       border-radius: calc(6 * var(--u));
       font-weight: 700;
       position: relative;
-      overflow: hidden;
+      box-shadow: 0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, 0.3);
     }
 
+    .flip-digit::before,
     .flip-digit::after {
       content: "";
       position: absolute;
-      left: 0;
-      right: 0;
-      top: 50%;
-      border-top: calc(2 * var(--u)) solid rgba(0, 0, 0, 0.6);
+      top: calc(-8 * var(--u));
+      width: calc(14 * var(--u));
+      height: calc(14 * var(--u));
+      border-radius: 50%;
+      border: calc(3 * var(--u)) solid #6b6b6b;
+      box-sizing: border-box;
     }
+
+    .flip-digit::before { left: calc(6 * var(--u)); }
+    .flip-digit::after { right: calc(6 * var(--u)); }
 
     .calendar-row-day .flip-digit {
       width: calc(50 * var(--u));
@@ -536,23 +513,17 @@
       <section class="situation-area">
         <div class="label">状況エリア</div>
         <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
-          <span class="calendar-binding">
-            <span class="calendar-ring"></span>
-            <span class="calendar-ring"></span>
+          <span class="calendar-row calendar-row-day">
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">1</span>
+            <span class="calendar-day-unit">日目</span>
           </span>
-          <span class="calendar-body">
-            <span class="calendar-row calendar-row-day">
-              <span class="flip-digit">1</span>
-              <span class="flip-digit">1</span>
-              <span class="calendar-day-unit">日目</span>
-            </span>
-            <span class="calendar-row calendar-row-time">
-              <span class="flip-digit">1</span>
-              <span class="flip-digit">0</span>
-              <span class="calendar-colon">:</span>
-              <span class="flip-digit">1</span>
-              <span class="flip-digit">5</span>
-            </span>
+          <span class="calendar-row calendar-row-time">
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">0</span>
+            <span class="calendar-colon">:</span>
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">5</span>
           </span>
         </button>
         <div class="weather-chip">☀️ 灼熱の快晴</div>
