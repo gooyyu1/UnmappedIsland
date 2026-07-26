@@ -44,7 +44,7 @@
 画面を等分して領域を作るのではなく、カード寸法を基準に各エリアの
 寸法を積み上げて決める。カードのアスペクト比は<strong>ブリッジ版のトランプ（57:89）</strong>に合わせ、205×320u
 （= 41:64、比率
-0.6406）とする。枠の画像（<code>public/images/card_frame.png</code>、820×1280）も同じ比率で、
+0.6406）とする。枠の画像（<code>src/assets/card_frame.png</code>、820×1280）も同じ比率で、
 引き伸ばしによる歪みが出ないようカードのちょうど4倍の解像度で作ってある。</li>
 <li><strong>短辺基準の単位</strong>: 寸法は <code>u</code>（= 画面短辺 ÷
 1080、CSS では <code>vmin</code> ベース）で定義する。
@@ -255,6 +255,24 @@ Area)</h4>
 <p>カードを配置する主要な描画領域です。上から<strong>ロケーションレーン</strong>・<strong>フィールドアイテムレーン</strong>・
 <strong>ハンドレーン</strong>の 3 レーン（各 352u
 高）で構成し、各レーンは独立に横スクロールできます。</p>
+<h4 id="カードの絵">カードの絵</h4>
+<p>カードの絵は
+<strong><code>src/assets/objects/&lt;object_def の識別子&gt;.png</code></strong>
+に置きます。ファイル名が識別子そのもので、
+コード側への登録は要りません（<code>src/game/ui/objectArt.ts</code>）。</p>
+<ul>
+<li><strong>種別のプレフィックス・サフィックスは付けません。</strong>
+識別子は Codex 全体で一意なので不要ですし、
+アイテムから設置物へ移したときにファイル名を変えずに済みます。</li>
+<li>絵は<strong>枠と同じ寸法</strong>（205:320）で作り、枠の上にそのまま重ねます。背景は透過にします。</li>
+<li>絵がまだ無い object_def は、<code>PlayScreenView</code>
+が種別ごとに割り当てた<strong>絵文字で代用</strong>します。
+絵は少しずつ増える前提なので、両者が混ざった状態を正常とします。</li>
+</ul>
+<p>一覧はビルド時に作ります（<code>import.meta.glob</code>）。実行時に総当たりで読みに行くと、絵をまだ用意していない
+object_def のぶんだけ 404 が出るためです。ファイル名の綴りが object_def
+と食い違っていると絵は黙って
+使われないままになるので、実在の識別子かどうかは自動テスト（<code>tests/game/objectArt.test.ts</code>）で検査します。</p>
 <h4 id="ロケーションレーン-location-lane">ロケーションレーン (Location
 Lane)</h4>
 <p>左端に現在地カードをピン留めし、区切り線を挟んで移動先候補のロケーションカードを並べます。
