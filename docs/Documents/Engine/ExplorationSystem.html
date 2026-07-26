@@ -220,7 +220,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">actions</span><span class="kw">:</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">explore</span><span class="kw">:</span></span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">showMenu</span><span class="kw">:</span><span class="at"> always</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">duration</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pick</span><span class="kw">:</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">self</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">exploration_progress</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">}}</span></span>
@@ -249,7 +249,11 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="
 は同じ候補内に共存できます、10.1 節）。</li>
 <li><strong><code>duration</code></strong>:
 1回の探索にかかる時間（分、<code>GameElementDefinition.md</code> 11.3
-節）。見通しの悪い土地 （密林・岸壁など）ほど長く設定しています。</li>
+節）。<strong>全土地とも 1 tick（<code>minutes_per_tick</code> = 15
+分）</strong>に揃えています。1回の探索がちょうど1 tick 分の世界の変化に
+対応するため、探索を繰り返しても時計とゲーム内の変化が刻みからずれません。土地ごとの探索の重さは、
+探索率100%までの回数（<code>exploration_progress</code> の
+<code>range.max</code>）だけで表します。</li>
 </ul>
 <h2 id="道path-object_defと移動">3. 道（<code>path</code>
 object_def）と移動</h2>
