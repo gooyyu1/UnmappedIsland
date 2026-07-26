@@ -1,21 +1,10 @@
 #!/bin/bash
-# SessionStart hook: Claude Code on the web 用に .NET 8 SDK を用意し、
-# `dotnet test Tests/Tests.csproj`（NUnit）と `python3 Tools/check_namespace.py`
-# がそのまま回せる状態にする。
+# SessionStart hook: Claude Code on the web で `npm run lint` / `npm run typecheck` /
+# `npm test` と run skill の開発サーバがそのまま動く状態にする。
 #
-# この環境の egress プロキシは dotnet の SDK 配布 CDN（builds.dotnet.microsoft.com
-# など）を 403 で拒否するため、公式インストールスクリプトは使えない。一方 Ubuntu の
-# アーカイブと nuget.org は到達可能なので、apt から dotnet-sdk-8.0 を導入する。
-# apt は HTTPS_PROXY(CONNECT) 経由でしか出られず http:// は 405 になるため、
-# ソースを https:// に書き換えたうえでプロキシを明示して取得する。
-#
-# 冪等（SDK が既にあれば何もしない）・非対話。既定では Claude Code on the web
-# （CLAUDE_CODE_REMOTE=true）でのみ実体処理を行う。
-#
-# 非同期モード: 先頭で async 宣言を出力し、以降の重い処理（SDK 導入・restore）を
-# セッション開始と並行してバックグラウンドで走らせる。起動待ちが無くなる代わりに、
-# 準備完了前に dotnet を使おうとしうる競合があるため、後続の `dotnet test` 実行時に
-# まだ導入中なら少し待つ想定（初回のみ）。
+# 同期実行（`{"async": true}` を出さない）。セッションが始まった時点で node_modules が
+# 揃っていることを保証し、準備前にテストやリンタを走らせてしまう競合を避ける。
+# 冪等・非対話。既定では Claude Code on the web（CLAUDE_CODE_REMOTE=true）でのみ動く。
 set -euo pipefail
 
 # --- web(remote) 以外では何もしない -------------------------------------------
@@ -23,56 +12,22 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
-# 非同期実行を宣言（この行以降はバックグラウンドで実行される）。
-echo '{"async": true, "asyncTimeout": 600000}'
-
 REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+cd "$REPO_DIR"
 
-# --- セッション用の環境変数を永続化（dotnet のバナー/テレメトリ抑制） ---------
-if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
-  {
-    echo 'export DOTNET_CLI_TELEMETRY_OPTOUT=1'
-    echo 'export DOTNET_NOLOGO=1'
-  } >> "$CLAUDE_ENV_FILE"
-fi
-export DOTNET_CLI_TELEMETRY_OPTOUT=1
-export DOTNET_NOLOGO=1
-
-# --- 既に .NET 8 SDK があれば導入はスキップ（冪等） ---------------------------
-if command -v dotnet >/dev/null 2>&1 && dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
-  echo "[session-start] .NET 8 SDK は既に導入済み: $(dotnet --version)"
-else
-  echo "[session-start] .NET 8 SDK を apt から導入します..."
-  export DEBIAN_FRONTEND=noninteractive
-
-  # apt をプロキシ(HTTPS CONNECT)で出せるようにする。archive/security を https:// に。
-  for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
-    [ -f "$f" ] && sed -i \
-      -e 's|http://archive.ubuntu.com|https://archive.ubuntu.com|g' \
-      -e 's|http://security.ubuntu.com|https://security.ubuntu.com|g' "$f"
-  done
-
-  # メインの ubuntu.sources だけを更新（到達不能な PPA の 403 で失敗させない）。
-  apt-get \
-    -o Acquire::https::Proxy="${HTTPS_PROXY:-}" \
-    -o Dir::Etc::sourcelist="sources.list.d/ubuntu.sources" \
-    -o Dir::Etc::sourceparts="-" \
-    update || true
-
-  apt-get \
-    -o Acquire::https::Proxy="${HTTPS_PROXY:-}" \
-    install -y --no-install-recommends dotnet-sdk-8.0
-
-  echo "[session-start] 導入完了: $(dotnet --version)"
+# --- C#時代の生成物の後始末 ---------------------------------------------------
+# Unity/C#からTypeScriptへ移行した際、追跡対象のC#ファイルはcheckoutで消えたが、
+# dotnet restoreが作ったTests/obj以下（未追跡）はgitが触らないため環境に残りうる。
+# gitが1つも追跡していないことを確かめてから消す（誤って実体を消さないため）。
+if [ -d Tests ] && [ -z "$(git ls-files Tests)" ]; then
+  echo "[session-start] C#時代の残骸 Tests/ を削除します。"
+  rm -rf Tests
 fi
 
-# --- NuGet 復元でコンテナのキャッシュを温める（初回 dotnet test を高速化） -----
-# nuget.org はプロキシ経由で到達可能。ネットワークの一時失敗でセッション開始を
-# 妨げないよう best-effort（失敗しても続行。dotnet test 側で再復元される）。
-if [ -f "$REPO_DIR/Tests/Tests.csproj" ]; then
-  echo "[session-start] NuGet パッケージを復元します..."
-  dotnet restore "$REPO_DIR/Tests/Tests.csproj" \
-    || echo "[session-start] 警告: restore に失敗しました（dotnet test 実行時に再試行されます）。"
-fi
+# --- 依存の導入 ---------------------------------------------------------------
+# コンテナの状態はフック完了後にキャッシュされるため、差分だけを入れ直せる
+# npm install を使う（npm ci は毎回node_modulesを作り直す）。
+echo "[session-start] npm install を実行します..."
+npm install --no-fund --no-audit
 
-echo "[session-start] 準備完了。'dotnet test Tests/Tests.csproj' と 'python3 Tools/check_namespace.py' が利用できます。"
+echo "[session-start] 準備完了。'npm run lint' / 'npm run typecheck' / 'npm test' が利用できます。"
