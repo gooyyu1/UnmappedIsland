@@ -186,9 +186,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toEqual([stone]);
 
     const view = fromGameSession(game, codex, locale);
-    expect(view.equipment[0].place).toBe('equipment');
+    expect(view.cardsIn('equipment')[0].place).toBe('equipment');
 
-    view.equipment[0].moveTo?.('hand')?.();
+    view.cardsIn('equipment')[0].moveTo?.('hand')?.();
     expect(game.player.hand[0], '手持ちへ戻せる').toBe(stone);
   });
 
@@ -202,16 +202,57 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.injuries).toHaveLength(1);
-    expect(view.injuries[0].moveTo, '取り出せない').toBeUndefined();
-    expect(view.injuries[0].reorder, '並び替えもできない').toBeUndefined();
+    expect(view.cardsIn('injuries')).toHaveLength(1);
+    expect(view.cardsIn('injuries')[0].moveTo, '取り出せない').toBeUndefined();
+    expect(view.cardsIn('injuries')[0].reorder, '並び替えもできない').toBeUndefined();
     expect(view.hand[0]?.moveTo?.('injuries'), '怪我は移動の宛先にならない').toBeUndefined();
+  });
+
+  it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const handSlotId = codex.slotNames.getId('hand');
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    for (const item of [basket, stone]) {
+      expect(item.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
+    }
+
+    const opened = fromGameSession(game, codex, locale).hand[0]?.contents;
+    expect(opened, 'コンテナのカードは中身の場所を持つ').toBeDefined();
+    expect(fromGameSession(game, codex, locale).hand[1]?.contents, '石はコンテナではない').toBeUndefined();
+
+    // 手持ちの石を、開いた籠の中へ入れる。
+    fromGameSession(game, codex, locale).hand[1]?.moveTo?.(opened!)?.();
+
+    const view = fromGameSession(game, codex, locale);
+    expect(view.cardsIn(opened!).map((card) => card.object)).toEqual([stone]);
+    expect(view.nameOf(opened!), 'タイトルはコンテナ自身の表示名').toBe(
+      locale.object('woven_basket').displayName,
+    );
+    expect(view.acceptsCards(opened!)).toBe(true);
+    expect(view.hand[1], '石は手持ちから無くなる').toBeUndefined();
+
+    // 中身のカードは手持ちへ戻せる。
+    view.cardsIn(opened!)[0].moveTo?.('hand')?.();
+    expect(game.player.hand[1]).toBe(stone);
+  });
+
+  it('コンテナを自分自身の中へは入れられない', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown)).toBe(
+      undefined,
+    );
+
+    const card = fromGameSession(game, codex, locale).hand[0];
+
+    expect(card?.moveTo?.(card.contents!), '籠を籠自身の中へは入れられない').toBeUndefined();
   });
 
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
-    // water_liquidはwith: water_liquidのpour_inを持つ（containers.yaml）。
+    // water_liquidはwith: water_liquidのpour_inを持つ（liquid_containers.yaml）。
     const cardOf = (name: string) => ({
       icon: '',
       name,

@@ -7,7 +7,7 @@ import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 
-describe('containers.yamlの液体容器定義', () => {
+describe('liquid_containers.yamlの液体容器定義', () => {
   let codex: WorldCodex;
   let nextInstanceId: number;
   let hydrationId: number;
@@ -21,7 +21,7 @@ describe('containers.yamlの液体容器定義', () => {
     const loader = new WorldCodexYamlLoader();
     loadYamlFile(loader, worldCodexPath('core.yaml'));
     loadYamlFile(loader, worldCodexPath('characters.yaml'));
-    loadYamlFile(loader, worldCodexPath('containers.yaml'));
+    loadYamlFile(loader, worldCodexPath('liquid_containers.yaml'));
     codex = loader.build();
 
     hydrationId = codex.propertyNames.getId('hydration');

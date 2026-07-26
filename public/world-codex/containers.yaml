@@ -1,208 +1,26 @@
-# 液体容器の定義。容器本体は「液体を1つ入れられるスロットを持つだけ」にし、
-# 飲用・注入・蒸発・スタック判定は represented_by された中身オブジェクト側へ委譲する。
-# liquid_amount は容器本体が持ち、中身オブジェクトは liquid_amount を持たない。
-# 飲用・注入は from_object/to_object で親容器を参照することで実現する。
+# 物を入れて持ち運ぶ入れ物（コンテナ）の定義。
+#
+# 液体の容器（liquid_containers.yaml）とは別物として扱う。あちらは「中身の液体オブジェクトが容器を代表し、
+# 量はliquid_amountという数値で持つ」構造で、こちらは「中身をスロットへそのまま入れる」構造。
+# 共通化できるのは名前だけなので、trait・タグとも分けている。
 
 traits:
-  liquid_container:
-    represented_by: content
+  # 中身をスロットに持つ入れ物。containerタグが付いたカードは、タップすると中身の子ウィンドウが開く
+  # （ScreenLayout.md スロットの子ウィンドウ節）。
+  item_container:
+    tags: [container]
     slots:
-      content:
-        accepts: [{tag: liquid, max: 1}]
-
-  sealed_container:
-    tags: [sealed_container]
-
-  wide_open_container:
-    tags: [wide_open_container]
-
-  narrow_open_container:
-    tags: [narrow_open_container]
-
-  water_liquid:
-    tags: [liquid, water_liquid]
-    actions:
-      drink:
-        transfer:
-          amount: 1200
-          from_object: parent
-          from_prop: liquid_amount
-          to_object: actor
-          to_prop: hydration
-    combinations:
-      pour_in:
-        with: water_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-
-  tea_liquid:
-    tags: [liquid, tea_liquid]
-    actions:
-      drink:
-        transfer:
-          amount: 1200
-          from_object: parent
-          from_prop: liquid_amount
-          to_object: actor
-          to_prop: hydration
-          linked_add:
-            actor:
-              wakefulness: 200
-    combinations:
-      pour_in:
-        with: tea_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-
-  oil_liquid:
-    tags: [liquid, oil_liquid]
-    combinations:
-      pour_in:
-        with: oil_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-
-  evaporating_liquid:
-    passives:
-      - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: cloudy}
-        accumulate:
-          parent:
-            liquid_amount: -1
-      - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: clear}
-        accumulate:
-          parent:
-            liquid_amount: -2
-      - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: sunny}
-        accumulate:
-          parent:
-            liquid_amount: -3
-      - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: scorching}
-        accumulate:
-          parent:
-            liquid_amount: -4
-      - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: cloudy}
-        accumulate:
-          parent:
-            liquid_amount: -2
-      - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: clear}
-        accumulate:
-          parent:
-            liquid_amount: -4
-      - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: sunny}
-        accumulate:
-          parent:
-            liquid_amount: -6
-      - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: scorching}
-        accumulate:
-          parent:
-            liquid_amount: -8
+      # 中身。前詰めスロットなので、出し入れしても詰まって並ぶ。
+      # capacityは中身のsizeの合計の上限（GameElementDefinition.md 7.3節）。sizeの単位も、
+      # 各アイテムのsizeもまだ決めていないため、当面この上限は効かない（どのアイテムもsize=0扱い）。
+      # 値は「石や枝が十分入る」という想定の仮置きで、単位が決まったら見直す。
+      contents:
+        accepts:
+          - {tag: item, max: 9999}
+        capacity: 1000
 
 object_defs:
-  canteen:
-    traits: [liquid_container, sealed_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
-
-  pot:
-    traits: [liquid_container, sealed_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
-
-  bottle:
-    traits: [liquid_container, sealed_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 9600}
-
-  jar:
-    traits: [liquid_container, narrow_open_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 19200}
-
-  coconut_bowl:
-    traits: [liquid_container, wide_open_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 1200}
-
-  empty_liquid:
-    tags: [liquid, empty_liquid]
-    combinations:
-      pour_water:
-        with: water_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: water_liquid
-      pour_tea:
-        with: tea_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: tea_liquid
-      pour_oil:
-        with: oil_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: oil_liquid
-
-  water_liquid:
-    traits: [water_liquid, evaporating_liquid]
-
-  tea_liquid:
-    traits: [tea_liquid, evaporating_liquid]
-
-  oil_liquid:
-    traits: [oil_liquid, evaporating_liquid]
+  # 編み籠。蔓や草を編んで作る、最初の運搬用の入れ物。
+  woven_basket:
+    tags: [item]
+    traits: [item_container]

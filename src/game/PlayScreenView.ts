@@ -24,7 +24,16 @@ export type CardPlacement =
  * 今後コンテナ（箱・かご）の中身も同じ子ウィンドウで見せるため、ここに置き場所を足していけるよう
  * 移動の宛先は名前で指す（moveTo）。「どのレーンの隣か」という暗黙の対応は持たない。
  */
-export type CardPlace = 'field' | 'hand' | 'equipment' | 'injuries';
+export type CardPlace = 'field' | 'hand' | 'equipment' | 'injuries' | { readonly container: WorldObject };
+
+/**
+ * 2つの場所が同じか。コンテナの場所は映しているインスタンスで見分ける（同じ型のコンテナが複数あっても
+ * 中身は別なので、型では一意に決まらない）。
+ */
+export function samePlace(a: CardPlace, b: CardPlace): boolean {
+  if (typeof a === 'string' || typeof b === 'string') return a === b;
+  return a.container === b.container;
+}
 
 /**
  * アイテムのカード1枚。moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への
@@ -43,6 +52,12 @@ export interface ItemCard extends CardContent {
 
   /** このカードが今いる場所。 */
   readonly place: CardPlace;
+
+  /**
+   * このカードがコンテナ（containerタグ、containers.yaml）なら、その中身を映す場所。
+   * 画面側はこれを持つカードをタップで開けるようにする。
+   */
+  readonly contents?: CardPlace;
 
   /**
    * 別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
@@ -82,10 +97,15 @@ export interface PlayScreenView {
   readonly fieldItems: readonly ItemCard[];
   /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
   readonly hand: readonly (ItemCard | undefined)[];
-  /** 装備の子ウィンドウに並べる中身。前詰めスロットなので空きセルは無い。 */
-  readonly equipment: readonly ItemCard[];
-  /** 怪我の子ウィンドウに並べる中身。プレイヤーは出し入れも並び替えもできない（moveTo/reorderを持たない）。 */
-  readonly injuries: readonly ItemCard[];
+
+  /**
+   * 子ウィンドウに並べる、その場所の中身（装備・怪我・コンテナの中身）。前詰めスロットなので
+   * 空きセルは無い。レーンで常に見えているfield/handはこちらでは扱わない。
+   */
+  readonly cardsIn: (place: CardPlace) => readonly ItemCard[];
+
+  /** 子ウィンドウのタイトルに出す、その場所の名前。 */
+  readonly nameOf: (place: CardPlace) => string;
 
   /**
    * その場所がカードを受け入れるか（怪我のような読み取り専用の場所はfalse）。中身が空でも
@@ -114,6 +134,31 @@ const INJURY_ICON = '🩹';
 const UNNAMED_LOCATION = '名もなき土地';
 
 /**
+ * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
+ * レーンで常に見えているfield/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
+ */
+const PLACE_NAMES: Partial<Record<CardPlace & string, string>> = {
+  equipment: '装備',
+  injuries: '怪我',
+};
+
+/** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
+function stacksIn(
+  dest: { owner: WorldObject; slotId: number } | undefined,
+): readonly (readonly WorldObject[])[] {
+  const slot = dest?.owner.tryGetSlot(dest.slotId);
+  return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
+}
+
+/** targetがitem自身か、itemの中に入っているか。入れ物を自分自身の中へ入れる操作を弾くために使う。 */
+function isSelfOrDescendant(item: WorldObject, target: WorldObject): boolean {
+  for (let node: WorldObject | undefined = target; node !== undefined; node = node.parent) {
+    if (node === item) return true;
+  }
+  return false;
+}
+
+/**
  * 生成済みのゲーム一式から画面の表示内容を作る。ロケーションレーン・フィールドアイテムレーン・
  * ハンドレーンは現在地とキャラクターのスロットの中身をそのまま映す。
  *
@@ -125,6 +170,14 @@ export function fromGameSession(
   locale: Localization,
 ): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
+  const containerTagId = codex.tagNames.tryGetId('container');
+  const contentsSlotId = codex.slotNames.tryGetId('contents');
+  /** そのカードがコンテナなら、中身を映す場所。中身を持てるスロットが無いcodexではundefined。 */
+  const contentsOf = (object: WorldObject): CardPlace | undefined =>
+    containerTagId !== undefined && contentsSlotId !== undefined && object.def.tags.includes(containerTagId)
+      ? { container: object }
+      : undefined;
+
   // 1枚のカードが複数のインスタンス（スタック）を表すことがあるため、識別子は先頭を代表とする集合で持つ。
   const cardOf = (instances: readonly WorldObject[], icon: string, place: CardPlace): ItemCard => ({
     icon,
@@ -133,6 +186,7 @@ export function fromGameSession(
     count: instances.length,
     object: instances[0],
     place,
+    contents: contentsOf(instances[0]),
   });
 
   // フィールドアイテムレーンは土地のitemsスロットの後ろへ設置物を並べたもの。設置物は別のスロットに
@@ -148,19 +202,30 @@ export function fromGameSession(
    *
    * 怪我だけundefinedなのは「移動の宛先にならない」ことを表す（ワールド側の効果だけが付け外しする）。
    */
-  const slotOf: Record<CardPlace, { owner: WorldObject; slotId: number } | undefined> = {
-    field: { owner: location.instance, slotId: location.itemsSlotId },
-    hand: { owner: game.player.instance, slotId: game.player.handSlotId },
-    equipment: { owner: game.player.instance, slotId: game.player.equipmentSlotId },
-    injuries: undefined,
+  const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
+    if (typeof place !== 'string') {
+      return contentsSlotId === undefined ? undefined : { owner: place.container, slotId: contentsSlotId };
+    }
+    switch (place) {
+      case 'field':
+        return { owner: location.instance, slotId: location.itemsSlotId };
+      case 'hand':
+        return { owner: game.player.instance, slotId: game.player.handSlotId };
+      case 'equipment':
+        return { owner: game.player.instance, slotId: game.player.equipmentSlotId };
+      case 'injuries':
+        return undefined;
+    }
   };
 
   /** itemを場所placeへ入れる操作（そこへは入れられないならundefined）。 */
   const moveInto =
     (item: WorldObject, from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement): (() => void) | undefined => {
-      const dest = slotOf[place];
-      if (dest === undefined || place === from) return undefined;
+      const dest = slotOf(place);
+      if (dest === undefined || samePlace(place, from)) return undefined;
+      // 自分の中へは入れられない（籠を籠自身へ、また自分の子孫の中へ）。
+      if (typeof place !== 'string' && isSelfOrDescendant(item, place.container)) return undefined;
 
       const wellKnown = game.session.codex.wellKnown;
       if (at === undefined) {
@@ -252,14 +317,23 @@ export function fromGameSession(
             reorder: reorderIn(stack[0], 'hand'),
           },
     ),
-    equipment: game.player.equipmentStacks.map((stack) => ({
-      ...cardOf(stack, ITEM_ICON, 'equipment'),
-      moveTo: moveInto(stack[0], 'equipment'),
-      reorder: reorderIn(stack[0], 'equipment'),
-    })),
-    // 怪我はワールド側の効果だけが付け外しするため、moveTo/reorderを持たせない。
-    injuries: game.player.injuryStacks.map((stack) => cardOf(stack, INJURY_ICON, 'injuries')),
-    acceptsCards: (place) => slotOf[place] !== undefined,
+    cardsIn: (place) => {
+      // 怪我はワールド側の効果だけが付け外しするため、moveTo/reorderを持たせない。
+      if (place === 'injuries')
+        return game.player.injuryStacks.map((stack) => cardOf(stack, INJURY_ICON, 'injuries'));
+
+      const stacks = place === 'equipment' ? game.player.equipmentStacks : stacksIn(slotOf(place));
+      return stacks.map((stack) => ({
+        ...cardOf(stack, ITEM_ICON, place),
+        moveTo: moveInto(stack[0], place),
+        reorder: reorderIn(stack[0], place),
+      }));
+    },
+    nameOf: (place) =>
+      typeof place === 'string'
+        ? (PLACE_NAMES[place] ?? place)
+        : locale.object(place.container.def.name).displayName,
+    acceptsCards: (place) => slotOf(place) !== undefined,
     combinationOf: (dragged, target) => {
       const [combination] = target.object.findMatchingCombinations(dragged.object);
       if (combination === undefined) return undefined;
