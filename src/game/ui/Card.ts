@@ -267,7 +267,23 @@ function addFrame(
 ): Phaser.GameObjects.GameObject {
   if (scene.textures.exists(CARD_FRAME_TEXTURE)) {
     const image = scene.add.image(0, 0, CARD_FRAME_TEXTURE).setOrigin(0, 0).setDisplaySize(width, height);
-    return empty ? image.setAlpha(EMPTY_FRAME_ALPHA) : image;
+    if (!empty) return image;
+
+    // 空き枠は紙を薄く敷いたうえに破線を重ねる。薄いだけだと明るい下地（子ウィンドウの台紙）で
+    // ほとんど見えず、「枠がいくつあるか」が伝わらないため。
+    image.setAlpha(EMPTY_FRAME_ALPHA);
+    const outline = scene.add.graphics();
+    drawBox(
+      outline,
+      { x: 0, y: 0, width, height },
+      {
+        border: COLOR.cardBorder,
+        borderWidth: Math.max(1, metrics.px(2)),
+        radius: metrics.px(SIZE.radius),
+        dashed: true,
+      },
+    );
+    return scene.add.container(0, 0, [image, outline]);
   }
 
   const face = scene.add.graphics();
