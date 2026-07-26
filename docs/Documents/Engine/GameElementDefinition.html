@@ -1142,8 +1142,7 @@ set/add/destroy/spawn/transfer/move が書ける場所</h3>
 <li><code>actions</code>/<code>combinations</code> の各エントリ（11
 節・12 節）—
 <code>showMenu</code>/<code>conditions</code>/<code>duration</code>/<code>with</code>/<code>pick</code>
-と 対等な兄弟キー（<code>duration</code> は現時点で <code>actions</code>
-のみが持ちます、11.3 節）</li>
+と 対等な兄弟キー</li>
 <li><code>pick</code> の各候補（10 節）—
 <code>weight</code>/<code>pick</code> と対等な兄弟キー</li>
 <li><code>props</code> の <code>on_min</code>（6.5
@@ -1232,9 +1231,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb34-1"><a href=
 <h3 id="duration実行にかかるゲーム内時間">11.3
 duration（実行にかかるゲーム内時間）</h3>
 <p><code>duration</code>
-は、このアクションを実行するのにかかるゲーム内時間（分）です。<code>showMenu</code>/<code>conditions</code>と対等な
+は、この操作を実行するのにかかるゲーム内時間（分）です。<code>showMenu</code>/<code>conditions</code>と対等な
 兄弟キーとして直接書きます。省略すれば時間を消費しません（例:
-<code>eat</code>のような即座に終わる操作）。</p>
+<code>eat</code>のような即座に終わる操作）。
+<code>combinations</code>（12 節）も同じキーを同じ意味で持てます。</p>
 <div class="sourceCode" id="cb35"><pre
 class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">actions</span><span class="kw">:</span></span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">explore</span><span class="kw">:</span></span>
@@ -1247,7 +1247,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href=
 節）と同じ<strong>リテラル数値</strong>か<strong><code>{object, prop}</code>
 参照</strong>のいずれかで、10.2節と同じ解決規則
 （<code>object</code>省略時は<code>self</code>、<code>ancestor</code>も可）を共有します。</p>
-<p>条件（<code>conditions</code>）が不成立でアクション自体が実行されなかった場合、<code>duration</code>は消費されません。時間の消費は
+<p>条件（<code>conditions</code>）が不成立で操作自体が実行されなかった場合、<code>duration</code>は消費されません。時間の消費は
 <strong>実行結果が適用された後</strong>に行われます（先に時間を進めると、tick駆動の変化——腐敗による<code>destroy</code>など——が、
 まだ効果を適用していない対象を先に消してしまう事故が起こりうるため）。</p>
 <h3 id="setadddestroyspawntransfermoveactive-pick">11.4
@@ -1292,6 +1292,10 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb36-1"><a href=
 名では直接マッチングしません （4.1
 節）。そのタグを持つあらゆるカード（MOD 追加分・trait
 を介さず直接タグを宣言したカードも含む）と一致します。</p>
+<p><code>combinations</code> も <code>duration</code>（11.3
+節）を持てます。<code>{object, prop}</code> 参照では
+<code>dragged</code> も指せるため、
+「使う道具側のプロパティが所要時間を決める」（切れ味の悪い刃物ほど時間がかかる、など）も書けます。</p>
 <h3 id="dragged">12.2 dragged</h3>
 <p><code>set</code>/<code>add</code>/<code>destroy</code>/<code>transfer</code>（9
 節）の対象キー、および <code>conditions</code>/<code>weight</code> の

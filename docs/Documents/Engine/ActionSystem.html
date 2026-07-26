@@ -80,14 +80,14 @@ combinations</h2>
 <code>dragged</code> の <code>ObjectDef.Tags</code> に <code>with</code>
 タグが含まれるか。</li>
 <li><code>conditions</code> 評価（3節）: 省略時は常に真。</li>
-<li><code>duration</code> の解決（actions のみ）: 参照
-<code>duration</code> は適用前の <code>self</code>
-から読む必要があるため、 効果適用の前に分数だけ確定させる。</li>
+<li><code>duration</code> の解決: 参照 <code>duration</code> は適用前の
+<code>self</code>（combinations では <code>dragged</code> も）から読む
+必要があるため、効果適用の前に分数だけ確定させる。</li>
 <li>効果の適用:
 <code>self.ApplyActiveEffect(effect, session, actor, dragged)</code>（4節）。</li>
-<li>時間進行（actions のみ、6節）:
-効果適用の後に進める（先に進めると、tick 中の destroy 等が
-<code>self</code> を破棄してから効果を適用する事故になる）。</li>
+<li>時間進行（6節）: 効果適用の後に進める（先に進めると、tick 中の
+destroy 等が <code>self</code>
+を破棄してから効果を適用する事故になる）。</li>
 </ol>
 <h2 id="実行可能条件conditions">3. 実行可能条件（conditions）</h2>
 <p><code>Domain.Defs.ConditionNode</code> の木。葉は4種、複合は
@@ -240,14 +240,15 @@ actor/dragged が null で、対象は <code>self</code>
 </ul>
 <h2 id="時間の経過duration">6. 時間の経過（duration）</h2>
 <ul>
-<li><code>actions</code> の <code>duration</code>
-はゲーム内の<strong>分</strong>。リテラルか <code>{object, prop}</code>
-参照（<code>weight</code> と同じ二択）で、
-省略時は時間を消費しない。<code>combinations</code> は現状
-<code>duration</code> を持たない。</li>
-<li>時間進行は <code>ActionDef.TryExecute</code> 自身が
-<code>WorldSession.AdvanceWorldTime(minutes)</code> を呼んで完結させる。
-呼び出し側（UI層）が実行後に別途時間を進める必要はない。</li>
+<li><code>actions</code>/<code>combinations</code> の
+<code>duration</code> はゲーム内の<strong>分</strong>。リテラルか
+<code>{object, prop}</code> 参照 （<code>weight</code>
+と同じ二択。<code>combinations</code> では <code>dragged</code>
+も指せる）で、省略時は時間を消費しない。</li>
+<li>時間進行は <code>ActionDef</code>/<code>CombinationDef</code> の
+<code>TryExecute</code> 自身が
+<code>WorldSession.AdvanceWorldTime(minutes)</code>
+を呼んで完結させる。呼び出し側（UI層）が実行後に別途時間を進める必要はない。</li>
 <li><code>AdvanceWorldTime</code> は分を進めながら、tick 境界（world の
 <code>minutes_per_tick</code> プロパティ、 現状15分）を跨ぐたびに world
 ツリー全体の <code>Tick()</code> を1回実行する。長い
@@ -268,7 +269,6 @@ accumulate・rangeイベントをすべて経験する。</li>
 の条件・効果として書き換えられないか</li>
 <li><code>with</code> で複数タグのAND条件を指定する必要があるか</li>
 <li>対称的な組み合わせ（12.3節）で両側に同じ内容を書く冗長さの軽減</li>
-<li><code>combinations</code> への <code>duration</code> の導入</li>
 <li><code>showMenu</code> の値が <code>always</code>
 以外に増える場合の用途・記法</li>
 <li>ドラッグ中のハイライトで全カードの <code>conditions</code>
