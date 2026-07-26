@@ -11,13 +11,13 @@ import type { SaveData } from '../save/SaveData';
 import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
-import type { CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
+import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeDirection } from './ui/Card';
 import { Card, cardFace } from './ui/Card';
-import type { CardDrop } from './ui/CardDragController';
+import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import { CardMotion } from './ui/CardMotion';
@@ -212,7 +212,7 @@ export class PlayScene extends ResponsiveScene {
 
     // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
     this.drag ??= new CardDragController(this, () => this.metrics, {
-      canDrop: (drop) => this.dropAction(drop) !== undefined,
+      describeDrop: (drop) => this.describeDrop(drop),
       onDrop: (drop) => this.applyDrop(drop),
     });
     this.setDragLanes();
@@ -273,18 +273,35 @@ export class PlayScene extends ResponsiveScene {
    * 落としたら位置を変える。同じレーンの中ならスタックごとの並び替え、レーンをまたぐならカード1枚の移動。
    */
   private dropAction(drop: CardDrop): (() => void) | undefined {
+    if (drop.target.kind === 'combine') return this.combinationAt(drop)?.execute;
+
     const dragged = this.cardsOf(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
-
-    if (drop.target.kind === 'combine') {
-      const target = this.cardsOf(drop.to)[drop.target.index];
-      if (target === undefined) return undefined;
-      return this.view.combinationOf(dragged, target);
-    }
-
     return drop.to === drop.from
       ? dragged.reorder?.(drop.target)
       : dragged.moveTo?.(this.placeOf(drop.to), drop.target);
+  }
+
+  /** カードに重ねたときに実行できるcombination（重ねる操作でなければundefined）。 */
+  private combinationAt(drop: CardDrop): CardCombination | undefined {
+    if (drop.target.kind !== 'combine') return undefined;
+
+    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
+    const target = this.cardsOf(drop.to)[drop.target.index];
+    if (dragged === undefined || target === undefined) return undefined;
+    return this.view.combinationOf(dragged, target);
+  }
+
+  /**
+   * そのドロップで何が起きるか（何も起きないならundefined）。combinationは名前と説明を返し、
+   * ドラッグ中の吹き出しになる。位置を変えるだけの移動には説明が要らないので中身は空。
+   */
+  private describeDrop(drop: CardDrop): CardDropInfo | undefined {
+    const combination = this.combinationAt(drop);
+    if (combination !== undefined) {
+      return { tooltip: { title: combination.name, body: combination.description } };
+    }
+    return this.dropAction(drop) === undefined ? undefined : {};
   }
 
   private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {

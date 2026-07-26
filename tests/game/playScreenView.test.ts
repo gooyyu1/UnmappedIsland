@@ -261,7 +261,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     });
     const water = cardOf('water_liquid');
 
-    expect(view.combinationOf(water, cardOf('water_liquid'))).toBeTypeOf('function');
+    expect(view.combinationOf(water, cardOf('water_liquid'))?.execute).toBeTypeOf('function');
     expect(view.combinationOf(water, cardOf('stone')), '受け側にマッチする組み合わせが無い').toBeUndefined();
   });
 
@@ -279,12 +279,43 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(stones.count, '2個の石は1枚のカードにまとまる').toBe(2);
 
     // 石と石はsharp_stoneになる（tools.yaml）。1個しか無いカードには相手が居ない。
-    expect(view.combinationOf(stones, stones), 'スタックの中の2つで実行できる').toBeTypeOf('function');
+    expect(view.combinationOf(stones, stones)?.execute, 'スタックの中の2つで実行できる').toBeTypeOf(
+      'function',
+    );
     const driftwood = cardOf('driftwood');
     expect(
       view.combinationOf(driftwood, driftwood),
       '1個しか無いカードは自分自身とは組み合わせられない',
     ).toBeUndefined();
+  });
+
+  it('combinationOfは、ドラッグ中に見せる表示名と説明も返す', () => {
+    // 吹き出しに出す文字列はlocale側から来る（Localization.md）。ここでは専用の対応表で確かめる。
+    const texts = parseLocale(
+      'ja.yaml',
+      `object_texts:
+  stone:
+    display_name: 石
+    combinations:
+      knap:
+        display_name: 打ち割る
+        description: 石を打ち合わせて割る。
+`,
+    );
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const itemsSlotId = codex.slotNames.getId('items');
+    for (const name of ['stone', 'stone']) {
+      const stone = game.session.spawn(codex.objectNames.getId(name));
+      expect(stone.moveToSlot(game.startLocation.instance, itemsSlotId, codex.wellKnown)).toBeUndefined();
+    }
+
+    const view = fromGameSession(game, codex, texts);
+    const stones = view.fieldItems.find((card) => card.objects[0].def.name === 'stone')!;
+
+    expect(view.combinationOf(stones, stones)).toMatchObject({
+      name: '打ち割る',
+      description: '石を打ち合わせて割る。',
+    });
   });
 
   it('現在地は移動に追従する', () => {

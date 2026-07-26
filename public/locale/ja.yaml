@@ -35,9 +35,13 @@ object_texts:
     combinations:
       pour_in:
         display_name: 注ぎ移す
+        description: 中身を相手の容器へ移す。入る分だけ移り、あふれる分は元の容器に残る。
       knap:
         display_name: 打ち割る
         description: 石を打ち合わせて割り、鋭い縁を作る。
+      put_in:
+        display_name: 中に入れる
+        description: この入れ物の中へしまう。持ち歩けるようになるが、取り出すまで使えない。
 
   character:
     display_name: 主人公
