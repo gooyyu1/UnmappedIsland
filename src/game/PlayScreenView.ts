@@ -45,10 +45,10 @@ export function samePlace(a: CardPlace, b: CardPlace): boolean {
  */
 export interface ItemCard extends CardContent {
   /**
-   * このカードが映しているワールド上のオブジェクト。PlayScreenViewの操作（combinationOf）へ
-   * 渡すためだけのもので、画面の組み立て側は中身を見ない。
+   * このカードが映しているワールド上のオブジェクト（スタックなら全部、先頭が代表）。
+   * PlayScreenViewの操作（combinationOf）へ渡すためだけのもので、画面の組み立て側は中身を見ない。
    */
-  readonly object: WorldObject;
+  readonly objects: readonly WorldObject[];
 
   /** このカードが今いる場所。 */
   readonly place: CardPlace;
@@ -115,7 +115,8 @@ export interface PlayScreenView {
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
-   * 実行できる組み合わせが無ければundefined。
+   * 実行できる組み合わせが無ければundefined。draggedとtargetが同じカード（スタックの上の1枚を
+   * 元の位置へ重ねた）なら、そのスタックの中の2つを組み合わせる。
    *
    * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
    * （ActionSystem.md 1節）ため、ここでは宣言順の先頭を採る。マッチはwithタグだけで判定するので、
@@ -185,7 +186,7 @@ export function fromGameSession(
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: instances[0].def.name,
-    object: instances[0],
+    objects: instances,
     place,
     contents: contentsOf(instances[0]),
   });
@@ -336,15 +337,16 @@ export function fromGameSession(
         : locale.object(place.container.def.name).displayName,
     acceptsCards: (place) => slotOf(place) !== undefined,
     combinationOf: (dragged, target) => {
-      const [combination] = target.object.findMatchingCombinations(dragged.object);
+      // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを
+      // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
+      const [first, second] = target.objects;
+      const source = dragged === target ? second : dragged.objects[0];
+      if (source === undefined) return undefined;
+
+      const [combination] = first.findMatchingCombinations(source);
       if (combination === undefined) return undefined;
       return () => {
-        target.object.tryExecuteCombination(
-          dragged.object,
-          game.player.instance,
-          combination.name,
-          game.session,
-        );
+        first.tryExecuteCombination(source, game.player.instance, combination.name, game.session);
       };
     },
   };

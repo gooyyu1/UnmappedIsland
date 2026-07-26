@@ -16,7 +16,7 @@ import { fromGameSession } from './PlayScreenView';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeDirection } from './ui/Card';
-import { Card } from './ui/Card';
+import { Card, cardFace } from './ui/Card';
 import type { CardDrop } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
@@ -278,7 +278,7 @@ export class PlayScene extends ResponsiveScene {
 
     if (drop.target.kind === 'combine') {
       const target = this.cardsOf(drop.to)[drop.target.index];
-      if (target === undefined || target === dragged) return undefined;
+      if (target === undefined) return undefined;
       return this.view.combinationOf(dragged, target);
     }
 
@@ -396,9 +396,7 @@ export class PlayScene extends ResponsiveScene {
   /** 控えておいた「出ていたもの」に無いカード＝この探索で見つかったもの（アイテムと道）。 */
   private foundSince(shownBefore: ReadonlySet<number>): readonly CardContent[] {
     const shown = [...this.view.fieldItems, ...this.view.destinations];
-    return shown
-      .filter((card) => card.identity?.some((id) => !shownBefore.has(id)) === true)
-      .map(({ icon, name, art }) => ({ icon, name, art }));
+    return shown.filter((card) => card.identity?.some((id) => !shownBefore.has(id)) === true).map(cardFace);
   }
 
   /**
