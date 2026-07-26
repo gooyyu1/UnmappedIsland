@@ -103,6 +103,42 @@ object_defs:
     expect(player.hand[0], '先頭の枠は同種2個のスタックになっている').toBe(a);
   });
 
+  it('並び替えは、スタックを丸ごと動かす（1個ずつでは元のスタックへ戻ってしまう）', () => {
+    const [a] = fill('a', 'b', 'c');
+    expect(player.take(item('a'), session)).toBe(true);
+    expect(hand(), '同種2個は先頭の枠で1スタックになる').toEqual(['a', 'b', 'c', '_', '_', '_']);
+
+    expect(player.reorderHand(a, 3), 'cの右へ動かす').toBe(true);
+
+    expect(hand()).toEqual(['b', 'c', 'a', '_', '_', '_']);
+    expect(player.handStacks[2], '2個とも一緒に動く').toHaveLength(2);
+  });
+
+  it('並び替えでは、抜けた跡の側へ詰める', () => {
+    const [, , c] = fill('a', 'b', 'c', 'd');
+
+    expect(player.reorderHand(c, 1), 'aとbの隙間へ左向きに動かす').toBe(true);
+
+    expect(hand(), '跡（右側）へ詰めるので、bだけが右へずれる').toEqual(['a', 'c', 'b', 'd', '_', '_']);
+  });
+
+  it('自分の両隣の隙間へ落としても並びは変わらない', () => {
+    const [, b] = fill('a', 'b', 'c');
+
+    expect(player.reorderHand(b, 1)).toBe(true);
+    expect(player.reorderHand(b, 2)).toBe(true);
+
+    expect(hand()).toEqual(['a', 'b', 'c', '_', '_', '_']);
+  });
+
+  it('6枠とも埋まっていても並び替えはできる', () => {
+    const [a] = fill('a', 'b', 'c', 'd', 'e', 'f');
+
+    expect(player.reorderHand(a, 3)).toBe(true);
+
+    expect(hand()).toEqual(['b', 'c', 'a', 'd', 'e', 'f']);
+  });
+
   it('6枠とも埋まっていれば、隙間へ入れることもできない', () => {
     fill('a', 'b', 'c', 'd', 'e', 'f');
     const g = item('g');

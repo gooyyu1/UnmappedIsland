@@ -27,6 +27,13 @@ export interface ItemCard extends CardContent {
    * 指定できる。移せない設置物にはない。手持ちが埋まっている等で移せなかった場合は何も起きない。
    */
   readonly move?: (gapIndex?: number) => void;
+
+  /**
+   * 同じレーンの中で位置を変える。1枚が複数のインスタンスを表している場合はスタックごと動かす
+   * （1個ずつでは元のスタックへ合流して戻ってしまうため、SlotSystem.md 3節）。
+   * 並び替えの効かないレーン（枠の位置が固定でないフィールド側）にはない。
+   */
+  readonly reorder?: (gapIndex: number) => void;
 }
 
 /**
@@ -142,6 +149,9 @@ export function fromGameSession(
             ...cardOf(stack, ITEM_ICON),
             move: () => {
               game.player.drop(stack[0], game.session);
+            },
+            reorder: (gapIndex: number) => {
+              game.player.reorderHand(stack[0], gapIndex);
             },
           },
     ),

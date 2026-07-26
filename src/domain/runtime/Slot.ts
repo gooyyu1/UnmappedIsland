@@ -168,27 +168,39 @@ export class Slot {
       return true;
     }
 
-    return kindRemains ? this.tryPlaceAdjacent(obj, originCellIndex) : this.tryFillCell(obj, originCellIndex);
+    const stack = new ObjectStack(obj);
+    return kindRemains
+      ? this.tryPlaceAdjacent(stack, originCellIndex)
+      : this.tryFillCell(stack, originCellIndex);
   }
 
-  /** fixedPositions: 空いているセル(cellIndex)を新規スタックで埋める（埋まっていれば失敗）。 */
-  private tryFillCell(obj: WorldObject, cellIndex: number): boolean {
+  /** fixedPositions: 空いているセル(cellIndex)をスタックで埋める（埋まっていれば失敗）。 */
+  private tryFillCell(stack: ObjectStack, cellIndex: number): boolean {
     if (cellIndex < 0 || cellIndex >= this._cells.length || this._cells[cellIndex] !== undefined)
       return false;
-    this._cells[cellIndex] = new ObjectStack(obj);
+    this._cells[cellIndex] = stack;
     return true;
   }
 
   /**
    * fixedPositions: originCellIndexの右隣（無ければ左隣）へ、最寄りの空きセルをその方向へずらして場所を作り、
-   * 新規スタックを入れる。「右が空いている限り右に、そうでなければ左に生まれる」。どちらの方向にも空きが無ければ
+   * スタックを入れる。「右が空いている限り右に、そうでなければ左に生まれる」。どちらの方向にも空きが無ければ
    * false（＝スロットが埋まっている。呼び出し側でfallbackへ委ねる）。
    */
-  private tryPlaceAdjacent(obj: WorldObject, originCellIndex: number): boolean {
-    return this.tryPlaceShifted(obj, originCellIndex, 1) || this.tryPlaceShifted(obj, originCellIndex, -1);
+  private tryPlaceAdjacent(stack: ObjectStack, originCellIndex: number): boolean {
+    return (
+      this.tryPlaceShifted(stack, originCellIndex, 1) || this.tryPlaceShifted(stack, originCellIndex, -1)
+    );
   }
 
-  private tryPlaceShifted(obj: WorldObject, originCellIndex: number, step: number): boolean {
+  /** fixedPositions: gapIndexの隙間へ、step方向へ既存のセルをずらして場所を作り、スタックを入れる。 */
+  private tryPlaceAtGap(stack: ObjectStack, gapIndex: number, step: 1 | -1): boolean {
+    return step === 1
+      ? this.tryPlaceShifted(stack, gapIndex - 1, 1)
+      : this.tryPlaceShifted(stack, gapIndex, -1);
+  }
+
+  private tryPlaceShifted(stack: ObjectStack, originCellIndex: number, step: number): boolean {
     const target = originCellIndex + step;
     if (target < 0 || target >= this._cells.length) return false;
 
@@ -204,7 +216,7 @@ export class Slot {
     // emptyからtargetへ、間のセルをstep方向へ1つずつずらす（targetを空ける）。押し出しはセル単位で行うため、
     // 押し出されるスタック（同種複数個）の中身の相対順序は変わらない。
     for (let i = emptyAt; i !== target; i -= step) this._cells[i] = this._cells[i - step];
-    this._cells[target] = new ObjectStack(obj);
+    this._cells[target] = stack;
     return true;
   }
 
@@ -224,7 +236,33 @@ export class Slot {
       if (existing !== undefined && existing.tryInsert(obj)) return true;
     }
 
-    return this.tryPlaceShifted(obj, gapIndex - 1, 1) || this.tryPlaceShifted(obj, gapIndex, -1);
+    const stack = new ObjectStack(obj);
+    return this.tryPlaceAtGap(stack, gapIndex, 1) || this.tryPlaceAtGap(stack, gapIndex, -1);
+  }
+
+  /**
+   * プレイヤーによる手動並び替え（fixedPositions専用）。スタックを丸ごと、指定した隙間へ入れ直す。
+   *
+   * 並び替えを1個ずつの出し入れで行うことはできない。抜いた1個を入れ直すとき、残った同種のスタックへの
+   * 合流が位置指定より優先される（tryInsertAtGap）ため、必ず元の位置へ戻ってしまうため。
+   *
+   * 詰める向きは、スタックが抜けた跡の側を先に試す。そちらには必ず空きがあるので、遠くのセルを
+   * 動かさずに済む。自分の両隣の隙間へ落とした場合は、跡がそのまま行き先になるので何も動かさない。
+   */
+  tryMoveStackToGap(stack: ObjectStack, gapIndex: number): boolean {
+    if (!this.def.fixedPositions) return false;
+
+    const from = this._cells.indexOf(stack);
+    if (from < 0) return false;
+    if (gapIndex === from || gapIndex === from + 1) return true;
+
+    this._cells[from] = undefined;
+    const toward: 1 | -1 = from < gapIndex ? -1 : 1;
+    if (this.tryPlaceAtGap(stack, gapIndex, toward)) return true;
+    if (this.tryPlaceAtGap(stack, gapIndex, toward === 1 ? -1 : 1)) return true;
+
+    this._cells[from] = stack;
+    return false;
   }
 
   /** objが現在属しているObjectStack（無ければundefined）。 */
