@@ -11,9 +11,20 @@
         height: 100%;
         background: #000;
         overflow: hidden;
+        /* 端まで送ったあとの引っ張り（オーバースクロール・引き下げて再読込）を出さない。 */
+        overscroll-behavior: none;
       }
       #game {
         height: 100%;
+      }
+      /*
+       * タッチ操作はすべてゲームが解釈する。既定（auto）のままだと横スワイプをブラウザが
+       * ページのパンや「戻る」として扱ってしまい、レーンを横スクロールしようとすると
+       * 画面全体が動く。Phaserはcanvasにtouch-actionを設定しないため、ここで指定する。
+       */
+      #game,
+      #game canvas {
+        touch-action: none;
       }
       /* インライン要素のままだと行ボックスの余白が付き、表示先の高さと一致しない。 */
       #game canvas {

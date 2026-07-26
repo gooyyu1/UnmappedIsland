@@ -3,6 +3,7 @@ import type { ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
 import { drawBox } from './shapes';
 import { objectTexture } from './objectArt';
+import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
 
 /**
@@ -215,11 +216,13 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   private makeTappable(): void {
-    this.on('pointerdown', () => this.setAlpha(PRESSED_ALPHA));
-    this.on('pointerout', () => this.setAlpha(1));
-    this.on('pointerup', () => {
-      this.setAlpha(1);
-      this._content.onTap?.();
+    onPressRelease(this, {
+      onPress: () => this.setAlpha(PRESSED_ALPHA),
+      onCancel: () => this.setAlpha(1),
+      onRelease: () => {
+        this.setAlpha(1);
+        this._content.onTap?.();
+      },
     });
   }
 
@@ -269,19 +272,21 @@ export class Card extends Phaser.GameObjects.Container {
     const feedback = scene.add.container(0, 0, [overlay, arrow]).setVisible(false);
     const hitArea = scene.add.rectangle(0, top, width, edgeHeight).setOrigin(0, 0).setInteractive();
 
-    hitArea.on('pointerdown', () => {
-      feedback.setVisible(true);
-      this.startEdgeRepeat();
-    });
-    hitArea.on('pointerout', () => {
-      feedback.setVisible(false);
-      this.cancelEdgeRepeat();
-    });
-    hitArea.on('pointerup', () => {
-      feedback.setVisible(false);
-      const moved = this.edgeRepeated;
-      this.cancelEdgeRepeat();
-      if (!moved) this._content.edge?.onTap();
+    onPressRelease(hitArea, {
+      onPress: () => {
+        feedback.setVisible(true);
+        this.startEdgeRepeat();
+      },
+      onCancel: () => {
+        feedback.setVisible(false);
+        this.cancelEdgeRepeat();
+      },
+      onRelease: () => {
+        feedback.setVisible(false);
+        const moved = this.edgeRepeated;
+        this.cancelEdgeRepeat();
+        if (!moved) this._content.edge?.onTap();
+      },
     });
 
     // 指を離した先がこのカードの外だと端のpointerupが来ないため、シーン全体の離上でも必ず止める。
