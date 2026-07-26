@@ -1,18 +1,39 @@
 import { parseDocument } from 'yaml';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
-import { asMap, entriesInOrder, requireInt, tryGetMap, tryGetSeq } from '../loader/yamlMapping';
+import { asMap, entriesInOrder, requireInt, tryGetMap, tryGetScalar, tryGetSeq } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
 import type { YamlNode } from '../loader/yamlMapping';
 import { asScalarText } from '../loader/yamlMapping';
 
-/** シナリオファイルの置き場所（public/配下、ビルドでそのまま配信される）。 */
-export function scenarioFile(name: string): string {
-  return `scenarios/${name}.yaml`;
+/**
+ * 同梱シナリオの中身。置き場所と名前の規約は `src/scenarios/<シナリオ名>.yaml` のみで、
+ * コード側への登録は要らない。一覧はimport.meta.globがビルド時に作る——画面にシナリオを並べるには
+ * 名前を列挙できる必要があるが、public/配下に置くと実行時に一覧を得る手段が無いため。
+ */
+const FILES = import.meta.glob('../scenarios/*.yaml', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
+
+/** 同梱シナリオの名前と、そのファイルの中身。 */
+const SCENARIO_TEXTS: ReadonlyMap<string, string> = new Map(
+  Object.entries(FILES)
+    .map(([path, text]): [string, string] => [path.replace(/^.*\/(.+)\.yaml$/, '$1'), text])
+    .sort(([a], [b]) => a.localeCompare(b)),
+);
+
+/** 同梱シナリオの名前一覧（名前順）。 */
+export function scenarioNames(): readonly string[] {
+  return [...SCENARIO_TEXTS.keys()];
 }
 
-/** シナリオ名として受け付ける形（object_defの識別子と同じ規則）。URLから受け取るため必ず検査する。 */
-export const SCENARIO_NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
+/** 同梱シナリオを読む。名前が無ければundefined（URLで指定された名前は存在しないことがある）。 */
+export function bundledScenario(name: string): Scenario | undefined {
+  const text = SCENARIO_TEXTS.get(name);
+  return text === undefined ? undefined : parseScenario(`scenarios/${name}.yaml`, text);
+}
 
 /** 1つのスロットへ入れるobject_defの識別子の並び。同じ名前を並べると、その数だけ作られる。 */
 export type SlotContents = readonly string[];
@@ -25,6 +46,8 @@ export type SlotContents = readonly string[];
  * 不正な状態は作れない。
  */
 export interface Scenario {
+  /** 一覧に出す表示名。省略するとシナリオ名がそのまま出る。 */
+  readonly title: string;
   /** 島のシード。新規ゲームのシードと同じ意味で、地形はこれだけで決まる。 */
   readonly seed: number;
   readonly hand: SlotContents;
@@ -50,6 +73,7 @@ export function parseScenario(fileName: string, text: string): Scenario {
   const location = tryGetMap(root, 'location', fileName);
 
   return {
+    title: tryGetScalar(root, 'title', fileName) ?? fileName.replace(/^.*\/(.+)\.yaml$/, '$1'),
     seed,
     hand: names(player, 'hand', `${fileName}.player`),
     equipment: names(player, 'equipment', `${fileName}.player`),

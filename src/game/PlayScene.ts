@@ -8,6 +8,7 @@ import { start } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/runtime/Rng';
 import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
+import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import type { CardPlace, ItemCard, PlayScreenView } from './PlayScreenView';
@@ -70,6 +71,26 @@ export interface PlaySceneData {
   readonly slotIndex: number;
   /** テスト用シナリオ。渡すと、シードから作り直した世界へ開始状態を置いてから始める。 */
   readonly scenario?: Scenario;
+}
+
+/**
+ * テスト用シナリオでプレイ画面を開くためのデータ。
+ *
+ * シナリオはセーブスロットを使わない（書き戻しもしない）ため、島の名前と生存日数は表示用の仮値になる。
+ */
+export function scenarioPlayData(scenario: Scenario): PlaySceneData {
+  return {
+    save: {
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      islandName: scenario.title,
+      seed: scenario.seed,
+      characterId: 'character',
+      createdAt: 0,
+      elapsedDays: 0,
+    },
+    slotIndex: -1,
+    scenario,
+  };
 }
 
 /**
