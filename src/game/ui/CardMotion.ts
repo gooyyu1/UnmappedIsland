@@ -1,7 +1,8 @@
 import type Phaser from 'phaser';
-import type { Rect } from '../layout/ScreenMetrics';
-import type { Card, CardContent } from './Card';
-import type { CardLane } from './CardLane';
+import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { CardContent } from './Card';
+import { Card } from './Card';
+import type { CardLane, LaneUpdate } from './CardLane';
 
 /** カードが飛ぶ時間（ミリ秒）と加速の形。並びが詰め直される滑りより少しだけ長く取る。 */
 const FLY_MS = 260;
@@ -18,19 +19,24 @@ const FADE_MS = 200;
  * スタックの代表の入れ替わりを、いずれも「同じカードが動いた」として扱える。差し替え後に
  * どのカードのIDでもなくなったものが破棄、差し替え前のどのIDでもないものが新しく生まれたもの。
  *
+ * カードゲームらしく、スタックへの合流は薄れさせずに「上に重ねて」見せる（stackOnto）。重なった
+ * カードは着いた時点で捨てるが、その下には合流先のカードが既に居るので、見た目は札束が増えたまま残る。
+ *
  * 動いている間はカードを最前面の層へ預ける。レーンからはみ出したカードは隣接エリアの背景板に
  * 隠れる設計（CardLane参照）のため、レーンの中に置いたままでは境界をまたげないため。
  */
 export class CardMotion {
   private readonly scene: Phaser.Scene;
+  private readonly metrics: ScreenMetrics;
   private readonly layer: Phaser.GameObjects.Container;
 
   /**
    * 動いているカードは常に最前面へ出す。探索の子ウィンドウを開いたまま探索したときに、見つけたものが
    * ウィンドウの覆いに隠れてしまわないようにするため（他はすべて既定のdepth 0で描画順に従う）。
    */
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics) {
     this.scene = scene;
+    this.metrics = metrics;
     this.layer = scene.add.container(0, 0).setDepth(1);
   }
 
@@ -56,6 +62,8 @@ export class CardMotion {
       }
     });
 
+    this.stackNewcomers(lanes, updates, before, origin);
+
     for (const { left } of updates) {
       for (const card of left) {
         const ids = idsOf(card);
@@ -65,6 +73,36 @@ export class CardMotion {
         }
         this.dismiss(card, rectOf(before, ids), rectOf(after, ids));
       }
+    }
+  }
+
+  /**
+   * 元から画面に居たカードのスタックへ、新しく生まれたインスタンスが加わったぶんを見せる。
+   *
+   * 合流先のカードはそのまま居座るので、そのままでは右上の数字が変わるだけで何も起きていないように
+   * 見える（発見済みのアイテムをもう一度発見したときがこれ）。増えた1枚ぶんの分身をoriginから飛ばし、
+   * 合流先の上に重ねて示す。
+   */
+  private stackNewcomers(
+    lanes: readonly CardLane[],
+    updates: readonly LaneUpdate[],
+    before: ReadonlyMap<number, Rect>,
+    origin: Rect | undefined,
+  ): void {
+    if (origin === undefined) return;
+
+    // 新しいカードとして現れたぶんは、カードそのものが飛ぶ（fly）ので数えない。
+    const entered = new Set(updates.flatMap((update) => update.entered).map(({ card }) => card));
+
+    for (const lane of lanes) {
+      lane.cardObjects.forEach((card, slot) => {
+        if (card === undefined || entered.has(card)) return;
+        if (!idsOf(card).some((id) => !before.has(id))) return;
+
+        const { icon, name, art } = card.content;
+        const newcomer = new Card(this.scene, this.metrics, origin.x, origin.y, { icon, name, art });
+        this.stackOnto(newcomer, origin, lane.slotRect(slot));
+      });
     }
   }
 
@@ -98,7 +136,7 @@ export class CardMotion {
 
   /**
    * 居なくなったカードを片付ける。同じインスタンスがまだ他のカードに映っているなら（スタックへの
-   * 合流）そこへ吸い込み、どこにも無いなら（破棄）その場で消す。
+   * 合流）そこへ重ね、どこにも無いなら（破棄）その場で薄れさせる。
    */
   private dismiss(card: Card, from: Rect | undefined, to: Rect | undefined): void {
     if (from === undefined) {
@@ -106,14 +144,29 @@ export class CardMotion {
       return;
     }
 
+    if (to === undefined) {
+      this.layer.add(card);
+      card.setPosition(from.x, from.y);
+      this.scene.tweens.add({
+        targets: card,
+        alpha: 0,
+        duration: FADE_MS,
+        onComplete: () => card.destroy(),
+      });
+      return;
+    }
+    this.stackOnto(card, from, to);
+  }
+
+  /** カードをfromからtoへ飛ばして重ねる。着いた時点で捨てる——下には合流先のカードが既に居るため。 */
+  private stackOnto(card: Card, from: Rect, to: Rect): void {
     this.layer.add(card);
     card.setPosition(from.x, from.y);
     this.scene.tweens.add({
       targets: card,
-      x: to?.x ?? from.x,
-      y: to?.y ?? from.y,
-      alpha: 0,
-      duration: to === undefined ? FADE_MS : FLY_MS,
+      x: to.x,
+      y: to.y,
+      duration: FLY_MS,
       ease: FLY_EASE,
       onComplete: () => card.destroy(),
     });

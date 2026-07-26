@@ -198,7 +198,8 @@ export class ExplorationWindow {
       const slot =
         content === undefined
           ? new EmptyCard(scene, metrics, 0, 0)
-          : new Card(scene, metrics, 0, 0, { icon: content.icon, name: content.name });
+          : // 操作は持たせない（見つけたものを見せるだけの枠）。
+            new Card(scene, metrics, 0, 0, { icon: content.icon, name: content.name, art: content.art });
       strip.add(slot.setPosition(i * pitch, 0).setScale(scale));
     }
 
