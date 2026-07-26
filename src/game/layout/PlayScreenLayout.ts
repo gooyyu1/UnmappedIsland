@@ -50,6 +50,12 @@ export class PlayScreenLayout {
   /** 上からロケーション・フィールドアイテム・ハンドの3レーン。 */
   readonly lanes: readonly Rect[];
 
+  /**
+   * ハンドレーンを覆わない子ウィンドウ（装備・怪我・コンテナ）の置き場所。手持ちとカードを
+   * やり取りする操作があるため、開いている間も手持ちが見えている必要がある。
+   */
+  readonly slotWindowArea: Rect;
+
   constructor(metrics: ScreenMetrics) {
     this.metrics = metrics;
     const u = (units: number): number => metrics.px(units);
@@ -123,6 +129,14 @@ export class PlayScreenLayout {
     }
 
     this.lanes = this.buildLanes();
+
+    const handLane = this.lanes[2];
+    this.slotWindowArea = {
+      x: this.fieldArea.x,
+      y: this.fieldArea.y,
+      width: this.fieldArea.width,
+      height: Math.max(0, handLane.y - this.fieldArea.y),
+    };
   }
 
   private buildLanes(): readonly Rect[] {

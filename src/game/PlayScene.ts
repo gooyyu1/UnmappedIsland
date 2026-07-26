@@ -8,7 +8,7 @@ import { start } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/runtime/Rng';
 import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
-import type { ItemCard, PlayScreenView } from './PlayScreenView';
+import type { CardPlace, ItemCard, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
@@ -22,6 +22,7 @@ import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
 import { ModalDialog } from './ui/ModalDialog';
 import { ProgressRing } from './ui/ProgressRing';
+import { SlotWindow } from './ui/SlotWindow';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
 import { addLabel } from './ui/labels';
@@ -89,6 +90,9 @@ export class PlayScene extends ResponsiveScene {
   /** フィールドエリアの矩形。時間経過のドーナツグラフと探索の子ウィンドウを、この中央に出す。 */
   private fieldArea: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
+  /** ハンドレーンを覆わない子ウィンドウの置き場所（PlayScreenLayout参照）。 */
+  private slotWindowArea: Rect = { x: 0, y: 0, width: 0, height: 0 };
+
   private drag: CardDragController | undefined;
 
   private selectedFilter = 0;
@@ -96,6 +100,13 @@ export class PlayScene extends ResponsiveScene {
 
   /** 開いている探索の子ウィンドウ。画面の作り直しをまたいで開いたままにするために持つ。 */
   private explorationWindow: ExplorationWindow | undefined;
+
+  /**
+   * 開いているスロットの子ウィンドウ（装備・怪我）と、それが映している場所。
+   * 開いている間は、この場所が手持ちの「隣」になる（laneCards・cardsOf参照）。
+   */
+  private slotWindow: SlotWindow | undefined;
+  private slotWindowPlace: CardPlace | undefined;
 
   /** 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。 */
   private searching = false;
@@ -125,15 +136,21 @@ export class PlayScene extends ResponsiveScene {
 
   protected build(): void {
     const layout = new PlayScreenLayout(this.metrics);
+    // 開いていた子ウィンドウは、画面を作り直したあと同じものを開き直す（表示物は捨てられているため）。
     const wasExploring = this.explorationWindow !== undefined;
+    const openedPlace = this.slotWindowPlace;
     this.explorationWindow = undefined;
+    this.slotWindow = undefined;
+    this.slotWindowPlace = undefined;
     this.fieldArea = layout.fieldArea;
+    this.slotWindowArea = layout.slotWindowArea;
 
     this.buildFieldArea(layout);
     this.buildDashboard(layout);
     this.buildOptionsBar(layout.optionsBar);
     this.buildFilterBar(layout.filterBar);
     if (wasExploring) this.openExplorationWindow();
+    if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
@@ -146,7 +163,7 @@ export class PlayScene extends ResponsiveScene {
       location,
       COLOR.locationLane,
       this.view.destinations,
-      { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() },
+      { pinned: { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() } },
     );
     this.fieldItemLane = new CardLane(
       this,
@@ -154,6 +171,8 @@ export class PlayScene extends ResponsiveScene {
       fieldItems,
       COLOR.fieldItemLane,
       this.laneCards(this.view.fieldItems, 'down'),
+      // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
+      { trailingPlaceholder: this.view.acceptsCards('field') },
     );
     this.handLane = new CardLane(
       this,
@@ -169,14 +188,24 @@ export class PlayScene extends ResponsiveScene {
       canDrop: (drop) => this.dropAction(drop) !== undefined,
       onDrop: (drop) => this.applyDrop(drop),
     });
-    this.drag.setLanes([this.fieldItemLane, this.handLane]);
+    this.setDragLanes();
+  }
+
+  /** ドラッグの対象になるレーン。スロットの子ウィンドウを開いている間は、その中身も対象に加える。 */
+  private setDragLanes(): void {
+    const lanes = [this.fieldItemLane, this.handLane];
+    if (this.slotWindow !== undefined) lanes.push(this.slotWindow.lane);
+    this.drag?.setLanes(lanes);
   }
 
   /**
-   * アイテムのカードに、レーン間の操作（端を押しての移動と、掴んでのドラッグ）を付ける。ハンドレーンは
-   * フィールドアイテムレーンの下にあるので、フィールド側は下端（▼）、手持ち側は上端（▲）が移動先を指す。
+   * アイテムのカードに、隣の場所への操作（端を押しての移動と、掴んでのドラッグ）を付ける。
+   * 端の向きは並びの上下関係を表す: フィールドは下端（▼）が手持ち、手持ちは上端（▲）が上の場所。
    *
-   * 移せない設置物にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
+   * 手持ちの上端が指す先は、スロットの子ウィンドウを開いている間だけそちらへ切り替わる。カードを
+   * やり取りする相手が画面に出ているなら、端を押す操作もその相手を指すのが自然なため。
+   *
+   * 移せない設置物・怪我にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
    */
   private laneCards(
     cards: readonly (ItemCard | undefined)[],
@@ -184,14 +213,27 @@ export class PlayScene extends ResponsiveScene {
   ): readonly (CardContent | undefined)[] {
     return cards.map((card) => {
       if (card === undefined) return undefined;
-      // 端を押したときの移動先は「空いている場所」なので、位置を指定せずに操作を引く。
-      const move = card.move?.();
+      const move = this.edgeMove(card);
       return {
         ...card,
         draggable: true,
         edge: move === undefined ? undefined : { direction, onTap: () => this.applyToWorld(move) },
       };
     });
+  }
+
+  /**
+   * 端を押したときの移動（移せないカードならundefined）。行き先は「空いている場所」なので位置は指定しない。
+   *
+   * 手持ちの行き先は、子ウィンドウが開いていればそちらを優先する。ただし受け取れない場所（怪我）なら
+   * 元どおりフィールドへ戻す——開いているだけで手持ちの端が使えなくなるのは不便なため。
+   */
+  private edgeMove(card: ItemCard): (() => void) | undefined {
+    if (card.place === 'hand' && this.slotWindowPlace !== undefined) {
+      const intoWindow = card.moveTo?.(this.slotWindowPlace);
+      if (intoWindow !== undefined) return intoWindow;
+    }
+    return card.moveTo?.(card.place === 'hand' ? 'field' : 'hand');
   }
 
   /**
@@ -208,11 +250,26 @@ export class PlayScene extends ResponsiveScene {
       return this.view.combinationOf(dragged, target);
     }
 
-    return drop.to === drop.from ? dragged.reorder?.(drop.target) : dragged.move?.(drop.target);
+    return drop.to === drop.from
+      ? dragged.reorder?.(drop.target)
+      : dragged.moveTo?.(this.placeOf(drop.to), drop.target);
   }
 
   private cardsOf(lane: CardLane): readonly (ItemCard | undefined)[] {
-    return lane === this.handLane ? this.view.hand : this.view.fieldItems;
+    if (lane === this.handLane) return this.view.hand;
+    if (lane === this.fieldItemLane) return this.view.fieldItems;
+    return this.slotWindowCards();
+  }
+
+  /** レーンが映している場所。 */
+  private placeOf(lane: CardLane): CardPlace {
+    if (lane === this.handLane) return 'hand';
+    if (lane === this.fieldItemLane) return 'field';
+    return this.slotWindowPlace ?? 'field';
+  }
+
+  private slotWindowCards(): readonly ItemCard[] {
+    return this.slotWindowPlace === 'equipment' ? this.view.equipment : this.view.injuries;
   }
 
   /** ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。 */
@@ -222,6 +279,38 @@ export class PlayScene extends ResponsiveScene {
 
     const origin = drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined;
     this.applyToWorld(action, origin);
+  }
+
+  /**
+   * 装備・怪我のボタンから開くスロットの子ウィンドウ。同時に開けるのは1つだけで、別の場所を開くと
+   * 入れ替わる（手持ちの端が指す先が1つに定まらなくなるため）。
+   */
+  private openSlotWindow(place: CardPlace): void {
+    this.slotWindow?.close();
+    this.slotWindowPlace = place;
+    this.slotWindow = new SlotWindow(this, this.metrics, {
+      title: place === 'equipment' ? '装備' : '怪我',
+      cards: this.laneCards(this.slotWindowCards(), 'down'),
+      area: this.slotWindowArea,
+      acceptsCards: this.view.acceptsCards(place),
+      onClose: () => this.closeSlotWindow(),
+    });
+    this.setDragLanes();
+    // 手持ちの端が指す先が変わるため、手持ちの並びを作り直す（laneCards・neighbourOf参照）。
+    this.refreshHandLane();
+  }
+
+  private closeSlotWindow(): void {
+    this.slotWindow?.close();
+    this.slotWindow = undefined;
+    this.slotWindowPlace = undefined;
+    this.setDragLanes();
+    this.refreshHandLane();
+  }
+
+  /** 手持ちのカードに付いている操作だけを引き直す（並びは変わらないので動きは出ない）。 */
+  private refreshHandLane(): void {
+    this.handLane.setCards(this.laneCards(this.view.hand, 'up'));
   }
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
@@ -358,15 +447,20 @@ export class PlayScene extends ResponsiveScene {
    * 見せる（CardMotion）。
    */
   private showView(origin?: Rect): void {
-    this.motion.update(
-      [this.locationLane, this.fieldItemLane, this.handLane],
-      [
-        this.view.destinations,
-        this.laneCards(this.view.fieldItems, 'down'),
-        this.laneCards(this.view.hand, 'up'),
-      ],
-      origin,
-    );
+    const lanes = [this.locationLane, this.fieldItemLane, this.handLane];
+    const contents: (readonly (CardContent | undefined)[])[] = [
+      this.view.destinations,
+      this.laneCards(this.view.fieldItems, 'down'),
+      this.laneCards(this.view.hand, 'up'),
+    ];
+    // 開いている子ウィンドウの中身も同じ差し替えに乗せる。手持ちとの間でカードが行き来するため、
+    // 外していると出ていったカードがウィンドウ側に現れない。
+    if (this.slotWindow !== undefined) {
+      lanes.push(this.slotWindow.lane);
+      contents.push(this.laneCards(this.slotWindowCards(), 'down'));
+    }
+
+    this.motion.update(lanes, contents, origin);
     this.calendar.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
@@ -419,6 +513,7 @@ export class PlayScene extends ResponsiveScene {
         '装備',
         this.view.equipmentIcon,
         COLOR.equipmentButton,
+        'equipment',
       );
       cursorY += buttonHeight + gap;
       this.addEquipmentButton(
@@ -426,6 +521,7 @@ export class PlayScene extends ResponsiveScene {
         '怪我',
         this.view.injuryIcon,
         COLOR.injuryButton,
+        'injuries',
       );
       return;
     }
@@ -451,12 +547,14 @@ export class PlayScene extends ResponsiveScene {
       '装備',
       this.view.equipmentIcon,
       COLOR.equipmentButton,
+      'equipment',
     );
     this.addEquipmentButton(
       { x: area.x + padding + halfWidth + gap, y: rowY, width: halfWidth, height: buttonHeight },
       '怪我',
       this.view.injuryIcon,
       COLOR.injuryButton,
+      'injuries',
     );
   }
 
@@ -479,8 +577,11 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
-  /** 装備・怪我はアイコンの右に種別の固定ラベルを置いた横長ボタン（アイテム名は出さない）。 */
-  private addEquipmentButton(rect: Rect, label: string, icon: string, fill: number): void {
+  /**
+   * 装備・怪我はアイコンの右に種別の固定ラベルを置いた横長ボタン（アイテム名は出さない）。
+   * 押すと、そのスロットの中身を並べる子ウィンドウが開く（openSlotWindow）。
+   */
+  private addEquipmentButton(rect: Rect, label: string, icon: string, fill: number, place: CardPlace): void {
     const button = new Button(this, rect, {
       fill,
       border: COLOR.buttonBorder,
@@ -503,6 +604,7 @@ export class PlayScene extends ResponsiveScene {
         { size: 24, bold: true },
       ).setOrigin(0, 0.5),
     );
+    button.on('pointerup', () => this.openSlotWindow(place));
   }
 
   /** バーは上端に揃える。表示件数が変わっても位置が動かないようにするため（ScreenLayout.md）。 */

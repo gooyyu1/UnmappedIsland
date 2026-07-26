@@ -29,6 +29,9 @@ export const COLOR = {
   statusArea: 0xe3ffe0,
   situationArea: 0xe8e2d4,
 
+  /** スロットの子ウィンドウ（装備・怪我・コンテナ）の中身を並べる帯。 */
+  slotWindowLane: 0xf2eee6,
+
   cardFace: 0xffffff,
   cardBorder: 0x000000,
   /** カードの端を押している間だけ被せる、移動操作のオーバーレイ。 */

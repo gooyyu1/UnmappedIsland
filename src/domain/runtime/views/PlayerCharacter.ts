@@ -17,7 +17,9 @@ export class PlayerCharacter {
 
   private readonly hpId: number;
   private readonly satietyId: number;
-  private readonly handSlotId: number;
+  readonly handSlotId: number;
+  readonly equipmentSlotId: number;
+  readonly injuriesSlotId: number;
 
   constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
@@ -25,6 +27,8 @@ export class PlayerCharacter {
     this.hpId = PlayerCharacter.idOrMissing(codex.propertyNames, 'hp');
     this.satietyId = PlayerCharacter.idOrMissing(codex.propertyNames, 'satiety');
     this.handSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'hand');
+    this.equipmentSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'equipment');
+    this.injuriesSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'injuries');
   }
 
   /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする。characters.yamlがこのビューの知る全プロパティ・スロットを持つとは限らないため、「持っていなければ空として読む」姿勢に合わせる。 */
@@ -48,6 +52,21 @@ export class PlayerCharacter {
   get handStacks(): readonly (readonly WorldObject[])[] {
     const slot = this.instance.tryGetSlot(this.handSlotId);
     return slot === undefined ? [] : slot.cells.map((cell) => cell?.members ?? []);
+  }
+
+  /** 装備スロットの中身を、積み重なっているまとまりごとに分けたもの（前詰めなので空きセルは無い）。 */
+  get equipmentStacks(): readonly (readonly WorldObject[])[] {
+    return this.stacksOf(this.equipmentSlotId);
+  }
+
+  /** 怪我スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
+  get injuryStacks(): readonly (readonly WorldObject[])[] {
+    return this.stacksOf(this.injuriesSlotId);
+  }
+
+  private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
+    const slot = this.instance.tryGetSlot(slotGlobalId);
+    return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
   }
 
   /** 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。 */
@@ -82,24 +101,18 @@ export class PlayerCharacter {
 
   /**
    * 手持ちの枠を並び替える。memberが属するスタックを丸ごと、指定した隙間（gapIndexは0が先頭の枠の前）へ
-   * 入れ直す（Slot.tryMoveStackToGap）。並び替えられなければfalse。
+   * 入れ直す（WorldObject.reorderInParentSlot）。並び替えられなければfalse。
    */
   reorderHand(member: WorldObject, gapIndex: number): boolean {
-    const slot = this.instance.tryGetSlot(this.handSlotId);
-    const stack = slot?.findStackContaining(member);
-    if (slot === undefined || stack === undefined) return false;
-    return slot.tryMoveStackToGap(stack, gapIndex);
+    return member.reorderInParentSlot(gapIndex);
   }
 
   /**
    * 手持ちの枠を、指定した番号の枠（cellIndex）と入れ替える。空き枠を指せば、他の枠を動かさずに
-   * そこへ移る（Slot.trySetManualPosition）。動かせなければfalse。
+   * そこへ移る（WorldObject.moveToCellInParentSlot）。動かせなければfalse。
    */
   moveHandToCell(member: WorldObject, cellIndex: number): boolean {
-    const slot = this.instance.tryGetSlot(this.handSlotId);
-    const stack = slot?.findStackContaining(member);
-    if (slot === undefined || stack === undefined) return false;
-    return slot.trySetManualPosition(stack, cellIndex);
+    return member.moveToCellInParentSlot(cellIndex);
   }
 
   /**

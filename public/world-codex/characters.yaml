@@ -15,6 +15,17 @@ object_defs:
           - {tag: item, max: 9999}
         unit_capacity: 6
         fixed_positions: true
+      # 身につけているもの。枠数の上限はまだ決めていないため前詰めスロットにする（子ウィンドウ側は
+      # はみ出した分を横スクロールで送る、ScreenLayout.md スロットの子ウィンドウ節）。
+      # 「何を装備できるか」の語彙（equippableタグ・部位）は未検討のため、暫定でitemを受け入れる。
+      equipment:
+        accepts:
+          - {tag: item, max: 9999}
+      # 怪我。プレイヤーが任意に出し入れするものではなく、ワールド側の効果だけが付け外しする
+      # （UIからの移動・並び替えを許さない、ScreenLayout.md 参照）。怪我のobject_defはまだ無い。
+      injuries:
+        accepts:
+          - {tag: injury, max: 9999}
     props:
       # 満腹度。0でも即死せず体調不良につながる想定（未実装。致死性はbody_fat参照）。
       # 満腹から1日（96 tick）で空になる。桁の余裕のため-100/tickで減衰し、max=96*100=9600。
