@@ -35,8 +35,14 @@ export function bundledScenario(name: string): Scenario | undefined {
   return text === undefined ? undefined : parseScenario(`scenarios/${name}.yaml`, text);
 }
 
-/** 1つのスロットへ入れるobject_defの識別子の並び。同じ名前を並べると、その数だけ作られる。 */
+/** 1つのスロットへ入れるobject_defの識別子の並び。同じ名前が並んだ数だけ作られる。 */
 export type SlotContents = readonly string[];
+
+/** 個数の指定（`stone x100`）。同じものを並べる代わりに数で書ける。 */
+const COUNT_PATTERN = /^(\S+)\s*x\s*(\d+)$/;
+
+/** 1つの指定で作れる個数の上限。これを超えるのは書き間違いとみなして弾く。 */
+const MAX_COUNT = 1000;
 
 /**
  * テスト用の開始状態（SaveDataManagement.md ワールド状態の保存節）。
@@ -87,7 +93,22 @@ function names(parent: ReturnType<typeof tryGetMap>, key: string, context: strin
   if (parent === undefined) return [];
   const seq = tryGetSeq(parent, key, context);
   if (seq === undefined) return [];
-  return (seq.items as YamlNode[]).map((item) => asScalarText(item, `${context}.${key}`));
+  return (seq.items as YamlNode[]).flatMap((item) =>
+    expandCount(asScalarText(item, `${context}.${key}`), `${context}.${key}`),
+  );
+}
+
+/** `stone x100` を100個の'stone'へ展開する。個数の指定が無ければ、その名前1つ。 */
+function expandCount(text: string, context: string): readonly string[] {
+  const matched = COUNT_PATTERN.exec(text.trim());
+  if (matched === null) return [text.trim()];
+
+  const [, name, digits] = matched;
+  const count = Number(digits);
+  if (count < 1 || count > MAX_COUNT) {
+    throw new YamlLoadError(`${context}: 個数は1以上${MAX_COUNT}以下である必要があります（値: '${text}'）。`);
+  }
+  return Array.from({ length: count }, () => name);
 }
 
 function numbers(
