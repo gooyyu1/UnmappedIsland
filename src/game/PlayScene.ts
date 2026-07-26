@@ -86,9 +86,8 @@ export class PlayScene extends ResponsiveScene {
   private motion!: CardMotion;
   private calendar!: FlipCalendar;
 
-  /** フィールドエリアの矩形（時間経過のドーナツグラフはこの中央に出す）と、探索の子ウィンドウの幅。 */
+  /** フィールドエリアの矩形。時間経過のドーナツグラフと探索の子ウィンドウを、この中央に出す。 */
   private fieldArea: Rect = { x: 0, y: 0, width: 0, height: 0 };
-  private windowWidth = 0;
 
   private drag: CardDragController | undefined;
 
@@ -129,7 +128,6 @@ export class PlayScene extends ResponsiveScene {
     const wasExploring = this.explorationWindow !== undefined;
     this.explorationWindow = undefined;
     this.fieldArea = layout.fieldArea;
-    this.windowWidth = layout.fieldArea.width;
 
     this.buildFieldArea(layout);
     this.buildDashboard(layout);
@@ -232,7 +230,7 @@ export class PlayScene extends ResponsiveScene {
     this.explorationWindow = new ExplorationWindow(this, this.metrics, {
       locationName: this.view.currentLocation.name,
       ratio: this.view.explorationRatio,
-      width: this.windowWidth,
+      area: this.fieldArea,
       found: this.found,
       searching: this.searching,
       onExplore: () => this.explore(),
