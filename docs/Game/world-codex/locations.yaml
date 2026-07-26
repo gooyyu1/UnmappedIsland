@@ -74,9 +74,16 @@ object_defs:
   driftwood:
     tags: [item]
 
-  # 石。
+  # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
+  # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
   stone:
-    tags: [item]
+    tags: [item, stone]
+    combinations:
+      knap:
+        with: stone
+        duration: 60
+        destroy: self
+        spawn: {object: sharp_stone}
 
   # 枝。
   branch:
