@@ -3,6 +3,7 @@ import { WorldCodexYamlLoader } from '../loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { LOCALE_FILE, parseLocale } from '../locale/Localization';
+import { CARD_FRAME_TEXTURE } from './ui/Card';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 
 /** ゲーム本体に同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。 */
@@ -33,6 +34,8 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     for (const file of WORLD_CODEX_FILES) this.load.text(file, `world-codex/${file}`);
     this.load.text(LOCALE_FILE, LOCALE_FILE);
+    // 読み込めなくてもカードは図形で描かれる（Card.addFrame）ため、失敗しても起動は止めない。
+    this.load.image(CARD_FRAME_TEXTURE, 'images/card_frame.png');
   }
 
   create(): void {

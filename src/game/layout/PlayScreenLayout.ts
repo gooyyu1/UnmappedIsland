@@ -10,13 +10,13 @@ const SITUATION_HEIGHT_PORTRAIT = SIZE.iconButton + 40;
 /** 横型の状況エリア・天候の帯の高（フリップカード88 + 上下パディング12×2）。 */
 const SITUATION_HEIGHT_LANDSCAPE = SIZE.iconButton + 24;
 
-/** 横型のキャラクター表示エリア高（ポートレイトカード322 + 上下パディング16×2）。右の縦列はこの下端に揃う。 */
+/** 横型のキャラクター表示エリア高（ポートレイトカード320 + 上下パディング16×2）。右の縦列はこの下端に揃う。 */
 const CHARACTER_DISPLAY_HEIGHT_LANDSCAPE = SIZE.cardHeight + 32;
 
-/** 縦型のキャラクター表示エリアの内容量（パディング16×2 + ポートレイト322 + ギャップ + 装備/怪我の行88）。 */
+/** 縦型のキャラクター表示エリアの内容量（パディング16×2 + ポートレイト320 + ギャップ + 装備/怪我の行88）。 */
 const CHARACTER_DISPLAY_HEIGHT_PORTRAIT = SIZE.cardHeight + SIZE.gap + SIZE.iconButton + 32;
 
-/** 縦型のキャラクター表示エリア幅。ポートレイト210 + 条件2列 + ギャップ・パディング。 */
+/** 縦型のキャラクター表示エリア幅。ポートレイト205 + 条件2列 + ギャップ・パディング。 */
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
 /** 横型のダッシュボード列幅・右サイドバー幅（ScreenLayout.md 横型レイアウト節）。 */
