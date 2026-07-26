@@ -53,6 +53,10 @@ export const COLOR = {
   statusBarTrackBorder: 0x999999,
   statusBarFill: 0x4caf50,
 
+  /** 時間経過のドーナツグラフ（画面に重ねて出すため、暗い輪に明るい塗りを載せる）。 */
+  progressRingTrack: 0x1b3a4b,
+  progressRingFill: 0x4caf50,
+
   headerBar: 0xf5e9d5,
   slotPortrait: 0xffe5d1,
   slotDelete: 0xfff0f0,
