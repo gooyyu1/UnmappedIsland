@@ -3,6 +3,7 @@ import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { ConditionNode } from './ConditionNode';
 import type { ObjectDef } from './ObjectDef';
+import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -19,16 +20,24 @@ export class CombinationDef {
   /** 条件成立時に適用する効果。undefinedなら何も起きない。 */
   private readonly effect: ActiveEffect | undefined;
 
+  /**
+   * 実行にかかるゲーム内時間（分）。ActionDef.durationと同じ扱いで、参照は{object, prop}
+   * （combinationsではdraggedも指せる）。undefinedなら時間を消費しない。
+   */
+  private readonly duration: WeightSpec | undefined;
+
   constructor(
     name: string,
     withTagGlobalId: number,
     conditions: ConditionNode | undefined,
     effect: ActiveEffect | undefined,
+    duration?: WeightSpec,
   ) {
     this.name = name;
     this.with = withTagGlobalId;
     this.conditions = conditions;
     this.effect = effect;
+    this.duration = duration;
   }
 
   /** draggedDefがこのcombinationのwithタグを持っていれば真（12.1節）。 */
@@ -49,7 +58,12 @@ export class CombinationDef {
     )
       return false;
 
+    // 時間進行の順序と、参照durationを適用前に解決する理由はActionDef.tryExecuteと同じ。
+    const minutes = this.duration !== undefined ? Math.trunc(this.duration.resolve(self, actor, dragged)) : 0;
+
     if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, dragged);
+
+    if (minutes > 0 && session.world !== undefined) session.advanceWorldTime(minutes);
     return true;
   }
 }

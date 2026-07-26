@@ -102,6 +102,12 @@ export class PlayScene extends ResponsiveScene {
   private searching = false;
   private found: readonly CardContent[] = [];
 
+  /**
+   * 時間の経過を見せている最中か。この間はワールドを変える操作を受け付けない（passTime参照）。
+   * 画面にはまだ経過前の状態が出ているため、そこへの操作は既に古い並びを指しているため。
+   */
+  private passingTime = false;
+
   constructor() {
     super('play');
   }
@@ -244,7 +250,7 @@ export class PlayScene extends ResponsiveScene {
    * から見せる。押した瞬間に発見物の枠が空へ戻り、時間が経ってから埋まる。
    */
   private explore(): void {
-    if (this.searching) return;
+    if (this.searching || this.passingTime) return;
 
     const shownBefore = this.shownInstanceIds();
     const startedAt = this.gameSession.world.totalMinutes;
@@ -282,6 +288,8 @@ export class PlayScene extends ResponsiveScene {
    *
    * 時計もドーナツグラフもtick境界で刻む（TickProgress参照）。時計はグラフが目盛りへ届いた瞬間に
    * その時刻へ飛ぶので、両者が食い違って見えない。
+   *
+   * 経過を見せている間はpassingTimeを立て、ワールドを変える操作を止める。
    */
   private passTime(fromMinutes: number, toMinutes: number, onElapsed: () => void): void {
     const minutes = toMinutes - fromMinutes;
@@ -290,6 +298,7 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
+    this.passingTime = true;
     const progress = new TickProgress(fromMinutes, toMinutes, this.gameSession.world.minutesPerTick);
     const ring = new ProgressRing(
       this,
@@ -311,6 +320,7 @@ export class PlayScene extends ResponsiveScene {
       },
       onComplete: () => {
         ring.destroy();
+        this.passingTime = false;
         onElapsed();
       },
     });
@@ -330,11 +340,19 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * ワールドを変える操作を実行し、その結果を画面へ反映する。originは新しく生まれたカードの出どころ。
+   *
+   * その操作がゲーム内時間を消費した場合（durationを持つcombination等）は、探索と同じく経過分だけ
+   * 実時間をかけてから結果を見せる。時間を消費しない操作は待たずにそのまま反映される（passTime参照）。
    */
   private applyToWorld(change: () => void, origin?: Rect): void {
+    if (this.passingTime) return;
+
+    const startedAt = this.gameSession.world.totalMinutes;
     change();
-    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-    this.showView(origin);
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
+      this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+      this.showView(origin);
+    });
   }
 
   /**

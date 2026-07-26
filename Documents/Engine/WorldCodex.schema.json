@@ -453,7 +453,7 @@
       ]
     },
     "weight_spec": {
-      "description": "pick候補のweight（10.2節）・actionsのduration（11.3節）。リテラル数値、または既存propsへの参照（{object, prop}）。objectは省略可（既定値self）。",
+      "description": "pick候補のweight（10.2節）・actions/combinationsのduration（11.3節）。リテラル数値、または既存propsへの参照（{object, prop}）。objectは省略可（既定値self）。",
       "oneOf": [
         {
           "type": "number"
@@ -607,7 +607,7 @@
       "additionalProperties": false
     },
     "combination_def": {
-      "description": "ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。キーはUIラベル用の名前であり、マッチング対象はwithで別途指定する。専用の`active:`ラップは挟まず、with/conditions/pickと対等な兄弟キーとして直接持つ。",
+      "description": "ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。キーはUIラベル用の名前であり、マッチング対象はwithで別途指定する。専用の`active:`ラップは挟まず、with/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
       "allOf": [
         {
           "$ref": "#/$defs/not_active_verbs_with_pick"
@@ -621,6 +621,10 @@
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list"
+        },
+        "duration": {
+          "$ref": "#/$defs/weight_spec",
+          "description": "実行にかかるゲーム内時間（分）。actionsのdurationと同じ（11.3節）。参照のobjectにはdraggedも使える（12.2節）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",

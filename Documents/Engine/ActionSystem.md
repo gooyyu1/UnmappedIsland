@@ -35,10 +35,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 1. `with` マッチング（combinations のみ）: `dragged` の `ObjectDef.Tags` に `with` タグが含まれるか。
 2. `conditions` 評価（3節）: 省略時は常に真。
-3. `duration` の解決（actions のみ）: 参照 `duration` は適用前の `self` から読む必要があるため、
-   効果適用の前に分数だけ確定させる。
+3. `duration` の解決: 参照 `duration` は適用前の `self`（combinations では `dragged` も）から読む
+   必要があるため、効果適用の前に分数だけ確定させる。
 4. 効果の適用: `self.ApplyActiveEffect(effect, session, actor, dragged)`（4節）。
-5. 時間進行（actions のみ、6節）: 効果適用の後に進める（先に進めると、tick 中の destroy 等が
+5. 時間進行（6節）: 効果適用の後に進める（先に進めると、tick 中の destroy 等が
    `self` を破棄してから効果を適用する事故になる）。
 
 ## 3. 実行可能条件（conditions）
@@ -102,10 +102,10 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 ## 6. 時間の経過（duration）
 
-- `actions` の `duration` はゲーム内の**分**。リテラルか `{object, prop}` 参照（`weight` と同じ二択）で、
-  省略時は時間を消費しない。`combinations` は現状 `duration` を持たない。
-- 時間進行は `ActionDef.TryExecute` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
-  呼び出し側（UI層）が実行後に別途時間を進める必要はない。
+- `actions`/`combinations` の `duration` はゲーム内の**分**。リテラルか `{object, prop}` 参照
+  （`weight` と同じ二択。`combinations` では `dragged` も指せる）で、省略時は時間を消費しない。
+- 時間進行は `ActionDef`/`CombinationDef` の `TryExecute` 自身が `WorldSession.AdvanceWorldTime(minutes)`
+  を呼んで完結させる。呼び出し側（UI層）が実行後に別途時間を進める必要はない。
 - `AdvanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
   現状15分）を跨ぐたびに world ツリー全体の `Tick()` を1回実行する。長い `duration` の action は、
   その間の accumulate・rangeイベントをすべて経験する。
@@ -119,6 +119,5 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
   `actions` の条件・効果として書き換えられないか
 - `with` で複数タグのAND条件を指定する必要があるか
 - 対称的な組み合わせ（12.3節）で両側に同じ内容を書く冗長さの軽減
-- `combinations` への `duration` の導入
 - `showMenu` の値が `always` 以外に増える場合の用途・記法
 - ドラッグ中のハイライトで全カードの `conditions` を評価するコストの抑制

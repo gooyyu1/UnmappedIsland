@@ -13,6 +13,7 @@ const WORLD_CODEX_FILES = [
   'foods.yaml',
   'locations.yaml',
   'terrain_generation.yaml',
+  'tools.yaml',
 ];
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
