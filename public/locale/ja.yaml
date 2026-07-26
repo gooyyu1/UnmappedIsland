@@ -35,6 +35,9 @@ object_texts:
     combinations:
       pour_in:
         display_name: 注ぎ移す
+      knap:
+        display_name: 打ち割る
+        description: 石を打ち合わせて割り、鋭い縁を作る。
 
   character:
     display_name: 主人公
@@ -75,6 +78,10 @@ object_texts:
     display_name: ヤシガニ
   taro:
     display_name: タロイモ
+
+  # 道具（tools.yaml）。
+  sharp_stone:
+    display_name: 尖った石
 
   # 探索で見つかる設置物（locations.yaml）。
   palm_tree:

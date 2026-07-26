@@ -6,10 +6,10 @@ import { World } from '../../src/domain/runtime/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
- * アクションのduration（実行にかかるゲーム内時間・分）に対する自動テスト。durationを持つアクションを実行
- * すると、効果の適用後にWorldSession.advanceWorldTimeで相当分だけ時間が進む（tick境界を跨げばpassivesも
- * 動く）。時間進行まで含めてActionDef自身が行うため、呼び出し側（UI等）は実行後に別途時間を進める必要が
- * ない。
+ * actions/combinationsのduration（実行にかかるゲーム内時間・分）に対する自動テスト。durationを持つ操作を
+ * 実行すると、効果の適用後にWorldSession.advanceWorldTimeで相当分だけ時間が進む（tick境界を跨げば
+ * passivesも動く）。時間進行まで含めて定義側（ActionDef/CombinationDef）が行うため、呼び出し側（UI等）は
+ * 実行後に別途時間を進める必要がない。
  */
 describe('アクションのduration', () => {
   const worldYaml = `
@@ -120,6 +120,55 @@ object_defs:
 
     expect(campfire.tryExecuteAction('rest', undefined, session)).toBe(false);
     expect(world.minute, '条件不成立なら時間は進まない').toBe(0);
+  });
+
+  it('combinationのdurationも効果の適用後に世界時間を進める', () => {
+    const { codex, session, world } = buildWorldSession(`
+object_defs:
+  hammer:
+    tags: [hammer]
+  nut:
+    props:
+      cracked:
+        value: 0
+    combinations:
+      crack:
+        with: hammer
+        duration: 20
+        add:
+          self:
+            cracked: 1
+`);
+    const nut = session.spawn(codex.objectNames.getId('nut'));
+    const hammer = session.spawn(codex.objectNames.getId('hammer'));
+    nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+
+    expect(nut.tryExecuteCombination(hammer, undefined, 'crack', session)).toBe(true);
+
+    expect(nut.getNumber(codex.propertyNames.getId('cracked')), '効果は適用される').toBe(1);
+    expect(world.minute, 'duration分だけ時間が進む').toBe(20);
+  });
+
+  it('combinationの参照durationはdraggedのプロパティも読める', () => {
+    const { codex, session, world } = buildWorldSession(`
+object_defs:
+  blunt_hammer:
+    tags: [hammer]
+    props:
+      swing_minutes:
+        value: 35
+  nut:
+    combinations:
+      crack:
+        with: hammer
+        duration: {object: dragged, prop: swing_minutes}
+`);
+    const nut = session.spawn(codex.objectNames.getId('nut'));
+    const hammer = session.spawn(codex.objectNames.getId('blunt_hammer'));
+    nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+
+    expect(nut.tryExecuteCombination(hammer, undefined, 'crack', session)).toBe(true);
+    expect(world.minute, 'dragged.swing_minutesの値だけ時間が進む').toBe(35);
   });
 
   it('Worldを持たないセッションでは時間進行をスキップする', () => {

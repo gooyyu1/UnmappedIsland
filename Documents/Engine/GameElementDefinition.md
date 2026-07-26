@@ -887,7 +887,7 @@ actions:
 持つ `passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
 
 - `actions`/`combinations` の各エントリ（11 節・12 節）— `showMenu`/`conditions`/`duration`/`with`/`pick` と
-  対等な兄弟キー（`duration` は現時点で `actions` のみが持ちます、11.3 節）
+  対等な兄弟キー
 - `pick` の各候補（10 節）— `weight`/`pick` と対等な兄弟キー
 - `props` の `on_min`（6.5 節）・`on_overflow`/`on_shortfall`（6.3 節）・`on_max`（6.6 節）— これらは専用の
   キーの直下にそのまま書きます
@@ -972,8 +972,9 @@ traits:
 
 ### 11.3 duration（実行にかかるゲーム内時間）
 
-`duration` は、このアクションを実行するのにかかるゲーム内時間（分）です。`showMenu`/`conditions`と対等な
+`duration` は、この操作を実行するのにかかるゲーム内時間（分）です。`showMenu`/`conditions`と対等な
 兄弟キーとして直接書きます。省略すれば時間を消費しません（例: `eat`のような即座に終わる操作）。
+`combinations`（12 節）も同じキーを同じ意味で持てます。
 
 ```yaml
 actions:
@@ -988,7 +989,7 @@ actions:
 値は、`weight`（10.2 節）と同じ**リテラル数値**か**`{object, prop}` 参照**のいずれかで、10.2節と同じ解決規則
 （`object`省略時は`self`、`ancestor`も可）を共有します。
 
-条件（`conditions`）が不成立でアクション自体が実行されなかった場合、`duration`は消費されません。時間の消費は
+条件（`conditions`）が不成立で操作自体が実行されなかった場合、`duration`は消費されません。時間の消費は
 **実行結果が適用された後**に行われます（先に時間を進めると、tick駆動の変化——腐敗による`destroy`など——が、
 まだ効果を適用していない対象を先に消してしまう事故が起こりうるため）。
 
@@ -1032,6 +1033,9 @@ object_defs:
 
 マッチング対象を、タグ（4.1 節）で指定します。`object_defs` の id や trait 名では直接マッチングしません
 （4.1 節）。そのタグを持つあらゆるカード（MOD 追加分・trait を介さず直接タグを宣言したカードも含む）と一致します。
+
+`combinations` も `duration`（11.3 節）を持てます。`{object, prop}` 参照では `dragged` も指せるため、
+「使う道具側のプロパティが所要時間を決める」（切れ味の悪い刃物ほど時間がかかる、など）も書けます。
 
 ### 12.2 dragged
 

@@ -1,0 +1,9 @@
+# 道具（tool）の定義（GameElementDefinition.md 12節・RecipeSystem.md参照）。
+#
+# 道具は「何ができるか」をタグで表し、使う側（combinationsのwith・レシピの要求）はそのタグで探す。
+# 素材そのものを名指ししないことで、同じ用途の別の道具（後から追加されるもの・MOD）へそのまま置き換わる。
+
+object_defs:
+  # 尖った石。石同士を打ち合わせて作る最初の刃物（locations.yamlのstone.combinations.knap）。
+  sharp_stone:
+    tags: [item, cutting_tool]
