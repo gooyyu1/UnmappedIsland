@@ -10,6 +10,7 @@
 ## 収録ドキュメント
 
 - [道具・武器・容器・衣類 アイテム案](./SurvivalItems.md)
+- [コンテナ（かご・箱・そり）](./Containers.md)
 - [WorldCodex データベースビューア](./WorldCodexViewer.html) — 実際のゲームデータ
   （`public/world-codex/*.yaml`）を表示のたびにGitHubから直接取得して一覧・詳細表示する
   閲覧ツール（ビルド不要）。YAML文法リファレンスは
