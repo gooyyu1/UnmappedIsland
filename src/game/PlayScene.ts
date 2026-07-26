@@ -208,7 +208,7 @@ export class PlayScene extends ResponsiveScene {
       COLOR.handLane,
       this.laneCards(this.view.hand, 'up'),
     );
-    this.motion = new CardMotion(this);
+    this.motion = new CardMotion(this, this.metrics);
 
     // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
     this.drag ??= new CardDragController(this, () => this.metrics, {
@@ -398,7 +398,7 @@ export class PlayScene extends ResponsiveScene {
     const shown = [...this.view.fieldItems, ...this.view.destinations];
     return shown
       .filter((card) => card.identity?.some((id) => !shownBefore.has(id)) === true)
-      .map(({ icon, name }) => ({ icon, name }));
+      .map(({ icon, name, art }) => ({ icon, name, art }));
   }
 
   /**
