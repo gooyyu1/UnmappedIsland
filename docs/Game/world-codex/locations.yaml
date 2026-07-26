@@ -146,6 +146,10 @@ object_defs:
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: palm_tree, into: self}
+          # 漂着した編み籠（containers.yaml）。作る手段（レシピ）がまだ無いので、当面はここが唯一の入手元。
+          - weight: 5
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: woven_basket, into: self}
 
   # 岩だらけの海岸。石とヤシガニが多いが、足場が悪い。
   rocky_coast:
