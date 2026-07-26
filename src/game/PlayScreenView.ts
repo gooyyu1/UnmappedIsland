@@ -19,11 +19,20 @@ export type CardPlacement =
   { readonly kind: 'gap'; readonly index: number } | { readonly kind: 'cell'; readonly index: number };
 
 /**
- * アイテムのカード1枚。move・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への
+ * カードが並ぶ場所（＝ワールド上の1つのスロット）の名前。レーンと子ウィンドウの対応付けに使う。
+ *
+ * 今後コンテナ（箱・かご）の中身も同じ子ウィンドウで見せるため、ここに置き場所を足していけるよう
+ * 移動の宛先は名前で指す（moveTo）。「どのレーンの隣か」という暗黙の対応は持たない。
+ */
+export type CardPlace = 'field' | 'hand' | 'equipment' | 'injuries';
+
+/**
+ * アイテムのカード1枚。moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への
  * 反映（表示内容の作り直し）は呼び出し側の責務。
  *
- * moveとreorderは「その場所へ落とせるか」を、操作を返すか否かで答える。落とせない場所（設置物の間、
- * 前詰めレーンの空き枠など）ではundefinedになるので、呼び出し側は落とし先の枠を出す前に問い合わせられる。
+ * moveToとreorderは「そこへ落とせるか」を、操作を返すか否かで答える。落とせない場所（設置物の間、
+ * 前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedになるので、呼び出し側は落とし先の枠を
+ * 出す前に問い合わせられる。
  */
 export interface ItemCard extends CardContent {
   /**
@@ -32,14 +41,17 @@ export interface ItemCard extends CardContent {
    */
   readonly object: WorldObject;
 
-  /**
-   * フィールドと手持ちの間で移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
-   * 移せない設置物にはない。手持ちが埋まっている等で移せなかった場合は何も起きない。
-   */
-  readonly move?: (at?: CardPlacement) => (() => void) | undefined;
+  /** このカードが今いる場所。 */
+  readonly place: CardPlace;
 
   /**
-   * 同じレーンの中で位置を変える操作。1枚が複数のインスタンスを表している場合はスタックごと動かす
+   * 別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
+   * 動かせないカード（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。
+   */
+  readonly moveTo?: (place: CardPlace, at?: CardPlacement) => (() => void) | undefined;
+
+  /**
+   * 同じ場所の中で位置を変える操作。1枚が複数のインスタンスを表している場合はスタックごと動かす
    * （1個ずつでは元のスタックへ合流して戻ってしまうため、SlotSystem.md 3節）。
    */
   readonly reorder?: (at: CardPlacement) => (() => void) | undefined;
@@ -70,6 +82,10 @@ export interface PlayScreenView {
   readonly fieldItems: readonly ItemCard[];
   /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
   readonly hand: readonly (ItemCard | undefined)[];
+  /** 装備の子ウィンドウに並べる中身。前詰めスロットなので空きセルは無い。 */
+  readonly equipment: readonly ItemCard[];
+  /** 怪我の子ウィンドウに並べる中身。プレイヤーは出し入れも並び替えもできない（moveTo/reorderを持たない）。 */
+  readonly injuries: readonly ItemCard[];
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
@@ -86,6 +102,7 @@ export interface PlayScreenView {
 const LOCATION_ICON = '🗺️';
 const ITEM_ICON = '📦';
 const FIXTURE_ICON = '🌳';
+const INJURY_ICON = '🩹';
 
 /** 命名処理が名前を付けていない土地（テスト用の最小Codex等）の代替表示。 */
 const UNNAMED_LOCATION = '名もなき土地';
@@ -103,12 +120,13 @@ export function fromGameSession(
 ): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
   // 1枚のカードが複数のインスタンス（スタック）を表すことがあるため、識別子は先頭を代表とする集合で持つ。
-  const cardOf = (instances: readonly WorldObject[], icon: string): ItemCard => ({
+  const cardOf = (instances: readonly WorldObject[], icon: string, place: CardPlace): ItemCard => ({
     icon,
     name: locale.object(instances[0].def.name).displayName,
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     object: instances[0],
+    place,
   });
 
   // フィールドアイテムレーンは土地のitemsスロットの後ろへ設置物を並べたもの。設置物は別のスロットに
@@ -116,6 +134,67 @@ export function fromGameSession(
   const itemStacks = location.itemStacks;
   const gapInItems = (at: CardPlacement): number | undefined =>
     at.kind === 'cell' || at.index > itemStacks.length ? undefined : at.index;
+
+  /**
+   * 場所ごとの「どのオブジェクトのどのスロットか」。カードの移動はすべてこの表を引いた
+   * スロット移動（WorldObject.moveToSlot*）で、場所ごとの特別扱いは持たない。コンテナ（箱・かご）
+   * を足すときも、この表に1行増やすだけで移動もドラッグも動く。
+   *
+   * 怪我だけundefinedなのは「移動の宛先にならない」ことを表す（ワールド側の効果だけが付け外しする）。
+   */
+  const slotOf: Record<CardPlace, { owner: WorldObject; slotId: number } | undefined> = {
+    field: { owner: location.instance, slotId: location.itemsSlotId },
+    hand: { owner: game.player.instance, slotId: game.player.handSlotId },
+    equipment: { owner: game.player.instance, slotId: game.player.equipmentSlotId },
+    injuries: undefined,
+  };
+
+  /** itemを場所placeへ入れる操作（そこへは入れられないならundefined）。 */
+  const moveInto =
+    (item: WorldObject, from: CardPlace) =>
+    (place: CardPlace, at?: CardPlacement): (() => void) | undefined => {
+      const dest = slotOf[place];
+      if (dest === undefined || place === from) return undefined;
+
+      const wellKnown = game.session.codex.wellKnown;
+      if (at === undefined) {
+        return () => {
+          item.moveToSlot(dest.owner, dest.slotId, wellKnown);
+        };
+      }
+
+      if (at.kind === 'cell') {
+        // 空き枠を指せるのは固定枠スロットだけ（前詰めスロットに空き枠は無い）。
+        const fixed = dest.owner.tryGetSlot(dest.slotId)?.def.fixedPositions === true;
+        return fixed
+          ? () => {
+              item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
+            }
+          : undefined;
+      }
+
+      // フィールドのレーンだけは設置物（別スロット）を後ろに連ねているため、その範囲へは入れられない。
+      const gapIndex = place === 'field' ? gapInItems(at) : at.index;
+      if (gapIndex === undefined) return undefined;
+      return () => {
+        item.moveToSlotAtGap(dest.owner, dest.slotId, gapIndex, wellKnown);
+      };
+    };
+
+  /** itemを同じ場所の中で動かす操作（動かせない位置ならundefined）。今いるスロットの中だけで完結する。 */
+  const reorderIn =
+    (item: WorldObject, place: CardPlace) =>
+    (at: CardPlacement): (() => void) | undefined => {
+      if (at.kind === 'cell') {
+        return () => {
+          item.moveToCellInParentSlot(at.index);
+        };
+      }
+      if (place === 'field' && gapInItems(at) === undefined) return undefined;
+      return () => {
+        item.reorderInParentSlot(at.index);
+      };
+    };
 
   return {
     characterName: locale.object(game.player.instance.def.name).displayName,
@@ -151,45 +230,29 @@ export function fromGameSession(
     })),
     fieldItems: [
       ...itemStacks.map((stack) => ({
-        ...cardOf(stack, ITEM_ICON),
-        // 手持ちは固定枠なので、隙間も空き枠もそのまま行き先になる（落とせない場所が無い）。
-        move: (at?: CardPlacement) =>
-          at?.kind === 'cell'
-            ? () => {
-                game.player.takeIntoCell(stack[0], game.session, at.index);
-              }
-            : () => {
-                game.player.take(stack[0], game.session, at?.index);
-              },
-        reorder: (at: CardPlacement) => {
-          const gapIndex = gapInItems(at);
-          return gapIndex === undefined
-            ? undefined
-            : () => {
-                location.reorderItems(stack[0], gapIndex);
-              };
-        },
+        ...cardOf(stack, ITEM_ICON, 'field'),
+        moveTo: moveInto(stack[0], 'field'),
+        reorder: reorderIn(stack[0], 'field'),
       })),
-      ...location.fixtureStacks.map((stack) => cardOf(stack, FIXTURE_ICON)),
+      // 設置物は動かせないので、移動も並び替えも持たない（combinationの相手にはなれる）。
+      ...location.fixtureStacks.map((stack) => cardOf(stack, FIXTURE_ICON, 'field')),
     ],
     hand: game.player.handStacks.map((stack) =>
       stack.length === 0
         ? undefined
         : {
-            ...cardOf(stack, ITEM_ICON),
-            move: (at?: CardPlacement) => {
-              const gapIndex = at === undefined ? undefined : gapInItems(at);
-              if (at !== undefined && gapIndex === undefined) return undefined;
-              return () => {
-                game.player.drop(stack[0], game.session, gapIndex);
-              };
-            },
-            reorder: (at: CardPlacement) => () => {
-              if (at.kind === 'cell') game.player.moveHandToCell(stack[0], at.index);
-              else game.player.reorderHand(stack[0], at.index);
-            },
+            ...cardOf(stack, ITEM_ICON, 'hand'),
+            moveTo: moveInto(stack[0], 'hand'),
+            reorder: reorderIn(stack[0], 'hand'),
           },
     ),
+    equipment: game.player.equipmentStacks.map((stack) => ({
+      ...cardOf(stack, ITEM_ICON, 'equipment'),
+      moveTo: moveInto(stack[0], 'equipment'),
+      reorder: reorderIn(stack[0], 'equipment'),
+    })),
+    // 怪我はワールド側の効果だけが付け外しするため、moveTo/reorderを持たせない。
+    injuries: game.player.injuryStacks.map((stack) => cardOf(stack, INJURY_ICON, 'injuries')),
     combinationOf: (dragged, target) => {
       const [combination] = target.object.findMatchingCombinations(dragged.object);
       if (combination === undefined) return undefined;

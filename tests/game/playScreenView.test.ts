@@ -106,12 +106,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     exploreToFull(game);
     const picked = game.startLocation.items[0];
 
-    fromGameSession(game, codex, locale).fieldItems[0].move?.()?.();
+    fromGameSession(game, codex, locale).fieldItems[0].moveTo?.('hand')?.();
 
     expect(game.player.hand[0], '押したアイテムが手持ちの先頭の枠に入る').toBe(picked);
     expect(game.startLocation.items, 'フィールドからは無くなる').not.toContain(picked);
 
-    fromGameSession(game, codex, locale).hand[0]?.move?.()?.();
+    fromGameSession(game, codex, locale).hand[0]?.moveTo?.('field')?.();
 
     expect(game.player.hand[0], '手持ちの枠は空く').toBeUndefined();
     expect(game.startLocation.items, 'フィールドへ戻る').toContain(picked);
@@ -126,7 +126,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.fieldItems.map((card) => card.move)).toEqual([undefined]);
+    expect(view.fieldItems.map((card) => card.moveTo)).toEqual([undefined]);
   });
 
   it('手持ちが6枠とも埋まっていると、フィールドアイテムのmoveは何も起こさない', () => {
@@ -140,7 +140,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     exploreToFull(game);
     const items = [...game.startLocation.items];
 
-    fromGameSession(game, codex, locale).fieldItems[0].move?.()?.();
+    fromGameSession(game, codex, locale).fieldItems[0].moveTo?.('hand')?.();
 
     expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });
@@ -170,6 +170,44 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     );
   });
 
+  it('手持ちのカードは装備へ移せる（装備固有の経路ではなく、場所を指すだけ）', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    expect(
+      stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    fromGameSession(game, codex, locale).hand[0]?.moveTo?.('equipment')?.();
+
+    expect(game.player.hand[0], '手持ちからは無くなる').toBeUndefined();
+    expect(
+      game.player.equipmentStacks.map((stack) => stack[0]),
+      '装備スロットへ入る',
+    ).toEqual([stone]);
+
+    const view = fromGameSession(game, codex, locale);
+    expect(view.equipment[0].place).toBe('equipment');
+
+    view.equipment[0].moveTo?.('hand')?.();
+    expect(game.player.hand[0], '手持ちへ戻せる').toBe(stone);
+  });
+
+  it('怪我は移動も並び替えもできない', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    // 怪我のobject_defはまだ無いため、怪我スロットの中身としてitemを強制的に入れて代用する。
+    expect(
+      stone.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'), codex.wellKnown, true),
+    ).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.injuries).toHaveLength(1);
+    expect(view.injuries[0].moveTo, '取り出せない').toBeUndefined();
+    expect(view.injuries[0].reorder, '並び替えもできない').toBeUndefined();
+    expect(view.hand[0]?.moveTo?.('injuries'), '怪我は移動の宛先にならない').toBeUndefined();
+  });
+
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
@@ -177,6 +215,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const cardOf = (name: string) => ({
       icon: '',
       name,
+      place: 'field' as const,
       object: game.session.spawn(codex.objectNames.getId(name)),
     });
     const water = cardOf('water_liquid');

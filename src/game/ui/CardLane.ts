@@ -31,6 +31,17 @@ const INSERT_MARK_WIDTH = 10;
 const SLIDE_MS = 220;
 const SLIDE_EASE = 'Quad.easeOut';
 
+/** レーンの見た目の選択肢。既定（省略）はフィールドエリアの3レーン。 */
+export interface CardLaneOptions {
+  /** 左端にピン留めするカード（ロケーションレーンの現在地）。 */
+  readonly pinned?: CardContent;
+  /**
+   * はみ出したカードをマスクで切り抜くか。子ウィンドウの中で使うときに立てる——レーンの既定は
+   * 「隣接エリアの背景板が上から覆って隠す」で、周りに背景板が無い子ウィンドウでは通用しないため。
+   */
+  readonly clip?: boolean;
+}
+
 /** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardMotion）が決める。 */
 export interface LaneUpdate {
   /** このレーンに新しく現れたカード。stripの所定の位置に居るが、まだ表示されていない。 */
@@ -86,14 +97,18 @@ export class CardLane {
 
   private dragStartScrollX = 0;
 
+  /** はみ出しを切り抜くマスクの形（clipのときだけ持つ）。表示物ではないので破棄も自分で行う。 */
+  private readonly maskShape: Phaser.GameObjects.Graphics | undefined;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
     rect: Rect,
     background: number,
     cards: readonly (CardContent | undefined)[],
-    pinned?: CardContent,
+    options: CardLaneOptions = {},
   ) {
+    const { pinned } = options;
     const margin = metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
     const cardWidth = metrics.px(SIZE.cardWidth);
@@ -136,6 +151,21 @@ export class CardLane {
         this.scrollTo(this.strip.x - this.originX - wheelPixels(pointer, deltaX, deltaY));
       });
     }
+
+    if (options.clip === true) {
+      // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用）。
+      this.maskShape = scene.make.graphics({});
+      this.maskShape.fillStyle(COLOR.cardFace, 1);
+      this.maskShape.fillRect(rect.x, rect.y, rect.width, rect.height);
+      this.strip.enableFilters();
+      this.strip.filters?.internal.addMask(this.maskShape);
+    }
+  }
+
+  /** レーンごと片付ける（子ウィンドウを閉じるとき）。カード自体はstripの破棄でまとめて消える。 */
+  destroy(): void {
+    this.strip.destroy();
+    this.maskShape?.destroy();
   }
 
   /**

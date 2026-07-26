@@ -17,7 +17,7 @@ export class Location {
 
   private readonly explorationProgressId: number = -1;
   private readonly requiredProgressId: number = -1;
-  private readonly itemsSlotId: number = -1;
+  readonly itemsSlotId: number = -1;
   private readonly fixturesSlotId: number = -1;
   private readonly charactersSlotId: number = -1;
   private readonly undiscoveredPathsSlotId: number = -1;
@@ -81,13 +81,10 @@ export class Location {
 
   /**
    * アイテムスロットの中で並び替える。memberが属するスタックを丸ごと、指定した隙間（0=先頭の前）へ
-   * 入れ直す（Slot.tryMoveStackToGap）。並び替えられなければfalse。
+   * 入れ直す（WorldObject.reorderInParentSlot）。並び替えられなければfalse。
    */
   reorderItems(member: WorldObject, gapIndex: number): boolean {
-    const slot = this.instance.tryGetSlot(this.itemsSlotId);
-    const stack = slot?.findStackContaining(member);
-    if (slot === undefined || stack === undefined) return false;
-    return slot.tryMoveStackToGap(stack, gapIndex);
+    return member.reorderInParentSlot(gapIndex);
   }
 
   /** 設置物（木・植物・建築物・家具・洞窟入口など）スロットの中身。 */

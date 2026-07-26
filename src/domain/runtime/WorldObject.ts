@@ -269,6 +269,33 @@ export class WorldObject {
     );
   }
 
+  /**
+   * プレイヤーによる手動並び替え（Slot.tryMoveStackToGap参照）。今いるスロットの中で、自分が属する
+   * スタックを丸ごと指定した隙間へ入れ直す。どこにも属していない場合はfalse。
+   *
+   * 「どのスロットに居るか」を呼び出し側に持たせないための入口。1個ずつではなくスタックごと動かす
+   * 理由はSlot側にある。
+   */
+  reorderInParentSlot(gapIndex: number): boolean {
+    if (this._parent === undefined) return false;
+
+    const slot = this._parent.getSlotByLocalId(this._parentSlotLocalId);
+    const stack = slot.findStackContaining(this);
+    return stack !== undefined && slot.tryMoveStackToGap(stack, gapIndex);
+  }
+
+  /**
+   * プレイヤーによる手動並び替えのうち、行き先を空きセルで指定するもの（Slot.trySetManualPosition参照）。
+   * fixedPositionsのスロット専用。
+   */
+  moveToCellInParentSlot(cellIndex: number): boolean {
+    if (this._parent === undefined) return false;
+
+    const slot = this._parent.getSlotByLocalId(this._parentSlotLocalId);
+    const stack = slot.findStackContaining(this);
+    return stack !== undefined && slot.trySetManualPosition(stack, cellIndex);
+  }
+
   /** placeは位置を指定する配置（上記のinsertSameSlot・moveToSlotAt*）専用。省略すると通常の追加（Slot.addInternal）になる。 */
   private attachToSlot(
     newParent: WorldObject,
