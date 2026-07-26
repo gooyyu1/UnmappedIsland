@@ -3,7 +3,9 @@ import { WorldCodexYamlLoader } from '../loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { LOCALE_FILE, parseLocale } from '../locale/Localization';
+import cardFrameUrl from '../assets/card_frame.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
+import { OBJECT_ART, objectTexture } from './ui/objectArt';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 
 /** ゲーム本体に同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。 */
@@ -35,7 +37,9 @@ export class BootScene extends Phaser.Scene {
     for (const file of WORLD_CODEX_FILES) this.load.text(file, `world-codex/${file}`);
     this.load.text(LOCALE_FILE, LOCALE_FILE);
     // 読み込めなくてもカードは図形で描かれる（Card.addFrame）ため、失敗しても起動は止めない。
-    this.load.image(CARD_FRAME_TEXTURE, 'images/card_frame.png');
+    this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
+    // object_defごとの絵。用意されているものだけが並ぶ（objectArt参照）。
+    for (const [name, url] of OBJECT_ART) this.load.image(objectTexture(name), url);
   }
 
   create(): void {
