@@ -11,7 +11,7 @@ import type { SaveData } from '../save/SaveData';
 import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
-import type { CardPlace, ItemCard, PlayScreenView } from './PlayScreenView';
+import type { CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
@@ -238,7 +238,7 @@ export class PlayScene extends ResponsiveScene {
    * 端を押しての移動とは競合しない（Card参照）。
    */
   private laneCards(
-    cards: readonly (ItemCard | undefined)[],
+    cards: readonly (ObjectCardStack | undefined)[],
     direction: CardEdgeDirection,
   ): readonly (CardContent | undefined)[] {
     return cards.map((card) => {
@@ -260,7 +260,7 @@ export class PlayScene extends ResponsiveScene {
    * 手持ちの行き先は、子ウィンドウが開いていればそちらを優先する。ただし受け取れない場所（怪我）なら
    * 元どおりフィールドへ戻す——開いているだけで手持ちの端が使えなくなるのは不便なため。
    */
-  private edgeMove(card: ItemCard): (() => void) | undefined {
+  private edgeMove(card: ObjectCardStack): (() => void) | undefined {
     if (card.place === 'hand' && this.slotWindowPlace !== undefined) {
       const intoWindow = card.moveTo?.(this.slotWindowPlace);
       if (intoWindow !== undefined) return intoWindow;
@@ -287,7 +287,7 @@ export class PlayScene extends ResponsiveScene {
       : dragged.moveTo?.(this.placeOf(drop.to), drop.target);
   }
 
-  private cardsOf(lane: CardLane): readonly (ItemCard | undefined)[] {
+  private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
     if (lane === this.handLane) return this.view.hand;
     if (lane === this.fieldItemLane) return this.view.fieldItems;
     return this.slotWindowCards();
@@ -300,7 +300,7 @@ export class PlayScene extends ResponsiveScene {
     return this.slotWindowPlace ?? 'field';
   }
 
-  private slotWindowCards(): readonly ItemCard[] {
+  private slotWindowCards(): readonly ObjectCardStack[] {
     return this.slotWindowPlace === undefined ? [] : this.view.cardsIn(this.slotWindowPlace);
   }
 
