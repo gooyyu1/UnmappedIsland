@@ -84,6 +84,11 @@ export interface CardCombination {
   readonly name: string;
   /** 説明文。localeに書かれていなければundefined。 */
   readonly description: string | undefined;
+  /**
+   * ドラッグされた側として使われるインスタンス。同じ束へ重ねたときは束の2つ目になるため、束の代表とは
+   * 限らない。画面側は「掴んでいたカード」の行方を追う（CardMotion.MotionContext.released）のに使う。
+   */
+  readonly source: WorldObject;
   /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
   readonly execute: () => void;
 }
@@ -357,6 +362,7 @@ export function fromGameSession(
       return {
         name: texts.displayName,
         description: texts.description,
+        source,
         execute: () => {
           first.tryExecuteCombination(source, game.player.instance, combination.name, game.session);
         },

@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
 import { DropTooltip } from './DropTooltip';
@@ -26,12 +26,12 @@ const INDICATOR_FILL_ALPHA = 0.3;
  * （Phaserに発光の描画が無いため）。明滅は左右の往復で、止まった枠との違いを出す。
  */
 const GLOW_LAYERS = [
-  { border: 16, alpha: 0.18 },
-  { border: 10, alpha: 0.35 },
-  { border: 5, alpha: 0.9 },
+  { border: 34, alpha: 0.25 },
+  { border: 20, alpha: 0.5 },
+  { border: 10, alpha: 1 },
 ];
-const GLOW_PULSE_MS = 620;
-const GLOW_PULSE_ALPHA = 0.55;
+const GLOW_PULSE_MS = 1200;
+const GLOW_PULSE_ALPHA = 0.2;
 
 /** ドラッグしたカードを落とした先。 */
 export interface CardDrop {
@@ -53,7 +53,8 @@ export interface CardDragHandlers {
    * 説明の吹き出しは、いずれもこの答えだけを見て決める。
    */
   readonly describeDrop: (drop: CardDrop) => CardDropInfo | undefined;
-  readonly onDrop: (drop: CardDrop) => void;
+  /** releasedは手を離した時点で分身が居た矩形。落とした後の動きの出発点になる（CardMotion参照）。 */
+  readonly onDrop: (drop: CardDrop, released: Rect) => void;
 }
 
 /** 押してから離すまでの1回の操作。カードのドラッグとレーンのスクロールのどちらになるかは押した後に決まる。 */
@@ -254,14 +255,7 @@ export class CardDragController {
     });
 
     if (info.tooltip === undefined) gesture.tooltip?.hide();
-    else {
-      gesture.tooltip?.show(info.tooltip.title, info.tooltip.body, {
-        x: gesture.ghost.x,
-        y: gesture.ghost.y,
-        width: gesture.ghost.cardWidth,
-        height: gesture.ghost.cardHeight,
-      });
-    }
+    else gesture.tooltip?.show(info.tooltip.title, info.tooltip.body, ghostRect(gesture)!);
   }
 
   /** 今のポインタ位置で成立するドロップと、そこで起きること（何も起きないものはundefined）。 */
@@ -286,8 +280,10 @@ export class CardDragController {
     if (gesture === undefined) return;
 
     const found = gesture.kind === 'dragging' ? this.dropAt(gesture, pointer) : undefined;
+    // 分身はcancelで消えるので、その居場所を先に控える。落としたカードはここから動き出す。
+    const released = ghostRect(gesture);
     this.cancel();
-    if (found !== undefined) this.handlers.onDrop(found.drop);
+    if (found !== undefined && released !== undefined) this.handlers.onDrop(found.drop, released);
   }
 
   private cancel(): void {
@@ -304,6 +300,14 @@ export class CardDragController {
     if (gesture.card.scene !== undefined) gesture.card.setAlpha(1);
     this.gesture = undefined;
   }
+}
+
+/** 掴んでいる分身が今いる矩形（掴んでいなければundefined）。 */
+function ghostRect(gesture: Gesture): Rect | undefined {
+  const { ghost } = gesture;
+  return ghost === undefined
+    ? undefined
+    : { x: ghost.x, y: ghost.y, width: ghost.cardWidth, height: ghost.cardHeight };
 }
 
 /** レーンの添字のカードに重ねるドロップ先。 */
