@@ -27,6 +27,17 @@ const EDGE_RATIO = 1 / 6;
 const EDGE_OVERLAY_ALPHA = 0.55;
 const EDGE_ARROW_SIZE = 44;
 
+/**
+ * 端を押し続けたときの繰り返し（1枚ずつ送り続ける、addEdge参照）。
+ *
+ * HOLDは指を離さないまま1枚目が動くまで、REPEATは2枚目以降の間隔で、1枚送るごとにDECAYを掛けて
+ * MINまで縮める。MINが最高速度で、50ミリ秒＝秒間20枚。100枚のスタックでも10秒はかからない。
+ */
+const EDGE_HOLD_MS = 400;
+const EDGE_REPEAT_MS = 300;
+const EDGE_REPEAT_MIN_MS = 50;
+const EDGE_REPEAT_DECAY = 0.8;
+
 /** スタック数を囲む丸の直径・カードの右上からの余白・中の数字の大きさ（u単位）。 */
 const STACK_BADGE_SIZE = 56;
 const STACK_BADGE_MARGIN = 6;
@@ -35,7 +46,10 @@ const STACK_COUNT_SIZE = 32;
 /** 移動先のレーンがカードのどちら側にあるか。 */
 export type CardEdgeDirection = 'up' | 'down';
 
-/** カードの端（上下1/6）を押したときの操作。 */
+/**
+ * カードの端（上下1/6）を押したときの操作。1回の呼び出しで束のうち1つが動く。
+ * 押し続けている間は繰り返し呼ばれる（addEdge参照）。
+ */
 export interface CardEdgeAction {
   readonly direction: CardEdgeDirection;
   readonly onTap: () => void;
@@ -92,6 +106,11 @@ export class Card extends Phaser.GameObjects.Container {
   /** スタック数の表示。個数は差し替えのたびに変わるので、作り直さず書き換える。 */
   private readonly stackBadge: Phaser.GameObjects.Container;
   private readonly stackCount: Phaser.GameObjects.Text;
+
+  /** 端を押し続けている間の繰り返し（addEdge参照）と、次の1枚までの間隔、既に送ったかどうか。 */
+  private edgeRepeat: Phaser.Time.TimerEvent | undefined;
+  private edgeRepeatDelay = EDGE_REPEAT_MS;
+  private edgeRepeated = false;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, content: CardContent) {
     super(scene, x, y);
@@ -208,6 +227,10 @@ export class Card extends Phaser.GameObjects.Container {
    * 隣のレーンへ移すための端の操作エリア。押している間だけ半透明のオーバーレイと矢印を出し、
    * どちら向きの操作なのかを示す。
    *
+   * 押し続けると、指を離さないまま1枚目が動き、そのあとは間隔を詰めながら送り続ける
+   * （EDGE_HOLD_MS・EDGE_REPEAT_MS）。短く押して離した場合だけ、離した時点で1枚動かす——
+   * 押し続けて既に動き出しているなら、離したぶんをもう1枚足すことにはならない。
+   *
    * ヒット領域はカード本体の後に足す。重なった対象のうち描画順が最前面の1つだけが入力を受け取る
    * （InputPlugin.topOnly）ため、これで端はカード全体の操作もドラッグも横取りする。透明でも描画される
    * Rectangleを使うのは、Zoneが描画リストへ載らず前後関係が決まらないため。
@@ -246,14 +269,60 @@ export class Card extends Phaser.GameObjects.Container {
     const feedback = scene.add.container(0, 0, [overlay, arrow]).setVisible(false);
     const hitArea = scene.add.rectangle(0, top, width, edgeHeight).setOrigin(0, 0).setInteractive();
 
-    hitArea.on('pointerdown', () => feedback.setVisible(true));
-    hitArea.on('pointerout', () => feedback.setVisible(false));
+    hitArea.on('pointerdown', () => {
+      feedback.setVisible(true);
+      this.startEdgeRepeat();
+    });
+    hitArea.on('pointerout', () => {
+      feedback.setVisible(false);
+      this.cancelEdgeRepeat();
+    });
     hitArea.on('pointerup', () => {
       feedback.setVisible(false);
-      this._content.edge?.onTap();
+      const moved = this.edgeRepeated;
+      this.cancelEdgeRepeat();
+      if (!moved) this._content.edge?.onTap();
+    });
+
+    // 指を離した先がこのカードの外だと端のpointerupが来ないため、シーン全体の離上でも必ず止める。
+    // 送り続けるものが残っているので、止め損なうと押していないのに動き続けてしまう。
+    const stop = (): void => this.cancelEdgeRepeat();
+    scene.input.on(Phaser.Input.Events.POINTER_UP, stop);
+    this.once(Phaser.GameObjects.Events.DESTROY, () => {
+      this.cancelEdgeRepeat();
+      scene.input.off(Phaser.Input.Events.POINTER_UP, stop);
     });
 
     this.add([feedback, hitArea]);
+  }
+
+  /** 押し続けの繰り返しを始める。1枚目はEDGE_HOLD_MS後で、そこからは間隔を詰めていく。 */
+  private startEdgeRepeat(): void {
+    this.edgeRepeated = false;
+    this.edgeRepeatDelay = EDGE_REPEAT_MS;
+    this.scheduleEdgeRepeat(EDGE_HOLD_MS);
+  }
+
+  private scheduleEdgeRepeat(delay: number): void {
+    this.edgeRepeat = this.scene.time.delayedCall(delay, () => {
+      const edge = this._content.edge;
+      if (edge === undefined) return;
+
+      this.edgeRepeated = true;
+      edge.onTap();
+      // 送った結果このカードが空になっていれば、破棄されていてもう続けられない。
+      if (this.scene === undefined) return;
+
+      const next = this.edgeRepeatDelay;
+      this.edgeRepeatDelay = Math.max(EDGE_REPEAT_MIN_MS, this.edgeRepeatDelay * EDGE_REPEAT_DECAY);
+      this.scheduleEdgeRepeat(next);
+    });
+  }
+
+  /** 繰り返しを止める。edgeRepeatedは離したときの判断に使うので、ここでは触らない。 */
+  private cancelEdgeRepeat(): void {
+    this.edgeRepeat?.remove();
+    this.edgeRepeat = undefined;
   }
 }
 
