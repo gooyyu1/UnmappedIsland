@@ -24,6 +24,18 @@ const GAP_EDGE_RATIO = 1 / 8;
 /** 隙間を示す帯の幅（u単位）。 */
 const INSERT_MARK_WIDTH = 10;
 
+/** 並びが変わったカードが、新しい位置へ滑る時間（ミリ秒）と加速の形。 */
+const SLIDE_MS = 220;
+const SLIDE_EASE = 'Quad.easeOut';
+
+/** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardMotion）が決める。 */
+export interface LaneUpdate {
+  /** このレーンに新しく現れたカード。stripの所定の位置に居るが、まだ表示されていない。 */
+  readonly entered: readonly { readonly card: Card; readonly index: number }[];
+  /** このレーンから居なくなったカード。stripからは外してあるが、破棄は呼び出し側が行う。 */
+  readonly left: readonly Card[];
+}
+
 /**
  * フィールドエリアの1レーン。カードは横スクロールで送る（ScreenLayout.md フィールドエリア節）。
  *
@@ -31,21 +43,36 @@ const INSERT_MARK_WIDTH = 10;
  * ロケーションレーンの現在地カードも同様に、スクロール領域より後に描いて上へ重ねる。
  *
  * cardsのundefinedは空きセルを表し、EmptyCard（枠だけの破線カード）として並べる。
+ *
+ * 内容が変わったときは作り直さずsetCardsで差し替える。同じインスタンスを映しているカードは
+ * そのまま残して新しい位置へ滑らせ、出入りするカードだけを呼び出し側へ渡す。
  */
 export class CardLane {
   /** レーンの矩形。ドロップ先の判定（dropTargetAt）に使う。 */
   readonly rect: Rect;
 
-  /** 並んでいるカードの表示物。空きセルはundefined。位置＝添字。 */
-  readonly cardObjects: readonly (Card | undefined)[];
+  /** ピン留めしたカードの矩形（持たないレーンではundefined）。 */
+  readonly pinnedRect: Rect | undefined;
 
+  private readonly scene: Phaser.Scene;
+  private readonly metrics: ScreenMetrics;
   private readonly strip: Phaser.GameObjects.Container;
 
-  /** スクロール量0のときのstripの位置。 */
+  /** 並んでいるカードの表示物。空きセルはundefined。位置＝添字。 */
+  private _cardObjects: (Card | undefined)[] = [];
+  get cardObjects(): readonly (Card | undefined)[] {
+    return this._cardObjects;
+  }
+
+  /** 空きセルの枠。カードと違って位置以外の状態を持たないので、差し替えのたびに作り直す。 */
+  private placeholders: EmptyCard[] = [];
+
+  /** スクロール量0のときのstripの位置と、可視域の幅。 */
   private readonly originX: number;
+  private readonly stripWidth: number;
 
   /** スクロールできる下限（コンテンツが可視域に収まるなら0）。 */
-  private readonly minScrollX: number;
+  private minScrollX = 0;
 
   /** カード1枚分の送り幅（カード幅＋ギャップ）とカードの実寸。 */
   private readonly pitch: number;
@@ -74,8 +101,9 @@ export class CardLane {
 
     const pinnedWidth = pinned === undefined ? 0 : cardWidth + gap + dividerWidth + gap;
     const stripX = rect.x + margin + pinnedWidth;
-    const stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
 
+    this.scene = scene;
+    this.metrics = metrics;
     this.rect = rect;
     this.pitch = cardWidth + gap;
     this.cardWidth = cardWidth;
@@ -83,21 +111,15 @@ export class CardLane {
     this.cardY = cardY;
     this.insertMarkWidth = metrics.px(INSERT_MARK_WIDTH);
     this.originX = stripX;
+    this.stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
     this.strip = scene.add.container(stripX, cardY);
-    this.cardObjects = cards.map((card, index) => {
-      const x = index * this.pitch;
-      if (card === undefined) {
-        this.strip.add(new EmptyCard(scene, metrics, x, 0));
-        return undefined;
-      }
-      const object = new Card(scene, metrics, x, 0, card);
-      this.strip.add(object);
-      return object;
-    });
+    // 最初の1回だけは出どころが無いので、setCardsが伏せたカードをそのまま表に返す。
+    for (const { card } of this.setCards(cards).entered) card.setVisible(true);
 
-    const contentWidth = cards.length === 0 ? 0 : cards.length * (cardWidth + gap) - gap;
-    this.minScrollX = Math.min(0, stripWidth - contentWidth);
-
+    this.pinnedRect =
+      pinned === undefined
+        ? undefined
+        : { x: rect.x + margin, y: cardY, width: cardWidth, height: this.cardHeight };
     const pinnedPanel =
       pinned === undefined ? undefined : this.addPinnedSlot(scene, metrics, rect, background, cardY, pinned);
 
@@ -111,6 +133,73 @@ export class CardLane {
         this.scrollTo(this.strip.x - this.originX - wheelPixels(pointer, deltaX, deltaY));
       });
     }
+  }
+
+  /**
+   * 並べるカードを差し替える。同じインスタンスを映しているカード（identityが1つでも重なるもの）は
+   * 作り直さず、新しい位置へ滑らせる。新しく現れたカードは所定の位置に置くが、どこから来たのかは
+   * このレーンには分からないので、非表示のまま呼び出し側へ渡す。
+   */
+  setCards(cards: readonly (CardContent | undefined)[]): LaneUpdate {
+    const reusable = this._cardObjects.filter((card): card is Card => card !== undefined);
+    const entered: { card: Card; index: number }[] = [];
+
+    this._cardObjects = cards.map((content, index) => {
+      if (content === undefined) return undefined;
+
+      const found = reusable.findIndex((card) => sharesIdentity(card.content, content));
+      if (found < 0) {
+        const card = new Card(this.scene, this.metrics, index * this.pitch, 0, content);
+        card.setVisible(false);
+        this.strip.add(card);
+        entered.push({ card, index });
+        return card;
+      }
+
+      const [card] = reusable.splice(found, 1);
+      card.setContent(content);
+      this.slideTo(card, index);
+      return card;
+    });
+
+    for (const card of reusable) this.strip.remove(card);
+    this.resetPlaceholders();
+
+    const contentWidth = cards.length === 0 ? 0 : cards.length * this.pitch - (this.pitch - this.cardWidth);
+    this.minScrollX = Math.min(0, this.stripWidth - contentWidth);
+    this.scrollTo(this.strip.x - this.originX);
+
+    return { entered, left: reusable };
+  }
+
+  /** 居続けるカードを新しい位置へ滑らせる（既に所定の位置なら何もしない）。 */
+  private slideTo(card: Card, index: number): void {
+    const x = index * this.pitch;
+    if (card.x === x) return;
+
+    this.scene.tweens.add({ targets: card, x, duration: SLIDE_MS, ease: SLIDE_EASE });
+  }
+
+  private resetPlaceholders(): void {
+    for (const placeholder of this.placeholders) placeholder.destroy();
+    this.placeholders = this._cardObjects.flatMap((card, index) =>
+      card === undefined ? [new EmptyCard(this.scene, this.metrics, index * this.pitch, 0)] : [],
+    );
+    // 空きセルの枠はカードより奥に敷く（飛んできたカードが枠に隠れないように）。
+    for (const placeholder of this.placeholders) {
+      this.strip.add(placeholder);
+      this.strip.sendToBack(placeholder);
+    }
+  }
+
+  /** 添字の位置に並ぶカードの、画面上の矩形。 */
+  slotRect(index: number): Rect {
+    return {
+      x: this.strip.x + index * this.pitch,
+      y: this.cardY,
+      width: this.cardWidth,
+      height: this.cardHeight,
+    };
   }
 
   /**
@@ -158,14 +247,7 @@ export class CardLane {
 
   /** ドロップ先を示す枠の位置（カードに重ねるならカードそのもの、隙間なら細い縦帯）。 */
   dropIndicatorRect(target: LaneDropTarget): Rect {
-    if (target.kind === 'combine') {
-      return {
-        x: this.strip.x + target.index * this.pitch,
-        y: this.cardY,
-        width: this.cardWidth,
-        height: this.cardHeight,
-      };
-    }
+    if (target.kind === 'combine') return this.slotRect(target.index);
 
     // 隙間の中心は「右隣のカードの左端 - ギャップの半分」。両端の隙間はレーンからはみ出すので収める。
     const center = this.strip.x + target.gapIndex * this.pitch - (this.pitch - this.cardWidth) / 2;
@@ -206,6 +288,12 @@ export class CardLane {
     );
     return panel;
   }
+}
+
+/** 2枚のカードが同じものを映しているか（identityが1つでも重なるか、Card.identity参照）。 */
+function sharesIdentity(a: CardContent, b: CardContent): boolean {
+  if (a.identity === undefined || b.identity === undefined) return false;
+  return a.identity.some((id) => b.identity?.includes(id) === true);
 }
 
 /** deltaModeがピクセル・行・ページのときの、delta1あたりのピクセル数。 */

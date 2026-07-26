@@ -16,6 +16,7 @@ import { Card } from './ui/Card';
 import type { CardDrop } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
+import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
 import { ModalDialog } from './ui/ModalDialog';
@@ -64,15 +65,23 @@ export class PlayScene extends ResponsiveScene {
   private gameSession!: NewGameSession;
   private view!: PlayScreenView;
 
-  /** ドラッグ＆ドロップの対象になる2レーン。buildのたびに作り直される。 */
+  /** カードを並べるレーンと、その内容の差し替えを動きとして見せる層。buildのたびに作り直される。 */
+  private locationLane!: CardLane;
   private fieldItemLane!: CardLane;
   private handLane!: CardLane;
+  private motion!: CardMotion;
+  private calendar!: FlipCalendar;
+
+  /** 探索の子ウィンドウの幅（フィールドエリアに合わせる）。 */
+  private windowWidth = 0;
+
+  private drag: CardDragController | undefined;
 
   private selectedFilter = 0;
   private filterButtons: Button[] = [];
 
-  /** 探索の子ウィンドウが開いているか。画面の作り直しをまたいで開いたままにするために持つ。 */
-  private exploring = false;
+  /** 開いている探索の子ウィンドウ。画面の作り直しをまたいで開いたままにするために持つ。 */
+  private explorationWindow: ExplorationWindow | undefined;
 
   constructor() {
     super('play');
@@ -92,22 +101,29 @@ export class PlayScene extends ResponsiveScene {
 
   protected build(): void {
     const layout = new PlayScreenLayout(this.metrics);
+    const wasExploring = this.explorationWindow !== undefined;
+    this.explorationWindow = undefined;
+    this.windowWidth = layout.fieldArea.width;
 
     this.buildFieldArea(layout);
     this.buildDashboard(layout);
     this.buildOptionsBar(layout.optionsBar);
     this.buildFilterBar(layout.filterBar);
-    if (this.exploring) this.openExplorationWindow(layout.fieldArea.width);
+    if (wasExploring) this.openExplorationWindow();
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
     addPanel(this, layout.fieldArea, COLOR.fieldArea);
-    const [locationLane, fieldItems, hand] = layout.lanes;
+    const [location, fieldItems, hand] = layout.lanes;
 
-    new CardLane(this, this.metrics, locationLane, COLOR.locationLane, this.view.destinations, {
-      ...this.view.currentLocation,
-      onTap: () => this.openExplorationWindow(layout.fieldArea.width),
-    });
+    this.locationLane = new CardLane(
+      this,
+      this.metrics,
+      location,
+      COLOR.locationLane,
+      this.view.destinations,
+      { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() },
+    );
     this.fieldItemLane = new CardLane(
       this,
       this.metrics,
@@ -122,16 +138,14 @@ export class PlayScene extends ResponsiveScene {
       COLOR.handLane,
       this.laneCards(this.view.hand, 'up'),
     );
+    this.motion = new CardMotion(this);
 
-    const drag = new CardDragController(this, this.metrics, {
+    // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
+    this.drag ??= new CardDragController(this, () => this.metrics, {
       canDrop: (drop) => this.dropAction(drop) !== undefined,
-      onDrop: (drop) => {
-        const action = this.dropAction(drop);
-        if (action !== undefined) this.applyToWorld(action);
-      },
+      onDrop: (drop) => this.applyDrop(drop),
     });
-    drag.addLane(this.fieldItemLane);
-    drag.addLane(this.handLane);
+    this.drag.setLanes([this.fieldItemLane, this.handLane]);
   }
 
   /**
@@ -181,35 +195,58 @@ export class PlayScene extends ResponsiveScene {
     return lane === this.handLane ? this.view.hand : this.view.fieldItems;
   }
 
-  /** 現在地のロケーションカードから開く探索の子ウィンドウ。幅はフィールドエリアに合わせる。 */
-  private openExplorationWindow(width: number): void {
-    this.exploring = true;
-    new ExplorationWindow(this, this.metrics, {
+  /** ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。 */
+  private applyDrop(drop: CardDrop): void {
+    const action = this.dropAction(drop);
+    if (action === undefined) return;
+
+    const origin = drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined;
+    this.applyToWorld(action, origin);
+  }
+
+  /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
+  private openExplorationWindow(): void {
+    this.explorationWindow?.close();
+    this.explorationWindow = new ExplorationWindow(this, this.metrics, {
       locationName: this.view.currentLocation.name,
       ratio: this.view.explorationRatio,
-      width,
+      width: this.windowWidth,
       onExplore: () => this.explore(),
       onClose: () => {
-        this.exploring = false;
+        this.explorationWindow = undefined;
       },
     });
   }
 
   /**
-   * 現在地を1回探索する。探索の子ウィンドウは開いたまま、更新後の探索率で組み立て直される
-   * （buildの末尾）。
+   * 現在地を1回探索する。見つかったものは現在地のカードから出てくる。探索の子ウィンドウは
+   * 開いたまま、更新後の探索率で開き直される。
    */
   private explore(): void {
     this.applyToWorld(() => {
       this.gameSession.player.explore(this.gameSession.session);
-    });
+    }, this.locationLane.pinnedRect);
   }
 
-  /** ワールドを変える操作を実行し、その結果を画面へ反映する。 */
-  private applyToWorld(change: () => void): void {
+  /**
+   * ワールドを変える操作を実行し、その結果を画面へ反映する。カードは作り直さずに差し替え、
+   * 動いた分をアニメーションで見せる（CardMotion）。originは新しく生まれたカードの出どころ。
+   */
+  private applyToWorld(change: () => void, origin?: Rect): void {
     change();
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-    this.rebuild();
+
+    this.motion.update(
+      [this.locationLane, this.fieldItemLane, this.handLane],
+      [
+        this.view.destinations,
+        this.laneCards(this.view.fieldItems, 'down'),
+        this.laneCards(this.view.hand, 'up'),
+      ],
+      origin,
+    );
+    this.calendar.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
+    if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
 
   private buildDashboard(layout: PlayScreenLayout): void {
@@ -379,6 +416,7 @@ export class PlayScene extends ResponsiveScene {
       this.view.hour,
       this.view.minute,
     );
+    this.calendar = calendar;
 
     if (!withWeather) return;
 

@@ -41,13 +41,18 @@ export class PlayerCharacter {
   }
 
   /**
-   * 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。固定枠スロットのため、
+   * 手持ちスロットの各セルの中身（空きセルは空配列、先頭が代表）。固定枠スロットのため、
    * 配列長は常にunit_capacityと等しく、位置＝添字が安定する（SlotSystem.md 3節）。
    * スロット自体を持たないcodexでは空配列。
    */
-  get hand(): readonly (WorldObject | undefined)[] {
+  get handStacks(): readonly (readonly WorldObject[])[] {
     const slot = this.instance.tryGetSlot(this.handSlotId);
-    return slot === undefined ? [] : slot.cells.map((cell) => cell?.members.at(0));
+    return slot === undefined ? [] : slot.cells.map((cell) => cell?.members ?? []);
+  }
+
+  /** 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。 */
+  get hand(): readonly (WorldObject | undefined)[] {
+    return this.handStacks.map((stack) => stack.at(0));
   }
 
   /**
