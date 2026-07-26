@@ -99,7 +99,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 30
+        duration: 15
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -117,8 +117,10 @@ object_defs:
 - **発見物**: `pick`（10 節）による重み付き抽選です。「ハズレ」（進捗だけが増える候補）を必ず用意しています。
   `add`/`pick` は排他な兄弟キーのため、進捗+1（`add`）は `pick` の各候補に個別に含めています（`add` と
   `spawn` は同じ候補内に共存できます、10.1 節）。
-- **`duration`**: 1回の探索にかかる時間（分、`GameElementDefinition.md` 11.3 節）。見通しの悪い土地
-  （密林・岸壁など）ほど長く設定しています。
+- **`duration`**: 1回の探索にかかる時間（分、`GameElementDefinition.md` 11.3 節）。**全土地とも
+  1 tick（`minutes_per_tick` = 15 分）**に揃えています。1回の探索がちょうど1 tick 分の世界の変化に
+  対応するため、探索を繰り返しても時計とゲーム内の変化が刻みからずれません。土地ごとの探索の重さは、
+  探索率100%までの回数（`exploration_progress` の `range.max`）だけで表します。
 
 ## 3. 道（`path` object_def）と移動
 

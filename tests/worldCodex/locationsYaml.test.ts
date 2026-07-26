@@ -162,7 +162,7 @@ describe('locations.yamlの土地・道定義', () => {
 
     // 発見済みの道で移動すると、プレイヤーは移動先のcharactersスロットへ移り、移動時間分だけ時間が進む。
     const minutesBefore = worldView.hour * 60 + worldView.minute;
-    expect(minutesBefore, '草原の探索3回でduration 30分×3が経過している').toBe(30 * 3);
+    expect(minutesBefore, '草原の探索3回でduration 15分×3が経過している').toBe(15 * 3);
     expect(pathView.travel(character, session)).toBe(true);
 
     expect(character.parent, '移動で移動先の土地へ移る').toBe(forest);
