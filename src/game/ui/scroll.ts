@@ -8,9 +8,10 @@ const WHEEL_DELTA_PIXELS = [1, 16, 400];
  *
  * 縦ホイールしか無いマウスでも送れるよう、横方向の回転が無ければ縦方向の回転を横スクロールに使う。
  * ブラウザによってdeltaの単位が行・ページになるため（Phaserは正規化しない）、ピクセルへ揃える。
+ * ブラウザが渡すのはCSSピクセルなので、ゲームの座標系（物理ピクセル・DeviceScreen参照）へ換算する。
  */
 export function wheelPixels(pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number): number {
   const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
   const mode = pointer.event instanceof WheelEvent ? pointer.event.deltaMode : 0;
-  return delta * (WHEEL_DELTA_PIXELS[mode] ?? 1);
+  return delta * (WHEEL_DELTA_PIXELS[mode] ?? 1) * pointer.manager.scaleManager.displayScale.x;
 }

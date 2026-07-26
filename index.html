@@ -15,6 +15,10 @@
       #game {
         height: 100%;
       }
+      /* インライン要素のままだと行ボックスの余白が付き、表示先の高さと一致しない。 */
+      #game canvas {
+        display: block;
+      }
     </style>
   </head>
   <body>
