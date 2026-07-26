@@ -1,0 +1,359 @@
+<!DOCTYPE html><html class="default" lang="ja" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>ConditionNode | UnmappedIsland ソースリファレンス - v0.1.0</title><meta name="description" content="Documentation for UnmappedIsland ソースリファレンス"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">UnmappedIsland ソースリファレンス - v0.1.0</a>
+<div id="tsd-toolbar-links"><a href="../Documents/">ドキュメント</a><a href="../Game/">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland">GitHub</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="検索"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="検索"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="ドキュメントを検索" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>検索インデックスを準備しています...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="メニュー"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/domain_defs_ConditionNode.html">domain/defs/ConditionNode</a></li>
+<li><a href="" aria-current="page">ConditionNode</a></li></ul>
+<h1>クラス ConditionNode</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲートが
+同じ木を共用する。葉はproperty・slot_position・slot_content・object_tagの4種、複合はall/any/notの3種で、
+kindに応じて使うフィールドが変わる（単一クラス+kindで判別）。</p>
+</div></section><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L35">src/domain/defs/ConditionNode.ts:35</a></li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">インデックス</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="コンストラクター">コンストラクター<a href="#コンストラクター" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#constructor" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="プロパティ">プロパティ<a href="#プロパティ" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#children" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>children</span></a>
+<a href="#kind" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>kind</span></a>
+<a href="#op" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>op</span></a>
+<a href="#propertyglobalid" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>property<wbr/>Global<wbr/>Id</span></a>
+<a href="#root" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>root</span></a>
+<a href="#slotglobalid" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Global<wbr/>Id</span></a>
+<a href="#tagglobalid" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>tag<wbr/>Global<wbr/>Id</span></a>
+<a href="#valueref" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>value<wbr/>Ref</span></a>
+<a href="#values" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>values</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="メソッド">メソッド<a href="#メソッド" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#all" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>all</span></a>
+<a href="#any" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>any</span></a>
+<a href="#evaluate" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate</span></a>
+<a href="#evaluateobjecttag" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Object<wbr/>Tag</span></a>
+<a href="#evaluateproperty" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Property</span></a>
+<a href="#evaluateslotcontent" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Slot<wbr/>Content</span></a>
+<a href="#evaluateslotposition" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Slot<wbr/>Position</span></a>
+<a href="#not" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>not</span></a>
+<a href="#objecttag" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>object<wbr/>Tag</span></a>
+<a href="#property" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>property</span></a>
+<a href="#resolvepropertyeffectivevalue" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Property<wbr/>Effective<wbr/>Value</span></a>
+<a href="#slotcontent" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>slot<wbr/>Content</span></a>
+<a href="#slotposition" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>slot<wbr/>Position</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="コンストラクター-1">コンストラクター<a href="#コンストラクター-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="constructor"><code class="tsd-tag">非公開</code><span>constructor</span><a href="#constructor" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="constructorconditionnode"><span class="tsd-signature-keyword">new</span> <span class="tsd-kind-constructor-signature">ConditionNode</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">kind</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ConditionNodeKind</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">propertyGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">op</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ConditionNode.ConditionOp.html" class="tsd-signature-type tsd-kind-type-alias">ConditionOp</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">values</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">valueRef</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_ReferenceRoot.PropertyPath.html" class="tsd-signature-type tsd-kind-class">PropertyPath</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">slotGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">tagGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">children</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#constructorconditionnode" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">kind</span>: <span class="tsd-signature-type">ConditionNodeKind</span></span></li>
+<li><span><span class="tsd-kind-parameter">root</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">propertyGlobalId</span>: <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">op</span>: <a href="../types/domain_defs_ConditionNode.ConditionOp.html" class="tsd-signature-type tsd-kind-type-alias">ConditionOp</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">values</span>: <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">valueRef</span>: <a href="domain_defs_ReferenceRoot.PropertyPath.html" class="tsd-signature-type tsd-kind-class">PropertyPath</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">slotGlobalId</span>: <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">tagGlobalId</span>: <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">children</span>: <span class="tsd-signature-keyword">readonly</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L66">src/domain/defs/ConditionNode.ts:66</a></li></ul></aside></div></li></ul></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="プロパティ-1">プロパティ<a href="#プロパティ-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="children"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>children</span><a href="#children" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">children</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>all/any/notのみ有効。notは常に1要素。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L64">src/domain/defs/ConditionNode.ts:64</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="kind"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>kind</span><a href="#kind" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">kind</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ConditionNodeKind</span></div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L36">src/domain/defs/ConditionNode.ts:36</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="op"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>op</span><a href="#op" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">op</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ConditionNode.ConditionOp.html" class="tsd-signature-type tsd-kind-type-alias">ConditionOp</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>property葉のみ有効。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L45">src/domain/defs/ConditionNode.ts:45</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="propertyglobalid"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>property<wbr/>Global<wbr/>Id</span><a href="#propertyglobalid" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">propertyGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>property葉のみ有効。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L42">src/domain/defs/ConditionNode.ts:42</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="root"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>root</span><a href="#root" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>property/slot_position/slot_content/object_tag葉のみ有効。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L39">src/domain/defs/ConditionNode.ts:39</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="slotglobalid"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>slot<wbr/>Global<wbr/>Id</span><a href="#slotglobalid" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">slotGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>slot_position/slot_content葉のみ有効。slot_positionではobjectの親の中の位置、
+slot_contentではobject自身が持つスロットを指す（向きが異なる）。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L58">src/domain/defs/ConditionNode.ts:58</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="tagglobalid"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>tag<wbr/>Global<wbr/>Id</span><a href="#tagglobalid" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">tagGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>slot_content/object_tag葉のみ有効。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L61">src/domain/defs/ConditionNode.ts:61</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="valueref"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>value<wbr/>Ref</span><a href="#valueref" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">valueRef</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_ReferenceRoot.PropertyPath.html" class="tsd-signature-type tsd-kind-class">PropertyPath</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>property葉のみ有効。設定されていれば、リテラルvalue（values）の代わりに{object, prop}参照先の
+現在の実効値と比較する（10.2節と同じ「リテラルか参照か」の二択）。in/not_inでは意味を持たない
+（ロード時エラー）。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L54">src/domain/defs/ConditionNode.ts:54</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="values"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>values</span><a href="#values" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">values</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>property葉のみ有効かつvalueRefがundefinedの場合のみ使う。lt/lte/gt/gte/eq/neqは常に1要素。
+in/not_inは複数要素になりうる。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L49">src/domain/defs/ConditionNode.ts:49</a></li></ul></aside></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="メソッド-1">メソッド<a href="#メソッド-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="all"><code class="tsd-tag">静的</code><span>all</span><a href="#all" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="all-1"><span class="tsd-kind-call-signature">all</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">children</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#all-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">children</span>: <span class="tsd-signature-keyword">readonly</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">[]</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L150">src/domain/defs/ConditionNode.ts:150</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="any"><code class="tsd-tag">静的</code><span>any</span><a href="#any" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="any-1"><span class="tsd-kind-call-signature">any</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">children</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#any-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">children</span>: <span class="tsd-signature-keyword">readonly</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">[]</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L164">src/domain/defs/ConditionNode.ts:164</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="evaluate"><span>evaluate</span><a href="#evaluate" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="evaluate-1"><span class="tsd-kind-call-signature">evaluate</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resolveRoot</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#evaluate-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">resolveRoot</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L192">src/domain/defs/ConditionNode.ts:192</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="evaluateobjecttag"><code class="tsd-tag">非公開</code><span>evaluate<wbr/>Object<wbr/>Tag</span><a href="#evaluateobjecttag" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="evaluateobjecttag-1"><span class="tsd-kind-call-signature">evaluateObjectTag</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">resolveRoot</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#evaluateobjecttag-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">resolveRoot</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L281">src/domain/defs/ConditionNode.ts:281</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="evaluateproperty"><code class="tsd-tag">非公開</code><span>evaluate<wbr/>Property</span><a href="#evaluateproperty" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="evaluateproperty-1"><span class="tsd-kind-call-signature">evaluateProperty</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">resolveRoot</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#evaluateproperty-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">resolveRoot</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L213">src/domain/defs/ConditionNode.ts:213</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="evaluateslotcontent"><code class="tsd-tag">非公開</code><span>evaluate<wbr/>Slot<wbr/>Content</span><a href="#evaluateslotcontent" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="evaluateslotcontent-1"><span class="tsd-kind-call-signature">evaluateSlotContent</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">resolveRoot</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#evaluateslotcontent-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">resolveRoot</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L274">src/domain/defs/ConditionNode.ts:274</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="evaluateslotposition"><code class="tsd-tag">非公開</code><span>evaluate<wbr/>Slot<wbr/>Position</span><a href="#evaluateslotposition" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="evaluateslotposition-1"><span class="tsd-kind-call-signature">evaluateSlotPosition</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">resolveRoot</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#evaluateslotposition-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">resolveRoot</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L266">src/domain/defs/ConditionNode.ts:266</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="not"><code class="tsd-tag">静的</code><span>not</span><a href="#not" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="not-1"><span class="tsd-kind-call-signature">not</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">inner</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#not-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">inner</span>: <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L178">src/domain/defs/ConditionNode.ts:178</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="objecttag"><code class="tsd-tag">静的</code><span>object<wbr/>Tag</span><a href="#objecttag" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="objecttag-1"><span class="tsd-kind-call-signature">objectTag</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">tagGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#objecttag-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">root</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">tagGlobalId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L136">src/domain/defs/ConditionNode.ts:136</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="property"><code class="tsd-tag">静的</code><span>property</span><a href="#property" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="property-1"><span class="tsd-kind-call-signature">property</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">propertyGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">op</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ConditionNode.ConditionOp.html" class="tsd-signature-type tsd-kind-type-alias">ConditionOp</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">values</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">valueRef</span><span class="tsd-signature-symbol">?:</span> <a href="domain_defs_ReferenceRoot.PropertyPath.html" class="tsd-signature-type tsd-kind-class">PropertyPath</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#property-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">root</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">propertyGlobalId</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">op</span>: <a href="../types/domain_defs_ConditionNode.ConditionOp.html" class="tsd-signature-type tsd-kind-type-alias">ConditionOp</a></span></li>
+<li><span><span class="tsd-kind-parameter">values</span>: <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><code class="tsd-tag">オプション</code><span class="tsd-kind-parameter">valueRef</span>: <a href="domain_defs_ReferenceRoot.PropertyPath.html" class="tsd-signature-type tsd-kind-class">PropertyPath</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L88">src/domain/defs/ConditionNode.ts:88</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="resolvepropertyeffectivevalue"><code class="tsd-tag">非公開</code><span>resolve<wbr/>Property<wbr/>Effective<wbr/>Value</span><a href="#resolvepropertyeffectivevalue" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="resolvepropertyeffectivevalue-1"><span class="tsd-kind-call-signature">resolvePropertyEffectiveValue</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">propertyGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">resolveRoot</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#resolvepropertyeffectivevalue-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">root</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">propertyGlobalId</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">resolveRoot</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L252">src/domain/defs/ConditionNode.ts:252</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="slotcontent"><code class="tsd-tag">静的</code><span>slot<wbr/>Content</span><a href="#slotcontent" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="slotcontent-1"><span class="tsd-kind-call-signature">slotContent</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">slotGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">tagGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#slotcontent-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">root</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">slotGlobalId</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">tagGlobalId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L122">src/domain/defs/ConditionNode.ts:122</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="slotposition"><code class="tsd-tag">静的</code><span>slot<wbr/>Position</span><a href="#slotposition" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="slotposition-1"><span class="tsd-kind-call-signature">slotPosition</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">root</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">slotGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a><a href="#slotposition-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">root</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">slotGlobalId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ConditionNode</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/ConditionNode.ts#L108">src/domain/defs/ConditionNode.ts:108</a></li></ul></aside></div></li></ul></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>テーマ設定</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">メンバーの可視性</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>保護</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-private" name="private"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>非公開</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>継承</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">配色</label><select id="tsd-theme"><option value="os">自動</option><option value="light">ライト</option><option value="dark">ダーク</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>このページ</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>コンストラクター</summary>
+<div><a href="#constructor" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>プロパティ</summary>
+<div><a href="#children" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>children</span></a><a href="#kind" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>kind</span></a><a href="#op" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>op</span></a><a href="#propertyglobalid" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>property<wbr/>Global<wbr/>Id</span></a><a href="#root" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>root</span></a><a href="#slotglobalid" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Global<wbr/>Id</span></a><a href="#tagglobalid" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>tag<wbr/>Global<wbr/>Id</span></a><a href="#valueref" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>value<wbr/>Ref</span></a><a href="#values" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>values</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>メソッド</summary>
+<div><a href="#all"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>all</span></a><a href="#any"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>any</span></a><a href="#evaluate"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate</span></a><a href="#evaluateobjecttag" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Object<wbr/>Tag</span></a><a href="#evaluateproperty" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Property</span></a><a href="#evaluateslotcontent" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Slot<wbr/>Content</span></a><a href="#evaluateslotposition" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>evaluate<wbr/>Slot<wbr/>Position</span></a><a href="#not"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>not</span></a><a href="#objecttag"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>object<wbr/>Tag</span></a><a href="#property"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>property</span></a><a href="#resolvepropertyeffectivevalue" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Property<wbr/>Effective<wbr/>Value</span></a><a href="#slotcontent"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>slot<wbr/>Content</span></a><a href="#slotposition"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>slot<wbr/>Position</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../Documents/" class="tsd-nav-link">ドキュメント</a><a href="../Game/" class="tsd-nav-link">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland" class="tsd-nav-link">GitHub</a></nav>
+<nav class="tsd-navigation"><a href="../modules.html">UnmappedIsland ソースリファレンス - v0.1.0</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>読み込み中...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator"><a href="https://typedoc.org/" target="_blank">TypeDoc</a>を使用して生成</p></footer>
+<div class="overlay"></div></body></html>

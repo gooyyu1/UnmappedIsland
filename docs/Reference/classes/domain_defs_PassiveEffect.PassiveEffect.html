@@ -1,0 +1,258 @@
+<!DOCTYPE html><html class="default" lang="ja" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>PassiveEffect | UnmappedIsland ソースリファレンス - v0.1.0</title><meta name="description" content="Documentation for UnmappedIsland ソースリファレンス"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">UnmappedIsland ソースリファレンス - v0.1.0</a>
+<div id="tsd-toolbar-links"><a href="../Documents/">ドキュメント</a><a href="../Game/">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland">GitHub</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="検索"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="検索"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="ドキュメントを検索" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>検索インデックスを準備しています...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="メニュー"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/domain_defs_PassiveEffect.html">domain/defs/PassiveEffect</a></li>
+<li><a href="" aria-current="page">PassiveEffect</a></li></ul>
+<h1>クラス PassiveEffect<code class="tsd-tag">抽象</code></h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.passives の要素。</p>
+<p>modify（条件が真の間だけ実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ加減算＝不可逆）は
+別クラスで表し、判別用のkindは持たない。唯一の差は「PropertyValueのどちらのincomingへ登録されるか」で、
+registerIntoの実装で表現する。</p>
+<p>登録先の解決と登録/解除はtargetの種別に応じて自分で行い、呼び出し側（WorldObject）はライフサイクルの
+契機で登録/解除を依頼するだけで、どのtargetがどこへ紐付くかは知らない。</p>
+<p>アクション/combination/pickの一時的な <code>add</code>（実行の瞬間に1回だけ効く）は、持続するゲート判定が不要な
+ため、この登録の仕組みには乗らない。</p>
+</div></section>
+<section class="tsd-panel tsd-hierarchy" data-refl="383">
+<h4>階層 (<a href="../hierarchy.html#domain/defs/PassiveEffect.PassiveEffect">一覧を見る</a>)</h4>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">PassiveEffect</span>
+<ul class="tsd-hierarchy">
+<li class="tsd-hierarchy-item"><a href="domain_defs_PassiveEffect.ModifyEffect.html" class="tsd-signature-type tsd-kind-class">ModifyEffect</a></li>
+<li class="tsd-hierarchy-item"><a href="domain_defs_PassiveEffect.AccumulateEffect.html" class="tsd-signature-type tsd-kind-class">AccumulateEffect</a></li></ul></li></ul></section><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L66">src/domain/defs/PassiveEffect.ts:66</a></li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">インデックス</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="コンストラクター">コンストラクター<a href="#コンストラクター" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#constructor" class="tsd-index-link tsd-is-protected"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="プロパティ">プロパティ<a href="#プロパティ" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#amount" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>amount</span></a>
+<a href="#gate" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>gate</span></a>
+<a href="#target" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>target</span></a>
+<a href="#targetpropertyglobalid" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>target<wbr/>Property<wbr/>Global<wbr/>Id</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="メソッド">メソッド<a href="#メソッド" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#activeamount" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>active<wbr/>Amount</span></a>
+<a href="#register" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register</span></a>
+<a href="#registerchild" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Child</span></a>
+<a href="#registerinto" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Into</span></a>
+<a href="#registerrelation" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Relation</span></a>
+<a href="#registerresolvedrelation" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Resolved<wbr/>Relation</span></a>
+<a href="#unregister" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unregister</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="コンストラクター-1">コンストラクター<a href="#コンストラクター-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-protected">
+<h3 class="tsd-anchor-link" id="constructor"><code class="tsd-tag">保護</code><span>constructor</span><a href="#constructor" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-protected">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="constructorpassiveeffect"><span class="tsd-signature-keyword">new</span> <span class="tsd-kind-constructor-signature">PassiveEffect</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">target</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">targetPropertyGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">amount</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">gate</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_PassiveEffect.PassiveEffectGate.html" class="tsd-signature-type tsd-kind-class">PassiveEffectGate</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">PassiveEffect</a><a href="#constructorpassiveeffect" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">target</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">targetPropertyGlobalId</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">amount</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">gate</span>: <a href="domain_defs_PassiveEffect.PassiveEffectGate.html" class="tsd-signature-type tsd-kind-class">PassiveEffectGate</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">PassiveEffect</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L72">src/domain/defs/PassiveEffect.ts:72</a></li></ul></aside></div></li></ul></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="プロパティ-1">プロパティ<a href="#プロパティ-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="amount"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>amount</span><a href="#amount" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">amount</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L69">src/domain/defs/PassiveEffect.ts:69</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="gate"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>gate</span><a href="#gate" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">gate</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_PassiveEffect.PassiveEffectGate.html" class="tsd-signature-type tsd-kind-class">PassiveEffectGate</a></div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L70">src/domain/defs/PassiveEffect.ts:70</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="target"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>target</span><a href="#target" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">target</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L67">src/domain/defs/PassiveEffect.ts:67</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="targetpropertyglobalid"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>target<wbr/>Property<wbr/>Global<wbr/>Id</span><a href="#targetpropertyglobalid" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">targetPropertyGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L68">src/domain/defs/PassiveEffect.ts:68</a></li></ul></aside></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="メソッド-1">メソッド<a href="#メソッド-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="activeamount"><span>active<wbr/>Amount</span><a href="#activeamount" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="activeamount-1"><span class="tsd-kind-call-signature">activeAmount</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">declarer</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">slotBearer</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><a href="#activeamount-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
+modifyでもaccumulateでも同じ量。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">declarer</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">slotBearer</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">number</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L90">src/domain/defs/PassiveEffect.ts:90</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="register"><code class="tsd-tag">非公開</code><span>register</span><a href="#register" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="register-1"><span class="tsd-kind-call-signature">register</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">targetOwner</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">declarer</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">slotBearer</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#register-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>この効果を、targetOwnerの対象プロパティへ1件登録する（そのプロパティを持たなければ何もしない）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">targetOwner</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">declarer</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">slotBearer</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L142">src/domain/defs/PassiveEffect.ts:142</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="registerchild"><span>register<wbr/>Child</span><a href="#registerchild" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="registerchild-1"><span class="tsd-kind-call-signature">registerChild</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">owner</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">child</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">register</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#registerchild-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>childがparentに付く/離れる際に、parent（owner）側のtarget=child効果を、その付いた/離れた子(child)へ
+登録/解除する。childは相手がownerから一意に辿れない唯一の関係のため、childを明示的に受け取る。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">owner</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">child</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">register</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L120">src/domain/defs/PassiveEffect.ts:120</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="registerinto"><code class="tsd-tag">抽象</code><span>register<wbr/>Into</span><a href="#registerinto" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="registerinto-1"><span class="tsd-kind-call-signature">registerInto</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">target</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_PropertyValue.PropertyValue.html" class="tsd-signature-type tsd-kind-class">PropertyValue</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">registration</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_RegisteredPassiveEffect.RegisteredPassiveEffect.html" class="tsd-signature-type tsd-kind-class">RegisteredPassiveEffect</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#registerinto-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>この効果（registration）を、対象プロパティ値（target）のmodify用/accumulate用incomingのうち
+具象クラスに応じた側へ登録する。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">target</span>: <a href="domain_runtime_PropertyValue.PropertyValue.html" class="tsd-signature-type tsd-kind-class">PropertyValue</a></span></li>
+<li><span><span class="tsd-kind-parameter">registration</span>: <a href="domain_runtime_RegisteredPassiveEffect.RegisteredPassiveEffect.html" class="tsd-signature-type tsd-kind-class">RegisteredPassiveEffect</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L86">src/domain/defs/PassiveEffect.ts:86</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="registerrelation"><span>register<wbr/>Relation</span><a href="#registerrelation" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="registerrelation-1"><span class="tsd-kind-call-signature">registerRelation</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">owner</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">relation</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">register</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#registerrelation-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>相手（related）がownerから直接辿れる関係（self/parent/ancestor）の登録/解除。相手はowner自身から
+解決するため、呼び出し側がrelationとrelatedに矛盾した組を渡す余地が無い。</p>
+<p>ancestorは、ツリー構造が変わる前に解除・変わった後に登録という順序を呼び出し側
+（WorldObject.registerAncestorTargetedRecursively）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
+よく、前回の登録先を憶えない。</p>
+<p>childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずregisterChildを使う。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">owner</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">relation</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">register</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L104">src/domain/defs/PassiveEffect.ts:104</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="registerresolvedrelation"><code class="tsd-tag">非公開</code><span>register<wbr/>Resolved<wbr/>Relation</span><a href="#registerresolvedrelation" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="registerresolvedrelation-1"><span class="tsd-kind-call-signature">registerResolvedRelation</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">owner</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">relation</span><span class="tsd-signature-symbol">:</span> <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">related</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">register</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#registerresolvedrelation-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>内部共通処理: この効果の対象がrelationと一致するときだけrelatedの対象プロパティへ登録/解除する。
+gateのself（＝slotBearer）はエッジの子側（child対象なら子=related、それ以外はowner）。
+relationとrelatedに矛盾した組を外部から渡せないよう非公開。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">owner</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">relation</span>: <a href="../types/domain_defs_ReferenceRoot.ReferenceRoot.html" class="tsd-signature-type tsd-kind-type-alias">ReferenceRoot</a></span></li>
+<li><span><span class="tsd-kind-parameter">related</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">register</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L129">src/domain/defs/PassiveEffect.ts:129</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="unregister"><code class="tsd-tag">非公開</code><span>unregister</span><a href="#unregister" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="unregister-1"><span class="tsd-kind-call-signature">unregister</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">targetOwner</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">declarer</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#unregister-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>targetOwnerの対象プロパティから、declarerが宣言した登録を解除する。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">targetOwner</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li>
+<li><span><span class="tsd-kind-parameter">declarer</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/defs/PassiveEffect.ts#L155">src/domain/defs/PassiveEffect.ts:155</a></li></ul></aside></div></li></ul></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>テーマ設定</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">メンバーの可視性</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>保護</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-private" name="private"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>非公開</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>継承</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">配色</label><select id="tsd-theme"><option value="os">自動</option><option value="light">ライト</option><option value="dark">ダーク</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>このページ</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>コンストラクター</summary>
+<div><a href="#constructor" class="tsd-is-protected"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>プロパティ</summary>
+<div><a href="#amount" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>amount</span></a><a href="#gate" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>gate</span></a><a href="#target" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>target</span></a><a href="#targetpropertyglobalid" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>target<wbr/>Property<wbr/>Global<wbr/>Id</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>メソッド</summary>
+<div><a href="#activeamount"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>active<wbr/>Amount</span></a><a href="#register" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register</span></a><a href="#registerchild"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Child</span></a><a href="#registerinto"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Into</span></a><a href="#registerrelation"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Relation</span></a><a href="#registerresolvedrelation" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Resolved<wbr/>Relation</span></a><a href="#unregister" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unregister</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../Documents/" class="tsd-nav-link">ドキュメント</a><a href="../Game/" class="tsd-nav-link">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland" class="tsd-nav-link">GitHub</a></nav>
+<nav class="tsd-navigation"><a href="../modules.html">UnmappedIsland ソースリファレンス - v0.1.0</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>読み込み中...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator"><a href="https://typedoc.org/" target="_blank">TypeDoc</a>を使用して生成</p></footer>
+<div class="overlay"></div></body></html>

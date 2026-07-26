@@ -1,0 +1,486 @@
+<!DOCTYPE html><html class="default" lang="ja" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Slot | UnmappedIsland ソースリファレンス - v0.1.0</title><meta name="description" content="Documentation for UnmappedIsland ソースリファレンス"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="../index.html" class="title">UnmappedIsland ソースリファレンス - v0.1.0</a>
+<div id="tsd-toolbar-links"><a href="../Documents/">ドキュメント</a><a href="../Game/">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland">GitHub</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="検索"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="検索"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="ドキュメントを検索" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>検索インデックスを準備しています...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="メニュー"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<ul class="tsd-breadcrumb" aria-label="Breadcrumb">
+<li><a href="../modules/domain_runtime_Slot.html">domain/runtime/Slot</a></li>
+<li><a href="" aria-current="page">Slot</a></li></ul>
+<h1>クラス Slot</h1></div>
+<section class="tsd-panel tsd-comment">
+<div class="tsd-comment tsd-typography"><p>1つのWorldObjectが持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは1つの
+ObjectStack（7.6節）か、空（undefined）。位置＝セルの添字。正の情報源はこちら側（親のスロット配列）であり、
+子側のWorldObject.parentは逆引き用のキャッシュ（7.1節）。</p>
+<p>fixedPositionsと非fixedPositionsの違いは「空になったセルを残すか、詰めるか」の1点のみ:</p>
+<ul>
+<li>fixedPositions: セル配列は常にunitCapacity長で、空セルはundefinedとして保持され位置が安定する。</li>
+<li>非fixedPositions: 空になったセルは削除して前詰めする（undefinedを含まない）。</li>
+</ul>
+<p>中身の追加・削除はWorldObjectのスロット移動系経由でのみ行う（親子の整合性を1箇所でのみ保証するため）。</p>
+</div></section><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L17">src/domain/runtime/Slot.ts:17</a></li></ul></aside>
+<section class="tsd-panel-group tsd-index-group">
+<section class="tsd-panel tsd-index-panel">
+<details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h5 class="tsd-index-heading uppercase">インデックス</h5></summary>
+<div class="tsd-accordion-details">
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="コンストラクター">コンストラクター<a href="#コンストラクター" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#constructor" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="プロパティ">プロパティ<a href="#プロパティ" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#_cells" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>_<wbr/>cells</span></a>
+<a href="#def" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>def</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="アクセッサー">アクセッサー<a href="#アクセッサー" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#cells" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>cells</span></a>
+<a href="#contents" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>contents</span></a>
+<a href="#livestacks" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>live<wbr/>Stacks</span></a>
+</div></section>
+<section class="tsd-index-section">
+<h3 class="tsd-index-heading tsd-anchor-link" id="メソッド">メソッド<a href="#メソッド" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-index-list"><a href="#acceptsrule" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>accepts<wbr/>Rule</span></a>
+<a href="#addinternal" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Internal</span></a>
+<a href="#canaccept" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>can<wbr/>Accept</span></a>
+<a href="#findmatchingstack" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Matching<wbr/>Stack</span></a>
+<a href="#findstackcontaining" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Stack<wbr/>Containing</span></a>
+<a href="#hascapacityfor" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>has<wbr/>Capacity<wbr/>For</span></a>
+<a href="#indexofstack" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>index<wbr/>Of<wbr/>Stack</span></a>
+<a href="#placenewstack" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place<wbr/>New<wbr/>Stack</span></a>
+<a href="#placesameslot" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place<wbr/>Same<wbr/>Slot</span></a>
+<a href="#removeinternal" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Internal</span></a>
+<a href="#restack" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>restack</span></a>
+<a href="#sumsize" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>sum<wbr/>Size</span></a>
+<a href="#tryfillcell" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Fill<wbr/>Cell</span></a>
+<a href="#tryinsertatgap" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Insert<wbr/>At<wbr/>Gap</span></a>
+<a href="#trymovestacktogap" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Move<wbr/>Stack<wbr/>To<wbr/>Gap</span></a>
+<a href="#tryplaceadjacent" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Place<wbr/>Adjacent</span></a>
+<a href="#tryplaceatgap" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Place<wbr/>At<wbr/>Gap</span></a>
+<a href="#tryplaceshifted" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Place<wbr/>Shifted</span></a>
+<a href="#trysetmanualposition" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Set<wbr/>Manual<wbr/>Position</span></a>
+</div></section></div></details></section></section>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="コンストラクター-1">コンストラクター<a href="#コンストラクター-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="constructor"><span>constructor</span><a href="#constructor" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="constructorslot"><span class="tsd-signature-keyword">new</span> <span class="tsd-kind-constructor-signature">Slot</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">def</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_SlotDef.SlotDef.html" class="tsd-signature-type tsd-kind-class">SlotDef</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">Slot</a><a href="#constructorslot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">def</span>: <a href="domain_defs_SlotDef.SlotDef.html" class="tsd-signature-type tsd-kind-class">SlotDef</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">Slot</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L37">src/domain/runtime/Slot.ts:37</a></li></ul></aside></div></li></ul></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="プロパティ-1">プロパティ<a href="#プロパティ-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="_cells"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>_<wbr/>cells</span><a href="#_cells" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">_cells</span><span class="tsd-signature-symbol">:</span> (<a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = []</span></div>
+<div class="tsd-comment tsd-typography"><p>セルの並び。要素はObjectStackかundefined（空セル、fixedPositionsのみ）。位置＝添字。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L21">src/domain/runtime/Slot.ts:21</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="def"><code class="tsd-tag">読み取り専用</code><span>def</span><a href="#def" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">def</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_SlotDef.SlotDef.html" class="tsd-signature-type tsd-kind-class">SlotDef</a></div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L18">src/domain/runtime/Slot.ts:18</a></li></ul></aside></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-アクセッサー"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="アクセッサー-1">アクセッサー<a href="#アクセッサー-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="cells"><span>cells</span><a href="#cells" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li>
+<div class="tsd-signature" id="cellscells"><span class="tsd-signature-keyword">get</span> <span class="tsd-kind-get-signature">cells</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> (<a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>セルの並びそのもの（空セルはundefined）。位置＝添字。</p>
+</div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> (<a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L28">src/domain/runtime/Slot.ts:28</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="contents"><span>contents</span><a href="#contents" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li>
+<div class="tsd-signature" id="contentscontents"><span class="tsd-signature-keyword">get</span> <span class="tsd-kind-get-signature">contents</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">[]</span></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>スタックの区別を畳み込んだ、このスロットの中身全部のビュー。</p>
+</div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L33">src/domain/runtime/Slot.ts:33</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="livestacks"><code class="tsd-tag">非公開</code><span>live<wbr/>Stacks</span><a href="#livestacks" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li>
+<div class="tsd-signature" id="livestackslivestacks"><span class="tsd-signature-keyword">get</span> <span class="tsd-kind-get-signature">liveStacks</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">[]</span></div>
+<div class="tsd-description">
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L23">src/domain/runtime/Slot.ts:23</a></li></ul></aside></div></li></ul></section></section></details>
+<details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h2 class="tsd-anchor-link" id="メソッド-1">メソッド<a href="#メソッド-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
+<section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="acceptsrule"><code class="tsd-tag">非公開</code><span>accepts<wbr/>Rule</span><a href="#acceptsrule" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="acceptsrule-1"><span class="tsd-kind-call-signature">acceptsRule</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">candidate</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#acceptsrule-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">candidate</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L71">src/domain/runtime/Slot.ts:71</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="addinternal"><span>add<wbr/>Internal</span><a href="#addinternal" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="addinternal-1"><span class="tsd-kind-call-signature">addInternal</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">obj</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#addinternal-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>通常の追加。合流できる既存スタックがあればそこへ、無ければ新規スタックとして最初の空きセルへ、空きが無ければ
+末尾へ入れる。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">obj</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L101">src/domain/runtime/Slot.ts:101</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="canaccept"><span>can<wbr/>Accept</span><a href="#canaccept" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="canaccept-1"><span class="tsd-kind-call-signature">canAccept</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">candidate</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">wellKnown</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_WellKnownProperties.WellKnownProperties.html" class="tsd-signature-type tsd-kind-class">WellKnownProperties</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">ownerName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#canaccept-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>move_to_slot（7.1節）が候補オブジェクトを受け入れられるか（accepts制約・capacity・unitCapacity、
+7.2〜7.3節）。force=trueの場合は呼び出し側がこの判定自体をスキップする。</p>
+<p>戻り値: 受け入れ可能ならundefined、拒否する場合はその理由。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">candidate</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">wellKnown</span>: <a href="domain_defs_WellKnownProperties.WellKnownProperties.html" class="tsd-signature-type tsd-kind-class">WellKnownProperties</a></span></li>
+<li><span><span class="tsd-kind-parameter">ownerName</span>: <span class="tsd-signature-type">string</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L51">src/domain/runtime/Slot.ts:51</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="findmatchingstack"><span>find<wbr/>Matching<wbr/>Stack</span><a href="#findmatchingstack" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="findmatchingstack-1"><span class="tsd-kind-call-signature">findMatchingStack</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">candidate</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#findmatchingstack-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければundefined）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">candidate</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L274">src/domain/runtime/Slot.ts:274</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="findstackcontaining"><span>find<wbr/>Stack<wbr/>Containing</span><a href="#findstackcontaining" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="findstackcontaining-1"><span class="tsd-kind-call-signature">findStackContaining</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">obj</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#findstackcontaining-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>objが現在属しているObjectStack（無ければundefined）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">obj</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L269">src/domain/runtime/Slot.ts:269</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="hascapacityfor"><code class="tsd-tag">非公開</code><span>has<wbr/>Capacity<wbr/>For</span><a href="#hascapacityfor" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="hascapacityfor-1"><span class="tsd-kind-call-signature">hasCapacityFor</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">candidate</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#hascapacityfor-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>unitCapacityにcandidateを新たに加える余地があるか。stackableで既存のObjectStackへ合流できる場合は
+新しい枠を消費しない（非stackableは同種でも常に個体ごとに別スタック）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">candidate</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L91">src/domain/runtime/Slot.ts:91</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="indexofstack"><span>index<wbr/>Of<wbr/>Stack</span><a href="#indexofstack" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="indexofstack-1"><span class="tsd-kind-call-signature">indexOfStack</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">stack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><a href="#indexofstack-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>このObjectStackがセルの並びの何番目にあるか（＝位置。fixedPositionsでは固定番号）。属していなければ-1。
+位置を知りたい呼び出し側は、対象の具体的なObjectStack（cells / findStackContaining / findMatchingStackで
+得る）を渡す。型（ObjectDef）では引かない——represented_byが絡むと同じ外側Defでも別スタックが並びうるため、
+Defは位置を一意に決めない。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">stack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">number</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L284">src/domain/runtime/Slot.ts:284</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="placenewstack"><code class="tsd-tag">非公開</code><span>place<wbr/>New<wbr/>Stack</span><a href="#placenewstack" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="placenewstack-1"><span class="tsd-kind-call-signature">placeNewStack</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">newStack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#placenewstack-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>新規スタックを最初の空きセルへ、無ければ末尾へ。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">newStack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L112">src/domain/runtime/Slot.ts:112</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="placesameslot"><span>place<wbr/>Same<wbr/>Slot</span><a href="#placesameslot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="placesameslot-1"><span class="tsd-kind-call-signature">placeSameSlot</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">obj</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">originCellIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">kindRemains</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#placesameslot-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>same_slotによる置き換え（GameElementDefinition.md 9.4節）。置き換えオブジェクトを新規スタックとして、
+originが居たセル(originCellIndex)を基準に配置する（EffectSite参照）。自動整列は行わない（同種はObjectStack
+内で整列されるため、スタック間の位置は著者が見た位置を保つ）。</p>
+<ul>
+<li>kindRemains（originの同種がまだ残る＝selfが生き残る/同種の兄弟が残る）: 置き換え先はoriginの隣。非
+fixedPositionsはその添字へ挿入（後続が右へずれる）。fixedPositionsはoriginの右隣（無ければ左隣）へ、
+最寄りの空きセルをずらして場所を作って入れる。空きが無ければ配置失敗（false→呼び出し側でfallback）。</li>
+<li>!kindRemains（originの同種が全て消えた）: 空いた元の位置へ。非fixedPositionsはその添字へ挿入、
+fixedPositionsは空になったそのセル(undefined)を埋める。</li>
+</ul>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">obj</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">originCellIndex</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">kindRemains</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L164">src/domain/runtime/Slot.ts:164</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="removeinternal"><span>remove<wbr/>Internal</span><a href="#removeinternal" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="removeinternal-1"><span class="tsd-kind-call-signature">removeInternal</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">obj</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#removeinternal-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">obj</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L118">src/domain/runtime/Slot.ts:118</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="restack"><span>restack</span><a href="#restack" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="restack-1"><span class="tsd-kind-call-signature">restack</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">obj</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#restack-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>objの代表チェーンが変わったかもしれないとき、今の所属スタックの固定識別子に合致しなくなっていれば抜いて
+入れ直し（既存スタックへ合流／新規スタック）、「同種は1スタックにまとまる」という不変条件を中身の変化後も
+保つ。非stackableは対象外（個体ごとの別スタックで、合流判定の相手が居ないため実害が無い）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">obj</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L135">src/domain/runtime/Slot.ts:135</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="sumsize"><code class="tsd-tag">非公開</code><span>sum<wbr/>Size</span><a href="#sumsize" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="sumsize-1"><span class="tsd-kind-call-signature">sumSize</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">sizePropertyGlobalId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><a href="#sumsize-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">sizePropertyGlobalId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">number</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L83">src/domain/runtime/Slot.ts:83</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="tryfillcell"><code class="tsd-tag">非公開</code><span>try<wbr/>Fill<wbr/>Cell</span><a href="#tryfillcell" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="tryfillcell-1"><span class="tsd-kind-call-signature">tryFillCell</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">stack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">cellIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#tryfillcell-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>fixedPositions: 空いているセル(cellIndex)をスタックで埋める（埋まっていれば失敗）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">stack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li>
+<li><span><span class="tsd-kind-parameter">cellIndex</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L178">src/domain/runtime/Slot.ts:178</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="tryinsertatgap"><span>try<wbr/>Insert<wbr/>At<wbr/>Gap</span><a href="#tryinsertatgap" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="tryinsertatgap-1"><span class="tsd-kind-call-signature">tryInsertAtGap</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">obj</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">gapIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#tryinsertatgap-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>プレイヤーが位置を指定して入れる手動配置（fixedPositions専用）。gapIndexはセルとセルの隙間の番号で、
+0が先頭のセルの前、cells.lengthが末尾のセルの後ろ。まず右方向へ、それが無理なら左方向へ既存のセルを
+ずらして場所を作る（tryPlaceShifted）。どちらへもずらせなければfalse。</p>
+<p>合流できる既存スタックがあるときは、指定された位置よりも「同種は1スタックにまとまる」という不変条件を
+優先してそちらへ入れる（addInternalと同じ扱い）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">obj</span>: <a href="domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li>
+<li><span><span class="tsd-kind-parameter">gapIndex</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L231">src/domain/runtime/Slot.ts:231</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="trymovestacktogap"><span>try<wbr/>Move<wbr/>Stack<wbr/>To<wbr/>Gap</span><a href="#trymovestacktogap" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="trymovestacktogap-1"><span class="tsd-kind-call-signature">tryMoveStackToGap</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">stack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">gapIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#trymovestacktogap-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>プレイヤーによる手動並び替え（fixedPositions専用）。スタックを丸ごと、指定した隙間へ入れ直す。</p>
+<p>並び替えを1個ずつの出し入れで行うことはできない。抜いた1個を入れ直すとき、残った同種のスタックへの
+合流が位置指定より優先される（tryInsertAtGap）ため、必ず元の位置へ戻ってしまうため。</p>
+<p>詰める向きは、スタックが抜けた跡の側を先に試す。そちらには必ず空きがあるので、遠くのセルを
+動かさずに済む。自分の両隣の隙間へ落とした場合は、跡がそのまま行き先になるので何も動かさない。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">stack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li>
+<li><span><span class="tsd-kind-parameter">gapIndex</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L252">src/domain/runtime/Slot.ts:252</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="tryplaceadjacent"><code class="tsd-tag">非公開</code><span>try<wbr/>Place<wbr/>Adjacent</span><a href="#tryplaceadjacent" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="tryplaceadjacent-1"><span class="tsd-kind-call-signature">tryPlaceAdjacent</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">stack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">originCellIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#tryplaceadjacent-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>fixedPositions: originCellIndexの右隣（無ければ左隣）へ、最寄りの空きセルをその方向へずらして場所を作り、
+スタックを入れる。「右が空いている限り右に、そうでなければ左に生まれる」。どちらの方向にも空きが無ければ
+false（＝スロットが埋まっている。呼び出し側でfallbackへ委ねる）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">stack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li>
+<li><span><span class="tsd-kind-parameter">originCellIndex</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L190">src/domain/runtime/Slot.ts:190</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="tryplaceatgap"><code class="tsd-tag">非公開</code><span>try<wbr/>Place<wbr/>At<wbr/>Gap</span><a href="#tryplaceatgap" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="tryplaceatgap-1"><span class="tsd-kind-call-signature">tryPlaceAtGap</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">stack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">gapIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">step</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">-1</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">1</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#tryplaceatgap-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>fixedPositions: gapIndexの隙間へ、step方向へ既存のセルをずらして場所を作り、スタックを入れる。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">stack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li>
+<li><span><span class="tsd-kind-parameter">gapIndex</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">step</span>: <span class="tsd-signature-type">-1</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">1</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L197">src/domain/runtime/Slot.ts:197</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="tryplaceshifted"><code class="tsd-tag">非公開</code><span>try<wbr/>Place<wbr/>Shifted</span><a href="#tryplaceshifted" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="tryplaceshifted-1"><span class="tsd-kind-call-signature">tryPlaceShifted</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">stack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">originCellIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">step</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#tryplaceshifted-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">stack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li>
+<li><span><span class="tsd-kind-parameter">originCellIndex</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">step</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L203">src/domain/runtime/Slot.ts:203</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="trysetmanualposition"><span>try<wbr/>Set<wbr/>Manual<wbr/>Position</span><a href="#trysetmanualposition" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="trysetmanualposition-1"><span class="tsd-kind-call-signature">trySetManualPosition</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">stack</span><span class="tsd-signature-symbol">:</span> <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">newGridIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#trysetmanualposition-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>プレイヤーによる手動並び替え（fixedPositions専用）。対象のスタックを、指定した番号のセルと入れ替える
+（相手が空セルなら実質移動になり、元のセルが空く）。前詰めしない前提のため、単純な2者間のswap。対象は
+具体的なObjectStackで受け取る（型では一意に定まらないため。indexOfStack参照）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">stack</span>: <a href="domain_runtime_ObjectStack.ObjectStack.html" class="tsd-signature-type tsd-kind-class">ObjectStack</a></span></li>
+<li><span><span class="tsd-kind-parameter">newGridIndex</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/Slot.ts#L293">src/domain/runtime/Slot.ts:293</a></li></ul></aside></div></li></ul></section></section></details></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>テーマ設定</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">メンバーの可視性</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>保護</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-private" name="private"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>非公開</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>継承</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">配色</label><select id="tsd-theme"><option value="os">自動</option><option value="light">ライト</option><option value="dark">ダーク</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>このページ</h3></summary>
+<div class="tsd-accordion-details">
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>コンストラクター</summary>
+<div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>プロパティ</summary>
+<div><a href="#_cells" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>_<wbr/>cells</span></a><a href="#def"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>def</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-アクセッサー"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>アクセッサー</summary>
+<div><a href="#cells"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>cells</span></a><a href="#contents"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>contents</span></a><a href="#livestacks" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>live<wbr/>Stacks</span></a></div></details>
+<details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>メソッド</summary>
+<div><a href="#acceptsrule" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>accepts<wbr/>Rule</span></a><a href="#addinternal"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Internal</span></a><a href="#canaccept"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>can<wbr/>Accept</span></a><a href="#findmatchingstack"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Matching<wbr/>Stack</span></a><a href="#findstackcontaining"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Stack<wbr/>Containing</span></a><a href="#hascapacityfor" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>has<wbr/>Capacity<wbr/>For</span></a><a href="#indexofstack"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>index<wbr/>Of<wbr/>Stack</span></a><a href="#placenewstack" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place<wbr/>New<wbr/>Stack</span></a><a href="#placesameslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place<wbr/>Same<wbr/>Slot</span></a><a href="#removeinternal"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Internal</span></a><a href="#restack"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>restack</span></a><a href="#sumsize" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>sum<wbr/>Size</span></a><a href="#tryfillcell" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Fill<wbr/>Cell</span></a><a href="#tryinsertatgap"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Insert<wbr/>At<wbr/>Gap</span></a><a href="#trymovestacktogap"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Move<wbr/>Stack<wbr/>To<wbr/>Gap</span></a><a href="#tryplaceadjacent" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Place<wbr/>Adjacent</span></a><a href="#tryplaceatgap" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Place<wbr/>At<wbr/>Gap</span></a><a href="#tryplaceshifted" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Place<wbr/>Shifted</span></a><a href="#trysetmanualposition"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Set<wbr/>Manual<wbr/>Position</span></a></div></details></div></details></div>
+<div class="site-menu">
+<nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../Documents/" class="tsd-nav-link">ドキュメント</a><a href="../Game/" class="tsd-nav-link">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland" class="tsd-nav-link">GitHub</a></nav>
+<nav class="tsd-navigation"><a href="../modules.html">UnmappedIsland ソースリファレンス - v0.1.0</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>読み込み中...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator"><a href="https://typedoc.org/" target="_blank">TypeDoc</a>を使用して生成</p></footer>
+<div class="overlay"></div></body></html>
