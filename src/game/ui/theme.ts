@@ -40,6 +40,8 @@ export const COLOR = {
   button: 0xffffff,
   buttonBorder: 0x000000,
   buttonActive: 0x3a3a3a,
+  /** 実行中などで今は押せないボタン。 */
+  buttonDisabled: 0xdedede,
   equipmentButton: 0xd6fff0,
   injuryButton: 0xffe0d6,
 

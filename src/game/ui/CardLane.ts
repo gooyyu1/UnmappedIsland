@@ -4,6 +4,7 @@ import type { CardContent } from './Card';
 import { Card, EmptyCard } from './Card';
 import { COLOR, SIZE } from './theme';
 import { addPanel } from './shapes';
+import { wheelPixels } from './scroll';
 
 /**
  * ドロップ先として見たときの、レーン上の1点の意味。
@@ -294,19 +295,4 @@ export class CardLane {
 function sharesIdentity(a: CardContent, b: CardContent): boolean {
   if (a.identity === undefined || b.identity === undefined) return false;
   return a.identity.some((id) => b.identity?.includes(id) === true);
-}
-
-/** deltaModeがピクセル・行・ページのときの、delta1あたりのピクセル数。 */
-const WHEEL_DELTA_PIXELS = [1, 16, 400];
-
-/**
- * ホイールの回転量をスクロールするピクセル数に直す。
- *
- * 縦ホイールしか無いマウスでも送れるよう、横方向の回転が無ければ縦方向の回転を横スクロールに使う。
- * ブラウザによってdeltaの単位が行・ページになるため（Phaserは正規化しない）、ピクセルへ揃える。
- */
-function wheelPixels(pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number): number {
-  const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
-  const mode = pointer.event instanceof WheelEvent ? pointer.event.deltaMode : 0;
-  return delta * (WHEEL_DELTA_PIXELS[mode] ?? 1);
 }

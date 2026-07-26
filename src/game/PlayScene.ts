@@ -36,6 +36,15 @@ const FILTER_BAR_PADDING_X = 20;
 const DISPLAY_PADDING = 16;
 const STATUS_PADDING = 24;
 
+/**
+ * ゲーム内時間の経過を実時間で見せる速さ（ゲーム内15分＝現実0.5秒）。durationを持つアクションは、
+ * この速さで時間が経ち切るまで結果を見せない。
+ */
+const REAL_MS_PER_GAME_MINUTE = 500 / 15;
+
+/** 経過分から日付・時刻を組み立てるための1日の長さ。 */
+const MINUTES_PER_DAY = 24 * 60;
+
 /** 状況エリア・天候の帯のパディング（縦型は広め、横型は狭め）。 */
 const SITUATION_PADDING_PORTRAIT = { x: 32, y: 20 };
 const SITUATION_PADDING_LANDSCAPE = { x: 20, y: 12 };
@@ -82,6 +91,10 @@ export class PlayScene extends ResponsiveScene {
 
   /** 開いている探索の子ウィンドウ。画面の作り直しをまたいで開いたままにするために持つ。 */
   private explorationWindow: ExplorationWindow | undefined;
+
+  /** 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。 */
+  private searching = false;
+  private found: readonly CardContent[] = [];
 
   constructor() {
     super('play');
@@ -216,6 +229,8 @@ export class PlayScene extends ResponsiveScene {
       locationName: this.view.currentLocation.name,
       ratio: this.view.explorationRatio,
       width: this.windowWidth,
+      found: this.found,
+      searching: this.searching,
       onExplore: () => this.explore(),
       onClose: () => {
         this.explorationWindow = undefined;
@@ -224,23 +239,93 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 現在地を1回探索する。見つかったものは現在地のカードから出てくる。探索の子ウィンドウは
-   * 開いたまま、更新後の探索率で開き直される。
+   * 現在地を1回探索する。
+   *
+   * 探索はゲーム内時間を消費するアクションなので、その分だけ実時間をかけて進める。ワールド自体は
+   * 先に変えてしまい、時計だけを実時間で動かして、結果（見つかったカード・探索率）は経過し切って
+   * から見せる。押した瞬間に発見物の枠が空へ戻り、時間が経ってから埋まる。
    */
   private explore(): void {
-    this.applyToWorld(() => {
-      this.gameSession.player.explore(this.gameSession.session);
-    }, this.locationLane.pinnedRect);
+    if (this.searching) return;
+
+    const shownBefore = this.shownInstanceIds();
+    const startedAt = this.gameSession.world.totalMinutes;
+
+    this.searching = true;
+    this.found = [];
+    this.openExplorationWindow();
+
+    this.gameSession.player.explore(this.gameSession.session);
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
+      this.searching = false;
+      this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+      this.found = this.foundSince(shownBefore);
+      this.showView(this.locationLane.pinnedRect);
+    });
+  }
+
+  /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
+  private shownInstanceIds(): ReadonlySet<number> {
+    const shown = [...this.view.fieldItems, ...this.view.destinations];
+    return new Set(shown.flatMap((card) => card.identity ?? []));
+  }
+
+  /** 控えておいた「出ていたもの」に無いカード＝この探索で見つかったもの（アイテムと道）。 */
+  private foundSince(shownBefore: ReadonlySet<number>): readonly CardContent[] {
+    const shown = [...this.view.fieldItems, ...this.view.destinations];
+    return shown
+      .filter((card) => card.identity?.some((id) => !shownBefore.has(id)) === true)
+      .map(({ icon, name }) => ({ icon, name }));
   }
 
   /**
-   * ワールドを変える操作を実行し、その結果を画面へ反映する。カードは作り直さずに差し替え、
-   * 動いた分をアニメーションで見せる（CardMotion）。originは新しく生まれたカードの出どころ。
+   * fromMinutesからtoMinutesまで、ゲーム内時間の経過をREAL_MS_PER_GAME_MINUTEの速さで時計へ映し、
+   * 経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
+   */
+  private passTime(fromMinutes: number, toMinutes: number, onElapsed: () => void): void {
+    const minutes = toMinutes - fromMinutes;
+    if (minutes <= 0) {
+      onElapsed();
+      return;
+    }
+
+    const clock = { minutes: fromMinutes };
+    this.tweens.add({
+      targets: clock,
+      minutes: toMinutes,
+      duration: minutes * REAL_MS_PER_GAME_MINUTE,
+      ease: 'Linear',
+      onUpdate: () => this.showClock(clock.minutes),
+      onComplete: onElapsed,
+    });
+  }
+
+  /** 経過分を日数・時刻へ直して時計に出す。画面を作り直した直後はまだ時計が無いことがある。 */
+  private showClock(totalMinutes: number): void {
+    if (this.calendar.scene === undefined) return;
+
+    const whole = Math.trunc(totalMinutes);
+    this.calendar.setTime(
+      Math.trunc(whole / MINUTES_PER_DAY),
+      Math.trunc((whole % MINUTES_PER_DAY) / 60),
+      whole % 60,
+    );
+  }
+
+  /**
+   * ワールドを変える操作を実行し、その結果を画面へ反映する。originは新しく生まれたカードの出どころ。
    */
   private applyToWorld(change: () => void, origin?: Rect): void {
     change();
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.showView(origin);
+  }
 
+  /**
+   * 今のthis.viewを画面へ反映する。カードは作り直さずに差し替え、動いた分をアニメーションで
+   * 見せる（CardMotion）。
+   */
+  private showView(origin?: Rect): void {
     this.motion.update(
       [this.locationLane, this.fieldItemLane, this.handLane],
       [
