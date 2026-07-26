@@ -70,6 +70,17 @@ export class PlayerCharacter {
     return failure === undefined;
   }
 
+  /**
+   * 手持ちの枠を並び替える。memberが属するスタックを丸ごと、指定した隙間（gapIndexは0が先頭の枠の前）へ
+   * 入れ直す（Slot.tryMoveStackToGap）。並び替えられなければfalse。
+   */
+  reorderHand(member: WorldObject, gapIndex: number): boolean {
+    const slot = this.instance.tryGetSlot(this.handSlotId);
+    const stack = slot?.findStackContaining(member);
+    if (slot === undefined || stack === undefined) return false;
+    return slot.tryMoveStackToGap(stack, gapIndex);
+  }
+
   /** 手持ちのアイテムを今いる土地へ置く。土地に居ない・土地が受け入れられないならfalse。 */
   drop(item: WorldObject, session: WorldSession): boolean {
     return this.location?.receiveItem(item, session) ?? false;

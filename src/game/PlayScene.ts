@@ -171,7 +171,7 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、隙間へ落としたら
-   * 隣のレーンへの移動。同じレーンの隙間へ落とす並べ替えは扱わない。
+   * 位置を変える。同じレーンの中ならスタックごとの並び替え、レーンをまたぐならカード1枚の移動。
    */
   private dropAction(drop: CardDrop): (() => void) | undefined {
     const dragged = this.cardsOf(drop.from)[drop.fromIndex];
@@ -183,12 +183,17 @@ export class PlayScene extends ResponsiveScene {
       return this.view.combinationOf(dragged, target);
     }
 
+    const { gapIndex } = drop.target;
+    if (drop.to === drop.from) {
+      const reorder = dragged.reorder;
+      return reorder === undefined ? undefined : () => reorder(gapIndex);
+    }
+
     const move = dragged.move;
-    if (drop.to === drop.from || move === undefined) return undefined;
+    if (move === undefined) return undefined;
 
     // 手持ちは枠の位置が固定なので落とした隙間へ入れる。フィールド側は並び順を持たない。
-    const gapIndex = drop.to === this.handLane ? drop.target.gapIndex : undefined;
-    return () => move(gapIndex);
+    return () => move(drop.to === this.handLane ? gapIndex : undefined);
   }
 
   private cardsOf(lane: CardLane): readonly (ItemCard | undefined)[] {
