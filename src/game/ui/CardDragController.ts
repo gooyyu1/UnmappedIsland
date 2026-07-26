@@ -13,7 +13,7 @@ const LONG_PRESS_SLOP = 12;
 const DIRECTION_THRESHOLD = 20;
 const VERTICAL_RATIO = 1.5;
 
-/** ドラッグ中の分身の濃さと、掴まれて薄くなった元のカードの濃さ。 */
+/** ドラッグ中の分身の濃さと、掴まれて場所が空いた元のカードの濃さ。 */
 const GHOST_ALPHA = 0.9;
 const GRABBED_ALPHA = 0.3;
 
@@ -157,13 +157,11 @@ export class CardDragController {
     if (gesture === undefined) return;
 
     gesture.kind = 'dragging';
-    gesture.card.setAlpha(GRABBED_ALPHA);
+    // 掴んで動くのは1つだけなので、スタックは残りがそこに居る。薄くするのは場所ごと空くときだけ。
+    if ((gesture.card.content.count ?? 1) < 2) gesture.card.setAlpha(GRABBED_ALPHA);
     // 分身を先に作り、枠を後から作る（後に作ったものが手前に描かれる）。どこへ落ちるかの方が
     // 分身の見た目より大事なので、枠を分身の上に出す。
-    gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, {
-      ...cardFace(gesture.card.content),
-      count: gesture.card.content.count,
-    });
+    gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, cardFace(gesture.card.content));
     gesture.ghost.setAlpha(GHOST_ALPHA);
     gesture.indicator = this.scene.add.graphics();
     this.follow(pointer);

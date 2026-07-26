@@ -49,9 +49,9 @@ export class CardMotion {
     contents: readonly (readonly (CardContent | undefined)[])[],
     origin?: Rect,
   ): void {
-    const before = positionsOf(lanes);
+    const before = ownersOf(lanes);
     const updates = lanes.map((lane, index) => lane.setCards(contents[index]));
-    const after = positionsOf(lanes);
+    const after = ownersOf(lanes);
 
     // 現れた側が飛ぶIDは、居なくなった側では改めて動かさない（同じ移動を二重に見せないため）。
     const entering = new Set(updates.flatMap((update) => update.entered).flatMap(({ card }) => idsOf(card)));
@@ -62,7 +62,7 @@ export class CardMotion {
       }
     });
 
-    this.stackNewcomers(lanes, updates, before, origin);
+    this.moveInstances(lanes, updates, before, origin);
 
     for (const { left } of updates) {
       for (const card of left) {
@@ -77,30 +77,35 @@ export class CardMotion {
   }
 
   /**
-   * 元から画面に居たカードのスタックへ、新しく生まれたインスタンスが加わったぶんを見せる。
+   * カードそのものは動かない、インスタンス1つぶんの移動を見せる。
    *
-   * 合流先のカードはそのまま居座るので、そのままでは右上の数字が変わるだけで何も起きていないように
-   * 見える（発見済みのアイテムをもう一度発見したときがこれ）。増えた1枚ぶんの分身をoriginから飛ばし、
-   * 合流先の上に重ねて示す。
+   * 1枚のカードがスタック全体を映すため、居続けるカードの間でインスタンスが移った場合、どちらの
+   * カードも残ってしまい右上の数字が変わるだけになる（スタックの1つを、同じものが既に居る場所へ
+   * 移したとき）。発見済みのアイテムをもう一度発見したときも同じで、こちらは出どころがoriginになる。
+   * どちらも、移った1つぶんの分身を飛ばして移動先へ重ねる。
    */
-  private stackNewcomers(
+  private moveInstances(
     lanes: readonly CardLane[],
     updates: readonly LaneUpdate[],
-    before: ReadonlyMap<number, Rect>,
+    before: ReadonlyMap<number, Owner>,
     origin: Rect | undefined,
   ): void {
-    if (origin === undefined) return;
-
-    // 新しいカードとして現れたぶんは、カードそのものが飛ぶ（fly）ので数えない。
+    // カードごと出入りするぶんは、そのカード自身が飛ぶ（fly・dismiss）ので数えない。
     const entered = new Set(updates.flatMap((update) => update.entered).map(({ card }) => card));
+    const left = new Set(updates.flatMap((update) => update.left));
 
     for (const lane of lanes) {
       lane.cardObjects.forEach((card, slot) => {
         if (card === undefined || entered.has(card)) return;
-        if (!idsOf(card).some((id) => !before.has(id))) return;
 
-        const newcomer = new Card(this.scene, this.metrics, origin.x, origin.y, cardFace(card.content));
-        this.stackOnto(newcomer, origin, lane.slotRect(slot));
+        const to = lane.slotRect(slot);
+        for (const from of arrivalsAt(card, before, left, origin)) {
+          this.stackOnto(
+            new Card(this.scene, this.metrics, from.x, from.y, cardFace(card.content)),
+            from,
+            to,
+          );
+        }
       });
     }
   }
@@ -172,27 +177,52 @@ export class CardMotion {
   }
 }
 
-/** レーンに並ぶカードが映しているインスタンスのIDから、その置き場所を引ける表。 */
-function positionsOf(lanes: readonly CardLane[]): Map<number, Rect> {
-  const positions = new Map<number, Rect>();
+/** 1つのインスタンスを、今どのカードがどこで映しているか。 */
+interface Owner {
+  readonly card: Card;
+  readonly rect: Rect;
+}
+
+/** レーンに並ぶカードが映しているインスタンスのIDから、そのカードと置き場所を引ける表。 */
+function ownersOf(lanes: readonly CardLane[]): Map<number, Owner> {
+  const owners = new Map<number, Owner>();
   for (const lane of lanes) {
     lane.cardObjects.forEach((card, index) => {
-      if (card === undefined) return;
       const rect = lane.slotRect(index);
-      for (const id of idsOf(card)) positions.set(id, rect);
+      if (card !== undefined) for (const id of idsOf(card)) owners.set(id, { card, rect });
     });
   }
-  return positions;
+  return owners;
+}
+
+/**
+ * このカードが新しく受け取ったインスタンスの、それぞれの出どころ。
+ *
+ * 元のカードごと居なくなったぶんは、そのカード自身が飛ぶ（CardMotion.dismiss）ので含めない。
+ * 差し替え前に画面のどこにも無かったインスタンス（探索・クラフトで生まれたもの）はoriginから来る。
+ */
+function arrivalsAt(
+  card: Card,
+  before: ReadonlyMap<number, Owner>,
+  left: ReadonlySet<Card>,
+  origin: Rect | undefined,
+): readonly Rect[] {
+  return idsOf(card).flatMap((id) => {
+    const previous = before.get(id);
+    if (previous === undefined) return origin === undefined ? [] : [origin];
+    if (previous.card === card || left.has(previous.card)) return [];
+    return [previous.rect];
+  });
 }
 
 function idsOf(card: Card): readonly number[] {
   return card.content.identity ?? [];
 }
 
-function rectOf(positions: Map<number, Rect>, ids: readonly number[]): Rect | undefined {
+function rectOf(owners: ReadonlyMap<number, Owner>, ids: readonly number[]): Rect | undefined {
   for (const id of ids) {
-    const rect = positions.get(id);
-    if (rect !== undefined) return rect;
+    const owner = owners.get(id);
+    if (owner !== undefined) return owner.rect;
   }
   return undefined;
 }
