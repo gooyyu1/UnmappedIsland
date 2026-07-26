@@ -81,11 +81,11 @@ title: 編み籠と石            # 一覧に出す表示名（省略すると�
 seed: 3
 player:
   hand: [woven_basket]      # キャラクターのhandスロットへ、並べた順に入れる
-  equipment: []             # 同じ名前を並べた数だけ作られる
+  equipment: []             # 同じ名前が並んだ数だけ作られる
   props:
     satiety: 1200           # プロパティの上書き（実体値）
 location:
-  items: [stone, stone, driftwood]   # 開始地点の土地に置く
+  items: [stone x100, driftwood]     # `x個数` で同じものをまとめて指定できる（1〜1000）
   fixtures: []
 ```
 

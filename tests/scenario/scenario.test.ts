@@ -54,6 +54,26 @@ describe('テスト用シナリオ', () => {
     ]);
   });
 
+  it('個数の指定は、同じものをその数だけ並べたのと同じ', () => {
+    const scenario = parseScenario('count.yaml', 'seed: 1\nlocation:\n  items: [stone x3, driftwood]\n');
+
+    expect(scenario.items).toEqual(['stone', 'stone', 'stone', 'driftwood']);
+  });
+
+  it('many_stonesは、100個の石を1つのスタックとして持たせる', () => {
+    const scenario = load('many_stones');
+    const game = startNewGame(codex, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    expect(game.player.hand[0]?.def.name).toBe('stone');
+    expect(game.player.handStacks[0]?.length, '100個でも手持ちの1枠に収まる').toBe(100);
+  });
+
+  it('個数が上限を超えていればエラーになる（書き間違いを通さない）', () => {
+    expect(() => parseScenario('over.yaml', 'seed: 1\nlocation:\n  items: [stone x1001]\n')).toThrow(/個数/);
+  });
+
   it('object_defの名前が違えばエラーになる（黙って違う状態で始めない）', () => {
     const scenario = parseScenario('bad.yaml', 'seed: 1\nplayer:\n  hand: [no_such_item]\n');
     const game = startNewGame(codex, 1, new SeededRng(1));
