@@ -99,7 +99,10 @@ describe('containers.yamlの液体容器定義', () => {
     expect(canteen.representedBySlotGlobalId).toBe(contentSlotId);
     expect(canteen.actions, '容器本体は中身の行動を持たない').toHaveLength(0);
     expect(canteen.combinations, '容器本体は注ぎ処理を持たない').toHaveLength(0);
-    expect(canteen.getPropertyDef(codex.propertyNames.getId('liquid_amount')), '容器本体はliquid_amountを持つ').toBeDefined();
+    expect(
+      canteen.getPropertyDef(codex.propertyNames.getId('liquid_amount')),
+      '容器本体はliquid_amountを持つ',
+    ).toBeDefined();
   });
 
   it.each([
@@ -154,7 +157,9 @@ describe('containers.yamlの液体容器定義', () => {
 
     expect(executed).toBe(true);
     expect(actor.getNumber(hydrationId), '在庫(600)の分しか水分補給されない').toBe(600);
-    expect(actor.getNumber(wakefulnessId), '飲んだ量(600)に比例した眠気改善: 200 * 600 / 1200 = 100').toBe(100);
+    expect(actor.getNumber(wakefulnessId), '飲んだ量(600)に比例した眠気改善: 200 * 600 / 1200 = 100').toBe(
+      100,
+    );
   });
 
   it('油にはdrinkアクションが無い', () => {
@@ -182,18 +187,15 @@ describe('containers.yamlの液体容器定義', () => {
     expect(bowl.getNumber(liquidAmountId)).toBe(100 + expectedDelta);
   });
 
-  it.each(['storm', 'heavy_rain', 'light_rain'])(
-    'coconut_bowlは雨天(%s)では蒸発しない',
-    (weather) => {
-      const session = new WorldSession(codex);
-      const world = spawnWorld(weather);
-      const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world, session);
+  it.each(['storm', 'heavy_rain', 'light_rain'])('coconut_bowlは雨天(%s)では蒸発しない', (weather) => {
+    const session = new WorldSession(codex);
+    const world = spawnWorld(weather);
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world, session);
 
-      bowl.tick(session);
+    bowl.tick(session);
 
-      expect(bowl.getNumber(liquidAmountId)).toBe(100);
-    },
-  );
+    expect(bowl.getNumber(liquidAmountId)).toBe(100);
+  });
 
   it.each([
     ['cloudy', -2],

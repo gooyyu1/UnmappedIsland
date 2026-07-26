@@ -287,8 +287,12 @@ function buildReport(
   append('## 計測方法');
   append();
   append('- 序盤/中盤/終盤 = 各季節インスタンスの実持続期間の3等分区間。');
-  append('- 天気ごとの発生時間 = 期間内の合計時間。発生しなかった期間も0時間の標本として計上（nは全天気共通）。');
-  append('- 連続降雨/未降雨時間 = 同じ状態が連続した1回ごとの長さ。開始tickの区間に割り当て、季節境界で打ち切り。');
+  append(
+    '- 天気ごとの発生時間 = 期間内の合計時間。発生しなかった期間も0時間の標本として計上（nは全天気共通）。',
+  );
+  append(
+    '- 連続降雨/未降雨時間 = 同じ状態が連続した1回ごとの長さ。開始tickの区間に割り当て、季節境界で打ち切り。',
+  );
   append('- 標準偏差は標本標準偏差（n-1）、5%ile/95%ileは最近隣法（nearest-rank）。');
   append();
 
@@ -324,7 +328,9 @@ function buildReport(
     '',
     seasonKinds.map((s) => [seasonName(s), getStat(stats.seasonMoistureRate, s)] as const),
   );
-  append('（`dry`の標準偏差が0でないのは、最初の`dry`季節に難易度の初期補正=`ClimateSystem.md` 5.2節が重なるため。）');
+  append(
+    '（`dry`の標準偏差が0でないのは、最初の`dry`季節に難易度の初期補正=`ClimateSystem.md` 5.2節が重なるため。）',
+  );
   append();
   append('### 天気ごとの自己減算（1tickあたり、降雨中のみ）');
   append();
@@ -362,7 +368,9 @@ function buildReport(
     appendStatTable(
       '区間',
       '',
-      thirdRows(getStat(stats.temperatureOverall, s), (third) => getStat(stats.temperatureThird, `${s},${third}`)),
+      thirdRows(getStat(stats.temperatureOverall, s), (third) =>
+        getStat(stats.temperatureThird, `${s},${third}`),
+      ),
     );
 
     append('### 天気ごとの発生時間（時間/期間）');
@@ -385,7 +393,9 @@ function buildReport(
     appendStatTable(
       '区間',
       '日',
-      thirdRows(getStat(stats.nonRainStreak, s), (third) => getStat(stats.nonRainStreakThird, `${s},${third}`)),
+      thirdRows(getStat(stats.nonRainStreak, s), (third) =>
+        getStat(stats.nonRainStreakThird, `${s},${third}`),
+      ),
     );
 
     append('### 連続降雨時間（日）');
@@ -401,81 +411,85 @@ function buildReport(
 }
 
 describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計レポート', () => {
-  it(
-    '20シード×3600日をシミュレートしてClimateSystemStats.mdを再生成する',
-    () => {
-      const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).build();
+  it('20シード×3600日をシミュレートしてClimateSystemStats.mdを再生成する', () => {
+    const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).build();
 
-      const calmId = codex.symbolNames.intern('calm');
-      const wetId = codex.symbolNames.intern('wet');
-      const dryId = codex.symbolNames.intern('dry');
-      const sunnyId = codex.symbolNames.intern('sunny');
-      const clearId = codex.symbolNames.intern('clear');
-      const cloudyId = codex.symbolNames.intern('cloudy');
-      const scorchingId = codex.symbolNames.intern('scorching');
-      const lightRainId = codex.symbolNames.intern('light_rain');
-      const heavyRainId = codex.symbolNames.intern('heavy_rain');
-      const stormId = codex.symbolNames.intern('storm');
-      const seasonId = codex.propertyNames.getId('season');
-      const weatherId = codex.propertyNames.getId('weather');
-      const temperatureId = codex.propertyNames.getId('ambient_temperature');
-      const moistureId = codex.propertyNames.getId('atmospheric_moisture');
+    const calmId = codex.symbolNames.intern('calm');
+    const wetId = codex.symbolNames.intern('wet');
+    const dryId = codex.symbolNames.intern('dry');
+    const sunnyId = codex.symbolNames.intern('sunny');
+    const clearId = codex.symbolNames.intern('clear');
+    const cloudyId = codex.symbolNames.intern('cloudy');
+    const scorchingId = codex.symbolNames.intern('scorching');
+    const lightRainId = codex.symbolNames.intern('light_rain');
+    const heavyRainId = codex.symbolNames.intern('heavy_rain');
+    const stormId = codex.symbolNames.intern('storm');
+    const seasonId = codex.propertyNames.getId('season');
+    const weatherId = codex.propertyNames.getId('weather');
+    const temperatureId = codex.propertyNames.getId('ambient_temperature');
+    const moistureId = codex.propertyNames.getId('atmospheric_moisture');
 
-      const seasonKinds = [calmId, wetId, dryId];
-      const weatherKinds = [scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId];
-      const rainWeatherKinds = [lightRainId, heavyRainId, stormId];
-      const isRain = (w: number): boolean => w === lightRainId || w === heavyRainId || w === stormId;
+    const seasonKinds = [calmId, wetId, dryId];
+    const weatherKinds = [scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId];
+    const rainWeatherKinds = [lightRainId, heavyRainId, stormId];
+    const isRain = (w: number): boolean => w === lightRainId || w === heavyRainId || w === stormId;
 
-      const stats = createClimateStats(seasonKinds, weatherKinds, rainWeatherKinds);
+    const stats = createClimateStats(seasonKinds, weatherKinds, rainWeatherKinds);
 
-      const worldDef = codex.objects.get(codex.objectNames.getId('world'));
-      const totalTicks = SIM_DAYS * 96;
+    const worldDef = codex.objects.get(codex.objectNames.getId('world'));
+    const totalTicks = SIM_DAYS * 96;
 
-      for (let seed = 1; seed <= SEED_COUNT; seed++) {
-        const worldInstance = new WorldObject(1, worldDef, new WorldSession(codex));
-        const worldView = new World(worldInstance, codex.propertyNames);
-        const session = new WorldSession(codex, worldView, new SeededRng(seed));
+    for (let seed = 1; seed <= SEED_COUNT; seed++) {
+      const worldInstance = new WorldObject(1, worldDef, new WorldSession(codex));
+      const worldView = new World(worldInstance, codex.propertyNames);
+      const session = new WorldSession(codex, worldView, new SeededRng(seed));
 
-        // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
-        let segSeason = worldInstance.getNumber(seasonId);
-        let segTemps: number[] = [];
-        let segWeathers: number[] = [];
-        let segMoistures: number[] = [];
-        let isFirstSegment = true;
+      // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
+      let segSeason = worldInstance.getNumber(seasonId);
+      let segTemps: number[] = [];
+      let segWeathers: number[] = [];
+      let segMoistures: number[] = [];
+      let isFirstSegment = true;
 
-        const flushSegment = (): void => {
-          if (!isFirstSegment) {
-            processCompletedSegment(stats, weatherKinds, isRain, segSeason, segTemps, segWeathers, segMoistures);
-          }
-          segTemps = [];
-          segWeathers = [];
-          segMoistures = [];
-        };
-
-        for (let t = 0; t < totalTicks; t++) {
-          session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
-
-          const currentSeason = worldInstance.getNumber(seasonId);
-          if (currentSeason !== segSeason) {
-            flushSegment();
-            isFirstSegment = false;
-            segSeason = currentSeason;
-          }
-
-          segTemps.push(worldInstance.getEffectiveValue(temperatureId));
-          segWeathers.push(worldInstance.getNumber(weatherId));
-          segMoistures.push(worldInstance.getNumber(moistureId));
+      const flushSegment = (): void => {
+        if (!isFirstSegment) {
+          processCompletedSegment(
+            stats,
+            weatherKinds,
+            isRain,
+            segSeason,
+            segTemps,
+            segWeathers,
+            segMoistures,
+          );
         }
-        // 末尾の未完了セグメントは破棄（flushSegmentを呼ばない）
+        segTemps = [];
+        segWeathers = [];
+        segMoistures = [];
+      };
+
+      for (let t = 0; t < totalTicks; t++) {
+        session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
+
+        const currentSeason = worldInstance.getNumber(seasonId);
+        if (currentSeason !== segSeason) {
+          flushSegment();
+          isFirstSegment = false;
+          segSeason = currentSeason;
+        }
+
+        segTemps.push(worldInstance.getEffectiveValue(temperatureId));
+        segWeathers.push(worldInstance.getNumber(weatherId));
+        segMoistures.push(worldInstance.getNumber(moistureId));
       }
+      // 末尾の未完了セグメントは破棄（flushSegmentを呼ばない）
+    }
 
-      const report = buildReport(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats);
-      const outPath = join('Documents', 'Diagnostics', 'ClimateSystemStats.md');
-      writeFileSync(outPath, report, 'utf8');
-      console.log(`Report written to: ${outPath}`);
+    const report = buildReport(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats);
+    const outPath = join('Documents', 'Diagnostics', 'ClimateSystemStats.md');
+    writeFileSync(outPath, report, 'utf8');
+    console.log(`Report written to: ${outPath}`);
 
-      expect(report).toContain('# 気候システム統計レポート');
-    },
-    600_000,
-  );
+    expect(report).toContain('# 気候システム統計レポート');
+  }, 600_000);
 });

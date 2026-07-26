@@ -81,9 +81,13 @@ describe('terrain_generation.yamlの地形生成定義', () => {
       expect(coastal, `${type.name} はcoastal_distanceのhard_limitを持つ`).toBeDefined();
 
       if (coastalTypes.includes(type.name))
-        expect(coastal?.max, `海岸型 ${type.name} は海岸帯(coast_band以下)にしか出ない`).toBe(island.coastBand);
+        expect(coastal?.max, `海岸型 ${type.name} は海岸帯(coast_band以下)にしか出ない`).toBe(
+          island.coastBand,
+        );
       else
-        expect(coastal?.min, `内陸型 ${type.name} は海岸帯には出ない(海岸過多の防止)`).toBe(island.coastBand + 1);
+        expect(coastal?.min, `内陸型 ${type.name} は海岸帯には出ない(海岸過多の防止)`).toBe(
+          island.coastBand + 1,
+        );
     }
   });
 });

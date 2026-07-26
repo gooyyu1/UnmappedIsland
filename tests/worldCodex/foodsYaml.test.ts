@@ -19,7 +19,11 @@ describe('foods.yamlの食料定義', () => {
   });
 
   function spawn(objectName: string, instanceId: number): WorldObject {
-    return new WorldObject(instanceId, codex.objects.get(codex.objectNames.getId(objectName)), new WorldSession(codex));
+    return new WorldObject(
+      instanceId,
+      codex.objects.get(codex.objectNames.getId(objectName)),
+      new WorldSession(codex),
+    );
   }
 
   it.each([

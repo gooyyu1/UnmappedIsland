@@ -139,7 +139,12 @@ describe('core.yamlのworld定義', () => {
 
     const worldInstance = new WorldObject(1, world, new WorldSession(codex));
 
-    function assertSunlightAt(weather: string, hour: number, expectedEffective: number, because: string): void {
+    function assertSunlightAt(
+      weather: string,
+      hour: number,
+      expectedEffective: number,
+      because: string,
+    ): void {
       worldInstance.setProperty(weatherId, codex.symbolNames.intern(weather));
       worldInstance.setProperty(hourId, hour);
       expect(worldInstance.getEffectiveValue(sunlightId), because).toBe(expectedEffective);

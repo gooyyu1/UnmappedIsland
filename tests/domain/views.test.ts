@@ -32,7 +32,11 @@ object_defs:
         value: 15
 `;
     const codex = load(yaml);
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), new WorldSession(codex));
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
 
     const world = new World(instance, codex.propertyNames);
 
@@ -62,7 +66,11 @@ object_defs:
             minute: 10
 `;
     const codex = load(yaml);
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), new WorldSession(codex));
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
 
     const world = new World(instance, codex.propertyNames);
 
@@ -107,11 +115,7 @@ object_defs:
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
-    const instance = new WorldObject(
-      1,
-      codex.objects.get(codex.objectNames.getId('character')),
-      session,
-    );
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
     const stone = session.spawn(codex.objectNames.getId('stone'));
     stone.moveToSlot(instance, codex.slotNames.getId('hand'), codex.wellKnown);
 

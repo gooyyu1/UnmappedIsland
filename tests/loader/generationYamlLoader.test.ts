@@ -216,9 +216,9 @@ axes:
       blend:
         - {type: distance_field, reference: edge, weight: 100}
 `;
-    expect(() =>
-      new WorldCodexYamlLoader().load('a.yaml', axisYaml).load('b.yaml', axisYaml),
-    ).toThrowError(/elevation/);
+    expect(() => new WorldCodexYamlLoader().load('a.yaml', axisYaml).load('b.yaml', axisYaml)).toThrowError(
+      /elevation/,
+    );
   });
 
   it('未知のジェネレータ種別はエラーになる', () => {

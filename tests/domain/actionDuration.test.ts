@@ -48,7 +48,10 @@ object_defs:
 `;
 
   function buildWorldSession(extraYaml: string): { codex: WorldCodex; session: WorldSession; world: World } {
-    const codex = new WorldCodexYamlLoader().load('world.yaml', worldYaml).load('extra.yaml', extraYaml).build();
+    const codex = new WorldCodexYamlLoader()
+      .load('world.yaml', worldYaml)
+      .load('extra.yaml', extraYaml)
+      .build();
     const bootstrap = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
     const world = new World(instance, codex.propertyNames);
@@ -122,9 +125,10 @@ object_defs:
   it('Worldを持たないセッションでは時間進行をスキップする', () => {
     // Worldを持たないセッション（時間の概念が無いテスト文脈）でも、durationつきアクションは
     // 例外を出さずに効果だけを適用する。
-    const codex = new WorldCodexYamlLoader().load(
-      'extra.yaml',
-      `
+    const codex = new WorldCodexYamlLoader()
+      .load(
+        'extra.yaml',
+        `
 object_defs:
   campfire:
     props:
@@ -137,7 +141,8 @@ object_defs:
           self:
             warmth: 1
 `,
-    ).build();
+      )
+      .build();
     const session = new WorldSession(codex);
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
 

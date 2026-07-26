@@ -107,7 +107,10 @@ describe('気候システム(ClimateSystem.md)', () => {
   }
 
   /** 確率的な要件をシードごとに判定し、成功率が閾値以上であることを検証する。 */
-  function assertSuccessRate(requirement: string, failureReasonOrNull: (trace: Trace) => string | undefined): void {
+  function assertSuccessRate(
+    requirement: string,
+    failureReasonOrNull: (trace: Trace) => string | undefined,
+  ): void {
     const failures: string[] = [];
     for (const trace of traces) {
       const reason = failureReasonOrNull(trace);
@@ -127,9 +130,10 @@ describe('気候システム(ClimateSystem.md)', () => {
     // 巡回順・初回サイクルの日数は乱数に依存しない構造要件のため、全シードで成立を要求する
     for (const trace of traces) {
       const segments = completedSeasonSegments(trace.season);
-      expect(segments.length, `seed ${trace.seed}: 2周目に入るまでシミュレーションできていること`).toBeGreaterThanOrEqual(
-        4,
-      );
+      expect(
+        segments.length,
+        `seed ${trace.seed}: 2周目に入るまでシミュレーションできていること`,
+      ).toBeGreaterThanOrEqual(4);
 
       expect(segments[0].season, `seed ${trace.seed}: 開始はcalm`).toBe(calmId);
       expect(segments[1].season, `seed ${trace.seed}: calmの次はwet`).toBe(wetId);
@@ -183,7 +187,8 @@ describe('気候システム(ClimateSystem.md)', () => {
     assertSuccessRate('calmは概ね2日に1回雨が降り、嵐にならない', (trace) => {
       const rainStartTicks: number[] = [];
       for (let t = first; t <= last; t++) {
-        if (isRain(trace.weather[t]) && (t === first || !isRain(trace.weather[t - 1]))) rainStartTicks.push(t);
+        if (isRain(trace.weather[t]) && (t === first || !isRain(trace.weather[t - 1])))
+          rainStartTicks.push(t);
         if (trace.weather[t] === stormId) return `${Math.trunc(t / TICKS_PER_DAY) + 1}日目に嵐が発生した`;
       }
 
@@ -218,7 +223,8 @@ describe('気候システム(ClimateSystem.md)', () => {
 
       const rainRatio = rainTicks / total;
       if (rainRatio < 0.6) return `雨のtick比率が${(rainRatio * 100).toFixed(0)}%（期待: 60%以上）`;
-      if (nonRainTicks < 16) return `雨が止んだtickが${nonRainTicks}のみ（期待: 少なくとも1天気周期=16tick以上）`;
+      if (nonRainTicks < 16)
+        return `雨が止んだtickが${nonRainTicks}のみ（期待: 少なくとも1天気周期=16tick以上）`;
 
       return undefined;
     });
@@ -234,7 +240,8 @@ describe('気候システム(ClimateSystem.md)', () => {
     assertSuccessRate('wetは後半ほど嵐・大雨が増える', (trace) => {
       function countHeavyStorm(from: number, to: number): number {
         let count = 0;
-        for (let t = from; t <= to; t++) if (trace.weather[t] === heavyRainId || trace.weather[t] === stormId) count++;
+        for (let t = from; t <= to; t++)
+          if (trace.weather[t] === heavyRainId || trace.weather[t] === stormId) count++;
         return count;
       }
       function countStorm(from: number, to: number): number {
@@ -250,7 +257,8 @@ describe('気候システム(ClimateSystem.md)', () => {
 
       const earlyStorm = countStorm(first, first + third - 1);
       const lateStorm = countStorm(last - third + 1, last);
-      if (lateStorm <= earlyStorm) return `嵐のtick数が序盤${earlyStorm}に対し終盤${lateStorm}（期待: 終盤のほうが多い）`;
+      if (lateStorm <= earlyStorm)
+        return `嵐のtick数が序盤${earlyStorm}に対し終盤${lateStorm}（期待: 終盤のほうが多い）`;
 
       return undefined;
     });
@@ -278,7 +286,8 @@ describe('気候システム(ClimateSystem.md)', () => {
 
       const rainRatio = rainTicks / total;
       if (rainRatio > 0.2) return `雨のtick比率が${(rainRatio * 100).toFixed(0)}%（期待: 20%以下）`;
-      if (fairTicks / total < 0.7) return `晴れ・曇りのtick比率が${((fairTicks / total) * 100).toFixed(0)}%（期待: 70%以上）`;
+      if (fairTicks / total < 0.7)
+        return `晴れ・曇りのtick比率が${((fairTicks / total) * 100).toFixed(0)}%（期待: 70%以上）`;
       if (rainTicks === 0) return '乾季に一度も雨が降らなかった（期待: 稀には降る）';
 
       return undefined;
@@ -340,8 +349,10 @@ describe('気候システム(ClimateSystem.md)', () => {
 
       const calmRatio = clearRatio(calmFirst, calmLast);
       const dryRatio = clearRatio(dryFirst, dryLast);
-      if (calmRatio < 0.15) return `calm(4-30日目)のclear比率が${(calmRatio * 100).toFixed(0)}%（期待: 15%以上）`;
-      if (dryRatio < 0.15) return `dry(61-90日目)のclear比率が${(dryRatio * 100).toFixed(0)}%（期待: 15%以上）`;
+      if (calmRatio < 0.15)
+        return `calm(4-30日目)のclear比率が${(calmRatio * 100).toFixed(0)}%（期待: 15%以上）`;
+      if (dryRatio < 0.15)
+        return `dry(61-90日目)のclear比率が${(dryRatio * 100).toFixed(0)}%（期待: 15%以上）`;
 
       return undefined;
     });

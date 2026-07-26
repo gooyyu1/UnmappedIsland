@@ -22,7 +22,11 @@ describe('RepresentedByTests', () => {
     return new WorldObject(nextInstanceId++, def, new WorldSession(codex));
   }
 
-  function spawnRepresentedContainer(codex: WorldCodex, containerName: string, contentName: string): WorldObject {
+  function spawnRepresentedContainer(
+    codex: WorldCodex,
+    containerName: string,
+    contentName: string,
+  ): WorldObject {
     const contentSlotId = codex.slotNames.getId('content');
     const container = spawn(codex, containerName);
     const content = spawn(codex, contentName);

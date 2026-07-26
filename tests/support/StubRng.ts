@@ -24,9 +24,7 @@ export class StubRng implements Rng {
     const value = this.ints.shift();
     if (value === undefined) throw new Error('StubRng: nextIntの用意した値を使い切りました。');
     if (value < minInclusive || value >= maxExclusive)
-      throw new Error(
-        `StubRng: 用意した値${value}が要求範囲[${minInclusive}, ${maxExclusive})の外です。`,
-      );
+      throw new Error(`StubRng: 用意した値${value}が要求範囲[${minInclusive}, ${maxExclusive})の外です。`);
     return value;
   }
 }

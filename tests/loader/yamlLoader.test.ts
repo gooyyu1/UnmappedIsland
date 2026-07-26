@@ -58,9 +58,7 @@ object_defs:
 object_defs:
   rock: {}
 `;
-    expect(() =>
-      new WorldCodexYamlLoader().load('a.yaml', a).load('b.yaml', b).build(),
-    ).toThrowError(/rock/);
+    expect(() => new WorldCodexYamlLoader().load('a.yaml', a).load('b.yaml', b).build()).toThrowError(/rock/);
   });
 
   // ------------------------------------------------------------------
@@ -116,9 +114,7 @@ object_defs:
   thing:
     traits: [does_not_exist]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
-      /does_not_exist/,
-    );
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/does_not_exist/);
   });
 
   // ------------------------------------------------------------------
@@ -186,7 +182,11 @@ object_defs:
     const offHandId = codex.slotNames.getId('off_hand');
 
     const session = new WorldSession(codex);
-    const characterInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
+    const characterInstance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('character')),
+      session,
+    );
     const swordInstance = new WorldObject(2, codex.objects.get(codex.objectNames.getId('sword')), session);
 
     expect(swordInstance.moveToSlot(characterInstance, mainHandId, session.codex.wellKnown)).toBeUndefined();
@@ -496,7 +496,11 @@ object_defs:
     const box = new WorldObject(1, codex.objects.get(codex.objectNames.getId('box2')), session);
     expect(box.tryExecuteAction('use', undefined, session)).toBe(false); // contentスロットが空なので実行されない
 
-    const blueMarker = new WorldObject(2, codex.objects.get(codex.objectNames.getId('blue_marker2')), session);
+    const blueMarker = new WorldObject(
+      2,
+      codex.objects.get(codex.objectNames.getId('blue_marker2')),
+      session,
+    );
     blueMarker.moveToSlot(box, contentSlotId, session.codex.wellKnown);
     expect(box.tryExecuteAction('use', undefined, session)).toBe(false); // contentスロットの中身がredタグを持たない(blueタグ)ので実行されない
   });
@@ -555,7 +559,11 @@ object_defs:
 
     const session = new WorldSession(codex);
     const bottle = new WorldObject(1, codex.objects.get(codex.objectNames.getId('bottle')), session);
-    const sameContent = new WorldObject(2, codex.objects.get(codex.objectNames.getId('bottle_source')), session);
+    const sameContent = new WorldObject(
+      2,
+      codex.objects.get(codex.objectNames.getId('bottle_source')),
+      session,
+    );
 
     expect(bottle.tryExecuteCombination(sameContent, undefined, 'pour_in', session)).toBe(false); // self(empty)とdragged(water)のcontentが異なるので不成立
 
@@ -696,7 +704,11 @@ object_defs:
     const storageSlotId = codex.slotNames.getId('storage');
 
     const session = new WorldSession(codex);
-    const campfireInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('campfire')), session);
+    const campfireInstance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('campfire')),
+      session,
+    );
     const logInstance = new WorldObject(2, codex.objects.get(codex.objectNames.getId('log')), session);
 
     expect(logInstance.moveToSlot(campfireInstance, fuelSlotId, session.codex.wellKnown)).toBeUndefined();
@@ -945,15 +957,15 @@ object_defs:
 
     const session = new WorldSession(codex);
     const roomInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('room')), session);
-    const characterInstance = new WorldObject(2, codex.objects.get(codex.objectNames.getId('character')), session);
+    const characterInstance = new WorldObject(
+      2,
+      codex.objects.get(codex.objectNames.getId('character')),
+      session,
+    );
     const foodInstance = new WorldObject(3, codex.objects.get(codex.objectNames.getId('food')), session);
 
-    expect(
-      characterInstance.moveToSlot(roomInstance, contentsSlotId, codex.wellKnown),
-    ).toBeUndefined();
-    expect(
-      foodInstance.moveToSlot(characterInstance, pocketSlotId, codex.wellKnown),
-    ).toBeUndefined();
+    expect(characterInstance.moveToSlot(roomInstance, contentsSlotId, codex.wellKnown)).toBeUndefined();
+    expect(foodInstance.moveToSlot(characterInstance, pocketSlotId, codex.wellKnown)).toBeUndefined();
 
     expect(foodInstance.tryExecuteAction('check', undefined, session)).toBe(true); // characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる
   });

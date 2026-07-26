@@ -284,9 +284,10 @@ object_defs:
 
     bowInstance.tryExecuteAction('shoot', actor, session);
 
-    expect(actor.getNumber(hpId), 'luck(1000)がweightのpath参照先なので、ほぼ確実に1番目の候補が選ばれる').toBe(
-      101,
-    );
+    expect(
+      actor.getNumber(hpId),
+      'luck(1000)がweightのpath参照先なので、ほぼ確実に1番目の候補が選ばれる',
+    ).toBe(101);
   });
 
   // ------------------------------------------------------------------
@@ -441,7 +442,9 @@ object_defs:
 
     const receiver = spawn(codex, 'receiver2');
     const source = spawn(codex, 'source2');
-    expect(spawn(codex, 'water_liquid2').moveToSlot(receiver, contentSlotId, codex.wellKnown)).toBeUndefined();
+    expect(
+      spawn(codex, 'water_liquid2').moveToSlot(receiver, contentSlotId, codex.wellKnown),
+    ).toBeUndefined();
     expect(spawn(codex, 'water_liquid2').moveToSlot(source, contentSlotId, codex.wellKnown)).toBeUndefined();
     const names = receiver.findMatchingCombinations(source).map((c) => c.name);
     expect(names).toEqual(['pour_in']);

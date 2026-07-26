@@ -80,7 +80,9 @@ object_defs:
     const locationsId = codex.slotNames.getId('locations');
     expect(meadow.moveToSlot(world, locationsId, codex.wellKnown)).toBeUndefined();
     expect(hilltop.moveToSlot(world, locationsId, codex.wellKnown)).toBeUndefined();
-    expect(character.moveToSlot(meadow, codex.slotNames.getId('characters'), codex.wellKnown)).toBeUndefined();
+    expect(
+      character.moveToSlot(meadow, codex.slotNames.getId('characters'), codex.wellKnown),
+    ).toBeUndefined();
     expect(path.moveToSlot(meadow, codex.slotNames.getId('stuff'), codex.wellKnown)).toBeUndefined();
 
     return { codex, session, world, meadow, hilltop, character, path };
@@ -121,9 +123,10 @@ object_defs:
 
   it('moveのobjectにactor以外を指定するとロードエラーになる', () => {
     const loadBad = (): WorldCodex =>
-      new WorldCodexYamlLoader().load(
-        'bad.yaml',
-        `
+      new WorldCodexYamlLoader()
+        .load(
+          'bad.yaml',
+          `
 object_defs:
   path:
     props:
@@ -135,7 +138,8 @@ object_defs:
           object: self
           to_prop: destination_id
 `,
-      ).build();
+        )
+        .build();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/actor/);
@@ -143,9 +147,10 @@ object_defs:
 
   it('moveに未知のキーがあるとロードエラーになる', () => {
     const loadBad = (): WorldCodex =>
-      new WorldCodexYamlLoader().load(
-        'bad.yaml',
-        `
+      new WorldCodexYamlLoader()
+        .load(
+          'bad.yaml',
+          `
 object_defs:
   path:
     props:
@@ -158,7 +163,8 @@ object_defs:
           to_prop: destination_id
           into: characters
 `,
-      ).build();
+        )
+        .build();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/未知のキー/);
@@ -166,9 +172,10 @@ object_defs:
 
   it('on_min内のmoveはロードエラーになる', () => {
     const loadBad = (): WorldCodex =>
-      new WorldCodexYamlLoader().load(
-        'bad.yaml',
-        `
+      new WorldCodexYamlLoader()
+        .load(
+          'bad.yaml',
+          `
 object_defs:
   bomb:
     props:
@@ -180,7 +187,8 @@ object_defs:
             object: actor
             to_prop: fuse
 `,
-      ).build();
+        )
+        .build();
 
     expect(loadBad).toThrow(YamlLoadError);
   });

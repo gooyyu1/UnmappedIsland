@@ -28,9 +28,10 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     for (const site of map.sites) {
       const location = game.world.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index]);
       expect(location, `サイト${site.index}の土地が世界に居る`).toBeDefined();
-      expect(location!.def.globalId, `サイト${site.index}はLocationTypeどおりのobject_defで実体化される`).toBe(
-        site.type!.objectDefGlobalId,
-      );
+      expect(
+        location!.def.globalId,
+        `サイト${site.index}はLocationTypeどおりのobject_defで実体化される`,
+      ).toBe(site.type!.objectDefGlobalId);
 
       const view = new Location(location!, codex);
       const degree = map.edges.filter((e) => e.a === site.index || e.b === site.index).length;
@@ -116,10 +117,9 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     expect(new Location(actor.parent!, codex).characters, '移動先ではcharactersスロットに入る').toContain(
       actor,
     );
-    expect(
-      totalMinutes(game.world) - minutesBefore,
-      '移動時間の分だけゲーム内時間が進む',
-    ).toBe(path.travelMinutes);
+    expect(totalMinutes(game.world) - minutesBefore, '移動時間の分だけゲーム内時間が進む').toBe(
+      path.travelMinutes,
+    );
   });
 
   it('IslandMapは実体化された土地のinstanceIdから命名処理の付けた名前を引ける', () => {

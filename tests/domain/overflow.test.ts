@@ -31,7 +31,11 @@ object_defs:
     const hourId = codex.propertyNames.getId('hour');
     const session = new WorldSession(codex);
 
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock_immediate')), session);
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('clock_immediate')),
+      session,
+    );
 
     instance.addNumber(minuteId, 15, session); // 45+15=60 > 59。Tick()は一度も呼んでいない
 
@@ -59,7 +63,11 @@ object_defs:
     const hourId = codex.propertyNames.getId('hour');
     const session = new WorldSession(codex);
 
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock_deferred')), session);
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('clock_deferred')),
+      session,
+    );
 
     instance.addNumber(minuteId, 15); // sessionを渡さない
 
@@ -89,7 +97,11 @@ object_defs:
     const pressureId = codex.propertyNames.getId('pressure');
     const session = new WorldSession(codex);
 
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('tank_immediate')), session);
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('tank_immediate')),
+      session,
+    );
 
     instance.addNumber(pressureId, 5, session); // 5+5=10 >= max(10)。例外・制御不能なスタックオーバーフローを起こさなければ成功
 
@@ -258,7 +270,10 @@ object_defs:
     instance.tick(session);
 
     expect(instance.getNumber(minuteId)).toBe(5);
-    expect(instance.getNumber(hourId), '23+1=24は範囲(0-23)を超えるため、同じtick内でhour自身も折り返す').toBe(0);
+    expect(
+      instance.getNumber(hourId),
+      '23+1=24は範囲(0-23)を超えるため、同じtick内でhour自身も折り返す',
+    ).toBe(0);
     expect(instance.getNumber(dayId), 'hourの繰り上げでdayも+1される').toBe(2);
   });
 
@@ -299,7 +314,9 @@ object_defs:
     instance.tick(session);
 
     expect(instance.getNumber(minuteId)).toBe(5);
-    expect(instance.getNumber(hourId), 'hourがminuteより先に宣言されていても、即座に連鎖して折り返る').toBe(0);
+    expect(instance.getNumber(hourId), 'hourがminuteより先に宣言されていても、即座に連鎖して折り返る').toBe(
+      0,
+    );
     expect(instance.getNumber(dayId), 'hourの繰り上げでdayも同じTick()内で+1される').toBe(2);
   });
 
@@ -412,7 +429,9 @@ object_defs:
     instance.tick(session); // 50 - 150 = -100 < 0 なので折り返す。折り返し量(+150)はmin(0)ちょうどには
     // 着地させない(50に着地させる)ことで、「折り返し後の値がたまたま境界と一致する」ケースと区別する。
 
-    expect(instance.getNumber(gaugeId), 'on_shortfallにより50へ折り返される(0ちょうどには着地しない)').toBe(50);
+    expect(instance.getNumber(gaugeId), 'on_shortfallにより50へ折り返される(0ちょうどには着地しない)').toBe(
+      50,
+    );
     expect(
       instance.getNumber(alarmId),
       'on_shortfallで折り返される前に、gaugeが確かにmin(0)以下に達していたことをon_minが検知できているはず',
