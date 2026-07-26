@@ -200,7 +200,7 @@ object_defs:
                     season_is_wet: 1
               - accumulate:
                   self:
-                    atmospheric_moisture: 90
+                    atmospheric_moisture: 100
                     thermal_level: -1
                     monsoon_level: 1
           - name: dry
@@ -312,8 +312,9 @@ object_defs:
                       add:
                         self: {season_cycle: 1}
       # 大気水分量（ClimateSystem.md 3節の貯水池）。季節レート＋降雨中の自己減算（weather参照）で駆動。
-      # 0-10000のスケールは、calmの遅いレート（+10/tick）を整数のまま表現するため。stagesは天気候補
-      # ごとの重み（*_weight）をmodifyで駆動する（4.3節）: saturatedでは晴れ系の重みなし、dryでは
+      # スケールの基準（1 tick分=100、GameElementDefinition.md 6.0節）は雨季の上昇レート。湿度が上がる
+      # 季節を基準に置き、calm/dryはその微変動として扱う。
+      # stagesは天気候補ごとの重み（*_weight）をmodifyで駆動する（4.3節）: saturatedでは晴れ系の重みなし、dryでは
       # heavy_rain/stormの重み0。晴れ系の中ではclearを最も重くする。moderateまでの雨は必ずlight_rain
       # （序盤の「軽めの雨」要件、3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
       atmospheric_moisture:
