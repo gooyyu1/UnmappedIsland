@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="default" lang="ja" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>ItemCard | UnmappedIsland ソースリファレンス - v0.1.0</title><meta name="description" content="Documentation for UnmappedIsland ソースリファレンス"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<!DOCTYPE html><html class="default" lang="ja" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>ObjectCardStack | UnmappedIsland ソースリファレンス - v0.1.0</title><meta name="description" content="Documentation for UnmappedIsland ソースリファレンス"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
 <div class="tsd-toolbar-contents container"><a href="../index.html" class="title">UnmappedIsland ソースリファレンス - v0.1.0</a>
 <div id="tsd-toolbar-links"><a href="../../Documents/">ドキュメント</a><a href="../../Game/">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland">GitHub</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="検索"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="検索"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="ドキュメントを検索" maxLength="100"/>
 <ul role="listbox" id="tsd-search-results"></ul>
@@ -9,24 +9,26 @@
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
 <li><a href="../modules/game_PlayScreenView.html">game/PlayScreenView</a></li>
-<li><a href="" aria-current="page">ItemCard</a></li></ul>
-<h1>インターフェイス ItemCard</h1></div>
+<li><a href="" aria-current="page">ObjectCardStack</a></li></ul>
+<h1>インターフェイス ObjectCardStack</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>アイテムのカード1枚。moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への
-反映（表示内容の作り直し）は呼び出し側の責務。</p>
-<p>moveToとreorderは「そこへ落とせるか」を、操作を返すか否かで答える。落とせない場所（設置物の間、
-前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedになるので、呼び出し側は落とし先の枠を
-出す前に問い合わせられる。</p>
+<div class="tsd-comment tsd-typography"><p>積み重なったカードの束（ドメインのObjectStackに対応する画面側の1まとまり）。</p>
+<p>スタックのメンバーはobjectsに全部入っていて、束ねているだけの表示上の都合で1枚に見えている
+（CardContent.identityも全メンバーのID）。1枚しか無い束もこの形で表す。</p>
+<p>moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
+作り直し）は呼び出し側の責務。moveToとreorderは「そこへ落とせるか」を、操作を返すか否かで答える。
+落とせない場所（設置物の間、前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedになるので、
+呼び出し側は落とし先の枠を出す前に問い合わせられる。</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">ItemCard</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#art">art</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#contents">contents</a><span class="tsd-signature-symbol">?:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#count">count</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#draggable">draggable</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#edge">edge</a><span class="tsd-signature-symbol">?:</span> <a href="game_ui_Card.CardEdgeAction.html" class="tsd-signature-type tsd-kind-interface">CardEdgeAction</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#icon">icon</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#identity">identity</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#moveto">moveTo</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">place</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">at</span><span class="tsd-signature-symbol">?:</span> <a href="../types/game_PlayScreenView.CardPlacement.html" class="tsd-signature-type tsd-kind-type-alias">CardPlacement</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#name">name</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#objects">objects</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="../classes/domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#ontap">onTap</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#place">place</a><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#reorder">reorder</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">at</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlacement.html" class="tsd-signature-type tsd-kind-type-alias">CardPlacement</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">ObjectCardStack</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#art">art</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#contents">contents</a><span class="tsd-signature-symbol">?:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#count">count</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#draggable">draggable</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#edge">edge</a><span class="tsd-signature-symbol">?:</span> <a href="game_ui_Card.CardEdgeAction.html" class="tsd-signature-type tsd-kind-interface">CardEdgeAction</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#icon">icon</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#identity">identity</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#moveto">moveTo</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">place</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">at</span><span class="tsd-signature-symbol">?:</span> <a href="../types/game_PlayScreenView.CardPlacement.html" class="tsd-signature-type tsd-kind-type-alias">CardPlacement</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#name">name</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#objects">objects</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="../classes/domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#ontap">onTap</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#place">place</a><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#reorder">reorder</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">at</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlacement.html" class="tsd-signature-type tsd-kind-type-alias">CardPlacement</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
 <section class="tsd-panel tsd-hierarchy" data-refl="1884">
-<h4>階層 (<a href="../hierarchy.html#game/PlayScreenView.ItemCard">一覧を見る</a>)</h4>
+<h4>階層 (<a href="../hierarchy.html#game/PlayScreenView.ObjectCardStack">一覧を見る</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><a href="game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a>
 <ul class="tsd-hierarchy">
-<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">ItemCard</span></li></ul></li></ul></section><aside class="tsd-sources">
+<li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">ObjectCardStack</span></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L46">src/game/PlayScreenView.ts:46</a></li></ul></aside>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L49">src/game/PlayScreenView.ts:49</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -59,15 +61,15 @@
 </div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#art">art</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L60">src/game/ui/Card.ts:60</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L74">src/game/ui/Card.ts:74</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="contents"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>contents</span><a href="#contents" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">contents</span><span class="tsd-signature-symbol">?:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a></div>
-<div class="tsd-comment tsd-typography"><p>このカードがコンテナ（containerタグ、containers.yaml）なら、その中身を映す場所。
+<div class="tsd-comment tsd-typography"><p>代表がコンテナ（containerタグ、containers.yaml）なら、その中身を映す場所。
 画面側はこれを持つカードをタップで開けるようにする。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L60">src/game/PlayScreenView.ts:60</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L64">src/game/PlayScreenView.ts:64</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="count"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>count</span><a href="#count" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">count</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
@@ -75,7 +77,7 @@
 </div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#count">count</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L55">src/game/ui/Card.ts:55</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L69">src/game/ui/Card.ts:69</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="draggable"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>draggable</span><a href="#draggable" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">draggable</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -83,7 +85,7 @@
 </div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#draggable">draggable</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L66">src/game/ui/Card.ts:66</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L80">src/game/ui/Card.ts:80</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="edge"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>edge</span><a href="#edge" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">edge</span><span class="tsd-signature-symbol">?:</span> <a href="game_ui_Card.CardEdgeAction.html" class="tsd-signature-type tsd-kind-interface">CardEdgeAction</a></div>
@@ -91,13 +93,13 @@
 </div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#edge">edge</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L64">src/game/ui/Card.ts:64</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L78">src/game/ui/Card.ts:78</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="icon"><code class="tsd-tag">読み取り専用</code><span>icon</span><a href="#icon" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">icon</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#icon">icon</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L46">src/game/ui/Card.ts:46</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L60">src/game/ui/Card.ts:60</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="identity"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>identity</span><a href="#identity" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">identity</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></div>
@@ -107,29 +109,30 @@
 </div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#identity">identity</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L53">src/game/ui/Card.ts:53</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L67">src/game/ui/Card.ts:67</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="moveto"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>move<wbr/>To</span><a href="#moveto" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">moveTo</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">place</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">at</span><span class="tsd-signature-symbol">?:</span> <a href="../types/game_PlayScreenView.CardPlacement.html" class="tsd-signature-type tsd-kind-type-alias">CardPlacement</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
-<div class="tsd-comment tsd-typography"><p>別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
-動かせないカード（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。</p>
+<div class="tsd-comment tsd-typography"><p>束のうち1つを別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
+動かせない束（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L66">src/game/PlayScreenView.ts:66</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L70">src/game/PlayScreenView.ts:70</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="name"><code class="tsd-tag">読み取り専用</code><span>name</span><a href="#name" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">name</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#name">name</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L47">src/game/ui/Card.ts:47</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L61">src/game/ui/Card.ts:61</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="objects"><code class="tsd-tag">読み取り専用</code><span>objects</span><a href="#objects" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">objects</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="../classes/domain_runtime_WorldObject.WorldObject.html" class="tsd-signature-type tsd-kind-class">WorldObject</a><span class="tsd-signature-symbol">[]</span></div>
-<div class="tsd-comment tsd-typography"><p>このカードが映しているワールド上のオブジェクト（スタックなら全部、先頭が代表）。
-PlayScreenViewの操作（combinationOf）へ渡すためだけのもので、画面の組み立て側は中身を見ない。</p>
+<div class="tsd-comment tsd-typography"><p>この束が映しているワールド上のオブジェクト（先頭が代表）。表示に使う名前・絵は代表から採るが、
+これは同じ束に入れる条件が「代表ObjectDef列の一致」（ObjectStack）だからで、個体ごとに違い得る
+値（プロパティ）を見るときはメンバーを1つずつ読む。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L51">src/game/PlayScreenView.ts:51</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L55">src/game/PlayScreenView.ts:55</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="ontap"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>on<wbr/>Tap</span><a href="#ontap" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onTap</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div>
@@ -137,22 +140,22 @@ PlayScreenViewの操作（combinationOf）へ渡すためだけのもので、�
 </div><aside class="tsd-sources">
 <p>継承元 <a href="game_ui_Card.CardContent.html">CardContent</a>.<a href="game_ui_Card.CardContent.html#ontap">onTap</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L62">src/game/ui/Card.ts:62</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L76">src/game/ui/Card.ts:76</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="place"><code class="tsd-tag">読み取り専用</code><span>place</span><a href="#place" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">place</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a></div>
-<div class="tsd-comment tsd-typography"><p>このカードが今いる場所。</p>
+<div class="tsd-comment tsd-typography"><p>この束が今いる場所。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L54">src/game/PlayScreenView.ts:54</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L58">src/game/PlayScreenView.ts:58</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="reorder"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>reorder</span><a href="#reorder" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">reorder</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">at</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlacement.html" class="tsd-signature-type tsd-kind-type-alias">CardPlacement</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
-<div class="tsd-comment tsd-typography"><p>同じ場所の中で位置を変える操作。1枚が複数のインスタンスを表している場合はスタックごと動かす
-（1個ずつでは元のスタックへ合流して戻ってしまうため、SlotSystem.md 3節）。</p>
+<div class="tsd-comment tsd-typography"><p>同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
+SlotSystem.md 3節）。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L72">src/game/PlayScreenView.ts:72</a></li></ul></aside></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L76">src/game/PlayScreenView.ts:76</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

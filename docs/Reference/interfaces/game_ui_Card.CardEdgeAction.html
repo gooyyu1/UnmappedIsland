@@ -12,11 +12,12 @@
 <li><a href="" aria-current="page">CardEdgeAction</a></li></ul>
 <h1>インターフェイス CardEdgeAction</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>カードの端（上下1/6）を押したときの操作。</p>
+<div class="tsd-comment tsd-typography"><p>カードの端（上下1/6）を押したときの操作。1回の呼び出しで束のうち1つが動く。
+押し続けている間は繰り返し呼ばれる（addEdge参照）。</p>
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">CardEdgeAction</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#direction">direction</a><span class="tsd-signature-symbol">:</span> <a href="../types/game_ui_Card.CardEdgeDirection.html" class="tsd-signature-type tsd-kind-type-alias">CardEdgeDirection</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#ontap">onTap</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L39">src/game/ui/Card.ts:39</a></li></ul></aside>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L53">src/game/ui/Card.ts:53</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -34,12 +35,12 @@
 <h3 class="tsd-anchor-link" id="direction"><code class="tsd-tag">読み取り専用</code><span>direction</span><a href="#direction" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">direction</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_ui_Card.CardEdgeDirection.html" class="tsd-signature-type tsd-kind-type-alias">CardEdgeDirection</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L40">src/game/ui/Card.ts:40</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L54">src/game/ui/Card.ts:54</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="ontap"><code class="tsd-tag">読み取り専用</code><span>on<wbr/>Tap</span><a href="#ontap" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">onTap</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L41">src/game/ui/Card.ts:41</a></li></ul></aside></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/Card.ts#L55">src/game/ui/Card.ts:55</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
