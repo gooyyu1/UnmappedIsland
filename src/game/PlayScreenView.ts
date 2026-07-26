@@ -155,14 +155,6 @@ function stacksIn(
   return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
 }
 
-/** targetがitem自身か、itemの中に入っているか。入れ物を自分自身の中へ入れる操作を弾くために使う。 */
-function isSelfOrDescendant(item: WorldObject, target: WorldObject): boolean {
-  for (let node: WorldObject | undefined = target; node !== undefined; node = node.parent) {
-    if (node === item) return true;
-  }
-  return false;
-}
-
 /**
  * 生成済みのゲーム一式から画面の表示内容を作る。ロケーションレーン・フィールドアイテムレーン・
  * ハンドレーンは現在地とキャラクターのスロットの中身をそのまま映す。
@@ -230,7 +222,7 @@ export function fromGameSession(
       const dest = slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
       // 自分の中へは入れられない（籠を籠自身へ、また自分の子孫の中へ）。
-      if (typeof place !== 'string' && isSelfOrDescendant(item, place.container)) return undefined;
+      if (typeof place !== 'string' && item.contains(place.container)) return undefined;
 
       const wellKnown = game.session.codex.wellKnown;
       if (at === undefined) {
