@@ -10,7 +10,7 @@ import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
 import type { ItemCard, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
-import { tickSteppedRatio } from './tickSteppedRatio';
+import { tickSteppedCount, tickSteppedRatio } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeDirection } from './ui/Card';
 import { Card } from './ui/Card';
@@ -288,6 +288,9 @@ export class PlayScene extends ResponsiveScene {
   /**
    * fromMinutesからtoMinutesまで、ゲーム内時間の経過をREAL_MS_PER_GAME_MINUTEの速さで時計と
    * ドーナツグラフへ映し、経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
+   *
+   * 時計もドーナツグラフもtick刻みで動かす（tickProgress参照）。時計はグラフが目盛りへ届いた瞬間に
+   * その時刻へ飛ぶので、両者が食い違って見えない。
    */
   private passTime(fromMinutes: number, toMinutes: number, onElapsed: () => void): void {
     const minutes = toMinutes - fromMinutes;
@@ -296,7 +299,8 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
-    const ticks = Math.max(1, Math.round(minutes / this.gameSession.world.minutesPerTick));
+    const tickMinutes = this.gameSession.world.minutesPerTick;
+    const ticks = Math.max(1, Math.round(minutes / tickMinutes));
     const ring = new ProgressRing(
       this,
       this.metrics,
@@ -311,8 +315,11 @@ export class PlayScene extends ResponsiveScene {
       duration: minutes * REAL_MS_PER_GAME_MINUTE,
       ease: 'Linear',
       onUpdate: () => {
-        this.showClock(clock.minutes);
-        ring.setRatio(tickSteppedRatio((clock.minutes - fromMinutes) / minutes, ticks));
+        const elapsed = (clock.minutes - fromMinutes) / minutes;
+        // durationがtickの倍数でない場合に行き過ぎないよう、最後は経過量そのもので止める。
+        const stepped = Math.min(tickSteppedCount(elapsed, ticks) * tickMinutes, minutes);
+        this.showClock(fromMinutes + stepped);
+        ring.setRatio(tickSteppedRatio(elapsed, ticks));
       },
       onComplete: () => {
         ring.destroy();

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { tickSteppedRatio } from '../../src/game/tickSteppedRatio';
+import { tickSteppedCount, tickSteppedRatio } from '../../src/game/tickProgress';
 
 /**
- * 時間経過のドーナツグラフの進み方（ScreenLayout.md 探索ウィンドウ節）の自動テスト。
+ * 時間経過の見せ方（ScreenLayout.md 時間経過のドーナツグラフ節）の自動テスト。
  * 3tick分（探索の45分＝実時間1.5秒）を例に、tickの前半で進み後半で止まることを確かめる。
  */
-describe('tickSteppedRatio(tickごとに一拍置く割合)', () => {
+describe('tickProgress(tickごとに一拍置く時間経過)', () => {
   it('tickの前半で次の目盛りまで進む', () => {
     expect(tickSteppedRatio(0, 3), '押した直後は0%').toBe(0);
     // 1tick目の実時間は0〜1/3。その前半（0〜1/6）で0%から1/3へ進む。
@@ -35,5 +35,19 @@ describe('tickSteppedRatio(tickごとに一拍置く割合)', () => {
     expect(tickSteppedRatio(0.25, 1)).toBeCloseTo(0.5);
     expect(tickSteppedRatio(0.5, 1)).toBe(1);
     expect(tickSteppedRatio(0.9, 1)).toBe(1);
+  });
+
+  it('埋まった目盛りの数は、塗りが目盛りへ届いた瞬間に増える', () => {
+    // 時計はこの数で刻むので、塗り（tickSteppedRatio）と食い違わないことが要点。
+    const count = (elapsed: number): number => tickSteppedCount(elapsed, 3);
+
+    expect(count(0), '押した直後はまだ0つ目').toBe(0);
+    expect(count(1 / 12), '1つ目の目盛りへ向かっている間は増えない').toBe(0);
+    expect(count(1 / 6), '1つ目の目盛りへ届いた瞬間に1つ').toBe(1);
+    expect(count(1 / 3), 'tickの後半の間は1つのまま').toBe(1);
+    expect(count(0.4), '2つ目へ向かっている間も1つのまま').toBe(1);
+    expect(count(1 / 2)).toBe(2);
+    expect(count(5 / 6)).toBe(3);
+    expect(count(1), '経過し切れば全部').toBe(3);
   });
 });
