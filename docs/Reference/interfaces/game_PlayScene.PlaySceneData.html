@@ -14,9 +14,9 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>プレイ中の画面を開くときに渡す、対象のセーブデータ。</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">PlaySceneData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#save">save</a><span class="tsd-signature-symbol">:</span> <a href="save_SaveData.SaveData.html" class="tsd-signature-type tsd-kind-interface">SaveData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#slotindex">slotIndex</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">PlaySceneData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#save">save</a><span class="tsd-signature-symbol">:</span> <a href="save_SaveData.SaveData.html" class="tsd-signature-type tsd-kind-interface">SaveData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#scenario">scenario</a><span class="tsd-signature-symbol">?:</span> <a href="scenario_Scenario.Scenario.html" class="tsd-signature-type tsd-kind-interface">Scenario</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#slotindex">slotIndex</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L65">src/game/PlayScene.ts:65</a></li></ul></aside>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L68">src/game/PlayScene.ts:68</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -25,6 +25,7 @@
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="プロパティ">プロパティ<a href="#プロパティ" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#save" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>save</span></a>
+<a href="#scenario" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>scenario?</span></a>
 <a href="#slotindex" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Index</span></a>
 </div></section></div></details></section></section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -34,12 +35,21 @@
 <h3 class="tsd-anchor-link" id="save"><code class="tsd-tag">読み取り専用</code><span>save</span><a href="#save" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">save</span><span class="tsd-signature-symbol">:</span> <a href="save_SaveData.SaveData.html" class="tsd-signature-type tsd-kind-interface">SaveData</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L66">src/game/PlayScene.ts:66</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L69">src/game/PlayScene.ts:69</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="scenario"><code class="tsd-tag">オプション</code> <code class="tsd-tag">読み取り専用</code><span>scenario</span><a href="#scenario" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">scenario</span><span class="tsd-signature-symbol">?:</span> <a href="scenario_Scenario.Scenario.html" class="tsd-signature-type tsd-kind-interface">Scenario</a></div>
+<div class="tsd-comment tsd-typography"><p>テスト用シナリオ。渡すと、シードから作り直した世界へ開始状態を置いてから始める。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L73">src/game/PlayScene.ts:73</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="slotindex"><code class="tsd-tag">読み取り専用</code><span>slot<wbr/>Index</span><a href="#slotindex" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">slotIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-kind-property">slotIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>セーブスロットの番号。シナリオからの起動（BootScene）はセーブへ書き戻さないため-1。</p>
+</div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L67">src/game/PlayScene.ts:67</a></li></ul></aside></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L71">src/game/PlayScene.ts:71</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -56,7 +66,7 @@
 <h3>このページ</h3></summary>
 <div class="tsd-accordion-details">
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>プロパティ</summary>
-<div><a href="#save"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>save</span></a><a href="#slotindex"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Index</span></a></div></details></div></details></div>
+<div><a href="#save"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>save</span></a><a href="#scenario"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>scenario</span></a><a href="#slotindex"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Index</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../Documents/" class="tsd-nav-link">ドキュメント</a><a href="../../Game/" class="tsd-nav-link">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland" class="tsd-nav-link">GitHub</a></nav>
 <nav class="tsd-navigation"><a href="../modules.html">UnmappedIsland ソースリファレンス - v0.1.0</a>
