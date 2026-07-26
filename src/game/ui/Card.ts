@@ -2,10 +2,11 @@ import Phaser from 'phaser';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
 import { drawBox } from './shapes';
+import { objectTexture } from './objectArt';
 import { wrapByCharacter } from './textLayout';
 
 /**
- * カードの枠の画像のテクスチャキー（実体はpublic/images/card_frame.png、BootSceneが読む）。
+ * カードの枠の画像のテクスチャキー（実体はsrc/assets/card_frame.png、BootSceneが読む）。
  * カードの寸法（SIZE.cardWidth/cardHeight）はこの画像の比率に合わせてある。
  */
 export const CARD_FRAME_TEXTURE = 'card-frame';
@@ -52,6 +53,11 @@ export interface CardContent {
   readonly identity?: readonly number[];
   /** 1枚が映しているインスタンスの数。2以上のときだけ、右上に丸で囲んだ数字として出す。 */
   readonly count?: number;
+  /**
+   * 絵を引くためのobject_defの識別子（objectArt参照）。その絵があれば枠の上に重ねて描き、
+   * 無ければiconの絵文字で代用する。
+   */
+  readonly art?: string;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
   readonly onTap?: () => void;
   /** 端だけを押したときの動作。端ではカード全体の動作より優先される。 */
@@ -90,13 +96,18 @@ export class Card extends Phaser.GameObjects.Container {
 
     const face = addFrame(scene, metrics, width, height, false);
 
-    const iconText = scene.add
-      .text(width / 2, height / 2, icon, {
-        fontFamily: FONT_FAMILY,
-        fontSize: `${metrics.fontPx(96)}px`,
-      })
-      .setOrigin(0.5)
-      .setAlpha(0.95);
+    // 絵があれば枠に重ねる。無いあいだは絵文字で代用する（絵は少しずつ用意されるため）。
+    const artTexture = content.art === undefined ? undefined : objectTexture(content.art);
+    const art =
+      artTexture !== undefined && scene.textures.exists(artTexture)
+        ? scene.add.image(0, 0, artTexture).setOrigin(0, 0).setDisplaySize(width, height)
+        : scene.add
+            .text(width / 2, height / 2, icon, {
+              fontFamily: FONT_FAMILY,
+              fontSize: `${metrics.fontPx(96)}px`,
+            })
+            .setOrigin(0.5)
+            .setAlpha(0.95);
 
     const inset = metrics.px(8);
     const nameText = scene.add
@@ -111,7 +122,7 @@ export class Card extends Phaser.GameObjects.Container {
       .setShadow(0, 0, cssColor(COLOR.cardFace), metrics.px(3), false, true);
     nameText.setWordWrapCallback(wrapByCharacter(width - inset * 2));
 
-    this.add([face, iconText, nameText]);
+    this.add([face, art, nameText]);
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
     if (content.onTap !== undefined) this.makeTappable();
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが

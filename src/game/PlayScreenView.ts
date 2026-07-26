@@ -184,6 +184,7 @@ export function fromGameSession(
     name: locale.object(instances[0].def.name).displayName,
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
+    art: instances[0].def.name,
     object: instances[0],
     place,
     contents: contentsOf(instances[0]),
