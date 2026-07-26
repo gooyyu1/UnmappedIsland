@@ -109,7 +109,8 @@ object_defs:
   #   探索は続けられ（進捗はrangeの上限に張り付く）、生成時に仕込まれた道がそれ以上見つからなくなるだけ。
   # - exploreのpickは「その土地で何が見つかるか」の確率テーブル。進捗+1（add self）は
   #   addとpickが排他という文法上、全候補に含める（10節）。
-  # - durationは1回の探索にかかる時間（分）。見通しが悪い・足場が悪い土地ほど長い。
+  # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
+  #   土地ごとの探索の重さは、回数（exploration_progress.range.max）だけで表す。
   # ------------------------------------------------------------------
 
   # 砂浜。開けていて歩きやすく、漂着物とヤシの実に恵まれる。
@@ -122,7 +123,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 30
+        duration: 15
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -139,7 +140,7 @@ object_defs:
             add: {self: {exploration_progress: 1}}
             spawn: {object: palm_tree, into: self}
 
-  # 岩だらけの海岸。石とヤシガニが多いが、足場が悪く探索に時間がかかる。
+  # 岩だらけの海岸。石とヤシガニが多いが、足場が悪い。
   rocky_coast:
     traits: [location, explorable]
     props:
@@ -149,7 +150,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 45
+        duration: 15
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -176,7 +177,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 60
+        duration: 15
         pick:
           - weight: 40
             add: {self: {exploration_progress: 1}}
@@ -200,7 +201,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 30
+        duration: 15
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -227,7 +228,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 45
+        duration: 15
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -244,7 +245,7 @@ object_defs:
             add: {self: {exploration_progress: 1}}
             spawn: {object: spring, into: self}
 
-  # 密林。湿って鬱蒼としており、探索には時間がかかるが、食料は最も豊か。
+  # 密林。湿って鬱蒼としており、探索し切るまでが最も長いが、食料は最も豊か。
   jungle:
     traits: [location, explorable]
     props:
@@ -254,7 +255,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 60
+        duration: 15
         pick:
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -284,7 +285,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 45
+        duration: 15
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -308,7 +309,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 30
+        duration: 15
         pick:
           - weight: 50
             add: {self: {exploration_progress: 1}}
@@ -329,7 +330,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 60
+        duration: 15
         pick:
           - weight: 30
             add: {self: {exploration_progress: 1}}
@@ -356,7 +357,7 @@ object_defs:
     actions:
       explore:
         showMenu: always
-        duration: 45
+        duration: 15
         pick:
           - weight: 50
             add: {self: {exploration_progress: 1}}
