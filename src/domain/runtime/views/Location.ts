@@ -59,14 +59,45 @@ export class Location {
     return this.slotContents(this.itemsSlotId);
   }
 
-  /** アイテムスロットへ受け入れる。受け入れられなければ（accepts制約・容量）false。 */
-  receiveItem(item: WorldObject, session: WorldSession): boolean {
-    return item.moveToSlot(this.instance, this.itemsSlotId, session.codex.wellKnown) === undefined;
+  /** アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。 */
+  get itemStacks(): readonly (readonly WorldObject[])[] {
+    return this.slotStacks(this.itemsSlotId);
+  }
+
+  /**
+   * アイテムスロットへ受け入れる。受け入れられなければ（accepts制約・容量）false。
+   *
+   * gapIndexは並びの隙間の番号（0=先頭の前）で、渡すとその位置へ入れる（Slot.tryInsertAtGap）。
+   * 省略すると末尾（合流できる同種があればそのスタック）へ入る。
+   */
+  receiveItem(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
+    const wellKnown = session.codex.wellKnown;
+    const failure =
+      gapIndex === undefined
+        ? item.moveToSlot(this.instance, this.itemsSlotId, wellKnown)
+        : item.moveToSlotAtGap(this.instance, this.itemsSlotId, gapIndex, wellKnown);
+    return failure === undefined;
+  }
+
+  /**
+   * アイテムスロットの中で並び替える。memberが属するスタックを丸ごと、指定した隙間（0=先頭の前）へ
+   * 入れ直す（Slot.tryMoveStackToGap）。並び替えられなければfalse。
+   */
+  reorderItems(member: WorldObject, gapIndex: number): boolean {
+    const slot = this.instance.tryGetSlot(this.itemsSlotId);
+    const stack = slot?.findStackContaining(member);
+    if (slot === undefined || stack === undefined) return false;
+    return slot.tryMoveStackToGap(stack, gapIndex);
   }
 
   /** 設置物（木・植物・建築物・家具・洞窟入口など）スロットの中身。 */
   get fixtures(): readonly WorldObject[] {
     return this.slotContents(this.fixturesSlotId);
+  }
+
+  /** 設置物スロットの中身を、積み重なっているまとまりごとに分けたもの（itemStacksと同じ扱い）。 */
+  get fixtureStacks(): readonly (readonly WorldObject[])[] {
+    return this.slotStacks(this.fixturesSlotId);
   }
 
   /** キャラクタスロットの中身。 */
@@ -109,5 +140,10 @@ export class Location {
   private slotContents(slotGlobalId: number): readonly WorldObject[] {
     const slot = this.instance.tryGetSlot(slotGlobalId);
     return slot !== undefined ? slot.contents : [];
+  }
+
+  private slotStacks(slotGlobalId: number): readonly (readonly WorldObject[])[] {
+    const slot = this.instance.tryGetSlot(slotGlobalId);
+    return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
   }
 }

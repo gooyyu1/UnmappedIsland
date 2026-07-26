@@ -163,6 +163,7 @@ export class CardDragController {
     gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, {
       icon: gesture.card.content.icon,
       name: gesture.card.content.name,
+      count: gesture.card.content.count,
     });
     gesture.ghost.setAlpha(GHOST_ALPHA);
     gesture.indicator = this.scene.add.graphics();

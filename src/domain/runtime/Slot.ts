@@ -221,14 +221,34 @@ export class Slot {
   }
 
   /**
-   * プレイヤーが位置を指定して入れる手動配置（fixedPositions専用）。gapIndexはセルとセルの隙間の番号で、
-   * 0が先頭のセルの前、cells.lengthが末尾のセルの後ろ。まず右方向へ、それが無理なら左方向へ既存のセルを
-   * ずらして場所を作る（tryPlaceShifted）。どちらへもずらせなければfalse。
+   * プレイヤーが位置を指定して入れる手動配置。gapIndexはセルとセルの隙間の番号で、0が先頭のセルの前、
+   * cells.lengthが末尾のセルの後ろ。
+   *
+   * fixedPositionsはまず右方向へ、それが無理なら左方向へ既存のセルをずらして場所を作る
+   * （tryPlaceShifted）。どちらへもずらせなければfalse。前詰めスロットはその隙間へ挿入するだけ。
    *
    * 合流できる既存スタックがあるときは、指定された位置よりも「同種は1スタックにまとまる」という不変条件を
    * 優先してそちらへ入れる（addInternalと同じ扱い）。
    */
   tryInsertAtGap(obj: WorldObject, gapIndex: number): boolean {
+    if (this.def.stackable) {
+      const existing = this.findMatchingStack(obj);
+      if (existing !== undefined && existing.tryInsert(obj)) return true;
+    }
+
+    const stack = new ObjectStack(obj);
+    if (!this.def.fixedPositions) {
+      this._cells.splice(clampIndex(gapIndex, this._cells.length), 0, stack);
+      return true;
+    }
+    return this.tryPlaceAtGap(stack, gapIndex, 1) || this.tryPlaceAtGap(stack, gapIndex, -1);
+  }
+
+  /**
+   * プレイヤーが空きセルを指定して入れる手動配置（fixedPositions専用）。指定したセルが空いていなければ
+   * false。合流できる既存スタックの優先はtryInsertAtGapと同じ。
+   */
+  tryInsertAtCell(obj: WorldObject, cellIndex: number): boolean {
     if (!this.def.fixedPositions) return false;
 
     if (this.def.stackable) {
@@ -236,25 +256,30 @@ export class Slot {
       if (existing !== undefined && existing.tryInsert(obj)) return true;
     }
 
-    const stack = new ObjectStack(obj);
-    return this.tryPlaceAtGap(stack, gapIndex, 1) || this.tryPlaceAtGap(stack, gapIndex, -1);
+    return this.tryFillCell(new ObjectStack(obj), cellIndex);
   }
 
   /**
-   * プレイヤーによる手動並び替え（fixedPositions専用）。スタックを丸ごと、指定した隙間へ入れ直す。
+   * プレイヤーによる手動並び替え。スタックを丸ごと、指定した隙間へ入れ直す。
    *
    * 並び替えを1個ずつの出し入れで行うことはできない。抜いた1個を入れ直すとき、残った同種のスタックへの
    * 合流が位置指定より優先される（tryInsertAtGap）ため、必ず元の位置へ戻ってしまうため。
    *
-   * 詰める向きは、スタックが抜けた跡の側を先に試す。そちらには必ず空きがあるので、遠くのセルを
-   * 動かさずに済む。自分の両隣の隙間へ落とした場合は、跡がそのまま行き先になるので何も動かさない。
+   * fixedPositionsで詰める向きは、スタックが抜けた跡の側を先に試す。そちらには必ず空きがあるので、
+   * 遠くのセルを動かさずに済む。自分の両隣の隙間へ落とした場合は、跡がそのまま行き先になるので
+   * 何も動かさない。前詰めスロットは抜いて入れ直すだけ。
    */
   tryMoveStackToGap(stack: ObjectStack, gapIndex: number): boolean {
-    if (!this.def.fixedPositions) return false;
-
     const from = this._cells.indexOf(stack);
     if (from < 0) return false;
     if (gapIndex === from || gapIndex === from + 1) return true;
+
+    if (!this.def.fixedPositions) {
+      this._cells.splice(from, 1);
+      // 抜いた跡の分だけ、右へ動かすときの行き先が1つ手前へずれる。
+      this._cells.splice(clampIndex(gapIndex > from ? gapIndex - 1 : gapIndex, this._cells.length), 0, stack);
+      return true;
+    }
 
     this._cells[from] = undefined;
     const toward: 1 | -1 = from < gapIndex ? -1 : 1;
@@ -301,4 +326,9 @@ export class Slot {
     this._cells[cur] = tmp;
     return true;
   }
+}
+
+/** 挿入位置をセルの並びの範囲へ収める（前詰めスロットは範囲外の指定を端として受け入れる）。 */
+function clampIndex(index: number, length: number): number {
+  return Math.min(Math.max(index, 0), length);
 }

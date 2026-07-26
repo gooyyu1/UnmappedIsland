@@ -10,11 +10,13 @@ import { wheelPixels } from './scroll';
  * ドロップ先として見たときの、レーン上の1点の意味。
  *
  * - combine: カードそのものに重ねた（そのカードとのcombination、GameElementDefinition.md 12節）。
- * - insert: カードとカードの隙間へ落とした（そこへ移動）。gapIndexは0が先頭のカードの前。
+ * - gap: カードとカードの隙間へ落とした（そこへ移動）。indexは0が先頭のカードの前。
+ * - cell: 空きセルそのものへ落とした（その枠へ移動）。indexはその枠の位置。
  */
 export type LaneDropTarget =
   | { readonly kind: 'combine'; readonly index: number }
-  | { readonly kind: 'insert'; readonly gapIndex: number };
+  | { readonly kind: 'gap'; readonly index: number }
+  | { readonly kind: 'cell'; readonly index: number };
 
 /**
  * カードの左右のうち、隙間へ落としたものとして扱う幅の比。カード同士の実際の隙間（12u）は狭く、
@@ -224,8 +226,9 @@ export class CardLane {
   /**
    * 画面上の1点が指すドロップ先（レーンの外ならundefined）。
    *
-   * カードの中央部分だけを「そのカードに重ねた」とみなし、左右のGAP_EDGE_RATIO分とカード同士の隙間、
-   * および空きセルは「隙間へ落とした」＝移動として扱う。
+   * カードの中央部分だけを「そのカードに重ねた」とみなし、左右のGAP_EDGE_RATIO分とカード同士の隙間は
+   * 「隙間へ落とした」として扱う。空きセルは幅いっぱいが「その枠へ落とした」——枠が見えている以上、
+   * 狙うのは両隣の隙間ではなく枠そのものになるため。
    */
   dropTargetAt(x: number, y: number): LaneDropTarget | undefined {
     if (x < this.rect.x || x >= this.rect.x + this.rect.width) return undefined;
@@ -234,24 +237,25 @@ export class CardLane {
     const count = this.cardObjects.length;
     const localX = x - this.strip.x;
     const index = Math.floor(localX / this.pitch);
-    if (index < 0) return { kind: 'insert', gapIndex: 0 };
-    if (index >= count) return { kind: 'insert', gapIndex: count };
+    if (index < 0) return { kind: 'gap', index: 0 };
+    if (index >= count) return { kind: 'gap', index: count };
 
-    // 空きセルには重ねる相手が居ないので、幅いっぱいがその枠への挿入になる。
-    if (this.cardObjects[index] === undefined) return { kind: 'insert', gapIndex: index };
-
+    // カード1枚分の送り幅のうち、カードの右側にはみ出した分がカード同士の実際の隙間。
     const offset = localX - index * this.pitch;
-    if (offset < this.cardWidth * GAP_EDGE_RATIO) return { kind: 'insert', gapIndex: index };
-    if (offset > this.cardWidth * (1 - GAP_EDGE_RATIO)) return { kind: 'insert', gapIndex: index + 1 };
+    if (offset >= this.cardWidth) return { kind: 'gap', index: index + 1 };
+
+    if (this.cardObjects[index] === undefined) return { kind: 'cell', index };
+    if (offset < this.cardWidth * GAP_EDGE_RATIO) return { kind: 'gap', index };
+    if (offset > this.cardWidth * (1 - GAP_EDGE_RATIO)) return { kind: 'gap', index: index + 1 };
     return { kind: 'combine', index };
   }
 
-  /** ドロップ先を示す枠の位置（カードに重ねるならカードそのもの、隙間なら細い縦帯）。 */
+  /** ドロップ先を示す枠の位置（カード・空きセルならその枠そのもの、隙間なら細い縦帯）。 */
   dropIndicatorRect(target: LaneDropTarget): Rect {
-    if (target.kind === 'combine') return this.slotRect(target.index);
+    if (target.kind !== 'gap') return this.slotRect(target.index);
 
     // 隙間の中心は「右隣のカードの左端 - ギャップの半分」。両端の隙間はレーンからはみ出すので収める。
-    const center = this.strip.x + target.gapIndex * this.pitch - (this.pitch - this.cardWidth) / 2;
+    const center = this.strip.x + target.index * this.pitch - (this.pitch - this.cardWidth) / 2;
     const width = this.insertMarkWidth;
     return {
       x: Phaser.Math.Clamp(center - width / 2, this.rect.x, this.rect.x + this.rect.width - width),

@@ -232,7 +232,7 @@ export class WorldObject {
   }
 
   /**
-   * プレイヤーが位置を指定して入れる手動配置（Slot.tryInsertAtGap参照）。fixedPositionsのスロット専用で、
+   * プレイヤーが隙間を指定して入れる手動配置（Slot.tryInsertAtGap参照）。fixedPositionsのスロットで
    * 既存のセルをずらして場所を作れない場合はエラーを返す。
    */
   moveToSlotAtGap(
@@ -250,7 +250,26 @@ export class WorldObject {
     );
   }
 
-  /** placeは位置を指定する配置（同上の2つ）専用。省略すると通常の追加（Slot.addInternal）になる。 */
+  /**
+   * プレイヤーが空きセルを指定して入れる手動配置（Slot.tryInsertAtCell参照）。fixedPositionsのスロット
+   * 専用で、そのセルが空いていない場合はエラーを返す。
+   */
+  moveToSlotAtCell(
+    newParent: WorldObject,
+    slotGlobalId: number,
+    cellIndex: number,
+    wellKnown: WellKnownProperties,
+  ): string | undefined {
+    return this.attachToSlot(
+      newParent,
+      slotGlobalId,
+      (slot) => slot.tryInsertAtCell(this, cellIndex),
+      wellKnown,
+      false,
+    );
+  }
+
+  /** placeは位置を指定する配置（上記のinsertSameSlot・moveToSlotAt*）専用。省略すると通常の追加（Slot.addInternal）になる。 */
   private attachToSlot(
     newParent: WorldObject,
     slotGlobalId: number,

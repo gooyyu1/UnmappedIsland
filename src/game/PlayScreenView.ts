@@ -12,8 +12,18 @@ export interface StatusEntry {
 }
 
 /**
- * アイテムのカード1枚。move・combinationOfはワールドを変えるだけで、画面への反映（表示内容の
- * 作り直し）は呼び出し側の責務。
+ * レーンの中でカードを置く場所。gapは枠と枠の隙間（indexは0が先頭の枠の前）、cellは空き枠そのもの
+ * （indexはその枠の位置）。CardLaneのドロップ先（LaneDropTarget）と同じ形。
+ */
+export type CardPlacement =
+  { readonly kind: 'gap'; readonly index: number } | { readonly kind: 'cell'; readonly index: number };
+
+/**
+ * アイテムのカード1枚。move・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への
+ * 反映（表示内容の作り直し）は呼び出し側の責務。
+ *
+ * moveとreorderは「その場所へ落とせるか」を、操作を返すか否かで答える。落とせない場所（設置物の間、
+ * 前詰めレーンの空き枠など）ではundefinedになるので、呼び出し側は落とし先の枠を出す前に問い合わせられる。
  */
 export interface ItemCard extends CardContent {
   /**
@@ -23,17 +33,16 @@ export interface ItemCard extends CardContent {
   readonly object: WorldObject;
 
   /**
-   * フィールドと手持ちの間で移す。手持ちへ入れるときは、gapIndex（0=先頭の枠の前）で入れる位置を
-   * 指定できる。移せない設置物にはない。手持ちが埋まっている等で移せなかった場合は何も起きない。
+   * フィールドと手持ちの間で移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
+   * 移せない設置物にはない。手持ちが埋まっている等で移せなかった場合は何も起きない。
    */
-  readonly move?: (gapIndex?: number) => void;
+  readonly move?: (at?: CardPlacement) => (() => void) | undefined;
 
   /**
-   * 同じレーンの中で位置を変える。1枚が複数のインスタンスを表している場合はスタックごと動かす
+   * 同じレーンの中で位置を変える操作。1枚が複数のインスタンスを表している場合はスタックごと動かす
    * （1個ずつでは元のスタックへ合流して戻ってしまうため、SlotSystem.md 3節）。
-   * 並び替えの効かないレーン（枠の位置が固定でないフィールド側）にはない。
    */
-  readonly reorder?: (gapIndex: number) => void;
+  readonly reorder?: (at: CardPlacement) => (() => void) | undefined;
 }
 
 /**
@@ -98,8 +107,15 @@ export function fromGameSession(
     icon,
     name: locale.object(instances[0].def.name).displayName,
     identity: instances.map((instance) => instance.instanceId),
+    count: instances.length,
     object: instances[0],
   });
+
+  // フィールドアイテムレーンは土地のitemsスロットの後ろへ設置物を並べたもの。設置物は別のスロットに
+  // 居て動かせないため、アイテムの並びに関わる位置指定はここまでしか受け付けられない。
+  const itemStacks = location.itemStacks;
+  const gapInItems = (at: CardPlacement): number | undefined =>
+    at.kind === 'cell' || at.index > itemStacks.length ? undefined : at.index;
 
   return {
     characterName: locale.object(game.player.instance.def.name).displayName,
@@ -134,24 +150,43 @@ export function fromGameSession(
       identity: [path.instanceId],
     })),
     fieldItems: [
-      ...location.items.map((item) => ({
-        ...cardOf([item], ITEM_ICON),
-        move: (gapIndex?: number) => {
-          game.player.take(item, game.session, gapIndex);
+      ...itemStacks.map((stack) => ({
+        ...cardOf(stack, ITEM_ICON),
+        // 手持ちは固定枠なので、隙間も空き枠もそのまま行き先になる（落とせない場所が無い）。
+        move: (at?: CardPlacement) =>
+          at?.kind === 'cell'
+            ? () => {
+                game.player.takeIntoCell(stack[0], game.session, at.index);
+              }
+            : () => {
+                game.player.take(stack[0], game.session, at?.index);
+              },
+        reorder: (at: CardPlacement) => {
+          const gapIndex = gapInItems(at);
+          return gapIndex === undefined
+            ? undefined
+            : () => {
+                location.reorderItems(stack[0], gapIndex);
+              };
         },
       })),
-      ...location.fixtures.map((fixture) => cardOf([fixture], FIXTURE_ICON)),
+      ...location.fixtureStacks.map((stack) => cardOf(stack, FIXTURE_ICON)),
     ],
     hand: game.player.handStacks.map((stack) =>
       stack.length === 0
         ? undefined
         : {
             ...cardOf(stack, ITEM_ICON),
-            move: () => {
-              game.player.drop(stack[0], game.session);
+            move: (at?: CardPlacement) => {
+              const gapIndex = at === undefined ? undefined : gapInItems(at);
+              if (at !== undefined && gapIndex === undefined) return undefined;
+              return () => {
+                game.player.drop(stack[0], game.session, gapIndex);
+              };
             },
-            reorder: (gapIndex: number) => {
-              game.player.reorderHand(stack[0], gapIndex);
+            reorder: (at: CardPlacement) => () => {
+              if (at.kind === 'cell') game.player.moveHandToCell(stack[0], at.index);
+              else game.player.reorderHand(stack[0], at.index);
             },
           },
     ),

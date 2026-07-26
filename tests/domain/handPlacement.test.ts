@@ -6,8 +6,9 @@ import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter'
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
- * 手持ち（固定枠スロット）へ位置を指定して入れる手動配置（PlayerCharacter.take・Slot.tryInsertAtGap）の
- * 自動テスト。カードを隙間へドラッグ＆ドロップしたときの挙動にあたる。
+ * 手持ち（固定枠スロット）へ位置を指定して入れる手動配置と並び替えの自動テスト。カードを隙間
+ * （PlayerCharacter.take・reorderHand）や空き枠（takeIntoCell・moveHandToCell）へドラッグ＆
+ * ドロップしたときの挙動にあたる。
  */
 describe('手持ちへの位置指定の配置', () => {
   const YAML = `
@@ -137,6 +138,42 @@ object_defs:
     expect(player.reorderHand(a, 3)).toBe(true);
 
     expect(hand()).toEqual(['b', 'c', 'a', 'd', 'e', 'f']);
+  });
+
+  it('空き枠を指して入れると、その枠へ入る', () => {
+    const [, b] = fill('a', 'b', 'c');
+    b.destroy(codex.wellKnown);
+
+    expect(player.takeIntoCell(item('g'), session, 1)).toBe(true);
+
+    expect(hand()).toEqual(['a', 'g', 'c', '_', '_', '_']);
+  });
+
+  it('埋まっている枠を指して入れることはできない', () => {
+    fill('a', 'b');
+    const g = item('g');
+
+    expect(player.takeIntoCell(g, session, 0)).toBe(false);
+
+    expect(hand()).toEqual(['a', 'b', '_', '_', '_', '_']);
+    expect(g.parent, '失敗したので入れ替わりもしない').toBeUndefined();
+  });
+
+  it('空き枠を指しても、同種のアイテムは既存スタックへの合流が優先される', () => {
+    fill('a', 'b');
+
+    expect(player.takeIntoCell(item('a'), session, 4)).toBe(true);
+
+    expect(hand(), '指した空き枠は使わない').toEqual(['a', 'b', '_', '_', '_', '_']);
+    expect(player.handStacks[0]).toHaveLength(2);
+  });
+
+  it('空き枠への移動は、間の枠を動かさずにその枠へ移る', () => {
+    const [a] = fill('a', 'b', 'c');
+
+    expect(player.moveHandToCell(a, 4)).toBe(true);
+
+    expect(hand()).toEqual(['_', 'b', 'c', '_', 'a', '_']);
   });
 
   it('6枠とも埋まっていれば、隙間へ入れることもできない', () => {
