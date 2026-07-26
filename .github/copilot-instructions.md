@@ -1,20 +1,24 @@
 # Copilot Agent Instructions
 
 設計方針・コメントの書き方は [`CLAUDE.md`](../CLAUDE.md)、TypeScriptのコーディング規約は
-[`Documents/Engine/CodingConventions.md`](../Documents/Engine/CodingConventions.md) に従うこと。
+[`docs/engine/CodingConventions.md`](../docs/engine/CodingConventions.md) に従うこと。
 
 ## 公開サイト（GitHub Pages）について
 
 公開サイトは `.github/workflows/pages.yml` が `main` へのプッシュのたびに丸ごと作り直し、
-GitHub Pages へ直接デプロイする。**生成物はリポジトリに存在しない**（出力先の `docs/` は
+GitHub Pages へ直接デプロイする。**生成物はリポジトリに存在しない**（出力先の `site/` は
 `.gitignore` 済み）。
 
-- Markdown (`Documents/**/*.md`) は Pandoc で HTML に変換される。
-- HTML・画像などの静的ファイル (`Documents/**/*.html`, `*.png` 等) はそのままコピーされる。
-- ソースリファレンスは TypeDoc、ゲーム本体は Vite がビルドする。
+原稿は `docs/` に置く。サイトは3本立てで、それぞれ出どころが違う。
 
-**ドキュメント類を修正する際は必ず `Documents/` 以下のファイルを編集すること。** ローカルに
-`docs/` を作っても公開内容には一切影響しない（コミットもされない）。
+| サイトのパス | 出どころ |
+|---|---|
+| `/docs/` | `docs/**/*.md` を Pandoc で HTML 化。`*.html`・画像はそのままコピー |
+| `/reference/` | `src/` から TypeDoc が生成 |
+| `/game/` | Vite がビルドしたゲーム本体 |
+
+**ドキュメント類は `docs/` 以下を編集すること。** ローカルに `site/` を作っても公開内容には
+影響しない（コミットもされない）。
 
 ---
 

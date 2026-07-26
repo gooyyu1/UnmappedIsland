@@ -4,7 +4,7 @@
 モノ**をどう表現するかをまとめたドキュメントを格納します。
 
 気候・地形生成・探索といった**仕組み**（プレイヤーの目に触れるモノではなく、それらを成り立たせている
-メカニズム）は含みません。そちらは [`../Engine/`](../Engine/README.md) を参照してください。文法そのもの
+メカニズム）は含みません。そちらは [`../Engine/`](../engine/README.md) を参照してください。文法そのもの
 （`traits`/`props`/`slots`/`actions` 等）も同様に `Engine/` を参照してください。
 
 ## 収録ドキュメント
@@ -13,7 +13,7 @@
 - [WorldCodex データベースビューア](./WorldCodexViewer.html) — 実際のゲームデータ
   （`public/world-codex/*.yaml`）を表示のたびにGitHubから直接取得して一覧・詳細表示する
   閲覧ツール（ビルド不要）。YAML文法リファレンスは
-  [`../Engine/GameElementDefinition.md`](../Engine/GameElementDefinition.md) を参照
+  [`../Engine/GameElementDefinition.md`](../engine/GameElementDefinition.md) を参照
 
 ## 含まれるドキュメント例
 

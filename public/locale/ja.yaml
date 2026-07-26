@@ -1,4 +1,4 @@
-# 日本語の表示文字列（Documents/Engine/Localization.md 参照）。
+# 日本語の表示文字列（docs/engine/Localization.md 参照）。
 #
 # キーはWorldCodexの識別子で、値が画面に出す文字列。WorldCodex側は識別子だけを持ち、
 # 表示文字列はこのファイルにだけ書く。ここに無い識別子は、そのまま識別子が表示される。

@@ -1,8 +1,8 @@
 name: Publish docs and game to GitHub Pages
 
-# ドキュメントのHTMLとビルドしたゲームをdocs/へ出力し、GitHub Pagesへ直接デプロイする。
+# ドキュメントのHTMLとビルドしたゲームをsite/へ出力し、GitHub Pagesへ直接デプロイする。
 #
-# 生成物はリポジトリへコミットしない（docs/は.gitignore）。以前はmainのdocs/を配信する設定で、
+# 生成物はリポジトリへコミットしない（site/は.gitignore）。以前はmainのdocs/を配信する設定で、
 # ワークフローが生成物をコミットしていたが、それだとマージのたびに生成物一式が履歴へ積まれ、
 # ドキュメント側とゲーム側のpushでPagesのビルドも2回走っていた。
 #
@@ -14,7 +14,7 @@ on:
     branches:
       - main
     paths:
-      - 'Documents/**'
+      - 'docs/**'
       - 'src/**'
       - 'public/**'
       - 'index.html'
@@ -61,12 +61,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Prepare docs output directories
+      - name: Prepare site output directories
         run: |
           # サブフォルダごとの出力先は後続の変換ループが`mkdir -p "$out_dir"`で都度作成するため、
-          # ここではDocuments/配下のフォルダ名をハードコードしない（フォルダ構成が変わっても壊れない）。
-          rm -rf docs
-          mkdir -p docs/Documents
+          # ここではdocs/配下のフォルダ名をハードコードしない（フォルダ構成が変わっても壊れない）。
+          rm -rf site
+          mkdir -p site/docs
 
       - name: Convert markdown files to HTML
         run: |
@@ -89,11 +89,11 @@ jobs:
             --variable=include-after='</article>'
           )
 
-          find Documents -name '*.md' | while read md_file; do
-            # Derive output path: Documents/Engine/Foo.md -> docs/Documents/Engine/Foo.html
-            rel="${md_file#Documents/}"          # strip leading "Documents/"
-            out_dir="docs/Documents/$(dirname "$rel")"
-            out_file="docs/Documents/${rel%.md}.html"
+          find docs -name '*.md' | while read md_file; do
+            # Derive output path: docs/engine/Foo.md -> site/docs/engine/Foo.html
+            rel="${md_file#docs/}"               # strip leading "docs/"
+            out_dir="site/docs/$(dirname "$rel")"
+            out_file="site/docs/${rel%.md}.html"
             mkdir -p "$out_dir"
             pandoc "${PANDOC_OPTS[@]}" \
               --metadata title="$(basename "${rel%.md}")" \
@@ -109,42 +109,44 @@ jobs:
           # untouched even though only Design/README.html exists in the output. Rewrite
           # every such relative href (anything without a ":" is treated as relative,
           # so http(s):// and mailto: links are left alone) from .md to .html.
-          find docs/Documents -name '*.html' | while read -r html_file; do
+          find site/docs -name '*.html' | while read -r html_file; do
             sed -i -E 's/href="([^":]+)\.md(#[^"]*)?"/href="\1.html\2"/g' "$html_file"
           done
-          echo "Rewrote internal .md links to .html across docs/Documents/"
+          echo "Rewrote internal .md links to .html across site/docs/"
 
-      - name: Copy HTML mocks and assets to docs/Documents
+      - name: Copy HTML mocks and assets to site/docs
         run: |
-          # Copy standalone HTML mocks and screenshots from Documents to docs/Documents
-          find Documents -name '*.html' -o -name '*.png' -o -name '*.jpg' -o -name '*.gif' | while read asset; do
-            rel="${asset#Documents/}"
-            dest="docs/Documents/${rel}"
+          # Copy standalone HTML mocks and screenshots from docs/ into the site
+          find docs -name '*.html' -o -name '*.png' -o -name '*.jpg' -o -name '*.gif' | while read asset; do
+            rel="${asset#docs/}"
+            dest="site/docs/${rel}"
             mkdir -p "$(dirname "$dest")"
             cp "$asset" "$dest"
             echo "Copied: $dest"
           done
 
       - name: Generate source reference with TypeDoc
-        # 出力先（docs/Reference）はtypedoc.jsonに書いてある。
+        # 出力先（site/reference）はtypedoc.jsonに書いてある。
         run: npm run docs:reference
 
       # viteのビルドは型エラーを無視するため、壊れたものを公開しないよう先に型検査する。
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Build game into docs/Game
+      - name: Build game into site/game
         # baseを相対パスにすると、リポジトリ名・サブフォルダ名を成果物へ埋め込まずに済む
-        # （https://<user>.github.io/<repo>/Game/ でそのまま動く）。
-        run: npx vite build --base=./ --outDir=docs/Game --emptyOutDir
+        # （https://<user>.github.io/<repo>/game/ でそのまま動く）。
+        run: npx vite build --base=./ --outDir=site/game --emptyOutDir
 
       - name: Generate missing index.html files
         run: |
-          # docs/ 配下の全ディレクトリを走査し、index.html が存在しないフォルダにのみ生成する。
+          # site/ 配下の全ディレクトリを走査し、index.html が存在しないフォルダにのみ生成する。
           # すでにindex.htmlがあるフォルダ（Pandoc変換済みを含む）は上書きしない。
           generate_index() {
             local dir="$1"
-            local rel="${dir#docs/}"
+            # サイトルート自身はrelが空になる（前置きを外すだけでは"site"のまま残るため2段で削る）。
+            local rel="${dir#site}"
+            rel="${rel#/}"
             local title="${rel:-UnmappedIsland}"
 
             if [ -f "$dir/index.html" ]; then
@@ -184,12 +186,12 @@ jobs:
             echo "Generated: $dir/index.html"
           }
 
-          # docs/GameはViteの、docs/ReferenceはTypeDocのビルド成果物で、どちらも自前の入口ページを
-          # 持つので索引ページを混ぜない（docs直下のindex.htmlからは、他のフォルダと同じく
-          # Game/・Reference/へのリンクが張られる）。
-          find docs -type d \
-            -not -path 'docs/Game' -not -path 'docs/Game/*' \
-            -not -path 'docs/Reference' -not -path 'docs/Reference/*' \
+          # site/gameはViteの、site/referenceはTypeDocのビルド成果物で、どちらも自前の入口ページを
+          # 持つので索引ページを混ぜない（サイト直下のindex.htmlからは、他のフォルダと同じく
+          # game/・reference/へのリンクが張られる）。
+          find site -type d \
+            -not -path 'site/game' -not -path 'site/game/*' \
+            -not -path 'site/reference' -not -path 'site/reference/*' \
             | sort | while read -r d; do
             generate_index "$d"
           done
@@ -197,7 +199,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: site
 
   deploy:
     name: deploy

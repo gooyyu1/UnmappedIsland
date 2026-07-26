@@ -1,4 +1,4 @@
-# ゲーム全体の基本定義（Documents/Engine/GameElementDefinition.md参照）。シングルトンのworldと
+# ゲーム全体の基本定義（docs/engine/GameElementDefinition.md参照）。シングルトンのworldと
 # locationsスロット・locationトレイトのみを含む。個々のlocation種別と道はlocations.yaml、
 # 地形生成はterrain_generation.yamlが持つ。
 

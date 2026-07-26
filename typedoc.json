@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src"],
   "entryPointStrategy": "expand",
-  "out": "docs/Reference",
+  "out": "site/reference",
   "name": "UnmappedIsland ソースリファレンス",
   "lang": "ja",
   // TypeDoc 0.28同梱の日本語訳には以下のUI文字列が無く、未訳のままだとキー名
@@ -30,12 +30,12 @@
   "categorizeByGroup": true,
   // Phaserの基底クラスから継承したメンバーまで載せると、自分たちのコードが埋もれる（かつ出力が数MB膨らむ）。
   "excludeExternals": true,
-  // 行き先はサイトルート（docs/）起点で書く。%SITE_ROOT%は生成後に
+  // 行き先はサイトルート（site/）起点で書く。%SITE_ROOT%は生成後に
   // scripts/fixReferenceNavigationLinks.mjsがページごとの相対パスへ置き換える
   // （TypeDocはここのURLを階層に合わせて補正しないため）。
   "navigationLinks": {
-    "ドキュメント": "%SITE_ROOT%/Documents/",
-    "ゲーム": "%SITE_ROOT%/Game/",
+    "ドキュメント": "%SITE_ROOT%/docs/",
+    "ゲーム": "%SITE_ROOT%/game/",
     "GitHub": "https://github.com/gooyyu1/UnmappedIsland"
   },
   // 既定ではソースへのリンクに生成時のコミットSHAが埋まり、中身が変わっていないページまで

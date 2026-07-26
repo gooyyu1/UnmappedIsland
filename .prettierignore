@@ -2,6 +2,6 @@ dist/
 node_modules/
 public/world-codex/
 docs/
-Documents/
+site/
 *.md
 package-lock.json

@@ -1,6 +1,6 @@
 # 実装スタイル
 
-TypeScriptのコーディング規約は [`Documents/Engine/CodingConventions.md`](Documents/Engine/CodingConventions.md)
+TypeScriptのコーディング規約は [`docs/engine/CodingConventions.md`](docs/engine/CodingConventions.md)
 に従う。変更後は `npm run lint` / `npm run typecheck` / `npm test` がすべて成功することを確認する。
 
 ## 自分のことは自分でする（カプセル化の徹底）
@@ -27,7 +27,7 @@ TypeScriptのコーディング規約は [`Documents/Engine/CodingConventions.md
   および仕様書の節番号への参照だけ。コードの動作をなぞる説明は書かない。
 - 経緯（旧仕様、変更履歴、不採用案、検討過程）はコメントにもドキュメント本文にも書かない。
   過去の失敗を繰り返さないために残す価値がある事項だけを
-  [`Documents/Engine/DesignNotes.md`](Documents/Engine/DesignNotes.md) に集約する。
+  [`docs/engine/DesignNotes.md`](docs/engine/DesignNotes.md) に集約する。
 
 # 作業ブランチ・PRの運用
 

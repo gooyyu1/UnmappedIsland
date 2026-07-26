@@ -1,5 +1,5 @@
 /**
- * Documents/UI のモック（ScreenLayout_Mock.html・StartScreen_Mock.html）のCSSに対応する
+ * docs/ui のモック（ScreenLayout_Mock.html・StartScreen_Mock.html）のCSSに対応する
  * 配色・寸法トークン。モック側の値を変えたときはここも合わせる。
  */
 

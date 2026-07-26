@@ -74,7 +74,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 ```bash
 python3 -c "
 import json, yaml, jsonschema
-schema = json.load(open('Documents/Engine/WorldCodex.schema.json'))
+schema = json.load(open('docs/engine/WorldCodex.schema.json'))
 v = jsonschema.Draft202012Validator(schema)
 for e in v.iter_errors(yaml.safe_load(open('public/world-codex/core.yaml'))):
     print(list(e.absolute_path), e.message)

@@ -8,14 +8,14 @@ Card Survivalの影響を受けた、無人島を舞台にしたサバイバル�
 
 ## 遊ぶ
 
-<https://gooyyu1.github.io/UnmappedIsland/Game/>
+<https://gooyyu1.github.io/UnmappedIsland/game/>
 
 `main` への変更を GitHub Actions がビルドし、GitHub Pages で公開します（開発中のため内容は随時変わります）。
 
 ## プロジェクトコンセプト
 
 制作者自身がシミュレーション表現と AI 活用を学ぶための個人プロジェクトで、一般販売は想定していません。
-詳細は [`Documents/Concept/GameConcept.md`](./Documents/Concept/GameConcept.md) を参照してください。
+詳細は [`docs/concept/GameConcept.md`](./docs/concept/GameConcept.md) を参照してください。
 
 ## 動作環境
 
@@ -32,8 +32,8 @@ npm test               # テスト実行（Vitest）
 npm run lint           # ESLint
 npm run typecheck      # 型チェック（tsc --noEmit）
 npm run build          # 型チェック + プロダクションビルド
-npm run stats:climate  # 気候システムの統計レポート再生成（Documents/Diagnostics/）
-npm run docs:reference # ソースリファレンス生成（TypeDoc → docs/Reference/）
+npm run stats:climate  # 気候システムの統計レポート再生成（docs/diagnostics/）
+npm run docs:reference # ソースリファレンス生成（TypeDoc → site/reference/）
 ```
 
 ## プロジェクト構成
@@ -54,25 +54,25 @@ UnmappedIsland/
 ├── public/
 │   └── world-codex/      # ゲーム定義YAML（そのまま配信される）
 ├── tests/                # テスト（Vitest）
-├── Documents/
-│   ├── Concept/          # コンセプト
-│   ├── UI/               # UI/UX
-│   ├── Engine/           # ルール・エンジン（YAML文法・汎用サブシステム・実装ガイド）
-│   ├── World/            # ワールド（地形・気候・アイテムなど実際にゲームに登場する内容）
-│   └── Diagnostics/      # 計測レポート（気候統計など）
-└── docs/                 # 公開サイトの生成物（.gitignore済み・リポジトリには入らない）
-    ├── Documents/        # Documents/ から生成したHTML
-    ├── Reference/        # src/ から生成したソースリファレンス（TypeDoc）
-    └── Game/             # ビルド済みのゲーム本体
+└── docs/                 # 開発ドキュメント（原稿）
+    ├── concept/          # コンセプト
+    ├── ui/               # UI/UX
+    ├── engine/           # ルール・エンジン（YAML文法・汎用サブシステム・実装ガイド）
+    ├── world/            # ワールド（地形・気候・アイテムなど実際にゲームに登場する内容）
+    └── diagnostics/      # 計測レポート（気候統計など）
 ```
+
+公開サイトは `site/` へ生成してGitHub Pagesへ直接デプロイするため、生成物はリポジトリに入らない
+（`.gitignore` 済み）。サイトは `/docs/`（`docs/` から生成したHTML）・`/reference/`（TypeDocの
+ソースリファレンス）・`/game/`（ビルド済みのゲーム本体）の3本立て。
 
 ## ドキュメント
 
-開発ドキュメントは [`Documents/`](./Documents/README.md) フォルダで管理します。
-ゲームコンセプトは [`Documents/Concept/GameConcept.md`](./Documents/Concept/GameConcept.md) にまとめています。
-コーディング規約は [`Documents/Engine/CodingConventions.md`](./Documents/Engine/CodingConventions.md) を参照してください。
+開発ドキュメントは [`docs/`](./docs/README.md) フォルダで管理します。
+ゲームコンセプトは [`docs/concept/GameConcept.md`](./docs/concept/GameConcept.md) にまとめています。
+コーディング規約は [`docs/engine/CodingConventions.md`](./docs/engine/CodingConventions.md) を参照してください。
 `src/` のクラス・型とJSDocコメントから生成したソースリファレンスは
-<https://gooyyu1.github.io/UnmappedIsland/Reference/> で公開しています。
+<https://gooyyu1.github.io/UnmappedIsland/reference/> で公開しています。
 ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装します。
 
 ## ライセンス

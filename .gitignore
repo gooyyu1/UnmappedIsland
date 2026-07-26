@@ -4,7 +4,7 @@ dist/
 *.log
 
 # GitHub Pagesへ公開する生成物（.github/workflows/pages.ymlが毎回作り直してデプロイする）。
-docs/
+site/
 
 # Editor/OS
 .vscode/
