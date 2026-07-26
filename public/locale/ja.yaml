@@ -83,6 +83,10 @@ object_texts:
   sharp_stone:
     display_name: 尖った石
 
+  # 入れ物（containers.yaml）。
+  woven_basket:
+    display_name: 編み籠
+
   # 探索で見つかる設置物（locations.yaml）。
   palm_tree:
     display_name: ヤシの木
@@ -93,7 +97,7 @@ object_texts:
   spring:
     display_name: 湧き水
 
-  # 液体容器とその中身（containers.yaml）。
+  # 液体容器とその中身（liquid_containers.yaml）。
   canteen:
     display_name: 水筒
   pot:

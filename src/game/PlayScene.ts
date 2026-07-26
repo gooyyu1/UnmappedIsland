@@ -206,6 +206,9 @@ export class PlayScene extends ResponsiveScene {
    * やり取りする相手が画面に出ているなら、端を押す操作もその相手を指すのが自然なため。
    *
    * 移せない設置物・怪我にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
+   *
+   * コンテナのカードは、押すと中身の子ウィンドウが開く。端の操作エリアは中央より手前に居るので、
+   * 端を押しての移動とは競合しない（Card参照）。
    */
   private laneCards(
     cards: readonly (ItemCard | undefined)[],
@@ -214,9 +217,11 @@ export class PlayScene extends ResponsiveScene {
     return cards.map((card) => {
       if (card === undefined) return undefined;
       const move = this.edgeMove(card);
+      const contents = card.contents;
       return {
         ...card,
         draggable: true,
+        onTap: contents === undefined ? undefined : () => this.openSlotWindow(contents),
         edge: move === undefined ? undefined : { direction, onTap: () => this.applyToWorld(move) },
       };
     });
@@ -269,7 +274,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   private slotWindowCards(): readonly ItemCard[] {
-    return this.slotWindowPlace === 'equipment' ? this.view.equipment : this.view.injuries;
+    return this.slotWindowPlace === undefined ? [] : this.view.cardsIn(this.slotWindowPlace);
   }
 
   /** ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。 */
@@ -289,7 +294,7 @@ export class PlayScene extends ResponsiveScene {
     this.slotWindow?.close();
     this.slotWindowPlace = place;
     this.slotWindow = new SlotWindow(this, this.metrics, {
-      title: place === 'equipment' ? '装備' : '怪我',
+      title: this.view.nameOf(place),
       cards: this.laneCards(this.slotWindowCards(), 'down'),
       area: this.slotWindowArea,
       acceptsCards: this.view.acceptsCards(place),

@@ -18,7 +18,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 - **スキーマ自体の妥当性**: `jsonschema` ライブラリの `Draft202012Validator.check_schema` により、Draft 2020-12として
   構文的に正しいスキーマであることを確認
 - **実データ全ファイルの受理**: `public/world-codex/` の全YAMLファイル（`core.yaml`・`locations.yaml`・
-  `containers.yaml`・`foods.yaml`・`characters.yaml`・`terrain_generation.yaml`）が、実際にゲームがロードしている
+  `liquid_containers.yaml`・`containers.yaml`・`foods.yaml`・`characters.yaml`・`terrain_generation.yaml`）が、実際にゲームがロードしている
   ままの内容でスキーマを満たすことを確認（ローダーで読み込めるファイルはスキーマも通る、が維持基準）
 - **不正な記述の拒否**: `set`/`add`/`destroy`/`spawn`/`transfer`/`move` と `pick` を同時に指定する、identifier の
   命名規則に反するキーを使う、未定義の比較演算子を使う、`set`/`add` に未対応の対象キー（`sibling`/`child` など)を

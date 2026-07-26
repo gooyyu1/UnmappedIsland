@@ -11,6 +11,7 @@ const WORLD_CODEX_FILES = [
   'containers.yaml',
   'core.yaml',
   'foods.yaml',
+  'liquid_containers.yaml',
   'locations.yaml',
   'terrain_generation.yaml',
   'tools.yaml',

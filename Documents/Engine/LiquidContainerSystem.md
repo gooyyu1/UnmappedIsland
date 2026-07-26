@@ -5,7 +5,7 @@
 液体（水・茶・油）を容器で保持し、飲用・注ぎ移し・蒸発させる仕組みの設計ドキュメントです。
 液体専用のエンジン機構は持たず、汎用文法（`represented_by` = 7.6節、`transfer` = 9.5節、
 `passives` = 8節。いずれも [`GameElementDefinition.md`](./GameElementDefinition.md)）の組み合わせ
-だけで実現しています。定義本体は `public/world-codex/containers.yaml`、
+だけで実現しています。定義本体は `public/world-codex/liquid_containers.yaml`、
 検証は `tests/worldCodex/containersYaml.test.ts`。
 
 ## 1. 役割分担: 量は容器、種類と振る舞いは中身
@@ -78,7 +78,7 @@ pour_in:
 
 - 開放度は容器側のタグ（`wide_open_container` / `narrow_open_container` / `sealed_container`）。
   密閉容器はどのゲートも成立しないため蒸発しない。口が狭い容器は広い容器より減りが速い
-  （設定値は `containers.yaml`）。
+  （設定値は `liquid_containers.yaml`）。
 - 天候ゲートは晴天系のみ定義されているため、降雨中は蒸発しない。
 - `liquid_amount` の `range.min: 0` の既定クランプ（6.3節）により、負にはならない。
 
