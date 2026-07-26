@@ -5,8 +5,8 @@
 
 /** カードのアスペクト比は58:89（ポーカーサイズ）。寸法は全てu単位（ScreenLayout.md 寸法トークン節）。 */
 export const SIZE = {
-  cardWidth: 210,
-  cardHeight: 322,
+  cardWidth: 205,
+  cardHeight: 320,
   laneHeight: 352,
   gap: 12,
   margin: 6,

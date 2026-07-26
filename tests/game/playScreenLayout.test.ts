@@ -40,8 +40,8 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.optionsBar).toEqual({ x: 1800, y: 0, width: 120, height: 444 });
     expect(layout.filterBar).toEqual({ x: 1800, y: 444, width: 120, height: 636 });
     expect(layout.weatherRow).toEqual({ x: 0, y: 112, width: 540, height: 112 });
-    expect(layout.characterDisplay).toEqual({ x: 0, y: 224, width: 540, height: 354 });
-    expect(layout.statusArea).toEqual({ x: 0, y: 578, width: 540, height: 502 });
+    expect(layout.characterDisplay).toEqual({ x: 0, y: 224, width: 540, height: 352 });
+    expect(layout.statusArea).toEqual({ x: 0, y: 576, width: 540, height: 504 });
   });
 
   it('3レーンは向きによらずフィールドエリアを外周マージン込みで埋める', () => {
