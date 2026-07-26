@@ -41,6 +41,7 @@
 <a href="#maskshape" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mask<wbr/>Shape</span></a>
 <a href="#metrics" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a>
 <a href="#minscrollx" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>min<wbr/>Scroll<wbr/>X</span></a>
+<a href="#objects" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>objects</span></a>
 <a href="#originx" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>origin<wbr/>X</span></a>
 <a href="#pinnedrect" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pinned<wbr/>Rect</span></a>
 <a href="#pitch" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pitch</span></a>
@@ -89,7 +90,7 @@
 <li><span><span class="tsd-kind-parameter">options</span>: <a href="../interfaces/game_ui_CardLane.CardLaneOptions.html" class="tsd-signature-type tsd-kind-interface">CardLaneOptions</a><span class="tsd-signature-symbol"> = {}</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">CardLane</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L112">src/game/ui/CardLane.ts:112</a></li></ul></aside></div></li></ul></section></section></details>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L118">src/game/ui/CardLane.ts:118</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="プロパティ-1">プロパティ<a href="#プロパティ-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -144,6 +145,14 @@
 </div><aside class="tsd-sources">
 <ul>
 <li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L95">src/game/ui/CardLane.ts:95</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="objects"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>objects</span><a href="#objects" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">objects</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">GameObject</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = []</span></div>
+<div class="tsd-comment tsd-typography"><p>stripに属さない表示物（背景板・ピン留め部分）。カードはstripごと消えるが、これらは
+個別に破棄しないと残ってしまう（背景板は入力も吸い続ける）。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L116">src/game/ui/CardLane.ts:116</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="originx"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>origin<wbr/>X</span><a href="#originx" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">originX</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
@@ -235,7 +244,7 @@
 <li><span><span class="tsd-kind-parameter">pinned</span>: <a href="../interfaces/game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">Rectangle</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L319">src/game/ui/CardLane.ts:319</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L328">src/game/ui/CardLane.ts:328</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="beginscroll"><span>begin<wbr/>Scroll</span><a href="#beginscroll" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -247,7 +256,7 @@
 </div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L258">src/game/ui/CardLane.ts:258</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L267">src/game/ui/CardLane.ts:267</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="destroy"><span>destroy</span><a href="#destroy" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -258,7 +267,7 @@
 </div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L176">src/game/ui/CardLane.ts:176</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L183">src/game/ui/CardLane.ts:183</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="dropindicatorrect"><span>drop<wbr/>Indicator<wbr/>Rect</span><a href="#dropindicatorrect" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -273,7 +282,7 @@
 <li><span><span class="tsd-kind-parameter">target</span>: <a href="../types/game_ui_CardLane.LaneDropTarget.html" class="tsd-signature-type tsd-kind-type-alias">LaneDropTarget</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L300">src/game/ui/CardLane.ts:300</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L309">src/game/ui/CardLane.ts:309</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="droptargetat"><span>drop<wbr/>Target<wbr/>At</span><a href="#droptargetat" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -292,7 +301,7 @@
 <li><span><span class="tsd-kind-parameter">y</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="../types/game_ui_CardLane.LaneDropTarget.html" class="tsd-signature-type tsd-kind-type-alias">LaneDropTarget</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L279">src/game/ui/CardLane.ts:279</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L288">src/game/ui/CardLane.ts:288</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="resetplaceholders"><code class="tsd-tag">非公開</code><span>reset<wbr/>Placeholders</span><a href="#resetplaceholders" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -301,7 +310,7 @@
 <div class="tsd-description">
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L228">src/game/ui/CardLane.ts:228</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L237">src/game/ui/CardLane.ts:237</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="scrollbydrag"><span>scroll<wbr/>By<wbr/>Drag</span><a href="#scrollbydrag" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -316,7 +325,7 @@
 <li><span><span class="tsd-kind-parameter">deltaX</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L263">src/game/ui/CardLane.ts:263</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L272">src/game/ui/CardLane.ts:272</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="scrollto"><code class="tsd-tag">非公開</code><span>scroll<wbr/>To</span><a href="#scrollto" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -331,7 +340,7 @@
 <li><span><span class="tsd-kind-parameter">scrollX</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L268">src/game/ui/CardLane.ts:268</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L277">src/game/ui/CardLane.ts:277</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="setcards"><span>set<wbr/>Cards</span><a href="#setcards" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -348,7 +357,7 @@
 <li><span><span class="tsd-kind-parameter">cards</span>: <span class="tsd-signature-keyword">readonly</span> (<a href="../interfaces/game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="../interfaces/game_ui_CardLane.LaneUpdate.html" class="tsd-signature-type tsd-kind-interface">LaneUpdate</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L186">src/game/ui/CardLane.ts:186</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L195">src/game/ui/CardLane.ts:195</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="slideto"><code class="tsd-tag">非公開</code><span>slide<wbr/>To</span><a href="#slideto" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -364,7 +373,7 @@
 <li><span><span class="tsd-kind-parameter">index</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L221">src/game/ui/CardLane.ts:221</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L230">src/game/ui/CardLane.ts:230</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="slotrect"><span>slot<wbr/>Rect</span><a href="#slotrect" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -379,7 +388,7 @@
 <li><span><span class="tsd-kind-parameter">index</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L245">src/game/ui/CardLane.ts:245</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/CardLane.ts#L254">src/game/ui/CardLane.ts:254</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -398,7 +407,7 @@
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>コンストラクター</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>プロパティ</summary>
-<div><a href="#_cardobjects" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>_<wbr/>card<wbr/>Objects</span></a><a href="#cardheight" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>card<wbr/>Height</span></a><a href="#cardwidth" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>card<wbr/>Width</span></a><a href="#cardy" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>card<wbr/>Y</span></a><a href="#dragstartscrollx" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>drag<wbr/>Start<wbr/>Scroll<wbr/>X</span></a><a href="#insertmarkwidth" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>insert<wbr/>Mark<wbr/>Width</span></a><a href="#maskshape" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mask<wbr/>Shape</span></a><a href="#metrics" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a><a href="#minscrollx" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>min<wbr/>Scroll<wbr/>X</span></a><a href="#originx" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>origin<wbr/>X</span></a><a href="#pinnedrect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pinned<wbr/>Rect</span></a><a href="#pitch" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pitch</span></a><a href="#placeholders" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>placeholders</span></a><a href="#rect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>rect</span></a><a href="#scene" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>scene</span></a><a href="#strip" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>strip</span></a><a href="#stripwidth" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>strip<wbr/>Width</span></a><a href="#trailingplaceholder" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>trailing<wbr/>Placeholder</span></a></div></details>
+<div><a href="#_cardobjects" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>_<wbr/>card<wbr/>Objects</span></a><a href="#cardheight" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>card<wbr/>Height</span></a><a href="#cardwidth" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>card<wbr/>Width</span></a><a href="#cardy" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>card<wbr/>Y</span></a><a href="#dragstartscrollx" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>drag<wbr/>Start<wbr/>Scroll<wbr/>X</span></a><a href="#insertmarkwidth" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>insert<wbr/>Mark<wbr/>Width</span></a><a href="#maskshape" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mask<wbr/>Shape</span></a><a href="#metrics" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a><a href="#minscrollx" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>min<wbr/>Scroll<wbr/>X</span></a><a href="#objects" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>objects</span></a><a href="#originx" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>origin<wbr/>X</span></a><a href="#pinnedrect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pinned<wbr/>Rect</span></a><a href="#pitch" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>pitch</span></a><a href="#placeholders" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>placeholders</span></a><a href="#rect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>rect</span></a><a href="#scene" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>scene</span></a><a href="#strip" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>strip</span></a><a href="#stripwidth" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>strip<wbr/>Width</span></a><a href="#trailingplaceholder" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>trailing<wbr/>Placeholder</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-アクセッサー"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>アクセッサー</summary>
 <div><a href="#cardobjects"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>card<wbr/>Objects</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>メソッド</summary>
