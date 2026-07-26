@@ -36,38 +36,42 @@ export function samePlace(a: CardPlace, b: CardPlace): boolean {
 }
 
 /**
- * アイテムのカード1枚。moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への
- * 反映（表示内容の作り直し）は呼び出し側の責務。
+ * 積み重なったカードの束（ドメインのObjectStackに対応する画面側の1まとまり）。
  *
- * moveToとreorderは「そこへ落とせるか」を、操作を返すか否かで答える。落とせない場所（設置物の間、
- * 前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedになるので、呼び出し側は落とし先の枠を
- * 出す前に問い合わせられる。
+ * スタックのメンバーはobjectsに全部入っていて、束ねているだけの表示上の都合で1枚に見えている
+ * （CardContent.identityも全メンバーのID）。1枚しか無い束もこの形で表す。
+ *
+ * moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
+ * 作り直し）は呼び出し側の責務。moveToとreorderは「そこへ落とせるか」を、操作を返すか否かで答える。
+ * 落とせない場所（設置物の間、前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedになるので、
+ * 呼び出し側は落とし先の枠を出す前に問い合わせられる。
  */
-export interface ItemCard extends CardContent {
+export interface ObjectCardStack extends CardContent {
   /**
-   * このカードが映しているワールド上のオブジェクト（スタックなら全部、先頭が代表）。
-   * PlayScreenViewの操作（combinationOf）へ渡すためだけのもので、画面の組み立て側は中身を見ない。
+   * この束が映しているワールド上のオブジェクト（先頭が代表）。表示に使う名前・絵は代表から採るが、
+   * これは同じ束に入れる条件が「代表ObjectDef列の一致」（ObjectStack）だからで、個体ごとに違い得る
+   * 値（プロパティ）を見るときはメンバーを1つずつ読む。
    */
   readonly objects: readonly WorldObject[];
 
-  /** このカードが今いる場所。 */
+  /** この束が今いる場所。 */
   readonly place: CardPlace;
 
   /**
-   * このカードがコンテナ（containerタグ、containers.yaml）なら、その中身を映す場所。
+   * 代表がコンテナ（containerタグ、containers.yaml）なら、その中身を映す場所。
    * 画面側はこれを持つカードをタップで開けるようにする。
    */
   readonly contents?: CardPlace;
 
   /**
-   * 別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
-   * 動かせないカード（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。
+   * 束のうち1つを別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
+   * 動かせない束（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。
    */
   readonly moveTo?: (place: CardPlace, at?: CardPlacement) => (() => void) | undefined;
 
   /**
-   * 同じ場所の中で位置を変える操作。1枚が複数のインスタンスを表している場合はスタックごと動かす
-   * （1個ずつでは元のスタックへ合流して戻ってしまうため、SlotSystem.md 3節）。
+   * 同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
+   * SlotSystem.md 3節）。
    */
   readonly reorder?: (at: CardPlacement) => (() => void) | undefined;
 }
@@ -94,15 +98,15 @@ export interface PlayScreenView {
   /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
   readonly explorationRatio: number;
   readonly destinations: readonly CardContent[];
-  readonly fieldItems: readonly ItemCard[];
+  readonly fieldItems: readonly ObjectCardStack[];
   /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
-  readonly hand: readonly (ItemCard | undefined)[];
+  readonly hand: readonly (ObjectCardStack | undefined)[];
 
   /**
    * 子ウィンドウに並べる、その場所の中身（装備・怪我・コンテナの中身）。前詰めスロットなので
    * 空きセルは無い。レーンで常に見えているfield/handはこちらでは扱わない。
    */
-  readonly cardsIn: (place: CardPlace) => readonly ItemCard[];
+  readonly cardsIn: (place: CardPlace) => readonly ObjectCardStack[];
 
   /** 子ウィンドウのタイトルに出す、その場所の名前。 */
   readonly nameOf: (place: CardPlace) => string;
@@ -115,14 +119,14 @@ export interface PlayScreenView {
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
-   * 実行できる組み合わせが無ければundefined。draggedとtargetが同じカード（スタックの上の1枚を
-   * 元の位置へ重ねた）なら、そのスタックの中の2つを組み合わせる。
+   * 実行できる組み合わせが無ければundefined。draggedとtargetが同じ束（その束の上の1枚を元の位置へ
+   * 重ねた）なら、束の中の2つを組み合わせる。
    *
    * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
    * （ActionSystem.md 1節）ため、ここでは宣言順の先頭を採る。マッチはwithタグだけで判定するので、
    * conditionsを満たさず実行が空振りすることはある。
    */
-  readonly combinationOf: (dragged: ItemCard, target: ItemCard) => (() => void) | undefined;
+  readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => (() => void) | undefined;
 }
 
 /** アイテムの画像がまだ無いため、種別ごとの絵文字を仮のアイコンとして使う。 */
@@ -179,8 +183,7 @@ export function fromGameSession(
       ? { container: object }
       : undefined;
 
-  // 1枚のカードが複数のインスタンス（スタック）を表すことがあるため、識別子は先頭を代表とする集合で持つ。
-  const cardOf = (instances: readonly WorldObject[], icon: string, place: CardPlace): ItemCard => ({
+  const stackOf = (instances: readonly WorldObject[], icon: string, place: CardPlace): ObjectCardStack => ({
     icon,
     name: locale.object(instances[0].def.name).displayName,
     identity: instances.map((instance) => instance.instanceId),
@@ -303,18 +306,18 @@ export function fromGameSession(
     })),
     fieldItems: [
       ...itemStacks.map((stack) => ({
-        ...cardOf(stack, ITEM_ICON, 'field'),
+        ...stackOf(stack, ITEM_ICON, 'field'),
         moveTo: moveInto(stack[0], 'field'),
         reorder: reorderIn(stack[0], 'field'),
       })),
       // 設置物は動かせないので、移動も並び替えも持たない（combinationの相手にはなれる）。
-      ...location.fixtureStacks.map((stack) => cardOf(stack, FIXTURE_ICON, 'field')),
+      ...location.fixtureStacks.map((stack) => stackOf(stack, FIXTURE_ICON, 'field')),
     ],
     hand: game.player.handStacks.map((stack) =>
       stack.length === 0
         ? undefined
         : {
-            ...cardOf(stack, ITEM_ICON, 'hand'),
+            ...stackOf(stack, ITEM_ICON, 'hand'),
             moveTo: moveInto(stack[0], 'hand'),
             reorder: reorderIn(stack[0], 'hand'),
           },
@@ -322,11 +325,11 @@ export function fromGameSession(
     cardsIn: (place) => {
       // 怪我はワールド側の効果だけが付け外しするため、moveTo/reorderを持たせない。
       if (place === 'injuries')
-        return game.player.injuryStacks.map((stack) => cardOf(stack, INJURY_ICON, 'injuries'));
+        return game.player.injuryStacks.map((stack) => stackOf(stack, INJURY_ICON, 'injuries'));
 
       const stacks = place === 'equipment' ? game.player.equipmentStacks : stacksIn(slotOf(place));
       return stacks.map((stack) => ({
-        ...cardOf(stack, ITEM_ICON, place),
+        ...stackOf(stack, ITEM_ICON, place),
         moveTo: moveInto(stack[0], place),
         reorder: reorderIn(stack[0], place),
       }));
