@@ -75,8 +75,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.fieldItems.map((card) => card.name)).toEqual([
-      ...location.items.map((item) => locale.object(item.def.name).displayName),
-      ...location.fixtures.map((fixture) => locale.object(fixture.def.name).displayName),
+      ...location.itemStacks.map((stack) => locale.object(stack[0].def.name).displayName),
+      ...location.fixtureStacks.map((stack) => locale.object(stack[0].def.name).displayName),
     ]);
     expect(view.fieldItems.length, '探索し切れば何かしら見つかっている').toBeGreaterThan(0);
 
@@ -106,12 +106,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     exploreToFull(game);
     const picked = game.startLocation.items[0];
 
-    fromGameSession(game, codex, locale).fieldItems[0].move?.();
+    fromGameSession(game, codex, locale).fieldItems[0].move?.()?.();
 
     expect(game.player.hand[0], '押したアイテムが手持ちの先頭の枠に入る').toBe(picked);
     expect(game.startLocation.items, 'フィールドからは無くなる').not.toContain(picked);
 
-    fromGameSession(game, codex, locale).hand[0]?.move?.();
+    fromGameSession(game, codex, locale).hand[0]?.move?.()?.();
 
     expect(game.player.hand[0], '手持ちの枠は空く').toBeUndefined();
     expect(game.startLocation.items, 'フィールドへ戻る').toContain(picked);
@@ -140,7 +140,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     exploreToFull(game);
     const items = [...game.startLocation.items];
 
-    fromGameSession(game, codex, locale).fieldItems[0].move?.();
+    fromGameSession(game, codex, locale).fieldItems[0].move?.()?.();
 
     expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });
@@ -159,13 +159,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.hand[0]?.identity, '同種2個は1枚のカードなので、両方のIDを持つ').toEqual(
       stones.map((stone) => stone.instanceId),
     );
+    expect(view.hand[0]?.count, 'スタック数はそのままインスタンスの個数').toBe(2);
     expect(
       view.fieldItems.map((card) => card.identity),
-      'フィールドは1個体が1枚',
+      'フィールドも同種はスタックにまとまって1枚',
     ).toEqual(
-      game.startLocation.items
-        .map((item) => [item.instanceId])
-        .concat(game.startLocation.fixtures.map((fixture) => [fixture.instanceId])),
+      game.startLocation.itemStacks
+        .map((stack) => stack.map((item) => item.instanceId))
+        .concat(game.startLocation.fixtureStacks.map((stack) => stack.map((f) => f.instanceId))),
     );
   });
 

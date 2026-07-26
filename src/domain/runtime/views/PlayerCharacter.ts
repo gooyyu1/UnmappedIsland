@@ -71,6 +71,16 @@ export class PlayerCharacter {
   }
 
   /**
+   * アイテムを手持ちの空き枠（cellIndex）へ入れる。埋まっている枠を指した場合や、手持ちが受け入れ
+   * られない場合はfalse（Slot.tryInsertAtCell）。
+   */
+  takeIntoCell(item: WorldObject, session: WorldSession, cellIndex: number): boolean {
+    return (
+      item.moveToSlotAtCell(this.instance, this.handSlotId, cellIndex, session.codex.wellKnown) === undefined
+    );
+  }
+
+  /**
    * 手持ちの枠を並び替える。memberが属するスタックを丸ごと、指定した隙間（gapIndexは0が先頭の枠の前）へ
    * 入れ直す（Slot.tryMoveStackToGap）。並び替えられなければfalse。
    */
@@ -81,9 +91,23 @@ export class PlayerCharacter {
     return slot.tryMoveStackToGap(stack, gapIndex);
   }
 
-  /** 手持ちのアイテムを今いる土地へ置く。土地に居ない・土地が受け入れられないならfalse。 */
-  drop(item: WorldObject, session: WorldSession): boolean {
-    return this.location?.receiveItem(item, session) ?? false;
+  /**
+   * 手持ちの枠を、指定した番号の枠（cellIndex）と入れ替える。空き枠を指せば、他の枠を動かさずに
+   * そこへ移る（Slot.trySetManualPosition）。動かせなければfalse。
+   */
+  moveHandToCell(member: WorldObject, cellIndex: number): boolean {
+    const slot = this.instance.tryGetSlot(this.handSlotId);
+    const stack = slot?.findStackContaining(member);
+    if (slot === undefined || stack === undefined) return false;
+    return slot.trySetManualPosition(stack, cellIndex);
+  }
+
+  /**
+   * 手持ちのアイテムを今いる土地へ置く。土地に居ない・土地が受け入れられないならfalse。
+   * gapIndexを渡すと、土地のアイテムの並びのその隙間へ入る（Location.receiveItem）。
+   */
+  drop(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
+    return this.location?.receiveItem(item, session, gapIndex) ?? false;
   }
 
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */

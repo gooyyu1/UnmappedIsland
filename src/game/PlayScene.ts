@@ -180,7 +180,8 @@ export class PlayScene extends ResponsiveScene {
   ): readonly (CardContent | undefined)[] {
     return cards.map((card) => {
       if (card === undefined) return undefined;
-      const move = card.move;
+      // 端を押したときの移動先は「空いている場所」なので、位置を指定せずに操作を引く。
+      const move = card.move?.();
       return {
         ...card,
         draggable: true,
@@ -190,8 +191,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、隙間へ落としたら
-   * 位置を変える。同じレーンの中ならスタックごとの並び替え、レーンをまたぐならカード1枚の移動。
+   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、隙間・空き枠へ
+   * 落としたら位置を変える。同じレーンの中ならスタックごとの並び替え、レーンをまたぐならカード1枚の移動。
    */
   private dropAction(drop: CardDrop): (() => void) | undefined {
     const dragged = this.cardsOf(drop.from)[drop.fromIndex];
@@ -203,17 +204,7 @@ export class PlayScene extends ResponsiveScene {
       return this.view.combinationOf(dragged, target);
     }
 
-    const { gapIndex } = drop.target;
-    if (drop.to === drop.from) {
-      const reorder = dragged.reorder;
-      return reorder === undefined ? undefined : () => reorder(gapIndex);
-    }
-
-    const move = dragged.move;
-    if (move === undefined) return undefined;
-
-    // 手持ちは枠の位置が固定なので落とした隙間へ入れる。フィールド側は並び順を持たない。
-    return () => move(drop.to === this.handLane ? gapIndex : undefined);
+    return drop.to === drop.from ? dragged.reorder?.(drop.target) : dragged.move?.(drop.target);
   }
 
   private cardsOf(lane: CardLane): readonly (ItemCard | undefined)[] {

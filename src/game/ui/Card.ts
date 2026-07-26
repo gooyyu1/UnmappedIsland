@@ -17,6 +17,11 @@ const EDGE_RATIO = 1 / 6;
 const EDGE_OVERLAY_ALPHA = 0.55;
 const EDGE_ARROW_SIZE = 44;
 
+/** スタック数を囲む丸の直径・カードの右上からの余白・中の数字の大きさ（u単位）。 */
+const STACK_BADGE_SIZE = 56;
+const STACK_BADGE_MARGIN = 6;
+const STACK_COUNT_SIZE = 32;
+
 /** 移動先のレーンがカードのどちら側にあるか。 */
 export type CardEdgeDirection = 'up' | 'down';
 
@@ -36,6 +41,8 @@ export interface CardContent {
    * みなす。省略したカードは差し替えのたびに別のカードとして扱われる。
    */
   readonly identity?: readonly number[];
+  /** 1枚が映しているインスタンスの数。2以上のときだけ、右上に丸で囲んだ数字として出す。 */
+  readonly count?: number;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
   readonly onTap?: () => void;
   /** 端だけを押したときの動作。端ではカード全体の動作より優先される。 */
@@ -57,6 +64,10 @@ export class Card extends Phaser.GameObjects.Container {
   /** カードの実寸。ドラッグ中の分身やドロップ先の枠を同じ大きさで描くために公開する。 */
   readonly cardWidth: number;
   readonly cardHeight: number;
+
+  /** スタック数の表示。個数は差し替えのたびに変わるので、作り直さず書き換える。 */
+  private readonly stackBadge: Phaser.GameObjects.Container;
+  private readonly stackCount: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, content: CardContent) {
     super(scene, x, y);
@@ -110,15 +121,55 @@ export class Card extends Phaser.GameObjects.Container {
     // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
     if (content.draggable === true) scene.input.setDraggable(this);
     if (content.edge !== undefined) this.addEdge(scene, metrics, width, height, content.edge);
+
+    // スタック数は端の操作エリアより後に足して、オーバーレイが出ている間も読めるようにする。
+    this.stackCount = scene.add
+      .text(0, 0, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(STACK_COUNT_SIZE)}px`,
+        fontStyle: 'bold',
+        color: cssColor(COLOR.text),
+      })
+      .setOrigin(0.5);
+    this.stackBadge = this.addStackBadge(scene, metrics, width);
+    this.add(this.stackBadge);
+    this.showStackCount();
+
     scene.add.existing(this);
   }
 
   /**
    * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・名前・端の向きは変わらない
-   * 前提で、操作の実体（毎回作り直されるクロージャ）だけを新しくする。
+   * 前提で、スタック数と、操作の実体（毎回作り直されるクロージャ）だけを新しくする。
    */
   setContent(content: CardContent): void {
     this._content = content;
+    this.showStackCount();
+  }
+
+  /** スタック数を囲む丸。数字はスタックが増減しても位置が動かないよう、丸の中心へ固定する。 */
+  private addStackBadge(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    width: number,
+  ): Phaser.GameObjects.Container {
+    const size = metrics.px(STACK_BADGE_SIZE);
+    const margin = metrics.px(STACK_BADGE_MARGIN);
+    const radius = size / 2;
+
+    const circle = scene.add.graphics();
+    circle.fillStyle(COLOR.cardFace, 1);
+    circle.fillCircle(0, 0, radius);
+    circle.lineStyle(Math.max(1, metrics.px(3)), COLOR.cardBorder, 1);
+    circle.strokeCircle(0, 0, radius);
+
+    return scene.add.container(width - margin - radius, margin + radius, [circle, this.stackCount]);
+  }
+
+  private showStackCount(): void {
+    const count = this._content.count ?? 1;
+    this.stackBadge.setVisible(count >= 2);
+    this.stackCount.setText(String(count));
   }
 
   /** Containerのdisplay originによるヒット領域のずれを避ける理由はButtonと同じ（サイズを設定しない）。 */
