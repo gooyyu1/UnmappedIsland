@@ -36,6 +36,7 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     for (const file of WORLD_CODEX_FILES) this.load.text(file, `world-codex/${file}`);
     this.load.text(LOCALE_FILE, LOCALE_FILE);
+
     // 読み込めなくてもカードは図形で描かれる（Card.addFrame）ため、失敗しても起動は止めない。
     this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
     // object_defごとの絵。用意されているものだけが並ぶ（objectArt参照）。
@@ -57,6 +58,7 @@ export class BootScene extends Phaser.Scene {
 
     this.registry.set(WORLD_CODEX_KEY, codex);
     this.registry.set(LOCALIZATION_KEY, localization);
+
     this.scene.start('title');
   }
 

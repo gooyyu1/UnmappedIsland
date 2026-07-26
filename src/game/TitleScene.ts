@@ -1,4 +1,5 @@
 import { ResponsiveScene } from './ResponsiveScene';
+import { scenarioNames } from '../scenario/Scenario';
 import { Button } from './ui/Button';
 import { addLabel } from './ui/labels';
 import { COLOR } from './ui/theme';
@@ -36,9 +37,19 @@ export class TitleScene extends ResponsiveScene {
     }).setOrigin(0.5, 0);
     mainLabel.setShadow(0, this.metrics.px(2), 'rgba(0,0,0,0.35)', this.metrics.px(6), false, true);
 
+    // テスト用シナリオは同梱されているときだけ並べる（SaveDataManagement.md「テスト用シナリオ」節）。
+    const menu: { label: string; primary: boolean; onTap?: () => void }[] = [
+      { label: 'はじめる', primary: true, onTap: () => this.scene.start('slots') },
+      { label: '設定', primary: false },
+    ];
+    if (scenarioNames().length > 0) {
+      menu.push({ label: 'テスト用シナリオ', primary: false, onTap: () => this.scene.start('scenarios') });
+    }
+
     const logoGap = this.metrics.px(12);
     const buttonHeight = this.metrics.px(MENU_BUTTON_HEIGHT);
-    const menuHeight = buttonHeight * 2 + this.metrics.px(MENU_BUTTON_GAP);
+    const buttonGap = this.metrics.px(MENU_BUTTON_GAP);
+    const menuHeight = buttonHeight * menu.length + buttonGap * (menu.length - 1);
     const logoHeight = subLabel.height + logoGap + mainLabel.height;
     const contentTop = (height - (logoHeight + this.metrics.px(LOGO_MENU_GAP) + menuHeight)) / 2;
 
@@ -49,17 +60,10 @@ export class TitleScene extends ResponsiveScene {
     const menuX = (width - menuWidth) / 2;
     const menuY = contentTop + logoHeight + this.metrics.px(LOGO_MENU_GAP);
 
-    this.addMenuButton(menuX, menuY, menuWidth, buttonHeight, 'はじめる', true, () =>
-      this.scene.start('slots'),
-    );
-    this.addMenuButton(
-      menuX,
-      menuY + buttonHeight + this.metrics.px(MENU_BUTTON_GAP),
-      menuWidth,
-      buttonHeight,
-      '設定',
-      false,
-    );
+    menu.forEach((item, index) => {
+      const y = menuY + index * (buttonHeight + buttonGap);
+      this.addMenuButton(menuX, y, menuWidth, buttonHeight, item.label, item.primary, item.onTap);
+    });
   }
 
   /** 上から順に空・海・砂浜へ移る縦のグラデーション。中間色で2枚に分けて3色を表現する。 */

@@ -1,0 +1,16 @@
+# 入れ物のテスト用。編み籠を最初から持ち、足元に石と流木が転がっている状態から始める。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+# タイトル画面の「テスト用シナリオ」に並ぶ名前。
+title: 編み籠と石
+
+# 島のシードは新規ゲームと同じ意味。3は開始地点が砂浜になるシード。
+seed: 3
+
+player:
+  hand: [woven_basket]
+
+location:
+  # 同じ名前を並べた数だけ作られる。石はスタックにまとまって1枚のカードになる。
+  items: [stone, stone, stone, driftwood, driftwood]

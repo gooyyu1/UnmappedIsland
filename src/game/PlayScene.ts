@@ -8,6 +8,9 @@ import { start } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/runtime/Rng';
 import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
+import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
+import type { Scenario } from '../scenario/Scenario';
+import { applyScenario } from '../scenario/Scenario';
 import type { CardPlace, ItemCard, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
 import { TickProgress } from './tickProgress';
@@ -64,7 +67,30 @@ const FILTER_ICONS = ['🗂️', '🍳', '💧', '🔨', '🎲'];
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
 export interface PlaySceneData {
   readonly save: SaveData;
+  /** セーブスロットの番号。シナリオからの起動（BootScene）はセーブへ書き戻さないため-1。 */
   readonly slotIndex: number;
+  /** テスト用シナリオ。渡すと、シードから作り直した世界へ開始状態を置いてから始める。 */
+  readonly scenario?: Scenario;
+}
+
+/**
+ * テスト用シナリオでプレイ画面を開くためのデータ。
+ *
+ * シナリオはセーブスロットを使わない（書き戻しもしない）ため、島の名前と生存日数は表示用の仮値になる。
+ */
+export function scenarioPlayData(scenario: Scenario): PlaySceneData {
+  return {
+    save: {
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      islandName: scenario.title,
+      seed: scenario.seed,
+      characterId: 'character',
+      createdAt: 0,
+      elapsedDays: 0,
+    },
+    slotIndex: -1,
+    scenario,
+  };
 }
 
 /**
@@ -131,6 +157,7 @@ export class PlayScene extends ResponsiveScene {
     this.codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
     this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
     this.gameSession = start(this.codex, data.save.seed, seededRng(data.save.seed));
+    if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
   }
 
