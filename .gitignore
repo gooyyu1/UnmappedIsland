@@ -3,6 +3,10 @@ node_modules/
 dist/
 *.log
 
+# .NET (Tests/配下のC#プロジェクトのビルド生成物)
+obj/
+bin/
+
 # Editor/OS
 .vscode/
 .idea/
