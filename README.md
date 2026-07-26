@@ -1,4 +1,4 @@
-# UnmappedIsland
+# Unmapped Island
 
 Card Survivalの影響を受けた、無人島を舞台にしたサバイバルカードゲーム
 
