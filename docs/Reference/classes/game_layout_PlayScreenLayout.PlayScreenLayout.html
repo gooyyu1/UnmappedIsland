@@ -35,6 +35,7 @@
 <a href="#metrics" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a>
 <a href="#optionsbar" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>options<wbr/>Bar</span></a>
 <a href="#situationarea" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>situation<wbr/>Area</span></a>
+<a href="#slotwindowarea" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window<wbr/>Area</span></a>
 <a href="#statusarea" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>status<wbr/>Area</span></a>
 <a href="#weatherrow" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>weather<wbr/>Row</span></a>
 </div></section>
@@ -57,7 +58,7 @@
 <li><span><span class="tsd-kind-parameter">metrics</span>: <a href="game_layout_ScreenMetrics.ScreenMetrics.html" class="tsd-signature-type tsd-kind-class">ScreenMetrics</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">PlayScreenLayout</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/layout/PlayScreenLayout.ts#L53">src/game/layout/PlayScreenLayout.ts:53</a></li></ul></aside></div></li></ul></section></section></details>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/layout/PlayScreenLayout.ts#L59">src/game/layout/PlayScreenLayout.ts:59</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="プロパティ-1">プロパティ<a href="#プロパティ-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -99,6 +100,14 @@
 <ul>
 <li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/layout/PlayScreenLayout.ts#L42">src/game/layout/PlayScreenLayout.ts:42</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="slotwindowarea"><code class="tsd-tag">読み取り専用</code><span>slot<wbr/>Window<wbr/>Area</span><a href="#slotwindowarea" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">slotWindowArea</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></div>
+<div class="tsd-comment tsd-typography"><p>ハンドレーンを覆わない子ウィンドウ（装備・怪我・コンテナ）の置き場所。手持ちとカードを
+やり取りする操作があるため、開いている間も手持ちが見えている必要がある。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/layout/PlayScreenLayout.ts#L57">src/game/layout/PlayScreenLayout.ts:57</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="statusarea"><code class="tsd-tag">読み取り専用</code><span>status<wbr/>Area</span><a href="#statusarea" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">statusArea</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></div><aside class="tsd-sources">
 <ul>
@@ -121,7 +130,7 @@
 <div class="tsd-description">
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/layout/PlayScreenLayout.ts#L128">src/game/layout/PlayScreenLayout.ts:128</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/layout/PlayScreenLayout.ts#L142">src/game/layout/PlayScreenLayout.ts:142</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -140,7 +149,7 @@
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>コンストラクター</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>プロパティ</summary>
-<div><a href="#characterdisplay"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>character<wbr/>Display</span></a><a href="#fieldarea"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>field<wbr/>Area</span></a><a href="#filterbar"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>filter<wbr/>Bar</span></a><a href="#lanes"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>lanes</span></a><a href="#metrics"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a><a href="#optionsbar"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>options<wbr/>Bar</span></a><a href="#situationarea"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>situation<wbr/>Area</span></a><a href="#statusarea"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>status<wbr/>Area</span></a><a href="#weatherrow"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>weather<wbr/>Row</span></a></div></details>
+<div><a href="#characterdisplay"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>character<wbr/>Display</span></a><a href="#fieldarea"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>field<wbr/>Area</span></a><a href="#filterbar"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>filter<wbr/>Bar</span></a><a href="#lanes"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>lanes</span></a><a href="#metrics"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a><a href="#optionsbar"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>options<wbr/>Bar</span></a><a href="#situationarea"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>situation<wbr/>Area</span></a><a href="#slotwindowarea"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window<wbr/>Area</span></a><a href="#statusarea"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>status<wbr/>Area</span></a><a href="#weatherrow"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>weather<wbr/>Row</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>メソッド</summary>
 <div><a href="#buildlanes" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Lanes</span></a></div></details></div></details></div>
 <div class="site-menu">

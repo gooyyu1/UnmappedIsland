@@ -77,6 +77,7 @@ same_slot spawnの位置捕捉（EffectSite）・配置（place）を持つが�
 <a href="#matchesrepresentation" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>matches<wbr/>Representation</span></a>
 <a href="#matchrepresentationfrom" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>match<wbr/>Representation<wbr/>From</span></a>
 <a href="#moveintofirstacceptingslot" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>Into<wbr/>First<wbr/>Accepting<wbr/>Slot</span></a>
+<a href="#movetocellinparentslot" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Cell<wbr/>In<wbr/>Parent<wbr/>Slot</span></a>
 <a href="#movetoslot" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot</span></a>
 <a href="#movetoslotatcell" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot<wbr/>At<wbr/>Cell</span></a>
 <a href="#movetoslotatgap" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot<wbr/>At<wbr/>Gap</span></a>
@@ -87,6 +88,7 @@ same_slot spawnの位置捕捉（EffectSite）・配置（place）を持つが�
 <a href="#registerancestortargetedrecursively" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Ancestor<wbr/>Targeted<wbr/>Recursively</span></a>
 <a href="#registeredgewith" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Edge<wbr/>With</span></a>
 <a href="#registerpassiveeffect" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Passive<wbr/>Effect</span></a>
+<a href="#reorderinparentslot" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>reorder<wbr/>In<wbr/>Parent<wbr/>Slot</span></a>
 <a href="#resolveeffecttarget" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Effect<wbr/>Target</span></a>
 <a href="#resolveeffecttargetorancestor" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Effect<wbr/>Target<wbr/>Or<wbr/>Ancestor</span></a>
 <a href="#resolveinteractiontarget" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Interaction<wbr/>Target</span></a>
@@ -235,7 +237,7 @@ actions/combinations（11節・12節）の両方から呼ばれる（rangeイベ
 <li><span><span class="tsd-kind-parameter">dragged</span>: <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L514">src/domain/runtime/WorldObject.ts:514</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L541">src/domain/runtime/WorldObject.ts:541</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="attachtoslot"><code class="tsd-tag">非公開</code><span>attach<wbr/>To<wbr/>Slot</span><a href="#attachtoslot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -254,7 +256,7 @@ actions/combinations（11節・12節）の両方から呼ばれる（rangeイベ
 <li><span><span class="tsd-kind-parameter">force</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L273">src/domain/runtime/WorldObject.ts:273</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L300">src/domain/runtime/WorldObject.ts:300</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="captureeffectsite"><code class="tsd-tag">非公開</code><span>capture<wbr/>Effect<wbr/>Site</span><a href="#captureeffectsite" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -265,7 +267,7 @@ actions/combinations（11節・12節）の両方から呼ばれる（rangeイベ
 </div>
 <h4 class="tsd-returns-title">戻り値 <a href="domain_runtime_WorldObject.EffectSite.html" class="tsd-signature-type tsd-kind-class">EffectSite</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L562">src/domain/runtime/WorldObject.ts:562</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L589">src/domain/runtime/WorldObject.ts:589</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="capturerepresentationchain"><span>capture<wbr/>Representation<wbr/>Chain</span><a href="#capturerepresentationchain" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -291,7 +293,7 @@ ObjectDefで、続いて代表・代表の代表…を深さ順に並べる（�
 <li><span><span class="tsd-kind-parameter">other</span>: <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L587">src/domain/runtime/WorldObject.ts:587</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L614">src/domain/runtime/WorldObject.ts:614</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="destroy"><span>destroy</span><a href="#destroy" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -307,7 +309,7 @@ ObjectDefで、続いて代表・代表の代表…を深さ順に並べる（�
 <li><span><span class="tsd-kind-parameter">wellKnown</span>: <a href="domain_defs_WellKnownProperties.WellKnownProperties.html" class="tsd-signature-type tsd-kind-class">WellKnownProperties</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L321">src/domain/runtime/WorldObject.ts:321</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L348">src/domain/runtime/WorldObject.ts:348</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="detachfromparent"><code class="tsd-tag">非公開</code><span>detach<wbr/>From<wbr/>Parent</span><a href="#detachfromparent" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -320,7 +322,7 @@ ObjectDefで、続いて代表・代表の代表…を深さ順に並べる（�
 <li><span><span class="tsd-kind-parameter">wellKnown</span>: <a href="domain_defs_WellKnownProperties.WellKnownProperties.html" class="tsd-signature-type tsd-kind-class">WellKnownProperties</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L325">src/domain/runtime/WorldObject.ts:325</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L352">src/domain/runtime/WorldObject.ts:352</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="executespawn"><span>execute<wbr/>Spawn</span><a href="#executespawn" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -339,7 +341,7 @@ ObjectDefで、続いて代表・代表の代表…を深さ順に並べる（�
 <li><span><span class="tsd-kind-parameter">effectSite</span>: <a href="domain_runtime_WorldObject.EffectSite.html" class="tsd-signature-type tsd-kind-class">EffectSite</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L576">src/domain/runtime/WorldObject.ts:576</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L603">src/domain/runtime/WorldObject.ts:603</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="findancestorwithproperty"><span>find<wbr/>Ancestor<wbr/>With<wbr/>Property</span><a href="#findancestorwithproperty" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -355,7 +357,7 @@ inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、
 <li><span><span class="tsd-kind-parameter">propertyGlobalId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L381">src/domain/runtime/WorldObject.ts:381</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L408">src/domain/runtime/WorldObject.ts:408</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="finddescendantbyinstanceid"><span>find<wbr/>Descendant<wbr/>By<wbr/>Instance<wbr/>Id</span><a href="#finddescendantbyinstanceid" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -372,7 +374,7 @@ inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、
 <li><span><span class="tsd-kind-parameter">instanceId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L406">src/domain/runtime/WorldObject.ts:406</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L433">src/domain/runtime/WorldObject.ts:433</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="findmatchingcombinations"><span>find<wbr/>Matching<wbr/>Combinations</span><a href="#findmatchingcombinations" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -385,7 +387,7 @@ inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、
 <li><span><span class="tsd-kind-parameter">dragged</span>: <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> <a href="domain_defs_CombinationDef.CombinationDef.html" class="tsd-signature-type tsd-kind-class">CombinationDef</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L486">src/domain/runtime/WorldObject.ts:486</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L513">src/domain/runtime/WorldObject.ts:513</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="findroot"><span>find<wbr/>Root</span><a href="#findroot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -396,7 +398,7 @@ inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、
 </div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L391">src/domain/runtime/WorldObject.ts:391</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L418">src/domain/runtime/WorldObject.ts:418</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="findrootfrom"><code class="tsd-tag">非公開</code> <code class="tsd-tag">静的</code><span>find<wbr/>Root<wbr/>From</span><a href="#findrootfrom" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -409,7 +411,7 @@ inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、
 <li><span><span class="tsd-kind-parameter">start</span>: <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L395">src/domain/runtime/WorldObject.ts:395</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L422">src/domain/runtime/WorldObject.ts:422</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="geteffectivevalue"><span>get<wbr/>Effective<wbr/>Value</span><a href="#geteffectivevalue" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -439,7 +441,7 @@ inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、
 <li><span><span class="tsd-kind-parameter">propertyGlobalId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> <a href="domain_runtime_RegisteredPassiveEffect.RegisteredPassiveEffect.html" class="tsd-signature-type tsd-kind-class">RegisteredPassiveEffect</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L468">src/domain/runtime/WorldObject.ts:468</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L495">src/domain/runtime/WorldObject.ts:495</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="getnumber"><span>get<wbr/>Number</span><a href="#getnumber" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -568,7 +570,23 @@ fallbackへ委ねる）。</p>
 <li><span><span class="tsd-kind-parameter">force</span>: <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> = false</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L424">src/domain/runtime/WorldObject.ts:424</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L451">src/domain/runtime/WorldObject.ts:451</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="movetocellinparentslot"><span>move<wbr/>To<wbr/>Cell<wbr/>In<wbr/>Parent<wbr/>Slot</span><a href="#movetocellinparentslot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="movetocellinparentslot-1"><span class="tsd-kind-call-signature">moveToCellInParentSlot</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">cellIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#movetocellinparentslot-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>プレイヤーによる手動並び替えのうち、行き先を空きセルで指定するもの（Slot.trySetManualPosition参照）。
+fixedPositionsのスロット専用。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">cellIndex</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L291">src/domain/runtime/WorldObject.ts:291</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="movetoslot"><span>move<wbr/>To<wbr/>Slot</span><a href="#movetoslot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -663,7 +681,7 @@ fallbackへ委ねる）。</p>
 <li><span><span class="tsd-kind-parameter">site</span>: <a href="domain_runtime_WorldObject.EffectSite.html" class="tsd-signature-type tsd-kind-class">EffectSite</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L601">src/domain/runtime/WorldObject.ts:601</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L628">src/domain/runtime/WorldObject.ts:628</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="propagateweightchange"><code class="tsd-tag">非公開</code><span>propagate<wbr/>Weight<wbr/>Change</span><a href="#propagateweightchange" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -683,7 +701,7 @@ fallbackへ委ねる）。</p>
 <li><span><span class="tsd-kind-parameter">wellKnown</span>: <a href="domain_defs_WellKnownProperties.WellKnownProperties.html" class="tsd-signature-type tsd-kind-class">WellKnownProperties</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L349">src/domain/runtime/WorldObject.ts:349</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L376">src/domain/runtime/WorldObject.ts:376</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="propagateweightchangefrom"><code class="tsd-tag">非公開</code> <code class="tsd-tag">静的</code><span>propagate<wbr/>Weight<wbr/>Change<wbr/>From</span><a href="#propagateweightchangefrom" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -699,7 +717,7 @@ fallbackへ委ねる）。</p>
 <li><span><span class="tsd-kind-parameter">wellKnown</span>: <a href="domain_defs_WellKnownProperties.WellKnownProperties.html" class="tsd-signature-type tsd-kind-class">WellKnownProperties</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L357">src/domain/runtime/WorldObject.ts:357</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L384">src/domain/runtime/WorldObject.ts:384</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="registerancestortargetedrecursively"><code class="tsd-tag">非公開</code><span>register<wbr/>Ancestor<wbr/>Targeted<wbr/>Recursively</span><a href="#registerancestortargetedrecursively" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -716,7 +734,7 @@ fallbackへ委ねる）。</p>
 <li><span><span class="tsd-kind-parameter">register</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L447">src/domain/runtime/WorldObject.ts:447</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L474">src/domain/runtime/WorldObject.ts:474</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="registeredgewith"><code class="tsd-tag">非公開</code><span>register<wbr/>Edge<wbr/>With</span><a href="#registeredgewith" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -734,7 +752,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">register</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L437">src/domain/runtime/WorldObject.ts:437</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L464">src/domain/runtime/WorldObject.ts:464</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="registerpassiveeffect"><span>register<wbr/>Passive<wbr/>Effect</span><a href="#registerpassiveeffect" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -750,7 +768,25 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">effect</span>: <a href="domain_runtime_RegisteredPassiveEffect.RegisteredPassiveEffect.html" class="tsd-signature-type tsd-kind-class">RegisteredPassiveEffect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L456">src/domain/runtime/WorldObject.ts:456</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L483">src/domain/runtime/WorldObject.ts:483</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="reorderinparentslot"><span>reorder<wbr/>In<wbr/>Parent<wbr/>Slot</span><a href="#reorderinparentslot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="reorderinparentslot-1"><span class="tsd-kind-call-signature">reorderInParentSlot</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">gapIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#reorderinparentslot-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>プレイヤーによる手動並び替え（Slot.tryMoveStackToGap参照）。今いるスロットの中で、自分が属する
+スタックを丸ごと指定した隙間へ入れ直す。どこにも属していない場合はfalse。</p>
+<p>「どのスロットに居るか」を呼び出し側に持たせないための入口。1個ずつではなくスタックごと動かす
+理由はSlot側にある。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">gapIndex</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L279">src/domain/runtime/WorldObject.ts:279</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="resolveeffecttarget"><span>resolve<wbr/>Effect<wbr/>Target</span><a href="#resolveeffecttarget" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -767,7 +803,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">dragged</span>: <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L528">src/domain/runtime/WorldObject.ts:528</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L555">src/domain/runtime/WorldObject.ts:555</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="resolveeffecttargetorancestor"><span>resolve<wbr/>Effect<wbr/>Target<wbr/>Or<wbr/>Ancestor</span><a href="#resolveeffecttargetorancestor" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -785,7 +821,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">dragged</span>: <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">WorldObject</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L550">src/domain/runtime/WorldObject.ts:550</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L577">src/domain/runtime/WorldObject.ts:577</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="resolveinteractiontarget"><span>resolve<wbr/>Interaction<wbr/>Target</span><a href="#resolveinteractiontarget" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -864,7 +900,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">session</span>: <a href="domain_runtime_WorldSession.WorldSession.html" class="tsd-signature-type tsd-kind-class">WorldSession</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L498">src/domain/runtime/WorldObject.ts:498</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L525">src/domain/runtime/WorldObject.ts:525</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="tryexecuteaction"><span>try<wbr/>Execute<wbr/>Action</span><a href="#tryexecuteaction" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -879,7 +915,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">session</span>: <a href="domain_runtime_WorldSession.WorldSession.html" class="tsd-signature-type tsd-kind-class">WorldSession</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L473">src/domain/runtime/WorldObject.ts:473</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L500">src/domain/runtime/WorldObject.ts:500</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="tryexecutecombination"><span>try<wbr/>Execute<wbr/>Combination</span><a href="#tryexecutecombination" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -895,7 +931,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">session</span>: <a href="domain_runtime_WorldSession.WorldSession.html" class="tsd-signature-type tsd-kind-class">WorldSession</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L477">src/domain/runtime/WorldObject.ts:477</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L504">src/domain/runtime/WorldObject.ts:504</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="tryfirstacceptingslot"><code class="tsd-tag">非公開</code> <code class="tsd-tag">静的</code><span>try<wbr/>First<wbr/>Accepting<wbr/>Slot</span><a href="#tryfirstacceptingslot" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -913,7 +949,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">force</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L645">src/domain/runtime/WorldObject.ts:645</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L672">src/domain/runtime/WorldObject.ts:672</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="trygetproperty"><span>try<wbr/>Get<wbr/>Property</span><a href="#trygetproperty" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -955,7 +991,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <li><span><span class="tsd-kind-parameter">propertyGlobalId</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L462">src/domain/runtime/WorldObject.ts:462</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/domain/runtime/WorldObject.ts#L489">src/domain/runtime/WorldObject.ts:489</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -978,7 +1014,7 @@ falseで解除）。親側だけ子thisを明示的に渡すのは、親から�
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-アクセッサー"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>アクセッサー</summary>
 <div><a href="#parent"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>parent</span></a><a href="#parentslotlocalid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="アクセッサー"><use href="../assets/icons.svg#icon-262144"></use></svg><span>parent<wbr/>Slot<wbr/>Local<wbr/>Id</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>メソッド</summary>
-<div><a href="#addnumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Number</span></a><a href="#appendrepresentationchain" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>append<wbr/>Representation<wbr/>Chain</span></a><a href="#applyactiveeffect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>apply<wbr/>Active<wbr/>Effect</span></a><a href="#attachtoslot" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>attach<wbr/>To<wbr/>Slot</span></a><a href="#captureeffectsite" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>capture<wbr/>Effect<wbr/>Site</span></a><a href="#capturerepresentationchain"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>capture<wbr/>Representation<wbr/>Chain</span></a><a href="#copysharedpropertiesto" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>copy<wbr/>Shared<wbr/>Properties<wbr/>To</span></a><a href="#destroy"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>destroy</span></a><a href="#detachfromparent" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>detach<wbr/>From<wbr/>Parent</span></a><a href="#executespawn"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>execute<wbr/>Spawn</span></a><a href="#findancestorwithproperty"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Ancestor<wbr/>With<wbr/>Property</span></a><a href="#finddescendantbyinstanceid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Descendant<wbr/>By<wbr/>Instance<wbr/>Id</span></a><a href="#findmatchingcombinations"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Matching<wbr/>Combinations</span></a><a href="#findroot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Root</span></a><a href="#findrootfrom" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Root<wbr/>From</span></a><a href="#geteffectivevalue"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Effective<wbr/>Value</span></a><a href="#getincomingpassiveeffects"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Incoming<wbr/>Passive<wbr/>Effects</span></a><a href="#getnumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Number</span></a><a href="#getslotbylocalid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Slot<wbr/>By<wbr/>Local<wbr/>Id</span></a><a href="#insertsameslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>insert<wbr/>Same<wbr/>Slot</span></a><a href="#isinstage"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>is<wbr/>In<wbr/>Stage</span></a><a href="#isrepresentedbyslot" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>is<wbr/>Represented<wbr/>By<wbr/>Slot</span></a><a href="#matchesrepresentation"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>matches<wbr/>Representation</span></a><a href="#matchrepresentationfrom" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>match<wbr/>Representation<wbr/>From</span></a><a href="#moveintofirstacceptingslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>Into<wbr/>First<wbr/>Accepting<wbr/>Slot</span></a><a href="#movetoslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot</span></a><a href="#movetoslotatcell"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot<wbr/>At<wbr/>Cell</span></a><a href="#movetoslotatgap"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot<wbr/>At<wbr/>Gap</span></a><a href="#onrepresentationchanged" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>on<wbr/>Representation<wbr/>Changed</span></a><a href="#place" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place</span></a><a href="#propagateweightchange" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>propagate<wbr/>Weight<wbr/>Change</span></a><a href="#propagateweightchangefrom" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>propagate<wbr/>Weight<wbr/>Change<wbr/>From</span></a><a href="#registerancestortargetedrecursively" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Ancestor<wbr/>Targeted<wbr/>Recursively</span></a><a href="#registeredgewith" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Edge<wbr/>With</span></a><a href="#registerpassiveeffect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Passive<wbr/>Effect</span></a><a href="#resolveeffecttarget"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Effect<wbr/>Target</span></a><a href="#resolveeffecttargetorancestor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Effect<wbr/>Target<wbr/>Or<wbr/>Ancestor</span></a><a href="#resolveinteractiontarget"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Interaction<wbr/>Target</span></a><a href="#setnumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Number</span></a><a href="#setparent"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Parent</span></a><a href="#setproperty"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Property</span></a><a href="#tick"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>tick</span></a><a href="#tryexecuteaction"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Execute<wbr/>Action</span></a><a href="#tryexecutecombination"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Execute<wbr/>Combination</span></a><a href="#tryfirstacceptingslot" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>First<wbr/>Accepting<wbr/>Slot</span></a><a href="#trygetproperty"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Get<wbr/>Property</span></a><a href="#trygetslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Get<wbr/>Slot</span></a><a href="#unregisterpassiveeffectsfrom"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unregister<wbr/>Passive<wbr/>Effects<wbr/>From</span></a></div></details></div></details></div>
+<div><a href="#addnumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Number</span></a><a href="#appendrepresentationchain" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>append<wbr/>Representation<wbr/>Chain</span></a><a href="#applyactiveeffect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>apply<wbr/>Active<wbr/>Effect</span></a><a href="#attachtoslot" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>attach<wbr/>To<wbr/>Slot</span></a><a href="#captureeffectsite" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>capture<wbr/>Effect<wbr/>Site</span></a><a href="#capturerepresentationchain"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>capture<wbr/>Representation<wbr/>Chain</span></a><a href="#copysharedpropertiesto" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>copy<wbr/>Shared<wbr/>Properties<wbr/>To</span></a><a href="#destroy"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>destroy</span></a><a href="#detachfromparent" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>detach<wbr/>From<wbr/>Parent</span></a><a href="#executespawn"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>execute<wbr/>Spawn</span></a><a href="#findancestorwithproperty"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Ancestor<wbr/>With<wbr/>Property</span></a><a href="#finddescendantbyinstanceid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Descendant<wbr/>By<wbr/>Instance<wbr/>Id</span></a><a href="#findmatchingcombinations"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Matching<wbr/>Combinations</span></a><a href="#findroot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Root</span></a><a href="#findrootfrom" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>find<wbr/>Root<wbr/>From</span></a><a href="#geteffectivevalue"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Effective<wbr/>Value</span></a><a href="#getincomingpassiveeffects"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Incoming<wbr/>Passive<wbr/>Effects</span></a><a href="#getnumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Number</span></a><a href="#getslotbylocalid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Slot<wbr/>By<wbr/>Local<wbr/>Id</span></a><a href="#insertsameslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>insert<wbr/>Same<wbr/>Slot</span></a><a href="#isinstage"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>is<wbr/>In<wbr/>Stage</span></a><a href="#isrepresentedbyslot" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>is<wbr/>Represented<wbr/>By<wbr/>Slot</span></a><a href="#matchesrepresentation"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>matches<wbr/>Representation</span></a><a href="#matchrepresentationfrom" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>match<wbr/>Representation<wbr/>From</span></a><a href="#moveintofirstacceptingslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>Into<wbr/>First<wbr/>Accepting<wbr/>Slot</span></a><a href="#movetocellinparentslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Cell<wbr/>In<wbr/>Parent<wbr/>Slot</span></a><a href="#movetoslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot</span></a><a href="#movetoslotatcell"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot<wbr/>At<wbr/>Cell</span></a><a href="#movetoslotatgap"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move<wbr/>To<wbr/>Slot<wbr/>At<wbr/>Gap</span></a><a href="#onrepresentationchanged" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>on<wbr/>Representation<wbr/>Changed</span></a><a href="#place" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place</span></a><a href="#propagateweightchange" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>propagate<wbr/>Weight<wbr/>Change</span></a><a href="#propagateweightchangefrom" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>propagate<wbr/>Weight<wbr/>Change<wbr/>From</span></a><a href="#registerancestortargetedrecursively" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Ancestor<wbr/>Targeted<wbr/>Recursively</span></a><a href="#registeredgewith" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Edge<wbr/>With</span></a><a href="#registerpassiveeffect"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>register<wbr/>Passive<wbr/>Effect</span></a><a href="#reorderinparentslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>reorder<wbr/>In<wbr/>Parent<wbr/>Slot</span></a><a href="#resolveeffecttarget"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Effect<wbr/>Target</span></a><a href="#resolveeffecttargetorancestor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Effect<wbr/>Target<wbr/>Or<wbr/>Ancestor</span></a><a href="#resolveinteractiontarget"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resolve<wbr/>Interaction<wbr/>Target</span></a><a href="#setnumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Number</span></a><a href="#setparent"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Parent</span></a><a href="#setproperty"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Property</span></a><a href="#tick"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>tick</span></a><a href="#tryexecuteaction"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Execute<wbr/>Action</span></a><a href="#tryexecutecombination"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Execute<wbr/>Combination</span></a><a href="#tryfirstacceptingslot" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>First<wbr/>Accepting<wbr/>Slot</span></a><a href="#trygetproperty"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Get<wbr/>Property</span></a><a href="#trygetslot"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>try<wbr/>Get<wbr/>Slot</span></a><a href="#unregisterpassiveeffectsfrom"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unregister<wbr/>Passive<wbr/>Effects<wbr/>From</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../Documents/" class="tsd-nav-link">ドキュメント</a><a href="../../Game/" class="tsd-nav-link">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland" class="tsd-nav-link">GitHub</a></nav>
 <nav class="tsd-navigation"><a href="../modules.html">UnmappedIsland ソースリファレンス - v0.1.0</a>

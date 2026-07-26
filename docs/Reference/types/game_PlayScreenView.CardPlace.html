@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="default" lang="ja" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>FONT_FAMILY | UnmappedIsland ソースリファレンス - v0.1.0</title><meta name="description" content="Documentation for UnmappedIsland ソースリファレンス"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<!DOCTYPE html><html class="default" lang="ja" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>CardPlace | UnmappedIsland ソースリファレンス - v0.1.0</title><meta name="description" content="Documentation for UnmappedIsland ソースリファレンス"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
 <div class="tsd-toolbar-contents container"><a href="../index.html" class="title">UnmappedIsland ソースリファレンス - v0.1.0</a>
 <div id="tsd-toolbar-links"><a href="../../Documents/">ドキュメント</a><a href="../../Game/">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland">GitHub</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="検索"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="検索"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="ドキュメントを検索" maxLength="100"/>
 <ul role="listbox" id="tsd-search-results"></ul>
@@ -8,12 +8,16 @@
 <div class="col-content">
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
-<li><a href="../modules/game_ui_theme.html">game/ui/theme</a></li>
-<li><a href="" aria-current="page">FONT_FAMILY</a></li></ul>
-<h1>変数 FONT_FAMILY<code class="tsd-tag">定数</code></h1></div>
-<div class="tsd-signature"><span class="tsd-kind-variable">FONT_FAMILY</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">&quot;\&quot;Noto Sans JP\&quot;, \&quot;Noto Sans CJK JP\&quot;, \&quot;Yu Gothic\&quot;, sans-serif&quot;</span><span class="tsd-signature-symbol"> = &#39;&quot;Noto Sans JP&quot;, &quot;Noto Sans CJK JP&quot;, &quot;Yu Gothic&quot;, sans-serif&#39;</span></div><aside class="tsd-sources">
+<li><a href="../modules/game_PlayScreenView.html">game/PlayScreenView</a></li>
+<li><a href="" aria-current="page">CardPlace</a></li></ul>
+<h1>型エイリアス CardPlace</h1></div>
+<div class="tsd-signature"><span class="tsd-kind-type-alias">CardPlace</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">&quot;field&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;hand&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;equipment&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;injuries&quot;</span></div>
+<div class="tsd-comment tsd-typography"><p>カードが並ぶ場所（＝ワールド上の1つのスロット）の名前。レーンと子ウィンドウの対応付けに使う。</p>
+<p>今後コンテナ（箱・かご）の中身も同じ子ウィンドウで見せるため、ここに置き場所を足していけるよう
+移動の宛先は名前で指す（moveTo）。「どのレーンの隣か」という暗黙の対応は持たない。</p>
+</div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/theme.ts#L89">src/game/ui/theme.ts:89</a></li></ul></aside></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L27">src/game/PlayScreenView.ts:27</a></li></ul></aside></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

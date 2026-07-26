@@ -16,14 +16,14 @@
 <p>カードはレーンからはみ出しても切り抜かず、後から描く隣接エリアの背景板で隠す。そのため
 組み立ての順序（フィールドエリア → ダッシュボード列 → オプション／フィルターバー）に意味がある。</p>
 </div></section>
-<section class="tsd-panel tsd-hierarchy" data-refl="1695">
+<section class="tsd-panel tsd-hierarchy" data-refl="1710">
 <h4>階層 (<a href="../hierarchy.html#game/PlayScene.PlayScene">一覧を見る</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><a href="game_ResponsiveScene.ResponsiveScene.html" class="tsd-signature-type tsd-kind-class">ResponsiveScene</a>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">PlayScene</span></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L75">src/game/PlayScene.ts:75</a></li></ul></aside>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L76">src/game/PlayScene.ts:76</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -52,6 +52,9 @@
 <a href="#passingtime" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>passing<wbr/>Time</span></a>
 <a href="#searching" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>searching</span></a>
 <a href="#selectedfilter" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>selected<wbr/>Filter</span></a>
+<a href="#slotwindow" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window</span></a>
+<a href="#slotwindowarea" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window<wbr/>Area</span></a>
+<a href="#slotwindowplace" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window<wbr/>Place</span></a>
 <a href="#view" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>view</span></a>
 </div></section>
 <section class="tsd-index-section">
@@ -71,21 +74,28 @@
 <a href="#buildstatusarea" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Status<wbr/>Area</span></a>
 <a href="#buildweatherrow" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Weather<wbr/>Row</span></a>
 <a href="#cardsof" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>cards<wbr/>Of</span></a>
+<a href="#closeslotwindow" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>close<wbr/>Slot<wbr/>Window</span></a>
 <a href="#confirmreturntotitle" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>confirm<wbr/>Return<wbr/>To<wbr/>Title</span></a>
 <a href="#create" class="tsd-index-link tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>create</span></a>
 <a href="#dropaction" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>drop<wbr/>Action</span></a>
+<a href="#edgemove" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>edge<wbr/>Move</span></a>
 <a href="#explore" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>explore</span></a>
 <a href="#foundsince" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>found<wbr/>Since</span></a>
 <a href="#iconbuttonstyle" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>icon<wbr/>Button<wbr/>Style</span></a>
 <a href="#init" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>init</span></a>
 <a href="#lanecards" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>lane<wbr/>Cards</span></a>
 <a href="#openexplorationwindow" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open<wbr/>Exploration<wbr/>Window</span></a>
+<a href="#openslotwindow" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open<wbr/>Slot<wbr/>Window</span></a>
 <a href="#passtime" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>pass<wbr/>Time</span></a>
+<a href="#placeof" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place<wbr/>Of</span></a>
 <a href="#rebuild" class="tsd-index-link tsd-is-protected tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>rebuild</span></a>
+<a href="#refreshhandlane" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>refresh<wbr/>Hand<wbr/>Lane</span></a>
 <a href="#selectfilter" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>select<wbr/>Filter</span></a>
+<a href="#setdraglanes" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Drag<wbr/>Lanes</span></a>
 <a href="#showclock" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>show<wbr/>Clock</span></a>
 <a href="#showninstanceids" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>shown<wbr/>Instance<wbr/>Ids</span></a>
 <a href="#showview" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>show<wbr/>View</span></a>
+<a href="#slotwindowcards" class="tsd-index-link tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>slot<wbr/>Window<wbr/>Cards</span></a>
 </div></section></div></details></section></section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="コンストラクター-1">コンストラクター<a href="#コンストラクター-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
@@ -99,7 +109,7 @@
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">PlayScene</a></h4><aside class="tsd-sources">
 <p>上書き <a href="game_ResponsiveScene.ResponsiveScene.html">ResponsiveScene</a>.<a href="game_ResponsiveScene.ResponsiveScene.html#constructor">constructor</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L110">src/game/PlayScene.ts:110</a></li></ul></aside></div></li></ul></section></section></details>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L121">src/game/PlayScene.ts:121</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="プロパティ-1">プロパティ<a href="#プロパティ-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -107,70 +117,70 @@
 <h3 class="tsd-anchor-link" id="calendar"><code class="tsd-tag">非公開</code><span>calendar</span><a href="#calendar" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">calendar</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_FlipCalendar.FlipCalendar.html" class="tsd-signature-type tsd-kind-class">FlipCalendar</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L87">src/game/PlayScene.ts:87</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L88">src/game/PlayScene.ts:88</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="codex"><code class="tsd-tag">非公開</code><span>codex</span><a href="#codex" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">codex</span><span class="tsd-signature-symbol">:</span> <a href="domain_defs_WorldCodex.WorldCodex.html" class="tsd-signature-type tsd-kind-class">WorldCodex</a></div>
 <div class="tsd-comment tsd-typography"><p>いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L77">src/game/PlayScene.ts:77</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L78">src/game/PlayScene.ts:78</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="drag"><code class="tsd-tag">非公開</code><span>drag</span><a href="#drag" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">drag</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_CardDragController.CardDragController.html" class="tsd-signature-type tsd-kind-class">CardDragController</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L92">src/game/PlayScene.ts:92</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L96">src/game/PlayScene.ts:96</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="explorationwindow"><code class="tsd-tag">非公開</code><span>exploration<wbr/>Window</span><a href="#explorationwindow" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">explorationWindow</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_ExplorationWindow.ExplorationWindow.html" class="tsd-signature-type tsd-kind-class">ExplorationWindow</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
 <div class="tsd-comment tsd-typography"><p>開いている探索の子ウィンドウ。画面の作り直しをまたいで開いたままにするために持つ。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L98">src/game/PlayScene.ts:98</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L102">src/game/PlayScene.ts:102</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="fieldarea"><code class="tsd-tag">非公開</code><span>field<wbr/>Area</span><a href="#fieldarea" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">fieldArea</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a><span class="tsd-signature-symbol"> = ...</span></div>
 <div class="tsd-comment tsd-typography"><p>フィールドエリアの矩形。時間経過のドーナツグラフと探索の子ウィンドウを、この中央に出す。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L90">src/game/PlayScene.ts:90</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L91">src/game/PlayScene.ts:91</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="fielditemlane"><code class="tsd-tag">非公開</code><span>field<wbr/>Item<wbr/>Lane</span><a href="#fielditemlane" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">fieldItemLane</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_CardLane.CardLane.html" class="tsd-signature-type tsd-kind-class">CardLane</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L84">src/game/PlayScene.ts:84</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L85">src/game/PlayScene.ts:85</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="filterbuttons"><code class="tsd-tag">非公開</code><span>filter<wbr/>Buttons</span><a href="#filterbuttons" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">filterButtons</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_Button.Button.html" class="tsd-signature-type tsd-kind-class">Button</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = []</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L95">src/game/PlayScene.ts:95</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L99">src/game/PlayScene.ts:99</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="found"><code class="tsd-tag">非公開</code><span>found</span><a href="#found" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">found</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="../interfaces/game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = []</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L102">src/game/PlayScene.ts:102</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L113">src/game/PlayScene.ts:113</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="gamesession"><code class="tsd-tag">非公開</code><span>game<wbr/>Session</span><a href="#gamesession" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">gameSession</span><span class="tsd-signature-symbol">:</span> <a href="domain_generation_NewGame.NewGameSession.html" class="tsd-signature-type tsd-kind-class">NewGameSession</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L79">src/game/PlayScene.ts:79</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L80">src/game/PlayScene.ts:80</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="handlane"><code class="tsd-tag">非公開</code><span>hand<wbr/>Lane</span><a href="#handlane" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">handLane</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_CardLane.CardLane.html" class="tsd-signature-type tsd-kind-class">CardLane</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L85">src/game/PlayScene.ts:85</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L86">src/game/PlayScene.ts:86</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="locale"><code class="tsd-tag">非公開</code><span>locale</span><a href="#locale" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">locale</span><span class="tsd-signature-symbol">:</span> <a href="locale_Localization.Localization.html" class="tsd-signature-type tsd-kind-class">Localization</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L78">src/game/PlayScene.ts:78</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L79">src/game/PlayScene.ts:79</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="locationlane"><code class="tsd-tag">非公開</code><span>location<wbr/>Lane</span><a href="#locationlane" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">locationLane</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_CardLane.CardLane.html" class="tsd-signature-type tsd-kind-class">CardLane</a></div>
 <div class="tsd-comment tsd-typography"><p>カードを並べるレーンと、その内容の差し替えを動きとして見せる層。buildのたびに作り直される。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L83">src/game/PlayScene.ts:83</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L84">src/game/PlayScene.ts:84</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-protected tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="metrics"><code class="tsd-tag">保護</code><span>metrics</span><a href="#metrics" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">metrics</span><span class="tsd-signature-symbol">:</span> <a href="game_layout_ScreenMetrics.ScreenMetrics.html" class="tsd-signature-type tsd-kind-class">ScreenMetrics</a><span class="tsd-signature-symbol"> = ...</span></div>
@@ -183,7 +193,7 @@
 <h3 class="tsd-anchor-link" id="motion"><code class="tsd-tag">非公開</code><span>motion</span><a href="#motion" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">motion</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_CardMotion.CardMotion.html" class="tsd-signature-type tsd-kind-class">CardMotion</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L86">src/game/PlayScene.ts:86</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L87">src/game/PlayScene.ts:87</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="passingtime"><code class="tsd-tag">非公開</code><span>passing<wbr/>Time</span><a href="#passingtime" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">passingTime</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> = false</span></div>
@@ -191,24 +201,44 @@
 画面にはまだ経過前の状態が出ているため、そこへの操作は既に古い並びを指しているため。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L108">src/game/PlayScene.ts:108</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L119">src/game/PlayScene.ts:119</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="searching"><code class="tsd-tag">非公開</code><span>searching</span><a href="#searching" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">searching</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> = false</span></div>
 <div class="tsd-comment tsd-typography"><p>探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L101">src/game/PlayScene.ts:101</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L112">src/game/PlayScene.ts:112</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="selectedfilter"><code class="tsd-tag">非公開</code><span>selected<wbr/>Filter</span><a href="#selectedfilter" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">selectedFilter</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> = 0</span></div><aside class="tsd-sources">
 <ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L98">src/game/PlayScene.ts:98</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="slotwindow"><code class="tsd-tag">非公開</code><span>slot<wbr/>Window</span><a href="#slotwindow" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">slotWindow</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_SlotWindow.SlotWindow.html" class="tsd-signature-type tsd-kind-class">SlotWindow</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
+<div class="tsd-comment tsd-typography"><p>開いているスロットの子ウィンドウ（装備・怪我）と、それが映している場所。
+開いている間は、この場所が手持ちの「隣」になる（laneCards・cardsOf参照）。</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L108">src/game/PlayScene.ts:108</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="slotwindowarea"><code class="tsd-tag">非公開</code><span>slot<wbr/>Window<wbr/>Area</span><a href="#slotwindowarea" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">slotWindowArea</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a><span class="tsd-signature-symbol"> = ...</span></div>
+<div class="tsd-comment tsd-typography"><p>ハンドレーンを覆わない子ウィンドウの置き場所（PlayScreenLayout参照）。</p>
+</div><aside class="tsd-sources">
+<ul>
 <li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L94">src/game/PlayScene.ts:94</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="slotwindowplace"><code class="tsd-tag">非公開</code><span>slot<wbr/>Window<wbr/>Place</span><a href="#slotwindowplace" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">slotWindowPlace</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L109">src/game/PlayScene.ts:109</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="view"><code class="tsd-tag">非公開</code><span>view</span><a href="#view" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">view</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_PlayScreenView.PlayScreenView.html" class="tsd-signature-type tsd-kind-interface">PlayScreenView</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L80">src/game/PlayScene.ts:80</a></li></ul></aside></section></section></details>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L81">src/game/PlayScene.ts:81</a></li></ul></aside></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="メソッド-1">メソッド<a href="#メソッド-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -230,14 +260,15 @@
 <li><span><span class="tsd-kind-parameter">columns</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L464">src/game/PlayScene.ts:464</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L562">src/game/PlayScene.ts:562</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="addequipmentbutton"><code class="tsd-tag">非公開</code><span>add<wbr/>Equipment<wbr/>Button</span><a href="#addequipmentbutton" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="addequipmentbutton-1"><span class="tsd-kind-call-signature">addEquipmentButton</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">rect</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">label</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">icon</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">fill</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#addequipmentbutton-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="addequipmentbutton-1"><span class="tsd-kind-call-signature">addEquipmentButton</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">rect</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">label</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">icon</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">fill</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">place</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#addequipmentbutton-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>装備・怪我はアイコンの右に種別の固定ラベルを置いた横長ボタン（アイテム名は出さない）。</p>
+<div class="tsd-comment tsd-typography"><p>装備・怪我はアイコンの右に種別の固定ラベルを置いた横長ボタン（アイテム名は出さない）。
+押すと、そのスロットの中身を並べる子ウィンドウが開く（openSlotWindow）。</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">パラメータ</h4>
@@ -245,10 +276,11 @@
 <li><span><span class="tsd-kind-parameter">rect</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li>
 <li><span><span class="tsd-kind-parameter">label</span>: <span class="tsd-signature-type">string</span></span></li>
 <li><span><span class="tsd-kind-parameter">icon</span>: <span class="tsd-signature-type">string</span></span></li>
-<li><span><span class="tsd-kind-parameter">fill</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<li><span><span class="tsd-kind-parameter">fill</span>: <span class="tsd-signature-type">number</span></span></li>
+<li><span><span class="tsd-kind-parameter">place</span>: <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L483">src/game/PlayScene.ts:483</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L584">src/game/PlayScene.ts:584</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="addiconbutton"><code class="tsd-tag">非公開</code><span>add<wbr/>Icon<wbr/>Button</span><a href="#addiconbutton" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -263,7 +295,7 @@
 <li><span><span class="tsd-kind-parameter">active</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="game_ui_Button.Button.html" class="tsd-signature-type tsd-kind-class">Button</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L628">src/game/PlayScene.ts:628</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L730">src/game/PlayScene.ts:730</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="applydrop"><code class="tsd-tag">非公開</code><span>apply<wbr/>Drop</span><a href="#applydrop" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -278,7 +310,7 @@
 <li><span><span class="tsd-kind-parameter">drop</span>: <a href="../interfaces/game_ui_CardDragController.CardDrop.html" class="tsd-signature-type tsd-kind-interface">CardDrop</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L219">src/game/PlayScene.ts:219</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L276">src/game/PlayScene.ts:276</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="applytoworld"><code class="tsd-tag">非公開</code><span>apply<wbr/>To<wbr/>World</span><a href="#applytoworld" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -296,7 +328,7 @@
 <li><span><code class="tsd-tag">オプション</code><span class="tsd-kind-parameter">origin</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L345">src/game/PlayScene.ts:345</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L434">src/game/PlayScene.ts:434</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-protected">
 <h3 class="tsd-anchor-link" id="build"><code class="tsd-tag">保護</code><span>build</span><a href="#build" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-protected">
@@ -308,7 +340,7 @@
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <p>上書き <a href="game_ResponsiveScene.ResponsiveScene.html">ResponsiveScene</a>.<a href="game_ResponsiveScene.ResponsiveScene.html#build">build</a></p>
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L126">src/game/PlayScene.ts:126</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L137">src/game/PlayScene.ts:137</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="buildcharacterdisplay"><code class="tsd-tag">非公開</code><span>build<wbr/>Character<wbr/>Display</span><a href="#buildcharacterdisplay" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -325,7 +357,7 @@
 <li><span><span class="tsd-kind-parameter">area</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L386">src/game/PlayScene.ts:386</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L480">src/game/PlayScene.ts:480</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="builddashboard"><code class="tsd-tag">非公開</code><span>build<wbr/>Dashboard</span><a href="#builddashboard" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -338,7 +370,7 @@
 <li><span><span class="tsd-kind-parameter">layout</span>: <a href="game_layout_PlayScreenLayout.PlayScreenLayout.html" class="tsd-signature-type tsd-kind-class">PlayScreenLayout</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L374">src/game/PlayScene.ts:374</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L468">src/game/PlayScene.ts:468</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="buildfieldarea"><code class="tsd-tag">非公開</code><span>build<wbr/>Field<wbr/>Area</span><a href="#buildfieldarea" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -351,7 +383,7 @@
 <li><span><span class="tsd-kind-parameter">layout</span>: <a href="game_layout_PlayScreenLayout.PlayScreenLayout.html" class="tsd-signature-type tsd-kind-class">PlayScreenLayout</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L139">src/game/PlayScene.ts:139</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L156">src/game/PlayScene.ts:156</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="buildfilterbar"><code class="tsd-tag">非公開</code><span>build<wbr/>Filter<wbr/>Bar</span><a href="#buildfilterbar" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -366,7 +398,7 @@
 <li><span><span class="tsd-kind-parameter">area</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L594">src/game/PlayScene.ts:594</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L696">src/game/PlayScene.ts:696</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="buildoptionsbar"><code class="tsd-tag">非公開</code><span>build<wbr/>Options<wbr/>Bar</span><a href="#buildoptionsbar" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -381,7 +413,7 @@
 <li><span><span class="tsd-kind-parameter">area</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L567">src/game/PlayScene.ts:567</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L669">src/game/PlayScene.ts:669</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="buildsituationarea"><code class="tsd-tag">非公開</code><span>build<wbr/>Situation<wbr/>Area</span><a href="#buildsituationarea" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -395,7 +427,7 @@
 <li><span><span class="tsd-kind-parameter">withWeather</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L528">src/game/PlayScene.ts:528</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L630">src/game/PlayScene.ts:630</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="buildstatusarea"><code class="tsd-tag">非公開</code><span>build<wbr/>Status<wbr/>Area</span><a href="#buildstatusarea" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -410,7 +442,7 @@
 <li><span><span class="tsd-kind-parameter">area</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L509">src/game/PlayScene.ts:509</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L611">src/game/PlayScene.ts:611</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="buildweatherrow"><code class="tsd-tag">非公開</code><span>build<wbr/>Weather<wbr/>Row</span><a href="#buildweatherrow" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -423,7 +455,7 @@
 <li><span><span class="tsd-kind-parameter">area</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L555">src/game/PlayScene.ts:555</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L657">src/game/PlayScene.ts:657</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="cardsof"><code class="tsd-tag">非公開</code><span>cards<wbr/>Of</span><a href="#cardsof" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -436,7 +468,16 @@
 <li><span><span class="tsd-kind-parameter">lane</span>: <a href="game_ui_CardLane.CardLane.html" class="tsd-signature-type tsd-kind-class">CardLane</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> (<a href="../interfaces/game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L214">src/game/PlayScene.ts:214</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L258">src/game/PlayScene.ts:258</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="closeslotwindow"><code class="tsd-tag">非公開</code><span>close<wbr/>Slot<wbr/>Window</span><a href="#closeslotwindow" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="closeslotwindow-1"><span class="tsd-kind-call-signature">closeSlotWindow</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#closeslotwindow-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L303">src/game/PlayScene.ts:303</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="confirmreturntotitle"><code class="tsd-tag">非公開</code><span>confirm<wbr/>Return<wbr/>To<wbr/>Title</span><a href="#confirmreturntotitle" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -445,7 +486,7 @@
 <div class="tsd-description">
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L645">src/game/PlayScene.ts:645</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L747">src/game/PlayScene.ts:747</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="create"><span>create</span><a href="#create" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-inherited">
@@ -471,7 +512,24 @@
 <li><span><span class="tsd-kind-parameter">drop</span>: <a href="../interfaces/game_ui_CardDragController.CardDrop.html" class="tsd-signature-type tsd-kind-interface">CardDrop</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L201">src/game/PlayScene.ts:201</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L243">src/game/PlayScene.ts:243</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="edgemove"><code class="tsd-tag">非公開</code><span>edge<wbr/>Move</span><a href="#edgemove" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="edgemove-1"><span class="tsd-kind-call-signature">edgeMove</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">card</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#edgemove-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>端を押したときの移動（移せないカードならundefined）。行き先は「空いている場所」なので位置は指定しない。</p>
+<p>手持ちの行き先は、子ウィンドウが開いていればそちらを優先する。ただし受け取れない場所（怪我）なら
+元どおりフィールドへ戻す——開いているだけで手持ちの端が使えなくなるのは不便なため。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">card</span>: <a href="../interfaces/game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L231">src/game/PlayScene.ts:231</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="explore"><code class="tsd-tag">非公開</code><span>explore</span><a href="#explore" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -485,7 +543,7 @@
 </div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L250">src/game/PlayScene.ts:250</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L339">src/game/PlayScene.ts:339</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="foundsince"><code class="tsd-tag">非公開</code><span>found<wbr/>Since</span><a href="#foundsince" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -500,7 +558,7 @@
 <li><span><span class="tsd-kind-parameter">shownBefore</span>: <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> <a href="../interfaces/game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L276">src/game/PlayScene.ts:276</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L365">src/game/PlayScene.ts:365</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="iconbuttonstyle"><code class="tsd-tag">非公開</code><span>icon<wbr/>Button<wbr/>Style</span><a href="#iconbuttonstyle" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -513,7 +571,7 @@
 <li><span><span class="tsd-kind-parameter">active</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="../interfaces/game_ui_shapes.BoxStyle.html" class="tsd-signature-type tsd-kind-interface">BoxStyle</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L636">src/game/PlayScene.ts:636</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L738">src/game/PlayScene.ts:738</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="init"><span>init</span><a href="#init" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -530,16 +588,18 @@
 <li><span><span class="tsd-kind-parameter">data</span>: <a href="../interfaces/game_PlayScene.PlaySceneData.html" class="tsd-signature-type tsd-kind-interface">PlaySceneData</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L119">src/game/PlayScene.ts:119</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L130">src/game/PlayScene.ts:130</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="lanecards"><code class="tsd-tag">非公開</code><span>lane<wbr/>Cards</span><a href="#lanecards" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
 <li class="">
 <div class="tsd-signature tsd-anchor-link" id="lanecards-1"><span class="tsd-kind-call-signature">laneCards</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">cards</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> (<a href="../interfaces/game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">direction</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_ui_Card.CardEdgeDirection.html" class="tsd-signature-type tsd-kind-type-alias">CardEdgeDirection</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> (<a href="../interfaces/game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span><a href="#lanecards-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>アイテムのカードに、レーン間の操作（端を押しての移動と、掴んでのドラッグ）を付ける。ハンドレーンは
-フィールドアイテムレーンの下にあるので、フィールド側は下端（▼）、手持ち側は上端（▲）が移動先を指す。</p>
-<p>移せない設置物にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。</p>
+<div class="tsd-comment tsd-typography"><p>アイテムのカードに、隣の場所への操作（端を押しての移動と、掴んでのドラッグ）を付ける。
+端の向きは並びの上下関係を表す: フィールドは下端（▼）が手持ち、手持ちは上端（▲）が上の場所。</p>
+<p>手持ちの上端が指す先は、スロットの子ウィンドウを開いている間だけそちらへ切り替わる。カードを
+やり取りする相手が画面に出ているなら、端を押す操作もその相手を指すのが自然なため。</p>
+<p>移せない設置物・怪我にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">パラメータ</h4>
@@ -548,7 +608,7 @@
 <li><span><span class="tsd-kind-parameter">direction</span>: <a href="../types/game_ui_Card.CardEdgeDirection.html" class="tsd-signature-type tsd-kind-type-alias">CardEdgeDirection</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> (<a href="../interfaces/game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L181">src/game/PlayScene.ts:181</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L210">src/game/PlayScene.ts:210</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="openexplorationwindow"><code class="tsd-tag">非公開</code><span>open<wbr/>Exploration<wbr/>Window</span><a href="#openexplorationwindow" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -559,7 +619,23 @@
 </div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L228">src/game/PlayScene.ts:228</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L317">src/game/PlayScene.ts:317</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="openslotwindow"><code class="tsd-tag">非公開</code><span>open<wbr/>Slot<wbr/>Window</span><a href="#openslotwindow" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="openslotwindow-1"><span class="tsd-kind-call-signature">openSlotWindow</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">place</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#openslotwindow-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>装備・怪我のボタンから開くスロットの子ウィンドウ。同時に開けるのは1つだけで、別の場所を開くと
+入れ替わる（手持ちの端が指す先が1つに定まらなくなるため）。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">place</span>: <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L288">src/game/PlayScene.ts:288</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="passtime"><code class="tsd-tag">非公開</code><span>pass<wbr/>Time</span><a href="#passtime" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -580,7 +656,22 @@
 <li><span><span class="tsd-kind-parameter">onElapsed</span>: <span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L292">src/game/PlayScene.ts:292</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L381">src/game/PlayScene.ts:381</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="placeof"><code class="tsd-tag">非公開</code><span>place<wbr/>Of</span><a href="#placeof" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="placeof-1"><span class="tsd-kind-call-signature">placeOf</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">lane</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_CardLane.CardLane.html" class="tsd-signature-type tsd-kind-class">CardLane</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a><a href="#placeof-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>レーンが映している場所。</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">パラメータ</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">lane</span>: <a href="game_ui_CardLane.CardLane.html" class="tsd-signature-type tsd-kind-class">CardLane</a></span></li></ul></div>
+<h4 class="tsd-returns-title">戻り値 <a href="../types/game_PlayScreenView.CardPlace.html" class="tsd-signature-type tsd-kind-type-alias">CardPlace</a></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L265">src/game/PlayScene.ts:265</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-protected tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="rebuild"><code class="tsd-tag">保護</code><span>rebuild</span><a href="#rebuild" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-protected tsd-is-inherited">
@@ -595,6 +686,17 @@
 <ul>
 <li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ResponsiveScene.ts#L30">src/game/ResponsiveScene.ts:30</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="refreshhandlane"><code class="tsd-tag">非公開</code><span>refresh<wbr/>Hand<wbr/>Lane</span><a href="#refreshhandlane" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="refreshhandlane-1"><span class="tsd-kind-call-signature">refreshHandLane</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#refreshhandlane-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>手持ちのカードに付いている操作だけを引き直す（並びは変わらないので動きは出ない）。</p>
+</div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L312">src/game/PlayScene.ts:312</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="selectfilter"><code class="tsd-tag">非公開</code><span>select<wbr/>Filter</span><a href="#selectfilter" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
 <li class="">
@@ -606,7 +708,18 @@
 <li><span><span class="tsd-kind-parameter">index</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L621">src/game/PlayScene.ts:621</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L723">src/game/PlayScene.ts:723</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="setdraglanes"><code class="tsd-tag">非公開</code><span>set<wbr/>Drag<wbr/>Lanes</span><a href="#setdraglanes" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="setdraglanes-1"><span class="tsd-kind-call-signature">setDragLanes</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#setdraglanes-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>ドラッグの対象になるレーン。スロットの子ウィンドウを開いている間は、その中身も対象に加える。</p>
+</div>
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L195">src/game/PlayScene.ts:195</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="showclock"><code class="tsd-tag">非公開</code><span>show<wbr/>Clock</span><a href="#showclock" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -621,7 +734,7 @@
 <li><span><span class="tsd-kind-parameter">totalMinutes</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L328">src/game/PlayScene.ts:328</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L417">src/game/PlayScene.ts:417</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="showninstanceids"><code class="tsd-tag">非公開</code><span>shown<wbr/>Instance<wbr/>Ids</span><a href="#showninstanceids" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -632,7 +745,7 @@
 </div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L270">src/game/PlayScene.ts:270</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L359">src/game/PlayScene.ts:359</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="showview"><code class="tsd-tag">非公開</code><span>show<wbr/>View</span><a href="#showview" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-is-private">
@@ -648,7 +761,16 @@
 <li><span><code class="tsd-tag">オプション</code><span class="tsd-kind-parameter">origin</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L360">src/game/PlayScene.ts:360</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L449">src/game/PlayScene.ts:449</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member tsd-is-private">
+<h3 class="tsd-anchor-link" id="slotwindowcards"><code class="tsd-tag">非公開</code><span>slot<wbr/>Window<wbr/>Cards</span><a href="#slotwindowcards" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-is-private">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="slotwindowcards-1"><span class="tsd-kind-call-signature">slotWindowCards</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="../interfaces/game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">[]</span><a href="#slotwindowcards-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-keyword">readonly</span> <a href="../interfaces/game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">[]</span></h4><aside class="tsd-sources">
+<ul>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScene.ts#L271">src/game/PlayScene.ts:271</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -667,9 +789,9 @@
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-コンストラクター"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>コンストラクター</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="コンストラクター"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>プロパティ</summary>
-<div><a href="#calendar" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>calendar</span></a><a href="#codex" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>codex</span></a><a href="#drag" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>drag</span></a><a href="#explorationwindow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>exploration<wbr/>Window</span></a><a href="#fieldarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>field<wbr/>Area</span></a><a href="#fielditemlane" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>field<wbr/>Item<wbr/>Lane</span></a><a href="#filterbuttons" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>filter<wbr/>Buttons</span></a><a href="#found" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>found</span></a><a href="#gamesession" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>game<wbr/>Session</span></a><a href="#handlane" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hand<wbr/>Lane</span></a><a href="#locale" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>locale</span></a><a href="#locationlane" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>location<wbr/>Lane</span></a><a href="#metrics" class="tsd-is-protected tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a><a href="#motion" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>motion</span></a><a href="#passingtime" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>passing<wbr/>Time</span></a><a href="#searching" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>searching</span></a><a href="#selectedfilter" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>selected<wbr/>Filter</span></a><a href="#view" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>view</span></a></div></details>
+<div><a href="#calendar" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>calendar</span></a><a href="#codex" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>codex</span></a><a href="#drag" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>drag</span></a><a href="#explorationwindow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>exploration<wbr/>Window</span></a><a href="#fieldarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>field<wbr/>Area</span></a><a href="#fielditemlane" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>field<wbr/>Item<wbr/>Lane</span></a><a href="#filterbuttons" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>filter<wbr/>Buttons</span></a><a href="#found" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>found</span></a><a href="#gamesession" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>game<wbr/>Session</span></a><a href="#handlane" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hand<wbr/>Lane</span></a><a href="#locale" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>locale</span></a><a href="#locationlane" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>location<wbr/>Lane</span></a><a href="#metrics" class="tsd-is-protected tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>metrics</span></a><a href="#motion" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>motion</span></a><a href="#passingtime" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>passing<wbr/>Time</span></a><a href="#searching" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>searching</span></a><a href="#selectedfilter" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>selected<wbr/>Filter</span></a><a href="#slotwindow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window</span></a><a href="#slotwindowarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window<wbr/>Area</span></a><a href="#slotwindowplace" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>slot<wbr/>Window<wbr/>Place</span></a><a href="#view" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="プロパティ"><use href="../assets/icons.svg#icon-1024"></use></svg><span>view</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>メソッド</summary>
-<div><a href="#addconditionrow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Condition<wbr/>Row</span></a><a href="#addequipmentbutton" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Equipment<wbr/>Button</span></a><a href="#addiconbutton" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Icon<wbr/>Button</span></a><a href="#applydrop" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>apply<wbr/>Drop</span></a><a href="#applytoworld" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>apply<wbr/>To<wbr/>World</span></a><a href="#build" class="tsd-is-protected"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build</span></a><a href="#buildcharacterdisplay" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Character<wbr/>Display</span></a><a href="#builddashboard" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Dashboard</span></a><a href="#buildfieldarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Field<wbr/>Area</span></a><a href="#buildfilterbar" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Filter<wbr/>Bar</span></a><a href="#buildoptionsbar" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Options<wbr/>Bar</span></a><a href="#buildsituationarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Situation<wbr/>Area</span></a><a href="#buildstatusarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Status<wbr/>Area</span></a><a href="#buildweatherrow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Weather<wbr/>Row</span></a><a href="#cardsof" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>cards<wbr/>Of</span></a><a href="#confirmreturntotitle" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>confirm<wbr/>Return<wbr/>To<wbr/>Title</span></a><a href="#create" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>create</span></a><a href="#dropaction" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>drop<wbr/>Action</span></a><a href="#explore" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>explore</span></a><a href="#foundsince" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>found<wbr/>Since</span></a><a href="#iconbuttonstyle" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>icon<wbr/>Button<wbr/>Style</span></a><a href="#init"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>init</span></a><a href="#lanecards" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>lane<wbr/>Cards</span></a><a href="#openexplorationwindow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open<wbr/>Exploration<wbr/>Window</span></a><a href="#passtime" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>pass<wbr/>Time</span></a><a href="#rebuild" class="tsd-is-protected tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>rebuild</span></a><a href="#selectfilter" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>select<wbr/>Filter</span></a><a href="#showclock" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>show<wbr/>Clock</span></a><a href="#showninstanceids" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>shown<wbr/>Instance<wbr/>Ids</span></a><a href="#showview" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>show<wbr/>View</span></a></div></details></div></details></div>
+<div><a href="#addconditionrow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Condition<wbr/>Row</span></a><a href="#addequipmentbutton" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Equipment<wbr/>Button</span></a><a href="#addiconbutton" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>add<wbr/>Icon<wbr/>Button</span></a><a href="#applydrop" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>apply<wbr/>Drop</span></a><a href="#applytoworld" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>apply<wbr/>To<wbr/>World</span></a><a href="#build" class="tsd-is-protected"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build</span></a><a href="#buildcharacterdisplay" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Character<wbr/>Display</span></a><a href="#builddashboard" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Dashboard</span></a><a href="#buildfieldarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Field<wbr/>Area</span></a><a href="#buildfilterbar" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Filter<wbr/>Bar</span></a><a href="#buildoptionsbar" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Options<wbr/>Bar</span></a><a href="#buildsituationarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Situation<wbr/>Area</span></a><a href="#buildstatusarea" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Status<wbr/>Area</span></a><a href="#buildweatherrow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>build<wbr/>Weather<wbr/>Row</span></a><a href="#cardsof" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>cards<wbr/>Of</span></a><a href="#closeslotwindow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>close<wbr/>Slot<wbr/>Window</span></a><a href="#confirmreturntotitle" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>confirm<wbr/>Return<wbr/>To<wbr/>Title</span></a><a href="#create" class="tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>create</span></a><a href="#dropaction" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>drop<wbr/>Action</span></a><a href="#edgemove" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>edge<wbr/>Move</span></a><a href="#explore" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>explore</span></a><a href="#foundsince" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>found<wbr/>Since</span></a><a href="#iconbuttonstyle" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>icon<wbr/>Button<wbr/>Style</span></a><a href="#init"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>init</span></a><a href="#lanecards" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>lane<wbr/>Cards</span></a><a href="#openexplorationwindow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open<wbr/>Exploration<wbr/>Window</span></a><a href="#openslotwindow" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>open<wbr/>Slot<wbr/>Window</span></a><a href="#passtime" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>pass<wbr/>Time</span></a><a href="#placeof" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>place<wbr/>Of</span></a><a href="#rebuild" class="tsd-is-protected tsd-is-inherited"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>rebuild</span></a><a href="#refreshhandlane" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>refresh<wbr/>Hand<wbr/>Lane</span></a><a href="#selectfilter" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>select<wbr/>Filter</span></a><a href="#setdraglanes" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>set<wbr/>Drag<wbr/>Lanes</span></a><a href="#showclock" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>show<wbr/>Clock</span></a><a href="#showninstanceids" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>shown<wbr/>Instance<wbr/>Ids</span></a><a href="#showview" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>show<wbr/>View</span></a><a href="#slotwindowcards" class="tsd-is-private"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="メソッド"><use href="../assets/icons.svg#icon-2048"></use></svg><span>slot<wbr/>Window<wbr/>Cards</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav id="tsd-sidebar-links" class="tsd-navigation"><a href="../../Documents/" class="tsd-nav-link">ドキュメント</a><a href="../../Game/" class="tsd-nav-link">ゲーム</a><a href="https://github.com/gooyyu1/UnmappedIsland" class="tsd-nav-link">GitHub</a></nav>
 <nav class="tsd-navigation"><a href="../modules.html">UnmappedIsland ソースリファレンス - v0.1.0</a>
