@@ -217,10 +217,12 @@ tick）を <code>set</code> するだけ。2 周目以降側は 24/30/36 日
 <ul>
 <li><code>atmospheric_moisture</code>（<code>world</code>
 の蓄積型プロパティ、range 0〜10,000）: <code>season</code> の各 stage
-が持つレートを 毎 tick 加算する（calm: +10 / wet: +90 / dry:
--20）。0〜10,000 というスケールは、calm の遅いレート （moderate 閾値
-3,000 まで約 3 日）を整数の <code>accumulate</code>
-のまま表現するためのもの。
+が持つレートを 毎 tick 加算する（calm: +10 / wet: +100 / dry:
+-20）。スケールの基準（1 tick 分 = 100、
+<code>GameElementDefinition.md</code> 6.0 節）は
+<strong><code>wet</code>
+の上昇レート</strong>に置く。湿度が上がる季節が基準で、
+<code>calm</code>/<code>dry</code> はその微変動という位置づけ。
 季節レートは意図的に控えめな値に抑えており、季節ごとの天気の対比は、レートの絶対値の大きさではなく、
 自己減算（後述）との<strong>大小関係</strong>（正味でどちらへ動くか）が作る。</li>
 <li><code>thermal_level</code>（蓄熱量。同じく <code>world</code>
@@ -254,7 +256,8 @@ tick <code>atmospheric_moisture</code> を減算する （-110 / -130 /
 -200。激しい雨ほど速く消費する。<code>GameElementDefinition.md</code>
 6.4 節の <code>progress</code>/<code>feverish</code>
 例と同じ、ステージ自身が値を変化させるパターン）。どの減算量も
-<code>wet</code> の季節レート（+90/tick）をやや上回る （正味 -20 / -40 /
+<code>wet</code> の季節レート（+100/tick）をやや上回る （正味 -20 / -40
+/
 -110）ため、降り続けた雨はいずれ水分を減らして晴れ間を呼び込みます。<code>light_rain</code>
 の 減算量は <code>calm</code> の連続未降雨時間（3.2
 節）を決める主要パラメータでもあります。</li>
@@ -294,7 +297,7 @@ tick <code>atmospheric_moisture</code> を減算する （-110 / -130 /
 <ul>
 <li>大気水分量: <code>dry</code> はマイナス（-20）、<code>calm</code>
 は<strong>プラス</strong>（+10。乾季で下がりきった水準から、雨季にふさわしい
-水準へじわじわ回復）、<code>wet</code> はさらにプラス（+90）。</li>
+水準へじわじわ回復）、<code>wet</code> はさらにプラス（+100）。</li>
 <li>蓄熱量: <code>dry</code> はプラス（+1）、<code>calm</code>
 は<strong>マイナス</strong>（-1。乾季の暑さから涼しさへじわじわ下降）、<code>wet</code>
 も マイナス（-1、下限 0 の <code>cool</code> 帯に張り付く）。</li>
@@ -553,15 +556,15 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="
 節）しか起きないため、体感上の不自然さにはならないと考えます。</p>
 <p><strong>雨季の降雨の緩急は、季節レートと自己減算の大小関係が作ります。</strong>
 <code>wet</code> 中の各天気の正味レートは、 <code>light_rain</code>
--20/tick（季節レート +90 － 自己減算 110）、<code>heavy_rain</code>
--40/tick、<code>storm</code> -110/tick、 非降雨時 +90/tick
+-10/tick（季節レート +100 － 自己減算 110）、<code>heavy_rain</code>
+-30/tick、<code>storm</code> -100/tick、 非降雨時 +100/tick
 です。どの雨も正味マイナスのため降り続けばいずれ晴れ間を呼び込み、非降雨時の
-+90 が
++100 が
 素早く水分を回復させて次の雨へつなぐ——という充放電の往復が、<code>humid</code>
 閾値（6,000）付近を上下しながら
 「ほとんど雨だが、まとまった雨と晴れ間が交互に来る」という雨季の体感を作ります。実測では
-<code>wet</code> の 雨 tick 比率は約 68%（うち大雨・嵐が約
-36%）、連続降雨時間は平均 0.54 日、連続未降雨時間は平均 0.25 日
+<code>wet</code> の 雨 tick 比率は約 75%（うち大雨・嵐が約
+42%）、連続降雨時間は平均 0.73 日、連続未降雨時間は平均 0.24 日
 でした（<code>Documents/Diagnostics/ClimateSystemStats.md</code>、20
 シード×3,600 日）。なお <code>light_rain</code> の
 自己減算（-110）は雨季のためではなく、<code>calm</code>
