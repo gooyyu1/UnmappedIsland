@@ -40,6 +40,8 @@
 - [Domain.Defs と Domain.Runtime の統合方針](./DomainDefsRuntimeIntegration.md)
 - [地形生成 実装ガイド](./TerrainGenerationImplementation.md) — 実際のクラス名・メソッド名でたどる、
   ロードから島の実体化までの呼び出し関係
+- [ソースリファレンス](https://gooyyu1.github.io/UnmappedIsland/Reference/) — `src/` のクラス・型・JSDocから
+  TypeDocが自動生成する一覧（設計の意図はこのフォルダの手書きドキュメント側にある）
 
 ### その他
 

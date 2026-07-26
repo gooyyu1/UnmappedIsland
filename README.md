@@ -33,6 +33,7 @@ npm run lint           # ESLint
 npm run typecheck      # 型チェック（tsc --noEmit）
 npm run build          # 型チェック + プロダクションビルド
 npm run stats:climate  # 気候システムの統計レポート再生成（Documents/Diagnostics/）
+npm run docs:reference # ソースリファレンス生成（TypeDoc → docs/Reference/）
 ```
 
 ## プロジェクト構成
@@ -61,6 +62,7 @@ UnmappedIsland/
 │   └── Diagnostics/      # 計測レポート（気候統計など）
 └── docs/                 # GitHub Pages の配信元（自動生成・直接編集不可）
     ├── Documents/        # Documents/ から生成したHTML
+    ├── Reference/        # src/ から生成したソースリファレンス（TypeDoc）
     └── Game/             # ビルド済みのゲーム本体
 ```
 
@@ -69,6 +71,8 @@ UnmappedIsland/
 開発ドキュメントは [`Documents/`](./Documents/README.md) フォルダで管理します。
 ゲームコンセプトは [`Documents/Concept/GameConcept.md`](./Documents/Concept/GameConcept.md) にまとめています。
 コーディング規約は [`Documents/Engine/CodingConventions.md`](./Documents/Engine/CodingConventions.md) を参照してください。
+`src/` のクラス・型とJSDocコメントから生成したソースリファレンスは
+<https://gooyyu1.github.io/UnmappedIsland/Reference/> で公開しています。
 ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装します。
 
 ## ライセンス

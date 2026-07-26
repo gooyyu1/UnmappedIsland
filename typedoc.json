@@ -1,0 +1,50 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src"],
+  "entryPointStrategy": "expand",
+  "out": "docs/Reference",
+  "name": "UnmappedIsland ソースリファレンス",
+  "lang": "ja",
+  // TypeDoc 0.28同梱の日本語訳には以下のUI文字列が無く、未訳のままだとキー名
+  // （"theme_search_placeholder"等）が画面にそのまま出てしまうため、ここで補う。
+  "locales": {
+    "ja": {
+      "theme_search_placeholder": "ドキュメントを検索",
+      "theme_search_no_results_found_for_0": "{0} に一致する結果はありません",
+      "theme_folder": "フォルダ",
+      "theme_hierarchy_summary": "階層の一覧",
+      "theme_hierarchy_view_summary": "一覧を見る",
+      "theme_hierarchy_expand": "展開",
+      "theme_hierarchy_collapse": "折りたたむ",
+      // 画面ではなく生成時のログに出る（CIのログでキー名だけ出ると何が起きたか読めない）。
+      "output_0_generated_at_1": "{0} を {1} に生成しました"
+    }
+  },
+  // コメント中の「ScreenLayout.md」のような仕様書への言及を、markdown-itが自動リンク化して
+  // http://ScreenLayout.md（.mdはモルドバのTLD）へのリンクにしてしまうため切る。
+  "markdownItOptions": {
+    "linkify": false
+  },
+  "readme": "typedoc.readme.md",
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  // Phaserの基底クラスから継承したメンバーまで載せると、自分たちのコードが埋もれる（かつ出力が数MB膨らむ）。
+  "excludeExternals": true,
+  "navigationLinks": {
+    "ドキュメント": "../Documents/",
+    "ゲーム": "../Game/",
+    "GitHub": "https://github.com/gooyyu1/UnmappedIsland"
+  },
+  // 既定ではソースへのリンクに生成時のコミットSHAが埋まり、中身が変わっていないページまで
+  // 毎回差分になる（生成物をコミットしているのでリポジトリが膨らむ）。mainに固定して防ぐ。
+  "gitRevision": "main",
+  "excludePrivate": false,
+  "excludeInternal": true,
+  "sort": ["kind", "alphabetical"],
+  "validation": {
+    "notExported": false,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "treatWarningsAsErrors": false
+}
