@@ -110,25 +110,35 @@ href="./LiquidContainerSystem.html"><code>LiquidContainerSystem.md</code></a>
 <ul>
 <li><strong><code>fixed_positions: true</code></strong>（例:
 プレイヤー手持ちの6枠）: セル配列は常に <code>unit_capacity</code>
-長で、 空セルを null
-として保持する。位置（固定番号）が安定し、プレイヤーによる手動配置ができる。
-<ul>
-<li><code>Slot.TrySetManualPosition</code>: 指定した番号のセルとの単純
-swap。</li>
-<li><code>Slot.TryInsertAtGap</code>:
-セルとセルの<strong>隙間</strong>へ、外から1個を入れる。まず右方向へ、それが無理なら
-左方向へ既存のセルをずらして場所を作る。合流できる既存スタックがあるときは、指定された位置より
-「同種は1スタック」（4〜5節）を優先してそちらへ入れる。</li>
-<li><code>Slot.TryMoveStackToGap</code>:
-スロットの中での並び替え。<strong>スタックを丸ごと</strong>隙間へ入れ直す。
-1個ずつの出し入れで並び替えることはできない——<code>TryInsertAtGap</code>
-の合流優先により、抜いた1個は
-残ったスタックへ戻ってしまうため。詰める向きは、スタックが抜けた跡の側を先に試す（そちらには
-必ず空きがあるので、遠くのセルを動かさずに済む）。</li>
-</ul></li>
+長で、 空セルを null として保持する。位置（固定番号）が安定する。</li>
 <li><strong>非 fixed_positions</strong>:
 空になったセルは削除して前詰めする（null を含まない）。</li>
 </ul>
+<p>プレイヤーによる手動配置・並び替えは、どちらのスロットにもできる。位置の指定は「セルとセルの<strong>隙間</strong>」
+（0が先頭のセルの前）か「<strong>空きセル</strong>そのもの」のいずれかで行う。空きセルを指せるのは
+<code>fixed_positions</code>
+だけ（前詰めスロットには空きセルが無い）。</p>
+<ul>
+<li><code>Slot.TryInsertAtGap</code>:
+隙間へ、外から1個を入れる。<code>fixed_positions</code>
+はまず右方向へ、それが無理なら
+左方向へ既存のセルをずらして場所を作る。前詰めスロットはその隙間へ挿入するだけ。</li>
+<li><code>Slot.TryInsertAtCell</code>:
+空きセルへ、外から1個を入れる（<code>fixed_positions</code>
+専用）。埋まっている セルを指した場合は失敗。</li>
+<li><code>Slot.TrySetManualPosition</code>: 指定した番号のセルとの単純
+swap（<code>fixed_positions</code> 専用）。空きセルを
+指せば、他のセルを動かさずにそこへ移る。</li>
+<li><code>Slot.TryMoveStackToGap</code>:
+スロットの中での並び替え。<strong>スタックを丸ごと</strong>隙間へ入れ直す。
+1個ずつの出し入れで並び替えることはできない——挿入時の合流優先により、抜いた1個は残ったスタックへ
+戻ってしまうため。<code>fixed_positions</code>
+で詰める向きは、スタックが抜けた跡の側を先に試す（そちらには
+必ず空きがあるので、遠くのセルを動かさずに済む）。</li>
+</ul>
+<p>挿入系（<code>TryInsertAtGap</code> /
+<code>TryInsertAtCell</code>）は、合流できる既存スタックがあるときは指定された位置より
+「同種は1スタック」（4〜5節）を優先してそちらへ入れる。</p>
 <p><code>same_slot</code> spawn
 の置き換え配置（元の位置の引き継ぎ・「隣に生まれる」・押し出し）は
 7.6節の 規定どおり <code>Slot.PlaceSameSlot</code>

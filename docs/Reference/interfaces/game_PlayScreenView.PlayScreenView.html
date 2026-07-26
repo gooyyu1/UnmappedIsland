@@ -18,7 +18,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">PlayScreenView</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#charactername">characterName</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#combinationof">combinationOf</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><br/>        <span class="tsd-kind-parameter">dragged</span><span class="tsd-signature-symbol">:</span> <a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">,</span><br/>        <span class="tsd-kind-parameter">target</span><span class="tsd-signature-symbol">:</span> <a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#conditions">conditions</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#currentlocation">currentLocation</a><span class="tsd-signature-symbol">:</span> <a href="game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#destinations">destinations</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#elapseddays">elapsedDays</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#equipmenticon">equipmentIcon</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#explorationratio">explorationRatio</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#fielditems">fieldItems</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#hand">hand</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> (<a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#hour">hour</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#injuryicon">injuryIcon</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#minute">minute</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#statuses">statuses</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="game_PlayScreenView.StatusEntry.html" class="tsd-signature-type tsd-kind-interface">StatusEntry</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#weather">weather</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L45">src/game/PlayScreenView.ts:45</a></li></ul></aside>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L54">src/game/PlayScreenView.ts:54</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -49,7 +49,7 @@
 <h3 class="tsd-anchor-link" id="charactername"><code class="tsd-tag">読み取り専用</code><span>character<wbr/>Name</span><a href="#charactername" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">characterName</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L46">src/game/PlayScreenView.ts:46</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L55">src/game/PlayScreenView.ts:55</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="combinationof"><code class="tsd-tag">読み取り専用</code><span>combination<wbr/>Of</span><a href="#combinationof" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">combinationOf</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">dragged</span><span class="tsd-signature-symbol">:</span> <a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">target</span><span class="tsd-signature-symbol">:</span> <a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> (<span class="tsd-signature-symbol">()</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span>) <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
@@ -60,80 +60,80 @@
 conditionsを満たさず実行が空振りすることはある。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L73">src/game/PlayScreenView.ts:73</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L82">src/game/PlayScreenView.ts:82</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="conditions"><code class="tsd-tag">読み取り専用</code><span>conditions</span><a href="#conditions" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">conditions</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>条件アイコン。複数同時に付き得るので件数は可変。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L48">src/game/PlayScreenView.ts:48</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L57">src/game/PlayScreenView.ts:57</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="currentlocation"><code class="tsd-tag">読み取り専用</code><span>current<wbr/>Location</span><a href="#currentlocation" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">currentLocation</span><span class="tsd-signature-symbol">:</span> <a href="game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L57">src/game/PlayScreenView.ts:57</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L66">src/game/PlayScreenView.ts:66</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="destinations"><code class="tsd-tag">読み取り専用</code><span>destinations</span><a href="#destinations" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">destinations</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="game_ui_Card.CardContent.html" class="tsd-signature-type tsd-kind-interface">CardContent</a><span class="tsd-signature-symbol">[]</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L60">src/game/PlayScreenView.ts:60</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L69">src/game/PlayScreenView.ts:69</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="elapseddays"><code class="tsd-tag">読み取り専用</code><span>elapsed<wbr/>Days</span><a href="#elapseddays" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">elapsedDays</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L53">src/game/PlayScreenView.ts:53</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L62">src/game/PlayScreenView.ts:62</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="equipmenticon"><code class="tsd-tag">読み取り専用</code><span>equipment<wbr/>Icon</span><a href="#equipmenticon" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">equipmentIcon</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L49">src/game/PlayScreenView.ts:49</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L58">src/game/PlayScreenView.ts:58</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="explorationratio"><code class="tsd-tag">読み取り専用</code><span>exploration<wbr/>Ratio</span><a href="#explorationratio" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">explorationRatio</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L59">src/game/PlayScreenView.ts:59</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L68">src/game/PlayScreenView.ts:68</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="fielditems"><code class="tsd-tag">読み取り専用</code><span>field<wbr/>Items</span><a href="#fielditems" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">fieldItems</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a><span class="tsd-signature-symbol">[]</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L61">src/game/PlayScreenView.ts:61</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L70">src/game/PlayScreenView.ts:70</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="hand"><code class="tsd-tag">読み取り専用</code><span>hand</span><a href="#hand" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">hand</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> (<a href="game_PlayScreenView.ItemCard.html" class="tsd-signature-type tsd-kind-interface">ItemCard</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span>)<span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L63">src/game/PlayScreenView.ts:63</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L72">src/game/PlayScreenView.ts:72</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="hour"><code class="tsd-tag">読み取り専用</code><span>hour</span><a href="#hour" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">hour</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L54">src/game/PlayScreenView.ts:54</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L63">src/game/PlayScreenView.ts:63</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="injuryicon"><code class="tsd-tag">読み取り専用</code><span>injury<wbr/>Icon</span><a href="#injuryicon" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">injuryIcon</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L50">src/game/PlayScreenView.ts:50</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L59">src/game/PlayScreenView.ts:59</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="minute"><code class="tsd-tag">読み取り専用</code><span>minute</span><a href="#minute" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">minute</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L55">src/game/PlayScreenView.ts:55</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L64">src/game/PlayScreenView.ts:64</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="statuses"><code class="tsd-tag">読み取り専用</code><span>statuses</span><a href="#statuses" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">statuses</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-keyword">readonly</span> <a href="game_PlayScreenView.StatusEntry.html" class="tsd-signature-type tsd-kind-interface">StatusEntry</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>表示対象のステータスだけを並べた可変長リスト（ScreenLayout.md ステータスエリア節）。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L52">src/game/PlayScreenView.ts:52</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L61">src/game/PlayScreenView.ts:61</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="weather"><code class="tsd-tag">読み取り専用</code><span>weather</span><a href="#weather" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">weather</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L56">src/game/PlayScreenView.ts:56</a></li></ul></aside></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/PlayScreenView.ts#L65">src/game/PlayScreenView.ts:65</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
