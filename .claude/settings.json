@@ -1,9 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "mcp__Claude_Code_Remote__send_later",
-      "mcp__claude-code-remote__send_later"
-    ]
+    "allow": ["mcp__Claude_Code_Remote__send_later", "mcp__claude-code-remote__send_later"]
   },
   "hooks": {
     "SessionStart": [
