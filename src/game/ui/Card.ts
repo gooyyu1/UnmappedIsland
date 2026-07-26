@@ -4,6 +4,15 @@ import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
 import { drawBox } from './shapes';
 import { wrapByCharacter } from './textLayout';
 
+/**
+ * カードの枠の画像のテクスチャキー（実体はpublic/images/card_frame.png、BootSceneが読む）。
+ * カードの寸法（SIZE.cardWidth/cardHeight）はこの画像の比率に合わせてある。
+ */
+export const CARD_FRAME_TEXTURE = 'card-frame';
+
+/** 空き枠は同じ枠の画像を薄く敷いて表す。 */
+const EMPTY_FRAME_ALPHA = 0.35;
+
 /** カード名の最大行数。これを超える分は表示しない（モックの-webkit-line-clamp: 3に対応）。 */
 const NAME_MAX_LINES = 3;
 
@@ -79,18 +88,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.cardWidth = width;
     this.cardHeight = height;
 
-    const face = scene.add.graphics();
-    drawBox(
-      face,
-      { x: 0, y: 0, width, height },
-      {
-        fill: COLOR.cardFace,
-        fillAlpha: 0.85,
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, metrics.px(2)),
-        radius: metrics.px(SIZE.radius),
-      },
-    );
+    const face = addFrame(scene, metrics, width, height, false);
 
     const iconText = scene.add
       .text(width / 2, height / 2, icon, {
@@ -247,21 +245,43 @@ export class EmptyCard extends Phaser.GameObjects.Container {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number) {
     super(scene, x, y);
 
-    const face = scene.add.graphics();
-    drawBox(
-      face,
-      { x: 0, y: 0, width: metrics.px(SIZE.cardWidth), height: metrics.px(SIZE.cardHeight) },
-      {
-        fill: COLOR.cardFace,
-        fillAlpha: 0.35,
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, metrics.px(2)),
-        radius: metrics.px(SIZE.radius),
-        dashed: true,
-      },
-    );
+    const face = addFrame(scene, metrics, metrics.px(SIZE.cardWidth), metrics.px(SIZE.cardHeight), true);
 
     this.add(face);
     scene.add.existing(this);
   }
+}
+
+/**
+ * カードの枠。画像（CARD_FRAME_TEXTURE）があればそれを矩形いっぱいに貼り、無ければ図形で描く。
+ * 画像を差し替えたり用意しなかったりしても画面が成り立つよう、図形の描画は残してある。
+ *
+ * emptyは中身の無い枠（EmptyCard）。画像なら薄く敷き、図形なら破線で描く。
+ */
+function addFrame(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+  empty: boolean,
+): Phaser.GameObjects.GameObject {
+  if (scene.textures.exists(CARD_FRAME_TEXTURE)) {
+    const image = scene.add.image(0, 0, CARD_FRAME_TEXTURE).setOrigin(0, 0).setDisplaySize(width, height);
+    return empty ? image.setAlpha(EMPTY_FRAME_ALPHA) : image;
+  }
+
+  const face = scene.add.graphics();
+  drawBox(
+    face,
+    { x: 0, y: 0, width, height },
+    {
+      fill: COLOR.cardFace,
+      fillAlpha: empty ? 0.35 : 0.85,
+      border: COLOR.cardBorder,
+      borderWidth: Math.max(1, metrics.px(2)),
+      radius: metrics.px(SIZE.radius),
+      dashed: empty,
+    },
+  );
+  return face;
 }
