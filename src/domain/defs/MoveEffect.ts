@@ -4,26 +4,34 @@ import { ActiveEffect } from './ActiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
- * move の1命令。対象を、self のプロパティ（to_prop）が保持する WorldObject.instanceId のオブジェクトの中へ
- * 移動する。移動先が定義時点で決まらず生成時に確定するケース（道の移動アクション等）のため、
- * object_def 参照ではなくインスタンスIDのプロパティ値で指す。
+ * move の移動先の指し方。
  *
- * YAML: `move: {object: actor, to_prop: destination_id}`（transfer と同じフラットフィールド規約）。
- * object は現時点で actor のみ（ロード時に検証）。移動先の解決は「ツリーの根から InstanceId で子孫を探す」。
- * 解決できない・どのスロットも受け入れない場合は何もしない（「解決できない適用は無視」の既存規約）。
- * 配置は moveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、force なし）。
+ * - `self`: move を宣言したオブジェクト自身（YAMLの `to: self`）。行き先が定義時点で決まっている場合
+ *   （かごの中へ入れる等）に使う。
+ * - `instance_id_prop`: self のそのプロパティが保持する WorldObject.instanceId のオブジェクト
+ *   （YAMLの `to_prop`）。行き先が定義時点で決まらず生成時に確定する場合（道が指す特定の土地）に使う。
+ */
+export type MoveDestination =
+  { readonly kind: 'self' } | { readonly kind: 'instance_id_prop'; readonly propertyGlobalId: number };
+
+/**
+ * move の1命令。既に世界に存在するオブジェクトを、移動先（MoveDestination）の中へ移動する。
+ *
+ * YAML: `move: {object: actor, to_prop: destination_id}` / `move: {object: dragged, to: self}`
+ * （transfer と同じフラットフィールド規約）。解決できない・どのスロットも受け入れない場合は何もしない
+ * （「解決できない適用は無視」の既存規約）。配置は moveIntoFirstAcceptingSlot（spawn の into と同じ
+ * 宣言順走査、force なし）。
  */
 export class MoveEffect extends ActiveEffect {
-  /** 移動するオブジェクト。現時点で actor のみ（ローダーが強制する）。 */
+  /** 移動するオブジェクト。actorかdraggedのみ（ローダーが強制する）。 */
   private readonly target: ReferenceRoot;
 
-  /** self が持つ、移動先 WorldObject.instanceId を保持するプロパティ。 */
-  private readonly toPropertyGlobalId: number;
+  private readonly destination: MoveDestination;
 
-  constructor(target: ReferenceRoot, toPropertyGlobalId: number) {
+  constructor(target: ReferenceRoot, destination: MoveDestination) {
     super();
     this.target = target;
-    this.toPropertyGlobalId = toPropertyGlobalId;
+    this.destination = destination;
   }
 
   apply(
@@ -34,12 +42,19 @@ export class MoveEffect extends ActiveEffect {
   ): void {
     const mover = owner.resolveEffectTarget(this.target, actor, dragged);
     if (mover === undefined) return;
-    const destinationIdValue = owner.tryGetProperty(this.toPropertyGlobalId);
-    if (destinationIdValue === undefined) return;
 
-    const destination = owner.findRoot().findDescendantByInstanceId(destinationIdValue.getEffectiveValue());
-    if (destination === undefined || destination === mover) return;
+    const destination = this.resolveDestination(owner);
+    if (destination === undefined) return;
 
     mover.moveIntoFirstAcceptingSlot(destination, session.codex.wellKnown);
+  }
+
+  private resolveDestination(owner: WorldObject): WorldObject | undefined {
+    if (this.destination.kind === 'self') return owner;
+
+    const instanceId = owner.tryGetProperty(this.destination.propertyGlobalId);
+    if (instanceId === undefined) return undefined;
+    // 移動先の解決は「ツリーの根から InstanceId で子孫を探す」。
+    return owner.findRoot().findDescendantByInstanceId(instanceId.getEffectiveValue());
   }
 }

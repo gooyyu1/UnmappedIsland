@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
+import { DropTooltip } from './DropTooltip';
 import { drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 
@@ -13,13 +14,24 @@ const LONG_PRESS_SLOP = 12;
 const DIRECTION_THRESHOLD = 20;
 const VERTICAL_RATIO = 1.5;
 
-/** ドラッグ中の分身の濃さと、掴まれて場所が空いた元のカードの濃さ。 */
-const GHOST_ALPHA = 0.9;
+/** 掴まれて場所が空いた元のカードの濃さ。掴んでいるカード自身は不透明のまま（カードらしさのため）。 */
 const GRABBED_ALPHA = 0.3;
 
 /** ドロップ先を示す枠の太さ（u単位）と、塗りの濃さ。 */
 const INDICATOR_BORDER = 6;
 const INDICATOR_FILL_ALPHA = 0.3;
+
+/**
+ * 受け入れられるカードのふちの光。太さの違う枠を重ねて、外側ほど薄くすることで滲みを作る
+ * （Phaserに発光の描画が無いため）。明滅は左右の往復で、止まった枠との違いを出す。
+ */
+const GLOW_LAYERS = [
+  { border: 16, alpha: 0.18 },
+  { border: 10, alpha: 0.35 },
+  { border: 5, alpha: 0.9 },
+];
+const GLOW_PULSE_MS = 620;
+const GLOW_PULSE_ALPHA = 0.55;
 
 /** ドラッグしたカードを落とした先。 */
 export interface CardDrop {
@@ -29,9 +41,18 @@ export interface CardDrop {
   readonly target: LaneDropTarget;
 }
 
+/** そのドロップで何が起きるか。 */
+export interface CardDropInfo {
+  /** 重ねたときに何が起きるかの説明（combinationのときだけ持つ）。 */
+  readonly tooltip?: { readonly title: string; readonly body: string | undefined };
+}
+
 export interface CardDragHandlers {
-  /** そのドロップで何かが起きるか。起きないドロップは枠を出さず、離しても何もしない。 */
-  readonly canDrop: (drop: CardDrop) => boolean;
+  /**
+   * そのドロップで何が起きるか（何も起きないならundefined）。ドロップ先の枠・受け入れ側のふちの光・
+   * 説明の吹き出しは、いずれもこの答えだけを見て決める。
+   */
+  readonly describeDrop: (drop: CardDrop) => CardDropInfo | undefined;
   readonly onDrop: (drop: CardDrop) => void;
 }
 
@@ -46,6 +67,10 @@ interface Gesture {
   longPress: Phaser.Time.TimerEvent | undefined;
   ghost: Card | undefined;
   indicator: Phaser.GameObjects.Graphics | undefined;
+  /** 受け入れられるカードのふちの光と、その明滅。 */
+  glow: Phaser.GameObjects.Graphics | undefined;
+  glowPulse: Phaser.Tweens.Tween | undefined;
+  tooltip: DropTooltip | undefined;
 }
 
 /**
@@ -122,6 +147,9 @@ export class CardDragController {
       longPress: undefined,
       ghost: undefined,
       indicator: undefined,
+      glow: undefined,
+      glowPulse: undefined,
+      tooltip: undefined,
     };
     this.gesture = gesture;
 
@@ -159,12 +187,43 @@ export class CardDragController {
     gesture.kind = 'dragging';
     // 掴んで動くのは1つだけなので、スタックは残りがそこに居る。薄くするのは場所ごと空くときだけ。
     if ((gesture.card.content.count ?? 1) < 2) gesture.card.setAlpha(GRABBED_ALPHA);
-    // 分身を先に作り、枠を後から作る（後に作ったものが手前に描かれる）。どこへ落ちるかの方が
-    // 分身の見た目より大事なので、枠を分身の上に出す。
+
+    // 作る順がそのまま重なりの順になる。ふちの光はレーンのカードの装飾なので分身より奥、
+    // どこへ落ちるかの枠と説明は分身より手前（分身の見た目より、何が起きるかの方が大事）。
+    this.showAcceptingCards(gesture);
     gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, cardFace(gesture.card.content));
-    gesture.ghost.setAlpha(GHOST_ALPHA);
     gesture.indicator = this.scene.add.graphics();
+    gesture.tooltip = new DropTooltip(this.scene, this.metrics());
     this.follow(pointer);
+  }
+
+  /** 今掴んでいるカードを受け入れられるカードすべてのふちを光らせる。 */
+  private showAcceptingCards(gesture: Gesture): void {
+    const glow = this.scene.add.graphics();
+    gesture.glow = glow;
+
+    for (const lane of this.lanes) {
+      lane.cardObjects.forEach((card, index) => {
+        if (card === undefined) return;
+        const drop = { from: gesture.lane, fromIndex: gesture.index, to: lane, target: cardTarget(index) };
+        if (this.handlers.describeDrop(drop) === undefined) return;
+
+        const rect = lane.slotRect(index);
+        for (const layer of GLOW_LAYERS) {
+          glow.lineStyle(this.metrics().px(layer.border), COLOR.cardDropAccept, layer.alpha);
+          glow.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, this.metrics().px(SIZE.radius));
+        }
+      });
+    }
+
+    gesture.glowPulse = this.scene.tweens.add({
+      targets: glow,
+      alpha: GLOW_PULSE_ALPHA,
+      duration: GLOW_PULSE_MS,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+    });
   }
 
   /** 分身をポインタの中心へ置き、今の位置で成立するドロップ先を枠で示す。 */
@@ -178,9 +237,13 @@ export class CardDragController {
     );
 
     gesture.indicator.clear();
-    const drop = this.dropAt(gesture, pointer);
-    if (drop === undefined) return;
+    const found = this.dropAt(gesture, pointer);
+    if (found === undefined) {
+      gesture.tooltip?.hide();
+      return;
+    }
 
+    const { drop, info } = found;
     const rect = drop.to.dropIndicatorRect(drop.target);
     drawBox(gesture.indicator, rect, {
       fill: COLOR.cardDropTarget,
@@ -189,16 +252,30 @@ export class CardDragController {
       borderWidth: this.metrics().px(INDICATOR_BORDER),
       radius: this.metrics().px(SIZE.radius),
     });
+
+    if (info.tooltip === undefined) gesture.tooltip?.hide();
+    else {
+      gesture.tooltip?.show(info.tooltip.title, info.tooltip.body, {
+        x: gesture.ghost.x,
+        y: gesture.ghost.y,
+        width: gesture.ghost.cardWidth,
+        height: gesture.ghost.cardHeight,
+      });
+    }
   }
 
-  /** 今のポインタ位置で成立するドロップ（何も起きないものはundefined）。 */
-  private dropAt(gesture: Gesture, pointer: Phaser.Input.Pointer): CardDrop | undefined {
+  /** 今のポインタ位置で成立するドロップと、そこで起きること（何も起きないものはundefined）。 */
+  private dropAt(
+    gesture: Gesture,
+    pointer: Phaser.Input.Pointer,
+  ): { drop: CardDrop; info: CardDropInfo } | undefined {
     for (const lane of this.lanes) {
       const target = lane.dropTargetAt(pointer.x, pointer.y);
       if (target === undefined) continue;
 
       const drop = { from: gesture.lane, fromIndex: gesture.index, to: lane, target };
-      return this.handlers.canDrop(drop) ? drop : undefined;
+      const info = this.handlers.describeDrop(drop);
+      return info === undefined ? undefined : { drop, info };
     }
     return undefined;
   }
@@ -208,9 +285,9 @@ export class CardDragController {
     const gesture = this.gesture;
     if (gesture === undefined) return;
 
-    const drop = gesture.kind === 'dragging' ? this.dropAt(gesture, pointer) : undefined;
+    const found = gesture.kind === 'dragging' ? this.dropAt(gesture, pointer) : undefined;
     this.cancel();
-    if (drop !== undefined) this.handlers.onDrop(drop);
+    if (found !== undefined) this.handlers.onDrop(found.drop);
   }
 
   private cancel(): void {
@@ -220,8 +297,16 @@ export class CardDragController {
     gesture.longPress?.remove();
     gesture.ghost?.destroy();
     gesture.indicator?.destroy();
+    gesture.glowPulse?.remove();
+    gesture.glow?.destroy();
+    gesture.tooltip?.destroy();
     // 掴んでいたカードは、画面を作り直していれば既に破棄されている（sceneがundefinedになる）。
     if (gesture.card.scene !== undefined) gesture.card.setAlpha(1);
     this.gesture = undefined;
   }
+}
+
+/** レーンの添字のカードに重ねるドロップ先。 */
+function cardTarget(index: number): LaneDropTarget {
+  return { kind: 'combine', index };
 }

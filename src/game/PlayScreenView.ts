@@ -77,6 +77,18 @@ export interface ObjectCardStack extends CardContent {
 }
 
 /**
+ * カードを重ねたときに実行できるcombination。何が起きるかをドラッグ中に見せるため、実行する手段だけで
+ * なく表示文字列も持つ（locale/ja.yamlのcombinations節、Localization.md）。
+ */
+export interface CardCombination {
+  readonly name: string;
+  /** 説明文。localeに書かれていなければundefined。 */
+  readonly description: string | undefined;
+  /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
+  readonly execute: () => void;
+}
+
+/**
  * プレイ中の画面が表示する内容。画面の組み立て（PlayScene）とゲーム状態の間を仕切る。
  *
  * 天候・条件・装備・怪我のように、ドメイン側にまだ表示できる形が無い項目はモック
@@ -126,7 +138,7 @@ export interface PlayScreenView {
    * （ActionSystem.md 1節）ため、ここでは宣言順の先頭を採る。マッチはwithタグだけで判定するので、
    * conditionsを満たさず実行が空振りすることはある。
    */
-  readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => (() => void) | undefined;
+  readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
 }
 
 /** アイテムの画像がまだ無いため、種別ごとの絵文字を仮のアイコンとして使う。 */
@@ -153,14 +165,6 @@ function stacksIn(
 ): readonly (readonly WorldObject[])[] {
   const slot = dest?.owner.tryGetSlot(dest.slotId);
   return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
-}
-
-/** targetがitem自身か、itemの中に入っているか。入れ物を自分自身の中へ入れる操作を弾くために使う。 */
-function isSelfOrDescendant(item: WorldObject, target: WorldObject): boolean {
-  for (let node: WorldObject | undefined = target; node !== undefined; node = node.parent) {
-    if (node === item) return true;
-  }
-  return false;
 }
 
 /**
@@ -230,7 +234,7 @@ export function fromGameSession(
       const dest = slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
       // 自分の中へは入れられない（籠を籠自身へ、また自分の子孫の中へ）。
-      if (typeof place !== 'string' && isSelfOrDescendant(item, place.container)) return undefined;
+      if (typeof place !== 'string' && item.contains(place.container)) return undefined;
 
       const wellKnown = game.session.codex.wellKnown;
       if (at === undefined) {
@@ -348,8 +352,14 @@ export function fromGameSession(
 
       const [combination] = first.findMatchingCombinations(source);
       if (combination === undefined) return undefined;
-      return () => {
-        first.tryExecuteCombination(source, game.player.instance, combination.name, game.session);
+
+      const texts = locale.object(first.def.name).combination(combination.name);
+      return {
+        name: texts.displayName,
+        description: texts.description,
+        execute: () => {
+          first.tryExecuteCombination(source, game.player.instance, combination.name, game.session);
+        },
       };
     },
   };

@@ -121,6 +121,102 @@ object_defs:
     expect(character.parent, 'actorがいない文脈では何も起きない').toBe(meadow);
   });
 
+  it('draggedをselfの中へ移す（かごへ入れるcombination）', () => {
+    const codex = new WorldCodexYamlLoader()
+      .load(
+        'containers.yaml',
+        `
+object_defs:
+  world:
+    singleton: true
+    slots:
+      stuff:
+        accepts:
+          - {tag: item, max: 9999}
+
+  stone:
+    tags: [item]
+
+  basket:
+    tags: [item]
+    combinations:
+      put_in:
+        with: item
+        move: {object: dragged, to: self}
+    slots:
+      contents:
+        accepts:
+          - {tag: item, max: 9999}
+`,
+      )
+      .build();
+
+    const session = new WorldSession(codex);
+    const world = session.spawn(codex.objectNames.getId('world'));
+    const stuffSlot = codex.slotNames.getId('stuff');
+    const basket = session.spawn(codex.objectNames.getId('basket'));
+    const stone = session.spawn(codex.objectNames.getId('stone'));
+    for (const item of [basket, stone]) {
+      expect(item.moveToSlot(world, stuffSlot, codex.wellKnown)).toBeUndefined();
+    }
+
+    expect(basket.tryExecuteCombination(stone, undefined, 'put_in', session)).toBe(true);
+
+    expect(stone.parent, 'draggedがかごの中へ移る').toBe(basket);
+    expect(stone.parentSlotLocalId, '宣言順走査でcontentsスロットへ入る').toBe(
+      basket.def.slotLayout.toLocal(codex.slotNames.getId('contents')),
+    );
+  });
+
+  it('入れ物を自分自身や自分の中身の中へは入れられない', () => {
+    const codex = new WorldCodexYamlLoader()
+      .load(
+        'containers.yaml',
+        `
+object_defs:
+  world:
+    singleton: true
+    slots:
+      stuff:
+        accepts:
+          - {tag: item, max: 9999}
+
+  basket:
+    tags: [item]
+    combinations:
+      put_in:
+        with: item
+        move: {object: dragged, to: self}
+    slots:
+      contents:
+        accepts:
+          - {tag: item, max: 9999}
+`,
+      )
+      .build();
+
+    const session = new WorldSession(codex);
+    const world = session.spawn(codex.objectNames.getId('world'));
+    const stuffSlot = codex.slotNames.getId('stuff');
+    const outer = session.spawn(codex.objectNames.getId('basket'));
+    const inner = session.spawn(codex.objectNames.getId('basket'));
+    expect(outer.moveToSlot(world, stuffSlot, codex.wellKnown)).toBeUndefined();
+    expect(inner.moveToSlot(world, stuffSlot, codex.wellKnown)).toBeUndefined();
+
+    // かご同士も入れ子にできる。
+    expect(outer.tryExecuteCombination(inner, undefined, 'put_in', session)).toBe(true);
+    expect(inner.parent, '内側のかごが外側のかごへ入る').toBe(outer);
+
+    // 逆向き（外側を、その中に入っている内側へ）は輪ができるので弾く。
+    expect(inner.tryExecuteCombination(outer, undefined, 'put_in', session)).toBe(true);
+    expect(outer.parent, '自分の中身の中へは入らない').toBe(world);
+    expect(inner.parent, '相手も動かない').toBe(outer);
+
+    // 自分自身の中へも入らない。
+    expect(outer.tryExecuteCombination(outer, undefined, 'put_in', session)).toBe(true);
+    expect(outer.parent, '自分自身の中へは入らない').toBe(world);
+  });
+
   it('moveのobjectにactor以外を指定するとロードエラーになる', () => {
     const loadBad = (): WorldCodex =>
       new WorldCodexYamlLoader()
@@ -143,6 +239,50 @@ object_defs:
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/actor/);
+  });
+
+  it('moveの移動先をtoとto_propの両方で指定するとロードエラーになる', () => {
+    const loadBad = (): WorldCodex =>
+      new WorldCodexYamlLoader()
+        .load(
+          'bad.yaml',
+          `
+object_defs:
+  path:
+    props:
+      destination_id:
+        value: 0
+    actions:
+      travel:
+        move:
+          object: actor
+          to: self
+          to_prop: destination_id
+`,
+        )
+        .build();
+
+    expect(loadBad).toThrow(YamlLoadError);
+    expect(loadBad).toThrowError(/どちらか一方/);
+  });
+
+  it('moveのtoにself以外を指定するとロードエラーになる', () => {
+    const loadBad = (): WorldCodex =>
+      new WorldCodexYamlLoader()
+        .load(
+          'bad.yaml',
+          `
+object_defs:
+  basket:
+    actions:
+      travel:
+        move: {object: actor, to: parent}
+`,
+        )
+        .build();
+
+    expect(loadBad).toThrow(YamlLoadError);
+    expect(loadBad).toThrowError(/self/);
   });
 
   it('moveに未知のキーがあるとロードエラーになる', () => {

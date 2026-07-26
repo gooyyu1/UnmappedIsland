@@ -304,6 +304,12 @@ export class WorldObject {
     wellKnown: WellKnownProperties,
     force: boolean,
   ): string | undefined {
+    // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
+    // forceでも許さない——forceが省くのはaccepts/capacityの判定であって、木構造の不変条件ではない。
+    if (this.contains(newParent)) {
+      return `'${this.def.name}' を自分自身の中へは入れられません。`;
+    }
+
     const localSlot = newParent.def.slotLayout.toLocal(slotGlobalId);
     if (localSlot === LocalIndexMap.missing) {
       return `'${newParent.def.name}' はスロット(id=${slotGlobalId})を持ちません。`;
@@ -448,6 +454,14 @@ export class WorldObject {
    * 知らなくてよい規約。spawnのintoとmoveが共用、9.4節）。force=trueは検証を飛ばすため、スロットが1つでも
    * あれば必ず成功する。
    */
+  /** otherが自分自身か、自分の中に入っているか。入れ物を自分の中へ入れる操作を弾くのに使う。 */
+  contains(other: WorldObject): boolean {
+    for (let node: WorldObject | undefined = other; node !== undefined; node = node._parent) {
+      if (node === this) return true;
+    }
+    return false;
+  }
+
   moveIntoFirstAcceptingSlot(target: WorldObject, wellKnown: WellKnownProperties, force = false): boolean {
     for (const slotDef of target.def.enumerateSlotDefs()) {
       if (this.moveToSlot(target, slotDef.globalId, wellKnown, force) === undefined) return true;

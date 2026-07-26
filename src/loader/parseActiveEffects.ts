@@ -25,6 +25,7 @@ import {
   TransferEffect,
 } from '../domain/defs/ActiveEffect';
 import type { ActiveEffect, SpawnTargetRoot } from '../domain/defs/ActiveEffect';
+import type { MoveDestination } from '../domain/defs/MoveEffect';
 import { MoveEffect } from '../domain/defs/MoveEffect';
 
 /**
@@ -278,10 +279,13 @@ function parseTransfers(
 }
 
 /**
- * move（対象を、to_propが指すインスタンスIDのオブジェクトの中へ移動する。MoveEffect参照）。
+ * move（対象のオブジェクトを、移動先の中へ移動する。MoveEffect参照）。
  * transferと同じフラットフィールド規約（`move: {object: actor, to_prop: destination_id}`）。
- * objectは現時点でactorのみ対応（それ以外の対象には「どの子か」等の未確定な意味論が伴うため）。
- * selfOnly文脈（rangeイベント）にはactorが存在しないため使えない。
+ *
+ * objectはactor（アクション実行者）とdragged（combinationsでドラッグされてきたカード）のみ対応する。
+ * self/parent/child等は「一度きりの命令に対してどれを動かすか」の意味論が未確定のため未対応。
+ * 移動先はtoかto_propのどちらか一方で指す（両方・どちらも無しはエラー）。
+ * selfOnly文脈（rangeイベント）にはactorもdraggedも存在しないため使えない。
  */
 function parseMove(
   loader: WorldCodexYamlLoader,
@@ -295,20 +299,34 @@ function parseMove(
     );
 
   const objectRaw = requireScalar(map, 'object', context);
-  if (objectRaw !== 'actor')
+  if (objectRaw !== 'actor' && objectRaw !== 'dragged')
     throw new YamlLoadError(
-      `${context}: moveのobjectは現時点で'actor'のみ対応しています（値: '${objectRaw}'）。`,
+      `${context}: moveのobjectは'actor'か'dragged'のみ対応しています（値: '${objectRaw}'）。`,
     );
-
-  const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
 
   const unknownKeys = entriesInOrder(map)
     .map(([key]) => key)
-    .filter((key) => key !== 'object' && key !== 'to_prop');
+    .filter((key) => key !== 'object' && key !== 'to' && key !== 'to_prop');
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
-  return new MoveEffect('actor', toProp);
+  return new MoveEffect(objectRaw, parseMoveDestination(loader, context, map));
+}
+
+/** moveの移動先（to か to_prop のどちらか一方）。 */
+function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): MoveDestination {
+  const to = tryGetScalar(map, 'to', context);
+  const toProp = tryGetScalar(map, 'to_prop', context);
+
+  if ((to === undefined) === (toProp === undefined))
+    throw new YamlLoadError(`${context}: moveの移動先はtoかto_propのどちらか一方で指定してください。`);
+
+  if (toProp !== undefined) {
+    return { kind: 'instance_id_prop', propertyGlobalId: loader.propertyNames.intern(toProp) };
+  }
+  if (to !== 'self')
+    throw new YamlLoadError(`${context}: moveのtoは現時点で'self'のみ対応しています（値: '${to}'）。`);
+  return { kind: 'self' };
 }
 
 /**

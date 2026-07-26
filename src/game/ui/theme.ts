@@ -38,6 +38,8 @@ export const COLOR = {
   cardEdgeOverlay: 0x1b3a4b,
   /** ドラッグ中に、落とせる先を示す枠。 */
   cardDropTarget: 0x1b7a5c,
+  /** ドラッグ中に、受け入れられるカードのふちを光らせる色。今の落とし先（緑）とは色相を分ける。 */
+  cardDropAccept: 0xffc23e,
   laneDivider: 0x000000,
 
   button: 0xffffff,

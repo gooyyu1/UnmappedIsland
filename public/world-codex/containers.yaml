@@ -9,6 +9,12 @@ traits:
   # （ScreenLayout.md スロットの子ウィンドウ節）。
   item_container:
     tags: [container]
+    combinations:
+      # 中へ入れる。カードを重ねるだけの操作なので時間はかからない（durationを持たない）。
+      # 入るかどうかはcontentsスロットのaccepts/capacityが決めるので、ここでは条件を書かない。
+      put_in:
+        with: item
+        move: {object: dragged, to: self}
     slots:
       # 中身。前詰めスロットなので、出し入れしても詰まって並ぶ。
       # capacityは中身のsizeの合計の上限（GameElementDefinition.md 7.3節）。sizeの単位も、
