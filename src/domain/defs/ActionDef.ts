@@ -4,6 +4,7 @@ import type { ActiveEffect } from './ActiveEffect';
 import type { ConditionNode } from './ConditionNode';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
+import { spendDuration } from './actionTime';
 
 /** showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 7節）。 */
 export type ShowMenuMode = 'always';
@@ -49,15 +50,15 @@ export class ActionDef {
     )
       return false;
 
-    // 時間進行はeffect適用の後（先に進めるとtick中のdestroy等がselfを破棄してから効果を適用する事故になる）。
-    // ただし参照durationは適用前のselfから読む必要があるため、解決だけは適用前に行う。
+    // 所要時間は「今のselfの状態から見て、どれだけかかるか」なので、時間を進める前に解決する
+    // （切れ味の悪い刃物ほど時間がかかる、が書けるように）。
     const minutes =
       this.duration !== undefined ? Math.trunc(this.duration.resolve(self, actor, undefined)) : 0;
 
-    if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, undefined);
+    // 時間はeffect適用より先に進める。経過中に関与オブジェクトが壊れたら行動は成立しない（actionTime参照）。
+    if (!spendDuration(minutes, session, [self, actor])) return false;
 
-    // Worldを持たないセッション（単体テスト等、時間の概念が無い文脈）では時間進行をスキップする。
-    if (minutes > 0 && session.world !== undefined) session.advanceWorldTime(minutes);
+    if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, undefined);
     return true;
   }
 }
