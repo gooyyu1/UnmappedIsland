@@ -18,7 +18,7 @@
 100%で変わるのは「隠された道がもう見つからない」ことだけなので、それを補足の1行で伝える。</p>
 </div></section><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L56">src/game/ui/ExplorationWindow.ts:56</a></li></ul></aside>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L58">src/game/ui/ExplorationWindow.ts:58</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -55,7 +55,7 @@
 <li><span><span class="tsd-kind-parameter">options</span>: <a href="../interfaces/game_ui_ExplorationWindow.ExplorationWindowOptions.html" class="tsd-signature-type tsd-kind-interface">ExplorationWindowOptions</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <a href="" class="tsd-signature-type tsd-kind-class">ExplorationWindow</a></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L62">src/game/ui/ExplorationWindow.ts:62</a></li></ul></aside></div></li></ul></section></section></details>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L64">src/game/ui/ExplorationWindow.ts:64</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-プロパティ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="プロパティ-1">プロパティ<a href="#プロパティ-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -65,12 +65,12 @@
 <div class="tsd-comment tsd-typography"><p>発見物の並びを切り抜くマスクの形。表示物ではないので、閉じるときに個別に捨てる。</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L60">src/game/ui/ExplorationWindow.ts:60</a></li></ul></aside></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L62">src/game/ui/ExplorationWindow.ts:62</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-private">
 <h3 class="tsd-anchor-link" id="objects"><code class="tsd-tag">非公開</code> <code class="tsd-tag">読み取り専用</code><span>objects</span><a href="#objects" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">objects</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">GameObject</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = []</span></div><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L57">src/game/ui/ExplorationWindow.ts:57</a></li></ul></aside></section></section></details>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L59">src/game/ui/ExplorationWindow.ts:59</a></li></ul></aside></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-メソッド"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="メソッド-1">メソッド<a href="#メソッド-1" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -82,7 +82,7 @@
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>見つかったものを並べる枠。枠はFOUND_SLOTS個で固定し、収まらない分は横スクロールで送る。
 枠からはみ出したカードは、レーンと違って背景板では隠せないのでマスクで切り抜く。</p>
-<p>カードは1枚をレーンと同じ形のまま、枠の幅に合わせて縮めて描く。</p>
+<p>カードはレーンと同じ寸法で描く。ウィンドウの横幅が4枠ぶんに足りない画面でだけ、収まる大きさへ縮める。</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">パラメータ</h4>
@@ -93,7 +93,7 @@
 <li><span><span class="tsd-kind-parameter">viewport</span>: <a href="../interfaces/game_layout_ScreenMetrics.Rect.html" class="tsd-signature-type tsd-kind-interface">Rect</a></span></li></ul></div>
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L175">src/game/ui/ExplorationWindow.ts:175</a></li></ul></aside></div></li></ul></section>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L183">src/game/ui/ExplorationWindow.ts:183</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="close"><span>close</span><a href="#close" aria-label="パーマリンク" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -102,7 +102,7 @@
 <div class="tsd-description">
 <h4 class="tsd-returns-title">戻り値 <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L227">src/game/ui/ExplorationWindow.ts:227</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>定義 <a href="https://github.com/gooyyu1/UnmappedIsland/blob/main/src/game/ui/ExplorationWindow.ts#L235">src/game/ui/ExplorationWindow.ts:235</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
