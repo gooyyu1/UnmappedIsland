@@ -109,6 +109,12 @@ export class CardLane {
   /** 末尾に受け入れの空枠を出すか（CardLaneOptions.trailingPlaceholder）。 */
   private readonly trailingPlaceholder: boolean;
 
+  /**
+   * stripに属さない表示物（背景板・ピン留め部分）。カードはstripごと消えるが、これらは
+   * 個別に破棄しないと残ってしまう（背景板は入力も吸い続ける）。
+   */
+  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -125,6 +131,7 @@ export class CardLane {
     const cardY = rect.y + (rect.height - metrics.px(SIZE.cardHeight)) / 2;
 
     const panel = addPanel(scene, rect, background);
+    this.objects.push(panel);
 
     const pinnedWidth = pinned === undefined ? 0 : cardWidth + gap + dividerWidth + gap;
     const stripX = rect.x + margin + pinnedWidth;
@@ -175,6 +182,8 @@ export class CardLane {
   /** レーンごと片付ける（子ウィンドウを閉じるとき）。カード自体はstripの破棄でまとめて消える。 */
   destroy(): void {
     this.strip.destroy();
+    for (const object of this.objects) object.destroy();
+    this.objects.length = 0;
     this.maskShape?.destroy();
   }
 
@@ -330,10 +339,10 @@ export class CardLane {
     const dividerWidth = metrics.px(4);
 
     const panel = addPanel(scene, { ...rect, width: margin + cardWidth + gap + dividerWidth }, background);
-    new Card(scene, metrics, rect.x + margin, cardY, pinned);
+    this.objects.push(panel, new Card(scene, metrics, rect.x + margin, cardY, pinned));
 
     const cardHeight = metrics.px(SIZE.cardHeight);
-    scene.add.rectangle(
+    const divider = scene.add.rectangle(
       rect.x + margin + cardWidth + gap + dividerWidth / 2,
       cardY + cardHeight / 2,
       dividerWidth,
@@ -341,6 +350,7 @@ export class CardLane {
       COLOR.laneDivider,
       0.35,
     );
+    this.objects.push(divider);
     return panel;
   }
 }
