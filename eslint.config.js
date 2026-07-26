@@ -21,8 +21,8 @@ export default tseslint.config(
     },
   },
   {
-    // skill付属のNode.js CLIスクリプト。ブラウザ向けdomain/gameコードとは実行環境が異なる。
-    files: ['.claude/skills/**/*.mjs'],
+    // ビルド用・skill付属のNode.js CLIスクリプト。ブラウザ向けdomain/gameコードとは実行環境が異なる。
+    files: ['.claude/skills/**/*.mjs', 'scripts/**/*.mjs'],
     languageOptions: { globals: globals.node },
   },
 );

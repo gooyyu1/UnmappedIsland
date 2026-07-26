@@ -9,6 +9,7 @@ on:
       - 'src/**'
       - 'typedoc.json'
       - 'typedoc.readme.md'
+      - 'scripts/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'
