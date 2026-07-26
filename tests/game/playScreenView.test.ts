@@ -145,6 +145,27 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });
 
+  it('カードの識別子は、そのカードが映しているインスタンスのID一式になる', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const handSlotId = codex.slotNames.getId('hand');
+    const stones = [0, 1].map(() => game.session.spawn(codex.objectNames.getId('stone')));
+    for (const stone of stones) {
+      expect(stone.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
+    }
+    exploreToFull(game);
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.hand[0]?.identity, '同種2個は1枚のカードなので、両方のIDを持つ').toEqual(
+      stones.map((stone) => stone.instanceId),
+    );
+    expect(view.fieldItems.map((card) => card.identity), 'フィールドは1個体が1枚').toEqual(
+      game.startLocation.items
+        .map((item) => [item.instanceId])
+        .concat(game.startLocation.fixtures.map((fixture) => [fixture.instanceId])),
+    );
+  });
+
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);

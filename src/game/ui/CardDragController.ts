@@ -60,41 +60,62 @@ interface Gesture {
  */
 export class CardDragController {
   private readonly scene: Phaser.Scene;
-  private readonly metrics: ScreenMetrics;
+  /** 画面を作り直すと寸法が変わるため、その都度の値を引けるようにしておく。 */
+  private readonly metrics: () => ScreenMetrics;
   private readonly handlers: CardDragHandlers;
   private readonly lanes: CardLane[] = [];
 
   private gesture: Gesture | undefined;
 
-  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, handlers: CardDragHandlers) {
+  /**
+   * ドラッグの受け口はカード個別ではなくシーンに置く。カードは画面の更新をまたいで生き残り、
+   * 属するレーンも並びの位置も変わる（CardLane.setCards）ため、掴まれた時点で引き直す。
+   */
+  constructor(scene: Phaser.Scene, metrics: () => ScreenMetrics, handlers: CardDragHandlers) {
     this.scene = scene;
     this.metrics = metrics;
     this.handlers = handlers;
+
+    scene.input.on('dragstart', (pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject) =>
+      this.begin(object, pointer),
+    );
+    scene.input.on('drag', (pointer: Phaser.Input.Pointer) => this.update(pointer));
+    scene.input.on('dragend', (pointer: Phaser.Input.Pointer) => this.end(pointer));
   }
 
-  /** レーンをドラッグ元・ドロップ先として登録する。ドラッグできるカードだけがドラッグ元になる。 */
-  addLane(lane: CardLane): void {
-    this.lanes.push(lane);
-    lane.cardObjects.forEach((card, index) => {
-      if (card === undefined) return;
-      card.on('dragstart', (pointer: Phaser.Input.Pointer) => this.begin(lane, index, card, pointer));
-      card.on('drag', (pointer: Phaser.Input.Pointer) => this.update(pointer));
-      card.on('dragend', (pointer: Phaser.Input.Pointer) => this.end(pointer));
-    });
+  /** ドラッグ元・ドロップ先になるレーンを差し替える（画面を組み立て直したとき）。 */
+  setLanes(lanes: readonly CardLane[]): void {
+    this.cancel();
+    this.lanes.length = 0;
+    this.lanes.push(...lanes);
+  }
+
+  /** 掴まれたものが、管理下のレーンに並ぶカードならその居場所。 */
+  private locate(object: Phaser.GameObjects.GameObject): { lane: CardLane; index: number } | undefined {
+    for (const lane of this.lanes) {
+      const index = lane.cardObjects.indexOf(object as Card);
+      if (index >= 0) return { lane, index };
+    }
+    return undefined;
   }
 
   /**
    * Phaserはしきい値なしでポインタを押した時点でdragstartを出すため、ここではまだどちらの操作かを
    * 決めず、ロングプレスの計測だけを始める（レーン側もスクロールの基準を控えておく）。
    */
-  private begin(lane: CardLane, index: number, card: Card, pointer: Phaser.Input.Pointer): void {
+  private begin(object: Phaser.GameObjects.GameObject, pointer: Phaser.Input.Pointer): void {
     this.cancel();
+
+    const found = this.locate(object);
+    if (found === undefined) return;
+
+    const { lane, index } = found;
     lane.beginScroll();
 
     const gesture: Gesture = {
       lane,
       index,
-      card,
+      card: object as Card,
       startX: pointer.x,
       startY: pointer.y,
       kind: 'pending',
@@ -104,7 +125,7 @@ export class CardDragController {
     };
     this.gesture = gesture;
 
-    const slop = this.metrics.px(LONG_PRESS_SLOP);
+    const slop = this.metrics().px(LONG_PRESS_SLOP);
     gesture.longPress = this.scene.time.delayedCall(LONG_PRESS_MS, () => {
       if (this.gesture !== gesture || gesture.kind !== 'pending') return;
       if (Math.hypot(pointer.x - gesture.startX, pointer.y - gesture.startY) > slop) return;
@@ -125,7 +146,7 @@ export class CardDragController {
   private decide(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
     const dx = pointer.x - gesture.startX;
     const dy = pointer.y - gesture.startY;
-    if (Math.hypot(dx, dy) < this.metrics.px(DIRECTION_THRESHOLD)) return;
+    if (Math.hypot(dx, dy) < this.metrics().px(DIRECTION_THRESHOLD)) return;
 
     if (Math.abs(dy) > Math.abs(dx) * VERTICAL_RATIO) this.startDragging(pointer);
     else gesture.kind = 'scrolling';
@@ -139,7 +160,7 @@ export class CardDragController {
     gesture.card.setAlpha(GRABBED_ALPHA);
     // 分身を先に作り、枠を後から作る（後に作ったものが手前に描かれる）。どこへ落ちるかの方が
     // 分身の見た目より大事なので、枠を分身の上に出す。
-    gesture.ghost = new Card(this.scene, this.metrics, 0, 0, {
+    gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, {
       icon: gesture.card.content.icon,
       name: gesture.card.content.name,
     });
@@ -167,8 +188,8 @@ export class CardDragController {
       fill: COLOR.cardDropTarget,
       fillAlpha: INDICATOR_FILL_ALPHA,
       border: COLOR.cardDropTarget,
-      borderWidth: this.metrics.px(INDICATOR_BORDER),
-      radius: this.metrics.px(SIZE.radius),
+      borderWidth: this.metrics().px(INDICATOR_BORDER),
+      radius: this.metrics().px(SIZE.radius),
     });
   }
 
@@ -184,7 +205,7 @@ export class CardDragController {
     return undefined;
   }
 
-  /** ドロップの実行はワールドを変え画面を作り直すので、その前に表示物を片付けておく。 */
+  /** ドロップの実行はカードを動かすので、その前にドラッグ中の表示物を片付けておく。 */
   private end(pointer: Phaser.Input.Pointer): void {
     const gesture = this.gesture;
     if (gesture === undefined) return;
@@ -201,7 +222,8 @@ export class CardDragController {
     gesture.longPress?.remove();
     gesture.ghost?.destroy();
     gesture.indicator?.destroy();
-    gesture.card.setAlpha(1);
+    // 掴んでいたカードは、画面を作り直していれば既に破棄されている（sceneがundefinedになる）。
+    if (gesture.card.scene !== undefined) gesture.card.setAlpha(1);
     this.gesture = undefined;
   }
 }

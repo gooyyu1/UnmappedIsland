@@ -23,6 +23,8 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
 
   readonly contentWidth: number;
 
+  private readonly metrics: ScreenMetrics;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -34,7 +36,32 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     onTap?: () => void,
   ) {
     super(scene, x, y);
+    this.metrics = metrics;
 
+    this.contentWidth = this.draw(elapsedDays, hour, minute);
+
+    // サイズを設定しない理由はButtonのヒット領域についてのコメントを参照。
+    this.setInteractive(
+      new Phaser.Geom.Rectangle(0, 0, this.contentWidth, metrics.px(DAY_DIGIT.height)),
+      Phaser.Geom.Rectangle.Contains,
+    );
+    this.on('pointerup', () => onTap?.());
+
+    scene.add.existing(this);
+  }
+
+  /**
+   * 表示する日時を差し替える。桁数は固定（日数3桁・時刻4桁）なので、書き直しても幅は変わらない。
+   */
+  setTime(elapsedDays: number, hour: number, minute: number): void {
+    this.removeAll(true);
+    this.draw(elapsedDays, hour, minute);
+  }
+
+  /** 桁とラベルを左から並べ、占有した幅を返す。 */
+  private draw(elapsedDays: number, hour: number, minute: number): number {
+    const scene = this.scene;
+    const metrics = this.metrics;
     const height = metrics.px(DAY_DIGIT.height);
     let cursor = 0;
 
@@ -52,16 +79,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
       cursor += metrics.px(TIME_DIGIT.width + DIGIT_GAP);
       if (i === 1) cursor += this.addLabel(scene, metrics, cursor, height, ':', 32);
     }
-    this.contentWidth = cursor - metrics.px(DIGIT_GAP);
-
-    // サイズを設定しない理由はButtonのヒット領域についてのコメントを参照。
-    this.setInteractive(
-      new Phaser.Geom.Rectangle(0, 0, this.contentWidth, height),
-      Phaser.Geom.Rectangle.Contains,
-    );
-    this.on('pointerup', () => onTap?.());
-
-    scene.add.existing(this);
+    return cursor - metrics.px(DIGIT_GAP);
   }
 
   private addDigit(

@@ -30,6 +30,12 @@ export interface CardEdgeAction {
 export interface CardContent {
   readonly icon: string;
   readonly name: string;
+  /**
+   * 内容を差し替えたときに「前と同じカード」だと分かるための識別子（映しているインスタンスのID）。
+   * 1枚が複数のインスタンス（スタック）を表すことがあるので集合で持ち、1つでも重なれば同じカードと
+   * みなす。省略したカードは差し替えのたびに別のカードとして扱われる。
+   */
+  readonly identity?: readonly number[];
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
   readonly onTap?: () => void;
   /** 端だけを押したときの動作。端ではカード全体の動作より優先される。 */
@@ -43,7 +49,10 @@ export interface CardContent {
  * 大きなアイコンを中央に敷き、名前を左上へ重ねる（ScreenLayout.md デザインメモ）。
  */
 export class Card extends Phaser.GameObjects.Container {
-  readonly content: CardContent;
+  private _content: CardContent;
+  get content(): CardContent {
+    return this._content;
+  }
 
   /** カードの実寸。ドラッグ中の分身やドロップ先の枠を同じ大きさで描くために公開する。 */
   readonly cardWidth: number;
@@ -55,7 +64,7 @@ export class Card extends Phaser.GameObjects.Container {
 
     const width = metrics.px(SIZE.cardWidth);
     const height = metrics.px(SIZE.cardHeight);
-    this.content = content;
+    this._content = content;
     this.cardWidth = width;
     this.cardHeight = height;
 
@@ -95,7 +104,7 @@ export class Card extends Phaser.GameObjects.Container {
 
     this.add([face, iconText, nameText]);
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
-    if (content.onTap !== undefined) this.makeTappable(content.onTap);
+    if (content.onTap !== undefined) this.makeTappable();
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
     // 入力を受け取る（InputPlugin.topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
     // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
@@ -104,17 +113,25 @@ export class Card extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
+  /**
+   * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・名前・端の向きは変わらない
+   * 前提で、操作の実体（毎回作り直されるクロージャ）だけを新しくする。
+   */
+  setContent(content: CardContent): void {
+    this._content = content;
+  }
+
   /** Containerのdisplay originによるヒット領域のずれを避ける理由はButtonと同じ（サイズを設定しない）。 */
   private makeInteractive(width: number, height: number): void {
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
   }
 
-  private makeTappable(onTap: () => void): void {
+  private makeTappable(): void {
     this.on('pointerdown', () => this.setAlpha(PRESSED_ALPHA));
     this.on('pointerout', () => this.setAlpha(1));
     this.on('pointerup', () => {
       this.setAlpha(1);
-      onTap();
+      this._content.onTap?.();
     });
   }
 
@@ -164,7 +181,7 @@ export class Card extends Phaser.GameObjects.Container {
     hitArea.on('pointerout', () => feedback.setVisible(false));
     hitArea.on('pointerup', () => {
       feedback.setVisible(false);
-      edge.onTap();
+      this._content.edge?.onTap();
     });
 
     this.add([feedback, hitArea]);

@@ -86,10 +86,12 @@ export function fromGameSession(
   locale: Localization,
 ): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
-  const cardOf = (instance: WorldObject, icon: string): ItemCard => ({
+  // 1枚のカードが複数のインスタンス（スタック）を表すことがあるため、識別子は先頭を代表とする集合で持つ。
+  const cardOf = (instances: readonly WorldObject[], icon: string): ItemCard => ({
     icon,
-    name: locale.object(instance.def.name).displayName,
-    object: instance,
+    name: locale.object(instances[0].def.name).displayName,
+    identity: instances.map((instance) => instance.instanceId),
+    object: instances[0],
   });
 
   return {
@@ -122,23 +124,24 @@ export function fromGameSession(
       name:
         game.map.nameOfInstance(new Path(path, codex.propertyNames).destinationInstanceId) ??
         UNNAMED_LOCATION,
+      identity: [path.instanceId],
     })),
     fieldItems: [
       ...location.items.map((item) => ({
-        ...cardOf(item, ITEM_ICON),
+        ...cardOf([item], ITEM_ICON),
         move: (gapIndex?: number) => {
           game.player.take(item, game.session, gapIndex);
         },
       })),
-      ...location.fixtures.map((fixture) => cardOf(fixture, FIXTURE_ICON)),
+      ...location.fixtures.map((fixture) => cardOf([fixture], FIXTURE_ICON)),
     ],
-    hand: game.player.hand.map((item) =>
-      item === undefined
+    hand: game.player.handStacks.map((stack) =>
+      stack.length === 0
         ? undefined
         : {
-            ...cardOf(item, ITEM_ICON),
+            ...cardOf(stack, ITEM_ICON),
             move: () => {
-              game.player.drop(item, game.session);
+              game.player.drop(stack[0], game.session);
             },
           },
     ),
