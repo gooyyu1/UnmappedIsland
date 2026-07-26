@@ -3,6 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addLabel } from './labels';
 import type { BoxStyle } from './shapes';
 import { drawBox } from './shapes';
+import { onPressRelease } from './tap';
 import { COLOR, SIZE } from './theme';
 
 /** 押下中の沈み込み表現。実装が絵を持たないため、透過で押されたことを示す。 */
@@ -35,11 +36,13 @@ export class Button extends Phaser.GameObjects.Container {
       new Phaser.Geom.Rectangle(0, 0, rect.width, rect.height),
       Phaser.Geom.Rectangle.Contains,
     );
-    this.on('pointerdown', () => this.setAlpha(PRESSED_ALPHA));
-    this.on('pointerout', () => this.setAlpha(1));
-    this.on('pointerup', () => {
-      this.setAlpha(1);
-      onTap?.();
+    onPressRelease(this, {
+      onPress: () => this.setAlpha(PRESSED_ALPHA),
+      onCancel: () => this.setAlpha(1),
+      onRelease: () => {
+        this.setAlpha(1);
+        onTap?.();
+      },
     });
 
     scene.add.existing(this);
