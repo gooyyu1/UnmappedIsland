@@ -159,7 +159,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.hand[0]?.identity, '同種2個は1枚のカードなので、両方のIDを持つ').toEqual(
       stones.map((stone) => stone.instanceId),
     );
-    expect(view.fieldItems.map((card) => card.identity), 'フィールドは1個体が1枚').toEqual(
+    expect(
+      view.fieldItems.map((card) => card.identity),
+      'フィールドは1個体が1枚',
+    ).toEqual(
       game.startLocation.items
         .map((item) => [item.instanceId])
         .concat(game.startLocation.fixtures.map((fixture) => [fixture.instanceId])),

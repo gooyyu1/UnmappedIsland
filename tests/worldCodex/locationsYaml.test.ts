@@ -47,7 +47,10 @@ describe('locations.yamlの土地・道定義', () => {
     for (const name of LAND_NAMES) {
       const land = def(name);
       for (const slotName of ['items', 'fixtures', 'characters', 'undiscovered_paths', 'paths'])
-        expect(land.getSlotDef(codex.slotNames.getId(slotName)), `${name} は ${slotName} スロットを持つ`).toBeDefined();
+        expect(
+          land.getSlotDef(codex.slotNames.getId(slotName)),
+          `${name} は ${slotName} スロットを持つ`,
+        ).toBeDefined();
 
       const characters = land.getSlotDef(codex.slotNames.getId('characters'));
       expect(characters?.fixedPositions, `${name} のキャラクタスロットは固定型`).toBe(true);
@@ -107,9 +110,10 @@ describe('locations.yamlの土地・道定義', () => {
     expect(view.explorationProgress).toBe(view.explorationProgressMax);
     const itemTag = codex.tagNames.getId('item');
     const fixtureTag = codex.tagNames.getId('fixture');
-    expect(view.items.every((o) => o.def.tags.includes(itemTag)), 'itemsスロットにはitemタグの発見物だけが入る').toBe(
-      true,
-    );
+    expect(
+      view.items.every((o) => o.def.tags.includes(itemTag)),
+      'itemsスロットにはitemタグの発見物だけが入る',
+    ).toBe(true);
     expect(
       view.fixtures.every((o) => o.def.tags.includes(fixtureTag)),
       'fixturesスロットにはfixtureタグの発見物だけが入る',
@@ -131,7 +135,9 @@ describe('locations.yamlの土地・道定義', () => {
     const locationsSlotId = codex.slotNames.getId('locations');
     expect(grassland.moveToSlot(worldInstance, locationsSlotId, codex.wellKnown)).toBeUndefined();
     expect(forest.moveToSlot(worldInstance, locationsSlotId, codex.wellKnown)).toBeUndefined();
-    expect(character.moveToSlot(grassland, codex.slotNames.getId('characters'), codex.wellKnown)).toBeUndefined();
+    expect(
+      character.moveToSlot(grassland, codex.slotNames.getId('characters'), codex.wellKnown),
+    ).toBeUndefined();
     expect(
       pathToForest.moveToSlot(grassland, codex.slotNames.getId('undiscovered_paths'), codex.wellKnown),
     ).toBeUndefined();

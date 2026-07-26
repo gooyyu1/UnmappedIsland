@@ -591,7 +591,10 @@ object_defs:
     aInstance.setProperty(spawnEId, 0);
     handInstance.tick(session);
 
-    expect(hand6.contents.some((o) => o.def.name === 'type_e3'), 'handには入らない').toBe(false);
+    expect(
+      hand6.contents.some((o) => o.def.name === 'type_e3'),
+      'handには入らない',
+    ).toBe(false);
     const ground = locationInstance.tryGetSlot(groundSlotId)!;
     expect(
       ground.contents.some((o) => o.def.name === 'type_e3'),

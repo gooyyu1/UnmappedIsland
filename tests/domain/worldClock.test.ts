@@ -49,7 +49,11 @@ object_defs:
         value: 1
 `;
     const codex = load(yaml);
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), new WorldSession(codex));
+    const instance = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
     return { codex, world: new World(instance, codex.propertyNames) };
   }
 

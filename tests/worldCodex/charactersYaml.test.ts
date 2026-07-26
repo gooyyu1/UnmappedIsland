@@ -64,18 +64,15 @@ describe('characters.yamlのcharacter定義', () => {
     expect(prop.range?.max).toBe(expectedMax);
   });
 
-  it.each(['satiety', 'hydration', 'body_fat', 'wakefulness'])(
-    '%sはtickごとに100ずつ減衰する',
-    (name) => {
-      const session = new WorldSession(codex);
-      const character = codex.objects.get(codex.objectNames.getId('character'));
-      const instance = new WorldObject(1, character, session);
-      const propId = codex.propertyNames.getId(name);
-      const before = instance.getNumber(propId);
+  it.each(['satiety', 'hydration', 'body_fat', 'wakefulness'])('%sはtickごとに100ずつ減衰する', (name) => {
+    const session = new WorldSession(codex);
+    const character = codex.objects.get(codex.objectNames.getId('character'));
+    const instance = new WorldObject(1, character, session);
+    const propId = codex.propertyNames.getId(name);
+    const before = instance.getNumber(propId);
 
-      instance.tick(session);
+    instance.tick(session);
 
-      expect(instance.getNumber(propId)).toBe(before - 100);
-    },
-  );
+    expect(instance.getNumber(propId)).toBe(before - 100);
+  });
 });
