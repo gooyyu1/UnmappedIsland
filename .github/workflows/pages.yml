@@ -1,11 +1,13 @@
 name: Publish docs and game to GitHub Pages
 
-# ドキュメントのHTMLとビルドしたゲームを、まとめてdocs/へコミットする。GitHub Pagesはmainブランチの
-# /docsを配信する設定なので、コミットした時点で公開される。
+# ドキュメントのHTMLとビルドしたゲームをdocs/へ出力し、GitHub Pagesへ直接デプロイする。
 #
-# ドキュメントとゲームで2本に分けない: どちらもdocs/へコミットしてmainへpushするため、分けると
-# mainへのpushが2回になり、Pagesのビルド（pages-build-deployment）もマージのたびに2回走る。
-# 1本にまとめてpushを1回にすれば、Pagesのビルドも1回で済む。
+# 生成物はリポジトリへコミットしない（docs/は.gitignore）。以前はmainのdocs/を配信する設定で、
+# ワークフローが生成物をコミットしていたが、それだとマージのたびに生成物一式が履歴へ積まれ、
+# ドキュメント側とゲーム側のpushでPagesのビルドも2回走っていた。
+#
+# 前提: リポジトリ設定のPagesのソースが「GitHub Actions」になっていること。
+# 「Deploy from a branch」のままだとdeploy-pagesが失敗する。
 
 on:
   push:
@@ -27,15 +29,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
-  # 手動実行と push が重なってもdocs/への書き込みが交錯しないよう、同時には走らせない。
-  group: pages-publish
+  # 走っているデプロイは止めない（公開途中で打ち切ると中途半端な状態になるため）。
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  publish:
+  build:
     name: docs / game
     runs-on: ubuntu-latest
 
@@ -61,10 +65,7 @@ jobs:
         run: |
           # サブフォルダごとの出力先は後続の変換ループが`mkdir -p "$out_dir"`で都度作成するため、
           # ここではDocuments/配下のフォルダ名をハードコードしない（フォルダ構成が変わっても壊れない）。
-          # docs/Gameは後のステップがビルドし直すので、ここでは消さない（消すと索引ページが
-          # Game/へのリンクを落としてしまう）。
-          mkdir -p docs
-          find docs -mindepth 1 -maxdepth 1 ! -name 'Game' -exec rm -rf {} +
+          rm -rf docs
           mkdir -p docs/Documents
 
       - name: Convert markdown files to HTML
@@ -193,16 +194,20 @@ jobs:
             generate_index "$d"
           done
 
-      - name: Commit generated files
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A docs/
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore: publish docs and game to GitHub Pages [skip ci]"
-            # 手動実行と重なって待たされている間に進んだ分を取り込んでから押し上げる。
-            git pull --rebase origin main
-            git push
-          fi
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -3,22 +3,18 @@
 設計方針・コメントの書き方は [`CLAUDE.md`](../CLAUDE.md)、TypeScriptのコーディング規約は
 [`Documents/Engine/CodingConventions.md`](../Documents/Engine/CodingConventions.md) に従うこと。
 
-## docs/ フォルダについて
+## 公開サイト（GitHub Pages）について
 
-> ⛔ **`docs/` フォルダは絶対に編集・コミットしてはならない。** ⛔
+公開サイトは `.github/workflows/pages.yml` が `main` へのプッシュのたびに丸ごと作り直し、
+GitHub Pages へ直接デプロイする。**生成物はリポジトリに存在しない**（出力先の `docs/` は
+`.gitignore` 済み）。
 
-`docs/` フォルダは **`Documents/` から自動生成される**。
+- Markdown (`Documents/**/*.md`) は Pandoc で HTML に変換される。
+- HTML・画像などの静的ファイル (`Documents/**/*.html`, `*.png` 等) はそのままコピーされる。
+- ソースリファレンスは TypeDoc、ゲーム本体は Vite がビルドする。
 
-- Markdown ファイル (`Documents/**/*.md`) は Pandoc で HTML に変換され `docs/` へ出力される。
-- HTML・画像などの静的ファイル (`Documents/**/*.html`, `*.png` 等) はそのまま `docs/` にコピーされる。
-- 変換・コピーは `.github/workflows/pages.yml` の GitHub Actions ワークフローが `main` ブランチへのプッシュ時に自動実行する。
-
-**ドキュメント類を修正する際は必ず `Documents/` 以下のファイルを編集すること。** `docs/` への変更は次回ワークフロー実行時に上書きされる。
-
-**エージェントへの厳守ルール:**
-- `docs/` 以下のファイルを `create`・`edit`・`git checkout`・`git add` 等の手段でいかなる変更も行ってはならない。
-- `git add docs/` や `git add docs/<file>` を実行してはならない。
-- コミットに `docs/` 以下の変更が含まれていてはならない。これを過去に誤って行った場合は直ちに `git checkout <prev_sha> -- docs/` で元に戻すこと。
+**ドキュメント類を修正する際は必ず `Documents/` 以下のファイルを編集すること。** ローカルに
+`docs/` を作っても公開内容には一切影響しない（コミットもされない）。
 
 ---
 

@@ -60,7 +60,7 @@ UnmappedIsland/
 │   ├── Engine/           # ルール・エンジン（YAML文法・汎用サブシステム・実装ガイド）
 │   ├── World/            # ワールド（地形・気候・アイテムなど実際にゲームに登場する内容）
 │   └── Diagnostics/      # 計測レポート（気候統計など）
-└── docs/                 # GitHub Pages の配信元（自動生成・直接編集不可）
+└── docs/                 # 公開サイトの生成物（.gitignore済み・リポジトリには入らない）
     ├── Documents/        # Documents/ から生成したHTML
     ├── Reference/        # src/ から生成したソースリファレンス（TypeDoc）
     └── Game/             # ビルド済みのゲーム本体
