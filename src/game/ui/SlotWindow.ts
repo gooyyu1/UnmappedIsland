@@ -32,6 +32,12 @@ export interface SlotWindowOptions {
    */
   readonly area: Rect;
 
+  /**
+   * このスロットがカードを受け入れるか。受け入れる場合だけ、並びの末尾に受け皿の空枠を出す
+   * （中身が空でも落とせる場所だと分かるように、CardLaneOptions.trailingPlaceholder）。
+   */
+  readonly acceptsCards: boolean;
+
   readonly onClose: () => void;
 }
 
@@ -98,7 +104,7 @@ export class SlotWindow {
       { x: windowX + padding, y: laneY, width: windowWidth - padding * 2, height: laneHeight },
       COLOR.slotWindowLane,
       options.cards,
-      { clip: true },
+      { clip: true, trailingPlaceholder: options.acceptsCards },
     );
 
     this.objects.push(

@@ -171,6 +171,8 @@ export class PlayScene extends ResponsiveScene {
       fieldItems,
       COLOR.fieldItemLane,
       this.laneCards(this.view.fieldItems, 'down'),
+      // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
+      { trailingPlaceholder: this.view.acceptsCards('field') },
     );
     this.handLane = new CardLane(
       this,
@@ -290,6 +292,7 @@ export class PlayScene extends ResponsiveScene {
       title: place === 'equipment' ? '装備' : '怪我',
       cards: this.laneCards(this.slotWindowCards(), 'down'),
       area: this.slotWindowArea,
+      acceptsCards: this.view.acceptsCards(place),
       onClose: () => this.closeSlotWindow(),
     });
     this.setDragLanes();

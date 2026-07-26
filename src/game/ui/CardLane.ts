@@ -40,6 +40,12 @@ export interface CardLaneOptions {
    * 「隣接エリアの背景板が上から覆って隠す」で、周りに背景板が無い子ウィンドウでは通用しないため。
    */
   readonly clip?: boolean;
+  /**
+   * 並びの末尾に、カードを受け入れることを示す空枠を1つ出すか。カードを落とせる前詰めのレーンで立てる。
+   * 前詰めのレーンは中身が空だと何も描かれず、操作を受け付けるかどうかが見て分からないため。
+   * 固定枠のレーンは空き枠そのものが常に見えているので不要。
+   */
+  readonly trailingPlaceholder?: boolean;
 }
 
 /** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardMotion）が決める。 */
@@ -100,6 +106,9 @@ export class CardLane {
   /** はみ出しを切り抜くマスクの形（clipのときだけ持つ）。表示物ではないので破棄も自分で行う。 */
   private readonly maskShape: Phaser.GameObjects.Graphics | undefined;
 
+  /** 末尾に受け入れの空枠を出すか（CardLaneOptions.trailingPlaceholder）。 */
+  private readonly trailingPlaceholder: boolean;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -129,6 +138,7 @@ export class CardLane {
     this.cardY = cardY;
     this.insertMarkWidth = metrics.px(INSERT_MARK_WIDTH);
     this.originX = stripX;
+    this.trailingPlaceholder = options.trailingPlaceholder === true;
     this.stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
     this.strip = scene.add.container(stripX, cardY);
     // 最初の1回だけは出どころが無いので、setCardsが伏せたカードをそのまま表に返す。
@@ -198,7 +208,9 @@ export class CardLane {
     for (const card of reusable) this.strip.remove(card);
     this.resetPlaceholders();
 
-    const contentWidth = cards.length === 0 ? 0 : cards.length * this.pitch - (this.pitch - this.cardWidth);
+    // 末尾の空枠も送れる範囲に含める（画面外に置いたままでは受け皿にならない）。
+    const slots = cards.length + (this.trailingPlaceholder ? 1 : 0);
+    const contentWidth = slots === 0 ? 0 : slots * this.pitch - (this.pitch - this.cardWidth);
     this.minScrollX = Math.min(0, this.stripWidth - contentWidth);
     this.scrollTo(this.strip.x - this.originX);
 
@@ -218,6 +230,10 @@ export class CardLane {
     this.placeholders = this._cardObjects.flatMap((card, index) =>
       card === undefined ? [new EmptyCard(this.scene, this.metrics, index * this.pitch, 0)] : [],
     );
+    if (this.trailingPlaceholder) {
+      const at = this._cardObjects.length * this.pitch;
+      this.placeholders.push(new EmptyCard(this.scene, this.metrics, at, 0));
+    }
     // 空きセルの枠はカードより奥に敷く（飛んできたカードが枠に隠れないように）。
     for (const placeholder of this.placeholders) {
       this.strip.add(placeholder);
@@ -283,6 +299,10 @@ export class CardLane {
   /** ドロップ先を示す枠の位置（カード・空きセルならその枠そのもの、隙間なら細い縦帯）。 */
   dropIndicatorRect(target: LaneDropTarget): Rect {
     if (target.kind !== 'gap') return this.slotRect(target.index);
+    // 末尾の空枠へ落とすときは、そこが受け皿なので帯ではなく枠そのものを示す。
+    if (this.trailingPlaceholder && target.index === this._cardObjects.length) {
+      return this.slotRect(target.index);
+    }
 
     // 隙間の中心は「右隣のカードの左端 - ギャップの半分」。両端の隙間はレーンからはみ出すので収める。
     const center = this.strip.x + target.index * this.pitch - (this.pitch - this.cardWidth) / 2;

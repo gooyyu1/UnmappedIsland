@@ -88,6 +88,12 @@ export interface PlayScreenView {
   readonly injuries: readonly ItemCard[];
 
   /**
+   * その場所がカードを受け入れるか（怪我のような読み取り専用の場所はfalse）。中身が空でも
+   * 「落とせる場所かどうか」を見せるために、画面側が受け皿の空枠を出すかの判断に使う。
+   */
+  readonly acceptsCards: (place: CardPlace) => boolean;
+
+  /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
    * 実行できる組み合わせが無ければundefined。
    *
@@ -253,6 +259,7 @@ export function fromGameSession(
     })),
     // 怪我はワールド側の効果だけが付け外しするため、moveTo/reorderを持たせない。
     injuries: game.player.injuryStacks.map((stack) => cardOf(stack, INJURY_ICON, 'injuries')),
+    acceptsCards: (place) => slotOf[place] !== undefined,
     combinationOf: (dragged, target) => {
       const [combination] = target.object.findMatchingCombinations(dragged.object);
       if (combination === undefined) return undefined;
