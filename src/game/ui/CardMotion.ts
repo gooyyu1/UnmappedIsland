@@ -12,6 +12,19 @@ const FLY_EASE = 'Quad.easeOut';
 const FADE_MS = 200;
 
 /**
+ * 差し替えのきっかけ。どちらも「そのカードがどこから動き出すか」を決めるための情報。
+ */
+export interface MotionContext {
+  /** 差し替え前に画面に無かったカード（探索・クラフトで生まれたもの）の出発点。 */
+  readonly origin?: Rect;
+  /**
+   * 掴んで離したインスタンスと、手を離した時点の矩形。そのカードは元の枠ではなく、指を離した場所に
+   * 居るため、そこから動き出す。
+   */
+  readonly released?: { readonly id: number; readonly rect: Rect };
+}
+
+/**
  * レーンの内容の差し替えを、カードの動きとして見せる。
  *
  * カードの同定はCardContent.identity（映しているインスタンスのID）で行う。差し替えの前後で
@@ -40,14 +53,11 @@ export class CardMotion {
     this.layer = scene.add.container(0, 0).setDepth(1);
   }
 
-  /**
-   * 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcontentsは同じ順に対応する。
-   * originは、差し替え前に画面に無かったカード（探索・クラフトで生まれたもの）の出発点。
-   */
+  /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcontentsは同じ順に対応する。 */
   update(
     lanes: readonly CardLane[],
     contents: readonly (readonly (CardContent | undefined)[])[],
-    origin?: Rect,
+    context: MotionContext = {},
   ): void {
     const before = ownersOf(lanes);
     const updates = lanes.map((lane, index) => lane.setCards(contents[index]));
@@ -58,11 +68,12 @@ export class CardMotion {
 
     updates.forEach((update, index) => {
       for (const { card, index: slot } of update.entered) {
-        this.fly(card, rectOf(before, idsOf(card)) ?? origin, lanes[index].slotRect(slot));
+        const from = releasedRect(idsOf(card), context) ?? rectOf(before, idsOf(card)) ?? context.origin;
+        this.fly(card, from, lanes[index].slotRect(slot));
       }
     });
 
-    this.moveInstances(lanes, updates, before, origin);
+    this.moveInstances(lanes, updates, before, context);
 
     for (const { left } of updates) {
       for (const card of left) {
@@ -77,6 +88,17 @@ export class CardMotion {
   }
 
   /**
+   * 掴んで離したカードが元の場所に残ったときに、手を離した位置からそこへ戻る動きを見せる。
+   *
+   * 重ねてもカード自身は動かないcombination（石を打ち割る等）では、ワールドの差し替えを待っても
+   * カードは動かないため動きが出ない。それだと指を離した瞬間にカードが枠へ瞬間移動して見えるので、
+   * 離した時点でここから戻す（時間のかかるcombinationでは、差し替えは経過し切ってからになる）。
+   */
+  returnCard(content: CardContent, from: Rect, to: Rect): void {
+    this.stackOnto(new Card(this.scene, this.metrics, from.x, from.y, cardFace(content)), from, to);
+  }
+
+  /**
    * カードそのものは動かない、インスタンス1つぶんの移動を見せる。
    *
    * 1枚のカードがスタック全体を映すため、居続けるカードの間でインスタンスが移った場合、どちらの
@@ -88,7 +110,7 @@ export class CardMotion {
     lanes: readonly CardLane[],
     updates: readonly LaneUpdate[],
     before: ReadonlyMap<number, Owner>,
-    origin: Rect | undefined,
+    context: MotionContext,
   ): void {
     // カードごと出入りするぶんは、そのカード自身が飛ぶ（fly・dismiss）ので数えない。
     const entered = new Set(updates.flatMap((update) => update.entered).map(({ card }) => card));
@@ -99,7 +121,7 @@ export class CardMotion {
         if (card === undefined || entered.has(card)) return;
 
         const to = lane.slotRect(slot);
-        for (const from of arrivalsAt(card, before, left, origin)) {
+        for (const from of arrivalsAt(card, before, left, context)) {
           this.stackOnto(
             new Card(this.scene, this.metrics, from.x, from.y, cardFace(card.content)),
             from,
@@ -140,7 +162,7 @@ export class CardMotion {
 
   /**
    * 居なくなったカードを片付ける。同じインスタンスがまだ他のカードに映っているなら（スタックへの
-   * 合流）そこへ重ね、どこにも無いなら（破棄）その場で薄れさせる。
+   * 合流）そこへ重ね、どこにも無いなら（破棄）その場で消す。
    */
   private dismiss(card: Card, from: Rect | undefined, to: Rect | undefined): void {
     if (from === undefined) {
@@ -148,15 +170,10 @@ export class CardMotion {
       return;
     }
 
+    // 行き先が無い＝そのインスタンスが世界から消えた。カードもその場で消す（薄れさせると、掴んで
+    // 離したカードが即座に消えるのと食い違って見える）。
     if (to === undefined) {
-      this.layer.add(card);
-      card.setPosition(from.x, from.y);
-      this.scene.tweens.add({
-        targets: card,
-        alpha: 0,
-        duration: FADE_MS,
-        onComplete: () => card.destroy(),
-      });
+      card.destroy();
       return;
     }
     this.stackOnto(card, from, to);
@@ -205,14 +222,24 @@ function arrivalsAt(
   card: Card,
   before: ReadonlyMap<number, Owner>,
   left: ReadonlySet<Card>,
-  origin: Rect | undefined,
+  context: MotionContext,
 ): readonly Rect[] {
   return idsOf(card).flatMap((id) => {
     const previous = before.get(id);
-    if (previous === undefined) return origin === undefined ? [] : [origin];
+    // 掴んで離したものは、指を離した場所から動き出す。元と同じカードに残ったぶんは、離した時点で
+    // 戻る動きを見せている（CardMotion.returnCard）ので、ここでは二重に動かさない。
+    if (id === context.released?.id) return previous?.card === card ? [] : [context.released.rect];
+
+    if (previous === undefined) return context.origin === undefined ? [] : [context.origin];
     if (previous.card === card || left.has(previous.card)) return [];
     return [previous.rect];
   });
+}
+
+/** そのカードが、掴んで離したインスタンスを映しているなら、手を離した位置。 */
+function releasedRect(ids: readonly number[], context: MotionContext): Rect | undefined {
+  const { released } = context;
+  return released !== undefined && ids.includes(released.id) ? released.rect : undefined;
 }
 
 function idsOf(card: Card): readonly number[] {

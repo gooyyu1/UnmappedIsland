@@ -20,6 +20,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
+import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
@@ -213,7 +214,7 @@ export class PlayScene extends ResponsiveScene {
     // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
     this.drag ??= new CardDragController(this, () => this.metrics, {
       describeDrop: (drop) => this.describeDrop(drop),
-      onDrop: (drop) => this.applyDrop(drop),
+      onDrop: (drop, released) => this.applyDrop(drop, released),
     });
     this.setDragLanes();
   }
@@ -321,13 +322,28 @@ export class PlayScene extends ResponsiveScene {
     return this.slotWindowPlace === undefined ? [] : this.view.cardsIn(this.slotWindowPlace);
   }
 
-  /** ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。 */
-  private applyDrop(drop: CardDrop): void {
+  /**
+   * ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。
+   * 掴んでいたカードは手を離した場所に居るので、そこから動き出す（releasedは分身が居た矩形）。
+   */
+  private applyDrop(drop: CardDrop, released: Rect): void {
     const action = this.dropAction(drop);
     if (action === undefined) return;
 
-    const origin = drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined;
-    this.applyToWorld(action, origin);
+    const dragged = this.combinationAt(drop)?.source ?? this.cardsOf(drop.from)[drop.fromIndex]?.objects[0];
+    const stayed = dragged?.parent;
+
+    this.applyToWorld(action, {
+      origin: drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined,
+      released: dragged === undefined ? undefined : { id: dragged.instanceId, rect: released },
+    });
+
+    // 掴んでいたカードが元の場所に残ったなら、その場で戻す（重ねてもカード自身は動かないcombination）。
+    // ワールドは既に変わっているので、居場所が変わっていないことをここで確かめられる。
+    const content = drop.from.cardObjects[drop.fromIndex]?.content;
+    if (dragged !== undefined && content !== undefined && dragged.parent === stayed) {
+      this.motion.returnCard(content, released, drop.from.slotRect(drop.fromIndex));
+    }
   }
 
   /**
@@ -400,7 +416,7 @@ export class PlayScene extends ResponsiveScene {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.found = this.foundSince(shownBefore);
-      this.showView(this.locationLane.pinnedRect);
+      this.showView({ origin: this.locationLane.pinnedRect });
     });
   }
 
@@ -478,14 +494,14 @@ export class PlayScene extends ResponsiveScene {
    * その操作がゲーム内時間を消費した場合（durationを持つcombination等）は、探索と同じく経過分だけ
    * 実時間をかけてから結果を見せる。時間を消費しない操作は待たずにそのまま反映される（passTime参照）。
    */
-  private applyToWorld(change: () => void, origin?: Rect): void {
+  private applyToWorld(change: () => void, context: MotionContext = {}): void {
     if (this.passingTime) return;
 
     const startedAt = this.gameSession.world.totalMinutes;
     change();
     this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-      this.showView(origin);
+      this.showView(context);
     });
   }
 
@@ -493,7 +509,7 @@ export class PlayScene extends ResponsiveScene {
    * 今のthis.viewを画面へ反映する。カードは作り直さずに差し替え、動いた分をアニメーションで
    * 見せる（CardMotion）。
    */
-  private showView(origin?: Rect): void {
+  private showView(context: MotionContext = {}): void {
     const lanes = [this.locationLane, this.fieldItemLane, this.handLane];
     const contents: (readonly (CardContent | undefined)[])[] = [
       this.view.destinations,
@@ -507,7 +523,7 @@ export class PlayScene extends ResponsiveScene {
       contents.push(this.laneCards(this.slotWindowCards(), 'down'));
     }
 
-    this.motion.update(lanes, contents, origin);
+    this.motion.update(lanes, contents, context);
     this.calendar.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
