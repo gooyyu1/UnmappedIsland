@@ -13,7 +13,7 @@ import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
  * 連続未降雨/降雨時間の統計（平均/最小/5%ile/95%ile/最大/標準偏差）を計測し、
- * `Documents/Diagnostics/ClimateSystemStats.md`へ書き出す。
+ * `docs/diagnostics/ClimateSystemStats.md`へ書き出す。
  *
  * 通常のテストスイート（`npm test`）には含めない: 20シード×3600日のシミュレーションに数分かかり、
  * かつ合否判定を目的とした回帰テストではなく統計の再計測が目的のため、`RUN_CLIMATE_STATS`環境変数が
@@ -486,7 +486,7 @@ describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計�
     }
 
     const report = buildReport(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats);
-    const outPath = join('Documents', 'Diagnostics', 'ClimateSystemStats.md');
+    const outPath = join('docs', 'diagnostics', 'ClimateSystemStats.md');
     writeFileSync(outPath, report, 'utf8');
     console.log(`Report written to: ${outPath}`);
 

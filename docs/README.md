@@ -8,7 +8,7 @@
 領域は検討の進み具合によらず変わらないため、ドキュメントの成熟度が上がっても別フォルダへ移す必要がありません。
 
 ```
-Documents/
+docs/
 ├── Concept/       # コンセプト（企画の核となる考え方。ターゲット・マネタイズ等を含む）
 ├── UI/            # UI/UX（画面レイアウト、モック、スクリーンショット）
 ├── Engine/        # ルール・エンジン（WorldCodexのYAML文法そのもの、汎用サブシステム、
@@ -22,13 +22,13 @@ Documents/
 
 | フォルダ | 内容 |
 |--------|------|
-| [Concept/](./Concept/README.md) | ゲームコンセプト、目指す体験、ターゲット、マネタイズ計画など |
-| [UI/](./UI/README.md) | 画面レイアウト、モック、UI/UX設計 |
-| [Engine/](./Engine/README.md) | WorldCodex（YAML）の文法リファレンス、汎用サブシステム（レシピ・コンテナ・耐久値・アクション使い分け）の設計、実装のアーキテクチャ・コード構造ガイド |
-| [World/](./World/README.md) | 気候、地形生成、探索・道、アイテムなど、実際にこのゲームに登場する具体的な内容 |
-| [Diagnostics/](./Diagnostics/README.md) | 実装をシミュレーションして計測した統計レポート（`tests/diagnostics/`の`RUN_CLIMATE_STATS`環境変数付きテストで再生成する測定値のスナップショット。設計そのものではない） |
+| [Concept/](./concept/README.md) | ゲームコンセプト、目指す体験、ターゲット、マネタイズ計画など |
+| [UI/](./ui/README.md) | 画面レイアウト、モック、UI/UX設計 |
+| [Engine/](./engine/README.md) | WorldCodex（YAML）の文法リファレンス、汎用サブシステム（レシピ・コンテナ・耐久値・アクション使い分け）の設計、実装のアーキテクチャ・コード構造ガイド |
+| [World/](./world/README.md) | 気候、地形生成、探索・道、アイテムなど、実際にこのゲームに登場する具体的な内容 |
+| [Diagnostics/](./diagnostics/README.md) | 実装をシミュレーションして計測した統計レポート（`tests/diagnostics/`の`RUN_CLIMATE_STATS`環境変数付きテストで再生成する測定値のスナップショット。設計そのものではない） |
 
 `Diagnostics/` のみ性質が異なり、設計判断ではなく実装の測定結果を格納します
-（詳細は [`Diagnostics/README.md`](./Diagnostics/README.md)）。
+（詳細は [`Diagnostics/README.md`](./diagnostics/README.md)）。
 
 > **備考**: ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装するため、このフォルダには含まれません。

@@ -24,5 +24,5 @@ npm run stats:climate
 ## 収録レポート
 
 - [気候システム統計レポート](./ClimateSystemStats.md) — 季節の持続日数・気温・天気ごとの持続時間・
-  連続降雨/未降雨時間の平均/最小/最大/標準偏差（[`ClimateSystem.md`](../Engine/ClimateSystem.md) 参照）。
+  連続降雨/未降雨時間の平均/最小/最大/標準偏差（[`ClimateSystem.md`](../engine/ClimateSystem.md) 参照）。
   生成元: `tests/diagnostics/climateStatsReport.test.ts`

@@ -6,7 +6,7 @@
 実装のアーキテクチャ・コード構造に関するドキュメントを格納します。
 
 石・斧・防具・容器など、「実際にこのゲームに登場する具体的なモノ」は含みません。そちらは
-[`../World/`](../World/README.md) を参照してください。
+[`../World/`](../world/README.md) を参照してください。
 
 ## 収録ドキュメント
 
@@ -19,7 +19,7 @@
   機械的な検証
 
 実際のゲームデータ（`public/world-codex/*.yaml`）を閲覧するツールは
-[`../World/WorldCodexViewer.html`](../World/WorldCodexViewer.html) を参照してください。
+[`../World/WorldCodexViewer.html`](../world/WorldCodexViewer.html) を参照してください。
 
 ### 汎用サブシステム（文法を使って、どんな内容にも適用できる仕組みの設計）
 
@@ -40,12 +40,12 @@
 - [Domain.Defs と Domain.Runtime の統合方針](./DomainDefsRuntimeIntegration.md)
 - [地形生成 実装ガイド](./TerrainGenerationImplementation.md) — 実際のクラス名・メソッド名でたどる、
   ロードから島の実体化までの呼び出し関係
-- [ソースリファレンス](https://gooyyu1.github.io/UnmappedIsland/Reference/) — `src/` のクラス・型・JSDocから
+- [ソースリファレンス](https://gooyyu1.github.io/UnmappedIsland/reference/) — `src/` のクラス・型・JSDocから
   TypeDocが自動生成する一覧（設計の意図はこのフォルダの手書きドキュメント側にある）
 
 ### その他
 
 - [セーブデータ管理](./SaveDataManagement.md) — 保存先・スキーマ・削除の扱いなど、
-  [スタート画面・セーブ選択画面](../UI/StartScreen.md)のモックから派生した永続化の決定。
+  [スタート画面・セーブ選択画面](../ui/StartScreen.md)のモックから派生した永続化の決定。
   決まった開始状態から起動するテスト用シナリオもこの節にある
 - [設計の経緯・教訓集](./DesignNotes.md) — 再発防止のために残す過去の失敗・不採用の決定（本文には経緯を書かない）

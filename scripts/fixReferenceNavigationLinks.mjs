@@ -4,7 +4,7 @@
 // Reference/index.htmlでは正しくても、Reference/modules/*.html など深い階層のページからは
 // 1階層ずれた先を指してしまう。
 //
-// そこでtypedoc.jsonでは行き先をサイトルート（docs/）起点で `%SITE_ROOT%/…` と書いておき、
+// そこでtypedoc.jsonでは行き先をサイトルート（site/）起点で `%SITE_ROOT%/…` と書いておき、
 // 生成後にこのスクリプトが各ページの深さに合わせた相対パス（`..` や `../..`）へ置き換える。
 
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -12,8 +12,8 @@ import path from 'node:path';
 
 const PLACEHOLDER = '%SITE_ROOT%';
 // typedoc.jsonの"out"と、その出力先を含むサイトルート。
-const REFERENCE_DIR = 'docs/Reference';
-const SITE_ROOT = 'docs';
+const REFERENCE_DIR = 'site/reference';
+const SITE_ROOT = 'site';
 
 const htmlFiles = readdirSync(REFERENCE_DIR, { recursive: true })
   .filter((entry) => entry.endsWith('.html'))
