@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
-import { Card } from './Card';
+import { Card, cardFace } from './Card';
 import type { CardLane, LaneUpdate } from './CardLane';
 
 /** カードが飛ぶ時間（ミリ秒）と加速の形。並びが詰め直される滑りより少しだけ長く取る。 */
@@ -99,8 +99,7 @@ export class CardMotion {
         if (card === undefined || entered.has(card)) return;
         if (!idsOf(card).some((id) => !before.has(id))) return;
 
-        const { icon, name, art } = card.content;
-        const newcomer = new Card(this.scene, this.metrics, origin.x, origin.y, { icon, name, art });
+        const newcomer = new Card(this.scene, this.metrics, origin.x, origin.y, cardFace(card.content));
         this.stackOnto(newcomer, origin, lane.slotRect(slot));
       });
     }

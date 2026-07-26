@@ -67,6 +67,15 @@ export interface CardContent {
 }
 
 /**
+ * 見た目のぶんだけを取り出す（操作も識別子も引き継がない）。見せるためだけのカード——ドラッグ中の
+ * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
+ */
+export function cardFace(content: CardContent): CardContent {
+  const { icon, name, art } = content;
+  return { icon, name, art };
+}
+
+/**
  * フィールド・ハンド・ポートレイトに共通のカード。
  * 大きなアイコンを中央に敷き、名前を左上へ重ねる（ScreenLayout.md デザインメモ）。
  */

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
-import { Card, EmptyCard } from './Card';
+import { Card, cardFace, EmptyCard } from './Card';
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from './labels';
 import { wheelPixels } from './scroll';
@@ -198,8 +198,7 @@ export class ExplorationWindow {
       const slot =
         content === undefined
           ? new EmptyCard(scene, metrics, 0, 0)
-          : // 操作は持たせない（見つけたものを見せるだけの枠）。
-            new Card(scene, metrics, 0, 0, { icon: content.icon, name: content.name, art: content.art });
+          : new Card(scene, metrics, 0, 0, cardFace(content));
       strip.add(slot.setPosition(i * pitch, 0).setScale(scale));
     }
 

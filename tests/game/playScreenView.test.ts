@@ -225,7 +225,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     fromGameSession(game, codex, locale).hand[1]?.moveTo?.(opened!)?.();
 
     const view = fromGameSession(game, codex, locale);
-    expect(view.cardsIn(opened!).map((card) => card.object)).toEqual([stone]);
+    expect(view.cardsIn(opened!).flatMap((card) => card.objects)).toEqual([stone]);
     expect(view.nameOf(opened!), 'タイトルはコンテナ自身の表示名').toBe(
       locale.object('woven_basket').displayName,
     );
@@ -257,12 +257,34 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       icon: '',
       name,
       place: 'field' as const,
-      object: game.session.spawn(codex.objectNames.getId(name)),
+      objects: [game.session.spawn(codex.objectNames.getId(name))],
     });
     const water = cardOf('water_liquid');
 
     expect(view.combinationOf(water, cardOf('water_liquid'))).toBeTypeOf('function');
     expect(view.combinationOf(water, cardOf('stone')), '受け側にマッチする組み合わせが無い').toBeUndefined();
+  });
+
+  it('同じカードへ重ねたときは、スタックの中の2つを組み合わせる', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const itemsSlotId = codex.slotNames.getId('items');
+    for (const name of ['stone', 'stone', 'driftwood']) {
+      const item = game.session.spawn(codex.objectNames.getId(name));
+      expect(item.moveToSlot(game.startLocation.instance, itemsSlotId, codex.wellKnown)).toBeUndefined();
+    }
+
+    const view = fromGameSession(game, codex, locale);
+    const cardOf = (name: string) => view.fieldItems.find((card) => card?.objects[0].def.name === name)!;
+    const stones = cardOf('stone');
+    expect(stones.count, '2個の石は1枚のカードにまとまる').toBe(2);
+
+    // 石と石はsharp_stoneになる（tools.yaml）。1個しか無いカードには相手が居ない。
+    expect(view.combinationOf(stones, stones), 'スタックの中の2つで実行できる').toBeTypeOf('function');
+    const driftwood = cardOf('driftwood');
+    expect(
+      view.combinationOf(driftwood, driftwood),
+      '1個しか無いカードは自分自身とは組み合わせられない',
+    ).toBeUndefined();
   });
 
   it('現在地は移動に追従する', () => {

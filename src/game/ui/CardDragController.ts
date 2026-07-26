@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { Card } from './Card';
+import { Card, cardFace } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
 import { drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
@@ -161,8 +161,7 @@ export class CardDragController {
     // 分身を先に作り、枠を後から作る（後に作ったものが手前に描かれる）。どこへ落ちるかの方が
     // 分身の見た目より大事なので、枠を分身の上に出す。
     gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, {
-      icon: gesture.card.content.icon,
-      name: gesture.card.content.name,
+      ...cardFace(gesture.card.content),
       count: gesture.card.content.count,
     });
     gesture.ghost.setAlpha(GHOST_ALPHA);
