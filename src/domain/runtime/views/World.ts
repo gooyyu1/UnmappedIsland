@@ -37,6 +37,14 @@ export class World {
     return this.instance.getEffectiveValue(this.minuteId);
   }
 
+  /**
+   * 開始からの経過分（dayは1始まりなので0起点へ直す）。時間の経過そのものを1つの数として扱いたい
+   * 場面——経過量を求める・その分だけ実時間をかけて時計を進める——のための読み取り。
+   */
+  get totalMinutes(): number {
+    return ((this.day - 1) * 24 + this.hour) * 60 + this.minute;
+  }
+
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */
   get minutesPerTick(): number {
     return this.instance.getNumber(this.minutesPerTickId);

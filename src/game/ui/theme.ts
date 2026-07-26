@@ -40,6 +40,8 @@ export const COLOR = {
   button: 0xffffff,
   buttonBorder: 0x000000,
   buttonActive: 0x3a3a3a,
+  /** 実行中などで今は押せないボタン。 */
+  buttonDisabled: 0xdedede,
   equipmentButton: 0xd6fff0,
   injuryButton: 0xffe0d6,
 
@@ -50,6 +52,10 @@ export const COLOR = {
   statusBarTrack: 0xdddddd,
   statusBarTrackBorder: 0x999999,
   statusBarFill: 0x4caf50,
+
+  /** 時間経過のドーナツグラフ（画面に重ねて出すため、暗い輪に明るい塗りを載せる）。 */
+  progressRingTrack: 0x1b3a4b,
+  progressRingFill: 0x4caf50,
 
   headerBar: 0xf5e9d5,
   slotPortrait: 0xffe5d1,

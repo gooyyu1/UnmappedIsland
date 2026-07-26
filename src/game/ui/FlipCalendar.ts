@@ -23,7 +23,8 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
 
   readonly contentWidth: number;
 
-  private readonly metrics: ScreenMetrics;
+  /** 日数3桁・時刻4桁の数字。桁の並びは固定なので、値の差し替えは文字だけを書き換える。 */
+  private readonly digits: Phaser.GameObjects.Text[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -36,9 +37,9 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     onTap?: () => void,
   ) {
     super(scene, x, y);
-    this.metrics = metrics;
 
-    this.contentWidth = this.draw(elapsedDays, hour, minute);
+    this.contentWidth = this.build(scene, metrics);
+    this.setTime(elapsedDays, hour, minute);
 
     // サイズを設定しない理由はButtonのヒット領域についてのコメントを参照。
     this.setInteractive(
@@ -50,32 +51,29 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
-  /**
-   * 表示する日時を差し替える。桁数は固定（日数3桁・時刻4桁）なので、書き直しても幅は変わらない。
-   */
+  /** 表示する日時を差し替える。時間の経過を実時間で見せるため、毎フレーム呼ばれうる。 */
   setTime(elapsedDays: number, hour: number, minute: number): void {
-    this.removeAll(true);
-    this.draw(elapsedDays, hour, minute);
+    const value =
+      String(Math.min(elapsedDays, 999)).padStart(3, '0') +
+      String(hour).padStart(2, '0') +
+      String(minute).padStart(2, '0');
+    this.digits.forEach((digit, index) => digit.setText(value[index]));
   }
 
-  /** 桁とラベルを左から並べ、占有した幅を返す。 */
-  private draw(elapsedDays: number, hour: number, minute: number): number {
-    const scene = this.scene;
-    const metrics = this.metrics;
+  /** 桁の枠とラベルを左から並べ、占有した幅を返す（数字の中身はsetTimeが入れる）。 */
+  private build(scene: Phaser.Scene, metrics: ScreenMetrics): number {
     const height = metrics.px(DAY_DIGIT.height);
     let cursor = 0;
 
-    const days = String(Math.min(elapsedDays, 999)).padStart(3, '0');
-    for (const digit of days) {
-      this.addDigit(scene, metrics, cursor, height, digit, DAY_DIGIT);
+    for (let i = 0; i < 3; i++) {
+      this.addDigit(scene, metrics, cursor, height, DAY_DIGIT);
       cursor += metrics.px(DAY_DIGIT.width + DIGIT_GAP);
     }
     cursor += this.addLabel(scene, metrics, cursor, height, '日目', 26);
 
     cursor += metrics.px(BLOCK_GAP);
-    const time = `${String(hour).padStart(2, '0')}${String(minute).padStart(2, '0')}`;
-    for (let i = 0; i < time.length; i++) {
-      this.addDigit(scene, metrics, cursor, height, time[i], TIME_DIGIT);
+    for (let i = 0; i < 4; i++) {
+      this.addDigit(scene, metrics, cursor, height, TIME_DIGIT);
       cursor += metrics.px(TIME_DIGIT.width + DIGIT_GAP);
       if (i === 1) cursor += this.addLabel(scene, metrics, cursor, height, ':', 32);
     }
@@ -87,7 +85,6 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     metrics: ScreenMetrics,
     x: number,
     blockHeight: number,
-    digit: string,
     size: { width: number; height: number; fontSize: number },
   ): void {
     const width = metrics.px(size.width);
@@ -106,7 +103,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     card.strokeCircle(x + width - metrics.px(13), top - metrics.px(1), ringRadius);
 
     const text = scene.add
-      .text(x + width / 2, top + height / 2, digit, {
+      .text(x + width / 2, top + height / 2, '', {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(size.fontSize)}px`,
         fontStyle: 'bold',
@@ -115,6 +112,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
 
     this.add([card, text]);
+    this.digits.push(text);
   }
 
   /** 「日目」「:」のような桁と桁の間のラベル。占有した幅（前後の間隔込み）を返す。 */
