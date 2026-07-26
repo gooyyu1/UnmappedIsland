@@ -17,9 +17,8 @@ const CONTENT_GAP = 24;
 /** 探索の進み具合を示すバーの高さ（ゲームの主操作なので、ステータスバーより大きく取る）。 */
 const BAR_HEIGHT = 72;
 
-/** 発見物の枠の数と、1枠の幅（u単位）。カードはこの幅に合わせて縮めて描く。 */
+/** 発見物の枠の数。1枠はレーンのカードと同じ幅で、ウィンドウの横幅はこの4枠から決まる。 */
 const FOUND_SLOTS = 4;
-const FOUND_SLOT_WIDTH = 150;
 
 /** 操作ボタンの高さ（アイコンボタンと同じ最小タップ領域）と、幅の上限・間隔。 */
 const ACTION_HEIGHT = SIZE.iconButton;
@@ -33,8 +32,11 @@ export interface ExplorationWindowOptions {
   /** 探索率（0〜1）。 */
   readonly ratio: number;
 
-  /** ウィンドウの横幅。フィールドエリアと同程度を渡す（ScreenLayout.md 探索ウィンドウ節）。 */
-  readonly width: number;
+  /**
+   * ウィンドウを収める領域。フィールドエリアを渡す（ScreenLayout.md 探索ウィンドウ節）。
+   * ウィンドウはこの中央へ置く——画面の中央に置くと、縦型では状況エリアの時計を覆ってしまうため。
+   */
+  readonly area: Rect;
 
   /** 直前の探索で見つかったもの（アイテムと道）。枠に収まらない分は横スクロールで見る。 */
   readonly found: readonly CardContent[];
@@ -63,12 +65,15 @@ export class ExplorationWindow {
     const { width, height } = metrics;
     this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
 
-    // 縦型はフィールドエリアが画面幅いっぱいなので、左右に画面の余白が残るところまでは絞る。
-    const windowWidth = Math.min(options.width, width * 0.92);
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
     const barHeight = metrics.px(BAR_HEIGHT);
     const actionHeight = metrics.px(ACTION_HEIGHT);
+
+    // 横幅は発見物の4枠ぶんで決める。領域（横型のフィールドエリア）に合わせて広げると横に間延びし、
+    // 4枠が離れて散らばって見えるため。入りきらない画面ではその範囲まで絞る（枠が縮む、addFound参照）。
+    const foundWidth = metrics.px(SIZE.cardWidth) * FOUND_SLOTS + metrics.px(SIZE.gap) * (FOUND_SLOTS - 1);
+    const windowWidth = Math.min(foundWidth + padding * 2, options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
@@ -87,10 +92,7 @@ export class ExplorationWindow {
       .setAlign('center');
     note.setWordWrapCallback(wrapByCharacter(contentWidth));
 
-    const slotWidth = Math.min(
-      metrics.px(FOUND_SLOT_WIDTH),
-      (contentWidth - metrics.px(SIZE.gap) * (FOUND_SLOTS - 1)) / FOUND_SLOTS,
-    );
+    const slotWidth = (contentWidth - metrics.px(SIZE.gap) * (FOUND_SLOTS - 1)) / FOUND_SLOTS;
     const foundHeight = (slotWidth * SIZE.cardHeight) / SIZE.cardWidth;
 
     const windowHeight =
@@ -104,40 +106,46 @@ export class ExplorationWindow {
       note.height +
       gap +
       actionHeight;
-    const windowX = (width - windowWidth) / 2;
-    const windowY = (height - windowHeight) / 2;
+    // 領域の中央へ置く。領域より背が高い場合でも画面の外へは出さない。
+    const windowX = clamp(options.area.x + (options.area.width - windowWidth) / 2, 0, width - windowWidth);
+    const windowY = clamp(
+      options.area.y + (options.area.height - windowHeight) / 2,
+      0,
+      height - windowHeight,
+    );
+    const centerX = windowX + windowWidth / 2;
     drawBox(
       card,
       { x: windowX, y: windowY, width: windowWidth, height: windowHeight },
       { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
     );
 
-    title.setPosition(width / 2, windowY + padding);
+    title.setPosition(centerX, windowY + padding);
     this.objects.push(title, note);
 
     let cursorY = windowY + padding + title.height + gap;
     this.addFound(scene, metrics, options.found, {
-      x: windowX + (windowWidth - (slotWidth * FOUND_SLOTS + metrics.px(SIZE.gap) * (FOUND_SLOTS - 1))) / 2,
+      x: windowX + padding,
       y: cursorY,
-      width: slotWidth * FOUND_SLOTS + metrics.px(SIZE.gap) * (FOUND_SLOTS - 1),
+      width: contentWidth,
       height: foundHeight,
     });
 
     cursorY += foundHeight + gap;
     this.objects.push(
       new ProgressBar(scene, metrics, windowX + padding, cursorY, contentWidth, barHeight, options.ratio),
-      addLabel(scene, metrics, width / 2, cursorY + barHeight / 2, percentOf(options.ratio), {
+      addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(options.ratio), {
         size: 32,
         bold: true,
       }).setOrigin(0.5),
     );
 
     cursorY += barHeight + gap;
-    note.setPosition(width / 2, cursorY);
+    note.setPosition(centerX, cursorY);
 
     cursorY += note.height + gap;
     const actionWidth = Math.min(metrics.px(ACTION_MAX_WIDTH), (contentWidth - metrics.px(ACTION_GAP)) / 2);
-    const actionsX = (width - (actionWidth * 2 + metrics.px(ACTION_GAP))) / 2;
+    const actionsX = centerX - (actionWidth * 2 + metrics.px(ACTION_GAP)) / 2;
     this.objects.push(
       addTextButton(
         scene,
@@ -170,7 +178,7 @@ export class ExplorationWindow {
    * 見つかったものを並べる枠。枠はFOUND_SLOTS個で固定し、収まらない分は横スクロールで送る。
    * 枠からはみ出したカードは、レーンと違って背景板では隠せないのでマスクで切り抜く。
    *
-   * カードは1枚をレーンと同じ形のまま、枠の幅に合わせて縮めて描く。
+   * カードはレーンと同じ寸法で描く。ウィンドウの横幅が4枠ぶんに足りない画面でだけ、収まる大きさへ縮める。
    */
   private addFound(
     scene: Phaser.Scene,
@@ -235,6 +243,10 @@ export class ExplorationWindow {
 /** 探索率は整数の%で見せる。100%に届いていない進捗を切り上げて100%と誤解させないよう切り捨てる。 */
 function percentOf(ratio: number): string {
   return `${Math.min(100, Math.trunc(ratio * 100))}%`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
 function noteFor(ratio: number): string {
