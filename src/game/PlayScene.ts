@@ -10,6 +10,7 @@ import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
 import type { ItemCard, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
+import { tickSteppedRatio } from './tickSteppedRatio';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeDirection } from './ui/Card';
 import { Card } from './ui/Card';
@@ -20,6 +21,7 @@ import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
 import { ModalDialog } from './ui/ModalDialog';
+import { ProgressRing } from './ui/ProgressRing';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
 import { addLabel } from './ui/labels';
@@ -44,6 +46,9 @@ const REAL_MS_PER_GAME_MINUTE = 500 / 15;
 
 /** 経過分から日付・時刻を組み立てるための1日の長さ。 */
 const MINUTES_PER_DAY = 24 * 60;
+
+/** ドーナツグラフは、飛んでいるカードも探索の子ウィンドウも越えて最前面に出す。 */
+const RING_DEPTH = 2;
 
 /** 状況エリア・天候の帯のパディング（縦型は広め、横型は狭め）。 */
 const SITUATION_PADDING_PORTRAIT = { x: 32, y: 20 };
@@ -81,7 +86,8 @@ export class PlayScene extends ResponsiveScene {
   private motion!: CardMotion;
   private calendar!: FlipCalendar;
 
-  /** 探索の子ウィンドウの幅（フィールドエリアに合わせる）。 */
+  /** フィールドエリアの矩形（時間経過のドーナツグラフはこの中央に出す）と、探索の子ウィンドウの幅。 */
+  private fieldArea: Rect = { x: 0, y: 0, width: 0, height: 0 };
   private windowWidth = 0;
 
   private drag: CardDragController | undefined;
@@ -116,6 +122,7 @@ export class PlayScene extends ResponsiveScene {
     const layout = new PlayScreenLayout(this.metrics);
     const wasExploring = this.explorationWindow !== undefined;
     this.explorationWindow = undefined;
+    this.fieldArea = layout.fieldArea;
     this.windowWidth = layout.fieldArea.width;
 
     this.buildFieldArea(layout);
@@ -279,8 +286,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * fromMinutesからtoMinutesまで、ゲーム内時間の経過をREAL_MS_PER_GAME_MINUTEの速さで時計へ映し、
-   * 経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
+   * fromMinutesからtoMinutesまで、ゲーム内時間の経過をREAL_MS_PER_GAME_MINUTEの速さで時計と
+   * ドーナツグラフへ映し、経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
    */
   private passTime(fromMinutes: number, toMinutes: number, onElapsed: () => void): void {
     const minutes = toMinutes - fromMinutes;
@@ -289,14 +296,28 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
+    const ticks = Math.max(1, Math.round(minutes / this.gameSession.world.minutesPerTick));
+    const ring = new ProgressRing(
+      this,
+      this.metrics,
+      this.fieldArea.x + this.fieldArea.width / 2,
+      this.fieldArea.y + this.fieldArea.height / 2,
+    ).setDepth(RING_DEPTH);
+
     const clock = { minutes: fromMinutes };
     this.tweens.add({
       targets: clock,
       minutes: toMinutes,
       duration: minutes * REAL_MS_PER_GAME_MINUTE,
       ease: 'Linear',
-      onUpdate: () => this.showClock(clock.minutes),
-      onComplete: onElapsed,
+      onUpdate: () => {
+        this.showClock(clock.minutes);
+        ring.setRatio(tickSteppedRatio((clock.minutes - fromMinutes) / minutes, ticks));
+      },
+      onComplete: () => {
+        ring.destroy();
+        onElapsed();
+      },
     });
   }
 
