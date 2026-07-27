@@ -331,19 +331,10 @@ export class PlayScene extends ResponsiveScene {
     if (action === undefined) return;
 
     const dragged = this.combinationAt(drop)?.source ?? this.cardsOf(drop.from)[drop.fromIndex]?.objects[0];
-    const stayed = dragged?.parent;
-
     this.applyToWorld(action, {
       origin: drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined,
       released: dragged === undefined ? undefined : { id: dragged.instanceId, rect: released },
     });
-
-    // 掴んでいたカードが元の場所に残ったなら、その場で戻す（重ねてもカード自身は動かないcombination）。
-    // ワールドは既に変わっているので、居場所が変わっていないことをここで確かめられる。
-    const content = drop.from.cardObjects[drop.fromIndex]?.content;
-    if (dragged !== undefined && content !== undefined && dragged.parent === stayed) {
-      this.motion.returnCard(content, released, drop.from.slotRect(drop.fromIndex));
-    }
   }
 
   /**

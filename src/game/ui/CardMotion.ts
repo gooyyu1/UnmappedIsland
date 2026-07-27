@@ -19,7 +19,8 @@ export interface MotionContext {
   readonly origin?: Rect;
   /**
    * 掴んで離したインスタンスと、手を離した時点の矩形。そのカードは元の枠ではなく、指を離した場所に
-   * 居るため、そこから動き出す。
+   * 居るため、そこから動き出す。元と同じカードへ戻る場合（重ねてもカード自身は動かないcombination）も
+   * 同じ扱いで、道具は使い終わってから手元へ戻る。
    */
   readonly released?: { readonly id: number; readonly rect: Rect };
 }
@@ -85,17 +86,6 @@ export class CardMotion {
         this.dismiss(card, rectOf(before, ids), rectOf(after, ids));
       }
     }
-  }
-
-  /**
-   * 掴んで離したカードが元の場所に残ったときに、手を離した位置からそこへ戻る動きを見せる。
-   *
-   * 重ねてもカード自身は動かないcombination（石を打ち割る等）では、ワールドの差し替えを待っても
-   * カードは動かないため動きが出ない。それだと指を離した瞬間にカードが枠へ瞬間移動して見えるので、
-   * 離した時点でここから戻す（時間のかかるcombinationでは、差し替えは経過し切ってからになる）。
-   */
-  returnCard(content: CardContent, from: Rect, to: Rect): void {
-    this.stackOnto(new Card(this.scene, this.metrics, from.x, from.y, cardFace(content)), from, to);
   }
 
   /**
@@ -225,11 +215,11 @@ function arrivalsAt(
   context: MotionContext,
 ): readonly Rect[] {
   return idsOf(card).flatMap((id) => {
-    const previous = before.get(id);
-    // 掴んで離したものは、指を離した場所から動き出す。元と同じカードに残ったぶんは、離した時点で
-    // 戻る動きを見せている（CardMotion.returnCard）ので、ここでは二重に動かさない。
-    if (id === context.released?.id) return previous?.card === card ? [] : [context.released.rect];
+    // 掴んで離したものは、指を離した場所から動き出す。元と同じカードへ戻る場合も同じで、これは
+    // 差し替えの時点＝時間のかかるcombinationなら経過し切ってからになる（使い終わってから手元へ戻る）。
+    if (id === context.released?.id) return [context.released.rect];
 
+    const previous = before.get(id);
     if (previous === undefined) return context.origin === undefined ? [] : [context.origin];
     if (previous.card === card || left.has(previous.card)) return [];
     return [previous.rect];
