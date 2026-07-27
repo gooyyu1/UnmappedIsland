@@ -5,6 +5,7 @@ import type { ConditionNode } from './ConditionNode';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
+import { spendDuration } from './actionTime';
 
 /**
  * ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の
@@ -58,12 +59,12 @@ export class CombinationDef {
     )
       return false;
 
-    // 時間進行の順序と、参照durationを適用前に解決する理由はActionDef.tryExecuteと同じ。
+    // 時間進行の順序と、参照durationを進行前に解決する理由はActionDef.tryExecuteと同じ。
     const minutes = this.duration !== undefined ? Math.trunc(this.duration.resolve(self, actor, dragged)) : 0;
 
-    if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, dragged);
+    if (!spendDuration(minutes, session, [self, dragged, actor])) return false;
 
-    if (minutes > 0 && session.world !== undefined) session.advanceWorldTime(minutes);
+    if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, dragged);
     return true;
   }
 }
