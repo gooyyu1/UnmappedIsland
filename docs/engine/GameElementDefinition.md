@@ -771,12 +771,12 @@ actions:
 
 `set` の値は、**リテラル**（整数・真偽値・シンボル名、6.8 節）か、**`{object, prop}` 参照**
 （`conditions` の値参照・`weight` の path 参照と同じ二択）のいずれかです。参照の場合、その参照先の現在の
-実効値をそのままコピーします（例: 別の容器から注がれた液体の種類をそのまま引き継ぐ）。
+実効値をそのままコピーします（例: そのときの周囲の気温を控えとして写し取る）。
 
 ```yaml
 set:
   self:
-    content: {object: dragged, prop: content}   # draggedの現在のcontentをそのままselfへコピーする
+    recorded_temperature: {object: ancestor, prop: ambient_temperature}
 ```
 
 `add` は加減算量が常に量そのもの（差分）であり、値をコピーする用途に当てはまらないため、参照は用意していません。
@@ -837,7 +837,7 @@ actions:
   drink:
     transfer:
       amount: 2000
-      from_prop: water_amount
+      from_prop: liquid_amount
       to_object: actor
       to_prop: hydration
 ```
@@ -1217,7 +1217,7 @@ conditions:
 
 ```yaml
 conditions:
-  - {object: self, slot: content, tag: liquid_water}
+  - {object: self, slot: content, tag: water_liquid}
 ```
 
 - **`slot`**: 判定対象の、`object` 自身が持つスロット名。
@@ -1228,26 +1228,27 @@ conditions:
 区別しています。
 
 液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
-スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します（`ContainerSystem.md` 参照）。
+スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します
+（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 参照）。
 
 ```yaml
 object_defs:
   canteen:
     props:
-      water_amount:
+      liquid_amount:
         value: 0
         range: {min: 0, max: 4800}
     slots:
       content:
         accepts:
-          - {tag: liquid_marker, max: 1}
+          - {tag: liquid, max: 1}
     actions:
       drink:
         conditions:
-          - {slot: content, tag: liquid_water}
+          - {slot: content, tag: water_liquid}
         transfer:
           amount: 2000
-          from_prop: water_amount
+          from_prop: liquid_amount
           to_object: actor
           to_prop: hydration
 ```
