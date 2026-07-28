@@ -10,15 +10,15 @@ traits:
   # 探索できる場所だけが追加で持つ構造。
   explorable:
     slots:
-      # 生成時に道を隠しておくスロット。探索の進捗が道のrequired_progressへ達すると、
-      # Location（Views）がpathsスロットへ移して「発見」させる。UI側は表示しない。
-      undiscovered_paths:
+      # 生成時に設置物を隠しておくスロット。探索の進捗が設置物のrequired_progressへ達すると、
+      # Location（Views）がfixturesスロットへ移して「発見」させる。UI側は表示しない。
+      #
+      # locationのfixturesスロットより後に宣言すること。探索でその場に湧く設置物（explore内の
+      # spawn）は宣言順で最初に受け入れたスロットへ入るため、先に置くと湧いた側まで隠れてしまう。
+      undiscovered_fixtures:
         accepts:
-          - {tag: path, max: 9999}
-      # 発見済みの道のスロット。
-      paths:
-        accepts:
-          - {tag: path, max: 9999}
+          - {tag: fixture, max: 9999}
+        stackable: false
     props:
       # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索率100%=range.max）
       # を必ず与える（5節の「traitでvalueなし=継承先で必須」の規約）。
@@ -28,6 +28,7 @@ object_defs:
   # ------------------------------------------------------------------
   # 道（path）。土地と土地の繋がり1本の片方向分。地形生成が辺1本につき両端へ1個ずつ生成し、
   # destination_idが相手側を指す（発見の進み方は両端で非対称になりうる）。
+  # 持ち歩けないものなので設置物（fixture）の一種として、木や建物と同じfixturesスロットに並ぶ。
   # - travel_minutes: 移動時間（分）。距離と移動難易度から生成時に計算され、インスタンスごとに
   #   上書きされる（TerrainGeneration.md 3.5節）。
   # - required_progress: 親の土地のexploration_progressがこの値に達すると発見される。
@@ -35,7 +36,9 @@ object_defs:
   #   object_def参照ではなくインスタンスIDのプロパティで持つ（moveの規約）。
   # ------------------------------------------------------------------
   path:
-    tags: [path]
+    # fixtureは「持ち歩けない」という置き場所の分類、pathは「移動手段である」という役割。
+    # 画面側は後者を見て、道のカードだけ移動先の土地名を表示する。
+    tags: [fixture, path]
     props:
       travel_minutes:
         value: 60
@@ -47,7 +50,7 @@ object_defs:
       travel:
         showMenu: always
         conditions:
-          - {in_slot: paths}   # 未発見（undiscovered_paths側）の間は実行できない
+          - {in_slot: fixtures}   # 未発見（undiscovered_fixtures側）の間は実行できない
         duration: {prop: travel_minutes}
         move:
           object: actor

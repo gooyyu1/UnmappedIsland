@@ -8,7 +8,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 const ART_DIR = 'src/assets/lanes';
 
 /** 土地ごとに絵が変わるレーン。laneArt.LocationLane と一致していなければならない。 */
-const LOCATION_LANES = ['location', 'field_item'];
+const LOCATION_LANES = ['fixture', 'item'];
 
 /** 土地によらないレーンの絵。 */
 const FIXED_ART = ['hand'];

@@ -15,10 +15,14 @@ traits:
       items:
         accepts:
           - {tag: item, max: 9999}
-      # 木・植物・建築物・洞窟の入口などの設置物用スロット。
+      # 道・木・植物・建築物・家具・洞窟の入口など、持ち歩けないもののスロット。
+      # 設置物は同種でも1つずつ別のカードにする（stackable: false、SlotSystem.md 4節）。
+      # 道は行き先ごとに別物だが、同じobject_defなのでまとめると行き先を1つしか出せなくなる。
+      # 木や建物も、プレイヤーが地形として並べ替える対象なので個体ごとに見えている必要がある。
       fixtures:
         accepts:
           - {tag: fixture, max: 9999}
+        stackable: false
       # キャラクタ用スロット。固定型（fixed_positions）で、スタック枠は1つ（unit_capacity: 1）。
       characters:
         accepts:

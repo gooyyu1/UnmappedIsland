@@ -19,12 +19,14 @@ export type CardPlacement =
   { readonly kind: 'gap'; readonly index: number } | { readonly kind: 'cell'; readonly index: number };
 
 /**
- * カードが並ぶ場所（＝ワールド上の1つのスロット）の名前。レーンと子ウィンドウの対応付けに使う。
+ * カードが並ぶ場所（＝ワールド上の1つのスロット）の名前。名前はスロット名そのもので、レーンと
+ * 子ウィンドウの対応付けに使う。
  *
  * 今後コンテナ（箱・かご）の中身も同じ子ウィンドウで見せるため、ここに置き場所を足していけるよう
  * 移動の宛先は名前で指す（moveTo）。「どのレーンの隣か」という暗黙の対応は持たない。
  */
-export type CardPlace = 'field' | 'hand' | 'equipment' | 'injuries' | { readonly container: WorldObject };
+export type CardPlace =
+  'fixtures' | 'items' | 'hand' | 'equipment' | 'injuries' | { readonly container: WorldObject };
 
 /**
  * 2つの場所が同じか。コンテナの場所は映しているインスタンスで見分ける（同じ型のコンテナが複数あっても
@@ -43,8 +45,8 @@ export function samePlace(a: CardPlace, b: CardPlace): boolean {
  *
  * moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
  * 作り直し）は呼び出し側の責務。moveToとreorderは「そこへ落とせるか」を、操作を返すか否かで答える。
- * 落とせない場所（設置物の間、前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedになるので、
- * 呼び出し側は落とし先の枠を出す前に問い合わせられる。
+ * 落とせない場所（持ち歩けない設置物、前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedに
+ * なるので、呼び出し側は落とし先の枠を出す前に問い合わせられる。
  */
 export interface ObjectCardStack extends CardContent {
   /**
@@ -116,14 +118,16 @@ export interface PlayScreenView {
   readonly locationArt: string;
   /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
   readonly explorationRatio: number;
-  readonly destinations: readonly CardContent[];
-  readonly fieldItems: readonly ObjectCardStack[];
+  /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
+  readonly fixtures: readonly ObjectCardStack[];
+  /** 現在地に落ちているアイテム（持ち歩けるもの）。 */
+  readonly items: readonly ObjectCardStack[];
   /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
   readonly hand: readonly (ObjectCardStack | undefined)[];
 
   /**
    * 子ウィンドウに並べる、その場所の中身（装備・怪我・コンテナの中身）。前詰めスロットなので
-   * 空きセルは無い。レーンで常に見えているfield/handはこちらでは扱わない。
+   * 空きセルは無い。レーンで常に見えているfixtures/items/handはこちらでは扱わない。
    */
   readonly cardsIn: (place: CardPlace) => readonly ObjectCardStack[];
 
@@ -159,7 +163,7 @@ const UNNAMED_LOCATION = '名もなき土地';
 
 /**
  * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
- * レーンで常に見えているfield/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
+ * レーンで常に見えているfixtures/items/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
  */
 const PLACE_NAMES: Partial<Record<CardPlace & string, string>> = {
   equipment: '装備',
@@ -175,8 +179,8 @@ function stacksIn(
 }
 
 /**
- * 生成済みのゲーム一式から画面の表示内容を作る。ロケーションレーン・フィールドアイテムレーン・
- * ハンドレーンは現在地とキャラクターのスロットの中身をそのまま映す。
+ * 生成済みのゲーム一式から画面の表示内容を作る。設置物レーン・アイテムレーン・ハンドレーンは
+ * 現在地とキャラクターのスロットの中身をそのまま映す。
  *
  * ワールドの状態を写し取るだけなので、アクションでワールドが変わったら作り直す（PlayScene参照）。
  */
@@ -205,26 +209,38 @@ export function fromGameSession(
     contents: contentsOf(instances[0]),
   });
 
-  // フィールドアイテムレーンは土地のitemsスロットの後ろへ設置物を並べたもの。設置物は別のスロットに
-  // 居て動かせないため、アイテムの並びに関わる位置指定はここまでしか受け付けられない。
-  const itemStacks = location.itemStacks;
-  const gapInItems = (at: CardPlacement): number | undefined =>
-    at.kind === 'cell' || at.index > itemStacks.length ? undefined : at.index;
+  const pathTagId = codex.tagNames.tryGetId('path');
+  /**
+   * 道の設置物がカードに映すもの（道以外はundefinedで、設置物そのものの名前と絵をそのまま使う）。
+   * 道は「どこへ繋がっているか」だけが意味を持つため、行き先の土地の名前を出す。
+   */
+  const destinationOf = (fixture: WorldObject): { icon: string; name: string } | undefined =>
+    pathTagId !== undefined && fixture.def.tags.includes(pathTagId)
+      ? {
+          icon: LOCATION_ICON,
+          name:
+            game.map.nameOfInstance(new Path(fixture, codex.propertyNames).destinationInstanceId) ??
+            UNNAMED_LOCATION,
+        }
+      : undefined;
 
   /**
    * 場所ごとの「どのオブジェクトのどのスロットか」。カードの移動はすべてこの表を引いた
    * スロット移動（WorldObject.moveToSlot*）で、場所ごとの特別扱いは持たない。コンテナ（箱・かご）
    * を足すときも、この表に1行増やすだけで移動もドラッグも動く。
    *
-   * 怪我だけundefinedなのは「移動の宛先にならない」ことを表す（ワールド側の効果だけが付け外しする）。
+   * 怪我と設置物だけundefinedなのは「移動の宛先にならない」ことを表す（怪我はワールド側の効果だけが
+   * 付け外しし、設置物は持ち歩けない）。どちらも同じ場所の中での並び替えはできる（reorder）。
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
     if (typeof place !== 'string') {
       return contentsSlotId === undefined ? undefined : { owner: place.container, slotId: contentsSlotId };
     }
     switch (place) {
-      case 'field':
+      case 'items':
         return { owner: location.instance, slotId: location.itemsSlotId };
+      case 'fixtures':
+        return undefined;
       case 'hand':
         return { owner: game.player.instance, slotId: game.player.handSlotId };
       case 'equipment':
@@ -260,24 +276,20 @@ export function fromGameSession(
           : undefined;
       }
 
-      // フィールドのレーンだけは設置物（別スロット）を後ろに連ねているため、その範囲へは入れられない。
-      const gapIndex = place === 'field' ? gapInItems(at) : at.index;
-      if (gapIndex === undefined) return undefined;
       return () => {
-        item.moveToSlotAtGap(dest.owner, dest.slotId, gapIndex, wellKnown);
+        item.moveToSlotAtGap(dest.owner, dest.slotId, at.index, wellKnown);
       };
     };
 
   /** itemを同じ場所の中で動かす操作（動かせない位置ならundefined）。今いるスロットの中だけで完結する。 */
   const reorderIn =
-    (item: WorldObject, place: CardPlace) =>
+    (item: WorldObject) =>
     (at: CardPlacement): (() => void) | undefined => {
       if (at.kind === 'cell') {
         return () => {
           item.moveToCellInParentSlot(at.index);
         };
       }
-      if (place === 'field' && gapInItems(at) === undefined) return undefined;
       return () => {
         item.reorderInParentSlot(at.index);
       };
@@ -309,29 +321,25 @@ export function fromGameSession(
       location.explorationProgressMax === 0
         ? 0
         : location.explorationProgress / location.explorationProgressMax,
-    destinations: location.paths.map((path) => ({
-      icon: LOCATION_ICON,
-      name:
-        game.map.nameOfInstance(new Path(path, codex.propertyNames).destinationInstanceId) ??
-        UNNAMED_LOCATION,
-      identity: [path.instanceId],
+    // 設置物は持ち歩けないのでmoveToを持たないが、並び方はプレイヤーが地形をどう捉えているかで
+    // 変わるため、同じスロットの中での並び替えだけは許す。
+    fixtures: location.fixtureStacks.map((stack) => ({
+      ...stackOf(stack, FIXTURE_ICON, 'fixtures'),
+      ...destinationOf(stack[0]),
+      reorder: reorderIn(stack[0]),
     })),
-    fieldItems: [
-      ...itemStacks.map((stack) => ({
-        ...stackOf(stack, ITEM_ICON, 'field'),
-        moveTo: moveInto(stack[0], 'field'),
-        reorder: reorderIn(stack[0], 'field'),
-      })),
-      // 設置物は動かせないので、移動も並び替えも持たない（combinationの相手にはなれる）。
-      ...location.fixtureStacks.map((stack) => stackOf(stack, FIXTURE_ICON, 'field')),
-    ],
+    items: location.itemStacks.map((stack) => ({
+      ...stackOf(stack, ITEM_ICON, 'items'),
+      moveTo: moveInto(stack[0], 'items'),
+      reorder: reorderIn(stack[0]),
+    })),
     hand: game.player.handStacks.map((stack) =>
       stack.length === 0
         ? undefined
         : {
             ...stackOf(stack, ITEM_ICON, 'hand'),
             moveTo: moveInto(stack[0], 'hand'),
-            reorder: reorderIn(stack[0], 'hand'),
+            reorder: reorderIn(stack[0]),
           },
     ),
     cardsIn: (place) => {
@@ -343,7 +351,7 @@ export function fromGameSession(
       return stacks.map((stack) => ({
         ...stackOf(stack, ITEM_ICON, place),
         moveTo: moveInto(stack[0], place),
-        reorder: reorderIn(stack[0], place),
+        reorder: reorderIn(stack[0]),
       }));
     },
     nameOf: (place) =>

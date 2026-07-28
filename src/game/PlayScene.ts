@@ -20,7 +20,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
-import { HAND_LANE_TEXTURE, locationLaneTexture } from './ui/laneArt';
+import { HAND_LANE_TEXTURE, laneTexture } from './ui/laneArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
@@ -109,8 +109,8 @@ export class PlayScene extends ResponsiveScene {
   private view!: PlayScreenView;
 
   /** カードを並べるレーンと、その内容の差し替えを動きとして見せる層。buildのたびに作り直される。 */
-  private locationLane!: CardLane;
-  private fieldItemLane!: CardLane;
+  private fixtureLane!: CardLane;
+  private itemLane!: CardLane;
   private handLane!: CardLane;
   private motion!: CardMotion;
   private calendar!: FlipCalendar;
@@ -184,31 +184,32 @@ export class PlayScene extends ResponsiveScene {
 
   private buildFieldArea(layout: PlayScreenLayout): void {
     addPanel(this, layout.fieldArea, COLOR.fieldArea);
-    const [location, fieldItems, hand] = layout.lanes;
+    const [fixtures, items, hand] = layout.lanes;
 
     const art = this.view.locationArt;
 
-    this.locationLane = new CardLane(
+    this.fixtureLane = new CardLane(
       this,
       this.metrics,
-      location,
-      COLOR.locationLane,
-      this.view.destinations,
+      fixtures,
+      COLOR.fixtureLane,
+      // 設置物は持ち出せないので、手持ちへ送る端の操作は付けない（並び替えのドラッグだけ）。
+      this.laneCards(this.view.fixtures, undefined),
       {
         pinned: { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() },
-        art: locationLaneTexture('location', art),
+        art: laneTexture('fixture', art),
       },
     );
-    this.fieldItemLane = new CardLane(
+    this.itemLane = new CardLane(
       this,
       this.metrics,
-      fieldItems,
-      COLOR.fieldItemLane,
-      this.laneCards(this.view.fieldItems, 'down'),
+      items,
+      COLOR.itemLane,
+      this.laneCards(this.view.items, 'down'),
       {
         // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
-        trailingPlaceholder: this.view.acceptsCards('field'),
-        art: locationLaneTexture('field_item', art),
+        trailingPlaceholder: this.view.acceptsCards('items'),
+        art: laneTexture('item', art),
       },
     );
     this.handLane = new CardLane(
@@ -231,7 +232,8 @@ export class PlayScene extends ResponsiveScene {
 
   /** ドラッグの対象になるレーン。スロットの子ウィンドウを開いている間は、その中身も対象に加える。 */
   private setDragLanes(): void {
-    const lanes = [this.fieldItemLane, this.handLane];
+    // 設置物レーンも対象に含める。持ち出せはしないが、同じレーンの中でなら並び替えられるため。
+    const lanes = [this.fixtureLane, this.itemLane, this.handLane];
     if (this.slotWindow !== undefined) lanes.push(this.slotWindow.lane);
     this.drag?.setLanes(lanes);
   }
@@ -250,17 +252,20 @@ export class PlayScene extends ResponsiveScene {
    */
   private laneCards(
     cards: readonly (ObjectCardStack | undefined)[],
-    direction: CardEdgeDirection,
+    direction: CardEdgeDirection | undefined,
   ): readonly (CardContent | undefined)[] {
     return cards.map((card) => {
       if (card === undefined) return undefined;
-      const move = this.edgeMove(card);
+      const move = direction === undefined ? undefined : this.edgeMove(card);
       const contents = card.contents;
       return {
         ...card,
         draggable: true,
         onTap: contents === undefined ? undefined : () => this.openSlotWindow(contents),
-        edge: move === undefined ? undefined : { direction, onTap: () => this.applyToWorld(move) },
+        edge:
+          move === undefined || direction === undefined
+            ? undefined
+            : { direction, onTap: () => this.applyToWorld(move) },
       };
     });
   }
@@ -276,7 +281,7 @@ export class PlayScene extends ResponsiveScene {
       const intoWindow = card.moveTo?.(this.slotWindowPlace);
       if (intoWindow !== undefined) return intoWindow;
     }
-    return card.moveTo?.(card.place === 'hand' ? 'field' : 'hand');
+    return card.moveTo?.(card.place === 'hand' ? 'items' : 'hand');
   }
 
   /**
@@ -317,15 +322,17 @@ export class PlayScene extends ResponsiveScene {
 
   private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
     if (lane === this.handLane) return this.view.hand;
-    if (lane === this.fieldItemLane) return this.view.fieldItems;
+    if (lane === this.itemLane) return this.view.items;
+    if (lane === this.fixtureLane) return this.view.fixtures;
     return this.slotWindowCards();
   }
 
   /** レーンが映している場所。 */
   private placeOf(lane: CardLane): CardPlace {
     if (lane === this.handLane) return 'hand';
-    if (lane === this.fieldItemLane) return 'field';
-    return this.slotWindowPlace ?? 'field';
+    if (lane === this.itemLane) return 'items';
+    if (lane === this.fixtureLane) return 'fixtures';
+    return this.slotWindowPlace ?? 'items';
   }
 
   private slotWindowCards(): readonly ObjectCardStack[] {
@@ -417,19 +424,19 @@ export class PlayScene extends ResponsiveScene {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.found = this.foundSince(shownBefore);
-      this.showView({ origin: this.locationLane.pinnedRect });
+      this.showView({ origin: this.fixtureLane.pinnedRect });
     });
   }
 
   /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
   private shownInstanceIds(): ReadonlySet<number> {
-    const shown = [...this.view.fieldItems, ...this.view.destinations];
+    const shown = [...this.view.fixtures, ...this.view.items];
     return new Set(shown.flatMap((card) => card.identity ?? []));
   }
 
   /** 控えておいた「出ていたもの」に無いカード＝この探索で見つかったもの（アイテムと道）。 */
   private foundSince(shownBefore: ReadonlySet<number>): readonly CardContent[] {
-    const shown = [...this.view.fieldItems, ...this.view.destinations];
+    const shown = [...this.view.fixtures, ...this.view.items];
     return shown.filter((card) => card.identity?.some((id) => !shownBefore.has(id)) === true).map(cardFace);
   }
 
@@ -511,10 +518,10 @@ export class PlayScene extends ResponsiveScene {
    * 見せる（CardMotion）。
    */
   private showView(context: MotionContext = {}): void {
-    const lanes = [this.locationLane, this.fieldItemLane, this.handLane];
+    const lanes = [this.fixtureLane, this.itemLane, this.handLane];
     const contents: (readonly (CardContent | undefined)[])[] = [
-      this.view.destinations,
-      this.laneCards(this.view.fieldItems, 'down'),
+      this.laneCards(this.view.fixtures, undefined),
+      this.laneCards(this.view.items, 'down'),
       this.laneCards(this.view.hand, 'up'),
     ];
     // 開いている子ウィンドウの中身も同じ差し替えに乗せる。手持ちとの間でカードが行き来するため、

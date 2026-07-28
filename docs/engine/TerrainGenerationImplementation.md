@@ -154,7 +154,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
      応じて `required_progress` を `[FIRST_PATH_PROGRESS(=2), progressMax - 1]` へ等間隔割当てする式
      （`FIRST_PATH_PROGRESS + (lastPathProgress - FIRST_PATH_PROGRESS) * i / (touching.length - 1)`）で計算します。
      `path` を `session.spawn` し、`setProperty` で `travel_minutes`/`required_progress`/`destination_id`
-     （接続相手の `instanceId`）を書き込み、`undiscovered_paths` スロットへ `moveToSlot` します。
+     （接続相手の `instanceId`）を書き込み、`undiscovered_fixtures` スロットへ `moveToSlot` します。
 - **`placePlayer(session, map, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
   それも無ければ `map.sites[0]` の順で選び、`WorldObject.findDescendantByInstanceId`（`WorldObject` 自身の
   汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlot` した上で
@@ -203,7 +203,7 @@ WorldSession.rngのシードが異なっても同じ島レイアウトになる�
   `findDescendantByInstanceId`/`moveIntoFirstAcceptingSlot` はいずれも `WorldObject`
   （`src/domain/runtime/WorldObject.ts`）に定義した汎用メソッドです。
 - **道の発見・移動の入口**: `Location.explore(actor, session)`（`src/domain/runtime/views/Location.ts`）が
-  `explore` アクションの実行と `revealDuePaths`（`undiscovered_paths` → `paths` の移動）を1回の呼び出しに
+  `explore` アクションの実行と `revealDueFixtures`（`undiscovered_fixtures` → `fixtures` の移動）を1回の呼び出しに
   まとめています。`Path.travel(actor, session)`（`src/domain/runtime/views/Path.ts`）が `travel` アクション
   を実行します。
 
@@ -230,7 +230,7 @@ WorldSession.rngのシードが異なっても同じ島レイアウトになる�
 | `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`start`）・`NewGameSession` |
 | `src/domain/defs/MoveEffect.ts` | 7節: `move` 効果動詞 |
 | `src/domain/defs/ActionDef.ts` | 7節: `duration` フィールド |
-| `src/domain/runtime/views/Location.ts` | 7節: 探索の入口（`explore`/`revealDuePaths`） |
+| `src/domain/runtime/views/Location.ts` | 7節: 探索の入口（`explore`/`revealDueFixtures`） |
 | `src/domain/runtime/views/Path.ts` | 7節: 道のビュー（`travel`） |
 
 対応するテストは以下のとおりです。

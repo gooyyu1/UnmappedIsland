@@ -19,7 +19,7 @@ const FILES = import.meta.glob('../../assets/lanes/*.png', {
 }) as Record<string, string>;
 
 /** 土地ごとに背景が変わるレーン。値はそのままファイル名の接尾辞。 */
-export type LocationLane = 'location' | 'field_item';
+export type LocationLane = 'fixture' | 'item';
 
 /** ハンドレーンの背景のテクスチャキー（プレイヤーの手なので土地によらない）。 */
 export const HAND_LANE_TEXTURE = 'lane:hand';
@@ -33,7 +33,7 @@ export const LANE_ART: ReadonlyMap<string, string> = new Map(
  * 土地に応じたレーンの背景のテクスチャキー。絵がまだ無い土地ではundefinedを返し、呼び出し側は
  * 単色の背景板へ落とす。
  */
-export function locationLaneTexture(lane: LocationLane, location: string): string | undefined {
+export function laneTexture(lane: LocationLane, location: string): string | undefined {
   const key = `lane:${location}_${lane}`;
   return LANE_ART.has(key) ? key : undefined;
 }

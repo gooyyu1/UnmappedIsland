@@ -7,6 +7,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 import { SeededRng } from '../support/SeededRng';
+import { pathsIn } from '../support/paths';
 
 describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   let codex: WorldCodex;
@@ -35,9 +36,9 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
       const view = new Location(location!, codex);
       const degree = map.edges.filter((e) => e.a === site.index || e.b === site.index).length;
-      expect(view.paths, '開始直後、発見済みの道は無い').toEqual([]);
+      expect(pathsIn(view, codex), '開始直後、発見済みの道は無い').toEqual([]);
 
-      const hidden = location!.tryGetSlot(codex.slotNames.getId('undiscovered_paths'));
+      const hidden = location!.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'));
       expect(hidden!.contents.length, `サイト${site.index}: 繋がる辺の数だけ道が隠されている`).toBe(degree);
       totalPaths += hidden!.contents.length;
     }
@@ -53,7 +54,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     for (const site of map.sites) {
       const location = game.world.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index])!;
       const progressMax = location.def.getPropertyDef(progressId)!.range!.max;
-      const hidden = location.tryGetSlot(codex.slotNames.getId('undiscovered_paths'))!;
+      const hidden = location.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'))!;
 
       const neighborInstanceIds = new Set(
         map.edges
@@ -105,10 +106,10 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
       expect(start.explore(actor, session), '探索できる土地なので毎回成立する').toBe(true);
 
     expect(start.explorationProgress, '探索率100%に達している').toBe(start.explorationProgressMax);
-    expect(start.paths.length, '探索でこの土地のすべての道が見つかる').toBe(degree);
+    expect(pathsIn(start, codex).length, '探索でこの土地のすべての道が見つかる').toBe(degree);
 
     // 見つかった道で移動する。
-    const path = new Path(start.paths[0], codex.propertyNames);
+    const path = new Path(pathsIn(start, codex)[0], codex.propertyNames);
     const minutesBefore = totalMinutes(game.world);
 
     expect(path.travel(actor, session)).toBe(true);

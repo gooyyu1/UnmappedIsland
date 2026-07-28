@@ -8,6 +8,7 @@ import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
+import { pathsIn } from '../support/paths';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
@@ -29,7 +30,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');
   });
 
-  it('開始直後は漂着地だけが出て、移動先・フィールドアイテムは空になる', () => {
+  it('開始直後は漂着地だけが出て、設置物・アイテムのレーンは空になる', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
 
     const view = fromGameSession(game, codex, locale);
@@ -37,8 +38,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.currentLocation.name, '現在地は命名処理が付けた漂着地の名前').toBe(
       game.map.nameOfInstance(game.startLocation.instance.instanceId),
     );
-    expect(view.destinations, '未探索なので発見済みの道は無い').toEqual([]);
-    expect(view.fieldItems, '未探索なので土地には何も落ちていない').toEqual([]);
+    expect(view.fixtures, '未探索なので設置物も道も見つかっていない').toEqual([]);
+    expect(view.items, '未探索なので土地には何も落ちていない').toEqual([]);
     expect(view.elapsedDays).toBe(0);
     expect(view.hour).toBe(0);
     expect(view.minute).toBe(0);
@@ -67,25 +68,44 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ]);
   });
 
-  it('探索で見つかった発見物と道が、そのままレーンの内容になる', () => {
+  it('探索で見つかった発見物と道が、それぞれのレーンの内容になる', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const location = game.startLocation;
     exploreToFull(game);
 
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.fieldItems.map((card) => card.name)).toEqual([
-      ...location.itemStacks.map((stack) => locale.object(stack[0].def.name).displayName),
-      ...location.fixtureStacks.map((stack) => locale.object(stack[0].def.name).displayName),
-    ]);
-    expect(view.fieldItems.length, '探索し切れば何かしら見つかっている').toBeGreaterThan(0);
+    expect(view.items.map((card) => card.name)).toEqual(
+      location.itemStacks.map((stack) => locale.object(stack[0].def.name).displayName),
+    );
+    expect(view.items.length, '探索し切れば何かしら見つかっている').toBeGreaterThan(0);
 
-    expect(view.destinations.map((card) => card.name)).toEqual(
-      location.paths.map((path) =>
-        game.map.nameOfInstance(new Path(path, codex.propertyNames).destinationInstanceId),
+    // 設置物のレーンには道も並ぶ。道のカードだけは、道そのものではなく行き先の土地名を映す。
+    const pathTagId = codex.tagNames.getId('path');
+    expect(view.fixtures.map((card) => card.name)).toEqual(
+      location.fixtureStacks.map((stack) =>
+        stack[0].def.tags.includes(pathTagId)
+          ? game.map.nameOfInstance(new Path(stack[0], codex.propertyNames).destinationInstanceId)
+          : locale.object(stack[0].def.name).displayName,
       ),
     );
-    expect(view.destinations.length, '探索し切れば全ての道が見つかっている').toBeGreaterThan(0);
+    expect(pathsIn(location, codex).length, '探索し切れば全ての道が見つかっている').toBeGreaterThan(0);
+  });
+
+  it('行き先の違う道は、1枚のカードにまとまらない', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const paths = pathsIn(game.startLocation, codex);
+    const destinations = new Set(
+      paths.map((path) => new Path(path, codex.propertyNames).destinationInstanceId),
+    );
+    expect(destinations.size, '行き先の違う道が2本以上ある土地で確かめる').toBeGreaterThan(1);
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(new Set(view.fixtures.map((card) => card.name)).size, '道のカードは行き先ごとに分かれる').toBe(
+      destinations.size,
+    );
   });
 
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
@@ -101,23 +121,23 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(fromGameSession(game, codex, locale).explorationRatio).toBe(1);
   });
 
-  it('フィールドアイテムのmoveで手持ちへ移り、手持ちのmoveでフィールドへ戻る', () => {
+  it('アイテムのmoveで手持ちへ移り、手持ちのmoveでフィールドへ戻る', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);
     const picked = game.startLocation.items[0];
 
-    fromGameSession(game, codex, locale).fieldItems[0].moveTo?.('hand')?.();
+    fromGameSession(game, codex, locale).items[0].moveTo?.('hand')?.();
 
     expect(game.player.hand[0], '押したアイテムが手持ちの先頭の枠に入る').toBe(picked);
     expect(game.startLocation.items, 'フィールドからは無くなる').not.toContain(picked);
 
-    fromGameSession(game, codex, locale).hand[0]?.moveTo?.('field')?.();
+    fromGameSession(game, codex, locale).hand[0]?.moveTo?.('items')?.();
 
     expect(game.player.hand[0], '手持ちの枠は空く').toBeUndefined();
     expect(game.startLocation.items, 'フィールドへ戻る').toContain(picked);
   });
 
-  it('設置物のカードは移せない', () => {
+  it('設置物のカードは移せないが、同じレーンの中でなら並び替えられる', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(
@@ -126,10 +146,15 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.fieldItems.map((card) => card.moveTo)).toEqual([undefined]);
+    expect(view.items, '設置物はアイテムのレーンには出ない').toEqual([]);
+    expect(
+      view.fixtures.map((card) => card.moveTo),
+      '持ち歩けないので移動の宛先を持たない',
+    ).toEqual([undefined]);
+    expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
-  it('手持ちが6枠とも埋まっていると、フィールドアイテムのmoveは何も起こさない', () => {
+  it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
     const handSlotId = codex.slotNames.getId('hand');
@@ -140,7 +165,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     exploreToFull(game);
     const items = [...game.startLocation.items];
 
-    fromGameSession(game, codex, locale).fieldItems[0].moveTo?.('hand')?.();
+    fromGameSession(game, codex, locale).items[0].moveTo?.('hand')?.();
 
     expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });
@@ -161,13 +186,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     );
     expect(view.hand[0]?.count, 'スタック数はそのままインスタンスの個数').toBe(2);
     expect(
-      view.fieldItems.map((card) => card.identity),
+      view.items.map((card) => card.identity),
       'フィールドも同種はスタックにまとまって1枚',
-    ).toEqual(
-      game.startLocation.itemStacks
-        .map((stack) => stack.map((item) => item.instanceId))
-        .concat(game.startLocation.fixtureStacks.map((stack) => stack.map((f) => f.instanceId))),
-    );
+    ).toEqual(game.startLocation.itemStacks.map((stack) => stack.map((item) => item.instanceId)));
   });
 
   it('手持ちのカードは装備へ移せる（装備固有の経路ではなく、場所を指すだけ）', () => {
@@ -256,7 +277,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const cardOf = (name: string) => ({
       icon: '',
       name,
-      place: 'field' as const,
+      place: 'items' as const,
       objects: [game.session.spawn(codex.objectNames.getId(name))],
     });
     const water = cardOf('water_liquid');
@@ -274,7 +295,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     }
 
     const view = fromGameSession(game, codex, locale);
-    const cardOf = (name: string) => view.fieldItems.find((card) => card?.objects[0].def.name === name)!;
+    const cardOf = (name: string) => view.items.find((card) => card?.objects[0].def.name === name)!;
     const stones = cardOf('stone');
     expect(stones.count, '2個の石は1枚のカードにまとまる').toBe(2);
 
@@ -310,7 +331,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     }
 
     const view = fromGameSession(game, codex, texts);
-    const stones = view.fieldItems.find((card) => card.objects[0].def.name === 'stone')!;
+    const stones = view.items.find((card) => card.objects[0].def.name === 'stone')!;
 
     expect(view.combinationOf(stones, stones)).toMatchObject({
       name: '打ち割る',
@@ -321,7 +342,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('現在地は移動に追従する', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);
-    const path = new Path(game.startLocation.paths[0], codex.propertyNames);
+    const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
     expect(path.travel(game.player.instance, game.session)).toBe(true);
 
     const view = fromGameSession(game, codex, locale);

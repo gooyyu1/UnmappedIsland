@@ -5,6 +5,7 @@ import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { Location } from '../../src/domain/runtime/views/Location';
 import { Path } from '../../src/domain/runtime/views/Path';
+import { pathsIn } from '../support/paths';
 import { World } from '../../src/domain/runtime/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
@@ -46,11 +47,19 @@ describe('locations.yamlの土地・道定義', () => {
   it('すべての土地は期待されるスロットを持ち、キャラクタスロットは固定・単数である', () => {
     for (const name of LAND_NAMES) {
       const land = def(name);
-      for (const slotName of ['items', 'fixtures', 'characters', 'undiscovered_paths', 'paths'])
+      for (const slotName of ['items', 'fixtures', 'characters', 'undiscovered_fixtures'])
         expect(
           land.getSlotDef(codex.slotNames.getId(slotName)),
           `${name} は ${slotName} スロットを持つ`,
         ).toBeDefined();
+
+      // 探索でその場に湧く設置物は、宣言順で最初に受け入れたスロットへ入る（WorldObject.place）。
+      // undiscovered_fixturesが先に来ると、湧いた設置物まで未発見側へ入って表示されなくなる。
+      const slotNames = [...land.enumerateSlotDefs()].map((slot) => codex.slotNames.getName(slot.globalId));
+      expect(
+        slotNames.indexOf('fixtures'),
+        `${name}: fixturesはundiscovered_fixturesより先に宣言されている`,
+      ).toBeLessThan(slotNames.indexOf('undiscovered_fixtures'));
 
       const characters = land.getSlotDef(codex.slotNames.getId('characters'));
       expect(characters?.fixedPositions, `${name} のキャラクタスロットは固定型`).toBe(true);
@@ -139,7 +148,7 @@ describe('locations.yamlの土地・道定義', () => {
       character.moveToSlot(grassland, codex.slotNames.getId('characters'), codex.wellKnown),
     ).toBeUndefined();
     expect(
-      pathToForest.moveToSlot(grassland, codex.slotNames.getId('undiscovered_paths'), codex.wellKnown),
+      pathToForest.moveToSlot(grassland, codex.slotNames.getId('undiscovered_fixtures'), codex.wellKnown),
     ).toBeUndefined();
 
     pathToForest.setProperty(codex.propertyNames.getId('required_progress'), 3);
@@ -149,16 +158,18 @@ describe('locations.yamlの土地・道定義', () => {
     const grasslandView = new Location(grassland, codex);
     const pathView = new Path(pathToForest, codex.propertyNames);
 
-    // 進捗2までは道は見つからず、未発見の道は移動アクションも成立しない（in_slot: paths条件）。
+    // 進捗2までは道は見つからず、未発見の道は移動アクションも成立しない（in_slot: fixtures条件）。
     expect(grasslandView.explore(character, session)).toBe(true);
     expect(grasslandView.explore(character, session)).toBe(true);
-    expect(grasslandView.paths, '進捗2ではまだ道は見つからない').toHaveLength(0);
+    expect(pathsIn(grasslandView, codex), '進捗2ではまだ道は見つからない').toHaveLength(0);
     expect(pathView.travel(character, session), '未発見の道は移動できない').toBe(false);
     expect(character.parent).toBe(grassland);
 
     // 進捗3で道が発見される。
     expect(grasslandView.explore(character, session)).toBe(true);
-    expect(grasslandView.paths, '進捗3（required_progress）で道が公開される').toContain(pathToForest);
+    expect(pathsIn(grasslandView, codex), '進捗3（required_progress）で道が公開される').toContain(
+      pathToForest,
+    );
 
     // 発見済みの道で移動すると、プレイヤーは移動先のcharactersスロットへ移り、移動時間分だけ時間が進む。
     const minutesBefore = worldView.hour * 60 + worldView.minute;

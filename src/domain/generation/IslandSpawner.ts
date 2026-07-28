@@ -12,7 +12,7 @@ const FIRST_PATH_PROGRESS = 2;
  * - 各SiteのLocationTypeが指すobject_defをspawnし、worldのlocationsスロットへ配置する
  * - 各辺（IslandEdge）につき道（path）を両端に1個ずつspawnし、travelMinutes・requiredProgress・
  *   destinationId（相手側LocationのInstanceId）を書き込んで、それぞれの土地の
- *   undiscovered_paths（隠しスロット）へ配置する
+ *   undiscovered_fixtures（隠しスロット）へ配置する
  *
  * requiredProgressは土地ごとに [2, 探索上限-1] の範囲へ等間隔に割り当てる。これにより
  * 「探索の進捗が最大へ達する前に、その土地のすべての道が見つかる」という要求を、
@@ -24,7 +24,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
   const codex = session.codex;
   const world = session.world.instance;
   const locationsSlotId = codex.slotNames.getId('locations');
-  const undiscoveredPathsSlotId = codex.slotNames.getId('undiscovered_paths');
+  const undiscoveredFixturesSlotId = codex.slotNames.getId('undiscovered_fixtures');
   const pathDefId = codex.objectNames.getId('path');
   const progressId = codex.propertyNames.getId('exploration_progress');
   const travelMinutesId = codex.propertyNames.getId('travel_minutes');
@@ -65,7 +65,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
       path.setProperty(travelMinutesId, edge.travelMinutes);
       path.setProperty(requiredProgressId, requiredProgress);
       path.setProperty(destinationIdId, locations[other].instanceId);
-      const error = path.moveToSlot(locations[site.index], undiscoveredPathsSlotId, codex.wellKnown);
+      const error = path.moveToSlot(locations[site.index], undiscoveredFixturesSlotId, codex.wellKnown);
       if (error !== undefined) throw new Error(`道を配置できません: ${error}`);
     }
   }
