@@ -769,17 +769,10 @@ actions:
 
 `conditions`/常時の継続的な加算は `accumulate`（8.4 節）が担うため、`set`/`add` は一時的な命令専用です。
 
-`set` の値は、**リテラル**（整数・真偽値・シンボル名、6.8 節）か、**`{object, prop}` 参照**
-（`conditions` の値参照・`weight` の path 参照と同じ二択）のいずれかです。参照の場合、その参照先の現在の
-実効値をそのままコピーします（例: そのときの周囲の気温を控えとして写し取る）。
-
-```yaml
-set:
-  self:
-    recorded_temperature: {object: ancestor, prop: ambient_temperature}
-```
-
-`add` は加減算量が常に量そのもの（差分）であり、値をコピーする用途に当てはまらないため、参照は用意していません。
+`set`/`add` の値は、どちらも**リテラル**（整数・真偽値・シンボル名、6.8 節）だけです。他のプロパティを指す
+`{object, prop}` 参照は使えません（`conditions` の値参照・`weight`・`duration` とはここが異なります）。値の
+算出を YAML へ持ち込むと定義ファイルがプログラム化していくためです。在庫に応じて動く量が変わる移送は、
+専用の動詞である `transfer`（9.5 節）で表します。
 
 ### 9.3 destroy
 

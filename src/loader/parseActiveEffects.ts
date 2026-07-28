@@ -15,7 +15,6 @@ import { YamlLoadError } from './YamlLoadError';
 import { ACTIVE_VERB_KEYS, parseIntLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
-import { PropertyPath } from '../domain/defs/ReferenceRoot';
 import {
   ActiveEffects,
   AddEffect,
@@ -82,39 +81,14 @@ export function parseActiveEffectBody(
   return new ActiveEffects(operations);
 }
 
-/**
- * setの1エントリの値。スカラーならリテラル（整数・真偽値・シンボル名）、マッピングなら
- * {object, prop}参照（他のプロパティの現在値のコピー、9.2節）。参照先のobjectはset自身の
- * 対象キーと同じ制約（selfOnly・allowDragged）を共有する。
- */
+/** setの1エントリの値。リテラル（整数・真偽値・シンボル名）のみ（9.2節）。 */
 function parseSetEffect(
   loader: WorldCodexYamlLoader,
   context: string,
   target: ReferenceRoot,
   propertyGlobalId: number,
   valueNode: YamlNode,
-  allowDragged: boolean,
-  selfOnly: boolean,
 ): SetEffect {
-  if (isMap(valueNode)) {
-    const objectName = tryGetScalar(valueNode, 'object', context);
-    const root =
-      objectName !== undefined ? parseActiveTargetKey(context, objectName, allowDragged, selfOnly) : 'self';
-    const propName = requireScalar(valueNode, 'prop', context);
-
-    const unknownKeys = entriesInOrder(valueNode)
-      .map(([key]) => key)
-      .filter((key) => key !== 'object' && key !== 'prop');
-    if (unknownKeys.length > 0)
-      throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
-
-    return new SetEffect(
-      target,
-      propertyGlobalId,
-      new PropertyPath(root, loader.propertyNames.intern(propName)),
-    );
-  }
-
   const [value] = parseScalarNumber(loader, context, asScalarText(valueNode, context));
   return new SetEffect(target, propertyGlobalId, value);
 }
@@ -190,8 +164,6 @@ function parseSets(
           target,
           loader.propertyNames.intern(propName),
           valueNode,
-          allowDragged,
-          selfOnly,
         ),
       );
   }

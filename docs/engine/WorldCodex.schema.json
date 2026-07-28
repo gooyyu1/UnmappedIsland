@@ -997,7 +997,7 @@
       "additionalProperties": false
     },
     "set_value": {
-      "description": "setの1エントリの値（9.2節）。リテラル（整数・真偽値・シンボル名）か、{object, prop}参照（他プロパティの現在値のコピー）のいずれか。",
+      "description": "setの1エントリの値（9.2節）。リテラル（整数・真偽値・シンボル名）のみ。",
       "oneOf": [
         {
           "type": [
@@ -1008,9 +1008,6 @@
         {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$"
-        },
-        {
-          "$ref": "#/$defs/prop_ref"
         }
       ]
     },
