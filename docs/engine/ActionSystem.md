@@ -69,7 +69,6 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 | `parent` | self の直接の親 | すべて |
 | `actor` | プレイヤーキャラクター | actions / combinations（rangeイベントには存在しない） |
 | `dragged` | ドラッグされてきたカード | combinations のみ |
-| `dragged_parent` | dragged の直接の親 | combinations のみ（液体容器の中身→容器参照） |
 | `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | プロパティ参照のみ（位置判定では不可） |
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、

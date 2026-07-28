@@ -85,6 +85,28 @@ export class Slot {
   }
 
   /**
+   * 量的オブジェクト（7.6節）をこのスロットへ何単位まで受け入れられるか。capacity未指定なら無制限
+   * （Number.POSITIVE_INFINITY）。既に入っている量の分だけ空きが減る。
+   */
+  remainingCapacity(sizePropertyGlobalId: number): number {
+    if (this.def.capacity === undefined) return Number.POSITIVE_INFINITY;
+    return this.def.capacity - this.sumSize(sizePropertyGlobalId);
+  }
+
+  /**
+   * 量的オブジェクトの合流先（同じ型の在中インスタンス）。同種は1インスタンスに保たれる前提のため
+   * 最初の1つを返す。accepts制約を満たさない場合はundefined（異種の液体が既にいる場合など）。
+   */
+  findQuantityMergeTarget(candidate: WorldObject): WorldObject | undefined {
+    return this.contents.find((o) => o.def.globalId === candidate.def.globalId);
+  }
+
+  /** acceptsルール（7.2節）だけを判定する。量的オブジェクトはcapacityを量として別に扱うため分けて使う。 */
+  acceptsByRule(candidate: WorldObject): boolean {
+    return this.acceptsRule(candidate);
+  }
+
+  /**
    * unitCapacityにcandidateを新たに加える余地があるか。stackableで既存のObjectStackへ合流できる場合は
    * 新しい枠を消費しない（非stackableは同種でも常に個体ごとに別スタック）。
    */

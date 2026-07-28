@@ -325,7 +325,7 @@ object_defs:
     expect(axeInstance.getNumber(durabilityId)).toBe(9);
   });
 
-  it('dragged_parentへのsetとaddが両方適用される', () => {
+  it('dragged_parentは対象キーとして使えない', () => {
     const yaml = `
 object_defs:
   lever:
@@ -335,38 +335,10 @@ object_defs:
         add:
           dragged_parent:
             power: 3
-        set:
-          dragged_parent:
-            mode: 2
-  carrier:
-    props:
-      power:
-        value: 1
-      mode:
-        value: 0
-    slots:
-      hold:
-        accepts:
-          - {tag: marker_tag, max: 1}
   marker:
     tags: [marker_tag]
 `;
-    const codex = load(yaml);
-    const holdSlotId = codex.slotNames.getId('hold');
-    const powerId = codex.propertyNames.getId('power');
-    const modeId = codex.propertyNames.getId('mode');
-
-    const session = new WorldSession(codex);
-    const lever = spawn(codex, 'lever');
-    const carrier = spawn(codex, 'carrier');
-    const marker = spawn(codex, 'marker');
-    expect(marker.moveToSlot(carrier, holdSlotId, codex.wellKnown)).toBeUndefined();
-
-    const executed = lever.tryExecuteCombination(marker, undefined, 'operate', session);
-
-    expect(executed).toBe(true);
-    expect(carrier.getNumber(powerId)).toBe(4);
-    expect(carrier.getNumber(modeId)).toBe(2);
+    expect(() => load(yaml)).toThrowError(/未知の対象キー/);
   });
 
   it('receiver/draggedの両方が代表(represented_by)の中身へ委譲される', () => {

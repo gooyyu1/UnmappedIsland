@@ -19,11 +19,6 @@ export type ReferenceRoot =
   /** combinations内でのみ意味を持つ、ドラッグされてきたカード（12.2節）。 */
   | 'dragged'
   /**
-   * combinations内でのみ意味を持つ、ドラッグされてきたカードの直接の親（液体容器のように「中身が
-   * コンテナ親のプロパティを参照する」ケースで使う）。
-   */
-  | 'dragged_parent'
-  /**
    * selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（WorldObject.findAncestorWithProperty
    * 参照）。SlotPosition判定（{in_slot: ...}）では意味を持たないため未対応（ロード時エラー）。
    */
@@ -63,8 +58,6 @@ export function resolveReferenceRoot(
       return actor;
     case 'dragged':
       return dragged;
-    case 'dragged_parent':
-      return dragged?.parent;
     default:
       return undefined;
   }

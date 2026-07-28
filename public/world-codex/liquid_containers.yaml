@@ -1,14 +1,39 @@
-# 液体容器の定義。容器本体は「液体を1つ入れられるスロットを持つだけ」にし、
-# 飲用・注入・蒸発・スタック判定は represented_by された中身オブジェクト側へ委譲する。
-# liquid_amount は容器本体が持ち、中身オブジェクトは liquid_amount を持たない。
-# 飲用・注入は from_object/to_object で親容器を参照することで実現する。
+# 液体容器の定義。液体は個数ではなく量で存在し（quantitative、GameElementDefinition.md 7.6節）、
+# 量は液体自身がsizeとして持つ。上限は容器のcontentスロットのcapacityが決める。
+# 設計の全体像はLiquidContainerSystem.mdを参照。
+#
+# 固形物を入れる容器（containers.yaml）とは構造が別。あちらは中身をスロットへそのまま入れるだけで、
+# こちらは中身が量を持ち、注ぎ移しが量の移動になる。
 
 traits:
+  # 液体を1つ入れる容器。中身が代表（represented_by）となり、操作もスタック判定も中身へ委譲する。
   liquid_container:
     represented_by: content
-    slots:
-      content:
-        accepts: [{tag: liquid, max: 1}]
+    combinations:
+      # 受け側が空のとき、代表は容器自身なのでこちらが発火する（中身入りならliquid側が発火する）。
+      # 空いている量だけ入り、入りきらない分は注ぎ元に残る（quantitativeの規定）。
+      pour_in:
+        with: liquid
+        move: {object: dragged, to: self}
+
+  # 液体に共通する、量としての振る舞い。
+  liquid:
+    tags: [liquid]
+    quantitative: true
+    props:
+      # 量。単位はhydrationと同一スケール（1L ≈ 4800、characters.yaml）。
+      # 上限は容器のcontentスロットのcapacityが決めるため、ここではrangeを持たない。
+      size:
+        value: 0
+      # 単位量あたりの重さ。水を100とする（ContainerSystem.md）。
+      density:
+        value: 100
+    combinations:
+      # 受け側が中身入りのとき、代表は中身の液体自身。移し先は自分ではなく容器なのでto: parent。
+      # 異種の液体はcontentのaccepts（max 1）が拒むため、条件を書く必要がない。
+      pour_in:
+        with: liquid
+        move: {object: dragged, to: parent}
 
   sealed_container:
     tags: [sealed_container]
@@ -20,189 +45,128 @@ traits:
     tags: [narrow_open_container]
 
   water_liquid:
-    tags: [liquid, water_liquid]
+    tags: [water_liquid]
     actions:
+      # 1回の飲用 = 250mL相当。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
       drink:
         transfer:
           amount: 1200
-          from_object: parent
-          from_prop: liquid_amount
+          from_prop: size
           to_object: actor
           to_prop: hydration
-    combinations:
-      pour_in:
-        with: water_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
 
   tea_liquid:
-    tags: [liquid, tea_liquid]
+    tags: [tea_liquid]
     actions:
       drink:
         transfer:
           amount: 1200
-          from_object: parent
-          from_prop: liquid_amount
+          from_prop: size
           to_object: actor
           to_prop: hydration
           linked_add:
             actor:
               wakefulness: 200
-    combinations:
-      pour_in:
-        with: tea_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
 
+  # 飲めない液体はdrinkを定義しないだけでよい。
   oil_liquid:
-    tags: [liquid, oil_liquid]
-    combinations:
-      pour_in:
-        with: oil_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
+    tags: [oil_liquid]
 
+  # 開放度タグ×天候の組み合わせで自分の量を減らす。密閉容器はどのゲートも成立しないため蒸発しない。
+  # 量が尽きたインスタンスはエンジンが消す（quantitativeの規定）。
   evaporating_liquid:
     passives:
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, op: eq, value: cloudy}
         accumulate:
-          parent:
-            liquid_amount: -1
+          self:
+            size: -1
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, op: eq, value: clear}
         accumulate:
-          parent:
-            liquid_amount: -2
+          self:
+            size: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, op: eq, value: sunny}
         accumulate:
-          parent:
-            liquid_amount: -3
+          self:
+            size: -3
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, op: eq, value: scorching}
         accumulate:
-          parent:
-            liquid_amount: -4
+          self:
+            size: -4
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, op: eq, value: cloudy}
         accumulate:
-          parent:
-            liquid_amount: -2
+          self:
+            size: -2
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, op: eq, value: clear}
         accumulate:
-          parent:
-            liquid_amount: -4
+          self:
+            size: -4
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, op: eq, value: sunny}
         accumulate:
-          parent:
-            liquid_amount: -6
+          self:
+            size: -6
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, op: eq, value: scorching}
         accumulate:
-          parent:
-            liquid_amount: -8
+          self:
+            size: -8
 
 object_defs:
+  # 容量はcontentスロットのcapacityで持つ。1L = 4800。
   canteen:
     traits: [liquid_container, sealed_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+        capacity: 4800
 
   pot:
     traits: [liquid_container, sealed_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+        capacity: 4800
 
   bottle:
     traits: [liquid_container, sealed_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 9600}
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+        capacity: 9600
 
   jar:
     traits: [liquid_container, narrow_open_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 19200}
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+        capacity: 19200
 
   coconut_bowl:
     traits: [liquid_container, wide_open_container]
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 1200}
-
-  empty_liquid:
-    tags: [liquid, empty_liquid]
-    combinations:
-      pour_water:
-        with: water_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: water_liquid
-      pour_tea:
-        with: tea_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: tea_liquid
-      pour_oil:
-        with: oil_liquid
-        transfer:
-          amount: 999999
-          from_object: dragged_parent
-          from_prop: liquid_amount
-          to_object: parent
-          to_prop: liquid_amount
-        destroy: self
-        spawn:
-          object: oil_liquid
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+        capacity: 1200
 
   water_liquid:
-    traits: [water_liquid, evaporating_liquid]
+    traits: [liquid, water_liquid, evaporating_liquid]
 
   tea_liquid:
-    traits: [tea_liquid, evaporating_liquid]
+    traits: [liquid, tea_liquid, evaporating_liquid]
 
   oil_liquid:
-    traits: [oil_liquid, evaporating_liquid]
+    traits: [liquid, oil_liquid, evaporating_liquid]

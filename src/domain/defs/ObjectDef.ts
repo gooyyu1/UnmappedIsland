@@ -55,6 +55,12 @@ export class ObjectDef {
   /** このObjectDefが（受け側として）持つドラッグ型操作（12節）。 */
   readonly combinations: readonly CombinationDef[];
 
+  /**
+   * 個数ではなく量で存在する型か（7.6節）。真なら、インスタンスの存在と「sizeが正であること」が
+   * 同値になる——moveは量を移し、移り先に同種が無ければ生まれ、移し元は量が尽きた時点で消える。
+   */
+  readonly isQuantitative: boolean;
+
   constructor(
     globalId: number,
     name: string,
@@ -69,6 +75,7 @@ export class ObjectDef {
     actions: readonly ActionDef[] = [],
     combinations: readonly CombinationDef[] = [],
     representedBySlotGlobalId?: number,
+    isQuantitative = false,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -83,6 +90,7 @@ export class ObjectDef {
     this.actions = actions;
     this.combinations = combinations;
     this.representedBySlotGlobalId = representedBySlotGlobalId;
+    this.isQuantitative = isQuantitative;
   }
 
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */

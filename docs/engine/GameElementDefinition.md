@@ -592,6 +592,25 @@ object_defs:
         accepts: [{tag: liquid, max: 1}]
 ```
 
+- **`quantitative`**（既定`false`）: `true`の場合、この型のインスタンスは「1個・2個」ではなく**量**で存在し、
+  その量は `size`（7.3節）が表します。**「`size`が正であること」と「インスタンスが存在すること」が同値**という
+  不変条件のもとで動くため、`move`（9.6節）は量を移す操作になります——移り先に同種がいなければその量で新しい
+  インスタンスが生まれ、既にいればその `size` へ加算され、移し元は量が尽きた時点で消えます。量は分割できるので、
+  `capacity` に入りきらない分は移し元に残ります（個数のオブジェクトは分割できないため全か無かです）。
+  `traits`側（5節）でも宣言でき、真偽値なので複数の`trait`が宣言しても重複エラーにはならず論理和で合成します。
+
+  注ぐたびにインスタンスが生まれ直すため、**この型のプロパティに生成時ロールの範囲値（6.2節）は使えません**
+  （移すたびに振り直されてしまうため、ロード時エラー）。
+
+```yaml
+object_defs:
+  water_liquid:
+    quantitative: true
+    tags: [liquid]
+    props:
+      size: {value: 0}
+```
+
   代表が見つからない（スロットが空、またはそのslot自体を持たない）場合は自分自身をそのまま使います。
   `stack_order`と同じく、スタックへ加わるかどうかの判定は挿入時に1度だけ行い、その後の中身の変化を追って
   自動的に別スタックへ移し替えることはしません。`fixed_positions`の固定番号も`ObjectStack`単位で
@@ -830,7 +849,7 @@ actions:
   drink:
     transfer:
       amount: 2000
-      from_prop: liquid_amount
+      from_prop: size
       to_object: actor
       to_prop: hydration
 ```
@@ -854,8 +873,7 @@ actions:
   drink:
     transfer:
       amount: 1200
-      from_object: parent
-      from_prop: liquid_amount
+      from_prop: size
       to_object: actor
       to_prop: hydration
       linked_add:
@@ -908,6 +926,11 @@ traits:
         with: item
         move: {object: dragged, to: self}
 ```
+
+移動対象が**量的オブジェクト**（`quantitative`、7.6 節）の場合、`move` はインスタンスではなく**量を移します**。
+移り先に同種がいなければその量で新しいインスタンスが生まれ、既にいればその `size` へ加算され、移し元は量が
+尽きた時点で消えます。入りきらない量は移し元に残ります。プレイヤーから見れば「水が移った」であり、
+インスタンスは量を載せる器にすぎません。
 
 移動先が移動対象自身か、その中身である場合（入れ物を自分の中へ入れる）は、ツリーから切り離された輪が
 できてしまうため、配置は必ず失敗します（7.1 節）。この判定は `accepts`/`capacity` とは別の木構造の
@@ -1223,29 +1246,22 @@ conditions:
 区別しています。
 
 液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
-スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します
+スロットへ、種類ごとのタグを持つ中身のオブジェクトを1つ置くことで表現します
 （[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 参照）。
 
 ```yaml
 object_defs:
   canteen:
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
     slots:
       content:
         accepts:
           - {tag: liquid, max: 1}
+        capacity: 4800
     actions:
-      drink:
+      pour_out:
         conditions:
           - {slot: content, tag: water_liquid}
-        transfer:
-          amount: 2000
-          from_prop: liquid_amount
-          to_object: actor
-          to_prop: hydration
+        destroy: self
 ```
 
 ### 14.4 葉: タグ判定
