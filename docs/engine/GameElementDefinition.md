@@ -479,13 +479,13 @@ props:
 
 ### 7.4 weight / load（重さと負荷）
 
-`weight`・`load`・`density`・`weight_reduction_rate` は、エンジンが名前で直接参照する規約プロパティです
+`weight`・`load`・`density`・`load_reduction_rate` は、エンジンが名前で直接参照する規約プロパティです
 （内部設計は [`ContainerSystem.md`](./ContainerSystem.md)）。いずれも実効値として読むたびに導出されます。
 
 - **`weight`**: 物の重さ。自分の値に、**中身の `weight` をそのまま足します**（率はかけません）。量的
   オブジェクト（`quantitative`、7.6 節）は `size × density ÷ 100` が自分の重さになります（`density` は
   単位量あたりの重さ、水を 100 とする）。そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものです。
-- **`load`**: 担いだ人が感じる負荷。**直接の子**の `weight` に、その子の `weight_reduction_rate`（%、
+- **`load`**: 担いだ人が感じる負荷。**直接の子**の `weight` に、その子の `load_reduction_rate`（%、
   既定 0 = 軽減なし、上限 100 でクランプ）を効かせた分の合計です。持つのはキャラクターだけで、他の
   オブジェクトは定義しません。
 
@@ -497,11 +497,11 @@ object_defs:
   sledge:
     props:
       weight: {value: 10000}
-      weight_reduction_rate:
+      load_reduction_rate:
         value: 0
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {weight_reduction_rate: 90}}   # 引きずるので9割軽く感じる
+            modify: {self: {load_reduction_rate: 90}}   # 引きずるので9割軽く感じる
 
   character:
     props:
@@ -1367,7 +1367,7 @@ object_defs:
 - `weight` の合計が0（またはマイナス）になった場合のフォールバック候補の扱いは、宣言順で先頭の候補を選ぶ、と
   実装上決定した（YAML側にフォールバック候補を明示する記法は無い）
 - `slots` が character 専有の概念か、コンテナ全般で使い回す汎用概念か
-- `weight_reduction_rate`（7.4 節）に負の値を許し、「かえって重く感じる」を表せるようにするか
+- `load_reduction_rate`（7.4 節）に負の値を許し、「かえって重く感じる」を表せるようにするか
 - `combinations` に関する未決事項一式（キーの衝突解決、MOD 拡張性など）は `ActionSystem.md` に整理
 - レシピに関する未決事項一式は `RecipeSystem.md` に整理
 - コンテナの容量・重さに関する未決事項一式は `ContainerSystem.md` に整理
