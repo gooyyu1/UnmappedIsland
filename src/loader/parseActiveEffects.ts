@@ -296,9 +296,9 @@ function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map
   if (toProp !== undefined) {
     return { kind: 'instance_id_prop', propertyGlobalId: loader.propertyNames.intern(toProp) };
   }
-  if (to !== 'self')
-    throw new YamlLoadError(`${context}: moveのtoは現時点で'self'のみ対応しています（値: '${to}'）。`);
-  return { kind: 'self' };
+  if (to === 'self') return { kind: 'self' };
+  if (to === 'parent') return { kind: 'parent' };
+  throw new YamlLoadError(`${context}: moveのtoは'self'か'parent'のみ対応しています（値: '${to}'）。`);
 }
 
 /**
