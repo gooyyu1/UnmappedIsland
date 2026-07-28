@@ -36,10 +36,10 @@ weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効�
 
 ```
 load の実効値 = load.value + 通常の modify
-              + Σ( 直接の子の weight実効値 × (100 − min(子の weight_reduction_rate実効値, 100)) ÷ 100 )
+              + Σ( 直接の子の weight実効値 × (100 − min(子の load_reduction_rate実効値, 100)) ÷ 100 )
 ```
 
-`weight_reduction_rate`（%、既定 0 = 軽減なし）は**アイテム側**のプロパティで、スロット位置に応じて
+`load_reduction_rate`（%、既定 0 = 軽減なし）は**アイテム側**のプロパティで、スロット位置に応じて
 `passives` が設定します。8.5 節の「装備するスロットによってボーナス量を変える剣」と同じ形です。
 
 ```yaml
@@ -47,11 +47,11 @@ object_defs:
   sledge:
     props:
       weight: {value: 10000}
-      weight_reduction_rate:
+      load_reduction_rate:
         value: 0
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {weight_reduction_rate: 90}}   # 引きずるので9割軽く感じる
+            modify: {self: {load_reduction_rate: 90}}   # 引きずるので9割軽く感じる
 ```
 
 率をスロットではなく**アイテム**が持つのは、同じ入れ物でも担ぎ方で体感が変わるからです。背負い袋は背負えば

@@ -31,11 +31,11 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 1000}
-      weight_reduction_rate:
+      load_reduction_rate:
         value: 0
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {weight_reduction_rate: 90}}
+            modify: {self: {load_reduction_rate: 90}}
     slots:
       cargo:
         accepts: [{tag: item, max: 9999}]
@@ -45,11 +45,11 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 15000}
-      weight_reduction_rate:
+      load_reduction_rate:
         value: 0
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {weight_reduction_rate: 95}}
+            modify: {self: {load_reduction_rate: 95}}
     slots:
       cargo:
         accepts: [{tag: item, max: 9999}]
@@ -59,11 +59,11 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 500}
-      weight_reduction_rate:
+      load_reduction_rate:
         value: 0
         passives:
           - conditions: [{in_slot: equipment}]
-            modify: {self: {weight_reduction_rate: 50}}
+            modify: {self: {load_reduction_rate: 50}}
     slots:
       contents:
         accepts: [{tag: item, max: 9999}]
