@@ -189,11 +189,11 @@ export class CardDragController {
     // 掴んで動くのは1つだけなので、スタックは残りがそこに居る。薄くするのは場所ごと空くときだけ。
     if ((gesture.card.content.count ?? 1) < 2) gesture.card.setAlpha(GRABBED_ALPHA);
 
-    // 作る順がそのまま重なりの順になる。ふちの光はレーンのカードの装飾なので分身より奥、
-    // どこへ落ちるかの枠と説明は分身より手前（分身の見た目より、何が起きるかの方が大事）。
+    // 作る順がそのまま重なりの順になる。ふちの光もどこへ落ちるかの枠もレーンのカードの装飾なので
+    // 分身より奥（指が運んでいるカードは常に見えている必要がある）、説明だけが分身より手前。
     this.showAcceptingCards(gesture);
-    gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, cardFace(gesture.card.content));
     gesture.indicator = this.scene.add.graphics();
+    gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, cardFace(gesture.card.content));
     gesture.tooltip = new DropTooltip(this.scene, this.metrics());
     this.follow(pointer);
   }
