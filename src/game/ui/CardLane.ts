@@ -3,7 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card, EmptyCard } from './Card';
 import { COLOR, SIZE } from './theme';
-import { addPanel } from './shapes';
+import { addPanel, addTiledPanel } from './shapes';
 import { wheelPixels } from './scroll';
 
 /**
@@ -35,6 +35,11 @@ const SLIDE_EASE = 'Quad.easeOut';
 export interface CardLaneOptions {
   /** 左端にピン留めするカード（ロケーションレーンの現在地）。 */
   readonly pinned?: CardContent;
+  /**
+   * 背景に敷く絵のテクスチャキー（laneArt参照）。省略すると背景色だけで塗る。絵が用意されていない
+   * 土地・子ウィンドウの中のレーンがそれにあたる。
+   */
+  readonly art?: string;
   /**
    * はみ出したカードをマスクで切り抜くか。子ウィンドウの中で使うときに立てる——レーンの既定は
    * 「隣接エリアの背景板が上から覆って隠す」で、周りに背景板が無い子ウィンドウでは通用しないため。
@@ -115,6 +120,12 @@ export class CardLane {
    */
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
+  /**
+   * 絵を敷いた背景板（背景色だけのレーンでは空）。カードと同じだけ横へ送るので、スクロールのたびに
+   * 敷き位置を更新する。ピン留め部分の背景板も、絵が途切れないよう同じ位置で敷く。
+   */
+  private readonly tiles: Phaser.GameObjects.TileSprite[] = [];
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -130,8 +141,7 @@ export class CardLane {
     const dividerWidth = metrics.px(4);
     const cardY = rect.y + (rect.height - metrics.px(SIZE.cardHeight)) / 2;
 
-    const panel = addPanel(scene, rect, background);
-    this.objects.push(panel);
+    const panel = this.addBackground(scene, rect, background, options.art);
 
     const pinnedWidth = pinned === undefined ? 0 : cardWidth + gap + dividerWidth + gap;
     const stripX = rect.x + margin + pinnedWidth;
@@ -156,7 +166,9 @@ export class CardLane {
         ? undefined
         : { x: rect.x + margin, y: cardY, width: cardWidth, height: this.cardHeight };
     const pinnedPanel =
-      pinned === undefined ? undefined : this.addPinnedSlot(scene, metrics, rect, background, cardY, pinned);
+      pinned === undefined
+        ? undefined
+        : this.addPinnedSlot(scene, metrics, rect, background, options.art, cardY, pinned);
 
     scene.input.setDraggable(panel);
     panel.on('dragstart', () => this.beginScroll());
@@ -273,9 +285,12 @@ export class CardLane {
     this.scrollTo(this.dragStartScrollX + deltaX);
   }
 
-  /** スクロール量を可動範囲へ収めて反映する。 */
+  /** スクロール量を可動範囲へ収めて反映する。背景の絵もカードと同じだけ送る（地面の上を送る見え方）。 */
   private scrollTo(scrollX: number): void {
-    this.strip.x = this.originX + Phaser.Math.Clamp(scrollX, this.minScrollX, 0);
+    const clamped = Phaser.Math.Clamp(scrollX, this.minScrollX, 0);
+    this.strip.x = this.originX + clamped;
+    // tilePositionXは絵の側の座標なので、敷くときにかけた倍率で割り戻す。
+    for (const tile of this.tiles) tile.tilePositionX = -clamped / tile.tileScaleX;
   }
 
   /**
@@ -324,22 +339,44 @@ export class CardLane {
     };
   }
 
+  /**
+   * 背景板を1枚置く。絵があれば敷き、無ければ背景色で塗る。どちらも入力を遮る（addPanel参照）。
+   * 置いた板は自分で片付ける（objects）。
+   */
+  private addBackground(
+    scene: Phaser.Scene,
+    rect: Rect,
+    background: number,
+    art: string | undefined,
+  ): Phaser.GameObjects.GameObject {
+    const panel = art === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, art);
+    if (panel instanceof Phaser.GameObjects.TileSprite) this.tiles.push(panel);
+    this.objects.push(panel);
+    return panel;
+  }
+
   /** 現在地カードはレーン左端に固定し、区切り線を挟んで右にスクロール領域を置く。 */
   private addPinnedSlot(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
     rect: Rect,
     background: number,
+    art: string | undefined,
     cardY: number,
     pinned: CardContent,
-  ): Phaser.GameObjects.Rectangle {
+  ): Phaser.GameObjects.GameObject {
     const margin = metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
     const cardWidth = metrics.px(SIZE.cardWidth);
     const dividerWidth = metrics.px(4);
 
-    const panel = addPanel(scene, { ...rect, width: margin + cardWidth + gap + dividerWidth }, background);
-    this.objects.push(panel, new Card(scene, metrics, rect.x + margin, cardY, pinned));
+    const panel = this.addBackground(
+      scene,
+      { ...rect, width: margin + cardWidth + gap + dividerWidth },
+      background,
+      art,
+    );
+    this.objects.push(new Card(scene, metrics, rect.x + margin, cardY, pinned));
 
     const cardHeight = metrics.px(SIZE.cardHeight);
     const divider = scene.add.rectangle(

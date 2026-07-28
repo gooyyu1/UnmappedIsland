@@ -112,6 +112,8 @@ export interface PlayScreenView {
   readonly minute: number;
   readonly weather: string;
   readonly currentLocation: CardContent;
+  /** 現在地のobject_defの識別子（表示名ではない）。土地ごとに変わるレーンの背景を選ぶ（laneArt参照）。 */
+  readonly locationArt: string;
   /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
   readonly explorationRatio: number;
   readonly destinations: readonly CardContent[];
@@ -301,6 +303,7 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: game.map.nameOfInstance(location.instance.instanceId) ?? UNNAMED_LOCATION,
     },
+    locationArt: location.instance.def.name,
     // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
     explorationRatio:
       location.explorationProgressMax === 0
