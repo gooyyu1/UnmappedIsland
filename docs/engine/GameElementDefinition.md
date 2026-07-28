@@ -849,7 +849,7 @@ actions:
   drink:
     transfer:
       amount: 2000
-      from_prop: liquid_amount
+      from_prop: size
       to_object: actor
       to_prop: hydration
 ```
@@ -873,8 +873,7 @@ actions:
   drink:
     transfer:
       amount: 1200
-      from_object: parent
-      from_prop: liquid_amount
+      from_prop: size
       to_object: actor
       to_prop: hydration
       linked_add:
@@ -1247,29 +1246,22 @@ conditions:
 区別しています。
 
 液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
-スロットへ、種類ごとのタグを持つ目印用オブジェクトを1つ置くことで表現します
+スロットへ、種類ごとのタグを持つ中身のオブジェクトを1つ置くことで表現します
 （[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 参照）。
 
 ```yaml
 object_defs:
   canteen:
-    props:
-      liquid_amount:
-        value: 0
-        range: {min: 0, max: 4800}
     slots:
       content:
         accepts:
           - {tag: liquid, max: 1}
+        capacity: 4800
     actions:
-      drink:
+      pour_out:
         conditions:
           - {slot: content, tag: water_liquid}
-        transfer:
-          amount: 2000
-          from_prop: liquid_amount
-          to_object: actor
-          to_prop: hydration
+        destroy: self
 ```
 
 ### 14.4 葉: タグ判定

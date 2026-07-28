@@ -327,10 +327,6 @@ function parseActiveTargetKey(
     case 'dragged':
       if (!allowDragged) throw new YamlLoadError(`${context}: 'dragged'はcombinationsの中でのみ使えます。`);
       return 'dragged';
-    case 'dragged_parent':
-      if (!allowDragged)
-        throw new YamlLoadError(`${context}: 'dragged_parent'はcombinationsの中でのみ使えます。`);
-      return 'dragged_parent';
     case 'child':
       throw new YamlLoadError(
         `${context}: activeの対象'child'は未対応です（一度きりの命令に対して『どの子か』の意味が確定していないため）。`,

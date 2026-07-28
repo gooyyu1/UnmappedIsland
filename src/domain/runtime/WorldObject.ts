@@ -595,6 +595,12 @@ export class WorldObject {
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) child.tick(session);
     }
+
+    // 量的オブジェクト（7.6節）は「sizeが正であること」と「インスタンスが存在すること」が同値。
+    // 蒸発などで量が尽きたら、この不変条件を自分で回復する（on_minの宣言を各液体に書かせない）。
+    if (this.def.isQuantitative && this.getNumber(session.codex.wellKnown.sizeId) <= 0) {
+      this.destroy(session.codex.wellKnown);
+    }
   }
 
   /**
@@ -618,7 +624,7 @@ export class WorldObject {
     effect.apply(this, session, actor, dragged, effectSite);
   }
 
-  /** 効果の対象キー(self/parent/actor/dragged/dragged_parent)を解決する。ancestorはプロパティごとに解決先が変わりうるため扱わない（resolveEffectTargetOrAncestor参照）。 */
+  /** 効果の対象キー(self/parent/actor/dragged)を解決する。ancestorはプロパティごとに解決先が変わりうるため扱わない（resolveEffectTargetOrAncestor参照）。 */
   resolveEffectTarget(
     root: ReferenceRoot,
     actor: WorldObject | undefined,
@@ -633,8 +639,6 @@ export class WorldObject {
         return actor;
       case 'dragged':
         return dragged;
-      case 'dragged_parent':
-        return dragged?.parent;
       default:
         return undefined;
     }

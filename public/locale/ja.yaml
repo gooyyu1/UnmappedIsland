@@ -15,8 +15,8 @@ object_texts:
       exploration_progress:
         display_name: 探索の進み具合
         description: この土地をどれだけ調べ尽くしたか。100%に達しても探索は続けられるが、隠された道はもう見つからない。
-      liquid_amount:
-        display_name: 中身の量
+      size:
+        display_name: 量
       travel_minutes:
         display_name: 移動時間
       required_progress:
@@ -112,8 +112,6 @@ object_texts:
     display_name: 甕
   coconut_bowl:
     display_name: ヤシの実の器
-  empty_liquid:
-    display_name: 空
   water_liquid:
     display_name: 水
   tea_liquid:

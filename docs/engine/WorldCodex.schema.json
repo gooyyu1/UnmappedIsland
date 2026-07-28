@@ -371,14 +371,13 @@
       }
     },
     "active_target_name": {
-      "description": "set/addの対象キー、およびdestroyの対象名。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。dragged/dragged_parentはcombinations内のみ。",
+      "description": "set/addの対象キー、およびdestroyの対象名。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。draggedはcombinations内のみ。",
       "enum": [
         "self",
         "parent",
         "ancestor",
         "actor",
-        "dragged",
-        "dragged_parent"
+        "dragged"
       ]
     },
     "destroy_target_spec": {
@@ -983,8 +982,7 @@
         "self",
         "parent",
         "actor",
-        "dragged",
-        "dragged_parent"
+        "dragged"
       ]
     },
     "prop_ref": {
@@ -1040,7 +1038,7 @@
       "additionalProperties": false
     },
     "set_operation_map": {
-      "description": "setが持つ、対象（self/parent/ancestor/actor、combinations内はdragged/dragged_parentも）をキーとする辞書。",
+      "description": "setが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも）をキーとする辞書。",
       "type": "object",
       "properties": {
         "self": {
@@ -1056,10 +1054,6 @@
           "$ref": "#/$defs/set_target_amount_map"
         },
         "dragged": {
-          "$ref": "#/$defs/set_target_amount_map",
-          "description": "combinationsの中でのみ意味を持つ（12.2節）。"
-        },
-        "dragged_parent": {
           "$ref": "#/$defs/set_target_amount_map",
           "description": "combinationsの中でのみ意味を持つ（12.2節）。"
         }
@@ -1067,7 +1061,7 @@
       "additionalProperties": false
     },
     "add_operation_map": {
-      "description": "addが持つ、対象（self/parent/ancestor/actor、combinations内はdragged/dragged_parentも）をキーとする辞書。",
+      "description": "addが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも）をキーとする辞書。",
       "type": "object",
       "properties": {
         "self": {
@@ -1083,10 +1077,6 @@
           "$ref": "#/$defs/add_target_amount_map"
         },
         "dragged": {
-          "$ref": "#/$defs/add_target_amount_map",
-          "description": "combinationsの中でのみ意味を持つ（12.2節）。"
-        },
-        "dragged_parent": {
           "$ref": "#/$defs/add_target_amount_map",
           "description": "combinationsの中でのみ意味を持つ（12.2節）。"
         }

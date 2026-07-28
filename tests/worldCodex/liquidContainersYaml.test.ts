@@ -1,6 +1,4 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
-import type { PropertyDef } from '../../src/domain/defs/PropertyDef';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
@@ -15,7 +13,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   let weatherId: number;
   let locationsSlotId: number;
   let contentSlotId: number;
-  let liquidAmountId: number;
+  let sizeId: number;
 
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();
@@ -29,7 +27,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     weatherId = codex.propertyNames.getId('weather');
     locationsSlotId = codex.slotNames.getId('locations');
     contentSlotId = codex.slotNames.getId('content');
-    liquidAmountId = codex.propertyNames.getId('liquid_amount');
+    sizeId = codex.propertyNames.getId('size');
   });
 
   beforeEach(() => {
@@ -44,29 +42,33 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     );
   }
 
-  function propOf(def: ObjectDef, propertyName: string): PropertyDef {
-    const prop = def.getPropertyDef(codex.propertyNames.getId(propertyName));
-    if (prop === undefined) throw new Error(`'${def.name}' はプロパティ'${propertyName}'を持ちません。`);
-    return prop;
-  }
-
-  function liquidMarkerNameFor(liquidKind: string): string {
-    return `${liquidKind}_liquid`;
-  }
-
-  function spawnContainer(containerName: string, liquidKind: string, liquidAmount: number): WorldObject {
+  /** 液体入りの容器。量は容器ではなく中身の液体がsizeとして持つ。 */
+  function spawnContainer(containerName: string, liquidKind: string, size: number): WorldObject {
     const container = spawn(containerName);
-    container.setProperty(liquidAmountId, liquidAmount);
-    const content = spawn(liquidMarkerNameFor(liquidKind));
+    const content = spawn(`${liquidKind}_liquid`);
+    content.setProperty(sizeId, size);
     content.moveToSlot(container, contentSlotId, codex.wellKnown);
     return container;
   }
 
-  function contentOf(container: WorldObject): WorldObject {
-    const slot = container.tryGetSlot(contentSlotId);
-    if (slot === undefined || slot.contents.length !== 1)
-      throw new Error(`'${container.def.name}' のcontentスロットの中身がちょうど1つではありません。`);
-    return slot.contents[0];
+  /** contentスロットの中身。空ならundefined（空の容器には中身のインスタンスが存在しない）。 */
+  function contentOf(container: WorldObject): WorldObject | undefined {
+    return container.tryGetSlot(contentSlotId)?.contents[0];
+  }
+
+  function amountIn(container: WorldObject): number {
+    return contentOf(container)?.getNumber(sizeId) ?? 0;
+  }
+
+  function capacityOf(containerName: string): number | undefined {
+    const def = codex.objects.get(codex.objectNames.getId(containerName));
+    return def.enumerateSlotDefs().find((s) => s.name === 'content')?.capacity;
+  }
+
+  function requireContent(container: WorldObject): WorldObject {
+    const content = contentOf(container);
+    if (content === undefined) throw new Error(`'${container.def.name}' に中身がありません。`);
+    return content;
   }
 
   function spawnWorld(weather: string): WorldObject {
@@ -78,88 +80,73 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   function spawnContainerUnderWorld(
     containerName: string,
     liquidKind: string,
-    liquidAmount: number,
+    size: number,
     world: WorldObject,
     session: WorldSession,
   ): WorldObject {
-    const container = spawnContainer(containerName, liquidKind, liquidAmount);
+    const container = spawnContainer(containerName, liquidKind, size);
     container.moveToSlot(world, locationsSlotId, session.codex.wellKnown, true);
     return container;
   }
 
-  function findOnlyMatchingCombinationName(self: WorldObject, dragged: WorldObject): string {
-    const matches = self.findMatchingCombinations(dragged);
-    expect(matches.length, 'この組み合わせでは候補が1つだけであることを前提にしている').toBe(1);
-    return matches[0].name;
-  }
-
-  it('容器はcontent経由で中身へ委譲されるラッパーで、liquid_amountを持つ', () => {
+  it('容器はcontent経由で中身へ委譲されるラッパーで、量は持たない', () => {
     const canteen = codex.objects.get(codex.objectNames.getId('canteen'));
 
     expect(canteen.representedBySlotGlobalId).toBe(contentSlotId);
     expect(canteen.actions, '容器本体は中身の行動を持たない').toHaveLength(0);
-    expect(canteen.combinations, '容器本体は注ぎ処理を持たない').toHaveLength(0);
     expect(
-      canteen.getPropertyDef(codex.propertyNames.getId('liquid_amount')),
-      '容器本体はliquid_amountを持つ',
-    ).toBeDefined();
+      canteen.getPropertyDef(sizeId),
+      '量は中身が持つ。容器側にあるのは上限（capacity）だけ',
+    ).toBeUndefined();
+    expect(
+      canteen.combinations,
+      '空のときに受け取るためのpour_inだけは容器本体が持つ（代表が自分自身になるため）',
+    ).toHaveLength(1);
   });
 
-  it.each([
-    ['coconut_bowl', 1200],
-    ['canteen', 4800],
-    ['pot', 4800],
-    ['bottle', 9600],
-    ['jar', 19200],
-  ])('%sは期待される液体容量%iを持つ', (containerName, expectedMax) => {
-    const container = codex.objects.get(codex.objectNames.getId(containerName));
-    const liquidAmount = propOf(container, 'liquid_amount');
-
-    expect(liquidAmount.range).toBeDefined();
-    expect(liquidAmount.range?.max).toBe(expectedMax);
+  it('容量は容器のcontentスロットのcapacityが決める', () => {
+    expect(capacityOf('coconut_bowl'), 'ヤシの器は250mL').toBe(1200);
+    expect(capacityOf('canteen'), '水筒は1L').toBe(4800);
+    expect(capacityOf('bottle'), '瓶は2L').toBe(9600);
+    expect(capacityOf('jar'), '甕は4L').toBe(19200);
   });
 
-  it('水を飲むと容器からactorのhydrationへ委譲される', () => {
+  it('水を飲むと中身のsizeからactorのhydrationへ移る', () => {
     const session = new WorldSession(codex);
     const actor = spawn('character');
-    const canteen = spawnContainer('canteen', 'water', 3000);
     actor.setProperty(hydrationId, 0);
+    const canteen = spawnContainer('canteen', 'water', 3000);
 
-    const executed = canteen.tryExecuteAction('drink', actor, session);
+    expect(canteen.tryExecuteAction('drink', actor, session), '容器への操作は中身へ委譲される').toBe(true);
 
-    expect(executed).toBe(true);
-    expect(canteen.getNumber(liquidAmountId)).toBe(1800);
     expect(actor.getNumber(hydrationId)).toBe(1200);
+    expect(amountIn(canteen)).toBe(1800);
   });
 
   it('お茶を飲むと追加の効果も適用できる', () => {
     const session = new WorldSession(codex);
     const actor = spawn('character');
-    const canteen = spawnContainer('canteen', 'tea', 3000);
     actor.setProperty(hydrationId, 0);
     actor.setProperty(wakefulnessId, 0);
+    const canteen = spawnContainer('canteen', 'tea', 3000);
 
-    const executed = canteen.tryExecuteAction('drink', actor, session);
+    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
 
-    expect(executed).toBe(true);
     expect(actor.getNumber(hydrationId)).toBe(1200);
-    expect(actor.getNumber(wakefulnessId), 'お茶だけが持つ追加効果もrepresented_by経由で発動する').toBe(200);
+    expect(actor.getNumber(wakefulnessId)).toBe(200);
   });
 
   it('お茶のwakefulness効果は飲んだ量に比例する', () => {
     const session = new WorldSession(codex);
     const actor = spawn('character');
-    const canteen = spawnContainer('canteen', 'tea', 600);
     actor.setProperty(hydrationId, 0);
     actor.setProperty(wakefulnessId, 0);
+    const canteen = spawnContainer('canteen', 'tea', 600); // 1回分(1200)の半分しか無い
 
-    const executed = canteen.tryExecuteAction('drink', actor, session);
+    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
 
-    expect(executed).toBe(true);
-    expect(actor.getNumber(hydrationId), '在庫(600)の分しか水分補給されない').toBe(600);
-    expect(actor.getNumber(wakefulnessId), '飲んだ量(600)に比例した眠気改善: 200 * 600 / 1200 = 100').toBe(
-      100,
-    );
+    expect(actor.getNumber(hydrationId), '在庫の分だけ飲む').toBe(600);
+    expect(actor.getNumber(wakefulnessId), 'linked_addは実際に移った量に比例する').toBe(100);
   });
 
   it('油にはdrinkアクションが無い', () => {
@@ -167,9 +154,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const actor = spawn('character');
     const canteen = spawnContainer('canteen', 'oil', 3000);
 
-    const executed = canteen.tryExecuteAction('drink', actor, session);
-
-    expect(executed, '飲用不可の液体は自分でdrinkアクションを持たない').toBe(false);
+    expect(canteen.tryExecuteAction('drink', actor, session), '飲用不可の液体はdrinkを持たない').toBe(false);
   });
 
   it.each([
@@ -184,7 +169,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     bowl.tick(session);
 
-    expect(bowl.getNumber(liquidAmountId)).toBe(100 + expectedDelta);
+    expect(amountIn(bowl)).toBe(100 + expectedDelta);
   });
 
   it.each(['storm', 'heavy_rain', 'light_rain'])('coconut_bowlは雨天(%s)では蒸発しない', (weather) => {
@@ -194,7 +179,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     bowl.tick(session);
 
-    expect(bowl.getNumber(liquidAmountId)).toBe(100);
+    expect(amountIn(bowl)).toBe(100);
   });
 
   it.each([
@@ -209,7 +194,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     jar.tick(session);
 
-    expect(jar.getNumber(liquidAmountId)).toBe(200 + expectedDelta);
+    expect(amountIn(jar)).toBe(200 + expectedDelta);
   });
 
   it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は蒸発しない', (objectName) => {
@@ -219,56 +204,66 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     container.tick(session);
 
-    expect(container.getNumber(liquidAmountId)).toBe(100);
+    expect(amountIn(container)).toBe(100);
   });
 
-  it('蒸発で液体が尽きるとliquid_amountは0で止まる', () => {
+  it('蒸発で量が尽きると中身のインスタンスごと消える', () => {
     const session = new WorldSession(codex);
     const world = spawnWorld('clear');
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 2, world, session);
 
     bowl.tick(session);
 
-    expect(bowl.getNumber(liquidAmountId)).toBe(0);
+    expect(contentOf(bowl), '量が0の液体は存在しない（quantitativeの不変条件）').toBeUndefined();
   });
 
-  it('空の容器へ注ぐと空マーカーが注いだ液体の種類に置き換わる', () => {
+  it('空の容器へ注ぐと、その量の液体が注ぎ先に生まれる', () => {
     const session = new WorldSession(codex);
-    const self = spawnContainer('canteen', 'empty', 0);
-    const dragged = spawnContainer('canteen', 'water', 3000);
-    const combinationName = findOnlyMatchingCombinationName(self, dragged);
+    const empty = spawn('canteen');
+    const jar = spawnContainer('jar', 'water', 3000);
+    const poured = requireContent(jar);
 
-    const executed = self.tryExecuteCombination(dragged, undefined, combinationName, session);
+    expect(empty.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
 
-    expect(executed).toBe(true);
-    expect(contentOf(self).def.name).toBe('water_liquid');
-    expect(self.getNumber(liquidAmountId)).toBe(3000);
-    expect(dragged.getNumber(liquidAmountId)).toBe(0);
+    expect(amountIn(empty), '全量が移る').toBe(3000);
+    expect(contentOf(jar), '空になった注ぎ元の中身は消える').toBeUndefined();
   });
 
-  it('同じ中身の容器へ注ぐと種類を変えずに継ぎ足される', () => {
+  it('同じ種類の中身が入った容器へ注ぐと継ぎ足される', () => {
     const session = new WorldSession(codex);
-    const self = spawnContainer('canteen', 'water', 500);
-    const dragged = spawnContainer('canteen', 'water', 3000);
+    const canteen = spawnContainer('canteen', 'water', 1000);
+    const jar = spawnContainer('jar', 'water', 500);
+    const receiver = requireContent(canteen);
+    const poured = requireContent(jar);
 
-    const executed = self.tryExecuteCombination(dragged, undefined, 'pour_in', session);
+    expect(receiver.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
 
-    expect(executed).toBe(true);
-    expect(contentOf(self).def.name).toBe('water_liquid');
-    expect(self.getNumber(liquidAmountId)).toBe(3500);
-    expect(dragged.getNumber(liquidAmountId)).toBe(0);
+    expect(amountIn(canteen)).toBe(1500);
+    expect(contentOf(jar)).toBeUndefined();
   });
 
-  it('異なる中身の容器へ注ぐと何も起きずfalseを返す', () => {
+  it('capacityに入りきらない量は注ぎ元に残る', () => {
     const session = new WorldSession(codex);
-    const self = spawnContainer('canteen', 'oil', 500);
-    const dragged = spawnContainer('canteen', 'water', 3000);
+    const bowl = spawn('coconut_bowl'); // capacity 1200
+    const jar = spawnContainer('jar', 'water', 5000);
+    const poured = requireContent(jar);
 
-    const executed = self.tryExecuteCombination(dragged, undefined, 'pour_in', session);
+    expect(bowl.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
 
-    expect(executed).toBe(false);
-    expect(contentOf(self).def.name).toBe('oil_liquid');
-    expect(self.getNumber(liquidAmountId)).toBe(500);
-    expect(dragged.getNumber(liquidAmountId)).toBe(3000);
+    expect(amountIn(bowl), '入る分だけ入る').toBe(1200);
+    expect(amountIn(jar), '残りは注ぎ元に留まる').toBe(3800);
+  });
+
+  it('異なる種類の中身が入った容器へは注げない', () => {
+    const session = new WorldSession(codex);
+    const canteen = spawnContainer('canteen', 'tea', 1000);
+    const jar = spawnContainer('jar', 'water', 500);
+    const receiver = requireContent(canteen);
+    const poured = requireContent(jar);
+
+    receiver.tryExecuteCombination(poured, undefined, 'pour_in', session);
+
+    expect(amountIn(canteen), '混ざらない（contentのaccepts max:1が拒む）').toBe(1000);
+    expect(amountIn(jar)).toBe(500);
   });
 });
