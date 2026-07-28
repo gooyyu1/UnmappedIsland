@@ -47,9 +47,9 @@ const EDGE_REPEAT_MS = 300;
 const EDGE_REPEAT_MIN_MS = 50;
 const EDGE_REPEAT_DECAY = 0.8;
 
-/** スタック数を囲む丸の直径・カードの右上からの余白・中の数字の大きさ（u単位）。 */
+/** スタック数を囲む丸の直径・絵の右上の角から外へはみ出させる量・中の数字の大きさ（u単位）。 */
 const STACK_BADGE_SIZE = 56;
-const STACK_BADGE_MARGIN = 6;
+const STACK_BADGE_OVERHANG = 8;
 const STACK_COUNT_SIZE = 32;
 
 /** 移動先のレーンがカードのどちら側にあるか。 */
@@ -177,7 +177,7 @@ export class Card extends Phaser.GameObjects.Container {
         color: cssColor(COLOR.text),
       })
       .setOrigin(0.5);
-    this.stackBadge = this.addStackBadge(scene, metrics, width);
+    this.stackBadge = this.addStackBadge(scene, metrics, width, height);
     this.add(this.stackBadge);
     this.showStackCount();
 
@@ -193,15 +193,19 @@ export class Card extends Phaser.GameObjects.Container {
     this.showStackCount();
   }
 
-  /** スタック数を囲む丸。数字はスタックが増減しても位置が動かないよう、丸の中心へ固定する。 */
+  /**
+   * スタック数を囲む丸。数字はスタックが増減しても位置が動かないよう、丸の中心へ固定する。
+   * 絵の右上の角からわざと少しはみ出させる（カードに載せ切るより、札束の厚みとして目に付くため）。
+   */
   private addStackBadge(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
     width: number,
+    height: number,
   ): Phaser.GameObjects.Container {
-    const size = metrics.px(STACK_BADGE_SIZE);
-    const margin = metrics.px(STACK_BADGE_MARGIN);
-    const radius = size / 2;
+    const paper = paperRect(metrics, width, height);
+    const radius = metrics.px(STACK_BADGE_SIZE) / 2;
+    const offset = radius - metrics.px(STACK_BADGE_OVERHANG);
 
     const circle = scene.add.graphics();
     circle.fillStyle(COLOR.cardFace, 1);
@@ -209,7 +213,7 @@ export class Card extends Phaser.GameObjects.Container {
     circle.lineStyle(Math.max(1, metrics.px(3)), COLOR.cardBorder, 1);
     circle.strokeCircle(0, 0, radius);
 
-    return scene.add.container(width - margin - radius, margin + radius, [circle, this.stackCount]);
+    return scene.add.container(paper.x + paper.width - offset, paper.y + offset, [circle, this.stackCount]);
   }
 
   private showStackCount(): void {
