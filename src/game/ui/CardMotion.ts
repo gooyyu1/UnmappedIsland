@@ -166,10 +166,18 @@ export class CardMotion {
       card.destroy();
       return;
     }
-    this.stackOnto(card, from, to);
+
+    this.stackOnto(new Card(this.scene, this.metrics, from.x, from.y, cardFace(card.content)), from, to);
+    card.destroy();
   }
 
-  /** カードをfromからtoへ飛ばして重ねる。着いた時点で捨てる——下には合流先のカードが既に居るため。 */
+  /**
+   * 見た目だけの分身をfromからtoへ飛ばして重ねる。着いた時点で捨てる——下には合流先のカードが
+   * 既に居るため。
+   *
+   * 飛ばすのは必ず分身で、レーンに並んでいたカード自身ではない。カードには押している間の表示
+   * （端のオーバーレイ）や端の繰り返しなど、そのレーンに居ることが前提の状態が乗っているため。
+   */
   private stackOnto(card: Card, from: Rect, to: Rect): void {
     this.layer.add(card);
     card.setPosition(from.x, from.y);
