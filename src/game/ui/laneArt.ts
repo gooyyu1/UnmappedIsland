@@ -25,9 +25,10 @@ export const HAND_LANE_TEXTURE = 'lane:hand';
 
 /** テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。 */
 export const LANE_ART: ReadonlyMap<string, string> = new Map([
-  ...Object.entries(FILES).map(
-    ([path, url]): [string, string] => [path.replace(/^.*\/(.+)\/(.+)\.png$/, 'lane:$1:$2'), url],
-  ),
+  ...Object.entries(FILES).map(([path, url]): [string, string] => [
+    path.replace(/^.*\/(.+)\/(.+)\.png$/, 'lane:$1:$2'),
+    url,
+  ]),
   [HAND_LANE_TEXTURE, handUrl],
 ]);
 
