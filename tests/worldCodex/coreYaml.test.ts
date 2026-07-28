@@ -240,7 +240,7 @@ object_defs:
   it('location traitだけでitems/fixtures/charactersスロットを持ち、探索は伴わない', () => {
     // location trait（本ファイル）は「場所である」ことに付随する構造（items/fixtures/
     // charactersの3スロット）だけを配る。探索（exploration_progressプロパティ・
-    // undiscovered_paths/pathsスロット）はexplorable trait（locations.yaml）側の役割であり、
+    // undiscovered_fixturesスロット）はexplorable trait（locations.yaml）側の役割であり、
     // location単体を実装するオブジェクト（家のような、探索を伴わない場所）はそれらを持たない
     // （ExplorationSystem.md参照）。
     const yaml = `

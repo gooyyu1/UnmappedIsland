@@ -50,7 +50,7 @@
    ↓ 8方位 + LocationType.display_name で命名
 [Location群] (命名済み)
    ↓ IslandSpawner が object_defs を spawn し、world.locations へ配置
-   ↓ 辺ごとに path を両端へ生成し、undiscovered_paths（隠しスロット）へ配置（ExplorationSystem.md）
+   ↓ 辺ごとに path を両端へ生成し、undiscovered_fixtures（隠しスロット）へ配置（ExplorationSystem.md）
 [実体化済みの島]
 ```
 

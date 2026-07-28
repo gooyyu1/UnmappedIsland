@@ -7,8 +7,8 @@ import type { WorldSession } from '../WorldSession';
  * 土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付きビュー。World
  * と同じ理由で継承ではなくラップにしている。
  *
- * 探索の入口はexploreに一本化: exploreアクションの実行に加え、道の公開（revealDuePaths）まで自分で行い、
- * 呼び出し側に後続手順を持たせない。
+ * 探索の入口はexploreに一本化: exploreアクションの実行に加え、設置物の公開（revealDueFixtures）まで
+ * 自分で行い、呼び出し側に後続手順を持たせない。
  *
  * 名前解決はidOrMissingで行い、探索の語彙を持たないcodex（最小のテストフィクスチャ等）でも生成できるようにしている。
  */
@@ -18,10 +18,9 @@ export class Location {
   private readonly explorationProgressId: number = -1;
   private readonly requiredProgressId: number = -1;
   readonly itemsSlotId: number = -1;
-  private readonly fixturesSlotId: number = -1;
+  readonly fixturesSlotId: number = -1;
   private readonly charactersSlotId: number = -1;
-  private readonly undiscoveredPathsSlotId: number = -1;
-  private readonly pathsSlotId: number = -1;
+  private readonly undiscoveredFixturesSlotId: number = -1;
 
   constructor(instance: WorldObject, codex?: WorldCodex) {
     this.instance = instance;
@@ -31,8 +30,7 @@ export class Location {
       this.itemsSlotId = Location.idOrMissing(codex.slotNames, 'items');
       this.fixturesSlotId = Location.idOrMissing(codex.slotNames, 'fixtures');
       this.charactersSlotId = Location.idOrMissing(codex.slotNames, 'characters');
-      this.undiscoveredPathsSlotId = Location.idOrMissing(codex.slotNames, 'undiscovered_paths');
-      this.pathsSlotId = Location.idOrMissing(codex.slotNames, 'paths');
+      this.undiscoveredFixturesSlotId = Location.idOrMissing(codex.slotNames, 'undiscovered_fixtures');
     }
   }
 
@@ -87,7 +85,7 @@ export class Location {
     return member.reorderInParentSlot(gapIndex);
   }
 
-  /** 設置物（木・植物・建築物・家具・洞窟入口など）スロットの中身。 */
+  /** 設置物（道・木・建築物・家具・洞窟入口など、持ち歩けないもの）スロットの中身。 */
   get fixtures(): readonly WorldObject[] {
     return this.slotContents(this.fixturesSlotId);
   }
@@ -97,39 +95,42 @@ export class Location {
     return this.slotStacks(this.fixturesSlotId);
   }
 
+  /**
+   * 設置物スロットの中で並び替える。プレイヤーが地形をどう捉えているかで並べ方が変わるため、
+   * 持ち出せない設置物にも並び替えだけは許す（reorderItemsと同じ扱い）。
+   */
+  reorderFixtures(member: WorldObject, gapIndex: number): boolean {
+    return member.reorderInParentSlot(gapIndex);
+  }
+
   /** キャラクタスロットの中身。 */
   get characters(): readonly WorldObject[] {
     return this.slotContents(this.charactersSlotId);
   }
 
-  /** 発見済みの道。未発見の道（undiscovered_paths側）は含まない。 */
-  get paths(): readonly WorldObject[] {
-    return this.slotContents(this.pathsSlotId);
-  }
-
   /**
-   * この土地を1回探索する（exploreアクション＋revealDuePaths）。探索できない土地（exploreアクションを
+   * この土地を1回探索する（exploreアクション＋revealDueFixtures）。探索できない土地（exploreアクションを
    * 持たない・条件を満たさない）ならfalse。探索率100%に達した後も探索は続けられる
    * （ExplorationSystem.md 2節）。
    */
   explore(actor: WorldObject | undefined, session: WorldSession): boolean {
     if (!this.instance.tryExecuteAction('explore', actor, session)) return false;
-    this.revealDuePaths(session);
+    this.revealDueFixtures(session);
     return true;
   }
 
   /**
-   * undiscovered_pathsの道のうち、required_progressが現在の探索進捗以下のものをpathsへ移して「発見」させる。
-   * 冪等。進捗がYAML側の効果だけで動いた場合に備え、exploreを介さず単独でも呼べる。
+   * undiscovered_fixturesの設置物のうち、required_progressが現在の探索進捗以下のものをfixturesへ移して
+   * 「発見」させる。冪等。進捗がYAML側の効果だけで動いた場合に備え、exploreを介さず単独でも呼べる。
    */
-  revealDuePaths(session: WorldSession): void {
-    const hidden = this.instance.tryGetSlot(this.undiscoveredPathsSlotId);
+  revealDueFixtures(session: WorldSession): void {
+    const hidden = this.instance.tryGetSlot(this.undiscoveredFixturesSlotId);
     if (hidden === undefined) return;
 
     const progress = this.explorationProgress;
-    for (const path of [...hidden.contents]) {
-      if (path.getEffectiveValue(this.requiredProgressId) <= progress) {
-        path.moveToSlot(this.instance, this.pathsSlotId, session.codex.wellKnown);
+    for (const fixture of [...hidden.contents]) {
+      if (fixture.getEffectiveValue(this.requiredProgressId) <= progress) {
+        fixture.moveToSlot(this.instance, this.fixturesSlotId, session.codex.wellKnown);
       }
     }
   }

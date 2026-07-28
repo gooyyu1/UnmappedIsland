@@ -24,7 +24,7 @@
 - **`location`**（`core.yaml`）: あらゆる場所が共通して持つ構造。**3種のスロット**（`items`/`fixtures`/
   `characters`）と、`world.locations` スロットの `accepts` 判定用のタグ配布。
 - **`explorable`**（`locations.yaml`）: 探索**できる**場所だけが追加で持つ構造。探索進捗プロパティと、
-  道の発見に使う2スロット（`undiscovered_paths`/`paths`）。
+  未発見の設置物を隠しておくスロット（`undiscovered_fixtures`）。
 
 ```yaml
 # core.yaml
@@ -47,10 +47,9 @@ traits:
 traits:
   explorable:
     slots:
-      undiscovered_paths:
-        accepts: [{tag: path, max: 9999}]
-      paths:
-        accepts: [{tag: path, max: 9999}]
+      # locationのfixturesより後に宣言する（探索で湧く設置物が隠し側へ入らないように）。
+      undiscovered_fixtures:
+        accepts: [{tag: fixture, max: 9999}]
     props:
       exploration_progress: {}   # valueなし = 実装する側で必須（5節）
 ```
@@ -76,9 +75,9 @@ traits:
 ### 1.2 道の2スロット（隠しスロット方式、`explorable` trait）
 
 土地同士の繋がりは、**探索によって見つかる `path` という専用オブジェクト**として表現します。「発見」は
-隠しスロット方式で実装しています。生成時点で道は `undiscovered_paths`（隠し）に置かれ、探索の進捗が道ごとの
-必要値に達すると `paths`（公開）へ移動して「発見」されます。この移動は既存の `move_to_slot`（唯一の汎用
-スロット移動操作、7.1 節）1回で表現でき、UI 側は「発見済みの `paths` の中身だけを表示する」という単純な
+隠しスロット方式で実装しています。生成時点で道は `undiscovered_fixtures`（隠し）に置かれ、探索の進捗が道ごとの
+必要値に達すると `fixtures`（公開）へ移動して「発見」されます。この移動は既存の `move_to_slot`（唯一の汎用
+スロット移動操作、7.1 節）1回で表現でき、UI 側は「`fixtures` の中身をそのまま表示する」という単純な
 規約だけでよく、未発見の道を非表示にする特別な処理を持ちません（道を1スロットに置き移動アクションの条件で
 実行だけ禁止する方式は、UI側に隠す処理が別途必要になり「発見」が実体を持たないため不採用）。
 
@@ -139,7 +138,7 @@ object_defs:
       travel:
         showMenu: always
         conditions:
-          - {in_slot: paths}   # 発見済み（pathsスロット）の間だけ実行できる
+          - {in_slot: fixtures}   # 発見済み（fixturesスロット）の間だけ実行できる
         duration: {prop: travel_minutes}
         move:
           object: actor
@@ -149,7 +148,7 @@ object_defs:
 - **`travel_minutes`/`required_progress`/`destination_id`** はいずれも `path` の通常の `props` で、地形生成
   （`src/domain/generation/IslandSpawner.ts`）がインスタンス生成の直後に `setProperty` で書き込みます。`object_defs`
   レベルの初期値はプレースホルダで、実際に使われるのは常にインスタンスごとの上書き後の値です。
-- **`conditions: [{in_slot: paths}]`**（`GameElementDefinition.md` 14.2 節）が「未発見（`undiscovered_paths`
+- **`conditions: [{in_slot: fixtures}]`**（`GameElementDefinition.md` 14.2 節）が「未発見（`undiscovered_fixtures`
   側）の間は移動できない」を表します。1 節の隠しスロット方式と組み合わさり、「発見されていない道は移動も
   できない」が自然に両立します。
 - **`move`**（`GameElementDefinition.md` 9.6 節で新設した汎用の active 動詞）が、`actor` を `destination_id`
@@ -160,7 +159,7 @@ object_defs:
 ### 3.1 道は辺1本につき両端へ2個
 
 地形生成（`TerrainGeneration.md` 3.5 節）が確定させる `Location` 間の1本の繋がりに対し、`path` インスタンスを
-**両端に1個ずつ**生成します。片方は「Aの `undiscovered_paths` に居て、`destination_id` はBを指す」、もう片方は
+**両端に1個ずつ**生成します。片方は「Aの `undiscovered_fixtures` に居て、`destination_id` はBを指す」、もう片方は
 その逆です。この非対称な表現により、「Aから探索を進めて先にAB間の道を見つけたが、Bはまだその道を見つけていない」
 という状態を、特別な仕組みなしに自然に表現できます（Bからは、B側の道インスタンスの `required_progress` に
 達するまで、同じ繋がりは見つかりません）。
@@ -197,7 +196,7 @@ object_defs:
 ```typescript
 explore(actor: WorldObject | undefined, session: WorldSession): boolean {
   if (!this.instance.tryExecuteAction('explore', actor, session)) return false;
-  this.revealDuePaths(session);   // 進捗が必要値に達した道を、隠しスロットから公開スロットへ移す
+  this.revealDueFixtures(session);   // 進捗が必要値に達した設置物を、隠しスロットから公開スロットへ移す
   return true;
 }
 ```
@@ -206,9 +205,9 @@ explore(actor: WorldObject | undefined, session: WorldSession): boolean {
 「今いる土地に自分を actor として渡す」という手順を引き受けるため、UI は自分の居場所を知らなくてよく、
 探索できない場所に居る場合は `false` が返ります。
 
-`explore` アクション（YAML側）の実行と、後処理の `revealDuePaths` を呼び出し側（UI等）に分けて呼ばせません
-（`CLAUDE.md` の「自分のことは自分でする」方針）。`revealDuePaths` 自体は冪等なため、進捗がYAML側の効果
-だけで動いた場合に備えて `paths` アクセサからも呼べるようにしています。
+`explore` アクション（YAML側）の実行と、後処理の `revealDueFixtures` を呼び出し側（UI等）に分けて呼ばせません
+（`CLAUDE.md` の「自分のことは自分でする」方針）。`revealDueFixtures` 自体は冪等なため、進捗がYAML側の効果
+だけで動いた場合に備えて単独でも呼べるようにしています。
 
 ## 6. 未決事項・今後の検討課題
 
