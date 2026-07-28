@@ -253,24 +253,24 @@ export class Card extends Phaser.GameObjects.Container {
     height: number,
     edge: CardEdgeAction,
   ): void {
-    const edgeHeight = height * EDGE_RATIO;
-    const top = edge.direction === 'up' ? 0 : height - edgeHeight;
-    const radius = metrics.px(SIZE.radius);
+    const up = edge.direction === 'up';
+    const paper = paperRect(metrics, width, height);
+    const edgeHeight = paper.height * EDGE_RATIO;
+    const top = up ? paper.y : paper.y + paper.height - edgeHeight;
+    const radius = metrics.px(FRAME_RADIUS);
 
     const overlay = scene.add.graphics();
     overlay.fillStyle(COLOR.cardEdgeOverlay, EDGE_OVERLAY_ALPHA);
     overlay.fillRoundedRect(
-      0,
+      paper.x,
       top,
-      width,
+      paper.width,
       edgeHeight,
-      edge.direction === 'up'
-        ? { tl: radius, tr: radius, bl: 0, br: 0 }
-        : { tl: 0, tr: 0, bl: radius, br: radius },
+      up ? { tl: radius, tr: radius, bl: 0, br: 0 } : { tl: 0, tr: 0, bl: radius, br: radius },
     );
 
     const arrow = scene.add
-      .text(width / 2, top + edgeHeight / 2, edge.direction === 'up' ? '▲' : '▼', {
+      .text(width / 2, top + edgeHeight / 2, up ? '▲' : '▼', {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(EDGE_ARROW_SIZE)}px`,
         color: cssColor(COLOR.textOnDark),
@@ -278,7 +278,12 @@ export class Card extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
 
     const feedback = scene.add.container(0, 0, [overlay, arrow]).setVisible(false);
-    const hitArea = scene.add.rectangle(0, top, width, edgeHeight).setOrigin(0, 0).setInteractive();
+    // 押せる範囲はカードの矩形いっぱいまで広げる。絵の余白は見た目だけのもので、そこを押しても
+    // 端を押したことにしたいため。
+    const hitArea = scene.add
+      .rectangle(0, up ? 0 : top, width, up ? top + edgeHeight : height - top)
+      .setOrigin(0, 0)
+      .setInteractive();
 
     onPressRelease(hitArea, {
       onPress: () => {
