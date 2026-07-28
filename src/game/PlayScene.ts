@@ -20,6 +20,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
+import { HAND_LANE_TEXTURE, locationLaneTexture } from './ui/laneArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
@@ -185,13 +186,18 @@ export class PlayScene extends ResponsiveScene {
     addPanel(this, layout.fieldArea, COLOR.fieldArea);
     const [location, fieldItems, hand] = layout.lanes;
 
+    const art = this.view.locationArt;
+
     this.locationLane = new CardLane(
       this,
       this.metrics,
       location,
       COLOR.locationLane,
       this.view.destinations,
-      { pinned: { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() } },
+      {
+        pinned: { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() },
+        art: locationLaneTexture('location', art),
+      },
     );
     this.fieldItemLane = new CardLane(
       this,
@@ -199,8 +205,11 @@ export class PlayScene extends ResponsiveScene {
       fieldItems,
       COLOR.fieldItemLane,
       this.laneCards(this.view.fieldItems, 'down'),
-      // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
-      { trailingPlaceholder: this.view.acceptsCards('field') },
+      {
+        // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
+        trailingPlaceholder: this.view.acceptsCards('field'),
+        art: locationLaneTexture('field_item', art),
+      },
     );
     this.handLane = new CardLane(
       this,
@@ -208,6 +217,7 @@ export class PlayScene extends ResponsiveScene {
       hand,
       COLOR.handLane,
       this.laneCards(this.view.hand, 'up'),
+      { art: HAND_LANE_TEXTURE },
     );
     this.motion = new CardMotion(this, this.metrics);
 
