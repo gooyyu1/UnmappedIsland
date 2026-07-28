@@ -151,7 +151,7 @@ object_defs:
     ).toHaveLength(2);
 
     // 水入りボウルの中身を消す → 空ボウルになり、既存の空ボウルスタックへ再合流するはず。
-    water.destroy(codex.wellKnown);
+    water.destroy();
 
     const live = pile.cells.filter((c) => c !== undefined);
     expect(live, '空になったボウルは既存の空ボウルスタックへ合流し1スタックにまとまる').toHaveLength(1);
@@ -215,7 +215,7 @@ object_defs:
     ).toHaveLength(1);
 
     // brothA の末端エッセンスを sweet → bitter に差し替える。
-    sweetA.destroy(codex.wellKnown);
+    sweetA.destroy();
     const bitterA = spawn(codex, 'bitter_essence');
     bitterA.moveToSlot(brothA, essenceSlotId, codex.wellKnown);
 

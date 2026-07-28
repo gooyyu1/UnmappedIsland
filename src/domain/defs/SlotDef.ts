@@ -51,9 +51,6 @@ export class SlotDef {
   /** 合計サイズの上限（GameElementDefinition.md 7.3節）。undefined なら無制限。 */
   readonly capacity: number | undefined;
 
-  /** 重さの伝播率（GameElementDefinition.md 7.4節）。既定 1.0（そのまま伝播）。 */
-  readonly weightRate: number;
-
   /**
    * 同種オブジェクトを表示上1つの単位（スタック）としてまとめるか（既定true）。falseなら同種でも
    * 個体ごとに別単位として数える（例: かまどの投入口。同じ種類の燃料を2つ入れても2枠消費する）。
@@ -79,7 +76,6 @@ export class SlotDef {
     name: string,
     accepts: readonly SlotAcceptRule[],
     capacity: number | undefined,
-    weightRate: number,
     stackable = true,
     unitCapacity?: number,
     fixedPositions = false,
@@ -88,7 +84,6 @@ export class SlotDef {
     this.name = name;
     this.accepts = accepts;
     this.capacity = capacity;
-    this.weightRate = weightRate;
     this.stackable = stackable;
     this.unitCapacity = unitCapacity;
     this.fixedPositions = fixedPositions;

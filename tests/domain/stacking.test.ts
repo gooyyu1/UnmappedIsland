@@ -348,7 +348,7 @@ object_defs:
     expect(gridIndexOfType(hand2, typeAId)).toBe(0);
     expect(gridIndexOfType(hand2, typeBId)).toBe(1);
 
-    a.destroy(codex.wellKnown); // 0番が空く
+    a.destroy(); // 0番が空く
 
     const c = spawn(codex, 'type_c');
     c.moveToSlot(handInstance, handSlotId, codex.wellKnown);
@@ -424,7 +424,7 @@ object_defs:
 
     fillerInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
     potatoInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    fillerInstance.destroy(session.codex.wellKnown); // 0番が空く（1番=potatoとは別に）
+    fillerInstance.destroy(); // 0番が空く（1番=potatoとは別に）
 
     const hand4 = handInstance.tryGetSlot(handSlotId)!;
     const potatoGridIndex = gridIndexOfType(hand4, codex.objectNames.getId('potato'))!;

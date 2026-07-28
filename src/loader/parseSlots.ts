@@ -54,19 +54,9 @@ export function parseSlot(
     }
 
   const capacity = tryGetNumber(node, 'capacity', context);
-  const weightRate = tryGetNumber(node, 'weight_rate', context) ?? 1.0;
   const stackable = tryGetBool(node, 'stackable', context, true);
   const unitCapacity = tryGetInt(node, 'unit_capacity', context);
   const fixedPositions = tryGetBool(node, 'fixed_positions', context, false);
 
-  return new SlotDef(
-    slotGlobalId,
-    slotName,
-    accepts,
-    capacity,
-    weightRate,
-    stackable,
-    unitCapacity,
-    fixedPositions,
-  );
+  return new SlotDef(slotGlobalId, slotName, accepts, capacity, stackable, unitCapacity, fixedPositions);
 }

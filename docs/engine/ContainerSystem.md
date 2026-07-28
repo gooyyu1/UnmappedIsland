@@ -10,8 +10,7 @@
 実際にゲームへ登場させる入れ物の一覧と比較は [`../world/Containers.md`](../world/Containers.md)、
 液体の量の扱いは [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) です。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。2〜4 節の `weight`/`load`/`weight_reduction_rate`
-はまだ実装されていません。未決事項は 6 節に整理しています。
+本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節に整理しています。
 
 ## 1. weight は率をかけない純粋な合算
 

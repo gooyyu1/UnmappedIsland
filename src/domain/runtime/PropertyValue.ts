@@ -117,6 +117,9 @@ export class PropertyValue {
 
       sum += this.def.inheritedContribution(this.owner);
 
+      // weight/load は中身から寄与を受ける（ContainerSystem.md 1〜2節）。他のプロパティでは0。
+      sum += this.owner.containerContributionTo(this.def.globalId);
+
       return this.def.range !== undefined ? this.def.range.clamp(sum) : sum;
     } finally {
       this.isComputingEffectiveValue = false;

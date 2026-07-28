@@ -477,31 +477,40 @@ props:
     value: 3
 ```
 
-### 7.4 weight_rate（重さの伝播率）
+### 7.4 weight / load（重さと負荷）
 
-コンテナ自体の重さは、中に入っているアイテムの重さの影響を受けます。`move_to_slot` は、アイテムがスロットに
-出入りするたびに、そのアイテムの実効重量を、スロットの持ち主の `weight` プロパティへ**伝播率 `weight_rate` を
-掛けて**加算・減算します（省略時は 1.0）。
+`weight`・`load`・`density`・`weight_reduction_rate` は、エンジンが名前で直接参照する規約プロパティです
+（内部設計は [`ContainerSystem.md`](./ContainerSystem.md)）。いずれも実効値として読むたびに導出されます。
+
+- **`weight`**: 物の重さ。自分の値に、**中身の `weight` をそのまま足します**（率はかけません）。量的
+  オブジェクト（`quantitative`、7.6 節）は `size × density ÷ 100` が自分の重さになります（`density` は
+  単位量あたりの重さ、水を 100 とする）。そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものです。
+- **`load`**: 担いだ人が感じる負荷。**直接の子**の `weight` に、その子の `weight_reduction_rate`（%、
+  既定 0 = 軽減なし、上限 100 でクランプ）を効かせた分の合計です。持つのはキャラクターだけで、他の
+  オブジェクトは定義しません。
+
+軽減率をスロットではなくアイテムが持つのは、同じ入れ物でも背負うか手に提げるかで体感が変わるからです。
+どのスロットにいるかは `passives` の `in_slot`（14.2 節）で切り替えます。
 
 ```yaml
 object_defs:
-  character:
-    slots:
-      equip:
-        weight_rate: 0.5    # 身につけると重さが半分に感じる
-      inventory:
-        weight_rate: 1.0    # 手荷物はそのまま
-
-  cart:
+  sledge:
     props:
-      weight:
-        value: 20
-    slots:
-      storage:
-        weight_rate: 0.1    # 中身の重さの10%しか伝播しない
+      weight: {value: 10000}
+      weight_reduction_rate:
+        value: 0
+        passives:
+          - conditions: [{in_slot: hand}]
+            modify: {self: {weight_reduction_rate: 90}}   # 引きずるので9割軽く感じる
+
+  character:
+    props:
+      weight: {value: 70000}   # 自重。荷物は中身として上に乗る
+      load: {value: 0}
 ```
 
-入れ子（アイテム→バッグ→バックパック）も、この仕組みが再帰的に働くことで自然にカスケードします。
+石（`weight` 100）を載せたそり（自重 1000）を手で引くと、そりの `weight` は 1100、キャラクターの `weight` は
+自重込みの 71100、`load` は 1100 × 10 ÷ 100 = 110 になります。
 
 ### 7.5 装備の排他制御（covers / layer）
 
@@ -1358,7 +1367,7 @@ object_defs:
 - `weight` の合計が0（またはマイナス）になった場合のフォールバック候補の扱いは、宣言順で先頭の候補を選ぶ、と
   実装上決定した（YAML側にフォールバック候補を明示する記法は無い）
 - `slots` が character 専有の概念か、コンテナ全般で使い回す汎用概念か
-- `weight_rate`（7.4 節）が 1.0 を超えるケースを許容するか
+- `weight_reduction_rate`（7.4 節）に負の値を許し、「かえって重く感じる」を表せるようにするか
 - `combinations` に関する未決事項一式（キーの衝突解決、MOD 拡張性など）は `ActionSystem.md` に整理
 - レシピに関する未決事項一式は `RecipeSystem.md` に整理
 - コンテナの容量・重さに関する未決事項一式は `ContainerSystem.md` に整理

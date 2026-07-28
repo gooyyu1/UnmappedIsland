@@ -61,7 +61,7 @@ object_defs:
 
   it('gapIndexを省略すると最初の空き枠へ入る', () => {
     const [, b] = fill('a', 'b', 'c');
-    b.destroy(codex.wellKnown);
+    b.destroy();
 
     expect(player.take(item('d'), session)).toBe(true);
 
@@ -78,7 +78,7 @@ object_defs:
 
   it('右に空きが無ければ、左方向へ押し出して隙間の左隣へ入る', () => {
     const [a] = fill('a', 'b', 'c', 'd', 'e', 'f');
-    a.destroy(codex.wellKnown);
+    a.destroy();
     expect(hand(), '左端だけが空いた状態を作る').toEqual(['_', 'b', 'c', 'd', 'e', 'f']);
 
     expect(player.take(item('g'), session, 3)).toBe(true);
@@ -88,7 +88,7 @@ object_defs:
 
   it('空きセルの位置へ入れると、他の枠を動かさずにそのセルへ入る', () => {
     const [, b] = fill('a', 'b', 'c');
-    b.destroy(codex.wellKnown);
+    b.destroy();
 
     expect(player.take(item('g'), session, 1)).toBe(true);
 
@@ -142,7 +142,7 @@ object_defs:
 
   it('空き枠を指して入れると、その枠へ入る', () => {
     const [, b] = fill('a', 'b', 'c');
-    b.destroy(codex.wellKnown);
+    b.destroy();
 
     expect(player.takeIntoCell(item('g'), session, 1)).toBe(true);
 
