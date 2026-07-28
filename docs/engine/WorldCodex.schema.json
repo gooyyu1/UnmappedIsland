@@ -772,11 +772,6 @@
           "type": "number",
           "exclusiveMinimum": 0
         },
-        "weight_rate": {
-          "description": "重さの伝播率（GameElementDefinition.md 7.4節。内部設計はContainerSystem.md 2節）。1.0を超えるケースを許容するかは未決定。",
-          "type": "number",
-          "minimum": 0
-        },
         "stackable": {
           "description": "同種オブジェクトを1つの単位としてまとめるか（GameElementDefinition.md 7.6節）。既定true。falseなら同種でも個体ごとに別単位として数える（例: かまどの投入口）。",
           "type": "boolean"

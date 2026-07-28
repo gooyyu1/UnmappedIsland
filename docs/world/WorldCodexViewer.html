@@ -645,7 +645,6 @@ function renderObjectDetailPage(name) {
       "<td>" + esc(sname) + "</td>" +
       "<td>" + renderAccepts(s.accepts) + "</td>" +
       "<td>" + (s.capacity != null ? s.capacity : "") + "</td>" +
-      "<td>" + (s.weight_rate != null ? s.weight_rate : 1) + "</td>" +
       "<td>" + (s.stackable === false ? "×" : "○") + "</td>" +
       "<td>" + (s.unit_capacity != null ? s.unit_capacity : "") + "</td>" +
       "<td>" + (s.fixed_positions ? "○" : "") + "</td>" +
@@ -686,7 +685,7 @@ function renderObjectDetailPage(name) {
     "<tbody>" + (propsRows || "<tr><td colspan=\"4\">(なし)</td></tr>") + "</tbody></table>" +
 
     "<h2>slots</h2>" +
-    "<table><thead><tr><th>名前</th><th>accepts</th><th>capacity</th><th>weight_rate</th><th>stackable</th><th>unit_capacity</th><th>fixed_positions</th></tr></thead>" +
+    "<table><thead><tr><th>名前</th><th>accepts</th><th>capacity</th><th>stackable</th><th>unit_capacity</th><th>fixed_positions</th></tr></thead>" +
     "<tbody>" + (slotsRows || "<tr><td colspan=\"7\">(なし)</td></tr>") + "</tbody></table>" +
 
     "<h2>passives（オブジェクトレベル）</h2>" +

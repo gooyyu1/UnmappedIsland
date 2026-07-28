@@ -951,10 +951,10 @@ object_defs:
       const itemInstance = spawn(codex, 'trinket');
       expect(itemInstance.moveToSlot(boxInstance, contentsSlotId, codex.wellKnown)).toBeUndefined();
 
-      itemInstance.destroy(codex.wellKnown);
+      itemInstance.destroy();
       expect(itemInstance.parent).toBeUndefined();
 
-      itemInstance.destroy(codex.wellKnown); // 例外を投げればテスト自体が失敗する
+      itemInstance.destroy(); // 例外を投げればテスト自体が失敗する
       expect(itemInstance.parent).toBeUndefined();
     });
 
@@ -1178,7 +1178,7 @@ object_defs:
       expect(fireplaceInstance.moveToSlot(roomInstance, contentsSlotId, codex.wellKnown)).toBeUndefined();
       expect(roomInstance.getEffectiveValue(temperatureId)).toBe(25); // 暖炉を置くと部屋の気温が+5される
 
-      fireplaceInstance.destroy(codex.wellKnown);
+      fireplaceInstance.destroy();
       expect(roomInstance.getEffectiveValue(temperatureId)).toBe(20); // 暖炉が無くなれば補正も消える
     });
 

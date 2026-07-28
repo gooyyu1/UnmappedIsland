@@ -45,10 +45,14 @@ export class WorldObject {
     return this._parentSlotLocalId;
   }
 
+  /** weight/loadの実効値導出（containerContributionTo）が使う、規約で決まったプロパティ名のID。 */
+  private readonly wellKnown: WellKnownProperties;
+
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
   constructor(instanceId: number, def: ObjectDef, session: WorldSession) {
     this.instanceId = instanceId;
     this.def = def;
+    this.wellKnown = session.codex.wellKnown;
 
     this.properties = def.enumeratePropertyDefs().map((pd) => pd.createValue(this, session));
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd));
@@ -322,7 +326,7 @@ export class WorldObject {
       if (error !== undefined) return error;
     }
 
-    this.detachFromParent(wellKnown);
+    this.detachFromParent();
 
     if (place !== undefined) {
       if (!place(targetSlot)) {
@@ -335,7 +339,6 @@ export class WorldObject {
     }
 
     this.setParent(newParent, localSlot);
-    newParent.propagateWeightChange(localSlot, this.getNumber(wellKnown.weightId), wellKnown);
     this.registerEdgeWith(newParent, true);
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
     // registerAncestorTargetedRecursively参照）。
@@ -351,11 +354,11 @@ export class WorldObject {
    * 現在の親から切り離す（destroy、9.3節）。切り離された時点でworldツリーから到達不能になり、tickの対象からも
    * 自然に外れる。既に親を持たない場合は何もしない（繰り返し実行しても安全、6.5節）。
    */
-  destroy(wellKnown: WellKnownProperties): void {
-    this.detachFromParent(wellKnown);
+  destroy(): void {
+    this.detachFromParent();
   }
 
-  private detachFromParent(wellKnown: WellKnownProperties): void {
+  private detachFromParent(): void {
     const oldParent = this._parent;
     if (oldParent === undefined) return;
 
@@ -365,7 +368,6 @@ export class WorldObject {
 
     const oldParentSlotLocalId = this._parentSlotLocalId;
     oldParent.getSlotByLocalId(oldParentSlotLocalId).removeInternal(this);
-    oldParent.propagateWeightChange(oldParentSlotLocalId, -this.getNumber(wellKnown.weightId), wellKnown);
     this.registerEdgeWith(oldParent, false);
     this.setParent(undefined, LocalIndexMap.missing);
 
@@ -374,37 +376,49 @@ export class WorldObject {
   }
 
   /**
-   * ContainerSystem.md 1〜2節: 重さはderivedではなくmove_to_slotの副作用として、出入りのたびに祖先を遡りながら
-   * 各階層のweight_rateを掛け合わせてweightプロパティへ加減算する。weightプロパティは整数のため、各階層へ
-   * 加算する直前にだけ丸める（伝播中の途中値は端数のまま次の階層の倍率と掛け合わせる）。常に「対象スロットを
-   * 持つ自分自身」から呼ぶ。
+   * ContainerSystem.md 1〜2節: weight/load は実効値として読むたびに導出する。自分のプロパティのうち
+   * weight と load だけが、中身から寄与を受ける。
+   *
+   * - weight: 物の重さ。子の weight をそのまま足す（率はかけない）。量的オブジェクト（7.6節）は
+   *   自分の size × density ÷ 100 が自分の重さになる。
+   * - load: 担いだ人が感じる負荷。直接の子の weight に、その子の weight_reduction_rate（%）を効かせた分だけ。
+   *
+   * 率をスロットではなく子（アイテム）が持つのは、同じ入れ物でも背負うか手に提げるかで体感が変わるため
+   * （ContainerSystem.md 2節）。
    */
-  private propagateWeightChange(
-    occupiedSlotLocalId: number,
-    delta: number,
-    wellKnown: WellKnownProperties,
-  ): void {
-    WorldObject.propagateWeightChangeFrom(this, occupiedSlotLocalId, delta, wellKnown);
+  containerContributionTo(propertyGlobalId: number): number {
+    const wellKnown = this.wellKnown;
+    if (propertyGlobalId === wellKnown.weightId) {
+      let sum = this.def.isQuantitative
+        ? Math.round((this.getNumber(wellKnown.sizeId) * this.getNumber(wellKnown.densityId, 100)) / 100)
+        : 0;
+      for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
+      return sum;
+    }
+
+    if (propertyGlobalId === wellKnown.loadId) {
+      let sum = 0;
+      for (const slot of this.slots) {
+        for (const child of slot.contents) {
+          const rate = Math.min(child.getEffectiveValue(wellKnown.weightReductionRateId), 100);
+          sum += Math.round((child.effectiveWeight() * (100 - rate)) / 100);
+        }
+      }
+      return sum;
+    }
+
+    return 0;
   }
 
-  private static propagateWeightChangeFrom(
-    start: WorldObject,
-    occupiedSlotLocalId: number,
-    delta: number,
-    wellKnown: WellKnownProperties,
-  ): void {
-    let current: WorldObject | undefined = start;
-    let slotLocalId = occupiedSlotLocalId;
-
-    while (current !== undefined) {
-      const slotDef = current.getSlotByLocalId(slotLocalId).def;
-      delta *= slotDef.weightRate;
-      current.addNumber(wellKnown.weightId, Math.round(delta));
-
-      if (current.parent === undefined) break;
-      slotLocalId = current.parentSlotLocalId;
-      current = current.parent;
-    }
+  /**
+   * 中身と、量的オブジェクトなら自分の量を含めた重さ。weightプロパティを宣言していないオブジェクトでも、
+   * 中身の重さは上へ伝わる（液体は size × density が重さなので、weightを宣言する必要が無い）。
+   */
+  effectiveWeight(): number {
+    const own = this.tryGetProperty(this.wellKnown.weightId);
+    return own !== undefined
+      ? own.getEffectiveValue()
+      : this.containerContributionTo(this.wellKnown.weightId);
   }
 
   /**
@@ -518,7 +532,7 @@ export class WorldObject {
 
     const left = available - amount;
     this.setNumber(wellKnown.sizeId, left, session);
-    if (left <= 0) this.destroy(wellKnown);
+    if (left <= 0) this.destroy();
 
     return true;
   }
@@ -599,7 +613,7 @@ export class WorldObject {
     // 量的オブジェクト（7.6節）は「sizeが正であること」と「インスタンスが存在すること」が同値。
     // 蒸発などで量が尽きたら、この不変条件を自分で回復する（on_minの宣言を各液体に書かせない）。
     if (this.def.isQuantitative && this.getNumber(session.codex.wellKnown.sizeId) <= 0) {
-      this.destroy(session.codex.wellKnown);
+      this.destroy();
     }
   }
 
