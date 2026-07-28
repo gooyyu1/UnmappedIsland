@@ -12,7 +12,7 @@
 
 - [`RecipeSystem.md`](./RecipeSystem.md) — アイテムの製作
 - [`SlotSystem.md`](./SlotSystem.md) — スロットの実行時実装（固定位置・受け入れ判定・スタック）
-- [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ
+- [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ・保護
 - [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) — 液体容器（量・飲用・注ぎ移し・蒸発）
 - [`ActionSystem.md`](./ActionSystem.md) — アクション実行の設計（`actions`/`combinations` の実行時の仕組み）
 - [`ClimateSystem.md`](./ClimateSystem.md) — 季節・天候
