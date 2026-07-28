@@ -56,6 +56,32 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     }
   });
 
+  it('区切りの帯は4本あり、中央半分がレーンの隙間にちょうど重なる', () => {
+    for (const metrics of [new ScreenMetrics(1080, 1920), new ScreenMetrics(1920, 1080)]) {
+      const layout = new PlayScreenLayout(metrics);
+      const gaps = [
+        { top: layout.fieldArea.y, bottom: layout.lanes[0].y },
+        ...layout.lanes.slice(0, 2).map((lane, i) => ({
+          top: lane.y + lane.height,
+          bottom: layout.lanes[i + 1].y,
+        })),
+        {
+          top: layout.lanes[2].y + layout.lanes[2].height,
+          bottom: layout.fieldArea.y + layout.fieldArea.height,
+        },
+      ];
+      expect(layout.laneSeparators, '設置物レーンの上・レーン間×2・ハンドレーンの下').toHaveLength(4);
+
+      for (const [i, separator] of layout.laneSeparators.entries()) {
+        const gap = gaps[i];
+        // 絵の中央半分（上下1/4ずつを除いた範囲）が隙間そのものに一致する。
+        expect(separator.height / 2, `${i}本目の中央半分は隙間の高さ`).toBe(gap.bottom - gap.top);
+        expect(separator.y + separator.height / 4, `${i}本目の中央半分の上端`).toBe(gap.top);
+        expect(separator.width).toBe(layout.fieldArea.width);
+      }
+    }
+  });
+
   it('9:16より縦長でない縦型ではフィールドエリアを縮めてダッシュボード列を確保する', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1400));
 

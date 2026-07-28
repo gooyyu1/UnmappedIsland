@@ -1,3 +1,5 @@
+import separatorUrl from '../../assets/lane_separator.png';
+
 /**
  * レーンの背景画像（レーン全面に敷く絵）の解決。
  *
@@ -24,10 +26,20 @@ export type LocationLane = 'fixture' | 'item';
 /** ハンドレーンの背景のテクスチャキー（プレイヤーの手なので土地によらない）。 */
 export const HAND_LANE_TEXTURE = 'lane:hand';
 
+/**
+ * レーンの区切りに敷く帯のテクスチャキー。絵は中央半分だけが区切りそのもので、上下1/4ずつは
+ * 隣のレーンへかぶせる前提で描かれている（PlayScreenLayout.buildLaneSeparators参照）。
+ */
+export const LANE_SEPARATOR_TEXTURE = 'lane:separator';
+
 /** テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。 */
-export const LANE_ART: ReadonlyMap<string, string> = new Map(
-  Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, 'lane:$1'), url]),
-);
+export const LANE_ART: ReadonlyMap<string, string> = new Map([
+  ...Object.entries(FILES).map(([path, url]): [string, string] => [
+    path.replace(/^.*\/(.+)\.png$/, 'lane:$1'),
+    url,
+  ]),
+  [LANE_SEPARATOR_TEXTURE, separatorUrl],
+]);
 
 /**
  * 土地に応じたレーンの背景のテクスチャキー。絵がまだ無い土地ではundefinedを返し、呼び出し側は

@@ -31,12 +31,12 @@ export function addPanel(
 }
 
 /**
- * 背景板を絵で敷く（addPanelの絵版。入力を遮る役目も同じ）。
+ * 絵を矩形いっぱいに敷く。高さが合うよう縦横同率で拡大縮小し、横方向は足りない分を繰り返して埋める。
  *
- * 絵は矩形の高さいっぱいになるよう縦横同率で拡大縮小し、横方向は足りない分を繰り返して埋める。
- * 敷いた絵を横へ送るのは呼び出し側（CardLane.scrollTo）。
+ * 入力は遮らない。レーンの区切りのように他の要素へかぶせて置くものが、下の要素のタップを
+ * 奪わないようにするため。
  */
-export function addTiledPanel(
+export function addTiledImage(
   scene: Phaser.Scene,
   rect: Rect,
   texture: string,
@@ -49,7 +49,19 @@ export function addTiledPanel(
     texture,
   );
   const scale = rect.height / tile.frame.height;
-  return tile.setTileScale(scale, scale).setInteractive();
+  return tile.setTileScale(scale, scale);
+}
+
+/**
+ * 背景板を絵で敷く（addPanelの絵版。入力を遮る役目も同じ）。
+ * 敷いた絵を横へ送るのは呼び出し側（CardLane.scrollTo）。
+ */
+export function addTiledPanel(
+  scene: Phaser.Scene,
+  rect: Rect,
+  texture: string,
+): Phaser.GameObjects.TileSprite {
+  return addTiledImage(scene, rect, texture).setInteractive();
 }
 
 /** 角丸矩形を描く。座標はgraphicsのローカル座標。 */
