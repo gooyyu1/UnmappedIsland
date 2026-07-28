@@ -1,3 +1,4 @@
+import { INFORMATION_PAPER_INSET } from '../ui/informationArt';
 import { SIZE } from '../ui/theme';
 import type { Rect, ScreenMetrics } from './ScreenMetrics';
 
@@ -66,6 +67,12 @@ export class PlayScreenLayout {
    */
   readonly informationArea: Rect;
 
+  /**
+   * 情報エリアのうち、中身を置ける範囲（背景のページの紙の内側）。内訳の各エリアはこの中に収まる。
+   * 情報エリアそのものとの差が、本の縁のぶんの余白（INFORMATION_PAPER_INSET）。
+   */
+  readonly informationContent: Rect;
+
   /** 上から設置物・アイテム・ハンドの3レーン。 */
   readonly lanes: readonly Rect[];
 
@@ -102,18 +109,38 @@ export class PlayScreenLayout {
         height,
       };
 
-      const situationHeight = u(SITUATION_HEIGHT_LANDSCAPE);
-      this.situationArea = { x: 0, y: 0, width: dashboardWidth, height: situationHeight };
-      this.weatherRow = { x: 0, y: situationHeight, width: dashboardWidth, height: situationHeight };
-
-      const characterAreaY = situationHeight * 2;
-      const displayHeight = u(CHARACTER_DISPLAY_HEIGHT_LANDSCAPE);
-      this.characterDisplay = { x: 0, y: characterAreaY, width: dashboardWidth, height: displayHeight };
-      this.statusArea = {
+      this.informationArea = { x: 0, y: 0, width: dashboardWidth, height };
+      // 右は表紙の縁、上下はページの縁。内訳の各エリアはこの内側に収める。
+      const content = {
         x: 0,
+        y: u(INFORMATION_PAPER_INSET.edge),
+        width: Math.max(0, dashboardWidth - u(INFORMATION_PAPER_INSET.field)),
+        height: Math.max(0, height - u(INFORMATION_PAPER_INSET.edge) * 2),
+      };
+      this.informationContent = content;
+
+      const situationHeight = u(SITUATION_HEIGHT_LANDSCAPE);
+      this.situationArea = { x: content.x, y: content.y, width: content.width, height: situationHeight };
+      this.weatherRow = {
+        x: content.x,
+        y: content.y + situationHeight,
+        width: content.width,
+        height: situationHeight,
+      };
+
+      const characterAreaY = content.y + situationHeight * 2;
+      const displayHeight = u(CHARACTER_DISPLAY_HEIGHT_LANDSCAPE);
+      this.characterDisplay = {
+        x: content.x,
+        y: characterAreaY,
+        width: content.width,
+        height: displayHeight,
+      };
+      this.statusArea = {
+        x: content.x,
         y: characterAreaY + displayHeight,
-        width: dashboardWidth,
-        height: Math.max(0, height - characterAreaY - displayHeight),
+        width: content.width,
+        height: Math.max(0, content.y + content.height - characterAreaY - displayHeight),
       };
     } else {
       const barHeight = u(BAR_THICKNESS);
@@ -123,37 +150,48 @@ export class PlayScreenLayout {
         0,
         Math.min(u(1080), height - barHeight * 2 - u(DASHBOARD_MIN_HEIGHT_PORTRAIT)),
       );
-      const dashboardHeight = Math.max(0, height - barHeight * 2 - fieldHeight);
-      const situationHeight = Math.min(u(SITUATION_HEIGHT_PORTRAIT), dashboardHeight);
+      // キャラクター表示エリアは内容量ぶんだけ確保し、引き伸ばさない。極端に縦長の画面で余った高さは
+      // オプションバーの上の余白（画面外として塗り潰す）にする。上端は指が届きにくく、使い切る価値が薄いため。
+      const available = Math.max(0, height - barHeight * 2 - fieldHeight);
+      const situationHeight = Math.min(u(SITUATION_HEIGHT_PORTRAIT), available);
+      const displayHeight = Math.min(u(CHARACTER_DISPLAY_HEIGHT_PORTRAIT), available - situationHeight);
+      const top = available - situationHeight - displayHeight;
 
-      this.optionsBar = { x: 0, y: 0, width, height: barHeight };
+      this.fieldArea = { x: 0, y: height - barHeight - fieldHeight, width, height: fieldHeight };
+      this.filterBar = { x: 0, y: height - barHeight, width, height: barHeight };
+      this.weatherRow = undefined;
+      this.informationArea = { x: 0, y: top, width, height: this.fieldArea.y - top };
+
+      // 左右はページの縁。下（フィールドエリア側の表紙の縁）は状況エリアの下パディングが受け持つ。
+      const edge = u(INFORMATION_PAPER_INSET.edge);
+      const content = {
+        x: edge,
+        y: top,
+        width: Math.max(0, width - edge * 2),
+        height: this.informationArea.height,
+      };
+      this.informationContent = content;
+
+      this.optionsBar = { x: content.x, y: content.y, width: content.width, height: barHeight };
       this.characterDisplay = {
-        x: 0,
-        y: barHeight,
-        width: Math.min(u(CHARACTER_DISPLAY_WIDTH_PORTRAIT), width),
-        height: dashboardHeight - situationHeight,
+        x: content.x,
+        y: content.y + barHeight,
+        width: Math.min(u(CHARACTER_DISPLAY_WIDTH_PORTRAIT), content.width),
+        height: displayHeight,
       };
       this.statusArea = {
-        x: this.characterDisplay.width,
-        y: barHeight,
-        width: width - this.characterDisplay.width,
-        height: this.characterDisplay.height,
+        x: content.x + this.characterDisplay.width,
+        y: this.characterDisplay.y,
+        width: content.width - this.characterDisplay.width,
+        height: displayHeight,
       };
       this.situationArea = {
-        x: 0,
-        y: barHeight + this.characterDisplay.height,
-        width,
+        x: content.x,
+        y: this.characterDisplay.y + displayHeight,
+        width: content.width,
         height: situationHeight,
       };
-      this.weatherRow = undefined;
-      this.fieldArea = { x: 0, y: barHeight + dashboardHeight, width, height: fieldHeight };
-      this.filterBar = { x: 0, y: height - barHeight, width, height: barHeight };
     }
-
-    // 縦型はフィールドエリアより上の全体（オプションバーも含む）、横型はその左の列。
-    this.informationArea = metrics.isLandscape
-      ? { x: 0, y: 0, width: this.fieldArea.x, height }
-      : { x: 0, y: 0, width, height: this.fieldArea.y };
 
     this.lanes = this.buildLanes();
     this.laneSeparators = this.buildLaneSeparators();

@@ -19,6 +19,8 @@ export const SIZE = {
 
 export const COLOR = {
   screenBackground: 0xf6f6f6,
+  /** 画面の外側（Phaserのキャンバスの地の色）。UIを置かない余りをここで塗り潰す。 */
+  outsideScreen: 0x101418,
   optionsBar: 0xf5e9d5,
   filterBar: 0xe6dcf5,
   fieldArea: 0xd6d6ff,
