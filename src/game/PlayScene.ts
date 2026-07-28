@@ -20,7 +20,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
-import { HAND_LANE_TEXTURE, laneTexture } from './ui/laneArt';
+import { HAND_LANE_TEXTURE, LANE_SEPARATOR_TEXTURE, laneTexture } from './ui/laneArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
@@ -32,7 +32,7 @@ import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
 import { addLabel } from './ui/labels';
 import type { BoxStyle } from './ui/shapes';
-import { addPanel } from './ui/shapes';
+import { addPanel, addTiledImage } from './ui/shapes';
 import { COLOR, SIZE } from './ui/theme';
 
 /** オプションバー・フィルターバーの内側パディング（縦型は左右が広め）。 */
@@ -178,6 +178,8 @@ export class PlayScene extends ResponsiveScene {
     this.buildDashboard(layout);
     this.buildOptionsBar(layout.optionsBar);
     this.buildFilterBar(layout.filterBar);
+    // 区切りの帯は隣接エリアへもかぶるため、それらの背景板を描き終えてから最後に敷く。
+    for (const rect of layout.laneSeparators) addTiledImage(this, rect, LANE_SEPARATOR_TEXTURE);
     if (wasExploring) this.openExplorationWindow();
     if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
   }

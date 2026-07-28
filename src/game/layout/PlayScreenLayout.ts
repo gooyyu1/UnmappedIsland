@@ -47,8 +47,11 @@ export class PlayScreenLayout {
   readonly characterDisplay: Rect;
   readonly statusArea: Rect;
 
-  /** 上からロケーション・フィールドアイテム・ハンドの3レーン。 */
+  /** 上から設置物・アイテム・ハンドの3レーン。 */
   readonly lanes: readonly Rect[];
+
+  /** レーンの区切りに敷く帯。上から順に、設置物レーンの上・レーン間×2・ハンドレーンの下の4本。 */
+  readonly laneSeparators: readonly Rect[];
 
   /**
    * ハンドレーンを覆わない子ウィンドウ（装備・怪我・コンテナ）の置き場所。手持ちとカードを
@@ -129,6 +132,7 @@ export class PlayScreenLayout {
     }
 
     this.lanes = this.buildLanes();
+    this.laneSeparators = this.buildLaneSeparators();
 
     const handLane = this.lanes[2];
     this.slotWindowArea = {
@@ -152,5 +156,26 @@ export class PlayScreenLayout {
       });
     }
     return lanes;
+  }
+
+  /**
+   * レーンの区切りの帯（ScreenLayout.md レーンの区切り節）。
+   *
+   * 帯は絵の中央半分だけが区切りそのもので、上下1/4ずつは隣のレーンへかぶせる前提で描かれている。
+   * そのため高さはレーンの隙間の2倍を取り、隙間の中心線に対して上下対称に置く。
+   */
+  private buildLaneSeparators(): readonly Rect[] {
+    const margin = this.metrics.px(SIZE.margin);
+    const height = margin * 2;
+    const centers = [
+      this.lanes[0].y - margin / 2,
+      ...this.lanes.map((lane) => lane.y + lane.height + margin / 2),
+    ];
+    return centers.map((center) => ({
+      x: this.fieldArea.x,
+      y: center - height / 2,
+      width: this.fieldArea.width,
+      height,
+    }));
   }
 }
