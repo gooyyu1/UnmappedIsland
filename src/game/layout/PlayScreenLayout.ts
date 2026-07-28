@@ -4,8 +4,15 @@ import type { Rect, ScreenMetrics } from './ScreenMetrics';
 /** オプションバー・フィルターバーの厚み（アイコンボタン88 + 上下パディング16×2）。 */
 const BAR_THICKNESS = SIZE.iconButton + 32;
 
-/** 縦型の状況エリア高（フリップカード88 + 上下パディング20×2）。天候チップを同居させる。 */
-const SITUATION_HEIGHT_PORTRAIT = SIZE.iconButton + 40;
+/**
+ * 縦型の状況エリア高（フリップカード88 + 上パディング20 + 下パディング40）。天候チップを同居させる。
+ *
+ * 下だけ広いのは、背景のページの下端が表紙の縁で、その内側（INFORMATION_PAPER_INSET）へ日時を
+ * 収める必要があるため。エリアの下端はフィールドエリアに接しているので、高さを足すと中身が上へ寄る。
+ * これ以上広げるとダッシュボード列の最小高が600uを超え、9:16の端末でフィールドエリアが1080uを
+ * 割ってしまう（＝3レーンが収まらなくなる）ので、下パディングの上限は40u。
+ */
+const SITUATION_HEIGHT_PORTRAIT = SIZE.iconButton + 60;
 
 /** 横型の状況エリア・天候の帯の高（フリップカード88 + 上下パディング12×2）。 */
 const SITUATION_HEIGHT_LANDSCAPE = SIZE.iconButton + 24;
@@ -19,8 +26,14 @@ const CHARACTER_DISPLAY_HEIGHT_PORTRAIT = SIZE.cardHeight + SIZE.gap + SIZE.icon
 /** 縦型のキャラクター表示エリア幅。ポートレイト205 + 条件2列 + ギャップ・パディング。 */
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
-/** 横型のダッシュボード列幅・右サイドバー幅（ScreenLayout.md 横型レイアウト節）。 */
-const DASHBOARD_WIDTH_LANDSCAPE = 540;
+/**
+ * 横型のダッシュボード列幅・右サイドバー幅（ScreenLayout.md 横型レイアウト節）。
+ *
+ * 列幅は日時のフリップカード（523u）が背景のページの紙の内側に収まる幅で決まる。
+ * 左右パディング20u×2と、フィールドエリア側の紙の余白（INFORMATION_PAPER_INSET）を足すと588u必要で、
+ * 時刻の桁1枚分（44u + 桁間8u）を足した592uにしている。
+ */
+const DASHBOARD_WIDTH_LANDSCAPE = 592;
 const SIDEBAR_WIDTH_LANDSCAPE = 120;
 
 /** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */

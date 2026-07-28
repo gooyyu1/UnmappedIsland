@@ -20,7 +20,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
-import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX } from './ui/informationArt';
+import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX, INFORMATION_PAPER_INSET } from './ui/informationArt';
 import { HAND_LANE_TEXTURE, LANE_SEPARATOR_TEXTURE, laneTexture } from './ui/laneArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
@@ -571,11 +571,61 @@ export class PlayScene extends ResponsiveScene {
     else page.setOrigin(0, 1).setPosition(area.x, area.height + overlap);
   }
 
+  /**
+   * 情報エリアの中を仕切る区切り線。背景が1枚の紙になり、エリアごとの塗り分けが無くなったため、
+   * 意味のまとまり（日時／天候・キャラクター／ステータス）の境目だけを線で示す。
+   * 見た目は現在地カードの右の区切り線と同じ（CardLane.addPinnedSlot）。
+   */
+  private buildInformationDividers(layout: PlayScreenLayout): void {
+    const thickness = this.metrics.px(4);
+    const inset = this.metrics.px(INFORMATION_PAPER_INSET);
+
+    if (this.metrics.isLandscape) {
+      const padding = this.metrics.px(SITUATION_PADDING_LANDSCAPE.x);
+      const x = layout.informationArea.x + padding;
+      // 紙の内側に収める。フィールドエリア側の辺だけ、絵の表紙の縁のぶんを追加で避ける。
+      const width = layout.informationArea.width - inset - padding * 2;
+      for (const y of [layout.situationArea.y + layout.situationArea.height, layout.statusArea.y]) {
+        this.addDivider({ x, y: y - thickness / 2, width, height: thickness });
+      }
+      return;
+    }
+
+    const padding = this.metrics.px(SITUATION_PADDING_PORTRAIT.x);
+    // 日時・天候の上。
+    this.addDivider({
+      x: layout.informationArea.x + padding,
+      y: layout.situationArea.y - thickness / 2,
+      width: layout.informationArea.width - padding * 2,
+      height: thickness,
+    });
+    // ステータスエリアの左（キャラクター表示エリアとの境目）。
+    const verticalPadding = this.metrics.px(STATUS_PADDING);
+    this.addDivider({
+      x: layout.statusArea.x - thickness / 2,
+      y: layout.statusArea.y + verticalPadding,
+      width: thickness,
+      height: Math.max(0, layout.statusArea.height - verticalPadding * 2),
+    });
+  }
+
+  private addDivider(rect: Rect): void {
+    this.add.rectangle(
+      rect.x + rect.width / 2,
+      rect.y + rect.height / 2,
+      rect.width,
+      rect.height,
+      COLOR.laneDivider,
+      0.35,
+    );
+  }
+
   private buildDashboard(layout: PlayScreenLayout): void {
     this.buildCharacterDisplay(layout.characterDisplay);
     this.buildStatusArea(layout.statusArea);
     this.buildSituationArea(layout.situationArea, layout.weatherRow === undefined);
     if (layout.weatherRow !== undefined) this.buildWeatherRow(layout.weatherRow);
+    this.buildInformationDividers(layout);
   }
 
   /**
@@ -750,7 +800,8 @@ export class PlayScene extends ResponsiveScene {
         calendar.x + calendar.contentWidth + this.metrics.px(24),
         area.x + area.width - this.metrics.px(padding.x) - chip.contentWidth,
       ),
-      area.y + (area.height - WeatherChip.height(this.metrics)) / 2,
+      // エリアではなく日時の帯に対して上下中央へ揃える（下パディングが広いため、エリア中央だと下へずれる）。
+      calendar.y + (FlipCalendar.height(this.metrics) - WeatherChip.height(this.metrics)) / 2,
     );
   }
 
