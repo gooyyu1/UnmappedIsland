@@ -570,9 +570,11 @@ export class PlayScene extends ResponsiveScene {
     if (landscape) page.setOrigin(1, 0).setPosition(area.width + overlap, area.y);
     else page.setOrigin(0, 1).setPosition(area.x, area.y + area.height + overlap);
 
-    // 情報エリアの上に余りが出る画面（縦長すぎる縦型）では、ページのはみ出しごと画面外として塗り潰す。
-    if (area.y > 0) {
-      addPanel(this, { x: 0, y: 0, width: this.metrics.width, height: area.y }, COLOR.outsideScreen);
+    // 縦長すぎる縦型でオプションバーの上に出る余りを、ページのはみ出しごと画面外として塗り潰す。
+    // オプションバーはこの後に置くので、その帯にかぶるぶんは塗り直される。
+    const outside = landscape ? 0 : layout.optionsBar.y;
+    if (outside > 0) {
+      addPanel(this, { x: 0, y: 0, width: this.metrics.width, height: outside }, COLOR.outsideScreen);
     }
   }
 

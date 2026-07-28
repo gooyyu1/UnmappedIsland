@@ -19,7 +19,7 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
   it('縦型1080×1920はScreenLayout.mdの表どおりの高さに分かれる', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
 
-    expect(layout.optionsBar).toEqual({ x: 24, y: 0, width: 1032, height: 120 });
+    expect(layout.optionsBar).toEqual({ x: 0, y: 0, width: 1080, height: 120 });
     expect(layout.fieldArea).toEqual({ x: 0, y: 720, width: 1080, height: 1080 });
     expect(layout.filterBar).toEqual({ x: 0, y: 1800, width: 1080, height: 120 });
     expect(layout.situationArea.height).toBe(148);
@@ -86,12 +86,11 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     const landscape = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
     expect(landscape.informationArea).toEqual({ x: 0, y: 0, width: landscape.fieldArea.x, height: 1080 });
 
+    // 縦型はオプションバーが背景のページの外側なので、情報エリアはその下からフィールドエリアまで。
     const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
-    expect(portrait.informationArea).toEqual({ x: 0, y: 0, width: 1080, height: portrait.fieldArea.y });
-    // 縦型はオプションバーも情報エリアの中に入る（背景のページの上に載る）。
-    expect(portrait.optionsBar.y + portrait.optionsBar.height).toBeLessThanOrEqual(
-      portrait.informationArea.height,
-    );
+    expect(portrait.informationArea).toEqual({ x: 0, y: 120, width: 1080, height: 600 });
+    expect(portrait.informationArea.y).toBe(portrait.optionsBar.y + portrait.optionsBar.height);
+    expect(portrait.informationArea.y + portrait.informationArea.height).toBe(portrait.fieldArea.y);
   });
 
   it('情報エリアの中身は、本の縁のぶん内側へ収まる', () => {
@@ -103,8 +102,8 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     }
 
     const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
-    expect(portrait.informationContent).toEqual({ x: 24, y: 0, width: 1032, height: 720 });
-    for (const area of [portrait.optionsBar, portrait.characterDisplay, portrait.situationArea]) {
+    expect(portrait.informationContent).toEqual({ x: 24, y: 120, width: 1032, height: 600 });
+    for (const area of [portrait.characterDisplay, portrait.situationArea]) {
       expect(area.x, '中身の左端は紙の内側').toBeGreaterThanOrEqual(24);
     }
     expect(portrait.statusArea.x + portrait.statusArea.width).toBe(1056);
@@ -116,7 +115,7 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.characterDisplay.height, '内容量ぶんのまま').toBe(452);
     expect(layout.situationArea.height).toBe(148);
     expect(layout.optionsBar.y, '余りはオプションバーの上へ').toBe(480);
-    expect(layout.informationArea.y, '情報エリアも余りの下から始まる').toBe(480);
+    expect(layout.informationArea.y, '情報エリアはオプションバーの下から').toBe(600);
     // 下から順に、フィルターバー・フィールドエリア・情報エリアが隙間なく積まれている。
     expect(layout.filterBar.y + layout.filterBar.height).toBe(2400);
     expect(layout.fieldArea.y + layout.fieldArea.height).toBe(layout.filterBar.y);

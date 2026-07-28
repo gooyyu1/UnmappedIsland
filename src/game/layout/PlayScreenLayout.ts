@@ -160,34 +160,40 @@ export class PlayScreenLayout {
       this.fieldArea = { x: 0, y: height - barHeight - fieldHeight, width, height: fieldHeight };
       this.filterBar = { x: 0, y: height - barHeight, width, height: barHeight };
       this.weatherRow = undefined;
-      this.informationArea = { x: 0, y: top, width, height: this.fieldArea.y - top };
+      // オプションバーは背景のページの外側なので、幅いっぱいのまま。ページはその下から始まる。
+      this.optionsBar = { x: 0, y: top, width, height: barHeight };
+      this.informationArea = {
+        x: 0,
+        y: top + barHeight,
+        width,
+        height: Math.max(0, this.fieldArea.y - top - barHeight),
+      };
 
       // 左右はページの縁。下（フィールドエリア側の表紙の縁）は状況エリアの下パディングが受け持つ。
       const edge = u(INFORMATION_PAPER_INSET.edge);
       const content = {
         x: edge,
-        y: top,
+        y: this.informationArea.y,
         width: Math.max(0, width - edge * 2),
         height: this.informationArea.height,
       };
       this.informationContent = content;
 
-      this.optionsBar = { x: content.x, y: content.y, width: content.width, height: barHeight };
       this.characterDisplay = {
         x: content.x,
-        y: content.y + barHeight,
+        y: content.y,
         width: Math.min(u(CHARACTER_DISPLAY_WIDTH_PORTRAIT), content.width),
         height: displayHeight,
       };
       this.statusArea = {
         x: content.x + this.characterDisplay.width,
-        y: this.characterDisplay.y,
+        y: content.y,
         width: content.width - this.characterDisplay.width,
         height: displayHeight,
       };
       this.situationArea = {
         x: content.x,
-        y: this.characterDisplay.y + displayHeight,
+        y: content.y + displayHeight,
         width: content.width,
         height: situationHeight,
       };
