@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
 import { drawBox } from './shapes';
 import { objectTexture } from './objectArt';
@@ -14,6 +14,14 @@ export const CARD_FRAME_TEXTURE = 'card-frame';
 
 /** 空き枠は同じ枠の画像を薄く敷いて表す。 */
 const EMPTY_FRAME_ALPHA = 0.35;
+
+/**
+ * カードの絵の中で紙そのものが占める範囲（u単位）。絵は820x1280pxで、紙は周囲に10pxの余白を空け、
+ * 角の半径は64px。カードの実寸は絵と同じ比率なので、u単位へは1/4で直せる。
+ * 図形で描く枠（破線の空き枠・画像が無いときの代用）を絵の輪郭に重ねるために使う。
+ */
+const FRAME_INSET = 2.5;
+const FRAME_RADIUS = 16;
 
 /** カード名の最大行数。これを超える分は表示しない（モックの-webkit-line-clamp: 3に対応）。 */
 const NAME_MAX_LINES = 3;
@@ -367,31 +375,29 @@ function addFrame(
     // ほとんど見えず、「枠がいくつあるか」が伝わらないため。
     image.setAlpha(EMPTY_FRAME_ALPHA);
     const outline = scene.add.graphics();
-    drawBox(
-      outline,
-      { x: 0, y: 0, width, height },
-      {
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, metrics.px(2)),
-        radius: metrics.px(SIZE.radius),
-        dashed: true,
-      },
-    );
+    drawBox(outline, paperRect(metrics, width, height), {
+      border: COLOR.cardBorder,
+      borderWidth: Math.max(1, metrics.px(2)),
+      radius: metrics.px(FRAME_RADIUS),
+      dashed: true,
+    });
     return scene.add.container(0, 0, [image, outline]);
   }
 
   const face = scene.add.graphics();
-  drawBox(
-    face,
-    { x: 0, y: 0, width, height },
-    {
-      fill: COLOR.cardFace,
-      fillAlpha: empty ? 0.35 : 0.85,
-      border: COLOR.cardBorder,
-      borderWidth: Math.max(1, metrics.px(2)),
-      radius: metrics.px(SIZE.radius),
-      dashed: empty,
-    },
-  );
+  drawBox(face, paperRect(metrics, width, height), {
+    fill: COLOR.cardFace,
+    fillAlpha: empty ? 0.35 : 0.85,
+    border: COLOR.cardBorder,
+    borderWidth: Math.max(1, metrics.px(2)),
+    radius: metrics.px(FRAME_RADIUS),
+    dashed: empty,
+  });
   return face;
+}
+
+/** カードの矩形の中で、絵の紙が占める範囲（FRAME_INSET参照）。 */
+function paperRect(metrics: ScreenMetrics, width: number, height: number): Rect {
+  const inset = metrics.px(FRAME_INSET);
+  return { x: inset, y: inset, width: width - inset * 2, height: height - inset * 2 };
 }
