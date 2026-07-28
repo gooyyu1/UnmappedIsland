@@ -25,6 +25,8 @@ export const COLOR = {
   fixtureLane: 0xffe1b3,
   itemLane: 0xd9ffd5,
   handLane: 0xe1dbff,
+  /** 情報エリアの下地。背景画像（本のページ）の紙の色で、絵が届かない範囲を埋める。 */
+  informationPaper: 0xf5f0e1,
   characterDisplay: 0xd9f6ff,
   statusArea: 0xe3ffe0,
   situationArea: 0xe8e2d4,

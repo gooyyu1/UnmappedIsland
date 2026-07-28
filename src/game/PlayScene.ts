@@ -20,6 +20,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
+import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX } from './ui/informationArt';
 import { HAND_LANE_TEXTURE, LANE_SEPARATOR_TEXTURE, laneTexture } from './ui/laneArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
@@ -174,12 +175,19 @@ export class PlayScene extends ResponsiveScene {
     this.fieldArea = layout.fieldArea;
     this.slotWindowArea = layout.slotWindowArea;
 
+    // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
+    // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
     this.buildFieldArea(layout);
-    this.buildDashboard(layout);
-    this.buildOptionsBar(layout.optionsBar);
     this.buildFilterBar(layout.filterBar);
-    // 区切りの帯は隣接エリアへもかぶるため、それらの背景板を描き終えてから最後に敷く。
+    // 横型のオプションバーはフィールドエリアの隣（右サイドバー）なので、フィルターバーと同じく
+    // レーンのはみ出しを隠す背景板を兼ねる。縦型は情報エリアの中なので、ページを敷いた後に置く。
+    if (this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
+    // 区切りの帯は隣接エリアへもかぶるため、それらの背景板を描き終えてから敷く。
     for (const rect of layout.laneSeparators) addTiledImage(this, rect, LANE_SEPARATOR_TEXTURE);
+    // 情報エリアのページはフィールドエリアへ食い込むので、帯より後（＝手前）に置く。
+    this.buildInformationArea(layout);
+    this.buildDashboard(layout);
+    if (!this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
     if (wasExploring) this.openExplorationWindow();
     if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
   }
@@ -538,6 +546,31 @@ export class PlayScene extends ResponsiveScene {
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
 
+  /**
+   * 情報エリアの背景（1枚の本のページ）。フィールドエリアに接する辺だけ、表紙の縁がフィールドへ
+   * 食い込む（informationArt参照）。内訳の各エリアは自前の背景板を持たず、このページの上に直接載る。
+   *
+   * 絵は縦横同率で拡大縮小し、フィールドエリア側の辺を基準に置く。反対側（横型の左・縦型の上）は
+   * 画面外へはみ出す前提で、絵の側に十分な余白が取られている。極端な画面比で絵が届かない場合に
+   * 備えて、下地に紙の色の背景板を敷く。背景板はレーンからはみ出したカードを隠す役目も兼ねる。
+   */
+  private buildInformationArea(layout: PlayScreenLayout): void {
+    const area = layout.informationArea;
+    const landscape = this.metrics.isLandscape;
+    addPanel(this, area, COLOR.informationPaper);
+
+    const page = this.add.image(
+      0,
+      0,
+      landscape ? INFORMATION_BACKGROUND.landscape : INFORMATION_BACKGROUND.portrait,
+    );
+    const scale = landscape ? area.height / page.height : area.width / page.width;
+    const overlap = INFORMATION_OVERLAP_PX * scale;
+    page.setScale(scale).setInteractive();
+    if (landscape) page.setOrigin(1, 0).setPosition(area.width + overlap, area.y);
+    else page.setOrigin(0, 1).setPosition(area.x, area.height + overlap);
+  }
+
   private buildDashboard(layout: PlayScreenLayout): void {
     this.buildCharacterDisplay(layout.characterDisplay);
     this.buildStatusArea(layout.statusArea);
@@ -551,8 +584,6 @@ export class PlayScene extends ResponsiveScene {
    * （ScreenLayout.md 設計原則）。
    */
   private buildCharacterDisplay(area: Rect): void {
-    addPanel(this, area, COLOR.characterDisplay);
-
     const padding = this.metrics.px(DISPLAY_PADDING);
     const gap = this.metrics.px(SIZE.gap);
     const portraitWidth = this.metrics.px(SIZE.cardWidth);
@@ -682,8 +713,6 @@ export class PlayScene extends ResponsiveScene {
 
   /** バーは上端に揃える。表示件数が変わっても位置が動かないようにするため（ScreenLayout.md）。 */
   private buildStatusArea(area: Rect): void {
-    addPanel(this, area, COLOR.statusArea);
-
     const padding = this.metrics.px(STATUS_PADDING);
     const gap = this.metrics.px(this.metrics.isLandscape ? 10 : 16);
     const barHeight = StatusBar.height(this.metrics);
@@ -701,8 +730,6 @@ export class PlayScene extends ResponsiveScene {
   }
 
   private buildSituationArea(area: Rect, withWeather: boolean): void {
-    addPanel(this, area, COLOR.situationArea);
-
     const padding = this.metrics.isLandscape ? SITUATION_PADDING_LANDSCAPE : SITUATION_PADDING_PORTRAIT;
     const calendar = new FlipCalendar(
       this,
@@ -728,7 +755,6 @@ export class PlayScene extends ResponsiveScene {
   }
 
   private buildWeatherRow(area: Rect): void {
-    addPanel(this, area, COLOR.situationArea);
     new WeatherChip(
       this,
       this.metrics,
@@ -740,7 +766,8 @@ export class PlayScene extends ResponsiveScene {
 
   /** 縦型は画面最上部の横長バー（右寄せ）、横型は右サイドバー上段の縦積み。 */
   private buildOptionsBar(area: Rect): void {
-    addPanel(this, area, COLOR.optionsBar);
+    // 縦型は情報エリアのページの上に載るので、背景板は置かない（横型は右サイドバーなので置く）。
+    if (this.metrics.isLandscape) addPanel(this, area, COLOR.optionsBar);
 
     const size = this.metrics.px(SIZE.iconButton);
     const gap = this.metrics.px(SIZE.barGap);

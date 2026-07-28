@@ -82,6 +82,18 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     }
   });
 
+  it('情報エリアはフィールドエリアの左（横型）・上（縦型）を隙間なく占める', () => {
+    const landscape = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
+    expect(landscape.informationArea).toEqual({ x: 0, y: 0, width: landscape.fieldArea.x, height: 1080 });
+
+    const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
+    expect(portrait.informationArea).toEqual({ x: 0, y: 0, width: 1080, height: portrait.fieldArea.y });
+    // 縦型はオプションバーも情報エリアの中に入る（背景のページの上に載る）。
+    expect(portrait.optionsBar.y + portrait.optionsBar.height).toBeLessThanOrEqual(
+      portrait.informationArea.height,
+    );
+  });
+
   it('9:16より縦長でない縦型ではフィールドエリアを縮めてダッシュボード列を確保する', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1400));
 

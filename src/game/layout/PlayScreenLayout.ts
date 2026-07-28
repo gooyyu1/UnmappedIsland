@@ -47,6 +47,12 @@ export class PlayScreenLayout {
   readonly characterDisplay: Rect;
   readonly statusArea: Rect;
 
+  /**
+   * 情報エリア。フィールドエリアの左（横型）・上（縦型）にまとめて置かれる、状況エリア・天候の帯・
+   * キャラクターエリアの全体。1枚の紙の背景として塗るための矩形なので、内訳の各エリアとは別に持つ。
+   */
+  readonly informationArea: Rect;
+
   /** 上から設置物・アイテム・ハンドの3レーン。 */
   readonly lanes: readonly Rect[];
 
@@ -130,6 +136,11 @@ export class PlayScreenLayout {
       this.fieldArea = { x: 0, y: barHeight + dashboardHeight, width, height: fieldHeight };
       this.filterBar = { x: 0, y: height - barHeight, width, height: barHeight };
     }
+
+    // 縦型はフィールドエリアより上の全体（オプションバーも含む）、横型はその左の列。
+    this.informationArea = metrics.isLandscape
+      ? { x: 0, y: 0, width: this.fieldArea.x, height }
+      : { x: 0, y: 0, width, height: this.fieldArea.y };
 
     this.lanes = this.buildLanes();
     this.laneSeparators = this.buildLaneSeparators();
