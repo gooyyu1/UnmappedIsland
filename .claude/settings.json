@@ -1,7 +1,12 @@
 {
   "permissions": {
     "defaultMode": "bypassPermissions",
-    "allow": ["mcp__Claude_Code_Remote__send_later", "mcp__claude-code-remote__send_later"]
+    "allow": [
+      "mcp__Claude_Code_Remote__send_later",
+      "mcp__claude-code-remote__send_later",
+      "mcp__Claude_Code_Remote__delete_trigger",
+      "mcp__claude-code-remote__delete_trigger"
+    ]
   },
   "hooks": {
     "SessionStart": [
