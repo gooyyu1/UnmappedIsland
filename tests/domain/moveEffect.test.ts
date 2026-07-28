@@ -266,7 +266,7 @@ object_defs:
     expect(loadBad).toThrowError(/どちらか一方/);
   });
 
-  it('moveのtoにself以外を指定するとロードエラーになる', () => {
+  it('moveのtoにself/parent以外を指定するとロードエラーになる', () => {
     const loadBad = (): WorldCodex =>
       new WorldCodexYamlLoader()
         .load(
@@ -276,13 +276,48 @@ object_defs:
   basket:
     actions:
       travel:
-        move: {object: actor, to: parent}
+        move: {object: actor, to: ancestor}
 `,
         )
         .build();
 
     expect(loadBad).toThrow(YamlLoadError);
-    expect(loadBad).toThrowError(/self/);
+    expect(loadBad).toThrowError(/'self'か'parent'/);
+  });
+
+  it('to: parentは、宣言元ではなくその親の中へ移す', () => {
+    // 代表(represented_by)へリダイレクトされた中身が、自分ではなく容器を行き先にするケース
+    // （液体の注ぎ移し、LiquidContainerSystem.md 4節）。
+    const codex = new WorldCodexYamlLoader()
+      .load(
+        'jar.yaml',
+        `
+object_defs:
+  jar:
+    slots:
+      content:
+        accepts:
+          - {tag: liquid, max: 9999}
+  water:
+    tags: [liquid]
+    combinations:
+      pour_in:
+        with: liquid
+        move: {object: dragged, to: parent}
+`,
+      )
+      .build();
+    const session = new WorldSession(codex);
+
+    const jar = session.spawn(codex.objectNames.getId('jar'));
+    const receiver = session.spawn(codex.objectNames.getId('water'));
+    const poured = session.spawn(codex.objectNames.getId('water'));
+    const contentId = codex.slotNames.getId('content');
+    expect(receiver.moveToSlot(jar, contentId, codex.wellKnown)).toBeUndefined();
+
+    expect(receiver.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
+
+    expect(poured.parent, '宣言元(receiver)ではなく、その親である容器へ入る').toBe(jar);
   });
 
   it('moveに未知のキーがあるとロードエラーになる', () => {

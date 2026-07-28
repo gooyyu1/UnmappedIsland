@@ -1136,12 +1136,19 @@
       ]
     },
     "move_spec": {
-      "description": "move（9.6節）: 対象を、to_propが指すインスタンスIDのオブジェクトの中へ移動する。objectは現時点でactorのみ対応。on_min等のrangeイベントでは使えない（actorが存在しないため、ロード時エラー）。",
+      "description": "move（9.6節）: 対象を、移動先のオブジェクトの中へ移動する。objectはactorかdraggedのみ。移動先はto（self=move宣言元自身 / parent=その直接の親）かto_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方で指す。on_min等のrangeイベントでは使えない（actorが存在しないため、ロード時エラー）。",
       "type": "object",
       "properties": {
         "object": {
           "enum": [
-            "actor"
+            "actor",
+            "dragged"
+          ]
+        },
+        "to": {
+          "enum": [
+            "self",
+            "parent"
           ]
         },
         "to_prop": {
@@ -1150,8 +1157,19 @@
         }
       },
       "required": [
-        "object",
-        "to_prop"
+        "object"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "to"
+          ]
+        },
+        {
+          "required": [
+            "to_prop"
+          ]
+        }
       ],
       "additionalProperties": false
     },
