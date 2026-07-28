@@ -2,91 +2,130 @@
 
 ## 概要
 
-液体（水・茶・油）を容器で保持し、飲用・注ぎ移し・蒸発させる仕組みの設計ドキュメントです。
-液体専用のエンジン機構は持たず、汎用文法（`represented_by` = 7.6節、`transfer` = 9.5節、
-`passives` = 8節。いずれも [`GameElementDefinition.md`](./GameElementDefinition.md)）の組み合わせ
-だけで実現しています。定義本体は `public/world-codex/liquid_containers.yaml`、
-検証は `tests/worldCodex/containersYaml.test.ts`。
+液体（水・茶・油）を容器で保持し、飲用・注ぎ移し・蒸発させる仕組みの設計ドキュメントです。定義本体は
+`public/world-codex/liquid_containers.yaml`、検証は `tests/worldCodex/liquidContainersYaml.test.ts`。
 
-## 1. 役割分担: 量は容器、種類と振る舞いは中身
+液体は**個数ではなく量で存在する**という一点だけをエンジンに宣言し（1節）、あとは汎用文法
+（`represented_by`・`capacity`・`move`・`transfer`・`passives`、いずれも
+[`GameElementDefinition.md`](./GameElementDefinition.md)）をそのまま使います。
 
-液体入り容器は「容器本体」と「中身の液体カード」の親子2オブジェクトで表す。
+本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 7 節に整理しています。1 節の
+`quantitative` と 4 節の `move` の `to: parent` は文法の拡張を伴うため、`GameElementDefinition.md`
+（確定した文法のみを記述）にはまだ載っておらず、実装も済んでいません。
 
-- **容器本体**（`canteen`・`pot`・`bottle`・`jar`・`coconut_bowl`）: `liquid_amount`
-  （`range: {min: 0, max: 容量}`）と、液体を1つだけ入れる `content` スロット
-  （`accepts: [{tag: liquid, max: 1}]`）、`represented_by: content` を持つだけ。
-  `actions`/`combinations` は一切持たない。
-- **中身の液体カード**（`water_liquid`・`tea_liquid`・`oil_liquid`・`empty_liquid`）: 量を持たない。
-  種類タグと、飲用 `actions`・注ぎ `combinations`・蒸発 `passives` という振る舞いだけを持つ。
+## 1. 液体は量で存在する（quantitative）
 
-量を中身ではなく容器に持たせるのは、容量（`range` の `max`）が容器ごとに異なる属性だから。
-中身カードは全容器で共有される型のまま、液体の種類ごとの振る舞いだけを担う。
-中身から見た量は常に `parent.liquid_amount` という1階層参照で届く。
+`quantitative: true` を宣言した型は、インスタンスが「1個・2個」ではなく「どれだけあるか」で存在します。
+量は `size`（7.3節）が持ちます。この宣言1つから、次のすべてが決まります。
 
-## 2. represented_by による委譲
+| 振る舞い | 個数のオブジェクト | 量のオブジェクト |
+|---|---|---|
+| 同じスロットへの合流 | 個数が増える | `size` が加算される |
+| 入りきらないとき | 全部入るか、入らないか | **入るぶんだけ入り、残りは元に留まる** |
+| `size` が 0 になったとき | （0にならない） | **消滅する** |
 
-容器本体は `represented_by: content` により、操作もスタック判定も中身へ委譲する（7.6節）。
+「入るぶんだけ入る」が意味を持つのは、量は分割できるからです。固形物は分割できないので全か無かになります。
+`stackable`（7.6節）が「数える単位」を決めるのと同じ軸の話で、量はその第3の状態にあたります。
 
-- **操作**: 容器カードへの `actions`/`combinations` は、実行前に代表（中身の液体カード）へ
-  リダイレクトされる（`WorldObject.resolveInteractionTarget`、`ActionSystem.md` 1節）。
-  「水筒を選ぶと『飲む』が出る」のは、水筒ではなく中の `water_liquid` の action。
-- **スタック判定**: 代表チェーンの `ObjectDef` 列の完全一致を要求するため、水入り水筒と
-  茶入り水筒、水入り水筒と水入りボウルは、それぞれ別スタックになる。
+## 2. 役割分担: 量も種類も振る舞いも中身、上限だけが容器
 
-## 3. 飲用（drink）
+液体入り容器は「容器本体」と「中身の液体カード」の親子2オブジェクトで表します。
 
-液体トレイト側の `actions`。`transfer` で `parent.liquid_amount` から `actor.hydration` へ
-1回 1200 移す。`transfer` の在庫クランプにより、残量が 1200 未満なら残っている分だけ飲む。
+- **容器本体**（`canteen`・`pot`・`bottle`・`jar`・`coconut_bowl`）: 液体を1つだけ入れる `content`
+  スロット（`accepts: [{tag: liquid, max: 1}]`・`capacity: 容量`）と `represented_by: content` を持つ。
+  空の容器へ注ぎ込む `combinations` だけを持つ（4節）。
+- **中身の液体カード**（`water_liquid`・`tea_liquid`・`oil_liquid`）: `quantitative: true`。
+  量（`size`）・密度（`density`）・種類タグ・飲用 `actions`・注ぎ `combinations`・蒸発 `passives` を持つ。
 
-- 効果が種類ごとに違う液体は `linked_add` で表す: 茶は実際に飲んだ量に比例して
-  `actor.wakefulness` を加算する。
-- 飲めない液体（油）は、単に `drink` を定義しない。
+**上限を決めるのは容器、量そのものは中身**です。上限だけが容器側なのは、同じ `water_liquid` が水筒
+（1L）にも甕（4L）にも入るためで、型定義である `range` では表せません。スロットの `capacity` は
+まさにこのための仕組みで、編み籠の「石がいくつ入るか」と同じ語彙・同じ意味です。
 
-単位は `hydration` と同一スケール（1L ≈ 4800、`characters.yaml`）。1回の drink = 250mL 相当。
+空の容器の `content` は本当に空です。空を表すための目印オブジェクトは置きません。
 
-## 4. 注ぎ移し（pour_in）
+## 3. represented_by による委譲
 
-**受け側**の液体カードに定義する `combinations`。ドラッグされるのは容器カードだが、
-`self`・`dragged` の両方が代表解決されるため、実行文脈は「受け側の液体」に「注ぎ側の液体」を
-重ねた形になり、`dragged_parent` がドラッグ元の容器を指す。
+容器本体は `represented_by: content` により、操作もスタック判定も中身へ委譲します（7.6節）。
+
+- **操作**: 容器カードへの `actions`/`combinations` は、実行前に代表へリダイレクトされます
+  （`WorldObject.resolveInteractionTarget`、`ActionSystem.md` 1節）。中身がいれば液体カードが、
+  空なら容器自身が代表になります。
+- **スタック判定**: 代表チェーンの完全一致を要求するため、水入り水筒と茶入り水筒は別スタックです。
+
+代表が「容器自身か中身か」で切り替わることが、4節の書き分けの土台になります。
+
+## 4. 注ぎ移しは move
+
+液体は場所が変わるだけで別の概念にはならないので、**注ぎ移しは量的オブジェクトの移動**として表します。
+`transfer` は概念が転移するとき（飲用、5節）にだけ使います。
+
+代表解決（3節）は `self` と `dragged` の両方に効くため、**受け側が空か中身入りかは、combination を
+宣言する場所だけで分かれます**。条件は要りません。
 
 ```yaml
-pour_in:
-  with: water_liquid          # 同種の液体のみマッチ（異種はマッチせず何も起きない）
-  transfer:
-    amount: 999999
-    from_object: dragged_parent   # 注ぎ側の容器の量から
-    from_prop: liquid_amount
-    to_object: parent             # 受け側の容器の量へ
-    to_prop: liquid_amount
+traits:
+  # 受け側が空のとき（代表は容器自身）
+  liquid_container:
+    represented_by: content
+    combinations:
+      pour_in:
+        with: liquid
+        move: {object: dragged, to: self}
+
+  # 受け側が中身入りのとき（代表は中身の液体）
+  liquid:
+    tags: [liquid]
+    quantitative: true
+    combinations:
+      pour_in:
+        with: liquid
+        move: {object: dragged, to: parent}
 ```
 
-`amount: 999999` は「全部」の意図。実移動量は `transfer` の在庫（注ぎ側の残量）と
-受け入れ容量（受け側の `range.max` までの空き）の小さい方に自動でクランプされるため、
-「あるだけ注ぎ、入るだけ受け、残りは注ぎ側に残る」が transfer の既定動作だけで成立する。
+| ドラッグ | ドロップ先 | 発火する宣言 |
+|---|---|---|
+| 中身入り | 空 | 容器側 |
+| 中身入り | 中身入り | 中身側 |
+| 空 | 中身入り | 中身側（汲む、逆向きの注ぎ） |
+| 空 | 空 | なし（何も起きない） |
 
-**空の容器**は、`content` スロットを `empty_liquid` マーカーカードが占める。`empty_liquid` は
-液体の種類ごとの受け入れ `combinations`（`pour_water`/`pour_tea`/`pour_oil`）を持ち、
-`transfer`（量の移送）→ `destroy: self` → `spawn`（`same_slot`、実液体カードへの置き換え）を
-1つの効果として宣言順に実行する（適用順は `ActionSystem.md` 5節）。
+**異種の混合は `accepts` が拒みます。** 茶が入っている容器へ水を入れようとすると、`liquid` タグの
+在中数が既に上限（`max: 1`）なので受け入れが失敗します。種類ごとに `with` を分ける必要はありません。
 
-## 5. 蒸発
+**入りきらない分は注ぎ側に残ります。** 量的オブジェクトの部分移動（1節）がそのまま働くためで、
+「あるだけ注ぎ、入るだけ受け、残りは残る」に特別な記述は要りません。
 
-`evaporating_liquid` トレイトの `passives`（`accumulate`）。ゲートは
-「`parent` の開放度タグ × `ancestor.weather`」の組み合わせで、該当する組み合わせの分だけ
-`parent.liquid_amount` を毎 tick 減算する。
+**注ぎ切った側は消えます。** `size` が 0 になった液体は消滅し（1節）、容器の `content` が空に戻ります。
+
+液体の種類を増やしても、この2つの `combinations` に手を入れる必要はありません。
+
+## 5. 飲用（drink）
+
+液体トレイト側の `actions`。`transfer` で自分の `size` から `actor.hydration` へ 1回 1200 移します。
+`transfer` の在庫クランプにより、残量が 1200 未満なら残っている分だけ飲みます。
+
+- 効果が種類ごとに違う液体は `linked_add` で表します: 茶は実際に飲んだ量に比例して
+  `actor.wakefulness` を加算します。
+- 飲めない液体（油）は、単に `drink` を定義しません。
+
+単位は `hydration` と同一スケール（1L ≈ 4800、`characters.yaml`）。1回の drink = 250mL 相当です。
+
+## 6. 蒸発と重さ
+
+**蒸発**は `evaporating_liquid` トレイトの `passives`（`accumulate`）で、自分の `size` を毎 tick
+減らします。ゲートは「`parent` の開放度タグ × `ancestor.weather`」の組み合わせです。
 
 - 開放度は容器側のタグ（`wide_open_container` / `narrow_open_container` / `sealed_container`）。
-  密閉容器はどのゲートも成立しないため蒸発しない。口が狭い容器は広い容器より減りが速い
-  （設定値は `liquid_containers.yaml`）。
-- 天候ゲートは晴天系のみ定義されているため、降雨中は蒸発しない。
-- `liquid_amount` の `range.min: 0` の既定クランプ（6.3節）により、負にはならない。
+  密閉容器はどのゲートも成立しないため蒸発しません。口が狭い容器は広い容器より減りが速くなります。
+- 天候ゲートは晴天系のみ定義されているため、降雨中は蒸発しません。
+- 蒸発しきった液体は消滅します（1節）。
 
-## 6. 未決事項・今後の検討課題
+**重さ**は `size × density ÷ 100` です（`density` は単位量あたりの重さ、水を 100 とする）。液体は
+1個あたりではなく単位体積あたりの重さを持つ、という当たり前をそのまま表します。容器の重さへの合算は
+[`ContainerSystem.md`](./ContainerSystem.md) が扱います。
 
-- 量が 0 になっても中身カードは自動で `empty_liquid` に戻らない（「空だが種類は水」の状態が残る。
-  現状 `pour_in` は同種としてマッチし続ける）。`liquid_amount` の `on_min` による置き換えを
-  導入するか。
-- 液体の種類を増やすたびに、液体トレイト側の `pour_in` と `empty_liquid` 側の `pour_*` を
-  1組ずつ追加する必要がある（`ActionSystem.md` 7節の `with` 拡張と関連）。
-- 異種液体の混合（水＋茶）は表現できない（マッチせず失敗する、が現状の仕様）。
+## 7. 未決事項・今後の検討課題
+
+- 異種液体の混合（水＋茶）は表現できない（`accepts` が拒む、が現状の仕様）
+- `density` の差（油は約92）を実際に効かせるか、全液体を水と同じ 100 に揃えるか
+- 空の容器同士を重ねたときに何も起きないことを、UI 側でどう見せるか
