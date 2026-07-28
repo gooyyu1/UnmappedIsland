@@ -31,8 +31,8 @@ describe('characters.yamlのcharacter定義', () => {
     const instance = new WorldObject(1, character, new WorldSession(codex));
     // satiety: 1日(96 tick)分、-100/tickでmax=9600。
     expect(instance.getNumber(codex.propertyNames.getId('satiety'))).toBe(9600);
-    // hydration: 3日(288 tick)分、-100/tickでmax=28800。
-    expect(instance.getNumber(codex.propertyNames.getId('hydration'))).toBe(28800);
+    // hydration: 3日(288 tick)分、-25/tick(=1日2400mL)でmax=7200。
+    expect(instance.getNumber(codex.propertyNames.getId('hydration'))).toBe(7200);
     // body_fat: 標準体型を想定した初期値=15日分(1440 tick)、-100/tickで144000。
     expect(instance.getNumber(codex.propertyNames.getId('body_fat'))).toBe(144000);
     // wakefulness: 強制的に起こされ続けない自然な限界=24時間(96 tick)分、-100/tickでmax=9600。
@@ -52,7 +52,7 @@ describe('characters.yamlのcharacter定義', () => {
 
   it.each([
     ['satiety', 0, 9600],
-    ['hydration', 0, 28800],
+    ['hydration', 0, 7200],
     ['body_fat', 0, 576000], // 最大限に肥満した状態=60日分(5760 tick)、-100/tick。
     ['wakefulness', 0, 9600],
     ['stamina', 0, 100],
@@ -64,7 +64,13 @@ describe('characters.yamlのcharacter定義', () => {
     expect(prop.range?.max).toBe(expectedMax);
   });
 
-  it.each(['satiety', 'hydration', 'body_fat', 'wakefulness'])('%sはtickごとに100ずつ減衰する', (name) => {
+  // hydrationだけは実単位のmLに載るため-25/tick（LiquidContainerSystem.md 5節）。
+  it.each([
+    ['satiety', 100],
+    ['hydration', 25],
+    ['body_fat', 100],
+    ['wakefulness', 100],
+  ])('%sはtickごとに%iずつ減衰する', (name, expectedDecay) => {
     const session = new WorldSession(codex);
     const character = codex.objects.get(codex.objectNames.getId('character'));
     const instance = new WorldObject(1, character, session);
@@ -73,6 +79,6 @@ describe('characters.yamlのcharacter定義', () => {
 
     instance.tick(session);
 
-    expect(instance.getNumber(propId)).toBe(before - 100);
+    expect(instance.getNumber(propId)).toBe(before - expectedDecay);
   });
 });

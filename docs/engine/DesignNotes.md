@@ -17,6 +17,12 @@
   オプションボタン等の操作部が過大になった。領域サイズはカード寸法（58:89）からの積み上げで決め、
   縦横のカード実寸一致は短辺基準の単位（u = 短辺 ÷ 1080）で得ること。
 
+## 数値のスケール（[GameElementDefinition.md](./GameElementDefinition.md) 6.0節）
+
+- `hydration` が -25/tick なのは書き間違いではない。実単位（mL）に載せた結果であり、他の生理パラメータに
+  合わせて -100/tick へ「揃える」と、水 1L = 1000 = 1kg の対応が壊れる。液体の量の単位と重さの単位は
+  `weight = size × density ÷ 100` で連動しているため、片方だけを選び直すこともできない。
+
 ## 地形生成（[TerrainGeneration.md](./TerrainGeneration.md)）
 
 - `tolerance` はスケールであって閾値ではない（3.2節）。草案にあった「tolerance を超えたら最も

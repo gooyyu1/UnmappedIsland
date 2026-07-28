@@ -150,13 +150,13 @@ object_defs:
     const { codex, session, weightId, make, put } = build();
     const sledge = make('sledge');
     const water = make('water');
-    water.setNumber(codex.wellKnown.sizeId, 4800, session);
+    water.setNumber(codex.wellKnown.sizeId, 1000, session);
     put(water, sledge, 'cargo');
 
-    expect(sledge.getEffectiveValue(weightId), '自重1000 + 水1L(4800 × 密度100 ÷ 100)').toBe(5800);
+    expect(sledge.getEffectiveValue(weightId), '自重1000 + 水1L(1000mL × 密度100 ÷ 100 = 1000g)').toBe(2000);
 
-    water.setNumber(codex.wellKnown.sizeId, 2400, session);
-    expect(sledge.getEffectiveValue(weightId), '蒸発しても読み直せば正しい').toBe(3400);
+    water.setNumber(codex.wellKnown.sizeId, 500, session);
+    expect(sledge.getEffectiveValue(weightId), '蒸発しても読み直せば正しい').toBe(1500);
   });
 
   it('出し入れを繰り返しても重さの帳尻が合う', () => {
