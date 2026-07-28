@@ -821,8 +821,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 縦型は画面最上部の横長バー（右寄せ）、横型は右サイドバー上段の縦積み。 */
   private buildOptionsBar(area: Rect): void {
-    // 縦型は情報エリアのページの上に載るので、背景板は置かない（横型は右サイドバーなので置く）。
-    if (this.metrics.isLandscape) addPanel(this, area, COLOR.optionsBar);
+    addPanel(this, area, COLOR.optionsBar);
 
     const size = this.metrics.px(SIZE.iconButton);
     const gap = this.metrics.px(SIZE.barGap);
