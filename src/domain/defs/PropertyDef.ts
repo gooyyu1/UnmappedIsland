@@ -60,6 +60,11 @@ export class PropertyDef {
   /** value: {min, max} 記法による初期値のランダム範囲（6.2節、createValue参照）。無ければundefined。 */
   private readonly initialValueRange: PropertyRange | undefined;
 
+  /** 生成時に1回ロールされる初期値を持つか（6.2節）。量的オブジェクトでは禁止（7.6節）。 */
+  get hasInitialValueRoll(): boolean {
+    return this.initialValueRange !== undefined;
+  }
+
   /** 取りうる値域（6.3節）。on_overflow/on_shortfall/on_min/on_maxを使う場合は必須。使わない場合はundefined。 */
   readonly range: PropertyRange | undefined;
 

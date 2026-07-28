@@ -462,12 +462,65 @@ export class WorldObject {
     return false;
   }
 
-  moveIntoFirstAcceptingSlot(target: WorldObject, wellKnown: WellKnownProperties, force = false): boolean {
+  moveIntoFirstAcceptingSlot(
+    target: WorldObject,
+    wellKnown: WellKnownProperties,
+    force = false,
+    session?: WorldSession,
+  ): boolean {
     for (const slotDef of target.def.enumerateSlotDefs()) {
+      if (this.def.isQuantitative && !force && session !== undefined) {
+        if (this.pourQuantityInto(target, slotDef.globalId, wellKnown, session)) return true;
+        continue;
+      }
       if (this.moveToSlot(target, slotDef.globalId, wellKnown, force) === undefined) return true;
     }
 
     return false;
+  }
+
+  /**
+   * 量的オブジェクト（7.6節）の量を、target のスロットへ移す。インスタンスは移動せず、
+   * **移り先に生まれ、移し元は量が尽きた時点で消える**（「量が正であること」と「インスタンスが
+   * 存在すること」が同値、という不変条件を保つ唯一のやり方）。入りきらない量は移し元に残る。
+   *
+   * 戻り値: 1単位でも移せたか。
+   */
+  private pourQuantityInto(
+    target: WorldObject,
+    slotGlobalId: number,
+    wellKnown: WellKnownProperties,
+    session: WorldSession,
+  ): boolean {
+    if (target === this || this.contains(target)) return false;
+
+    const localSlot = target.def.slotLayout.toLocal(slotGlobalId);
+    if (localSlot === LocalIndexMap.missing) return false;
+    const slot = target.getSlotByLocalId(localSlot);
+
+    const available = this.getNumber(wellKnown.sizeId);
+    if (available <= 0) return false;
+
+    const merged = slot.findQuantityMergeTarget(this);
+    // 合流先が無いときだけ、新しいインスタンスを置けるかをacceptsに問う（既にいるなら枠は増えない）。
+    if (merged === undefined && !slot.acceptsByRule(this)) return false;
+
+    const amount = Math.min(available, slot.remainingCapacity(wellKnown.sizeId));
+    if (amount <= 0) return false;
+
+    if (merged !== undefined) {
+      merged.setNumber(wellKnown.sizeId, merged.getNumber(wellKnown.sizeId) + amount, session);
+    } else {
+      const born = session.spawn(this.def.globalId);
+      born.setNumber(wellKnown.sizeId, amount, session);
+      if (born.moveToSlot(target, slotGlobalId, wellKnown) !== undefined) return false;
+    }
+
+    const left = available - amount;
+    this.setNumber(wellKnown.sizeId, left, session);
+    if (left <= 0) this.destroy(wellKnown);
+
+    return true;
   }
 
   /**

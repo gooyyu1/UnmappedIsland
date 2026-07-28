@@ -50,7 +50,7 @@ export class MoveEffect extends ActiveEffect {
     const destination = this.resolveDestination(owner);
     if (destination === undefined) return;
 
-    mover.moveIntoFirstAcceptingSlot(destination, session.codex.wellKnown);
+    mover.moveIntoFirstAcceptingSlot(destination, session.codex.wellKnown, false, session);
   }
 
   private resolveDestination(owner: WorldObject): WorldObject | undefined {

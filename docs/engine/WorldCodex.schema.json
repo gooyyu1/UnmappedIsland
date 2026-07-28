@@ -903,6 +903,10 @@
         "represented_by": {
           "$ref": "#/$defs/identifier",
           "description": "スタック上の見た目を代表させるスロット名（7.6節）。"
+        },
+        "quantitative": {
+          "type": "boolean",
+          "description": "個数ではなく量で存在する型か（7.6節）。真ならsizeが量を表し、インスタンスの存在とsizeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
         }
       },
       "additionalProperties": false
@@ -965,6 +969,10 @@
         "represented_by": {
           "$ref": "#/$defs/identifier",
           "description": "スタック上の見た目を代表させるスロット名（7.6節）。"
+        },
+        "quantitative": {
+          "type": "boolean",
+          "description": "個数ではなく量で存在する型か（7.6節）。真ならsizeが量を表し、インスタンスの存在とsizeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
         }
       },
       "additionalProperties": false

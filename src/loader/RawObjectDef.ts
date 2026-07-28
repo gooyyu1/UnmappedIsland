@@ -42,6 +42,9 @@ export class RawObjectDef {
   /** represented_by（7.6節）で指定されたスロット名。未指定ならundefined。 */
   representedBy: string | undefined;
 
+  /** quantitative（7.6節）。個数ではなく量で存在する型か。traitのどれか1つでも宣言していれば真。 */
+  quantitative = false;
+
   actions: YAMLMap | undefined;
   combinations: YAMLMap | undefined;
 
@@ -73,6 +76,7 @@ export class RawObjectDef {
     const stackOrderCandidates: Array<[string, YAMLMap]> = [];
     const representedByCandidates: Array<[string, string]> = [];
     const tags: string[] = [];
+    let quantitative = this.quantitative;
 
     for (const traitName of this.traitNames) {
       const trait = traitsByName.get(traitName);
@@ -88,6 +92,8 @@ export class RawObjectDef {
           passiveNodes.push(asMap(passiveNode, `traits.'${traitName}'.passives`));
       if (trait.stackOrder !== undefined) stackOrderCandidates.push([traitName, trait.stackOrder]);
       if (trait.representedBy !== undefined) representedByCandidates.push([traitName, trait.representedBy]);
+      // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
+      if (trait.quantitative) quantitative = true;
       tags.push(...trait.tags);
     }
 
@@ -173,6 +179,15 @@ export class RawObjectDef {
     const representedBySlotGlobalId =
       representedByName !== undefined ? loader.slotNames.intern(representedByName) : undefined;
 
+    // 量的オブジェクトは注ぐたびにインスタンスが生まれ直すため、生成時ロール（6.2節）を持てない
+    // （移すたびに振り直されてしまう、7.6節）。
+    if (quantitative)
+      for (const propertyDef of propertyDefs)
+        if (propertyDef.hasInitialValueRoll)
+          throw new YamlLoadError(
+            `'${this.name}': quantitative な型のプロパティ '${propertyDef.name}' に生成時ロールの範囲値（value: {min, max}）は使えません（量を移すたびに振り直されるため）。`,
+          );
+
     return new ObjectDef(
       this.globalId,
       this.name,
@@ -187,6 +202,7 @@ export class RawObjectDef {
       actions,
       combinations,
       representedBySlotGlobalId,
+      quantitative,
     );
   }
 }
