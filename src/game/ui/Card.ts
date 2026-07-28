@@ -213,10 +213,7 @@ export class Card extends Phaser.GameObjects.Container {
     circle.lineStyle(Math.max(1, metrics.px(3)), COLOR.cardBorder, 1);
     circle.strokeCircle(0, 0, radius);
 
-    return scene.add.container(paper.x + paper.width - offset, paper.y + offset, [
-      circle,
-      this.stackCount,
-    ]);
+    return scene.add.container(paper.x + paper.width - offset, paper.y + offset, [circle, this.stackCount]);
   }
 
   private showStackCount(): void {
