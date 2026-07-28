@@ -20,7 +20,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
-import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX, INFORMATION_PAPER_INSET } from './ui/informationArt';
+import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX } from './ui/informationArt';
 import { HAND_LANE_TEXTURE, LANE_SEPARATOR_TEXTURE, laneTexture } from './ui/laneArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
@@ -568,7 +568,14 @@ export class PlayScene extends ResponsiveScene {
     const overlap = INFORMATION_OVERLAP_PX * scale;
     page.setScale(scale).setInteractive();
     if (landscape) page.setOrigin(1, 0).setPosition(area.width + overlap, area.y);
-    else page.setOrigin(0, 1).setPosition(area.x, area.height + overlap);
+    else page.setOrigin(0, 1).setPosition(area.x, area.y + area.height + overlap);
+
+    // 縦長すぎる縦型でオプションバーの上に出る余りを、ページのはみ出しごと画面外として塗り潰す。
+    // オプションバーはこの後に置くので、その帯にかぶるぶんは塗り直される。
+    const outside = landscape ? 0 : layout.optionsBar.y;
+    if (outside > 0) {
+      addPanel(this, { x: 0, y: 0, width: this.metrics.width, height: outside }, COLOR.outsideScreen);
+    }
   }
 
   /**
@@ -578,13 +585,12 @@ export class PlayScene extends ResponsiveScene {
    */
   private buildInformationDividers(layout: PlayScreenLayout): void {
     const thickness = this.metrics.px(4);
-    const inset = this.metrics.px(INFORMATION_PAPER_INSET);
+    const content = layout.informationContent;
 
     if (this.metrics.isLandscape) {
       const padding = this.metrics.px(SITUATION_PADDING_LANDSCAPE.x);
-      const x = layout.informationArea.x + padding;
-      // 紙の内側に収める。フィールドエリア側の辺だけ、絵の表紙の縁のぶんを追加で避ける。
-      const width = layout.informationArea.width - inset - padding * 2;
+      const x = content.x + padding;
+      const width = Math.max(0, content.width - padding * 2);
       for (const y of [layout.situationArea.y + layout.situationArea.height, layout.statusArea.y]) {
         this.addDivider({ x, y: y - thickness / 2, width, height: thickness });
       }
@@ -594,9 +600,9 @@ export class PlayScene extends ResponsiveScene {
     const padding = this.metrics.px(SITUATION_PADDING_PORTRAIT.x);
     // 日時・天候の上。
     this.addDivider({
-      x: layout.informationArea.x + padding,
+      x: content.x + padding,
       y: layout.situationArea.y - thickness / 2,
-      width: layout.informationArea.width - padding * 2,
+      width: Math.max(0, content.width - padding * 2),
       height: thickness,
     });
     // ステータスエリアの左（キャラクター表示エリアとの境目）。
@@ -817,8 +823,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 縦型は画面最上部の横長バー（右寄せ）、横型は右サイドバー上段の縦積み。 */
   private buildOptionsBar(area: Rect): void {
-    // 縦型は情報エリアのページの上に載るので、背景板は置かない（横型は右サイドバーなので置く）。
-    if (this.metrics.isLandscape) addPanel(this, area, COLOR.optionsBar);
+    addPanel(this, area, COLOR.optionsBar);
 
     const size = this.metrics.px(SIZE.iconButton);
     const gap = this.metrics.px(SIZE.barGap);
