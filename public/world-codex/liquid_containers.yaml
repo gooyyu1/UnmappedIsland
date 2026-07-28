@@ -21,11 +21,11 @@ traits:
     tags: [liquid]
     quantitative: true
     props:
-      # 量。単位はhydrationと同一スケール（1L ≈ 4800、characters.yaml）。
+      # 量。単位はmL（1 = 1mL、LiquidContainerSystem.md 5節）。
       # 上限は容器のcontentスロットのcapacityが決めるため、ここではrangeを持たない。
       size:
         value: 0
-      # 単位量あたりの重さ。水を100とする（ContainerSystem.md）。
+      # 単位量あたりの重さ。水を100とする＝100が1g/mL（ContainerSystem.md）。
       density:
         value: 100
     combinations:
@@ -47,10 +47,10 @@ traits:
   water_liquid:
     tags: [water_liquid]
     actions:
-      # 1回の飲用 = 250mL相当。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
+      # 1回の飲用 = 250mL。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
       drink:
         transfer:
-          amount: 1200
+          amount: 250
           from_prop: size
           to_object: actor
           to_prop: hydration
@@ -60,7 +60,7 @@ traits:
     actions:
       drink:
         transfer:
-          amount: 1200
+          amount: 250
           from_prop: size
           to_object: actor
           to_prop: hydration
@@ -72,95 +72,93 @@ traits:
   oil_liquid:
     tags: [oil_liquid]
 
-  # 開放度タグ×天候の組み合わせで自分の量を減らす。密閉容器はどのゲートも成立しないため蒸発しない。
+  # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、sunlightのしきい値で決まる上乗せの和
+  # （LiquidContainerSystem.md 6節）。密閉容器はどちらのゲートも成立しないため蒸発しない。
   # 量が尽きたインスタンスはエンジンが消す（quantitativeの規定）。
   evaporating_liquid:
     passives:
+      # 基礎。湿度が未実装のため、雨天は「湿度が高くて乾かない」の代理として除外する。
       - conditions:
           - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: cloudy}
+          - {object: ancestor, prop: weather, op: not_in, value: [light_rain, heavy_rain, storm]}
         accumulate:
           self:
             size: -1
       - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: clear}
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, op: not_in, value: [light_rain, heavy_rain, storm]}
+        accumulate:
+          self:
+            size: -2
+      # 日射による上乗せ。夜はsunlightが0になる（core.yamlのhour）ため成立せず、雨天のsunlightは
+      # 最大6で最も低いしきい値10に届かないため、天候を見る必要がない。
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: sunlight, op: gte, value: 10}
         accumulate:
           self:
             size: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: sunny}
+          - {object: ancestor, prop: sunlight, op: gte, value: 12}
         accumulate:
           self:
-            size: -3
-      - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: scorching}
-        accumulate:
-          self:
-            size: -4
+            size: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: cloudy}
+          - {object: ancestor, prop: sunlight, op: gte, value: 12}
         accumulate:
           self:
             size: -2
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: clear}
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: sunlight, op: gte, value: 15}
         accumulate:
           self:
-            size: -4
+            size: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: sunny}
+          - {object: ancestor, prop: sunlight, op: gte, value: 15}
         accumulate:
           self:
-            size: -6
-      - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: eq, value: scorching}
-        accumulate:
-          self:
-            size: -8
+            size: -2
 
 object_defs:
-  # 容量はcontentスロットのcapacityで持つ。1L = 4800。
+  # 容量はcontentスロットのcapacityで持つ。単位はmLなので、1L = 1000。
   canteen:
     traits: [liquid_container, sealed_container]
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
-        capacity: 4800
+        capacity: 1000
 
   pot:
     traits: [liquid_container, sealed_container]
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
-        capacity: 4800
+        capacity: 1000
 
   bottle:
     traits: [liquid_container, sealed_container]
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
-        capacity: 9600
+        capacity: 2000
 
   jar:
     traits: [liquid_container, narrow_open_container]
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
-        capacity: 19200
+        capacity: 4000
 
   coconut_bowl:
     traits: [liquid_container, wide_open_container]
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
-        capacity: 1200
+        capacity: 250
 
   water_liquid:
     traits: [liquid, water_liquid, evaporating_liquid]
