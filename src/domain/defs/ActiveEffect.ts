@@ -1,7 +1,6 @@
 import type { PropertyValue } from '../runtime/PropertyValue';
 import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
-import { PropertyPath } from './ReferenceRoot';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -52,29 +51,17 @@ export class ActiveEffects extends ActiveEffect {
   }
 }
 
-/**
- * set の1命令（対象プロパティへ絶対値を代入する）。valueRefが設定されていれば、リテラルの代わりに
- * その{object, prop}参照先の現在の実効値を代入する（「リテラルか参照か」の二択、9.2節）。
- */
+/** set の1命令（対象プロパティへリテラルの絶対値を代入する、9.2節）。 */
 export class SetEffect extends ActiveEffect {
   private readonly target: ReferenceRoot;
   private readonly propertyGlobalId: number;
   private readonly value: number;
-  private readonly valueRef: PropertyPath | undefined;
 
-  constructor(target: ReferenceRoot, propertyGlobalId: number, value: number);
-  constructor(target: ReferenceRoot, propertyGlobalId: number, valueRef: PropertyPath);
-  constructor(target: ReferenceRoot, propertyGlobalId: number, valueOrRef: number | PropertyPath) {
+  constructor(target: ReferenceRoot, propertyGlobalId: number, value: number) {
     super();
     this.target = target;
     this.propertyGlobalId = propertyGlobalId;
-    if (valueOrRef instanceof PropertyPath) {
-      this.value = 0;
-      this.valueRef = valueOrRef;
-    } else {
-      this.value = valueOrRef;
-      this.valueRef = undefined;
-    }
+    this.value = value;
   }
 
   apply(
@@ -84,20 +71,7 @@ export class SetEffect extends ActiveEffect {
     dragged: WorldObject | undefined,
   ): void {
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
-    resolved?.setNumber(this.propertyGlobalId, this.resolveValue(owner, actor, dragged), session);
-  }
-
-  /** valueRefが無ければリテラル、あれば参照先の現在の実効値（解決できなければ0）。 */
-  private resolveValue(
-    owner: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): number {
-    if (this.valueRef === undefined) return this.value;
-    const path = this.valueRef;
-    const source = owner.resolveEffectTargetOrAncestor(path.root, path.propertyGlobalId, actor, dragged);
-    const value = source?.tryGetProperty(path.propertyGlobalId);
-    return value !== undefined ? value.getEffectiveValue() : 0;
+    resolved?.setNumber(this.propertyGlobalId, this.value, session);
   }
 }
 

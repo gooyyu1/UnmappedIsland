@@ -585,7 +585,7 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/in/);
   });
 
-  it('setのvalueをプロパティ参照にすると、draggedのプロパティをselfへコピーできる', () => {
+  it('setのvalueにプロパティ参照を書くとエラーになる（リテラルのみ、9.2節）', () => {
     const yaml = `
 object_defs:
   bottle2:
@@ -604,15 +604,7 @@ object_defs:
       content:
         value: oil
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
-    const contentId = codex.propertyNames.getId('content');
-
-    const session = new WorldSession(codex);
-    const bottle = new WorldObject(1, codex.objects.get(codex.objectNames.getId('bottle2')), session);
-    const oilSource = new WorldObject(2, codex.objects.get(codex.objectNames.getId('oil_source')), session);
-
-    expect(bottle.tryExecuteCombination(oilSource, undefined, 'pour_in', session)).toBe(true);
-    expect(bottle.getNumber(contentId)).toBe(codex.symbolNames.getId('oil')); // set: {content: {object: dragged, prop: content}}がdraggedの現在値をそのままコピーする
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/スカラー値/);
   });
 
   it('anyコンビネータはいずれかの葉が真であれば一致する', () => {
