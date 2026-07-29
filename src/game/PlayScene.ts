@@ -13,6 +13,7 @@ import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
+import { statusChangesBetween } from './statusChanges';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
@@ -33,6 +34,7 @@ import { ObjectWindow } from './ui/ObjectWindow';
 import { ProgressRing } from './ui/ProgressRing';
 import { PropertyWindow } from './ui/PropertyWindow';
 import { SlotWindow } from './ui/SlotWindow';
+import type { StatusChange, StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
 import { durationText } from './ui/durationText';
@@ -151,6 +153,12 @@ export class PlayScene extends ResponsiveScene {
    */
   private objectWindow: ObjectWindow | undefined;
   private objectWindowCard: ObjectCardStack | undefined;
+
+  /** ステータスエリアに並んでいるバー。行動のたびに中身を書き換える（showStatuses参照）。 */
+  private statusBars: StatusBar[] = [];
+
+  /** 直前の行動でのステータスの増減。表示名で引く（並びが変わっても対応が取れる）。 */
+  private statusChanges: ReadonlyMap<string, StatusChange> = new Map();
 
   /** 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。 */
   private searching = false;
@@ -500,6 +508,7 @@ export class PlayScene extends ResponsiveScene {
     if (this.searching || this.passingTime) return;
 
     const shownBefore = this.shownInstanceIds();
+    const statusesBefore = this.view.statuses;
     const startedAt = this.gameSession.world.totalMinutes;
 
     this.searching = true;
@@ -510,6 +519,7 @@ export class PlayScene extends ResponsiveScene {
     this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+      this.noteStatusChanges(statusesBefore);
       this.found = this.foundSince(shownBefore);
       this.showView({ origin: this.fixtureLane.pinnedRect });
     });
@@ -603,9 +613,12 @@ export class PlayScene extends ResponsiveScene {
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
+    const statusesBefore = this.view.statuses;
     change();
     this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+      // 増減は画面を作り直す前に控える。作り直したステータスエリアもこれを見て記号を出す。
+      this.noteStatusChanges(statusesBefore);
       // 移動で現在地が変わると、レーンの中身だけでなく現在地カードも背景の絵も総取り替えになる。
       // 差し替えでは追いつかないので画面ごと作り直す（動きは出ない）。
       if (this.gameSession.player.location?.instance !== locationBefore) {
@@ -637,6 +650,7 @@ export class PlayScene extends ResponsiveScene {
 
     this.motion.update(lanes, contents, context);
     this.calendar.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
+    this.showStatuses();
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
 
@@ -867,16 +881,40 @@ export class PlayScene extends ResponsiveScene {
     const padding = this.metrics.px(STATUS_PADDING);
     const gap = this.metrics.px(this.metrics.isLandscape ? 10 : 16);
     const barHeight = StatusBar.height(this.metrics);
+    this.statusBars = this.view.statuses.map(
+      (status, index) =>
+        new StatusBar(
+          this,
+          this.metrics,
+          area.x + padding,
+          area.y + padding + index * (barHeight + gap),
+          area.width - padding * 2,
+          this.statusContent(status),
+        ),
+    );
+  }
+
+  /**
+   * バーの中身を今の状態へ書き換える。ワールドが変われば値も増減の記号も変わるので、行動のたびに
+   * 呼ぶ（showView）。並ぶ項目はキャラクターのプロパティで決まり増減しないため、位置は引き直さない。
+   */
+  private showStatuses(): void {
     this.view.statuses.forEach((status, index) => {
-      new StatusBar(
-        this,
-        this.metrics,
-        area.x + padding,
-        area.y + padding + index * (barHeight + gap),
-        area.width - padding * 2,
-        status,
-      );
+      this.statusBars[index]?.setContent(this.statusContent(status));
     });
+  }
+
+  /** バーに渡す1件分。直前の行動での増減（noteStatusChanges）を添える。 */
+  private statusContent(status: StatusContent): StatusContent {
+    return { ...status, change: this.statusChanges.get(status.name) };
+  }
+
+  /**
+   * 行動の前後でステータスを比べ、増減を控える。次の行動まで記号を出し続けるので、画面を作り直す
+   * 行動（移動）でもそのまま出る。
+   */
+  private noteStatusChanges(before: readonly StatusContent[]): void {
+    this.statusChanges = statusChangesBetween(before, this.view.statuses);
   }
 
   /**
