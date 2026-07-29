@@ -10,6 +10,13 @@ import { COLOR } from './theme';
 const LAG_DELAY_MS = 250;
 const LAG_DURATION_MS = 700;
 
+/** 警戒を示す枠の明滅（片道の時間と、最も薄いときの濃さ）。 */
+const BLINK_DURATION_MS = 450;
+const BLINK_MIN_ALPHA = 0.15;
+
+/** 警戒を示す枠の太さ（通常の枠線より太くして、明滅していることが分かるようにする）。 */
+const ALERT_BORDER_WIDTH = 5;
+
 /**
  * 横方向の進捗バー（枠付きのトラックと、左詰めの塗り）。ステータスバー・探索ウィンドウのように
  * 「全体に対する割合」を見せる場所で共用する。
@@ -21,12 +28,19 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   private readonly barWidth: number;
   private readonly barHeight: number;
   private readonly borderWidth: number;
+  private readonly alertBorderWidth: number;
+  private readonly radius: number;
 
   /** 今の満たされ具合と、減る前の位置に残している赤い帯の右端（減っていなければ同じ値）。 */
   private ratio: number;
   private lagRatio: number;
 
   private lagTween: Phaser.Tweens.Tween | undefined;
+
+  /** 警戒を示す枠。明滅は濃さのtweenだけで見せ、毎フレーム描き直さない。 */
+  private readonly alertFrame: Phaser.GameObjects.Graphics;
+  private alertColor: number | undefined;
+  private blinkTween: Phaser.Tweens.Tween | undefined;
 
   constructor(
     scene: Phaser.Scene,
@@ -42,6 +56,8 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.barWidth = width;
     this.barHeight = height;
     this.borderWidth = Math.max(1, metrics.px(2));
+    this.alertBorderWidth = Math.max(1, metrics.px(ALERT_BORDER_WIDTH));
+    this.radius = height / 4;
     this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
     this.lagRatio = this.ratio;
 
@@ -49,8 +65,15 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.add(this.bar);
     this.draw();
 
-    // 縮んでいる途中で画面を作り直されることがある。止めないと、捨てられたバーを描き続ける。
-    this.once(Phaser.GameObjects.Events.DESTROY, () => this.lagTween?.stop());
+    // 警戒の枠は塗りより手前に重ねる（バーより後に作る）。
+    this.alertFrame = scene.add.graphics().setVisible(false);
+    this.add(this.alertFrame);
+
+    // 動いている途中で画面を作り直されることがある。止めないと、捨てられたバーを動かし続ける。
+    this.once(Phaser.GameObjects.Events.DESTROY, () => {
+      this.lagTween?.stop();
+      this.blinkTween?.stop();
+    });
 
     scene.add.existing(this);
   }
@@ -92,10 +115,41 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     });
   }
 
+  /**
+   * 警戒を示す枠を色で出す（undefinedで消す）。出ている間は濃さが明滅する。
+   * どの域をどの色で示すかは呼び出し側の判断（StatusBar参照）。
+   */
+  setAlertBorder(color: number | undefined): void {
+    if (color === this.alertColor) return;
+    this.alertColor = color;
+
+    if (color === undefined) {
+      this.blinkTween?.stop();
+      this.blinkTween = undefined;
+      this.alertFrame.setVisible(false).setAlpha(1);
+      return;
+    }
+
+    this.alertFrame.clear();
+    drawBox(
+      this.alertFrame,
+      { x: 0, y: 0, width: this.barWidth, height: this.barHeight },
+      { border: color, borderWidth: Math.max(this.borderWidth, this.alertBorderWidth), radius: this.radius },
+    );
+    this.alertFrame.setVisible(true);
+
+    this.blinkTween ??= this.scene.tweens.add({
+      targets: this.alertFrame,
+      alpha: BLINK_MIN_ALPHA,
+      duration: BLINK_DURATION_MS,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
   /** トラック → 赤い帯 → 塗り → 枠線の順に重ねる。 */
   private draw(): void {
-    const { barWidth: width, barHeight: height } = this;
-    const radius = height / 4;
+    const { barWidth: width, barHeight: height, radius } = this;
 
     this.bar.clear();
     drawBox(this.bar, { x: 0, y: 0, width, height }, { fill: COLOR.statusBarTrack, radius });

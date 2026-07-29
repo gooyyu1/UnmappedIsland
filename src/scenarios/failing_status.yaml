@@ -1,0 +1,14 @@
+# ステータスの域ごとの見せ方（ScreenLayout.md ステータスエリア節）を試すための開始状態。
+# 水分だけが致命的域、満腹度が危険域、覚醒度が要注意域で、体力は安全域（＝出ない）になる。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 危険なステータス
+
+seed: 3
+
+player:
+  props:
+    hydration: 400
+    satiety: 800
+    wakefulness: 3000

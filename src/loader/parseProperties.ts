@@ -9,6 +9,7 @@ import {
   tryGetBool,
   tryGetInt,
   tryGetMap,
+  tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
@@ -19,6 +20,8 @@ import { parsePickList } from './parseActionsAndCombinations';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ActiveEffects, SetEffect } from '../domain/defs/ActiveEffect';
+import type { AlertLevel } from '../domain/defs/AlertLevel';
+import { ALERT_LEVELS } from '../domain/defs/AlertLevel';
 import type { ActiveEffect } from '../domain/defs/ActiveEffect';
 import { PickEffect } from '../domain/defs/PickEffect';
 import { PropertyDef, PropertyRange, PropertyStage } from '../domain/defs/PropertyDef';
@@ -198,6 +201,7 @@ function parseStage(
   stageMap: YAMLMap,
 ): PropertyStage {
   const stageName = requireScalar(stageMap, 'name', context);
+  const alert = parseAlertLevel(context, stageMap);
   let stage: PropertyStage;
 
   if (isSymbolProperty) {
@@ -205,10 +209,10 @@ function parseStage(
       throw new YamlLoadError(
         `${context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。`,
       );
-    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName));
+    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert);
   } else {
     const min = tryGetInt(stageMap, 'min', context);
-    stage = new PropertyStage(stageName, min);
+    stage = new PropertyStage(stageName, min, undefined, alert);
   }
 
   // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。
@@ -218,6 +222,19 @@ function parseStage(
       parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), propName, stageName);
 
   return stage;
+}
+
+/** stagesエントリのalert（6.4節）。未指定は安全域。綴り間違いをロード時に捕まえるため一覧と突き合わせる。 */
+function parseAlertLevel(context: string, stageMap: YAMLMap): AlertLevel {
+  const text = tryGetScalar(stageMap, 'alert', context);
+  if (text === undefined) return 'safe';
+
+  const level = ALERT_LEVELS.find((candidate) => candidate === text);
+  if (level === undefined)
+    throw new YamlLoadError(
+      `${context}: 未知のalert '${text}' です（${ALERT_LEVELS.join(' / ')} のいずれかを指定してください）。`,
+    );
+  return level;
 }
 
 /**

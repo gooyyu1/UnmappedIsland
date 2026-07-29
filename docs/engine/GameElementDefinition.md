@@ -297,6 +297,11 @@ props:
   常に配列です、8 節）。
 - ステージの `passives` ブロックには `conditions` も併記できます。この場合、「現在値がこの段階の区間内に
   あること」（`WhenOwnStage`）と `conditions` の両方を満たす間だけ有効になります（AND、8.2 節）。
+- ステージは **`alert`** で「その段階にいる間、値がどの域にあると見なすか」を宣言できます。値は
+  `safe`（安全域）・`caution`（要注意域）・`danger`（危険域）・`fatal`（致命的域）のいずれかで、省略時は
+  `safe` です。UI はこの宣言だけを見てステータスの見せ方（非表示・表示・明滅）を決めます
+  （[`ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節）。`fatal` は**放置すると死に至る**
+  プロパティ（水分など）にだけ付けます。
 
 ```yaml
 props:
@@ -306,12 +311,14 @@ props:
         min: 0
       - name: mild
         min: 20
+        alert: caution
         passives:
           - accumulate:
               parent:
                 temperature: 1
       - name: feverish
         min: 50
+        alert: danger
         passives:
           - accumulate:
               parent:

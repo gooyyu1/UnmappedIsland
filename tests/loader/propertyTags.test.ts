@@ -186,9 +186,10 @@ object_defs:
       codex.propertyTagNames.getId('status'),
     );
 
+    // stagesを持たないプロパティはどの域にも入らない扱い（safe）になる。
     expect(readings).toEqual([
-      { name: 'stamina', value: 25, ratio: 0.25 },
-      { name: 'tick_count', value: 7, ratio: undefined },
+      { name: 'stamina', value: 25, ratio: 0.25, alert: 'safe' },
+      { name: 'tick_count', value: 7, ratio: undefined, alert: 'safe' },
     ]);
   });
 });
