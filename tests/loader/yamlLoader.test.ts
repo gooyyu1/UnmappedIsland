@@ -118,7 +118,7 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // passive / stage / on_min
+  // passive / stage / rangeイベント
   // ------------------------------------------------------------------
 
   it('シンボル型プロパティのstageにminを指定するとエラーになる', () => {
@@ -196,20 +196,34 @@ object_defs:
     expect(characterInstance.getEffectiveValue(attackId)).toBe(12); // off_handへ持ち替えると+2に切り替わる
   });
 
-  it('on_minはrangeが無いとエラーになる', () => {
+  it('on_shortfallはrangeが無いとエラーになる', () => {
     const yaml = `
 object_defs:
   log:
     props:
       life:
         value: 0
-        on_min:
+        on_shortfall:
           destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
   });
 
-  it('on_minの対象にself以外を指定するとエラーになる', () => {
+  it('on_shortfallの対象にself以外を指定するとエラーになる', () => {
+    const yaml = `
+object_defs:
+  log:
+    props:
+      life:
+        value: 0
+        range: {min: 0, max: 100}
+        on_shortfall:
+          destroy: parent
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_shortfall/);
+  });
+
+  it('propの未知のキーはエラーになる（廃止されたon_min/on_maxを含む）', () => {
     const yaml = `
 object_defs:
   log:
@@ -218,8 +232,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 100}
         on_min:
-          destroy: parent
+          destroy: self
 `;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/未知のキー/);
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_min/);
   });
 

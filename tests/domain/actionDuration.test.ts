@@ -215,8 +215,8 @@ object_defs:
     props:
       durability:
         value: 2
-        range: {min: 0, max: 10}
-        on_min:
+        range: {min: 1, max: 10}
+        on_shortfall:
           destroy: self
         passives:
           - accumulate:
@@ -250,8 +250,8 @@ object_defs:
     props:
       durability:
         value: 1
-        range: {min: 0, max: 10}
-        on_min:
+        range: {min: 1, max: 10}
+        on_shortfall:
           destroy: self
         passives:
           - accumulate:

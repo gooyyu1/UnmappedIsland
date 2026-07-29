@@ -330,15 +330,14 @@ function collectPassiveContexts(o) {
   return contexts;
 }
 
-// on_min/on_max/on_overflow/on_shortfall（6節）は、現状selfのみ対応のActiveEffect（GameElementDefinition.md
-// 155行目付近）で、値の境界を跨いだ瞬間に発火する。targetは常にselfだが、書き換え先は宣言元とは別の
-// プロパティであることが多い（例: hourのon_overflowがself.dayを+1する）ため、passivesと同様に
-// 逆引き索引へ含める。
+// on_overflow/on_shortfall（6.3節）は、現状selfのみ対応のActiveEffectで、値がrangeの外へ出た際に
+// 発火する。targetは常にselfだが、書き換え先は宣言元とは別のプロパティであることが多い
+// （例: hourのon_overflowがself.dayを+1する）ため、passivesと同様に逆引き索引へ含める。
 function collectActiveEffectContexts(o) {
   var contexts = [];
   Object.keys(o.props).forEach(function (propName) {
     var p = o.props[propName];
-    ["on_overflow", "on_shortfall", "on_min", "on_max"].forEach(function (eventName) {
+    ["on_overflow", "on_shortfall"].forEach(function (eventName) {
       if (p[eventName]) contexts.push({ node: p[eventName], sourceProperty: propName, eventName: eventName });
     });
   });
@@ -751,8 +750,6 @@ function renderPropertyDetailPage(objName, propName) {
 
     renderOptionalEffect("on_overflow", p.on_overflow) +
     renderOptionalEffect("on_shortfall", p.on_shortfall) +
-    renderOptionalEffect("on_min", p.on_min) +
-    renderOptionalEffect("on_max", p.on_max) +
 
     "<h2>stages</h2>" + (stagesHtml || "<p class=\"muted\">(なし)</p>") +
 

@@ -31,7 +31,7 @@ export interface PropertyWindowOptions {
   /** ウィンドウの見出し（キャラクターの表示名）。 */
   readonly title: string;
 
-  /** タブ一式。並び順はプロパティタグの宣言順（GameElementDefinition.md 6.9節）。 */
+  /** タブ一式。並び順はプロパティタグの宣言順（GameElementDefinition.md 6.7節）。 */
   readonly tabs: readonly PropertyTab[];
 
   /** ウィンドウを収める領域。 */

@@ -17,7 +17,7 @@ export class WorldCodex {
   readonly tagNames: NameRegistry;
 
   /**
-   * プロパティのタグ（6.9節）の名前空間。object_defのタグ（tagNames）とは別で、`property_tags` で
+   * プロパティのタグ（6.7節）の名前空間。object_defのタグ（tagNames）とは別で、`property_tags` で
    * 宣言された順にIDが振られる。UIはこのIDの昇順をカテゴリの表示順として使ってよい。
    */
   readonly propertyTagNames: NameRegistry;

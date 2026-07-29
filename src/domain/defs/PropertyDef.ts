@@ -24,7 +24,7 @@ export class PropertyRange {
 
 /**
  * 6.4節の stages の1段。minとeqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。
- * min: 下限のみの半開区間（数値プロパティ向け）。eq: 完全一致判定（シンボル型プロパティ（6.8節）向け）。
+ * min: 下限のみの半開区間（数値プロパティ向け）。eq: 完全一致判定（シンボル型プロパティ（6.6節）向け）。
  * どちらも未指定ならフォールバック段（どの段にも該当しない場合の受け皿、6.4節）。
  */
 export class PropertyStage {
@@ -65,7 +65,7 @@ export class PropertyDef {
     return this.initialValueRange !== undefined;
   }
 
-  /** 取りうる値域（6.3節）。on_overflow/on_shortfall/on_min/on_maxを使う場合は必須。使わない場合はundefined。 */
+  /** 取りうる値域（6.3節）。on_overflow/on_shortfallを使う場合は必須。使わない場合はundefined。 */
   readonly range: PropertyRange | undefined;
 
   /**
@@ -89,18 +89,6 @@ export class PropertyDef {
   private readonly fallbackStage: PropertyStage | undefined;
 
   /**
-   * on_min（6.5節）。値がrange.min以下である間、毎tick実行されるactive内容。on_overflow/on_shortfallと
-   * 異なり既定の自動生成は行わない（undefinedならon_minを持たない）。rangeが必須。
-   */
-  private readonly onMin: ActiveEffect | undefined;
-
-  /**
-   * on_max（6.6節）。値がrange.max以上である間、毎tick実行されるactive内容。on_minの上限側の鏡像。
-   * 既定の自動生成は行わない（undefinedならon_maxを持たない）。rangeが必須。
-   */
-  private readonly onMax: ActiveEffect | undefined;
-
-  /**
    * inherit: 同名プロパティを定義している最初の祖先（findAncestorWithProperty）の実効値を、自分の
    * 実効値に加算するか。祖先が見つからなければ寄与0。parentではなくancestorなのは、直接の親が
    * このプロパティを持たない場合に備えるため（例: ambient_temperatureは部屋が持つ）。
@@ -108,7 +96,7 @@ export class PropertyDef {
   private readonly inherit: boolean;
 
   /**
-   * このプロパティに付いたタグのグローバルIDの一覧（6.9節）。object_defのタグ（4.1節）とは別の
+   * このプロパティに付いたタグのグローバルIDの一覧（6.7節）。object_defのタグ（4.1節）とは別の
    * 名前空間で、UIがプロパティをカテゴリ別にまとめるために使う。
    */
   readonly tags: readonly number[];
@@ -121,9 +109,7 @@ export class PropertyDef {
     range: PropertyRange | undefined,
     onOverflow: ActiveEffect | undefined,
     stages: readonly PropertyStage[],
-    onMin?: ActiveEffect,
     onShortfall?: ActiveEffect,
-    onMax?: ActiveEffect,
     inherit = false,
     tags: readonly number[] = [],
   ) {
@@ -134,16 +120,14 @@ export class PropertyDef {
     this.range = range;
     this.onOverflow = onOverflow;
     this.stages = stages;
-    this.onMin = onMin;
     this.onShortfall = onShortfall;
-    this.onMax = onMax;
     this.inherit = inherit;
     this.tags = tags;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
   }
 
-  /** このプロパティにタグ（6.9節）が付いているか。 */
+  /** このプロパティにタグ（6.7節）が付いているか。 */
   hasTag(tagGlobalId: number): boolean {
     return this.tags.includes(tagGlobalId);
   }
@@ -174,26 +158,15 @@ export class PropertyDef {
   }
 
   /**
-   * number（変更直後の実体値）に対してon_max・on_min・on_overflow・on_shortfall（6.3・6.5・6.6節）を
-   * 判定し、該当するものをowner自身へ適用する。rangeが未定義なら何もしない。
+   * number（変更直後の実体値）に対してon_overflow・on_shortfall（6.3節）を判定し、該当するものを
+   * owner自身へ適用する。rangeが未定義なら何もしない。
    *
-   * 判定順はon_max→on_min→on_overflow→on_shortfall。観測者（on_max/on_min: 値を書き換えず境界到達を
-   * 報告する）を先に、補正者（on_overflow/on_shortfall: 折り返し等で値を書き換える）を後に評価する。
-   * 補正を先にすると値がrange内へ戻ってしまい、循環プロパティが一度にrange幅を飛び越えた場合など
-   * 「境界へ到達していた」事実を観測者が見逃すため、この順序は変えてはならない。
-   *
-   * on_overflow/on_shortfallの適用はowner側のadd/setNumberを通って本メソッドを再帰的に呼ぶため、
-   * 1回の呼び出しの中で複数span分の溢れや繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が解決される。
+   * 適用はowner側のadd/setNumberを通って本メソッドを再帰的に呼ぶため、1回の呼び出しの中で
+   * 複数span分の溢れや繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が解決される。
    */
   checkRangeEvents(number: number, owner: WorldObject, session: WorldSession): void {
     if (this.range === undefined) return;
     const range = this.range;
-
-    if (this.onMax !== undefined && number >= range.max)
-      owner.applyActiveEffect(this.onMax, session, undefined, undefined);
-
-    if (this.onMin !== undefined && number <= range.min)
-      owner.applyActiveEffect(this.onMin, session, undefined, undefined);
 
     if (this.onOverflow !== undefined && number > range.max)
       owner.applyActiveEffect(this.onOverflow, session, undefined, undefined);

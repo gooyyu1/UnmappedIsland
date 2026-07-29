@@ -186,7 +186,7 @@ const INJURY_ICON = '🩹';
 const UNNAMED_LOCATION = '名もなき土地';
 
 /**
- * ステータスエリアへ常時出すプロパティに付けるタグ（GameElementDefinition.md 6.9節）。
+ * ステータスエリアへ常時出すプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
  * 健康・栄養といったカテゴリのタグと重ねて付ける（満腹度はstatusでありnutritionでもある）。
  */
 const STATUS_TAG = 'status';

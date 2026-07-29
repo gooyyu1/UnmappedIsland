@@ -59,8 +59,7 @@ export class PropertyValue {
   }
 
   /**
-   * 数値を加減算し（不可逆）、値が変わった直後にon_overflow・on_shortfall・on_min・on_max
-   * （6.3節・6.5節・6.6節）の判定を行う。
+   * 数値を加減算し（不可逆）、値が変わった直後にon_overflow・on_shortfall（6.3節）の判定を行う。
    *
    * sessionが未指定の場合は判定を行わない（呼び出し側が後で明示的にtick()を呼んで判定させる場合。
    * WorldObject.addNumber参照）。
@@ -139,8 +138,8 @@ export class PropertyValue {
   }
 
   /**
-   * accumulateを実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節・6.5節・6.6節）を
-   * 判定する。1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
+   * accumulateを実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節）を判定する。
+   * 1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
    */
   tick(session: WorldSession): void {
     for (const c of this.accumulateEffects) this._number += c.activeAmount();
@@ -157,7 +156,7 @@ export class PropertyValue {
   }
 
   /**
-   * タグ（6.9節）が付いていれば今の値を読み取る。付いていなければundefined。実効値で読むのは、
+   * タグ（6.7節）が付いていれば今の値を読み取る。付いていなければundefined。実効値で読むのは、
    * 画面に出すのが「今そう見えている値」（modify・inheritを加味した値）であるため。
    */
   readIfTagged(tagGlobalId: number): PropertyReading | undefined {

@@ -103,7 +103,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 - `move` は、`self` のプロパティ（`to_prop`）が保持する **インスタンスID** のオブジェクトの中へ
   `actor` を移動する。移動先が定義時点で決まらず生成時に確定する（道の移動アクション）ため、
   `object_def` 参照ではなくインスタンスIDで指す。
-- プロパティの rangeイベント（`on_min`/`on_max`/`on_overflow`/`on_shortfall`、6節）も**同じ**
+- プロパティの rangeイベント（`on_overflow`/`on_shortfall`、6.3節）も**同じ**
   `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。その文脈では
   actor/dragged が null で、対象は `self` のみ（ロード時に強制）。
 

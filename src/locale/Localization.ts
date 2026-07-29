@@ -122,7 +122,7 @@ export class Localization {
     this.propertyTags = propertyTags;
   }
 
-  /** プロパティのタグ（GameElementDefinition.md 6.9節）の表示文字列。未登録なら識別子そのもの。 */
+  /** プロパティのタグ（GameElementDefinition.md 6.7節）の表示文字列。未登録なら識別子そのもの。 */
   propertyTag(tagName: string): Texts {
     const declared = this.propertyTags.get(tagName);
     return new Texts(declared?.displayName ?? tagName, declared?.description);

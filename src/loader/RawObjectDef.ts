@@ -207,7 +207,7 @@ export class RawObjectDef {
 }
 
 /**
- * propsのフィールドのうち、trait側と自分自身の指定を上書きではなく足し合わせるもの（6.9節）。
+ * propsのフィールドのうち、trait側と自分自身の指定を上書きではなく足し合わせるもの（6.7節）。
  * タグは集合であり、object_def側が1つ足しただけでtrait由来のカテゴリを失うのは事故になるため。
  */
 const PROP_UNION_KEYS = ['tags'];

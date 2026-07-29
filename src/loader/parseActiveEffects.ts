@@ -267,7 +267,7 @@ function parseMove(
 ): MoveEffect {
   if (selfOnly)
     throw new YamlLoadError(
-      `${context}: moveはon_min/on_max/on_overflow/on_shortfallでは使えません（actorが存在しないため）。`,
+      `${context}: moveはon_overflow/on_shortfallでは使えません（actorが存在しないため）。`,
     );
 
   const objectRaw = requireScalar(map, 'object', context);
