@@ -107,6 +107,12 @@ export class PropertyDef {
    */
   private readonly inherit: boolean;
 
+  /**
+   * このプロパティに付いたタグのグローバルIDの一覧（6.9節）。object_defのタグ（4.1節）とは別の
+   * 名前空間で、UIがプロパティをカテゴリ別にまとめるために使う。
+   */
+  readonly tags: readonly number[];
+
   constructor(
     globalId: number,
     name: string,
@@ -119,6 +125,7 @@ export class PropertyDef {
     onShortfall?: ActiveEffect,
     onMax?: ActiveEffect,
     inherit = false,
+    tags: readonly number[] = [],
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -131,8 +138,25 @@ export class PropertyDef {
     this.onShortfall = onShortfall;
     this.onMax = onMax;
     this.inherit = inherit;
+    this.tags = tags;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
+  }
+
+  /** このプロパティにタグ（6.9節）が付いているか。 */
+  hasTag(tagGlobalId: number): boolean {
+    return this.tags.includes(tagGlobalId);
+  }
+
+  /**
+   * rangeの中での値の位置（0〜1）。バー表示のための導出値で、rangeを持たないプロパティ（＝上下限が
+   * 無く「満たされ具合」を定義できない）と幅0のrangeではundefinedを返す。
+   */
+  ratioOf(value: number): number | undefined {
+    if (this.range === undefined) return undefined;
+    const width = this.range.max - this.range.min;
+    if (width <= 0) return undefined;
+    return (this.range.clamp(value) - this.range.min) / width;
   }
 
   /**

@@ -36,8 +36,8 @@
 
 ### 3.1 ルート構造
 
-ファイル全体が 1 つの `WorldCodex` を表します。専用のルートキーは置かず、`object_defs` と `traits` の 2 つだけを
-トップレベルキーとして持ちます。
+ファイル全体が 1 つの `WorldCodex` を表します。専用のルートキーは置かず、`object_defs`・`traits` と、
+プロパティのカテゴリを宣言する `property_tags`（6.9 節）をトップレベルキーとして持ちます。
 
 ### 3.2 命名規則
 
@@ -88,6 +88,8 @@ object_defs:
     tags: [location]     # locationトレイトを一切参照しなくても、直接同じタグを宣言できる
 ```
 
+ここでいうタグは `object_def` に付くもので、プロパティに付けるタグ（6.9 節）とは別の名前空間です。
+
 タグは、`slots.accepts`（7.2節）・`combinations.with`（12.1節）が型・グループを指定する唯一の手段です。
 `object_defs` の id や trait 名では直接マッチングしません（trait は合成後に消える存在であり、外部から参照
 すべきではないため）。`beach` の例のように trait を経由せず直接 `tags` を書いても、同じタグを共有していれば
@@ -103,6 +105,7 @@ object_defs:
   - trait 側で `value` を持たないプロパティ = object_def 側で値を与えることが必須
   - trait 側で `value` を持つプロパティ = デフォルト値。object_def 側で省略可、上書きも可
   - object_def 側で一部属性（例: `value`）だけを上書きした場合、残りの属性（`unit` など）は trait 側の値を引き継ぐ
+  - 例外として `props` の `tags`（6.9 節）だけは上書きせず足し合わせる
 
 ```yaml
 traits:
@@ -397,6 +400,40 @@ props:
   シンボル型のプロパティは `eq`/`neq`/`in`/`not_in` で比較する用途を想定しています。
 - `range`/`on_overflow`/`on_shortfall`/`stages` はいずれも数値の大小関係を前提にした仕組みのため、
   シンボル型のプロパティと組み合わせても意味のある結果にはなりません。
+
+### 6.9 tags（プロパティのカテゴリ）
+
+プロパティは `tags` でカテゴリ分けできます。キャラクターのように多数のプロパティを持つ型を、UI が
+「健康」「栄養」のようなまとまりに分けて見せるための仕組みです。
+
+タグ名はトップレベルの `property_tags` で宣言し、`props` 側はそこで宣言した名前しか使えません
+（未宣言の名前はロード時エラー。綴り間違いをその場で捕まえるため）。**宣言した順がそのまま UI での
+表示順**になります。
+
+```yaml
+property_tags:
+  status:
+  health:
+  nutrition:
+
+object_defs:
+  character:
+    props:
+      satiety:
+        tags: [status, nutrition]
+        value: 9600
+        range: {min: 0, max: 9600}
+```
+
+- **`object_defs` のタグ（4.1 節）とは別の名前空間**です。`slots.accepts`・`combinations.with`・
+  `conditions` の `tag`（14.3・14.4 節）が見るのは 4.1 節のタグだけで、プロパティのタグは参照しません。
+- 1 つのプロパティに複数のタグを付けられます（上の例の `satiety` は「常時ステータスエリアに出す」＝
+  `status` であり、栄養カテゴリの一員でもあります）。
+- **trait 経由のタグは合成されます**。`props` の他のフィールド（`value`・`range` など）は trait 側の
+  指定を object_def 側が上書きしますが、`tags` だけは足し合わせます（5 節）。タグは集合であり、
+  object_def 側がタグを1つ足しただけで trait 由来のカテゴリを失うのは事故になるためです。
+- `property_tags` のエントリは今のところ中身を持ちません（`status:` のようにキーだけを書きます）。
+  タブに出す表示名は他の識別子と同様 locale 側が持ちます（[`Localization.md`](./Localization.md)）。
 
 ## 7. slots（親子関係とコンテナ）
 

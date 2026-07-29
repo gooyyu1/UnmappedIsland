@@ -64,6 +64,39 @@ describe('characters.yamlのcharacter定義', () => {
     expect(prop.range?.max).toBe(expectedMax);
   });
 
+  // statusはステータスエリアへ常時出すものに付ける（ScreenLayout.md）。カテゴリのタグと重ねて付く。
+  it.each([
+    ['satiety', ['status', 'nutrition']],
+    ['hydration', ['status', 'nutrition']],
+    ['wakefulness', ['status', 'health']],
+    ['stamina', ['status', 'health']],
+    ['body_fat', ['nutrition']],
+    ['vegetable_nutrition', ['nutrition']],
+    ['meat_nutrition', ['nutrition']],
+    ['grain_tuber_nutrition', ['nutrition']],
+  ])('%sは期待されるプロパティタグを持つ', (name, expectedTags) => {
+    const character = codex.objects.get(codex.objectNames.getId('character'));
+    const tagNames = propOf(character, name).tags.map((id) => codex.propertyTagNames.getName(id));
+
+    expect(tagNames.sort()).toEqual([...expectedTags].sort());
+  });
+
+  it('ステータスエリアに出るのは4件で、残りはプロパティウィンドウでだけ見られる', () => {
+    const character = codex.objects.get(codex.objectNames.getId('character'));
+    const instance = new WorldObject(1, character, new WorldSession(codex));
+
+    const status = instance.readPropertiesWithTag(codex.propertyTagNames.getId('status'));
+    const nutrition = instance.readPropertiesWithTag(codex.propertyTagNames.getId('nutrition'));
+
+    expect(status.map((reading) => reading.name)).toEqual([
+      'satiety',
+      'hydration',
+      'wakefulness',
+      'stamina',
+    ]);
+    expect(nutrition.map((reading) => reading.name)).toContain('body_fat');
+  });
+
   // hydrationだけは実単位のmLに載るため-25/tick（LiquidContainerSystem.md 5節）。
   it.each([
     ['satiety', 100],

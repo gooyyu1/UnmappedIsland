@@ -2,6 +2,15 @@
 # locationsスロット・locationトレイトのみを含む。個々のlocation種別と道はlocations.yaml、
 # 地形生成はterrain_generation.yamlが持つ。
 
+# プロパティのカテゴリ（GameElementDefinition.md 6.9節）。props側の`tags`はここで宣言した名前しか
+# 使えない。宣言順がそのままUIでのタブの並び順になる。
+property_tags:
+  # ステータスエリアに常時バーで出すもの。他のカテゴリと重ねて付ける（満腹度はstatusでありnutrition
+  # でもある）ため、「どのカテゴリか」ではなく「常に見せるか」だけを表すタグとして独立させている。
+  status:
+  health:
+  nutrition:
+
 traits:
   # あらゆる「場所」が探索の可否によらず共通して持つ構造（ExplorationSystem.md参照）。
   # worldのlocationsスロットの受け入れ判定用のタグ（4節・7.2節）もこのtraitが配る。

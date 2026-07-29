@@ -119,6 +119,7 @@ export function parseProp(
   }
 
   const inherit = tryGetBool(node, 'inherit', context, false);
+  const tags = parsePropertyTags(loader, context, node);
 
   return new PropertyDef(
     propertyGlobalId,
@@ -132,7 +133,33 @@ export function parseProp(
     onShortfall,
     onMax,
     inherit,
+    tags,
   );
+}
+
+/**
+ * props.'name'.tags（6.9節）を読む。未宣言のタグ名はエラーにする（object_defのtagsと違い、
+ * property_tagsという宣言の場があるため、綴り間違いをロード時に捕まえられる）。
+ */
+function parsePropertyTags(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YAMLMap,
+): readonly number[] {
+  const tagsNode = tryGetSeq(node, 'tags', context);
+  if (tagsNode === undefined) return [];
+
+  const tagIds = new Set<number>();
+  for (const item of tagsNode.items as YamlNode[]) {
+    const tagName = asScalarText(item, context);
+    const tagId = loader.propertyTagNames.tryGetId(tagName);
+    if (tagId === undefined)
+      throw new YamlLoadError(
+        `${context}: プロパティタグ '${tagName}' が property_tags（6.9節）で宣言されていません。`,
+      );
+    tagIds.add(tagId);
+  }
+  return [...tagIds];
 }
 
 /**

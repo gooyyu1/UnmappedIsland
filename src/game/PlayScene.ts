@@ -28,6 +28,7 @@ import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
 import { ModalDialog } from './ui/ModalDialog';
 import { ProgressRing } from './ui/ProgressRing';
+import { PropertyWindow } from './ui/PropertyWindow';
 import { SlotWindow } from './ui/SlotWindow';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
@@ -137,6 +138,9 @@ export class PlayScene extends ResponsiveScene {
   private slotWindow: SlotWindow | undefined;
   private slotWindowPlace: CardPlace | undefined;
 
+  /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
+  private propertyWindow: PropertyWindow | undefined;
+
   /** 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。 */
   private searching = false;
   private found: readonly CardContent[] = [];
@@ -169,9 +173,11 @@ export class PlayScene extends ResponsiveScene {
     // 開いていた子ウィンドウは、画面を作り直したあと同じものを開き直す（表示物は捨てられているため）。
     const wasExploring = this.explorationWindow !== undefined;
     const openedPlace = this.slotWindowPlace;
+    const wasShowingProperties = this.propertyWindow !== undefined;
     this.explorationWindow = undefined;
     this.slotWindow = undefined;
     this.slotWindowPlace = undefined;
+    this.propertyWindow = undefined;
     this.fieldArea = layout.fieldArea;
     this.slotWindowArea = layout.slotWindowArea;
 
@@ -190,6 +196,7 @@ export class PlayScene extends ResponsiveScene {
     if (!this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
     if (wasExploring) this.openExplorationWindow();
     if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
+    if (wasShowingProperties) this.openPropertyWindow();
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
@@ -648,6 +655,7 @@ export class PlayScene extends ResponsiveScene {
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
       icon: '🧍',
       name: this.view.characterName,
+      onTap: () => this.openPropertyWindow(),
     });
 
     const infoX = area.x + padding + portraitWidth + gap;
@@ -779,9 +787,25 @@ export class PlayScene extends ResponsiveScene {
         area.x + padding,
         area.y + padding + index * (barHeight + gap),
         area.width - padding * 2,
-        status.name,
-        status.ratio,
+        status,
       );
+    });
+  }
+
+  /**
+   * キャラクターのプロパティをタグごとに見せるウィンドウ（ポートレイトカードのタップで開く）。
+   * ステータスエリアに出ていない分も含めて、ここで全部のカテゴリを見られる。
+   */
+  private openPropertyWindow(): void {
+    if (this.propertyWindow !== undefined) return;
+
+    this.propertyWindow = new PropertyWindow(this, this.metrics, {
+      title: this.view.characterName,
+      tabs: this.view.propertyCategories,
+      area: this.slotWindowArea,
+      onClose: () => {
+        this.propertyWindow = undefined;
+      },
     });
   }
 

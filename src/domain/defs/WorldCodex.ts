@@ -5,7 +5,7 @@ import type { WellKnownProperties } from './WellKnownProperties';
 
 /**
  * ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。
- * 本体データ（ObjectDefTable）、5種の独立した名前空間（object/property/slot/tag/symbol）の
+ * 本体データ（ObjectDefTable）、6種の独立した名前空間（object/property/slot/tag/property_tag/symbol）の
  * NameRegistry、およびWellKnownPropertiesを持つ。ロード完了後は不変として扱う。
  * symbolNamesはシンボル型props（6節）の値の名前空間。実行時状態（WorldObject）は含まない
  * （runtimeが担う）。
@@ -15,6 +15,13 @@ export class WorldCodex {
   readonly propertyNames: NameRegistry;
   readonly slotNames: NameRegistry;
   readonly tagNames: NameRegistry;
+
+  /**
+   * プロパティのタグ（6.9節）の名前空間。object_defのタグ（tagNames）とは別で、`property_tags` で
+   * 宣言された順にIDが振られる。UIはこのIDの昇順をカテゴリの表示順として使ってよい。
+   */
+  readonly propertyTagNames: NameRegistry;
+
   readonly symbolNames: NameRegistry;
 
   readonly objects: ObjectDefTable;
@@ -29,6 +36,7 @@ export class WorldCodex {
     propertyNames: NameRegistry,
     slotNames: NameRegistry,
     tagNames: NameRegistry,
+    propertyTagNames: NameRegistry,
     symbolNames: NameRegistry,
     objects: ObjectDefTable,
     wellKnown: WellKnownProperties,
@@ -38,6 +46,7 @@ export class WorldCodex {
     this.propertyNames = propertyNames;
     this.slotNames = slotNames;
     this.tagNames = tagNames;
+    this.propertyTagNames = propertyTagNames;
     this.symbolNames = symbolNames;
     this.objects = objects;
     this.wellKnown = wellKnown;

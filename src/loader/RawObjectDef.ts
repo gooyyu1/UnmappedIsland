@@ -1,5 +1,4 @@
-import type { YAMLSeq } from 'yaml';
-import { YAMLMap, Scalar } from 'yaml';
+import { YAMLMap, YAMLSeq, Scalar, isSeq } from 'yaml';
 import type { YamlNode } from './yamlMapping';
 import { asMap, entriesInOrder, requireScalar, tryGetBool } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
@@ -97,7 +96,7 @@ export class RawObjectDef {
       tags.push(...trait.tags);
     }
 
-    const mergedProps = mergeIdentifierMaps(traitProps, this.props, `'${this.name}'のprops`);
+    const mergedProps = mergeIdentifierMaps(traitProps, this.props, `'${this.name}'のprops`, PROP_UNION_KEYS);
     const mergedSlots = mergeIdentifierMaps(traitSlots, this.slots, `'${this.name}'のslots`);
     const mergedActions = mergeIdentifierMaps(traitActions, this.actions, `'${this.name}'のactions`);
     const mergedCombinations = mergeIdentifierMaps(
@@ -207,10 +206,17 @@ export class RawObjectDef {
   }
 }
 
+/**
+ * propsのフィールドのうち、trait側と自分自身の指定を上書きではなく足し合わせるもの（6.9節）。
+ * タグは集合であり、object_def側が1つ足しただけでtrait由来のカテゴリを失うのは事故になるため。
+ */
+const PROP_UNION_KEYS = ['tags'];
+
 function mergeIdentifierMaps(
   traitMaps: ReadonlyArray<[string, YAMLMap | undefined]>,
   ownMap: YAMLMap | undefined,
   fieldLabel: string,
+  unionKeys: readonly string[] = [],
 ): YAMLMap | undefined {
   const order: string[] = [];
   const byKey = new Map<string, YamlNode>();
@@ -233,7 +239,10 @@ function mergeIdentifierMaps(
     for (const [key, value] of entriesInOrder(ownMap)) {
       if (byKey.has(key)) {
         const traitValue = byKey.get(key) as YAMLMap;
-        byKey.set(key, shallowMergeFields(asMap(traitValue, fieldLabel), asMap(value, fieldLabel)));
+        byKey.set(
+          key,
+          shallowMergeFields(asMap(traitValue, fieldLabel), asMap(value, fieldLabel), unionKeys),
+        );
       } else {
         order.push(key);
         byKey.set(key, value);
@@ -248,8 +257,15 @@ function mergeIdentifierMaps(
   return result;
 }
 
-/** baseNodeのフィールドを持ちつつ、overlayNodeにあるフィールドで上書き・追加する（5節）。 */
-function shallowMergeFields(baseNode: YAMLMap, overlayNode: YAMLMap): YAMLMap {
+/**
+ * baseNodeのフィールドを持ちつつ、overlayNodeにあるフィールドで上書き・追加する（5節）。
+ * unionKeysに挙げたフィールドだけは、両方が配列なら上書きせず連結する（PROP_UNION_KEYS参照）。
+ */
+function shallowMergeFields(
+  baseNode: YAMLMap,
+  overlayNode: YAMLMap,
+  unionKeys: readonly string[],
+): YAMLMap {
   const order: string[] = [];
   const byKey = new Map<string, YamlNode>();
 
@@ -259,11 +275,21 @@ function shallowMergeFields(baseNode: YAMLMap, overlayNode: YAMLMap): YAMLMap {
   }
 
   for (const [key, value] of entriesInOrder(overlayNode)) {
-    if (!byKey.has(key)) order.push(key);
-    byKey.set(key, value);
+    const base = byKey.get(key);
+    if (base === undefined) order.push(key);
+    byKey.set(key, unionKeys.includes(key) ? concatSeqs(base, value) : value);
   }
 
   const result = new YAMLMap();
   for (const key of order) result.add({ key: new Scalar(key), value: byKey.get(key) });
   return result;
+}
+
+/** baseとoverlayがどちらも配列なら連結した新しい配列を、そうでなければoverlayをそのまま返す。 */
+function concatSeqs(base: YamlNode | undefined, overlay: YamlNode): YamlNode {
+  if (base === undefined || !isSeq(base) || !isSeq(overlay)) return overlay;
+
+  const merged = new YAMLSeq();
+  for (const item of [...base.items, ...overlay.items]) merged.add(item);
+  return merged;
 }

@@ -32,6 +32,14 @@ describe('core.yamlのworld定義', () => {
     return slot;
   }
 
+  it('property_tagsは宣言順にIDが振られる（UIのタブの並び順になる）', () => {
+    const declared = [...Array(codex.propertyTagNames.count).keys()].map((id) =>
+      codex.propertyTagNames.getName(id),
+    );
+
+    expect(declared).toEqual(['status', 'health', 'nutrition']);
+  });
+
   it('worldはシングルトンで、期待されるデフォルトプロパティ値を持つ', () => {
     const world = codex.objects.get(codex.objectNames.getId('world'));
     expect(world.isSingleton).toBe(true);

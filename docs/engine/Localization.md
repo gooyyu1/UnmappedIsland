@@ -61,6 +61,17 @@ object_texts:
 `default` に書いた `display_name`/`description`（オブジェクト自身の組）は使いません。使ってしまうと
 未登録のオブジェクトがすべて同じ名前で表示されるため、`default` はメンバーのフォールバック専用です。
 
+## property_tag_texts: プロパティのカテゴリ名
+
+プロパティのタグ（[GameElementDefinition.md](./GameElementDefinition.md) 6.9節）は、どのオブジェクトにも
+属さない独立した識別子なので、`object_texts` とは別のトップレベルの節に書きます。
+
+```yaml
+property_tag_texts:
+  nutrition:
+    display_name: 栄養
+```
+
 ## 引き方と欠落時の扱い
 
 `Localization`（`src/locale/Localization.ts`）が対応表を保持します。`object(識別子)` で1つの
@@ -72,6 +83,7 @@ locale.object('coconut').description          // '硬い殻に覆われた実。
 locale.object('coconut').action('eat').displayName
 locale.object('coconut').prop('freshness').displayName
 locale.object('coconut').combination('pour_in').displayName
+locale.propertyTag('nutrition').displayName   // '栄養'
 ```
 
 **`displayName` は、対応表に無ければ識別子そのものを返します。** 表示文字列の欠落でゲームが止まるより、

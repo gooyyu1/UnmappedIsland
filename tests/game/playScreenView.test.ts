@@ -339,6 +339,48 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     });
   });
 
+  it('ステータスエリアには、statusタグが付いたプロパティだけが実際の値で並ぶ', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const statusTagId = codex.propertyTagNames.getId('status');
+    const tagged = game.player.instance.readPropertiesWithTag(statusTagId);
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.statuses).toHaveLength(tagged.length);
+    // 初期値はどれもmax（characters.yaml）なので、バーは満タンになる。
+    expect(view.statuses.map((status) => status.ratio)).toEqual(tagged.map(() => 1));
+    // localeに登録の無いcharacterでは識別子がそのまま出る（Localization.md）。
+    expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((reading) => reading.name));
+  });
+
+  it('プロパティウィンドウのタブはproperty_tagsの宣言順で、中身のないタグは出ない', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const declared = [...Array(codex.propertyTagNames.count).keys()].map((id) =>
+      codex.propertyTagNames.getName(id),
+    );
+
+    const view = fromGameSession(game, codex, locale);
+
+    const shown = declared.filter(
+      (name) =>
+        game.player.instance.readPropertiesWithTag(codex.propertyTagNames.getId(name)).length > 0,
+    );
+    expect(view.propertyCategories.map((category) => category.name)).toEqual(shown);
+    for (const category of view.propertyCategories) expect(category.entries.length).toBeGreaterThan(0);
+  });
+
+  it('プロパティウィンドウには、ステータスエリアに出ないプロパティも出る', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+
+    const view = fromGameSession(game, codex, locale);
+
+    const shown = new Set(view.propertyCategories.flatMap((c) => c.entries.map((e) => e.name)));
+    const inStatusArea = new Set(view.statuses.map((status) => status.name));
+    // body_fatはnutritionタグだけを持つ（characters.yaml）ため、ウィンドウにだけ現れる。
+    expect(shown.has('body_fat')).toBe(true);
+    expect(inStatusArea.has('body_fat')).toBe(false);
+  });
+
   it('現在地は移動に追従する', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);
