@@ -46,6 +46,11 @@ export class CombinationDef {
     return draggedDef.tags.includes(this.with);
   }
 
+  /** この組み合わせにかかるゲーム内時間（分）。扱いはActionDef.minutesForと同じ。 */
+  minutesFor(self: WorldObject, dragged: WorldObject, actor: WorldObject | undefined): number {
+    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(self, actor, dragged));
+  }
+
   tryExecute(
     self: WorldObject,
     dragged: WorldObject,
@@ -60,9 +65,7 @@ export class CombinationDef {
       return false;
 
     // 時間進行の順序と、参照durationを進行前に解決する理由はActionDef.tryExecuteと同じ。
-    const minutes = this.duration !== undefined ? Math.trunc(this.duration.resolve(self, actor, dragged)) : 0;
-
-    if (!spendDuration(minutes, session, [self, dragged, actor])) return false;
+    if (!spendDuration(this.minutesFor(self, dragged, actor), session, [self, dragged, actor])) return false;
 
     if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, dragged);
     return true;

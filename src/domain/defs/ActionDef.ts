@@ -43,6 +43,16 @@ export class ActionDef {
     this.duration = duration;
   }
 
+  /**
+   * この行動にかかるゲーム内時間（分）。durationを省いていれば0。
+   *
+   * 「今のselfの状態から見て、どれだけかかるか」なので、時間を進める前に解決する（切れ味の悪い刃物ほど
+   * 時間がかかる、が書けるように）。実行前に画面へ見せる用途にも使う。
+   */
+  minutesFor(self: WorldObject, actor: WorldObject | undefined): number {
+    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(self, actor, undefined));
+  }
+
   tryExecute(self: WorldObject, actor: WorldObject | undefined, session: WorldSession): boolean {
     if (
       this.conditions !== undefined &&
@@ -50,13 +60,8 @@ export class ActionDef {
     )
       return false;
 
-    // 所要時間は「今のselfの状態から見て、どれだけかかるか」なので、時間を進める前に解決する
-    // （切れ味の悪い刃物ほど時間がかかる、が書けるように）。
-    const minutes =
-      this.duration !== undefined ? Math.trunc(this.duration.resolve(self, actor, undefined)) : 0;
-
     // 時間はeffect適用より先に進める。経過中に関与オブジェクトが壊れたら行動は成立しない（actionTime参照）。
-    if (!spendDuration(minutes, session, [self, actor])) return false;
+    if (!spendDuration(this.minutesFor(self, actor), session, [self, actor])) return false;
 
     if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, undefined);
     return true;

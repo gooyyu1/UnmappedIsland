@@ -126,6 +126,28 @@ export class ObjectDef {
     return action !== undefined && action.tryExecute(resolved, actor, session);
   }
 
+  /** actionNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。対象の解決はtryExecuteActionと同じ。 */
+  actionMinutes(self: WorldObject, actor: WorldObject | undefined, actionName: string): number {
+    const resolved = self.resolveInteractionTarget();
+    return resolved.def.actions.find((a) => a.name === actionName)?.minutesFor(resolved, actor) ?? 0;
+  }
+
+  /** combinationNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。 */
+  combinationMinutes(
+    self: WorldObject,
+    dragged: WorldObject,
+    actor: WorldObject | undefined,
+    combinationName: string,
+  ): number {
+    const resolvedSelf = self.resolveInteractionTarget();
+    const resolvedDragged = dragged.resolveInteractionTarget();
+    return (
+      resolvedSelf.def.combinations
+        .find((c) => c.name === combinationName)
+        ?.minutesFor(resolvedSelf, resolvedDragged, actor) ?? 0
+    );
+  }
+
   tryExecuteCombination(
     self: WorldObject,
     dragged: WorldObject,
