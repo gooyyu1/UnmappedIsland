@@ -18,6 +18,11 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   `with`（タグのグローバルID）がドラッグされてきたカードとのマッチング条件になる。
   対称的な組み合わせは両側のカードに定義する（12.3節）。
 
+2種が違うのは**入口（どう選ばれるか）だけ**なので、どちらも `Domain.Defs.InteractionDef` を継承し、
+選ばれた後の実行（2節）と所要時間の解決はその基底クラスが1箇所で持つ。派生が足すのは、
+`ActionDef` が `showMenu`、`CombinationDef` が `with` によるマッチングだけ。`dragged` はドラッグ型
+だけが持つ相手で、メニュー型では `undefined` のまま同じ経路を通る。
+
 実行時の入口は `Runtime.WorldObject` の3メソッド。
 
 - `TryExecuteAction(actionName, actor, session)`
@@ -31,7 +36,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 ## 2. 実行パイプライン
 
-`TryExecute` は次の順に進み、途中で失敗すると `false` を返して何も適用しない。
+実行は次の順に進み、途中で失敗すると `false` を返して何も適用しない。順序に意味があるため、
+実装は `InteractionDef` に1つだけ置く（`with` マッチングだけは `CombinationDef` が先に見る）。
 
 1. `with` マッチング（combinations のみ）: `dragged` の `ObjectDef.Tags` に `with` タグが含まれるか。
 2. `conditions` 評価（3節）: 省略時は常に真。
@@ -105,8 +111,9 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 - `actions`/`combinations` の `duration` はゲーム内の**分**。リテラルか `{object, prop}` 参照
   （`weight` と同じ二択。`combinations` では `dragged` も指せる）で、省略時は時間を消費しない。
-- 時間進行は `ActionDef`/`CombinationDef` の `TryExecute` 自身が `WorldSession.AdvanceWorldTime(minutes)`
-  を呼んで完結させる。呼び出し側（UI層）が実行後に別途時間を進める必要はない。
+- 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
+  呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける
+  （`MinutesFor`。UI層が実行前に所要時間を見せるため、[ScreenLayout.md](../ui/ScreenLayout.md)）。
 - `AdvanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
   現状15分）を跨ぐたびに world ツリー全体の `Tick()` を1回実行する。長い `duration` の action は、
   その間の accumulate・rangeイベントをすべて経験する。
