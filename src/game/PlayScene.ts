@@ -15,7 +15,7 @@ import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from
 import { fromGameSession } from './PlayScreenView';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
-import type { CardContent, CardEdgeDirection } from './ui/Card';
+import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
 import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
@@ -298,19 +298,21 @@ export class PlayScene extends ResponsiveScene {
   ): readonly (CardContent | undefined)[] {
     return cards.map((card) => {
       if (card === undefined) return undefined;
-      const move = direction === undefined ? undefined : this.edgeMove(card);
       const contents = card.contents;
       return {
         ...card,
         draggable: true,
         onTap:
           contents === undefined ? () => this.openObjectWindow(card) : () => this.openSlotWindow(contents),
-        edge:
-          move === undefined || direction === undefined
-            ? undefined
-            : { direction, onTap: () => this.applyToWorld(move) },
+        edge: direction === undefined ? undefined : this.cardEdge(card, direction),
       };
     });
+  }
+
+  /** 端の操作（そのカードを移せないならundefined。行き先の決め方はedgeMove参照）。 */
+  private cardEdge(card: ObjectCardStack, direction: CardEdgeDirection): CardEdgeAction | undefined {
+    const move = this.edgeMove(card);
+    return move === undefined ? undefined : { direction, onTap: () => this.applyToWorld(move) };
   }
 
   /**

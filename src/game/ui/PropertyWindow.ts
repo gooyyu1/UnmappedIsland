@@ -2,16 +2,13 @@ import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { Button } from './Button';
 import { addTextButton } from './Button';
+import { ACTION_HEIGHT, ACTION_MAX_WIDTH, CONTENT_GAP, WINDOW_PADDING, centerWindow } from './childWindow';
 import { addLabel } from './labels';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
 import type { BoxStyle } from './shapes';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
-
-/** 子ウィンドウの内側パディングと、内容同士の間隔（スロットの子ウィンドウと揃える）。 */
-const WINDOW_PADDING = 32;
-const CONTENT_GAP = 24;
 
 /** タブとバーの寸法。タブは最小タップ領域（アイコンボタン）と同じ高さにする。 */
 const TAB_HEIGHT = SIZE.iconButton;
@@ -23,10 +20,6 @@ const WINDOW_WIDTH = 760;
 
 /** 名前欄の幅。ステータスエリアより広げる（「穀物・イモの栄養」のような長い表示名が並ぶため）。 */
 const NAME_WIDTH = 260;
-
-/** 閉じるボタンの高さと幅。 */
-const ACTION_HEIGHT = SIZE.iconButton;
-const ACTION_WIDTH = 420;
 
 /** 1つのタブ（1つのプロパティタグと、そのタグが付いたプロパティ）。 */
 export interface PropertyTab {
@@ -97,20 +90,15 @@ export class PropertyWindow {
 
     const title = addLabel(scene, metrics, 0, 0, options.title, { size: 34, bold: true }).setOrigin(0.5, 0);
     const windowHeight = padding * 2 + title.height + gap + tabHeight + gap + rowsHeight + gap + actionHeight;
-    const windowX = clamp(area.x + (area.width - windowWidth) / 2, 0, width - windowWidth);
-    const windowY = clamp(area.y + (area.height - windowHeight) / 2, 0, height - windowHeight);
-    const centerX = windowX + windowWidth / 2;
+    const window = centerWindow(metrics, area, windowWidth, windowHeight);
+    const centerX = window.x + windowWidth / 2;
 
-    drawBox(
-      card,
-      { x: windowX, y: windowY, width: windowWidth, height: windowHeight },
-      { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
-    );
+    drawBox(card, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
-    title.setPosition(centerX, windowY + padding);
+    title.setPosition(centerX, window.y + padding);
     this.frame.push(title);
 
-    const tabsY = windowY + padding + title.height + gap;
+    const tabsY = window.y + padding + title.height + gap;
     const tabGap = metrics.px(TAB_GAP);
     const tabsWidth = windowWidth - padding * 2;
     const tabWidth = (tabsWidth - tabGap * (options.tabs.length - 1)) / Math.max(1, options.tabs.length);
@@ -118,7 +106,7 @@ export class PropertyWindow {
       const button = addTextButton(
         scene,
         metrics,
-        { x: windowX + padding + index * (tabWidth + tabGap), y: tabsY, width: tabWidth, height: tabHeight },
+        { x: window.x + padding + index * (tabWidth + tabGap), y: tabsY, width: tabWidth, height: tabHeight },
         tab.name,
         { fill: COLOR.button },
         () => this.select(index),
@@ -128,11 +116,11 @@ export class PropertyWindow {
       this.frame.push(button);
     });
 
-    this.rowsX = windowX + padding;
+    this.rowsX = window.x + padding;
     this.rowsY = tabsY + tabHeight + gap;
     this.rowsWidth = tabsWidth;
 
-    const actionWidth = Math.min(metrics.px(ACTION_WIDTH), tabsWidth);
+    const actionWidth = Math.min(metrics.px(ACTION_MAX_WIDTH), tabsWidth);
     this.frame.push(
       addTextButton(
         scene,
@@ -202,8 +190,4 @@ export class PropertyWindow {
     for (const object of this.frame) object.destroy();
     this.frame.length = 0;
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), Math.max(min, max));
 }

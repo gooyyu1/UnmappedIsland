@@ -29,9 +29,6 @@ export const COLOR = {
   handLane: 0xe1dbff,
   /** 情報エリアの下地。背景画像（本のページ）の紙の色で、絵が届かない範囲を埋める。 */
   informationPaper: 0xf5f0e1,
-  characterDisplay: 0xd9f6ff,
-  statusArea: 0xe3ffe0,
-  situationArea: 0xe8e2d4,
 
   /** スロットの子ウィンドウ（装備・怪我・コンテナ）の中身を並べる帯。 */
   slotWindowLane: 0xf2eee6,

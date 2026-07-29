@@ -3,6 +3,14 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace, EmptyCard } from './Card';
+import {
+  ACTION_GAP,
+  ACTION_HEIGHT,
+  ACTION_MAX_WIDTH,
+  CONTENT_GAP,
+  WINDOW_PADDING,
+  centerWindow,
+} from './childWindow';
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from './labels';
 import { wheelPixels } from './scroll';
@@ -10,20 +18,11 @@ import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 import { wrapByCharacter } from './textLayout';
 
-/** 子ウィンドウの内側パディングと、内容同士の間隔。 */
-const WINDOW_PADDING = 32;
-const CONTENT_GAP = 24;
-
 /** 探索の進み具合を示すバーの高さ（ゲームの主操作なので、ステータスバーより大きく取る）。 */
 const BAR_HEIGHT = 72;
 
 /** 発見物の枠の数。1枠はレーンのカードと同じ幅で、ウィンドウの横幅はこの4枠から決まる。 */
 const FOUND_SLOTS = 4;
-
-/** 操作ボタンの高さ（アイコンボタンと同じ最小タップ領域）と、幅の上限・間隔。 */
-const ACTION_HEIGHT = SIZE.iconButton;
-const ACTION_MAX_WIDTH = 420;
-const ACTION_GAP = 24;
 
 export interface ExplorationWindowOptions {
   /** 探索する土地の名前。 */
@@ -106,26 +105,16 @@ export class ExplorationWindow {
       note.height +
       gap +
       actionHeight;
-    // 領域の中央へ置く。領域より背が高い場合でも画面の外へは出さない。
-    const windowX = clamp(options.area.x + (options.area.width - windowWidth) / 2, 0, width - windowWidth);
-    const windowY = clamp(
-      options.area.y + (options.area.height - windowHeight) / 2,
-      0,
-      height - windowHeight,
-    );
-    const centerX = windowX + windowWidth / 2;
-    drawBox(
-      card,
-      { x: windowX, y: windowY, width: windowWidth, height: windowHeight },
-      { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
-    );
+    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
+    const centerX = window.x + windowWidth / 2;
+    drawBox(card, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
-    title.setPosition(centerX, windowY + padding);
+    title.setPosition(centerX, window.y + padding);
     this.objects.push(title, note);
 
-    let cursorY = windowY + padding + title.height + gap;
+    let cursorY = window.y + padding + title.height + gap;
     this.addFound(scene, metrics, options.found, {
-      x: windowX + padding,
+      x: window.x + padding,
       y: cursorY,
       width: contentWidth,
       height: foundHeight,
@@ -133,7 +122,7 @@ export class ExplorationWindow {
 
     cursorY += foundHeight + gap;
     this.objects.push(
-      new ProgressBar(scene, metrics, windowX + padding, cursorY, contentWidth, barHeight, options.ratio),
+      new ProgressBar(scene, metrics, window.x + padding, cursorY, contentWidth, barHeight, options.ratio),
       addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(options.ratio), {
         size: 32,
         bold: true,
@@ -243,10 +232,6 @@ export class ExplorationWindow {
 /** 探索率は整数の%で見せる。100%に届いていない進捗を切り上げて100%と誤解させないよう切り捨てる。 */
 function percentOf(ratio: number): string {
   return `${Math.min(100, Math.trunc(ratio * 100))}%`;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), Math.max(min, max));
 }
 
 function noteFor(ratio: number): string {
