@@ -5,7 +5,7 @@ import type { ObjectDef } from '../defs/ObjectDef';
 import type { ReferenceRoot } from '../defs/ReferenceRoot';
 import type { WellKnownProperties } from '../defs/WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
-import type { PropertyValue } from './PropertyValue';
+import type { PropertyReading, PropertyValue } from './PropertyValue';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
 import { Slot } from './Slot';
 import type { WorldSession } from './WorldSession';
@@ -116,6 +116,19 @@ export class WorldObject {
   isInStage(propertyGlobalId: number, stageName: string): boolean {
     const property = this.tryGetProperty(propertyGlobalId);
     return property !== undefined && property.isInStage(stageName);
+  }
+
+  /**
+   * 指定したタグ（6.9節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
+   * タグを1つも持たないオブジェクトでは空配列。
+   */
+  readPropertiesWithTag(tagGlobalId: number): readonly PropertyReading[] {
+    const readings: PropertyReading[] = [];
+    for (const property of this.properties) {
+      const reading = property.readIfTagged(tagGlobalId);
+      if (reading !== undefined) readings.push(reading);
+    }
+    return readings;
   }
 
   /** modifyのみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。プロパティを持たなければ0。 */

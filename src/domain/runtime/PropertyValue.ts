@@ -6,6 +6,18 @@ import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 
 /**
+ * 1つのプロパティの現在の状態を、表示側が必要とする形だけ切り出したもの（PropertyValue.readIfTagged）。
+ * nameは識別子であり表示名ではない（表示名はLocalizationが引く）。
+ */
+export interface PropertyReading {
+  readonly name: string;
+  readonly value: number;
+
+  /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */
+  readonly ratio: number | undefined;
+}
+
+/**
  * props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」であるため、
  * 登録済み効果の一覧・tick毎の反映・実効値の算出はWorldObjectではなくこの値自身が持つ。値の変更後のrangeイベント
  * 判定（どのon_*をいつ発火するか）は自分のPropertyDef（checkRangeEvents）へ委譲し、呼び出し側は変更後に何を
@@ -142,6 +154,17 @@ export class PropertyValue {
    */
   isInStage(stageName: string): boolean {
     return this.def.isInStage(this.getEffectiveValue(), stageName);
+  }
+
+  /**
+   * タグ（6.9節）が付いていれば今の値を読み取る。付いていなければundefined。実効値で読むのは、
+   * 画面に出すのが「今そう見えている値」（modify・inheritを加味した値）であるため。
+   */
+  readIfTagged(tagGlobalId: number): PropertyReading | undefined {
+    if (!this.def.hasTag(tagGlobalId)) return undefined;
+
+    const value = this.getEffectiveValue();
+    return { name: this.def.name, value, ratio: this.def.ratioOf(value) };
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

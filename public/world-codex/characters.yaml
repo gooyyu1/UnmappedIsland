@@ -30,6 +30,7 @@ object_defs:
       # 満腹度。0でも即死せず体調不良につながる想定（未実装。致死性はbody_fat参照）。
       # 満腹から1日（96 tick）で空になる。桁の余裕のため-100/tickで減衰し、max=96*100=9600。
       satiety:
+        tags: [status, nutrition]
         value: 9600
         range: {min: 0, max: 9600}
         passives:
@@ -40,6 +41,7 @@ object_defs:
       # 他の量と違い、値は液体の量と同じ実単位のmL（1 = 1mL、LiquidContainerSystem.md 5節）で、
       # 1日の必要量2400mLを96 tickで割った-25/tickで減衰する。max=288*25=7200（＝7.2L）。
       hydration:
+        tags: [status, nutrition]
         value: 7200
         range: {min: 0, max: 7200}
         passives:
@@ -51,6 +53,7 @@ object_defs:
       # 初期値は標準体格を想定した15日分＝maxの1/4。-100/tickで減衰し、max=576000、初期値=144000。
       # 食事による回復（食料ごとの体脂肪への配分）は未実装。
       body_fat:
+        tags: [nutrition]
         value: 144000
         range: {min: 0, max: 576000}
         passives:
@@ -60,6 +63,7 @@ object_defs:
       # 覚醒度。0で強制的に眠りに入る想定（未実装。致死性は無い）。約24時間（96 tick）で
       # 抗えない眠気が始まるとされる。-100/tickで減衰し、max=96*100=9600。
       wakefulness:
+        tags: [status, health]
         value: 9600
         range: {min: 0, max: 9600}
         passives:
@@ -68,6 +72,7 @@ object_defs:
                 wakefulness: -100
       # 体力（疲労の逆）。0で疲労困憊の状態を表す。
       stamina:
+        tags: [status, health]
         value: 100
         range: {min: 0, max: 100}
       # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。「飽き」（短スパンの繰り返しペナルティ、
@@ -76,6 +81,7 @@ object_defs:
       # への部分加算を表現するため。食べると回復し毎tick減る、satiety等と同じ構造。
       # 減少時の体調不良は未実装。maxと減衰量（1週間で空になる想定）は仮の値。
       vegetable_nutrition:
+        tags: [nutrition]
         value: 67200
         range: {min: 0, max: 67200}
         passives:
@@ -83,6 +89,7 @@ object_defs:
               self:
                 vegetable_nutrition: -100
       meat_nutrition:
+        tags: [nutrition]
         value: 67200
         range: {min: 0, max: 67200}
         passives:
@@ -90,6 +97,7 @@ object_defs:
               self:
                 meat_nutrition: -100
       grain_tuber_nutrition:
+        tags: [nutrition]
         value: 67200
         range: {min: 0, max: 67200}
         passives:

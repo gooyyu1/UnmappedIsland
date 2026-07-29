@@ -118,3 +118,13 @@ object_texts:
     display_name: お茶
   oil_liquid:
     display_name: 油
+
+# プロパティのカテゴリ（GameElementDefinition.md 6.9節、public/world-codex/core.yamlのproperty_tags）。
+# キャラクターのプロパティウィンドウのタブ名として使う。
+property_tag_texts:
+  status:
+    display_name: 状態
+  health:
+    display_name: 健康
+  nutrition:
+    display_name: 栄養

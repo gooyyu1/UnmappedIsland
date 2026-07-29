@@ -87,6 +87,13 @@ object_texts:
     expect(parseLocale('ja.yaml', 'ui:\n  ok: OK\n').object('coconut').displayName).toBe('coconut');
   });
 
+  it('プロパティのタグの表示名を引ける（未登録なら識別子）', () => {
+    const texts = parseLocale('ja.yaml', 'property_tag_texts:\n  nutrition:\n    display_name: 栄養\n');
+
+    expect(texts.propertyTag('nutrition').displayName).toBe('栄養');
+    expect(texts.propertyTag('health').displayName).toBe('health');
+  });
+
   it('表示文字列がスカラーでなければエラーになる', () => {
     expect(() =>
       parseLocale('ja.yaml', 'object_texts:\n  coconut:\n    display_name: {ja: ヤシの実}\n'),
@@ -115,6 +122,14 @@ describe('同梱の表示文字列ファイル', () => {
       expect(locale.object(objectDef.name).displayName, `${objectDef.name} には表示名が必要`).not.toBe(
         objectDef.name,
       );
+    }
+  });
+
+  it('宣言されたプロパティタグはすべて表示名を持つ', () => {
+    // タブ名として画面に出るため、欠けると識別子（nutrition等）がそのままタブに出る。
+    for (let globalId = 0; globalId < codex.propertyTagNames.count; globalId++) {
+      const name = codex.propertyTagNames.getName(globalId);
+      expect(locale.propertyTag(name).displayName, `${name} には表示名が必要`).not.toBe(name);
     }
   });
 

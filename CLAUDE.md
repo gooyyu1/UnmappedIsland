@@ -1,7 +1,13 @@
 # 実装スタイル
 
 TypeScriptのコーディング規約は [`docs/engine/CodingConventions.md`](docs/engine/CodingConventions.md)
-に従う。変更後は `npm run lint` / `npm run typecheck` / `npm test` がすべて成功することを確認する。
+に従う。変更後は `npm run lint` / `npm run typecheck` / `npm test` / `npm run format:check` が
+すべて成功することを確認する（CIが走らせるのはこの4つ）。
+
+整形のずれは `npm run lint` では検出できない（eslintの整形系ルールはeslint-config-prettierが
+無効化しており、prettierだけが見ている）。書いたファイルはPostToolUseフック
+（`.claude/hooks/format-after-edit.sh`）が自動で整形するが、フックが効かない経路で編集した場合は
+`npm run format` で直す。
 
 ## 自分のことは自分でする（カプセル化の徹底）
 

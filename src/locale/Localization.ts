@@ -112,9 +112,20 @@ export class ObjectTexts {
  */
 export class Localization {
   private readonly objects: ReadonlyMap<string, ObjectTextsEntry>;
+  private readonly propertyTags: ReadonlyMap<string, DeclaredTexts>;
 
-  constructor(objects: ReadonlyMap<string, ObjectTextsEntry>) {
+  constructor(
+    objects: ReadonlyMap<string, ObjectTextsEntry>,
+    propertyTags: ReadonlyMap<string, DeclaredTexts> = new Map(),
+  ) {
     this.objects = objects;
+    this.propertyTags = propertyTags;
+  }
+
+  /** プロパティのタグ（GameElementDefinition.md 6.9節）の表示文字列。未登録なら識別子そのもの。 */
+  propertyTag(tagName: string): Texts {
+    const declared = this.propertyTags.get(tagName);
+    return new Texts(declared?.displayName ?? tagName, declared?.description);
   }
 
   /** 1つのobject_defの表示文字列。未登録のオブジェクトでも、識別子へフォールバックする窓口として必ず返る。 */
@@ -138,15 +149,26 @@ export function parseLocale(label: string, yamlText: string): Localization {
     throw new YamlLoadError(`${label}: YAML構文エラー: ${document.errors[0].message}`);
   if (document.contents === null) return Localization.empty();
 
-  const objects = new Map<string, ObjectTextsEntry>();
-  const section = tryGetMap(asMap(document.contents, label), 'object_texts', label);
-  if (section === undefined) return new Localization(objects);
+  const root = asMap(document.contents, label);
 
-  for (const [name, node] of entriesInOrder(section)) {
-    const context = `${label}.object_texts.'${name}'`;
-    objects.set(name, parseEntry(asMap(node, context), context));
-  }
-  return new Localization(objects);
+  const objects = new Map<string, ObjectTextsEntry>();
+  const section = tryGetMap(root, 'object_texts', label);
+  if (section !== undefined)
+    for (const [name, node] of entriesInOrder(section)) {
+      const context = `${label}.object_texts.'${name}'`;
+      objects.set(name, parseEntry(asMap(node, context), context));
+    }
+
+  const propertyTags = new Map<string, DeclaredTexts>();
+  const tagSection = tryGetMap(root, 'property_tag_texts', label);
+  if (tagSection !== undefined)
+    for (const [name, node] of entriesInOrder(tagSection)) {
+      const context = `${label}.property_tag_texts.'${name}'`;
+      const texts = parseTexts(asMap(node, context), context);
+      if (texts !== undefined) propertyTags.set(name, texts);
+    }
+
+  return new Localization(objects, propertyTags);
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

@@ -4,12 +4,8 @@ import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { Localization } from '../locale/Localization';
 import type { CardContent } from './ui/Card';
-
-/** ステータスエリアに出す1件。ratioは0〜1。 */
-export interface StatusEntry {
-  readonly name: string;
-  readonly ratio: number;
-}
+import type { PropertyTab } from './ui/PropertyWindow';
+import type { StatusContent } from './ui/StatusBar';
 
 /**
  * レーンの中でカードを置く場所。gapは枠と枠の隙間（indexは0が先頭の枠の前）、cellは空き枠そのもの
@@ -107,8 +103,14 @@ export interface PlayScreenView {
   readonly conditions: readonly string[];
   readonly equipmentIcon: string;
   readonly injuryIcon: string;
-  /** 表示対象のステータスだけを並べた可変長リスト（ScreenLayout.md ステータスエリア節）。 */
-  readonly statuses: readonly StatusEntry[];
+  /** ステータスエリアに常時出すプロパティ（statusタグが付いたもの、ScreenLayout.md ステータスエリア節）。 */
+  readonly statuses: readonly StatusContent[];
+
+  /**
+   * プロパティウィンドウのタブ一式（property_tagsの宣言順）。キャラクターが1つも持たないタグは
+   * 空のタブになるだけなので落とす。
+   */
+  readonly propertyCategories: readonly PropertyTab[];
   readonly elapsedDays: number;
   readonly hour: number;
   readonly minute: number;
@@ -162,6 +164,12 @@ const INJURY_ICON = '🩹';
 const UNNAMED_LOCATION = '名もなき土地';
 
 /**
+ * ステータスエリアへ常時出すプロパティに付けるタグ（GameElementDefinition.md 6.9節）。
+ * 健康・栄養といったカテゴリのタグと重ねて付ける（満腹度はstatusでありnutritionでもある）。
+ */
+const STATUS_TAG = 'status';
+
+/**
  * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
  * レーンで常に見えているfixtures/items/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
  */
@@ -190,6 +198,29 @@ export function fromGameSession(
   locale: Localization,
 ): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
+
+  const characterTexts = locale.object(game.player.instance.def.name);
+  /** タグが付いたキャラクターのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
+  const entriesWithTag = (tagGlobalId: number | undefined): readonly StatusContent[] =>
+    tagGlobalId === undefined
+      ? []
+      : game.player.instance.readPropertiesWithTag(tagGlobalId).map((reading) => ({
+          name: characterTexts.prop(reading.name).displayName,
+          value: reading.value,
+          ratio: reading.ratio,
+        }));
+
+  // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
+  const propertyCategories: PropertyTab[] = [];
+  for (let tagGlobalId = 0; tagGlobalId < codex.propertyTagNames.count; tagGlobalId++) {
+    const entries = entriesWithTag(tagGlobalId);
+    if (entries.length > 0)
+      propertyCategories.push({
+        name: locale.propertyTag(codex.propertyTagNames.getName(tagGlobalId)).displayName,
+        entries,
+      });
+  }
+
   const containerTagId = codex.tagNames.tryGetId('container');
   const contentsSlotId = codex.slotNames.tryGetId('contents');
   /** そのカードがコンテナなら、中身を映す場所。中身を持てるスロットが無いcodexではundefined。 */
@@ -296,16 +327,12 @@ export function fromGameSession(
     };
 
   return {
-    characterName: locale.object(game.player.instance.def.name).displayName,
+    characterName: characterTexts.displayName,
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '🪑',
     injuryIcon: '🩹',
-    statuses: [
-      { name: 'HP', ratio: 0.8 },
-      { name: 'スタミナ', ratio: 0.65 },
-      { name: '食料', ratio: 0.3 },
-      { name: '精神', ratio: 0.55 },
-    ],
+    statuses: entriesWithTag(codex.propertyTagNames.tryGetId(STATUS_TAG)),
+    propertyCategories,
     // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。
     elapsedDays: game.world.day - 1,
     hour: game.world.hour,

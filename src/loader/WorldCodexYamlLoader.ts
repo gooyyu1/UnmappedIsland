@@ -50,9 +50,10 @@ export class WorldCodexYamlLoader {
   private _propertyNames = new NameRegistry();
   private _slotNames = new NameRegistry();
   private _tagNames = new NameRegistry();
+  private _propertyTagNames = new NameRegistry();
   private _symbolNames = new NameRegistry();
 
-  /** 5種の名前空間（object/property/slot/tag/symbol）のNameRegistry。 */
+  /** 6種の名前空間（object/property/slot/tag/property_tag/symbol）のNameRegistry。 */
   get objectNames(): NameRegistry {
     return this._objectNames;
   }
@@ -64,6 +65,9 @@ export class WorldCodexYamlLoader {
   }
   get tagNames(): NameRegistry {
     return this._tagNames;
+  }
+  get propertyTagNames(): NameRegistry {
+    return this._propertyTagNames;
   }
   get symbolNames(): NameRegistry {
     return this._symbolNames;
@@ -82,6 +86,13 @@ export class WorldCodexYamlLoader {
     if (doc.contents === null) return this;
 
     const root = asMap(doc.contents, label);
+
+    // プロパティタグ（6.9節）はprops側の参照より先に揃っている必要があるが、object_defのtrait解決
+    // （＝propsの解釈）はbuild時なので、ファイル間の読み込み順は問わない。IDは宣言順に振られ、
+    // それがそのままUIでのカテゴリの並び順になる。重複宣言はinternが冪等なので黙って無視される。
+    const propertyTags = tryGetMap(root, 'property_tags', label);
+    if (propertyTags !== undefined)
+      for (const [name] of entriesInOrder(propertyTags)) this._propertyTagNames.intern(name);
 
     const objectDefs = tryGetMap(root, 'object_defs', label);
     if (objectDefs !== undefined)
@@ -129,6 +140,7 @@ export class WorldCodexYamlLoader {
       this.propertyNames,
       this.slotNames,
       this.tagNames,
+      this.propertyTagNames,
       this.symbolNames,
       new ObjectDefTable(defsByGlobalId),
       wellKnown,
@@ -147,6 +159,7 @@ export class WorldCodexYamlLoader {
     this._propertyNames = new NameRegistry();
     this._slotNames = new NameRegistry();
     this._tagNames = new NameRegistry();
+    this._propertyTagNames = new NameRegistry();
     this._symbolNames = new NameRegistry();
   }
 
