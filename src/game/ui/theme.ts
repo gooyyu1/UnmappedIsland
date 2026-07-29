@@ -79,6 +79,8 @@ export const COLOR = {
   selectedOptionFace: 0xe3fff0,
   dangerButton: 0xff5252,
   modalOverlay: 0x000000,
+  /** 場面転換の暗幕（Curtain）。画面の外側と同じ暗さで落とす。 */
+  curtain: 0x101418,
 
   titleGradientTop: 0x123544,
   titleGradientMiddle: 0x2f7480,
