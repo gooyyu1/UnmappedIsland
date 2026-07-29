@@ -77,13 +77,23 @@ export function populate(session: WorldSession, map: IslandMap): void {
  * （いずれもindex順で決定的）。
  */
 export function placePlayer(session: WorldSession, map: IslandMap, character: WorldObject): Location {
-  const codex = session.codex;
   const start: Site =
     map.sites.find((s) => s.type!.name === 'sandy_beach') ??
     map.sites.find((s) => s.onCoastRing) ??
     map.sites[0];
 
-  const location = session.world!.instance.findDescendantByInstanceId(map.siteInstanceIds[start.index]);
+  return placePlayerAt(session, map, character, start);
+}
+
+/** 指定したサイトの土地へプレイヤーキャラクタを移し、その土地のビューを返す。 */
+export function placePlayerAt(
+  session: WorldSession,
+  map: IslandMap,
+  character: WorldObject,
+  site: Site,
+): Location {
+  const codex = session.codex;
+  const location = session.world!.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index]);
   if (location === undefined)
     throw new Error('開始地点の土地が実体化されていません（先にpopulateを呼んでください）。');
 

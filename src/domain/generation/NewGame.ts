@@ -7,7 +7,7 @@ import { PlayerCharacter } from '../runtime/views/PlayerCharacter';
 import type { Location } from '../runtime/views/Location';
 import type { IslandMap } from './IslandMap';
 import { generate } from './TerrainGenerator';
-import { populate, placePlayer } from './IslandSpawner';
+import { populate, placePlayer, placePlayerAt } from './IslandSpawner';
 
 /** NewGame.startが組み立てた、開始直後のゲーム一式。 */
 export class NewGameSession {
@@ -15,8 +15,7 @@ export class NewGameSession {
   readonly world: World;
   readonly player: PlayerCharacter;
 
-  /** プレイヤーが漂着した開始地点の土地。 */
-  readonly startLocation: Location;
+  private _startLocation: Location;
 
   /** 生成された島のレイアウト（土地の座標・名前・道のネットワーク。UI/デバッグ用）。 */
   readonly map: IslandMap;
@@ -31,8 +30,25 @@ export class NewGameSession {
     this.session = session;
     this.world = world;
     this.player = player;
-    this.startLocation = startLocation;
+    this._startLocation = startLocation;
     this.map = map;
+  }
+
+  /** プレイヤーが漂着した開始地点の土地。 */
+  get startLocation(): Location {
+    return this._startLocation;
+  }
+
+  /**
+   * 開始地点を、渡したobject_def（locations.yamlの土地）の土地のうちindex順で最初のものへ移す。
+   * プレイヤーもそこへ移る。その土地が島に1つも無ければfalseで、開始地点は変わらない。
+   */
+  startAt(locationDefGlobalId: number): boolean {
+    const site = this.map.sites.find((s) => s.type!.objectDefGlobalId === locationDefGlobalId);
+    if (site === undefined) return false;
+
+    this._startLocation = placePlayerAt(this.session, this.map, this.player.instance, site);
+    return true;
   }
 }
 
