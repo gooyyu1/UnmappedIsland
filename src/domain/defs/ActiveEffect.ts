@@ -25,8 +25,8 @@ export abstract class ActiveEffect {
 
 /**
  * 一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`、9節）を宣言順にまとめた合成効果。
- * on_min・on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）が共用する。
- * on_min/on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。
+ * on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）が共用する。
+ * on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。
  */
 export class ActiveEffects extends ActiveEffect {
   /**
@@ -142,7 +142,7 @@ export class DestroyEffect extends ActiveEffect {
 /**
  * spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定せず、起点が持つスロットを宣言順に
  * 走査して最初に配置できた所へ入れる（著者がスロット名を知らなくてよい）。fallbackはYAML上に存在せず、
- * 配置失敗時は必ず起点自身の親へ伝播する（WorldObject.place参照）。on_min/on_overflow/on_shortfallには
+ * 配置失敗時は必ず起点自身の親へ伝播する（WorldObject.place参照）。on_overflow/on_shortfallには
  * actorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。
  */
 export type SpawnTargetRoot =

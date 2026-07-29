@@ -119,7 +119,7 @@ export class WorldObject {
   }
 
   /**
-   * 指定したタグ（6.9節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
+   * 指定したタグ（6.7節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
    * タグを1つも持たないオブジェクトでは空配列。
    */
   readPropertiesWithTag(tagGlobalId: number): readonly PropertyReading[] {
@@ -365,7 +365,7 @@ export class WorldObject {
 
   /**
    * 現在の親から切り離す（destroy、9.3節）。切り離された時点でworldツリーから到達不能になり、tickの対象からも
-   * 自然に外れる。既に親を持たない場合は何もしない（繰り返し実行しても安全、6.5節）。
+   * 自然に外れる。既に親を持たない場合は何もしない（繰り返し実行しても安全、6.3節）。
    */
   destroy(): void {
     this.detachFromParent();
@@ -634,7 +634,7 @@ export class WorldObject {
     }
 
     // 量的オブジェクト（7.6節）は「sizeが正であること」と「インスタンスが存在すること」が同値。
-    // 蒸発などで量が尽きたら、この不変条件を自分で回復する（on_minの宣言を各液体に書かせない）。
+    // 蒸発などで量が尽きたら、この不変条件を自分で回復する（on_shortfallの宣言を各液体に書かせない）。
     if (this.def.isQuantitative && this.getNumber(session.codex.wellKnown.sizeId) <= 0) {
       this.destroy();
     }

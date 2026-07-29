@@ -87,7 +87,7 @@ export class WorldCodexYamlLoader {
 
     const root = asMap(doc.contents, label);
 
-    // プロパティタグ（6.9節）はprops側の参照より先に揃っている必要があるが、object_defのtrait解決
+    // プロパティタグ（6.7節）はprops側の参照より先に揃っている必要があるが、object_defのtrait解決
     // （＝propsの解釈）はbuild時なので、ファイル間の読み込み順は問わない。IDは宣言順に振られ、
     // それがそのままUIでのカテゴリの並び順になる。重複宣言はinternが冪等なので黙って無視される。
     const propertyTags = tryGetMap(root, 'property_tags', label);

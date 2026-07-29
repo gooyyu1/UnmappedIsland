@@ -83,7 +83,7 @@ export function parsePickList(
     if (!hasActive && nestedPick === undefined)
       throw new YamlLoadError(`${candidateContext}: set/add/destroy/spawnのいずれか、またはpickが必要です。`);
 
-    // selfOnly（on_min等のrangeイベント内のpick）は、ネストした候補にもそのまま引き継ぐ。
+    // selfOnly（on_shortfall等のrangeイベント内のpick）は、ネストした候補にもそのまま引き継ぐ。
     // nestedPickは、直前の2つのチェックにより、hasActiveがfalseの場合は必ず定義されている。
     const effect: ActiveEffect = hasActive
       ? parseActiveEffectBody(

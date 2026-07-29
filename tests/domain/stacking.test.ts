@@ -128,8 +128,8 @@ object_defs:
     props:
       life:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
           spawn:
             object: d_item
@@ -170,8 +170,8 @@ object_defs:
     props:
       life:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
           spawn:
             object: d_item2
@@ -193,7 +193,7 @@ object_defs:
     bInstance2.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
     cInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
 
-    // bInstance1 は on_min が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
+    // bInstance1 は on_shortfall が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
     bInstance1.setProperty(lifeId, 5);
 
     locInstance.tick(session);
@@ -218,8 +218,8 @@ object_defs:
     props:
       life:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: d_item3
             into: same_slot
@@ -406,8 +406,8 @@ object_defs:
     props:
       freshness:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
           spawn:
             object: rotten_potato
@@ -453,8 +453,8 @@ object_defs:
     props:
       freshness:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
           spawn:
             object: rotten_potato2
@@ -510,22 +510,22 @@ object_defs:
     props:
       spawn_c:
         value: 1
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: type_c3
             into: same_slot
       spawn_d:
         value: 1
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: type_d3
             into: same_slot
       spawn_e:
         value: 1
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: type_e3
             into: same_slot
@@ -615,8 +615,8 @@ object_defs:
     props:
       spawn_a:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: type_a4
             into: same_slot
@@ -662,8 +662,8 @@ object_defs:
     props:
       spawn_c:
         value: 1
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: type_c4
             into: same_slot
@@ -671,8 +671,8 @@ object_defs:
     props:
       spawn_d:
         value: 1
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: type_d4
             into: same_slot
@@ -740,8 +740,8 @@ object_defs:
     props:
       spawn_d:
         value: 1
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: type_d5
             into: same_slot

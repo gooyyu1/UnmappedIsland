@@ -68,7 +68,7 @@
       "additionalProperties": false
     },
     "prop_value": {
-      "description": "props の value。固定値（整数・真偽値・シンボル名）、または {min, max} の範囲値（6.2節、生成時に1回だけロールされる初期値の範囲）のいずれか。整数・真偽値として解釈できない識別子形の文字列はシンボル型（6.8節）として登録され、そのプロパティ自体がシンボル型になる。数値は32bit整数のみを扱う（6節）。",
+      "description": "props の value。固定値（整数・真偽値・シンボル名）、または {min, max} の範囲値（6.2節、生成時に1回だけロールされる初期値の範囲）のいずれか。整数・真偽値として解釈できない識別子形の文字列はシンボル型（6.6節）として登録され、そのプロパティ自体がシンボル型になる。数値は32bit整数のみを扱う（6節）。",
       "oneOf": [
         {
           "type": [
@@ -86,7 +86,7 @@
       ]
     },
     "stage_def": {
-      "description": "props の段階（6.4節）。数値型プロパティでは min のみを指定する半開区間（最下段は min: null か省略でフォールバック）。シンボル型プロパティ（6.8節）では min を書かず、name 自体がそのまま比較対象の値になる（min を書いた場合はロード時エラー。プロパティがシンボル型かどうかは value の形で決まるため、本スキーマでは区別まで表現できない）。ヒステリシスは採用しない。ステージのpassivesはレベルトリガーのみであり、一時的な命令の瞬間を持たないためpickは書けない（10節参照）。",
+      "description": "props の段階（6.4節）。数値型プロパティでは min のみを指定する半開区間（最下段は min: null か省略でフォールバック）。シンボル型プロパティ（6.6節）では min を書かず、name 自体がそのまま比較対象の値になる（min を書いた場合はロード時エラー。プロパティがシンボル型かどうかは value の形で決まるため、本スキーマでは区別まで表現できない）。ヒステリシスは採用しない。ステージのpassivesはレベルトリガーのみであり、一時的な命令の瞬間を持たないためpickは書けない（10節参照）。",
       "type": "object",
       "properties": {
         "name": {
@@ -125,11 +125,11 @@
         },
         "on_overflow": {
           "$ref": "#/$defs/active_def",
-          "description": "rangeの上限を超えた瞬間の挙動（6.3節）。on_minと全く同じactive_defを流用する（対象は現時点でselfのみ対応、それ以外はロード時エラー）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。rangeを使う場合は必須。"
+          "description": "rangeの上限を超えている間、値の変更・tickのたびに適用される挙動（6.3節。対象は現時点でselfのみ対応、それ以外はロード時エラー）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。rangeを使う場合は必須。"
         },
         "on_shortfall": {
           "$ref": "#/$defs/active_def",
-          "description": "on_overflowの下限側の鏡像（6.3節）。rangeの下限を下回った瞬間の挙動。省略した場合、'自分自身をrange.minへset'という既定の挙動が自動的に補われる（単純な下限クランプ）。rangeを使う場合は必須。"
+          "description": "on_overflowの下限側の鏡像（6.3節）。rangeの下限を下回っている間の挙動。省略した場合、'自分自身をrange.minへset'という既定の挙動が自動的に補われる（単純な下限クランプ）。「境界値に達した瞬間」に反応させたい場合は、境界値をrangeの外に置く（例: range.minを1にして0到達でon_shortfallを発火させる）。rangeを使う場合は必須。"
         },
         "stages": {
           "type": "array",
@@ -140,13 +140,16 @@
         "passives": {
           "$ref": "#/$defs/passives_list"
         },
-        "on_min": {
-          "$ref": "#/$defs/active_def",
-          "description": "値がrangeの下限以下である間、毎tick実行されるactive内容（6.5節、旧on_zero）。activeと全く同じactive_defを直接持つ（対象は現時点でselfのみ対応）。on_overflow/on_shortfallとは異なり、既定の自動生成は行われない。rangeを使う場合は必須。"
+        "inherit": {
+          "type": "boolean",
+          "description": "祖先からの値の継承（6.5節）。同名プロパティを定義している最初の祖先の実効値を、自分の実効値に加算する。"
         },
-        "on_max": {
-          "$ref": "#/$defs/active_def",
-          "description": "値がrangeの上限以上である間、毎tick実行されるactive内容（6.6節）。on_minの上限側の鏡像。activeと全く同じactive_defを直接持つ（対象は現時点でselfのみ対応）。on_overflow/on_shortfallとは異なり、既定の自動生成は行われない。rangeを使う場合は必須。"
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "プロパティのカテゴリ（6.7節）。トップレベルのproperty_tagsで宣言した名前のみ使える（未宣言はロード時エラー）。"
         }
       },
       "additionalProperties": false
@@ -417,7 +420,7 @@
       "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/transfer/move)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_min（6.5節）・on_max（6.6節）・on_overflow/on_shortfall（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持ち、activeの代わりにpick（10節、排他）も書ける。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/transfer/move)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持ち、activeの代わりにpick（10節、排他）も書ける。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "set": {
@@ -1129,7 +1132,7 @@
       ]
     },
     "move_spec": {
-      "description": "move（9.6節）: 対象を、移動先のオブジェクトの中へ移動する。objectはactorかdraggedのみ。移動先はto（self=move宣言元自身 / parent=その直接の親）かto_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方で指す。on_min等のrangeイベントでは使えない（actorが存在しないため、ロード時エラー）。",
+      "description": "move（9.6節）: 対象を、移動先のオブジェクトの中へ移動する。objectはactorかdraggedのみ。移動先はto（self=move宣言元自身 / parent=その直接の親）かto_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方で指す。on_overflow/on_shortfallでは使えない（actorが存在しないため、ロード時エラー）。",
       "type": "object",
       "properties": {
         "object": {

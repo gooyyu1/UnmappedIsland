@@ -63,7 +63,7 @@ object_texts:
 
 ## property_tag_texts: プロパティのカテゴリ名
 
-プロパティのタグ（[GameElementDefinition.md](./GameElementDefinition.md) 6.9節）は、どのオブジェクトにも
+プロパティのタグ（[GameElementDefinition.md](./GameElementDefinition.md) 6.7節）は、どのオブジェクトにも
 属さない独立した識別子なので、`object_texts` とは別のトップレベルの節に書きます。
 
 ```yaml

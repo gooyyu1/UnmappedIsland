@@ -166,7 +166,7 @@ UnmappedIsland のゲーム画面レイアウトを検討するためのモッ�
 #### ステータスエリア (Status Area)
 
 キャラクターのプロパティのうち、**`status` タグ**（プロパティのタグ、
-[GameElementDefinition.md](../engine/GameElementDefinition.md) 6.9 節）が付いたものだけをバーで表示
+[GameElementDefinition.md](../engine/GameElementDefinition.md) 6.7 節）が付いたものだけをバーで表示
 します。何を常時見せるかは YAML 側の宣言で決まり、UI は種別を一切知りません。`status` は健康・栄養と
 いったカテゴリと**重ねて**付けます（満腹度は `status` であり `nutrition` でもある）。
 
@@ -472,7 +472,7 @@ object_def のぶんだけ 404 が出るためです。ファイル名の綴り�
 開きます。ステータスエリアには一部しか出さないため（次項）、残りを含めて見るための画面です。
 
 - タブが 1 つのカテゴリ（プロパティのタグ、
-  [GameElementDefinition.md](../engine/GameElementDefinition.md) 6.9 節）に対応し、**タブの並び順は
+  [GameElementDefinition.md](../engine/GameElementDefinition.md) 6.7 節）に対応し、**タブの並び順は
   `property_tags` の宣言順**です。キャラクターがそのタグのプロパティを 1 つも持たないタブは出しません。
 - 1 行は「名前＋バー」で、ステータスエリアと同じ部品（`StatusBar`）です。`range` を持たず割合を
   定義できないプロパティは、バーの代わりに値そのものを出します。増減の記号（前々項）は出しません

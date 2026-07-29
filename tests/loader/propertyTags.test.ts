@@ -5,7 +5,7 @@ import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 
-/** プロパティのタグ（GameElementDefinition.md 6.9節）に対する自動テスト。 */
+/** プロパティのタグ（GameElementDefinition.md 6.7節）に対する自動テスト。 */
 describe('プロパティのタグ', () => {
   function build(...files: string[]): WorldCodex {
     const loader = new WorldCodexYamlLoader();

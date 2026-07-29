@@ -7,8 +7,8 @@ import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { StubRng } from '../support/StubRng';
 import { SeededRng } from '../support/SeededRng';
 
-// rangeイベント（on_min等）の直下にpickを書ける文法（GameElementDefinition.md 9.7節・10節）の
-// 自動テスト。気候システム（ClimateSystem.md）の「残り時間が0になった瞬間、プロパティ参照の重みで
+// rangeイベント（on_shortfall等）の直下にpickを書ける文法（GameElementDefinition.md 9.7節・10節）の
+// 自動テスト。気候システム（ClimateSystem.md）の「残り時間が0に達した瞬間、プロパティ参照の重みで
 // 次の状態を抽選し、残り時間自体も再ロールする」パターンがこの文法に依存する。
 describe('rangeイベントのpick文法', () => {
   function load(yaml: string): WorldCodex {
@@ -37,12 +37,12 @@ object_defs:
         value: 0
       counter:
         value: 3
-        range: {min: 0, max: 999}
+        range: {min: 1, max: 999}
         passives:
           - accumulate:
               self:
                 counter: -1
-        on_min:
+        on_shortfall:
           pick:
             - weight: {prop: go_a}
               set:
@@ -71,16 +71,16 @@ object_defs:
     expect(cycler.getNumber(counterId)).toBe(20);
   });
 
-  it('on_min配下のpick候補（ネストを含む）にparent対象を書くとロードエラーになる', () => {
-    // on_min配下のpick候補（ネストを含む）の効果対象はselfのみ（6.5節の制約をそのまま引き継ぐ）
+  it('on_shortfall配下のpick候補（ネストを含む）にparent対象を書くとロードエラーになる', () => {
+    // on_shortfall配下のpick候補（ネストを含む）の効果対象はselfのみ（6.3節の制約をそのまま引き継ぐ）
     const yaml = `
 object_defs:
   broken:
     props:
       counter:
         value: 3
-        range: {min: 0, max: 999}
-        on_min:
+        range: {min: 1, max: 999}
+        on_shortfall:
           pick:
             - weight: 1
               pick:
@@ -91,15 +91,15 @@ object_defs:
     expect(() => load(yaml)).toThrow(YamlLoadError);
   });
 
-  it('on_minにactiveとpickを同時に書くとロードエラーになる', () => {
+  it('on_shortfallにactiveとpickを同時に書くとロードエラーになる', () => {
     const yaml = `
 object_defs:
   broken:
     props:
       counter:
         value: 3
-        range: {min: 0, max: 999}
-        on_min:
+        range: {min: 1, max: 999}
+        on_shortfall:
           set:
             self: {counter: 10}
           pick:

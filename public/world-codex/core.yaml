@@ -2,7 +2,7 @@
 # locationsスロット・locationトレイトのみを含む。個々のlocation種別と道はlocations.yaml、
 # 地形生成はterrain_generation.yamlが持つ。
 
-# プロパティのカテゴリ（GameElementDefinition.md 6.9節）。props側の`tags`はここで宣言した名前しか
+# プロパティのカテゴリ（GameElementDefinition.md 6.7節）。props側の`tags`はここで宣言した名前しか
 # 使えない。宣言順がそのままUIでのタブの並び順になる。
 property_tags:
   # ステータスエリアに常時バーで出すもの。他のカテゴリと重ねて付ける（満腹度はstatusでありnutrition
@@ -110,7 +110,7 @@ object_defs:
       # 現在の日（1始まり、上限なし。GameElementDefinition.md 17節）。
       day:
         value: 1
-      # 現在の天気。シンボル型プロパティ（6.8節）。storm/heavy_rain/light_rain/cloudy/clear/sunny/
+      # 現在の天気。シンボル型プロパティ（6.6節）。storm/heavy_rain/light_rain/cloudy/clear/sunny/
       # scorchingの7段階で、clear（普通の晴れ）がこの島の標準的な天気。
       # 遷移はClimateSystem.md参照: weather_remainingが0になるたび、atmospheric_moistureのstages
       # （scorchingのみthermal_levelのhot stage）が駆動する*_weightを重みとするpickで次が選ばれる。
@@ -254,19 +254,17 @@ object_defs:
         value: 0
       later_cycle_flag:
         value: 0
-      # 現在の季節の残りtick数。0になった瞬間（on_min）に3段のpick（10節）で遷移: (1)season_is_*で
-      # 今の季節へ分岐、(2)初回サイクルか否かで分岐、(3)初回は30日（2880tick）固定、2周目以降は
-      # 24/30/36日（2304/2880/3456tick）の等確率pick。dry→calm遷移だけがseason_cycleを+1する。
-      # on_shortfallの空宣言: 既定の「下限へクランプ」だとon_minが再発火し、1tickで2回遷移しうるため。
+      # 現在の季節の残りtick数。0に達した瞬間（min:1を下回るon_shortfall、6.3節）に3段のpick（10節）で
+      # 遷移: (1)season_is_*で今の季節へ分岐、(2)初回サイクルか否かで分岐、(3)初回は30日（2880tick）固定、
+      # 2周目以降は24/30/36日（2304/2880/3456tick）の等確率pick。dry→calm遷移だけがseason_cycleを+1する。
       season_remaining:
         value: 2880
-        range: {min: 0, max: 999999}
-        on_shortfall: {}
+        range: {min: 1, max: 999999}
         passives:
           - accumulate:
               self:
                 season_remaining: -1
-        on_min:
+        on_shortfall:
           pick:
             - weight: {prop: season_is_calm}
               pick:
@@ -386,18 +384,17 @@ object_defs:
         value: 0
       scorching_weight:
         value: 0
-      # 現在の天気の残りtick数。0になった瞬間（on_min）に、外側のpickが*_weightを重みに次の天気を、
-      # 内側のpickが持続時間4/5/6時間（16/20/24tick）を等確率で選ぶ（ClimateSystem.md 4節）。
-      # 初期値20（5時間）はday1の最初の遷移までの猶予。on_shortfallの空宣言はseason_remainingと同じ理由。
+      # 現在の天気の残りtick数。0に達した瞬間（min:1を下回るon_shortfall、6.3節）に、外側のpickが
+      # *_weightを重みに次の天気を、内側のpickが持続時間4/5/6時間（16/20/24tick）を等確率で選ぶ
+      # （ClimateSystem.md 4節）。初期値20（5時間）はday1の最初の遷移までの猶予。
       weather_remaining:
         value: 20
-        range: {min: 0, max: 999999}
-        on_shortfall: {}
+        range: {min: 1, max: 999999}
         passives:
           - accumulate:
               self:
                 weather_remaining: -1
-        on_min:
+        on_shortfall:
           pick:
             - weight: {prop: sunny_weight}
               pick:

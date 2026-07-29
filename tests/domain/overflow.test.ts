@@ -321,7 +321,7 @@ object_defs:
   });
 
   it('overflow補正の加算先プロパティをこのobject_defが持たない場合は黙って無視される', () => {
-    // on_minのadd（WorldObject.addNumber）と同じ規約: このobject_defが持たないプロパティへの
+    // add（WorldObject.addNumber）の通常の規約と同じ: このobject_defが持たないプロパティへの
     // 加算は、たとえ同名のプロパティを別のobject_defが持っていて名前自体は登録されていても、
     // 黙って無視される（エラーにしない）。
     const yaml = `
@@ -354,16 +354,10 @@ object_defs:
     expect(instance.getNumber(minuteId)).toBe(0);
   });
 
-  // ------------------------------------------------------------------
-  // on_max/on_minとon_overflow/on_shortfallの評価順: 循環する(自身をラップして戻す)
-  // カスタムon_overflow/on_shortfallを持つプロパティが、1tickでrangeをいきなり飛び越えた場合でも、
-  // on_max/on_minのレベルトリガーが「その瞬間、境界に達していたこと」を見逃さないことを確認する。
-  // ------------------------------------------------------------------
-
-  it('カスタムon_overflowが同じTick()内でmaxを超えて折り返しても、on_maxは境界到達を検知する', () => {
-    // gaugeは0-100を循環するプロパティ(on_overflowが自分自身を-100して折り返す、時計のminuteと同じ
-    // パターン)。1tickでの加算(+150)がrangeの幅(100)を超えるため、on_overflow適用後のgaugeは
-    // 50(range内)に収まってしまい、on_maxの判定(>=100)をon_overflowの後に行うと見逃してしまう。
+  it('折り返しと別プロパティへの加算を1つのon_overflowに併記すると、span数だけ加算される', () => {
+    // gaugeは0-100を循環するプロパティ。1tickでの加算(+250)がrangeの幅を複数span分飛び越えても、
+    // on_overflowの補正が連鎖するため、併記したalarm_countへの加算はspanごとに1回ずつ適用される
+    // （「境界を越えた回数を数える」は折り返しと同じon_overflowに併記すれば足りる）。
     const yaml = `
 object_defs:
   tank2:
@@ -372,15 +366,13 @@ object_defs:
         value: 0
         range: {min: 0, max: 100}
         on_overflow:
-          add: {self: {gauge: -100}}
-        on_max:
-          add: {self: {alarm_count: 1}}
+          add: {self: {gauge: -101, alarm_count: 1}}
       alarm_count:
         value: 0
     passives:
       - accumulate:
           self:
-            gauge: 150
+            gauge: 250
 `;
     const codex = load(yaml);
     const gaugeId = codex.propertyNames.getId('gauge');
@@ -389,52 +381,9 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('tank2')), session);
 
-    instance.tick(session); // 0 + 150 = 150 > 100 なので折り返す
+    instance.tick(session); // 0 + 250 = 250 > 100。250 -> 149 -> 48 と2回連鎖する
 
-    expect(instance.getNumber(gaugeId), 'on_overflowにより50へ折り返される').toBe(50);
-    expect(
-      instance.getNumber(alarmId),
-      'on_overflowで折り返される前に、gaugeが確かにmax(100)以上に達していたことをon_maxが検知できているはず',
-    ).toBe(1);
-  });
-
-  it('カスタムon_shortfallが同じTick()内でminを下回って折り返しても、on_minは境界到達を検知する', () => {
-    // on_maxのテストの下限側の鏡像。gaugeが1tickでrangeの下限をいきなり下回った場合でも、
-    // on_shortfallによる折り返しの前に、on_minのレベルトリガーがその瞬間を検知できることを確認する。
-    const yaml = `
-object_defs:
-  tank3:
-    props:
-      gauge:
-        value: 50
-        range: {min: 0, max: 100}
-        on_shortfall:
-          add: {self: {gauge: 150}}
-        on_min:
-          add: {self: {alarm_count: 1}}
-      alarm_count:
-        value: 0
-    passives:
-      - accumulate:
-          self:
-            gauge: -150
-`;
-    const codex = load(yaml);
-    const gaugeId = codex.propertyNames.getId('gauge');
-    const alarmId = codex.propertyNames.getId('alarm_count');
-    const session = new WorldSession(codex);
-
-    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('tank3')), session);
-
-    instance.tick(session); // 50 - 150 = -100 < 0 なので折り返す。折り返し量(+150)はmin(0)ちょうどには
-    // 着地させない(50に着地させる)ことで、「折り返し後の値がたまたま境界と一致する」ケースと区別する。
-
-    expect(instance.getNumber(gaugeId), 'on_shortfallにより50へ折り返される(0ちょうどには着地しない)').toBe(
-      50,
-    );
-    expect(
-      instance.getNumber(alarmId),
-      'on_shortfallで折り返される前に、gaugeが確かにmin(0)以下に達していたことをon_minが検知できているはず',
-    ).toBe(1);
+    expect(instance.getNumber(gaugeId)).toBe(48);
+    expect(instance.getNumber(alarmId), '2span分の折り返しでalarm_countも2回加算される').toBe(2);
   });
 });

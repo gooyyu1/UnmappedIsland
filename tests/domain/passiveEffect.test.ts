@@ -4,8 +4,8 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 
-// modify/accumulate（GameElementDefinition.md 8節）の実行時集計と、on_min/on_max（6節、値がRange境界に
-// 達している間毎回実行されるactive内容）に対する自動テスト。
+// modify/accumulate（GameElementDefinition.md 8節）の実行時集計と、on_overflow/on_shortfall
+// （6.3節、値がRangeの外へ出た際にselfへ適用されるactive内容）に対する自動テスト。
 describe('PassiveEffect', () => {
   let nextInstanceId: number;
 
@@ -524,10 +524,10 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // on_min / on_max / destroy / spawn: 値がRange境界に達している間、毎tick実行されるactive内容。
+  // on_overflow / on_shortfall / destroy / spawn: 値がRangeの外へ出た際にselfへ適用されるactive内容。
   // ------------------------------------------------------------------
-  describe('on_min / on_max / destroy / spawn: 値がRange境界に達している間、毎tick実行されるactive内容。', () => {
-    it('on_maxが発火するとdestroy: selfで自分自身が破棄される', () => {
+  describe('on_overflow / on_shortfall / destroy / spawn: 値がRangeの外へ出た際にselfへ適用されるactive内容。', () => {
+    it('on_overflowが発火するとdestroy: selfで自分自身が破棄される', () => {
       const yaml = `
 object_defs:
   holder:
@@ -537,8 +537,8 @@ object_defs:
     props:
       pressure:
         value: 100
-        range: {min: 0, max: 100}
-        on_max:
+        range: {min: 0, max: 99}
+        on_overflow:
           destroy: self
 `;
       const codex = load(yaml);
@@ -558,7 +558,7 @@ object_defs:
       expect(slot?.contents.length).toBe(0);
     });
 
-    it('値がmax未満の間はon_maxが発火しない', () => {
+    it('値がmax以下の間はon_overflowが発火しない', () => {
       const yaml = `
 object_defs:
   holder:
@@ -569,7 +569,7 @@ object_defs:
       pressure:
         value: 50
         range: {min: 0, max: 100}
-        on_max:
+        on_overflow:
           destroy: self
 `;
       const codex = load(yaml);
@@ -584,7 +584,7 @@ object_defs:
 
       containerInstance.tick(session);
 
-      expect(tankInstance.parent).toBeDefined(); // on_maxは上限未満では発火しない
+      expect(tankInstance.parent).toBeDefined(); // on_overflowは上限以下では発火しない
     });
 
     it('tickは子のtickを直接呼ばなくても子孫へ再帰する', () => {
@@ -618,7 +618,7 @@ object_defs:
       expect(batteryInstance.getEffectiveValue(chargeId)).toBe(9);
     });
 
-    it('on_minが発火するとdestroy: selfで自分自身が破棄される', () => {
+    it('on_shortfallが発火するとdestroy: selfで自分自身が破棄される', () => {
       const yaml = `
 object_defs:
   lantern_holder:
@@ -628,8 +628,8 @@ object_defs:
     props:
       durability:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
 `;
       const codex = load(yaml);
@@ -658,8 +658,8 @@ object_defs:
     props:
       ripeness:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: berry
             into: self
@@ -688,8 +688,8 @@ object_defs:
     props:
       freshness:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
           spawn:
             object: rotten_log
@@ -733,8 +733,8 @@ object_defs:
     props:
       ripeness:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: boulder
             into: self
@@ -775,8 +775,8 @@ object_defs:
     props:
       yield:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: pebble
             into: self
@@ -846,8 +846,8 @@ object_defs:
     props:
       yield:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           spawn:
             object: pebble2
             into: self
@@ -865,7 +865,7 @@ object_defs:
       expect(slot?.contents.length).toBe(0);
     });
 
-    it('on_min文脈にはactorが無いため、into: actorのspawnは何も配置しない', () => {
+    it('on_shortfall文脈にはactorが無いため、into: actorのspawnは何も配置しない', () => {
       const yaml = `
 object_defs:
   clearing3:
@@ -876,8 +876,8 @@ object_defs:
     props:
       ripeness:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
           spawn:
             object: berry
@@ -897,7 +897,7 @@ object_defs:
 
       expect(bushInstance.parent).toBeUndefined(); // bush自身は破棄される
       const slot = locationInstance.tryGetSlot(groundSlotId);
-      expect(slot?.contents.length).toBe(0); // actorルートはon_min文脈では解決できないため、berryはどこにも配置されない
+      expect(slot?.contents.length).toBe(0); // actorルートはon_shortfall文脈では解決できないため、berryはどこにも配置されない
     });
 
     it('同じtick内で複数の子が自分自身を破棄しても、tickは正常に完了する', () => {
@@ -910,8 +910,8 @@ object_defs:
     props:
       integrity:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
 `;
       const codex = load(yaml);
@@ -959,7 +959,7 @@ object_defs:
     });
 
     it('同じtick内で自分自身を破棄したオブジェクトの子も、問題なくtickされる', () => {
-      // innerBoxは自分自身のon_minによって、outerBox.tick()の実行中に破棄される。それでも
+      // innerBoxは自分自身のon_shortfallによって、outerBox.tick()の実行中に破棄される。それでも
       // innerBoxがまだ持っている子(battery)は、同じtickの中で問題なくaccumulateされることを確認する
       // （WorldObjectはtick内で自分や子がdestroyされる可能性に備える必要がある、という要件）。
       const yaml = `
@@ -973,8 +973,8 @@ object_defs:
     props:
       integrity:
         value: 0
-        range: {min: 0, max: 2147483647}
-        on_min:
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
           destroy: self
   cell:
     props:
@@ -999,7 +999,7 @@ object_defs:
 
       outerInstance.tick(session);
 
-      expect(innerInstance.parent).toBeUndefined(); // inner_boxは自分自身のon_minにより破棄される
+      expect(innerInstance.parent).toBeUndefined(); // inner_boxは自分自身のon_shortfallにより破棄される
       // 親(inner_box)が同じtick内で破棄されても、子(battery)は問題なくtickされる
       expect(batteryInstance.getEffectiveValue(chargeId)).toBe(9);
     });

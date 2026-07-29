@@ -24,6 +24,20 @@ import { PickEffect } from '../domain/defs/PickEffect';
 import { PropertyDef, PropertyRange, PropertyStage } from '../domain/defs/PropertyDef';
 import type { PassiveEffect } from '../domain/defs/PassiveEffect';
 
+/** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
+ * unitは単位表記などの注記用で、ローダーは解釈しない（WorldCodex.schema.json参照）。 */
+const KNOWN_PROP_KEYS = new Set<string>([
+  'value',
+  'unit',
+  'range',
+  'on_overflow',
+  'on_shortfall',
+  'stages',
+  'passives',
+  'inherit',
+  'tags',
+]);
+
 /** props.'propName'エントリを1つ読む（GameElementDefinition.md 6節）。
  * trait合成済みのノードを渡すこと。 */
 export function parseProp(
@@ -35,6 +49,12 @@ export function parseProp(
 ): PropertyDef {
   const context = `'${objectDefName}'.props.'${propName}'`;
   const propertyGlobalId = loader.propertyNames.intern(propName);
+
+  const unknownKeys = entriesInOrder(node)
+    .map(([key]) => key)
+    .filter((key) => !KNOWN_PROP_KEYS.has(key));
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
   const valueNode = tryGetNode(node, 'value');
   if (valueNode === undefined)
@@ -104,20 +124,6 @@ export function parseProp(
     for (const passiveNode of propPassives.items as YamlNode[])
       parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), undefined, undefined);
 
-  let onMin: ActiveEffect | undefined;
-  const onMinNode = tryGetMap(node, 'on_min', context);
-  if (onMinNode !== undefined) {
-    if (range === undefined) throw new YamlLoadError(`${context}: on_minを使うには'range'が必須です。`);
-    onMin = parseRangeEventEffect(loader, `${context}.on_min`, onMinNode);
-  }
-
-  let onMax: ActiveEffect | undefined;
-  const onMaxNode = tryGetMap(node, 'on_max', context);
-  if (onMaxNode !== undefined) {
-    if (range === undefined) throw new YamlLoadError(`${context}: on_maxを使うには'range'が必須です。`);
-    onMax = parseRangeEventEffect(loader, `${context}.on_max`, onMaxNode);
-  }
-
   const inherit = tryGetBool(node, 'inherit', context, false);
   const tags = parsePropertyTags(loader, context, node);
 
@@ -129,16 +135,14 @@ export function parseProp(
     range,
     onOverflow,
     stages,
-    onMin,
     onShortfall,
-    onMax,
     inherit,
     tags,
   );
 }
 
 /**
- * props.'name'.tags（6.9節）を読む。未宣言のタグ名はエラーにする（object_defのtagsと違い、
+ * props.'name'.tags（6.7節）を読む。未宣言のタグ名はエラーにする（object_defのtagsと違い、
  * property_tagsという宣言の場があるため、綴り間違いをロード時に捕まえられる）。
  */
 function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): readonly number[] {
@@ -151,7 +155,7 @@ function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: 
     const tagId = loader.propertyTagNames.tryGetId(tagName);
     if (tagId === undefined)
       throw new YamlLoadError(
-        `${context}: プロパティタグ '${tagName}' が property_tags（6.9節）で宣言されていません。`,
+        `${context}: プロパティタグ '${tagName}' が property_tags（6.7節）で宣言されていません。`,
       );
     tagIds.add(tagId);
   }
@@ -159,8 +163,8 @@ function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: 
 }
 
 /**
- * rangeイベント（on_min・on_max・on_overflow・on_shortfall、6節）の中身を読む。activeとpickは
- * 排他（9.7節・10節）。対象はselfのみ（6.5節）で、pick候補の中の効果にも引き継ぐ。
+ * rangeイベント（on_overflow・on_shortfall、6.3節）の中身を読む。activeとpickは排他
+ * （9.7節・10節）。対象はselfのみで、pick候補の中の効果にも引き継ぐ。
  * 空のmapping（`on_shortfall: {}`）は「宣言だけして何もしない」（既定のクランプを打ち消す）を
  * 意味し、空のActiveEffectsになる。
  */
