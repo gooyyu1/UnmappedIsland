@@ -86,6 +86,12 @@ export class PlayScreenLayout {
   readonly optionsBarSeparator: Rect | undefined;
 
   /**
+   * フィールドエリアと右サイドバー（オプション／フィルター）の境目に敷く、縦向きの帯（横型のみ）。
+   * 縦型はこの2つが接していないためundefined。
+   */
+  readonly sidebarSeparator: Rect | undefined;
+
+  /**
    * ハンドレーンを覆わない子ウィンドウ（装備・怪我・コンテナ）の置き場所。手持ちとカードを
    * やり取りする操作があるため、開いている間も手持ちが見えている必要がある。
    */
@@ -207,9 +213,13 @@ export class PlayScreenLayout {
 
     this.lanes = this.buildLanes();
     this.laneSeparators = this.buildLaneSeparators();
+    const separatorThickness = u(SIZE.margin) * 2;
     this.optionsBarSeparator = metrics.isLandscape
       ? undefined
-      : separatorAt(this.optionsBar.y + this.optionsBar.height, this.optionsBar, u(SIZE.margin) * 2);
+      : separatorAt(this.optionsBar.y + this.optionsBar.height, this.optionsBar, separatorThickness);
+    this.sidebarSeparator = metrics.isLandscape
+      ? verticalSeparatorAt(this.fieldArea.x + this.fieldArea.width, this.fieldArea, separatorThickness)
+      : undefined;
 
     const handLane = this.lanes[2];
     this.slotWindowArea = {
@@ -258,4 +268,9 @@ export class PlayScreenLayout {
  */
 function separatorAt(center: number, span: Rect, height: number): Rect {
   return { x: span.x, y: center - height / 2, width: span.width, height };
+}
+
+/** separatorAtの縦版。左右の境目に、絵を90度回して敷く（shapes.addTiledImageVertical）。 */
+function verticalSeparatorAt(center: number, span: Rect, width: number): Rect {
+  return { x: center - width / 2, y: span.y, width, height: span.height };
 }

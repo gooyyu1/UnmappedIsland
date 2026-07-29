@@ -136,6 +136,20 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(new PlayScreenLayout(new ScreenMetrics(1920, 1080)).optionsBarSeparator).toBeUndefined();
   });
 
+  it('フィールドエリアと右サイドバーの境目の区切りは横型だけに置く', () => {
+    const landscape = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
+    const separator = landscape.sidebarSeparator;
+    const boundary = landscape.fieldArea.x + landscape.fieldArea.width;
+
+    expect(separator).toBeDefined();
+    expect(separator?.width, 'レーンの区切りと同じ厚み（縦向きなので幅）').toBe(12);
+    expect((separator?.x ?? 0) + (separator?.width ?? 0) / 2, '境目が帯の中心').toBe(boundary);
+    expect(separator?.height, '高さはフィールドエリアいっぱい').toBe(landscape.fieldArea.height);
+
+    // 縦型はフィールドエリアと2つのバーが上下に並び、左右では接していない。
+    expect(new PlayScreenLayout(new ScreenMetrics(1080, 1920)).sidebarSeparator).toBeUndefined();
+  });
+
   it('9:16より縦長でない縦型ではフィールドエリアを縮めてダッシュボード列を確保する', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1400));
 
