@@ -53,6 +53,27 @@ export function addTiledImage(
 }
 
 /**
+ * 絵を反時計回りに90度回して、縦向きに敷く（addTiledImageの縦版）。厚みは矩形の幅、繰り返す方向は
+ * 矩形の高さになる。横向きの帯と同じ絵を縦の境目でも使うためのもので、絵を回した別ファイルは持たない。
+ */
+export function addTiledImageVertical(
+  scene: Phaser.Scene,
+  rect: Rect,
+  texture: string,
+): Phaser.GameObjects.TileSprite {
+  // 回す前の寸法で作るので、幅と高さが入れ替わる。原点は中央なので、回しても矩形の中心は動かない。
+  const tile = scene.add.tileSprite(
+    rect.x + rect.width / 2,
+    rect.y + rect.height / 2,
+    rect.height,
+    rect.width,
+    texture,
+  );
+  const scale = rect.width / tile.frame.height;
+  return tile.setTileScale(scale, scale).setAngle(-90);
+}
+
+/**
  * 背景板を絵で敷く（addPanelの絵版。入力を遮る役目も同じ）。
  * 敷いた絵を横へ送るのは呼び出し側（CardLane.scrollTo）。
  */

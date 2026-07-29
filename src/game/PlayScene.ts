@@ -35,7 +35,7 @@ import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
 import { addLabel } from './ui/labels';
 import type { BoxStyle } from './ui/shapes';
-import { addPanel, addTiledImage } from './ui/shapes';
+import { addPanel, addTiledImage, addTiledImageVertical } from './ui/shapes';
 import { COLOR, SIZE } from './ui/theme';
 
 /** オプションバー・フィルターバーの内側パディング（縦型は左右が広め）。 */
@@ -191,6 +191,10 @@ export class PlayScene extends ResponsiveScene {
     if (this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
     // 区切りの帯は隣接エリアへもかぶるため、それらの背景板を描き終えてから敷く。
     for (const rect of layout.laneSeparators) addTiledImage(this, rect, SEPARATOR_TEXTURE);
+    // フィールドエリアと右サイドバーの境目は、同じ絵を90度回して縦向きに敷く（横型のみ）。
+    if (layout.sidebarSeparator !== undefined) {
+      addTiledImageVertical(this, layout.sidebarSeparator, SEPARATOR_TEXTURE);
+    }
     // 情報エリアのページはフィールドエリアへ食い込むので、帯より後（＝手前）に置く。
     this.buildInformationArea(layout);
     this.buildDashboard(layout);
