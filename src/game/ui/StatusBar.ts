@@ -44,14 +44,12 @@ export class StatusBar extends Phaser.GameObjects.Container {
     return metrics.px(BAR_HEIGHT);
   }
 
-  private readonly metrics: ScreenMetrics;
+  /** 割合を持つ項目のバー。持たない項目（valueText）はどちらか一方だけを作る。 */
+  private readonly bar: ProgressBar | undefined;
+  private readonly valueText: Phaser.GameObjects.Text | undefined;
 
-  /** 行の中の寸法（バーの左端・幅・高さ、増減欄の中心）。中身を差し替えても変わらない。 */
-  private readonly barX: number;
-  private readonly barWidth: number;
-  private readonly barHeight: number;
-  private readonly changeX: number;
-  private readonly nameWidth: number;
+  /** 増減の記号。出ていないときは空文字にする（作り直すと表示順が変わるため消さない）。 */
+  private readonly changeMark: Phaser.GameObjects.Text;
 
   constructor(
     scene: Phaser.Scene,
@@ -63,72 +61,71 @@ export class StatusBar extends Phaser.GameObjects.Container {
     nameWidthU: number = NAME_WIDTH,
   ) {
     super(scene, x, y);
-    this.metrics = metrics;
 
+    const height = metrics.px(BAR_HEIGHT);
+    const nameWidth = metrics.px(nameWidthU);
+    const barX = nameWidth + metrics.px(NAME_GAP);
     const changeWidth = metrics.px(CHANGE_WIDTH);
-    this.barHeight = metrics.px(BAR_HEIGHT);
-    this.nameWidth = metrics.px(nameWidthU);
-    this.barX = this.nameWidth + metrics.px(NAME_GAP);
-    this.barWidth = Math.max(0, width - this.barX - changeWidth - metrics.px(CHANGE_GAP));
-    this.changeX = width - changeWidth / 2;
+    const barWidth = Math.max(0, width - barX - changeWidth - metrics.px(CHANGE_GAP));
 
-    this.build(content);
-    scene.add.existing(this);
-  }
-
-  /**
-   * 値と増減を今の状態へ書き換える。作り直さず中身だけ差し替えるのは、作り直すと画面の表示順が
-   * 変わり、後から置かれた子ウィンドウの覆いより手前へ出てしまうため。
-   */
-  setContent(content: StatusContent): void {
-    this.removeAll(true);
-    this.build(content);
-  }
-
-  private build(content: StatusContent): void {
-    const label = this.scene.add
-      .text(0, this.barHeight / 2, content.name, {
+    const label = scene.add
+      .text(0, height / 2, content.name, {
         fontFamily: FONT_FAMILY,
-        fontSize: `${this.metrics.fontPx(30)}px`,
+        fontSize: `${metrics.fontPx(30)}px`,
         fontStyle: 'bold',
         color: cssColor(COLOR.text),
       })
       .setOrigin(0, 0.5);
     // 名前欄に収まらない長い表示名は縮めて収める（はみ出すとバーに重なって読めなくなるため）。
-    if (label.width > this.nameWidth) label.setScale(this.nameWidth / label.width);
+    if (label.width > nameWidth) label.setScale(nameWidth / label.width);
+    this.add(label);
 
-    this.add([
-      label,
-      content.ratio !== undefined
-        ? new ProgressBar(
-            this.scene,
-            this.metrics,
-            this.barX,
-            0,
-            this.barWidth,
-            this.barHeight,
-            content.ratio,
-          )
-        : this.scene.add
-            .text(this.barX, this.barHeight / 2, String(content.value), {
-              fontFamily: FONT_FAMILY,
-              fontSize: `${this.metrics.fontPx(30)}px`,
-              color: cssColor(COLOR.text),
-            })
-            .setOrigin(0, 0.5),
-    ]);
-
-    if (content.change === undefined) return;
-
-    const increased = content.change === 'increased';
-    this.add(
-      this.scene.add
-        .text(this.changeX, this.barHeight / 2, increased ? '▲' : '▼', {
+    if (content.ratio !== undefined) {
+      this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, content.ratio);
+      this.add(this.bar);
+    } else {
+      this.valueText = scene.add
+        .text(barX, height / 2, String(content.value), {
           fontFamily: FONT_FAMILY,
-          fontSize: `${this.metrics.fontPx(CHANGE_SIZE)}px`,
-          color: cssColor(increased ? COLOR.statusIncreased : COLOR.statusDecreased),
+          fontSize: `${metrics.fontPx(30)}px`,
+          color: cssColor(COLOR.text),
         })
-        .setOrigin(0.5),
-    );
+        .setOrigin(0, 0.5);
+      this.add(this.valueText);
+    }
+
+    this.changeMark = scene.add
+      .text(width - changeWidth / 2, height / 2, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(CHANGE_SIZE)}px`,
+      })
+      .setOrigin(0.5);
+    this.add(this.changeMark);
+    this.showChange(content.change);
+
+    scene.add.existing(this);
+  }
+
+  /**
+   * 値と増減を今の状態へ書き換える。作り直さず中身だけ差し替えるのは、作り直すと画面の表示順が
+   * 変わって子ウィンドウの覆いより手前へ出てしまうことと、バーが減る様子（ProgressBar.setRatio）を
+   * 見せている途中で捨てないため。
+   */
+  setContent(content: StatusContent): void {
+    if (content.ratio !== undefined) this.bar?.setRatio(content.ratio);
+    this.valueText?.setText(String(content.value));
+    this.showChange(content.change);
+  }
+
+  private showChange(change: StatusChange | undefined): void {
+    if (change === undefined) {
+      this.changeMark.setText('');
+      return;
+    }
+
+    const increased = change === 'increased';
+    this.changeMark
+      .setText(increased ? '▲' : '▼')
+      .setColor(cssColor(increased ? COLOR.statusIncreased : COLOR.statusDecreased));
   }
 }

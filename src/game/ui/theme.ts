@@ -58,6 +58,8 @@ export const COLOR = {
   statusBarTrack: 0xdddddd,
   statusBarTrackBorder: 0x999999,
   statusBarFill: 0x4caf50,
+  /** 減った分を遅れて縮める帯（ProgressBar）。 */
+  statusBarLag: 0xd93025,
   /** 直前の行動でその値が増えた／減ったことを示す三角（StatusBar）。 */
   statusIncreased: 0x2ecc40,
   statusDecreased: 0xd93025,
