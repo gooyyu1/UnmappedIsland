@@ -279,6 +279,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       name,
       place: 'items' as const,
       objects: [game.session.spawn(codex.objectNames.getId(name))],
+      actions: [],
     });
     const water = cardOf('water_liquid');
 
@@ -337,6 +338,89 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       name: '打ち割る',
       description: '石を打ち合わせて割る。',
     });
+  });
+
+  it('カードは、そのオブジェクトの説明文とアクションを持つ', () => {
+    const texts = parseLocale(
+      'ja.yaml',
+      `object_texts:
+  coconut:
+    display_name: ヤシの実
+    description: 硬い殻に覆われた実。
+    actions:
+      eat:
+        display_name: 食べる
+        description: 殻を割って中身を食べる。
+`,
+    );
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const coconut = game.session.spawn(codex.objectNames.getId('coconut'));
+    expect(
+      coconut.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+    // 満腹度は初期値が上限なので、食べた分が乗る余地を空けておく。
+    const satietyId = codex.propertyNames.getId('satiety');
+    game.player.instance.setNumber(satietyId, 0, game.session);
+
+    const card = fromGameSession(game, codex, texts).hand[0];
+
+    expect(card?.description).toBe('硬い殻に覆われた実。');
+    expect(card?.actions).toMatchObject([{ name: '食べる', description: '殻を割って中身を食べる。' }]);
+
+    card?.actions[0].execute();
+
+    expect(game.player.instance.getNumber(satietyId), '食べた分だけ満腹度が上がる').toBeGreaterThan(0);
+    expect(game.player.hand[0], '食べたヤシの実は無くなる').toBeUndefined();
+  });
+
+  it('アクションを持たないオブジェクトのカードは、アクションが空になる', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const driftwood = game.session.spawn(codex.objectNames.getId('driftwood'));
+    expect(
+      driftwood.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    const card = fromGameSession(game, codex, locale).hand[0];
+
+    expect(card?.actions).toEqual([]);
+    expect(card?.description, 'localeに説明文が無ければundefined').toBeUndefined();
+  });
+
+  it('中身が代表するカード（液体容器）には、中身のアクションが並ぶ', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
+    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
+    water.setNumber(codex.propertyNames.getId('size'), 1000, game.session);
+    expect(water.moveToSlot(canteen, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
+    // 液体容器にはまだitemタグが無く手持ちのaccepts制約に掛かるため、強制的に入れて手持ちのカードにする。
+    expect(
+      canteen.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown, true),
+    ).toBeUndefined();
+    const hydrationId = codex.propertyNames.getId('hydration');
+    game.player.instance.setNumber(hydrationId, 0, game.session);
+
+    // 水筒のカードだが、操作の対象は代表（represented_by）である中身の水になる（ActionSystem.md 1節）。
+    const card = fromGameSession(game, codex, locale).hand[0];
+
+    expect(card?.actions.map((action) => action.name)).toEqual(['drink']);
+
+    card?.actions[0].execute();
+
+    expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(0);
+  });
+
+  it('道のカードのアクションで、現在地が行き先へ移る', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
+
+    const view = fromGameSession(game, codex, locale);
+    const card = view.fixtures.find((fixture) => fixture.objects[0] === path.instance)!;
+    card.actions.find((action) => action.name === 'travel')!.execute();
+
+    expect(fromGameSession(game, codex, locale).currentLocation.name).toBe(
+      game.map.nameOfInstance(path.destinationInstanceId),
+    );
   });
 
   it('ステータスエリアには、statusタグが付いたプロパティだけが実際の値で並ぶ', () => {

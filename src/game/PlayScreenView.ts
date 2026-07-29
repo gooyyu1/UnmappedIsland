@@ -52,6 +52,12 @@ export interface ObjectCardStack extends CardContent {
    */
   readonly objects: readonly WorldObject[];
 
+  /** カードを押して開く子ウィンドウに出す説明文。localeに書かれていなければundefined。 */
+  readonly description?: string;
+
+  /** このカードで実行できるアクション（宣言順）。持たないオブジェクトでは空。 */
+  readonly actions: readonly CardAction[];
+
   /** この束が今いる場所。 */
   readonly place: CardPlace;
 
@@ -72,6 +78,18 @@ export interface ObjectCardStack extends CardContent {
    * SlotSystem.md 3節）。
    */
   readonly reorder?: (at: CardPlacement) => (() => void) | undefined;
+}
+
+/**
+ * カード1枚だけで完結する操作（ActionSystem.md 1節のactions）。子ウィンドウにボタンとして並べるため、
+ * 実行する手段だけでなく表示文字列も持つ（locale/ja.yamlのactions節、Localization.md）。
+ */
+export interface CardAction {
+  readonly name: string;
+  /** 説明文。localeに書かれていなければundefined。 */
+  readonly description: string | undefined;
+  /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
+  readonly execute: () => void;
 }
 
 /**
@@ -229,6 +247,26 @@ export function fromGameSession(
       ? { container: object }
       : undefined;
 
+  /**
+   * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
+   * 1節）で、実行はカードが映しているオブジェクト自身へ頼む（代表の解決はエンジン側が行う）。
+   * 水筒のカードに、中身の水のdrinkがボタンとして出る。
+   */
+  const actionsOf = (instance: WorldObject): readonly CardAction[] => {
+    const target = instance.resolveInteractionTarget();
+    const texts = locale.object(target.def.name);
+    return target.def.actions.map((action) => {
+      const declared = texts.action(action.name);
+      return {
+        name: declared.displayName,
+        description: declared.description,
+        execute: () => {
+          instance.tryExecuteAction(action.name, game.player.instance, game.session);
+        },
+      };
+    });
+  };
+
   const stackOf = (instances: readonly WorldObject[], icon: string, place: CardPlace): ObjectCardStack => ({
     icon,
     name: locale.object(instances[0].def.name).displayName,
@@ -236,6 +274,8 @@ export function fromGameSession(
     count: instances.length,
     art: instances[0].def.name,
     objects: instances,
+    description: locale.object(instances[0].def.name).description,
+    actions: actionsOf(instances[0]),
     place,
     contents: contentsOf(instances[0]),
   });
