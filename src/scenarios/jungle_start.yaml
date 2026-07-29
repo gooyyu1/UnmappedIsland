@@ -1,0 +1,11 @@
+# 密林（jungle）の見た目と探索を試すための開始状態。漂着地ではなく密林から始める。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 密林スタート
+
+# 7は島に密林があるシード。地形の種類はシードだけでは選べないため、下のtypeで開始地点を指定する。
+seed: 7
+
+location:
+  type: jungle

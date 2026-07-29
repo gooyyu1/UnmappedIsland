@@ -54,6 +54,32 @@ describe('テスト用シナリオ', () => {
     ]);
   });
 
+  it('jungle_startは、漂着地ではなく密林から始める', () => {
+    const scenario = load('jungle_start');
+    const game = startNewGame(codex, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    expect(game.startLocation.instance.def.name, '開始地点が密林になる').toBe('jungle');
+    expect(game.player.location?.instance, 'プレイヤーもその土地に居る').toBe(game.startLocation.instance);
+  });
+
+  it('土地の指定があると、置いたものはその土地に乗る', () => {
+    const scenario = parseScenario('jungle.yaml', 'seed: 7\nlocation:\n  type: jungle\n  items: [stone]\n');
+    const game = startNewGame(codex, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    expect(game.startLocation.items.map((item) => item.def.name)).toEqual(['stone']);
+  });
+
+  it('指定した土地が島に無ければエラーになる（違う地形で始めない）', () => {
+    const scenario = parseScenario('nojungle.yaml', 'seed: 3\nlocation:\n  type: jungle\n');
+    const game = startNewGame(codex, scenario.seed, new SeededRng(scenario.seed));
+
+    expect(() => applyScenario(game, scenario, codex)).toThrow(/jungle/);
+  });
+
   it('個数の指定は、同じものをその数だけ並べたのと同じ', () => {
     const scenario = parseScenario('count.yaml', 'seed: 1\nlocation:\n  items: [stone x3, driftwood]\n');
 

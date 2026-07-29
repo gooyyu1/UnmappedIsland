@@ -58,6 +58,11 @@ export interface Scenario {
   readonly seed: number;
   readonly hand: SlotContents;
   readonly equipment: SlotContents;
+  /**
+   * 開始地点にする土地のobject_def名。省略すると通常の漂着地（砂浜優先、IslandSpawner.placePlayer）。
+   * シードだけでは地形の種類を選べないため、特定の土地から試したいシナリオはこれで指定する。
+   */
+  readonly locationType: string | undefined;
   /** 開始地点の土地に置くもの。 */
   readonly items: SlotContents;
   readonly fixtures: SlotContents;
@@ -83,6 +88,7 @@ export function parseScenario(fileName: string, text: string): Scenario {
     seed,
     hand: names(player, 'hand', `${fileName}.player`),
     equipment: names(player, 'equipment', `${fileName}.player`),
+    locationType: location === undefined ? undefined : tryGetScalar(location, 'type', `${fileName}.location`),
     items: names(location, 'items', `${fileName}.location`),
     fixtures: names(location, 'fixtures', `${fileName}.location`),
     props: numbers(player, 'props', `${fileName}.player`),
@@ -141,6 +147,13 @@ function numbers(
  * テストしたかった状態と違う状態でゲームが始まってしまうため。
  */
 export function applyScenario(game: NewGameSession, scenario: Scenario, codex: WorldCodex): void {
+  // 置き場所は開始地点を基準にするため、地形の指定は中身を置く前に効かせる。
+  if (scenario.locationType !== undefined && !game.startAt(objectIdOf(codex, scenario.locationType))) {
+    throw new YamlLoadError(
+      `シナリオ: シード ${scenario.seed} の島に '${scenario.locationType}' の土地がありません。`,
+    );
+  }
+
   place(game, codex, scenario.hand, 'hand');
   place(game, codex, scenario.equipment, 'equipment');
   place(game, codex, scenario.items, 'items');
