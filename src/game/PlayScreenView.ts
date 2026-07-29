@@ -125,7 +125,10 @@ export interface PlayScreenView {
   readonly conditions: readonly string[];
   readonly equipmentIcon: string;
   readonly injuryIcon: string;
-  /** ステータスエリアに常時出すプロパティ（statusタグが付いたもの、ScreenLayout.md ステータスエリア節）。 */
+  /**
+   * ステータスエリアに出す候補（statusタグが付いたもの、ScreenLayout.md ステータスエリア節）。
+   * このうち実際に出すのは、安全域を外れたものと固定表示にされたものだけ（statusRows参照）。
+   */
   readonly statuses: readonly StatusContent[];
 
   /**
@@ -186,7 +189,7 @@ const INJURY_ICON = '🩹';
 const UNNAMED_LOCATION = '名もなき土地';
 
 /**
- * ステータスエリアへ常時出すプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
+ * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
  * 健康・栄養といったカテゴリのタグと重ねて付ける（満腹度はstatusでありnutritionでもある）。
  */
 const STATUS_TAG = 'status';
@@ -227,9 +230,11 @@ export function fromGameSession(
     tagGlobalId === undefined
       ? []
       : game.player.instance.readPropertiesWithTag(tagGlobalId).map((reading) => ({
+          key: reading.name,
           name: characterTexts.prop(reading.name).displayName,
           value: reading.value,
           ratio: reading.ratio,
+          alert: reading.alert,
         }));
 
   // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。

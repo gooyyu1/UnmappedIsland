@@ -3,6 +3,7 @@ import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { INT32_MAX } from '../../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
+import type { AlertLevel } from './AlertLevel';
 
 /** 6.3節の値域。 */
 export class PropertyRange {
@@ -36,10 +37,14 @@ export class PropertyStage {
   /** 完全一致判定の対象値。undefinedは未指定（minまたはフォールバックとして扱う）。 */
   readonly eq: number | undefined;
 
-  constructor(name: string, min: number | undefined, eq?: number) {
+  /** この段にいる間、値がどの域にあると見なすか（6.4節のalert）。 */
+  readonly alert: AlertLevel;
+
+  constructor(name: string, min: number | undefined, eq?: number, alert: AlertLevel = 'safe') {
     this.name = name;
     this.min = min;
     this.eq = eq;
+    this.alert = alert;
   }
 }
 
@@ -198,6 +203,14 @@ export class PropertyDef {
     }
 
     return best ?? this.fallbackStage;
+  }
+
+  /**
+   * 実効値effectiveValueのとき、値がどの域にあるか（6.4節のalert）。該当する段が無い場合と、
+   * 該当した段がalertを宣言していない場合は安全域。
+   */
+  alertLevelOf(effectiveValue: number): AlertLevel {
+    return this.resolveStage(effectiveValue)?.alert ?? 'safe';
   }
 
   /** 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。 */

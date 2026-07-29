@@ -29,10 +29,20 @@ object_defs:
     props:
       # 満腹度。0でも即死せず体調不良につながる想定（未実装。致死性はbody_fat参照）。
       # 満腹から1日（96 tick）で空になる。桁の余裕のため-100/tickで減衰し、max=96*100=9600。
+      # 域の区分（6.4節のalert）は残り時間で切る（-100/tick=400/時）。餓死はbody_fatが受け持つため
+      # 致命的域は持たない。
       satiety:
         tags: [status, nutrition]
         value: 9600
         range: {min: 0, max: 9600}
+        stages:
+          - name: starving      # 残り3時間未満
+            alert: danger
+          - name: hungry        # 残り12時間未満
+            min: 1200
+            alert: caution
+          - name: fed
+            min: 4800
         passives:
           - accumulate:
               self:
@@ -40,10 +50,23 @@ object_defs:
       # 水分。0で脱水。「水なしでは3日」の経験則から、3日（288 tick）で空になる。
       # 他の量と違い、値は液体の量と同じ実単位のmL（1 = 1mL、LiquidContainerSystem.md 5節）で、
       # 1日の必要量2400mLを96 tickで割った-25/tickで減衰する。max=288*25=7200（＝7.2L）。
+      # 域の区分（6.4節のalert）は残り時間で切る（-25/tick=100mL/時）。脱水はそのまま死に至るため、
+      # 致命的域を持つ数少ないステータス。
       hydration:
         tags: [status, nutrition]
         value: 7200
         range: {min: 0, max: 7200}
+        stages:
+          - name: dehydrated    # 残り6時間未満
+            alert: fatal
+          - name: parched       # 残り1日未満
+            min: 600
+            alert: danger
+          - name: thirsty       # 残り2日未満
+            min: 2400
+            alert: caution
+          - name: hydrated
+            min: 4800
         passives:
           - accumulate:
               self:
@@ -66,15 +89,33 @@ object_defs:
         tags: [status, health]
         value: 9600
         range: {min: 0, max: 9600}
+        # 眠り込むだけで死には至らないため致命的域は持たない。しきい値は残り時間（-100/tick=400/時）。
+        stages:
+          - name: overtired     # 残り3時間未満
+            alert: danger
+          - name: sleepy        # 残り12時間未満
+            min: 1200
+            alert: caution
+          - name: rested
+            min: 4800
         passives:
           - accumulate:
               self:
                 wakefulness: -100
-      # 体力（疲労の逆）。0で疲労困憊の状態を表す。
+      # 体力（疲労の逆）。0で疲労困憊の状態を表す。tickでは減らないため、域の区分（6.4節のalert）は
+      # 残り時間ではなくmaxに対する割合で切る。
       stamina:
         tags: [status, health]
         value: 100
         range: {min: 0, max: 100}
+        stages:
+          - name: exhausted
+            alert: danger
+          - name: tired
+            min: 20
+            alert: caution
+          - name: fresh
+            min: 60
       # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。「飽き」（短スパンの繰り返しペナルティ、
       # 別途検討）とは別に、「あるカテゴリを長期間摂っていない」ことを検出する。経過tickの
       # カウンタでなく数値の増減なのは、食料ごとのカロリー密度・栄養密度の差や、料理の複数カテゴリ

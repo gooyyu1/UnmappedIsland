@@ -1,0 +1,30 @@
+import type { StatusContent } from './ui/StatusBar';
+
+/**
+ * ステータスエリアに並べる行を、出すものだけ表示順に選ぶ（ScreenLayout.md ステータスエリア節）。
+ *
+ * taggedはstatusタグが付いたもの（常に候補）、othersはプロパティウィンドウにだけ出るもので、
+ * 固定表示にされたものだけが候補に加わる。安全域は固定表示でなければ出さない。
+ *
+ * 並び順は「固定表示 → 危険域・致命的域 → 要注意域」で、同じまとまりの中はプロパティの宣言順を保つ。
+ */
+export function statusRows(
+  tagged: readonly StatusContent[],
+  others: readonly StatusContent[],
+): readonly StatusContent[] {
+  // 同じプロパティが複数のタブに現れるため（満腹度はstatusでありnutritionでもある）、識別子で束ねる。
+  const candidates = new Map<string, StatusContent>();
+  for (const status of tagged) candidates.set(status.key, status);
+  for (const status of others)
+    if (status.pinned === true && !candidates.has(status.key)) candidates.set(status.key, status);
+
+  return [...candidates.values()]
+    .filter((status) => status.pinned === true || status.alert !== 'safe')
+    .sort((a, b) => groupOf(a) - groupOf(b));
+}
+
+/** 表示順のまとまり（小さいほど上）。 */
+function groupOf(status: StatusContent): number {
+  if (status.pinned === true) return 0;
+  return status.alert === 'caution' ? 2 : 1;
+}

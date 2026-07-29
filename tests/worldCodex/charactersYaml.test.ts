@@ -92,6 +92,38 @@ describe('characters.yamlのcharacter定義', () => {
     expect(nutrition.map((reading) => reading.name)).toContain('body_fat');
   });
 
+  // 域の区分（GameElementDefinition.md 6.4節のalert）。満タンはどれも安全域で、ステータスエリアには
+  // 何も出ない状態から始まる（ScreenLayout.md ステータスエリア節）。
+  it.each([
+    ['satiety', 9600, 'safe'],
+    ['satiety', 4799, 'caution'],
+    ['satiety', 0, 'danger'],
+    ['hydration', 7200, 'safe'],
+    ['hydration', 4799, 'caution'],
+    ['hydration', 2399, 'danger'],
+    ['hydration', 0, 'fatal'],
+    ['wakefulness', 9600, 'safe'],
+    ['wakefulness', 0, 'danger'],
+    ['stamina', 100, 'safe'],
+    ['stamina', 59, 'caution'],
+    ['stamina', 0, 'danger'],
+  ])('%sが%iのときは%sの域に入る', (name, value, expectedAlert) => {
+    const character = codex.objects.get(codex.objectNames.getId('character'));
+
+    expect(propOf(character, name).alertLevelOf(value)).toBe(expectedAlert);
+  });
+
+  it('致命的域を持つのは、放置すると死に至る水分だけ', () => {
+    const character = codex.objects.get(codex.objectNames.getId('character'));
+    const instance = new WorldObject(1, character, new WorldSession(codex));
+
+    const fatal = instance
+      .readPropertiesWithTag(codex.propertyTagNames.getId('status'))
+      .filter((reading) => propOf(character, reading.name).alertLevelOf(0) === 'fatal');
+
+    expect(fatal.map((reading) => reading.name)).toEqual(['hydration']);
+  });
+
   // hydrationだけは実単位のmLに載るため-25/tick（LiquidContainerSystem.md 5節）。
   it.each([
     ['satiety', 100],

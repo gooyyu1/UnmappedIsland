@@ -49,11 +49,14 @@ export class PropertyWindow {
   private readonly metrics: ScreenMetrics;
   private readonly options: PropertyWindowOptions;
 
+  /** 今の行の内容（固定表示のトグルで印が変わるため差し替えられる、setTabs）。 */
+  private tabs: readonly PropertyTab[];
+
   /** 枠・見出し・タブ・閉じるボタンなど、タブを切り替えても作り直さないもの。 */
   private readonly frame: Phaser.GameObjects.GameObject[] = [];
 
   /** 今選ばれているタブのバーだけ。切り替えのたびに捨てて作り直す。 */
-  private rows: Phaser.GameObjects.GameObject[] = [];
+  private rows: StatusBar[] = [];
 
   private readonly tabButtons: Button[] = [];
   private selected = 0;
@@ -67,6 +70,7 @@ export class PropertyWindow {
     this.scene = scene;
     this.metrics = metrics;
     this.options = options;
+    this.tabs = options.tabs;
 
     const { area } = options;
     const padding = metrics.px(WINDOW_PADDING);
@@ -143,6 +147,19 @@ export class PropertyWindow {
     this.buildRows();
   }
 
+  /**
+   * 行の内容を書き換える（固定表示の印が変わるため）。並ぶ項目はキャラクターのプロパティで決まり
+   * 増減しないので、行は作り直さず中身だけ差し替える。
+   */
+  setTabs(tabs: readonly PropertyTab[]): void {
+    this.tabs = tabs;
+    const entries = this.tabs[this.selected]?.entries ?? [];
+    this.rows.forEach((row, index) => {
+      const entry = entries[index];
+      if (entry !== undefined) row.setContent(entry);
+    });
+  }
+
   private select(index: number): void {
     if (index === this.selected) return;
 
@@ -157,7 +174,7 @@ export class PropertyWindow {
 
     const rowHeight = StatusBar.height(this.metrics);
     const rowGap = this.metrics.px(ROW_GAP);
-    this.rows = (this.options.tabs[this.selected]?.entries ?? []).map(
+    this.rows = (this.tabs[this.selected]?.entries ?? []).map(
       (entry, index) =>
         new StatusBar(
           this.scene,

@@ -464,10 +464,23 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.statuses).toHaveLength(tagged.length);
-    // 初期値はどれもmax（characters.yaml）なので、バーは満タンになる。
+    // 初期値はどれもmax（characters.yaml）なので、バーは満タンで、どれも安全域に入る。
     expect(view.statuses.map((status) => status.ratio)).toEqual(tagged.map(() => 1));
+    expect(view.statuses.map((status) => status.alert)).toEqual(tagged.map(() => 'safe'));
+    expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((reading) => reading.name));
     // localeに登録の無いcharacterでは識別子がそのまま出る（Localization.md）。
     expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((reading) => reading.name));
+  });
+
+  it('ステータスの域は、値が減るとその区分に従って上がる', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const hydration = codex.propertyNames.getId('hydration');
+    // 残り6時間未満（600mL未満）で致命的域（characters.yaml）。
+    game.player.instance.setNumber(hydration, 500, game.session);
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.statuses.find((status) => status.key === 'hydration')?.alert).toBe('fatal');
   });
 
   it('プロパティウィンドウのタブはproperty_tagsの宣言順で、中身のないタグは出ない', () => {
