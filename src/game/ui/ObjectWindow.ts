@@ -3,10 +3,12 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
+import { durationText } from './durationText';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 import { wrapByCharacter } from './textLayout';
+import { Tooltip } from './Tooltip';
 
 /** 子ウィンドウの内側パディングと、内容同士の間隔（他の子ウィンドウと揃える）。 */
 const WINDOW_PADDING = 32;
@@ -26,9 +28,12 @@ const ACTION_GAP = 24;
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
 
-/** ボタンとして並べる1つの操作。 */
+/** ボタンとして並べる1つの操作。説明文とかかる時間は、ボタンの長押しで吹き出しに出す。 */
 export interface ObjectWindowAction {
   readonly label: string;
+  readonly description: string | undefined;
+  /** 実行にかかるゲーム内時間（分）。0なら吹き出しに時間の行を出さない。 */
+  readonly minutes: number;
   readonly onTap: () => void;
 }
 
@@ -54,6 +59,9 @@ export interface ObjectWindowOptions {
  */
 export class ObjectWindow {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
+
+  /** アクションのボタンを長押ししている間だけ出す吹き出し（addActions参照）。 */
+  private readonly tooltip: Tooltip;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
     const { width, height } = metrics;
@@ -114,11 +122,17 @@ export class ObjectWindow {
       width: contentWidth,
       height: actionHeight,
     });
+
+    // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
+    this.tooltip = new Tooltip(scene, metrics);
   }
 
   /**
    * 操作のボタンを1行に横並びにする。「閉じる」も同じ行の末尾に置く（探索ウィンドウと同じ扱い）。
    * 幅は行の中で等分し、数が少ないときに間延びしないよう上限で頭打ちにして、行ごと中央へ寄せる。
+   *
+   * アクションのボタンは、長押しの間だけ説明文とかかる時間を吹き出しに出す。ボタンには名前しか
+   * 載らないので、実行する前に「何が起きるか・どれだけ時間を取られるか」を確かめられるようにする。
    */
   private addActions(
     scene: Phaser.Scene,
@@ -128,6 +142,8 @@ export class ObjectWindow {
   ): void {
     const close: ObjectWindowAction = {
       label: '閉じる',
+      description: undefined,
+      minutes: 0,
       onTap: () => {
         this.close();
         options.onClose();
@@ -143,20 +159,41 @@ export class ObjectWindow {
     const left = row.x + (row.width - (buttonWidth * buttons.length + gap * (buttons.length - 1))) / 2;
 
     buttons.forEach((action, index) => {
+      const rect = {
+        x: left + index * (buttonWidth + gap),
+        y: row.y,
+        width: buttonWidth,
+        height: row.height,
+      };
       this.objects.push(
         addTextButton(
           scene,
           metrics,
-          { x: left + index * (buttonWidth + gap), y: row.y, width: buttonWidth, height: row.height },
+          rect,
           action.label,
           { fill: action === close ? COLOR.button : COLOR.primaryButton },
           action.onTap,
+          action === close
+            ? undefined
+            : {
+                onStart: () =>
+                  this.tooltip.show(
+                    {
+                      title: action.label,
+                      body: action.description,
+                      note: durationText(action.minutes),
+                    },
+                    rect,
+                  ),
+                onEnd: () => this.tooltip.hide(),
+              },
         ),
       );
     });
   }
 
   close(): void {
+    this.tooltip.destroy();
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
   }

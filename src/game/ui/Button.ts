@@ -9,6 +9,18 @@ import { COLOR, SIZE } from './theme';
 /** 押下中の沈み込み表現。実装が絵を持たないため、透過で押されたことを示す。 */
 const PRESSED_ALPHA = 0.6;
 
+/** 長押しと見なすまでの時間（カードの端を押し続けたときの1枚目と同じ）。 */
+const HOLD_MS = 400;
+
+/**
+ * 長押しの受け口。押している間だけ説明を見せる用途なので、始まりと終わりの両方を受け取る。
+ * 長押しになった押下は「押された」ことにならず、指を離してもonTapは呼ばれない。
+ */
+export interface HoldHandlers {
+  readonly onStart: () => void;
+  readonly onEnd: () => void;
+}
+
 /**
  * 角丸矩形の押しボタン。中身（アイコン・ラベル）は呼び出し側がaddContentで足す。
  *
@@ -20,7 +32,11 @@ export class Button extends Phaser.GameObjects.Container {
 
   private readonly background: Phaser.GameObjects.Graphics;
 
-  constructor(scene: Phaser.Scene, rect: Rect, style: BoxStyle, onTap?: () => void) {
+  /** 長押しの計時と、既に長押しになったか（なったなら離しても押されたことにしない）。 */
+  private holdTimer: Phaser.Time.TimerEvent | undefined;
+  private holding = false;
+
+  constructor(scene: Phaser.Scene, rect: Rect, style: BoxStyle, onTap?: () => void, hold?: HoldHandlers) {
     super(scene, rect.x, rect.y);
     this.boxWidth = rect.width;
     this.boxHeight = rect.height;
@@ -37,15 +53,39 @@ export class Button extends Phaser.GameObjects.Container {
       Phaser.Geom.Rectangle.Contains,
     );
     onPressRelease(this, {
-      onPress: () => this.setAlpha(PRESSED_ALPHA),
-      onCancel: () => this.setAlpha(1),
+      onPress: () => {
+        this.setAlpha(PRESSED_ALPHA);
+        if (hold !== undefined) {
+          this.holdTimer = scene.time.delayedCall(HOLD_MS, () => {
+            this.holding = true;
+            hold.onStart();
+          });
+        }
+      },
+      onCancel: () => {
+        this.setAlpha(1);
+        this.endHold(hold);
+      },
       onRelease: () => {
         this.setAlpha(1);
-        onTap?.();
+        const held = this.holding;
+        this.endHold(hold);
+        if (!held) onTap?.();
       },
     });
+    // 押している最中に画面が作り直されることがある。計時を止めないと、消えたボタンの長押しが後から始まる。
+    this.once(Phaser.GameObjects.Events.DESTROY, () => this.endHold(hold));
 
     scene.add.existing(this);
+  }
+
+  private endHold(hold: HoldHandlers | undefined): void {
+    this.holdTimer?.remove();
+    this.holdTimer = undefined;
+    if (!this.holding) return;
+
+    this.holding = false;
+    hold?.onEnd();
   }
 
   /** 塗り・枠線を描き直す。フィルターボタンの選択状態のように、見た目だけが変わる切り替えに使う。 */
@@ -75,6 +115,7 @@ export function addTextButton(
   label: string,
   style: TextButtonStyle,
   onTap: () => void,
+  hold?: HoldHandlers,
 ): Button {
   const button = new Button(
     scene,
@@ -86,6 +127,7 @@ export function addTextButton(
       radius: metrics.px(SIZE.radius),
     },
     onTap,
+    hold,
   );
   button.addContent(
     addLabel(scene, metrics, rect.width / 2, rect.height / 2, label, {

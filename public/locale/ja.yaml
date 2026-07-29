@@ -30,8 +30,10 @@ object_texts:
         description: この道を通って、繋がっている土地へ向かう。
       eat:
         display_name: 食べる
+        description: その場で食べる。腹が満ち、含まれている栄養と水分が身体に入る。
       drink:
         display_name: 飲む
+        description: 一口（250mL）飲む。残りが少なければ、残っている分だけ飲む。
     combinations:
       pour_in:
         display_name: 注ぎ移す

@@ -88,6 +88,8 @@ export interface CardAction {
   readonly name: string;
   /** 説明文。localeに書かれていなければundefined。 */
   readonly description: string | undefined;
+  /** 実行にかかるゲーム内時間（分）。時間を消費しない操作は0。 */
+  readonly minutes: number;
   /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
   readonly execute: () => void;
 }
@@ -100,6 +102,8 @@ export interface CardCombination {
   readonly name: string;
   /** 説明文。localeに書かれていなければundefined。 */
   readonly description: string | undefined;
+  /** 実行にかかるゲーム内時間（分）。時間を消費しない組み合わせは0。 */
+  readonly minutes: number;
   /**
    * ドラッグされた側として使われるインスタンス。同じ束へ重ねたときは束の2つ目になるため、束の代表とは
    * 限らない。画面側は「掴んでいたカード」の行方を追う（CardMotion.MotionContext.released）のに使う。
@@ -260,6 +264,7 @@ export function fromGameSession(
       return {
         name: declared.displayName,
         description: declared.description,
+        minutes: instance.actionMinutes(action.name, game.player.instance),
         execute: () => {
           instance.tryExecuteAction(action.name, game.player.instance, game.session);
         },
@@ -440,6 +445,7 @@ export function fromGameSession(
       return {
         name: texts.displayName,
         description: texts.description,
+        minutes: first.combinationMinutes(source, game.player.instance, combination.name),
         source,
         execute: () => {
           first.tryExecuteCombination(source, game.player.instance, combination.name, game.session);

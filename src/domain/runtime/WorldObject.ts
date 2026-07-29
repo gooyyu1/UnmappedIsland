@@ -595,6 +595,11 @@ export class WorldObject {
     return this.def.tryExecuteAction(this, actor, actionName, session);
   }
 
+  /** actionNameの実行にかかるゲーム内時間（分）。実行前に所要時間を見せるために使う。 */
+  actionMinutes(actionName: string, actor: WorldObject | undefined): number {
+    return this.def.actionMinutes(this, actor, actionName);
+  }
+
   tryExecuteCombination(
     dragged: WorldObject,
     actor: WorldObject | undefined,
@@ -602,6 +607,11 @@ export class WorldObject {
     session: WorldSession,
   ): boolean {
     return this.def.tryExecuteCombination(this, dragged, actor, combinationName, session);
+  }
+
+  /** combinationNameの実行にかかるゲーム内時間（分）。 */
+  combinationMinutes(dragged: WorldObject, actor: WorldObject | undefined, combinationName: string): number {
+    return this.def.combinationMinutes(this, dragged, actor, combinationName);
   }
 
   findMatchingCombinations(dragged: WorldObject): readonly CombinationDef[] {

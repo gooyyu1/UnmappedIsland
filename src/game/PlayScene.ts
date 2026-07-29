@@ -35,6 +35,7 @@ import { PropertyWindow } from './ui/PropertyWindow';
 import { SlotWindow } from './ui/SlotWindow';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
+import { durationText } from './ui/durationText';
 import { addLabel } from './ui/labels';
 import type { BoxStyle } from './ui/shapes';
 import { addPanel, addTiledImage, addTiledImageVertical } from './ui/shapes';
@@ -357,7 +358,13 @@ export class PlayScene extends ResponsiveScene {
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
     const combination = this.combinationAt(drop);
     if (combination !== undefined) {
-      return { tooltip: { title: combination.name, body: combination.description } };
+      return {
+        tooltip: {
+          title: combination.name,
+          body: combination.description,
+          note: durationText(combination.minutes),
+        },
+      };
     }
     return this.dropAction(drop) === undefined ? undefined : {};
   }
@@ -436,6 +443,8 @@ export class PlayScene extends ResponsiveScene {
 
     const actions: ObjectWindowAction[] = card.actions.map((action) => ({
       label: action.name,
+      description: action.description,
+      minutes: action.minutes,
       onTap: () => {
         this.closeObjectWindow();
         this.applyToWorld(action.execute);

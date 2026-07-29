@@ -12,20 +12,33 @@ const CARD_GAP = 16;
 /** 文字の大きさ（u単位）。指で操作するゲームなので、カードの名前より大きく取る。 */
 const TITLE_SIZE = 46;
 const BODY_SIZE = 34;
+const NOTE_SIZE = 30;
+
+/** 補足の行の薄さ（本文より一段引いて見せる）。 */
+const NOTE_ALPHA = 0.8;
 
 /** 吹き出しの最大幅（u単位）。画面が狭ければそちらに合わせて縮む。 */
 const MAX_WIDTH = 700;
 
+/** 吹き出しに出す文言。 */
+export interface TooltipContent {
+  readonly title: string;
+  readonly body?: string;
+  /** 本文に続く補足（かかる時間など）。本文より小さく薄く出す。 */
+  readonly note?: string;
+}
+
 /**
- * ドラッグ中のカードを重ねたときに何が起きるかを出す吹き出し。
+ * これから何が起きるかを出す吹き出し。ドラッグ中のカードを重ねたとき（CardDragController）と、
+ * アクションのボタンを長押ししたとき（ObjectWindow）に出す。
  *
- * 置き場所は掴んでいるカードの真上。指はカードの中心にあるので、上へ逃がせば隠れない。上に入り切らない
- * 場合だけ下へ回す（画面の上端に近いレーンで掴んだとき）。
+ * 置き場所は基準にした矩形（掴んでいるカード・押しているボタン）の真上。指はその中心にあるので、
+ * 上へ逃がせば隠れない。上に入り切らない場合だけ下へ回す。
  *
  * 中身の作り直しは文言が変わったときだけ行う。ポインタが動くたびにTextを作り直すと、そのたびに
  * テクスチャが焼き直されて重いため。
  */
-export class DropTooltip {
+export class Tooltip {
   private readonly scene: Phaser.Scene;
   private readonly metrics: ScreenMetrics;
   private readonly container: Phaser.GameObjects.Container;
@@ -43,22 +56,22 @@ export class DropTooltip {
     this.container = scene.add.container(0, 0).setVisible(false);
   }
 
-  /** 掴んでいるカードの矩形を基準に、その上（入らなければ下）へ出す。 */
-  show(title: string, body: string | undefined, card: Rect): void {
-    const key = `${title}\n${body ?? ''}`;
+  /** atの矩形を基準に、その上（入らなければ下）へ出す。 */
+  show(content: TooltipContent, at: Rect): void {
+    const key = `${content.title}\n${content.body ?? ''}\n${content.note ?? ''}`;
     if (key !== this.shown) {
       this.shown = key;
-      this.build(title, body);
+      this.build(content);
     }
 
     const gap = this.metrics.px(CARD_GAP);
     const margin = this.metrics.px(SIZE.margin * 2);
-    const above = card.y - gap - this.height;
-    const y = above >= margin ? above : card.y + card.height + gap;
+    const above = at.y - gap - this.height;
+    const y = above >= margin ? above : at.y + at.height + gap;
 
     this.container.setPosition(
       Phaser.Math.Clamp(
-        card.x + (card.width - this.width) / 2,
+        at.x + (at.width - this.width) / 2,
         margin,
         Math.max(margin, this.metrics.width - margin - this.width),
       ),
@@ -76,7 +89,7 @@ export class DropTooltip {
     this.container.destroy();
   }
 
-  private build(title: string, body: string | undefined): void {
+  private build(content: TooltipContent): void {
     this.container.removeAll(true);
 
     const padding = this.metrics.px(PADDING);
@@ -84,12 +97,16 @@ export class DropTooltip {
       Math.min(this.metrics.px(MAX_WIDTH), this.metrics.width - this.metrics.px(SIZE.margin * 4)) -
       padding * 2;
 
-    const titleText = this.addText(title, TITLE_SIZE, true, maxTextWidth);
-    const bodyText = body === undefined ? undefined : this.addText(body, BODY_SIZE, false, maxTextWidth);
+    const lines = [this.addText(content.title, TITLE_SIZE, true, maxTextWidth)];
+    if (content.body !== undefined) lines.push(this.addText(content.body, BODY_SIZE, false, maxTextWidth));
+    if (content.note !== undefined) {
+      lines.push(this.addText(content.note, NOTE_SIZE, false, maxTextWidth).setAlpha(NOTE_ALPHA));
+    }
 
     const lineGap = this.metrics.px(LINE_GAP);
-    this.width = Math.max(titleText.width, bodyText?.width ?? 0) + padding * 2;
-    this.height = titleText.height + (bodyText === undefined ? 0 : lineGap + bodyText.height) + padding * 2;
+    this.width = Math.max(...lines.map((line) => line.width)) + padding * 2;
+    this.height =
+      lines.reduce((total, line) => total + line.height, 0) + lineGap * (lines.length - 1) + padding * 2;
 
     const face = this.scene.add.graphics();
     drawBox(
@@ -104,9 +121,12 @@ export class DropTooltip {
       },
     );
 
-    titleText.setPosition(padding, padding);
-    bodyText?.setPosition(padding, padding + titleText.height + lineGap);
-    this.container.add([face, titleText, ...(bodyText === undefined ? [] : [bodyText])]);
+    let cursorY = padding;
+    for (const line of lines) {
+      line.setPosition(padding, cursorY);
+      cursorY += line.height + lineGap;
+    }
+    this.container.add([face, ...lines]);
   }
 
   private addText(value: string, size: number, bold: boolean, maxWidth: number): Phaser.GameObjects.Text {

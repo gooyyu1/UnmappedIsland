@@ -409,6 +409,39 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(0);
   });
 
+  it('アクションはかかる時間を持つ（durationを持たなければ0）', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const path = pathsIn(game.startLocation, codex)[0];
+    const coconut = game.session.spawn(codex.objectNames.getId('coconut'));
+    expect(
+      coconut.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+
+    // 道のtravelのdurationは、その道のtravel_minutesを引く（locations.yaml）。
+    const travel = view.fixtures.find((card) => card.objects[0] === path)!.actions[0];
+    expect(travel.minutes).toBe(new Path(path, codex.propertyNames).travelMinutes);
+    expect(travel.minutes, '移動には時間がかかる').toBeGreaterThan(0);
+    expect(view.hand[0]?.actions[0].minutes, 'eatはdurationを持たない').toBe(0);
+  });
+
+  it('combinationもかかる時間を持つ', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const itemsSlotId = codex.slotNames.getId('items');
+    for (const name of ['stone', 'stone']) {
+      const stone = game.session.spawn(codex.objectNames.getId(name));
+      expect(stone.moveToSlot(game.startLocation.instance, itemsSlotId, codex.wellKnown)).toBeUndefined();
+    }
+
+    const view = fromGameSession(game, codex, locale);
+    const stones = view.items.find((card) => card.objects[0].def.name === 'stone')!;
+
+    // 石を打ち割るknapのdurationは60分（locations.yaml）。
+    expect(view.combinationOf(stones, stones)?.minutes).toBe(60);
+  });
+
   it('道のカードのアクションで、現在地が行き先へ移る', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);

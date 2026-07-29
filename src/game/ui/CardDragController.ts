@@ -2,7 +2,8 @@ import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
-import { DropTooltip } from './DropTooltip';
+import type { TooltipContent } from './Tooltip';
+import { Tooltip } from './Tooltip';
 import { drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 
@@ -44,7 +45,7 @@ export interface CardDrop {
 /** そのドロップで何が起きるか。 */
 export interface CardDropInfo {
   /** 重ねたときに何が起きるかの説明（combinationのときだけ持つ）。 */
-  readonly tooltip?: { readonly title: string; readonly body: string | undefined };
+  readonly tooltip?: TooltipContent;
 }
 
 export interface CardDragHandlers {
@@ -71,7 +72,7 @@ interface Gesture {
   /** 受け入れられるカードのふちの光と、その明滅。 */
   glow: Phaser.GameObjects.Graphics | undefined;
   glowPulse: Phaser.Tweens.Tween | undefined;
-  tooltip: DropTooltip | undefined;
+  tooltip: Tooltip | undefined;
 }
 
 /**
@@ -194,7 +195,7 @@ export class CardDragController {
     this.showAcceptingCards(gesture);
     gesture.indicator = this.scene.add.graphics();
     gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, cardFace(gesture.card.content));
-    gesture.tooltip = new DropTooltip(this.scene, this.metrics());
+    gesture.tooltip = new Tooltip(this.scene, this.metrics());
     this.follow(pointer);
   }
 
@@ -255,7 +256,7 @@ export class CardDragController {
     });
 
     if (info.tooltip === undefined) gesture.tooltip?.hide();
-    else gesture.tooltip?.show(info.tooltip.title, info.tooltip.body, ghostRect(gesture)!);
+    else gesture.tooltip?.show(info.tooltip, ghostRect(gesture)!);
   }
 
   /** 今のポインタ位置で成立するドロップと、そこで起きること（何も起きないものはundefined）。 */
