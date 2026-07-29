@@ -121,6 +121,9 @@ export class Card extends Phaser.GameObjects.Container {
   private edgeRepeatDelay = EDGE_REPEAT_MS;
   private edgeRepeated = false;
 
+  /** 今の押下がタップでなくなったか（cancelTap参照）。押し始めるたびに戻す。 */
+  private tapCancelled = false;
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, content: CardContent) {
     super(scene, x, y);
     const { icon, name } = content;
@@ -229,13 +232,28 @@ export class Card extends Phaser.GameObjects.Container {
 
   private makeTappable(): void {
     onPressRelease(this, {
-      onPress: () => this.setAlpha(PRESSED_ALPHA),
+      onPress: () => {
+        this.tapCancelled = false;
+        this.setAlpha(PRESSED_ALPHA);
+      },
       onCancel: () => this.setAlpha(1),
       onRelease: () => {
         this.setAlpha(1);
-        this._content.onTap?.();
+        if (!this.tapCancelled) this._content.onTap?.();
       },
     });
+  }
+
+  /**
+   * 今の押下をタップとして扱わない。掴んで動かす操作（カードのドラッグ・レーンの横スクロール）に
+   * なったと分かった時点でCardDragControllerが呼ぶ。
+   *
+   * 押し始めたカードの上で指を離すと、動かしていてもタップとして成立してしまう（tap.ts）。
+   * スタックの上の1枚を自分の位置へ重ねる操作（石と石の組み合わせ）や、カードを掴んだままの
+   * レーンの横スクロールがこれに当たり、そのままでは操作のたびに子ウィンドウが開いてしまう。
+   */
+  cancelTap(): void {
+    this.tapCancelled = true;
   }
 
   /**

@@ -178,8 +178,13 @@ export class CardDragController {
     const dy = pointer.y - gesture.startY;
     if (Math.hypot(dx, dy) < this.metrics().px(DIRECTION_THRESHOLD)) return;
 
-    if (Math.abs(dy) > Math.abs(dx) * VERTICAL_RATIO) this.startDragging(pointer);
-    else gesture.kind = 'scrolling';
+    if (Math.abs(dy) > Math.abs(dx) * VERTICAL_RATIO) {
+      this.startDragging(pointer);
+      return;
+    }
+
+    gesture.kind = 'scrolling';
+    gesture.card.cancelTap();
   }
 
   private startDragging(pointer: Phaser.Input.Pointer): void {
@@ -187,6 +192,8 @@ export class CardDragController {
     if (gesture === undefined) return;
 
     gesture.kind = 'dragging';
+    // 掴んで動かす操作になったので、掴んだカードの上で指を離してもタップにはしない（Card.cancelTap）。
+    gesture.card.cancelTap();
     // 掴んで動くのは1つだけなので、スタックは残りがそこに居る。薄くするのは場所ごと空くときだけ。
     if ((gesture.card.content.count ?? 1) < 2) gesture.card.setAlpha(GRABBED_ALPHA);
 
