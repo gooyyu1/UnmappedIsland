@@ -129,7 +129,9 @@ export class ObjectDef {
   /** actionNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。対象の解決はtryExecuteActionと同じ。 */
   actionMinutes(self: WorldObject, actor: WorldObject | undefined, actionName: string): number {
     const resolved = self.resolveInteractionTarget();
-    return resolved.def.actions.find((a) => a.name === actionName)?.minutesFor(resolved, actor) ?? 0;
+    return (
+      resolved.def.actions.find((a) => a.name === actionName)?.minutesFor(resolved, undefined, actor) ?? 0
+    );
   }
 
   /** combinationNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。 */

@@ -14,6 +14,7 @@ import {
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyPath } from '../domain/defs/ReferenceRoot';
 import type { ActiveEffect } from '../domain/defs/ActiveEffect';
+import type { ConditionNode } from '../domain/defs/ConditionNode';
 import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/defs/PickEffect';
 import { ActionDef } from '../domain/defs/ActionDef';
 import { CombinationDef } from '../domain/defs/CombinationDef';
@@ -126,6 +127,42 @@ const ACTION_RESERVED_KEYS = ['showMenu', 'conditions', 'duration', 'pick'] as c
 /** combinationエントリが持つ、with/conditions/duration/pick以外の兄弟キー（set/add/destroy/spawn）。 */
 const COMBINATION_RESERVED_KEYS = ['with', 'conditions', 'duration', 'pick'] as const;
 
+/** actions・combinationsに共通する中身（InteractionDefが持つもの）。 */
+interface InteractionBody {
+  readonly conditions: ConditionNode | undefined;
+  readonly effect: ActiveEffect | undefined;
+  readonly duration: WeightSpec | undefined;
+}
+
+/**
+ * 操作1つの中身を読む。actionsとcombinationsで違うのは、draggedを指せるか（＝条件・効果・durationの
+ * 起点にdraggedを許すか）と、効果の兄弟キーとして無視する予約キーだけ。
+ */
+function parseInteractionBody(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  allowDragged: boolean,
+  reservedKeys: readonly string[],
+): InteractionBody {
+  const conditions = parseConditionsField(
+    loader,
+    context,
+    tryGetSeq(map, 'conditions', context),
+    allowDragged ? COMBINATION_CONDITION_ROOTS : ACTION_CONDITION_ROOTS,
+  );
+  const effect = parseEffect(loader, context, map, allowDragged, reservedKeys);
+
+  // duration: 実行にかかるゲーム内時間（分）。省略時は時間を消費しない。
+  const durationNode = tryGetNode(map, 'duration');
+  const duration =
+    durationNode !== undefined
+      ? parseWeight(loader, `${context}.duration`, durationNode, allowDragged, 'duration')
+      : undefined;
+
+  return { conditions, effect, duration };
+}
+
 /** actions_map（11節）を読む。trait合成済みのノードを渡すこと。
  * dragged対象はメニュー型操作では意味を持たないため不可。 */
 export function parseActions(
@@ -146,22 +183,8 @@ export function parseActions(
         `${context}: showMenuは現時点で'always'のみ対応しています（値: '${showMenuRaw}'）。`,
       );
 
-    const conditions = parseConditionsField(
-      loader,
-      context,
-      tryGetSeq(map, 'conditions', context),
-      ACTION_CONDITION_ROOTS,
-    );
-    const effect = parseEffect(loader, context, map, false, ACTION_RESERVED_KEYS);
-
-    // duration: 実行にかかるゲーム内時間（分）。省略時は時間を消費しない。
-    const durationNode = tryGetNode(map, 'duration');
-    const duration =
-      durationNode !== undefined
-        ? parseWeight(loader, `${context}.duration`, durationNode, false, 'duration')
-        : undefined;
-
-    result.push(new ActionDef(name, 'always', conditions, effect, duration));
+    const body = parseInteractionBody(loader, context, map, false, ACTION_RESERVED_KEYS);
+    result.push(new ActionDef(name, 'always', body.conditions, body.effect, body.duration));
   }
 
   return result;
@@ -181,21 +204,8 @@ export function parseCombinations(
     const map = asMap(node, context);
 
     const withId = loader.tagNames.intern(requireScalar(map, 'with', context));
-    const conditions = parseConditionsField(
-      loader,
-      context,
-      tryGetSeq(map, 'conditions', context),
-      COMBINATION_CONDITION_ROOTS,
-    );
-    const effect = parseEffect(loader, context, map, true, COMBINATION_RESERVED_KEYS);
-
-    const durationNode = tryGetNode(map, 'duration');
-    const duration =
-      durationNode !== undefined
-        ? parseWeight(loader, `${context}.duration`, durationNode, true, 'duration')
-        : undefined;
-
-    result.push(new CombinationDef(name, withId, conditions, effect, duration));
+    const body = parseInteractionBody(loader, context, map, true, COMBINATION_RESERVED_KEYS);
+    result.push(new CombinationDef(name, withId, body.conditions, body.effect, body.duration));
   }
 
   return result;

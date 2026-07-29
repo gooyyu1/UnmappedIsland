@@ -193,10 +193,9 @@ WorldSession.rngのシードが異なっても同じ島レイアウトになる�
 地形生成の実装にあわせて `GameElementDefinition.md` へ追加した2つの汎用エンジン拡張（`duration`/`move`、
 `ExplorationSystem.md` 4節）は、以下のコードに対応します。
 
-- **`duration`**: `ActionDef` が `WeightSpec | undefined` 型の `duration` フィールドを持ちます。
-  `ActionDef.tryExecute` の中で、`conditions` 判定 → `effect` の `WorldObject.applyActiveEffect` →
-  `duration` を解決して `session.advanceWorldTime(minutes)`、の順で処理します（`session.world` が
-  `undefined` なら時間進行だけスキップ）。
+- **`duration`**: `InteractionDef`（`ActionDef`/`CombinationDef` の基底）が `WeightSpec | undefined` 型の
+  `duration` フィールドを持ち、実行時に自分で時間を進めます（順序は
+  [`ActionSystem.md`](./ActionSystem.md) 2節）。
 - **`move`**: `MoveEffect`（`ActiveEffect` の一種）です。`apply` の中で
   `owner.findRoot().findDescendantByInstanceId(destinationId)` で移動先を解決し、
   `mover.moveIntoFirstAcceptingSlot(destination, ...)` で配置します。`findRoot`/
