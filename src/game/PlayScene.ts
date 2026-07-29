@@ -21,7 +21,8 @@ import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX } from './ui/informationArt';
-import { HAND_LANE_TEXTURE, LANE_SEPARATOR_TEXTURE, laneTexture } from './ui/laneArt';
+import { HAND_LANE_TEXTURE, laneTexture } from './ui/laneArt';
+import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
@@ -189,11 +190,15 @@ export class PlayScene extends ResponsiveScene {
     // レーンのはみ出しを隠す背景板を兼ねる。縦型は情報エリアの中なので、ページを敷いた後に置く。
     if (this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
     // 区切りの帯は隣接エリアへもかぶるため、それらの背景板を描き終えてから敷く。
-    for (const rect of layout.laneSeparators) addTiledImage(this, rect, LANE_SEPARATOR_TEXTURE);
+    for (const rect of layout.laneSeparators) addTiledImage(this, rect, SEPARATOR_TEXTURE);
     // 情報エリアのページはフィールドエリアへ食い込むので、帯より後（＝手前）に置く。
     this.buildInformationArea(layout);
     this.buildDashboard(layout);
     if (!this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
+    // オプションバーと情報エリアの境目の帯は、バーの上に重ねるので最後に敷く（縦型のみ）。
+    if (layout.optionsBarSeparator !== undefined) {
+      addTiledImage(this, layout.optionsBarSeparator, SEPARATOR_TEXTURE);
+    }
     if (wasExploring) this.openExplorationWindow();
     if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
     if (wasShowingProperties) this.openPropertyWindow();

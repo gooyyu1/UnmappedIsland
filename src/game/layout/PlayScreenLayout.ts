@@ -80,6 +80,12 @@ export class PlayScreenLayout {
   readonly laneSeparators: readonly Rect[];
 
   /**
+   * オプションバーと情報エリアの境目に敷く帯（縦型のみ。横型のオプションバーは右サイドバーで、
+   * 情報エリアと接していないためundefined）。
+   */
+  readonly optionsBarSeparator: Rect | undefined;
+
+  /**
    * ハンドレーンを覆わない子ウィンドウ（装備・怪我・コンテナ）の置き場所。手持ちとカードを
    * やり取りする操作があるため、開いている間も手持ちが見えている必要がある。
    */
@@ -201,6 +207,9 @@ export class PlayScreenLayout {
 
     this.lanes = this.buildLanes();
     this.laneSeparators = this.buildLaneSeparators();
+    this.optionsBarSeparator = metrics.isLandscape
+      ? undefined
+      : separatorAt(this.optionsBar.y + this.optionsBar.height, this.optionsBar, u(SIZE.margin) * 2);
 
     const handLane = this.lanes[2];
     this.slotWindowArea = {
@@ -227,7 +236,7 @@ export class PlayScreenLayout {
   }
 
   /**
-   * レーンの区切りの帯（ScreenLayout.md レーンの区切り節）。
+   * レーンの区切りの帯（ScreenLayout.md エリアの区切り節）。
    *
    * 帯は絵の中央半分だけが区切りそのもので、上下1/4ずつは隣のレーンへかぶせる前提で描かれている。
    * そのため高さはレーンの隙間の2倍を取り、隙間の中心線に対して上下対称に置く。
@@ -239,11 +248,14 @@ export class PlayScreenLayout {
       this.lanes[0].y - margin / 2,
       ...this.lanes.map((lane) => lane.y + lane.height + margin / 2),
     ];
-    return centers.map((center) => ({
-      x: this.fieldArea.x,
-      y: center - height / 2,
-      width: this.fieldArea.width,
-      height,
-    }));
+    return centers.map((center) => separatorAt(center, this.fieldArea, height));
   }
+}
+
+/**
+ * 境目の線に対して上下対称に置く帯。絵は中央半分だけが区切りそのもので、上下1/4ずつは隣のエリアへ
+ * かぶせる前提で描かれている（ScreenLayout.md）。
+ */
+function separatorAt(center: number, span: Rect, height: number): Rect {
+  return { x: span.x, y: center - height / 2, width: span.width, height };
 }

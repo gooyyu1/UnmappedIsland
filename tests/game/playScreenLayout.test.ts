@@ -122,6 +122,20 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.informationArea.y + layout.informationArea.height).toBe(layout.fieldArea.y);
   });
 
+  it('オプションバーの下の区切りは縦型だけに置き、境目に対して上下対称になる', () => {
+    const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
+    const separator = portrait.optionsBarSeparator;
+    const boundary = portrait.optionsBar.y + portrait.optionsBar.height;
+
+    expect(separator).toBeDefined();
+    expect(separator?.height, 'レーンの区切りと同じ厚み').toBe(12);
+    expect((separator?.y ?? 0) + (separator?.height ?? 0) / 2, '境目が帯の中心').toBe(boundary);
+    expect(separator?.width, '幅はオプションバーいっぱい').toBe(portrait.optionsBar.width);
+
+    // 横型のオプションバーは右サイドバーで、情報エリアと接していない。
+    expect(new PlayScreenLayout(new ScreenMetrics(1920, 1080)).optionsBarSeparator).toBeUndefined();
+  });
+
   it('9:16より縦長でない縦型ではフィールドエリアを縮めてダッシュボード列を確保する', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1400));
 

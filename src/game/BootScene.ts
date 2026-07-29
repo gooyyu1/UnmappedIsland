@@ -7,6 +7,7 @@ import cardFrameUrl from '../assets/card_frame.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
 import { INFORMATION_ART } from './ui/informationArt';
 import { LANE_ART } from './ui/laneArt';
+import { SEPARATOR_ART } from './ui/separatorArt';
 import { OBJECT_ART, objectTexture } from './ui/objectArt';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 
@@ -47,6 +48,8 @@ export class BootScene extends Phaser.Scene {
     for (const [texture, url] of LANE_ART) this.load.image(texture, url);
     // 情報エリア（フィールドエリアの左／上）の背景。向きごとに1枚ずつ。
     for (const [texture, url] of INFORMATION_ART) this.load.image(texture, url);
+    // エリアの境目に敷く帯。
+    for (const [texture, url] of SEPARATOR_ART) this.load.image(texture, url);
   }
 
   create(): void {
