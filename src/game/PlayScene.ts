@@ -28,6 +28,8 @@ import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
 import { ModalDialog } from './ui/ModalDialog';
+import type { ObjectWindowAction } from './ui/ObjectWindow';
+import { ObjectWindow } from './ui/ObjectWindow';
 import { ProgressRing } from './ui/ProgressRing';
 import { PropertyWindow } from './ui/PropertyWindow';
 import { SlotWindow } from './ui/SlotWindow';
@@ -142,6 +144,13 @@ export class PlayScene extends ResponsiveScene {
   /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
   private propertyWindow: PropertyWindow | undefined;
 
+  /**
+   * 開いているオブジェクトの子ウィンドウと、それが映しているカード。開いている間はワールドが
+   * 変わらない（覆いが画面全体を塞ぐ）ため、作り直しのときは同じカードのまま開き直せる。
+   */
+  private objectWindow: ObjectWindow | undefined;
+  private objectWindowCard: ObjectCardStack | undefined;
+
   /** 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。 */
   private searching = false;
   private found: readonly CardContent[] = [];
@@ -175,10 +184,13 @@ export class PlayScene extends ResponsiveScene {
     const wasExploring = this.explorationWindow !== undefined;
     const openedPlace = this.slotWindowPlace;
     const wasShowingProperties = this.propertyWindow !== undefined;
+    const openedCard = this.objectWindowCard;
     this.explorationWindow = undefined;
     this.slotWindow = undefined;
     this.slotWindowPlace = undefined;
     this.propertyWindow = undefined;
+    this.objectWindow = undefined;
+    this.objectWindowCard = undefined;
     this.fieldArea = layout.fieldArea;
     this.slotWindowArea = layout.slotWindowArea;
 
@@ -206,6 +218,8 @@ export class PlayScene extends ResponsiveScene {
     if (wasExploring) this.openExplorationWindow();
     if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
     if (wasShowingProperties) this.openPropertyWindow();
+    // オブジェクトの子ウィンドウは他の子ウィンドウの上に出るので、最後に開き直す。
+    if (openedCard !== undefined) this.openObjectWindow(openedCard);
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
@@ -273,8 +287,9 @@ export class PlayScene extends ResponsiveScene {
    *
    * 移せない設置物・怪我にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
    *
-   * コンテナのカードは、押すと中身の子ウィンドウが開く。端の操作エリアは中央より手前に居るので、
-   * 端を押しての移動とは競合しない（Card参照）。
+   * カードを押すと、そのオブジェクトの子ウィンドウが開く。コンテナのカードだけは中身の子ウィンドウを
+   * 直接開く（中身を見る・出し入れするのがそのカードの主な用途のため）。端の操作エリアは中央より
+   * 手前に居るので、端を押しての移動とは競合しない（Card参照）。
    */
   private laneCards(
     cards: readonly (ObjectCardStack | undefined)[],
@@ -287,7 +302,8 @@ export class PlayScene extends ResponsiveScene {
       return {
         ...card,
         draggable: true,
-        onTap: contents === undefined ? undefined : () => this.openSlotWindow(contents),
+        onTap:
+          contents === undefined ? () => this.openObjectWindow(card) : () => this.openSlotWindow(contents),
         edge:
           move === undefined || direction === undefined
             ? undefined
@@ -407,6 +423,40 @@ export class PlayScene extends ResponsiveScene {
     this.refreshHandLane();
   }
 
+  /**
+   * カードを押すと開くオブジェクトの子ウィンドウ。そのカードで実行できるアクション（ActionSystem.md
+   * 1節）をボタンとして並べる。
+   *
+   * アクションを実行するとワールドが変わり、このカードが消えることも別の場所へ移ることもあるため、
+   * 押した時点でウィンドウを閉じる。
+   */
+  private openObjectWindow(card: ObjectCardStack): void {
+    this.objectWindow?.close();
+    this.objectWindowCard = card;
+
+    const actions: ObjectWindowAction[] = card.actions.map((action) => ({
+      label: action.name,
+      onTap: () => {
+        this.closeObjectWindow();
+        this.applyToWorld(action.execute);
+      },
+    }));
+
+    this.objectWindow = new ObjectWindow(this, this.metrics, {
+      card,
+      description: card.description,
+      actions,
+      area: this.slotWindowArea,
+      onClose: () => this.closeObjectWindow(),
+    });
+  }
+
+  private closeObjectWindow(): void {
+    this.objectWindow?.close();
+    this.objectWindow = undefined;
+    this.objectWindowCard = undefined;
+  }
+
   /** 手持ちのカードに付いている操作だけを引き直す（並びは変わらないので動きは出ない）。 */
   private refreshHandLane(): void {
     this.handLane.setCards(this.laneCards(this.view.hand, 'up'));
@@ -510,6 +560,15 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
+  /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
+  private leaveLocation(): void {
+    this.found = [];
+    // 置いてきた入れ物の中身は開いたままにできない。手に持っている入れ物も、開き直せば済むので一律に閉じる。
+    if (this.slotWindowPlace !== undefined && typeof this.slotWindowPlace !== 'string') {
+      this.closeSlotWindow();
+    }
+  }
+
   /** 経過分を日数・時刻へ直して時計に出す。画面を作り直した直後はまだ時計が無いことがある。 */
   private showClock(totalMinutes: number): void {
     if (this.calendar.scene === undefined) return;
@@ -532,9 +591,17 @@ export class PlayScene extends ResponsiveScene {
     if (this.passingTime) return;
 
     const startedAt = this.gameSession.world.totalMinutes;
+    const locationBefore = this.gameSession.player.location?.instance;
     change();
     this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+      // 移動で現在地が変わると、レーンの中身だけでなく現在地カードも背景の絵も総取り替えになる。
+      // 差し替えでは追いつかないので画面ごと作り直す（動きは出ない）。
+      if (this.gameSession.player.location?.instance !== locationBefore) {
+        this.leaveLocation();
+        this.rebuild();
+        return;
+      }
       this.showView(context);
     });
   }
