@@ -362,8 +362,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     const shown = declared.filter(
-      (name) =>
-        game.player.instance.readPropertiesWithTag(codex.propertyTagNames.getId(name)).length > 0,
+      (name) => game.player.instance.readPropertiesWithTag(codex.propertyTagNames.getId(name)).length > 0,
     );
     expect(view.propertyCategories.map((category) => category.name)).toEqual(shown);
     for (const category of view.propertyCategories) expect(category.entries.length).toBeGreaterThan(0);

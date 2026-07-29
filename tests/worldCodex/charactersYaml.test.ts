@@ -88,12 +88,7 @@ describe('characters.yamlのcharacter定義', () => {
     const status = instance.readPropertiesWithTag(codex.propertyTagNames.getId('status'));
     const nutrition = instance.readPropertiesWithTag(codex.propertyTagNames.getId('nutrition'));
 
-    expect(status.map((reading) => reading.name)).toEqual([
-      'satiety',
-      'hydration',
-      'wakefulness',
-      'stamina',
-    ]);
+    expect(status.map((reading) => reading.name)).toEqual(['satiety', 'hydration', 'wakefulness', 'stamina']);
     expect(nutrition.map((reading) => reading.name)).toContain('body_fat');
   });
 

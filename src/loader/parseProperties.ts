@@ -141,11 +141,7 @@ export function parseProp(
  * props.'name'.tags（6.9節）を読む。未宣言のタグ名はエラーにする（object_defのtagsと違い、
  * property_tagsという宣言の場があるため、綴り間違いをロード時に捕まえられる）。
  */
-function parsePropertyTags(
-  loader: WorldCodexYamlLoader,
-  context: string,
-  node: YAMLMap,
-): readonly number[] {
+function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): readonly number[] {
   const tagsNode = tryGetSeq(node, 'tags', context);
   if (tagsNode === undefined) return [];
 

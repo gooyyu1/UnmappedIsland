@@ -96,8 +96,7 @@ export class PropertyWindow {
     this.frame.push(card);
 
     const title = addLabel(scene, metrics, 0, 0, options.title, { size: 34, bold: true }).setOrigin(0.5, 0);
-    const windowHeight =
-      padding * 2 + title.height + gap + tabHeight + gap + rowsHeight + gap + actionHeight;
+    const windowHeight = padding * 2 + title.height + gap + tabHeight + gap + rowsHeight + gap + actionHeight;
     const windowX = clamp(area.x + (area.width - windowWidth) / 2, 0, width - windowWidth);
     const windowY = clamp(area.y + (area.height - windowHeight) / 2, 0, height - windowHeight);
     const centerX = windowX + windowWidth / 2;

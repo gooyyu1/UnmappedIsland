@@ -261,11 +261,7 @@ function mergeIdentifierMaps(
  * baseNodeのフィールドを持ちつつ、overlayNodeにあるフィールドで上書き・追加する（5節）。
  * unionKeysに挙げたフィールドだけは、両方が配列なら上書きせず連結する（PROP_UNION_KEYS参照）。
  */
-function shallowMergeFields(
-  baseNode: YAMLMap,
-  overlayNode: YAMLMap,
-  unionKeys: readonly string[],
-): YAMLMap {
+function shallowMergeFields(baseNode: YAMLMap, overlayNode: YAMLMap, unionKeys: readonly string[]): YAMLMap {
   const order: string[] = [];
   const byKey = new Map<string, YamlNode>();
 

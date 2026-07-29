@@ -119,9 +119,11 @@ object_defs:
     expect(propertyNamesWithTag(codex, character, 'health')).toEqual(['stamina']);
     // valueは上書き、rangeはtrait側を引き継ぐ（5節）という既存の規則は変わらない。
     expect(character.getNumber(codex.propertyNames.getId('stamina'))).toBe(80);
-    expect(codex.objects
-      .get(codex.objectNames.getId('character'))
-      .getPropertyDef(codex.propertyNames.getId('stamina'))?.range?.max).toBe(100);
+    expect(
+      codex.objects
+        .get(codex.objectNames.getId('character'))
+        .getPropertyDef(codex.propertyNames.getId('stamina'))?.range?.max,
+    ).toBe(100);
   });
 
   it('同じタグをtraitとobject_defの両方で宣言しても重複しない', () => {
