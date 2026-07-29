@@ -3,6 +3,14 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
+import {
+  ACTION_GAP,
+  ACTION_HEIGHT,
+  ACTION_MAX_WIDTH,
+  CONTENT_GAP,
+  WINDOW_PADDING,
+  centerWindow,
+} from './childWindow';
 import { durationText } from './durationText';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
@@ -10,20 +18,11 @@ import { COLOR, SIZE } from './theme';
 import { wrapByCharacter } from './textLayout';
 import { Tooltip } from './Tooltip';
 
-/** 子ウィンドウの内側パディングと、内容同士の間隔（他の子ウィンドウと揃える）。 */
-const WINDOW_PADDING = 32;
-const CONTENT_GAP = 24;
-
 /** 見出しと説明文の間隔。同じまとまりなので、内容同士の間隔より詰める。 */
 const TITLE_GAP = 12;
 
 /** ウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面ではカードごと縮める。 */
 const WINDOW_WIDTH = 760;
-
-/** ボタンの高さ（アイコンボタンと同じ最小タップ領域）と、幅の上限・間隔。 */
-const ACTION_HEIGHT = SIZE.iconButton;
-const ACTION_MAX_WIDTH = 420;
-const ACTION_GAP = 24;
 
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
@@ -95,30 +94,23 @@ export class ObjectWindow {
     const titleGap = metrics.px(TITLE_GAP);
     const contentHeight = Math.max(cardHeight, title.height + titleGap + description.height);
     const windowHeight = padding * 2 + contentHeight + gap + actionHeight;
-    const windowX = clamp(options.area.x + (options.area.width - windowWidth) / 2, 0, width - windowWidth);
-    const windowY = clamp(
-      options.area.y + (options.area.height - windowHeight) / 2,
-      0,
-      height - windowHeight,
-    );
-    drawBox(
-      board,
-      { x: windowX, y: windowY, width: windowWidth, height: windowHeight },
-      { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
-    );
+    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
+    drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
     this.objects.push(
-      new Card(scene, metrics, windowX + padding, windowY + padding, cardFace(options.card)).setScale(scale),
+      new Card(scene, metrics, window.x + padding, window.y + padding, cardFace(options.card)).setScale(
+        scale,
+      ),
     );
 
-    const textX = windowX + padding + cardWidth + gap;
-    title.setPosition(textX, windowY + padding);
+    const textX = window.x + padding + cardWidth + gap;
+    title.setPosition(textX, window.y + padding);
     description.setPosition(textX, title.y + title.height + titleGap);
     this.objects.push(title, description);
 
     this.addActions(scene, metrics, options, {
-      x: windowX + padding,
-      y: windowY + padding + contentHeight + gap,
+      x: window.x + padding,
+      y: window.y + padding + contentHeight + gap,
       width: contentWidth,
       height: actionHeight,
     });
@@ -197,8 +189,4 @@ export class ObjectWindow {
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), Math.max(min, max));
 }

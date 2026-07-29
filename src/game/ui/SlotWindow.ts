@@ -3,21 +3,14 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { CardLane } from './CardLane';
+import { ACTION_HEIGHT, ACTION_MAX_WIDTH, CONTENT_GAP, WINDOW_PADDING, centerWindow } from './childWindow';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 import { wrapByCharacter } from './textLayout';
 
-/** 子ウィンドウの内側パディングと、内容同士の間隔（探索ウィンドウと揃える）。 */
-const WINDOW_PADDING = 32;
-const CONTENT_GAP = 24;
-
 /** 中身が空でも保つ枠の数。1枚も無いときにウィンドウが潰れないようにするための最小幅。 */
 const MIN_SLOTS = 4;
-
-/** 閉じるボタンの高さ（アイコンボタンと同じ最小タップ領域）と幅。 */
-const ACTION_HEIGHT = SIZE.iconButton;
-const ACTION_WIDTH = 420;
 
 export interface SlotWindowOptions {
   /** ウィンドウの見出し（「装備」「怪我」、コンテナなら容器の名前）。 */
@@ -55,7 +48,6 @@ export class SlotWindow {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: SlotWindowOptions) {
-    const { width, height } = metrics;
     // 覆いは領域の中だけに敷く。画面全体を覆うと、開いている間も操作できるはずの手持ちが
     // 覆いに入力を吸われてしまうため（探索ウィンドウと違い、こちらは外とやり取りする）。
     this.objects.push(addPanel(scene, options.area, COLOR.modalOverlay, 0.5));
@@ -69,7 +61,7 @@ export class SlotWindow {
     // 見える枚数を増やす（それでも収まらない分はレーンの横スクロールで送る）。
     const slots = Math.max(MIN_SLOTS, options.cards.length);
     const contentWidth = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);
-    const windowWidth = Math.min(contentWidth + padding * 2, options.area.width, width * 0.92);
+    const windowWidth = Math.min(contentWidth + padding * 2, options.area.width, metrics.width * 0.92);
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
     const card = scene.add.graphics();
@@ -81,27 +73,18 @@ export class SlotWindow {
     title.setWordWrapCallback(wrapByCharacter(windowWidth - padding * 2));
 
     const windowHeight = padding * 2 + title.height + gap + laneHeight + gap + actionHeight;
-    const windowX = clamp(options.area.x + (options.area.width - windowWidth) / 2, 0, width - windowWidth);
-    const windowY = clamp(
-      options.area.y + (options.area.height - windowHeight) / 2,
-      0,
-      height - windowHeight,
-    );
-    const centerX = windowX + windowWidth / 2;
-    drawBox(
-      card,
-      { x: windowX, y: windowY, width: windowWidth, height: windowHeight },
-      { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
-    );
+    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
+    const centerX = window.x + windowWidth / 2;
+    drawBox(card, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
-    title.setPosition(centerX, windowY + padding);
+    title.setPosition(centerX, window.y + padding);
     this.objects.push(title);
 
-    const laneY = windowY + padding + title.height + gap;
+    const laneY = window.y + padding + title.height + gap;
     this.lane = new CardLane(
       scene,
       metrics,
-      { x: windowX + padding, y: laneY, width: windowWidth - padding * 2, height: laneHeight },
+      { x: window.x + padding, y: laneY, width: windowWidth - padding * 2, height: laneHeight },
       COLOR.slotWindowLane,
       options.cards,
       { clip: true, trailingPlaceholder: options.acceptsCards },
@@ -112,9 +95,9 @@ export class SlotWindow {
         scene,
         metrics,
         {
-          x: centerX - Math.min(metrics.px(ACTION_WIDTH), windowWidth - padding * 2) / 2,
+          x: centerX - Math.min(metrics.px(ACTION_MAX_WIDTH), windowWidth - padding * 2) / 2,
           y: laneY + laneHeight + gap,
-          width: Math.min(metrics.px(ACTION_WIDTH), windowWidth - padding * 2),
+          width: Math.min(metrics.px(ACTION_MAX_WIDTH), windowWidth - padding * 2),
           height: actionHeight,
         },
         '閉じる',
@@ -132,8 +115,4 @@ export class SlotWindow {
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), Math.max(min, max));
 }

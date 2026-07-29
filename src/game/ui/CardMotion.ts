@@ -155,14 +155,9 @@ export class CardMotion {
    * 合流）そこへ重ね、どこにも無いなら（破棄）その場で消す。
    */
   private dismiss(card: Card, from: Rect | undefined, to: Rect | undefined): void {
-    if (from === undefined) {
-      card.destroy();
-      return;
-    }
-
     // 行き先が無い＝そのインスタンスが世界から消えた。カードもその場で消す（薄れさせると、掴んで
     // 離したカードが即座に消えるのと食い違って見える）。
-    if (to === undefined) {
+    if (from === undefined || to === undefined) {
       card.destroy();
       return;
     }
