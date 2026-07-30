@@ -663,6 +663,7 @@ export class PlayScene extends ResponsiveScene {
     const portraitBottom = area.y + padding + portraitHeight;
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
       icon: '🧍',
+      art: this.view.characterArt,
       name: this.view.characterName,
       onTap: () => this.openPropertyWindow(),
     });

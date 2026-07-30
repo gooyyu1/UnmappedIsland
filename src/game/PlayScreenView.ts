@@ -99,6 +99,8 @@ export interface CardCombination {
  */
 export interface PlayScreenView {
   readonly characterName: string;
+  /** キャラクターのobject_defの識別子（表示名ではない）。ポートレートカードの絵を選ぶ（objectArt参照）。 */
+  readonly characterArt: string;
   /** 条件アイコン。複数同時に付き得るので件数は可変。 */
   readonly conditions: readonly string[];
   readonly equipmentIcon: string;
@@ -328,6 +330,7 @@ export function fromGameSession(
 
   return {
     characterName: characterTexts.displayName,
+    characterArt: game.player.instance.def.name,
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '🪑',
     injuryIcon: '🩹',

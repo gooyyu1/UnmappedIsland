@@ -93,7 +93,12 @@ def download(server: str, image: dict, destination: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("name", help="prompts/lane_backgrounds.json のキー（例: rocky_field_fixture）")
+    parser.add_argument("name", help="プロンプト集のキー（例: rocky_field_fixture）")
+    parser.add_argument(
+        "--prompts",
+        default="lane_backgrounds.json",
+        help="prompts/ 配下のファイル名。キャラクタなら characters.json",
+    )
     parser.add_argument("--out", required=True, help="PNGの保存先ディレクトリ")
     parser.add_argument("--seed", type=int, help="省略すると乱数。記録されるので後から再現できる")
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH)
@@ -111,9 +116,9 @@ def main() -> None:
     parser.add_argument("--timeout", type=float, default=900)
     args = parser.parse_args()
 
-    prompts = json.loads((HERE / "prompts" / "lane_backgrounds.json").read_text("utf-8"))
+    prompts = json.loads((HERE / "prompts" / args.prompts).read_text("utf-8"))
     if args.name not in prompts:
-        raise SystemExit(f"'{args.name}' は prompts/lane_backgrounds.json にありません")
+        raise SystemExit(f"'{args.name}' は prompts/{args.prompts} にありません")
     entry = prompts[args.name]
     loras = json.loads((HERE / "prompts" / "loras.json").read_text("utf-8"))
     template = json.loads((HERE / "workflows" / args.workflow).read_text("utf-8"))

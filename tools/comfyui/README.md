@@ -15,6 +15,28 @@ python build.py recipes/rocky_field_fixture.json
 新しい土地を足すときは、`prompts/lane_backgrounds.json` にプロンプトを、`recipes/` にレシピを
 足します。
 
+## カードの絵
+
+キャラクターのポートレートなど、カードに載せる絵は後処理が違うので `card_art.py` を通します。
+
+```bash
+python generate.py castaway_man --prompts characters.json --out <dir> \
+  --seed 7001 --width 832 --height 1280 \
+  --workflow lane_background_sdxl.api.json --lora watercolor_sdxl.safetensors
+python card_art.py <dir>/castaway_man_7001.png --out ../../src/assets/objects/character.png
+```
+
+カードの絵は 820×1280 で、枠の画像の上へそのまま重ねられます（`Card.ts`）。紙が占めるのは周囲
+10px を空けた角丸（半径 64px）の内側だけなので、**そこからはみ出すと枠の縁を塗り潰してしまいます**。
+
+`card_art.py` は 2 つを重ねて、切り口が線に見えないようにしています。
+
+- **明るい画素ほど透かす**。生成された絵の白い余白がカードの紙地に置き換わり、絵と紙が地続きに
+  なります。影や薄い塗りは半透明として残るので、輪郭を切り抜いたときのような硬さが出ません。
+- **紙の縁の内側でだんだん薄くする**。ぼかしフィルタは使いません。**ぼかすとマスクが外側へも広がり、
+  枠の縁まで絵が乗ってしまう**ためです。代わりに縁からの距離を測って内側で立ち上げるので、境界の
+  外は必ず 0 になります。
+
 ## 環境
 
 ComfyUI は Comfy Desktop 同梱のものを使います。**`standalone-env\python.exe` には torch が入って
