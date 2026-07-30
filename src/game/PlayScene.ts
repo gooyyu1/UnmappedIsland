@@ -15,6 +15,7 @@ import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
+import type { StatusDelta } from './statusChanges';
 import { statusChangesBetween } from './statusChanges';
 import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
@@ -40,7 +41,7 @@ import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
 import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import { SlotWindow } from './ui/SlotWindow';
-import type { StatusChange, StatusContent } from './ui/StatusBar';
+import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
 import { durationText } from './ui/durationText';
@@ -111,7 +112,7 @@ interface RecordedView {
   readonly minutes: number;
   readonly view: PlayScreenView;
   /** 行動開始時からのステータスの増減。控えた時点までの分だけを見せる。 */
-  readonly statusChanges: ReadonlyMap<string, StatusChange>;
+  readonly statusChanges: ReadonlyMap<string, StatusDelta>;
 }
 
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
@@ -225,7 +226,7 @@ export class PlayScene extends ResponsiveScene {
   private pinnedStatuses = new Set<string>();
 
   /** 直前の行動でのステータスの増減。プロパティの識別子で引く（並びが変わっても対応が取れる）。 */
-  private statusChanges: ReadonlyMap<string, StatusChange> = new Map();
+  private statusChanges: ReadonlyMap<string, StatusDelta> = new Map();
 
   /** 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。 */
   private searching = false;
@@ -1155,11 +1156,13 @@ export class PlayScene extends ResponsiveScene {
     return statuses.map((status) => this.statusContent(status));
   }
 
-  /** バーに渡す1件分。直前の行動での増減（noteStatusChanges）と、固定表示の状態・トグルを添える。 */
+  /** バーに渡す1件分。直前の行動での増減と、固定表示の状態・トグルを添える。 */
   private statusContent(status: StatusContent): StatusContent {
+    const delta = this.statusChanges.get(status.key);
     return {
       ...status,
-      change: this.statusChanges.get(status.key),
+      change: delta?.change,
+      ratioBefore: delta?.ratioBefore,
       pinned: this.pinnedStatuses.has(status.key),
       onTogglePin: () => this.togglePinnedStatus(status.key),
     };

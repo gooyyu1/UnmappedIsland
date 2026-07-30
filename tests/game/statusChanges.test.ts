@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { statusChangesBetween } from '../../src/game/statusChanges';
 import type { StatusContent } from '../../src/game/ui/StatusBar';
 
-/** ratioと域は増減の判定に使わないため、比較に効くkeyとvalueだけを指定して作る。 */
-function status(key: string, value: number): StatusContent {
-  return { key, name: key, value, ratio: undefined, alert: 'safe' };
+/** 域は増減の判定に使わないため、比較に効くkey・value・ratioだけを指定して作る。 */
+function status(key: string, value: number, ratio?: number): StatusContent {
+  return { key, name: key, value, ratio, alert: 'safe' };
 }
 
 describe('statusChangesBetween(行動の前後でのステータスの増減)', () => {
@@ -14,9 +14,15 @@ describe('statusChangesBetween(行動の前後でのステータスの増減)', 
 
     const changes = statusChangesBetween(before, after);
 
-    expect(changes.get('satiety')).toBe('increased');
-    expect(changes.get('hydration')).toBe('decreased');
+    expect(changes.get('satiety')?.change).toBe('increased');
+    expect(changes.get('hydration')?.change).toBe('decreased');
     expect(changes.has('stamina'), '変わらなかった項目は含めない').toBe(false);
+  });
+
+  it('行動前の満たされ具合を添える（現れた行が、その行動での減少ぶんだけを帯で見せるため）', () => {
+    const changes = statusChangesBetween([status('satiety', 4850, 0.5)], [status('satiety', 4750, 0.49)]);
+
+    expect(changes.get('satiety')?.ratioBefore).toBe(0.5);
   });
 
   it('比べる相手が無い項目は含めない', () => {

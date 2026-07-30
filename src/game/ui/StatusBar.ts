@@ -51,6 +51,12 @@ export interface StatusContent {
   /** 直前の行動での増減。undefinedなら記号を出さない。 */
   readonly change?: StatusChange;
 
+  /**
+   * 直前の行動を始める前の満たされ具合。出ていなかった行を出すときに、この値から見せ始めることで
+   * 「その行動で減った分」だけが赤い帯になる（show参照）。増減が無ければundefined。
+   */
+  readonly ratioBefore?: number;
+
   /** ユーザが固定表示にしているか。 */
   readonly pinned?: boolean;
 
@@ -170,8 +176,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
    * （並び順が変わったとき、どのバーがどこへ動いたのかを目で追えるようにするため）。
    * 出ていなかった場合は動かさずその位置に現れる（見えていなかった位置から飛んでこないように）。
    *
-   * 出ていなかった間の値の変化には、減った分の赤い帯を出さない。目で追えなかった減り方を今この瞬間の
-   * 減少として見せてしまうため（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
+   * 出ていなかった行は、直前の行動を始める前の値（ratioBefore）から見せ始める。こうすると赤い帯は
+   * 「その行動で減った分」だけになる。出ていなかった間の減少まで帯にすると、目で追えなかった減り方が
+   * 今この瞬間の減少として出てしまう（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
    * 内容と位置を1つの操作にしているのは、呼び出し側が「出す前に中身を入れる」順序を覚えなくて済むよう。
    */
   show(y: number, content: StatusContent): void {
@@ -181,7 +188,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
       return;
     }
 
-    this.applyContent(content, false);
+    const before = content.ratioBefore;
+    if (before !== undefined) this.bar?.resetRatio(before);
+    this.applyContent(content, before !== undefined);
     this.stopMoving();
     this.setVisible(true).setY(y);
   }
