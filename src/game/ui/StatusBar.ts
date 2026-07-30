@@ -166,18 +166,54 @@ export class StatusBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * この行の位置へ移して見せる。既に出ていた場合は、位置が変わったぶんを動きとして見せる
+   * この行を、今の内容でyの位置へ出す。既に出ていた場合は、位置が変わったぶんを動きとして見せる
    * （並び順が変わったとき、どのバーがどこへ動いたのかを目で追えるようにするため）。
    * 出ていなかった場合は動かさずその位置に現れる（見えていなかった位置から飛んでこないように）。
+   *
+   * 出ていなかった間の値の変化には、減った分の赤い帯を出さない。目で追えなかった減り方を今この瞬間の
+   * 減少として見せてしまうため（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
+   * 内容と位置を1つの操作にしているのは、呼び出し側が「出す前に中身を入れる」順序を覚えなくて済むよう。
    */
-  showAt(y: number): void {
-    this.moveTween?.stop();
-    this.moveTween = undefined;
-
-    if (!this.visible) {
-      this.setVisible(true).setY(y);
+  show(y: number, content: StatusContent): void {
+    if (this.visible) {
+      this.setContent(content);
+      this.slideTo(y);
       return;
     }
+
+    this.applyContent(content, false);
+    this.stopMoving();
+    this.setVisible(true).setY(y);
+  }
+
+  /** 並びから外れた行にする（安全域に戻った、固定表示を外した）。 */
+  hide(): void {
+    this.stopMoving();
+    this.setVisible(false);
+  }
+
+  /**
+   * 値・増減・域・固定表示を今の状態へ書き換える。作り直さず中身だけ差し替えるのは、作り直すと画面の
+   * 表示順が変わって子ウィンドウの覆いより手前へ出てしまうことと、バーが減る様子（ProgressBar.setRatio）を
+   * 見せている途中で捨てないため。
+   */
+  setContent(content: StatusContent): void {
+    this.applyContent(content, true);
+  }
+
+  /** showDecreaseがfalseなら、減った分の赤い帯を出さずに値を今の状態にする（show参照）。 */
+  private applyContent(content: StatusContent, showDecrease: boolean): void {
+    if (content.ratio !== undefined) {
+      if (showDecrease) this.bar?.setRatio(content.ratio);
+      else this.bar?.resetRatio(content.ratio);
+    }
+    this.valueText?.setText(String(content.value));
+    this.showContent(content);
+  }
+
+  /** 位置が変わったぶんを動きとして見せる。 */
+  private slideTo(y: number): void {
+    this.stopMoving();
     if (this.y === y) return;
 
     this.moveTween = this.scene.tweens.add({
@@ -188,22 +224,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
     });
   }
 
-  /** 並びから外れた行にする（安全域に戻った、固定表示を外した）。 */
-  hide(): void {
+  private stopMoving(): void {
     this.moveTween?.stop();
     this.moveTween = undefined;
-    this.setVisible(false);
-  }
-
-  /**
-   * 値・増減・域・固定表示を今の状態へ書き換える。作り直さず中身だけ差し替えるのは、作り直すと画面の
-   * 表示順が変わって子ウィンドウの覆いより手前へ出てしまうことと、バーが減る様子（ProgressBar.setRatio）を
-   * 見せている途中で捨てないため。
-   */
-  setContent(content: StatusContent): void {
-    if (content.ratio !== undefined) this.bar?.setRatio(content.ratio);
-    this.valueText?.setText(String(content.value));
-    this.showContent(content);
   }
 
   private showContent(content: StatusContent): void {

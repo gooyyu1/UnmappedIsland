@@ -79,6 +79,19 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   }
 
   /**
+   * 満たされ具合を、減った様子を見せずに今の値にする。目で追えなかった変化（バーが出ていない間に
+   * 進んだ分）に使う（StatusBar.show参照）。
+   */
+  resetRatio(ratio: number): void {
+    this.lagTween?.stop();
+    this.lagTween = undefined;
+
+    this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
+    this.lagRatio = this.ratio;
+    this.draw();
+  }
+
+  /**
    * 満たされ具合を変える。**減ったときは、減る前の位置まで赤い帯を残し、少し遅れて縮める**
    * （格闘ゲームの体力バーと同じで、どれだけ減ったかを目で追えるようにするため）。
    * 増えたときは赤い帯を残さない——増えた分は塗りそのものが伸びて分かるため。

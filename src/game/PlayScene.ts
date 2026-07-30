@@ -1113,8 +1113,8 @@ export class PlayScene extends ResponsiveScene {
    * ステータスエリアの行を今の状態へ引き直す。ワールドが変われば値も増減の記号も、どの域に入るかも
    * 変わるので、行動のたびに呼ぶ（showView）。固定表示のトグルでも呼ぶ。
    *
-   * 出す行が入れ替わると並び順も変わるため、位置はそのつど与える（動きはバー自身が見せる、
-   * StatusBar.showAt）。
+   * 出す行が入れ替わると並び順も変わるため、位置と内容はそのつど与える（動きはバー自身が見せる、
+   * StatusBar.show）。
    */
   private showStatuses(): void {
     const rows = statusRows(this.statusContents(this.view.statuses), this.statusContents(this.allEntries()));
@@ -1125,8 +1125,7 @@ export class PlayScene extends ResponsiveScene {
       const bar = this.statusBars.get(row.key);
       if (bar === undefined) return;
       shown.add(row.key);
-      bar.setContent(row);
-      bar.showAt(this.statusRowsY + index * (rowHeight + this.statusRowGap));
+      bar.show(this.statusRowsY + index * (rowHeight + this.statusRowGap), row);
     });
     for (const [key, bar] of this.statusBars) if (!shown.has(key)) bar.hide();
 
