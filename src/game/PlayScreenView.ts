@@ -179,6 +179,19 @@ export interface PlayScreenView {
   readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
 }
 
+/**
+ * cardsInの答えをこの時点のものに固定したviewを返す（placeを開いていなければそのまま）。
+ *
+ * cardsInだけは呼んだ時点の生きたワールドを読むため、控えておいたviewをあとから表示すると、その部分に
+ * 限って「今」の状態が出てしまう。過去の時点を映す用途（時間経過の再現、PlayScene参照）で使う。
+ */
+export function withFrozenCards(view: PlayScreenView, place: CardPlace | undefined): PlayScreenView {
+  if (place === undefined) return view;
+
+  const frozen = view.cardsIn(place);
+  return { ...view, cardsIn: (asked) => (samePlace(asked, place) ? frozen : view.cardsIn(asked)) };
+}
+
 /** アイテムの画像がまだ無いため、種別ごとの絵文字を仮のアイコンとして使う。 */
 const LOCATION_ICON = '🗺️';
 const ITEM_ICON = '📦';
@@ -283,7 +296,8 @@ export function fromGameSession(
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: instances[0].def.name,
-    objects: instances,
+    // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
+    objects: [...instances],
     description: locale.object(instances[0].def.name).description,
     actions: actionsOf(instances[0]),
     place,

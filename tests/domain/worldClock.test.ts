@@ -126,4 +126,54 @@ object_defs:
     expect(world.instance.getNumber(tickId), 'minutes_per_tickが20なら25分で1tick跨ぐ').toBe(1);
     expect(world.minute % world.minutesPerTick).toBe(5);
   });
+
+  describe('observeTicksによるtickの観測', () => {
+    it('tickを回すたびに、その境界の時刻で観測できる', () => {
+      // 07:10から45分進めると、tickが回るのは07:15/07:30/07:45の3回。最後の07:55へはtickを伴わずに進む。
+      const { codex, world } = buildWorld();
+      const session = new WorldSession(codex, world);
+      session.advanceWorldTime(7 * 60 + 10);
+
+      const observed: number[] = [];
+      session.observeTicks(
+        () => observed.push(world.totalMinutes),
+        () => session.advanceWorldTime(45),
+      );
+
+      expect(observed, 'tick境界の絶対時刻で観測される').toEqual([7 * 60 + 15, 7 * 60 + 30, 7 * 60 + 45]);
+      expect(world.totalMinutes, '観測は時間進行そのものを変えない').toBe(7 * 60 + 55);
+    });
+
+    it('観測は呼び出しの中だけで、抜けたあとのtickでは呼ばれない', () => {
+      const { codex, world } = buildWorld();
+      const session = new WorldSession(codex, world);
+
+      let observed = 0;
+      session.observeTicks(
+        () => observed++,
+        () => session.advanceWorldTime(15),
+      );
+      session.advanceWorldTime(15);
+
+      expect(observed, '2回目のtickは観測の外なので数えない').toBe(1);
+    });
+
+    it('bodyが例外を投げても観測は解除される', () => {
+      const { codex, world } = buildWorld();
+      const session = new WorldSession(codex, world);
+
+      let observed = 0;
+      expect(() =>
+        session.observeTicks(
+          () => observed++,
+          () => {
+            throw new Error('失敗');
+          },
+        ),
+      ).toThrow();
+      session.advanceWorldTime(15);
+
+      expect(observed).toBe(0);
+    });
+  });
 });
