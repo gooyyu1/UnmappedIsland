@@ -34,6 +34,7 @@
     "credit": "required",
     "creator": "Husky_AI",
     "creatorSource": "モデル説明文の本文（APIのcreatorフィールドは無い）",
+    "risk": "説明文に reprinted（転載）の語がある。原著者が転載時の連絡を求めているのか、他所からの再アップロードなのか、英文が崩れていて確定できない。ポートレート用途なら ghibli watercolor（作者判明・許諾最大・クレジット不要）で代替できる",
     "url": "https://civitai.com/models/159766?modelVersionId=179712"
   },
   "oil_and_watercolor_painting.safetensors": {
@@ -44,7 +45,8 @@
     "commercial": ["Image", "RentCivit"],
     "credit": "required",
     "creator": null,
-    "creatorSource": "不明。APIにcreatorフィールドが無く、説明文にも名前がない。タイトルの命名規則と説明文の書式がtraditional_watercolor_painting（Husky_AI）と一致するため同一人物の可能性が高いが、未確認。クレジットに書く前にモデルページで確認すること",
+    "creatorSource": "不明。APIにcreatorフィールドが無く、説明文にも名前がない。タイトルの命名規則と説明文の書式がtraditional_watercolor_painting（Husky_AI）と一致するため同一人物の可能性が高いが、未確認",
+    "risk": "クレジットを必須としながら作者が特定できない、という矛盾がある。転載かどうかは確定できないが、それとは別に『疑問が出ても確認する相手がいない』という問題は確実に残る。またCivitaiの許諾フラグを設定するのはアップロード者であって権利者とは限らないため、匿名のアカウントが付けたImage許諾は後ろ盾が弱い。使うなら、その前提を承知のうえで",
     "url": "https://civitai.com/models/202230?modelVersionId=227662"
   },
   "ral-wtrclr-sdxl.safetensors": {
