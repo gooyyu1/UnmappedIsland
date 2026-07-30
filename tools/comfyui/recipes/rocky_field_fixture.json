@@ -10,14 +10,15 @@
   ],
   "output": "src/assets/lanes/rocky_field_fixture.png",
   "prompt": "rocky_field_fixture",
-  "workflow": "lane_background_sdxl.api.json",
+  "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",
   "seed": 3601,
-  "width": 2560,
+  "width": 2048,
   "height": 640,
   "postprocess": {
     "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRA側が担っているため。重ねて掛けると細かい草が潰れる。",
-    "blend": 512,
+    "width": 1024,
+    "height": 320,
     "oilifyRadius": 0,
     "oilifyLevels": 12
   },

@@ -10,16 +10,17 @@
   ],
   "output": "src/assets/lanes/sandy_beach_fixture.png",
   "prompt": "sandy_beach_fixture",
-  "workflow": "lane_background_sdxl.api.json",
+  "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",
   "loraStrength": 0.8,
   "noTrigger": true,
-  "width": 2560,
+  "width": 2048,
   "height": 640,
   "seed": 5001,
   "postprocess": {
     "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRAが担っており、重ねると細かい葉や草が潰れるため。",
-    "blend": 512,
+    "width": 1024,
+    "height": 320,
     "oilifyRadius": 0,
     "oilifyLevels": 12
   }

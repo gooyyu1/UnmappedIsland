@@ -1,0 +1,61 @@
+{
+  "_comment": [
+    "lane_background_sdxl.api.json の、左右が繋がった絵をそのまま生成する版。",
+    "畳み込みのパディングを横方向だけ circular にすることで、後処理のクロスフェード（のりしろ）が要らなくなる。",
+    "UNetとVAEの両方を替えないと、VAEのデコードで端に段差が残る。",
+    "ComfyUI-seamless-tiling（custom_nodes）が要る。"
+  ],
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "sd_xl_base_1.0.safetensors" }
+  },
+  "18": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "lora_name": "ghibli watercolor_v0.2.safetensors",
+      "strength_model": 0.8,
+      "strength_clip": 0.8,
+      "model": ["4", 0],
+      "clip": ["4", 1]
+    }
+  },
+  "19": {
+    "class_type": "SeamlessTile",
+    "inputs": { "model": ["18", 0], "tiling": "x_only", "copy_model": "Make a copy" }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "$positive", "clip": ["18", 1] }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "$negative", "clip": ["18", 1] }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": { "width": "$width", "height": "$height", "batch_size": 1 }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": "$seed",
+      "steps": 25,
+      "cfg": 8,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": ["19", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "8": {
+    "class_type": "CircularVAEDecode",
+    "inputs": { "samples": ["3", 0], "vae": ["4", 2], "tiling": "x_only" }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": { "filename_prefix": "$prefix", "images": ["8", 0] }
+  }
+}

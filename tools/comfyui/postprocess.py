@@ -5,11 +5,11 @@
 1. 油絵風にぼかす（oilify）。生成直後の絵は背景にするには輪郭がはっきりしすぎていて、カードより
    目立ってしまうため。GIMPのFilters > Artistic > Oilifyと同じ「窓の中で最も多い明度帯の色を採る」
    アルゴリズムを実装している。
-2. 横をシームレスにする。仕上がりの幅より広く生成しておき、余った幅を使って左右をクロスフェードで
-   繋ぐ。生成物は「仕上がりの幅＋のりしろ」へ縮小してから繋ぐので、絵は切り落とさずに全体が残る。
+2. 保持する大きさへ縮小する。生成は破綻しない解像度で行い、常駐量はここで削る。レーンの背景は
+   起動時に全土地ぶんを読み込む（BootScene参照）ので、1枚の大きさがそのまま常駐量に効く。
 
-仕上がりの高さは指定しない。ゲーム側がレーンの高さへ合わせて拡大縮小するため（laneArt.ts参照）、
-縦は元の絵の縦横比のまま任せてよい。
+左右は生成の時点で繋がっているので（workflows/*_tiling.api.json）、繋ぎ直す処理は要らない。
+繋がったままかは継ぎ目の指標を出して確かめる。
 
 使った設定は出力の隣へ .json として残す（generate.pyと同じ考え方）。
 
@@ -28,9 +28,8 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import uniform_filter
 
-TARGET_WIDTH = 2048
-# 左右を繋ぐのりしろ。仕上がりの幅にこれを足した幅ぶんが、生成物から使われる。
-BLEND = 512
+TARGET_WIDTH = 1024
+TARGET_HEIGHT = 320
 
 
 def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
@@ -38,8 +37,12 @@ def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
 
     明度をlevels段に量子化し、段ごとに「窓内の個数」と「窓内の色の合計」を移動平均で求めて、
     個数が最大の段の平均色を採る。段の数だけ移動平均をかけるだけなので、画素ごとのループは要らない。
+
+    横だけ端を巻き込む（wrap）。絵は左右が繋がっているので、端で折り返すと継ぎ目だけ別の平均になり、
+    せっかくの繋がりが壊れる。縦は繋がっていないのでreflectのまま。
     """
     size = radius * 2 + 1
+    modes = ["reflect", "wrap"]
     luma = rgb @ np.array([0.299, 0.587, 0.114])
     bins = np.clip((luma / 256.0 * levels).astype(np.int32), 0, levels - 1)
 
@@ -47,10 +50,10 @@ def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
     result = np.zeros_like(rgb)
     for level in range(levels):
         mask = (bins == level).astype(np.float64)
-        count = uniform_filter(mask, size=size, mode="reflect")
+        count = uniform_filter(mask, size=size, mode=modes)
         # 窓内でこの段に属する画素だけの平均色。countが0の位置は後段のwhereで捨てられる。
         total = np.stack(
-            [uniform_filter(rgb[:, :, c] * mask, size=size, mode="reflect") for c in range(3)],
+            [uniform_filter(rgb[:, :, c] * mask, size=size, mode=modes) for c in range(3)],
             axis=2,
         )
         mean = np.divide(total, count[:, :, None], out=np.zeros_like(total), where=count[:, :, None] > 0)
@@ -61,30 +64,18 @@ def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
     return result
 
 
-def fit_width(rgb: np.ndarray, width: int) -> np.ndarray:
-    """縦横比を保ったまま横幅をwidthへ合わせる。"""
-    height = round(rgb.shape[0] * width / rgb.shape[1])
-    source = Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8))
-    return np.asarray(source.resize((width, height), Image.LANCZOS), dtype=np.float64)
+def shrink(rgb: np.ndarray, width: int, height: int) -> np.ndarray:
+    """左右が繋がったまま縮小する。
 
-
-def seamless_horizontal(rgb: np.ndarray, target_width: int) -> np.ndarray:
-    """余った幅を使って左右をクロスフェードで繋ぐ。
-
-    出力のx列は入力のx列と(x + target_width)列が同じ絵になるべき位置なので、その2つを混ぜる。
-    継ぎ目（出力の右端→左端）では入力の隣り合う2列が並ぶことになり、段差が生まれない。
+    そのまま縮小すると、両端の画素は「外側に絵が無い」前提で重み付けされ、継ぎ目にだけ別の色が
+    生まれる。いったん横へ巻き付けてから縮小し、余分を切り落とすことでこれを避ける。
     """
-    height, width, _ = rgb.shape
-    blend = width - target_width
-    if blend <= 0:
-        raise ValueError(f"幅{width}は仕上がり{target_width}より広くありません")
-
-    out = rgb[:, :target_width].copy()
-    ramp = 1.0 - np.arange(blend) / blend  # 左端で1（＝継ぎ目側を採る）、blend列で0
-    out[:, :blend] = (
-        out[:, :blend] * (1 - ramp)[None, :, None] + rgb[:, target_width : target_width + blend] * ramp[None, :, None]
-    )
-    return out
+    margin = 32
+    source_margin = round(margin * rgb.shape[1] / width)
+    wrapped = np.concatenate([rgb[:, -source_margin:], rgb, rgb[:, :source_margin]], axis=1)
+    image = Image.fromarray(np.clip(wrapped, 0, 255).astype(np.uint8))
+    image = image.resize((width + margin * 2, height), Image.LANCZOS)
+    return np.asarray(image, dtype=np.float64)[:, margin : margin + width]
 
 
 def seam_ratio(rgb: np.ndarray) -> float:
@@ -98,19 +89,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", help="generate.pyが出したPNG")
     parser.add_argument("--out", required=True)
-    parser.add_argument("--width", type=int, default=TARGET_WIDTH, help="仕上がりの幅")
-    parser.add_argument("--blend", type=int, default=BLEND, help="左右を繋ぐのりしろの幅")
+    parser.add_argument("--width", type=int, default=TARGET_WIDTH, help="保持する幅")
+    parser.add_argument("--height", type=int, default=TARGET_HEIGHT, help="保持する高さ")
     parser.add_argument("--oilify-radius", type=int, default=3, help="0でoilifyを飛ばす")
     parser.add_argument("--oilify-levels", type=int, default=12)
     args = parser.parse_args()
 
     rgb = np.asarray(Image.open(args.source).convert("RGB"), dtype=np.float64)
-
-    # oilifyは生成時の解像度でかける。縮小してからだと、同じ半径でも効き方が生成サイズに左右される。
+    # oilifyは縮小前にかける。縮小後だと、同じ半径でも画面上での効き方が保持サイズに左右される。
     if args.oilify_radius > 0:
         rgb = oilify(rgb, args.oilify_radius, args.oilify_levels)
-    rgb = fit_width(rgb, args.width + args.blend)
-    rgb = seamless_horizontal(rgb, args.width)
+    rgb = shrink(rgb, args.width, args.height)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -119,11 +108,9 @@ def main() -> None:
     ratio = seam_ratio(rgb)
     settings = {
         "source": Path(args.source).name,
-        "width": args.width,
-        "blend": args.blend,
         "oilifyRadius": args.oilify_radius,
         "oilifyLevels": args.oilify_levels,
-        "outputHeight": rgb.shape[0],
+        "size": [rgb.shape[1], rgb.shape[0]],
         "seamRatio": round(ratio, 3),
     }
     out.with_suffix(".json").write_text(json.dumps(settings, ensure_ascii=False, indent=2), "utf-8")

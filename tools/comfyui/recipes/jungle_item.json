@@ -9,16 +9,17 @@
   ],
   "output": "src/assets/lanes/jungle_item.png",
   "prompt": "jungle_item",
-  "workflow": "lane_background_sdxl.api.json",
+  "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",
   "loraStrength": 0.8,
   "noTrigger": true,
-  "width": 2560,
+  "width": 2048,
   "height": 640,
   "seed": 4002,
   "postprocess": {
-    "_comment": "oilifyRadiusは実寸（背景はレーン高352uへ合わせるので画面上では0.55倍）で判断する。4まで上げると明るい粒が平坦に潰れて斑点として目立つ。",
-    "blend": 512,
+    "_comment": "oilifyは生成時の解像度でかかるので、画面上での半径は0.55倍（保持で0.5倍、レーン高352uへの表示で1.1倍）になる。実寸で判断すること。4まで上げると明るい粒が平坦に潰れて斑点として目立つ。",
+    "width": 1024,
+    "height": 320,
     "oilifyRadius": 2,
     "oilifyLevels": 12
   }
