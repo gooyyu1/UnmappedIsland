@@ -104,6 +104,9 @@ def main() -> None:
         default="lane_background.api.json",
         help="workflows/ 配下のファイル名。SDXLで出すなら lane_background_sdxl.api.json",
     )
+    parser.add_argument("--lora", help="ワークフロー既定のLoRAを差し替える（作風を比べるとき用）")
+    parser.add_argument("--lora-strength", type=float, help="LoRAの強度。--loraと合わせて使う")
+    parser.add_argument("--suffix", default="", help="出力ファイル名の末尾に足す文字（比較用）")
     parser.add_argument("--server", default=DEFAULT_SERVER)
     parser.add_argument("--timeout", type=float, default=900)
     args = parser.parse_args()
@@ -112,6 +115,7 @@ def main() -> None:
     if args.name not in prompts:
         raise SystemExit(f"'{args.name}' は prompts/lane_backgrounds.json にありません")
     entry = prompts[args.name]
+    loras = json.loads((HERE / "prompts" / "loras.json").read_text("utf-8"))
     template = json.loads((HERE / "workflows" / args.workflow).read_text("utf-8"))
 
     out_dir = Path(args.out)
@@ -126,8 +130,23 @@ def main() -> None:
         if entry.get("negativeExtra"):
             negative += ", " + entry["negativeExtra"]
 
+        # 実際に使うLoRA。--loraで差し替えないなら、ワークフローが持っている既定。
+        lora_name = args.lora or next(
+            (
+                node["inputs"]["lora_name"]
+                for node in template.values()
+                if isinstance(node, dict) and node.get("class_type") == "LoraLoader"
+            ),
+            None,
+        )
+        # トリガーワードを言わないとほとんど効かないLoRAがあるので、自動で先頭へ足す（loras.json）。
+        positive = entry["positive"]
+        trigger = loras.get(lora_name, {}).get("trigger") if lora_name else None
+        if trigger:
+            positive = f"{trigger}, {positive}"
+
         values = {
-            "positive": entry["positive"],
+            "positive": positive,
             "negative": negative,
             "width": args.width,
             "height": args.height,
@@ -135,6 +154,16 @@ def main() -> None:
             "prefix": f"unmapped-island/{args.name}",
         }
         workflow = fill(template, values)
+
+        # LoRAの差し替えは、組み立て終わったワークフローへ直接効かせる。
+        for node in workflow.values():
+            if node.get("class_type") != "LoraLoader":
+                continue
+            if args.lora:
+                node["inputs"]["lora_name"] = args.lora
+            if args.lora_strength is not None:
+                node["inputs"]["strength_model"] = args.lora_strength
+                node["inputs"]["strength_clip"] = args.lora_strength
 
         print(f"[{index + 1}/{args.count}] seed={seed} {args.width}x{args.height} 生成中...")
         started = time.time()
@@ -144,7 +173,7 @@ def main() -> None:
 
         for image_index, image in enumerate(images):
             suffix = "" if len(images) == 1 else f"_{image_index}"
-            stem = f"{args.name}_{seed}{suffix}"
+            stem = f"{args.name}_{seed}{args.suffix}{suffix}"
             download(args.server, image, out_dir / f"{stem}.png")
             # 同じ絵を作り直すのに要る情報を、絵の隣へ丸ごと残す。
             (out_dir / f"{stem}.json").write_text(

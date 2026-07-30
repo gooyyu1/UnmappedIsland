@@ -100,6 +100,26 @@ python generate.py rocky_field_fixture --out <dir> --workflow lane_background_sd
 
 レシピ側で使い分けるなら `"workflow": "lane_background_sdxl.api.json"` を足します。
 
+## ライセンス
+
+**ベースモデルと LoRA の両方を見る必要があります。**
+
+| | ライセンス | 生成画像の商用利用 |
+|---|---|---|
+| SDXL 1.0 base | CreativeML Open RAIL++-M | 可（Attachment A の用途制限あり） |
+| FLUX.1 [dev] | FLUX.1 [dev] Non-Commercial License | **不可**（別途 BFL の商用ライセンスが必要） |
+
+LoRA ごとの許諾は `prompts/loras.json` の `commercial` に記録しています。Civitai の
+`allowCommercialUse` で、**生成画像を配布・販売してよいかを表すのは `Image` だけ**です
+（`Rent`/`RentCivit` は有料生成サービスで動かす権利、`Sell` はモデル自体を売る権利）。
+
+手元の LoRA では **`ral-wtrclr-sdxl` と `oil painting` に `Image` がありません**。
+`traditional_watercolor_painting` と `oil_and_watercolor_painting` は `Image` はありますが
+**クレジット表記が要ります**。
+
+記録はCivitaiが持つメタデータであって法的な判断ではないので、使う前にモデルページを確認してください。
+ハッシュから引き直す手順はスキル（`.claude/skills/generate-image/`）に書いてあります。
+
 ## 再現性について
 
 **同じ seed で同じ構図が出ますが、画素が完全に一致するとは限りません。** fp8 の Flux を GPU で

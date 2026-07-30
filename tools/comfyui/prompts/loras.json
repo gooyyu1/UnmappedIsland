@@ -1,0 +1,95 @@
+{
+  "_comment": [
+    "LoRAごとのトリガーワード・素性・ライセンス。generate.pyは trigger だけを使う（プロンプト先頭へ足す）。",
+    "",
+    "trigger は safetensorsヘッダーの ss_tag_frequency（学習時のタグ頻度）から確定した。学習フォルダ名が",
+    "`20_<トリガー> style` の形になっていて、そのタグが全画像に付いている。サイドカーの metadata.json の",
+    "trainedWords は空のことが多いので当てにしない。",
+    "",
+    "bias は学習データから引きずる傾向。ネガティブで抑えても出てくる理由が事前に分かるように記録する。",
+    "",
+    "commercial は Civitai の allowCommercialUse（2026-07-30 に /api/v1/models/<id> から取得）。",
+    "生成画像を配布・販売してよいかを表すのは Image。Rent/RentCivit は有料生成サービスで動かす権利、",
+    "Sell はモデル自体を売る権利なので、このゲームで見るべきは Image だけ。",
+    "credit が required のものは表記が要る（allowNoCredit: false）。",
+    "これはCivitaiが持つメタデータであって、法的な判断ではない。使う前にモデルページの現物を確認すること。"
+  ],
+
+  "watercolor_sdxl.safetensors": {
+    "base": "sdxl",
+    "trigger": "watercolorsdxl style",
+    "note": "学習タグがこれ1つだけ。トリガー無しではほとんど効かない",
+    "commercial": ["Image", "RentCivit", "Rent", "Sell"],
+    "credit": "not required",
+    "url": "https://civitai.com/models/500223?modelVersionId=556044"
+  },
+  "traditional_watercolor_painting.safetensors": {
+    "base": "sdxl",
+    "trigger": "traditional watercolor painting",
+    "bias": "人物画（1boy 37枚 / old man）。風景では構図が偏ることがある",
+    "commercial": ["Image", "RentCivit"],
+    "credit": "required",
+    "url": "https://civitai.com/models/159766?modelVersionId=179712"
+  },
+  "oil_and_watercolor_painting.safetensors": {
+    "base": "sdxl",
+    "trigger": "oil and watercolor painting",
+    "bias": "都市（building 48枚 / city 43枚 / road 25枚）。建物や道が湧きやすく、ネガティブでも抑えきれない",
+    "commercial": ["Image", "RentCivit"],
+    "credit": "required",
+    "url": "https://civitai.com/models/202230?modelVersionId=227662"
+  },
+  "ral-wtrclr-sdxl.safetensors": {
+    "base": "sdxl",
+    "trigger": "ral-wtrclr",
+    "bias": "物体単体（バックパック・車・木など）",
+    "commercial": ["RentCivit"],
+    "credit": "not required",
+    "warning": "Imageが無い。生成画像を配布・販売する用途には使えない",
+    "url": "https://civitai.com/models/484723?modelVersionId=539071"
+  },
+  "oil painting.safetensors": {
+    "base": "sdxl",
+    "trigger": "bichu, oil painting",
+    "bias": "夜景・星空",
+    "commercial": [],
+    "credit": "not required",
+    "warning": "商用の許諾が一切ない",
+    "url": "https://civitai.com/models/118223?modelVersionId=128212"
+  },
+  "ghibli watercolor_v0.2.safetensors": {
+    "base": "sdxl",
+    "trigger": "ghibli watercolor",
+    "bias": "人物（1girl）",
+    "commercial": ["Image", "RentCivit", "Rent", "Sell"],
+    "credit": "not required",
+    "url": "https://civitai.com/models/2063095?modelVersionId=2334545"
+  },
+
+  "Watercolor.safetensors": {
+    "base": "flux",
+    "trigger": "",
+    "note": "トリガーレス。強度だけで効く。風景中心でレーンの背景と相性が良い",
+    "commercial": ["Image", "RentCivit", "Rent", "Sell"],
+    "credit": "not required",
+    "warning": "LoRA自体は緩いが、ベースのFLUX.1 [dev]が非商用ライセンス",
+    "url": "https://civitai.com/models/1713299?modelVersionId=1938815"
+  },
+  "edwardjuliusdetmold2_cap_d6a3.safetensors": {
+    "base": "flux",
+    "trigger": "edwardjuliusdetmold1 painting",
+    "bias": "動物・人物の挿絵",
+    "commercial": ["RentCivit", "Rent"],
+    "credit": "not required",
+    "warning": "Imageが無い。生成画像を配布・販売する用途には使えない",
+    "url": "https://civitai.com/models/1432107?modelVersionId=1618810"
+  },
+  "waterV2.safetensors": {
+    "base": "zimage",
+    "trigger": "Watery",
+    "note": "Z-Image向け。今のFlux/SDXLのチェックポイントでは読み込めない",
+    "commercial": ["Image", "RentCivit", "Rent"],
+    "credit": "required",
+    "url": "https://civitai.com/models/2481699?modelVersionId=2790185"
+  }
+}

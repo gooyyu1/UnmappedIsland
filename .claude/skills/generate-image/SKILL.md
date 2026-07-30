@@ -69,7 +69,28 @@ SDXL（`lane_background_sdxl.api.json`）は 1 枚 8〜12 秒で、Flux の 20�
 揃える必要があるなら Flux、構図の当たりを速く探したいだけなら SDXL** と使い分ける。
 比較の詳細は `tools/comfyui/README.md`。
 
-### 6. 生成しただけでは背景に使えない
+### 6. LoRAはトリガーワードとライセンスを両方確認する
+
+**トリガーワードを言わないとほとんど効かないLoRAがある。** サイドカーの `metadata.json` の
+`trainedWords` は空のことが多く当てにならない。実際のトリガーは safetensors ヘッダーの
+`ss_tag_frequency`（学習時のタグ頻度）にあり、学習フォルダ名が `20_<トリガー> style` の形。
+確定した結果は `tools/comfyui/prompts/loras.json` にあり、`generate.py` が自動で足す。
+
+**ライセンスはLoRAごとに違う。** 生成画像を配布・販売してよいかを表すのは Civitai の
+`allowCommercialUse` の **`Image`** だけ。手元にも `Image` の無いLoRAがある。
+`prompts/loras.json` に記録済みだが、引き直すならハッシュから:
+
+```
+GET https://civitai.com/api/v1/model-versions/by-hash/<sha256>   → modelId が取れる
+GET https://civitai.com/api/v1/models/<modelId>                  → allowCommercialUse はこちら
+```
+
+**by-hash の方には許諾が入っていない**（`model` は name/type/nsfw/poi のみ）ので、
+モデル本体のエンドポイントまで引くこと。
+
+ベースモデル側も見る。FLUX.1 [dev] は非商用、SDXL 1.0 base は OpenRAIL++-M で商用可。
+
+### 7. 生成しただけでは背景に使えない
 
 輪郭がはっきりしすぎていてカードより目立つ。`postprocess.py` が油絵風のぼかし（GIMPのoilifyと
 同じアルゴリズム）→ 縦の切り出し → 横のシームレス化を通す。
