@@ -1,3 +1,4 @@
+import type { AlertLevel } from '../defs/AlertLevel';
 import type { PropertyDef } from '../defs/PropertyDef';
 import { INT32_MAX } from '../../util/int32';
 import { removeWhere } from '../../util/arrays';
@@ -15,6 +16,9 @@ export interface PropertyReading {
 
   /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */
   readonly ratio: number | undefined;
+
+  /** 今の値がどの域にあるか（6.4節のalert）。表示するか・明滅させるかの判断はUI側（ScreenLayout.md）。 */
+  readonly alert: AlertLevel;
 }
 
 /**
@@ -163,7 +167,12 @@ export class PropertyValue {
     if (!this.def.hasTag(tagGlobalId)) return undefined;
 
     const value = this.getEffectiveValue();
-    return { name: this.def.name, value, ratio: this.def.ratioOf(value) };
+    return {
+      name: this.def.name,
+      value,
+      ratio: this.def.ratioOf(value),
+      alert: this.def.alertLevelOf(value),
+    };
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

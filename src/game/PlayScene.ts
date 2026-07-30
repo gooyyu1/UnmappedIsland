@@ -15,6 +15,7 @@ import { applyScenario } from '../scenario/Scenario';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession } from './PlayScreenView';
 import { statusChangesBetween } from './statusChanges';
+import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
@@ -34,7 +35,9 @@ import { ModalDialog } from './ui/ModalDialog';
 import type { ObjectWindowAction } from './ui/ObjectWindow';
 import { ObjectWindow } from './ui/ObjectWindow';
 import { ProgressRing } from './ui/ProgressRing';
+import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
+import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import { SlotWindow } from './ui/SlotWindow';
 import type { StatusChange, StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
@@ -65,6 +68,9 @@ const MINUTES_PER_DAY = 24 * 60;
 
 /** ドーナツグラフは、飛んでいるカードも探索の子ウィンドウも越えて最前面に出す。 */
 const RING_DEPTH = 2;
+
+/** 致命的域を伝える画面全体の枠は、そのドーナツグラフよりもさらに手前に出す。 */
+const ALERT_FRAME_DEPTH = 3;
 
 /**
  * フィールドエリアの表示物を置く層。既定の層（0）より奥へ置くことで、フィールドエリアだけを
@@ -167,10 +173,25 @@ export class PlayScene extends ResponsiveScene {
   private objectWindow: ObjectWindow | undefined;
   private objectWindowCard: ObjectCardStack | undefined;
 
-  /** ステータスエリアに並んでいるバー。行動のたびに中身を書き換える（showStatuses参照）。 */
-  private statusBars: StatusBar[] = [];
+  /**
+   * ステータスエリアに出しうるバー（プロパティの識別子で引く）。出す行と並び順は行動のたびに変わるが、
+   * バー自体は画面の組み立て時に全プロパティ分を作っておく（showStatuses参照）。
+   */
+  private statusBars: ReadonlyMap<string, StatusBar> = new Map();
 
-  /** 直前の行動でのステータスの増減。表示名で引く（並びが変わっても対応が取れる）。 */
+  /** ステータスエリアの1行目の位置・幅と行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
+  private statusRowsX = 0;
+  private statusRowsY = 0;
+  private statusRowsWidth = 0;
+  private statusRowGap = 0;
+
+  /** 致命的域のステータスがある間、画面全体の枠を明滅させる。 */
+  private alertFrame!: ScreenAlertFrame;
+
+  /** ユーザが固定表示にしたプロパティの識別子。画面の作り直しをまたいで保つ。 */
+  private readonly pinnedStatuses = new Set<string>();
+
+  /** 直前の行動でのステータスの増減。プロパティの識別子で引く（並びが変わっても対応が取れる）。 */
   private statusChanges: ReadonlyMap<string, StatusChange> = new Map();
 
   /** 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。 */
@@ -543,7 +564,7 @@ export class PlayScene extends ResponsiveScene {
     if (this.searching || this.busy) return;
 
     const shownBefore = this.shownInstanceIds();
-    const statusesBefore = this.view.statuses;
+    const statusesBefore = this.allStatuses();
     const startedAt = this.gameSession.world.totalMinutes;
 
     this.searching = true;
@@ -654,7 +675,7 @@ export class PlayScene extends ResponsiveScene {
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
-    const statusesBefore = this.view.statuses;
+    const statusesBefore = this.allStatuses();
     change();
 
     const moved = this.gameSession.player.location?.instance !== locationBefore;
@@ -945,45 +966,119 @@ export class PlayScene extends ResponsiveScene {
     button.on('pointerup', () => this.openSlotWindow(place));
   }
 
-  /** バーは上端に揃える。表示件数が変わっても位置が動かないようにするため（ScreenLayout.md）。 */
+  /**
+   * バーは上端に揃える。表示件数が変わっても位置が動かないようにするため（ScreenLayout.md）。
+   *
+   * 出す行は行動のたびに変わる（安全域のステータスは出さない）が、バーはここで全プロパティ分を作って
+   * おき、以後は見せ方と位置だけを変える。あとから作ると、開いている子ウィンドウの覆いより手前へ
+   * 出てしまうため（CardMotion参照）。
+   */
   private buildStatusArea(area: Rect): void {
     const padding = this.metrics.px(STATUS_PADDING);
-    const gap = this.metrics.px(this.metrics.isLandscape ? 10 : 16);
-    const barHeight = StatusBar.height(this.metrics);
-    this.statusBars = this.view.statuses.map(
-      (status, index) =>
-        new StatusBar(
-          this,
-          this.metrics,
-          area.x + padding,
-          area.y + padding + index * (barHeight + gap),
-          area.width - padding * 2,
-          this.statusContent(status),
-        ),
-    );
+    this.statusRowsX = area.x + padding;
+    this.statusRowsY = area.y + padding;
+    this.statusRowsWidth = area.width - padding * 2;
+    this.statusRowGap = this.metrics.px(this.metrics.isLandscape ? 10 : 16);
+
+    // 致命的域を伝える画面全体の枠。飛んでいるカードや子ウィンドウにも隠されないよう最前面へ出す。
+    this.alertFrame = new ScreenAlertFrame(this, this.metrics).setDepth(ALERT_FRAME_DEPTH);
+
+    const bars = new Map<string, StatusBar>();
+    for (const status of this.statusContents(this.allStatuses())) {
+      const bar = new StatusBar(
+        this,
+        this.metrics,
+        this.statusRowsX,
+        this.statusRowsY,
+        this.statusRowsWidth,
+        status,
+      );
+      bars.set(status.key, bar.setVisible(false));
+    }
+    this.statusBars = bars;
+
+    this.showStatuses();
   }
 
   /**
-   * バーの中身を今の状態へ書き換える。ワールドが変われば値も増減の記号も変わるので、行動のたびに
-   * 呼ぶ（showView）。並ぶ項目はキャラクターのプロパティで決まり増減しないため、位置は引き直さない。
+   * ステータスエリアの行を今の状態へ引き直す。ワールドが変われば値も増減の記号も、どの域に入るかも
+   * 変わるので、行動のたびに呼ぶ（showView）。固定表示のトグルでも呼ぶ。
+   *
+   * 出す行が入れ替わると並び順も変わるため、位置はそのつど与える（動きはバー自身が見せる、
+   * StatusBar.showAt）。
    */
   private showStatuses(): void {
-    this.view.statuses.forEach((status, index) => {
-      this.statusBars[index]?.setContent(this.statusContent(status));
-    });
-  }
+    const rows = statusRows(this.statusContents(this.view.statuses), this.statusContents(this.allEntries()));
+    const rowHeight = StatusBar.height(this.metrics);
 
-  /** バーに渡す1件分。直前の行動での増減（noteStatusChanges）を添える。 */
-  private statusContent(status: StatusContent): StatusContent {
-    return { ...status, change: this.statusChanges.get(status.name) };
+    const shown = new Set<string>();
+    rows.forEach((row, index) => {
+      const bar = this.statusBars.get(row.key);
+      if (bar === undefined) return;
+      shown.add(row.key);
+      bar.setContent(row);
+      bar.showAt(this.statusRowsY + index * (rowHeight + this.statusRowGap));
+    });
+    for (const [key, bar] of this.statusBars) if (!shown.has(key)) bar.hide();
+
+    this.alertFrame.setAlerting(rows.some((row) => row.alert === 'fatal'));
   }
 
   /**
-   * 行動の前後でステータスを比べ、増減を控える。次の行動まで記号を出し続けるので、画面を作り直す
-   * 行動（移動）でもそのまま出る。
+   * ステータスエリアに出しうるプロパティ（ステータスと、プロパティウィンドウに出るもの全部）を
+   * 重複なく。固定表示にすればどれもステータスエリアへ出るため、バーの用意と増減の比較はこの範囲で行う。
+   */
+  private allStatuses(): readonly StatusContent[] {
+    const all = new Map<string, StatusContent>();
+    for (const status of [...this.view.statuses, ...this.allEntries()])
+      if (!all.has(status.key)) all.set(status.key, status);
+    return [...all.values()];
+  }
+
+  /** プロパティウィンドウの全タブの行（同じプロパティが複数のタブに現れうる）。 */
+  private allEntries(): readonly StatusContent[] {
+    return this.view.propertyCategories.flatMap((tab) => tab.entries);
+  }
+
+  private statusContents(statuses: readonly StatusContent[]): readonly StatusContent[] {
+    return statuses.map((status) => this.statusContent(status));
+  }
+
+  /** バーに渡す1件分。直前の行動での増減（noteStatusChanges）と、固定表示の状態・トグルを添える。 */
+  private statusContent(status: StatusContent): StatusContent {
+    return {
+      ...status,
+      change: this.statusChanges.get(status.key),
+      pinned: this.pinnedStatuses.has(status.key),
+      onTogglePin: () => this.togglePinnedStatus(status.key),
+    };
+  }
+
+  /**
+   * ステータス名をタップしたときの固定表示の切り替え。固定表示にしたステータスは、安全域でも
+   * ステータスエリアの先頭に出続ける（ScreenLayout.md ステータスエリア節）。
+   */
+  private togglePinnedStatus(key: string): void {
+    if (!this.pinnedStatuses.delete(key)) this.pinnedStatuses.add(key);
+    this.showStatuses();
+    // プロパティウィンドウを開いたまま切り替えられるため、そちらの印も引き直す。
+    this.propertyWindow?.setTabs(this.propertyTabs());
+  }
+
+  /** プロパティウィンドウに渡すタブ（行に固定表示の状態とトグルを添える）。 */
+  private propertyTabs(): readonly PropertyTab[] {
+    return this.view.propertyCategories.map((tab) => ({
+      name: tab.name,
+      entries: this.statusContents(tab.entries),
+    }));
+  }
+
+  /**
+   * 行動の前後でステータスを比べ、増減を控える。次の行動まで記号を出し続けるので、移動で
+   * フィールドエリアを作り直してもそのまま出る。
    */
   private noteStatusChanges(before: readonly StatusContent[]): void {
-    this.statusChanges = statusChangesBetween(before, this.view.statuses);
+    this.statusChanges = statusChangesBetween(before, this.allStatuses());
   }
 
   /**
@@ -995,7 +1090,7 @@ export class PlayScene extends ResponsiveScene {
 
     this.propertyWindow = new PropertyWindow(this, this.metrics, {
       title: this.view.characterName,
-      tabs: this.view.propertyCategories,
+      tabs: this.propertyTabs(),
       area: this.layout.slotWindowArea,
       onClose: () => {
         this.propertyWindow = undefined;

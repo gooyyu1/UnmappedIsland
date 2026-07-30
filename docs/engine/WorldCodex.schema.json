@@ -99,6 +99,15 @@
             "null"
           ]
         },
+        "alert": {
+          "description": "この段階にいる間、値がどの域にあると見なすか（6.4節）。省略時は safe。UI はこれだけを見て見せ方を決める（安全域は非表示、危険域はバーの枠を明滅、致命的域は画面全体の枠を明滅）。fatal は放置すると死に至るプロパティにだけ付ける。",
+          "enum": [
+            "safe",
+            "caution",
+            "danger",
+            "fatal"
+          ]
+        },
         "passives": {
           "$ref": "#/$defs/passives_list"
         }

@@ -136,6 +136,48 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/シンボル型/);
   });
 
+  it('stagesのalertは、その段にいる間に値がどの域にあるかとして読み込まれる', () => {
+    const yaml = `
+object_defs:
+  character:
+    props:
+      hydration:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - name: dehydrated
+            alert: fatal
+          - name: thirsty
+            min: 20
+            alert: caution
+          - name: hydrated
+            min: 60
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const prop = codex.objects
+      .get(codex.objectNames.getId('character'))
+      .getPropertyDef(codex.propertyNames.getId('hydration'))!;
+
+    expect(prop.alertLevelOf(100), 'alert未指定の段は安全域').toBe('safe');
+    expect(prop.alertLevelOf(20)).toBe('caution');
+    expect(prop.alertLevelOf(0)).toBe('fatal');
+  });
+
+  it('stagesの未知のalertはエラーになる', () => {
+    const yaml = `
+object_defs:
+  character:
+    props:
+      hydration:
+        value: 100
+        stages:
+          - name: dry
+            alert: deadly
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/deadly/);
+  });
+
   it('passivesはマッピング形式を許容せず、常に配列である必要がある', () => {
     const yaml = `
 object_defs:
