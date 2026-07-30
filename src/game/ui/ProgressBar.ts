@@ -37,6 +37,9 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
   private lagTween: Phaser.Tweens.Tween | undefined;
 
+  /** 帯を縮め始めずに溜めている最中か（setRatioのhold）。 */
+  private holding = false;
+
   /** 警戒を示す枠。明滅は濃さのtweenだけで見せ、毎フレーム描き直さない。 */
   private readonly alertFrame: Phaser.GameObjects.Graphics;
   private alertColor: number | undefined;
@@ -83,8 +86,8 @@ export class ProgressBar extends Phaser.GameObjects.Container {
    * 進んだ分）に使う（StatusBar.show参照）。
    */
   resetRatio(ratio: number): void {
-    this.lagTween?.stop();
-    this.lagTween = undefined;
+    this.stopShrinking();
+    this.holding = false;
 
     this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
     this.lagRatio = this.ratio;
@@ -95,26 +98,30 @@ export class ProgressBar extends Phaser.GameObjects.Container {
    * 満たされ具合を変える。**減ったときは、減る前の位置まで赤い帯を残し、少し遅れて縮める**
    * （格闘ゲームの体力バーと同じで、どれだけ減ったかを目で追えるようにするため）。
    * 増えたときは赤い帯を残さない——増えた分は塗りそのものが伸びて分かるため。
+   *
+   * holdは「まだ値が動き続けている最中か」。trueの間は縮め始めず、帯の右端を動き始めの位置に残したままに
+   * するので、何度かに分けて減った分が合計として読める（ScreenLayout.md ステータスエリア節）。
+   * holdをfalseに戻した時点から縮み始めるため、値が変わらないtrue→falseの呼び出しにも意味がある。
    */
-  setRatio(ratio: number): void {
+  setRatio(ratio: number, hold = false): void {
     const next = Phaser.Math.Clamp(ratio, 0, 1);
-    if (next === this.ratio) return;
+    if (next === this.ratio && hold === this.holding) return;
 
     // 縮み切る前にまた減ったら、前回の減り始めの位置から続ける（帯は右端が最も高かった位置に残る）。
-    this.lagTween?.stop();
-    this.lagTween = undefined;
+    this.stopShrinking();
 
-    const decreased = next < this.ratio;
-    this.lagRatio = decreased ? Math.max(this.lagRatio, this.ratio) : next;
+    if (next < this.ratio) this.lagRatio = Math.max(this.lagRatio, this.ratio);
+    else if (next > this.ratio) this.lagRatio = next;
     this.ratio = next;
+    this.holding = hold;
     this.draw();
 
-    if (!decreased) return;
+    if (this.holding || this.lagRatio <= this.ratio) return;
 
     const lag = { value: this.lagRatio };
     this.lagTween = this.scene.tweens.add({
       targets: lag,
-      value: next,
+      value: this.ratio,
       delay: LAG_DELAY_MS,
       duration: LAG_DURATION_MS,
       ease: 'Sine.easeIn',
@@ -126,6 +133,11 @@ export class ProgressBar extends Phaser.GameObjects.Container {
         this.lagTween = undefined;
       },
     });
+  }
+
+  private stopShrinking(): void {
+    this.lagTween?.stop();
+    this.lagTween = undefined;
   }
 
   /**

@@ -57,6 +57,9 @@ export interface StatusContent {
    */
   readonly ratioBefore?: number;
 
+  /** その行動の途中の値か（trueの間は赤い帯を縮めず、合計の減少量を残す。ProgressBar.setRatio参照）。 */
+  readonly midAction?: boolean;
+
   /** ユーザが固定表示にしているか。 */
   readonly pinned?: boolean;
 
@@ -213,7 +216,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
   /** showDecreaseがfalseなら、減った分の赤い帯を出さずに値を今の状態にする（show参照）。 */
   private applyContent(content: StatusContent, showDecrease: boolean): void {
     if (content.ratio !== undefined) {
-      if (showDecrease) this.bar?.setRatio(content.ratio);
+      if (showDecrease) this.bar?.setRatio(content.ratio, content.midAction === true);
       else this.bar?.resetRatio(content.ratio);
     }
     this.valueText?.setText(String(content.value));

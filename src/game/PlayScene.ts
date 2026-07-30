@@ -1163,6 +1163,8 @@ export class PlayScene extends ResponsiveScene {
       ...status,
       change: delta?.change,
       ratioBefore: delta?.ratioBefore,
+      // 経過を見せている間は行動の途中の値。バーは減った分の帯を縮めずに溜める（ProgressBar.setRatio）。
+      midAction: this.passingTime,
       pinned: this.pinnedStatuses.has(status.key),
       onTogglePin: () => this.togglePinnedStatus(status.key),
     };
