@@ -79,8 +79,15 @@ const ALERT_FRAME_DEPTH = 3;
  */
 const FIELD_DEPTH = -1;
 
-/** 場面転換の明転にかける時間（ミリ秒）。暗転は時間経過と並行して進むので、こちらだけを決める。 */
+/** 場面転換の明転にかける時間（ミリ秒）。 */
 const BRIGHTEN_MS = 320;
+
+/**
+ * 場面転換の暗転にかける時間（ミリ秒）。時間経過を待たずに素早く落とし、あとは暗いまま経過を見せる
+ * （時計とドーナツグラフは暗幕より手前に出る）。明転より長く取るのは、場面が変わる合図として
+ * 落ちていく途中を見せたいため。移動にかかる時間がこれより短ければ、その分だけで落とし切る。
+ */
+const DARKEN_MS = BRIGHTEN_MS * 2;
 
 /** 状況エリア・天候の帯のパディング（縦型は広め、横型は狭め）。 */
 const SITUATION_PADDING_PORTRAIT = { x: 32, y: 20 };
@@ -762,10 +769,10 @@ export class PlayScene extends ResponsiveScene {
     const recorded = this.record(change);
 
     const moved = this.gameSession.player.location?.instance !== locationBefore;
-    const elapsed = this.gameSession.world.totalMinutes - startedAt;
+    const elapsedMs = (this.gameSession.world.totalMinutes - startedAt) * REAL_MS_PER_GAME_MINUTE;
     const curtain = moved ? new Curtain(this, this.layout.fieldArea) : undefined;
-    // 移動し終える時刻に暗転し切るよう、時間経過と同じ長さをかける。
-    curtain?.darken(elapsed * REAL_MS_PER_GAME_MINUTE);
+    // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
+    curtain?.darken(Math.min(DARKEN_MS, elapsedMs));
 
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
