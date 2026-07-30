@@ -42,10 +42,11 @@ describe('新規ゲームの入力(SaveDataManagement.md)', () => {
     expect(normalizeIslandName('あ'.repeat(21))).toBeUndefined();
   });
 
-  it('作成直後のセーブデータの生存日数は0になる', () => {
+  it('作成直後のセーブデータの生存日数は0で、固定表示にしたステータスも無い', () => {
     const save = createSaveData('霧深い孤島', 42, 'farmer', 1700000000000);
     expect(save.elapsedDays).toBe(0);
     expect(save.seed).toBe(42);
     expect(save.createdAt).toBe(1700000000000);
+    expect(save.pinnedStatuses).toEqual([]);
   });
 });
