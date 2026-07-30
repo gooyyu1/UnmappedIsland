@@ -1,0 +1,14 @@
+{
+  "_comment": "src/assets/lanes/rocky_field_fixture.png を作り直すためのレシピ。build.py が読む。",
+  "output": "src/assets/lanes/rocky_field_fixture.png",
+  "prompt": "rocky_field_fixture",
+  "seed": 1001,
+  "width": 2560,
+  "height": 640,
+  "postprocess": {
+    "_comment": "topが96なのは、上端の空を落として岩と草の割合を増やすため。",
+    "top": 96,
+    "oilifyRadius": 3,
+    "oilifyLevels": 12
+  }
+}

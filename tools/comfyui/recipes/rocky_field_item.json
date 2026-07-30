@@ -1,0 +1,14 @@
+{
+  "_comment": "src/assets/lanes/rocky_field_item.png を作り直すためのレシピ。build.py が読む。",
+  "output": "src/assets/lanes/rocky_field_item.png",
+  "prompt": "rocky_field_item",
+  "seed": 2002,
+  "width": 2560,
+  "height": 640,
+  "postprocess": {
+    "_comment": "一様なテクスチャなので、縦はどこを切っても同じ。中央付近から取る。",
+    "top": 64,
+    "oilifyRadius": 3,
+    "oilifyLevels": 12
+  }
+}
