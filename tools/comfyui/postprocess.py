@@ -1,17 +1,19 @@
 """生成した絵をレーンの背景として使える形に整える。
 
-やることは3つ。
+やることは2つ。
 
 1. 油絵風にぼかす（oilify）。生成直後の絵は背景にするには輪郭がはっきりしすぎていて、カードより
    目立ってしまうため。GIMPのFilters > Artistic > Oilifyと同じ「窓の中で最も多い明度帯の色を採る」
    アルゴリズムを実装している。
-2. 縦を切り出す。仕上がりの高さより高く生成しておき、要らない範囲（空など）を落とす。
-3. 横をシームレスにする。仕上がりの幅より広く生成しておき、余った幅を使って左右をクロスフェードで
-   繋ぐ。切り捨てるのではなく継ぎ目の材料として使い切るので、無駄が出ない。
+2. 横をシームレスにする。仕上がりの幅より広く生成しておき、余った幅を使って左右をクロスフェードで
+   繋ぐ。生成物は「仕上がりの幅＋のりしろ」へ縮小してから繋ぐので、絵は切り落とさずに全体が残る。
+
+仕上がりの高さは指定しない。ゲーム側がレーンの高さへ合わせて拡大縮小するため（laneArt.ts参照）、
+縦は元の絵の縦横比のまま任せてよい。
 
 使った設定は出力の隣へ .json として残す（generate.pyと同じ考え方）。
 
-    python postprocess.py in.png --out out.png --top 96
+    python postprocess.py in.png --out out.png
 
 PIL と numpy と scipy が要る。ComfyUI同梱の .venv のPythonで動く（README参照）。
 """
@@ -27,7 +29,8 @@ from PIL import Image
 from scipy.ndimage import uniform_filter
 
 TARGET_WIDTH = 2048
-TARGET_HEIGHT = 512
+# 左右を繋ぐのりしろ。仕上がりの幅にこれを足した幅ぶんが、生成物から使われる。
+BLEND = 512
 
 
 def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
@@ -56,6 +59,13 @@ def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
         best_count = np.where(wins, count, best_count)
         result = np.where(wins[:, :, None], mean, result)
     return result
+
+
+def fit_width(rgb: np.ndarray, width: int) -> np.ndarray:
+    """縦横比を保ったまま横幅をwidthへ合わせる。"""
+    height = round(rgb.shape[0] * width / rgb.shape[1])
+    source = Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8))
+    return np.asarray(source.resize((width, height), Image.LANCZOS), dtype=np.float64)
 
 
 def seamless_horizontal(rgb: np.ndarray, target_width: int) -> np.ndarray:
@@ -88,20 +98,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", help="generate.pyが出したPNG")
     parser.add_argument("--out", required=True)
-    parser.add_argument("--top", type=int, default=0, help="縦の切り出し開始位置")
-    parser.add_argument("--width", type=int, default=TARGET_WIDTH)
-    parser.add_argument("--height", type=int, default=TARGET_HEIGHT)
+    parser.add_argument("--width", type=int, default=TARGET_WIDTH, help="仕上がりの幅")
+    parser.add_argument("--blend", type=int, default=BLEND, help="左右を繋ぐのりしろの幅")
     parser.add_argument("--oilify-radius", type=int, default=3, help="0でoilifyを飛ばす")
     parser.add_argument("--oilify-levels", type=int, default=12)
     args = parser.parse_args()
 
     rgb = np.asarray(Image.open(args.source).convert("RGB"), dtype=np.float64)
-    if args.top + args.height > rgb.shape[0]:
-        raise SystemExit(f"--top {args.top} + 高さ {args.height} が元画像の高さ {rgb.shape[0]} を超えます")
 
+    # oilifyは生成時の解像度でかける。縮小してからだと、同じ半径でも効き方が生成サイズに左右される。
     if args.oilify_radius > 0:
         rgb = oilify(rgb, args.oilify_radius, args.oilify_levels)
-    rgb = rgb[args.top : args.top + args.height]
+    rgb = fit_width(rgb, args.width + args.blend)
     rgb = seamless_horizontal(rgb, args.width)
 
     out = Path(args.out)
@@ -111,11 +119,11 @@ def main() -> None:
     ratio = seam_ratio(rgb)
     settings = {
         "source": Path(args.source).name,
-        "top": args.top,
         "width": args.width,
-        "height": args.height,
+        "blend": args.blend,
         "oilifyRadius": args.oilify_radius,
         "oilifyLevels": args.oilify_levels,
+        "outputHeight": rgb.shape[0],
         "seamRatio": round(ratio, 3),
     }
     out.with_suffix(".json").write_text(json.dumps(settings, ensure_ascii=False, indent=2), "utf-8")

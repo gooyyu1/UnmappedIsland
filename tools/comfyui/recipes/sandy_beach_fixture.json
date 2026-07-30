@@ -5,8 +5,8 @@
     "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
     "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
     "",
-    "砂浜が下半分・海・上に細い空、という割合のものを選んでいる。夕日など主役ができた絵は使えない。",
-    "topを最大の128にして、空をさらに削っている。"
+    "空や海が暖色に寄ると夕暮れに見える。一日中この1枚を使うので、真昼の中立な光にしている。",
+    "seedを選んでいるのは、空が広い絵・砂浜が少ない絵が混ざるため。5001は砂6・海2.5・空1.5ほど。"
   ],
   "output": "src/assets/lanes/sandy_beach_fixture.png",
   "prompt": "sandy_beach_fixture",
@@ -16,10 +16,10 @@
   "noTrigger": true,
   "width": 2560,
   "height": 640,
-  "seed": 4002,
+  "seed": 5001,
   "postprocess": {
     "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRAが担っており、重ねると細かい葉や草が潰れるため。",
-    "top": 128,
+    "blend": 512,
     "oilifyRadius": 0,
     "oilifyLevels": 12
   }

@@ -69,7 +69,7 @@ def main() -> None:
             [
                 str(raw),
                 "--out", str(processed),
-                "--top", str(post["top"]),
+                "--blend", str(post["blend"]),
                 "--oilify-radius", str(post["oilifyRadius"]),
                 "--oilify-levels", str(post["oilifyLevels"]),
             ],

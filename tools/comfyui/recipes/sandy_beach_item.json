@@ -18,8 +18,8 @@
   "height": 640,
   "seed": 4004,
   "postprocess": {
-    "_comment": "oilifyRadiusは実寸（背景はレーン高352uへ合わせるので画面上では0.6875倍）で判断する。4まで上げると明るい粒が平坦に潰れて斑点として目立つ。",
-    "top": 64,
+    "_comment": "oilifyRadiusは実寸（背景はレーン高352uへ合わせるので画面上では0.55倍）で判断する。4まで上げると明るい粒が平坦に潰れて斑点として目立つ。",
+    "blend": 512,
     "oilifyRadius": 2,
     "oilifyLevels": 12
   }

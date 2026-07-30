@@ -5,7 +5,9 @@
     "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
     "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
     "",
-    "明るい絵が4枚とも出たので、そのうち最も均一で主役の無いものを選んでいる。"
+    "一日中この1枚を使うので、時間帯を感じさせない曇天の拡散光にしている。木漏れ日で明るくすると",
+    "日差しが強く出て、朝夕の場面と噛み合わなくなる。",
+    "seedを選んでいるのは、中央に大木の根元など主役ができた絵が混ざるため。"
   ],
   "output": "src/assets/lanes/jungle_fixture.png",
   "prompt": "jungle_fixture",
@@ -15,10 +17,10 @@
   "noTrigger": true,
   "width": 2560,
   "height": 640,
-  "seed": 4002,
+  "seed": 5001,
   "postprocess": {
     "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRAが担っており、重ねると細かい葉や草が潰れるため。",
-    "top": 64,
+    "blend": 512,
     "oilifyRadius": 0,
     "oilifyLevels": 12
   }

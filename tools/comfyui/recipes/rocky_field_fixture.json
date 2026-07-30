@@ -16,11 +16,8 @@
   "width": 2560,
   "height": 640,
   "postprocess": {
-    "_comment": [
-      "topを最大の128にして空を落とし、地面の割合を増やす。",
-      "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRA側が担っているため。重ねて掛けると細かい草が潰れる。"
-    ],
-    "top": 128,
+    "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRA側が担っているため。重ねて掛けると細かい草が潰れる。",
+    "blend": 512,
     "oilifyRadius": 0,
     "oilifyLevels": 12
   },
