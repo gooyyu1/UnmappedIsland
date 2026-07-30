@@ -29,8 +29,9 @@ object_defs:
     props:
       # 満腹度。0でも即死せず体調不良につながる想定（未実装。致死性はbody_fat参照）。
       # 満腹から1日（96 tick）で空になる。桁の余裕のため-100/tickで減衰し、max=96*100=9600。
-      # 域の区分（6.4節のalert）は残り時間で切る（-100/tick=400/時）。餓死はbody_fatが受け持つため
-      # 致命的域は持たない。
+      # 域の区分（6.4節のalert）は残り時間で切る（-100/tick=400/時）。安全域から外れる（＝ステータス
+      # エリアに出る）のはmaxの80%で、そこから先は減り具合に応じて段が上がる。餓死はbody_fatが
+      # 受け持つため致命的域は持たない。
       satiety:
         tags: [status, nutrition]
         value: 9600
@@ -41,8 +42,11 @@ object_defs:
           - name: hungry        # 残り12時間未満
             min: 1200
             alert: caution
-          - name: fed
+          - name: peckish       # 残り19時間（maxの80%）未満
             min: 4800
+            alert: watch
+          - name: fed
+            min: 7680
         passives:
           - accumulate:
               self:
@@ -51,7 +55,7 @@ object_defs:
       # 他の量と違い、値は液体の量と同じ実単位のmL（1 = 1mL、LiquidContainerSystem.md 5節）で、
       # 1日の必要量2400mLを96 tickで割った-25/tickで減衰する。max=288*25=7200（＝7.2L）。
       # 域の区分（6.4節のalert）は残り時間で切る（-25/tick=100mL/時）。脱水はそのまま死に至るため、
-      # 致命的域を持つ数少ないステータス。
+      # 致命的域を持つ数少ないステータス。安全域から外れるのはmaxの80%。
       hydration:
         tags: [status, nutrition]
         value: 7200
@@ -65,8 +69,11 @@ object_defs:
           - name: thirsty       # 残り2日未満
             min: 2400
             alert: caution
-          - name: hydrated
+          - name: dryish        # 残り2日9時間（maxの80%）未満
             min: 4800
+            alert: watch
+          - name: hydrated
+            min: 5760
         passives:
           - accumulate:
               self:
@@ -89,15 +96,19 @@ object_defs:
         tags: [status, health]
         value: 9600
         range: {min: 0, max: 9600}
-        # 眠り込むだけで死には至らないため致命的域は持たない。しきい値は残り時間（-100/tick=400/時）。
+        # 眠り込むだけで死には至らないため致命的域は持たない。しきい値は残り時間（-100/tick=400/時）で、
+        # 安全域から外れるのはmaxの80%。
         stages:
           - name: overtired     # 残り3時間未満
             alert: danger
           - name: sleepy        # 残り12時間未満
             min: 1200
             alert: caution
-          - name: rested
+          - name: yawning       # 残り19時間（maxの80%）未満
             min: 4800
+            alert: watch
+          - name: rested
+            min: 7680
         passives:
           - accumulate:
               self:
@@ -114,8 +125,11 @@ object_defs:
           - name: tired
             min: 20
             alert: caution
-          - name: fresh
+          - name: winded
             min: 60
+            alert: watch
+          - name: fresh
+            min: 80
       # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。「飽き」（短スパンの繰り返しペナルティ、
       # 別途検討）とは別に、「あるカテゴリを長期間摂っていない」ことを検出する。経過tickの
       # カウンタでなく数値の増減なのは、食料ごとのカロリー密度・栄養密度の差や、料理の複数カテゴリ

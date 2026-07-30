@@ -96,15 +96,20 @@ describe('characters.yamlのcharacter定義', () => {
   // 何も出ない状態から始まる（ScreenLayout.md ステータスエリア節）。
   it.each([
     ['satiety', 9600, 'safe'],
+    ['satiety', 7679, 'watch'],
     ['satiety', 4799, 'caution'],
     ['satiety', 0, 'danger'],
     ['hydration', 7200, 'safe'],
+    ['hydration', 5759, 'watch'],
     ['hydration', 4799, 'caution'],
     ['hydration', 2399, 'danger'],
     ['hydration', 0, 'fatal'],
     ['wakefulness', 9600, 'safe'],
+    ['wakefulness', 7679, 'watch'],
+    ['wakefulness', 4799, 'caution'],
     ['wakefulness', 0, 'danger'],
     ['stamina', 100, 'safe'],
+    ['stamina', 79, 'watch'],
     ['stamina', 59, 'caution'],
     ['stamina', 0, 'danger'],
   ])('%sが%iのときは%sの域に入る', (name, value, expectedAlert) => {
@@ -112,6 +117,19 @@ describe('characters.yamlのcharacter定義', () => {
 
     expect(propOf(character, name).alertLevelOf(value)).toBe(expectedAlert);
   });
+
+  // ステータスエリアへ出始めるところを揃えておく（ScreenLayout.md ステータスエリア節）。
+  it.each(['satiety', 'hydration', 'wakefulness', 'stamina'])(
+    '%sは最大値の80%%を下回ると安全域から外れる',
+    (name) => {
+      const character = codex.objects.get(codex.objectNames.getId('character'));
+      const prop = propOf(character, name);
+      const max = prop.range!.max;
+
+      expect(prop.alertLevelOf(Math.trunc(max * 0.8)), '80%ちょうどはまだ安全域').toBe('safe');
+      expect(prop.alertLevelOf(Math.trunc(max * 0.8) - 1)).not.toBe('safe');
+    },
+  );
 
   it('致命的域を持つのは、放置すると死に至る水分だけ', () => {
     const character = codex.objects.get(codex.objectNames.getId('character'));
