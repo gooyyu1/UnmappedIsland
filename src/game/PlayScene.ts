@@ -1,3 +1,4 @@
+import type Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
@@ -22,6 +23,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
+import { Curtain } from './ui/Curtain';
 import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX } from './ui/informationArt';
 import { HAND_LANE_TEXTURE, laneTexture } from './ui/laneArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
@@ -70,6 +72,16 @@ const RING_DEPTH = 2;
 /** 致命的域を伝える画面全体の枠は、そのドーナツグラフよりもさらに手前に出す。 */
 const ALERT_FRAME_DEPTH = 3;
 
+/**
+ * フィールドエリアの表示物を置く層。既定の層（0）より奥へ置くことで、フィールドエリアだけを
+ * 作り直しても（rebuildFieldArea）、はみ出したカードを隠す隣接エリアの背景板より奥に居ることを
+ * 保証する——描画順に頼ると、作り直したぶんが背景板より手前へ入ってしまう。
+ */
+const FIELD_DEPTH = -1;
+
+/** 場面転換の明転にかける時間（ミリ秒）。暗転は時間経過と並行して進むので、こちらだけを決める。 */
+const BRIGHTEN_MS = 320;
+
 /** 状況エリア・天候の帯のパディング（縦型は広め、横型は狭め）。 */
 const SITUATION_PADDING_PORTRAIT = { x: 32, y: 20 };
 const SITUATION_PADDING_LANDSCAPE = { x: 20, y: 12 };
@@ -114,6 +126,7 @@ export function scenarioPlayData(scenario: Scenario): PlaySceneData {
  *
  * カードはレーンからはみ出しても切り抜かず、後から描く隣接エリアの背景板で隠す。そのため
  * 組み立ての順序（フィールドエリア → ダッシュボード列 → オプション／フィルターバー）に意味がある。
+ * フィールドエリアの表示物だけは、順序ではなくFIELD_DEPTHの層で奥へ置く（そこだけを作り直すため）。
  */
 export class PlayScene extends ResponsiveScene {
   /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
@@ -129,11 +142,11 @@ export class PlayScene extends ResponsiveScene {
   private motion!: CardMotion;
   private calendar!: FlipCalendar;
 
-  /** フィールドエリアの矩形。時間経過のドーナツグラフと探索の子ウィンドウを、この中央に出す。 */
-  private fieldArea: Rect = { x: 0, y: 0, width: 0, height: 0 };
+  /** フィールドエリアの背景板。レーンと合わせて、フィールドエリアだけを作り直すときに捨てる。 */
+  private fieldPanel!: Phaser.GameObjects.Rectangle;
 
-  /** ハンドレーンを覆わない子ウィンドウの置き場所（PlayScreenLayout参照）。 */
-  private slotWindowArea: Rect = { x: 0, y: 0, width: 0, height: 0 };
+  /** 各エリアの位置・大きさ。画面寸法から決まるので、buildのたびに作り直される。 */
+  private layout!: PlayScreenLayout;
 
   private drag: CardDragController | undefined;
 
@@ -186,10 +199,18 @@ export class PlayScene extends ResponsiveScene {
   private found: readonly CardContent[] = [];
 
   /**
-   * 時間の経過を見せている最中か。この間はワールドを変える操作を受け付けない（passTime参照）。
-   * 画面にはまだ経過前の状態が出ているため、そこへの操作は既に古い並びを指しているため。
+   * 時間の経過を見せている最中か（passTime参照）。画面にはまだ経過前の状態が出ているため、
+   * そこへの操作は既に古い並びを指している。
    */
   private passingTime = false;
+
+  /** 場面転換（暗転 → フィールドエリアの作り直し → 明転）の最中か（transit参照）。 */
+  private transiting = false;
+
+  /** 演出を見せている最中か。この間はワールドを変える操作を受け付けない。 */
+  private get busy(): boolean {
+    return this.passingTime || this.transiting;
+  }
 
   constructor() {
     super('play');
@@ -210,6 +231,7 @@ export class PlayScene extends ResponsiveScene {
 
   protected build(): void {
     const layout = new PlayScreenLayout(this.metrics);
+    this.layout = layout;
     // 開いていた子ウィンドウは、画面を作り直したあと同じものを開き直す（表示物は捨てられているため）。
     const wasExploring = this.explorationWindow !== undefined;
     const openedPlace = this.slotWindowPlace;
@@ -221,12 +243,12 @@ export class PlayScene extends ResponsiveScene {
     this.propertyWindow = undefined;
     this.objectWindow = undefined;
     this.objectWindowCard = undefined;
-    this.fieldArea = layout.fieldArea;
-    this.slotWindowArea = layout.slotWindowArea;
 
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
     this.buildFieldArea(layout);
+    // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
+    this.motion = new CardMotion(this, this.metrics);
     this.buildFilterBar(layout.filterBar);
     // 横型のオプションバーはフィールドエリアの隣（右サイドバー）なので、フィルターバーと同じく
     // レーンのはみ出しを隠す背景板を兼ねる。縦型は情報エリアの中なので、ページを敷いた後に置く。
@@ -253,7 +275,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
-    addPanel(this, layout.fieldArea, COLOR.fieldArea);
+    this.fieldPanel = addPanel(this, layout.fieldArea, COLOR.fieldArea).setDepth(FIELD_DEPTH);
     const [fixtures, items, hand] = layout.lanes;
 
     const art = this.view.locationArt;
@@ -268,6 +290,7 @@ export class PlayScene extends ResponsiveScene {
       {
         pinned: { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() },
         art: laneTexture('fixture', art),
+        depth: FIELD_DEPTH,
       },
     );
     this.itemLane = new CardLane(
@@ -280,6 +303,7 @@ export class PlayScene extends ResponsiveScene {
         // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
         trailingPlaceholder: this.view.acceptsCards('items'),
         art: laneTexture('item', art),
+        depth: FIELD_DEPTH,
       },
     );
     this.handLane = new CardLane(
@@ -288,9 +312,8 @@ export class PlayScene extends ResponsiveScene {
       hand,
       COLOR.handLane,
       this.laneCards(this.view.hand, 'up'),
-      { art: HAND_LANE_TEXTURE },
+      { art: HAND_LANE_TEXTURE, depth: FIELD_DEPTH },
     );
-    this.motion = new CardMotion(this, this.metrics);
 
     // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
     this.drag ??= new CardDragController(this, () => this.metrics, {
@@ -298,6 +321,18 @@ export class PlayScene extends ResponsiveScene {
       onDrop: (drop, released) => this.applyDrop(drop, released),
     });
     this.setDragLanes();
+  }
+
+  /**
+   * フィールドエリアだけを作り直す。移動で現在地が変わると、レーンの中身だけでなく現在地カードも
+   * 背景の絵も総取り替えになるので、差し替え（showView）では追いつかない。
+   *
+   * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
+   */
+  private rebuildFieldArea(): void {
+    this.fieldPanel.destroy();
+    for (const lane of [this.fixtureLane, this.itemLane, this.handLane]) lane.destroy();
+    this.buildFieldArea(this.layout);
   }
 
   /** ドラッグの対象になるレーン。スロットの子ウィンドウを開いている間は、その中身も対象に加える。 */
@@ -444,7 +479,7 @@ export class PlayScene extends ResponsiveScene {
     this.slotWindow = new SlotWindow(this, this.metrics, {
       title: this.view.nameOf(place),
       cards: this.laneCards(this.slotWindowCards(), 'down'),
-      area: this.slotWindowArea,
+      area: this.layout.slotWindowArea,
       acceptsCards: this.view.acceptsCards(place),
       onClose: () => this.closeSlotWindow(),
     });
@@ -486,7 +521,7 @@ export class PlayScene extends ResponsiveScene {
       card,
       description: card.description,
       actions,
-      area: this.slotWindowArea,
+      area: this.layout.slotWindowArea,
       onClose: () => this.closeObjectWindow(),
     });
   }
@@ -508,7 +543,7 @@ export class PlayScene extends ResponsiveScene {
     this.explorationWindow = new ExplorationWindow(this, this.metrics, {
       locationName: this.view.currentLocation.name,
       ratio: this.view.explorationRatio,
-      area: this.fieldArea,
+      area: this.layout.fieldArea,
       found: this.found,
       searching: this.searching,
       onExplore: () => this.explore(),
@@ -526,7 +561,7 @@ export class PlayScene extends ResponsiveScene {
    * から見せる。押した瞬間に発見物の枠が空へ戻り、時間が経ってから埋まる。
    */
   private explore(): void {
-    if (this.searching || this.passingTime) return;
+    if (this.searching || this.busy) return;
 
     const shownBefore = this.shownInstanceIds();
     const statusesBefore = this.allStatuses();
@@ -579,8 +614,8 @@ export class PlayScene extends ResponsiveScene {
     const ring = new ProgressRing(
       this,
       this.metrics,
-      this.fieldArea.x + this.fieldArea.width / 2,
-      this.fieldArea.y + this.fieldArea.height / 2,
+      this.layout.fieldArea.x + this.layout.fieldArea.width / 2,
+      this.layout.fieldArea.y + this.layout.fieldArea.height / 2,
     ).setDepth(RING_DEPTH);
 
     const clock = { minutes: fromMinutes };
@@ -605,6 +640,9 @@ export class PlayScene extends ResponsiveScene {
   /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
   private leaveLocation(): void {
     this.found = [];
+    // 探索の子ウィンドウは前の土地の探索率・発見物を映しているため、開き直さずに閉じる。
+    this.explorationWindow?.close();
+    this.explorationWindow = undefined;
     // 置いてきた入れ物の中身は開いたままにできない。手に持っている入れ物も、開き直せば済むので一律に閉じる。
     if (this.slotWindowPlace !== undefined && typeof this.slotWindowPlace !== 'string') {
       this.closeSlotWindow();
@@ -628,26 +666,49 @@ export class PlayScene extends ResponsiveScene {
    *
    * その操作がゲーム内時間を消費した場合（durationを持つcombination等）は、探索と同じく経過分だけ
    * 実時間をかけてから結果を見せる。時間を消費しない操作は待たずにそのまま反映される（passTime参照）。
+   *
+   * 移動を伴う操作かどうかはワールドを変えた時点で分かる（画面へ反映するのはその後なので、経過前の
+   * 状態が出たまま）。そのため、場面転換の暗転を時間経過と並行して進められる（transit参照）。
    */
   private applyToWorld(change: () => void, context: MotionContext = {}): void {
-    if (this.passingTime) return;
+    if (this.busy) return;
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
     const statusesBefore = this.allStatuses();
     change();
+
+    const moved = this.gameSession.player.location?.instance !== locationBefore;
+    const elapsed = this.gameSession.world.totalMinutes - startedAt;
+    const curtain = moved ? new Curtain(this, this.layout.fieldArea) : undefined;
+    // 移動し終える時刻に暗転し切るよう、時間経過と同じ長さをかける。
+    curtain?.darken(elapsed * REAL_MS_PER_GAME_MINUTE);
+
     this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-      // 増減は画面を作り直す前に控える。作り直したステータスエリアもこれを見て記号を出す。
+      // 増減はステータスへ反映する前に控える（showInformationがこれを見て記号を出す）。
       this.noteStatusChanges(statusesBefore);
-      // 移動で現在地が変わると、レーンの中身だけでなく現在地カードも背景の絵も総取り替えになる。
-      // 差し替えでは追いつかないので画面ごと作り直す（動きは出ない）。
-      if (this.gameSession.player.location?.instance !== locationBefore) {
-        this.leaveLocation();
-        this.rebuild();
+      if (curtain !== undefined) {
+        this.transit(curtain);
         return;
       }
       this.showView(context);
+    });
+  }
+
+  /**
+   * 暗くなり切ったフィールドエリアを移動先のものへ作り直し、明転する。
+   *
+   * 明転し切るまでは演出中のままにして、ワールドを変える操作を止める（busy）。作り直した並びが
+   * まだ見えていないため、そこへの操作を受け付けると見えているものと食い違う。
+   */
+  private transit(curtain: Curtain): void {
+    this.transiting = true;
+    this.leaveLocation();
+    this.rebuildFieldArea();
+    this.showInformation();
+    curtain.brighten(BRIGHTEN_MS, () => {
+      this.transiting = false;
     });
   }
 
@@ -670,9 +731,17 @@ export class PlayScene extends ResponsiveScene {
     }
 
     this.motion.update(lanes, contents, context);
+    this.showInformation();
+    if (this.explorationWindow !== undefined) this.openExplorationWindow();
+  }
+
+  /**
+   * 情報エリアの表示を今のthis.viewへ合わせる。日時とステータスだけを引き直す——天候・条件・装備の
+   * アイコンはまだ固定値（PlayScreenView参照）で、行動しても変わらないため。
+   */
+  private showInformation(): void {
     this.calendar.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
     this.showStatuses();
-    if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
 
   /**
@@ -1005,8 +1074,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 行動の前後でステータスを比べ、増減を控える。次の行動まで記号を出し続けるので、画面を作り直す
-   * 行動（移動）でもそのまま出る。
+   * 行動の前後でステータスを比べ、増減を控える。次の行動まで記号を出し続けるので、移動で
+   * フィールドエリアを作り直してもそのまま出る。
    */
   private noteStatusChanges(before: readonly StatusContent[]): void {
     this.statusChanges = statusChangesBetween(before, this.allStatuses());
@@ -1022,7 +1091,7 @@ export class PlayScene extends ResponsiveScene {
     this.propertyWindow = new PropertyWindow(this, this.metrics, {
       title: this.view.characterName,
       tabs: this.propertyTabs(),
-      area: this.slotWindowArea,
+      area: this.layout.slotWindowArea,
       onClose: () => {
         this.propertyWindow = undefined;
       },

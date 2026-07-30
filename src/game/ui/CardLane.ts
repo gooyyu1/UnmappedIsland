@@ -51,6 +51,11 @@ export interface CardLaneOptions {
    * 固定枠のレーンは空き枠そのものが常に見えているので不要。
    */
   readonly trailingPlaceholder?: boolean;
+  /**
+   * 表示物を置く層（省略すると既定の0）。レーンだけを作り直しても描画順を保ちたい場合に、
+   * 周りより奥の層を指定する（PlayScene.FIELD_DEPTH）。
+   */
+  readonly depth?: number;
 }
 
 /** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardMotion）が決める。 */
@@ -118,7 +123,7 @@ export class CardLane {
    * stripに属さない表示物（背景板・ピン留め部分）。カードはstripごと消えるが、これらは
    * 個別に破棄しないと残ってしまう（背景板は入力も吸い続ける）。
    */
-  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  private readonly objects: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [];
 
   /**
    * 絵を敷いた背景板（背景色だけのレーンでは空）。カードと同じだけ横へ送るので、スクロールのたびに
@@ -188,6 +193,12 @@ export class CardLane {
       this.maskShape.fillRect(rect.x, rect.y, rect.width, rect.height);
       this.strip.enableFilters();
       this.strip.filters?.internal.addMask(this.maskShape);
+    }
+
+    // カードはstripの子なので、stripと自前の表示物を移せば並んでいるカードごと同じ層へ移る。
+    if (options.depth !== undefined) {
+      this.strip.setDepth(options.depth);
+      for (const object of this.objects) object.setDepth(options.depth);
     }
   }
 
@@ -348,7 +359,7 @@ export class CardLane {
     rect: Rect,
     background: number,
     art: string | undefined,
-  ): Phaser.GameObjects.GameObject {
+  ): Phaser.GameObjects.Rectangle | Phaser.GameObjects.TileSprite {
     const panel = art === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, art);
     if (panel instanceof Phaser.GameObjects.TileSprite) this.tiles.push(panel);
     this.objects.push(panel);
@@ -364,7 +375,7 @@ export class CardLane {
     art: string | undefined,
     cardY: number,
     pinned: CardContent,
-  ): Phaser.GameObjects.GameObject {
+  ): Phaser.GameObjects.Rectangle | Phaser.GameObjects.TileSprite {
     const margin = metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
     const cardWidth = metrics.px(SIZE.cardWidth);
