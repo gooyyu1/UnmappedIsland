@@ -21,22 +21,30 @@
     "note": "学習タグがこれ1つだけ。トリガー無しではほとんど効かない",
     "commercial": ["Image", "RentCivit", "Rent", "Sell"],
     "credit": "not required",
+    "creator": "cbo305",
     "url": "https://civitai.com/models/500223?modelVersionId=556044"
   },
   "traditional_watercolor_painting.safetensors": {
     "base": "sdxl",
     "trigger": "traditional watercolor painting",
-    "bias": "人物画（1boy 37枚 / old man）。風景では構図が偏ることがある",
+    "bias": "人物画（1boy 37枚 / old man）。風景では構図が偏るが、ポートレートには向く",
+    "recommendedStrength": 0.7,
+    "note": "作者の推奨ベースはSDXL baseではなくCounterfeitXL。本来の画風を出すならそちら",
     "commercial": ["Image", "RentCivit"],
     "credit": "required",
+    "creator": "Husky_AI",
+    "creatorSource": "モデル説明文の本文（APIのcreatorフィールドは無い）",
     "url": "https://civitai.com/models/159766?modelVersionId=179712"
   },
   "oil_and_watercolor_painting.safetensors": {
     "base": "sdxl",
     "trigger": "oil and watercolor painting",
-    "bias": "都市（building 48枚 / city 43枚 / road 25枚）。建物や道が湧きやすく、ネガティブでも抑えきれない",
+    "bias": "都市（building 48枚 / city 43枚 / road 25枚）。建物や道が湧く。建築物のカードには向く",
+    "recommendedStrength": 0.7,
     "commercial": ["Image", "RentCivit"],
     "credit": "required",
+    "creator": null,
+    "creatorSource": "不明。APIにcreatorフィールドが無く、説明文にも名前がない。タイトルの命名規則と説明文の書式がtraditional_watercolor_painting（Husky_AI）と一致するため同一人物の可能性が高いが、未確認。クレジットに書く前にモデルページで確認すること",
     "url": "https://civitai.com/models/202230?modelVersionId=227662"
   },
   "ral-wtrclr-sdxl.safetensors": {
@@ -46,6 +54,7 @@
     "commercial": ["RentCivit"],
     "credit": "not required",
     "warning": "Imageが無い。生成画像を配布・販売する用途には使えない",
+    "creator": "RalFinger",
     "url": "https://civitai.com/models/484723?modelVersionId=539071"
   },
   "oil painting.safetensors": {
@@ -55,6 +64,7 @@
     "commercial": [],
     "credit": "not required",
     "warning": "商用の許諾が一切ない",
+    "creator": "Someone97421",
     "url": "https://civitai.com/models/118223?modelVersionId=128212"
   },
   "ghibli watercolor_v0.2.safetensors": {
@@ -63,6 +73,7 @@
     "bias": "人物（1girl）",
     "commercial": ["Image", "RentCivit", "Rent", "Sell"],
     "credit": "not required",
+    "creator": "Benny_w",
     "url": "https://civitai.com/models/2063095?modelVersionId=2334545"
   },
 
@@ -73,6 +84,7 @@
     "commercial": ["Image", "RentCivit", "Rent", "Sell"],
     "credit": "not required",
     "warning": "LoRA自体は緩いが、ベースのFLUX.1 [dev]が非商用ライセンス",
+    "creator": "ninjodu153",
     "url": "https://civitai.com/models/1713299?modelVersionId=1938815"
   },
   "edwardjuliusdetmold2_cap_d6a3.safetensors": {
@@ -82,6 +94,7 @@
     "commercial": ["RentCivit", "Rent"],
     "credit": "not required",
     "warning": "Imageが無い。生成画像を配布・販売する用途には使えない",
+    "creator": "NobodyButMeow",
     "url": "https://civitai.com/models/1432107?modelVersionId=1618810"
   },
   "waterV2.safetensors": {
@@ -90,6 +103,7 @@
     "note": "Z-Image向け。今のFlux/SDXLのチェックポイントでは読み込めない",
     "commercial": ["Image", "RentCivit", "Rent"],
     "credit": "required",
+    "creator": "Mytee",
     "url": "https://civitai.com/models/2481699?modelVersionId=2790185"
   }
 }
