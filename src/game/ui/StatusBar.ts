@@ -51,6 +51,15 @@ export interface StatusContent {
   /** 直前の行動での増減。undefinedなら記号を出さない。 */
   readonly change?: StatusChange;
 
+  /**
+   * 直前の行動を始める前の満たされ具合。出ていなかった行を出すときに、この値から見せ始めることで
+   * 「その行動で減った分」だけが赤い帯になる（show参照）。増減が無ければundefined。
+   */
+  readonly ratioBefore?: number;
+
+  /** その行動の途中の値か（trueの間は赤い帯を縮めず、合計の減少量を残す。ProgressBar.setRatio参照）。 */
+  readonly midAction?: boolean;
+
   /** ユーザが固定表示にしているか。 */
   readonly pinned?: boolean;
 
@@ -166,18 +175,57 @@ export class StatusBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * この行の位置へ移して見せる。既に出ていた場合は、位置が変わったぶんを動きとして見せる
+   * この行を、今の内容でyの位置へ出す。既に出ていた場合は、位置が変わったぶんを動きとして見せる
    * （並び順が変わったとき、どのバーがどこへ動いたのかを目で追えるようにするため）。
    * 出ていなかった場合は動かさずその位置に現れる（見えていなかった位置から飛んでこないように）。
+   *
+   * 出ていなかった行は、直前の行動を始める前の値（ratioBefore）から見せ始める。こうすると赤い帯は
+   * 「その行動で減った分」だけになる。出ていなかった間の減少まで帯にすると、目で追えなかった減り方が
+   * 今この瞬間の減少として出てしまう（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
+   * 内容と位置を1つの操作にしているのは、呼び出し側が「出す前に中身を入れる」順序を覚えなくて済むよう。
    */
-  showAt(y: number): void {
-    this.moveTween?.stop();
-    this.moveTween = undefined;
-
-    if (!this.visible) {
-      this.setVisible(true).setY(y);
+  show(y: number, content: StatusContent): void {
+    if (this.visible) {
+      this.setContent(content);
+      this.slideTo(y);
       return;
     }
+
+    const before = content.ratioBefore;
+    if (before !== undefined) this.bar?.resetRatio(before);
+    this.applyContent(content, before !== undefined);
+    this.stopMoving();
+    this.setVisible(true).setY(y);
+  }
+
+  /** 並びから外れた行にする（安全域に戻った、固定表示を外した）。 */
+  hide(): void {
+    this.stopMoving();
+    this.setVisible(false);
+  }
+
+  /**
+   * 値・増減・域・固定表示を今の状態へ書き換える。作り直さず中身だけ差し替えるのは、作り直すと画面の
+   * 表示順が変わって子ウィンドウの覆いより手前へ出てしまうことと、バーが減る様子（ProgressBar.setRatio）を
+   * 見せている途中で捨てないため。
+   */
+  setContent(content: StatusContent): void {
+    this.applyContent(content, true);
+  }
+
+  /** showDecreaseがfalseなら、減った分の赤い帯を出さずに値を今の状態にする（show参照）。 */
+  private applyContent(content: StatusContent, showDecrease: boolean): void {
+    if (content.ratio !== undefined) {
+      if (showDecrease) this.bar?.setRatio(content.ratio, content.midAction === true);
+      else this.bar?.resetRatio(content.ratio);
+    }
+    this.valueText?.setText(String(content.value));
+    this.showContent(content);
+  }
+
+  /** 位置が変わったぶんを動きとして見せる。 */
+  private slideTo(y: number): void {
+    this.stopMoving();
     if (this.y === y) return;
 
     this.moveTween = this.scene.tweens.add({
@@ -188,22 +236,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
     });
   }
 
-  /** 並びから外れた行にする（安全域に戻った、固定表示を外した）。 */
-  hide(): void {
+  private stopMoving(): void {
     this.moveTween?.stop();
     this.moveTween = undefined;
-    this.setVisible(false);
-  }
-
-  /**
-   * 値・増減・域・固定表示を今の状態へ書き換える。作り直さず中身だけ差し替えるのは、作り直すと画面の
-   * 表示順が変わって子ウィンドウの覆いより手前へ出てしまうことと、バーが減る様子（ProgressBar.setRatio）を
-   * 見せている途中で捨てないため。
-   */
-  setContent(content: StatusContent): void {
-    if (content.ratio !== undefined) this.bar?.setRatio(content.ratio);
-    this.valueText?.setText(String(content.value));
-    this.showContent(content);
   }
 
   private showContent(content: StatusContent): void {
