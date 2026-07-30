@@ -38,7 +38,8 @@ Python          <上記>\ComfyUI\.venv\Scripts\python.exe
 | `build.py` | レシピ 1 つを読んで、生成と後処理を通す |
 | `generate.py` | ワークフローへプロンプトを差し込んで `/prompt` へ投げ、PNG を取ってくる |
 | `postprocess.py` | 油絵風 → 縦の切り出し → 横のシームレス化 |
-| `workflows/lane_background.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ） |
+| `workflows/lane_background.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ）。既定 |
+| `workflows/lane_background_sdxl.api.json` | SDXL 版。速いが作風が合わない（下記） |
 | `prompts/lane_backgrounds.json` | 土地ごとのプロンプト |
 | `recipes/*.json` | 出力 1 枚ぶんの、生成と後処理の設定 |
 
@@ -74,6 +75,30 @@ Filters > Artistic > Oilify と同じ「窓の中で最も多い明度帯の色�
 
 `postprocess.py` は仕上げたあと、**継ぎ目の段差が画像内部の平均的な段差の何倍か**を出します。
 1 に近いほど内部と見分けが付きません。既存の画像は 0.79〜1.97 で、この範囲なら問題ありません。
+
+## FluxとSDXLの使い分け
+
+**既定は Flux（`lane_background.api.json`）です。** SDXL も試しましたが、レーンの背景には向きません
+でした。同じプロンプト・同じ seed・同じ後処理で比べた結果です。
+
+| | Flux dev fp8 + Watercolor | SDXL base + ghibli watercolor |
+|---|---|---|
+| 1枚の生成時間 | 30〜350秒（実行ごとに大きく振れる） | **8〜12秒** |
+| 眺めの絵（`_fixture`） | 淡い水彩。カードより手前に出ない | 写実寄りの風景画。雲・山・木が描き込まれ、背景としては情報量が多い |
+| 地面の絵（`_item`） | 一様な水彩のテクスチャ | **写真のような質感**。中央に帯状のムラが残り、並べると縞に見える |
+
+**速さは SDXL の圧勝（20〜30倍）**ですが、`ghibli watercolor` LoRA は強度 0.8 でも 1.0 でも写実の
+まま（トリガーワードは無く、強度だけが効く）で、油絵風の後処理を通しても絵の出自が残りました。
+1.0 は構図もかえって崩れました。
+
+既存の絵（`jungle_*` / `sandy_beach_*` / `hand`）が水彩の作風なので、そこへ揃えるなら Flux です。
+作風を問わない用途や、構図の当たりを速く探したいときは SDXL が使えます。
+
+```bash
+python generate.py rocky_field_fixture --out <dir> --workflow lane_background_sdxl.api.json
+```
+
+レシピ側で使い分けるなら `"workflow": "lane_background_sdxl.api.json"` を足します。
 
 ## 再現性について
 

@@ -51,6 +51,7 @@ def main() -> None:
                 "--seed", str(recipe["seed"]),
                 "--width", str(recipe["width"]),
                 "--height", str(recipe["height"]),
+                "--workflow", recipe.get("workflow", "lane_background.api.json"),
                 "--server", args.server,
             ],
         )

@@ -62,7 +62,14 @@ ComfyUIの画面で保存した `.json`（`nodes` / `links` を持つブラウ�
 描かせている**のが原因。テクスチャが欲しい場合は `extreme close-up macro texture` /
 `the same density everywhere` / `no composition` と書き換えると収まる。
 
-### 5. 生成しただけでは背景に使えない
+### 5. モデルは Flux が既定。SDXL は速いが作風が合わない
+
+SDXL（`lane_background_sdxl.api.json`）は 1 枚 8〜12 秒で、Flux の 20〜30 倍速い。ただし
+`ghibli watercolor` LoRA は強度を上げても写実のままで、既存の絵（水彩）に揃わない。**作風を
+揃える必要があるなら Flux、構図の当たりを速く探したいだけなら SDXL** と使い分ける。
+比較の詳細は `tools/comfyui/README.md`。
+
+### 6. 生成しただけでは背景に使えない
 
 輪郭がはっきりしすぎていてカードより目立つ。`postprocess.py` が油絵風のぼかし（GIMPのoilifyと
 同じアルゴリズム）→ 縦の切り出し → 横のシームレス化を通す。

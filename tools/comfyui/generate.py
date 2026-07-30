@@ -99,6 +99,11 @@ def main() -> None:
     parser.add_argument("--width", type=int, default=DEFAULT_WIDTH)
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT)
     parser.add_argument("--count", type=int, default=1, help="seedを変えて複数枚出す")
+    parser.add_argument(
+        "--workflow",
+        default="lane_background.api.json",
+        help="workflows/ 配下のファイル名。SDXLで出すなら lane_background_sdxl.api.json",
+    )
     parser.add_argument("--server", default=DEFAULT_SERVER)
     parser.add_argument("--timeout", type=float, default=900)
     args = parser.parse_args()
@@ -107,7 +112,7 @@ def main() -> None:
     if args.name not in prompts:
         raise SystemExit(f"'{args.name}' は prompts/lane_backgrounds.json にありません")
     entry = prompts[args.name]
-    template = json.loads((HERE / "workflows" / "lane_background.api.json").read_text("utf-8"))
+    template = json.loads((HERE / "workflows" / args.workflow).read_text("utf-8"))
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -144,7 +149,13 @@ def main() -> None:
             # 同じ絵を作り直すのに要る情報を、絵の隣へ丸ごと残す。
             (out_dir / f"{stem}.json").write_text(
                 json.dumps(
-                    {"name": args.name, "seed": seed, "values": values, "workflow": workflow},
+                    {
+                        "name": args.name,
+                        "seed": seed,
+                        "workflowFile": args.workflow,
+                        "values": values,
+                        "workflow": workflow,
+                    },
                     ensure_ascii=False,
                     indent=2,
                 ),
