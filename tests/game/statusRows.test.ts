@@ -23,6 +23,15 @@ describe('statusRows(ステータスエリアに並べる行)', () => {
     expect(rows.map((row) => row.key)).toEqual(['hydration', 'stamina', 'satiety']);
   });
 
+  it('留意域は要注意域と同じまとまりに置く（今のところUIは区別しない）', () => {
+    const rows = statusRows(
+      [status('satiety', 'watch'), status('hydration', 'danger'), status('stamina', 'caution')],
+      [],
+    );
+
+    expect(rows.map((row) => row.key)).toEqual(['hydration', 'satiety', 'stamina']);
+  });
+
   it('同じまとまりの中はプロパティの宣言順を保つ', () => {
     const rows = statusRows([status('satiety', 'danger'), status('hydration', 'fatal')], []);
 

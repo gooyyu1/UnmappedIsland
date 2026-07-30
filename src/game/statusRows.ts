@@ -6,7 +6,8 @@ import type { StatusContent } from './ui/StatusBar';
  * taggedはstatusタグが付いたもの（常に候補）、othersはプロパティウィンドウにだけ出るもので、
  * 固定表示にされたものだけが候補に加わる。安全域は固定表示でなければ出さない。
  *
- * 並び順は「固定表示 → 危険域・致命的域 → 要注意域」で、同じまとまりの中はプロパティの宣言順を保つ。
+ * 並び順は「固定表示 → 危険域・致命的域 → 留意域・要注意域」で、同じまとまりの中はプロパティの
+ * 宣言順を保つ。
  */
 export function statusRows(
   tagged: readonly StatusContent[],
@@ -23,8 +24,8 @@ export function statusRows(
     .sort((a, b) => groupOf(a) - groupOf(b));
 }
 
-/** 表示順のまとまり（小さいほど上）。 */
+/** 表示順のまとまり（小さいほど上）。明滅しない域（留意・要注意）は同じまとまりに置く。 */
 function groupOf(status: StatusContent): number {
   if (status.pinned === true) return 0;
-  return status.alert === 'caution' ? 2 : 1;
+  return status.alert === 'watch' || status.alert === 'caution' ? 2 : 1;
 }

@@ -67,7 +67,7 @@ export interface StatusContent {
   readonly onTogglePin?: () => void;
 }
 
-/** 域ごとのバーの枠の色（安全域・要注意域は明滅させないためundefined）。 */
+/** 域ごとのバーの枠の色（明滅させない域はundefined）。 */
 function alertColor(alert: AlertLevel): number | undefined {
   if (alert === 'danger') return COLOR.statusAlertDanger;
   if (alert === 'fatal') return COLOR.statusAlertFatal;
