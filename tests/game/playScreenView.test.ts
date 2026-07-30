@@ -3,7 +3,7 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { Path } from '../../src/domain/runtime/views/Path';
-import { fromGameSession } from '../../src/game/PlayScreenView';
+import { fromGameSession, withFrozenCards } from '../../src/game/PlayScreenView';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -211,6 +211,38 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     view.cardsIn('equipment')[0].moveTo?.('hand')?.();
     expect(game.player.hand[0], '手持ちへ戻せる').toBe(stone);
+  });
+
+  it('withFrozenCardsは、控えた時点の中身を返し続ける', () => {
+    // 時間経過の再現（PlayScene）では、控えておいたviewをあとから表示する。cardsInだけは呼んだ時点の
+    // 生きたワールドを読むため、固定しないとその部分に限って「今」の状態が出てしまう。
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    const equipment = codex.slotNames.getId('equipment');
+    expect(stone.moveToSlot(game.player.instance, equipment, codex.wellKnown)).toBeUndefined();
+
+    const live = fromGameSession(game, codex, locale);
+    const frozen = withFrozenCards(live, 'equipment');
+
+    // 控えたあとでワールドが変わる（装備が外れる）。
+    expect(
+      stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    expect(
+      frozen.cardsIn('equipment').map((card) => card.objects[0]),
+      '固定した場所は控えた時点のまま',
+    ).toEqual([stone]);
+    expect(live.cardsIn('equipment'), '固定していないviewは今のワールドを読む').toEqual([]);
+    expect(frozen.cardsIn('injuries'), '固定していない場所は今のワールドを読む').toEqual([]);
+    expect(frozen.items, 'cardsIn以外は元のviewのまま').toBe(live.items);
+  });
+
+  it('withFrozenCardsは、開いている場所が無ければviewをそのまま返す', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const view = fromGameSession(game, codex, locale);
+
+    expect(withFrozenCards(view, undefined)).toBe(view);
   });
 
   it('怪我は移動も並び替えもできない', () => {

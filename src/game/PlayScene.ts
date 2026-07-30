@@ -13,7 +13,7 @@ import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
-import { fromGameSession } from './PlayScreenView';
+import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import { statusChangesBetween } from './statusChanges';
 import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
@@ -91,6 +91,20 @@ const MENU_ICON = '☰';
 
 const OPTION_ICONS = ['⚙️', '📖', '📓', MENU_ICON];
 const FILTER_ICONS = ['🗂️', '🍳', '💧', '🔨', '🎲'];
+
+/**
+ * ワールドを変えている途中の、あるtick境界での表示内容（PlayScene.record）。
+ *
+ * ワールドは操作の実行時に一気に進み切るが、画面は実時間をかけて追いかける。経過中のtickで起きた変化を
+ * その瞬間に見せるため、tickごとの表示内容を控えておいて再生する。
+ */
+interface RecordedView {
+  /** この控えが映している時刻（ゲーム内の総経過分。tick境界の絶対時刻になる）。 */
+  readonly minutes: number;
+  readonly view: PlayScreenView;
+  /** 行動開始時からのステータスの増減。控えた時点までの分だけを見せる。 */
+  readonly statusChanges: ReadonlyMap<string, StatusChange>;
+}
 
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
 export interface PlaySceneData {
@@ -212,6 +226,17 @@ export class PlayScene extends ResponsiveScene {
     return this.passingTime || this.transiting;
   }
 
+  /**
+   * 演出中は何もしないようにした操作を返す。演出中の画面は、経過中の過去の時点を再現していたり
+   * （record）作り直しを暗幕で隠していたり（transit）するため、そこから今のワールドを覗く子ウィンドウを
+   * 開かせない——並んでいるカードは既に古い対象を指しており、そのアクションを実行させるわけにいかない。
+   */
+  private whileIdle(onTap: () => void): () => void {
+    return () => {
+      if (!this.busy) onTap();
+    };
+  }
+
   constructor() {
     super('play');
   }
@@ -288,7 +313,10 @@ export class PlayScene extends ResponsiveScene {
       // 設置物は持ち出せないので、手持ちへ送る端の操作は付けない（並び替えのドラッグだけ）。
       this.laneCards(this.view.fixtures, undefined),
       {
-        pinned: { ...this.view.currentLocation, onTap: () => this.openExplorationWindow() },
+        pinned: {
+          ...this.view.currentLocation,
+          onTap: this.whileIdle(() => this.openExplorationWindow()),
+        },
         art: laneTexture('fixture', art),
         depth: FIELD_DEPTH,
       },
@@ -366,8 +394,9 @@ export class PlayScene extends ResponsiveScene {
       return {
         ...card,
         draggable: true,
-        onTap:
+        onTap: this.whileIdle(
           contents === undefined ? () => this.openObjectWindow(card) : () => this.openSlotWindow(contents),
+        ),
         edge: direction === undefined ? undefined : this.cardEdge(card, direction),
       };
     });
@@ -571,8 +600,8 @@ export class PlayScene extends ResponsiveScene {
     this.found = [];
     this.openExplorationWindow();
 
-    this.gameSession.player.explore(this.gameSession.session);
-    this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
+    const recorded = this.record(() => this.gameSession.player.explore(this.gameSession.session));
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.noteStatusChanges(statusesBefore);
@@ -594,15 +623,50 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
+   * ワールドを変える操作を実行し、経過中の各tick時点の表示内容を控えて返す（RecordedView）。
+   *
+   * ワールドはこの中で進み切る。経過中のtickは物を腐らせたり道具を壊したりするので、その変化が
+   * 「45分の行動の15分目に起きた」と分かるよう、tickごとの表示内容を控えて実時間で再生する（passTime）。
+   *
+   * 経過し切った時刻の控えは返さない。その瞬間の並びは、行動の効果まで含めてonElapsedが見せるため。
+   */
+  private record(change: () => void): readonly RecordedView[] {
+    const statusesBefore = this.allStatuses();
+    const recorded: RecordedView[] = [];
+
+    this.gameSession.session.observeTicks(() => {
+      // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
+      const view = withFrozenCards(
+        fromGameSession(this.gameSession, this.codex, this.locale),
+        this.slotWindowPlace,
+      );
+      recorded.push({
+        minutes: this.gameSession.world.totalMinutes,
+        view,
+        statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
+      });
+    }, change);
+
+    const endedAt = this.gameSession.world.totalMinutes;
+    return recorded.filter((snapshot) => snapshot.minutes < endedAt);
+  }
+
+  /**
    * fromMinutesからtoMinutesまで、ゲーム内時間の経過をREAL_MS_PER_GAME_MINUTEの速さで時計と
    * ドーナツグラフへ映し、経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
    *
    * 時計もドーナツグラフもtick境界で刻む（TickProgress参照）。時計はグラフが目盛りへ届いた瞬間に
-   * その時刻へ飛ぶので、両者が食い違って見えない。
+   * その時刻へ飛ぶので、両者が食い違って見えない。recordedの控えも同じ刻みで見せる——控えた時刻は
+   * tick境界そのものなので、目盛りに届いた瞬間がその変化が起きた瞬間になる。
    *
    * 経過を見せている間はpassingTimeを立て、ワールドを変える操作を止める。
    */
-  private passTime(fromMinutes: number, toMinutes: number, onElapsed: () => void): void {
+  private passTime(
+    fromMinutes: number,
+    toMinutes: number,
+    recorded: readonly RecordedView[],
+    onElapsed: () => void,
+  ): void {
     const minutes = toMinutes - fromMinutes;
     if (minutes <= 0) {
       onElapsed();
@@ -619,6 +683,7 @@ export class PlayScene extends ResponsiveScene {
     ).setDepth(RING_DEPTH);
 
     const clock = { minutes: fromMinutes };
+    let replayed = 0;
     this.tweens.add({
       targets: clock,
       minutes: toMinutes,
@@ -626,8 +691,13 @@ export class PlayScene extends ResponsiveScene {
       ease: 'Linear',
       onUpdate: () => {
         const elapsed = clock.minutes - fromMinutes;
-        this.showClock(fromMinutes + progress.steppedMinutesAt(elapsed));
+        const stepped = fromMinutes + progress.steppedMinutesAt(elapsed);
+        this.showClock(stepped);
         ring.setRatio(progress.ratioAt(elapsed));
+        while (replayed < recorded.length && recorded[replayed].minutes <= stepped) {
+          this.showRecorded(recorded[replayed]);
+          replayed += 1;
+        }
       },
       onComplete: () => {
         ring.destroy();
@@ -635,6 +705,19 @@ export class PlayScene extends ResponsiveScene {
         onElapsed();
       },
     });
+  }
+
+  /**
+   * 控えておいた時点の表示内容へ切り替える。差し替えの動き（出現・破棄）は普段と同じ経路で出るので、
+   * 経過中に壊れた道具はその瞬間に消える。
+   *
+   * 掴んで離したカードの出どころ（MotionContext.released）は渡さない。それは経過し切ったときに
+   * 見せる動きで（道具は使い終わってから手元へ戻る、ScreenLayout.md）、途中で消費してはならない。
+   */
+  private showRecorded(recorded: RecordedView): void {
+    this.view = recorded.view;
+    this.statusChanges = recorded.statusChanges;
+    this.showView();
   }
 
   /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
@@ -676,7 +759,7 @@ export class PlayScene extends ResponsiveScene {
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
     const statusesBefore = this.allStatuses();
-    change();
+    const recorded = this.record(change);
 
     const moved = this.gameSession.player.location?.instance !== locationBefore;
     const elapsed = this.gameSession.world.totalMinutes - startedAt;
@@ -684,7 +767,7 @@ export class PlayScene extends ResponsiveScene {
     // 移動し終える時刻に暗転し切るよう、時間経過と同じ長さをかける。
     curtain?.darken(elapsed * REAL_MS_PER_GAME_MINUTE);
 
-    this.passTime(startedAt, this.gameSession.world.totalMinutes, () => {
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       // 増減はステータスへ反映する前に控える（showInformationがこれを見て記号を出す）。
       this.noteStatusChanges(statusesBefore);
@@ -846,7 +929,7 @@ export class PlayScene extends ResponsiveScene {
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
       icon: '🧍',
       name: this.view.characterName,
-      onTap: () => this.openPropertyWindow(),
+      onTap: this.whileIdle(() => this.openPropertyWindow()),
     });
 
     const infoX = area.x + padding + portraitWidth + gap;
@@ -963,7 +1046,10 @@ export class PlayScene extends ResponsiveScene {
         { size: 24, bold: true },
       ).setOrigin(0, 0.5),
     );
-    button.on('pointerup', () => this.openSlotWindow(place));
+    button.on(
+      'pointerup',
+      this.whileIdle(() => this.openSlotWindow(place)),
+    );
   }
 
   /**
@@ -1027,17 +1113,20 @@ export class PlayScene extends ResponsiveScene {
   /**
    * ステータスエリアに出しうるプロパティ（ステータスと、プロパティウィンドウに出るもの全部）を
    * 重複なく。固定表示にすればどれもステータスエリアへ出るため、バーの用意と増減の比較はこの範囲で行う。
+   *
+   * viewを渡せば、今出ているものではなくそのviewの分を返す（時間経過の再現で控えた時点の増減を出す、
+   * record参照）。
    */
-  private allStatuses(): readonly StatusContent[] {
+  private allStatuses(view: PlayScreenView = this.view): readonly StatusContent[] {
     const all = new Map<string, StatusContent>();
-    for (const status of [...this.view.statuses, ...this.allEntries()])
+    for (const status of [...view.statuses, ...this.allEntries(view)])
       if (!all.has(status.key)) all.set(status.key, status);
     return [...all.values()];
   }
 
   /** プロパティウィンドウの全タブの行（同じプロパティが複数のタブに現れうる）。 */
-  private allEntries(): readonly StatusContent[] {
-    return this.view.propertyCategories.flatMap((tab) => tab.entries);
+  private allEntries(view: PlayScreenView = this.view): readonly StatusContent[] {
+    return view.propertyCategories.flatMap((tab) => tab.entries);
   }
 
   private statusContents(statuses: readonly StatusContent[]): readonly StatusContent[] {
