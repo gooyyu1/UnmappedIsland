@@ -111,6 +111,11 @@ def main() -> None:
     )
     parser.add_argument("--lora", help="ワークフロー既定のLoRAを差し替える（作風を比べるとき用）")
     parser.add_argument("--lora-strength", type=float, help="LoRAの強度。--loraと合わせて使う")
+    parser.add_argument(
+        "--no-trigger",
+        action="store_true",
+        help="LoRAのトリガーワードを足さない。画風を出さず、輪郭を和らげる用途だけに使いたいとき",
+    )
     parser.add_argument("--suffix", default="", help="出力ファイル名の末尾に足す文字（比較用）")
     parser.add_argument("--server", default=DEFAULT_SERVER)
     parser.add_argument("--timeout", type=float, default=900)
@@ -146,7 +151,7 @@ def main() -> None:
         )
         # トリガーワードを言わないとほとんど効かないLoRAがあるので、自動で先頭へ足す（loras.json）。
         positive = entry["positive"]
-        trigger = loras.get(lora_name, {}).get("trigger") if lora_name else None
+        trigger = None if args.no_trigger else (loras.get(lora_name, {}).get("trigger") if lora_name else None)
         if trigger:
             positive = f"{trigger}, {positive}"
 

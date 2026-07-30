@@ -12,14 +12,24 @@
   "sharedNegative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts",
 
   "rocky_field_fixture": {
-    "description": "岩場の眺め（設置物レーンの背景）。ごろごろした岩の連なりを目線の高さで見る。",
-    "positive": "a field of weathered gray boulders and rock outcrops seen at eye level, evenly scattered rocks filling the whole frame edge to edge, dry cracked stone surfaces, patches of pale dry grass between the rocks, overcast diffuse daylight, muted gray and warm beige tones, soft watercolor painting, loose brushwork, flat even composition with no single subject, game background art",
-    "negativeExtra": "cliff, mountain peak, cave entrance, single hero rock in the center"
+    "description": "岩場の眺め（設置物レーンの背景）。まばらに岩が転がる草地を目線の高さで見る。",
+    "_note": [
+      "rocky_fieldは『ごろごろした岩の間に、石材と洞窟が見つかる』土地（locations.yaml）なので、岩がちで正しい。",
+      "一度『まばらに』へ振ったところ、岩が消えて木と茂みの草原になった。岩を主語に置き、全面に散らす。",
+      "ただし積み上がった岩山にはしない（negativeのrock pile / scree / stacked rocks）。"
+    ],
+    "positive": "a rocky field seen at eye level, weathered gray boulders of many sizes strewn all across the ground from edge to edge, dry cracked stone surfaces, patches of pale dry grass in the gaps between the rocks, overcast diffuse daylight, muted gray and warm beige tones, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
+    "negativeExtra": "trees, bushes, shrubs, forest, empty grassland, rock pile, scree, rubble, stacked rocks, rocky wall, cliff, mountain peak, cave entrance, single hero rock in the center"
   },
 
   "rocky_field_item": {
     "description": "岩場の地面（アイテムレーンの背景）。真上から見た砂利。一様なテクスチャに寄せる。",
-    "positive": "extreme close-up macro texture of dry rocky ground seen from directly above, uniform layer of small gray gravel and coarse sand, evenly distributed with the same density everywhere, no large rocks, no arrangement, no composition, seamless natural ground texture, muted gray and warm brown tones, soft flat overcast light, soft watercolor painting, loose brushwork, game background texture",
-    "negativeExtra": "large boulders, big rocks, rocks framing the edges, border of stones, rocky border, channel, riverbed, stream bed, arranged stones, stone wall, cobblestone pattern, outlined rocks, ink outlines, cartoon shading"
+    "_note": [
+      "頼み方の匙加減が難しい。『texture』『macro』だけだと水彩LoRAが効きすぎて石の無い抽象的な滲みになり、",
+      "逆に『packed evenly』『seamless texture』と締めるとテクスチャ見本のような機械的な絵になる。",
+      "『地面を描いた水彩画』として頼み、土が見える程度の散らばりにするのが中間。"
+    ],
+    "positive": "dry stony ground, top-down view looking straight down at the ground, flat ground filling the whole frame, small pebbles and gravel scattered over bare dry earth, patches of bare soil between the stones, natural uneven scattering, muted gray and warm brown tones, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
+    "negativeExtra": "landscape, scenery, horizon, sky, hills, cliff, plateau, terrain, perspective, depth, vanishing point, long shadows, bushes, shrubs, grass, plants, trees, tiled texture, texture swatch, repeating pattern, packed pebbles, pebble mosaic, evenly packed stones, cobblestone pattern, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint, running paint, vertical streaks, blank paper, marble, wood grain, large boulders, big rocks, rocks framing the edges, border of stones, channel, riverbed, stone wall, ink outlines, cartoon shading"
   }
 }

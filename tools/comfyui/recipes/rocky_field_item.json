@@ -1,14 +1,32 @@
 {
-  "_comment": "src/assets/lanes/rocky_field_item.png を作り直すためのレシピ。build.py が読む。",
+  "_comment": [
+    "src/assets/lanes/rocky_field_item.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
+    "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。トリガーを入れると",
+    "紙の白や滲みが出て画風が水彩へ寄り、キャラクタの絵と差が付かなくなる。",
+    "",
+    "風景（地平線・茂み）に流れた絵が混ざるため、seedを選んでいる。"
+  ],
   "output": "src/assets/lanes/rocky_field_item.png",
   "prompt": "rocky_field_item",
-  "seed": 2002,
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "seed": 3503,
   "width": 2560,
   "height": 640,
   "postprocess": {
-    "_comment": "一様なテクスチャなので、縦はどこを切っても同じ。中央付近から取る。",
+    "_comment": [
+      "一様なテクスチャなので、縦はどこを切っても同じ。中央付近から取る。",
+      "oilifyRadiusは、レーンの実寸（背景はレーン高352uへ合わせるので画面上では0.6875倍）で判断すること。",
+      "拡大して見ると4のほうが馴染んで見えるが、実寸では明るい石が平坦な白い粒へ潰れて斑点として目立ち、",
+      "0より騒がしくなる。2はわずかに緩めるだけで破綻しない。",
+      "眺めの絵（_fixture）は草を潰したくないので0。"
+    ],
     "top": 64,
-    "oilifyRadius": 3,
+    "oilifyRadius": 2,
     "oilifyLevels": 12
-  }
+  },
+  "loraStrength": 0.8,
+  "noTrigger": true
 }

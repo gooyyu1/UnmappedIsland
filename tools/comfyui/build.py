@@ -52,6 +52,9 @@ def main() -> None:
                 "--width", str(recipe["width"]),
                 "--height", str(recipe["height"]),
                 "--workflow", recipe.get("workflow", "lane_background.api.json"),
+                *(["--lora", recipe["lora"]] if recipe.get("lora") else []),
+                *(["--lora-strength", str(recipe["loraStrength"])] if recipe.get("loraStrength") else []),
+                *(["--no-trigger"] if recipe.get("noTrigger") else []),
                 "--server", args.server,
             ],
         )
