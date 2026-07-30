@@ -1,0 +1,20 @@
+{
+  "_comment": [
+    "src/assets/objects/character.png を作り直すためのレシピ。",
+    "レーンの背景（build.py）とは後処理が違うため、手順はREADMEの『カードの絵』節を参照。"
+  ],
+  "output": "src/assets/objects/character.png",
+  "prompts": "characters.json",
+  "prompt": "castaway_man",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "seed": 7001,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "_comment": "featherが48なのは、24だと下端の切れ際が急で、80だと絵を削りすぎるため。",
+    "white": 250,
+    "opaque": 200,
+    "feather": 48
+  }
+}
