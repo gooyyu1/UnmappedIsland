@@ -12,7 +12,7 @@
   "prompt": "rocky_field_item",
   "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",
-  "seed": 3503,
+  "seed": 6002,
   "width": 2048,
   "height": 640,
   "postprocess": {

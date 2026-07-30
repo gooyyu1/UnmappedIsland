@@ -17,7 +17,7 @@
   "noTrigger": true,
   "width": 2048,
   "height": 640,
-  "seed": 5001,
+  "seed": 6003,
   "postprocess": {
     "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRAが担っており、重ねると細かい葉や草が潰れるため。",
     "width": 1024,
