@@ -8,9 +8,7 @@
     "後者は『構図のあるシーン』ではなく『一様なテクスチャ』を狙う。構図を作らせると中央に",
     "道や開けた帯が生まれ、カードの下に何度も同じ模様が出て不自然になるため。"
   ],
-
   "sharedNegative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts",
-
   "rocky_field_fixture": {
     "description": "岩場の眺め（設置物レーンの背景）。まばらに岩が転がる草地を目線の高さで見る。",
     "_note": [
@@ -21,7 +19,6 @@
     "positive": "a rocky field seen at eye level, weathered gray boulders of many sizes strewn all across the ground from edge to edge, dry cracked stone surfaces, patches of pale dry grass in the gaps between the rocks, overcast diffuse daylight, muted gray and warm beige tones, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
     "negativeExtra": "trees, bushes, shrubs, forest, empty grassland, rock pile, scree, rubble, stacked rocks, rocky wall, cliff, mountain peak, cave entrance, single hero rock in the center"
   },
-
   "rocky_field_item": {
     "description": "岩場の地面（アイテムレーンの背景）。真上から見た砂利。一様なテクスチャに寄せる。",
     "_note": [
@@ -31,5 +28,28 @@
     ],
     "positive": "dry stony ground, top-down view looking straight down at the ground, flat ground filling the whole frame, small pebbles and gravel scattered over bare dry earth, patches of bare soil between the stones, natural uneven scattering, muted gray and warm brown tones, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
     "negativeExtra": "landscape, scenery, horizon, sky, hills, cliff, plateau, terrain, perspective, depth, vanishing point, long shadows, bushes, shrubs, grass, plants, trees, tiled texture, texture swatch, repeating pattern, packed pebbles, pebble mosaic, evenly packed stones, cobblestone pattern, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint, running paint, vertical streaks, blank paper, marble, wood grain, large boulders, big rocks, rocks framing the edges, border of stones, channel, riverbed, stone wall, ink outlines, cartoon shading"
+  },
+  "jungle_fixture": {
+    "description": "密林の眺め（設置物レーンの背景）。木漏れ日の入る明るい林。",
+    "_note": "既存の絵は暗すぎた。深い密林（ディープジャングル）は別の土地に取っておき、ここは光の入る明るさにする。",
+    "positive": "a bright tropical jungle seen at eye level, sunlight filtering down through the canopy, fresh light green leaves and slender tree trunks, airy open undergrowth, hazy warm light in the air, light and airy atmosphere, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
+    "negativeExtra": "dark, gloomy, night, deep shadow, dense black foliage, silhouette, heavy undergrowth, path, clearing"
+  },
+  "jungle_item": {
+    "description": "密林の地面（アイテムレーンの背景）。真上から見た落ち葉の積もった土。",
+    "positive": "jungle floor, top-down view looking straight down at the ground, flat ground filling the whole frame, damp dark earth covered with fallen leaves and small twigs, scattered leaf litter, natural uneven scattering, muted brown and olive green tones, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
+    "negativeExtra": "landscape, scenery, horizon, sky, trees, trunks, perspective, depth, vanishing point, tiled texture, texture swatch, repeating pattern, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint"
+  },
+  "sandy_beach_fixture": {
+    "description": "砂浜の眺め（設置物レーンの背景）。手前に砂浜、中ほどに海、上に少しだけ空。",
+    "_note": "既存の絵は海と空だけだった。手前の砂浜を主役にし、空は上端に少し覗く程度へ抑える。",
+    "positive": "a tropical sandy beach seen at eye level from the shore, wide pale sand in the foreground taking up the lower half, calm shallow sea beyond it, high horizon line near the top of the frame, only a narrow strip of sky above the horizon, gentle small waves washing the sand, soft daylight, muted sand and turquoise tones, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
+    "negativeExtra": "low horizon, large sky, sky filling the frame, clouds dominating, open ocean only, no beach, palm trees, boats, people, footprints"
+  },
+  "sandy_beach_item": {
+    "description": "砂浜の地面（アイテムレーンの背景）。真上から見た乾いた砂。",
+    "_note": "構図が安定しにくく、波打ち際や風景に流れやすい。seedを何度か振って選ぶ前提。",
+    "positive": "dry beach sand, top-down view looking straight down at the ground, flat sand filling the whole frame, fine pale sand with faint wind ripples, a few tiny shell fragments and small pebbles scattered on it, natural uneven scattering, muted warm sand tones, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
+    "negativeExtra": "landscape, scenery, horizon, sky, sea, water, waves, shoreline, surf, foam, perspective, depth, vanishing point, dunes, large dune ridges, tiled texture, texture swatch, repeating pattern, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint, footprints"
   }
 }

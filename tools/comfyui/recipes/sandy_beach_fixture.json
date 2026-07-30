@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "src/assets/lanes/sandy_beach_fixture.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
+    "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
+    "",
+    "砂浜が下半分・海・上に細い空、という割合のものを選んでいる。夕日など主役ができた絵は使えない。",
+    "topを最大の128にして、空をさらに削っている。"
+  ],
+  "output": "src/assets/lanes/sandy_beach_fixture.png",
+  "prompt": "sandy_beach_fixture",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2560,
+  "height": 640,
+  "seed": 4002,
+  "postprocess": {
+    "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRAが担っており、重ねると細かい葉や草が潰れるため。",
+    "top": 128,
+    "oilifyRadius": 0,
+    "oilifyLevels": 12
+  }
+}
