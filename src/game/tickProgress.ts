@@ -2,12 +2,34 @@
 const ADVANCE_RATIO = 0.5;
 
 /**
+ * 進む側の実時間のうち、加速に使う比（残りは減速に使う）。半分より小さいので、動き出しは短く切り上げ、
+ * 目盛りへ吸い付くように止まる。止まり方のほうが目に付くため、そちらへ時間を多く割く。
+ */
+const ACCELERATION_RATIO = 0.35;
+
+/**
+ * 進む側の実時間の進み具合（0〜1）を、加速して動き出し減速して止まる進み具合へ直す。
+ *
+ * 速さを三角形——0から上がってACCELERATION_RATIOの時点で最大、そこから0へ落ちる——に取ったときの
+ * 位置。両端で速さが0になるので、動き出しにも止まりにも角が立たない。
+ */
+function eased(within: number): number {
+  if (within < ACCELERATION_RATIO) return (within * within) / ACCELERATION_RATIO;
+
+  const remaining = 1 - within;
+  return 1 - (remaining * remaining) / (1 - ACCELERATION_RATIO);
+}
+
+/**
  * 時間を消費するアクションの、時間経過の見せ方（ScreenLayout.md 時間経過のドーナツグラフ節）。
  *
  * ゲーム内の変化が起きるのはtick境界だけなので、実時間を一定の速さで滑らかに映すのではなく、
  * 区切りごとに一拍置く。区切り（目盛り）は**絶対時刻がminutes_per_tickの倍数になる瞬間**で、
  * WorldSession.advanceWorldTimeが実際にtickを回す瞬間と一致する。開始時刻が境界に乗っていなければ
  * 最初の区切りだけ短くなり、durationが倍数でなければ最後の区切りだけ短くなる。
+ *
+ * 目盛りへ向かう間は一定の速さでは動かさず、加速して動き出し減速して止まる（eased）。一拍置く作りは
+ * そのままなので、目盛りごとに動きが切れて見えないようにするのは、その両端の形だけが受け持つ。
  *
  * ドーナツグラフの塗り（ratioAt）と時計の刻み（steppedMinutesAt）が食い違わないよう、どちらも
  * 同じ区切りから導く。
@@ -29,7 +51,8 @@ export class TickProgress {
     if (this.totalMinutes <= 0) return 1;
 
     const { start, end, within } = this.segmentAt(elapsedMinutes);
-    return (start + Math.min(within / ADVANCE_RATIO, 1) * (end - start)) / this.totalMinutes;
+    const advanced = eased(Math.min(within / ADVANCE_RATIO, 1));
+    return (start + advanced * (end - start)) / this.totalMinutes;
   }
 
   /**

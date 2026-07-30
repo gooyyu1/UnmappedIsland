@@ -5,7 +5,8 @@ import { TickProgress } from '../../src/game/tickProgress';
  * 時間経過の見せ方（ScreenLayout.md 時間経過のドーナツグラフ節）の自動テスト。
  *
  * 目盛りが実際のtick境界（WorldSession.advanceWorldTimeがtickを回す瞬間）と一致すること、
- * 各区切りの前半で進み後半で止まること、塗りと時計が食い違わないことを確かめる。
+ * 各区切りの前半で進み後半で止まること、その進み方が加速・減速を伴うこと、塗りと時計が食い違わない
+ * ことを確かめる。
  */
 describe('TickProgress(tick境界で一拍置く時間経過)', () => {
   const TICK = 15;
@@ -16,8 +17,17 @@ describe('TickProgress(tick境界で一拍置く時間経過)', () => {
     it('区切りの前半で次の目盛りまで進む', () => {
       expect(progress.ratioAt(0), '押した直後は0%').toBe(0);
       // 1区切り目は0〜15分。その前半（0〜7.5分）で0%から1/3へ進む。
-      expect(progress.ratioAt(3.75), '前半の半分で目盛りの半分').toBeCloseTo(1 / 6);
       expect(progress.ratioAt(7.5), '前半の終わりで1つ目の目盛り').toBeCloseTo(1 / 3);
+    });
+
+    it('目盛りへは加速して動き出し、減速して止まる', () => {
+      // 1つ目の目盛り（1/3）へ向かう前半（0〜7.5分）の中での進み具合を、一定の速さの場合と比べる。
+      const towardMark = (elapsed: number): number => progress.ratioAt(elapsed) / (1 / 3);
+
+      expect(towardMark(0.75), '動き出しの1割の時点では、一定の速さより進んでいない').toBeLessThan(0.1);
+      expect(towardMark(3.75), '半分の時点では進んでいる（減速に時間を多く割くため）').toBeGreaterThan(0.5);
+      expect(towardMark(6.75), '止まる手前は目盛りに近い').toBeGreaterThan(0.9);
+      expect(towardMark(6.75), 'まだ届いてはいない').toBeLessThan(1);
     });
 
     it('区切りの後半は止まる', () => {
@@ -97,7 +107,7 @@ describe('TickProgress(tick境界で一拍置く時間経過)', () => {
     it('tickを1回も跨がないなら、目盛りは終わりだけ(00:00から10分)', () => {
       const progress = new TickProgress(0, 10, TICK);
 
-      expect(progress.ratioAt(2.5)).toBeCloseTo(0.5);
+      expect(progress.ratioAt(2.5), '前半の半分の時点。まだ塗り切っていない').toBeLessThan(1);
       expect(progress.steppedMinutesAt(2.5), '目盛りへ届く前は動かない').toBe(0);
       expect(progress.steppedMinutesAt(5), '前半の終わりで経過し切る').toBe(10);
       expect(progress.ratioAt(5)).toBe(1);
