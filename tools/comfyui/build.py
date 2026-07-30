@@ -73,6 +73,9 @@ def main() -> None:
                 "--height", str(post["height"]),
                 "--oilify-radius", str(post["oilifyRadius"]),
                 "--oilify-levels", str(post["oilifyLevels"]),
+                # 色味を寄せる基準は、リポジトリ内の出来上がった絵を指す（同じ土地の別レーンなど）。
+                *(["--match", str(REPO / post["matchTone"]),
+                   "--match-strength", str(post["matchStrength"])] if post.get("matchTone") else []),
             ],
         )
 

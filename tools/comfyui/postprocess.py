@@ -1,11 +1,14 @@
 """生成した絵をレーンの背景として使える形に整える。
 
-やることは2つ。
+やることは3つ。
 
 1. 油絵風にぼかす（oilify）。生成直後の絵は背景にするには輪郭がはっきりしすぎていて、カードより
    目立ってしまうため。GIMPのFilters > Artistic > Oilifyと同じ「窓の中で最も多い明度帯の色を採る」
    アルゴリズムを実装している。
-2. 保持する大きさへ縮小する。生成は破綻しない解像度で行い、常駐量はここで削る。レーンの背景は
+2. 別の絵の色味へ寄せる（--match）。同じ土地の2つのレーンが別の場所に見えないようにするための調整。
+   プロンプトで色を動かすと題材ごと変わってしまう（土色を足すよう頼んだら熱帯林が落葉樹林になった）
+   ので、構図は生成で決めて色だけここで合わせる。
+3. 保持する大きさへ縮小する。生成は破綻しない解像度で行い、常駐量はここで削る。レーンの背景は
    起動時に全土地ぶんを読み込む（BootScene参照）ので、1枚の大きさがそのまま常駐量に効く。
 
 左右は生成の時点で繋がっているので（workflows/*_tiling.api.json）、繋ぎ直す処理は要らない。
@@ -64,6 +67,31 @@ def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
     return result
 
 
+def match_tone(rgb: np.ndarray, reference: Path, strength: float) -> np.ndarray:
+    """基準の絵の色味へ寄せる。動かすのはチャンネル間の比だけで、明るさは変えない。
+
+    明るさまで合わせると別レーンとの明暗差という別の話まで巻き込むので、輝度が変わらないように
+    ゲインを正規化する。strengthは寄せる度合いで、1.0だと基準の色味そのもの、0.5だと中間。
+
+    効かせる強さは画素ごとに変える。無彩色に近い画素ほど同じゲインで色が大きく動くため、一律に
+    掛けると、寄せたい地面や葉が半分しか動かないうちに、奥の白い霞だけが色付く（実測で、暗部の
+    色味が+9→+18に留まる一方、明るい部分は+27→+59まで振れた）。明度の2乗で落として、暗い画素へ
+    集中させる。
+    """
+    luma = rgb @ np.array([0.299, 0.587, 0.114])
+    weight = ((1.0 - luma / 255.0) ** 2)[:, :, None]
+
+    # ゲインは「効かせたい範囲」の色から決めたいので、平均も同じ重みで取る。
+    source_mean = (rgb * weight).reshape(-1, 3).sum(axis=0) / weight.sum()
+    target_mean = np.asarray(Image.open(reference).convert("RGB"), dtype=np.float64).reshape(-1, 3).mean(axis=0)
+    gain = np.divide(target_mean, source_mean, out=np.ones(3), where=source_mean > 0)
+    gain = 1.0 + (gain - 1.0) * strength
+
+    weights = np.array([0.299, 0.587, 0.114])
+    gain /= float((weights * source_mean * gain).sum() / (weights * source_mean).sum())
+    return np.clip(rgb * (1.0 + (gain - 1.0) * weight), 0, 255)
+
+
 def shrink(rgb: np.ndarray, width: int, height: int) -> np.ndarray:
     """左右が繋がったまま縮小する。
 
@@ -93,12 +121,16 @@ def main() -> None:
     parser.add_argument("--height", type=int, default=TARGET_HEIGHT, help="保持する高さ")
     parser.add_argument("--oilify-radius", type=int, default=3, help="0でoilifyを飛ばす")
     parser.add_argument("--oilify-levels", type=int, default=12)
+    parser.add_argument("--match", help="色味を寄せる基準の画像")
+    parser.add_argument("--match-strength", type=float, default=0.5, help="寄せる度合い（0〜1）")
     args = parser.parse_args()
 
     rgb = np.asarray(Image.open(args.source).convert("RGB"), dtype=np.float64)
     # oilifyは縮小前にかける。縮小後だと、同じ半径でも画面上での効き方が保持サイズに左右される。
     if args.oilify_radius > 0:
         rgb = oilify(rgb, args.oilify_radius, args.oilify_levels)
+    if args.match:
+        rgb = match_tone(rgb, Path(args.match), args.match_strength)
     rgb = shrink(rgb, args.width, args.height)
 
     out = Path(args.out)
@@ -110,6 +142,8 @@ def main() -> None:
         "source": Path(args.source).name,
         "oilifyRadius": args.oilify_radius,
         "oilifyLevels": args.oilify_levels,
+        "match": Path(args.match).name if args.match else None,
+        "matchStrength": args.match_strength if args.match else None,
         "size": [rgb.shape[1], rgb.shape[0]],
         "seamRatio": round(ratio, 3),
     }

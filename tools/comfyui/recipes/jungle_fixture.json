@@ -19,10 +19,16 @@
   "height": 640,
   "seed": 6003,
   "postprocess": {
-    "_comment": "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRAが担っており、重ねると細かい葉や草が潰れるため。",
+    "_comment": [
+      "oilifyRadiusが0なのは、輪郭を和らげる役目をLoRAが担っており、重ねると細かい葉や草が潰れるため。",
+      "matchToneは、緑が鮮やかすぎてアイテムレーン（落ち葉の茶色）と別の場所に見えたための調整。",
+      "先にアイテムレーンを作る必要がある。"
+    ],
     "width": 1024,
     "height": 320,
     "oilifyRadius": 0,
-    "oilifyLevels": 12
+    "oilifyLevels": 12,
+    "matchTone": "src/assets/lanes/jungle_item.png",
+    "matchStrength": 0.8
   }
 }
