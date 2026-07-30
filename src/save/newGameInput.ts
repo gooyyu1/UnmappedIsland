@@ -76,5 +76,6 @@ export function createSaveData(
     characterId,
     createdAt,
     elapsedDays: 0,
+    pinnedStatuses: [],
   };
 }

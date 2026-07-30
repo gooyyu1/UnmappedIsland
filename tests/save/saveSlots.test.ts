@@ -31,6 +31,27 @@ describe('SaveSlots(SaveDataManagement.md)', () => {
     expect(storage.getItem('unmapped-island:save:1')).not.toBeNull();
   });
 
+  it('固定表示にしたステータスはスロットごとに残る', () => {
+    const slots = new SaveSlots(new MemoryStorage());
+    slots.write(0, { ...saveOf('霧深い孤島'), pinnedStatuses: ['hydration', 'body_fat'] });
+    slots.write(1, saveOf('第二の島'));
+
+    expect(slots.read(0)?.pinnedStatuses).toEqual(['hydration', 'body_fat']);
+    expect(slots.read(1)?.pinnedStatuses).toEqual([]);
+  });
+
+  it('固定表示を持たない古い形式のセーブは、固定表示なしとして読める', () => {
+    const storage = new MemoryStorage();
+    const { pinnedStatuses, ...oldFormat } = { ...saveOf('霧深い孤島'), schemaVersion: 1 };
+    expect(pinnedStatuses, '古い形式には無いフィールド').toEqual([]);
+    storage.setItem('unmapped-island:save:0', JSON.stringify(oldFormat));
+
+    const save = new SaveSlots(storage).read(0);
+
+    expect(save?.islandName, '他のフィールドはそのまま読める').toBe('霧深い孤島');
+    expect(save?.pinnedStatuses).toEqual([]);
+  });
+
   it('壊れた値が入っていても空きスロットとして扱う', () => {
     const storage = new MemoryStorage();
     storage.setItem('unmapped-island:save:0', '{壊れたJSON');

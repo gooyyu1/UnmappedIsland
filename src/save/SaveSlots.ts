@@ -1,5 +1,5 @@
 import type { SaveData } from './SaveData';
-import { isSaveData } from './SaveData';
+import { toSaveData } from './SaveData';
 import { SaveSlotIndexError } from './SaveSlotIndexError';
 
 /** スロット数は4固定（SaveDataManagement.md スロットの空き・削除節）。 */
@@ -41,7 +41,7 @@ export class SaveSlots {
     } catch {
       return undefined;
     }
-    return isSaveData(parsed) ? parsed : undefined;
+    return toSaveData(parsed);
   }
 
   write(slotIndex: number, data: SaveData): void {

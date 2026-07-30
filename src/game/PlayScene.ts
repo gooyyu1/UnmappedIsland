@@ -10,6 +10,7 @@ import { seededRng } from '../domain/runtime/Rng';
 import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
 import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
+import { SaveSlots } from '../save/SaveSlots';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
@@ -136,6 +137,7 @@ export function scenarioPlayData(scenario: Scenario): PlaySceneData {
       characterId: 'character',
       createdAt: 0,
       elapsedDays: 0,
+      pinnedStatuses: [],
     },
     slotIndex: -1,
     scenario,
@@ -209,8 +211,18 @@ export class PlayScene extends ResponsiveScene {
   /** 致命的域のステータスがある間、画面全体の枠を明滅させる。 */
   private alertFrame!: ScreenAlertFrame;
 
-  /** ユーザが固定表示にしたプロパティの識別子。画面の作り直しをまたいで保つ。 */
-  private readonly pinnedStatuses = new Set<string>();
+  /**
+   * 開いているセーブデータとそのスロット番号。固定表示の書き戻し先として持つ（savePinnedStatuses）。
+   * シナリオからの起動はスロットを使わないため-1。
+   */
+  private save!: SaveData;
+  private slotIndex = -1;
+
+  /**
+   * ユーザが固定表示にしたプロパティの識別子。セーブデータが持つ値の作業用の複製で、
+   * 切り替えるたびにスロットへ書き戻す（togglePinnedStatus）。
+   */
+  private pinnedStatuses = new Set<string>();
 
   /** 直前の行動でのステータスの増減。プロパティの識別子で引く（並びが変わっても対応が取れる）。 */
   private statusChanges: ReadonlyMap<string, StatusChange> = new Map();
@@ -256,6 +268,10 @@ export class PlayScene extends ResponsiveScene {
   init(data: PlaySceneData): void {
     this.codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
     this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
+    // Phaserはシーンのインスタンスを使い回すため、前のプレイの状態は必ずここで入れ替える。
+    this.save = data.save;
+    this.slotIndex = data.slotIndex;
+    this.pinnedStatuses = new Set(data.save.pinnedStatuses);
     this.gameSession = start(this.codex, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
@@ -1156,9 +1172,19 @@ export class PlayScene extends ResponsiveScene {
    */
   private togglePinnedStatus(key: string): void {
     if (!this.pinnedStatuses.delete(key)) this.pinnedStatuses.add(key);
+    this.savePinnedStatuses();
     this.showStatuses();
     // プロパティウィンドウを開いたまま切り替えられるため、そちらの印も引き直す。
     this.propertyWindow?.setTabs(this.propertyTabs());
+  }
+
+  /**
+   * 固定表示をセーブデータへ書き戻す（SaveDataManagement.md セーブデータのスキーマ節）。
+   * スロットを使わないシナリオからの起動では、そのプレイの間だけ残る。
+   */
+  private savePinnedStatuses(): void {
+    this.save = { ...this.save, pinnedStatuses: [...this.pinnedStatuses] };
+    if (this.slotIndex >= 0) new SaveSlots(localStorage).write(this.slotIndex, this.save);
   }
 
   /** プロパティウィンドウに渡すタブ（行に固定表示の状態とトグルを添える）。 */
