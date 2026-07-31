@@ -17,13 +17,11 @@ python build.py recipes/rocky_field_fixture.json
 
 ## カードの絵
 
-キャラクターのポートレートなど、カードに載せる絵は後処理が違うので `card_art.py` を通します。
+キャラクターのポートレートなど、カードに載せる絵は後処理が違い、`card_art.py` を通します。レシピが
+`postprocess` ではなく `cardArt` を持っていればこちらが選ばれるので、作り直し方は同じです。
 
 ```bash
-python generate.py castaway_man --prompts characters.json --out <dir> \
-  --seed 7001 --width 832 --height 1280 \
-  --workflow lane_background_sdxl.api.json --lora watercolor_sdxl.safetensors
-python card_art.py <dir>/castaway_man_7001.png --out ../../src/assets/objects/character.png
+python build.py recipes/character.json
 ```
 
 カードの絵は 410×640 で、枠の画像の上へそのまま重ねられます（`Card.ts`）。紙が占めるのは周囲
@@ -53,9 +51,18 @@ Python          <上記>\ComfyUI\.venv\Scripts\python.exe
 ```
 
 起動には 10 秒ほどかかります。`http://127.0.0.1:8188/system_stats` が 200 を返せば準備完了です。
+`build.py` は起動していなければ自分で起動します。
 
 `build.py` を動かす Python は、`postprocess.py` が numpy / scipy / Pillow を使うので、この `.venv`
 のものを指定してください。
+
+タイリングのワークフローを使うには、カスタムノードを入れておく必要があります。
+
+```
+custom_nodes/unmapped_island_seamless  →  <インストール先>\ComfyUI\custom_nodes\ へコピー
+```
+
+読み込ませるにはサーバーの再起動が要ります。`/object_info` に `SeamlessTileScoped` が出れば成功です。
 
 ## 中身
 
@@ -63,9 +70,12 @@ Python          <上記>\ComfyUI\.venv\Scripts\python.exe
 |---|---|
 | `build.py` | レシピ 1 つを読んで、生成と後処理を通す |
 | `generate.py` | ワークフローへプロンプトを差し込んで `/prompt` へ投げ、PNG を取ってくる |
-| `postprocess.py` | 油絵風 → 縦の切り出し → 横のシームレス化 |
+| `postprocess.py` | 油絵風 → 色味合わせ → 保持サイズへ縮小 |
+| `card_art.py` | カードの枠に馴染む形へ整える（明度による透過と、紙の縁でのぼかし） |
+| `custom_nodes/unmapped_island_seamless/` | 左右が繋がった絵を生成するための ComfyUI ノード |
 | `workflows/lane_background.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ）。既定 |
 | `workflows/lane_background_sdxl.api.json` | SDXL 版。速いが作風が合わない（下記） |
+| `workflows/lane_background_sdxl_tiling.api.json` | 上記の、左右が繋がった絵を生成する版 |
 | `prompts/lane_backgrounds.json` | 土地ごとのプロンプト |
 | `recipes/*.json` | 出力 1 枚ぶんの、生成と後処理の設定 |
 
@@ -74,11 +84,20 @@ Python          <上記>\ComfyUI\.venv\Scripts\python.exe
 ### 左右は生成の時点で繋げる
 
 `workflows/lane_background_sdxl_tiling.api.json` は、UNet と VAE の畳み込みのパディングを横方向だけ
-circular にして生成します（`ComfyUI-seamless-tiling` の `SeamlessTile` / `CircularVAEDecode`）。
-左右が最初から繋がるので、後処理で繋ぎ直す必要がありません。
+circular にして生成します（`custom_nodes/unmapped_island_seamless`）。左右が最初から繋がるので、
+後処理で繋ぎ直す必要がありません。
 
 以前はクロスフェードで繋いでいましたが、**両端の絵が重なって合成された跡が残る**うえ、のりしろの
 ぶんだけタイルが狭くなっていました。
+
+**パディングの差し替えはプロセスに残ります。** 自作ノードは掛けたぶんを必ず戻しますが、それでも
+完全には元へ戻りません（実測で、タイリングを挟むと後続の生成が平均 1.94 ずれます。挟まなければ
+差は 0）。絵としては同じでもレシピから同じ PNG が得られなくなるため、`build.py` はワークフローの
+種類（タイリングかどうか）が前回と変わる境目で ComfyUI を起動し直します。
+
+同じことをする既存のノード（`ComfyUI-seamless-tiling`）は使いません。デコードのたびに VAE を
+deepcopy するため**連続生成でプロセスごと落ち**、しかもパッチが掛けっぱなしになるためです
+（`ModelPatcher.clone()` は実体を共有するので `Make a copy` が効かず、後続の生成が全画素変わりました）。
 
 生成後に絵へ手を入れるときは、**横方向の端の扱いに気を付けてください。** oilify の移動平均を既定の
 `reflect` のままにすると、端で折り返して継ぎ目だけ別の色になります（実測で継ぎ目が 0.9x から 3.4x へ

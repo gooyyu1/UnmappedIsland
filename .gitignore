@@ -6,6 +6,9 @@ dist/
 # GitHub Pagesへ公開する生成物（.github/workflows/pages.ymlが毎回作り直してデプロイする）。
 site/
 
+# Python（tools/comfyui）
+__pycache__/
+
 # Editor/OS
 .vscode/
 .idea/

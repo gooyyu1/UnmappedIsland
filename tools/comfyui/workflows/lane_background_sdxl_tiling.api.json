@@ -2,8 +2,8 @@
   "_comment": [
     "lane_background_sdxl.api.json の、左右が繋がった絵をそのまま生成する版。",
     "畳み込みのパディングを横方向だけ circular にすることで、後処理のクロスフェード（のりしろ）が要らなくなる。",
-    "UNetとVAEの両方を替えないと、VAEのデコードで端に段差が残る。",
-    "ComfyUI-seamless-tiling（custom_nodes）が要る。"
+    "UNetとVAEの両方を替えないと、VAEのデコードで端に段差が残る（実測で継ぎ目が1.31x→6.11x）。",
+    "custom_nodes/unmapped_island_seamless を ComfyUI へ入れておく必要がある（README参照）。"
   ],
   "4": {
     "class_type": "CheckpointLoaderSimple",
@@ -20,8 +20,8 @@
     }
   },
   "19": {
-    "class_type": "SeamlessTile",
-    "inputs": { "model": ["18", 0], "tiling": "x_only", "copy_model": "Make a copy" }
+    "class_type": "SeamlessTileScoped",
+    "inputs": { "model": ["18", 0], "tiling": "x_only" }
   },
   "6": {
     "class_type": "CLIPTextEncode",
@@ -51,7 +51,7 @@
     }
   },
   "8": {
-    "class_type": "CircularVAEDecode",
+    "class_type": "SeamlessVAEDecodeScoped",
     "inputs": { "samples": ["3", 0], "vae": ["4", 2], "tiling": "x_only" }
   },
   "9": {

@@ -46,7 +46,8 @@ cd %LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI
 作業中のセッションを壊す。止める必要があるときは、キューが空かと、Comfy Desktop の GUI が
 開いていないかを確かめた上で、ユーザーの許可を取る。
 
-`custom_nodes` には `ComfyUI-seamless-tiling`（左右が繋がった絵）と `comfyui-inspyrenet-rembg`、
+`custom_nodes` には `unmapped_island_seamless`（左右が繋がった絵。リポジトリの
+`tools/comfyui/custom_nodes/` からコピーしたもの）と `comfyui-inspyrenet-rembg`、
 `comfyui-lora-manager` が入っている。読み込ませるにはサーバーの再起動が要る。
 
 ### 3. ワークフローは「API形式」で投げる
@@ -106,8 +107,12 @@ GET https://civitai.com/api/v1/models/<modelId>                  → allowCommer
 ### 8. 左右が繋がった絵は生成時に作る
 
 `workflows/lane_background_sdxl_tiling.api.json` が畳み込みのパディングを横だけ circular にする
-（`ComfyUI-seamless-tiling` の `SeamlessTile` と `CircularVAEDecode`。UNetとVAEの両方を替えないと
-デコードで端に段差が残る）。後処理でクロスフェードして繋ぐ方法もあるが、両端の絵が重なった跡が残る。
+（`tools/comfyui/custom_nodes/unmapped_island_seamless`。UNetとVAEの両方を替えないとデコードで端に
+段差が残る）。後処理でクロスフェードして繋ぐ方法もあるが、両端の絵が重なった跡が残る。
+
+**パディングの差し替えはプロセスに残る。** 掛けたぶんは戻しているが完全には戻らず、タイリングを
+挟むと後続の生成が平均1.94ずれる（挟まなければ差は0）。`build.py` が種類の変わり目でサーバーを
+起動し直すので、**生成は build.py 経由で行うこと。** generate.py を直接叩くとこの保護が働かない。
 
 **生成後に絵へ手を入れるときは、横方向の端の扱いに注意する。** oilify の移動平均を既定の `reflect`
 のままにしたら、端で折り返して継ぎ目が 0.9x から 3.4x へ悪化した。縮小も同様に、いったん横へ
