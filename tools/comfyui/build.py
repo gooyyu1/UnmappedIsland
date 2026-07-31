@@ -127,6 +127,22 @@ def main() -> None:
                     *(["--keep-paper"] if card.get("keepPaper") else []),
                 ],
             )
+        elif "cardFrame" in recipe:
+            frame = recipe["cardFrame"]
+            run(
+                "card_frame.py",
+                [
+                    str(raw),
+                    "--out", str(processed),
+                    "--paper", frame["paper"],
+                    "--wash", str(frame["wash"]),
+                    "--edge", frame["edge"],
+                    "--edge-width", str(frame["edgeWidth"]),
+                    "--shadow-offset", *map(str, frame["shadowOffset"]),
+                    "--shadow-blur", str(frame["shadowBlur"]),
+                    "--shadow-alpha", str(frame["shadowAlpha"]),
+                ],
+            )
         elif "pageArt" in recipe:
             page = recipe["pageArt"]
             run(

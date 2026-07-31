@@ -1,0 +1,18 @@
+{
+  "_comment": [
+    "カードの枠（card_frame.png）のプロンプト。",
+    "",
+    "生成させるのは紙のテクスチャだけで、カードの形（角丸・余白・縁・影）は card_frame.py で作る。",
+    "角丸の半径と余白は card_art.py と Card.ts の定数に一致していなければならず、生成では保証",
+    "できないため。",
+    "",
+    "カードとして直接生成しようとすると、『playing card』でトランプの絵札になり、外すと今度は",
+    "カードの形が消えて水彩の滲みだけになる（12枚で全滅した）。"
+  ],
+  "sharedNegative": "text, letters, numbers, writing, typography, watermark, logo, signature, illustration, drawing, picture, portrait, character, creature, item, object, icon, emblem, crest, ornament, filigree, flourish, corner decoration, pattern, border pattern, gold, foil, people, hands, high contrast, harsh shadows, low quality, jpeg artifacts, angle, tilt, perspective, multiple cards, stack of cards, deck, table, desk, props",
+  "card_paper": {
+    "description": "カードの下地になる紙。枠は言わず、紙そのものとして頼む。",
+    "positive": "a single blank card of aged cream paper filling the frame, soft watercolour wash with gentle blotches at the edges, faint paper grain, rounded corners, flat top-down view, even soft lighting, muted warm tones, soft low contrast, empty card template, game asset",
+    "negativeExtra": "border, frame, line around the edge, panel, window, shadow under the card, glow, torn edge, ragged edge, deckle edge"
+  }
+}
