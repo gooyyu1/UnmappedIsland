@@ -71,6 +71,26 @@ def splice(pixels: np.ndarray, start: int, end: int, blend: int, axis: int) -> n
     return np.moveaxis(out, 0, axis)
 
 
+def tint_paper(page: Image.Image, target: str, curve: tuple[int, int, int], inset: int) -> Image.Image:
+    """紙の色を目標へ寄せる。効かせる強さは明度で決める。
+
+    一律に掛けると、紙の橙を抜くのと同じだけ革からも茶色が抜けて灰色になる。紙は明るく革は暗いので、
+    明度で切り分けられる。curveは(low, full, soft)で、lowが革と紙の境目、lowからfullまでで立ち上げ、
+    softより明るいところは255へ向けて落とす。上を落とすのは、元から明るい部分が色飛びするのを防ぐため。
+    """
+    low, full, soft = curve
+    rgb = np.asarray(page, dtype=np.float64)
+    luma = rgb @ np.array([0.299, 0.587, 0.114])
+    rise = np.clip((luma - low) / max(full - low, 1), 0, 1)
+    fall = np.clip((255.0 - luma) / max(255 - soft, 1), 0, 1)
+    weight = (rise * fall)[:, :, None]
+
+    goal = np.array([int(target.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)], dtype=np.float64)
+    paper = rgb[inset:-inset, inset:-inset].reshape(-1, 3).mean(axis=0)
+    gain = np.divide(goal, paper, out=np.ones(3), where=paper > 0)
+    return Image.fromarray(np.clip(rgb * (1.0 + (gain - 1.0) * weight), 0, 255).astype(np.uint8), "RGB")
+
+
 def shade_outside(page: Image.Image, fade: int) -> Image.Image:
     """右端のfade列を、本が落とす影（外へ向かって消える半透明の黒）に置き換える。
 
@@ -97,6 +117,9 @@ def main() -> None:
     parser.add_argument("--cut-rows", type=int, nargs=2, metavar=("FROM", "TO"), action="append",
                         help="中央の行を落として縦横比を詰める範囲（切り出し前の座標）。複数回指定できる")
     parser.add_argument("--blend", type=int, default=48, help="落とした継ぎ目をクロスフェードする幅")
+    parser.add_argument("--paper", help="紙の色を寄せる目標（#RRGGBB）。表紙の革は動かさない")
+    parser.add_argument("--paper-curve", type=int, nargs=3, metavar=("LOW", "FULL", "SOFT"),
+                        default=(110, 140, 200), help="効かせる明度の範囲（革と紙の境目・全開・落とし始め）")
     parser.add_argument("--short", type=int, default=SHORT_SIDE, help="仕上がりの短辺")
     parser.add_argument("--rule-inset", type=int, default=0, help="罫を引く位置（縁からの距離）。0で罫なし")
     parser.add_argument("--rule-color", default="#8a6a2f", help="罫の色")
@@ -118,6 +141,8 @@ def main() -> None:
     scale = args.short / min(width, height)
     page = page.resize((max(1, round(width * scale)), max(1, round(height * scale))), Image.LANCZOS)
 
+    if args.paper:
+        page = tint_paper(page, args.paper, tuple(args.paper_curve), inset=max(8, round(args.short * 0.15)))
     if args.rule_inset > 0:
         draw_rule(page, args.rule_inset, args.rule_color, args.corner)
     if args.fade > 0:

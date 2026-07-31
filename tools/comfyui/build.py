@@ -139,6 +139,8 @@ def main() -> None:
                     "--fade", str(page["fade"]),
                     "--short", str(page["short"]),
                     "--blend", str(page["blend"]),
+                    *(["--paper", page["paper"],
+                       "--paper-curve", *map(str, page["paperCurve"])] if page.get("paper") else []),
                     *[str(v) for start, end in page.get("cut", []) for v in ("--cut", start, end)],
                     *[str(v) for start, end in page.get("cutRows", []) for v in ("--cut-rows", start, end)],
                 ],
