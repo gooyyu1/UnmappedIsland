@@ -29,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-from scipy.ndimage import uniform_filter
+from scipy.ndimage import gaussian_filter, uniform_filter
 
 TARGET_WIDTH = 1024
 TARGET_HEIGHT = 320
@@ -65,6 +65,16 @@ def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
         best_count = np.where(wins, count, best_count)
         result = np.where(wins[:, :, None], mean, result)
     return result
+
+
+def flatten(rgb: np.ndarray, sigma: float) -> np.ndarray:
+    """細部を潰して、色ムラだけの面にする。
+
+    生成モデルに「無地に近い面」を描かせるのは難しく、質感を否定すると別の題材（紙・布・風景）へ
+    流れる。素材として何か生成させ、構造をここで消す方が確実。oilifyと同じ理由で横だけ端を巻き込む。
+    """
+    modes = ["reflect", "wrap"]
+    return np.stack([gaussian_filter(rgb[:, :, c], sigma=sigma, mode=modes) for c in range(3)], axis=2)
 
 
 def match_tone(rgb: np.ndarray, reference: Path, strength: float) -> np.ndarray:
@@ -121,6 +131,7 @@ def main() -> None:
     parser.add_argument("--height", type=int, default=TARGET_HEIGHT, help="保持する高さ")
     parser.add_argument("--oilify-radius", type=int, default=3, help="0でoilifyを飛ばす")
     parser.add_argument("--oilify-levels", type=int, default=12)
+    parser.add_argument("--flatten", type=float, default=0, help="細部を潰すぼかしの強さ。0で飛ばす")
     parser.add_argument("--match", help="色味を寄せる基準の画像")
     parser.add_argument("--match-strength", type=float, default=0.5, help="寄せる度合い（0〜1）")
     args = parser.parse_args()
@@ -129,6 +140,8 @@ def main() -> None:
     # oilifyは縮小前にかける。縮小後だと、同じ半径でも画面上での効き方が保持サイズに左右される。
     if args.oilify_radius > 0:
         rgb = oilify(rgb, args.oilify_radius, args.oilify_levels)
+    if args.flatten > 0:
+        rgb = flatten(rgb, args.flatten)
     if args.match:
         rgb = match_tone(rgb, Path(args.match), args.match_strength)
     rgb = shrink(rgb, args.width, args.height)
@@ -142,6 +155,7 @@ def main() -> None:
         "source": Path(args.source).name,
         "oilifyRadius": args.oilify_radius,
         "oilifyLevels": args.oilify_levels,
+        "flatten": args.flatten,
         "match": Path(args.match).name if args.match else None,
         "matchStrength": args.match_strength if args.match else None,
         "size": [rgb.shape[1], rgb.shape[0]],

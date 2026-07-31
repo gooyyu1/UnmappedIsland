@@ -85,7 +85,7 @@ def main() -> None:
 
     recipe = json.loads(Path(args.recipe).read_text("utf-8"))
     output = REPO / recipe["output"]
-    workflow = recipe.get("workflow", "lane_background.api.json")
+    workflow = recipe["workflow"]
     ensure_fresh_process(workflow, args.server)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -138,6 +138,7 @@ def main() -> None:
                     "--height", str(post["height"]),
                     "--oilify-radius", str(post["oilifyRadius"]),
                     "--oilify-levels", str(post["oilifyLevels"]),
+                    *(["--flatten", str(post["flatten"])] if post.get("flatten") else []),
                     # 色味を寄せる基準は、リポジトリ内の出来上がった絵を指す（同じ土地の別レーンなど）。
                     *(["--match", str(REPO / post["matchTone"]),
                        "--match-strength", str(post["matchStrength"])] if post.get("matchTone") else []),
