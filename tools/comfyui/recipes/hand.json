@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/lanes/hand.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
+    "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
+    "",
+    "ハンドレーンは土地によらないので、ファイル名にも土地が付かない（laneArt.ts 参照）。"
+  ],
+  "output": "src/assets/lanes/hand.png",
+  "prompt": "hand",
+  "workflow": "lane_background_sdxl_tiling.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 6302,
+  "postprocess": {
+    "_comment": [
+      "flattenで粒を潰し、色ムラだけの面にする（生成では無地を狙えない。プロンプト側の_note参照）。",
+      "32なのは、16だと粒が残り、64だとムラまで消えて単色になるため。",
+      "oilifyRadiusが0なのは、flattenと役目が重なるため。"
+    ],
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 0,
+    "oilifyLevels": 12,
+    "flatten": 32
+  }
+}

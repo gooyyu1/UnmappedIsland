@@ -14,7 +14,6 @@
     "credit が required のものは表記が要る（allowNoCredit: false）。",
     "これはCivitaiが持つメタデータであって、法的な判断ではない。使う前にモデルページの現物を確認すること。"
   ],
-
   "watercolor_sdxl.safetensors": {
     "base": "sdxl",
     "trigger": "watercolorsdxl style",
@@ -77,35 +76,5 @@
     "credit": "not required",
     "creator": "Benny_w",
     "url": "https://civitai.com/models/2063095?modelVersionId=2334545"
-  },
-
-  "Watercolor.safetensors": {
-    "base": "flux",
-    "trigger": "",
-    "note": "トリガーレス。強度だけで効く。風景中心でレーンの背景と相性が良い",
-    "commercial": ["Image", "RentCivit", "Rent", "Sell"],
-    "credit": "not required",
-    "warning": "LoRA自体は緩いが、ベースのFLUX.1 [dev]が非商用ライセンス",
-    "creator": "ninjodu153",
-    "url": "https://civitai.com/models/1713299?modelVersionId=1938815"
-  },
-  "edwardjuliusdetmold2_cap_d6a3.safetensors": {
-    "base": "flux",
-    "trigger": "edwardjuliusdetmold1 painting",
-    "bias": "動物・人物の挿絵",
-    "commercial": ["RentCivit", "Rent"],
-    "credit": "not required",
-    "warning": "Imageが無い。生成画像を配布・販売する用途には使えない",
-    "creator": "NobodyButMeow",
-    "url": "https://civitai.com/models/1432107?modelVersionId=1618810"
-  },
-  "waterV2.safetensors": {
-    "base": "zimage",
-    "trigger": "Watery",
-    "note": "Z-Image向け。今のFlux/SDXLのチェックポイントでは読み込めない",
-    "commercial": ["Image", "RentCivit", "Rent"],
-    "credit": "required",
-    "creator": "Mytee",
-    "url": "https://civitai.com/models/2481699?modelVersionId=2790185"
   }
 }

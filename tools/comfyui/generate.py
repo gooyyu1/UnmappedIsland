@@ -106,7 +106,7 @@ def main() -> None:
     parser.add_argument("--count", type=int, default=1, help="seedを変えて複数枚出す")
     parser.add_argument(
         "--workflow",
-        default="lane_background.api.json",
+        default="lane_background_sdxl.api.json",
         help="workflows/ 配下のファイル名。SDXLで出すなら lane_background_sdxl.api.json",
     )
     parser.add_argument("--lora", help="ワークフロー既定のLoRAを差し替える（作風を比べるとき用）")

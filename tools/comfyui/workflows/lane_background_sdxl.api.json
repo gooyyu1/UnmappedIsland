@@ -1,7 +1,9 @@
 {
   "_comment": [
-    "lane_background.api.json（Flux）のSDXL版。速さの代わりに、極端な横長では破綻しやすい。",
-    "FluxGuidanceを持たず、代わりにKSamplerのcfgで効かせる点が構造上の違い。"
+    "レーンの背景やカードの絵を作るワークフロー（ComfyUIのAPI形式）。",
+    "ComfyUIの画面で保存したブラウザ形式（nodes/links）ではなく、/prompt へ直接POSTできる形式。",
+    "$で始まる値は generate.py が差し替えるプレースホルダ。",
+    "左右が繋がった絵が要るなら lane_background_sdxl_tiling.api.json の方を使う。"
   ],
   "4": {
     "class_type": "CheckpointLoaderSimple",

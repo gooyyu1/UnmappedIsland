@@ -1,7 +1,8 @@
 {
   "_comment": [
     "レーンの背景画像のプロンプト（docs/ui/ScreenLayout.md レーンの背景 節）。",
-    "キーは <土地のobject_defの識別子>_<レーン> で、出力するファイル名と一致させる。",
+    "キーは <土地のobject_defの識別子>_<レーン> で、出力するファイル名と一致させる。土地によらない",
+    "レーン（hand）は <レーン> だけ。",
     "negative は sharedNegative + 各エントリの negativeExtra を繋いだもの。",
     "",
     "設置物レーン（_fixture）はその土地の眺め、アイテムレーン（_item）は真上から見た地面。",
@@ -60,6 +61,17 @@
     ],
     "positive": "a tropical sandy beach seen at eye level from the shore under bright midday sun, wide pale sand in the foreground taking up the lower half, calm shallow turquoise sea beyond it, high horizon line near the top of the frame, only a narrow strip of pale blue sky above the horizon, gentle small waves washing the sand, neutral white daylight, cool clean tones, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
     "negativeExtra": "sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, sun reflection on water, long shadows, low horizon, large sky, sky filling the frame, clouds dominating, open ocean only, no beach, palm trees, boats, people, footprints"
+  },
+  "hand": {
+    "description": "手のひら（ハンドレーンの背景）。ここだけ土地によらず、プレイヤー自身の手。",
+    "_note": [
+      "無地に近い肌の面は、生成では狙わない。SDXLはこの被写体を持っておらず、肌を指定すれば人体か",
+      "皮膚のマクロ写真になり、質感を否定すると紙・布・花・風景へ流れる（21枚試して全滅した）。",
+      "ここでは素材として肌の面を出させるだけにして、粒はpostprocessのflattenで潰す。",
+      "そのため粒の否定はほどほどでよい。ただし『bare skin』は裸の人物像を呼ぶので使わない。"
+    ],
+    "positive": "an even surface of human skin filling the entire frame, bright warm peach skin tone, almost featureless with only a faint uneven flush of colour, no visible pores or wrinkles, even soft lighting with no shadows, very soft low contrast, plain and quiet, game background art",
+    "negativeExtra": "nude, naked, nudity, portrait, figure, woman, man, hand, arm, finger, body, person, face, eyes, nose, mouth, hair, outline, edge, shape, object, pattern, texture, grain, weave, silk, satin, fabric, cloth, drapery, flower, petal, paper, canvas, wall, macro photography, wrinkles, veins, blemishes, moles, freckles, tattoo, scar, sweat, oily shine, specular highlight, landscape, scenery, horizon, sky, perspective, depth, tiled texture, repeating pattern, photorealistic, 3d render, paint splatter"
   },
   "sandy_beach_item": {
     "description": "砂浜の地面（アイテムレーンの背景）。真上から見た乾いた白砂。",

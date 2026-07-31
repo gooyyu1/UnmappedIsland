@@ -85,7 +85,7 @@ def main() -> None:
 
     recipe = json.loads(Path(args.recipe).read_text("utf-8"))
     output = REPO / recipe["output"]
-    workflow = recipe.get("workflow", "lane_background.api.json")
+    workflow = recipe["workflow"]
     ensure_fresh_process(workflow, args.server)
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -127,6 +127,24 @@ def main() -> None:
                     *(["--keep-paper"] if card.get("keepPaper") else []),
                 ],
             )
+        elif "pageArt" in recipe:
+            page = recipe["pageArt"]
+            run(
+                "page_art.py",
+                [
+                    str(raw),
+                    "--out", str(processed),
+                    "--crop", *map(str, page["crop"]),
+                    "--cover-side", page["coverSide"],
+                    "--fade", str(page["fade"]),
+                    "--short", str(page["short"]),
+                    "--blend", str(page["blend"]),
+                    *(["--paper", page["paper"],
+                       "--paper-curve", *map(str, page["paperCurve"])] if page.get("paper") else []),
+                    *[str(v) for start, end in page.get("cut", []) for v in ("--cut", start, end)],
+                    *[str(v) for start, end in page.get("cutRows", []) for v in ("--cut-rows", start, end)],
+                ],
+            )
         else:
             post = recipe["postprocess"]
             run(
@@ -138,6 +156,7 @@ def main() -> None:
                     "--height", str(post["height"]),
                     "--oilify-radius", str(post["oilifyRadius"]),
                     "--oilify-levels", str(post["oilifyLevels"]),
+                    *(["--flatten", str(post["flatten"])] if post.get("flatten") else []),
                     # 色味を寄せる基準は、リポジトリ内の出来上がった絵を指す（同じ土地の別レーンなど）。
                     *(["--match", str(REPO / post["matchTone"]),
                        "--match-strength", str(post["matchStrength"])] if post.get("matchTone") else []),

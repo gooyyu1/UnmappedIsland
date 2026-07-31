@@ -39,6 +39,31 @@ python build.py recipes/character.json
   枠の縁まで絵が乗ってしまう**ためです。代わりに縁からの距離を測って内側で立ち上げるので、境界の
   外は必ず 0 になります。
 
+## 情報エリアの背景（9patch）
+
+本のページを模した枠付きの面で、`NineSlice` で引き伸ばして使います（`informationArt.ts`）。
+四隅と縁は原寸のまま、中央の紙だけが伸びるので、**1 枚で任意の大きさと両方の向きを賄えます**
+（縦型は 90 度回すだけ）。384×512 で 0.75MB です。
+
+```bash
+python build.py recipes/information_background.json
+```
+
+**本の一部を切り取った構図は SDXL に作らせられません。** 綴じ目が中央に来る・斜めになる・巻物や
+文字入りのページになる、という形で崩れます（16 枚試して全滅）。角の補強を頼むと、今度は豪華な古書の
+製品写真へ寄って平置きの見開きが崩れます（24 枚で全滅）。**見開きを画面いっぱいに作らせ、切り出しは
+`page_art.py` でやる**のが確実です。
+
+切り出しの決め方は 3 つあります。
+
+- **フィールドエリア側の辺だけ本の外を残し**（`fade`）、透明にして本が落とす影にします。残る 3 辺は
+  本の境界かその内側で切ります。机や背景が入ると、情報エリアの縁に別の物が見えてしまいます。
+- **縁は途中を抜いて細くします**（`cut`）。生成された表紙はそのままだと太すぎて UI を圧迫します。
+  革は一様なので、真ん中を抜いて繋いでも見えません。
+- **縦も中央を抜いて詰めます**（`cutRows`）。素材が縦長のままだと 9patch の中央が横だけ 2 倍伸びて、
+  紙のムラが横に伸びた縞に見えます。こちらは紙のムラが繋がらないため、`blend` でクロスフェード
+  しないと切断面が線として残ります。
+
 ## 環境
 
 ComfyUI は Comfy Desktop 同梱のものを使います。**`standalone-env\python.exe` には torch が入って
@@ -72,9 +97,9 @@ custom_nodes/unmapped_island_seamless  →  <インストール先>\ComfyUI\cust
 | `generate.py` | ワークフローへプロンプトを差し込んで `/prompt` へ投げ、PNG を取ってくる |
 | `postprocess.py` | 油絵風 → 色味合わせ → 保持サイズへ縮小 |
 | `card_art.py` | カードの枠に馴染む形へ整える（明度による透過と、紙の縁でのぼかし） |
+| `page_art.py` | 本の絵から片ページを切り出し、9patchの素材にする |
 | `custom_nodes/unmapped_island_seamless/` | 左右が繋がった絵を生成するための ComfyUI ノード |
-| `workflows/lane_background.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ）。既定 |
-| `workflows/lane_background_sdxl.api.json` | SDXL 版。速いが作風が合わない（下記） |
+| `workflows/lane_background_sdxl.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ）。既定 |
 | `workflows/lane_background_sdxl_tiling.api.json` | 上記の、左右が繋がった絵を生成する版 |
 | `prompts/lane_backgrounds.json` | 土地ごとのプロンプト |
 | `recipes/*.json` | 出力 1 枚ぶんの、生成と後処理の設定 |
@@ -134,38 +159,12 @@ Filters > Artistic > Oilify と同じ「窓の中で最も多い明度帯の色�
 `postprocess.py` は仕上げたあと、**継ぎ目の段差が画像内部の平均的な段差の何倍か**を出します。
 1 に近いほど内部と見分けが付きません。既存の画像は 0.79〜1.97 で、この範囲なら問題ありません。
 
-## FluxとSDXLの使い分け
-
-**既定は Flux（`lane_background.api.json`）です。** SDXL も試しましたが、レーンの背景には向きません
-でした。同じプロンプト・同じ seed・同じ後処理で比べた結果です。
-
-| | Flux dev fp8 + Watercolor | SDXL base + ghibli watercolor |
-|---|---|---|
-| 1枚の生成時間 | 30〜350秒（実行ごとに大きく振れる） | **8〜12秒** |
-| 眺めの絵（`_fixture`） | 淡い水彩。カードより手前に出ない | 写実寄りの風景画。雲・山・木が描き込まれ、背景としては情報量が多い |
-| 地面の絵（`_item`） | 一様な水彩のテクスチャ | **写真のような質感**。中央に帯状のムラが残り、並べると縞に見える |
-
-**速さは SDXL の圧勝（20〜30倍）**ですが、`ghibli watercolor` LoRA は強度 0.8 でも 1.0 でも写実の
-まま（トリガーワードは無く、強度だけが効く）で、油絵風の後処理を通しても絵の出自が残りました。
-1.0 は構図もかえって崩れました。
-
-既存の絵（`jungle_*` / `sandy_beach_*` / `hand`）が水彩の作風なので、そこへ揃えるなら Flux です。
-作風を問わない用途や、構図の当たりを速く探したいときは SDXL が使えます。
-
-```bash
-python generate.py rocky_field_fixture --out <dir> --workflow lane_background_sdxl.api.json
-```
-
-レシピ側で使い分けるなら `"workflow": "lane_background_sdxl.api.json"` を足します。
-
 ## ライセンス
 
 **ベースモデルと LoRA の両方を見る必要があります。**
 
-| | ライセンス | 生成画像の商用利用 |
-|---|---|---|
-| SDXL 1.0 base | CreativeML Open RAIL++-M | 可（Attachment A の用途制限あり） |
-| FLUX.1 [dev] | FLUX.1 [dev] Non-Commercial License | **不可**（別途 BFL の商用ライセンスが必要） |
+ベースモデルは **SDXL 1.0 base**（CreativeML Open RAIL++-M）に統一しています。生成画像の商用利用が
+可能なためです（Attachment A の用途制限あり）。FLUX.1 [dev] は非商用ライセンスなので使いません。
 
 LoRA ごとの許諾は `prompts/loras.json` の `commercial` に記録しています。Civitai の
 `allowCommercialUse` で、**生成画像を配布・販売してよいかを表すのは `Image` だけ**です
@@ -180,6 +179,9 @@ LoRA ごとの許諾は `prompts/loras.json` の `commercial` に記録してい
 
 ## 再現性について
 
-**同じ seed で同じ構図が出ますが、画素が完全に一致するとは限りません。** fp8 の Flux を GPU で
-動かすため、実行ごとにわずかな数値差が出ます（検証時、継ぎ目の指標が 1.25 → 1.06 と動きました）。
-絵として同じものが得られる、という意味での再現性です。
+`build.py` を通せば、同じレシピから同じ PNG が得られます（検証時、6 枚中 5 枚がバイト単位で一致）。
+
+**ただしプロセスの状態に依存します。** タイリングのワークフローはパディングを差し替えるので、
+使う生成と使わない生成が同じプロセスに混ざると、後から作った絵がわずかにずれます（実測で平均 1.94。
+混ざらなければ差は 0）。`build.py` が境目でサーバーを起動し直すのはこのためなので、
+`generate.py` を直接叩かず `build.py` を使ってください。
