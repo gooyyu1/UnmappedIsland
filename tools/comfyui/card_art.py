@@ -1,7 +1,7 @@
 """生成した絵を、カードの枠に馴染むかたちへ整える。
 
-カードの絵は820x1280で、枠の画像（card_frame.png）の上へそのまま重ねられる（Card.ts）。紙が占める
-のは周囲10pxを空けた角丸（半径64px）の内側だけなので、そこからはみ出した分は消す必要がある。
+カードの絵は410x640で、枠の画像（card_frame.png）の上へそのまま重ねられる（Card.ts）。紙が占める
+のは周囲5pxを空けた角丸（半径32px）の内側だけなので、そこからはみ出した分は消す必要がある。
 
 ただし四角く切り落とすと境目が線として見えてしまう。水彩の滲みは紙へ吸い込まれて薄くなるものなので、
 2つのやり方を重ねて「だんだん消える」ようにしている。
@@ -26,10 +26,12 @@ from PIL import Image, ImageDraw
 from scipy.ndimage import distance_transform_edt
 
 # カードの絵の寸法と、その中で紙が占める範囲（Card.ts の FRAME_INSET / FRAME_RADIUS と同じもの）。
-CARD_WIDTH = 820
-CARD_HEIGHT = 1280
-PAPER_MARGIN = 10
-PAPER_RADIUS = 64
+# 410x640は、カードの寸法205u x 320uのちょうど2倍。4K（u=2px）で等倍になる大きさで、これ以上は
+# どの画面でも縮小されるだけの無駄になる。カードの絵はobject_defの数だけ増えるので、常駐量に効く。
+CARD_WIDTH = 410
+CARD_HEIGHT = 640
+PAPER_MARGIN = 5
+PAPER_RADIUS = 32
 
 
 def cover(image: Image.Image, width: int, height: int) -> Image.Image:
@@ -75,7 +77,7 @@ def main() -> None:
     parser.add_argument("--out", required=True)
     parser.add_argument("--white", type=float, default=250, help="この明度以上を完全に透明にする")
     parser.add_argument("--opaque", type=float, default=200, help="この明度以下を完全に不透明にする")
-    parser.add_argument("--feather", type=int, default=48, help="紙の縁の内側で薄くしていく幅（px）")
+    parser.add_argument("--feather", type=int, default=24, help="紙の縁の内側で薄くしていく幅（px）")
     parser.add_argument("--keep-paper", action="store_true", help="明度による透過を使わない（縁の処理だけ）")
     args = parser.parse_args()
 

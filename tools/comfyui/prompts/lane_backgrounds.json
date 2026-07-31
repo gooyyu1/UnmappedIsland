@@ -8,9 +8,7 @@
     "後者は『構図のあるシーン』ではなく『一様なテクスチャ』を狙う。構図を作らせると中央に",
     "道や開けた帯が生まれ、カードの下に何度も同じ模様が出て不自然になるため。"
   ],
-
   "sharedNegative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts",
-
   "rocky_field_fixture": {
     "description": "岩場の眺め（設置物レーンの背景）。まばらに岩が転がる草地を目線の高さで見る。",
     "_note": [
@@ -21,15 +19,56 @@
     "positive": "a rocky field seen at eye level, weathered gray boulders of many sizes strewn all across the ground from edge to edge, dry cracked stone surfaces, patches of pale dry grass in the gaps between the rocks, overcast diffuse daylight, muted gray and warm beige tones, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
     "negativeExtra": "trees, bushes, shrubs, forest, empty grassland, rock pile, scree, rubble, stacked rocks, rocky wall, cliff, mountain peak, cave entrance, single hero rock in the center"
   },
-
   "rocky_field_item": {
-    "description": "岩場の地面（アイテムレーンの背景）。真上から見た砂利。一様なテクスチャに寄せる。",
+    "description": "岩場の地面（アイテムレーンの背景）。真上から見た岩肌と枯れ草。一様なテクスチャに寄せる。",
     "_note": [
-      "頼み方の匙加減が難しい。『texture』『macro』だけだと水彩LoRAが効きすぎて石の無い抽象的な滲みになり、",
-      "逆に『packed evenly』『seamless texture』と締めるとテクスチャ見本のような機械的な絵になる。",
-      "『地面を描いた水彩画』として頼み、土が見える程度の散らばりにするのが中間。"
+      "設置物レーン（灰色の岩と金色の枯れ草）と同じ土地に見えるよう、素材と色をそちらへ合わせる。",
+      "頼み方の匙加減が難しい。『texture』『macro』だけだと水彩LoRAが効きすぎて抽象的な滲みになり、",
+      "逆に『packed evenly』『seamless texture』と締めるとテクスチャ見本のような機械的な絵になる。"
     ],
-    "positive": "dry stony ground, top-down view looking straight down at the ground, flat ground filling the whole frame, small pebbles and gravel scattered over bare dry earth, patches of bare soil between the stones, natural uneven scattering, muted gray and warm brown tones, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
-    "negativeExtra": "landscape, scenery, horizon, sky, hills, cliff, plateau, terrain, perspective, depth, vanishing point, long shadows, bushes, shrubs, grass, plants, trees, tiled texture, texture swatch, repeating pattern, packed pebbles, pebble mosaic, evenly packed stones, cobblestone pattern, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint, running paint, vertical streaks, blank paper, marble, wood grain, large boulders, big rocks, rocks framing the edges, border of stones, channel, riverbed, stone wall, ink outlines, cartoon shading"
+    "positive": "dry grassy ground with a few flat stones, top-down view looking straight down at the ground, flat ground filling the whole frame, dry pale golden grass covering most of the ground, a few weathered flat gray stone slabs half buried in the grass, natural uneven scattering, warm dry grass and muted gray stone tones, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
+    "negativeExtra": "landscape, scenery, horizon, sky, hills, cliff, plateau, terrain, perspective, depth, vanishing point, long shadows, gravel, pebbles, loose stones, scattered small rocks, sand, stones covering the ground, stone floor, rocky ground, bushes, shrubs, green grass, lush grass, meadow, trees, tiled texture, texture swatch, repeating pattern, cobblestone pattern, paving, brickwork, cracked mud, dry lake bed, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint, running paint, vertical streaks, blank paper, marble, wood grain, large boulders, big rocks, rocks framing the edges, border of stones, channel, riverbed, stone wall, ink outlines, cartoon shading"
+  },
+  "jungle_fixture": {
+    "description": "密林の眺め（設置物レーンの背景）。木の壁が画面を埋め、幹の間の陰で暗さを作る。",
+    "_note": [
+      "奥を暗くしたいなら、暗さを色で頼んではいけない。奥行きを作らせないのが正しい。",
+      "『奥は暗く』と頼むとSDXLは素直に遠景を描き、それを霞として明るく塗る。fogやbright backgroundを",
+      "否定しても効かない。木の壁で画面を埋めさせ、隙間・開けた空間・消失点を否定すると、",
+      "そもそも霞む場所が無くなり、幹の間の陰だけが残る。",
+      "brightは全体に効いて絵が明るくなる。葉を目立たせたいなら、明るさではなく手前の茂みの",
+      "密度で言う。下半分を濃い緑の塊で埋めると、霞は幹の隙間だけに残って全体が締まる。",
+      "色はここでは動かさない。土色を足すよう頼んだら熱帯林が落葉樹林になったため、",
+      "アイテムレーンとの色合わせは後処理（postprocess.pyの--match）に任せる。",
+      "一日中この1枚を使うので、時間帯を感じさせない一様な光にする（曇天の拡散光）。",
+      "水を否定しないと、密林の指定が高確率で下端に川や池を作る。地面であってほしい。",
+      "蔓や苔や『古代の』といった語は幻想的な絵を呼ぶので、否定側へ回して普通の林に留める。"
+    ],
+    "positive": "dense jungle forest, a wall of tightly packed tree trunks and lush foliage filling the entire frame, continuous vegetation with no open space, deep shade under a closed canopy, a dense mass of dark green undergrowth filling the lower half of the frame, well-lit green leaves standing out in front of it, soft diffused light with no strong sunbeams, damp leaf-covered ground along the bottom, an ordinary natural forest, shallow depth of field, soft focus, muted deep green colors, calm mood, painterly, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
+    "negativeExtra": "gap between trees, open space, empty ground, distant view, deep background, receding forest, perspective corridor, bright background, glowing background, white background, pale background, luminous haze, backlight, silhouette, fog bank, white mist, fantasy, ethereal, dreamlike, magical, mystical, enchanted forest, otherworldly, dramatic, cathedral, hanging vines, spanish moss, ancient, ruins, water, river, stream, creek, pond, lake, waterfall, reflection, puddle, sunbeams, light shafts, god rays, sun rays, strong sunlight, direct sunlight, lens flare, night"
+  },
+  "jungle_item": {
+    "description": "密林の地面（アイテムレーンの背景）。真上から見た落ち葉の積もった土。",
+    "positive": "jungle floor, top-down view looking straight down at the ground, flat ground filling the whole frame, damp dark earth covered with fallen leaves and small twigs, scattered leaf litter, natural uneven scattering, muted brown and olive green tones, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
+    "negativeExtra": "landscape, scenery, horizon, sky, trees, trunks, perspective, depth, vanishing point, tiled texture, texture swatch, repeating pattern, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint"
+  },
+  "sandy_beach_fixture": {
+    "description": "砂浜の眺め（設置物レーンの背景）。手前に砂浜、中ほどに海、上に少しだけ空。",
+    "_note": [
+      "既存の絵は海と空だけだった。手前の砂浜を主役にし、空は上端に少し覗く程度へ抑える。",
+      "空や海が暖色に寄ると夕暮れに見える。一日中この1枚を使うので、真昼の中立な光にする。"
+    ],
+    "positive": "a tropical sandy beach seen at eye level from the shore under bright midday sun, wide pale sand in the foreground taking up the lower half, calm shallow turquoise sea beyond it, high horizon line near the top of the frame, only a narrow strip of pale blue sky above the horizon, gentle small waves washing the sand, neutral white daylight, cool clean tones, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
+    "negativeExtra": "sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, sun reflection on water, long shadows, low horizon, large sky, sky filling the frame, clouds dominating, open ocean only, no beach, palm trees, boats, people, footprints"
+  },
+  "sandy_beach_item": {
+    "description": "砂浜の地面（アイテムレーンの背景）。真上から見た乾いた白砂。",
+    "_note": [
+      "設置物レーンの砂浜がほぼ中立の白なので、暖色に寄せると同じ砂浜に見えない。ただし白へ振り切ると",
+      "質感が消えて紙のようになる。淡い砂色にとどめ、貝殻と小石で砂浜だと分かるようにする。",
+      "構図が安定しにくく、波打ち際や風景に流れやすい。seedを何度か振って選ぶ前提。"
+    ],
+    "positive": "dry beach sand, top-down view looking straight down at the ground, flat sand filling the whole frame, fine pale sand with a visible grainy texture and faint wind ripples, broken white shell fragments and a few small smooth pebbles scattered over it, natural uneven scattering, pale sand tones with a hint of warmth, soft low contrast, gently blended edges, subdued detail, quiet and plain with no single subject, game background art",
+    "negativeExtra": "landscape, scenery, horizon, sky, sea, water, waves, shoreline, surf, foam, perspective, depth, vanishing point, dunes, large dune ridges, deep ripples, corrugated surface, pure white, blank white, featureless, smooth flat surface, no texture, paper, golden sand, ochre, orange, yellow sand, brown earth, wet sand, dark sand, muddy, tiled texture, texture swatch, repeating pattern, photograph, photorealistic, 3d render, abstract, paint splatter, dripping paint, footprints"
   }
 }

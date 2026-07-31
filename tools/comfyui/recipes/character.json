@@ -12,9 +12,9 @@
   "width": 832,
   "height": 1280,
   "cardArt": {
-    "_comment": "featherが48なのは、24だと下端の切れ際が急で、80だと絵を削りすぎるため。",
+    "_comment": "featherが24なのは、12だと下端の切れ際が急で、40だと絵を削りすぎるため（絵の寸法410x640に対する値）。",
     "white": 250,
     "opaque": 200,
-    "feather": 48
+    "feather": 24
   }
 }

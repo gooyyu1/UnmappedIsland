@@ -10,20 +10,20 @@
   ],
   "output": "src/assets/lanes/rocky_field_item.png",
   "prompt": "rocky_field_item",
-  "workflow": "lane_background_sdxl.api.json",
+  "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",
-  "seed": 3503,
-  "width": 2560,
+  "seed": 6002,
+  "width": 2048,
   "height": 640,
   "postprocess": {
     "_comment": [
-      "一様なテクスチャなので、縦はどこを切っても同じ。中央付近から取る。",
-      "oilifyRadiusは、レーンの実寸（背景はレーン高352uへ合わせるので画面上では0.6875倍）で判断すること。",
+      "oilifyは生成時の解像度でかかるので、画面上での半径は0.55倍（保持で0.5倍、レーン高352uへの表示で1.1倍）になる。実寸で判断すること。",
       "拡大して見ると4のほうが馴染んで見えるが、実寸では明るい石が平坦な白い粒へ潰れて斑点として目立ち、",
       "0より騒がしくなる。2はわずかに緩めるだけで破綻しない。",
       "眺めの絵（_fixture）は草を潰したくないので0。"
     ],
-    "top": 64,
+    "width": 1024,
+    "height": 320,
     "oilifyRadius": 2,
     "oilifyLevels": 12
   },
