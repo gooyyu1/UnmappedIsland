@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "src/assets/objects/stone.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "1枚に石が2つ描かれたので、cropで左上の1つだけを残している（右下の石はy930から）。"
+  ],
+  "output": "src/assets/objects/stone.png",
+  "prompts": "objects.json",
+  "prompt": "stone",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 9904,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "_comment": "小石なので256。カード幅410に対して62%を占める。",
+    "size": "256",
+    "mode": "background",
+    "crop": [0, 0, 832, 900],
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

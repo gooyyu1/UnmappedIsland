@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
 import { drawBox } from './shapes';
-import { objectTexture } from './objectArt';
+import { CARD_ART_WIDTH, objectTexture } from './objectArt';
 import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
 
@@ -140,7 +140,7 @@ export class Card extends Phaser.GameObjects.Container {
     const artTexture = content.art === undefined ? undefined : objectTexture(content.art);
     const art =
       artTexture !== undefined && scene.textures.exists(artTexture)
-        ? scene.add.image(0, 0, artTexture).setOrigin(0, 0).setDisplaySize(width, height)
+        ? placeArt(scene, artTexture, width, height)
         : scene.add
             .text(width / 2, height / 2, icon, {
               fontFamily: FONT_FAMILY,
@@ -421,6 +421,23 @@ function addFrame(
     dashed: empty,
   });
   return face;
+}
+
+/**
+ * object_defの絵をカードの中央へ置く。
+ *
+ * 絵の大きさは画像そのものの寸法で決まる（CARD_ART_WIDTH参照）。小石は小さい画像、地形はカードと
+ * 同じ縦横比の大きい画像で、どちらもこの一つの規則で正しい大きさになる。
+ */
+function placeArt(
+  scene: Phaser.Scene,
+  texture: string,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Image {
+  const image = scene.add.image(width / 2, height / 2, texture).setOrigin(0.5);
+  const scale = width / CARD_ART_WIDTH;
+  return image.setDisplaySize(image.width * scale, image.height * scale);
 }
 
 /** カードの矩形の中で、絵の紙が占める範囲（FRAME_INSET参照）。 */

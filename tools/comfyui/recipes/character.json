@@ -12,7 +12,12 @@
   "width": 832,
   "height": 1280,
   "cardArt": {
-    "_comment": "featherが24なのは、12だと下端の切れ際が急で、40だと絵を削りすぎるため（絵の寸法410x640に対する値）。",
+    "_comment": [
+      "ポートレートはカード全面（size: card）。背景ごと紙へ溶かしたいのでmodeはluma。",
+      "featherが24なのは、12だと下端の切れ際が急で、40だと絵を削りすぎるため（絵の寸法410x640に対する値）。"
+    ],
+    "size": "card",
+    "mode": "luma",
     "white": 250,
     "opaque": 200,
     "feather": 24

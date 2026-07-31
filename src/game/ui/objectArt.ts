@@ -1,5 +1,5 @@
 /**
- * object_defごとの絵（カード全面に重ねる画像）の解決。
+ * object_defごとの絵の解決。
  *
  * 置き場所と名前の規約は `src/assets/objects/<object_defの識別子>.png` のみで、コード側への登録は
  * 要らない。識別子はCodex全体で一意（objectNamesは単一のレジストリ）なので、種別のプレフィックスも
@@ -18,6 +18,14 @@ const FILES = import.meta.glob('../../assets/objects/*.png', {
 export const OBJECT_ART: ReadonlyMap<string, string> = new Map(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, '$1'), url]),
 );
+
+/**
+ * 絵が描かれているときのカードの幅（tools/comfyui/card_art.py の CARD_WIDTH と同じ値）。
+ *
+ * 絵はこの幅のカードに載せる前提で作られていて、画像そのものの寸法は絵ごとに違う。小さい物は小さい
+ * 画像で持ち、カードの中央へ置かれる。表示側は寸法を気にせず、常に cardWidth / この値 倍で描けばよい。
+ */
+export const CARD_ART_WIDTH = 410;
 
 /** object_defの識別子に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。 */
 export function objectTexture(objectName: string): string {

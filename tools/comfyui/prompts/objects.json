@@ -1,0 +1,67 @@
+{
+  "_comment": [
+    "カードに載せるアイテムの絵のプロンプト。",
+    "",
+    "**NGワードはアイテムごとに持つ。** ここには sharedNegative を置かない。アイテムは性格が",
+    "ばらばらなので、ある物のために入れた否定が別の物を作れなくする。たとえば石の艶を消すために",
+    "glossy/shiny/reflection を共通で否定すると、この先ガラスや水や金属のアイテムが作れない。",
+    "_baseNegative は新しいアイテムを足すときの叩き台で、生成には使われない（generate.py 参照）。",
+    "",
+    "背景は白で頼む。card_art.py が紙・物・影に分けるので、白い余白はカードの紙地に置き換わり、",
+    "影は紙への乗算として残る（切り抜きは要らない）。",
+    "",
+    "水彩にはしない（LoRAは強度0、プロンプトにも水彩の語を入れない）。水彩画にしたいのは",
+    "キャラクターだけで、アイテムは物として見えてほしい。",
+    "",
+    "色は明示する。指定しないと石は白っぽい淡色になる。石は艶を否定する（艶を描かせると",
+    "白く飛んで色が抜ける）が、これは石の事情であって、共通の制約ではない。",
+    "",
+    "文の骨格は石（stone）のものを流用する。うまくいく形が決まっていて、崩すと途端に暴れる。",
+    "  - exactly one X alone on an empty white page",
+    "  - the X is small and sits in the middle with a wide empty white margin all around it",
+    "  - a soft shadow beneath it, plain white background, hand painted illustration, high quality",
+    "落ち影は必ず描かせる。card_art.py が紙への乗算として置くので、絵が紙に馴染む。",
+    "",
+    "写真を否定するNGワード（studio photograph, product photography, depth of field 等）は足さない。",
+    "足すと鉛筆スケッチの立木のような別物に崩れる（同条件で比較して確認）。"
+  ],
+  "_baseNegative": "two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, pattern, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed",
+  "driftwood": {
+    "description": [
+      "加工して斧の柄などにできる、頑丈で太い枝。細長い枝（branch）は別アイテム。",
+      "",
+      "**頭の名詞で結果が決まる。** log は太さが出るが製材された木口（年輪）になり、branch は葉付きの",
+      "細い小枝になる。log を残したまま木口を折れ口（snapped and splintered）に変え、鋸の断面と年輪を",
+      "NGワードで落とすのが、今のところ一番近い。",
+      "",
+      "**driftwood（流木）の語は使わない。** 物の画素だけを測ると、茶色さ（赤−青）が17.4しかなく、",
+      "他の言い方の30〜42に対して半分以下になる。実物の流木が日に晒されて灰色なので当然ではある。",
+      "白くなる原因を weathered / dry / flat even lighting / 白の語の重複 / bark にも疑いをかけて",
+      "1語ずつ外して測ったが、いずれも誤差の範囲だった。",
+      "",
+      "**斧の柄（axe handle）の語は危うい。** 頭の名詞を club や billet にしてこの語を残すと、斧",
+      "そのものが描かれる（12枚で全滅）。log の下でだけ無事なので、頭の名詞を触るなら一緒に外すこと。"
+    ],
+    "positive": "exactly one short thick log alone on an empty white page, a broken length of tree limb as thick as a wrist and about three times as long as it is thick, rough brown bark all over it, snapped and splintered at both ends, no leaves and no side twigs, straight and strong, the kind of wood you would carve into an axe handle, dark brown weathered wood, rich warm brown tones, matte dry surface, the log is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, firewood round, leaves, foliage, blossom, flowers, twigs sticking out, thin twig, slender stick, long thin pole, wand, thin sliver, splinter of wood, wood shaving, bark shard, plank, board, feather, white wood, grey wood, bleached driftwood, glossy, varnished, wet, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, twisted branch, tangled branches, forked branch, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "stone": {
+    "description": "石。角の無い丸い灰色の河原石。艶を否定する（艶を描かせると白く飛ぶ）。",
+    "positive": "exactly one grey river stone alone on an empty white page, a rounded pebble, oval shape, no sharp edges, medium grey stone with darker mottling, matte dusty surface, the stone is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "glossy, shiny, wet, polished, lacquered, reflection, specular highlight, glare, white stone, light grey, cream stone, marble, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, pebbles, stones, many stones, riverbed, sharp stone, angular rock, jagged edges, pointed rock, cracked stone, gravel, sand, crystal, gemstone, egg, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "sharp_stone": {
+    "description": [
+      "鋭い石。割れて尖った石。",
+      "",
+      "**石器（knapped stone tool, prehistoric hand tool）とは言わない。** 考古学の標本写真に寄り、",
+      "灰色の背景紙と強い落ち影のスタジオ写真になる。石（stone）として描写し、割れ方で鋭さを出す。",
+      "",
+      "**flat even lighting は入れない。** これがあると面の陰影が消えて絵が平面的になる。代わりに",
+      "面ごとの陰影と斜めからの光を指定する。ただし『横長』『横たえる』まで足すと角が丸まって",
+      "ただの塊になるので、そこまではやらない。"
+    ],
+    "positive": "exactly one dark grey stone alone on an empty white page, a stone broken to a sharp point, angular flat faces, straight chipped edges, dark grey stone with darker mottling, matte dusty surface, clearly three dimensional with soft shading across each facet, gentle light from the upper left, the stone is small and lies flat on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, high quality",
+    "negative": "flat silhouette, flat shading, two dimensional, paper cutout, monochrome, greyscale, ink wash painting, glossy, shiny, wet, polished, lacquered, reflection, specular highlight, glare, white stone, light grey, cream stone, chalk, marble, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, monolith, obelisk, rounded pebble, smooth stone, river stone, oval stone, egg, gravel, sand, crystal, gemstone, metal blade, modern knife, weapon handle, wooden handle, arrowhead on a shaft, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  }
+}

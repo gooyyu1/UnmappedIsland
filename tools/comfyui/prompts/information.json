@@ -10,10 +10,10 @@
     "角の補強（金具・当て革）も頼んだが、装飾を求めると豪華な古書の製品写真へ寄り、平置きの",
     "見開きが崩れる（24枚で全滅）。必要なら page_art.py 側で描く。"
   ],
-  "sharedNegative": "people, characters, animals, hands, high contrast, harsh shadows, low quality, jpeg artifacts, angle, tilt, perspective, three quarter view, closed book, cover facing up, book standing, floating, scroll, rolled, props, candle, ink bottle, quill, glasses, coffee, plant, cloth, map, spiral binding, rings, buckle, strap, clasp, grey backdrop, product mockup",
+  "_baseNegative": "people, characters, animals, hands, high contrast, harsh shadows, low quality, jpeg artifacts, angle, tilt, perspective, three quarter view, closed book, cover facing up, book standing, floating, scroll, rolled, props, candle, ink bottle, quill, glasses, coffee, plant, cloth, map, spiral binding, rings, buckle, strap, clasp, grey backdrop, product mockup",
   "information_book": {
     "description": "遭難者の日記。革表紙で、紙は日に焼けている。見開きが画面いっぱい。",
     "positive": "a blank page of an open journal seen from directly above, sun-yellowed paper filling almost the entire frame, a worn dark brown leather cover framing the page around the outside with thick reinforced corners and brass corner caps, flat top-down view, even soft lighting, soft low contrast, game background art",
-    "negativeExtra": "leather filling the frame, cover in the middle, ornate filigree, gold tooling"
+    "negative": "people, characters, animals, hands, high contrast, harsh shadows, low quality, jpeg artifacts, angle, tilt, perspective, three quarter view, closed book, cover facing up, book standing, floating, scroll, rolled, props, candle, ink bottle, quill, glasses, coffee, plant, cloth, map, spiral binding, rings, buckle, strap, clasp, grey backdrop, product mockup, leather filling the frame, cover in the middle, ornate filigree, gold tooling"
   }
 }
