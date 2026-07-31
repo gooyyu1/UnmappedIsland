@@ -1,0 +1,43 @@
+{
+  "_comment": [
+    "src/assets/information_background.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "9patchで引き伸ばして使う素材なので、生成した見開きから片ページを切り出す（pageArt / page_art.py）。",
+    "向きごとの画像は要らない。縦型ではゲーム側が90度回して使う。"
+  ],
+  "output": "src/assets/information_background.png",
+  "prompts": "information.json",
+  "prompt": "information_book",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 1024,
+  "height": 1024,
+  "seed": 7702,
+  "pageArt": {
+    "_comment": [
+      "生成物の実測: 本の外周は 左x=15 上y=32 下は影に溶けるので y=945 で切る。綴じ目は x=496。",
+      "cropは左ページ。フィールド側になる左辺だけ机を15px残し（fadeで透明にして影にする）、",
+      "他の3辺は本の境界かその内側で切る。coverSideがleftなので、出力では表紙が右へ来る。",
+      "",
+      "cutは縁を細くするための間引き。革(16..37)と小口(38..47)の途中を抜く。革は一様なので繋いでも",
+      "見えないが、cutRowsは紙のムラが繋がらないため、blendでクロスフェードして段差を消す。",
+      "",
+      "cutRowsで縦を詰めているのは、9patchの中央の引き伸ばし率を縦横で揃えるため。素材が縦長のまま",
+      "だと横だけ2倍伸びて、紙のムラが横に伸びた縞に見える。",
+      "",
+      "406-22=384、912-400=512。shortが384なので縮小は起きない（原寸のまま）。"
+    ],
+    "crop": [0, 33, 406, 912],
+    "coverSide": "left",
+    "fade": 15,
+    "cut": [
+      [20, 34],
+      [39, 47]
+    ],
+    "cutRows": [[250, 650]],
+    "blend": 150,
+    "short": 384
+  }
+}

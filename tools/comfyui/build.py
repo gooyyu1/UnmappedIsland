@@ -127,6 +127,22 @@ def main() -> None:
                     *(["--keep-paper"] if card.get("keepPaper") else []),
                 ],
             )
+        elif "pageArt" in recipe:
+            page = recipe["pageArt"]
+            run(
+                "page_art.py",
+                [
+                    str(raw),
+                    "--out", str(processed),
+                    "--crop", *map(str, page["crop"]),
+                    "--cover-side", page["coverSide"],
+                    "--fade", str(page["fade"]),
+                    "--short", str(page["short"]),
+                    "--blend", str(page["blend"]),
+                    *[str(v) for start, end in page.get("cut", []) for v in ("--cut", start, end)],
+                    *[str(v) for start, end in page.get("cutRows", []) for v in ("--cut-rows", start, end)],
+                ],
+            )
         else:
             post = recipe["postprocess"]
             run(

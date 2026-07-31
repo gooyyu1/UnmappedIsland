@@ -26,7 +26,7 @@ import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import { Curtain } from './ui/Curtain';
-import { INFORMATION_BACKGROUND, INFORMATION_OVERLAP_PX } from './ui/informationArt';
+import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from './ui/informationArt';
 import { HAND_LANE_TEXTURE, laneTexture } from './ui/laneArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
@@ -864,16 +864,19 @@ export class PlayScene extends ResponsiveScene {
     const landscape = this.metrics.isLandscape;
     addPanel(this, area, COLOR.informationPaper);
 
-    const page = this.add.image(
-      0,
-      0,
-      landscape ? INFORMATION_BACKGROUND.landscape : INFORMATION_BACKGROUND.portrait,
-    );
-    const scale = landscape ? area.height / page.height : area.width / page.width;
-    const overlap = INFORMATION_OVERLAP_PX * scale;
-    page.setScale(scale).setInteractive();
-    if (landscape) page.setOrigin(1, 0).setPosition(area.width + overlap, area.y);
-    else page.setOrigin(0, 1).setPosition(area.x, area.y + area.height + overlap);
+    // 9patchなので、絵の向きは変えずに大きさだけ指定する。縦型は表紙の縁を下へ向けるため90度回す。
+    // 回すと縦横が入れ替わるので、幅に情報エリアの高さを、高さに幅を渡す。
+    const overlap = this.metrics.px(INFORMATION_OVERLAP_PX);
+    const along = (landscape ? area.width : area.height) + overlap;
+    const across = landscape ? area.height : area.width;
+    const border = this.metrics.px(INFORMATION_BORDER_PX);
+    const page = this.add
+      .nineslice(0, 0, INFORMATION_BACKGROUND, undefined, along, across, border, border, border, border)
+      .setOrigin(0, 0)
+      .setInteractive();
+    if (landscape) page.setPosition(area.x, area.y);
+    // 原点(0,0)を軸に90度回すと、絵は右下方向ではなく左下方向へ広がる。右上の角を起点に置く。
+    else page.setAngle(90).setPosition(area.x + area.width, area.y);
 
     // 縦長すぎる縦型でオプションバーの上に出る余りを、ページのはみ出しごと画面外として塗り潰す。
     // オプションバーはこの後に置くので、その帯にかぶるぶんは塗り直される。
