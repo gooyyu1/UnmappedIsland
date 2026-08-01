@@ -103,7 +103,8 @@ def main() -> None:
                 "--workflow", workflow,
                 *(["--prompts", recipe["prompts"]] if recipe.get("prompts") else []),
                 *(["--lora", recipe["lora"]] if recipe.get("lora") else []),
-                *(["--lora-strength", str(recipe["loraStrength"])] if recipe.get("loraStrength") else []),
+                # 0は「LoRAを効かせない」という指定なので、getの真偽で見てはいけない。
+                *(["--lora-strength", str(recipe["loraStrength"])] if "loraStrength" in recipe else []),
                 *(["--no-trigger"] if recipe.get("noTrigger") else []),
                 "--server", args.server,
             ],
@@ -131,6 +132,11 @@ def main() -> None:
                     *(["--white", str(card["white"])] if "white" in card else []),
                     *(["--opaque", str(card["opaque"])] if "opaque" in card else []),
                     *(["--feather", str(card["feather"])] if "feather" in card else []),
+                    *(["--drop-shadow", str(card["dropShadow"])] if "dropShadow" in card else []),
+                    *(["--drop-offset", str(card["dropOffset"])] if "dropOffset" in card else []),
+                    *(["--drop-blur", str(card["dropBlur"])] if "dropBlur" in card else []),
+                    *(["--saturation", str(card["saturation"])] if "saturation" in card else []),
+                    *(["--gamma", str(card["gamma"])] if "gamma" in card else []),
                 ],
             )
         elif "cardFrame" in recipe:
