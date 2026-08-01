@@ -50,7 +50,7 @@ describe('テスト用シナリオ', () => {
       '同種はスタックにまとまる',
     ).toEqual([
       ['stone', 3],
-      ['driftwood', 2],
+      ['thick_branch', 2],
     ]);
   });
 
@@ -81,9 +81,9 @@ describe('テスト用シナリオ', () => {
   });
 
   it('個数の指定は、同じものをその数だけ並べたのと同じ', () => {
-    const scenario = parseScenario('count.yaml', 'seed: 1\nlocation:\n  items: [stone x3, driftwood]\n');
+    const scenario = parseScenario('count.yaml', 'seed: 1\nlocation:\n  items: [stone x3, thick_branch]\n');
 
-    expect(scenario.items).toEqual(['stone', 'stone', 'stone', 'driftwood']);
+    expect(scenario.items).toEqual(['stone', 'stone', 'stone', 'thick_branch']);
   });
 
   it('many_stonesは、100個の石を1つのスタックとして持たせる', () => {
@@ -108,7 +108,7 @@ describe('テスト用シナリオ', () => {
   });
 
   it('受け入れられない置き方はエラーになる（手持ちの枠を超える）', () => {
-    const names = ['stone', 'branch', 'driftwood', 'coconut', 'taro', 'water_spinach', 'woven_basket'];
+    const names = ['stone', 'branch', 'thick_branch', 'coconut', 'taro', 'water_spinach', 'woven_basket'];
     const scenario = parseScenario('over.yaml', `seed: 1\nplayer:\n  hand: [${names.join(', ')}]\n`);
     const game = startNewGame(codex, 1, new SeededRng(1));
 

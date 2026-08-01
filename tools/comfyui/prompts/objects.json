@@ -31,7 +31,7 @@
     "seedが増えるだけだった。"
   ],
   "_baseNegative": "two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, pattern, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed",
-  "driftwood": {
+  "thick_branch": {
     "description": [
       "加工して斧の柄などにできる、頑丈で太い枝。細長い枝（branch）は別アイテム。",
       "",
@@ -45,7 +45,7 @@
       "枝ではなく葉の絵になって全滅する（24枚で0）。同じく、丸太側の本文に先細りや節を足すと、",
       "複数本・立木・人物入りへ崩れる。この被写体はNGワードを増やすと壊れる。",
       "",
-      "**driftwood（流木）の語は使わない。** 物の画素だけを測ると、茶色さ（赤−青）が17.4しかなく、",
+      "**プロンプトに driftwood（流木）と書かない。** 物の画素だけを測ると、茶色さ（赤−青）が17.4しかなく、",
       "他の言い方の30〜42に対して半分以下になる。実物の流木が日に晒されて灰色なので当然ではある。",
       "白くなる原因を weathered / dry / flat even lighting / 白の語の重複 / bark にも疑いをかけて",
       "1語ずつ外して測ったが、いずれも誤差の範囲だった。**足りないのは明度ではなく彩度なので、",

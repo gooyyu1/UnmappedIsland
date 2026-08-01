@@ -87,7 +87,7 @@ locale.propertyTag('nutrition').displayName   // '栄養'
 ```
 
 **`displayName` は、対応表に無ければ識別子そのものを返します。** 表示文字列の欠落でゲームが止まるより、
-画面に `driftwood` と出て気付ける方がよいためです。`description` は無ければ `undefined` を返し、
+画面に `thick_branch` と出て気付ける方がよいためです。`description` は無ければ `undefined` を返し、
 呼び出し側が「説明が無い」ことを区別できるようにします。
 
 知らない節・キーは無視するため、実装が追いつく前に対応表へ節を足しても壊れません。

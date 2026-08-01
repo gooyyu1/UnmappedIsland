@@ -158,7 +158,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
     const handSlotId = codex.slotNames.getId('hand');
-    for (const name of ['stone', 'branch', 'driftwood', 'coconut', 'taro', 'water_spinach']) {
+    for (const name of ['stone', 'branch', 'thick_branch', 'coconut', 'taro', 'water_spinach']) {
       const item = game.session.spawn(codex.objectNames.getId(name));
       expect(item.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
     }
@@ -322,7 +322,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('同じカードへ重ねたときは、スタックの中の2つを組み合わせる', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const itemsSlotId = codex.slotNames.getId('items');
-    for (const name of ['stone', 'stone', 'driftwood']) {
+    for (const name of ['stone', 'stone', 'thick_branch']) {
       const item = game.session.spawn(codex.objectNames.getId(name));
       expect(item.moveToSlot(game.startLocation.instance, itemsSlotId, codex.wellKnown)).toBeUndefined();
     }
@@ -336,9 +336,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.combinationOf(stones, stones)?.execute, 'スタックの中の2つで実行できる').toBeTypeOf(
       'function',
     );
-    const driftwood = cardOf('driftwood');
+    const thickBranch = cardOf('thick_branch');
     expect(
-      view.combinationOf(driftwood, driftwood),
+      view.combinationOf(thickBranch, thickBranch),
       '1個しか無いカードは自分自身とは組み合わせられない',
     ).toBeUndefined();
   });
@@ -407,9 +407,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
   it('アクションを持たないオブジェクトのカードは、アクションが空になる', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
-    const driftwood = game.session.spawn(codex.objectNames.getId('driftwood'));
+    const thickBranch = game.session.spawn(codex.objectNames.getId('thick_branch'));
     expect(
-      driftwood.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+      thickBranch.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
     ).toBeUndefined();
 
     const card = fromGameSession(game, codex, locale).hand[0];

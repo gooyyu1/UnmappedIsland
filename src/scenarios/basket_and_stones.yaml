@@ -13,4 +13,4 @@ player:
 
 location:
   # 同じ名前を並べた数だけ作られる。石はスタックにまとまって1枚のカードになる。
-  items: [stone, stone, stone, driftwood, driftwood]
+  items: [stone, stone, stone, thick_branch, thick_branch]

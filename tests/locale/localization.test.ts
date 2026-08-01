@@ -47,8 +47,8 @@ object_texts:
   });
 
   it('未登録のオブジェクトは識別子を表示名にし、説明は持たない', () => {
-    expect(locale.object('driftwood').displayName).toBe('driftwood');
-    expect(locale.object('driftwood').description).toBeUndefined();
+    expect(locale.object('thick_branch').displayName).toBe('thick_branch');
+    expect(locale.object('thick_branch').description).toBeUndefined();
   });
 
   it('props・actions・combinationsの表示文字列を引ける', () => {
@@ -69,11 +69,11 @@ object_texts:
 
   it('オブジェクト側の定義はdefaultエントリより優先される', () => {
     expect(locale.object('coconut').action('eat').displayName).toBe('かじる');
-    expect(locale.object('driftwood').action('eat').displayName, 'defaultの側').toBe('食べる');
+    expect(locale.object('thick_branch').action('eat').displayName, 'defaultの側').toBe('食べる');
   });
 
   it('defaultエントリのdisplay_nameはオブジェクトの表示名には使われない', () => {
-    expect(locale.object('driftwood').displayName).toBe('driftwood');
+    expect(locale.object('thick_branch').displayName).toBe('thick_branch');
   });
 
   it('どこにも定義が無いメンバーは識別子を表示名にする', () => {
@@ -112,7 +112,7 @@ describe('同梱の表示文字列ファイル', () => {
   });
 
   it('カードに並ぶ発見物（item/fixture）はすべて表示名を持つ', () => {
-    // 対応表に無いと識別子（driftwood等）がそのままカードに出るため、UIに出る型には必須とする。
+    // 対応表に無いと識別子（thick_branch等）がそのままカードに出るため、UIに出る型には必須とする。
     const itemTag = codex.tagNames.getId('item');
     const fixtureTag = codex.tagNames.getId('fixture');
 
