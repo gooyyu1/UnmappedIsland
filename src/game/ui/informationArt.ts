@@ -4,24 +4,29 @@ import backgroundUrl from '../../assets/information_background.png';
  * 情報エリア（フィールドエリアの左／上）の背景画像。開いた本のページで、フィールドエリア側の端に
  * 表紙の縁と、その外へ落ちる影（透過）が描かれている。
  *
- * 絵は9patchとして敷く（Phaserの NineSlice）。四隅と縁は原寸のまま、中央の紙だけが引き伸ばされる
- * ので、1枚で任意の大きさを賄える。向きごとの絵も要らない（縦型は90度回して使う）。
+ * 絵は9patchとして敷く（Phaserの NineSlice）。四隅と縁は絵から原寸で切り出され、中央の紙だけが
+ * 引き伸ばされるので、1枚で任意の大きさを賄える。向きごとの絵も要らない（縦型は90度回して使う）。
+ *
+ * 絵は**1ピクセル = 1u**（短辺1080のときの原寸）で描かれている。9patchの縁は原寸で切り出される以上、
+ * 縁の太さを画面の大きさによらず一定のuに保つには、絵全体をu倍して敷くしかない
+ * （PlayScene.buildInformationArea）。下の2つは絵から測った値であり、絵を作り直して縁の太さが
+ * 変わったら測り直す（page_art.py の crop / fade が決める）。
  */
 export const INFORMATION_BACKGROUND = 'information:background';
 
-/** 絵の縁（表紙・小口・影）の幅。9patchで引き伸ばさない範囲であり、u単位でもある。 */
-export const INFORMATION_BORDER_PX = 50;
+/** 絵のフィールドエリア側の縁（小口・表紙・影）の幅。9patchで引き伸ばさない範囲。 */
+export const INFORMATION_BORDER_PX = 48;
 
 /**
- * フィールドエリアへ食い込ませる幅。絵のこの範囲は透過のグラデーションで、ページがフィールドエリアへ
- * 落とす影にあたる（page_art.py の fade）。
+ * 縁のうち、外側の影（透過のグラデーション）の幅。この分だけフィールドエリアへ食い込ませることで、
+ * 影が全部フィールドエリアの上に落ちる。
  */
-export const INFORMATION_OVERLAP_PX = 12;
+export const INFORMATION_OVERLAP_PX = 15;
 
 /**
  * 情報エリアの各辺から、中身を置ける範囲（紙の内側）までの距離（u）。
  *
- * 9patchの縁は画面の大きさによらず一定なので、どちらもuでそのまま扱える。
+ * 縁は画面の大きさによらず一定のuになるので、どちらもuでそのまま扱える。
  */
 export const INFORMATION_PAPER_INSET = {
   /** フィールドエリア側の辺（横型は右・縦型は下）。縁の幅から、食い込ませる分を引いた残り。 */

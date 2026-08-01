@@ -885,13 +885,17 @@ export class PlayScene extends ResponsiveScene {
 
     // 9patchなので、絵の向きは変えずに大きさだけ指定する。縦型は表紙の縁を下へ向けるため90度回す。
     // 回すと縦横が入れ替わるので、幅に情報エリアの高さを、高さに幅を渡す。
-    const overlap = this.metrics.px(INFORMATION_OVERLAP_PX);
-    const along = (landscape ? area.width : area.height) + overlap;
-    const across = landscape ? area.height : area.width;
-    const border = this.metrics.px(INFORMATION_BORDER_PX);
+    //
+    // 大きさはuで渡し、絵ごとu倍して敷く。9patchの縁は絵から原寸で切り出されるため、等倍で敷くと
+    // 縁の太さが絵のピクセル数のまま固定され、uで組んだ他の寸法とずれてしまう（informationArt参照）。
+    const scale = this.metrics.u;
+    const along = (landscape ? area.width : area.height) / scale + INFORMATION_OVERLAP_PX;
+    const across = (landscape ? area.height : area.width) / scale;
+    const border = INFORMATION_BORDER_PX;
     const page = this.add
       .nineslice(0, 0, INFORMATION_BACKGROUND, undefined, along, across, border, border, border, border)
       .setOrigin(0, 0)
+      .setScale(scale)
       .setInteractive();
     if (landscape) page.setPosition(area.x, area.y);
     // 原点(0,0)を軸に90度回すと、絵は右下方向ではなく左下方向へ広がる。右上の角を起点に置く。
