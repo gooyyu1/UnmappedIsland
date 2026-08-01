@@ -476,11 +476,6 @@ export class WorldObject {
     return undefined;
   }
 
-  /**
-   * targetのスロットを宣言順に走査し、最初に受け入れられたスロットへ自分自身を移動する（著者がスロット名を
-   * 知らなくてよい規約。spawnのintoとmoveが共用、9.4節）。force=trueは検証を飛ばすため、スロットが1つでも
-   * あれば必ず成功する。
-   */
   /** otherが自分自身か、自分の中に入っているか。入れ物を自分の中へ入れる操作を弾くのに使う。 */
   contains(other: WorldObject): boolean {
     for (let node: WorldObject | undefined = other; node !== undefined; node = node._parent) {
@@ -489,13 +484,18 @@ export class WorldObject {
     return false;
   }
 
+  /**
+   * targetの自動配置スロット（ObjectDef.enumerateAutoPlacementSlotDefs）を宣言順に走査し、最初に受け入れ
+   * られたスロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
+   * 9.4節）。force=trueは受け入れ判定を飛ばすため、自動配置スロットが1つでもあれば必ず成功する。
+   */
   moveIntoFirstAcceptingSlot(
     target: WorldObject,
     wellKnown: WellKnownProperties,
     force = false,
     session?: WorldSession,
   ): boolean {
-    for (const slotDef of target.def.enumerateSlotDefs()) {
+    for (const slotDef of target.def.enumerateAutoPlacementSlotDefs()) {
       if (this.def.isQuantitative && !force && session !== undefined) {
         if (this.pourQuantityInto(target, slotDef.globalId, wellKnown, session)) return true;
         continue;

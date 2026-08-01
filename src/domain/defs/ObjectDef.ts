@@ -37,6 +37,9 @@ export class ObjectDef {
   /** ローカルindexで並ぶ密配列。slotLayout と対になる。 */
   private readonly slotDefs: readonly SlotDef[];
 
+  /** slotDefsのうち、自動配置（7.7節）を受け入れるものだけを宣言順に並べたもの。 */
+  private readonly autoPlacementSlotDefs: readonly SlotDef[];
+
   /** このObjectDefが宣言する持続効果（8節）の一式（PassiveEffects参照）。 */
   readonly passives: PassiveEffects;
 
@@ -84,6 +87,7 @@ export class ObjectDef {
     this.propertyDefs = propertyDefs;
     this.slotLayout = slotLayout;
     this.slotDefs = slotDefs;
+    this.autoPlacementSlotDefs = slotDefs.filter((slotDef) => slotDef.autoPlacement);
     this.passives = new PassiveEffects(passives);
     this.stackOrder = stackOrder;
     this.tags = tags;
@@ -113,6 +117,15 @@ export class ObjectDef {
   /** 全SlotDefを列挙する（WorldObject内部利用専用）。 */
   enumerateSlotDefs(): readonly SlotDef[] {
     return this.slotDefs;
+  }
+
+  /**
+   * spawn/moveの宛先候補になるSlotDefを宣言順に列挙する（7.7節）。`auto_placement: false`のスロットは、
+   * 走査を強制配置（force）で行う場合も含めて候補にならない——forceが省くのは受け入れ判定であって、
+   * 「そもそも自動では入らない」という宣言ではないため。
+   */
+  enumerateAutoPlacementSlotDefs(): readonly SlotDef[] {
+    return this.autoPlacementSlotDefs;
   }
 
   tryExecuteAction(

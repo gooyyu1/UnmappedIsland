@@ -74,6 +74,20 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(worldView.minute).toBe(30);
   });
 
+  it('手持ちが埋まっていると、採った実は装備欄ではなく足元へ落ちる', () => {
+    const tree = spawnInto('palm_tree', beach, 'fixtures');
+    // 手持ち6枠を別々の型で埋める（同種は1枠にまとまるため、6種類必要）。
+    for (const name of ['stone', 'sharp_stone', 'branch', 'thick_branch', 'taro', 'water_spinach'])
+      spawnInto(name, player, 'hand');
+
+    expect(tree.tryExecuteAction('pick_coconut', player, session)).toBe(true);
+
+    expect(new PlayerCharacter(player, codex).equipmentStacks, '装備欄は自動配置の対象外（7.7節）').toEqual(
+      [],
+    );
+    expect(itemsOn(beach)).toEqual(['coconut']);
+  });
+
   it('ヤシの実に刃物を当てると、皮を剥いだ実と皮に分かれる', () => {
     const coconut = spawnInto('coconut', beach, 'items');
 
