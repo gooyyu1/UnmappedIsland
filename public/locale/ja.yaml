@@ -70,10 +70,53 @@ object_texts:
     display_name: 道
     description: 他の土地へ続く道。通れば、その先の土地へ移れる。
 
-  # 探索で見つかるアイテム（locations.yaml・foods.yaml）。
+  # ヤシの実の加工の連鎖（coconut.yaml）。
+  palm_tree:
+    display_name: ヤシの木
+    description: 高く伸びたヤシ。幹を登れば実がもげる。
+    actions:
+      pick_coconut:
+        display_name: 実を採る
+        description: 幹を登って、実をもぎ取る。
   coconut:
     display_name: ヤシの実
-    description: 硬い殻に覆われた実。中の果肉と水で、飢えと渇きの両方をしのげる。
+    description: 厚い繊維の皮に覆われた実。刃物ではがさないと中の殻に届かない。
+    combinations:
+      husk:
+        display_name: 皮をはぐ
+        description: 刃物で繊維の皮を削ぎ落とし、中の実を取り出す。
+  coconut_husk:
+    display_name: ヤシの実の皮
+    description: はぎ取った繊維の塊。硬く、ほぐれば長い繊維になる。
+  husked_coconut:
+    display_name: 皮を剥いだヤシの実
+    description: 皮を落として殻がむき出しになった実。殻は硬いが、刃先を当てれば穴が開く。
+    combinations:
+      bore:
+        display_name: 穴を開ける
+        description: 刃先を殻のくぼみへ当て、中まで貫く穴を開ける。
+  holed_coconut:
+    display_name: 穴を開けたヤシの実
+    description: 穴の開いた殻。強度が落ちていて、叩けば素直に二つに割れる。
+    combinations:
+      crack:
+        display_name: 叩き割る
+        description: 石を打ちつけ、穴から走る割れ目で二つに割る。
+      pry_open:
+        display_name: こじ開ける
+        description: 穴へ刃をねじ込み、こじって二つに割る。
+  coconut_half:
+    display_name: 割れたヤシの実
+    description: 半分になった実。殻の内側に白い果肉が張り付いている。
+    combinations:
+      scrape:
+        display_name: 果肉を削り取る
+        description: 刃物で内側の果肉を掻き出す。あとには器になる殻が残る。
+  coconut_meat:
+    display_name: ヤシの果肉
+    description: 殻から掻き出した白い果肉。ほのかに甘く、水気がある。
+
+  # 探索で見つかるアイテム（locations.yaml・foods.yaml）。
   thick_branch:
     display_name: 太い枝
     description: 腕ほどの太さの枝。折れ口が生々しく、削れば道具の柄になる。
@@ -104,9 +147,6 @@ object_texts:
     description: 蔓や草を編んだ入れ物。中に入れた物をまとめて持ち運べる。
 
   # 探索で見つかる設置物（locations.yaml）。
-  palm_tree:
-    display_name: ヤシの木
-    description: 高く伸びたヤシ。実を落とす。
   berry_bush:
     display_name: ベリーの茂み
     description: 小さな実を付ける低木の茂み。
@@ -131,8 +171,8 @@ object_texts:
     display_name: 甕
     description: 口の狭い大きな容器。据え置いて水を溜めておける。
   coconut_bowl:
-    display_name: ヤシの実の器
-    description: ヤシの実の殻で作った器。口が広いので、中身は日にあたると蒸発する。
+    display_name: ヤシの殻
+    description: 果肉を掻き出したあとの半球の殻。器として使える。口が広いので、中身は日にあたると蒸発する。
   water_liquid:
     display_name: 水
     description: 飲めばのどの渇きが癒える。

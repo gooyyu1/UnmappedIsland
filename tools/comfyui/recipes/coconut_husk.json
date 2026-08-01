@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "src/assets/objects/coconut_husk.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "はぎ取った皮。実と同じくらいの大きさの一片なので320。",
+    "",
+    "生成された皮は橙が強い（プロンプトで抑えると形が崩れる。prompts/objects.json 参照）ので、",
+    "saturationで落として茶へ寄せる。"
+  ],
+  "output": "src/assets/objects/coconut_husk.png",
+  "prompts": "objects.json",
+  "prompt": "coconut_husk",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 40101,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "saturation": 0.45
+  }
+}

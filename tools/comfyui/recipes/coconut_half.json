@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/objects/coconut_half.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "割れた実。大きさの意図は husked_coconut.json を参照。"
+  ],
+  "output": "src/assets/objects/coconut_half.png",
+  "prompts": "objects.json",
+  "prompt": "coconut_half",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 40001,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

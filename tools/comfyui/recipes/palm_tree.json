@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "src/assets/objects/palm_tree.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設置物なので、アイテムより一段大きい400。カード幅410のほぼ全幅を使う。",
+    "根元に草の茂みが描かれているが、木を地に着けて見せるので残している。",
+    "",
+    "小さい株が並ぶseedがあるので、1本だけのものを選んでいる。"
+  ],
+  "output": "src/assets/objects/palm_tree.png",
+  "prompts": "objects.json",
+  "prompt": "palm_tree",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 40004,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

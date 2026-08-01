@@ -14,6 +14,7 @@ import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 /** ゲーム本体に同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。 */
 const WORLD_CODEX_FILES = [
   'characters.yaml',
+  'coconut.yaml',
   'containers.yaml',
   'core.yaml',
   'foods.yaml',
