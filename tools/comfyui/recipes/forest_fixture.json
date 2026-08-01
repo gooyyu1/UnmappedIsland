@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/lanes/forest_fixture.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "密林（jungle）と作り分けるため、幹が細く間隔があり、下草の薄い絵を選んでいる。",
+    "",
+    "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixture.json / rocky_field_item.json を参照。"
+  ],
+  "output": "src/assets/lanes/forest_fixture.png",
+  "prompt": "forest_fixture",
+  "workflow": "lane_background_sdxl_tiling.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 7001,
+  "postprocess": {
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 0,
+    "oilifyLevels": 12
+  }
+}

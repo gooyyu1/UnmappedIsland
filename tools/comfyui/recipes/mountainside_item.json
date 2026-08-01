@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/lanes/mountainside_item.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "苔を olive と頼むと硫黄のような黄緑になる。茶色い土と枯れ草で頼み直した回のseed。",
+    "",
+    "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixture.json / rocky_field_item.json を参照。"
+  ],
+  "output": "src/assets/lanes/mountainside_item.png",
+  "prompt": "mountainside_item",
+  "workflow": "lane_background_sdxl_tiling.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 7102,
+  "postprocess": {
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 2,
+    "oilifyLevels": 12
+  }
+}
