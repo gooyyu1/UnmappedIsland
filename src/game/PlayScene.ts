@@ -387,12 +387,9 @@ export class PlayScene extends ResponsiveScene {
     this.buildFieldArea(this.layout);
   }
 
-  /** ドラッグの対象になるレーン。スロットの子ウィンドウを開いている間は、その中身も対象に加える。 */
+  /** ドラッグの対象になるレーン。設置物レーンも含める——持ち出せはしないが、同じレーンの中でなら並び替えられるため。 */
   private setDragLanes(): void {
-    // 設置物レーンも対象に含める。持ち出せはしないが、同じレーンの中でなら並び替えられるため。
-    const lanes = [this.fixtureLane, this.itemLane, this.handLane];
-    if (this.slotWindow !== undefined) lanes.push(this.slotWindow.lane);
-    this.drag?.setLanes(lanes);
+    this.drag?.setLanes(this.openLanes);
   }
 
   /**
@@ -507,6 +504,28 @@ export class PlayScene extends ResponsiveScene {
     return this.slotWindowPlace === undefined ? [] : this.view.cardsIn(this.slotWindowPlace);
   }
 
+  /** 今カードが並んでいるレーン。スロットの子ウィンドウを開いている間は、その中身も並びの一部。 */
+  private get openLanes(): readonly CardLane[] {
+    const lanes = [this.fixtureLane, this.itemLane, this.handLane];
+    if (this.slotWindow !== undefined) lanes.push(this.slotWindow.lane);
+    return lanes;
+  }
+
+  /**
+   * そのカードが今出ている画面上の矩形（どのレーンにも出ていなければundefined）。カードの同定は
+   * CardMotionと同じくインスタンスのIDで行う——スタックの代表が入れ替わっても同じカードとみなせるため。
+   */
+  private rectOf(card: ObjectCardStack): Rect | undefined {
+    const ids = new Set(card.identity ?? []);
+    for (const lane of this.openLanes) {
+      const index = lane.cardObjects.findIndex(
+        (object) => object?.content.identity?.some((id) => ids.has(id)) === true,
+      );
+      if (index >= 0) return lane.slotRect(index);
+    }
+    return undefined;
+  }
+
   /**
    * ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。
    * 掴んでいたカードは手を離した場所に居るので、そこから動き出す（releasedは分身が居た矩形）。
@@ -555,6 +574,9 @@ export class PlayScene extends ResponsiveScene {
    *
    * アクションを実行するとワールドが変わり、このカードが消えることも別の場所へ移ることもあるため、
    * 押した時点でウィンドウを閉じる。
+   *
+   * アクションで生まれたものは、このカードを出どころとして飛ばす（ヤシの木から採った実は木から手元へ）。
+   * 矩形を引くのはウィンドウを開いた時点ではなく押した時点——その間にレーンを送られていることがあるため。
    */
   private openObjectWindow(card: ObjectCardStack): void {
     this.objectWindow?.close();
@@ -565,8 +587,9 @@ export class PlayScene extends ResponsiveScene {
       description: action.description,
       minutes: action.minutes,
       onTap: () => {
+        const origin = this.rectOf(card);
         this.closeObjectWindow();
-        this.applyToWorld(action.execute);
+        this.applyToWorld(action.execute, { origin });
       },
     }));
 
@@ -824,20 +847,16 @@ export class PlayScene extends ResponsiveScene {
    * 見せる（CardMotion）。
    */
   private showView(context: MotionContext = {}): void {
-    const lanes = [this.fixtureLane, this.itemLane, this.handLane];
+    // 開いている子ウィンドウの中身も同じ差し替えに乗せる（openLanes）。手持ちとの間でカードが行き来する
+    // ため、外していると出ていったカードがウィンドウ側に現れない。
     const contents: (readonly (CardContent | undefined)[])[] = [
       this.laneCards(this.view.fixtures, undefined),
       this.laneCards(this.view.items, 'down'),
       this.laneCards(this.view.hand, 'up'),
     ];
-    // 開いている子ウィンドウの中身も同じ差し替えに乗せる。手持ちとの間でカードが行き来するため、
-    // 外していると出ていったカードがウィンドウ側に現れない。
-    if (this.slotWindow !== undefined) {
-      lanes.push(this.slotWindow.lane);
-      contents.push(this.laneCards(this.slotWindowCards(), 'down'));
-    }
+    if (this.slotWindow !== undefined) contents.push(this.laneCards(this.slotWindowCards(), 'down'));
 
-    this.motion.update(lanes, contents, context);
+    this.motion.update(this.openLanes, contents, context);
     this.showInformation();
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
