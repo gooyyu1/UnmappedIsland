@@ -1,13 +1,13 @@
 {
   "_comment": [
-    "src/assets/lanes/rocky_coast_fixture.png を作り直すためのレシピ。build.py が読む。",
+    "src/assets/backgrounds/rocky_coast_fixture.png を作り直すためのレシピ。build.py が読む。",
     "",
     "岩の海岸は写真の型が強く、暗さや濡れを言うほど長時間露光の風景写真へ寄る。",
     "明るい真昼と painterly で引き戻したうえで、seedを選んでいる（海だけの絵が混ざる）。",
     "",
     "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixture.json / rocky_field_item.json を参照。"
   ],
-  "output": "src/assets/lanes/rocky_coast_fixture.png",
+  "output": "src/assets/backgrounds/rocky_coast_fixture.png",
   "prompt": "rocky_coast_fixture",
   "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",

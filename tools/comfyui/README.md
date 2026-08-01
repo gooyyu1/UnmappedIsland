@@ -1,6 +1,6 @@
 # ComfyUI でレーンの背景画像を作る
 
-`src/assets/lanes/<土地>_fixture.png` / `<土地>_item.png`（仕様は
+`src/assets/backgrounds/<土地>_fixture.png` / `<土地>_item.png`（仕様は
 [docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) レーンの背景 節）を、ComfyUI の HTTP API
 経由で作るための一式です。**画面を操作せず、ワークフローを JSON として投げます。**
 

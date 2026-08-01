@@ -4,21 +4,24 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
-/** レーンの背景画像の置き場所（src/game/ui/laneArt.ts の規約）。 */
-const ART_DIR = 'src/assets/lanes';
+/** 背景画像の置き場所（src/game/ui/backgroundArt.ts の規約）。 */
+const ART_DIR = 'src/assets/backgrounds';
 
-/** 土地ごとに絵が変わるレーン。laneArt.LocationLane と一致していなければならない。 */
-const LOCATION_LANES = ['fixture', 'item'];
+/**
+ * 土地ごとに絵が変わる用途の接尾辞。backgroundArt.ts の LocationLane と CARD_BACKGROUND_SUFFIX に
+ * 一致していなければならない。
+ */
+const LOCATION_SUFFIXES = ['fixture', 'item', 'card_background'];
 
-/** 土地によらないレーンの絵。 */
+/** 土地によらない絵。 */
 const FIXED_ART = ['hand'];
 
 /**
- * 絵の解決は「ファイル名＝`<土地のobject_defの識別子>_<レーン>`」という規約だけで成り立っており、
+ * 絵の解決は「ファイル名＝`<土地のobject_defの識別子>_<用途>`」という規約だけで成り立っており、
  * コード側に対応表が無い。名前を間違えた絵は黙って使われないまま残るため、ここで実在の土地かどうかを
  * 検査する（objectArt.test.tsと同じ考え方）。
  */
-describe('レーンの背景画像', () => {
+describe('背景画像', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
@@ -31,24 +34,24 @@ describe('レーンの背景画像', () => {
       .map((file) => file.slice(0, -'.png'.length));
   }
 
-  /** ファイル名を土地とレーンへ分ける（どのレーンの接尾辞も付いていなければundefined）。 */
-  function split(name: string): { location: string; lane: string } | undefined {
-    for (const lane of LOCATION_LANES) {
-      if (name.endsWith(`_${lane}`)) {
-        return { location: name.slice(0, -`_${lane}`.length), lane };
+  /** ファイル名を土地と用途へ分ける（どの用途の接尾辞も付いていなければundefined）。 */
+  function split(name: string): { location: string; suffix: string } | undefined {
+    for (const suffix of LOCATION_SUFFIXES) {
+      if (name.endsWith(`_${suffix}`)) {
+        return { location: name.slice(0, -`_${suffix}`.length), suffix };
       }
     }
     return undefined;
   }
 
-  it('土地によらないレーンの絵が揃っている', () => {
+  it('土地によらない絵が揃っている', () => {
     expect(artNames()).toEqual(expect.arrayContaining(FIXED_ART));
   });
 
-  it('ファイル名の接尾辞は、土地ごとに絵が変わるレーンのものだけ', () => {
+  it('ファイル名の接尾辞は、土地ごとに絵が変わる用途のものだけ', () => {
     for (const name of artNames()) {
       if (FIXED_ART.includes(name)) continue;
-      expect(split(name), `'${name}.png' がどのレーンの絵か分からない`).toBeDefined();
+      expect(split(name), `'${name}.png' がどの用途の絵か分からない`).toBeDefined();
     }
   });
 
@@ -70,6 +73,12 @@ describe('レーンの背景画像', () => {
       checked += 1;
     }
     expect(checked, '検査対象が無い（置き場所が変わっていないか）').toBeGreaterThan(0);
+  });
+
+  it('どの用途の絵も少なくとも1枚は置かれている', () => {
+    const found = new Set(artNames().map((name) => split(name)?.suffix));
+    for (const suffix of LOCATION_SUFFIXES)
+      expect(found, `接尾辞 '_${suffix}' の絵が1枚も無い`).toContain(suffix);
   });
 
   it('ファイル名は識別子の命名規則（3.2節）に従う', () => {

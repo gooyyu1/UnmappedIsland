@@ -143,7 +143,7 @@ export interface PlayScreenView {
   readonly minute: number;
   readonly weather: string;
   readonly currentLocation: CardContent;
-  /** 現在地のobject_defの識別子（表示名ではない）。土地ごとに変わるレーンの背景を選ぶ（laneArt参照）。 */
+  /** 現在地のobject_defの識別子（表示名ではない）。土地ごとに変わるレーンの背景を選ぶ（backgroundArt参照）。 */
   readonly locationArt: string;
   /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
   readonly explorationRatio: number;
@@ -417,9 +417,12 @@ export function fromGameSession(
         : location.explorationProgress / location.explorationProgressMax,
     // 設置物は持ち歩けないのでmoveToを持たないが、並び方はプレイヤーが地形をどう捉えているかで
     // 変わるため、同じスロットの中での並び替えだけは許す。
+    // 設置物のカードだけは、その土地の景色を地に敷く（backgroundArt参照）。持ち歩けるアイテムと
+    // 違って土地から切り離せないものなので、カード自体が土地の一部として見える。
     fixtures: location.fixtureStacks.map((stack) => ({
       ...stackOf(stack, FIXTURE_ICON, 'fixtures'),
       ...destinationOf(stack[0]),
+      background: location.instance.def.name,
       reorder: reorderIn(stack[0]),
     })),
     items: location.itemStacks.map((stack) => ({

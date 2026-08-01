@@ -1,0 +1,14 @@
+# 設置物のカードに敷く土地の背景（src/game/ui/cardBackgroundArt.ts）を確かめるための開始状態。
+# 砂浜にヤシの木を2本立てた状態から始める。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 砂浜のヤシの木
+
+# 3は開始地点が砂浜になるシード。
+seed: 3
+
+location:
+  type: sandy_beach
+  # 探索を待たずに設置物を並べる（同じ名前を並べた数だけ作られる）。
+  fixtures: [palm_tree, palm_tree]

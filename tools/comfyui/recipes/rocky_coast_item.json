@@ -1,12 +1,12 @@
 {
   "_comment": [
-    "src/assets/lanes/rocky_coast_item.png を作り直すためのレシピ。build.py が読む。",
+    "src/assets/backgrounds/rocky_coast_item.png を作り直すためのレシピ。build.py が読む。",
     "",
     "玉石を敷き詰めると、カードの下で模様として騒がしい。地の砂を主にした絵を選んでいる。",
     "",
     "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixture.json / rocky_field_item.json を参照。"
   ],
-  "output": "src/assets/lanes/rocky_coast_item.png",
+  "output": "src/assets/backgrounds/rocky_coast_item.png",
   "prompt": "rocky_coast_item",
   "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",

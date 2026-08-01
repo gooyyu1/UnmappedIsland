@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/objects/coconut_meat.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "殻から掻き出した果肉。段は最小の256だが、絵の中の物が細いので、器（同じ256）より小さく見える。"
+  ],
+  "output": "src/assets/objects/coconut_meat.png",
+  "prompts": "objects.json",
+  "prompt": "coconut_meat",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 40201,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

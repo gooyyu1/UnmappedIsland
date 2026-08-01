@@ -1,0 +1,95 @@
+# ヤシの実の加工の連鎖（GameElementDefinition.md 11節・12節参照）。ヤシの木から実を採り、
+# 皮をはぎ、穴を開け、割り、果肉を掻き出すまでの一続きを1ファイルにまとめる。
+#
+# 生の実は食べられない。食べられるのは連鎖の終端の果肉（coconut_meat）だけで、実1個ぶんの
+# 満腹度・水分・栄養は、そこから採れる果肉2個へ等分してある。
+#
+# 液体の入れ物になる殻（coconut_bowl）は液体容器の一員なので、liquid_containers.yamlが持つ。
+
+object_defs:
+  # ヤシの木。実を採る採取ポイント。探索で見つかる設置物（locations.yamlのexplore）。
+  palm_tree:
+    tags: [fixture]
+    actions:
+      # 幹を登って実をもぎ取る。採れる数に上限は設けていない（採取ポイントの枯渇は今後の課題）。
+      pick_coconut:
+        showMenu: always
+        duration: 30
+        spawn: {object: coconut, into: actor}
+
+  # 皮のついたヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
+  # 皮をはぐと、中の実（husked_coconut）と皮（coconut_husk）に分かれる。
+  #
+  # 分かれた2つのうち、連鎖を継ぐ実だけを同じ場所へ置き換え（intoを省略＝same_slot）、
+  # 副産物の皮はactorへ渡す。same_slotは1つの位置を指すため、2つ以上を同じ場所へは置けない。
+  coconut:
+    tags: [item]
+    combinations:
+      husk:
+        with: cutting_tool
+        duration: 30
+        destroy: self
+        spawn:
+          - {object: husked_coconut}
+          - {object: coconut_husk, into: actor}
+
+  # ヤシの実の皮。はぎ取った繊維の塊（縄・火口などへの利用は今後の課題）。
+  coconut_husk:
+    tags: [item]
+
+  # 皮を剥いだヤシの実。刃物の先で殻に穴を開けられる。
+  husked_coconut:
+    tags: [item]
+    combinations:
+      bore:
+        with: cutting_tool
+        duration: 15
+        destroy: self
+        spawn: {object: holed_coconut}
+
+  # 穴を開けたヤシの実。穴が入った殻は衝撃で素直に割れる。石で叩いても刃物をこじ入れてもよいので、
+  # 道具のタグごとに1つずつcombinationを持つ（withは1つのタグしか取らないため）。
+  #
+  # 割れた実は2つ生まれる。same_slotは1つの位置しか指せないので、両方ともactorへ渡す
+  # （持ちきれなければactorの居る土地へ落ちる。9.4節の伝播）。
+  holed_coconut:
+    tags: [item]
+    combinations:
+      crack:
+        with: stone
+        duration: 15
+        destroy: self
+        spawn:
+          - {object: coconut_half, into: actor}
+          - {object: coconut_half, into: actor}
+      pry_open:
+        with: cutting_tool
+        duration: 15
+        destroy: self
+        spawn:
+          - {object: coconut_half, into: actor}
+          - {object: coconut_half, into: actor}
+
+  # 割れたヤシの実。刃物で果肉を掻き出すと、器になる殻（coconut_bowl）が手元に残る。
+  coconut_half:
+    tags: [item]
+    combinations:
+      scrape:
+        with: cutting_tool
+        duration: 30
+        destroy: self
+        spawn:
+          - {object: coconut_bowl}
+          - {object: coconut_meat, into: actor}
+
+  # ヤシの果肉。実1個から2個採れる。満腹度・水分・栄養は実1個ぶんの半分。
+  coconut_meat:
+    tags: [item]
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 6
+            hydration: 480
+            vegetable_nutrition: 2500
+        destroy: self

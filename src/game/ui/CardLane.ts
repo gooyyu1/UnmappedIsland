@@ -36,7 +36,7 @@ export interface CardLaneOptions {
   /** 左端にピン留めするカード（ロケーションレーンの現在地）。 */
   readonly pinned?: CardContent;
   /**
-   * 背景に敷く絵のテクスチャキー（laneArt参照）。省略すると背景色だけで塗る。絵が用意されていない
+   * 背景に敷く絵のテクスチャキー（backgroundArt参照）。省略すると背景色だけで塗る。絵が用意されていない
    * 土地・子ウィンドウの中のレーンがそれにあたる。
    */
   readonly art?: string;

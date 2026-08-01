@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "src/assets/lanes/sandy_beach_fixture.png を作り直すためのレシピ。build.py が読む。",
+    "src/assets/backgrounds/sandy_beach_fixture.png を作り直すためのレシピ。build.py が読む。",
     "",
     "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
     "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
@@ -8,7 +8,7 @@
     "空や海が暖色に寄ると夕暮れに見える。一日中この1枚を使うので、真昼の中立な光にしている。",
     "seedを選んでいるのは、空が広い絵・砂浜が少ない絵が混ざるため。5001は砂6・海2.5・空1.5ほど。"
   ],
-  "output": "src/assets/lanes/sandy_beach_fixture.png",
+  "output": "src/assets/backgrounds/sandy_beach_fixture.png",
   "prompt": "sandy_beach_fixture",
   "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",

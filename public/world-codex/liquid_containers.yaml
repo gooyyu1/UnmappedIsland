@@ -153,7 +153,10 @@ object_defs:
         accepts: [{tag: liquid, max: 1}]
         capacity: 4000
 
+  # ヤシの殻。割ったヤシの実から果肉を掻き出すと残る（coconut.yaml）。カードとして持ち歩けるよう、
+  # 容器の中では唯一itemタグを持つ（他の容器はまだ入手手段が無い）。
   coconut_bowl:
+    tags: [item]
     traits: [liquid_container, wide_open_container]
     slots:
       content:

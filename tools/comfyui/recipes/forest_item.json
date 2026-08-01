@@ -1,13 +1,13 @@
 {
   "_comment": [
-    "src/assets/lanes/forest_item.png を作り直すためのレシピ。build.py が読む。",
+    "src/assets/backgrounds/forest_item.png を作り直すためのレシピ。build.py が読む。",
     "",
     "密林の地面と見分けが付くよう、乾いた明るい落ち葉と苔の絵を選んでいる。",
     "真上からではなく目線の高さの林になった絵が混ざる。",
     "",
     "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixture.json / rocky_field_item.json を参照。"
   ],
-  "output": "src/assets/lanes/forest_item.png",
+  "output": "src/assets/backgrounds/forest_item.png",
   "prompt": "forest_item",
   "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",

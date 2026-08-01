@@ -154,6 +154,26 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
+  it('設置物のカードだけが、今いる土地を背景として持つ', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
+    expect(
+      tree.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'), codex.wellKnown),
+    ).toBeUndefined();
+    exploreToFull(game);
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(
+      view.fixtures.map((card) => card.background),
+      '道も含め、設置物のカードはすべて土地の識別子を持つ',
+    ).toEqual(view.fixtures.map(() => view.locationArt));
+    expect(
+      view.items.every((card) => card.background === undefined),
+      '持ち歩けるアイテムは土地から切り離せるので背景を持たない',
+    ).toBe(true);
+  });
+
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
@@ -376,19 +396,19 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const texts = parseLocale(
       'ja.yaml',
       `object_texts:
-  coconut:
-    display_name: ヤシの実
-    description: 硬い殻に覆われた実。
+  coconut_meat:
+    display_name: ヤシの果肉
+    description: 殻から掻き出した白い果肉。
     actions:
       eat:
         display_name: 食べる
-        description: 殻を割って中身を食べる。
+        description: そのまま口へ運ぶ。
 `,
     );
     const game = startNewGame(codex, 11, new SeededRng(1234));
-    const coconut = game.session.spawn(codex.objectNames.getId('coconut'));
+    const meat = game.session.spawn(codex.objectNames.getId('coconut_meat'));
     expect(
-      coconut.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+      meat.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
     ).toBeUndefined();
     // 満腹度は初期値が上限なので、食べた分が乗る余地を空けておく。
     const satietyId = codex.propertyNames.getId('satiety');
@@ -396,13 +416,13 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const card = fromGameSession(game, codex, texts).hand[0];
 
-    expect(card?.description).toBe('硬い殻に覆われた実。');
-    expect(card?.actions).toMatchObject([{ name: '食べる', description: '殻を割って中身を食べる。' }]);
+    expect(card?.description).toBe('殻から掻き出した白い果肉。');
+    expect(card?.actions).toMatchObject([{ name: '食べる', description: 'そのまま口へ運ぶ。' }]);
 
     card?.actions[0].execute();
 
     expect(game.player.instance.getNumber(satietyId), '食べた分だけ満腹度が上がる').toBeGreaterThan(0);
-    expect(game.player.hand[0], '食べたヤシの実は無くなる').toBeUndefined();
+    expect(game.player.hand[0], '食べた果肉は無くなる').toBeUndefined();
   });
 
   it('アクションを持たないオブジェクトのカードは、アクションが空になる', () => {
@@ -445,9 +465,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);
     const path = pathsIn(game.startLocation, codex)[0];
-    const coconut = game.session.spawn(codex.objectNames.getId('coconut'));
+    const meat = game.session.spawn(codex.objectNames.getId('coconut_meat'));
     expect(
-      coconut.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+      meat.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
     ).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);

@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "src/assets/lanes/sandy_beach_item.png を作り直すためのレシピ。build.py が読む。",
+    "src/assets/backgrounds/sandy_beach_item.png を作り直すためのレシピ。build.py が読む。",
     "",
     "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
     "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
@@ -8,7 +8,7 @@
     "4枚中3枚は砂紋が強い縞になり、背景として騒がしい。凪いだ砂に貝殻が散る絵は当たりが出にくいので、",
     "seedを振って選ぶ前提。"
   ],
-  "output": "src/assets/lanes/sandy_beach_item.png",
+  "output": "src/assets/backgrounds/sandy_beach_item.png",
   "prompt": "sandy_beach_item",
   "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",
