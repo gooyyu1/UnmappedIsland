@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/lanes/cliff_coast_fixture.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "岩壁で画面を埋めた絵を選んでいる。崖を遠景として描いた絵や、壁の間が開いた絵が混ざる。",
+    "",
+    "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixture.json / rocky_field_item.json を参照。"
+  ],
+  "output": "src/assets/lanes/cliff_coast_fixture.png",
+  "prompt": "cliff_coast_fixture",
+  "workflow": "lane_background_sdxl_tiling.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 7004,
+  "postprocess": {
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 0,
+    "oilifyLevels": 12
+  }
+}
