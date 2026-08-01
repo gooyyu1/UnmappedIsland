@@ -121,10 +121,16 @@ def main() -> None:
                 [
                     str(raw),
                     "--out", str(processed),
-                    "--white", str(card["white"]),
-                    "--opaque", str(card["opaque"]),
-                    "--feather", str(card["feather"]),
-                    *(["--keep-paper"] if card.get("keepPaper") else []),
+                    "--size", str(card["size"]),
+                    *(["--mode", card["mode"]] if card.get("mode") else []),
+                    *(["--crop", *map(str, card["crop"])] if card.get("crop") else []),
+                    *(["--tolerance", str(card["tolerance"])] if "tolerance" in card else []),
+                    *(["--edge", str(card["edge"])] if "edge" in card else []),
+                    *(["--shadow", str(card["shadow"])] if "shadow" in card else []),
+                    *(["--reach", str(card["reach"])] if "reach" in card else []),
+                    *(["--white", str(card["white"])] if "white" in card else []),
+                    *(["--opaque", str(card["opaque"])] if "opaque" in card else []),
+                    *(["--feather", str(card["feather"])] if "feather" in card else []),
                 ],
             )
         elif "cardFrame" in recipe:

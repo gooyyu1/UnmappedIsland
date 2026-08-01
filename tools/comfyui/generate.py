@@ -136,9 +136,10 @@ def main() -> None:
         if args.seed is not None and args.count > 1:
             seed += index
 
-        negative = prompts["sharedNegative"]
-        if entry.get("negativeExtra"):
-            negative += ", " + entry["negativeExtra"]
+        # NGワードはエントリごとに完全な形で持つ。共通の文字列を差し込む仕組みにすると、それを
+        # 1文字変えただけで、使っていたすべての絵が再現できなくなる。
+        # 新しいエントリを書くときの叩き台は、各ファイルの _baseNegative にある（生成には使わない）。
+        negative = entry["negative"]
 
         # 実際に使うLoRA。--loraで差し替えないなら、ワークフローが持っている既定。
         lora_name = args.lora or next(
