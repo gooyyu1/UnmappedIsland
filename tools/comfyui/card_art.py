@@ -18,6 +18,9 @@
 
     python card_art.py stone.png --out ../../src/assets/objects/stone.png --size 256
 
+絵に足りないものは、切り出したあとで足せる。落ち影が描かれていなければ --drop-shadow、色が
+薄ければ --saturation / --gamma（それぞれ drop_shadow / retone 参照）。
+
 使った設定は出力の隣へ .json として残す。
 """
 
@@ -29,7 +32,14 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
-from scipy.ndimage import binary_fill_holes, distance_transform_edt, label, sum_labels
+from scipy.ndimage import (
+    binary_fill_holes,
+    distance_transform_edt,
+    gaussian_filter,
+    label,
+    shift,
+    sum_labels,
+)
 
 # カードの絵の寸法と、その中で紙が占める範囲（Card.ts の CARD_ART_WIDTH / FRAME_INSET /
 # FRAME_RADIUS と同じもの）。410x640は、カードの寸法205u x 320uのちょうど2倍。4K（u=2px）で等倍に
@@ -58,11 +68,13 @@ def cover(image: Image.Image, width: int, height: int) -> Image.Image:
 def bounds(mask: np.ndarray) -> tuple[int, int, int, int]:
     """0でない部分の外接矩形 (left, top, right, bottom)。rightとbottomは含まない。"""
     ys, xs = np.nonzero(mask > 0)
+    if xs.size == 0:
+        raise SystemExit("紙の余白が無く、物を切り出せない。生成が画面いっぱいに描いている。")
     return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
 
 
 def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, shadow: float,
-               reach: float) -> np.ndarray:
+               reach: float, reserve: float = 0) -> np.ndarray:
     """物だけを切り出し、正方形のキャンバスの中央へ、長辺がキャンバスに収まる大きさで置く。
 
     中央に合わせるのも、大きさを決めるのも、影ではなく物そのもの。影は片側にしか出ないので、影ごと
@@ -72,9 +84,11 @@ def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, sha
     紙・物・影の判定は原寸の絵に対して行う（separate参照）。縁と影の幅は出力基準の指定なので、原寸へ
     直してから渡す。縮小は不透明度を掛けてから行う。掛けずに縮ませると、透明な画素が持っている白が
     縁へ滲み出て、紙の上に白い輪郭が残る。
+
+    reserveは、後から足すもの（drop_shadow）のために四辺へ余分に空けておく幅。
     """
     rgb = np.asarray(image, dtype=np.float64)
-    margin = max(edge, reach, OBJECT_SLACK)
+    margin = max(edge, reach, OBJECT_SLACK, reserve)
     core, _ = separate(rgb, tolerance, 0, 0, 1)
     left, top, right, bottom = bounds(core)
     scale = (size - margin * 2) / max(right - left, bottom - top)
@@ -115,7 +129,12 @@ def alpha_from_luma(rgb: np.ndarray, white: float, opaque: float) -> np.ndarray:
 
 def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reach: float,
              ) -> tuple[np.ndarray, np.ndarray]:
-    """絵を紙・物・影に分け、不透明度と、それを掛けた色（乗算済み）を返す。
+    """絵を紙・物・影に分け、不透明度と、乗算済みの前景色を返す。
+
+    **返すのは観測された色ではなく、紙を取り除いた前景の色。** 輪郭の画素は生成時の紙と物が混ざった
+    色をしている（観測色 C = α·F + (1-α)·B）。アルファだけ下げて C のまま返すと、カードの紙 P へ
+    重ねたときに α·C + (1-α)·P となり、C に含まれる紙の白が二重に乗って輪郭が白く光る。前景 F を
+    解いて α·F = C - (1-α)·B を返せば、重ねた結果は α·F + (1-α)·P になる。
 
     **影を物と同じ扱いにしてはいけない。** 「紙より暗ければ物」という一段のしきい値だと、落ち影も
     絵の具の下地板も不透明な塊として残り、切り出しの矩形がそのまま見える。
@@ -125,15 +144,17 @@ def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reac
     紙の色がカードの紙の色を汚さない。
 
     物は2段階で決める。紙よりtolerance以上暗い塊を芯とし、内側の穴を埋めて（石の明るい中央のような
-    「明るいが背景ではない」場所を残すため）不透明にする。芯の外側はedge幅だけ、実際の明度の落ち方に
-    沿って薄くする。人工的な傾斜を足すより輪郭が素直になる。
+    「明るいが背景ではない」場所を残すため）不透明にする。芯の外側はedge幅だけ、紙から物までどれだけ
+    寄ったかで薄くする。人工的な傾斜を足すより輪郭が素直になる。
 
     **必ず原寸の絵に対して呼ぶこと。** 物の周りだけを切り出した絵に渡すと、紙の明るさを測る外周に
     物や影が入って狂う。
     """
     luma = rgb @ np.array([0.299, 0.587, 0.114])
-    ring = np.concatenate([luma[:8].ravel(), luma[-8:].ravel(), luma[:, :8].ravel(), luma[:, -8:].ravel()])
-    paper = max(float(np.median(ring)), 1.0)
+    edges = [rgb[:8], rgb[-8:], rgb[:, :8].transpose(1, 0, 2), rgb[:, -8:].transpose(1, 0, 2)]
+    # 前景を解くには紙の色そのものが要る。生成時の紙は白とは限らず、灰色や淡い色のことがある。
+    paper_rgb = np.median(np.concatenate([band.reshape(-1, 3) for band in edges]), axis=0)
+    paper = max(float(paper_rgb @ np.array([0.299, 0.587, 0.114])), 1.0)
 
     core = binary_fill_holes(luma <= paper - tolerance)
     regions, count = label(core)
@@ -142,14 +163,60 @@ def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reac
         areas = sum_labels(np.ones_like(regions), regions, np.arange(1, count + 1))
         core = np.isin(regions, np.flatnonzero(areas >= areas.max() * 0.1) + 1)
 
-    outside = distance_transform_edt(~core)
-    inked = np.clip((paper - luma) / max(tolerance, 1e-6), 0, 1)
-    opacity = np.where(core, 1.0, np.where(outside <= edge, inked, 0.0))
+    # 縁の不透明度は、紙と物のあいだのどこに居るかの比。**明度ではなく色で測る。** 紙から最寄りの芯
+    # へ向かう線に観測色を射影し、その位置を不透明度とする。明度の比だと、紙をそのまま暗くしただけの
+    # 落ち影を「物が半分被っている」と読み違え、影の灰色が前景の色として残る。色で見れば、影は物の色の
+    # 方向からずれるぶん不透明度が小さく出る。toleranceで割るのも駄目で、あれは芯を決めるしきい値
+    # でしかなく物の色とは無関係なので、暗い物ほど見積もりを外す。
+    outside, (row, column) = distance_transform_edt(~core, return_indices=True)
+    direction = rgb[row, column] - paper_rgb if core.any() else np.zeros_like(rgb)
+    coverage = np.clip(
+        np.einsum("...c,...c->...", rgb - paper_rgb, direction)
+        / np.maximum((direction ** 2).sum(axis=-1), 1e-6),
+        0, 1)
+    opacity = np.where(core, 1.0, np.where(outside <= edge, coverage, 0.0))
 
     # 影は物の近くにだけ置く。離れた場所の暗がりは、絵の具の下地板のような背景の描き込みなので拾わない。
     cast = np.clip(1 - luma / paper, 0, 1) * shadow * np.clip(1 - outside / max(reach, 1e-6), 0, 1)
     alpha = opacity + (1 - opacity) * cast
-    return alpha, rgb * opacity[:, :, None]
+
+    foreground = rgb - (1 - opacity)[:, :, None] * paper_rgb
+    return alpha, np.clip(np.where(opacity[:, :, None] > 0, foreground, 0), 0, 255)
+
+
+def drop_shadow(canvas: np.ndarray, strength: float, offset: float, blur: float) -> np.ndarray:
+    """物の輪郭から落ち影を作り、物の下へ敷く。
+
+    生成された絵に落ち影が無いことは珍しくない。物を灰色の地の上に描き、その地の暗さで浮かせて
+    いるためで、地を紙へ置き換えると影ごと消える（地を残すと灰色の四角が付いてくる）。絵の側に
+    無いものは、こちらで描く。
+
+    影は物の輪郭をずらしてぼかしただけのもの。プロンプトで光を左上からと指定しているので、
+    右下へ落とす。strengthを上げると輪郭の形がそのまま出て貼り絵に見えるので、薄く使う。
+    """
+    obj = canvas[:, :, 3] / 255
+    cast = np.clip(gaussian_filter(shift(obj, (offset, offset), order=1), blur) * strength, 0, 1)
+    alpha = obj + (1 - obj) * cast
+
+    out = np.zeros_like(canvas)
+    # 影は黒。物の色を不透明度で按分するだけでよい。
+    out[:, :, :3] = np.divide(canvas[:, :, :3] * obj[:, :, None], alpha[:, :, None],
+                              out=np.zeros_like(canvas[:, :, :3]), where=alpha[:, :, None] > 0)
+    out[:, :, 3] = alpha * 255
+    return out
+
+
+def retone(rgb: np.ndarray, saturation: float, gamma: float) -> np.ndarray:
+    """彩度と明度を動かす。灰色との差を伸ばすだけなので、色相は変わらない。
+
+    生成された物の色が薄いときに使う。**明度ではなく彩度が足りないことが多い。** 木で測ると、
+    茶色く見える絵と白けて見える絵とで明度はほぼ同じ（104と103）で、違うのは彩度（20と61）だった。
+    """
+    grey = (rgb @ np.array([0.299, 0.587, 0.114]))[:, :, None]
+    toned = grey + (rgb - grey) * saturation
+    if gamma != 1.0:
+        toned = 255 * np.clip(toned / 255, 0, 1) ** gamma
+    return np.clip(toned, 0, 255)
 
 
 def paper_mask(width: int, height: int, feather: int) -> np.ndarray:
@@ -187,6 +254,12 @@ def main() -> None:
     parser.add_argument("--edge", type=float, default=4, help="background: 物の輪郭が滲む幅（px）")
     parser.add_argument("--shadow", type=float, default=1.0, help="background: 影の濃さ。0で影を捨てる")
     parser.add_argument("--reach", type=float, default=24, help="background: 影が届く範囲（物からのpx）")
+    parser.add_argument("--drop-shadow", type=float, default=0,
+                        help="輪郭から落ち影を描く濃さ。0で描かない（絵に影があるときは不要）")
+    parser.add_argument("--drop-offset", type=float, default=10, help="落ち影を右下へずらす量（px）")
+    parser.add_argument("--drop-blur", type=float, default=8, help="落ち影のぼかしの幅（px）")
+    parser.add_argument("--saturation", type=float, default=1.0, help="彩度の倍率")
+    parser.add_argument("--gamma", type=float, default=1.0, help="明度のガンマ。1より大きいと暗くなる")
     parser.add_argument("--white", type=float, default=250, help="luma: この明度以上を完全に透明にする")
     parser.add_argument("--opaque", type=float, default=200, help="luma: この明度以下を完全に不透明にする")
     parser.add_argument("--feather", type=int, default=24, help="紙の縁の内側で薄くしていく幅（px）")
@@ -213,7 +286,15 @@ def main() -> None:
             alpha = np.ones((CARD_HEIGHT, CARD_WIDTH))
         rgba = np.dstack([rgb, mask * alpha * 255])
     else:
-        rgba = fit_object(image, int(args.size), args.tolerance, args.edge, args.shadow, args.reach)
+        # ぼかした影は輪郭から offset + blur*2 ほど広がる。そのぶんを四辺へ空けておく。
+        reserve = args.drop_offset + args.drop_blur * 2 if args.drop_shadow else 0
+        rgba = fit_object(image, int(args.size), args.tolerance, args.edge, args.shadow,
+                          args.reach, reserve)
+        if args.drop_shadow:
+            rgba = drop_shadow(rgba, args.drop_shadow, args.drop_offset, args.drop_blur)
+
+    if args.saturation != 1.0 or args.gamma != 1.0:
+        rgba[:, :, :3] = retone(rgba[:, :, :3], args.saturation, args.gamma)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -228,6 +309,10 @@ def main() -> None:
            if args.size != "card" or args.mode == "background" else {}),
         **({"white": args.white, "opaque": args.opaque}
            if args.size == "card" and args.mode == "luma" else {}),
+        **({"dropShadow": args.drop_shadow, "dropOffset": args.drop_offset,
+            "dropBlur": args.drop_blur} if args.drop_shadow else {}),
+        **({"saturation": args.saturation} if args.saturation != 1.0 else {}),
+        **({"gamma": args.gamma} if args.gamma != 1.0 else {}),
     }
     out.with_suffix(".json").write_text(json.dumps(settings, ensure_ascii=False, indent=2), "utf-8")
     print(f"{out}  {rgba.shape[1]}x{rgba.shape[0]}  不透明度の平均 {rgba[:, :, 3].mean() / 255:.2f}")

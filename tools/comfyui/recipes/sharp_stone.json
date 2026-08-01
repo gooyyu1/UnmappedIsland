@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/objects/sharp_stone.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "この絵には落ち影が描かれていない（物を灰色の地の上に置いて浮かせている）。地は紙へ",
+    "置き換えられるので影は残らない。影はcard_art.py側で描く（dropShadow）。"
+  ],
+  "output": "src/assets/objects/sharp_stone.png",
+  "prompts": "objects.json",
+  "prompt": "sharp_stone",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 29002,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "_comment": "丸石（256）より大きく、木（400）より小さい石なので320。",
+    "size": "320",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "dropShadow": 0.35,
+    "dropOffset": 10,
+    "dropBlur": 8
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/driftwood.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "細い小枝になるseedがほとんどなので、太い枝になったものを選んでいる（66枚中5〜6枚）。",
+    "",
+    "生成された枝は灰色がかっていて、そのままでは白けて見える。足りないのは明度ではなく彩度",
+    "（物の画素で測ると、この絵は彩度20・明度104。茶色く見える丸太は彩度61・明度103）なので、",
+    "saturationで伸ばす。gammaは彩度を上げたぶんの浮きを抑えるための微調整。"
+  ],
+  "output": "src/assets/objects/driftwood.png",
+  "prompts": "objects.json",
+  "prompt": "driftwood",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 26007,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "_comment": "細長いので400。カード幅410のほぼ全幅を使う。",
+    "size": "400",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "saturation": 4.0,
+    "gamma": 1.3
+  }
+}
