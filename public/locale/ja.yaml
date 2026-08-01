@@ -74,9 +74,9 @@ object_texts:
   coconut:
     display_name: ヤシの実
     description: 硬い殻に覆われた実。中の果肉と水で、飢えと渇きの両方をしのげる。
-  driftwood:
-    display_name: 流木
-    description: 波に運ばれて打ち上げられた木。塩を含んで乾いている。
+  thick_branch:
+    display_name: 太い枝
+    description: 腕ほどの太さの枝。折れ口が生々しく、削れば道具の柄になる。
   stone:
     display_name: 石
     description: 手のひらに収まる硬い石。同じ石で打ち合わせると割れて、鋭い縁ができる。

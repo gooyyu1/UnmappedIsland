@@ -90,7 +90,7 @@ player:
     satiety: 1200           # プロパティの上書き（実体値）
 location:
   type: jungle              # 開始地点にする土地のobject_def（省略すると通常の漂着地）
-  items: [stone x100, driftwood]     # `x個数` で同じものをまとめて指定できる（1〜1000）
+  items: [stone x100, thick_branch]     # `x個数` で同じものをまとめて指定できる（1〜1000）
   fixtures: []
 ```
 

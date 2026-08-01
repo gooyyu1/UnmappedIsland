@@ -58,7 +58,7 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 探索で見つかる発見物（アイテム）。itemタグによって土地のitemsスロットへ振り分けられる。
-  # driftwood/stone/branchは工作・燃料などの素材の想定（レシピは今後の課題）。
+  # thick_branch/stone/branchは工作・燃料などの素材の想定（レシピは今後の課題）。
   # ------------------------------------------------------------------
 
   # ヤシの実。
@@ -73,8 +73,8 @@ object_defs:
             vegetable_nutrition: 5000
         destroy: self
 
-  # 流木。
-  driftwood:
+  # 太い枝。細い枝（branch）とは別のアイテム。
+  thick_branch:
     tags: [item]
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
@@ -142,7 +142,7 @@ object_defs:
             spawn: {object: coconut, into: self}
           - weight: 20
             add: {self: {exploration_progress: 1}}
-            spawn: {object: driftwood, into: self}
+            spawn: {object: thick_branch, into: self}
           - weight: 15
             add: {self: {exploration_progress: 1}}
             spawn: {object: coconut_crab, into: self}
@@ -176,7 +176,7 @@ object_defs:
             spawn: {object: coconut_crab, into: self}
           - weight: 15
             add: {self: {exploration_progress: 1}}
-            spawn: {object: driftwood, into: self}
+            spawn: {object: thick_branch, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
@@ -200,7 +200,7 @@ object_defs:
             spawn: {object: stone, into: self}
           - weight: 20
             add: {self: {exploration_progress: 1}}
-            spawn: {object: driftwood, into: self}
+            spawn: {object: thick_branch, into: self}
           - weight: 15
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
