@@ -57,6 +57,23 @@
     "positive": "exactly one thick fallen branch alone on an empty white page, a stout piece of branch with an old knot where a side twig broke off, tapering slightly from one end to the other as thick as a wrist and about five times as long as it is thick, rough brown bark all over it, snapped and splintered at both ends, no leaves and no side twigs, straight and strong, dark brown weathered wood, rich warm brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, firewood round, leaves, foliage, blossom, flowers, twigs sticking out, thin twig, slender stick, long thin pole, wand, thin sliver, splinter of wood, wood shaving, bark shard, plank, board, feather, white wood, grey wood, bleached driftwood, glossy, varnished, wet, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, twisted branch, tangled branches, forked branch, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
+  "branch": {
+    "description": [
+      "木から落ちた細い枝。太い枝（thick_branch）は別アイテム。NGワードは太い枝のものから",
+      "slender stick だけを外したもので、それ以外は同じ。",
+      "",
+      "**細さを抑えるNGワードを外しすぎてはいけない。** 狙いが逆だからと thin twig / long thin pole /",
+      "wand / thin sliver まで外すと、髪の毛のように細い小枝か、葉の付いた植物標本になる",
+      "（24枚中で棒に見えるのは1枚）。欲しいのは「小枝」ではなく「棒」なので、頭の名詞も",
+      "bare wooden stick にする。",
+      "",
+      "**植物標本を名指しで落とすのは逆効果。** dried plant specimen / herbarium / pressed plant を",
+      "足すと、墨絵のような枯れ枝や立木へ崩れる（8枚で全滅）。NGワードを増やすと壊れるのは",
+      "太い枝と同じ。"
+    ],
+    "positive": "exactly one bare wooden stick alone on an empty white page, a straight length of branch about as thick as two fingers and about six times as long as it is thick, a single shaft with no forks, rough brown bark along it, snapped at both ends, one short twig stub broken off flush, no leaves, dark brown weathered wood, rich warm brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, firewood round, leaves, foliage, blossom, flowers, twigs sticking out, thin twig, long thin pole, wand, thin sliver, splinter of wood, wood shaving, bark shard, plank, board, feather, white wood, grey wood, bleached driftwood, glossy, varnished, wet, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, twisted branch, tangled branches, forked branch, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
   "stone": {
     "description": "石。角の無い丸い灰色の河原石。艶を否定する（艶を描かせると白く飛ぶ）。",
     "positive": "exactly one grey river stone alone on an empty white page, a rounded pebble, oval shape, no sharp edges, medium grey stone with darker mottling, matte dusty surface, the stone is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
