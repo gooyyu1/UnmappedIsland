@@ -27,7 +27,7 @@ import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import { Curtain } from './ui/Curtain';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from './ui/informationArt';
-import { HAND_LANE_TEXTURE, laneTexture } from './ui/laneArt';
+import { HAND_LANE_TEXTURE, laneTexture } from './ui/backgroundArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';

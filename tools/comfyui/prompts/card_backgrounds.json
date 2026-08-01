@@ -1,13 +1,13 @@
 {
   "_comment": [
-    "設置物のカードの地に敷く、土地ごとの背景のプロンプト（src/game/ui/cardBackgroundArt.ts）。",
-    "キーは土地のobject_defの識別子で、出力するファイル名と一致させる。",
+    "設置物のカードの地に敷く、土地ごとの背景のプロンプト（src/game/ui/backgroundArt.ts）。",
+    "キーは出力するファイル名（<土地のobject_defの識別子>_card_background）と一致させる。",
     "",
     "狙いはレーンの背景（lane_backgrounds.json の _fixture）と同じ「その土地の眺め」だが、",
     "縦長のカード1枚に収まる構図にする。カードの上には物の絵と名前が載るので、レーンよりさらに",
     "淡く・平らに描かせる（主題を作らない、影を作らない、空を広く取らない）。"
   ],
-  "sandy_beach": {
+  "sandy_beach_card_background": {
     "description": "砂浜の眺め。カードの下2/3が砂、その上に海と空の帯。",
     "_note": [
       "レーンの sandy_beach_fixture と同じ言い回しを縦長へ組み替えたもの。空の帯を上端だけに",

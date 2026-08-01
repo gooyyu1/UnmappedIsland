@@ -6,9 +6,8 @@ import { LOCALE_FILE, parseLocale } from '../locale/Localization';
 import cardFrameUrl from '../assets/card_frame.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
 import { INFORMATION_ART } from './ui/informationArt';
-import { LANE_ART } from './ui/laneArt';
+import { BACKGROUND_ART } from './ui/backgroundArt';
 import { SEPARATOR_ART } from './ui/separatorArt';
-import { CARD_BACKGROUND_ART } from './ui/cardBackgroundArt';
 import { OBJECT_ART, objectTexture } from './ui/objectArt';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 
@@ -46,10 +45,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
     // object_defごとの絵。用意されているものだけが並ぶ（objectArt参照）。
     for (const [name, url] of OBJECT_ART) this.load.image(objectTexture(name), url);
-    // 設置物のカードの地に敷く、土地ごとの背景（cardBackgroundArt参照）。
-    for (const [texture, url] of CARD_BACKGROUND_ART) this.load.image(texture, url);
-    // レーンの背景。こちらも用意されているものだけが並ぶ（laneArt参照）。
-    for (const [texture, url] of LANE_ART) this.load.image(texture, url);
+    // レーンと設置物のカードに敷く背景。こちらも用意されているものだけが並ぶ（backgroundArt参照）。
+    for (const [texture, url] of BACKGROUND_ART) this.load.image(texture, url);
     // 情報エリア（フィールドエリアの左／上）の背景。向きごとに1枚ずつ。
     for (const [texture, url] of INFORMATION_ART) this.load.image(texture, url);
     // エリアの境目に敷く帯。

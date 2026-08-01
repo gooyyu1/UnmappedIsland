@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
 import { drawBox } from './shapes';
-import { cardBackgroundTexture } from './cardBackgroundArt';
+import { cardBackgroundTexture } from './backgroundArt';
 import { CARD_ART_WIDTH, objectTexture } from './objectArt';
 import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
@@ -83,7 +83,7 @@ export interface CardContent {
    */
   readonly art?: string;
   /**
-   * 地に敷く背景を引くための土地のobject_defの識別子（cardBackgroundArt参照）。設置物のカードが
+   * 地に敷く背景を引くための土地のobject_defの識別子（backgroundArt参照）。設置物のカードが
    * 「その土地に在るもの」だと分かるよう、絵の下に土地の景色を敷く。絵が無い土地では紙のまま。
    */
   readonly background?: string;
