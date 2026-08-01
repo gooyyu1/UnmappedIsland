@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
 import { drawBox } from './shapes';
+import { cardBackgroundTexture } from './cardBackgroundArt';
 import { CARD_ART_WIDTH, objectTexture } from './objectArt';
 import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
@@ -81,6 +82,11 @@ export interface CardContent {
    * 無ければiconの絵文字で代用する。
    */
   readonly art?: string;
+  /**
+   * 地に敷く背景を引くための土地のobject_defの識別子（cardBackgroundArt参照）。設置物のカードが
+   * 「その土地に在るもの」だと分かるよう、絵の下に土地の景色を敷く。絵が無い土地では紙のまま。
+   */
+  readonly background?: string;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
   readonly onTap?: () => void;
   /** 端だけを押したときの動作。端ではカード全体の動作より優先される。 */
@@ -94,8 +100,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art } = content;
-  return { icon, name, art };
+  const { icon, name, art, background } = content;
+  return { icon, name, art, background };
 }
 
 /**
@@ -136,6 +142,14 @@ export class Card extends Phaser.GameObjects.Container {
 
     const face = addFrame(scene, metrics, width, height, false);
 
+    // 土地の背景は絵より先に敷く。用意されていない土地では紙がそのまま地になる。
+    const backgroundTexture =
+      content.background === undefined ? undefined : cardBackgroundTexture(content.background);
+    const background =
+      backgroundTexture !== undefined && scene.textures.exists(backgroundTexture)
+        ? placeArt(scene, backgroundTexture, width, height)
+        : undefined;
+
     // 絵があれば枠に重ねる。無いあいだは絵文字で代用する（絵は少しずつ用意されるため）。
     const artTexture = content.art === undefined ? undefined : objectTexture(content.art);
     const art =
@@ -162,7 +176,7 @@ export class Card extends Phaser.GameObjects.Container {
       .setShadow(0, 0, cssColor(COLOR.cardFace), metrics.px(3), false, true);
     nameText.setWordWrapCallback(wrapByCharacter(width - inset * 2));
 
-    this.add([face, art, nameText]);
+    this.add(background === undefined ? [face, art, nameText] : [face, background, art, nameText]);
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
     if (content.onTap !== undefined) this.makeTappable();
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが

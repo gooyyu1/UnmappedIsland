@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "設置物のカードの地に敷く、土地ごとの背景のプロンプト（src/game/ui/cardBackgroundArt.ts）。",
+    "キーは土地のobject_defの識別子で、出力するファイル名と一致させる。",
+    "",
+    "狙いはレーンの背景（lane_backgrounds.json の _fixture）と同じ「その土地の眺め」だが、",
+    "縦長のカード1枚に収まる構図にする。カードの上には物の絵と名前が載るので、レーンよりさらに",
+    "淡く・平らに描かせる（主題を作らない、影を作らない、空を広く取らない）。"
+  ],
+  "sandy_beach": {
+    "description": "砂浜の眺め。カードの下2/3が砂、その上に海と空の帯。",
+    "_note": [
+      "レーンの sandy_beach_fixture と同じ言い回しを縦長へ組み替えたもの。空の帯を上端だけに",
+      "留めるのは、縦長だと空を許した分だけ画面の上半分が空で埋まるため。"
+    ],
+    "positive": "a tropical sandy beach seen at eye level from the shore under bright midday sun, wide pale sand filling the lower two thirds of the frame from edge to edge, calm shallow turquoise sea in a narrow band beyond it, high horizon line in the upper third, only a thin strip of pale blue sky above the horizon, gentle small waves washing the sand, neutral white daylight, cool clean tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
+    "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, sun reflection on water, long shadows, low horizon, large sky, sky filling the frame, clouds dominating, open ocean only, no beach, palm trees, trees, plants, driftwood, rocks, shells, boats, umbrellas, footprints"
+  }
+}
