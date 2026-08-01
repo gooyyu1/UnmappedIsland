@@ -797,6 +797,10 @@
         "fixed_positions": {
           "description": "前詰めしないか（GameElementDefinition.md 7.6節）。既定false。trueの場合、型ごとに固定番号（0始まり、unit_capacity個まで）が割り当てられ、空いた番号を保持したまま詰めない（例: プレイヤー手持ちの6枠）。",
           "type": "boolean"
+        },
+        "auto_placement": {
+          "description": "spawn/moveの宣言順走査の対象になるか（GameElementDefinition.md 7.7節）。既定true。falseなら、プレイヤーの手動配置とスロット名を名指しした移動でしか物が入らない（例: キャラクターの装備欄）。",
+          "type": "boolean"
         }
       },
       "additionalProperties": false

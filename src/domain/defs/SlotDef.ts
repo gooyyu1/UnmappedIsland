@@ -71,6 +71,12 @@ export class SlotDef {
    */
   readonly fixedPositions: boolean;
 
+  /**
+   * spawn/moveの宣言順走査（GameElementDefinition.md 7.7節）の対象になるか（既定true）。falseなら、
+   * このスロットへはプレイヤーの手動配置とスロット名を名指しした移動でしか入らない（例: 装備欄）。
+   */
+  readonly autoPlacement: boolean;
+
   constructor(
     globalId: number,
     name: string,
@@ -79,6 +85,7 @@ export class SlotDef {
     stackable = true,
     unitCapacity?: number,
     fixedPositions = false,
+    autoPlacement = true,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -87,5 +94,6 @@ export class SlotDef {
     this.stackable = stackable;
     this.unitCapacity = unitCapacity;
     this.fixedPositions = fixedPositions;
+    this.autoPlacement = autoPlacement;
   }
 }
