@@ -121,6 +121,34 @@ def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, sha
     return canvas
 
 
+def paper_colour(rgb: np.ndarray) -> np.ndarray:
+    """外周から測った紙の色。生成時の紙は白とは限らず、灰色や淡い色のことがある。"""
+    bands = [rgb[:8], rgb[-8:], rgb[:, :8].transpose(1, 0, 2), rgb[:, -8:].transpose(1, 0, 2)]
+    return np.median(np.concatenate([band.reshape(-1, 3) for band in bands]), axis=0)
+
+
+def align_to_diagonal(image: Image.Image, tolerance: float) -> Image.Image:
+    """物の長い向きを、正方形のキャンバスの対角線へ合わせる。
+
+    細長い物を軸沿いに置くと、長さは一辺までしか使えない。対角線へ向けると外接矩形が正方形へ
+    近づき、fit_objectの倍率が上がって√2倍まで伸ばせる。槍のように長さが見せ場の物に使う。
+
+    向きは芯の二次モーメントから求める。回転で空いた隅は紙の色で埋める——白で埋めると、生成時の
+    紙が白でないときに外周が二色になり、separateが紙の色を測り損ねる。
+    """
+    rgb = np.asarray(image, dtype=np.float64)
+    core, _ = separate(rgb, tolerance, 0, 0, 1)
+    ys, xs = np.nonzero(core > 0.5)
+    x = xs - xs.mean()
+    y = ys - ys.mean()
+    # 画像の座標はyが下向きなので、この角度は「右へ行くほど下がる」向きを正とする。
+    angle = np.degrees(0.5 * np.arctan2(2 * (x * y).mean(), (x * x).mean() - (y * y).mean()))
+    # 近いほうの対角線へ倒す。遠いほうへ回すと、描かれた陰影と落ち影の向きが大きく狂う。
+    target = min((45.0, -45.0), key=lambda t: abs(angle - t))
+    paper = tuple(int(round(v)) for v in paper_colour(rgb))
+    return image.rotate(angle - target, resample=Image.BICUBIC, expand=True, fillcolor=paper)
+
+
 def alpha_from_luma(rgb: np.ndarray, white: float, opaque: float) -> np.ndarray:
     """明るい画素ほど透ける不透明度。whiteで完全に透明、opaque以下で完全に不透明。"""
     luma = rgb @ np.array([0.299, 0.587, 0.114])
@@ -151,9 +179,7 @@ def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reac
     物や影が入って狂う。
     """
     luma = rgb @ np.array([0.299, 0.587, 0.114])
-    edges = [rgb[:8], rgb[-8:], rgb[:, :8].transpose(1, 0, 2), rgb[:, -8:].transpose(1, 0, 2)]
-    # 前景を解くには紙の色そのものが要る。生成時の紙は白とは限らず、灰色や淡い色のことがある。
-    paper_rgb = np.median(np.concatenate([band.reshape(-1, 3) for band in edges]), axis=0)
+    paper_rgb = paper_colour(rgb)
     paper = max(float(paper_rgb @ np.array([0.299, 0.587, 0.114])), 1.0)
 
     core = binary_fill_holes(luma <= paper - tolerance)
@@ -265,12 +291,16 @@ def main() -> None:
     parser.add_argument("--feather", type=int, default=24, help="紙の縁の内側で薄くしていく幅（px）")
     parser.add_argument("--crop", type=int, nargs=4, metavar=("X", "Y", "W", "H"),
                         help="使う範囲を先に切り出す（1枚に複数写ったときに1つだけ採る）")
+    parser.add_argument("--diagonal", action="store_true",
+                        help="物の長い向きを対角線へ倒す。細長い物を長く見せたいときに使う")
     args = parser.parse_args()
 
     image = Image.open(args.source).convert("RGB")
     if args.crop:
         x, y, width, height = args.crop
         image = image.crop((x, y, x + width, y + height))
+    if args.diagonal:
+        image = align_to_diagonal(image, args.tolerance)
 
     if args.size == "card":
         # 全面に敷くので、紙からはみ出した分を角丸で消す必要がある。
@@ -304,6 +334,7 @@ def main() -> None:
         "source": Path(args.source).name,
         "size": args.size,
         **({"crop": args.crop} if args.crop else {}),
+        **({"diagonal": True} if args.diagonal else {}),
         **({"mode": args.mode, "feather": args.feather} if args.size == "card" else {}),
         **({"tolerance": args.tolerance, "edge": args.edge, "shadow": args.shadow, "reach": args.reach}
            if args.size != "card" or args.mode == "background" else {}),
