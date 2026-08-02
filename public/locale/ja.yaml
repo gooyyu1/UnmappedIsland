@@ -192,3 +192,119 @@ property_tag_texts:
     display_name: 健康
   nutrition:
     display_name: 栄養
+
+# 土地の名前（TerrainGeneration.md 3.6節）。同じ型が島に1つだけならdisplay_nameが、複数あるなら
+# 亜種（variants）の名前がその土地の名前になる。亜種の名前は型の名前へ足すのではなく、置き換える。
+location_texts:
+  default:
+    # 亜種を使い切ったときだけ名前に付く通し番号の書式（{n}が番号）。variantsが足りない印なので、
+    # これが画面に出たらterrain_generation.yamlへ亜種を足す。
+    ordinal_suffix: '（第{n}）'
+  sandy_beach:
+    display_name: 砂浜
+    variants:
+      palm: {display_name: ヤシの浜}
+      crab: {display_name: ヤシガニの浜}
+      driftwood: {display_name: 流木の浜}
+      white_sand: {display_name: 白砂の浜}
+      shallow: {display_name: 遠浅の浜}
+      rough_surf: {display_name: 荒波の浜}
+      quiet: {display_name: 静かな浜}
+  rocky_coast:
+    display_name: 岩だらけの海岸
+    variants:
+      cave: {display_name: 洞のある海岸}
+      crab: {display_name: ヤシガニの海岸}
+      boulder: {display_name: 丸石の海岸}
+      black_rock: {display_name: 黒岩の海岸}
+      tide_pool: {display_name: 潮だまりの海岸}
+      wave_washed: {display_name: 波洗いの海岸}
+      crumbling: {display_name: 崩れ岩の海岸}
+      mossy: {display_name: 苔むした海岸}
+      white_rock: {display_name: 白岩の海岸}
+  cliff_coast:
+    display_name: 岸壁
+    variants:
+      cave: {display_name: 洞のある岸壁}
+      layered: {display_name: 層なす岸壁}
+      sheared: {display_name: 断ち切れた岸壁}
+      windy: {display_name: 風鳴りの岸壁}
+  grassland:
+    display_name: 草原
+    variants:
+      berry: {display_name: 木苺の草原}
+      spring: {display_name: 湧き水の草原}
+      tall_grass: {display_name: 丈高い草原}
+      flowering: {display_name: 花咲く草原}
+      windswept: {display_name: 風わたる草原}
+      withered: {display_name: 枯れ色の草原}
+      dewy: {display_name: 露の草原}
+      low_grass: {display_name: 低草の草原}
+      rippling: {display_name: 波打つ草原}
+      quiet: {display_name: 静かな草原}
+      wide: {display_name: 広い草原}
+      rough: {display_name: 荒れた草原}
+      insects: {display_name: 虫の声の草原}
+  forest:
+    display_name: 森林
+    variants:
+      berry: {display_name: 木苺の森}
+      spring: {display_name: 湧き水の森}
+      tall_trees: {display_name: 高木の森}
+      undergrowth: {display_name: 下草の森}
+      mossy: {display_name: 苔の森}
+      fallen_trees: {display_name: 倒木の森}
+      young_trees: {display_name: 若木の森}
+      dark: {display_name: 暗い森}
+      dappled: {display_name: 木漏れ日の森}
+      deep: {display_name: 深い森}
+      silent: {display_name: しじまの森}
+      leaf_litter: {display_name: 枯葉の森}
+      thin_trees: {display_name: 細い木の森}
+  jungle:
+    display_name: 密林
+    variants:
+      palm: {display_name: ヤシの密林}
+      taro: {display_name: 芋の密林}
+      humid: {display_name: 蒸れた密林}
+      broad_leaf: {display_name: 大葉の密林}
+      vines: {display_name: 蔓の密林}
+      dense: {display_name: 濃い密林}
+      damp: {display_name: 湿った密林}
+      birds: {display_name: 鳥の声の密林}
+  rocky_field:
+    display_name: 岩場
+    variants:
+      cave: {display_name: 洞のある岩場}
+      scattered: {display_name: 転石の岩場}
+      cracked: {display_name: 割れ岩の岩場}
+      flat: {display_name: 平岩の岩場}
+      mossy: {display_name: 苔岩の岩場}
+      white_rock: {display_name: 白岩の岩場}
+  wasteland:
+    display_name: 荒野
+    variants:
+      stone: {display_name: 石ころの荒野}
+      deadwood: {display_name: 枯れ枝の荒野}
+      cracked: {display_name: ひび割れた荒野}
+      dusty: {display_name: 砂塵の荒野}
+      bleached: {display_name: 白茶けた荒野}
+      endless: {display_name: 果てない荒野}
+      still: {display_name: 静まった荒野}
+  mountainside:
+    display_name: 山腹
+    variants:
+      cave: {display_name: 洞のある山腹}
+      shrub: {display_name: 灌木の山腹}
+      scree: {display_name: がれ場の山腹}
+      steep: {display_name: 急な山腹}
+      crumbling: {display_name: 崩れた山腹}
+      bare_rock: {display_name: 岩肌の山腹}
+      grassy: {display_name: 草付きの山腹}
+      stony: {display_name: 石だらけの山腹}
+  mountain_peak:
+    display_name: 山頂
+    variants:
+      bare_rock: {display_name: 裸岩の山頂}
+      windy: {display_name: 風の山頂}
+      flat: {display_name: 平らな山頂}

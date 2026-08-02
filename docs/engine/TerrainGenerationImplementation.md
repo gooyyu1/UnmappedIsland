@@ -136,10 +136,12 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 
 ### 3.6 `assignNames(sites, rng)`（`NameAssigner.ts`）
 
-`Site.name` と `Site.variant` を確定します。`Site` を `LocationType` ごとにまとめ、1 つだけの型はその
-`displayName` を名前にし（亜種は付きません）、複数ある型はモジュール内関数 `shuffled(values, rng)` で
-並べ替えた `variants` を 1 つずつ配ります。亜種が尽きた分にはモジュール内関数 `toKanjiOrdinal(ordinal)`
-による接尾辞（「（第四）」等）を付けます。亜種の `props` を実体へ書き込むのは `IslandSpawner`（4 節）です。
+`Site.name`（`LocationName`）と `Site.variant` を確定します。`Site` を `LocationType` ごとにまとめ、
+1 つだけの型は型の識別子だけを名前にし（亜種は付きません）、複数ある型はモジュール内関数
+`shuffled(values, rng)` で並べ替えた `variants` を 1 つずつ配ります。亜種が尽きた分には通し番号
+（`LocationName.ordinal`）を持たせます。**表示文字列はここでは作りません**——`LocationName` は識別子の
+組み合わせで、文字列にするのは `Localization.locationName`（`Localization.md`）です。亜種の `props` を
+実体へ書き込むのは `IslandSpawner`（4 節）です。
 
 `rng` は生成の他の段と同じ `Pcg32` で、命名は最後の段なので、名前の抽選が他の段の乱数列を動かすことは
 ありません。

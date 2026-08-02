@@ -72,6 +72,28 @@ property_tag_texts:
     display_name: 栄養
 ```
 
+## location_texts: 土地の名前
+
+土地の名前は、生成のたびに**型と亜種の識別子の組み合わせ**として決まります
+（[TerrainGeneration.md](./TerrainGeneration.md) 3.6節）。生成側（`IslandMap`）が持つのは識別子だけで、
+文字列の組み立てはこちらが行います。`object_texts` とは別の節にするのは、亜種が `object_def` ではなく
+`location_type` のメンバーだからです。
+
+```yaml
+location_texts:
+  default:
+    ordinal_suffix: '（第{n}）'   # 亜種を使い切ったときだけ名前に付く通し番号の書式
+  sandy_beach:
+    display_name: 砂浜            # 島にこの型が1つだけのときの名前
+    variants:
+      palm: {display_name: ヤシの浜}
+      white_sand: {display_name: 白砂の浜}
+```
+
+**亜種の名前は型の名前へ足すのではなく、置き換えます。** 「砂浜のヤシの浜」ではなく「ヤシの浜」です。
+`ordinal_suffix` が使われるのは亜種が足りないときだけで、これが画面に出たら
+`terrain_generation.yaml` へ亜種を足すべき合図です。
+
 ## 引き方と欠落時の扱い
 
 `Localization`（`src/locale/Localization.ts`）が対応表を保持します。`object(識別子)` で1つの
@@ -84,6 +106,9 @@ locale.object('coconut').action('eat').displayName
 locale.object('coconut').prop('freshness').displayName
 locale.object('coconut').combination('pour_in').displayName
 locale.propertyTag('nutrition').displayName   // '栄養'
+locale.location('sandy_beach').displayName    // '砂浜'
+locale.location('sandy_beach').variant('palm').displayName  // 'ヤシの浜'
+locale.locationName(name)                     // 生成された土地の名前（LocationName）を1つの文字列へ
 ```
 
 **`displayName` は、対応表に無ければ識別子そのものを返します。** 表示文字列の欠落でゲームが止まるより、
@@ -92,8 +117,8 @@ locale.propertyTag('nutrition').displayName   // '栄養'
 
 知らない節・キーは無視するため、実装が追いつく前に対応表へ節を足しても壊れません。
 
-同梱の対応表については、カードに並ぶ型（`item`/`fixture` タグを持つ `object_def`）が漏れなく表示名を
-持つこと、および存在しない識別子のエントリが残っていないことを自動テストで検証します
+同梱の対応表については、カードに並ぶ型（`item`/`fixture` タグを持つ `object_def`）と土地（型・亜種）が
+漏れなく表示名を持つこと、および存在しない識別子のエントリが残っていないことを自動テストで検証します
 （`tests/locale/localization.test.ts`）。
 
 ## 言語の切り替え
@@ -104,9 +129,5 @@ locale.propertyTag('nutrition').displayName   // '栄養'
 
 ## 対象外・今後の課題
 
-- 土地の名前は例外的に地形生成側（`location_types` の `display_name` と `variants`、
-  [TerrainGeneration.md](./TerrainGeneration.md) 3.6節）が持ったままです。同じ型が複数あるかどうかで
-  どちらを使うかが決まり、生成時に確定するため、この対応表へ移すには生成した名前を構成要素のまま
-  持ち回る作りへ変える必要があります。
 - UIの固定ラベル（「装備」「怪我」など）は各画面のコードに直接書かれたままです。`object_texts` と
   並ぶ別の節として集約できるよう、トップレベルを最初から節で区切っています。

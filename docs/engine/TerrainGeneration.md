@@ -47,7 +47,7 @@
 [Location群] (LocationType確定)
    ↓ Delaunay三角形分割 → MSTで間引き → 迂回率に応じて一部の辺を復活
 [Locationネットワーク] (距離・移動時間つきパスで接続)
-   ↓ LocationType.display_name（同型が複数ならvariants）で命名
+   ↓ LocationTypeの識別子（同型が複数ならvariants）で命名
 [Location群] (命名済み)
    ↓ IslandSpawner が object_defs を spawn し、world.locations へ配置
    ↓ 辺ごとに path を両端へ生成し、undiscovered_fixtures（隠しスロット）へ配置（ExplorationSystem.md）
@@ -232,26 +232,32 @@ generation_scopes:
 ### 3.6 命名処理
 
 1. `Site` を `LocationType` ごとにまとめます。
-2. その型が島に 1 つだけなら、`LocationType.display_name` がそのまま名前になります（例: 「草原」）。
-3. 複数あるなら、その型の `variants`（亜種）をシャッフルして 1 つずつ配ります（例: 「木苺の草原」）。
-4. `variants` が足りなければ、残りに漢数字の接尾辞（「草原（第四）」…）を付けます。名前として読めないので、
+2. その型が島に 1 つだけなら、型の識別子だけが名前になります（表示は「草原」）。
+3. 複数あるなら、その型の `variants`（亜種）をシャッフルして 1 つずつ配ります（表示は「木苺の草原」）。
+4. `variants` が足りなければ、残りに通し番号を付けます（表示は「草原（第四）」）。名前として読めないので、
    亜種は想定される個数ぶん用意します。
 
+**決まるのは識別子の組み合わせだけで、表示文字列は持ちません。** WorldCodex は識別子だけを持つという
+規約（[Localization.md](./Localization.md)）に従い、`Site.name`（`LocationName`）は「型・亜種・通し番号」
+を持ち、文字列の組み立ては `Localization.locationName` が行います。
+
 **名前に島のどこに在るかを出しません。** 地形の把握はプレイヤー自身の仕事なので、位置が分かる修飾語を
-付けると、行き先の名前を見ただけで島の形が割れてしまいます。亜種の名前も同じ制約に従います。
+付けると、行き先の名前を見ただけで島の形が割れてしまいます。亜種の名前も同じ制約に従います
+（対応表の側で自動テストが見張ります）。
 
 #### 亜種（variants）
 
-亜種は**表示名と、実体化した土地へ書き込むプロパティの上書き**の組です。`IslandSpawner` が `spawn` した
+亜種は**識別子と、実体化した土地へ書き込むプロパティの上書き**の組です。`IslandSpawner` が `spawn` した
 土地へ `props` を書き込み、探索の抽選がその値を候補の `weight` として読みます
-（`locations.yaml` の `weight: {prop: ...}`。`ExplorationSystem.md` 2 節）。
+（`locations.yaml` の `weight: {prop: ...}`。`ExplorationSystem.md` 2 節）。表示名は対応表が持ちます
+（[Localization.md](./Localization.md) の `location_texts`）。
 
 ```yaml
 sandy_beach:
-  display_name: 砂浜
+  object_def: sandy_beach
   variants:
-    - {name: ヤシの浜, props: {palm_find: 26}}   # 素の重みは13
-    - {name: 白砂の浜}                            # 素の亜種（名前だけが変わる）
+    - {id: palm, props: {palm_find: 26}}   # 素の重みは13
+    - {id: white_sand}                     # 素の亜種（名前だけが変わる）
 ```
 
 - **名前と中身を合わせます。** 「木苺の森」で木苺が増えないなら、名前はただの飾りです。合っていれば、
