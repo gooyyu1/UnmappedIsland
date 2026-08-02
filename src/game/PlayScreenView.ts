@@ -306,6 +306,15 @@ export function fromGameSession(
     contents: contentsOf(instances[0]),
   });
 
+  /**
+   * 実体化された土地の表示名。生成側（IslandMap）が持つのは識別子の組み合わせだけなので、
+   * 表示文字列はここで対応表から組み立てる（Localization.md）。
+   */
+  const locationNameOf = (instanceId: number): string => {
+    const name = game.map.nameOfInstance(instanceId);
+    return name === undefined ? UNNAMED_LOCATION : locale.locationName(name);
+  };
+
   const pathTagId = codex.tagNames.tryGetId('path');
   /**
    * 道の設置物がカードに映すもの（道以外はundefinedで、設置物そのものの名前と絵をそのまま使う）。
@@ -319,7 +328,7 @@ export function fromGameSession(
     const path = new Path(fixture, codex.propertyNames);
     return {
       icon: LOCATION_ICON,
-      name: game.map.nameOfInstance(path.destinationInstanceId) ?? UNNAMED_LOCATION,
+      name: locationNameOf(path.destinationInstanceId),
       art: path.destination?.def.name,
     };
   };
@@ -410,7 +419,7 @@ export function fromGameSession(
     weather: '☀️ 灼熱の快晴',
     currentLocation: {
       icon: LOCATION_ICON,
-      name: game.map.nameOfInstance(location.instance.instanceId) ?? UNNAMED_LOCATION,
+      name: locationNameOf(location.instance.instanceId),
       art: location.instance.def.name,
     },
     locationArt: location.instance.def.name,

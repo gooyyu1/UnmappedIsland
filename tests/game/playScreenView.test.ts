@@ -36,7 +36,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.currentLocation.name, '現在地は命名処理が付けた漂着地の名前').toBe(
-      game.map.nameOfInstance(game.startLocation.instance.instanceId),
+      locale.locationName(game.map.nameOfInstance(game.startLocation.instance.instanceId)!),
     );
     expect(view.fixtures, '未探索なので設置物も道も見つかっていない').toEqual([]);
     expect(view.items, '未探索なので土地には何も落ちていない').toEqual([]);
@@ -85,7 +85,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures.map((card) => card.name)).toEqual(
       location.fixtureStacks.map((stack) =>
         stack[0].def.tags.includes(pathTagId)
-          ? game.map.nameOfInstance(new Path(stack[0], codex.propertyNames).destinationInstanceId)
+          ? locale.locationName(
+              game.map.nameOfInstance(new Path(stack[0], codex.propertyNames).destinationInstanceId)!,
+            )
           : locale.object(stack[0].def.name).displayName,
       ),
     );
@@ -549,7 +551,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     card.actions.find((action) => action.name === 'travel')!.execute();
 
     expect(fromGameSession(game, codex, locale).currentLocation.name).toBe(
-      game.map.nameOfInstance(path.destinationInstanceId),
+      locale.locationName(game.map.nameOfInstance(path.destinationInstanceId)!),
     );
   });
 
@@ -615,6 +617,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.currentLocation.name).toBe(game.map.nameOfInstance(path.destinationInstanceId));
+    expect(view.currentLocation.name).toBe(
+      locale.locationName(game.map.nameOfInstance(path.destinationInstanceId)!),
+    );
   });
 });

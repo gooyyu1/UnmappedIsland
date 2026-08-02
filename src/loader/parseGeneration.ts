@@ -127,7 +127,7 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
 }
 
 /**
- * variants（亜種、TerrainGeneration.md 3.6節）。`- {name: 木苺の森, props: {berry_yield: 20}}` の並び。
+ * variants（亜種、TerrainGeneration.md 3.6節）。`- {id: berry, props: {berry_find: 30}}` の並び。
  * propsのプロパティが実在するかの検証はbuildGenerationDefsまで遅延する（object_defが別ファイルで
  * 後から定義されうるため、object_defの実在検証と同じ理由）。
  */
@@ -139,7 +139,7 @@ function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAML
   for (const entry of variantsNode.items as YamlNode[]) {
     const variantContext = `${context}.variants[${variants.length}]`;
     const map = asMap(entry, variantContext);
-    const variantName = requireScalar(map, 'name', variantContext);
+    const variantId = requireScalar(map, 'id', variantContext);
 
     const props = new Map<number, number>();
     const propsNode = tryGetMap(map, 'props', variantContext);
@@ -152,12 +152,12 @@ function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAML
         props.set(loader.propertyNames.intern(propName), value);
       }
 
-    checkUnknownKeys(variantContext, map, 'name', 'props');
-    variants.push(new LocationVariantDef(variantName, props));
+    checkUnknownKeys(variantContext, map, 'id', 'props');
+    variants.push(new LocationVariantDef(variantId, props));
   }
 
-  if (new Set(variants.map((v) => v.name)).size !== variants.length)
-    throw new YamlLoadError(`${context}: variantsに同じnameが複数あります（土地の名前は島の中で一意）。`);
+  if (new Set(variants.map((v) => v.id)).size !== variants.length)
+    throw new YamlLoadError(`${context}: variantsに同じidが複数あります。`);
 
   return variants;
 }
@@ -167,8 +167,6 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
 
   // object_defの実在検証はbuildGenerationDefsまで遅延する（別ファイルで後から定義されうるため）。
   const objectDefGlobalId = loader.objectNames.intern(requireScalar(node, 'object_def', context));
-  const displayName = requireScalar(node, 'display_name', context);
-
   const variants = parseVariants(loader, context, node);
 
   const scopes: string[] = [];
@@ -221,7 +219,6 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
     context,
     node,
     'object_def',
-    'display_name',
     'variants',
     'applicable_scopes',
     'move_cost',
@@ -234,7 +231,6 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
   return new LocationTypeDef(
     name,
     objectDefGlobalId,
-    displayName,
     variants,
     scopes,
     moveCost,
@@ -371,7 +367,7 @@ export function buildGenerationDefs(
       for (const propertyGlobalId of variant.props.keys())
         if (objectDef.getPropertyDef(propertyGlobalId) === undefined)
           throw new YamlLoadError(
-            `location_types '${type.name}' の亜種 '${variant.name}' が上書きするプロパティ ` +
+            `location_types '${type.name}' の亜種 '${variant.id}' が上書きするプロパティ ` +
               `'${loader.propertyNames.getName(propertyGlobalId)}' を、object_def '${objectDef.name}' が持っていません。`,
           );
   }

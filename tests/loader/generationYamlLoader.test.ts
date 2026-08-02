@@ -24,7 +24,6 @@ axes:
 location_types:
   meadow:
     object_def: meadow
-    display_name: 草地
     applicable_scopes: [island]
     axis_preferences:
       elevation: {ideal: 30, tolerance: 25, weight: 100}
@@ -32,7 +31,6 @@ location_types:
       elevation: {max: 60}
   peak:
     object_def: peak
-    display_name: 頂
     move_cost: 250
     axis_preferences:
       elevation: {ideal: 100, tolerance: 15}
@@ -74,7 +72,6 @@ generation_scopes:
     const meadow = generation.locationTypes[0];
     expect(meadow.name).toBe('meadow');
     expect(meadow.objectDefGlobalId).toBe(codex.objectNames.getId('meadow'));
-    expect(meadow.displayName).toBe('草地');
     expect(meadow.appliesTo('island')).toBe(true);
     expect(meadow.appliesTo('structure_interior')).toBe(false);
     expect(meadow.moveCost).toBe(100); // move_cost省略時は100(等倍)
@@ -129,7 +126,6 @@ axes:
 location_types:
   meadow:
     object_def: meadow
-    display_name: 草地
     axis_preferences:
       elevation: {ideal: 30, tolerance: 25}
 `,
@@ -153,7 +149,6 @@ axes:
 location_types:
   meadow:
     object_def: no_such_def
-    display_name: 草地
     axis_preferences:
       elevation: {ideal: 30, tolerance: 25}
 `),
@@ -177,17 +172,16 @@ axes:
 location_types:
   meadow:
     object_def: meadow
-    display_name: 草地
     variants:
-      - {name: 木苺の草地, props: {berry_find: 30}}
-      - {name: 泉の草地, props: {no_such_prop: 30}}
+      - {id: berry, props: {berry_find: 30}}
+      - {id: spring, props: {no_such_prop: 30}}
     axis_preferences:
       elevation: {ideal: 30, tolerance: 25}
 `),
     ).toThrowError(/no_such_prop/);
   });
 
-  it('同じ名前の亜種が並ぶとエラーになる', () => {
+  it('同じidの亜種が並ぶとエラーになる', () => {
     expect(() =>
       load(`
 object_defs:
@@ -201,10 +195,9 @@ axes:
 location_types:
   meadow:
     object_def: meadow
-    display_name: 草地
     variants:
-      - {name: 露の草地}
-      - {name: 露の草地}
+      - {id: dewy}
+      - {id: dewy}
     axis_preferences:
       elevation: {ideal: 30, tolerance: 25}
 `),
@@ -225,7 +218,6 @@ axes:
 location_types:
   meadow:
     object_def: meadow
-    display_name: 草地
     axis_preferences:
       no_such_axis: {ideal: 30, tolerance: 25}
 `),
@@ -246,7 +238,6 @@ axes:
 location_types:
   meadow:
     object_def: meadow
-    display_name: 草地
     axis_preferences:
       elevation: {ideal: 30, tolerance: 25}
 generation_scopes:
@@ -294,7 +285,6 @@ object_defs:
 location_types:
   meadow:
     object_def: meadow
-    display_name: 草地
 `),
     ).toThrowError(/is_fallback/);
   });

@@ -2,6 +2,7 @@ import { parseDocument } from 'yaml';
 import type { YAMLMap } from 'yaml';
 import { asMap, entriesInOrder, tryGetMap, tryGetScalar } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
+import type { LocationName } from '../domain/generation/IslandMap';
 
 /** 表示文字列を引く言語。切り替えの入口はまだ無いため、日本語で固定（Localization.md）。 */
 export const LANGUAGE = 'ja';
@@ -107,19 +108,90 @@ export class ObjectTexts {
 }
 
 /**
+ * 1つの土地の型の表示文字列を引く窓口。亜種（variants）はメンバーとして持つ。
+ * オブジェクトと違い、土地の名前は型と亜種の識別子の組み合わせで決まる（TerrainGeneration.md 3.6節）。
+ */
+export class LocationTexts {
+  private readonly identifier: string;
+  private readonly entry: LocationTextsEntry | undefined;
+
+  constructor(identifier: string, entry: LocationTextsEntry | undefined) {
+    this.identifier = identifier;
+    this.entry = entry;
+  }
+
+  /** 亜種を持たない土地の表示名。未登録なら識別子そのもの。 */
+  get displayName(): string {
+    return this.entry?.own?.displayName ?? this.identifier;
+  }
+
+  get description(): string | undefined {
+    return this.entry?.own?.description;
+  }
+
+  /** 亜種の表示名。これがその土地の名前そのものになる（型の名前へは足さない）。 */
+  variant(variantId: string): Texts {
+    const declared = this.entry?.tryGetVariant(variantId);
+    return new Texts(declared?.displayName ?? variantId, declared?.description);
+  }
+}
+
+/** localeファイルのlocation_textsの1エントリ（型自身の文字列と、亜種ごとの文字列）。 */
+class LocationTextsEntry {
+  readonly own: DeclaredTexts | undefined;
+  private readonly variants: ReadonlyMap<string, DeclaredTexts>;
+
+  constructor(own: DeclaredTexts | undefined, variants: ReadonlyMap<string, DeclaredTexts>) {
+    this.own = own;
+    this.variants = variants;
+  }
+
+  tryGetVariant(variantId: string): DeclaredTexts | undefined {
+    return this.variants.get(variantId);
+  }
+}
+
+/**
+ * 亜種を使い切ったときに名前へ付ける通し番号の書式（location_texts.default.ordinal_suffix）。
+ * `{n}` が番号に置き換わる。データ（variants）が足りないときの最後の手段なので、通常は使われない。
+ */
+const DEFAULT_ORDINAL_SUFFIX = ' ({n})';
+
+/**
  * 識別子から表示文字列を引く対応表（Localization.md）。WorldCodexは識別子だけを持ち、
  * 画面に出す文字列はこちらが持つ。
  */
 export class Localization {
   private readonly objects: ReadonlyMap<string, ObjectTextsEntry>;
   private readonly propertyTags: ReadonlyMap<string, DeclaredTexts>;
+  private readonly locations: ReadonlyMap<string, LocationTextsEntry>;
+  private readonly ordinalSuffix: string;
 
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
     propertyTags: ReadonlyMap<string, DeclaredTexts> = new Map(),
+    locations: ReadonlyMap<string, LocationTextsEntry> = new Map(),
+    ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
+    this.locations = locations;
+    this.ordinalSuffix = ordinalSuffix;
+  }
+
+  /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */
+  location(typeName: string): LocationTexts {
+    return new LocationTexts(typeName, this.locations.get(typeName));
+  }
+
+  /**
+   * 生成された土地の名前（LocationName）を1つの文字列に組み立てる。亜種があればその名前が
+   * 土地の名前そのもので、無ければ型の名前になる。
+   */
+  locationName(name: LocationName): string {
+    const texts = this.location(name.typeName);
+    const base = name.variantId === undefined ? texts.displayName : texts.variant(name.variantId).displayName;
+    return name.ordinal === undefined ? base : base + this.ordinalSuffix.replace('{n}', String(name.ordinal));
   }
 
   /** プロパティのタグ（GameElementDefinition.md 6.7節）の表示文字列。未登録なら識別子そのもの。 */
@@ -168,7 +240,32 @@ export function parseLocale(label: string, yamlText: string): Localization {
       if (texts !== undefined) propertyTags.set(name, texts);
     }
 
-  return new Localization(objects, propertyTags);
+  const locations = new Map<string, LocationTextsEntry>();
+  let ordinalSuffix = DEFAULT_ORDINAL_SUFFIX;
+  const locationSection = tryGetMap(root, 'location_texts', label);
+  if (locationSection !== undefined)
+    for (const [name, node] of entriesInOrder(locationSection)) {
+      const context = `${label}.location_texts.'${name}'`;
+      const entryNode = asMap(node, context);
+
+      if (name === DEFAULT_KEY) {
+        ordinalSuffix = tryGetScalar(entryNode, 'ordinal_suffix', context) ?? ordinalSuffix;
+        continue;
+      }
+
+      const variants = new Map<string, DeclaredTexts>();
+      const variantsNode = tryGetMap(entryNode, 'variants', context);
+      if (variantsNode !== undefined)
+        for (const [variantId, variantNode] of entriesInOrder(variantsNode)) {
+          const variantContext = `${context}.variants.'${variantId}'`;
+          const texts = parseTexts(asMap(variantNode, variantContext), variantContext);
+          if (texts !== undefined) variants.set(variantId, texts);
+        }
+
+      locations.set(name, new LocationTextsEntry(parseTexts(entryNode, context), variants));
+    }
+
+  return new Localization(objects, propertyTags, locations, ordinalSuffix);
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

@@ -1,6 +1,33 @@
 import type { LocationTypeDef, LocationVariantDef } from '../defs/generation/LocationTypeDef';
 
 /**
+ * 土地の名前（TerrainGeneration.md 3.6節）。**表示文字列ではなく構成要素で持つ**——WorldCodexは
+ * 識別子だけを持ち、画面に出す文字列はlocaleが持つという規約（Localization.md）に従うため。
+ * 組み立ては `Localization.locationName` が行う。
+ */
+export class LocationName {
+  /** 土地の型の識別子。亜種を持たない土地は、これだけで名前になる。 */
+  readonly typeName: string;
+
+  /** 同じ型が島に複数あるときの亜種の識別子。 */
+  readonly variantId: string | undefined;
+
+  /** 亜種が尽きたときだけ持つ通し番号（1始まり）。名前の重複を避けるための最後の手段。 */
+  readonly ordinal: number | undefined;
+
+  constructor(typeName: string, variantId?: string, ordinal?: number) {
+    this.typeName = typeName;
+    this.variantId = variantId;
+    this.ordinal = ordinal;
+  }
+
+  /** 表示ではなく同一性の比較・重複検査に使うキー。 */
+  get key(): string {
+    return `${this.typeName}/${this.variantId ?? ''}/${this.ordinal ?? ''}`;
+  }
+}
+
+/**
  * Site（TerrainGeneration.md 1節）: 座標と軸ベクトルを持つ、生成途中のノード。
  * パイプラインが進むにつれてLocationType・名前が確定し、最終的にIslandSpawnerが
  * Location（object_defのWorldObjectインスタンス）として実体化する。
@@ -19,8 +46,8 @@ export class Site {
   /** マッチング（LocationTypeMatcher）で確定するLocationType。 */
   type?: LocationTypeDef;
 
-  /** 命名処理（NameAssigner）で確定する表示名（例: 「草原」「木苺の草原」）。 */
-  name?: string;
+  /** 命名処理（NameAssigner）で確定する名前。表示文字列ではなく構成要素で持つ（LocationName参照）。 */
+  name?: LocationName;
 
   /**
    * 命名処理（NameAssigner）で確定する亜種。同じ型が島に1つだけならundefined（素の土地）。
@@ -86,7 +113,7 @@ export class IslandMap {
    * 土地の名前はインスタンスごとに決まる（同じobject_defでも「花咲く草原」「露の草原」）ため、
    * 型側ではなくこちらが唯一の出所になる。未実体化・未知のIDならundefined。
    */
-  nameOfInstance(instanceId: number): string | undefined {
+  nameOfInstance(instanceId: number): LocationName | undefined {
     // 未実体化のsiteInstanceIdsは0のまま。instanceIdの発行は1始まりなので、0は必ず「該当なし」。
     if (instanceId === 0) return undefined;
 

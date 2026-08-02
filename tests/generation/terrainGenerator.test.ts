@@ -166,14 +166,16 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       const map = generate(seed);
       const names = map.sites.map((s) => s.name);
       expect(
-        names.every((n) => n !== undefined && n !== ''),
+        names.every((n) => n !== undefined),
         `シード${seed}`,
       ).toBe(true);
-      expect(new Set(names).size, `シード${seed}: 土地の名前は重複しない`).toBe(map.sites.length);
+      expect(new Set(names.map((n) => n!.key)).size, `シード${seed}: 土地の名前は重複しない`).toBe(
+        map.sites.length,
+      );
     }
   });
 
-  it('土地の名前は、その型が1つだけなら表示名そのもの、複数なら亜種から配られる', () => {
+  it('土地の名前は、その型が1つだけなら型そのもの、複数なら亜種から配られる', () => {
     for (const seed of SEEDS) {
       const map = generate(seed);
       const counts = new Map<string, number>();
@@ -181,34 +183,25 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
 
       for (const site of map.sites) {
         const type = site.type!;
-        const alone = counts.get(type.name) === 1;
-        const expected = alone
-          ? [type.displayName]
-          : [...type.variants.map((v) => v.name), ...ordinalsOf(type)];
-        expect(expected, `シード${seed}: ${type.name}`).toContain(site.name);
-        expect(site.variant?.name, `シード${seed}: ${type.name}は名前と亜種が一致する`).toBe(
-          alone ? undefined : site.name,
-        );
+        const name = site.name!;
+        expect(name.typeName, `シード${seed}`).toBe(type.name);
+        expect(name.variantId, `シード${seed}: ${type.name}は名前と亜種が一致する`).toBe(site.variant?.id);
+
+        if (counts.get(type.name) === 1) {
+          expect(name.variantId, `シード${seed}: 1つだけの型に亜種は付かない`).toBeUndefined();
+          expect(name.ordinal).toBeUndefined();
+        } else if (name.variantId !== undefined) {
+          expect(
+            type.variants.map((v) => v.id),
+            `シード${seed}`,
+          ).toContain(name.variantId);
+        } else {
+          expect(name.ordinal, `シード${seed}: 亜種が尽きた分は通し番号で埋まる`).toBeGreaterThan(0);
+        }
       }
     }
   });
-
-  it('土地の名前に位置が分かる語を出さない', () => {
-    // 名前から島の形が割れないことの歯止め（TerrainGeneration.md 3.6節）。方角の語が
-    // 亜種の名前へ紛れ込むのを防ぐ。
-    const DIRECTIONS = ['東', '西', '南', '北'];
-    for (const type of codex.generation!.locationTypes)
-      for (const name of [type.displayName, ...type.variants.map((v) => v.name)])
-        for (const direction of DIRECTIONS)
-          expect(name.includes(direction), `${type.name}: '${name}'`).toBe(false);
-  });
 });
-
-/** 亜種が尽きたときに付く漢数字の接尾辞つきの名前（NameAssigner参照）。 */
-function ordinalsOf(type: { displayName: string }): string[] {
-  const kanji = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
-  return kanji.map((number) => `${type.displayName}（第${number}）`);
-}
 
 /** 生成結果の完全な指紋（決定性の比較用）。 */
 function fingerprint(map: IslandMap): string {

@@ -136,6 +136,42 @@ describe('同梱の表示文字列ファイル', () => {
   it('存在しない識別子のエントリを持たない（WorldCodexの改名時の取り残しを防ぐ）', () => {
     for (const name of declaredObjectNames())
       expect(codex.objectNames.tryGetId(name), `'${name}' はWorldCodexに存在しない識別子`).toBeDefined();
+
+    const types = new Map(codex.generation!.locationTypes.map((type) => [type.name, type]));
+    for (const [typeName, variantIds] of declaredLocationNames()) {
+      const type = types.get(typeName);
+      expect(type, `'${typeName}' は存在しないlocation_type`).toBeDefined();
+      for (const variantId of variantIds)
+        expect(
+          type!.variants.map((v) => v.id),
+          `'${typeName}' に存在しない亜種 '${variantId}'`,
+        ).toContain(variantId);
+    }
+  });
+
+  it('土地の型と亜種はすべて表示名を持つ', () => {
+    // 欠けると識別子（sandy_beach、palm等）がそのままカードの名前になる。
+    for (const type of codex.generation!.locationTypes) {
+      expect(locale.location(type.name).displayName, `${type.name} には表示名が必要`).not.toBe(type.name);
+      for (const variant of type.variants)
+        expect(
+          locale.location(type.name).variant(variant.id).displayName,
+          `${type.name}の亜種 ${variant.id} には表示名が必要`,
+        ).not.toBe(variant.id);
+    }
+  });
+
+  it('土地の名前に位置が分かる語を出さない', () => {
+    // 名前から島の形が割れないことの歯止め（TerrainGeneration.md 3.6節）。方角の語が
+    // 亜種の名前へ紛れ込むのを防ぐ。
+    const DIRECTIONS = ['東', '西', '南', '北'];
+    for (const type of codex.generation!.locationTypes) {
+      const texts = locale.location(type.name);
+      const names = [texts.displayName, ...type.variants.map((v) => texts.variant(v.id).displayName)];
+      for (const name of names)
+        for (const direction of DIRECTIONS)
+          expect(name.includes(direction), `${type.name}: '${name}'`).toBe(false);
+    }
   });
 
   /**
@@ -152,5 +188,29 @@ describe('同梱の表示文字列ファイル', () => {
     return section.items
       .map((pair) => (isScalar(pair.key) ? String(pair.key.value) : ''))
       .filter((name) => name !== '' && name !== 'default');
+  }
+
+  /** 対応表のlocation_texts節に並ぶ「型の識別子 → 亜種の識別子の並び」（defaultを除く）。 */
+  function declaredLocationNames(): Map<string, string[]> {
+    const root = parseDocument(readFileSync(LOCALE_PATH, 'utf8')).contents;
+    if (!isMap(root)) throw new Error('location_textsが見つかりません。');
+
+    const section = root.get('location_texts', true);
+    if (!isMap(section)) throw new Error('location_textsが見つかりません。');
+
+    const declared = new Map<string, string[]>();
+    for (const pair of section.items) {
+      const typeName = isScalar(pair.key) ? String(pair.key.value) : '';
+      if (typeName === '' || typeName === 'default') continue;
+
+      const variants = isMap(pair.value) ? pair.value.get('variants', true) : undefined;
+      declared.set(
+        typeName,
+        isMap(variants)
+          ? variants.items.map((v) => (isScalar(v.key) ? String(v.key.value) : '')).filter((id) => id !== '')
+          : [],
+      );
+    }
+    return declared;
   }
 });

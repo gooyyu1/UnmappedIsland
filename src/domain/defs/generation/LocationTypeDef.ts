@@ -41,8 +41,8 @@ export class AxisLimit {
 }
 
 /**
- * 亜種（TerrainGeneration.md 3.6節）: 同じLocationTypeの中の個体差。表示名と、実体化した土地へ
- * 書き込むプロパティの上書きを持つ。
+ * 亜種（TerrainGeneration.md 3.6節）: 同じLocationTypeの中の個体差。識別子と、実体化した土地へ
+ * 書き込むプロパティの上書きを持つ。表示名はlocaleが持つ（Localization.md）。
  *
  * **上書きしてよいのは発見量のつまみだけ**という制約は、YAMLの書き手が守る（プロパティの実在は
  * build時に検証する）。亜種は「少しだけ木苺が多い森」の類であって、そこにしか無いものを作る
@@ -50,14 +50,14 @@ export class AxisLimit {
  * 紐づけると「島のどこにも無い」が普通に起きる。
  */
 export class LocationVariantDef {
-  /** その土地の表示名になる（TerrainGeneration.md 3.6節）。島の中で一意。 */
-  readonly name: string;
+  /** 亜種の識別子。その型の中で一意で、localeの表示名を引くキーになる。 */
+  readonly id: string;
 
   /** プロパティのグローバルID→実体化時に書き込む値。空なら素の亜種（名前だけが変わる）。 */
   readonly props: ReadonlyMap<number, number>;
 
-  constructor(name: string, props: ReadonlyMap<number, number>) {
-    this.name = name;
+  constructor(id: string, props: ReadonlyMap<number, number>) {
+    this.id = id;
     this.props = props;
   }
 }
@@ -73,12 +73,9 @@ export class LocationTypeDef {
   /** この型が実体化するときのobject_defのグローバルID（build時に存在検証済み）。 */
   readonly objectDefGlobalId: number;
 
-  /** 命名処理（NameAssigner）に使う表示名。同じ型が島に1つだけなら、これがそのまま名前になる。 */
-  readonly displayName: string;
-
   /**
    * 同じ型が島に複数あるときに配る亜種（TerrainGeneration.md 3.6節）。個数が足りなければ名前は
-   * 漢数字の接尾辞で埋まるが、それは名前として読めないので、想定される個数ぶんは用意しておく。
+   * 通し番号で埋まるが、それは名前として読めないので、想定される個数ぶんは用意しておく。
    */
   readonly variants: readonly LocationVariantDef[];
 
@@ -100,7 +97,6 @@ export class LocationTypeDef {
   constructor(
     name: string,
     objectDefGlobalId: number,
-    displayName: string,
     variants: readonly LocationVariantDef[],
     applicableScopes: readonly string[],
     moveCost: number,
@@ -111,7 +107,6 @@ export class LocationTypeDef {
   ) {
     this.name = name;
     this.objectDefGlobalId = objectDefGlobalId;
-    this.displayName = displayName;
     this.variants = variants;
     this.applicableScopes = applicableScopes;
     this.moveCost = moveCost;
