@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/objects/rocky_field.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味は sandy_beach.json を参照。",
+    "",
+    "seedを選んでいるのは、立った岩が並んで遺跡のように見える絵が混ざるため。60704は転がった岩だけ。"
+  ],
+  "output": "src/assets/objects/rocky_field.png",
+  "prompts": "location_cards.json",
+  "prompt": "rocky_field",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 60704,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "feather": 24
+  }
+}

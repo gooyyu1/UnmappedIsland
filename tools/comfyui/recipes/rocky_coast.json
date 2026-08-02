@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/objects/rocky_coast.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味は sandy_beach.json を参照。",
+    "",
+    "seedを選んでいるのは、崖の出る絵が混ざるため（岸壁のcliff_coastと紛れる）。60204は丸い岩と浅瀬だけ。"
+  ],
+  "output": "src/assets/objects/rocky_coast.png",
+  "prompts": "location_cards.json",
+  "prompt": "rocky_coast",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 60204,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "feather": 24
+  }
+}

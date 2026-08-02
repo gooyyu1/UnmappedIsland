@@ -408,6 +408,7 @@ export function fromGameSession(
     currentLocation: {
       icon: LOCATION_ICON,
       name: game.map.nameOfInstance(location.instance.instanceId) ?? UNNAMED_LOCATION,
+      art: location.instance.def.name,
     },
     locationArt: location.instance.def.name,
     // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。

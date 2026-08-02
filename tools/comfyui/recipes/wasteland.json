@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/objects/wasteland.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味は sandy_beach.json を参照。",
+    "",
+    "seedを選んでいるのは、黒い雨雲が出て時間帯を感じさせる絵が混ざるため。60804は平らな曇天。"
+  ],
+  "output": "src/assets/objects/wasteland.png",
+  "prompts": "location_cards.json",
+  "prompt": "wasteland",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 60804,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "feather": 24
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "_comment": [
+    "土地そのもののカードに載せる絵のプロンプト（src/game/ui/objectArt.ts、設置物レーンの左端の",
+    "カード）。キーは出力するファイル名（土地の object_def の識別子）と一致させる。",
+    "",
+    "同じ土地の「カードの地に敷く背景」（card_backgrounds.json）とは狙いが違う。あちらは物の絵の",
+    "下に敷くので主題を作らないが、こちらはカードの主役なので、その土地らしい眺めを1枚の絵として",
+    "描かせてよい。中央に道や開けた帯ができるのを避ける必要も無い。",
+    "",
+    "時間帯を感じさせない光にするのは背景と同じ。1枚の絵を一日中使うため。",
+    "",
+    "negative はエントリごとに完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
+    "叩き台は _baseNegative にある（生成には使わない）。"
+  ],
+  "_baseNegative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing",
+  "sandy_beach": {
+    "description": "砂浜。波打ち際を手前に、奥へ海と空。",
+    "positive": "a tropical sandy beach seen from the shore at eye level, pale sand sweeping across the foreground, gentle waves washing up the sand, calm turquoise sea beyond, a high horizon with a band of soft blue sky and a few white clouds, bright neutral midday light, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, palm trees, footprints, shells, driftwood, umbrellas, rocks, cliffs"
+  },
+  "rocky_coast": {
+    "description": "岩だらけの海岸。手前に濡れた岩、その先に波と海。",
+    "positive": "a rocky sea shore seen at eye level, large rounded wet gray boulders piled across the foreground, shallow water and pale sand between them, white foam breaking over the outer rocks, calm pale turquoise sea beyond, a high horizon with a band of pale sky, bright neutral midday light, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, sandy beach only, no rocks, open ocean only, palm trees, trees, boats, birds, lighthouse, harbour"
+  },
+  "cliff_coast": {
+    "description": "岸壁。層になった崖が海へ落ち込む。",
+    "positive": "a steep sea cliff seen from the side at eye level, a tall wall of layered weathered gray rock dropping straight into the water, horizontal bands of stratified stone, tufts of hardy green grass along the top edge, calm gray blue sea washing the foot of the cliff, a band of overcast pale sky above, cool daylight, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, sandy beach, boulders in the foreground, trees, forest on top, birds, waterfall, arch, sea stack, lighthouse, castle"
+  },
+  "grassland": {
+    "description": "草原。丈の高い草が一面に広がり、上に曇天の空。",
+    "positive": "an open grassland seen at eye level, waist-high grasses covering the ground from edge to edge, a mix of fresh green and pale straw-coloured blades leaning gently in the same direction, small low wildflowers scattered among them, a gentle rise in the middle distance, a high horizon with a band of overcast pale sky, neutral diffuse daylight, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, trees, bushes, hay bale, crop field, farmland, hedge, mountains, large flowers, insects, birds"
+  },
+  "forest": {
+    "description": "森林。等間隔の幹が立ち、足元に下草と落ち葉。",
+    "positive": "an ordinary temperate forest seen at eye level from inside it, upright brown tree trunks of similar thickness standing evenly spread across the frame, green canopy leaves overhead, low ferns and grass and dry fallen leaves on the ground, soft overcast light between the trunks, muted green and warm brown tones, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, one big tree in the front, close-up of bark, clearing, open field, mushrooms, flowers, stumps, fallen logs, snow, autumn colours, red leaves"
+  },
+  "jungle": {
+    "description": "密林。手前を大きな葉が覆い、奥は幹と影で埋まる。",
+    "_note": [
+      "**霞ませない。森林（forest）と見分けが付かなくなる。** 素直に頼むと、どちらも霧の中の",
+      "灰緑の林になった（4枚とも）。手前に大きな照りのある葉を置き、奥を影で閉じ、",
+      "mist / fog / haze と針葉樹を名指しで否定すると、熱帯の林として分かれる。",
+      "色も muted と言わない（TAILを使わない）。彩度を落とすと温帯林の色になる。"
+    ],
+    "positive": "a dense tropical rainforest seen at eye level from inside it, large broad glossy dark green leaves and palm fronds crowding the foreground, thick tree trunks wrapped in green behind them, layers of foliage packed tightly together with no open space, deep shade closing off the background, damp dark leaf-covered ground along the bottom edge, soft diffused light with no sunbeams, rich deep green tones, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, mist, fog, haze, low cloud, white background, bright background, pale washed out colours, distant view, deep background, receding forest, clearing, open space, sky, pine, conifer, fir, birch, temperate forest, autumn colours, bare trunks, river, stream, pond, waterfall, flowers, fruit, hanging vines, temple, ruins, sunbeams, light shafts"
+  },
+  "rocky_field": {
+    "description": "岩場。丸みのある岩が一面に転がり、隙間に枯れ草。",
+    "positive": "a rocky field seen at eye level, weathered gray boulders of many sizes strewn all across the ground into the distance, dry cracked stone surfaces, patches of pale dry grass in the gaps between the rocks, a low band of overcast pale sky at the top, flat diffuse daylight, muted gray and warm beige tones, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, one large boulder in the center, close-up of a single rock, stone wall, cairn, quarry, mountains, trees, forest, river"
+  },
+  "wasteland": {
+    "description": "荒野。ひび割れた乾いた土が広がり、枯れ枝が点在する。",
+    "positive": "a dry barren wasteland seen at eye level, cracked pale clay ground stretching into the distance, a few low dead brushes and bleached stones scattered on it, thin dust in the air, a high horizon with a band of hazy pale sky, flat overcast daylight, dusty pale ochre and washed gray tones, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, close-up of a crack, macro, skull, bones, cactus, desert dunes, sand dunes, trees, green grass, tire tracks, ruins, wreck"
+  },
+  "mountainside": {
+    "description": "山腹。砕けた石の斜面に、まばらな草と低木。",
+    "positive": "a steep stony mountain slope seen from close by, coarse angular broken rock and loose scree covering the slope across the whole frame, tufts of hardy grass and low woody shrubs rooted between the stones, patches of gray lichen on the larger rocks, a sliver of overcast pale sky at the very top, cool gray with muted olive and brown tones, flat diffuse daylight, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, summit, peak, ridge line, rock spire, pinnacle, cliff face, whole mountain, distant mountain range, valley below, aerial view, mist, fog, pine trees, forest, snow"
+  },
+  "mountain_peak": {
+    "description": "山頂。裸岩の頂と、その先に広がる空。",
+    "positive": "the bare rocky top of a mountain seen at eye level, a broad flat expanse of pale gray stone worn level by the wind, shallow cracks and flat patches of pale lichen across it, the ground ending at a high horizon, a wide band of plain pale gray-white sky above, clear cold neutral daylight, cool pale gray tones, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, roads, paths, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, rock spire, pinnacle, jagged peak, eroded rock pillar, mushroom rock, hoodoo, cliff face, wall of rock, close-up, macro, distant mountain range, valley below, aerial view, sea of clouds, cairn, flag, cross, trees, grass, snow, ice"
+  }
+}

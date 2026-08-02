@@ -178,6 +178,16 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBe(true);
   });
 
+  it('現在地のカードは、その土地の絵を持つ', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.currentLocation.art, '土地そのものもobject_defなので、絵は識別子で引ける').toBe(
+      game.startLocation.instance.def.name,
+    );
+  });
+
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
