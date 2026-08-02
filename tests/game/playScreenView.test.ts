@@ -618,6 +618,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.mapLands[0].site, 'サイトindexは現在地の土地を指す').toBe(
       game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId),
     );
+    expect(view.mapLands[0].current, '現在地のカードは強調表示の対象').toBe(true);
     expect(view.mapRoads).toEqual([]);
   });
 
@@ -684,6 +685,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(new Set(view.mapRoads.map((road) => `${road.a}/${road.b}`))).toEqual(
       new Set(before.mapRoads.map((road) => `${road.a}/${road.b}`)),
     );
+
+    // 強調表示（current）は1枚だけで、移動に追従する。
+    const currentSites = view.mapLands.filter((land) => land.current).map((land) => land.site);
+    expect(currentSites).toEqual([game.map.siteInstanceIds.indexOf(path.destinationInstanceId)]);
   });
 
   it('現在地は移動に追従する', () => {

@@ -5,11 +5,17 @@ import { addTextButton } from './Button';
 import { Card, cardFace } from './Card';
 import { ACTION_HEIGHT, ACTION_MAX_WIDTH, WINDOW_PADDING } from './childWindow';
 import { addLabel } from './labels';
-import { addPanel } from './shapes';
+import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 
 /** 地図上のカードの縮尺（レーンのカードに対する比）。一覧性を優先して小さめにする。 */
 const CARD_SCALE = 0.5;
+
+/** ズームの上限（下限は等倍）。スマホでもカード名が読める倍率まで寄れるようにする。 */
+const MAX_ZOOM = 3;
+
+/** ホイール1目盛り（deltaY=100）でおよそ1.16倍になる拡大率の底。 */
+const WHEEL_ZOOM_BASE = 1.0015;
 
 /** 海図風の下地（羊皮紙の薄茶）と、島の輪郭のごく薄い線の色。 */
 const CHART_PAPER = 0xf3ead4;
@@ -22,6 +28,13 @@ const ROAD_DOT_SPACING = 22;
 
 /** 道の弧の膨らみ（両端の距離に対する比）。直線ではなく手描きの海路らしい曲線にする。 */
 const ROAD_BEND_RATIO = 0.18;
+
+/** 現在地のカードを囲む黒枠の太さ（u単位。カードの縮尺がかかる前の値）。 */
+const CURRENT_BORDER_WIDTH = 12;
+
+/** カードの絵の紙の範囲（Card.tsのFRAME_INSET/FRAME_RADIUSと同じ値）。黒枠を紙の輪郭に重ねる。 */
+const FRAME_INSET = 2.5;
+const FRAME_RADIUS = 16;
 
 /** 地図上のカードの置き場所（画面に対する0〜1の正規化座標、カード中心）。 */
 export interface MapPlacement {
@@ -49,32 +62,64 @@ export interface MapWindowOptions {
  *
  * 背景の島の輪郭は実際の地形ではなく、カードを置くときの目安になる「個性のない円形に近い島」。
  * 実際の配置を写してしまうと、自分で地図を描き上げる遊びが成り立たないため。
+ *
+ * ピンチ（スマホ）・ホイール（PC）で等倍〜MAX_ZOOM倍に拡大でき、拡大中は背景のドラッグで
+ * 見る範囲を動かせる。カードの位置は画面に対する正規化座標で持ち、ズームとパンは描画の変換
+ * だけに閉じる——保存される位置（onPlace）がズーム状態に依存しないようにするため。
  */
 export class MapWindow {
+  private readonly scene: Phaser.Scene;
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
   private readonly metrics: ScreenMetrics;
 
-  /** サイトindex→そのカード。道の描き直し（drawRoads）とドラッグの追従に使う。 */
+  /** サイトindex→そのカードと、正規化座標での現在位置（ウィンドウ内の真実はこちら）。 */
   private readonly cards = new Map<number, Card>();
+  private readonly placements = new Map<number, MapPlacement>();
 
   private readonly roads: readonly MapRoadView[];
   private readonly roadInk: Phaser.GameObjects.Graphics;
+  private readonly outline: Phaser.GameObjects.Graphics;
+
+  /** 描画の変換。screen = norm × 画面寸法 × zoom + pan。 */
+  private zoom = 1;
+  private panX = 0;
+  private panY = 0;
+
+  /** ピンチ中の直前の2本指の間隔と中点（両指が揃っていない間はundefined）。 */
+  private pinchDistance: number | undefined;
+  private pinchMid: Phaser.Math.Vector2 | undefined;
+
+  /** 背景ドラッグ（パン）の直前のポインタ位置。差分で送ることでピンチと干渉しない。 */
+  private panLast: Phaser.Math.Vector2 | undefined;
+
+  /** シーン全体の入力に付けた聞き手。closeで必ず外す。 */
+  private readonly sceneListeners: { event: string; handler: (...args: never[]) => void }[] = [];
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: MapWindowOptions) {
+    this.scene = scene;
     this.metrics = metrics;
     this.roads = options.roads;
     const { width, height } = metrics;
     const padding = metrics.px(WINDOW_PADDING);
 
-    this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, CHART_PAPER));
+    const surface = addPanel(scene, { x: 0, y: 0, width, height }, CHART_PAPER);
+    this.objects.push(surface);
 
-    const outline = scene.add.graphics();
-    drawIslandOutline(outline, metrics);
-    this.objects.push(outline);
+    this.outline = scene.add.graphics();
+    this.objects.push(this.outline);
 
     // 道はカードより奥に描く（カードの下から点線が延びて見える）。
     this.roadInk = scene.add.graphics();
     this.objects.push(this.roadInk);
+
+    for (const land of options.lands) {
+      this.placements.set(land.site, this.openingPlacement(land.site, options.positions));
+      this.addCard(scene, land, options.onPlace);
+    }
+    this.applyTransform();
+
+    this.addPan(scene, surface);
+    this.addZoom(scene);
 
     const title = addLabel(scene, metrics, padding, padding, '地図', { size: 34, bold: true });
     this.objects.push(
@@ -84,20 +129,13 @@ export class MapWindow {
         metrics,
         padding,
         padding + title.height + metrics.px(4),
-        'カードを動かして、自分だけの地図を作る',
+        'カードを動かして、自分だけの地図を作る（ピンチ／ホイールで拡大）',
         {
           size: 22,
           color: COLOR.textMuted,
         },
       ),
     );
-
-    let unplaced = 0;
-    for (const land of options.lands) {
-      const at = options.positions.get(land.site) ?? this.traySlot(unplaced++);
-      this.addCard(scene, land, at, options.onPlace);
-    }
-    this.drawRoads();
 
     const actionHeight = metrics.px(ACTION_HEIGHT);
     const actionWidth = Math.min(metrics.px(ACTION_MAX_WIDTH), width - padding * 2);
@@ -122,6 +160,31 @@ export class MapWindow {
   }
 
   /**
+   * 開いた時点のカードの位置。保存済みならその位置（画面の向きが変わって画面外を指していても
+   * 画面内へ収め直す）、まだ置かれていなければ下端の待機列に並べる。開く時点は必ず等倍なので、
+   * 画面座標のクランプを正規化座標へそのまま書き戻せる。
+   */
+  private openingPlacement(site: number, saved: ReadonlyMap<number, MapPlacement>): MapPlacement {
+    const at = saved.get(site) ?? this.traySlot(this.unplacedCount(saved));
+    const clamped = this.clampTopLeft(
+      at.x * this.metrics.width - (this.metrics.px(SIZE.cardWidth) * CARD_SCALE) / 2,
+      at.y * this.metrics.height - (this.metrics.px(SIZE.cardHeight) * CARD_SCALE) / 2,
+      1,
+    );
+    return {
+      x: (clamped.x + (this.metrics.px(SIZE.cardWidth) * CARD_SCALE) / 2) / this.metrics.width,
+      y: (clamped.y + (this.metrics.px(SIZE.cardHeight) * CARD_SCALE) / 2) / this.metrics.height,
+    };
+  }
+
+  /** 保存済みの位置が無い土地のうち、これまでに待機列へ並べた数（次に使う待機列の枠番号）。 */
+  private unplacedCount(saved: ReadonlyMap<number, MapPlacement>): number {
+    let count = 0;
+    for (const site of this.placements.keys()) if (!saved.has(site)) count++;
+    return count;
+  }
+
+  /**
    * まだ置かれていないカードの初期位置。閉じるボタンにかからないよう、その上の帯へ左から並べ、
    * 入りきらない分は上の行へ折り返す。ここはあくまで待機列で、位置はドラッグで置くまで保存しない。
    */
@@ -142,42 +205,49 @@ export class MapWindow {
     };
   }
 
-  private addCard(
-    scene: Phaser.Scene,
-    land: MapLandView,
-    at: MapPlacement,
-    onPlace: MapWindowOptions['onPlace'],
-  ): void {
+  private addCard(scene: Phaser.Scene, land: MapLandView, onPlace: MapWindowOptions['onPlace']): void {
     const card = new Card(scene, this.metrics, 0, 0, { ...cardFace(land.card), draggable: true });
-    card.setScale(CARD_SCALE);
-    this.placeCard(card, at);
+
+    // 現在地は太い黒枠で囲んで目立たせる。枠は紙の輪郭（Card.addFrameの図形と同じ矩形）に重ね、
+    // カードの子にすることでドラッグ・ズームへそのまま追従させる。
+    if (land.current) {
+      const inset = this.metrics.px(FRAME_INSET);
+      const highlight = scene.add.graphics();
+      drawBox(
+        highlight,
+        {
+          x: inset,
+          y: inset,
+          width: card.cardWidth - inset * 2,
+          height: card.cardHeight - inset * 2,
+        },
+        {
+          border: COLOR.cardBorder,
+          borderWidth: this.metrics.px(CURRENT_BORDER_WIDTH),
+          radius: this.metrics.px(FRAME_RADIUS),
+        },
+      );
+      card.add(highlight);
+    }
 
     // 掴んだカードは他のカードより手前へ出す（重なりの下へ潜ったまま動くと掴んでいる実感が無い）。
     card.on('dragstart', () => scene.children.bringToTop(card));
     card.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
-      const clamped = this.clampTopLeft(dragX, dragY);
+      const clamped = this.clampTopLeft(dragX, dragY, this.zoom);
       card.setPosition(clamped.x, clamped.y);
+      this.placements.set(land.site, this.placementOf(card));
       this.drawRoads();
     });
-    card.on('dragend', () => onPlace(land.site, this.centerOf(card)));
+    card.on('dragend', () => onPlace(land.site, this.placements.get(land.site)!));
 
     this.cards.set(land.site, card);
     this.objects.push(card);
   }
 
-  /** カードを正規化座標（中心）で置く。保存された位置が今の画面外を指していても、必ず画面内へ収める。 */
-  private placeCard(card: Card, at: MapPlacement): void {
-    const clamped = this.clampTopLeft(
-      at.x * this.metrics.width - (card.cardWidth * CARD_SCALE) / 2,
-      at.y * this.metrics.height - (card.cardHeight * CARD_SCALE) / 2,
-    );
-    card.setPosition(clamped.x, clamped.y);
-  }
-
   /** カードの左上位置を、閉じるボタンの帯を除いた画面内へ収める。 */
-  private clampTopLeft(x: number, y: number): { x: number; y: number } {
-    const cardWidth = this.metrics.px(SIZE.cardWidth) * CARD_SCALE;
-    const cardHeight = this.metrics.px(SIZE.cardHeight) * CARD_SCALE;
+  private clampTopLeft(x: number, y: number, zoom: number): { x: number; y: number } {
+    const cardWidth = this.metrics.px(SIZE.cardWidth) * CARD_SCALE * zoom;
+    const cardHeight = this.metrics.px(SIZE.cardHeight) * CARD_SCALE * zoom;
     const bottom =
       this.metrics.height - this.metrics.px(WINDOW_PADDING) - this.metrics.px(ACTION_HEIGHT) - cardHeight;
     return {
@@ -186,11 +256,109 @@ export class MapWindow {
     };
   }
 
-  private centerOf(card: Card): MapPlacement {
+  /** 画面上のカードの位置から、変換を逆に辿って正規化座標を求める。 */
+  private placementOf(card: Card): MapPlacement {
+    const centerX = card.x + (card.cardWidth * CARD_SCALE * this.zoom) / 2;
+    const centerY = card.y + (card.cardHeight * CARD_SCALE * this.zoom) / 2;
     return {
-      x: (card.x + (card.cardWidth * CARD_SCALE) / 2) / this.metrics.width,
-      y: (card.y + (card.cardHeight * CARD_SCALE) / 2) / this.metrics.height,
+      x: (centerX - this.panX) / (this.metrics.width * this.zoom),
+      y: (centerY - this.panY) / (this.metrics.height * this.zoom),
     };
+  }
+
+  /** 背景のドラッグで見る範囲を動かす（等倍では動く余地が無いので実質ズーム中だけ）。 */
+  private addPan(scene: Phaser.Scene, surface: Phaser.GameObjects.Rectangle): void {
+    scene.input.setDraggable(surface);
+    surface.on('dragstart', (pointer: Phaser.Input.Pointer) => {
+      this.panLast = new Phaser.Math.Vector2(pointer.x, pointer.y);
+    });
+    surface.on('drag', (pointer: Phaser.Input.Pointer) => {
+      if (this.panLast === undefined) return;
+      // ピンチ中は中点の移動がパンを受け持つ。直前位置だけ更新して、指が1本へ戻った瞬間の飛びを防ぐ。
+      if (this.pinchDistance === undefined) {
+        this.panX += pointer.x - this.panLast.x;
+        this.panY += pointer.y - this.panLast.y;
+        this.applyTransform();
+      }
+      this.panLast.set(pointer.x, pointer.y);
+    });
+    surface.on('dragend', () => {
+      this.panLast = undefined;
+    });
+  }
+
+  /**
+   * ホイールとピンチの拡大縮小。どちらもポインタ位置（2本指なら中点）の下の地点を動かさずに
+   * 倍率だけを変える。ピンチはシーン全体の入力で見る——2本目の指はカードや背景のどれを押して
+   * いるか分からないため、オブジェクト単位のイベントでは追えない。
+   */
+  private addZoom(scene: Phaser.Scene): void {
+    // ピンチには2本目のタッチポインタが要る（Phaserの既定はタッチ1本）。既にあれば足さない。
+    if (scene.input.pointer2 === undefined) scene.input.addPointer(1);
+
+    const onWheel = (pointer: Phaser.Input.Pointer): void => {
+      this.zoomAt(Math.pow(WHEEL_ZOOM_BASE, -pointer.deltaY), pointer.x, pointer.y);
+    };
+    const onPinch = (): void => {
+      const first = scene.input.pointer1;
+      const second = scene.input.pointer2;
+      if (first === undefined || second === undefined || !first.isDown || !second.isDown) {
+        this.pinchDistance = undefined;
+        this.pinchMid = undefined;
+        return;
+      }
+
+      const distance = Phaser.Math.Distance.Between(first.x, first.y, second.x, second.y);
+      const mid = new Phaser.Math.Vector2((first.x + second.x) / 2, (first.y + second.y) / 2);
+      if (this.pinchDistance !== undefined && this.pinchMid !== undefined && this.pinchDistance > 0) {
+        this.panX += mid.x - this.pinchMid.x;
+        this.panY += mid.y - this.pinchMid.y;
+        this.zoomAt(distance / this.pinchDistance, mid.x, mid.y);
+      }
+      this.pinchDistance = distance;
+      this.pinchMid = mid;
+    };
+
+    this.listenScene(scene, 'wheel', onWheel);
+    this.listenScene(scene, 'pointermove', onPinch);
+    this.listenScene(scene, 'pointerup', onPinch);
+    this.listenScene(scene, 'pointerdown', onPinch);
+  }
+
+  private listenScene(scene: Phaser.Scene, event: string, handler: (...args: never[]) => void): void {
+    scene.input.on(event, handler);
+    this.sceneListeners.push({ event, handler });
+  }
+
+  /** ポインタ位置の下の地点を固定したまま倍率を変える（等倍〜MAX_ZOOM倍）。 */
+  private zoomAt(factor: number, x: number, y: number): void {
+    const zoom = Phaser.Math.Clamp(this.zoom * factor, 1, MAX_ZOOM);
+    const scale = zoom / this.zoom;
+    this.panX = x - (x - this.panX) * scale;
+    this.panY = y - (y - this.panY) * scale;
+    this.zoom = zoom;
+    this.applyTransform();
+  }
+
+  /** 今の変換（ズーム・パン）で、島の輪郭・カード・道を描き直す。 */
+  private applyTransform(): void {
+    // 地図の端が画面の内側へ入らない範囲にパンを収める（等倍では0に固定される）。
+    this.panX = Phaser.Math.Clamp(this.panX, this.metrics.width * (1 - this.zoom), 0);
+    this.panY = Phaser.Math.Clamp(this.panY, this.metrics.height * (1 - this.zoom), 0);
+
+    this.outline.clear();
+    drawIslandOutline(this.outline, this.metrics, this.zoom, this.panX, this.panY);
+
+    for (const [site, card] of this.cards) {
+      const at = this.placements.get(site);
+      if (at === undefined) continue;
+      card.setScale(CARD_SCALE * this.zoom);
+      card.setPosition(
+        at.x * this.metrics.width * this.zoom + this.panX - (card.cardWidth * CARD_SCALE * this.zoom) / 2,
+        at.y * this.metrics.height * this.zoom + this.panY - (card.cardHeight * CARD_SCALE * this.zoom) / 2,
+      );
+    }
+    this.drawRoads();
   }
 
   /** 発見済みの道を、カードの中心同士を結ぶ太めの点線の弧として描き直す。ドラッグ中も毎回呼ぶ。 */
@@ -210,8 +378,8 @@ export class MapWindow {
 
   private centerPointOf(card: Card): Phaser.Math.Vector2 {
     return new Phaser.Math.Vector2(
-      card.x + (card.cardWidth * CARD_SCALE) / 2,
-      card.y + (card.cardHeight * CARD_SCALE) / 2,
+      card.x + (card.cardWidth * CARD_SCALE * this.zoom) / 2,
+      card.y + (card.cardHeight * CARD_SCALE * this.zoom) / 2,
     );
   }
 
@@ -234,7 +402,7 @@ export class MapWindow {
         (1 - t) * (1 - t) * from.y + 2 * (1 - t) * t * control.y + t * t * to.y,
       );
 
-    // 折れ線で近似して弧長を測り、その上へ等間隔に点を置く。
+    // 折れ線で近似して弧長を測り、その上へ等間隔に点を置く。点の大きさ・間隔もズームに合わせる。
     const samples = 64;
     const points: Phaser.Math.Vector2[] = [];
     const lengths: number[] = [0];
@@ -243,7 +411,7 @@ export class MapWindow {
       if (i > 0) lengths.push(lengths[i - 1] + Phaser.Math.Distance.BetweenPoints(points[i - 1], points[i]));
     }
     const total = lengths[samples];
-    const dots = Math.max(1, Math.round(total / this.metrics.px(ROAD_DOT_SPACING)));
+    const dots = Math.max(1, Math.round(total / (this.metrics.px(ROAD_DOT_SPACING) * this.zoom)));
 
     let segment = 1;
     for (let dot = 0; dot <= dots; dot++) {
@@ -252,27 +420,36 @@ export class MapWindow {
       const over = lengths[segment] - lengths[segment - 1];
       const ratio = over === 0 ? 0 : (target - lengths[segment - 1]) / over;
       const point = points[segment - 1].clone().lerp(points[segment], ratio);
-      this.roadInk.fillCircle(point.x, point.y, this.metrics.px(ROAD_DOT_RADIUS));
+      this.roadInk.fillCircle(point.x, point.y, this.metrics.px(ROAD_DOT_RADIUS) * this.zoom);
     }
   }
 
   close(): void {
+    for (const { event, handler } of this.sceneListeners) this.scene.input.off(event, handler);
+    this.sceneListeners.length = 0;
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
     this.cards.clear();
+    this.placements.clear();
   }
 }
 
 /**
  * 背景の島の輪郭。円の半径をいくつかの正弦波で揺らしただけの、実際の地形とは無関係の適当な形。
- * 揺らし方は固定で、どのセーブでも同じ輪郭になる。
+ * 揺らし方は固定で、どのセーブでも同じ輪郭になる。ズーム・パンは点の変換で反映する。
  */
-function drawIslandOutline(outline: Phaser.GameObjects.Graphics, metrics: ScreenMetrics): void {
-  const centerX = metrics.width / 2;
-  const centerY = metrics.height / 2;
-  const radius = Math.min(metrics.width, metrics.height) * 0.42;
+function drawIslandOutline(
+  outline: Phaser.GameObjects.Graphics,
+  metrics: ScreenMetrics,
+  zoom: number,
+  panX: number,
+  panY: number,
+): void {
+  const centerX = (metrics.width / 2) * zoom + panX;
+  const centerY = (metrics.height / 2) * zoom + panY;
+  const radius = Math.min(metrics.width, metrics.height) * 0.42 * zoom;
 
-  outline.lineStyle(Math.max(1, metrics.px(3)), CHART_LINE, 0.7);
+  outline.lineStyle(Math.max(1, metrics.px(3) * zoom), CHART_LINE, 0.7);
   outline.beginPath();
   const count = 128;
   for (let i = 0; i <= count; i++) {
