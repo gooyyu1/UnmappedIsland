@@ -308,24 +308,24 @@ export function fromGameSession(
 
   const pathTagId = codex.tagNames.tryGetId('path');
   /**
-   * 道の設置物がカードに映すもの（道以外はundefinedで、設置物そのものの名前と背景をそのまま使う）。
-   * 道は「どこへ繋がっているか」だけが意味を持つため、行き先の土地の名前と景色を出す。
-   *
-   * 地に敷く景色だけを行き先のものにするのは、絵（道そのもの）と役割が重ならないため——絵が
-   * 「これは道だ」を、地が「どこへ続くか」を答える。行き先の景色を絵として全面に出すと、
-   * 現在地のカードと見分けが付かなくなる。
+   * 道の設置物がカードに映すもの（道以外はundefinedで、設置物そのものの名前と絵をそのまま使う）。
+   * 道は「どこへ繋がっているか」だけが意味を持つため、行き先の土地の名前と絵を出す——道そのものを
+   * 描いた絵は、どの土地の景色に載せても人の目には不自然に映るため。
    */
   const destinationOf = (
     fixture: WorldObject,
-  ): { icon: string; name: string; background: string } | undefined => {
+  ): { icon: string; name: string; art: string | undefined; background: string } | undefined => {
     if (pathTagId === undefined || !fixture.def.tags.includes(pathTagId)) return undefined;
 
     const path = new Path(fixture, codex.propertyNames);
+    const destination = path.destination?.def.name;
     return {
       icon: LOCATION_ICON,
       name: game.map.nameOfInstance(path.destinationInstanceId) ?? UNNAMED_LOCATION,
-      // 行き先を辿れない道（生成の途中）は、今いる土地の景色のまま置く。
-      background: path.destination?.def.name ?? location.instance.def.name,
+      art: destination,
+      // 行き先の絵が無い土地では、代用の絵文字の地に景色が残る。行き先を辿れない道（生成の
+      // 途中）だけは、今いる土地の景色のまま置く。
+      background: destination ?? location.instance.def.name,
     };
   };
 
@@ -431,7 +431,7 @@ export function fromGameSession(
     fixtures: location.fixtureStacks.map((stack) => ({
       ...stackOf(stack, FIXTURE_ICON, 'fixtures'),
       background: location.instance.def.name,
-      // 道だけは名前も景色も行き先のものに差し替わる（destinationOf参照）。
+      // 道だけは名前も絵も景色も行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
       reorder: reorderIn(stack[0]),
     })),

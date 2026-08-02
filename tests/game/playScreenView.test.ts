@@ -112,7 +112,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(new Set(pathCardNames).size, '道のカードは行き先ごとに分かれる').toBe(destinations.size);
   });
 
-  it('道のカードは行き先の土地の景色を地に敷き、他の設置物は今いる土地の景色を敷く', () => {
+  it('道のカードは行き先の土地の絵を出し、他の設置物は自分の絵と今いる土地の景色を出す', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);
     const here = game.startLocation.instance.def.name;
@@ -126,13 +126,23 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(paths.length, '道と道以外が並ぶ土地で確かめる').toBeGreaterThan(0);
     expect(others.length).toBeGreaterThan(0);
 
-    expect(paths.map((card) => card.background)).toEqual(
-      paths.map((card) => new Path(card.objects[0], codex.propertyNames).destination?.def.name),
+    const destinations = paths.map(
+      (card) => new Path(card.objects[0], codex.propertyNames).destination?.def.name,
     );
     expect(
-      paths.some((card) => card.background !== here),
+      paths.map((card) => card.art),
+      '道は行き先の土地の絵を出す',
+    ).toEqual(destinations);
+    expect(
+      paths.map((card) => card.background),
+      '絵の無い土地でも行き先が分かるよう、地にも行き先の景色を敷く',
+    ).toEqual(destinations);
+    expect(
+      destinations.some((destination) => destination !== here),
       '行き先は今いる土地とは限らない',
     ).toBe(true);
+
+    expect(others.every((card) => card.art === card.objects[0].def.name)).toBe(true);
     expect(others.every((card) => card.background === here)).toBe(true);
   });
 
