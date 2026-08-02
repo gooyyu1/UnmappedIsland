@@ -17,6 +17,7 @@ export class Location {
 
   private readonly explorationProgressId: number = -1;
   private readonly requiredProgressId: number = -1;
+  private readonly returnPathIdId: number = -1;
   readonly itemsSlotId: number = -1;
   readonly fixturesSlotId: number = -1;
   private readonly charactersSlotId: number = -1;
@@ -27,6 +28,7 @@ export class Location {
     if (codex !== undefined) {
       this.explorationProgressId = Location.idOrMissing(codex.propertyNames, 'exploration_progress');
       this.requiredProgressId = Location.idOrMissing(codex.propertyNames, 'required_progress');
+      this.returnPathIdId = Location.idOrMissing(codex.propertyNames, 'return_path_id');
       this.itemsSlotId = Location.idOrMissing(codex.slotNames, 'items');
       this.fixturesSlotId = Location.idOrMissing(codex.slotNames, 'fixtures');
       this.charactersSlotId = Location.idOrMissing(codex.slotNames, 'characters');
@@ -129,10 +131,37 @@ export class Location {
 
     const progress = this.explorationProgress;
     for (const fixture of [...hidden.contents]) {
-      if (fixture.getEffectiveValue(this.requiredProgressId) <= progress) {
-        fixture.moveToSlot(this.instance, this.fixturesSlotId, session.codex.wellKnown);
-      }
+      if (fixture.getEffectiveValue(this.requiredProgressId) <= progress) this.reveal(fixture, session);
     }
+  }
+
+  /**
+   * 隠しスロットの設置物を1つ公開する。道なら、移動先の土地にある帰り道（return_path_id）も一緒に
+   * 公開する。片側だけ見つかると、渡った先の土地を探索し直すまで戻れなくなるため
+   * （ExplorationSystem.md 3.1節）。
+   */
+  private reveal(fixture: WorldObject, session: WorldSession): void {
+    this.revealInOwnLocation(fixture, session);
+
+    const returnPathId = fixture.getEffectiveValue(this.returnPathIdId);
+    if (returnPathId === 0) return;
+
+    const returnPath = fixture.findRoot().findDescendantByInstanceId(returnPathId);
+    if (returnPath !== undefined) this.revealInOwnLocation(returnPath, session);
+  }
+
+  /**
+   * 設置物を、それ自身が今属している土地の公開スロットへ移す。帰り道は別の土地に居るため、
+   * 移し先はthis.instanceではなくその設置物の親を見る。既に公開済みなら何もしない（冪等）。
+   */
+  private revealInOwnLocation(fixture: WorldObject, session: WorldSession): void {
+    const owner = fixture.parent;
+    if (owner === undefined) return;
+
+    const hidden = owner.tryGetSlot(this.undiscoveredFixturesSlotId);
+    if (hidden === undefined || !hidden.contents.includes(fixture)) return;
+
+    fixture.moveToSlot(owner, this.fixturesSlotId, session.codex.wellKnown);
   }
 
   private slotContents(slotGlobalId: number): readonly WorldObject[] {

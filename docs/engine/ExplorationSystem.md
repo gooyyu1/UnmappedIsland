@@ -137,6 +137,8 @@ object_defs:
         value: 1           # 同上
       destination_id:
         value: 0           # 同上（移動先LocationのインスタンスID）
+      return_path_id:
+        value: 0           # 同上（移動先にある、こちらへ戻る道のインスタンスID）
     actions:
       travel:
         showMenu: always
@@ -148,7 +150,8 @@ object_defs:
           to_prop: destination_id
 ```
 
-- **`travel_minutes`/`required_progress`/`destination_id`** はいずれも `path` の通常の `props` で、地形生成
+- **`travel_minutes`/`required_progress`/`destination_id`/`return_path_id`** はいずれも `path` の通常の
+  `props` で、地形生成
   （`src/domain/generation/IslandSpawner.ts`）がインスタンス生成の直後に `setProperty` で書き込みます。`object_defs`
   レベルの初期値はプレースホルダで、実際に使われるのは常にインスタンスごとの上書き後の値です。
 - **`conditions: [{in_slot: fixtures}]`**（`GameElementDefinition.md` 14.2 節）が「未発見（`undiscovered_fixtures`
@@ -159,13 +162,19 @@ object_defs:
   で指しているのは、同じ `LocationType` の土地が1つの島に複数存在しうる（例: 「東の草原」と「北の草原」）
   ため、型ではなく**生成時に確定した特定の個体**を指す必要があるからです。
 
-### 3.1 道は辺1本につき両端へ2個
+### 3.1 道は辺1本につき両端へ2個、発見は両側同時
 
 地形生成（`TerrainGeneration.md` 3.5 節）が確定させる `Location` 間の1本の繋がりに対し、`path` インスタンスを
 **両端に1個ずつ**生成します。片方は「Aの `undiscovered_fixtures` に居て、`destination_id` はBを指す」、もう片方は
-その逆です。この非対称な表現により、「Aから探索を進めて先にAB間の道を見つけたが、Bはまだその道を見つけていない」
-という状態を、特別な仕組みなしに自然に表現できます（Bからは、B側の道インスタンスの `required_progress` に
-達するまで、同じ繋がりは見つかりません）。
+その逆です。2個に分けるのは、どちらの土地から見るかで行き先（＝カードに出す土地名）が変わるためです。
+
+**発見は両側同時**です。生成時に両端の `path` へ互いの `instanceId` を `return_path_id` として書き込んでおき、
+片方を公開する際にもう片方も一緒に公開します（`Location.revealDueFixtures`）。片側だけを公開すると、
+渡った先の土地を `required_progress` に達するまで探索し直さない限り戻れず、行き止まりに閉じ込められた
+ように見えます。歩いた道の帰り方は分かる、という直感とも一致します。
+
+`required_progress` は「その土地を探索して自力で見つける」ための条件として引き続き働きます。一度も渡って
+いない土地の道は、その土地の探索でしか見つかりません。
 
 ### 3.2 required_progress の割り当て（探索率100%に達する前に道が見つかることの保証）
 

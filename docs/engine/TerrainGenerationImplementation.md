@@ -155,6 +155,9 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
      （`FIRST_PATH_PROGRESS + (lastPathProgress - FIRST_PATH_PROGRESS) * i / (touching.length - 1)`）で計算します。
      `path` を `session.spawn` し、`setProperty` で `travel_minutes`/`required_progress`/`destination_id`
      （接続相手の `instanceId`）を書き込み、`undiscovered_fixtures` スロットへ `moveToSlot` します。
+  3. 生成した道を「どのサイトからどのサイトへ向かう道か」で引けるように控えておき、`map.edges` を1本ずつ
+     辿って両端の道へ互いの `instanceId` を `return_path_id` として書き込みます（発見が両側同時になる、
+     [`ExplorationSystem.md`](./ExplorationSystem.md) 3.1 節）。
 - **`placePlayer(session, map, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
   それも無ければ `map.sites[0]` の順で選び、`WorldObject.findDescendantByInstanceId`（`WorldObject` 自身の
   汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlot` した上で
