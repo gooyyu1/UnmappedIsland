@@ -9,8 +9,10 @@ import backgroundUrl from '../../assets/information_background.png';
  *
  * 絵は**1ピクセル = 1u**（短辺1080のときの原寸）で描かれている。9patchの縁は原寸で切り出される以上、
  * 縁の太さを画面の大きさによらず一定のuに保つには、絵全体をu倍して敷くしかない
- * （PlayScene.buildInformationArea）。下の2つは絵から測った値であり、絵を作り直して縁の太さが
- * 変わったら測り直す（page_art.py の crop / fade が決める）。
+ * （PlayScene.buildInformationArea）。
+ *
+ * 下の2つは絵が従うべき寸法であって、絵から測った値ではない。絵を作り直すときは、この寸法に合わせて
+ * 切り出す（recipes/information_background.json の crop / fade）。
  */
 export const INFORMATION_BACKGROUND = 'information:background';
 
@@ -21,7 +23,7 @@ export const INFORMATION_BORDER_PX = 48;
  * 縁のうち、外側の影（透過のグラデーション）の幅。この分だけフィールドエリアへ食い込ませることで、
  * 影が全部フィールドエリアの上に落ちる。
  */
-export const INFORMATION_OVERLAP_PX = 15;
+export const INFORMATION_OVERLAP_PX = 16;
 
 /**
  * 情報エリアの各辺から、中身を置ける範囲（紙の内側）までの距離（u）。

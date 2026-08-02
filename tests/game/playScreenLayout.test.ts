@@ -33,10 +33,10 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(new PlayScreenLayout(new ScreenMetrics(1080, 1920)).weatherRow).toBeUndefined();
   });
 
-  it('横型1920×1080はダッシュボード596・フィールド1204・サイドバー120に分かれる', () => {
+  it('横型1920×1080はダッシュボード595・フィールド1205・サイドバー120に分かれる', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
 
-    expect(layout.fieldArea).toEqual({ x: 596, y: 0, width: 1204, height: 1080 });
+    expect(layout.fieldArea).toEqual({ x: 595, y: 0, width: 1205, height: 1080 });
     expect(layout.optionsBar).toEqual({ x: 1800, y: 0, width: 120, height: 444 });
     expect(layout.filterBar).toEqual({ x: 1800, y: 444, width: 120, height: 636 });
     expect(layout.weatherRow).toEqual({ x: 0, y: 136, width: 563, height: 112 });
@@ -95,7 +95,7 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
 
   it('情報エリアの中身は、本の縁のぶん内側へ収まる', () => {
     const landscape = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
-    // 右は表紙の縁（食い込ませる分を引いた33u）、上下はページの縁（24u）。
+    // 右は表紙の縁（食い込ませる分を引いた32u）、上下はページの縁（24u）。
     expect(landscape.informationContent).toEqual({ x: 0, y: 24, width: 563, height: 1032 });
     for (const area of [landscape.situationArea, landscape.characterDisplay, landscape.statusArea]) {
       expect(area.x + area.width, '中身の右端は紙の内側').toBeLessThanOrEqual(563);

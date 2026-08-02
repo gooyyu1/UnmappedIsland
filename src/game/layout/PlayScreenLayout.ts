@@ -33,7 +33,7 @@ const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
  * 列幅は日時のフリップカード（523u）が背景のページの紙の内側に収まる幅で決まる。左右パディング
  * 20u×2と、フィールドエリア側の紙の余白（INFORMATION_PAPER_INSET.field）を足した幅が下限。
  */
-const DASHBOARD_WIDTH_LANDSCAPE = 596;
+const DASHBOARD_WIDTH_LANDSCAPE = 595;
 const SIDEBAR_WIDTH_LANDSCAPE = 120;
 
 /** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */
