@@ -15,12 +15,14 @@ export class Path {
   private readonly travelMinutesId: number;
   private readonly requiredProgressId: number;
   private readonly destinationIdId: number;
+  private readonly returnPathIdId: number;
 
   constructor(instance: WorldObject, propertyNames: NameRegistry) {
     this.instance = instance;
     this.travelMinutesId = Path.idOrMissing(propertyNames, 'travel_minutes');
     this.requiredProgressId = Path.idOrMissing(propertyNames, 'required_progress');
     this.destinationIdId = Path.idOrMissing(propertyNames, 'destination_id');
+    this.returnPathIdId = Path.idOrMissing(propertyNames, 'return_path_id');
   }
 
   /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする（理由はLocation.idOrMissing参照）。 */
@@ -41,6 +43,11 @@ export class Path {
   /** 移動先LocationのインスタンスID。 */
   get destinationInstanceId(): number {
     return this.instance.getEffectiveValue(this.destinationIdId);
+  }
+
+  /** 移動先の土地にある、こちらへ戻る道のインスタンスID（辺の両端の道は互いを指す）。 */
+  get returnPathInstanceId(): number {
+    return this.instance.getEffectiveValue(this.returnPathIdId);
   }
 
   /** この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、travel_minutes分の時間が進む）。 */

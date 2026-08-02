@@ -13,6 +13,8 @@ const FIRST_PATH_PROGRESS = 2;
  * - 各辺（IslandEdge）につき道（path）を両端に1個ずつspawnし、travelMinutes・requiredProgress・
  *   destinationId（相手側LocationのInstanceId）を書き込んで、それぞれの土地の
  *   undiscovered_fixtures（隠しスロット）へ配置する
+ * - 辺の両端の道に、互いのInstanceIdをreturnPathIdとして書き込む（発見が両側同時になるように、
+ *   ExplorationSystem.md 3.1節）
  *
  * requiredProgressは土地ごとに [2, 探索上限-1] の範囲へ等間隔に割り当てる。これにより
  * 「探索の進捗が最大へ達する前に、その土地のすべての道が見つかる」という要求を、
@@ -30,6 +32,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
   const travelMinutesId = codex.propertyNames.getId('travel_minutes');
   const requiredProgressId = codex.propertyNames.getId('required_progress');
   const destinationIdId = codex.propertyNames.getId('destination_id');
+  const returnPathIdId = codex.propertyNames.getId('return_path_id');
 
   // 1. 土地の実体化。
   const locations = new Array<WorldObject>(map.sites.length);
@@ -43,6 +46,8 @@ export function populate(session: WorldSession, map: IslandMap): void {
 
   // 2. 道の実体化（辺1本につき両端へ1個ずつ）。土地ごとに、繋がる相手のindex順で
   //    requiredProgressを[FIRST_PATH_PROGRESS, 探索上限-1]へ等間隔に割り当てる。
+  //    3で互いに結ぶため、「どのサイトから、どのサイトへ向かう道か」で引けるようにしておく。
+  const pathsByEnds = new Map<string, WorldObject>();
   for (const site of map.sites) {
     const touching = map.edges
       .filter((e) => e.a === site.index || e.b === site.index)
@@ -67,8 +72,25 @@ export function populate(session: WorldSession, map: IslandMap): void {
       path.setProperty(destinationIdId, locations[other].instanceId);
       const error = path.moveToSlot(locations[site.index], undiscoveredFixturesSlotId, codex.wellKnown);
       if (error !== undefined) throw new Error(`道を配置できません: ${error}`);
+      pathsByEnds.set(endsKey(site.index, other), path);
     }
   }
+
+  // 3. 辺の両端の道を互いに結ぶ。
+  for (const edge of map.edges) {
+    const forward = pathsByEnds.get(endsKey(edge.a, edge.b));
+    const backward = pathsByEnds.get(endsKey(edge.b, edge.a));
+    if (forward === undefined || backward === undefined)
+      throw new Error(`辺(${edge.a},${edge.b})の道が両端に揃っていません。`);
+
+    forward.setProperty(returnPathIdId, backward.instanceId);
+    backward.setProperty(returnPathIdId, forward.instanceId);
+  }
+}
+
+/** pathsByEndsのキー: どのサイトから、どのサイトへ向かう道か。 */
+function endsKey(from: number, to: number): string {
+  return `${from}->${to}`;
 }
 
 /**

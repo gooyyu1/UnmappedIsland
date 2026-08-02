@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { Location } from '../../src/domain/runtime/views/Location';
 import { Path } from '../../src/domain/runtime/views/Path';
 import type { World } from '../../src/domain/runtime/views/World';
@@ -77,6 +78,58 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
           `サイト${site.index}: すべての道は進捗が最大へ達する前に見つかる`,
         ).toBeLessThanOrEqual(progressMax - 1);
       }
+    }
+  });
+
+  it('辺の両端の道は互いをreturn_path_idで指す', () => {
+    const game = startNewGame(codex, 5, new SeededRng(99));
+    const map = game.map;
+    const hiddenSlotId = codex.slotNames.getId('undiscovered_fixtures');
+
+    for (const site of map.sites) {
+      const location = game.world.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index])!;
+
+      for (const pathInstance of location.tryGetSlot(hiddenSlotId)!.contents) {
+        const path = new Path(pathInstance, codex.propertyNames);
+        const returnInstance = game.world.instance.findDescendantByInstanceId(path.returnPathInstanceId);
+        expect(returnInstance, `サイト${site.index}: 帰り道が世界に居る`).toBeDefined();
+
+        const back = new Path(returnInstance!, codex.propertyNames);
+        expect(back.destinationInstanceId, '帰り道はこちらの土地を指す').toBe(location.instanceId);
+        expect(back.returnPathInstanceId, '帰り道もこちらの道を指す（相互）').toBe(pathInstance.instanceId);
+        expect(returnInstance!.parent?.instanceId, '帰り道は移動先の土地に居る').toBe(
+          path.destinationInstanceId,
+        );
+      }
+    }
+  });
+
+  it('道を1本見つけると、渡った先から戻る道も同時に見つかる', () => {
+    for (const seed of [3, 5, 11, 20]) {
+      const game = startNewGame(codex, seed, new SeededRng(99));
+      const start = game.startLocation;
+
+      // 開始地点の道が1本見つかるまで探索する。
+      let discovered: readonly WorldObject[] = [];
+      for (let i = 0; i < start.explorationProgressMax && discovered.length === 0; i++) {
+        game.player.explore(game.session);
+        discovered = pathsIn(start, codex);
+      }
+      expect(discovered.length, `シード${seed}: 探索で道が見つかる`).toBeGreaterThan(0);
+
+      const outbound = new Path(discovered[0], codex.propertyNames);
+      expect(outbound.travel(game.player.instance, game.session), `シード${seed}: 渡れる`).toBe(true);
+
+      const arrived = game.player.location!;
+      expect(arrived.explorationProgress, `シード${seed}: 渡った先はまだ未探索`).toBe(0);
+      const back = pathsIn(arrived, codex).map((p) => new Path(p, codex.propertyNames));
+      const home = back.find((p) => p.destinationInstanceId === start.instance.instanceId);
+      expect(home, `シード${seed}: 未探索でも帰り道は見つかっている`).toBeDefined();
+
+      expect(home!.travel(game.player.instance, game.session), `シード${seed}: 帰れる`).toBe(true);
+      expect(game.player.location!.instance.instanceId, `シード${seed}: 元の土地へ戻る`).toBe(
+        start.instance.instanceId,
+      );
     }
   });
 

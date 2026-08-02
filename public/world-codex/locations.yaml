@@ -46,6 +46,11 @@ object_defs:
         value: 1
       destination_id:
         value: 0
+      # 移動先の土地にある、こちらへ戻る道のインスタンスID。辺1本の両端の道が互いを指す
+      # （生成時に相互に書き込まれる）。片方が見つかったらもう片方も一緒に見つかることで、
+      # 渡った先から必ず戻れる（ExplorationSystem.md 3.1節）。
+      return_path_id:
+        value: 0
     actions:
       travel:
         showMenu: always
