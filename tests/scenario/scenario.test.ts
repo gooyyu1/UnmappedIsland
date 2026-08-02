@@ -74,7 +74,8 @@ describe('テスト用シナリオ', () => {
   });
 
   it('指定した土地が島に無ければエラーになる（違う地形で始めない）', () => {
-    const scenario = parseScenario('nojungle.yaml', 'seed: 3\nlocation:\n  type: jungle\n');
+    // シード5は密林の出ない島（地形の分布はTerrainStats.md）。
+    const scenario = parseScenario('nojungle.yaml', 'seed: 5\nlocation:\n  type: jungle\n');
     const game = startNewGame(codex, scenario.seed, new SeededRng(scenario.seed));
 
     expect(() => applyScenario(game, scenario, codex)).toThrow(/jungle/);

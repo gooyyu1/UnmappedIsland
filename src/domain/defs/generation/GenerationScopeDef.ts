@@ -47,6 +47,18 @@ export class GenerationScopeDef {
   /** 抽象座標の距離1あたりの基準移動時間（分）。 */
   readonly baseMinutesPerDistance: number;
 
+  /**
+   * 同じLocationTypeを何個まで置いてよいか（TerrainGeneration.md 3.4節）。同じ地形は環境も発見物も
+   * 見た目も同じなので、並べても島は広くならない。0で無制限。
+   */
+  readonly maxSitesPerType: number;
+
+  /**
+   * 同じ型が1個増えるごとにマッチング距離へ乗せる割増（%、0で無効）。上限に当たる前から
+   * 他の型へ譲らせて、上限での打ち切りが「よくある結末」にならないようにする。
+   */
+  readonly crowdingPenalty: number;
+
   readonly guarantees: readonly GuaranteeDef[];
 
   constructor(
@@ -58,6 +70,8 @@ export class GenerationScopeDef {
     interiorBias: number,
     extraEdgeDetourFactor: number,
     baseMinutesPerDistance: number,
+    maxSitesPerType: number,
+    crowdingPenalty: number,
     guarantees: readonly GuaranteeDef[],
   ) {
     this.name = name;
@@ -68,6 +82,8 @@ export class GenerationScopeDef {
     this.interiorBias = interiorBias;
     this.extraEdgeDetourFactor = extraEdgeDetourFactor;
     this.baseMinutesPerDistance = baseMinutesPerDistance;
+    this.maxSitesPerType = maxSitesPerType;
+    this.crowdingPenalty = crowdingPenalty;
     this.guarantees = guarantees;
   }
 }

@@ -14,7 +14,10 @@ import type { Site } from './IslandMap';
  *    の最小の型を選ぶ。言及した軸だけをΣw_iで正規化するため、言及軸が少ない型が構造的に
  *    有利になる次元数バイアスは無い。toleranceは距離のスケールであり、除外はhard_limitsのみが
  *    担う（ドキュメントで未確定だった意味論の一義化）。同点は宣言順で先の型が勝つ（決定的）。
- * 3. フォールバック（3.3節）: hard_limitsで全型が弾かれたサイトは、is_fallbackの型のうち
+ * 3. 同じ型の抑制（3.4節）: 既に置いた同じ型の個数に応じてマッチング距離へ割増を掛け、
+ *    max_sites_per_typeで打ち切る。同じ地形は環境も発見物も見た目も同じなので、並べても島は
+ *    広くならない。**譲るのは「その型らしさ」が薄いサイトから**なので、最良距離の昇順に決める。
+ * 4. フォールバック（3.3節）: hard_limitsで全型が弾かれたサイトは、is_fallbackの型のうち
  *    priority最大のものが受ける（フォールバックは最後の受け皿のため、自身のhard_limitsも無視する）。
  */
 export function assignTypes(defs: GenerationDefs, scope: GenerationScopeDef, sites: readonly Site[]): void {
@@ -23,6 +26,11 @@ export function assignTypes(defs: GenerationDefs, scope: GenerationScopeDef, sit
     throw new Error(`スコープ'${scope.name}'に適用できるlocation_typeが1つもありません。`);
 
   const forced = new Set<Site>();
+  const counts = new Map<string, number>();
+  const take = (site: Site, type: LocationTypeDef): void => {
+    site.type = type;
+    counts.set(type.name, (counts.get(type.name) ?? 0) + 1);
+  };
 
   for (const guarantee of scope.guarantees) {
     const type = types.find((t) => t.name === guarantee.locationType);
@@ -35,15 +43,29 @@ export function assignTypes(defs: GenerationDefs, scope: GenerationScopeDef, sit
     const candidates = sites.filter((s) => !forced.has(s));
     const ordered = orderForGuarantee(candidates, guarantee, type);
     for (const site of ordered.slice(0, guarantee.count)) {
-      site.type = type;
+      take(site, type);
       forced.add(site);
     }
   }
 
-  for (const site of sites) {
-    if (forced.has(site)) continue;
-    site.type = matchNearest(types, site);
+  // 迷いの少ないサイト（最良距離が小さい＝その型らしさが濃い）から決める。後に回ったサイトほど、
+  // 埋まった型を諦めて他の型へ回る側になる。同値はindex順で決定的に。
+  const pending = sites.filter((s) => !forced.has(s));
+  const bestDistances = new Map<Site, number>(pending.map((s) => [s, bestDistanceOf(types, s)]));
+  pending.sort((a, b) => bestDistances.get(a)! - bestDistances.get(b)! || a.index - b.index);
+
+  for (const site of pending) take(site, matchNearest(types, site, scope, counts));
+}
+
+/** 混雑を無視した最良距離（決める順番だけに使う）。どの型もhard_limitsで弾くサイトは最後に回す。 */
+function bestDistanceOf(types: readonly LocationTypeDef[], site: Site): number {
+  let best = Number.MAX_VALUE;
+  for (const type of types) {
+    if (type.preferences.length === 0) continue;
+    if (!passesHardLimits(type, site)) continue;
+    best = Math.min(best, normalizedDistance(type, site));
   }
+  return best;
 }
 
 function orderForGuarantee(
@@ -66,7 +88,24 @@ function orderForGuarantee(
   ];
 }
 
-function matchNearest(types: readonly LocationTypeDef[], site: Site): LocationTypeDef {
+function matchNearest(
+  types: readonly LocationTypeDef[],
+  site: Site,
+  scope: GenerationScopeDef,
+  counts: ReadonlyMap<string, number>,
+): LocationTypeDef {
+  // 上限まで埋まった型を避けて選ぶ。全滅したら上限を無視して選び直す——上限は「同じ地形を並べない」
+  // ための強い希望であって、置けるかどうかの条件ではない（hard_limitsだけが絶対）。
+  return pickNearest(types, site, scope, counts, true) ?? pickNearest(types, site, scope, counts, false)!;
+}
+
+function pickNearest(
+  types: readonly LocationTypeDef[],
+  site: Site,
+  scope: GenerationScopeDef,
+  counts: ReadonlyMap<string, number>,
+  respectMax: boolean,
+): LocationTypeDef | undefined {
   let best: LocationTypeDef | undefined;
   let bestDistance = Number.MAX_VALUE;
 
@@ -74,7 +113,10 @@ function matchNearest(types: readonly LocationTypeDef[], site: Site): LocationTy
     if (type.preferences.length === 0) continue; // 全軸無関心の型はフォールバック専用
     if (!passesHardLimits(type, site)) continue;
 
-    const distance = normalizedDistance(type, site);
+    const count = counts.get(type.name) ?? 0;
+    if (respectMax && scope.maxSitesPerType > 0 && count >= scope.maxSitesPerType) continue;
+
+    const distance = normalizedDistance(type, site) * (1 + (scope.crowdingPenalty / 100) * count);
     if (distance < bestDistance) {
       // 同点は宣言順で先の型が勝つ
       bestDistance = distance;
@@ -83,6 +125,7 @@ function matchNearest(types: readonly LocationTypeDef[], site: Site): LocationTy
   }
 
   if (best !== undefined) return best;
+  if (respectMax) return undefined;
 
   const fallbacks = types.filter((t) => t.isFallback).sort((a, b) => b.priority - a.priority);
   const fallback = fallbacks.length > 0 ? fallbacks[0] : undefined;

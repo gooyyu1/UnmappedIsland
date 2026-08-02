@@ -268,11 +268,17 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
     tryGetInt(node, 'interior_bias', context) ?? 0,
     tryGetInt(node, 'extra_edge_detour_factor', context) ?? 150,
     tryGetInt(node, 'base_minutes_per_distance', context) ?? 1,
+    tryGetInt(node, 'max_sites_per_type', context) ?? 0,
+    tryGetInt(node, 'crowding_penalty', context) ?? 0,
     guarantees,
   );
 
   if (scope.interiorBias < 0 || scope.interiorBias > 100)
     throw new YamlLoadError(`${context}: interior_biasは0〜100である必要があります。`);
+  if (scope.maxSitesPerType < 0)
+    throw new YamlLoadError(`${context}: max_sites_per_typeは0以上である必要があります（0で無制限）。`);
+  if (scope.crowdingPenalty < 0)
+    throw new YamlLoadError(`${context}: crowding_penaltyは0以上である必要があります（0で無効）。`);
 
   checkUnknownKeys(
     context,
@@ -283,6 +289,8 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
     'interior_bias',
     'extra_edge_detour_factor',
     'base_minutes_per_distance',
+    'max_sites_per_type',
+    'crowding_penalty',
     'guarantees',
   );
 

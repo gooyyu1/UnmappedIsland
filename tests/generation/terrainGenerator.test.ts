@@ -136,6 +136,31 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       }
   });
 
+  it('同じ地形が並びすぎない（max_sites_per_type）', () => {
+    const max = codex.generation!.scopes.get('island')!.maxSitesPerType;
+    expect(max, '上限を設けたスコープで確かめる').toBeGreaterThan(0);
+
+    for (const seed of SEEDS) {
+      const counts = new Map<string, number>();
+      for (const site of generate(seed).sites)
+        counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
+
+      for (const [name, count] of counts) expect(count, `シード${seed}: ${name}`).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it('上限は島の地形の種類を増やす', () => {
+    // 上限が無いと、軸空間の中央付近に理想点を持つ型が大半のサイトを取り、端に寄った型が
+    // ほとんど出ない（TerrainGeneration.md 3.4節）。実測値はTerrainStats.md。
+    const seen = new Map<string, number>();
+    for (const seed of SEEDS) {
+      const types = new Set(generate(seed).sites.map((s) => s.type!.name));
+      for (const name of types) seen.set(name, (seen.get(name) ?? 0) + 1);
+    }
+
+    expect(seen.size, 'どの地形も、25島のうちのどこかには出る').toBe(codex.generation!.locationTypes.length);
+  });
+
   it('土地の名前は割り当てられ、重複しない', () => {
     for (const seed of SEEDS) {
       const map = generate(seed);
