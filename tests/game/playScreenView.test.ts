@@ -181,7 +181,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
-  it('設置物のカードだけが、今いる土地を背景として持つ', () => {
+  it('設置物レーンのカードだけが、今いる土地を背景として持つ', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(
@@ -193,11 +193,11 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(
       view.fixtures.map((card) => card.background),
-      '道も含め、設置物のカードはすべて土地の識別子を持つ',
+      '道も含め、このレーンのカードはすべて土地の識別子を持つ',
     ).toEqual(view.fixtures.map(() => view.locationArt));
     expect(
       view.items.every((card) => card.background === undefined),
-      '持ち歩けるアイテムは土地から切り離せるので背景を持たない',
+      '同じ土地に在っても、アイテムのレーンのカードは背景を持たない',
     ).toBe(true);
   });
 
