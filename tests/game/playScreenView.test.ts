@@ -112,10 +112,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(new Set(pathCardNames).size, '道のカードは行き先ごとに分かれる').toBe(destinations.size);
   });
 
-  it('道のカードは行き先の土地の絵を出し、他の設置物は自分の絵と今いる土地の景色を出す', () => {
+  it('道のカードは行き先の土地の絵を出し、他の設置物は自分の絵を出す', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);
-    const here = game.startLocation.instance.def.name;
 
     const view = fromGameSession(game, codex, locale);
 
@@ -126,24 +125,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(paths.length, '道と道以外が並ぶ土地で確かめる').toBeGreaterThan(0);
     expect(others.length).toBeGreaterThan(0);
 
-    const destinations = paths.map(
-      (card) => new Path(card.objects[0], codex.propertyNames).destination?.def.name,
+    expect(paths.map((card) => card.art)).toEqual(
+      paths.map((card) => new Path(card.objects[0], codex.propertyNames).destination?.def.name),
     );
     expect(
-      paths.map((card) => card.art),
-      '道は行き先の土地の絵を出す',
-    ).toEqual(destinations);
-    expect(
-      paths.map((card) => card.background),
-      '絵の無い土地でも行き先が分かるよう、地にも行き先の景色を敷く',
-    ).toEqual(destinations);
-    expect(
-      destinations.some((destination) => destination !== here),
+      paths.some((card) => card.art !== game.startLocation.instance.def.name),
       '行き先は今いる土地とは限らない',
     ).toBe(true);
-
     expect(others.every((card) => card.art === card.objects[0].def.name)).toBe(true);
-    expect(others.every((card) => card.background === here)).toBe(true);
   });
 
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
@@ -192,7 +181,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
-  it('設置物のカードだけが、土地の景色を背景として持つ', () => {
+  it('設置物のカードだけが、今いる土地を背景として持つ', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(
@@ -203,9 +192,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(
-      view.fixtures.every((card) => card.background !== undefined),
-      '道も含め、設置物のカードはすべて土地の識別子を持つ（どの土地かは道だけ違う）',
-    ).toBe(true);
+      view.fixtures.map((card) => card.background),
+      '道も含め、設置物のカードはすべて土地の識別子を持つ',
+    ).toEqual(view.fixtures.map(() => view.locationArt));
     expect(
       view.items.every((card) => card.background === undefined),
       '持ち歩けるアイテムは土地から切り離せるので背景を持たない',
