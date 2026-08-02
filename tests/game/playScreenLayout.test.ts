@@ -33,15 +33,15 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(new PlayScreenLayout(new ScreenMetrics(1080, 1920)).weatherRow).toBeUndefined();
   });
 
-  it('横型1920×1080はダッシュボード540・フィールド1260・サイドバー120に分かれる', () => {
+  it('横型1920×1080はダッシュボード534・フィールド1266・サイドバー120に分かれる', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
 
-    expect(layout.fieldArea).toEqual({ x: 592, y: 0, width: 1208, height: 1080 });
+    expect(layout.fieldArea).toEqual({ x: 534, y: 0, width: 1266, height: 1080 });
     expect(layout.optionsBar).toEqual({ x: 1800, y: 0, width: 120, height: 444 });
     expect(layout.filterBar).toEqual({ x: 1800, y: 444, width: 120, height: 636 });
-    expect(layout.weatherRow).toEqual({ x: 0, y: 136, width: 554, height: 112 });
-    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 554, height: 352 });
-    expect(layout.statusArea).toEqual({ x: 0, y: 600, width: 554, height: 456 });
+    expect(layout.weatherRow).toEqual({ x: 0, y: 136, width: 502, height: 112 });
+    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 502, height: 352 });
+    expect(layout.statusArea).toEqual({ x: 0, y: 600, width: 502, height: 456 });
   });
 
   it('3レーンは向きによらずフィールドエリアを外周マージン込みで埋める', () => {
@@ -95,10 +95,10 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
 
   it('情報エリアの中身は、本の縁のぶん内側へ収まる', () => {
     const landscape = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
-    // 右は表紙の縁（食い込ませる分を引いた38u）、上下はページの縁（24u）。
-    expect(landscape.informationContent).toEqual({ x: 0, y: 24, width: 554, height: 1032 });
+    // 右は表紙の縁（食い込ませる分を引いた32u）、上下はページの縁（24u）。
+    expect(landscape.informationContent).toEqual({ x: 0, y: 24, width: 502, height: 1032 });
     for (const area of [landscape.situationArea, landscape.characterDisplay, landscape.statusArea]) {
-      expect(area.x + area.width, '中身の右端は紙の内側').toBeLessThanOrEqual(554);
+      expect(area.x + area.width, '中身の右端は紙の内側').toBeLessThanOrEqual(502);
     }
 
     const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));

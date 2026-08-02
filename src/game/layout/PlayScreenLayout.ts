@@ -30,11 +30,10 @@ const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 /**
  * 横型のダッシュボード列幅・右サイドバー幅（ScreenLayout.md 横型レイアウト節）。
  *
- * 列幅は日時のフリップカード（523u）が背景のページの紙の内側に収まる幅で決まる。
- * 左右パディング20u×2と、フィールドエリア側の紙の余白（INFORMATION_PAPER_INSET）を足すと588u必要で、
- * 時刻の桁1枚分（44u + 桁間8u）を足した592uにしている。
+ * 列幅は日時のフリップカード（462u）が背景のページの紙の内側に収まる幅で決まる。左右パディング
+ * 20u×2と、フィールドエリア側の紙の余白（INFORMATION_PAPER_INSET.field）を足した幅が下限。
  */
-const DASHBOARD_WIDTH_LANDSCAPE = 592;
+const DASHBOARD_WIDTH_LANDSCAPE = 534;
 const SIDEBAR_WIDTH_LANDSCAPE = 120;
 
 /** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */

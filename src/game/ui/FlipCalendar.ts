@@ -11,6 +11,12 @@ const DIGIT_GAP = 8;
 const BLOCK_GAP = 28;
 
 /**
+ * 時刻の「:」に確保する幅。字幅はフォントで変わるため実測せず固定で取る——実測すると表示全体の幅、
+ * ひいてはダッシュボード列の幅がフォント依存になる。はみ出しても前後のDIGIT_GAPが吸収する。
+ */
+const COLON_WIDTH = 10;
+
+/**
  * 日時のぶら下げ式フリップカード（ScreenLayout.md 設計原則）。
  * 各桁は上部の留具（リング）だけで吊り下げられ、台紙のような外枠は持たない。
  * タップで時間経過アクションを選ぶ入口になる想定のため、押しボタンとして振る舞う。
@@ -60,7 +66,12 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     this.digits.forEach((digit, index) => digit.setText(value[index]));
   }
 
-  /** 桁の枠とラベルを左から並べ、占有した幅を返す（数字の中身はsetTimeが入れる）。 */
+  /**
+   * 桁の枠を左から並べ、占有した幅を返す（数字の中身はsetTimeが入れる）。
+   *
+   * 日数の側に単位のラベルは置かない。日数の桁は時刻の桁より大きく、時刻の側だけが「:」を持つので、
+   * 大小と区切りだけで読み分けられる——文字を持たなければ翻訳も要らず、幅も設計値だけで決まる。
+   */
   private build(scene: Phaser.Scene, metrics: ScreenMetrics): number {
     const height = metrics.px(DAY_DIGIT.height);
     let cursor = 0;
@@ -69,13 +80,12 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
       this.addDigit(scene, metrics, cursor, height, DAY_DIGIT);
       cursor += metrics.px(DAY_DIGIT.width + DIGIT_GAP);
     }
-    cursor += this.addLabel(scene, metrics, cursor, height, '日目', 26);
 
     cursor += metrics.px(BLOCK_GAP);
     for (let i = 0; i < 4; i++) {
       this.addDigit(scene, metrics, cursor, height, TIME_DIGIT);
       cursor += metrics.px(TIME_DIGIT.width + DIGIT_GAP);
-      if (i === 1) cursor += this.addLabel(scene, metrics, cursor, height, ':', 32);
+      if (i === 1) cursor += this.addColon(scene, metrics, cursor, height);
     }
     return cursor - metrics.px(DIGIT_GAP);
   }
@@ -115,24 +125,18 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     this.digits.push(text);
   }
 
-  /** 「日目」「:」のような桁と桁の間のラベル。占有した幅（前後の間隔込み）を返す。 */
-  private addLabel(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    x: number,
-    blockHeight: number,
-    content: string,
-    fontSize: number,
-  ): number {
+  /** 時・分の間の「:」。確保した幅（COLON_WIDTH）の中央へ置き、占有した幅（後ろの間隔込み）を返す。 */
+  private addColon(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, blockHeight: number): number {
+    const width = metrics.px(COLON_WIDTH);
     const text = scene.add
-      .text(x, blockHeight / 2, content, {
+      .text(x + width / 2, blockHeight / 2, ':', {
         fontFamily: FONT_FAMILY,
-        fontSize: `${metrics.fontPx(fontSize)}px`,
+        fontSize: `${metrics.fontPx(32)}px`,
         fontStyle: 'bold',
         color: cssColor(COLOR.text),
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(0.5);
     this.add(text);
-    return text.width + metrics.px(DIGIT_GAP);
+    return width + metrics.px(DIGIT_GAP);
   }
 }

@@ -885,13 +885,17 @@ export class PlayScene extends ResponsiveScene {
 
     // 9patchなので、絵の向きは変えずに大きさだけ指定する。縦型は表紙の縁を下へ向けるため90度回す。
     // 回すと縦横が入れ替わるので、幅に情報エリアの高さを、高さに幅を渡す。
-    const overlap = this.metrics.px(INFORMATION_OVERLAP_PX);
-    const along = (landscape ? area.width : area.height) + overlap;
-    const across = landscape ? area.height : area.width;
-    const border = this.metrics.px(INFORMATION_BORDER_PX);
+    //
+    // 大きさはuで渡し、絵ごとu倍して敷く。9patchの縁は絵から原寸で切り出されるため、等倍で敷くと
+    // 縁の太さが絵のピクセル数のまま固定され、uで組んだ他の寸法とずれてしまう（informationArt参照）。
+    const scale = this.metrics.u;
+    const along = (landscape ? area.width : area.height) / scale + INFORMATION_OVERLAP_PX;
+    const across = (landscape ? area.height : area.width) / scale;
+    const border = INFORMATION_BORDER_PX;
     const page = this.add
       .nineslice(0, 0, INFORMATION_BACKGROUND, undefined, along, across, border, border, border, border)
       .setOrigin(0, 0)
+      .setScale(scale)
       .setInteractive();
     if (landscape) page.setPosition(area.x, area.y);
     // 原点(0,0)を軸に90度回すと、絵は右下方向ではなく左下方向へ広がる。右上の角を起点に置く。
@@ -985,18 +989,19 @@ export class PlayScene extends ResponsiveScene {
     const conditionGap = this.metrics.px(8);
     const buttonHeight = this.metrics.px(SIZE.iconButton);
 
+    // 条件は縦横どちらでも2列で折り返す。ダッシュボード列の幅では、ポートレイトの右へ横一列に
+    // 並べるだけの幅が無い。
+    const conditionColumns = 2;
+    const conditionRows = Math.ceil(Math.max(1, this.view.conditions.length) / conditionColumns);
+    const conditionBlockWidth = conditionColumns * conditionSize + (conditionColumns - 1) * conditionGap;
+    const conditionBlockHeight = conditionRows * conditionSize + (conditionRows - 1) * conditionGap;
+
     if (this.metrics.isLandscape) {
-      // 横型: 条件の行・装備・怪我を右の縦列に上から並べ、列の下端をポートレイトの下端へ揃える。
-      const columnHeight = conditionSize + gap + buttonHeight + gap + buttonHeight;
+      // 横型: 条件・装備・怪我を右の縦列に上から並べ、列の下端をポートレイトの下端へ揃える。
+      const columnHeight = conditionBlockHeight + gap + buttonHeight + gap + buttonHeight;
       let cursorY = portraitBottom - columnHeight;
-      this.addConditionRow(
-        infoX,
-        cursorY,
-        conditionSize,
-        conditionGap,
-        Math.max(1, this.view.conditions.length),
-      );
-      cursorY += conditionSize + gap;
+      this.addConditionRow(infoX, cursorY, conditionSize, conditionGap, conditionColumns);
+      cursorY += conditionBlockHeight + gap;
       this.addEquipmentButton(
         { x: infoX, y: cursorY, width: infoWidth, height: buttonHeight },
         '装備',
@@ -1015,11 +1020,7 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
-    // 縦型: 上段は「ポートレイト｜条件（2列で折り返し）」、下段は両列にまたがる装備・怪我の行。
-    const conditionColumns = 2;
-    const conditionRows = Math.ceil(this.view.conditions.length / conditionColumns);
-    const conditionBlockWidth = conditionColumns * conditionSize + (conditionColumns - 1) * conditionGap;
-    const conditionBlockHeight = conditionRows * conditionSize + (conditionRows - 1) * conditionGap;
+    // 縦型: 上段は「ポートレイト｜条件」、下段は両列にまたがる装備・怪我の行。
     this.addConditionRow(
       infoX + (infoWidth - conditionBlockWidth) / 2,
       portraitBottom - conditionBlockHeight,
