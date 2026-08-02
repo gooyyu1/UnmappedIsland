@@ -989,18 +989,19 @@ export class PlayScene extends ResponsiveScene {
     const conditionGap = this.metrics.px(8);
     const buttonHeight = this.metrics.px(SIZE.iconButton);
 
+    // 条件は縦横どちらでも2列で折り返す。ダッシュボード列の幅では、ポートレイトの右へ横一列に
+    // 並べるだけの幅が無い。
+    const conditionColumns = 2;
+    const conditionRows = Math.ceil(Math.max(1, this.view.conditions.length) / conditionColumns);
+    const conditionBlockWidth = conditionColumns * conditionSize + (conditionColumns - 1) * conditionGap;
+    const conditionBlockHeight = conditionRows * conditionSize + (conditionRows - 1) * conditionGap;
+
     if (this.metrics.isLandscape) {
-      // 横型: 条件の行・装備・怪我を右の縦列に上から並べ、列の下端をポートレイトの下端へ揃える。
-      const columnHeight = conditionSize + gap + buttonHeight + gap + buttonHeight;
+      // 横型: 条件・装備・怪我を右の縦列に上から並べ、列の下端をポートレイトの下端へ揃える。
+      const columnHeight = conditionBlockHeight + gap + buttonHeight + gap + buttonHeight;
       let cursorY = portraitBottom - columnHeight;
-      this.addConditionRow(
-        infoX,
-        cursorY,
-        conditionSize,
-        conditionGap,
-        Math.max(1, this.view.conditions.length),
-      );
-      cursorY += conditionSize + gap;
+      this.addConditionRow(infoX, cursorY, conditionSize, conditionGap, conditionColumns);
+      cursorY += conditionBlockHeight + gap;
       this.addEquipmentButton(
         { x: infoX, y: cursorY, width: infoWidth, height: buttonHeight },
         '装備',
@@ -1019,11 +1020,7 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
-    // 縦型: 上段は「ポートレイト｜条件（2列で折り返し）」、下段は両列にまたがる装備・怪我の行。
-    const conditionColumns = 2;
-    const conditionRows = Math.ceil(this.view.conditions.length / conditionColumns);
-    const conditionBlockWidth = conditionColumns * conditionSize + (conditionColumns - 1) * conditionGap;
-    const conditionBlockHeight = conditionRows * conditionSize + (conditionRows - 1) * conditionGap;
+    // 縦型: 上段は「ポートレイト｜条件」、下段は両列にまたがる装備・怪我の行。
     this.addConditionRow(
       infoX + (infoWidth - conditionBlockWidth) / 2,
       portraitBottom - conditionBlockHeight,
