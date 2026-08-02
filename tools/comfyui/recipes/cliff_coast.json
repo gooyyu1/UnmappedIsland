@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/objects/cliff_coast.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味は sandy_beach.json を参照。",
+    "",
+    "seedを選んでいるのは、崖が遠く小さく写る絵が混ざるため。60303は崖の面がカードを占める。"
+  ],
+  "output": "src/assets/objects/cliff_coast.png",
+  "prompts": "location_cards.json",
+  "prompt": "cliff_coast",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 60303,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "feather": 24
+  }
+}

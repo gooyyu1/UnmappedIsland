@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/mountain_peak_card_background.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味（背景を抜かない・タイリングを使わない・LoRAの当て方）は",
+    "sandy_beach_card_background.json を参照。",
+    "",
+    "この1枚だけ、レーンと同じ横長（2048x640）で生成してカードの形に切り出す。縦長で頼むと",
+    "平らな山頂が出ないため（理由と失敗の内訳は prompts/card_backgrounds.json の _note）。",
+    "cropで切り出す位置は、裸岩の起伏と霞んだ空の帯がどちらも入るところ（右端）。左寄りは霧だけの絵になる。"
+  ],
+  "output": "src/assets/backgrounds/mountain_peak_card_background.png",
+  "prompts": "card_backgrounds.json",
+  "prompt": "mountain_peak_card_background",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 56901,
+  "width": 2048,
+  "height": 640,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "crop": [1638, 0, 410, 640],
+    "feather": 24
+  }
+}

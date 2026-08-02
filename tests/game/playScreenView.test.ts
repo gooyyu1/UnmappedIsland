@@ -112,6 +112,29 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(new Set(pathCardNames).size, '道のカードは行き先ごとに分かれる').toBe(destinations.size);
   });
 
+  it('道のカードは行き先の土地の絵を出し、他の設置物は自分の絵を出す', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+
+    const view = fromGameSession(game, codex, locale);
+
+    const pathTagId = codex.tagNames.getId('path');
+    const [paths, others] = [true, false].map((isPath) =>
+      view.fixtures.filter((card) => card.objects[0].def.tags.includes(pathTagId) === isPath),
+    );
+    expect(paths.length, '道と道以外が並ぶ土地で確かめる').toBeGreaterThan(0);
+    expect(others.length).toBeGreaterThan(0);
+
+    expect(paths.map((card) => card.art)).toEqual(
+      paths.map((card) => new Path(card.objects[0], codex.propertyNames).destination?.def.name),
+    );
+    expect(
+      paths.some((card) => card.art !== game.startLocation.instance.def.name),
+      '行き先は今いる土地とは限らない',
+    ).toBe(true);
+    expect(others.every((card) => card.art === card.objects[0].def.name)).toBe(true);
+  });
+
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
 
@@ -158,7 +181,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
-  it('設置物のカードだけが、今いる土地を背景として持つ', () => {
+  it('設置物レーンのカードだけが、今いる土地を背景として持つ', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(
@@ -170,12 +193,22 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(
       view.fixtures.map((card) => card.background),
-      '道も含め、設置物のカードはすべて土地の識別子を持つ',
+      '道も含め、このレーンのカードはすべて土地の識別子を持つ',
     ).toEqual(view.fixtures.map(() => view.locationArt));
     expect(
       view.items.every((card) => card.background === undefined),
-      '持ち歩けるアイテムは土地から切り離せるので背景を持たない',
+      '同じ土地に在っても、アイテムのレーンのカードは背景を持たない',
     ).toBe(true);
+  });
+
+  it('現在地のカードは、その土地の絵を持つ', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.currentLocation.art, '土地そのものもobject_defなので、絵は識別子で引ける').toBe(
+      game.startLocation.instance.def.name,
+    );
   });
 
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {

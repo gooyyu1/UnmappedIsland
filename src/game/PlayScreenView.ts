@@ -309,17 +309,20 @@ export function fromGameSession(
   const pathTagId = codex.tagNames.tryGetId('path');
   /**
    * 道の設置物がカードに映すもの（道以外はundefinedで、設置物そのものの名前と絵をそのまま使う）。
-   * 道は「どこへ繋がっているか」だけが意味を持つため、行き先の土地の名前を出す。
+   * 道は「どこへ繋がっているか」だけが意味を持つため、行き先の土地の名前と絵を出す。
    */
-  const destinationOf = (fixture: WorldObject): { icon: string; name: string } | undefined =>
-    pathTagId !== undefined && fixture.def.tags.includes(pathTagId)
-      ? {
-          icon: LOCATION_ICON,
-          name:
-            game.map.nameOfInstance(new Path(fixture, codex.propertyNames).destinationInstanceId) ??
-            UNNAMED_LOCATION,
-        }
-      : undefined;
+  const destinationOf = (
+    fixture: WorldObject,
+  ): { icon: string; name: string; art: string | undefined } | undefined => {
+    if (pathTagId === undefined || !fixture.def.tags.includes(pathTagId)) return undefined;
+
+    const path = new Path(fixture, codex.propertyNames);
+    return {
+      icon: LOCATION_ICON,
+      name: game.map.nameOfInstance(path.destinationInstanceId) ?? UNNAMED_LOCATION,
+      art: path.destination?.def.name,
+    };
+  };
 
   /**
    * 場所ごとの「どのオブジェクトのどのスロットか」。カードの移動はすべてこの表を引いた
@@ -408,6 +411,7 @@ export function fromGameSession(
     currentLocation: {
       icon: LOCATION_ICON,
       name: game.map.nameOfInstance(location.instance.instanceId) ?? UNNAMED_LOCATION,
+      art: location.instance.def.name,
     },
     locationArt: location.instance.def.name,
     // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
@@ -417,12 +421,13 @@ export function fromGameSession(
         : location.explorationProgress / location.explorationProgressMax,
     // 設置物は持ち歩けないのでmoveToを持たないが、並び方はプレイヤーが地形をどう捉えているかで
     // 変わるため、同じスロットの中での並び替えだけは許す。
-    // 設置物のカードだけは、その土地の景色を地に敷く（backgroundArt参照）。持ち歩けるアイテムと
-    // 違って土地から切り離せないものなので、カード自体が土地の一部として見える。
+    // このレーンに並ぶカードだけが、その土地の景色を地に敷く（backgroundArt参照）。オブジェクトの
+    // 種類ではなくここに並ぶかどうかで決まる——背景が表すのは「今その土地に在るもの」だから。
     fixtures: location.fixtureStacks.map((stack) => ({
       ...stackOf(stack, FIXTURE_ICON, 'fixtures'),
-      ...destinationOf(stack[0]),
       background: location.instance.def.name,
+      // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
+      ...destinationOf(stack[0]),
       reorder: reorderIn(stack[0]),
     })),
     items: location.itemStacks.map((stack) => ({

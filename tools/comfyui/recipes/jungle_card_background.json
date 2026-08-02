@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/jungle_card_background.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味（背景を抜かない・タイリングを使わない・LoRAの当て方）は",
+    "sandy_beach_card_background.json を参照。",
+    "",
+    "seedを選んでいるのは、霞んで明るい絵が多く出るため。50203は霞が幹の隙間だけに残り、下生えが濃い。"
+  ],
+  "output": "src/assets/backgrounds/jungle_card_background.png",
+  "prompts": "card_backgrounds.json",
+  "prompt": "jungle_card_background",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 50203,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "feather": 24
+  }
+}

@@ -45,6 +45,14 @@ export class Path {
     return this.instance.getEffectiveValue(this.destinationIdId);
   }
 
+  /**
+   * 移動先のLocation。世界のツリーから引く（MoveEffectの移動先の解決と同じ引き方）ので、
+   * 呼び出し側はインスタンスIDから実体を辿る手順を知らなくてよい。まだ実体化していなければundefined。
+   */
+  get destination(): WorldObject | undefined {
+    return this.instance.findRoot().findDescendantByInstanceId(this.destinationInstanceId);
+  }
+
   /** 移動先の土地にある、こちらへ戻る道のインスタンスID（辺の両端の道は互いを指す）。 */
   get returnPathInstanceId(): number {
     return this.instance.getEffectiveValue(this.returnPathIdId);

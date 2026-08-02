@@ -83,8 +83,8 @@ export interface CardContent {
    */
   readonly art?: string;
   /**
-   * 地に敷く背景を引くための土地のobject_defの識別子（backgroundArt参照）。設置物のカードが
-   * 「その土地に在るもの」だと分かるよう、絵の下に土地の景色を敷く。絵が無い土地では紙のまま。
+   * 地に敷く背景を引くための土地のobject_defの識別子（backgroundArt参照）。カードが「その土地に
+   * 在るもの」だと分かるよう、絵の下に土地の景色を敷く。絵が無い土地では紙のまま。
    */
   readonly background?: string;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
