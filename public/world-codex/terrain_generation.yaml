@@ -54,7 +54,11 @@ axes:
 # hard_limitsだけが担う（3.2〜3.3節）。
 #
 # - object_def: この型が実体化するときのobject_defs（locations.yaml）のid。Build時に存在検証する。
-# - display_name: 命名処理（「東の草原」等）に使う表示名。
+# - display_name: 命名処理（3.6節）に使う表示名。同じ型が島に1つだけなら、これがそのまま名前になる。
+# - name_pool: 同じ型が複数あるときに配る名前の候補。**島のどこに在るかが分かる語を入れないこと。**
+#   地形の把握はプレイヤー自身の仕事なので、方角や「島の奥の」のような語を名前に出すと、行き先の
+#   名前を見ただけで島の形が割れてしまう。個数は、その型が1つの島に出うる最大数（実測はforest 10・
+#   grassland 9・rocky_coast 7）に余裕を足して用意する。足りない分は漢数字の接尾辞で埋まる。
 # - move_cost: 移動コスト（100=等倍）。道のtravel_minutes = 距離 × base_minutes_per_distance ×
 #   両端move_costの平均/100 で決まる（3.5節）。
 # - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（3.3節）。
@@ -67,6 +71,7 @@ location_types:
   sandy_beach:
     object_def: sandy_beach
     display_name: 砂浜
+    name_pool: [白砂の浜, 貝殻の浜, 流木の浜, 遠浅の浜, 荒波の浜, 細砂の浜, 静かな浜]
     applicable_scopes: [island]
     move_cost: 100
     axis_preferences:
@@ -77,6 +82,7 @@ location_types:
   rocky_coast:
     object_def: rocky_coast
     display_name: 岩だらけの海岸
+    name_pool: [丸石の海岸, 黒岩の海岸, 潮だまりの海岸, 藻の海岸, 波洗いの海岸, 崩れ岩の海岸, 苔むした海岸, 貝の海岸, 白岩の海岸]
     applicable_scopes: [island]
     move_cost: 130
     axis_preferences:
@@ -88,6 +94,7 @@ location_types:
   cliff_coast:
     object_def: cliff_coast
     display_name: 岸壁
+    name_pool: [層なす岸壁, 断ち切れた岸壁, 風鳴りの岸壁]
     applicable_scopes: [island]
     move_cost: 170
     axis_preferences:
@@ -99,6 +106,7 @@ location_types:
   grassland:
     object_def: grassland
     display_name: 草原
+    name_pool: [丈高い草原, 花咲く草原, 風わたる草原, 枯れ色の草原, 露の草原, 低草の草原, 波打つ草原, 静かな草原, 広い草原, 荒れた草原, 虫の声の草原]
     applicable_scopes: [island]
     move_cost: 100
     axis_preferences:
@@ -111,6 +119,7 @@ location_types:
   forest:
     object_def: forest
     display_name: 森林
+    name_pool: [高木の森, 下草の森, 苔の森, 倒木の森, 若木の森, 暗い森, 木漏れ日の森, 深い森, しじまの森, 枯葉の森, 実りの森, 細い木の森]
     applicable_scopes: [island]
     move_cost: 120
     axis_preferences:
@@ -123,6 +132,7 @@ location_types:
   jungle:
     object_def: jungle
     display_name: 密林
+    name_pool: [蒸れた密林, 大葉の密林, 蔓の密林, 濃い密林, 湿った密林, 鳥の声の密林]
     applicable_scopes: [island]
     move_cost: 160
     axis_preferences:
@@ -136,6 +146,7 @@ location_types:
   rocky_field:
     object_def: rocky_field
     display_name: 岩場
+    name_pool: [転石の岩場, 割れ岩の岩場, 平岩の岩場, 苔岩の岩場, 白岩の岩場]
     applicable_scopes: [island]
     move_cost: 140
     axis_preferences:
@@ -148,6 +159,7 @@ location_types:
   wasteland:
     object_def: wasteland
     display_name: 荒野
+    name_pool: [ひび割れた荒野, 砂塵の荒野, 枯れ枝の荒野, 石ころの荒野, 白茶けた荒野, 果てない荒野, 静まった荒野]
     applicable_scopes: [island]
     is_fallback: true
     priority: 0
@@ -160,6 +172,7 @@ location_types:
   mountainside:
     object_def: mountainside
     display_name: 山腹
+    name_pool: [がれ場の山腹, 灌木の山腹, 急な山腹, 崩れた山腹, 岩肌の山腹, 草付きの山腹, 石だらけの山腹]
     applicable_scopes: [island]
     move_cost: 200
     axis_preferences:
@@ -171,6 +184,7 @@ location_types:
   mountain_peak:
     object_def: mountain_peak
     display_name: 山頂
+    name_pool: [裸岩の山頂, 風の山頂, 平らな山頂]
     applicable_scopes: [island]
     move_cost: 250
     axis_preferences:

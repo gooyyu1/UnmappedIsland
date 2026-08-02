@@ -128,6 +128,13 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
   const objectDefGlobalId = loader.objectNames.intern(requireScalar(node, 'object_def', context));
   const displayName = requireScalar(node, 'display_name', context);
 
+  const namePool: string[] = [];
+  const namePoolNode = tryGetSeq(node, 'name_pool', context);
+  if (namePoolNode !== undefined)
+    for (const entry of namePoolNode.items as YamlNode[]) namePool.push(asScalarText(entry, context));
+  if (new Set(namePool).size !== namePool.length)
+    throw new YamlLoadError(`${context}: name_poolに同じ名前が複数あります（土地の名前は島の中で一意）。`);
+
   const scopes: string[] = [];
   const scopesNode = tryGetSeq(node, 'applicable_scopes', context);
   if (scopesNode !== undefined)
@@ -179,6 +186,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
     node,
     'object_def',
     'display_name',
+    'name_pool',
     'applicable_scopes',
     'move_cost',
     'is_fallback',
@@ -191,6 +199,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
     name,
     objectDefGlobalId,
     displayName,
+    namePool,
     scopes,
     moveCost,
     isFallback,

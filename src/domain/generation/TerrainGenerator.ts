@@ -34,7 +34,7 @@ export function generate(defs: GenerationDefs | undefined, scopeName: string, se
   assignTypes(defs, scope, sites);
   const delaunayEdges = triangulate(sites);
   const edges = build(sites, delaunayEdges, scope);
-  assignNames(sites);
+  assignNames(sites, rng);
 
   return new IslandMap(scopeName, seed, sites, edges);
 }

@@ -147,7 +147,38 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       expect(new Set(names).size, `シード${seed}: 土地の名前は重複しない`).toBe(map.sites.length);
     }
   });
+
+  it('土地の名前は、その型が1つだけなら表示名そのもの、複数ならname_poolから配られる', () => {
+    for (const seed of SEEDS) {
+      const map = generate(seed);
+      const counts = new Map<string, number>();
+      for (const site of map.sites) counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
+
+      for (const site of map.sites) {
+        const type = site.type!;
+        const expected =
+          counts.get(type.name) === 1 ? [type.displayName] : [...type.namePool, ...ordinalsOf(type)];
+        expect(expected, `シード${seed}: ${type.name}`).toContain(site.name);
+      }
+    }
+  });
+
+  it('土地の名前に位置が分かる語を出さない', () => {
+    // 名前から島の形が割れないことの歯止め（TerrainGeneration.md 3.6節）。方角の語が
+    // name_poolへ紛れ込むのを防ぐ。
+    const DIRECTIONS = ['東', '西', '南', '北'];
+    for (const type of codex.generation!.locationTypes)
+      for (const name of [type.displayName, ...type.namePool])
+        for (const direction of DIRECTIONS)
+          expect(name.includes(direction), `${type.name}: '${name}'`).toBe(false);
+  });
 });
+
+/** name_poolが尽きたときに付く漢数字の接尾辞つきの名前（NameAssigner参照）。 */
+function ordinalsOf(type: { displayName: string }): string[] {
+  const kanji = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  return kanji.map((number) => `${type.displayName}（第${number}）`);
+}
 
 /** 生成結果の完全な指紋（決定性の比較用）。 */
 function fingerprint(map: IslandMap): string {

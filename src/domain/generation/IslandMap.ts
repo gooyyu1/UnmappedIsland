@@ -19,7 +19,7 @@ export class Site {
   /** マッチング（LocationTypeMatcher）で確定するLocationType。 */
   type?: LocationTypeDef;
 
-  /** 命名処理（NameAssigner）で確定する表示名（例: 「東の草原」）。 */
+  /** 命名処理（NameAssigner）で確定する表示名（例: 「草原」「花咲く草原」）。 */
   name?: string;
 
   constructor(index: number, x: number, y: number, onCoastRing: boolean) {
@@ -77,7 +77,7 @@ export class IslandMap {
 
   /**
    * 実体化されたLocationのinstanceIdから、命名処理（NameAssigner）が付けた名前を引く。
-   * 土地の名前はインスタンスごとに決まる（同じobject_defでも「東の草原」「西の草原」）ため、
+   * 土地の名前はインスタンスごとに決まる（同じobject_defでも「花咲く草原」「露の草原」）ため、
    * 型側ではなくこちらが唯一の出所になる。未実体化・未知のIDならundefined。
    */
   nameOfInstance(instanceId: number): string | undefined {

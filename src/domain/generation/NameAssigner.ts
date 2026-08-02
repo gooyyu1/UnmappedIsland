@@ -1,51 +1,45 @@
 import type { Site } from './IslandMap';
+import type { Pcg32 } from './Pcg32';
 
 /**
- * 命名処理（TerrainGeneration.md 3.6節）。島の重心からの方角（8方位）+LocationTypeの表示名で
- * 「東の草原」のような仮称を作り、重複はフォールバック接尾辞（第一/第二…）で区別する。
- * name_pool（固有名詞プール）は今後の課題。
+ * 命名処理（TerrainGeneration.md 3.6節）。LocationTypeの表示名をそのまま名前にし、同じ型が複数
+ * あるときだけname_poolから引いた名前で区別する。
+ *
+ * **島のどこに在るかを名前に出さない。** 地形の把握はプレイヤー自身の仕事なので、方角のように
+ * 位置が分かる修飾語を付けると、行き先の名前を見ただけで島の形が割れてしまう。
  */
 
-const DIRECTIONS = ['東', '北東', '北', '北西', '西', '南西', '南', '南東'];
-
-export function assignNames(sites: readonly Site[]): void {
-  let centerX = 0;
-  let centerY = 0;
+export function assignNames(sites: readonly Site[], rng: Pcg32): void {
+  const byType = new Map<string, Site[]>();
   for (const site of sites) {
-    centerX += site.x;
-    centerY += site.y;
-  }
-  centerX /= sites.length;
-  centerY /= sites.length;
-
-  const counts = new Map<string, number>();
-  const duplicated = new Set<string>();
-  for (const site of sites) {
-    const baseName = `${directionOf(site.x - centerX, site.y - centerY)}の${site.type!.displayName}`;
-    const seen = counts.get(baseName);
-    if (seen !== undefined) duplicated.add(baseName);
-    counts.set(baseName, (seen ?? 0) + 1);
+    const group = byType.get(site.type!.name);
+    if (group === undefined) byType.set(site.type!.name, [site]);
+    else group.push(site);
   }
 
-  const used = new Map<string, number>();
-  for (const site of sites) {
-    const baseName = `${directionOf(site.x - centerX, site.y - centerY)}の${site.type!.displayName}`;
-    if (!duplicated.has(baseName)) {
-      site.name = baseName;
+  for (const group of byType.values()) {
+    const type = group[0].type!;
+    if (group.length === 1) {
+      group[0].name = type.displayName;
       continue;
     }
 
-    const ordinal = (used.get(baseName) ?? 0) + 1;
-    used.set(baseName, ordinal);
-    site.name = `${baseName}${toKanjiOrdinal(ordinal)}`;
+    // プールは引いた順に配り、足りない分は漢数字で埋める（プールが尽きるのは想定外の状態）。
+    const pool = shuffled(type.namePool, rng);
+    group.forEach((site, index) => {
+      site.name = pool[index] ?? `${type.displayName}${toKanjiOrdinal(index + 1)}`;
+    });
   }
 }
 
-/** 重心からのベクトルを8方位に割り当てる（45度刻み、東=0度を中心に反時計回り）。 */
-function directionOf(dx: number, dy: number): string {
-  const angle = Math.atan2(dy, dx); // (-π, π]
-  const sector = Math.floor((angle + Math.PI / 8) / (Math.PI / 4));
-  return DIRECTIONS[((sector % 8) + 8) % 8];
+/** Fisher-Yatesの一様シャッフル。元の配列は変えない。 */
+function shuffled(values: readonly string[], rng: Pcg32): string[] {
+  const result = [...values];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = rng.nextInt(0, i);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 function toKanjiOrdinal(ordinal: number): string {

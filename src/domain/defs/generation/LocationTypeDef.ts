@@ -51,8 +51,14 @@ export class LocationTypeDef {
   /** この型が実体化するときのobject_defのグローバルID（build時に存在検証済み）。 */
   readonly objectDefGlobalId: number;
 
-  /** 命名処理（「東の草原」等）に使う表示名。 */
+  /** 命名処理（NameAssigner）に使う表示名。同じ型が島に1つだけなら、これがそのまま名前になる。 */
   readonly displayName: string;
+
+  /**
+   * 同じ型が島に複数あるときに配る名前の候補（TerrainGeneration.md 3.6節）。個数が足りなければ
+   * 漢数字の接尾辞で埋めるが、それは名前として読めないので、想定される個数ぶんは用意しておく。
+   */
+  readonly namePool: readonly string[];
 
   /** この型が適用される生成スコープ名（3.7節）。空なら全スコープに適用される。 */
   readonly applicableScopes: readonly string[];
@@ -73,6 +79,7 @@ export class LocationTypeDef {
     name: string,
     objectDefGlobalId: number,
     displayName: string,
+    namePool: readonly string[],
     applicableScopes: readonly string[],
     moveCost: number,
     isFallback: boolean,
@@ -83,6 +90,7 @@ export class LocationTypeDef {
     this.name = name;
     this.objectDefGlobalId = objectDefGlobalId;
     this.displayName = displayName;
+    this.namePool = namePool;
     this.applicableScopes = applicableScopes;
     this.moveCost = moveCost;
     this.isFallback = isFallback;

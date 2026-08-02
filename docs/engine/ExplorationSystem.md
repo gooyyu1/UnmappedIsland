@@ -159,7 +159,7 @@ object_defs:
   できない」が自然に両立します。
 - **`move`**（`GameElementDefinition.md` 9.6 節で新設した汎用の active 動詞）が、`actor` を `destination_id`
   が指すインスタンスへ移動させます。移動先を `object_defs` の id（型）ではなくプロパティ値（インスタンスID）
-  で指しているのは、同じ `LocationType` の土地が1つの島に複数存在しうる（例: 「東の草原」と「北の草原」）
+  で指しているのは、同じ `LocationType` の土地が1つの島に複数存在しうる（例: 「花咲く草原」と「露の草原」）
   ため、型ではなく**生成時に確定した特定の個体**を指す必要があるからです。
 
 ### 3.1 道は辺1本につき両端へ2個、発見は両側同時
@@ -231,7 +231,5 @@ explore(actor: WorldObject | undefined, session: WorldSession): boolean {
   `ContainerSystem.md` の液体表現の実装とあわせて今後の課題です。
 - **発見物の `size`/`weight`**: 探索で見つかるアイテム・設置物は、コンテナ容量（`ContainerSystem.md`）に
   関わる `size`/`weight` プロパティをまだ持たせていません。
-- **`name_pool`（固有名詞）**: `TerrainGeneration.md` 3.6 節が構想する、印象的な地形への固有名詞付与は
-  未実装です（現状は「方角+LocationType表示名」、重複時は漢数字の接尾辞のみ）。
 - **同じ土地への道が3本以上ある場合の分布**: 現在の等間隔割り当ては K 本すべてに対して機械的に働きますが、
   「最初の道が見つかるまでが長すぎる／短すぎる」といった体験上の調整は今後の課題です。
