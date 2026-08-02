@@ -173,7 +173,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     }
   });
 
-  it('土地の名前は、その型が1つだけなら表示名そのもの、複数ならname_poolから配られる', () => {
+  it('土地の名前は、その型が1つだけなら表示名そのもの、複数なら亜種から配られる', () => {
     for (const seed of SEEDS) {
       const map = generate(seed);
       const counts = new Map<string, number>();
@@ -181,25 +181,30 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
 
       for (const site of map.sites) {
         const type = site.type!;
-        const expected =
-          counts.get(type.name) === 1 ? [type.displayName] : [...type.namePool, ...ordinalsOf(type)];
+        const alone = counts.get(type.name) === 1;
+        const expected = alone
+          ? [type.displayName]
+          : [...type.variants.map((v) => v.name), ...ordinalsOf(type)];
         expect(expected, `シード${seed}: ${type.name}`).toContain(site.name);
+        expect(site.variant?.name, `シード${seed}: ${type.name}は名前と亜種が一致する`).toBe(
+          alone ? undefined : site.name,
+        );
       }
     }
   });
 
   it('土地の名前に位置が分かる語を出さない', () => {
     // 名前から島の形が割れないことの歯止め（TerrainGeneration.md 3.6節）。方角の語が
-    // name_poolへ紛れ込むのを防ぐ。
+    // 亜種の名前へ紛れ込むのを防ぐ。
     const DIRECTIONS = ['東', '西', '南', '北'];
     for (const type of codex.generation!.locationTypes)
-      for (const name of [type.displayName, ...type.namePool])
+      for (const name of [type.displayName, ...type.variants.map((v) => v.name)])
         for (const direction of DIRECTIONS)
           expect(name.includes(direction), `${type.name}: '${name}'`).toBe(false);
   });
 });
 
-/** name_poolが尽きたときに付く漢数字の接尾辞つきの名前（NameAssigner参照）。 */
+/** 亜種が尽きたときに付く漢数字の接尾辞つきの名前（NameAssigner参照）。 */
 function ordinalsOf(type: { displayName: string }): string[] {
   const kanji = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
   return kanji.map((number) => `${type.displayName}（第${number}）`);

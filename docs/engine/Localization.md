@@ -104,7 +104,7 @@ locale.propertyTag('nutrition').displayName   // '栄養'
 
 ## 対象外・今後の課題
 
-- 土地の名前は例外的に地形生成側（`location_types` の `display_name` と `name_pool`、
+- 土地の名前は例外的に地形生成側（`location_types` の `display_name` と `variants`、
   [TerrainGeneration.md](./TerrainGeneration.md) 3.6節）が持ったままです。同じ型が複数あるかどうかで
   どちらを使うかが決まり、生成時に確定するため、この対応表へ移すには生成した名前を構成要素のまま
   持ち回る作りへ変える必要があります。

@@ -1,4 +1,4 @@
-import type { LocationTypeDef } from '../defs/generation/LocationTypeDef';
+import type { LocationTypeDef, LocationVariantDef } from '../defs/generation/LocationTypeDef';
 
 /**
  * Site（TerrainGeneration.md 1節）: 座標と軸ベクトルを持つ、生成途中のノード。
@@ -19,8 +19,14 @@ export class Site {
   /** マッチング（LocationTypeMatcher）で確定するLocationType。 */
   type?: LocationTypeDef;
 
-  /** 命名処理（NameAssigner）で確定する表示名（例: 「草原」「花咲く草原」）。 */
+  /** 命名処理（NameAssigner）で確定する表示名（例: 「草原」「木苺の草原」）。 */
   name?: string;
+
+  /**
+   * 命名処理（NameAssigner）で確定する亜種。同じ型が島に1つだけならundefined（素の土地）。
+   * 実体化のとき、IslandSpawnerがこの亜種のプロパティを土地へ書き込む。
+   */
+  variant?: LocationVariantDef;
 
   constructor(index: number, x: number, y: number, onCoastRing: boolean) {
     this.index = index;

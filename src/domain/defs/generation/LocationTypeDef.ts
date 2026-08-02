@@ -41,6 +41,28 @@ export class AxisLimit {
 }
 
 /**
+ * 亜種（TerrainGeneration.md 3.6節）: 同じLocationTypeの中の個体差。表示名と、実体化した土地へ
+ * 書き込むプロパティの上書きを持つ。
+ *
+ * **上書きしてよいのは発見量のつまみだけ**という制約は、YAMLの書き手が守る（プロパティの実在は
+ * build時に検証する）。亜種は「少しだけ木苺が多い森」の類であって、そこにしか無いものを作る
+ * 仕組みではない——同じ型は島に高々3個で、型ごとの出現率も5割前後なので、亜種に固有のものを
+ * 紐づけると「島のどこにも無い」が普通に起きる。
+ */
+export class LocationVariantDef {
+  /** その土地の表示名になる（TerrainGeneration.md 3.6節）。島の中で一意。 */
+  readonly name: string;
+
+  /** プロパティのグローバルID→実体化時に書き込む値。空なら素の亜種（名前だけが変わる）。 */
+  readonly props: ReadonlyMap<number, number>;
+
+  constructor(name: string, props: ReadonlyMap<number, number>) {
+    this.name = name;
+    this.props = props;
+  }
+}
+
+/**
  * LocationType（TerrainGeneration.md 1節・3.2節）: 「草原」「洞窟」など、配置の定義。
  * プレイヤーには見えない設計者側の語彙で、実体（Location）はobjectDefGlobalIdが指す
  * object_def（locations.yaml）のインスタンスとして生成される。
@@ -55,10 +77,10 @@ export class LocationTypeDef {
   readonly displayName: string;
 
   /**
-   * 同じ型が島に複数あるときに配る名前の候補（TerrainGeneration.md 3.6節）。個数が足りなければ
-   * 漢数字の接尾辞で埋めるが、それは名前として読めないので、想定される個数ぶんは用意しておく。
+   * 同じ型が島に複数あるときに配る亜種（TerrainGeneration.md 3.6節）。個数が足りなければ名前は
+   * 漢数字の接尾辞で埋まるが、それは名前として読めないので、想定される個数ぶんは用意しておく。
    */
-  readonly namePool: readonly string[];
+  readonly variants: readonly LocationVariantDef[];
 
   /** この型が適用される生成スコープ名（3.7節）。空なら全スコープに適用される。 */
   readonly applicableScopes: readonly string[];
@@ -79,7 +101,7 @@ export class LocationTypeDef {
     name: string,
     objectDefGlobalId: number,
     displayName: string,
-    namePool: readonly string[],
+    variants: readonly LocationVariantDef[],
     applicableScopes: readonly string[],
     moveCost: number,
     isFallback: boolean,
@@ -90,7 +112,7 @@ export class LocationTypeDef {
     this.name = name;
     this.objectDefGlobalId = objectDefGlobalId;
     this.displayName = displayName;
-    this.namePool = namePool;
+    this.variants = variants;
     this.applicableScopes = applicableScopes;
     this.moveCost = moveCost;
     this.isFallback = isFallback;

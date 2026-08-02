@@ -160,6 +160,57 @@ location_types:
     ).toThrowError(/no_such_def/);
   });
 
+  it('亜種が、その土地のobject_defに無いプロパティを上書きするとエラーになる', () => {
+    // 持たないプロパティへの書き込みは黙って消えるので、書き間違いをロード時に止める。
+    expect(() =>
+      load(`
+object_defs:
+  meadow:
+    props:
+      berry_find: {value: 15}
+axes:
+  elevation:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: distance_field, reference: edge, weight: 100}
+location_types:
+  meadow:
+    object_def: meadow
+    display_name: 草地
+    variants:
+      - {name: 木苺の草地, props: {berry_find: 30}}
+      - {name: 泉の草地, props: {no_such_prop: 30}}
+    axis_preferences:
+      elevation: {ideal: 30, tolerance: 25}
+`),
+    ).toThrowError(/no_such_prop/);
+  });
+
+  it('同じ名前の亜種が並ぶとエラーになる', () => {
+    expect(() =>
+      load(`
+object_defs:
+  meadow: {}
+axes:
+  elevation:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: distance_field, reference: edge, weight: 100}
+location_types:
+  meadow:
+    object_def: meadow
+    display_name: 草地
+    variants:
+      - {name: 露の草地}
+      - {name: 露の草地}
+    axis_preferences:
+      elevation: {ideal: 30, tolerance: 25}
+`),
+    ).toThrowError(/variants/);
+  });
+
   it('axis_preferencesが未知の軸を参照するとエラーになる', () => {
     expect(() =>
       load(`

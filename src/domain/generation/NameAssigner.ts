@@ -2,8 +2,8 @@ import type { Site } from './IslandMap';
 import type { Pcg32 } from './Pcg32';
 
 /**
- * 命名処理（TerrainGeneration.md 3.6節）。LocationTypeの表示名をそのまま名前にし、同じ型が複数
- * あるときだけname_poolから引いた名前で区別する。
+ * 命名処理（TerrainGeneration.md 3.6節）。同じLocationTypeが島に1つだけならその表示名をそのまま
+ * 名前にし、複数あるときだけ亜種（variants）を1つずつ配って、名前と個体差の両方を決める。
  *
  * **島のどこに在るかを名前に出さない。** 地形の把握はプレイヤー自身の仕事なので、方角のように
  * 位置が分かる修飾語を付けると、行き先の名前を見ただけで島の形が割れてしまう。
@@ -24,16 +24,17 @@ export function assignNames(sites: readonly Site[], rng: Pcg32): void {
       continue;
     }
 
-    // プールは引いた順に配り、足りない分は漢数字で埋める（プールが尽きるのは想定外の状態）。
-    const pool = shuffled(type.namePool, rng);
+    // 亜種は引いた順に配り、足りない分は漢数字で埋める（足りないのは想定外の状態）。
+    const variants = shuffled(type.variants, rng);
     group.forEach((site, index) => {
-      site.name = pool[index] ?? `${type.displayName}${toKanjiOrdinal(index + 1)}`;
+      site.variant = variants[index];
+      site.name = variants[index]?.name ?? `${type.displayName}${toKanjiOrdinal(index + 1)}`;
     });
   }
 }
 
 /** Fisher-Yatesの一様シャッフル。元の配列は変えない。 */
-function shuffled(values: readonly string[], rng: Pcg32): string[] {
+function shuffled<T>(values: readonly T[], rng: Pcg32): T[] {
   const result = [...values];
   for (let i = result.length - 1; i > 0; i--) {
     const j = rng.nextInt(0, i);

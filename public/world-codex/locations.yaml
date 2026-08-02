@@ -116,6 +116,10 @@ object_defs:
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
   #   土地ごとの探索の重さは、回数（exploration_progress.range.max）だけで表す。
+  # - `weight: {prop: ...}`の候補は**発見量のつまみ**。valueが素の重みで、亜種
+  #   （terrain_generation.yamlのvariants、TerrainGeneration.md 3.6節）が個体ごとに上書きする。
+  #   亜種で変えたい候補にだけ足す。つまみを増やすほど「この土地らしさ」の調整点も増えるので、
+  #   その土地を特徴づける候補（洞窟・水場・実りなど）に絞る。
   # ------------------------------------------------------------------
 
   # 砂浜。開けていて歩きやすく、漂着物とヤシの実に恵まれる。
@@ -125,19 +129,28 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+      # ヤシの木が1本だけ見つかる候補の重み。亜種が上書きする（terrain_generation.yaml）。
+      palm_find:
+        value: 13
+      # ヤシガニが1匹だけ見つかる候補の重み。
+      crab_find:
+        value: 7
+      # 太い枝2本とヤシガニが見つかる候補の重み。
+      driftwood_find:
+        value: 12
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 13
+          - weight: {prop: palm_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: palm_tree, into: self}
           - weight: 5
             add: {self: {exploration_progress: 1}}
             spawn: {object: woven_basket, into: self}
-          - weight: 7
+          - weight: {prop: crab_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: coconut_crab, into: self}
           # 2個
@@ -163,7 +176,7 @@ object_defs:
               - {object: coconut, into: self}
               - {object: coconut, into: self}
               - {object: thick_branch, into: self}
-          - weight: 12
+          - weight: {prop: driftwood_find}
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: thick_branch, into: self}
@@ -177,16 +190,22 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
+      # 洞窟の入口が見つかる候補の重み。
+      cave_find:
+        value: 13
+      # ヤシガニが1匹だけ見つかる候補の重み。
+      crab_find:
+        value: 12
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 13
+          - weight: {prop: cave_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
-          - weight: 12
+          - weight: {prop: crab_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: coconut_crab, into: self}
           # 2個
@@ -226,13 +245,16 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+      # 洞窟の入口が見つかる候補の重み。
+      cave_find:
+        value: 20
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 20
+          - weight: {prop: cave_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: 30
@@ -264,16 +286,22 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
+      # 木苺の茂みが見つかる候補の重み。
+      berry_find:
+        value: 15
+      # 湧き水が見つかる候補の重み。
+      spring_find:
+        value: 10
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 15
+          - weight: {prop: berry_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
-          - weight: 10
+          - weight: {prop: spring_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: spring, into: self}
           # 2個
@@ -313,16 +341,22 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
+      # 木苺の茂みが見つかる候補の重み。
+      berry_find:
+        value: 15
+      # 湧き水が見つかる候補の重み。
+      spring_find:
+        value: 10
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 15
+          - weight: {prop: berry_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
-          - weight: 10
+          - weight: {prop: spring_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: spring, into: self}
           # 2個
@@ -362,16 +396,22 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 18}
+      # ヤシの木が1本だけ見つかる候補の重み。
+      palm_find:
+        value: 15
+      # タロイモが1つだけ見つかる候補の重み。
+      taro_find:
+        value: 10
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 15
+          - weight: {prop: palm_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: palm_tree, into: self}
-          - weight: 10
+          - weight: {prop: taro_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: taro, into: self}
           # 2個
@@ -411,13 +451,16 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
+      # 洞窟の入口が見つかる候補の重み。
+      cave_find:
+        value: 18
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 18
+          - weight: {prop: cave_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: 7
@@ -460,16 +503,22 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+      # 石が1つだけ見つかる候補の重み。
+      stone_find:
+        value: 30
+      # 枝が1本だけ見つかる候補の重み。
+      wood_find:
+        value: 20
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 30
+          - weight: {prop: stone_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: stone, into: self}
-          - weight: 20
+          - weight: {prop: wood_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: branch, into: self}
           # 2個
@@ -498,16 +547,22 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
+      # 洞窟の入口が見つかる候補の重み。
+      cave_find:
+        value: 15
+      # 木苺の茂みが見つかる候補の重み。
+      berry_find:
+        value: 10
     actions:
       explore:
         showMenu: always
         duration: 15
         pick:
           # 1個
-          - weight: 15
+          - weight: {prop: cave_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
-          - weight: 10
+          - weight: {prop: berry_find}
             add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
           # 2個

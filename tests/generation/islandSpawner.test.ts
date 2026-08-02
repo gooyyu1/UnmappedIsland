@@ -186,6 +186,21 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     expect(game.map.nameOfInstance(-1), '未知のinstanceIdは該当なし').toBeUndefined();
   });
 
+  it('亜種のプロパティが、実体化した土地へ書き込まれる', () => {
+    // 亜種は「その土地らしさ」を発見量のつまみ（locations.yamlのweight: {prop:...}）で表す。
+    // 素の値のままでは名前だけの飾りになるので、実体へ届いていることを確かめる。
+    const game = startNewGame(codex, 3, new SeededRng(99));
+
+    const withProps = game.map.sites.filter((site) => (site.variant?.props.size ?? 0) > 0);
+    expect(withProps.length, 'propsを持つ亜種が出るシードで確かめる').toBeGreaterThan(0);
+
+    for (const site of withProps) {
+      const location = game.world.instance.findDescendantByInstanceId(game.map.siteInstanceIds[site.index])!;
+      for (const [propertyGlobalId, value] of site.variant!.props)
+        expect(location.getEffectiveValue(propertyGlobalId), `${site.name}`).toBe(value);
+    }
+  });
+
   it('同じシードなら、WorldSession.rngのシードが異なっても同じ島レイアウトになる', () => {
     // 地形レイアウト(IslandMap)はシードのみに依存し、WorldSession.rng（pick抽選など）には
     // 依存しない: rngのシードを変えても同じ島になる。
