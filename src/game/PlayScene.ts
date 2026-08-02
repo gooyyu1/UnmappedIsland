@@ -33,6 +33,8 @@ import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import { FlipCalendar } from './ui/FlipCalendar';
+import type { MapPlacement } from './ui/MapWindow';
+import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
 import type { ObjectWindowAction } from './ui/ObjectWindow';
 import { ObjectWindow } from './ui/ObjectWindow';
@@ -98,6 +100,9 @@ const SITUATION_PADDING_LANDSCAPE = { x: 20, y: 12 };
 /** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
 const MENU_ICON = '☰';
 
+/** 地図ボタンのアイコン。ドメイン側に表示できる形が無い固定値（装備・怪我のアイコンと同じ扱い）。 */
+const MAP_ICON = '🗺️';
+
 const OPTION_ICONS = ['⚙️', '📖', '📓', MENU_ICON];
 const FILTER_ICONS = ['🗂️', '🍳', '💧', '🔨', '🎲'];
 
@@ -139,6 +144,7 @@ export function scenarioPlayData(scenario: Scenario): PlaySceneData {
       createdAt: 0,
       elapsedDays: 0,
       pinnedStatuses: [],
+      mapCardPositions: [],
     },
     slotIndex: -1,
     scenario,
@@ -190,6 +196,9 @@ export class PlayScene extends ResponsiveScene {
   /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
   private propertyWindow: PropertyWindow | undefined;
 
+  /** 開いている地図ウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
+  private mapWindow: MapWindow | undefined;
+
   /**
    * 開いているオブジェクトの子ウィンドウと、それが映しているカード。開いている間はワールドが
    * 変わらない（覆いが画面全体を塞ぐ）ため、作り直しのときは同じカードのまま開き直せる。
@@ -224,6 +233,12 @@ export class PlayScene extends ResponsiveScene {
    * 切り替えるたびにスロットへ書き戻す（togglePinnedStatus）。
    */
   private pinnedStatuses = new Set<string>();
+
+  /**
+   * ユーザが地図に置いたカードの位置（サイトindex→正規化座標）。セーブデータが持つ値の
+   * 作業用の複製で、カードを置くたびにスロットへ書き戻す（placeMapCard）。
+   */
+  private mapPositions = new Map<number, MapPlacement>();
 
   /** 直前の行動でのステータスの増減。プロパティの識別子で引く（並びが変わっても対応が取れる）。 */
   private statusChanges: ReadonlyMap<string, StatusDelta> = new Map();
@@ -273,6 +288,9 @@ export class PlayScene extends ResponsiveScene {
     this.save = data.save;
     this.slotIndex = data.slotIndex;
     this.pinnedStatuses = new Set(data.save.pinnedStatuses);
+    this.mapPositions = new Map(
+      data.save.mapCardPositions.map((position) => [position.site, { x: position.x, y: position.y }]),
+    );
     this.gameSession = start(this.codex, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
@@ -285,11 +303,13 @@ export class PlayScene extends ResponsiveScene {
     const wasExploring = this.explorationWindow !== undefined;
     const openedPlace = this.slotWindowPlace;
     const wasShowingProperties = this.propertyWindow !== undefined;
+    const wasShowingMap = this.mapWindow !== undefined;
     const openedCard = this.objectWindowCard;
     this.explorationWindow = undefined;
     this.slotWindow = undefined;
     this.slotWindowPlace = undefined;
     this.propertyWindow = undefined;
+    this.mapWindow = undefined;
     this.objectWindow = undefined;
     this.objectWindowCard = undefined;
 
@@ -321,6 +341,8 @@ export class PlayScene extends ResponsiveScene {
     if (wasShowingProperties) this.openPropertyWindow();
     // オブジェクトの子ウィンドウは他の子ウィンドウの上に出るので、最後に開き直す。
     if (openedCard !== undefined) this.openObjectWindow(openedCard);
+    // 地図は全画面を覆うので、さらにその上へ開き直す。
+    if (wasShowingMap) this.openMapWindow();
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
@@ -997,30 +1019,17 @@ export class PlayScene extends ResponsiveScene {
     const conditionBlockHeight = conditionRows * conditionSize + (conditionRows - 1) * conditionGap;
 
     if (this.metrics.isLandscape) {
-      // 横型: 条件・装備・怪我を右の縦列に上から並べ、列の下端をポートレイトの下端へ揃える。
-      const columnHeight = conditionBlockHeight + gap + buttonHeight + gap + buttonHeight;
+      // 横型: 条件の行と、装備・怪我・地図の1行を右の縦列に上から並べ、列の下端をポートレイトの
+      // 下端へ揃える。
+      const columnHeight = conditionBlockHeight + gap + buttonHeight;
       let cursorY = portraitBottom - columnHeight;
       this.addConditionRow(infoX, cursorY, conditionSize, conditionGap, conditionColumns);
       cursorY += conditionBlockHeight + gap;
-      this.addEquipmentButton(
-        { x: infoX, y: cursorY, width: infoWidth, height: buttonHeight },
-        '装備',
-        this.view.equipmentIcon,
-        COLOR.equipmentButton,
-        'equipment',
-      );
-      cursorY += buttonHeight + gap;
-      this.addEquipmentButton(
-        { x: infoX, y: cursorY, width: infoWidth, height: buttonHeight },
-        '怪我',
-        this.view.injuryIcon,
-        COLOR.injuryButton,
-        'injuries',
-      );
+      this.addSlotButtonRow({ x: infoX, y: cursorY, width: infoWidth, height: buttonHeight });
       return;
     }
 
-    // 縦型: 上段は「ポートレイト｜条件」、下段は両列にまたがる装備・怪我の行。
+    // 縦型: 上段は「ポートレイト｜条件」、下段は両列にまたがる装備・怪我・地図の行。
     this.addConditionRow(
       infoX + (infoWidth - conditionBlockWidth) / 2,
       portraitBottom - conditionBlockHeight,
@@ -1029,23 +1038,12 @@ export class PlayScene extends ResponsiveScene {
       conditionColumns,
     );
 
-    const rowY = portraitBottom + gap;
-    const rowWidth = area.width - padding * 2;
-    const halfWidth = (rowWidth - gap) / 2;
-    this.addEquipmentButton(
-      { x: area.x + padding, y: rowY, width: halfWidth, height: buttonHeight },
-      '装備',
-      this.view.equipmentIcon,
-      COLOR.equipmentButton,
-      'equipment',
-    );
-    this.addEquipmentButton(
-      { x: area.x + padding + halfWidth + gap, y: rowY, width: halfWidth, height: buttonHeight },
-      '怪我',
-      this.view.injuryIcon,
-      COLOR.injuryButton,
-      'injuries',
-    );
+    this.addSlotButtonRow({
+      x: area.x + padding,
+      y: portraitBottom + gap,
+      width: area.width - padding * 2,
+      height: buttonHeight,
+    });
   }
 
   /** 条件はラベルなしのアイコンボタン。columnsごとに折り返す。 */
@@ -1067,37 +1065,72 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
+  /** 装備・怪我・地図の3ボタンを、渡した行の幅を均等に分けて並べる。 */
+  private addSlotButtonRow(row: Rect): void {
+    const gap = this.metrics.px(SIZE.gap);
+    const buttons = [
+      {
+        label: '装備',
+        icon: this.view.equipmentIcon,
+        fill: COLOR.equipmentButton,
+        onTap: () => this.openSlotWindow('equipment'),
+      },
+      {
+        label: '怪我',
+        icon: this.view.injuryIcon,
+        fill: COLOR.injuryButton,
+        onTap: () => this.openSlotWindow('injuries'),
+      },
+      { label: '地図', icon: MAP_ICON, fill: COLOR.mapButton, onTap: () => this.openMapWindow() },
+    ];
+    const width = (row.width - gap * (buttons.length - 1)) / buttons.length;
+    buttons.forEach((spec, index) => {
+      this.addSlotButton({ x: row.x + index * (width + gap), y: row.y, width, height: row.height }, spec);
+    });
+  }
+
   /**
-   * 装備・怪我はアイコンの右に種別の固定ラベルを置いた横長ボタン（アイテム名は出さない）。
-   * 押すと、そのスロットの中身を並べる子ウィンドウが開く（openSlotWindow）。
+   * 装備・怪我・地図の固定ラベル付きボタン（アイテム名は出さない）。3つ並べるため中身は幅で
+   * 組み替える——収まる幅ならアイコンの右にラベル、狭い幅（横型の右列）ならアイコンの下にラベル。
    */
-  private addEquipmentButton(rect: Rect, label: string, icon: string, fill: number, place: CardPlace): void {
+  private addSlotButton(
+    rect: Rect,
+    spec: { label: string; icon: string; fill: number; onTap: () => void },
+  ): void {
     const button = new Button(this, rect, {
-      fill,
+      fill: spec.fill,
       border: COLOR.buttonBorder,
       borderWidth: Math.max(1, this.metrics.px(2)),
       radius: this.metrics.px(SIZE.radius),
     });
-    const left = this.metrics.px(18);
-    const iconText = addLabel(this, this.metrics, left, rect.height / 2, icon, { size: 44 }).setOrigin(
-      0,
-      0.5,
-    );
-    button.addContent(
-      iconText,
-      addLabel(
-        this,
-        this.metrics,
-        left + iconText.width + this.metrics.px(SIZE.gap),
-        rect.height / 2,
-        label,
-        { size: 24, bold: true },
-      ).setOrigin(0, 0.5),
-    );
-    button.on(
-      'pointerup',
-      this.whileIdle(() => this.openSlotWindow(place)),
-    );
+    if (rect.width >= this.metrics.px(120)) {
+      const left = this.metrics.px(14);
+      const iconText = addLabel(this, this.metrics, left, rect.height / 2, spec.icon, {
+        size: 40,
+      }).setOrigin(0, 0.5);
+      button.addContent(
+        iconText,
+        addLabel(
+          this,
+          this.metrics,
+          left + iconText.width + this.metrics.px(8),
+          rect.height / 2,
+          spec.label,
+          { size: 24, bold: true },
+        ).setOrigin(0, 0.5),
+      );
+    } else {
+      button.addContent(
+        addLabel(this, this.metrics, rect.width / 2, rect.height * 0.32, spec.icon, { size: 30 }).setOrigin(
+          0.5,
+        ),
+        addLabel(this, this.metrics, rect.width / 2, rect.height * 0.74, spec.label, {
+          size: 20,
+          bold: true,
+        }).setOrigin(0.5),
+      );
+    }
+    button.on('pointerup', this.whileIdle(spec.onTap));
   }
 
   /**
@@ -1212,6 +1245,24 @@ export class PlayScene extends ResponsiveScene {
    */
   private savePinnedStatuses(): void {
     this.save = { ...this.save, pinnedStatuses: [...this.pinnedStatuses] };
+    this.writeSave();
+  }
+
+  /** 地図でカードを置いた位置をセーブデータへ書き戻す（savePinnedStatusesと同じ扱い）。 */
+  private placeMapCard(site: number, at: MapPlacement): void {
+    this.mapPositions.set(site, at);
+    this.save = {
+      ...this.save,
+      mapCardPositions: [...this.mapPositions].map(([index, position]) => ({
+        site: index,
+        x: position.x,
+        y: position.y,
+      })),
+    };
+    this.writeSave();
+  }
+
+  private writeSave(): void {
     if (this.slotIndex >= 0) new SaveSlots(localStorage).write(this.slotIndex, this.save);
   }
 
@@ -1244,6 +1295,20 @@ export class PlayScene extends ResponsiveScene {
       area: this.layout.slotWindowArea,
       onClose: () => {
         this.propertyWindow = undefined;
+      },
+    });
+  }
+
+  /** 地図ボタンから開く地図ウィンドウ。既知の土地と発見済みの道を、ユーザが並べた位置で見せる。 */
+  private openMapWindow(): void {
+    this.mapWindow?.close();
+    this.mapWindow = new MapWindow(this, this.metrics, {
+      lands: this.view.mapLands,
+      roads: this.view.mapRoads,
+      positions: this.mapPositions,
+      onPlace: (site, at) => this.placeMapCard(site, at),
+      onClose: () => {
+        this.mapWindow = undefined;
       },
     });
   }
