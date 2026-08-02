@@ -121,6 +121,9 @@ export interface CardCombination {
 export interface MapLandView {
   readonly site: number;
   readonly card: CardContent;
+
+  /** 今プレイヤーが居る土地か。地図ではこのカードだけを太い枠で強調する。 */
+  readonly current: boolean;
 }
 
 /** 地図ウィンドウに出す、発見済みの道1本（無向辺）。両端のサイトは必ずmapLandsに含まれる。 */
@@ -397,6 +400,7 @@ export function fromGameSession(
             name: locationNameOf(instanceId),
             art: root.findDescendantByInstanceId(instanceId)?.def.name,
           },
+          current: site === currentSite,
         };
       });
     return { lands, roads: [...roads.values()] };
