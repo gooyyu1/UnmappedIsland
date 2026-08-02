@@ -134,11 +134,15 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 - 採用した各辺について、モジュール内関数 `travelMinutes(sites, a, b, distance, scope)` で移動時間（分、
   15分刻み・下限 `MIN_TRAVEL_MINUTES`）を計算し、`IslandEdge` を作ります。
 
-### 3.6 `assignNames(sites)`（`NameAssigner.ts`）
+### 3.6 `assignNames(sites, rng)`（`NameAssigner.ts`）
 
-`Site.name` を確定します。全 `Site` の座標の重心を求め、モジュール内関数 `directionOf(dx, dy)` で各 `Site`
-を8方位に丸め、`"{方角}の{Site.type.displayName}"` を仮の名前にします。同じ名前が複数生じた場合は、
-モジュール内関数 `toKanjiOrdinal(ordinal)` による接尾辞（「（第一）」等）を付けます。
+`Site.name` と `Site.variant` を確定します。`Site` を `LocationType` ごとにまとめ、1 つだけの型はその
+`displayName` を名前にし（亜種は付きません）、複数ある型はモジュール内関数 `shuffled(values, rng)` で
+並べ替えた `variants` を 1 つずつ配ります。亜種が尽きた分にはモジュール内関数 `toKanjiOrdinal(ordinal)`
+による接尾辞（「（第四）」等）を付けます。亜種の `props` を実体へ書き込むのは `IslandSpawner`（4 節）です。
+
+`rng` は生成の他の段と同じ `Pcg32` で、命名は最後の段なので、名前の抽選が他の段の乱数列を動かすことは
+ありません。
 
 ## 4. 実体化: `IslandSpawner`
 
@@ -146,8 +150,9 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 （`world` を根とするツリー）へ実体化します。
 
 - **`populate(session, map)`**:
-  1. `map.sites` を1つずつ `session.spawn(site.type.objectDefGlobalId)` し、`world.locations` スロットへ
-     `moveToSlot`。生成したインスタンスの `instanceId` を `map.siteInstanceIds[site.index]` へ書き込みます
+  1. `map.sites` を1つずつ `session.spawn(site.type.objectDefGlobalId)` し、`site.variant` があれば
+     その `props` を `setProperty` で書き込んでから、`world.locations` スロットへ `moveToSlot`。生成した
+     インスタンスの `instanceId` を `map.siteInstanceIds[site.index]` へ書き込みます
      （これが `IslandMap` を書き換える唯一の箇所です）。
   2. `map.sites` を1つずつ、その `Site` に接続する `map.edges` を集め（`filter`/`map`）、
      `ObjectDef.getPropertyDef(progressId).range.max` から探索率100%の進捗 `progressMax` を読み、道の本数に

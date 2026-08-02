@@ -136,6 +136,31 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       }
   });
 
+  it('同じ地形が並びすぎない（max_sites_per_type）', () => {
+    const max = codex.generation!.scopes.get('island')!.maxSitesPerType;
+    expect(max, '上限を設けたスコープで確かめる').toBeGreaterThan(0);
+
+    for (const seed of SEEDS) {
+      const counts = new Map<string, number>();
+      for (const site of generate(seed).sites)
+        counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
+
+      for (const [name, count] of counts) expect(count, `シード${seed}: ${name}`).toBeLessThanOrEqual(max);
+    }
+  });
+
+  it('上限は島の地形の種類を増やす', () => {
+    // 上限が無いと、軸空間の中央付近に理想点を持つ型が大半のサイトを取り、端に寄った型が
+    // ほとんど出ない（TerrainGeneration.md 3.4節）。実測値はTerrainStats.md。
+    const seen = new Map<string, number>();
+    for (const seed of SEEDS) {
+      const types = new Set(generate(seed).sites.map((s) => s.type!.name));
+      for (const name of types) seen.set(name, (seen.get(name) ?? 0) + 1);
+    }
+
+    expect(seen.size, 'どの地形も、25島のうちのどこかには出る').toBe(codex.generation!.locationTypes.length);
+  });
+
   it('土地の名前は割り当てられ、重複しない', () => {
     for (const seed of SEEDS) {
       const map = generate(seed);
@@ -147,7 +172,43 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       expect(new Set(names).size, `シード${seed}: 土地の名前は重複しない`).toBe(map.sites.length);
     }
   });
+
+  it('土地の名前は、その型が1つだけなら表示名そのもの、複数なら亜種から配られる', () => {
+    for (const seed of SEEDS) {
+      const map = generate(seed);
+      const counts = new Map<string, number>();
+      for (const site of map.sites) counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
+
+      for (const site of map.sites) {
+        const type = site.type!;
+        const alone = counts.get(type.name) === 1;
+        const expected = alone
+          ? [type.displayName]
+          : [...type.variants.map((v) => v.name), ...ordinalsOf(type)];
+        expect(expected, `シード${seed}: ${type.name}`).toContain(site.name);
+        expect(site.variant?.name, `シード${seed}: ${type.name}は名前と亜種が一致する`).toBe(
+          alone ? undefined : site.name,
+        );
+      }
+    }
+  });
+
+  it('土地の名前に位置が分かる語を出さない', () => {
+    // 名前から島の形が割れないことの歯止め（TerrainGeneration.md 3.6節）。方角の語が
+    // 亜種の名前へ紛れ込むのを防ぐ。
+    const DIRECTIONS = ['東', '西', '南', '北'];
+    for (const type of codex.generation!.locationTypes)
+      for (const name of [type.displayName, ...type.variants.map((v) => v.name)])
+        for (const direction of DIRECTIONS)
+          expect(name.includes(direction), `${type.name}: '${name}'`).toBe(false);
+  });
 });
+
+/** 亜種が尽きたときに付く漢数字の接尾辞つきの名前（NameAssigner参照）。 */
+function ordinalsOf(type: { displayName: string }): string[] {
+  const kanji = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  return kanji.map((number) => `${type.displayName}（第${number}）`);
+}
 
 /** 生成結果の完全な指紋（決定性の比較用）。 */
 function fingerprint(map: IslandMap): string {

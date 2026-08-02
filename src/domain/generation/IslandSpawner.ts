@@ -38,6 +38,10 @@ export function populate(session: WorldSession, map: IslandMap): void {
   const locations = new Array<WorldObject>(map.sites.length);
   for (const site of map.sites) {
     const location = session.spawn(site.type!.objectDefGlobalId);
+    // 亜種の個体差は、探索の抽選がweightとして読むプロパティ（TerrainGeneration.md 3.6節）。
+    if (site.variant !== undefined)
+      for (const [propertyGlobalId, value] of site.variant.props)
+        location.setProperty(propertyGlobalId, value);
     const error = location.moveToSlot(world, locationsSlotId, codex.wellKnown);
     if (error !== undefined) throw new Error(`土地 '${site.type!.name}' を配置できません: ${error}`);
     locations[site.index] = location;

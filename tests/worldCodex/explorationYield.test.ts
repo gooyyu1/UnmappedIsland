@@ -81,4 +81,35 @@ describe('探索で見つかる物の数', () => {
     // 「複数見つかることもある」ではなく「複数の方が普通」を狙っている。乏しい土地でも4割は超える。
     expect(multiple, `${landName}: 2個以上見つかる割合`).toBeGreaterThan(0.4);
   });
+
+  it('発見量のつまみが、その候補の出やすさを決める', () => {
+    // 亜種（TerrainGeneration.md 3.6節）は、このつまみを土地ごとに上書きして個体差を作る。
+    // 重み0の候補は抽選から外れる（PickEffect）ので、上下の端は確率ではなく不変条件で確かめられる。
+    const palmFindId = codex.propertyNames.getId('palm_find');
+
+    expect(countOf('sandy_beach', 'palm_tree', new Map([[palmFindId, 0]])), '重み0なら出ない').toBe(0);
+    expect(
+      countOf('sandy_beach', 'palm_tree', new Map([[palmFindId, 10000]])),
+      '重みが他を圧倒すればほぼ毎回出る',
+    ).toBeGreaterThan(TRIALS * 0.9);
+  });
+
+  /** その土地をpropsを上書きして作り、TRIALS回探索して、見つかったobject_defの数を返す。 */
+  function countOf(landName: string, objectName: string, props: ReadonlyMap<number, number>): number {
+    const session = new WorldSession(codex);
+    const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
+    const worldView = new World(worldInstance, codex.propertyNames);
+    const explorer = new WorldSession(codex, worldView, new SeededRng(20250801));
+
+    const instance = explorer.spawn(codex.objectNames.getId(landName));
+    for (const [propertyGlobalId, value] of props) instance.setProperty(propertyGlobalId, value);
+    expect(
+      instance.moveToSlot(worldInstance, codex.slotNames.getId('locations'), codex.wellKnown),
+    ).toBeUndefined();
+    const location = new Location(instance, codex);
+
+    const wanted = codex.objectNames.getId(objectName);
+    for (let i = 0; i < TRIALS; i++) location.explore(undefined, explorer);
+    return [...location.items, ...location.fixtures].filter((o) => o.def.globalId === wanted).length;
+  }
 });

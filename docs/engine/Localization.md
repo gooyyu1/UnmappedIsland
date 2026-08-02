@@ -104,9 +104,9 @@ locale.propertyTag('nutrition').displayName   // '栄養'
 
 ## 対象外・今後の課題
 
-- 土地の名前は例外的に地形生成側（`location_types` の `display_name`、
-  [TerrainGeneration.md](./TerrainGeneration.md) 3.6節）が持ったままです。「東の草原」のように
-  方角・重複の序数と組み合わせて生成時に確定するため、この対応表へ移すには生成した名前を
-  「方角＋型＋序数」の構成要素として持ち回る作りへ変える必要があります。
+- 土地の名前は例外的に地形生成側（`location_types` の `display_name` と `variants`、
+  [TerrainGeneration.md](./TerrainGeneration.md) 3.6節）が持ったままです。同じ型が複数あるかどうかで
+  どちらを使うかが決まり、生成時に確定するため、この対応表へ移すには生成した名前を構成要素のまま
+  持ち回る作りへ変える必要があります。
 - UIの固定ラベル（「装備」「怪我」など）は各画面のコードに直接書かれたままです。`object_texts` と
   並ぶ別の節として集約できるよう、トップレベルを最初から節で区切っています。

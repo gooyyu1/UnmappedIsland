@@ -20,7 +20,12 @@ import { AxisDef, GeneratorLayer } from '../domain/defs/generation/AxisDef';
 import { GenerationDefs } from '../domain/defs/generation/GenerationDefs';
 import { GenerationScopeDef, GuaranteeDef } from '../domain/defs/generation/GenerationScopeDef';
 import type { GuaranteePick } from '../domain/defs/generation/GenerationScopeDef';
-import { AxisLimit, AxisPreference, LocationTypeDef } from '../domain/defs/generation/LocationTypeDef';
+import {
+  AxisLimit,
+  AxisPreference,
+  LocationTypeDef,
+  LocationVariantDef,
+} from '../domain/defs/generation/LocationTypeDef';
 
 /** 蓄積した地形生成定義（axes/location_types/generation_scopes）をLoad系メソッドの呼び出しごとに
  * この関数群を通じて登録する。trait合成が無いためパース済みのDefで持ち、他ファイルとの相互参照の
@@ -121,12 +126,50 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
   }
 }
 
+/**
+ * variants（亜種、TerrainGeneration.md 3.6節）。`- {name: 木苺の森, props: {berry_yield: 20}}` の並び。
+ * propsのプロパティが実在するかの検証はbuildGenerationDefsまで遅延する（object_defが別ファイルで
+ * 後から定義されうるため、object_defの実在検証と同じ理由）。
+ */
+function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): LocationVariantDef[] {
+  const variants: LocationVariantDef[] = [];
+  const variantsNode = tryGetSeq(node, 'variants', context);
+  if (variantsNode === undefined) return variants;
+
+  for (const entry of variantsNode.items as YamlNode[]) {
+    const variantContext = `${context}.variants[${variants.length}]`;
+    const map = asMap(entry, variantContext);
+    const variantName = requireScalar(map, 'name', variantContext);
+
+    const props = new Map<number, number>();
+    const propsNode = tryGetMap(map, 'props', variantContext);
+    if (propsNode !== undefined)
+      for (const [propName, valueNode] of entriesInOrder(propsNode)) {
+        const propContext = `${variantContext}.props.'${propName}'`;
+        const value = Number(asScalarText(valueNode, propContext));
+        if (!Number.isInteger(value))
+          throw new YamlLoadError(`${propContext}: 亜種が上書きする値は整数である必要があります。`);
+        props.set(loader.propertyNames.intern(propName), value);
+      }
+
+    checkUnknownKeys(variantContext, map, 'name', 'props');
+    variants.push(new LocationVariantDef(variantName, props));
+  }
+
+  if (new Set(variants.map((v) => v.name)).size !== variants.length)
+    throw new YamlLoadError(`${context}: variantsに同じnameが複数あります（土地の名前は島の中で一意）。`);
+
+  return variants;
+}
+
 function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAMLMap): LocationTypeDef {
   const context = `location_types.'${name}'`;
 
   // object_defの実在検証はbuildGenerationDefsまで遅延する（別ファイルで後から定義されうるため）。
   const objectDefGlobalId = loader.objectNames.intern(requireScalar(node, 'object_def', context));
   const displayName = requireScalar(node, 'display_name', context);
+
+  const variants = parseVariants(loader, context, node);
 
   const scopes: string[] = [];
   const scopesNode = tryGetSeq(node, 'applicable_scopes', context);
@@ -179,6 +222,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
     node,
     'object_def',
     'display_name',
+    'variants',
     'applicable_scopes',
     'move_cost',
     'is_fallback',
@@ -191,6 +235,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
     name,
     objectDefGlobalId,
     displayName,
+    variants,
     scopes,
     moveCost,
     isFallback,
@@ -259,11 +304,17 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
     tryGetInt(node, 'interior_bias', context) ?? 0,
     tryGetInt(node, 'extra_edge_detour_factor', context) ?? 150,
     tryGetInt(node, 'base_minutes_per_distance', context) ?? 1,
+    tryGetInt(node, 'max_sites_per_type', context) ?? 0,
+    tryGetInt(node, 'crowding_penalty', context) ?? 0,
     guarantees,
   );
 
   if (scope.interiorBias < 0 || scope.interiorBias > 100)
     throw new YamlLoadError(`${context}: interior_biasは0〜100である必要があります。`);
+  if (scope.maxSitesPerType < 0)
+    throw new YamlLoadError(`${context}: max_sites_per_typeは0以上である必要があります（0で無制限）。`);
+  if (scope.crowdingPenalty < 0)
+    throw new YamlLoadError(`${context}: crowding_penaltyは0以上である必要があります（0で無効）。`);
 
   checkUnknownKeys(
     context,
@@ -274,6 +325,8 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
     'interior_bias',
     'extra_edge_detour_factor',
     'base_minutes_per_distance',
+    'max_sites_per_type',
+    'crowding_penalty',
     'guarantees',
   );
 
@@ -310,6 +363,17 @@ export function buildGenerationDefs(
         throw new YamlLoadError(
           `location_types '${type.name}' のhard_limitsが参照する軸 '${limit.axis}' が見つかりません。`,
         );
+
+    // 亜種が上書きするプロパティは、その土地のobject_defが持っていなければならない（持たない
+    // プロパティへの書き込みは黙って消えるため、書き間違いをここで止める）。
+    const objectDef = objectDefsByGlobalId.get(type.objectDefGlobalId)!;
+    for (const variant of type.variants)
+      for (const propertyGlobalId of variant.props.keys())
+        if (objectDef.getPropertyDef(propertyGlobalId) === undefined)
+          throw new YamlLoadError(
+            `location_types '${type.name}' の亜種 '${variant.name}' が上書きするプロパティ ` +
+              `'${loader.propertyNames.getName(propertyGlobalId)}' を、object_def '${objectDef.name}' が持っていません。`,
+          );
   }
 
   for (const scope of loader.generationScopes.values())

@@ -33,13 +33,18 @@ interface TerrainStats {
   readonly extraEdgeCount: Stat;
   readonly extraEdgeRatio: Stat;
 
+  /** 島1つあたりに出た土地の種類の数（同じ型がいくつあっても1と数える）。 */
+  readonly typesPerIsland: Stat;
+  /** 型ごと: 島1つあたりの個数（出なかった島は0として数える）。並びはYAMLの宣言順。 */
+  readonly countByType: ReadonlyMap<string, Stat>;
+
   /** 土地1つあたり: 次数。全島の全土地をまとめた分布。 */
   readonly degree: Stat;
   /** 道1本あたり: 移動時間（分）。 */
   readonly travelMinutes: Stat;
 }
 
-function createStats(): TerrainStats {
+function createStats(typeNames: readonly string[]): TerrainStats {
   return {
     siteCount: new Stat(),
     edgeCount: new Stat(),
@@ -47,6 +52,8 @@ function createStats(): TerrainStats {
     degreeStdDevPerIsland: new Stat(),
     extraEdgeCount: new Stat(),
     extraEdgeRatio: new Stat(),
+    typesPerIsland: new Stat(),
+    countByType: new Map(typeNames.map((name) => [name, new Stat()])),
     degree: new Stat(),
     travelMinutes: new Stat(),
   };
@@ -74,6 +81,11 @@ function collect(stats: TerrainStats, map: IslandMap): void {
   // 全土地を繋ぐのに最低限必要な道はn-1本（MST）。それを超えた分が近道・分岐として復活した辺。
   stats.extraEdgeCount.add(map.edges.length - (n - 1));
   stats.extraEdgeRatio.add(((map.edges.length - (n - 1)) / n) * 100);
+
+  const counts = new Map<string, number>();
+  for (const site of map.sites) counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
+  stats.typesPerIsland.add(counts.size);
+  for (const [name, stat] of stats.countByType) stat.add(counts.get(name) ?? 0);
 }
 
 function buildReport(stats: TerrainStats): string {
@@ -116,6 +128,26 @@ function buildReport(stats: TerrainStats): string {
     ['余分な道／土地数', '%', stats.extraEdgeRatio],
   ]);
 
+  append('## 土地の種類ごと');
+  append();
+  append('同じ地形は環境も発見物も見た目も同じなので、並べても島は広くならない。個数は');
+  append('`max_sites_per_type` で頭打ちにし、そこへ届く前から `crowding_penalty` で他の型へ譲らせている');
+  append('（TerrainGeneration.md 3.4節）。');
+  append();
+  appendStatTable('項目', [['島あたりの種類数', '種類', stats.typesPerIsland]]);
+
+  append('| 種類 | 出現する島 | 平均個数 | 出た島での平均 | 最大 |');
+  append('| --- | --- | --- | --- | --- |');
+  for (const [name, stat] of stats.countByType) {
+    const appeared = 1 - stat.shareOf(0);
+    const meanWhenPresent = appeared === 0 ? 0 : stat.mean / appeared;
+    append(
+      `| ${name} | ${(appeared * 100).toFixed(1)}% | ${stat.mean.toFixed(2)} |` +
+        ` ${meanWhenPresent.toFixed(2)} | ${stat.max.toFixed(0)} |`,
+    );
+  }
+  append();
+
   append('## 土地ごと');
   append();
   appendStatTable('項目', [['次数', '本', stats.degree]]);
@@ -144,7 +176,7 @@ describe.runIf(process.env.RUN_TERRAIN_STATS === '1')('地形生成統計レポ�
   it(`${SEED_COUNT}シード分の島を生成してTerrainStats.mdを再生成する`, () => {
     const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
 
-    const stats = createStats();
+    const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
     for (let seed = 0; seed < SEED_COUNT; seed++) {
       collect(stats, generateTerrain(codex.generation, 'island', seed));
     }
