@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/path.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "道のカードは、地に行き先の土地の景色を敷いて、その上にこの道を載せる（PlayScreenView参照）。",
+    "そのため設置物（palm_tree）と同じく絵をカード全面へ敷き（size: card）、白い余白は",
+    "mode: background で抜く。抜いた先に出るのが行き先の景色なので、ここだけは紙ではなく景色が透ける。",
+    "",
+    "作風はアイテム側に合わせる（LoRAは強度0）。下に敷く景色が水彩なので浮くかとも思ったが、",
+    "ヤシの木が同じ条件で馴染んでいる。",
+    "",
+    "seedは細い道が出るものを選ぶ。太い帯が出るseedは、カードの下半分が土色で埋まって行き先の",
+    "景色が隠れる（10土地ぶんの背景に載せて確かめた）。70305は幅が控えめで縁も滑らか。"
+  ],
+  "output": "src/assets/objects/path.png",
+  "prompts": "objects.json",
+  "prompt": "path",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 70305,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "feather": 24
+  }
+}

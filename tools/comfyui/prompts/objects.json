@@ -179,5 +179,23 @@
     ],
     "positive": "exactly one dark grey stone alone on an empty white page, a stone broken to a sharp point, angular flat faces, straight chipped edges, dark grey stone with darker mottling, matte dusty surface, clearly three dimensional with soft shading across each facet, gentle light from the upper left, the stone is small and lies flat on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, high quality",
     "negative": "flat silhouette, flat shading, two dimensional, paper cutout, monochrome, greyscale, ink wash painting, glossy, shiny, wet, polished, lacquered, reflection, specular highlight, glare, white stone, light grey, cream stone, chalk, marble, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, monolith, obelisk, rounded pebble, smooth stone, river stone, oval stone, egg, gravel, sand, crystal, gemstone, metal blade, modern knife, weapon handle, wooden handle, arrowhead on a shaft, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+
+  "path": {
+    "description": "道。踏み分けられた土の道を1本、白地から切り出す。行き先の土地の景色の上に載る。",
+    "_note": [
+      "他の物と違い、**景色を描かせない**のが要点。道は必ず風景の中に描かれようとするので、",
+      "空・地平線・草地・木を否定して、帯だけを白地に浮かせる。",
+      "",
+      "**細く・端をぼかす、とは頼まない。** 「幅は紙の1/4まで」「遠い端は白へ溶ける」「左右に広い余白」と",
+      "書いたら、帯そのものが消えて糸・羽根・リボン・煙になった（4枚とも）。下から入って上で尖る",
+      "「面」として頼み、細さはseedを選んで得る。",
+      "",
+      "細部（小石・轍・足跡）は頼まない。カードでは高さ320pxまで縮むので潰れる上に、",
+      "頼むと土の面を埋めるほど描かれて帯に見えなくなる。縁の草も同じで、頼むと切り抜きの縁が",
+      "ぎざぎざになる。"
+    ],
+    "positive": "exactly one dirt footpath alone on an empty white page, a single band of bare trodden brown earth entering at the bottom edge of the page and receding away from the viewer, widest across the bottom and tapering steadily to a point in the upper middle of the page, its surface flat smooth and evenly packed, clean smooth unbroken edges along both sides, warm brown and dusty ochre tones, matte surface, soft shading along both long edges so it sits into the ground, a wide empty white margin all around it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "wide band, broad band, filling half the page, ragged edges, torn edges, frayed edges, grass along the edges, tufts, weeds, moss, crack, cracked earth, fissure, crevice, split, gully, erosion channel, ravine, dry river bed, trench, ditch, furrow, rope, snake, branch, root, lightning, jagged line, zigzag, rubble, boulders, loose stones piled along it, gravel, scenery, landscape, background scenery, panorama, vista, horizon, sky, clouds, sun, distant hills, mountains, field, meadow, grass, lawn, trees, forest, bushes, shrubs, hedge, flowers, river, stream, water, cliff, paved road, cobblestone, brick path, stone slabs, flagstones, wooden boards, boardwalk, stairs, steps, bridge, fence, wall, signpost, sign, buildings, ruins, gate, tunnel, cart, wheel ruts, tire tracks, footprints, people, character, animals, two paths, three paths, several paths, forked path, crossroads, road network, maze, aerial view, top down view, map, filling the frame, close-up, cropped, cut off, out of frame, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   }
 }

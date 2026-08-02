@@ -112,6 +112,30 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(new Set(pathCardNames).size, '道のカードは行き先ごとに分かれる').toBe(destinations.size);
   });
 
+  it('道のカードは行き先の土地の景色を地に敷き、他の設置物は今いる土地の景色を敷く', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const here = game.startLocation.instance.def.name;
+
+    const view = fromGameSession(game, codex, locale);
+
+    const pathTagId = codex.tagNames.getId('path');
+    const [paths, others] = [true, false].map((isPath) =>
+      view.fixtures.filter((card) => card.objects[0].def.tags.includes(pathTagId) === isPath),
+    );
+    expect(paths.length, '道と道以外が並ぶ土地で確かめる').toBeGreaterThan(0);
+    expect(others.length).toBeGreaterThan(0);
+
+    expect(paths.map((card) => card.background)).toEqual(
+      paths.map((card) => new Path(card.objects[0], codex.propertyNames).destination?.def.name),
+    );
+    expect(
+      paths.some((card) => card.background !== here),
+      '行き先は今いる土地とは限らない',
+    ).toBe(true);
+    expect(others.every((card) => card.background === here)).toBe(true);
+  });
+
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
 
@@ -158,7 +182,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
-  it('設置物のカードだけが、今いる土地を背景として持つ', () => {
+  it('設置物のカードだけが、土地の景色を背景として持つ', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(
@@ -169,9 +193,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(
-      view.fixtures.map((card) => card.background),
-      '道も含め、設置物のカードはすべて土地の識別子を持つ',
-    ).toEqual(view.fixtures.map(() => view.locationArt));
+      view.fixtures.every((card) => card.background !== undefined),
+      '道も含め、設置物のカードはすべて土地の識別子を持つ（どの土地かは道だけ違う）',
+    ).toBe(true);
     expect(
       view.items.every((card) => card.background === undefined),
       '持ち歩けるアイテムは土地から切り離せるので背景を持たない',
