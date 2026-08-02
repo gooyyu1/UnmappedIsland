@@ -33,6 +33,7 @@ npm run lint           # ESLint
 npm run typecheck      # 型チェック（tsc --noEmit）
 npm run build          # 型チェック + プロダクションビルド
 npm run stats:climate  # 気候システムの統計レポート再生成（docs/diagnostics/）
+npm run stats:terrain  # 地形生成の統計レポート再生成（docs/diagnostics/）
 npm run docs:reference # ソースリファレンス生成（TypeDoc → site/reference/）
 ```
 

@@ -197,7 +197,9 @@ generation_scopes:
   2. MST 以外の Delaunay 辺は、距離の短い順に走査し、「現在のグラフでのその2点間最短距離（Dijkstra）が、
      直結距離の `generation_scopes.island.extra_edge_detour_factor`（%）を超える」場合だけ復活させます
      （大回りを強いられている場合に、近道・分岐を作る）。復活させる辺も Delaunay 辺の部分集合であるため、
-     グラフは常に交差なし（平面）のままです。
+     グラフは常に交差なし（平面）のままです。この閾値は上げるほど道が減り、下限は MST だけが残る
+     平均次数 ≒1.9 です。実測値は [`TerrainStats.md`](../diagnostics/TerrainStats.md)
+     （`npm run stats:terrain` で再生成）にあり、閾値を動かしたら再生成します。
 - 各エッジには `distance`（座標上のユークリッド距離）と `travel_minutes`（移動時間、分）を持たせます。
 
   ```

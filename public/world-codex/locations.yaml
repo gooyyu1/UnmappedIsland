@@ -105,6 +105,10 @@ object_defs:
   #   探索は続けられ（進捗はrangeの上限に張り付く）、生成時に仕込まれた道がそれ以上見つからなくなるだけ。
   # - exploreのpickは「その土地で何が見つかるか」の確率テーブル。進捗+1（add self）は
   #   addとpickが排他という文法上、全候補に含める（10節）。
+  # - どの候補も1個以上を必ず見つける（ハズレの候補は置かない）。1回で見つかる数は候補ごとに1〜3個で、
+  #   実りの多い土地は平均2個、荒野・山頂・岸壁のような乏しい土地は平均1.6個になるよう重みを配る
+  #   （tests/worldCodex/explorationYield.test.tsが検証する）。設置物（木・茂み・洞窟の入口など）は
+  #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
   #   土地ごとの探索の重さは、回数（exploration_progress.range.max）だけで表す。
   # ------------------------------------------------------------------
@@ -121,24 +125,45 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 30
-            add: {self: {exploration_progress: 1}}
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: coconut, into: self}
-          - weight: 20
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: thick_branch, into: self}
-          - weight: 15
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: coconut_crab, into: self}
-          - weight: 10
+          # 1個
+          - weight: 13
             add: {self: {exploration_progress: 1}}
             spawn: {object: palm_tree, into: self}
-          # 漂着した編み籠（containers.yaml）。作る手段（レシピ）がまだ無いので、当面はここが唯一の入手元。
           - weight: 5
             add: {self: {exploration_progress: 1}}
             spawn: {object: woven_basket, into: self}
+          - weight: 7
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: coconut_crab, into: self}
+          # 2個
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: coconut, into: self}
+              - {object: coconut, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: coconut, into: self}
+              - {object: thick_branch, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: thick_branch, into: self}
+              - {object: coconut_crab, into: self}
+          # 3個
+          - weight: 18
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: coconut, into: self}
+              - {object: coconut, into: self}
+              - {object: thick_branch, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: thick_branch, into: self}
+              - {object: thick_branch, into: self}
+              - {object: coconut_crab, into: self}
 
   # 岩だらけの海岸。石とヤシガニが多いが、足場が悪い。
   rocky_coast:
@@ -152,20 +177,42 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 30
-            add: {self: {exploration_progress: 1}}
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: stone, into: self}
-          - weight: 20
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: coconut_crab, into: self}
-          - weight: 15
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: thick_branch, into: self}
-          - weight: 10
+          # 1個
+          - weight: 13
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: coconut_crab, into: self}
+          # 2個
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: coconut_crab, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: thick_branch, into: self}
+          # 3個
+          - weight: 18
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: thick_branch, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: coconut_crab, into: self}
 
   # 岸壁。切り立った崖の海岸。得られるものは少ないが、洞窟が口を開けていることがある。
   cliff_coast:
@@ -179,17 +226,31 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 40
-            add: {self: {exploration_progress: 1}}
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: stone, into: self}
+          # 1個
           - weight: 20
             add: {self: {exploration_progress: 1}}
-            spawn: {object: thick_branch, into: self}
-          - weight: 15
-            add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          # 2個
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+          - weight: 17
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: thick_branch, into: self}
+          # 3個
+          - weight: 8
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: thick_branch, into: self}
 
   # 草原。見通しがよく歩きやすい。食べられる野草と水場に恵まれる。
   grassland:
@@ -203,20 +264,42 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: water_spinach, into: self}
-          - weight: 20
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: taro, into: self}
-          - weight: 20
+          # 1個
+          - weight: 15
             add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: spring, into: self}
+          # 2個
+          - weight: 18
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: water_spinach, into: self}
+              - {object: water_spinach, into: self}
+          - weight: 17
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: water_spinach, into: self}
+              - {object: taro, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: taro, into: self}
+              - {object: taro, into: self}
+          # 3個
+          - weight: 18
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: water_spinach, into: self}
+              - {object: water_spinach, into: self}
+              - {object: taro, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: taro, into: self}
+              - {object: taro, into: self}
+              - {object: water_spinach, into: self}
 
   # 森林。木々に囲まれ、枝・木の実・水場が見つかる。
   forest:
@@ -230,20 +313,42 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-          - weight: 30
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, into: self}
-          - weight: 20
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: berry_bush, into: self}
+          # 1個
           - weight: 15
             add: {self: {exploration_progress: 1}}
-            spawn: {object: taro, into: self}
+            spawn: {object: berry_bush, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: spring, into: self}
+          # 2個
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: branch, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: taro, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: berry_bush, into: self}
+          # 3個
+          - weight: 18
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: branch, into: self}
+              - {object: taro, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: branch, into: self}
+              - {object: branch, into: self}
 
   # 密林。湿って鬱蒼としており、探索し切るまでが最も長いが、食料は最も豊か。
   jungle:
@@ -257,23 +362,42 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-          - weight: 20
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, into: self}
-          - weight: 20
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: coconut, into: self}
+          # 1個
           - weight: 15
             add: {self: {exploration_progress: 1}}
-            spawn: {object: water_spinach, into: self}
+            spawn: {object: palm_tree, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: taro, into: self}
-          - weight: 10
+          # 2個
+          - weight: 17
             add: {self: {exploration_progress: 1}}
-            spawn: {object: palm_tree, into: self}
+            spawn:
+              - {object: branch, into: self}
+              - {object: coconut, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: coconut, into: self}
+              - {object: coconut, into: self}
+          - weight: 13
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: water_spinach, into: self}
+          # 3個
+          - weight: 18
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: coconut, into: self}
+              - {object: water_spinach, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: coconut, into: self}
+              - {object: coconut, into: self}
+              - {object: taro, into: self}
 
   # 岩場。ごろごろした岩の間に、石材と洞窟が見つかる。
   rocky_field:
@@ -287,17 +411,42 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 30
-            add: {self: {exploration_progress: 1}}
-          - weight: 35
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: stone, into: self}
-          - weight: 15
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, into: self}
-          - weight: 20
+          # 1個
+          - weight: 18
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
+          - weight: 7
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: branch, into: self}
+          # 2個
+          - weight: 22
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: branch, into: self}
+          - weight: 8
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: branch, into: self}
+          # 3個
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: branch, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: stone, into: self}
 
   # 荒野。乾いてひび割れた不毛の土地。得られるものは少ない。
   wasteland:
@@ -311,14 +460,31 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 50
-            add: {self: {exploration_progress: 1}}
+          # 1個
           - weight: 30
             add: {self: {exploration_progress: 1}}
             spawn: {object: stone, into: self}
           - weight: 20
             add: {self: {exploration_progress: 1}}
             spawn: {object: branch, into: self}
+          # 2個
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+          - weight: 17
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: branch, into: self}
+          # 3個
+          - weight: 8
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: branch, into: self}
 
   # 山腹。山の中腹の斜面。石と枝のほか、洞窟の入口が見つかりやすい。
   mountainside:
@@ -332,20 +498,42 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 30
-            add: {self: {exploration_progress: 1}}
-          - weight: 25
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: stone, into: self}
-          - weight: 20
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, into: self}
+          # 1個
           - weight: 15
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
+          # 2個
+          - weight: 20
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+          - weight: 15
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: branch, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: branch, into: self}
+              - {object: branch, into: self}
+          # 3個
+          - weight: 18
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: branch, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: branch, into: self}
+              - {object: berry_bush, into: self}
 
   # 山頂。島で最も高い場所。風が強く得られるものは少ない（島を見渡す効果は今後の課題）。
   mountain_peak:
@@ -359,11 +547,28 @@ object_defs:
         showMenu: always
         duration: 15
         pick:
-          - weight: 50
-            add: {self: {exploration_progress: 1}}
-          - weight: 30
-            add: {self: {exploration_progress: 1}}
-            spawn: {object: stone, into: self}
-          - weight: 20
+          # 1個
+          - weight: 25
             add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
+          - weight: 25
+            add: {self: {exploration_progress: 1}}
+            spawn: {object: stone, into: self}
+          # 2個
+          - weight: 30
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: cave_entrance, into: self}
+              - {object: stone, into: self}
+          # 3個
+          - weight: 8
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: stone, into: self}
+              - {object: stone, into: self}
+              - {object: stone, into: self}

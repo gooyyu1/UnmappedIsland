@@ -103,9 +103,13 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
 
-    expect(new Set(view.fixtures.map((card) => card.name)).size, '道のカードは行き先ごとに分かれる').toBe(
-      destinations.size,
-    );
+    // 設置物のレーンには探索で見つかった木や茂みも並ぶので、道のカードだけを数える。
+    const pathTagId = codex.tagNames.getId('path');
+    const pathCardNames = view.fixtures
+      .filter((card) => card.objects[0].def.tags.includes(pathTagId))
+      .map((card) => card.name);
+
+    expect(new Set(pathCardNames).size, '道のカードは行き先ごとに分かれる').toBe(destinations.size);
   });
 
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
@@ -185,7 +189,15 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     exploreToFull(game);
     const items = [...game.startLocation.items];
 
-    fromGameSession(game, codex, locale).items[0].moveTo?.('hand')?.();
+    // 手持ちに同種が居るアイテムは、枠が埋まっていても既存のスタックへ合流できてしまう
+    // （枠を数える単位は種類、SlotSystem.md 4節）。埋まっていることを確かめたいので、
+    // 手持ちに無い種類のカードで試す。
+    const held = new Set(game.player.hand.map((item) => item?.def.name));
+    const view = fromGameSession(game, codex, locale);
+    const newKind = view.items.find((card) => !held.has(card.objects[0].def.name));
+    expect(newKind, '手持ちに無い種類のアイテムが落ちている土地で確かめる').toBeDefined();
+
+    newKind?.moveTo?.('hand')?.();
 
     expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });

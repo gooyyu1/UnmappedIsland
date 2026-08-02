@@ -197,8 +197,10 @@ generation_scopes:
     # 海岸が多くなりすぎないようにする（普通に円盤へ一様散布すると面積比で外周が多数になるため）。
     interior_bias: 60
     # MST以外のDelaunay辺を復活させる迂回率の閾値（%）。現グラフでの2点間最短距離が
-    # 直結距離のこの割合を超えるなら、その辺を近道として復活させる。
-    extra_edge_detour_factor: 160
+    # 直結距離のこの割合を超えるなら、その辺を近道として復活させる。上げるほど道は減る
+    # （下限は全土地を繋ぐMSTの平均次数≒1.9）。200で平均次数2.5・行き止まり15%ほど。
+    # 変えたら docs/diagnostics/TerrainStats.md を再生成する（npm run stats:terrain）。
+    extra_edge_detour_factor: 200
     # 抽象座標の距離1あたりの基準移動時間（分）。島の直径=200単位を想定
     # （隣接する土地の典型的な距離は40前後 → 移動コスト等倍でおよそ45分）。
     base_minutes_per_distance: 1
