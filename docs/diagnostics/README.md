@@ -13,12 +13,13 @@
 
 ## 生成方法
 
-各レポートは、`tests/diagnostics/` に置かれた対応するテスト（`RUN_CLIMATE_STATS` 環境変数が立っている
-ときだけ実行され、通常の `npm test` では実行されない）を実行して生成します。生成元テストと出力先は
-レポート冒頭にコメントで記載しています。
+各レポートは、`tests/diagnostics/` に置かれた対応するテスト（専用の環境変数が立っているときだけ実行され、
+通常の `npm test` では実行されない）を実行して生成します。生成元テストと出力先はレポート冒頭にコメントで
+記載しています。
 
 ```bash
 npm run stats:climate
+npm run stats:terrain
 ```
 
 ## 収録レポート
@@ -26,3 +27,7 @@ npm run stats:climate
 - [気候システム統計レポート](./ClimateSystemStats.md) — 季節の持続日数・気温・天気ごとの持続時間・
   連続降雨/未降雨時間の平均/最小/最大/標準偏差（[`ClimateSystem.md`](../engine/ClimateSystem.md) 参照）。
   生成元: `tests/diagnostics/climateStatsReport.test.ts`
+- [地形生成統計レポート](./TerrainStats.md) — 土地1つあたりの道の本数（連結数）と余分な道の本数の
+  平均/最小/最大/標準偏差、次数の分布、道の移動時間
+  （[`TerrainGeneration.md`](../engine/TerrainGeneration.md) 3.5節参照）。
+  生成元: `tests/diagnostics/terrainStatsReport.test.ts`
