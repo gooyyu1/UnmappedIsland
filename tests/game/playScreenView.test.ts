@@ -609,6 +609,83 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(inStatusArea.has('body_fat')).toBe(false);
   });
 
+  it('開始直後の地図は、現在地の土地だけを知っていて道は無い', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.mapLands.map((land) => land.card.name)).toEqual([view.currentLocation.name]);
+    expect(view.mapLands[0].site, 'サイトindexは現在地の土地を指す').toBe(
+      game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId),
+    );
+    expect(view.mapRoads).toEqual([]);
+  });
+
+  it('探索で道が見つかると、地図はその道と行き先の土地を知る', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+
+    const view = fromGameSession(game, codex, locale);
+
+    const currentSite = game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId);
+    const destinations = pathsIn(game.startLocation, codex).map((path) =>
+      game.map.siteInstanceIds.indexOf(new Path(path, codex.propertyNames).destinationInstanceId),
+    );
+    expect(destinations.length, '道が見つかる土地で確かめる').toBeGreaterThan(0);
+
+    expect(new Set(view.mapLands.map((land) => land.site)), '現在地と、見つかった道の行き先').toEqual(
+      new Set([currentSite, ...destinations]),
+    );
+    expect(new Set(view.mapRoads.map((road) => `${road.a}/${road.b}`)), '道は両端で1本にまとまる').toEqual(
+      new Set(
+        destinations.map((site) =>
+          site < currentSite ? `${site}/${currentSite}` : `${currentSite}/${site}`,
+        ),
+      ),
+    );
+    for (const road of view.mapRoads) {
+      expect(
+        view.mapLands.some((land) => land.site === road.a) &&
+          view.mapLands.some((land) => land.site === road.b),
+        '道の両端は必ず既知の土地',
+      ).toBe(true);
+    }
+  });
+
+  it('地図の土地カードは、その土地の名前と絵を持つ', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+
+    const view = fromGameSession(game, codex, locale);
+
+    const root = game.startLocation.instance.findRoot();
+    for (const land of view.mapLands) {
+      const instanceId = game.map.siteInstanceIds[land.site];
+      expect(land.card.name).toBe(locale.locationName(game.map.nameOfInstance(instanceId)!));
+      expect(land.card.art, '絵は土地のobject_defの識別子で引く').toBe(
+        root.findDescendantByInstanceId(instanceId)?.def.name,
+      );
+      expect(land.card.art).toBeDefined();
+    }
+  });
+
+  it('移動しても、それまでに知った土地と道は地図に残る', () => {
+    const game = startNewGame(codex, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const before = fromGameSession(game, codex, locale);
+    const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
+    expect(path.travel(game.player.instance, game.session)).toBe(true);
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(new Set(view.mapLands.map((land) => land.site))).toEqual(
+      new Set(before.mapLands.map((land) => land.site)),
+    );
+    expect(new Set(view.mapRoads.map((road) => `${road.a}/${road.b}`))).toEqual(
+      new Set(before.mapRoads.map((road) => `${road.a}/${road.b}`)),
+    );
+  });
+
   it('現在地は移動に追従する', () => {
     const game = startNewGame(codex, 11, new SeededRng(1234));
     exploreToFull(game);

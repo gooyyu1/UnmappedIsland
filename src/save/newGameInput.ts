@@ -77,5 +77,6 @@ export function createSaveData(
     createdAt,
     elapsedDays: 0,
     pinnedStatuses: [],
+    mapCardPositions: [],
   };
 }

@@ -1,5 +1,6 @@
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
+import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { Localization } from '../locale/Localization';
@@ -114,6 +115,21 @@ export interface CardCombination {
 }
 
 /**
+ * 地図ウィンドウに出す、既知の土地1件。siteは地形生成のサイトindex（IslandMap.sites）で、
+ * セーブデータのカード位置（MapCardPosition）と対応付ける恒久キー。
+ */
+export interface MapLandView {
+  readonly site: number;
+  readonly card: CardContent;
+}
+
+/** 地図ウィンドウに出す、発見済みの道1本（無向辺）。両端のサイトは必ずmapLandsに含まれる。 */
+export interface MapRoadView {
+  readonly a: number;
+  readonly b: number;
+}
+
+/**
  * プレイ中の画面が表示する内容。画面の組み立て（PlayScene）とゲーム状態の間を仕切る。
  *
  * 天候・条件・装備・怪我のように、ドメイン側にまだ表示できる形が無い項目はモック
@@ -153,6 +169,12 @@ export interface PlayScreenView {
   readonly items: readonly ObjectCardStack[];
   /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
   readonly hand: readonly (ObjectCardStack | undefined)[];
+
+  /** 地図ウィンドウに出す既知の土地（現在地と、発見済みの道の両端）。 */
+  readonly mapLands: readonly MapLandView[];
+
+  /** 地図ウィンドウに出す発見済みの道。 */
+  readonly mapRoads: readonly MapRoadView[];
 
   /**
    * 子ウィンドウに並べる、その場所の中身（装備・怪我・コンテナの中身）。前詰めスロットなので
@@ -334,6 +356,54 @@ export function fromGameSession(
   };
 
   /**
+   * 地図ウィンドウに出す既知の土地と発見済みの道。発見は「pathオブジェクトがfixturesスロットに
+   * 出ているか」で表される（ExplorationSystem.md 3節）ため、フラグではなく全土地の公開済みの道から
+   * 導出する。道は両端で対になっている（発見も対で起きる）ので、無向辺として1本にまとめる。
+   */
+  const discoveredMap = (): { lands: readonly MapLandView[]; roads: readonly MapRoadView[] } => {
+    const siteOf = new Map<number, number>();
+    game.map.siteInstanceIds.forEach((instanceId, site) => {
+      if (instanceId !== 0) siteOf.set(instanceId, site);
+    });
+
+    const root = location.instance.findRoot();
+    const known = new Set<number>();
+    const currentSite = siteOf.get(location.instance.instanceId);
+    if (currentSite !== undefined) known.add(currentSite);
+
+    const roads = new Map<string, MapRoadView>();
+    for (const [instanceId, site] of siteOf) {
+      const land = root.findDescendantByInstanceId(instanceId);
+      if (land === undefined) continue;
+      for (const fixture of new Location(land, codex).fixtures) {
+        if (pathTagId === undefined || !fixture.def.tags.includes(pathTagId)) continue;
+        const destination = siteOf.get(new Path(fixture, codex.propertyNames).destinationInstanceId);
+        if (destination === undefined) continue;
+        known.add(site);
+        known.add(destination);
+        const [a, b] = site < destination ? [site, destination] : [destination, site];
+        roads.set(`${a}/${b}`, { a, b });
+      }
+    }
+
+    const lands = [...known]
+      .sort((a, b) => a - b)
+      .map((site) => {
+        const instanceId = game.map.siteInstanceIds[site];
+        return {
+          site,
+          card: {
+            icon: LOCATION_ICON,
+            name: locationNameOf(instanceId),
+            art: root.findDescendantByInstanceId(instanceId)?.def.name,
+          },
+        };
+      });
+    return { lands, roads: [...roads.values()] };
+  };
+  const discovered = discoveredMap();
+
+  /**
    * 場所ごとの「どのオブジェクトのどのスロットか」。カードの移動はすべてこの表を引いた
    * スロット移動（WorldObject.moveToSlot*）で、場所ごとの特別扱いは持たない。コンテナ（箱・かご）
    * を足すときも、この表に1行増やすだけで移動もドラッグも動く。
@@ -453,6 +523,8 @@ export function fromGameSession(
             reorder: reorderIn(stack[0]),
           },
     ),
+    mapLands: discovered.lands,
+    mapRoads: discovered.roads,
     cardsIn: (place) => {
       // 怪我はワールド側の効果だけが付け外しするため、moveTo/reorderを持たせない。
       if (place === 'injuries')

@@ -52,6 +52,38 @@ describe('SaveSlots(SaveDataManagement.md)', () => {
     expect(save?.pinnedStatuses).toEqual([]);
   });
 
+  it('地図のカード位置はスロットごとに残る', () => {
+    const slots = new SaveSlots(new MemoryStorage());
+    slots.write(0, { ...saveOf('霧深い孤島'), mapCardPositions: [{ site: 3, x: 0.25, y: 0.5 }] });
+    slots.write(1, saveOf('第二の島'));
+
+    expect(slots.read(0)?.mapCardPositions).toEqual([{ site: 3, x: 0.25, y: 0.5 }]);
+    expect(slots.read(1)?.mapCardPositions).toEqual([]);
+  });
+
+  it('地図のカード位置を持たない古い形式のセーブは、位置なしとして読める', () => {
+    const storage = new MemoryStorage();
+    const { mapCardPositions, ...oldFormat } = { ...saveOf('霧深い孤島'), schemaVersion: 2 };
+    expect(mapCardPositions, '古い形式には無いフィールド').toEqual([]);
+    storage.setItem('unmapped-island:save:0', JSON.stringify(oldFormat));
+
+    const save = new SaveSlots(storage).read(0);
+
+    expect(save?.islandName, '他のフィールドはそのまま読める').toBe('霧深い孤島');
+    expect(save?.mapCardPositions).toEqual([]);
+  });
+
+  it('壊れたカード位置の要素だけを落として読む', () => {
+    const storage = new MemoryStorage();
+    const broken = {
+      ...saveOf('霧深い孤島'),
+      mapCardPositions: [{ site: 1, x: 0.1, y: 0.2 }, { site: '2', x: 0.3, y: 0.4 }, 'garbage', null],
+    };
+    storage.setItem('unmapped-island:save:0', JSON.stringify(broken));
+
+    expect(new SaveSlots(storage).read(0)?.mapCardPositions).toEqual([{ site: 1, x: 0.1, y: 0.2 }]);
+  });
+
   it('壊れた値が入っていても空きスロットとして扱う', () => {
     const storage = new MemoryStorage();
     storage.setItem('unmapped-island:save:0', '{壊れたJSON');

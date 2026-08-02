@@ -50,6 +50,7 @@ export const COLOR = {
   buttonDisabled: 0xdedede,
   equipmentButton: 0xd6fff0,
   injuryButton: 0xffe0d6,
+  mapButton: 0xdbe7ff,
 
   flipDigit: 0x3a3a3a,
   flipDigitRing: 0x6b6b6b,
