@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
-import type { CardLane, LaneUpdate } from './CardLane';
+import type { CardLane, LaneUpdate, ReleasedCard } from './CardLane';
 
 /** カードが飛ぶ時間（ミリ秒）と加速の形。並びが詰め直される滑りより少しだけ長く取る。 */
 const FLY_MS = 260;
@@ -61,14 +61,15 @@ export class CardMotion {
     context: MotionContext = {},
   ): void {
     const before = ownersOf(lanes);
-    const updates = lanes.map((lane, index) => lane.setCards(contents[index]));
+    const released = releasedCard(before, context);
+    const updates = lanes.map((lane, index) => lane.setCards(contents[index], released));
     const after = ownersOf(lanes);
 
     // 現れた側が飛ぶIDは、居なくなった側では改めて動かさない（同じ移動を二重に見せないため）。
     const entering = new Set(updates.flatMap((update) => update.entered).flatMap(({ card }) => idsOf(card)));
 
     updates.forEach((update, index) => {
-      for (const { card, index: slot } of update.entered) {
+      for (const { card, index: slot } of arrivals(update)) {
         const from = releasedRect(idsOf(card), context) ?? rectOf(before, idsOf(card)) ?? context.origin;
         this.fly(card, from, lanes[index].slotRect(slot));
       }
@@ -103,12 +104,12 @@ export class CardMotion {
     context: MotionContext,
   ): void {
     // カードごと出入りするぶんは、そのカード自身が飛ぶ（fly・dismiss）ので数えない。
-    const entered = new Set(updates.flatMap((update) => update.entered).map(({ card }) => card));
+    const arriving = new Set(updates.flatMap(arrivals).map(({ card }) => card));
     const left = new Set(updates.flatMap((update) => update.left));
 
     for (const lane of lanes) {
       lane.cardObjects.forEach((card, slot) => {
-        if (card === undefined || entered.has(card)) return;
+        if (card === undefined || arriving.has(card)) return;
 
         const to = lane.slotRect(slot);
         for (const from of arrivalsAt(card, before, left, context)) {
@@ -227,6 +228,23 @@ function arrivalsAt(
     if (previous.card === card || left.has(previous.card)) return [];
     return [previous.rect];
   });
+}
+
+/**
+ * そのレーンで、枠の外から所定の位置へ動かすカード。新しく現れたカードと、掴んで離したまま同じレーンに
+ * 残ったカード（CardLane.LaneUpdate）。
+ */
+function arrivals(update: LaneUpdate): readonly { readonly card: Card; readonly index: number }[] {
+  return update.returned === undefined ? update.entered : [...update.entered, update.returned];
+}
+
+/** 掴んで離したインスタンスを、差し替え前に映していたカード。 */
+function releasedCard(before: ReadonlyMap<number, Owner>, context: MotionContext): ReleasedCard | undefined {
+  const { released } = context;
+  if (released === undefined) return undefined;
+
+  const card = before.get(released.id)?.card;
+  return card === undefined ? undefined : { card, id: released.id };
 }
 
 /** そのカードが、掴んで離したインスタンスを映しているなら、手を離した位置。 */
