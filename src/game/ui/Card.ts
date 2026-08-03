@@ -177,6 +177,9 @@ export class Card extends Phaser.GameObjects.Container {
     nameText.setWordWrapCallback(wrapByCharacter(width - inset * 2));
 
     this.add(background === undefined ? [face, art, nameText] : [face, background, art, nameText]);
+    if (artTexture !== undefined && !scene.textures.exists(artTexture)) {
+      this.swapArtWhenLoaded(scene, artTexture, art, width, height);
+    }
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
     if (content.onTap !== undefined) this.makeTappable();
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
@@ -199,6 +202,27 @@ export class Card extends Phaser.GameObjects.Container {
     this.showStackCount();
 
     scene.add.existing(this);
+  }
+
+  /**
+   * 絵文字で代用中の絵が後から届いたら、自分で貼り替える。道のカードは行き先の土地の絵の
+   * ロード完了（LocationArtLoader）を待たずに現れうるため。
+   */
+  private swapArtWhenLoaded(
+    scene: Phaser.Scene,
+    texture: string,
+    placeholder: Phaser.GameObjects.GameObject,
+    width: number,
+    height: number,
+  ): void {
+    const event = Phaser.Textures.Events.ADD_KEY + texture;
+    const swap = (): void => {
+      const index = this.getIndex(placeholder);
+      placeholder.destroy();
+      this.addAt(placeArt(scene, texture, width, height), index);
+    };
+    scene.textures.once(event, swap);
+    this.once(Phaser.GameObjects.Events.DESTROY, () => scene.textures.off(event, swap));
   }
 
   /**

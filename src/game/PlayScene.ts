@@ -13,6 +13,7 @@ import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
+import { Path } from '../domain/runtime/views/Path';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import type { StatusDelta } from './statusChanges';
@@ -26,6 +27,7 @@ import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import { Curtain } from './ui/Curtain';
+import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from './ui/informationArt';
 import { HAND_LANE_TEXTURE, laneTexture } from './ui/backgroundArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
@@ -256,6 +258,16 @@ export class PlayScene extends ResponsiveScene {
   /** 場面転換（暗転 → フィールドエリアの作り直し → 明転）の最中か（transit参照）。 */
   private transiting = false;
 
+  /** 土地の絵の遅延ロード。initで必ず設定される。 */
+  private artLoader!: LocationArtLoader;
+
+  /**
+   * 絵待ちの世代番号。画面の作り直し（rebuild）は張っていた暗幕ごと表示物を捨てるため、
+   * 捨てられた幕を明転させようとする古い待ちをこの番号の不一致で無効にする
+   * （revealWhenLocationArtLoaded参照）。
+   */
+  private artWait = 0;
+
   /** 演出を見せている最中か。この間はワールドを変える操作を受け付けない。 */
   private get busy(): boolean {
     return this.passingTime || this.transiting;
@@ -294,6 +306,28 @@ export class PlayScene extends ResponsiveScene {
     this.gameSession = start(this.codex, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.artLoader = new LocationArtLoader(this);
+    this.requestLocationArt();
+  }
+
+  /**
+   * 今の世界で絵が要る土地——現在地と、発見済みの道の行き先——のロードを始める（冪等）。
+   * 道が見つかった瞬間・移動が確定した瞬間（ワールドを変えた直後）に呼ぶことで、その絵が大きく映る
+   * 場面（行き先の土地カード・移動後のフィールド）までにロードを済ませておく。間に合わなかった絵は、
+   * カードなら届いた時点で貼り替わり（Card）、移動なら暗転のまま待つ（transit）。
+   */
+  private requestLocationArt(): void {
+    const location = this.gameSession.player.location;
+    if (location === undefined) return;
+
+    this.artLoader.request(location.instance.def.name);
+    const pathTagId = this.codex.tagNames.tryGetId('path');
+    if (pathTagId === undefined) return;
+    for (const fixture of location.fixtures) {
+      if (!fixture.def.tags.includes(pathTagId)) continue;
+      const destination = new Path(fixture, this.codex.propertyNames).destination;
+      if (destination !== undefined) this.artLoader.request(destination.def.name);
+    }
   }
 
   protected build(): void {
@@ -343,6 +377,27 @@ export class PlayScene extends ResponsiveScene {
     if (openedCard !== undefined) this.openObjectWindow(openedCard);
     // 地図は全画面を覆うので、さらにその上へ開き直す。
     if (wasShowingMap) this.openMapWindow();
+    this.coverUntilLocationArtLoaded();
+  }
+
+  /**
+   * 現在地の絵がまだ届いていなければ（プレイ開始直後・絵待ち中の作り直し）、届くまでフィールド
+   * エリアを暗幕で覆う。届いた時点で作り直して明転する——組み立て済みの表示に絵だけを後から
+   * 差し込む経路は無いため。
+   */
+  private coverUntilLocationArtLoaded(): void {
+    // 作り直し前の幕を明転させようとする待ちが残っていれば無効にする（幕は作り直しで消えている）。
+    this.artWait += 1;
+    if (this.artLoader.loaded(this.view.locationArt)) {
+      // 場面転換の途中で作り直された場合、その転換の明転はもう起きない。busyのまま固まらないよう戻す。
+      this.transiting = false;
+      return;
+    }
+
+    this.transiting = true;
+    const curtain = new Curtain(this, this.layout.fieldArea);
+    curtain.darken(0);
+    this.revealWhenLocationArtLoaded(curtain);
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
@@ -670,6 +725,8 @@ export class PlayScene extends ResponsiveScene {
     this.openExplorationWindow();
 
     const recorded = this.record(() => this.gameSession.player.explore(this.gameSession.session));
+    // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
+    this.requestLocationArt();
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
@@ -831,6 +888,8 @@ export class PlayScene extends ResponsiveScene {
     const recorded = this.record(change);
 
     const moved = this.gameSession.player.location?.instance !== locationBefore;
+    // 移動先・見つかった道の行き先の絵のロードを、経過を見せている間（暗転中）に始める。
+    this.requestLocationArt();
     const elapsedMs = (this.gameSession.world.totalMinutes - startedAt) * REAL_MS_PER_GAME_MINUTE;
     const curtain = moved ? new Curtain(this, this.layout.fieldArea) : undefined;
     // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
@@ -857,10 +916,26 @@ export class PlayScene extends ResponsiveScene {
   private transit(curtain: Curtain): void {
     this.transiting = true;
     this.leaveLocation();
-    this.rebuildFieldArea();
-    this.showInformation();
-    curtain.brighten(BRIGHTEN_MS, () => {
-      this.transiting = false;
+    // 移動先の絵がまだ届いていなければ、暗転のまま揃うのを待つ。普段は道の発見時に始めたロード
+    // （requestLocationArt）が済んでいて、待ちは出ない。
+    this.revealWhenLocationArtLoaded(curtain);
+  }
+
+  /**
+   * 現在地の絵が揃った時点でフィールドエリアを作り直し、明転する。既に揃っていれば同期に進み、
+   * 待ちの無い場面転換と同じ流れになる。待っている間に画面が作り直されたら（リサイズ）、幕ごと
+   * 捨てられているのでこの待ちも捨てる——作り直し側が改めて幕を張る（coverUntilLocationArtLoaded）。
+   */
+  private revealWhenLocationArtLoaded(curtain: Curtain): void {
+    this.artWait += 1;
+    const wait = this.artWait;
+    this.artLoader.onceLoaded(this.view.locationArt, () => {
+      if (wait !== this.artWait) return;
+      this.rebuildFieldArea();
+      this.showInformation();
+      curtain.brighten(BRIGHTEN_MS, () => {
+        this.transiting = false;
+      });
     });
   }
 

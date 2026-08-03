@@ -402,7 +402,10 @@ export class CardLane {
     background: number,
     art: string | undefined,
   ): Phaser.GameObjects.Rectangle | Phaser.GameObjects.TileSprite {
-    const panel = art === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, art);
+    // 絵が用意されていても届いていなければ（遅延ロードの失敗時）背景色へ落とす（Cardの絵文字代用と同じ姿勢）。
+    const texture = art !== undefined && scene.textures.exists(art) ? art : undefined;
+    const panel =
+      texture === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, texture);
     if (panel instanceof Phaser.GameObjects.TileSprite) this.tiles.push(panel);
     this.objects.push(panel);
     return panel;
