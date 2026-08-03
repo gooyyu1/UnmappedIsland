@@ -327,3 +327,4 @@ location_texts:
 # 押している間、吹き出しに出る。
 reason_texts:
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
+  not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。

@@ -135,10 +135,17 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(decayPerTick(character, propertyName)).toBe(expectedDecay);
     });
 
-    it('満タンから始まり、体脂肪だけは最大値の1/4から始まる', () => {
+    it('満腹度と水分は安全域のやや下、覚醒度と体力は満タン、体脂肪は最大値の1/4から始まる', () => {
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
 
-      for (const propertyName of ['satiety', 'hydration', 'wakefulness', 'stamina'])
+      // 開始直後からステータスバーに出るよう、安全域の境目（80%）のやや下の75%から始める（Characters.md）。
+      for (const propertyName of ['satiety', 'hydration'])
+        expect(
+          instance.getNumber(codex.propertyNames.getId(propertyName)),
+          `${propertyName} は最大値の3/4で始まる`,
+        ).toBe((maxOf(character, propertyName) * 3) / 4);
+
+      for (const propertyName of ['wakefulness', 'stamina'])
         expect(
           instance.getNumber(codex.propertyNames.getId(propertyName)),
           `${propertyName} は満タンで始まる`,
@@ -161,6 +168,15 @@ describe('プレイヤーキャラクタの定義', () => {
         expect(prop.alertLevelOf(threshold - 1)).not.toBe('safe');
       },
     );
+
+    it('水分は満水ちょうどのときだけfull段に入る', () => {
+      // 液体のdrinkがこの名前で「もう飲めない」を見る（liquid_containers.yaml・Characters.md）。
+      const prop = propOf(def(character), 'hydration');
+      const max = maxOf(character, 'hydration');
+
+      expect(prop.isInStage(max, 'full')).toBe(true);
+      expect(prop.isInStage(max - 1, 'full')).toBe(false);
+    });
 
     // 荷重だけは増える側が悪いので、境目は最大値からの割合で刻む（Characters.md）。
     it('荷重の域は最大値からの割合で切られ、危険域の段だけがtoo_heavyという名前を持つ', () => {

@@ -617,11 +617,16 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.statuses).toHaveLength(tagged.length);
-    // 満たされ具合を持つものは満タン、空身で始まる荷重だけが0（characters/）。どれも安全域に入る。
+    // 満腹度と水分は開始直後からバーに出るよう安全域のやや下（75%）、荷重は空身の0、残りは満タンで始まる
+    // （characters/・Characters.md 域の区分節）。
+    const startRatios: Record<string, number> = { satiety: 0.75, hydration: 0.75, load: 0 };
     expect(view.statuses.map((status) => status.ratio)).toEqual(
-      tagged.map((reading) => (reading.name === 'load' ? 0 : 1)),
+      tagged.map((reading) => startRatios[reading.name] ?? 1),
     );
-    expect(view.statuses.map((status) => status.alert)).toEqual(tagged.map(() => 'safe'));
+    const startAlerts: Record<string, string> = { satiety: 'watch', hydration: 'watch' };
+    expect(view.statuses.map((status) => status.alert)).toEqual(
+      tagged.map((reading) => startAlerts[reading.name] ?? 'safe'),
+    );
     expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((reading) => reading.name));
     // localeに登録の無いcharacterでは識別子がそのまま出る（Localization.md）。
     expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((reading) => reading.name));

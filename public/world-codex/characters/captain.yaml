@@ -11,7 +11,7 @@ object_defs:
       # 満腹から1日（96 tick）。
       satiety:
         tags: [status, nutrition]
-        value: 9600
+        value: 7200
         range: {min: 0, max: 9600}
         stages:
           - {name: starving, alert: danger}
@@ -25,7 +25,7 @@ object_defs:
       # 限られた水で保たせる術が身についており、満水から3日半（336 tick）。
       hydration:
         tags: [status, nutrition]
-        value: 8400
+        value: 6300
         range: {min: 0, max: 8400}
         stages:
           - {name: dehydrated, alert: fatal}
@@ -33,6 +33,7 @@ object_defs:
           - {name: thirsty, min: 2400, alert: caution}
           - {name: dryish, min: 4800, alert: watch}
           - {name: hydrated, min: 6720}
+          - {name: full, min: 8400}
         passives:
           - accumulate:
               self:
