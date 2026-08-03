@@ -27,6 +27,14 @@ const FRAME_RADIUS = 16;
 /** カード名の最大行数。これを超える分は表示しない（モックの-webkit-line-clamp: 3に対応）。 */
 const NAME_MAX_LINES = 3;
 
+/**
+ * カード名を紙の縁から離す余白と、白い縁取りの太さ（u単位）。
+ * 余白は角の丸み（FRAME_RADIUS）の内側へ収まる幅を取り、文字が枠の線に触れないようにする。
+ * 縁取りは、絵の上に載った暗い文字の輪郭を保つためのもの。
+ */
+const NAME_MARGIN = 8;
+const NAME_STROKE = 4;
+
 /** 押下中の沈み込み表現（Buttonと同じ）。 */
 const PRESSED_ALPHA = 0.6;
 
@@ -163,9 +171,11 @@ export class Card extends Phaser.GameObjects.Container {
             .setOrigin(0.5)
             .setAlpha(0.95);
 
-    const inset = metrics.px(8);
+    const paper = paperRect(metrics, width, height);
+    const margin = metrics.px(NAME_MARGIN);
+    const stroke = Math.max(1, metrics.px(NAME_STROKE));
     const nameText = scene.add
-      .text(inset, metrics.px(6), name, {
+      .text(paper.x + margin, paper.y + margin, name, {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(30)}px`,
         fontStyle: 'bold',
@@ -173,8 +183,9 @@ export class Card extends Phaser.GameObjects.Container {
         maxLines: NAME_MAX_LINES,
       })
       .setLineSpacing(metrics.px(2))
-      .setShadow(0, 0, cssColor(COLOR.cardFace), metrics.px(3), false, true);
-    nameText.setWordWrapCallback(wrapByCharacter(width - inset * 2));
+      .setStroke(cssColor(COLOR.cardFace), stroke);
+    // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
+    nameText.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
 
     this.add(background === undefined ? [face, art, nameText] : [face, background, art, nameText]);
     if (artTexture !== undefined && !scene.textures.exists(artTexture)) {
