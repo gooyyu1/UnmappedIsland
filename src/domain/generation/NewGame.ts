@@ -53,13 +53,21 @@ export class NewGameSession {
 }
 
 /**
+ * 開始時刻の範囲（その日の0:00からの経過分、両端を含む）。漂着してから動き出せる朝〜正午の間で、
+ * 日没までの猶予がゲームごとに変わるようにする。実際の時刻はこの範囲からtick刻みで選ぶ
+ * （World.rollTimeOfDay）。
+ */
+const START_TIME_EARLIEST_MINUTES = 8 * 60;
+const START_TIME_LATEST_MINUTES = 12 * 60;
+
+/**
  * 新しいゲームの開始一式（world/プレイヤーの生成 → 地形生成 → 島の実体化 → プレイヤー配置）を
  * 1回の呼び出しに閉じ込める入口。呼び出し側（Phaser側のシーン等）は「Codexとシードを渡す」
  * だけでよく、生成と配置の手順・順序を知らなくてよい（自分のことは自分でする、CLAUDE.md参照）。
  */
 
 /**
- * 新しいゲームを開始する。rngはpick抽選・初期値ロール用のWorldSession.rng（省略時は非決定。
+ * 新しいゲームを開始する。rngはpick抽選・初期値ロール・開始時刻用のWorldSession.rng（省略時は非決定。
  * 地形レイアウト自体はseedのみで決まり、rngには依存しない）。
  */
 export function start(codex: WorldCodex, seed: number, rng?: Rng): NewGameSession {
@@ -71,6 +79,8 @@ export function start(codex: WorldCodex, seed: number, rng?: Rng): NewGameSessio
   const world = new World(worldInstance, codex.propertyNames);
 
   const session = new WorldSession(codex, world, rng);
+  world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
+
   const character = session.spawn(codex.objectNames.getId('character'));
 
   const map = generate(codex.generation, 'island', seed);

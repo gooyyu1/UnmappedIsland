@@ -201,6 +201,25 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     }
   });
 
+  it('開始時刻は朝8:00〜正午12:00の間のtick刻みで決まる', () => {
+    for (const seed of [3, 11, 21]) {
+      const world = startNewGame(codex, seed, new SeededRng(seed)).world;
+      const minutes = world.hour * 60 + world.minute;
+
+      expect(world.day, '開始は1日目').toBe(1);
+      expect(minutes, `シード${seed}の開始時刻は8:00以降`).toBeGreaterThanOrEqual(8 * 60);
+      expect(minutes, `シード${seed}の開始時刻は12:00以前`).toBeLessThanOrEqual(12 * 60);
+      expect(minutes % world.minutesPerTick, `シード${seed}の開始時刻はtick刻み`).toBe(0);
+    }
+  });
+
+  it('同じシードなら開始時刻も同じになる（開始状態はシードだけで決まる）', () => {
+    const first = startNewGame(codex, 21, new SeededRng(21));
+    const second = startNewGame(codex, 21, new SeededRng(21));
+
+    expect(second.world.totalMinutes).toBe(first.world.totalMinutes);
+  });
+
   it('同じシードなら、WorldSession.rngのシードが異なっても同じ島レイアウトになる', () => {
     // 地形レイアウト(IslandMap)はシードのみに依存し、WorldSession.rng（pick抽選など）には
     // 依存しない: rngのシードを変えても同じ島になる。
