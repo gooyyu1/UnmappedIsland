@@ -16,11 +16,11 @@ export const SIZE = {
   conditionButton: 64,
   radius: 12,
   /**
-   * レーンのスクロールバーの厚みと、レーン下端との間隔（ScreenLayout.md スクロールバー節）。
-   * カードの下端（レーン下端から16u）と区切りの帯がかぶる3uの間へ収める。
+   * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md スクロールバー節）。
+   * レーンではこの位置がカードの下の余白（16u）に収まり、区切りの帯がかぶる3uにも掛からない。
    */
   scrollBar: 8,
-  scrollBarInset: 5,
+  scrollBarGap: 3,
 } as const;
 
 export const COLOR = {

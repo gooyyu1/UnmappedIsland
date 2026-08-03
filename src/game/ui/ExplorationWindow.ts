@@ -14,6 +14,7 @@ import {
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from './labels';
 import { wheelPixels } from './scroll';
+import { ScrollIndicator } from './ScrollIndicator';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 import { wrapByCharacter } from './textLayout';
@@ -203,9 +204,24 @@ export class ExplorationWindow {
     strip.enableFilters();
     strip.filters?.internal.addMask(this.maskShape);
 
+    // 送り具合を示すバーは枠の下（進捗バーとの間隔の中）へ置く。枠の高さはカードちょうどなので、
+    // レーンと違って枠の中には余白が無い。
+    const indicator = new ScrollIndicator(
+      scene,
+      metrics,
+      viewport.x,
+      viewport.y + viewport.height + metrics.px(SIZE.scrollBarGap),
+      viewport.width,
+    );
+    this.objects.push(indicator);
+
     const scrollTo = (scrollX: number): void => {
-      strip.x = viewport.x + Phaser.Math.Clamp(scrollX, minScrollX, 0);
+      const clamped = Phaser.Math.Clamp(scrollX, minScrollX, 0);
+      strip.x = viewport.x + clamped;
+      indicator.setScroll(clamped, minScrollX);
     };
+    scrollTo(0);
+
     let scrollStartX = 0;
     const surface = addPanel(scene, viewport, COLOR.cardFace, 0);
     this.objects.push(surface);

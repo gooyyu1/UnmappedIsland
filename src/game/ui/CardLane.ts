@@ -168,13 +168,12 @@ export class CardLane {
     this.stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
     this.strip = scene.add.container(stripX, cardY);
 
-    // バーはカードより後に作り、カードの上へ重ねる。置き場所はカードの下の余白で、
-    // レーンの区切りの帯がかぶる3uには掛からない（ScreenLayout.md スクロールバー節）。
+    // バーはカードより後に作り、カードの上へ重ねる。
     this.scrollIndicator = new ScrollIndicator(
       scene,
       metrics,
       stripX,
-      rect.y + rect.height - metrics.px(SIZE.scrollBarInset + SIZE.scrollBar),
+      cardY + this.cardHeight + metrics.px(SIZE.scrollBarGap),
       this.stripWidth,
     );
     this.objects.push(this.scrollIndicator);
