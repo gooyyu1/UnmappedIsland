@@ -3,7 +3,12 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import {
+  loadYamlDirectory,
+  loadYamlFile,
+  SAMPLE_CHARACTER,
+  worldCodexPath,
+} from '../support/worldCodexFiles';
 
 describe('liquid_containers.yamlの液体容器定義', () => {
   let codex: WorldCodex;
@@ -19,7 +24,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();
     loadYamlFile(loader, worldCodexPath('core.yaml'));
-    loadYamlFile(loader, worldCodexPath('characters.yaml'));
+    loadYamlDirectory(loader, worldCodexPath('characters'));
     loadYamlFile(loader, worldCodexPath('liquid_containers.yaml'));
     codex = loader.build();
 
@@ -117,7 +122,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('水を飲むと中身のsizeからactorのhydrationへ移る', () => {
     const session = new WorldSession(codex);
-    const actor = spawn('character');
+    const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
     const canteen = spawnContainer('canteen', 'water', 1000);
 
@@ -129,7 +134,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('お茶を飲むと追加の効果も適用できる', () => {
     const session = new WorldSession(codex);
-    const actor = spawn('character');
+    const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
     actor.setProperty(wakefulnessId, 0);
     const canteen = spawnContainer('canteen', 'tea', 1000);
@@ -142,7 +147,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('お茶のwakefulness効果は飲んだ量に比例する', () => {
     const session = new WorldSession(codex);
-    const actor = spawn('character');
+    const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
     actor.setProperty(wakefulnessId, 0);
     const canteen = spawnContainer('canteen', 'tea', 125); // 1回分(250)の半分しか無い
@@ -155,7 +160,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('油にはdrinkアクションが無い', () => {
     const session = new WorldSession(codex);
-    const actor = spawn('character');
+    const actor = spawn(SAMPLE_CHARACTER);
     const canteen = spawnContainer('canteen', 'oil', 1000);
 
     expect(canteen.tryExecuteAction('drink', actor, session), '飲用不可の液体はdrinkを持たない').toBe(false);

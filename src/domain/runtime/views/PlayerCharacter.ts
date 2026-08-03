@@ -31,7 +31,7 @@ export class PlayerCharacter {
     this.injuriesSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'injuries');
   }
 
-  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする。characters.yamlがこのビューの知る全プロパティ・スロットを持つとは限らないため、「持っていなければ空として読む」姿勢に合わせる。 */
+  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする。キャラクタの定義（docs/world/Characters.md）がこのビューの知る全プロパティ・スロットを持つとは限らないため、「持っていなければ空として読む」姿勢に合わせる。 */
   private static idOrMissing(names: NameRegistry, name: string): number {
     return names.tryGetId(name) ?? -1;
   }

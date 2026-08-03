@@ -2,21 +2,23 @@ import type { Rect } from './layout/ScreenMetrics';
 import { ResponsiveScene } from './ResponsiveScene';
 import type { SaveData } from '../save/SaveData';
 import { SaveSlots, SLOT_COUNT } from '../save/SaveSlots';
-import { CHARACTER_CHOICES } from '../save/newGameInput';
+import { LOCALIZATION_KEY } from './BootScene';
+import type { Localization } from '../locale/Localization';
 import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
+import { characterCardContent } from './ui/characterArt';
 import { addLabel } from './ui/labels';
-import { addPanel, drawBox } from './ui/shapes';
+import { addPanel } from './ui/shapes';
 import { COLOR, SIZE } from './ui/theme';
 import { truncateToWidth } from './ui/textLayout';
 
 /** スロット一覧の外周パディングとカード間ギャップ（StartScreen_Mock.htmlの.slot-grid）。 */
 const GRID_PADDING = 20;
 
-/** スロットカードの内側パディングと、ポートレイトの一辺。 */
+/** スロットカードの内側パディングと、削除ボタンの一辺。 */
 const SLOT_PADDING = 20;
-const PORTRAIT_SIZE = 140;
 const DELETE_BUTTON_SIZE = 56;
 
 /**
@@ -24,12 +26,16 @@ const DELETE_BUTTON_SIZE = 56;
  * スロットは4固定で、空き判定はセーブ本体の有無だけで行う。
  */
 export class SlotSelectScene extends ResponsiveScene {
+  /** buildで必ず設定される。 */
+  private locale!: Localization;
+
   constructor() {
     super('slots');
   }
 
   protected build(): void {
     const { width, height } = this.metrics;
+    this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
     const slots = new SaveSlots(localStorage).readAll();
 
     addPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
@@ -71,28 +77,18 @@ export class SlotSelectScene extends ResponsiveScene {
     );
 
     const padding = this.metrics.px(SLOT_PADDING);
-    const portraitSize = Math.min(this.metrics.px(PORTRAIT_SIZE), cell.height - padding * 2);
-    const portrait = this.add.graphics();
-    drawBox(
-      portrait,
-      { x: padding, y: (cell.height - portraitSize) / 2, width: portraitSize, height: portraitSize },
-      {
-        fill: COLOR.slotPortrait,
-        border: COLOR.cardBorder,
-        borderWidth,
-        radius: this.metrics.px(SIZE.radius),
-      },
-    );
-    const icon = addLabel(
+    // 札は行の高さいっぱいに収める（原寸より大きくはしない）。
+    const cardScale = Math.min(1, (cell.height - padding * 2) / this.metrics.px(SIZE.cardHeight));
+    const cardWidth = this.metrics.px(SIZE.cardWidth) * cardScale;
+    const card = new Card(
       this,
       this.metrics,
-      padding + portraitSize / 2,
-      cell.height / 2,
-      SlotSelectScene.iconOf(slot.characterId),
-      { size: 72 },
-    ).setOrigin(0.5);
+      padding,
+      (cell.height - this.metrics.px(SIZE.cardHeight) * cardScale) / 2,
+      characterCardContent(slot.characterId, this.locale),
+    ).setScale(cardScale);
 
-    const infoX = padding + portraitSize + this.metrics.px(SLOT_PADDING);
+    const infoX = padding + cardWidth + this.metrics.px(SLOT_PADDING);
     const infoWidth = cell.width - infoX - this.metrics.px(DELETE_BUTTON_SIZE + SLOT_PADDING);
     const name = addLabel(this, this.metrics, infoX, cell.height / 2, slot.islandName, {
       size: 32,
@@ -108,7 +104,7 @@ export class SlotSelectScene extends ResponsiveScene {
       { size: 24, color: COLOR.textMuted },
     ).setOrigin(0, 0);
 
-    button.addContent(portrait, icon, name, days);
+    button.addContent(card, name, days);
     this.addDeleteButton(cell, slotIndex, slot);
   }
 
@@ -173,10 +169,5 @@ export class SlotSelectScene extends ResponsiveScene {
       color: COLOR.textMuted,
     }).setOrigin(0.5, 0);
     button.addContent(icon, label);
-  }
-
-  /** セーブに残っているキャラクターIDが未知でも一覧は開けるようにする。 */
-  private static iconOf(characterId: string): string {
-    return CHARACTER_CHOICES.find((choice) => choice.id === characterId)?.icon ?? '🧍';
   }
 }

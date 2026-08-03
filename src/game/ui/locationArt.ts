@@ -50,13 +50,5 @@ export function commonArtFiles(locations: readonly string[]): readonly ArtFile[]
 
 /** locationタグを持つobject_defの識別子（＝絵を遅延ロードする土地）の一覧。 */
 export function locationDefNames(codex: WorldCodex): readonly string[] {
-  const tagId = codex.tagNames.tryGetId('location');
-  if (tagId === undefined) return [];
-
-  const names: string[] = [];
-  for (let id = 0; id < codex.objects.count; id++) {
-    const def = codex.objects.get(id);
-    if (def.tags.includes(tagId)) names.push(def.name);
-  }
-  return names;
+  return codex.objectDefNamesWithTag('location');
 }

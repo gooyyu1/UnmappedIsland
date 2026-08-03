@@ -29,7 +29,7 @@ describe('土地の絵の単位分け', () => {
     expect(locations).toContain('jungle');
     expect(locations).not.toContain('path');
     expect(locations).not.toContain('coconut');
-    expect(locations).not.toContain('character');
+    expect(locations).not.toContain('medic');
   });
 
   it('土地の絵は、その土地のカードの絵と背景だけを含む', () => {
@@ -73,7 +73,7 @@ describe('土地の絵の単位分け', () => {
 
   it('キャラクターと手持ちレーンの背景は起動時に読まれる', () => {
     const common = commonArtFiles(locations).map((file) => file.key);
-    expect(common).toContain('object:character');
+    expect(common).toContain('object:medic');
     expect(common).toContain('background:hand');
   });
 });

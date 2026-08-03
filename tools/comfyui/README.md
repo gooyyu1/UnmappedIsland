@@ -21,7 +21,7 @@ python build.py recipes/rocky_field_fixture.json
 `postprocess` ではなく `cardArt` を持っていればこちらが選ばれるので、作り直し方は同じです。
 
 ```bash
-python build.py recipes/character.json
+python build.py recipes/medic.json
 ```
 
 ### 大きさ

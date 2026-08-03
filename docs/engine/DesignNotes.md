@@ -35,6 +35,14 @@
   現形式（`min: 1`）では表現できない（最後の1単位が `availableToTransferOut` で汲み出せない）。必要になったら
   `allow_overflow` の鏡像として transfer に `allow_shortfall` を追加する。
 
+## プレイヤーキャラクタ（[Characters.md](../world/Characters.md)）
+
+- キャラクタ間で定義が食い違わないことを、`props` を配る trait では保証しないこと。trait は
+  「何を持つべきか」ではなく「省略したらこの値」しか表現できず、`props` のマージはフィールド単位の
+  上書きなので、`range.max` だけ上書きして `stages` を trait のまま残す、が素通りする。`stages` の
+  しきい値は `max` から導いた値なので、その瞬間に「安全域を外れるのは max の80%」が壊れるうえ、
+  キャラクタのファイルには `stages` が現れないため読んでも気づけない。契約はテストで検査する。
+
 ## 数値のスケール（[GameElementDefinition.md](./GameElementDefinition.md) 6.0節）
 
 - `hydration` が -25/tick なのは書き間違いではない。実単位（mL）に載せた結果であり、他の生理パラメータに

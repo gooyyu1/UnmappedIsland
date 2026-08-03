@@ -2,25 +2,6 @@ import type { Rng } from '../domain/runtime/Rng';
 import type { SaveData } from './SaveData';
 import { ISLAND_NAME_MAX_LENGTH, SAVE_SCHEMA_VERSION, SEED_MAX } from './SaveData';
 
-/** 新規ゲーム作成画面で選ぶキャラクター。 */
-export interface CharacterChoice {
-  readonly id: string;
-  readonly icon: string;
-  readonly name: string;
-}
-
-/**
- * 選択肢はこの画面のためのプレースホルダー。現状のドメインモデルはキャラクターを
- * singleton: true の1種類しか持たず、複数から選ぶ仕組みが無い
- * （SaveDataManagement.md 新規ゲーム作成時の入力とランダム生成節）。
- */
-export const CHARACTER_CHOICES: readonly CharacterChoice[] = [
-  { id: 'farmer', icon: '🧑‍🌾', name: '陽気な元農家' },
-  { id: 'engineer', icon: '🧑‍🔧', name: '手先の器用な元エンジニア' },
-  { id: 'captain', icon: '🧑‍✈️', name: '冷静な元船長' },
-  { id: 'medic', icon: '🧑‍⚕️', name: '頼れる元衛生兵' },
-];
-
 const NAME_ADJECTIVES = [
   '霧深い',
   '陽だまりの',
@@ -44,8 +25,9 @@ export function randomSeed(rng: Rng): number {
   return rng.nextInt(0, SEED_MAX + 1);
 }
 
-export function randomCharacter(rng: Rng): CharacterChoice {
-  return CHARACTER_CHOICES[rng.nextInt(0, CHARACTER_CHOICES.length)];
+/** 選べるキャラクタ（NewGame.characterDefNames）から1つ選ぶ。 */
+export function randomCharacter(rng: Rng, characterDefNames: readonly string[]): string {
+  return characterDefNames[rng.nextInt(0, characterDefNames.length)];
 }
 
 /** 入力欄の文字列をシードとして解釈する。数字以外を含む・値域外はundefined。 */

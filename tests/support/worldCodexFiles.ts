@@ -5,6 +5,12 @@ import type { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader
 /** ゲーム本体に同梱されるWorldCodex定義YAMLの置き場所（テストはリポジトリルートで実行される前提）。 */
 export const WORLD_CODEX_DIR = 'public/world-codex';
 
+/**
+ * キャラクタの個体差に関心が無いテストで代表として使うプレイヤーキャラクタ
+ * （docs/world/Characters.md）。どのキャラクタでも成り立つはずの検証をここへ集める。
+ */
+export const SAMPLE_CHARACTER = 'medic';
+
 /** WORLD_CODEX_DIR内の1ファイルへのパス。 */
 export function worldCodexPath(fileName: string): string {
   return join(WORLD_CODEX_DIR, fileName);

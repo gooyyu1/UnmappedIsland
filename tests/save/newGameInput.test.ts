@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SEED_MAX } from '../../src/save/SaveData';
 import {
-  CHARACTER_CHOICES,
   createSaveData,
   normalizeIslandName,
   parseSeed,
@@ -21,8 +20,10 @@ describe('新規ゲームの入力(SaveDataManagement.md)', () => {
     expect(randomSeed(new StubRng({ ints: [0] }))).toBe(0);
   });
 
-  it('キャラクターは選択肢の中から選ばれる', () => {
-    expect(randomCharacter(new StubRng({ ints: [2] }))).toBe(CHARACTER_CHOICES[2]);
+  it('キャラクターは渡された選択肢の中から選ばれる', () => {
+    const characters = ['farmer', 'engineer', 'captain'];
+
+    expect(randomCharacter(new StubRng({ ints: [2] }), characters)).toBe('captain');
   });
 
   it('数字以外を含むシードと値域外のシードは受け付けない', () => {

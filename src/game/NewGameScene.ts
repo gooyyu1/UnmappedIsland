@@ -1,12 +1,13 @@
-import type Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { ResponsiveScene } from './ResponsiveScene';
+import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
+import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { Localization } from '../locale/Localization';
+import { characterDefNames } from '../domain/generation/NewGame';
 import { randomRng } from '../domain/runtime/Rng';
 import { ISLAND_NAME_MAX_LENGTH, SEED_MAX } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
-import type { CharacterChoice } from '../save/newGameInput';
 import {
-  CHARACTER_CHOICES,
   createSaveData,
   normalizeIslandName,
   parseSeed,
@@ -15,13 +16,14 @@ import {
   randomSeed,
 } from '../save/newGameInput';
 import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { characterCardContent } from './ui/characterArt';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
 import { addLabel } from './ui/labels';
-import { addPanel, drawBox } from './ui/shapes';
+import { addPanel } from './ui/shapes';
 import { COLOR, SIZE } from './ui/theme';
-import { wrapByCharacter } from './ui/textLayout';
 
 /** 本文の余白と項目間の間隔（StartScreen_Mock.htmlの.newgame-body）。横型は左右を広く取る。 */
 const BODY_PADDING = 28;
@@ -32,7 +34,7 @@ const LABEL_GAP = 10;
 /** 入力欄・ランダムボタン・キャラクター選択肢・フッターボタンの寸法。 */
 const INPUT_HEIGHT = 72;
 const RANDOM_BUTTON_SIZE = 72;
-const CHARACTER_OPTION_WIDTH = 160;
+const CHARACTER_OPTION_PADDING = 12;
 const FOOTER_BUTTON_HEIGHT = 80;
 
 /** 新規ゲーム作成画面を開くときに渡す、書き込み先のスロット番号。 */
@@ -51,6 +53,10 @@ export class NewGameScene extends ResponsiveScene {
   private seedText = '';
   private characterId: string | undefined;
 
+  /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
+  private locale!: Localization;
+  private characters!: readonly string[];
+
   private nameInput: TextInput | undefined;
   private seedInput: TextInput | undefined;
 
@@ -63,6 +69,8 @@ export class NewGameScene extends ResponsiveScene {
   }
 
   init(data: NewGameSceneData): void {
+    this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
+    this.characters = characterDefNames(this.registry.get(WORLD_CODEX_KEY) as WorldCodex);
     this.slotIndex = data.slotIndex;
     this.islandName = '';
     this.characterId = undefined;
@@ -187,7 +195,7 @@ export class NewGameScene extends ResponsiveScene {
     });
     labelText.setY(y + (buttonSize - labelText.height) / 2);
     this.addRandomButton(x + width - buttonSize, y, () => {
-      this.characterId = randomCharacter(randomRng()).id;
+      this.characterId = randomCharacter(randomRng(), this.characters);
       this.refreshCharacterOptions();
     });
 
@@ -204,29 +212,25 @@ export class NewGameScene extends ResponsiveScene {
   private refreshCharacterOptions(): void {
     for (const option of this.characterOptions) option.destroy();
 
-    const optionWidth = this.metrics.px(CHARACTER_OPTION_WIDTH);
     const gap = this.metrics.px(SIZE.gap);
-    const padding = this.metrics.px(12);
-    const nameTop = padding + (optionWidth - padding * 2) + this.metrics.px(8);
+    const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
+    const cardWidth = this.metrics.px(SIZE.cardWidth);
+    // 札は原寸を上限に、全員が1行へ収まるところまで縮める（キャラクタが増えても溢れさせない）。
+    const optionWidth = Math.min(
+      cardWidth + padding * 2,
+      (this.characterOptionsOrigin.width - gap * (this.characters.length - 1)) / this.characters.length,
+    );
+    const cardScale = (optionWidth - padding * 2) / cardWidth;
+    const height = this.metrics.px(SIZE.cardHeight) * cardScale + padding * 2;
 
-    // 名前の行数は選択肢ごとに違うが、横並びの高さは揃える（モックのflexアイテムと同じ）。
-    const names = CHARACTER_CHOICES.map((choice) => {
-      const name = addLabel(this, this.metrics, 0, nameTop, choice.name, { size: 20 })
-        .setOrigin(0.5, 0)
-        .setAlign('center');
-      name.setWordWrapCallback(wrapByCharacter(optionWidth - padding * 2));
-      return name;
-    });
-    const height = nameTop + Math.max(...names.map((name) => name.height)) + padding;
-
-    this.characterOptions = CHARACTER_CHOICES.map((choice, index) =>
+    this.characterOptions = this.characters.map((character, index) =>
       this.addCharacterOption(
         this.characterOptionsOrigin.x + index * (optionWidth + gap),
         this.characterOptionsOrigin.y,
         optionWidth,
         height,
-        choice,
-        names[index],
+        character,
+        cardScale,
       ),
     );
   }
@@ -236,13 +240,10 @@ export class NewGameScene extends ResponsiveScene {
     y: number,
     width: number,
     height: number,
-    choice: CharacterChoice,
-    name: Phaser.GameObjects.Text,
+    character: string,
+    cardScale: number,
   ): Button {
-    const padding = this.metrics.px(12);
-    const portraitSize = width - padding * 2;
-
-    const selected = choice.id === this.characterId;
+    const selected = character === this.characterId;
     const button = new Button(
       this,
       { x, y, width, height },
@@ -253,28 +254,14 @@ export class NewGameScene extends ResponsiveScene {
         radius: this.metrics.px(SIZE.radius),
       },
       () => {
-        this.characterId = choice.id;
+        this.characterId = character;
         this.refreshCharacterOptions();
       },
     );
 
-    const portrait = this.add.graphics();
-    drawBox(
-      portrait,
-      { x: padding, y: padding, width: portraitSize, height: portraitSize },
-      {
-        fill: COLOR.slotPortrait,
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
-        radius: this.metrics.px(SIZE.radius),
-      },
-    );
-    const icon = addLabel(this, this.metrics, width / 2, padding + portraitSize / 2, choice.icon, {
-      size: 56,
-    }).setOrigin(0.5);
-
-    name.setX(width / 2);
-    button.addContent(portrait, icon, name);
+    const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
+    const card = new Card(this, this.metrics, padding, padding, characterCardContent(character, this.locale));
+    button.addContent(card.setScale(cardScale));
     return button;
   }
 

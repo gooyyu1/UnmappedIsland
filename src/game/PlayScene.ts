@@ -5,7 +5,7 @@ import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
-import { start } from '../domain/generation/NewGame';
+import { resolveCharacterDefName, start } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/runtime/Rng';
 import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
@@ -23,6 +23,7 @@ import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
+import { characterIcon } from './ui/characterArt';
 import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
@@ -132,6 +133,9 @@ export interface PlaySceneData {
   readonly scenario?: Scenario;
 }
 
+/** シナリオで動かすキャラクタ。開始状態の見え方を確かめるのが目的なので、基準どおりの体に固定する。 */
+const SCENARIO_CHARACTER = 'medic';
+
 /**
  * テスト用シナリオでプレイ画面を開くためのデータ。
  *
@@ -143,7 +147,7 @@ export function scenarioPlayData(scenario: Scenario): PlaySceneData {
       schemaVersion: SAVE_SCHEMA_VERSION,
       islandName: scenario.title,
       seed: scenario.seed,
-      characterId: 'character',
+      characterId: SCENARIO_CHARACTER,
       createdAt: 0,
       elapsedDays: 0,
       pinnedStatuses: [],
@@ -304,7 +308,8 @@ export class PlayScene extends ResponsiveScene {
     this.mapPositions = new Map(
       data.save.mapCardPositions.map((position) => [position.site, { x: position.x, y: position.y }]),
     );
-    this.gameSession = start(this.codex, data.save.seed, seededRng(data.save.seed));
+    const character = resolveCharacterDefName(this.codex, data.save.characterId);
+    this.gameSession = start(this.codex, character, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.artLoader = new LocationArtLoader(this);
@@ -1089,7 +1094,7 @@ export class PlayScene extends ResponsiveScene {
     const portraitHeight = this.metrics.px(SIZE.cardHeight);
     const portraitBottom = area.y + padding + portraitHeight;
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
-      icon: '🧍',
+      icon: characterIcon(this.view.characterArt),
       art: this.view.characterArt,
       name: this.view.characterName,
       onTap: this.whileIdle(() => this.openPropertyWindow()),

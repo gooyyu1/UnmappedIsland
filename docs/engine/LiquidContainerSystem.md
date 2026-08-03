@@ -108,7 +108,7 @@ traits:
 この単位のもとでは、`density` の 100 が「1g/mL」という実際の比重を意味します（油は 92 = 0.92g/mL）。
 容器の `capacity` は 1L = 1000、`ContainerSystem.md` の `weight` は 1kg = 1000 です。
 
-`hydration`（`characters.yaml`）も同じ mL のスケールに載せます。飲んだ量がそのまま体内の水分になり、
+`hydration`（`characters/`）も同じ mL のスケールに載せます。飲んだ量がそのまま体内の水分になり、
 残量を「あと何 L 分か」として読めるためで、`GameElementDefinition.md` 6.0 節の 100 分割の規約より
 こちらを優先しています。1日の必要量 2400mL を 96 tick で割った -25/tick で減り、3日分の `max` は 7200 です。
 2000mL ではなく 2400mL なのは、96 で割り切れる必要があるためです。

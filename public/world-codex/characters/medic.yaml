@@ -1,0 +1,73 @@
+# 元衛生兵。どの数値も基準どおりで、他のキャラクタはこの体を基準にどこを削ってどこを伸ばすかで
+# 表される。手当ての心得を活かせる怪我の仕組みはまだ無いため、個性は体力の高さだけに出る。
+# 各プロパティの意味・値の刻み方は docs/world/Characters.md 参照。
+
+object_defs:
+  medic:
+    singleton: true
+    traits: [player_character]
+    slots:
+      hand: {unit_capacity: 6}
+    props:
+      # 満腹から1日（96 tick）。
+      satiety:
+        tags: [status, nutrition]
+        value: 9600
+        range: {min: 0, max: 9600}
+        stages:
+          - {name: starving, alert: danger}
+          - {name: hungry, min: 1200, alert: caution}
+          - {name: peckish, min: 4800, alert: watch}
+          - {name: fed, min: 7680}
+        passives:
+          - accumulate:
+              self:
+                satiety: -100
+      # 満水から3日（288 tick）。
+      hydration:
+        tags: [status, nutrition]
+        value: 7200
+        range: {min: 0, max: 7200}
+        stages:
+          - {name: dehydrated, alert: fatal}
+          - {name: parched, min: 600, alert: danger}
+          - {name: thirsty, min: 2400, alert: caution}
+          - {name: dryish, min: 4800, alert: watch}
+          - {name: hydrated, min: 5760}
+        passives:
+          - accumulate:
+              self:
+                hydration: -25
+      # 絶食に耐えられるのは、最大限に肥えた状態から60日（5760 tick）。
+      body_fat:
+        tags: [nutrition]
+        value: 144000
+        range: {min: 0, max: 576000}
+        passives:
+          - accumulate:
+              self:
+                body_fat: -100
+      # 眠らずにいられるのは24時間（96 tick）。
+      wakefulness:
+        tags: [status, health]
+        value: 9600
+        range: {min: 0, max: 9600}
+        stages:
+          - {name: overtired, alert: danger}
+          - {name: sleepy, min: 1200, alert: caution}
+          - {name: yawning, min: 4800, alert: watch}
+          - {name: rested, min: 7680}
+        passives:
+          - accumulate:
+              self:
+                wakefulness: -100
+      # 現場を歩き回って培った、基準より1割高い体力。
+      stamina:
+        tags: [status, health]
+        value: 110
+        range: {min: 0, max: 110}
+        stages:
+          - {name: exhausted, alert: danger}
+          - {name: tired, min: 22, alert: caution}
+          - {name: winded, min: 66, alert: watch}
+          - {name: fresh, min: 88}
