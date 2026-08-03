@@ -28,7 +28,10 @@ function pngToWebp(): Plugin {
         delete bundle[fileName];
         const webpName = fileName.replace(/\.png$/, '.webp');
         this.emitFile({ type: 'asset', fileName: webpName, source: webp });
-        renames.set(fileName, webpName);
+        // URLの書き換えはハッシュ付きファイル名の単位で行う。チャンクに埋まるURLの形はbase設定で
+        // 変わり、相対base（--base=./）では `assets/` を含まないファイル名だけになる。ファイル名は
+        // 内容ハッシュ入りで一意なので、部分文字列置換でフルパス表記にもそのまま効く。
+        renames.set(fileName.split('/').pop() as string, webpName.split('/').pop() as string);
       }
       for (const output of Object.values(bundle)) {
         if (output.type !== 'chunk') continue;
