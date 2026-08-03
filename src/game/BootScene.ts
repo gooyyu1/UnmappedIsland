@@ -4,7 +4,9 @@ import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { LOCALE_FILE, parseLocale } from '../locale/Localization';
 import cardFrameUrl from '../assets/card_frame.png';
+import flipDigitUrl from '../assets/flip_digit.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
+import { FLIP_DIGIT_TEXTURE } from './ui/FlipCalendar';
 import { INFORMATION_ART } from './ui/informationArt';
 import { SEPARATOR_ART } from './ui/separatorArt';
 import { commonArtFiles, locationDefNames } from './ui/locationArt';
@@ -46,6 +48,8 @@ export class BootScene extends Phaser.Scene {
 
     // 読み込めなくてもカードは図形で描かれる（Card.addFrame）ため、失敗しても起動は止めない。
     this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
+    // 日時のフリップカードの紙。こちらも読み込めなければ図形で描かれる（FlipCalendar）。
+    this.load.image(FLIP_DIGIT_TEXTURE, flipDigitUrl);
     // 情報エリア（フィールドエリアの左／上）の背景。向きごとに1枚ずつ。
     for (const [texture, url] of INFORMATION_ART) this.load.image(texture, url);
     // エリアの境目に敷く帯。

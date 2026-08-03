@@ -156,6 +156,22 @@ def main() -> None:
                     "--shadow-alpha", str(frame["shadowAlpha"]),
                 ],
             )
+        elif "flipCard" in recipe:
+            flip = recipe["flipCard"]
+            run(
+                "flip_card.py",
+                [
+                    str(raw),
+                    "--out", str(processed),
+                    "--paper", flip["paper"],
+                    "--wash", str(flip["wash"]),
+                    "--edge", flip["edge"],
+                    "--edge-width", str(flip["edgeWidth"]),
+                    "--shadow-offset", *map(str, flip["shadowOffset"]),
+                    "--shadow-blur", str(flip["shadowBlur"]),
+                    "--shadow-alpha", str(flip["shadowAlpha"]),
+                ],
+            )
         elif "pageArt" in recipe:
             page = recipe["pageArt"]
             run(

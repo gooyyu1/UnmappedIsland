@@ -77,6 +77,9 @@ python build.py recipes/medic.json
 python build.py recipes/card_frame.json
 ```
 
+日時のフリップカード（`flip_digit.json`）も紙の生成物は同じで、組み立ては `flip_card.py` が行う。
+こちらは紙に加えて、留具の穴・そこを通る金属リング・落ち影まで1枚に描き込む。
+
 **カードとして直接生成することはできません。** `playing card` と言うとトランプの絵札になり、外すと
 今度はカードの形が消えて水彩の滲みだけになります（12 枚で全滅）。そもそも角丸の半径と余白は
 `card_art.py` と `Card.ts` の定数に一致していなければならず、生成では保証できません。
@@ -148,6 +151,7 @@ custom_nodes/unmapped_island_seamless  →  <インストール先>\ComfyUI\cust
 | `card_art.py` | カードに載る形へ整える（紙・物・影の分離と、出力サイズの決定） |
 | `prompts/objects.json` | アイテムごとのプロンプト |
 | `card_frame.py` | 紙のテクスチャからカードの枠を組み立てる |
+| `flip_card.py` | 紙のテクスチャから日時のフリップカード（穴・リング・影込み）を組み立てる |
 | `page_art.py` | 本の絵から片ページを切り出し、9patchの素材にする |
 | `custom_nodes/unmapped_island_seamless/` | 左右が繋がった絵を生成するための ComfyUI ノード |
 | `workflows/lane_background_sdxl.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ）。既定 |

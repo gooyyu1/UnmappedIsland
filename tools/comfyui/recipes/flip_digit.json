@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "src/assets/flip_digit.png（日時のフリップカード）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "紙のテクスチャはカードの枠と同じ生成物（card_paper）を使い、色だけ白へ寄せる。",
+    "素材を揃えることで、カードとフリップカードが同じ紙に見える。",
+    "留具の穴・リング・落ち影は flip_card.py が描き込む（寸法もあちらの定数）。"
+  ],
+  "output": "src/assets/flip_digit.png",
+  "prompts": "cards.json",
+  "prompt": "card_paper",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 8102,
+  "flipCard": {
+    "_comment": [
+      "白い紙は状況エリアの地（ベージュ）とも近いので、edgeの薄いグレーの線で輪郭を確保する。",
+      "影はぶら下がったカードの落ち影。狭く濃くして浮きを出す。"
+    ],
+    "paper": "#fdfdfb",
+    "wash": 0.4,
+    "edge": "#b0aba0",
+    "edgeWidth": 2,
+    "shadowOffset": [0, 3],
+    "shadowBlur": 1.0,
+    "shadowAlpha": 0.85
+  }
+}

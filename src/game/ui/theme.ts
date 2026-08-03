@@ -64,7 +64,8 @@ export const COLOR = {
   injuryButton: 0xffe0d6,
   mapButton: 0xdbe7ff,
 
-  flipDigit: 0x3a3a3a,
+  /** 日時の桁の紙。画像（flip_digit.png）が読めなかったときの図形フォールバックにも使う。 */
+  flipDigit: 0xffffff,
   flipDigitRing: 0x6b6b6b,
   weatherChip: 0xfff2e0,
 

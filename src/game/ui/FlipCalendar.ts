@@ -1,6 +1,17 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, cssColor } from './theme';
+import { drawBox } from './shapes';
+
+/** 桁の紙の画像のテクスチャキー（実体はsrc/assets/flip_digit.png、BootSceneが読む）。 */
+export const FLIP_DIGIT_TEXTURE = 'flip-digit';
+
+/**
+ * 桁の画像の中の、紙の高さとその上に留具のリングが伸びる分（px）。flip_card.py の寸法と
+ * 対応していなければならない（ずれるとリングが桁から浮く）。
+ */
+const IMAGE_PAPER_HEIGHT = 176;
+const IMAGE_RING_OVERHEAD = 20;
 
 /** 日数の桁・時刻の桁の寸法（ScreenLayout.md 寸法トークン節、縦型・横型共通）。 */
 const DAY_DIGIT = { width: 64, height: 88, fontSize: 56 };
@@ -102,22 +113,14 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     // 日数と時刻は桁の高さが違うため、背の高い日数の桁を基準に上下中央へ揃える。
     const top = (blockHeight - height) / 2;
 
-    const card = scene.add.graphics();
-    card.fillStyle(COLOR.flipDigit, 1);
-    card.fillRoundedRect(x, top, width, height, metrics.px(6));
-
-    // 留具のリング。CSSはborder-box指定なので、線幅の中心は外径14uから線幅3uを引いた半径になる。
-    const ringRadius = metrics.px((14 - 3) / 2);
-    card.lineStyle(metrics.px(3), COLOR.flipDigitRing, 1);
-    card.strokeCircle(x + metrics.px(13), top - metrics.px(1), ringRadius);
-    card.strokeCircle(x + width - metrics.px(13), top - metrics.px(1), ringRadius);
+    const card = addCardPaper(scene, metrics, x, top, width, height);
 
     const text = scene.add
       .text(x + width / 2, top + height / 2, '', {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(size.fontSize)}px`,
         fontStyle: 'bold',
-        color: cssColor(COLOR.textOnDark),
+        color: cssColor(COLOR.text),
       })
       .setOrigin(0.5);
 
@@ -139,4 +142,45 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     this.add(text);
     return width + metrics.px(DIGIT_GAP);
   }
+}
+
+/**
+ * 桁の紙と留具。画像（FLIP_DIGIT_TEXTURE）があればそれを貼り、無ければ図形で描く
+ * （Card.addFrameと同じ流儀）。画像には留具の穴・リング・落ち影まで描き込まれていて、
+ * 紙の部分が指定の矩形に一致し、リングはその上へはみ出す。
+ */
+function addCardPaper(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  x: number,
+  top: number,
+  width: number,
+  height: number,
+): Phaser.GameObjects.GameObject {
+  if (scene.textures.exists(FLIP_DIGIT_TEXTURE)) {
+    const overhead = (height * IMAGE_RING_OVERHEAD) / IMAGE_PAPER_HEIGHT;
+    return scene.add
+      .image(x, top - overhead, FLIP_DIGIT_TEXTURE)
+      .setOrigin(0, 0)
+      .setDisplaySize(width, height + overhead);
+  }
+
+  // フォールバックの図形。白い紙は明るい地に溶けるため縁の線で輪郭を確保する。
+  // リングのCSSはborder-box指定なので、線幅の中心は外径14uから線幅3uを引いた半径になる。
+  const card = scene.add.graphics();
+  drawBox(
+    card,
+    { x, y: top, width, height },
+    {
+      fill: COLOR.flipDigit,
+      border: COLOR.flipDigitRing,
+      borderWidth: Math.max(1, metrics.px(1)),
+      radius: metrics.px(6),
+    },
+  );
+  const ringRadius = metrics.px((14 - 3) / 2);
+  card.lineStyle(metrics.px(3), COLOR.flipDigitRing, 1);
+  card.strokeCircle(x + metrics.px(13), top - metrics.px(1), ringRadius);
+  card.strokeCircle(x + width - metrics.px(13), top - metrics.px(1), ringRadius);
+  return card;
 }
