@@ -35,8 +35,8 @@ const NAME_MAX_LINES = 3;
 const NAME_MARGIN = 8;
 const NAME_STROKE = 4;
 
-/** 押下中の沈み込み表現（Buttonと同じ）。 */
-const PRESSED_ALPHA = 0.6;
+/** 押下中に紙の縁へ重ねる黒枠の太さ（u単位）。半透明にはしない——札が透けるとカードらしさが損なわれるため。 */
+const PRESSED_BORDER_WIDTH = 12;
 
 /** 端の操作エリアの高さ（カード高さに対する比）。 */
 const EDGE_RATIO = 1 / 6;
@@ -143,6 +143,9 @@ export class Card extends Phaser.GameObjects.Container {
   /** 今の押下がタップでなくなったか（cancelTap参照）。押し始めるたびに戻す。 */
   private tapCancelled = false;
 
+  /** 押下中だけ出す黒枠（makeTappable参照）。押せないカードは持たない。 */
+  private pressHighlight: Phaser.GameObjects.Graphics | undefined;
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, content: CardContent) {
     super(scene, x, y);
     const { icon, name } = content;
@@ -200,7 +203,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.swapArtWhenLoaded(scene, artTexture, art, width, height);
     }
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
-    if (content.onTap !== undefined) this.makeTappable();
+    if (content.onTap !== undefined) this.makeTappable(scene, metrics, width, height);
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
     // 入力を受け取る（InputPlugin.topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
     // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
@@ -287,15 +290,25 @@ export class Card extends Phaser.GameObjects.Container {
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
   }
 
-  private makeTappable(): void {
+  /** 押下中は紙の縁を黒枠でなぞる。枠は紙の輪郭（addFrameの図形と同じ矩形）に重ねる。 */
+  private makeTappable(scene: Phaser.Scene, metrics: ScreenMetrics, width: number, height: number): void {
+    const highlight = scene.add.graphics().setVisible(false);
+    drawBox(highlight, paperRect(metrics, width, height), {
+      border: COLOR.cardBorder,
+      borderWidth: metrics.px(PRESSED_BORDER_WIDTH),
+      radius: metrics.px(FRAME_RADIUS),
+    });
+    this.pressHighlight = highlight;
+    this.add(highlight);
+
     onPressRelease(this, {
       onPress: () => {
         this.tapCancelled = false;
-        this.setAlpha(PRESSED_ALPHA);
+        highlight.setVisible(true);
       },
-      onCancel: () => this.setAlpha(1),
+      onCancel: () => highlight.setVisible(false),
       onRelease: () => {
-        this.setAlpha(1);
+        highlight.setVisible(false);
         if (!this.tapCancelled) this._content.onTap?.();
       },
     });
@@ -303,7 +316,8 @@ export class Card extends Phaser.GameObjects.Container {
 
   /**
    * 今の押下をタップとして扱わない。掴んで動かす操作（カードのドラッグ・レーンの横スクロール）に
-   * なったと分かった時点でCardDragControllerが呼ぶ。
+   * なったと分かった時点でCardDragControllerが呼ぶ。押下中の黒枠もここで引っ込める——押されている
+   * ことを示す表示は、掴んだ時点で分身に役目を譲る。
    *
    * 押し始めたカードの上で指を離すと、動かしていてもタップとして成立してしまう（tap.ts）。
    * スタックの上の1枚を自分の位置へ重ねる操作（石と石の組み合わせ）や、カードを掴んだままの
@@ -311,6 +325,7 @@ export class Card extends Phaser.GameObjects.Container {
    */
   cancelTap(): void {
     this.tapCancelled = true;
+    this.pressHighlight?.setVisible(false);
   }
 
   /**
