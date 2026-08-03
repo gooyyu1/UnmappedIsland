@@ -141,8 +141,8 @@ export class CardLane {
   private readonly objects: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [];
 
   /**
-   * 絵を敷いた背景板（背景色だけのレーンでは空）。カードと同じだけ横へ送るので、スクロールのたびに
-   * 敷き位置を更新する。ピン留め部分の背景板も、絵が途切れないよう同じ位置で敷く。
+   * 絵を敷いた背景板のうち、カードと同じだけ横へ送るもの（背景色だけのレーンでは空）。スクロールの
+   * たびに敷き位置を更新する。ピン留め部分の背景板は固定なので含めない（addPinnedSlot参照）。
    */
   private readonly tiles: Phaser.GameObjects.TileSprite[] = [];
 
@@ -394,24 +394,30 @@ export class CardLane {
 
   /**
    * 背景板を1枚置く。絵があれば敷き、無ければ背景色で塗る。どちらも入力を遮る（addPanel参照）。
-   * 置いた板は自分で片付ける（objects）。
+   * 置いた板は自分で片付ける（objects）。scrollsWithCardsを倒すと、絵をスクロールで送る対象から外す。
    */
   private addBackground(
     scene: Phaser.Scene,
     rect: Rect,
     background: number,
     art: string | undefined,
+    scrollsWithCards = true,
   ): Phaser.GameObjects.Rectangle | Phaser.GameObjects.TileSprite {
     // 絵が用意されていても届いていなければ（遅延ロードの失敗時）背景色へ落とす（Cardの絵文字代用と同じ姿勢）。
     const texture = art !== undefined && scene.textures.exists(art) ? art : undefined;
     const panel =
       texture === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, texture);
-    if (panel instanceof Phaser.GameObjects.TileSprite) this.tiles.push(panel);
+    if (panel instanceof Phaser.GameObjects.TileSprite && scrollsWithCards) this.tiles.push(panel);
     this.objects.push(panel);
     return panel;
   }
 
-  /** 現在地カードはレーン左端に固定し、区切り線を挟んで右にスクロール領域を置く。 */
+  /**
+   * 現在地カードはレーン左端に固定し、区切り線を挟んで右にスクロール領域を置く。
+   *
+   * 背景板もカードと一緒に固定する（scrollToの対象から外す）。スクロール量0では下のレーン背景と
+   * 同じ位置に敷かれるため1枚の絵として繋がり、送っている間だけ区切り線を境に地面が分かれて見える。
+   */
   private addPinnedSlot(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -431,6 +437,7 @@ export class CardLane {
       { ...rect, width: margin + cardWidth + gap + dividerWidth },
       background,
       art,
+      false,
     );
     this.objects.push(new Card(scene, metrics, rect.x + margin, cardY, pinned));
 
