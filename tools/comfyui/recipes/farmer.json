@@ -8,7 +8,7 @@
   "prompt": "castaway_cheerful_man",
   "workflow": "lane_background_sdxl.api.json",
   "lora": "watercolor_sdxl.safetensors",
-  "seed": 7004,
+  "seed": 7006,
   "width": 832,
   "height": 1280,
   "cardArt": {
