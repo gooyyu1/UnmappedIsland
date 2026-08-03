@@ -5,6 +5,7 @@ import { Card, EmptyCard } from './Card';
 import { COLOR, SIZE } from './theme';
 import { addPanel, addTiledPanel } from './shapes';
 import { wheelPixels } from './scroll';
+import { ScrollIndicator } from './ScrollIndicator';
 
 /**
  * ドロップ先として見たときの、レーン上の1点の意味。
@@ -104,6 +105,9 @@ export class CardLane {
   /** スクロールできる下限（コンテンツが可視域に収まるなら0）。 */
   private minScrollX = 0;
 
+  /** 送り具合を示すスクロールバー。送る必要が無いときは自分で姿を消す。 */
+  private readonly scrollIndicator: ScrollIndicator;
+
   /** カード1枚分の送り幅（カード幅＋ギャップ）とカードの実寸。 */
   private readonly pitch: number;
   private readonly cardWidth: number;
@@ -163,6 +167,18 @@ export class CardLane {
     this.trailingPlaceholder = options.trailingPlaceholder === true;
     this.stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
     this.strip = scene.add.container(stripX, cardY);
+
+    // バーはカードより後に作り、カードの上へ重ねる。置き場所はカードの下の余白で、
+    // レーンの区切りの帯がかぶる3uには掛からない（ScreenLayout.md スクロールバー節）。
+    this.scrollIndicator = new ScrollIndicator(
+      scene,
+      metrics,
+      stripX,
+      rect.y + rect.height - metrics.px(SIZE.scrollBarInset + SIZE.scrollBar),
+      this.stripWidth,
+    );
+    this.objects.push(this.scrollIndicator);
+
     // 最初の1回だけは出どころが無いので、setCardsが伏せたカードをそのまま表に返す。
     for (const { card } of this.setCards(cards).entered) card.setVisible(true);
 
@@ -302,6 +318,7 @@ export class CardLane {
     this.strip.x = this.originX + clamped;
     // tilePositionXは絵の側の座標なので、敷くときにかけた倍率で割り戻す。
     for (const tile of this.tiles) tile.tilePositionX = -clamped / tile.tileScaleX;
+    this.scrollIndicator.setScroll(clamped, this.minScrollX);
   }
 
   /**

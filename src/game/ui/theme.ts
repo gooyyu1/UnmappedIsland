@@ -15,6 +15,12 @@ export const SIZE = {
   iconButton: 88,
   conditionButton: 64,
   radius: 12,
+  /**
+   * レーンのスクロールバーの厚みと、レーン下端との間隔（ScreenLayout.md スクロールバー節）。
+   * カードの下端（レーン下端から16u）と区切りの帯がかぶる3uの間へ収める。
+   */
+  scrollBar: 8,
+  scrollBarInset: 5,
 } as const;
 
 export const COLOR = {
@@ -42,6 +48,12 @@ export const COLOR = {
   /** ドラッグ中に、受け入れられるカードのふちを光らせる色。今の落とし先（緑）とは色相を分ける。 */
   cardDropAccept: 0xffc23e,
   laneDivider: 0x000000,
+  /**
+   * レーンのスクロールバー。明るい地にも暗い地にも敷かれるので、暗いトラックに明るいつまみを
+   * 載せて、地の明るさに関わらずつまみが読めるようにする。
+   */
+  scrollBarTrack: 0x101418,
+  scrollBarThumb: 0xffffff,
 
   button: 0xffffff,
   buttonBorder: 0x000000,
