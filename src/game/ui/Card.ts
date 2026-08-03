@@ -35,8 +35,11 @@ const NAME_MAX_LINES = 3;
 const NAME_MARGIN = 8;
 const NAME_STROKE = 4;
 
-/** 押下中に紙の縁へ重ねる黒枠の太さ（u単位）。半透明にはしない——札が透けるとカードらしさが損なわれるため。 */
-const PRESSED_BORDER_WIDTH = 12;
+/**
+ * 押下中に紙の縁へ重ねる黒枠の太さ（u単位。ドロップ先を示す枠と揃える）。
+ * 半透明にはしない——札が透けるとカードらしさが損なわれるため。
+ */
+const PRESSED_BORDER_WIDTH = 6;
 
 /** 端の操作エリアの高さ（カード高さに対する比）。 */
 const EDGE_RATIO = 1 / 6;
