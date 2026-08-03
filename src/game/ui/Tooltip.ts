@@ -69,6 +69,8 @@ export class Tooltip {
     const above = at.y - gap - this.height;
     const y = above >= margin ? above : at.y + at.height + gap;
 
+    // 何の上に出すことになっても隠れないよう、出すたびに自分を最前面へ移す。
+    this.scene.children.bringToTop(this.container);
     this.container.setPosition(
       Phaser.Math.Clamp(
         at.x + (at.width - this.width) / 2,

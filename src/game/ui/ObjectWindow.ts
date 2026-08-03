@@ -129,7 +129,6 @@ export class ObjectWindow {
       height: actionHeight,
     });
 
-    // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
     this.tooltip = new Tooltip(scene, metrics);
   }
 

@@ -48,4 +48,12 @@ export class TextInput {
   setValue(value: string): void {
     this.input.value = value;
   }
+
+  /**
+   * 入力欄を出す・引っ込める。DOM要素はキャンバスより必ず手前に来るので、キャンバスへ描く吹き出しを
+   * 重ねたい間だけ引っ込める（NewGameScene）。
+   */
+  setVisible(visible: boolean): void {
+    this.input.style.visibility = visible ? 'visible' : 'hidden';
+  }
 }

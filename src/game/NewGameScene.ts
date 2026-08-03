@@ -21,6 +21,8 @@ import { characterCardContent } from './ui/characterArt';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
+import { Tooltip } from './ui/Tooltip';
+import type { TooltipContent } from './ui/Tooltip';
 import { addLabel } from './ui/labels';
 import { addPanel } from './ui/shapes';
 import { COLOR, SIZE } from './ui/theme';
@@ -64,6 +66,9 @@ export class NewGameScene extends ResponsiveScene {
   private characterOptionsOrigin: Rect = { x: 0, y: 0, width: 0, height: 0 };
   private characterOptions: Button[] = [];
 
+  /** 選択肢を長押ししている間だけ出す、人物の説明の吹き出し。buildで必ず作り直される。 */
+  private tooltip!: Tooltip;
+
   constructor() {
     super('newgame');
   }
@@ -89,6 +94,7 @@ export class NewGameScene extends ResponsiveScene {
     this.nameInput = undefined;
     this.seedInput = undefined;
     this.characterOptions = [];
+    this.tooltip = new Tooltip(this, this.metrics);
 
     cursorY += this.addTextField(paddingX, cursorY, contentWidth, '島の名前', {
       value: this.islandName,
@@ -244,9 +250,12 @@ export class NewGameScene extends ResponsiveScene {
     cardScale: number,
   ): Button {
     const selected = character === this.characterId;
+    const rect = { x, y, width, height };
+    // 札に載るのは名前だけなので、どういう人物かは長押しで確かめられるようにする。
+    const texts = this.locale.object(character);
     const button = new Button(
       this,
-      { x, y, width, height },
+      rect,
       {
         fill: selected ? COLOR.selectedOptionFace : COLOR.cardFace,
         border: selected ? COLOR.selectedOptionBorder : COLOR.cardFace,
@@ -257,12 +266,32 @@ export class NewGameScene extends ResponsiveScene {
         this.characterId = character;
         this.refreshCharacterOptions();
       },
+      {
+        onStart: () => this.showCharacterTooltip({ title: texts.displayName, body: texts.description }, rect),
+        onEnd: () => this.hideCharacterTooltip(),
+      },
     );
 
     const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
     const card = new Card(this, this.metrics, padding, padding, characterCardContent(character, this.locale));
     button.addContent(card.setScale(cardScale));
     return button;
+  }
+
+  /**
+   * 人物の説明の吹き出しを出す。入力欄はDOM要素でキャンバスより手前に出てしまうため、出している間だけ
+   * 引っ込めて、吹き出しが欠けないようにする。
+   */
+  private showCharacterTooltip(content: TooltipContent, at: Rect): void {
+    this.nameInput?.setVisible(false);
+    this.seedInput?.setVisible(false);
+    this.tooltip.show(content, at);
+  }
+
+  private hideCharacterTooltip(): void {
+    this.tooltip.hide();
+    this.nameInput?.setVisible(true);
+    this.seedInput?.setVisible(true);
   }
 
   private addFooter(): void {
