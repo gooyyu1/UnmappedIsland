@@ -94,16 +94,16 @@ export class ExplorationWindow {
 
     const slotWidth = (contentWidth - metrics.px(SIZE.gap) * (FOUND_SLOTS - 1)) / FOUND_SLOTS;
     const foundHeight = (slotWidth * SIZE.cardHeight) / SIZE.cardWidth;
-    // 発見物の枠は、レーンと同じくカードの下にスクロールバーのぶんを常に空けておく（ScreenLayout.md
+    // カードの下は、レーンのカードの余白と同じだけ空けてスクロールバーの場所にする（ScreenLayout.md
     // スクロールバー節）。送る必要が無い間は空くが、見つかった件数でウィンドウの高さは変わらない。
-    const scrollBarSpace = metrics.px(SIZE.scrollBarGap + SIZE.scrollBar);
+    const cardPadding = metrics.px((SIZE.laneHeight - SIZE.cardHeight) / 2);
 
     const windowHeight =
       padding * 2 +
       title.height +
       gap +
       foundHeight +
-      scrollBarSpace +
+      cardPadding +
       gap +
       barHeight +
       gap +
@@ -125,7 +125,7 @@ export class ExplorationWindow {
       height: foundHeight,
     });
 
-    cursorY += foundHeight + scrollBarSpace + gap;
+    cursorY += foundHeight + cardPadding + gap;
     this.objects.push(
       new ProgressBar(scene, metrics, window.x + padding, cursorY, contentWidth, barHeight, options.ratio),
       addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(options.ratio), {
@@ -208,7 +208,7 @@ export class ExplorationWindow {
     strip.enableFilters();
     strip.filters?.internal.addMask(this.maskShape);
 
-    // バーはカードの下に空けてある場所（呼び出し側が確保するscrollBarSpace）へ置く。
+    // バーはカードの下に空けてある余白（呼び出し側が確保するcardPadding）の上寄せに置く。
     const indicator = new ScrollIndicator(
       scene,
       metrics,
