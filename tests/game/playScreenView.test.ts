@@ -241,7 +241,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(fromGameSession(game, codex, locale).hand[0]?.fill, '空の容器も割合0のバーを出す').toEqual({
       ratio: 0,
-      content: undefined,
+      color: undefined,
     });
 
     // ヤシの器の容量は250mL（liquid_containers.yaml）なので、100mLで4割。
@@ -249,9 +249,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     water.setNumber(codex.wellKnown.sizeId, 100, game.session);
     expect(water.moveToSlot(bowl, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).hand[0]?.fill).toEqual({
+    expect(fromGameSession(game, codex, locale).hand[0]?.fill, '色は中身の液体が宣言したもの').toEqual({
       ratio: 0.4,
-      content: 'water_liquid',
+      color: water.getNumber(codex.propertyNames.getId('color')),
     });
   });
 

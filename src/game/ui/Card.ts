@@ -3,7 +3,6 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, SIZE, cssColor, durabilityColorFor } from './theme';
 import { drawBox } from './shapes';
 import { cardBackgroundTexture } from './backgroundArt';
-import { liquidColorOf } from './liquidColor';
 import { CARD_ART_WIDTH, objectTexture } from './objectArt';
 import { ProgressBar } from './ProgressBar';
 import { onPressRelease } from './tap';
@@ -92,10 +91,10 @@ export interface CardFill {
   readonly ratio: number;
 
   /**
-   * 中身の液体のobject_defの識別子。バーの色はこれで決まる（liquidColor参照）。
-   * 空の容器はundefined（塗る中身が無いので色も要らない）。
+   * 塗りの色。中身の液体が自分で宣言している色（`color`プロパティ）そのもの。
+   * 空の容器と、色を宣言していない液体はundefined。
    */
-  readonly content?: string;
+  readonly color?: number;
 }
 
 /** カード1枚の表示内容と操作。 */
@@ -360,8 +359,8 @@ export class Card extends Phaser.GameObjects.Container {
       paper.width - margin * 2,
       barHeight,
       fill.ratio,
-      // 中身の種類は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身から引き直す。
-      { fillColor: () => liquidColorOf(this._content.fill?.content) },
+      // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
+      { fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown },
     );
     this.add(bar);
     return bar;

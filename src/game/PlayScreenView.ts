@@ -242,11 +242,13 @@ const STATUS_TAG = 'status';
 
 /**
  * カードの状態バーが映すプロパティ・スロットの名前（ScreenLayout.md カードの状態バー節）。
- * どちらもGameElementDefinition.md・LiquidContainerSystem.mdが名前ごと決めている語彙で、UI側は
- * 「その名前を持つ物が状態バーを出す」とだけ知っている。
+ * いずれもGameElementDefinition.md・LiquidContainerSystem.mdが名前ごと決めている語彙で、UI側は
+ * 「その名前を持つ物が状態バーを出す」「バーの色はその名前のプロパティが決める」とだけ知っている。
+ * 後から足された物——MODの液体——も、同じ名前で宣言するだけで同じように出る。
  */
 const DURABILITY_PROPERTY = 'durability';
 const CONTENT_SLOT = 'content';
+const COLOR_PROPERTY = 'color';
 
 /**
  * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
@@ -312,16 +314,20 @@ export function fromGameSession(
     durabilityPropertyId === undefined ? undefined : object.readProperty(durabilityPropertyId)?.ratio;
 
   const contentSlotId = codex.slotNames.tryGetId(CONTENT_SLOT);
+  const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
   /**
-   * 液体容器なら、中身の割合と中身の種類（LiquidContainerSystem.md 2節）。容量を持つcontentスロットが
-   * 液体容器の目印で、空の容器も割合0のバーとして出す（空であることも中身の情報のため）。
+   * 液体容器なら、中身の割合と中身が宣言している色（LiquidContainerSystem.md 2節）。容量を持つ
+   * contentスロットが液体容器の目印で、空の容器も割合0のバーとして出す（空であることも中身の情報）。
    */
   const fillOf = (object: WorldObject): CardFill | undefined => {
     if (contentSlotId === undefined) return undefined;
 
     const ratio = object.fillRatioOfSlot(contentSlotId);
     if (ratio === undefined) return undefined;
-    return { ratio, content: object.tryGetSlot(contentSlotId)?.contents[0]?.def.name };
+
+    const content = object.tryGetSlot(contentSlotId)?.contents[0];
+    const color = colorPropertyId === undefined ? undefined : content?.readProperty(colorPropertyId)?.value;
+    return { ratio, color };
   };
 
   const containerTagId = codex.tagNames.tryGetId('container');

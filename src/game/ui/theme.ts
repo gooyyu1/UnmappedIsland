@@ -85,6 +85,11 @@ export const COLOR = {
   durabilityFull: 0x4caf50,
   durabilityHalf: 0xf2b01e,
   durabilityEmpty: 0xd93025,
+  /**
+   * 色（colorプロパティ）を宣言していない液体の、中身のバーの塗り。何色か分からなくても、
+   * 中身があること自体は見えるようにする。
+   */
+  cardFillUnknown: 0x9aa0a6,
   /** 直前の行動でその値が増えた／減ったことを示す三角（StatusBar）。 */
   statusIncreased: 0x2ecc40,
   statusDecreased: 0xd93025,

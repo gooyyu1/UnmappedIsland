@@ -35,7 +35,8 @@
   スロット（`accepts: [{tag: liquid, max: 1}]`・`capacity: 容量`）と `represented_by: content` を持つ。
   空の容器へ注ぎ込む `combinations` だけを持つ（4節）。
 - **中身の液体カード**（`water_liquid`・`tea_liquid`・`oil_liquid`）: `quantitative: true`。
-  量（`size`）・密度（`density`）・種類タグ・飲用 `actions`・注ぎ `combinations`・蒸発 `passives` を持つ。
+  量（`size`）・密度（`density`）・色（`color`）・種類タグ・飲用 `actions`・注ぎ `combinations`・
+  蒸発 `passives` を持つ。
 
 **上限を決めるのは容器、量そのものは中身**です。上限だけが容器側なのは、同じ `water_liquid` が水筒
 （1L）にも甕（4L）にも入るためで、型定義である `range` では表せません。スロットの `capacity` は
@@ -98,6 +99,18 @@ traits:
 **注ぎ切った側は消えます。** `size` が 0 になった液体は消滅し（1節）、容器の `content` が空に戻ります。
 
 液体の種類を増やしても、この2つの `combinations` に手を入れる必要はありません。
+
+## 4.1 色（color）
+
+液体は**自分の色を `color` プロパティ（`0xRRGGBB` の整数）として宣言します**。容器カードに出る
+「中身の割合を示すバー」がこの色で塗られます（[`ScreenLayout.md`](../ui/ScreenLayout.md) カードの
+状態バー節）。
+
+**UI 側に液体ごとの対応表を持ちません。** 表を持つと、後から足された液体が必ず「色の分からない液体」に
+なり、YAML を書くだけでは画面に出せなくなるためです。UI が知っているのは「`color` という名前の
+プロパティが塗りの色である」ということだけで、液体の種類は知りません。宣言していない液体は灰色で
+出ます。共通の既定値は置かず、種類ごとの trait がそれぞれ宣言します——何色に見えるかは液体そのものの
+性質で、液体一般に既定の色は無いためです。
 
 ## 5. 単位と飲用（drink）
 
