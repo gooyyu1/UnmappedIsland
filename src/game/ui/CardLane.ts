@@ -58,12 +58,23 @@ export interface CardLaneOptions {
   readonly depth?: number;
 }
 
+/** 掴んで離したカードと、そのインスタンスのID（CardMotion.MotionContext.released）。 */
+export interface ReleasedCard {
+  readonly card: Card;
+  readonly id: number;
+}
+
 /** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardMotion）が決める。 */
 export interface LaneUpdate {
   /** このレーンに新しく現れたカード。stripの所定の位置に居るが、まだ表示されていない。 */
   readonly entered: readonly { readonly card: Card; readonly index: number }[];
   /** このレーンから居なくなったカード。stripからは外してあるが、破棄は呼び出し側が行う。 */
   readonly left: readonly Card[];
+  /**
+   * 掴んで離したまま、このレーンに残ったカード（居なければundefined）。stripの所定の位置に置いてあるが、
+   * 出発点は元の枠ではないので、動かすのは呼び出し側。
+   */
+  readonly returned: { readonly card: Card; readonly index: number } | undefined;
 }
 
 /**
@@ -214,10 +225,14 @@ export class CardLane {
    * 並べるカードを差し替える。同じインスタンスを映しているカード（identityが1つでも重なるもの）は
    * 作り直さず、新しい位置へ滑らせる。新しく現れたカードは所定の位置に置くが、どこから来たのかは
    * このレーンには分からないので、非表示のまま呼び出し側へ渡す。
+   *
+   * releasedのカードは、そのインスタンスを持ったままこのレーンに残る場合だけ別扱いにする。掴んで
+   * 離した1枚は元の枠にはもう居ないので、並びの詰め直しに混ぜて滑らせず、returnedとして渡す。
    */
-  setCards(cards: readonly (CardContent | undefined)[]): LaneUpdate {
+  setCards(cards: readonly (CardContent | undefined)[], released?: ReleasedCard): LaneUpdate {
     const reusable = this._cardObjects.filter((card): card is Card => card !== undefined);
     const entered: { card: Card; index: number }[] = [];
+    let returned: { card: Card; index: number } | undefined;
 
     this._cardObjects = cards.map((content, index) => {
       if (content === undefined) return undefined;
@@ -233,7 +248,12 @@ export class CardLane {
 
       const [card] = reusable.splice(found, 1);
       card.setContent(content);
-      this.slideTo(card, index);
+      if (card === released?.card && content.identity?.includes(released.id) === true) {
+        this.placeAt(card, index);
+        returned = { card, index };
+      } else {
+        this.slideTo(card, index);
+      }
       return card;
     });
 
@@ -246,7 +266,7 @@ export class CardLane {
     this.minScrollX = Math.min(0, this.stripWidth - contentWidth);
     this.scrollTo(this.strip.x - this.originX);
 
-    return { entered, left: reusable };
+    return { entered, left: reusable, returned };
   }
 
   /** 居続けるカードを新しい位置へ滑らせる（既に所定の位置なら何もしない）。 */
@@ -255,6 +275,12 @@ export class CardLane {
     if (card.x === x) return;
 
     this.scene.tweens.add({ targets: card, x, duration: SLIDE_MS, ease: SLIDE_EASE });
+  }
+
+  /** 滑らせずに所定の位置へ置く。滑っている途中で掴まれたカードもあるので、前の滑りは止める。 */
+  private placeAt(card: Card, index: number): void {
+    this.scene.tweens.killTweensOf(card);
+    card.setPosition(index * this.pitch, 0);
   }
 
   private resetPlaceholders(): void {
