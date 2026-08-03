@@ -23,6 +23,7 @@ import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
 import { addLabel } from './ui/labels';
 import { addPanel } from './ui/shapes';
+import { wrapByCharacter } from './ui/textLayout';
 import { COLOR, SIZE } from './ui/theme';
 
 /** 本文の余白と項目間の間隔（StartScreen_Mock.htmlの.newgame-body）。横型は左右を広く取る。 */
@@ -36,6 +37,14 @@ const INPUT_HEIGHT = 72;
 const RANDOM_BUTTON_SIZE = 72;
 const CHARACTER_OPTION_PADDING = 12;
 const FOOTER_BUTTON_HEIGHT = 80;
+const FOOTER_PADDING_Y = 20;
+
+/**
+ * 選んだ人物の説明の文字の大きさ（u単位）と、常に空けておく行数。
+ * 高さを行数で固定しておくと、説明の長さが違う人物へ選び替えても札の位置が動かない。
+ */
+const CHARACTER_DESCRIPTION_SIZE = 26;
+const CHARACTER_DESCRIPTION_LINES = 3;
 
 /** 新規ゲーム作成画面を開くときに渡す、書き込み先のスロット番号。 */
 export interface NewGameSceneData {
@@ -63,6 +72,9 @@ export class NewGameScene extends ResponsiveScene {
   /** キャラクター選択肢は選択状態が変わるたびに描き直すため、置き場所と生成物を覚えておく。 */
   private characterOptionsOrigin: Rect = { x: 0, y: 0, width: 0, height: 0 };
   private characterOptions: Button[] = [];
+
+  /** 選んだ人物の説明。選択肢と一緒に作り直す。 */
+  private characterDescription: Phaser.GameObjects.Text | undefined;
 
   constructor() {
     super('newgame');
@@ -208,20 +220,28 @@ export class NewGameScene extends ResponsiveScene {
     this.refreshCharacterOptions();
   }
 
-  /** 選択中の枠線だけが変わるので、選択肢は作り直して置き換える。 */
+  /** 選択中の枠線と説明だけが変わるので、選択肢は作り直して置き換える。 */
   private refreshCharacterOptions(): void {
     for (const option of this.characterOptions) option.destroy();
 
     const gap = this.metrics.px(SIZE.gap);
     const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
     const cardWidth = this.metrics.px(SIZE.cardWidth);
+    const cardHeight = this.metrics.px(SIZE.cardHeight);
+    const lineSpacing = this.metrics.px(LABEL_GAP);
+    const descriptionHeight = this.characterDescriptionHeight(lineSpacing);
+    // 説明とフッターに使う分を除いた、選択肢の1行が使える高さ。
+    const room =
+      this.metrics.height - this.footerHeight() - descriptionHeight - gap - this.characterOptionsOrigin.y;
     // 札は原寸を上限に、全員が1行へ収まるところまで縮める（キャラクタが増えても溢れさせない）。
+    // 縦も同じで、説明の下がフッターへ潜り込まない大きさまで縮める。
     const optionWidth = Math.min(
       cardWidth + padding * 2,
       (this.characterOptionsOrigin.width - gap * (this.characters.length - 1)) / this.characters.length,
+      ((room - padding * 2) / cardHeight) * cardWidth + padding * 2,
     );
     const cardScale = (optionWidth - padding * 2) / cardWidth;
-    const height = this.metrics.px(SIZE.cardHeight) * cardScale + padding * 2;
+    const height = cardHeight * cardScale + padding * 2;
 
     this.characterOptions = this.characters.map((character, index) =>
       this.addCharacterOption(
@@ -233,6 +253,7 @@ export class NewGameScene extends ResponsiveScene {
         cardScale,
       ),
     );
+    this.refreshCharacterDescription(this.characterOptionsOrigin.y + height + gap, lineSpacing);
   }
 
   private addCharacterOption(
@@ -265,12 +286,41 @@ export class NewGameScene extends ResponsiveScene {
     return button;
   }
 
+  /**
+   * 選んでいる人物の説明を、選択肢の下へ出す。札には名前しか載らないので、どういう人物なのかは
+   * ここで見せる。まだ選んでいない間は空にする。
+   */
+  private refreshCharacterDescription(y: number, lineSpacing: number): void {
+    this.characterDescription?.destroy();
+
+    const description =
+      this.characterId === undefined ? '' : (this.locale.object(this.characterId).description ?? '');
+    this.characterDescription = addLabel(this, this.metrics, this.characterOptionsOrigin.x, y, description, {
+      size: CHARACTER_DESCRIPTION_SIZE,
+    }).setLineSpacing(lineSpacing);
+    this.characterDescription.setWordWrapCallback(wrapByCharacter(this.characterOptionsOrigin.width));
+  }
+
+  /** 説明のために常に空けておく高さ（CHARACTER_DESCRIPTION_LINES行ぶん）。 */
+  private characterDescriptionHeight(lineSpacing: number): number {
+    const sample = addLabel(this, this.metrics, 0, 0, 'あ', { size: CHARACTER_DESCRIPTION_SIZE });
+    const height =
+      sample.height * CHARACTER_DESCRIPTION_LINES + lineSpacing * (CHARACTER_DESCRIPTION_LINES - 1);
+    sample.destroy();
+    return height;
+  }
+
+  /** フッターの高さ。キャラクター欄がどこまで下を使えるかの計算にも要る。 */
+  private footerHeight(): number {
+    return this.metrics.px(FOOTER_BUTTON_HEIGHT) + this.metrics.px(FOOTER_PADDING_Y) * 2;
+  }
+
   private addFooter(): void {
     const { width, height } = this.metrics;
     const buttonHeight = this.metrics.px(FOOTER_BUTTON_HEIGHT);
     const paddingX = this.metrics.px(BODY_PADDING);
-    const paddingY = this.metrics.px(20);
-    const footerHeight = buttonHeight + paddingY * 2;
+    const paddingY = this.metrics.px(FOOTER_PADDING_Y);
+    const footerHeight = this.footerHeight();
     addPanel(this, { x: 0, y: height - footerHeight, width, height: footerHeight }, COLOR.footerBar);
 
     const gap = this.metrics.px(16);
