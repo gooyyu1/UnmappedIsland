@@ -15,3 +15,30 @@ export function wheelPixels(pointer: Phaser.Input.Pointer, deltaX: number, delta
   const mode = pointer.event instanceof WheelEvent ? pointer.event.deltaMode : 0;
   return delta * (WHEEL_DELTA_PIXELS[mode] ?? 1) * pointer.manager.scaleManager.displayScale.x;
 }
+
+/** スクロールバーのつまみが占める範囲（トラックの左端からの位置と長さ、ピクセル）。 */
+export interface ThumbSpan {
+  readonly x: number;
+  readonly width: number;
+}
+
+/**
+ * 送り具合を、つまみの位置と長さに直す。scrollXは0が左端・minScrollXが右端（負の値。
+ * CardLaneのスクロール量と同じ符号）で、送る必要が無ければminScrollXは0になる。
+ *
+ * 長さは中身に対する可視域の割合そのものだが、中身が長いと1ピクセル未満まで痩せて見失うため、
+ * minLengthで下限を切る。トラックの中でつまみが動ける幅もそのぶん縮み、両端は必ず端に着く。
+ */
+export function scrollThumbSpan(
+  trackWidth: number,
+  scrollX: number,
+  minScrollX: number,
+  minLength: number,
+): ThumbSpan {
+  if (minScrollX >= 0) return { x: 0, width: trackWidth };
+
+  const contentWidth = trackWidth - minScrollX;
+  const width = Math.min(trackWidth, Math.max(minLength, (trackWidth * trackWidth) / contentWidth));
+  const progress = Math.min(1, Math.max(0, scrollX / minScrollX));
+  return { x: (trackWidth - width) * progress, width };
+}

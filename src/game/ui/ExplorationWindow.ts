@@ -14,6 +14,7 @@ import {
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from './labels';
 import { wheelPixels } from './scroll';
+import { ScrollIndicator } from './ScrollIndicator';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 import { wrapByCharacter } from './textLayout';
@@ -93,12 +94,16 @@ export class ExplorationWindow {
 
     const slotWidth = (contentWidth - metrics.px(SIZE.gap) * (FOUND_SLOTS - 1)) / FOUND_SLOTS;
     const foundHeight = (slotWidth * SIZE.cardHeight) / SIZE.cardWidth;
+    // カードの下は、レーンのカードの余白と同じだけ空けてスクロールバーの場所にする（ScreenLayout.md
+    // スクロールバー節）。送る必要が無い間は空くが、見つかった件数でウィンドウの高さは変わらない。
+    const cardPadding = metrics.px((SIZE.laneHeight - SIZE.cardHeight) / 2);
 
     const windowHeight =
       padding * 2 +
       title.height +
       gap +
       foundHeight +
+      cardPadding +
       gap +
       barHeight +
       gap +
@@ -120,7 +125,7 @@ export class ExplorationWindow {
       height: foundHeight,
     });
 
-    cursorY += foundHeight + gap;
+    cursorY += foundHeight + cardPadding + gap;
     this.objects.push(
       new ProgressBar(scene, metrics, window.x + padding, cursorY, contentWidth, barHeight, options.ratio),
       addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(options.ratio), {
@@ -203,9 +208,23 @@ export class ExplorationWindow {
     strip.enableFilters();
     strip.filters?.internal.addMask(this.maskShape);
 
+    // バーはカードの下に空けてある余白（呼び出し側が確保するcardPadding）の上寄せに置く。
+    const indicator = new ScrollIndicator(
+      scene,
+      metrics,
+      viewport.x,
+      viewport.y + viewport.height + metrics.px(SIZE.scrollBarGap),
+      viewport.width,
+    );
+    this.objects.push(indicator);
+
     const scrollTo = (scrollX: number): void => {
-      strip.x = viewport.x + Phaser.Math.Clamp(scrollX, minScrollX, 0);
+      const clamped = Phaser.Math.Clamp(scrollX, minScrollX, 0);
+      strip.x = viewport.x + clamped;
+      indicator.setScroll(clamped, minScrollX);
     };
+    scrollTo(0);
+
     let scrollStartX = 0;
     const surface = addPanel(scene, viewport, COLOR.cardFace, 0);
     this.objects.push(surface);
