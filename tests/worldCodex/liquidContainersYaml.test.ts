@@ -132,6 +132,37 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(canteen)).toBe(750);
   });
 
+  it('水分が満水だと飲めず、理由not_thirstyを返す', () => {
+    // 満水では0mLの何も起きない飲用になるため、実行自体をさせない（liquid_containers.yaml）。
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    const hydrationMax = codex.objects
+      .get(codex.objectNames.getId(SAMPLE_CHARACTER))
+      .getPropertyDef(hydrationId)!.range!.max;
+    actor.setProperty(hydrationId, hydrationMax);
+    const canteen = spawnContainer('canteen', 'water', 1000);
+
+    expect(canteen.actionUnmetRequirement('drink', actor)?.reasonName).toBe('not_thirsty');
+    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(false);
+    expect(amountIn(canteen), '実行されないので量は変わらない').toBe(1000);
+  });
+
+  it('水分が満水の一歩手前なら飲め、入る分だけが移る', () => {
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    const hydrationMax = codex.objects
+      .get(codex.objectNames.getId(SAMPLE_CHARACTER))
+      .getPropertyDef(hydrationId)!.range!.max;
+    actor.setProperty(hydrationId, hydrationMax - 100);
+    const canteen = spawnContainer('canteen', 'water', 1000);
+
+    expect(canteen.actionUnmetRequirement('drink', actor)).toBeUndefined();
+    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
+
+    expect(actor.getNumber(hydrationId), 'あふれる分は飲まない').toBe(hydrationMax);
+    expect(amountIn(canteen), '空き容量(100)の分だけ減る').toBe(900);
+  });
+
   it('お茶を飲むと追加の効果も適用できる', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);

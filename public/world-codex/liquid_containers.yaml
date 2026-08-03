@@ -53,7 +53,12 @@ traits:
       color: {value: 0x2f86d8}
     actions:
       # 1回の飲用 = 250mL。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
+      # 満水では何も移らない操作になるため、実行自体をさせない。境目はキャラクターのhydrationの
+      # full段が持つ（Characters.md）。
       drink:
+        conditions:
+          - reason: not_thirsty
+            not: {object: actor, prop: hydration, in_stage: full}
         transfer:
           amount: 250
           from_prop: size
@@ -66,6 +71,9 @@ traits:
       color: {value: 0x6f8f3c}
     actions:
       drink:
+        conditions:
+          - reason: not_thirsty
+            not: {object: actor, prop: hydration, in_stage: full}
         transfer:
           amount: 250
           from_prop: size
