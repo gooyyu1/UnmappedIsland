@@ -15,9 +15,6 @@ const LONG_PRESS_SLOP = 12;
 const DIRECTION_THRESHOLD = 20;
 const VERTICAL_RATIO = 1.5;
 
-/** 掴まれて場所が空いた元のカードの濃さ。掴んでいるカード自身は不透明のまま（カードらしさのため）。 */
-const GRABBED_ALPHA = 0.3;
-
 /** ドロップ先を示す枠の太さ（u単位）と、塗りの濃さ。 */
 const INDICATOR_BORDER = 6;
 const INDICATOR_FILL_ALPHA = 0.3;
@@ -194,8 +191,6 @@ export class CardDragController {
     gesture.kind = 'dragging';
     // 掴んで動かす操作になったので、掴んだカードの上で指を離してもタップにはしない（Card.cancelTap）。
     gesture.card.cancelTap();
-    // 掴んで動くのは1つだけなので、スタックは残りがそこに居る。薄くするのは場所ごと空くときだけ。
-    if ((gesture.card.content.count ?? 1) < 2) gesture.card.setAlpha(GRABBED_ALPHA);
 
     // 作る順がそのまま重なりの順になる。ふちの光もどこへ落ちるかの枠もレーンのカードの装飾なので
     // 分身より奥（指が運んでいるカードは常に見えている必要がある）、説明だけが分身より手前。
@@ -304,8 +299,6 @@ export class CardDragController {
     gesture.glowPulse?.remove();
     gesture.glow?.destroy();
     gesture.tooltip?.destroy();
-    // 掴んでいたカードは、画面を作り直していれば既に破棄されている（sceneがundefinedになる）。
-    if (gesture.card.scene !== undefined) gesture.card.setAlpha(1);
     this.gesture = undefined;
   }
 }
