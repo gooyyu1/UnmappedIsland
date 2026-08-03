@@ -303,14 +303,14 @@
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: calc(28 * var(--u));
+      gap: calc(14 * var(--u));
       line-height: 1;
     }
 
     .calendar-row {
       display: flex;
       align-items: center;
-      gap: calc(8 * var(--u));
+      gap: calc(2 * var(--u));
     }
 
     /* 各桁のフリップカード。上部の留具（リング）だけで吊り下がる。
@@ -500,7 +500,7 @@
          キャラクター表示エリアは左にポートレイトカード、右の列に条件セル・
          装備・怪我を縦に並べる構成に変える（縦型は2×2グリッドのまま） */
       .screen {
-        grid-template-columns: calc(540 * var(--u)) 1fr calc(120 * var(--u));
+        grid-template-columns: calc(484 * var(--u)) 1fr calc(120 * var(--u));
         grid-template-rows: auto 1fr;
         grid-template-areas:
           "dashboard field options"
