@@ -1,0 +1,38 @@
+{
+  "_comment": [
+    "src/assets/flip_digit.png（日時のフリップカードの紙）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "紙のテクスチャはカードの枠と同じ生成物（card_paper）を使い、色だけ白へ寄せる。",
+    "素材を揃えることで、カードとフリップカードが同じ紙に見える。",
+    "",
+    "寸法128x176は日数の桁64u x 88uの2倍（4Kで等倍）。時刻の桁はゲーム側が縮小して使う。",
+    "角丸12はFlipCalendar.tsの図形フォールバック（半径6u）と対応する。"
+  ],
+  "output": "src/assets/flip_digit.png",
+  "prompts": "cards.json",
+  "prompt": "card_paper",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 8102,
+  "cardFrame": {
+    "_comment": [
+      "白い紙は状況エリアの地（ベージュ）とも近いので、edgeの薄いグレーの線で輪郭を確保する。",
+      "影は下方向だけ（ぶら下がったカードの落ち影）。余白4pxに収まるよう狭く濃くする。"
+    ],
+    "width": 128,
+    "height": 176,
+    "margin": 4,
+    "radius": 12,
+    "paper": "#fdfdfb",
+    "wash": 0.4,
+    "edge": "#b0aba0",
+    "edgeWidth": 2,
+    "shadowOffset": [0, 2],
+    "shadowBlur": 1.5,
+    "shadowAlpha": 0.6
+  }
+}

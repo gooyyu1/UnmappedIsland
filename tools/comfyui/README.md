@@ -77,6 +77,9 @@ python build.py recipes/medic.json
 python build.py recipes/card_frame.json
 ```
 
+日時のフリップカードの紙（`flip_digit.json`）も同じ仕組みで、`cardFrame` に寸法
+（`width` / `height` / `margin` / `radius`）を指定して小さな紙を組み立てる。
+
 **カードとして直接生成することはできません。** `playing card` と言うとトランプの絵札になり、外すと
 今度はカードの形が消えて水彩の滲みだけになります（12 枚で全滅）。そもそも角丸の半径と余白は
 `card_art.py` と `Card.ts` の定数に一致していなければならず、生成では保証できません。

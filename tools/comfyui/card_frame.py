@@ -1,7 +1,8 @@
-"""生成した紙のテクスチャから、カードの枠（card_frame.png）を組み立てる。
+"""生成した紙のテクスチャから、角丸の紙のカード（card_frame.pngなど）を組み立てる。
 
 カードの枠は「角丸の紙」でしかないが、角丸の半径と余白は card_art.py の定数と一致していなければ
 ならない（絵が枠からはみ出す）。生成では保証できないので、**紙だけ生成させて形はここで作る**。
+寸法を指定すれば、日時のフリップカードのような別サイズの紙カードも同じ手順で作れる。
 
 直接カードとして生成するのは無理だった。「playing card」と言うとトランプの絵札になり、外すと今度は
 カードの形が消えて水彩の滲みだけになる（12枚で全滅）。一方、紙のテクスチャは安定して出る。
@@ -21,7 +22,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy.ndimage import gaussian_filter
 
-# 出来上がりの寸法と、紙が占める範囲（card_art.py の PAPER_MARGIN / PAPER_RADIUS、
+# 既定の寸法と、紙が占める範囲（card_art.py の PAPER_MARGIN / PAPER_RADIUS、
 # および Card.ts の FRAME_INSET / FRAME_RADIUS と揃っていなければならない）。
 CARD_WIDTH = 410
 CARD_HEIGHT = 640
@@ -60,6 +61,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", help="紙のテクスチャの生成物")
     parser.add_argument("--out", required=True)
+    parser.add_argument("--width", type=int, default=CARD_WIDTH)
+    parser.add_argument("--height", type=int, default=CARD_HEIGHT)
     parser.add_argument("--paper", default="#fcf8e6", help="紙の色を寄せる目標（#RRGGBB）")
     parser.add_argument("--wash", type=float, default=0.0,
                         help="ムラを平均へ寄せる度合い（0〜1）。生成物の染みが強すぎるときに上げる")
@@ -74,7 +77,7 @@ def main() -> None:
     parser.add_argument("--shadow-alpha", type=float, default=0.7, help="影の濃さ（0〜1）")
     args = parser.parse_args()
 
-    rgb = np.asarray(cover(Image.open(args.source).convert("RGB"), CARD_WIDTH, CARD_HEIGHT), dtype=np.float64)
+    rgb = np.asarray(cover(Image.open(args.source).convert("RGB"), args.width, args.height), dtype=np.float64)
 
     # 生成された紙は濃いので、目標の色へ寄せる。全面が紙なので、平均を合わせるだけでよい。
     goal = np.array([int(args.paper.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)], dtype=np.float64)
@@ -84,11 +87,11 @@ def main() -> None:
     if args.wash > 0:
         rgb = rgb * (1 - args.wash) + goal * args.wash
 
-    alpha = rounded_mask(CARD_WIDTH, CARD_HEIGHT, args.margin, args.radius)
+    alpha = rounded_mask(args.width, args.height, args.margin, args.radius)
 
     # 縁の線は、マスクの内側だけに乗るよう、少し内側の角丸との差で描く。
     if args.edge_width > 0:
-        inner = rounded_mask(CARD_WIDTH, CARD_HEIGHT, args.margin + round(args.edge_width), args.radius)
+        inner = rounded_mask(args.width, args.height, args.margin + round(args.edge_width), args.radius)
         line = np.clip(alpha - inner, 0, 1)[:, :, None]
         edge = np.array([int(args.edge.lstrip("#")[i : i + 2], 16) for i in (0, 2, 4)], dtype=np.float64)
         rgb = rgb * (1 - line) + edge * line
@@ -109,6 +112,8 @@ def main() -> None:
 
     settings = {
         "source": Path(args.source).name,
+        "width": args.width,
+        "height": args.height,
         "paper": args.paper,
         "wash": args.wash,
         "edge": args.edge,
@@ -120,7 +125,7 @@ def main() -> None:
         "shadowAlpha": args.shadow_alpha,
     }
     out.with_suffix(".json").write_text(json.dumps(settings, ensure_ascii=False, indent=2), "utf-8")
-    print(f"{out}  {CARD_WIDTH}x{CARD_HEIGHT}  余白{args.margin} 角丸{args.radius}")
+    print(f"{out}  {args.width}x{args.height}  余白{args.margin} 角丸{args.radius}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
 import { COLOR, FONT_FAMILY, cssColor } from './theme';
+import { drawBox } from './shapes';
+
+/** 桁の紙の画像のテクスチャキー（実体はsrc/assets/flip_digit.png、BootSceneが読む）。 */
+export const FLIP_DIGIT_TEXTURE = 'flip-digit';
 
 /** 日数の桁・時刻の桁の寸法（ScreenLayout.md 寸法トークン節、縦型・横型共通）。 */
 const DAY_DIGIT = { width: 64, height: 88, fontSize: 56 };
@@ -102,26 +106,25 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     // 日数と時刻は桁の高さが違うため、背の高い日数の桁を基準に上下中央へ揃える。
     const top = (blockHeight - height) / 2;
 
-    const card = scene.add.graphics();
-    card.fillStyle(COLOR.flipDigit, 1);
-    card.fillRoundedRect(x, top, width, height, metrics.px(6));
+    const card = addCardPaper(scene, metrics, x, top, width, height);
 
     // 留具のリング。CSSはborder-box指定なので、線幅の中心は外径14uから線幅3uを引いた半径になる。
+    const clasps = scene.add.graphics();
     const ringRadius = metrics.px((14 - 3) / 2);
-    card.lineStyle(metrics.px(3), COLOR.flipDigitRing, 1);
-    card.strokeCircle(x + metrics.px(13), top - metrics.px(1), ringRadius);
-    card.strokeCircle(x + width - metrics.px(13), top - metrics.px(1), ringRadius);
+    clasps.lineStyle(metrics.px(3), COLOR.flipDigitRing, 1);
+    clasps.strokeCircle(x + metrics.px(13), top - metrics.px(1), ringRadius);
+    clasps.strokeCircle(x + width - metrics.px(13), top - metrics.px(1), ringRadius);
 
     const text = scene.add
       .text(x + width / 2, top + height / 2, '', {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(size.fontSize)}px`,
         fontStyle: 'bold',
-        color: cssColor(COLOR.textOnDark),
+        color: cssColor(COLOR.text),
       })
       .setOrigin(0.5);
 
-    this.add([card, text]);
+    this.add([card, clasps, text]);
     this.digits.push(text);
   }
 
@@ -139,4 +142,33 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     this.add(text);
     return width + metrics.px(DIGIT_GAP);
   }
+}
+
+/**
+ * 桁の紙。画像（FLIP_DIGIT_TEXTURE）があればそれを矩形いっぱいに貼り、無ければ図形で描く
+ * （Card.addFrameと同じ流儀）。図形の場合、白い紙は明るい地に溶けるため縁の線で輪郭を確保する。
+ */
+function addCardPaper(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  x: number,
+  top: number,
+  width: number,
+  height: number,
+): Phaser.GameObjects.GameObject {
+  if (scene.textures.exists(FLIP_DIGIT_TEXTURE)) {
+    return scene.add.image(x, top, FLIP_DIGIT_TEXTURE).setOrigin(0, 0).setDisplaySize(width, height);
+  }
+  const card = scene.add.graphics();
+  drawBox(
+    card,
+    { x, y: top, width, height },
+    {
+      fill: COLOR.flipDigit,
+      border: COLOR.flipDigitRing,
+      borderWidth: Math.max(1, metrics.px(1)),
+      radius: metrics.px(6),
+    },
+  );
+  return card;
 }

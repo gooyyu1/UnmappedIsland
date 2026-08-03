@@ -147,6 +147,10 @@ def main() -> None:
                 [
                     str(raw),
                     "--out", str(processed),
+                    *(["--width", str(frame["width"])] if "width" in frame else []),
+                    *(["--height", str(frame["height"])] if "height" in frame else []),
+                    *(["--margin", str(frame["margin"])] if "margin" in frame else []),
+                    *(["--radius", str(frame["radius"])] if "radius" in frame else []),
                     "--paper", frame["paper"],
                     "--wash", str(frame["wash"]),
                     "--edge", frame["edge"],
