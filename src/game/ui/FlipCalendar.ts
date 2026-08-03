@@ -18,8 +18,8 @@ const DAY_DIGIT = { width: 64, height: 88, fontSize: 56 };
 const TIME_DIGIT = { width: 44, height: 60, fontSize: 36 };
 
 /** 桁と桁の間隔、日数ブロックと時刻ブロックの間隔。 */
-const DIGIT_GAP = 8;
-const BLOCK_GAP = 28;
+const DIGIT_GAP = 2;
+const BLOCK_GAP = 14;
 
 /**
  * 時刻の「:」に確保する幅。字幅はフォントで変わるため実測せず固定で取る——実測すると表示全体の幅、
