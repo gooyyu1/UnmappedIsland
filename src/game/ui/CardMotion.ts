@@ -19,8 +19,7 @@ export interface MotionContext {
   readonly origin?: Rect;
   /**
    * 掴んで離したインスタンスと、手を離した時点の矩形。そのカードは元の枠ではなく、指を離した場所に
-   * 居るため、そこから動き出す。元と同じカードへ戻る場合（重ねてもカード自身は動かないcombination）も
-   * 同じ扱いで、道具は使い終わってから手元へ戻る。
+   * 居るため、そこから動き出す（そこに置いたままにする間の居場所でもある。hold参照）。
    */
   readonly released?: { readonly id: number; readonly rect: Rect };
 }
@@ -44,6 +43,9 @@ export class CardMotion {
   private readonly metrics: ScreenMetrics;
   private readonly layer: Phaser.GameObjects.Container;
 
+  /** 離した場所へ置いたままにしているもの（hold参照）。cardは分身の元になったレーンのカード。 */
+  private held: { readonly id: number; readonly card: Card; readonly stand: Card } | undefined;
+
   /**
    * 動いているカードは常に最前面へ出す。探索の子ウィンドウを開いたまま探索したときに、見つけたものが
    * ウィンドウの覆いに隠れてしまわないようにするため（他はすべて既定のdepth 0で描画順に従う）。
@@ -54,14 +56,81 @@ export class CardMotion {
     this.layer = scene.add.container(0, 0).setDepth(1);
   }
 
+  /**
+   * 掴んで離したカードを、離した場所へ置いたままにする。時間のかかるcombinationでは経過を見せている
+   * 間ずっとそこに在り、経過し切った差し替え（updateにreleasedが渡る）でそのインスタンスの居場所へ
+   * 動く（ScreenLayout.md カードの移動アニメーション節）。
+   *
+   * 置くのは分身で、本体はレーンの枠に居るまま伏せる。レーンをまたぐ位置へ本体を出すと隣接エリアの
+   * 背景板に隠れてしまう（CardLane参照）ため。
+   */
+  hold(lanes: readonly CardLane[], released: NonNullable<MotionContext['released']>): void {
+    this.release();
+
+    const card = ownersOf(lanes).get(released.id)?.card;
+    if (card === undefined) return;
+
+    // 置きに行くのは1つだけなので、スタックは残りがそこに居る。枠から居なくなるのは1つしか
+    // 映していないカードだけ。
+    if ((card.content.count ?? 1) < 2) card.setVisible(false);
+    const { x, y } = released.rect;
+    const stand = new Card(this.scene, this.metrics, x, y, cardFace(card.content));
+    this.layer.add(stand);
+    this.held = { id: released.id, card, stand };
+  }
+
+  /**
+   * 置いたままにしていたカードを、動かさずに本体へ返す（分身を捨て、伏せていた本体を表に戻す）。
+   * レーンを作り直すときは、本体ごと捨てられる前にここで片付ける。
+   */
+  release(): void {
+    const held = this.held;
+    if (held === undefined) return;
+
+    this.held = undefined;
+    held.stand.destroy();
+    reveal(held.card);
+  }
+
+  /**
+   * 置いたままにしていた分身を、そのインスタンスの新しい居場所へ運ぶ。着いた時点で分身を捨て、
+   * そこに居るカード（伏せていた本体・新しく現れたカード・合流先）を表に戻す。
+   * インスタンスが失われていれば（使い切った・壊れた）その場で捨てる。
+   */
+  private landHeld(held: NonNullable<CardMotion['held']>, after: ReadonlyMap<number, Owner>): void {
+    const owner = after.get(held.id);
+    if (owner === undefined) {
+      held.stand.destroy();
+      reveal(held.card);
+      return;
+    }
+
+    this.scene.tweens.add({
+      targets: held.stand,
+      x: owner.rect.x,
+      y: owner.rect.y,
+      duration: FLY_MS,
+      ease: FLY_EASE,
+      onComplete: () => {
+        held.stand.destroy();
+        reveal(owner.card);
+      },
+    });
+  }
+
   /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcontentsは同じ順に対応する。 */
   update(
     lanes: readonly CardLane[],
     contents: readonly (readonly (CardContent | undefined)[])[],
     context: MotionContext = {},
   ): void {
+    // 経過し切った差し替えなら、置いたままの分身がそのインスタンスを運ぶ。運ぶぶんは他の経路では
+    // 動かさない（同じ移動を二重に見せないため）ので、以降はreleasedを渡さない。
+    const landing = context.released === undefined ? undefined : this.takeHeld();
+    const remaining = landing === undefined ? context : { ...context, released: undefined };
+
     const before = ownersOf(lanes);
-    const released = releasedCard(before, context);
+    const released = releasedCard(before, remaining);
     const updates = lanes.map((lane, index) => lane.setCards(contents[index], released));
     const after = ownersOf(lanes);
 
@@ -70,23 +139,39 @@ export class CardMotion {
 
     updates.forEach((update, index) => {
       for (const { card, index: slot } of arrivals(update)) {
-        const from = releasedRect(idsOf(card), context) ?? rectOf(before, idsOf(card)) ?? context.origin;
+        // 分身が運ぶ先のカードは、着くまで伏せたまま待たせる（landHeldが表に戻す）。
+        if (landing !== undefined && idsOf(card).includes(landing.id)) continue;
+
+        const from = releasedRect(idsOf(card), remaining) ?? rectOf(before, idsOf(card)) ?? context.origin;
         this.fly(card, from, lanes[index].slotRect(slot));
       }
     });
 
-    this.moveInstances(lanes, updates, before, context);
+    this.moveInstances(lanes, updates, before, remaining);
 
     for (const { left } of updates) {
       for (const card of left) {
         const ids = idsOf(card);
-        if (ids.some((id) => entering.has(id))) {
+        // 分身が運んでいる1枚は、運ばれる姿でもう見えている。
+        const carried = card === landing?.card && ids.length === 1;
+        if (carried || ids.some((id) => entering.has(id))) {
           card.destroy();
           continue;
         }
         this.dismiss(card, rectOf(before, ids), rectOf(after, ids));
       }
     }
+
+    if (landing !== undefined) this.landHeld(landing, after);
+    // 置いている途中でそのカードが失われたら（経過中に壊れた道具等）、立てていた分身も片付ける。
+    if (this.held !== undefined && this.held.card.scene === undefined) this.release();
+  }
+
+  /** 置いたままにしていたものを、片付けずに取り出す（運び先が決まってから始末するため）。 */
+  private takeHeld(): NonNullable<CardMotion['held']> | undefined {
+    const held = this.held;
+    this.held = undefined;
+    return held;
   }
 
   /**
@@ -251,6 +336,11 @@ function releasedCard(before: ReadonlyMap<number, Owner>, context: MotionContext
 function releasedRect(ids: readonly number[], context: MotionContext): Rect | undefined {
   const { released } = context;
   return released !== undefined && ids.includes(released.id) ? released.rect : undefined;
+}
+
+/** 伏せていたカードを表に戻す（画面を作り直していれば既に破棄されている＝sceneがundefined）。 */
+function reveal(card: Card): void {
+  if (card.scene !== undefined) card.setVisible(true);
 }
 
 function idsOf(card: Card): readonly number[] {
