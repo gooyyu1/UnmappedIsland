@@ -3,7 +3,12 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { BACKGROUND_ART } from '../../src/game/ui/backgroundArt';
 import { OBJECT_ART } from '../../src/game/ui/objectArt';
-import { commonArtFiles, locationArtFiles, locationDefNames } from '../../src/game/ui/locationArt';
+import {
+  commonArtFiles,
+  locationArtFiles,
+  locationCardArtFiles,
+  locationDefNames,
+} from '../../src/game/ui/locationArt';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
@@ -39,6 +44,15 @@ describe('土地の絵の単位分け', () => {
 
   it('絵が1枚も無い土地では空になる（ロード待ちが即座に成立する）', () => {
     expect(locationArtFiles('no_such_location')).toHaveLength(0);
+    expect(locationCardArtFiles('no_such_location')).toHaveLength(0);
+  });
+
+  it('土地カードの絵は、土地の絵の一部として数えられている（先読みしても二重ロードにならない）', () => {
+    const cardArt = locationCardArtFiles('sandy_beach');
+    expect(cardArt.map((file) => file.key)).toEqual(['object:sandy_beach']);
+
+    const allKeys = locationArtFiles('sandy_beach').map((file) => file.key);
+    for (const { key } of cardArt) expect(allKeys).toContain(key);
   });
 
   it('起動時の絵と全土地の絵は、重複せず全アセットを覆う', () => {

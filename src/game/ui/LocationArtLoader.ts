@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { locationArtFiles } from './locationArt';
+import type { ArtFile } from './locationArt';
+import { locationArtFiles, locationCardArtFiles } from './locationArt';
 
 /**
  * 土地の絵の遅延ロード。起動時にはロードされない土地の絵（locationArt参照）を、プレイ中に
@@ -18,6 +19,12 @@ export class LocationArtLoader {
   /** ロードに失敗したテクスチャキー（再試行しない）。 */
   private readonly failed = new Set<string>();
 
+  /**
+   * ローダへまだ渡していない絵。ローダの実行中に追加した絵は黙って処理されないことがあるため、
+   * 自前で待たせておき、手が空いたとき（pump）にまとめて渡す。
+   */
+  private readonly queue: ArtFile[] = [];
+
   private readonly waiters: { location: string; onLoaded: () => void }[] = [];
 
   constructor(scene: Phaser.Scene) {
@@ -27,18 +34,37 @@ export class LocationArtLoader {
       this.failed.add(file.key);
       this.settle(file.key);
     });
+    scene.load.on(Phaser.Loader.Events.COMPLETE, () => this.pump());
   }
 
   /** その土地の絵のうち未ロードのものを読み始める（冪等）。 */
   request(location: string): void {
-    let added = false;
-    for (const { key, url } of locationArtFiles(location)) {
+    this.load(locationArtFiles(location));
+  }
+
+  /**
+   * その土地の土地カードの絵1枚だけを読み始める（冪等）。未発見の道の行き先用——道のカードは
+   * 発見と同時に行き先の絵で現れるため、発見してからでは間に合わない。背景はまだ読まない。
+   */
+  requestCardArt(location: string): void {
+    this.load(locationCardArtFiles(location));
+  }
+
+  private load(files: readonly ArtFile[]): void {
+    for (const file of files) {
+      const { key } = file;
       if (this.scene.textures.exists(key) || this.inFlight.has(key) || this.failed.has(key)) continue;
       this.inFlight.add(key);
-      this.scene.load.image(key, url);
-      added = true;
+      this.queue.push(file);
     }
-    if (added && !this.scene.load.isLoading()) this.scene.load.start();
+    this.pump();
+  }
+
+  /** 待たせている絵をローダへ渡して読み始める。ローダの実行中なら何もしない（完了時に呼び直される）。 */
+  private pump(): void {
+    if (this.queue.length === 0 || this.scene.load.isLoading()) return;
+    for (const { key, url } of this.queue.splice(0)) this.scene.load.image(key, url);
+    this.scene.load.start();
   }
 
   /** その土地の絵がすべて届いているか（失敗した絵は待っても来ないので届いた扱い）。 */

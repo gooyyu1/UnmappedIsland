@@ -6,7 +6,7 @@ import { OBJECT_ART, objectTexture } from './objectArt';
  * 土地の絵の遅延ロードの単位分け。
  *
  * 絵の大半（容量比で約9割）は土地ごとの絵——土地カードの絵1枚と背景（backgroundArt）最大3枚——で、
- * 要不要も土地単位で決まる（現在地と、発見済みの道の行き先だけが要る）。そこで起動時（BootScene）は
+ * 要不要も土地単位で決まる（現在地と道の行き先だけが要る）。そこで起動時（BootScene）は
  * 土地の絵を除いた残り（commonArtFiles）だけを読み、土地の絵はプレイ中に必要になった土地から
  * ロードする（LocationArtLoader）。
  */
@@ -17,11 +17,18 @@ export interface ArtFile {
   readonly url: string;
 }
 
+/**
+ * 土地カードの絵（1枚。用意されていなければ空）。道のカードが行き先の絵としても使うため、
+ * 未発見の道の行き先ぶんはこれだけを先に読む（LocationArtLoader.requestCardArt）。
+ */
+export function locationCardArtFiles(location: string): readonly ArtFile[] {
+  const url = OBJECT_ART.get(location);
+  return url === undefined ? [] : [{ key: objectTexture(location), url }];
+}
+
 /** 1つの土地に紐づく絵（用意されているものだけ。絵が1枚も無い土地では空）。 */
 export function locationArtFiles(location: string): readonly ArtFile[] {
-  const files: ArtFile[] = [];
-  const url = OBJECT_ART.get(location);
-  if (url !== undefined) files.push({ key: objectTexture(location), url });
+  const files: ArtFile[] = [...locationCardArtFiles(location)];
   for (const key of locationBackgroundTextures(location)) {
     const backgroundUrl = BACKGROUND_ART.get(key);
     if (backgroundUrl !== undefined) files.push({ key, url: backgroundUrl });

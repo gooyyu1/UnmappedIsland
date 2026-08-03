@@ -98,6 +98,14 @@ export class Location {
   }
 
   /**
+   * 未発見の設置物スロットの中身。画面には出さない（locations.yaml参照）が、道の行き先の絵の
+   * 先読み（PlayScene.requestLocationArt）が発見前に行き先を知るために読む。
+   */
+  get undiscoveredFixtures(): readonly WorldObject[] {
+    return this.slotContents(this.undiscoveredFixturesSlotId);
+  }
+
+  /**
    * 設置物スロットの中で並び替える。プレイヤーが地形をどう捉えているかで並べ方が変わるため、
    * 持ち出せない設置物にも並び替えだけは許す（reorderItemsと同じ扱い）。
    */
