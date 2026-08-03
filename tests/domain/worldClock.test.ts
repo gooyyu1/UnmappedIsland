@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { Rng } from '../../src/domain/runtime/Rng';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { World } from '../../src/domain/runtime/views/World';
@@ -125,6 +126,54 @@ object_defs:
 
     expect(world.instance.getNumber(tickId), 'minutes_per_tickが20なら25分で1tick跨ぐ').toBe(1);
     expect(world.minute % world.minutesPerTick).toBe(5);
+  });
+
+  describe('World.rollTimeOfDayによる開始時刻の抽選', () => {
+    /** nextIntへ渡された候補の範囲を記録し、常に「下から2番目の候補」を選ぶスタブ。 */
+    function pickSecondCandidate(requested: [number, number][]): Rng {
+      return {
+        nextDouble: () => 0,
+        nextInt: (minInclusive, maxExclusive) => {
+          requested.push([minInclusive, maxExclusive]);
+          return minInclusive + 1;
+        },
+      };
+    }
+
+    it('渡した範囲をtick刻みで区切った候補から選ぶ（両端を含む）', () => {
+      const { world } = buildWorld();
+      const requested: [number, number][] = [];
+
+      world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate(requested));
+
+      expect(requested, '8:00〜12:00を15分刻みで区切った17個の候補').toEqual([[32, 49]]);
+      expect(world.hour).toBe(8);
+      expect(world.minute).toBe(15);
+    });
+
+    it('刻みはハードコードではなくminutes_per_tickに従う', () => {
+      const { world } = buildWorld(20);
+      const requested: [number, number][] = [];
+
+      world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate(requested));
+
+      expect(requested).toEqual([[24, 37]]);
+      expect(world.hour).toBe(8);
+      expect(world.minute).toBe(20);
+    });
+
+    it('選ばれた時刻はtick境界に乗るので、最初のtickも1tick分の長さになる', () => {
+      const { codex, world } = buildWorld();
+      const session = new WorldSession(codex, world);
+      const tickId = codex.propertyNames.getId('tick');
+
+      world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate([]));
+      session.advanceWorldTime(world.minutesPerTick - 1);
+      expect(world.instance.getNumber(tickId), '1tickに1分足りなければまだ回らない').toBe(0);
+
+      session.advanceWorldTime(1);
+      expect(world.instance.getNumber(tickId), 'ちょうど1tick分でtickが回る').toBe(1);
+    });
   });
 
   describe('observeTicksによるtickの観測', () => {

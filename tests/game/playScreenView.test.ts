@@ -41,8 +41,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures, '未探索なので設置物も道も見つかっていない').toEqual([]);
     expect(view.items, '未探索なので土地には何も落ちていない').toEqual([]);
     expect(view.elapsedDays).toBe(0);
-    expect(view.hour).toBe(0);
-    expect(view.minute).toBe(0);
+    expect(view.hour * 60 + view.minute, '時計はランダムに決まった開始時刻をそのまま映す').toBe(
+      game.world.hour * 60 + game.world.minute,
+    );
   });
 
   it('手持ちは固定6枠ぶん並び、空きセルはundefinedになる', () => {

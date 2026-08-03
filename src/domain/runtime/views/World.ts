@@ -1,4 +1,5 @@
 import type { NameRegistry } from '../../defs/NameRegistry';
+import type { Rng } from '../Rng';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
 
@@ -38,8 +39,8 @@ export class World {
   }
 
   /**
-   * 開始からの経過分（dayは1始まりなので0起点へ直す）。時間の経過そのものを1つの数として扱いたい
-   * 場面——経過量を求める・その分だけ実時間をかけて時計を進める——のための読み取り。
+   * day 1の0:00から数えた通算分（dayは1始まりなので0起点へ直す）。時間の経過そのものを1つの数として
+   * 扱いたい場面——経過量を求める・その分だけ実時間をかけて時計を進める——のための読み取り。
    */
   get totalMinutes(): number {
     return ((this.day - 1) * 24 + this.hour) * 60 + this.minute;
@@ -48,6 +49,23 @@ export class World {
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */
   get minutesPerTick(): number {
     return this.instance.getNumber(this.minutesPerTickId);
+  }
+
+  /**
+   * 現在時刻を、その日のearliestMinutes〜latestMinutes（0:00からの経過分、両端を含む）の中から
+   * tick刻み（minutes_per_tick）で1つ選んで設定する（NewGame.start専用）。
+   *
+   * tickが回るのは絶対時刻がminutes_per_tickの倍数になる瞬間（WorldSession.advanceWorldTime）なので、
+   * 刻みに乗らない時刻から始めると、以後ずっとtick境界が半端な時刻へずれる。
+   */
+  rollTimeOfDay(earliestMinutes: number, latestMinutes: number, rng: Rng): void {
+    const step = this.minutesPerTick;
+    const firstStep = Math.ceil(earliestMinutes / step);
+    const lastStep = Math.trunc(latestMinutes / step);
+    const minutes = rng.nextInt(firstStep, lastStep + 1) * step;
+
+    this.instance.setNumber(this.hourId, Math.trunc(minutes / 60));
+    this.instance.setNumber(this.minuteId, minutes % 60);
   }
 
   /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。sessionを渡すことで、on_overflow等がtickを待たずその場で判定・実行される（WorldObject.addNumber参照）。 */
