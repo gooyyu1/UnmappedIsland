@@ -163,6 +163,71 @@ object_defs:
     expect(prop.alertLevelOf(0)).toBe('fatal');
   });
 
+  it('alertの深刻さは、rangeを持つプロパティでは下から上へ単調でなければならない', () => {
+    // 上下どちらの端も悪い量（体温）は、バーの塗りをどちら向きに読ませるか決められない。
+    const yaml = `
+object_defs:
+  character:
+    props:
+      body_temperature:
+        value: 37
+        range: {min: 30, max: 44}
+        stages:
+          - {name: hypothermia, alert: danger}
+          - {name: normal, min: 36}
+          - {name: hyperthermia, min: 38, alert: danger}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/単調/);
+  });
+
+  it('rangeを持たなければ、両端が深刻な段を宣言できる（バーにならないため）', () => {
+    const yaml = `
+object_defs:
+  character:
+    props:
+      body_temperature:
+        value: 37
+        stages:
+          - {name: hypothermia, alert: danger}
+          - {name: normal, min: 36}
+          - {name: hyperthermia, min: 38, alert: danger}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const prop = codex.objects
+      .get(codex.objectNames.getId('character'))
+      .getPropertyDef(codex.propertyNames.getId('body_temperature'))!;
+
+    expect(prop.alertDirection).toBe('mixed');
+  });
+
+  it('段のalertが上がっていくプロパティは、増えるほど悪いものとして扱われる', () => {
+    const yaml = `
+object_defs:
+  character:
+    props:
+      load:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: light}
+          - {name: heavy, min: 50, alert: caution}
+          - {name: too_heavy, min: 80, alert: danger}
+      satiety:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: starving, alert: danger}
+          - {name: fed, min: 80}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const objectDef = codex.objects.get(codex.objectNames.getId('character'));
+    const directionOf = (name: string) =>
+      objectDef.getPropertyDef(codex.propertyNames.getId(name))!.alertDirection;
+
+    expect(directionOf('load')).toBe('up');
+    expect(directionOf('satiety')).toBe('down');
+  });
+
   it('stagesの未知のalertはエラーになる', () => {
     const yaml = `
 object_defs:

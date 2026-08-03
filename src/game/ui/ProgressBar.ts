@@ -1,7 +1,15 @@
 import Phaser from 'phaser';
+import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
 import { drawBox } from './shapes';
-import { COLOR } from './theme';
+import { COLOR, fillColorFor } from './theme';
+
+/** 域ごとの警戒の枠の色（明滅させない域はundefined）。 */
+function alertBorderColor(alert: AlertLevel): number | undefined {
+  if (alert === 'danger') return COLOR.statusAlertDanger;
+  if (alert === 'fatal') return COLOR.statusAlertFatal;
+  return undefined;
+}
 
 /**
  * 減った分を赤い帯として残す時間と、それが縮み切るまでの時間（ScreenLayout.md ステータスエリア節）。
@@ -17,6 +25,9 @@ const BLINK_MIN_ALPHA = 0.15;
 /** 警戒を示す枠の太さ（通常の枠線より太くして、明滅していることが分かるようにする）。 */
 const ALERT_BORDER_WIDTH = 5;
 
+/** 警戒の枠の下に敷く暗い線が、枠からはみ出す太さ（濃い塗りの上でも輪郭が残るように）。 */
+const ALERT_OUTLINE_EXTRA_WIDTH = 4;
+
 /**
  * 横方向の進捗バー（枠付きのトラックと、左詰めの塗り）。ステータスバー・探索ウィンドウのように
  * 「全体に対する割合」を見せる場所で共用する。
@@ -29,6 +40,9 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   private readonly barHeight: number;
   private readonly borderWidth: number;
   private readonly alertBorderWidth: number;
+
+  /** 警戒の枠の下に敷く暗い線の太さ（枠より少し太い）。 */
+  private readonly alertOutlineWidth: number;
   private readonly radius: number;
 
   /**
@@ -46,8 +60,10 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
   /** 警戒を示す枠。明滅は濃さのtweenだけで見せ、毎フレーム描き直さない。 */
   private readonly alertFrame: Phaser.GameObjects.Graphics;
-  private alertColor: number | undefined;
   private blinkTween: Phaser.Tweens.Tween | undefined;
+
+  /** 今の域。塗りの色と、警戒の枠を出すかどうかの両方がこれで決まる。 */
+  private alert: AlertLevel = 'safe';
 
   /** 増えるほど悪い値か（PropertyDef.worsensUpward）。塗りの色と、帯をどちら向きに出すかが変わる。 */
   private readonly worsensUpward: boolean;
@@ -69,6 +85,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.barHeight = height;
     this.borderWidth = Math.max(1, metrics.px(2));
     this.alertBorderWidth = Math.max(1, metrics.px(ALERT_BORDER_WIDTH));
+    this.alertOutlineWidth = this.alertBorderWidth + Math.max(1, metrics.px(ALERT_OUTLINE_EXTRA_WIDTH));
     this.radius = height / 4;
     this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
     this.lagRatio = this.ratio;
@@ -166,13 +183,15 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 警戒を示す枠を色で出す（undefinedで消す）。出ている間は濃さが明滅する。
-   * どの域をどの色で示すかは呼び出し側の判断（StatusBar参照）。
+   * 今どの域にいるかを伝える。塗りの色（fillColorFor）が変わり、危険域・致命的域では枠が明滅する
+   * （ScreenLayout.md ステータスエリア節）。域を持たないバー（探索率）は安全域のままで、緑の塗りになる。
    */
-  setAlertBorder(color: number | undefined): void {
-    if (color === this.alertColor) return;
-    this.alertColor = color;
+  setAlert(alert: AlertLevel): void {
+    if (alert === this.alert) return;
+    this.alert = alert;
+    this.draw();
 
+    const color = alertBorderColor(alert);
     if (color === undefined) {
       this.blinkTween?.stop();
       this.blinkTween = undefined;
@@ -180,12 +199,16 @@ export class ProgressBar extends Phaser.GameObjects.Container {
       return;
     }
 
+    // 明るい枠は、濃い塗りの上では沈む。必ず暗い線を先に敷き、その上へ載せて輪郭を保つ。
+    const box = { x: 0, y: 0, width: this.barWidth, height: this.barHeight };
+    const width = Math.max(this.borderWidth, this.alertBorderWidth);
     this.alertFrame.clear();
-    drawBox(
-      this.alertFrame,
-      { x: 0, y: 0, width: this.barWidth, height: this.barHeight },
-      { border: color, borderWidth: Math.max(this.borderWidth, this.alertBorderWidth), radius: this.radius },
-    );
+    drawBox(this.alertFrame, box, {
+      border: COLOR.statusAlertOutline,
+      borderWidth: this.alertOutlineWidth,
+      radius: this.radius,
+    });
+    drawBox(this.alertFrame, box, { border: color, borderWidth: width, radius: this.radius });
     this.alertFrame.setVisible(true);
 
     this.blinkTween ??= this.scene.tweens.add({
@@ -211,8 +234,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
     const fillWidth = width * this.ratio;
     if (fillWidth > 0) {
-      const fill = this.worsensUpward ? COLOR.statusBarFillWorsening : COLOR.statusBarFill;
-      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill, radius });
+      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill: fillColorFor(this.alert), radius });
     }
 
     drawBox(

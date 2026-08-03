@@ -70,13 +70,6 @@ export interface StatusContent {
   readonly onTogglePin?: () => void;
 }
 
-/** 域ごとのバーの枠の色（明滅させない域はundefined）。 */
-function alertColor(alert: AlertLevel): number | undefined {
-  if (alert === 'danger') return COLOR.statusAlertDanger;
-  if (alert === 'fatal') return COLOR.statusAlertFatal;
-  return undefined;
-}
-
 /**
  * ステータス1件分の「固定表示の印＋名前＋バー＋増減」。行の高さはバーの高さと等しい。
  * 割合を定義できないプロパティは、バーの代わりに実効値そのものを出す。
@@ -258,7 +251,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
   }
 
   private showContent(content: StatusContent): void {
-    this.bar?.setAlertBorder(alertColor(content.alert));
+    this.bar?.setAlert(content.alert);
     this.pinMark.setText(content.pinned === true ? PIN_MARK : '');
     this.showChange(content.change);
   }

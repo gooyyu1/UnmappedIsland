@@ -6,6 +6,12 @@ import type { ActiveEffect } from './ActiveEffect';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
 
+/**
+ * 値がどちらへ動くと悪いか（PropertyDef.alertDirection）。mixedは「両端が悪い」並びで、バーの
+ * 向きを決められない。
+ */
+export type AlertDirection = 'up' | 'down' | 'mixed';
+
 /** 6.3節の値域。 */
 export class PropertyRange {
   readonly min: number;
@@ -95,13 +101,19 @@ export class PropertyDef {
   private readonly fallbackStage: PropertyStage | undefined;
 
   /**
-   * 値が増えるほど悪いプロパティか（負荷など）。**専用の宣言は持たず、`stages`のalertから導く**:
-   * 最も上の段が最も下の段より深刻なら、増える側が悪い。「どちらが危ないか」は既にalertが宣言して
-   * いるので、同じことを二度書かせない（両端が同じ深刻さの段なら、既定の「減ると悪い」のまま）。
+   * 値がどちらへ動くと悪いか。**専用の宣言は持たず、`stages`のalertから導く**——「どちらが危ないか」は
+   * 既にalertが宣言しているので、同じことを二度書かせない。段を下から上へ見て、深刻さが単調に上がるなら
+   * `up`（負荷など）、単調に下がるなら`down`（満腹度など）。上下どちらの端も悪い山なり・谷なりの並びは
+   * `mixed`で、バーの向きを決められない（rangeを持つプロパティでは、ロード時にこれを拒む）。
    *
-   * 見せ方（バーの向き・増減の記号の色）だけがこれを見る（ScreenLayout.md ステータスエリア節）。
+   * 見せ方（帯の向き・増減の記号の色）だけがこれを見る（ScreenLayout.md ステータスエリア節）。
    */
-  readonly worsensUpward: boolean;
+  readonly alertDirection: AlertDirection;
+
+  /** 値が増えるほど悪いか。`mixed`は向きを決められないので、既定の「減ると悪い」として扱う。 */
+  get worsensUpward(): boolean {
+    return this.alertDirection === 'up';
+  }
 
   /**
    * inherit: 同名プロパティを定義している最初の祖先（findAncestorWithProperty）の実効値を、自分の
@@ -140,18 +152,29 @@ export class PropertyDef {
     this.tags = tags;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
-    this.worsensUpward = PropertyDef.derivesWorsensUpward(stages);
+    this.alertDirection = PropertyDef.deriveAlertDirection(stages);
   }
 
-  /** 数値の段を下から上へ並べ、両端のalertの深刻さを比べる（段が2つ未満・シンボル型の段では常に偽）。 */
-  private static derivesWorsensUpward(stages: readonly PropertyStage[]): boolean {
-    const ordered = stages
+  /**
+   * 数値の段を下から上へ並べ、alertの深刻さがどちらへ動くかを見る（シンボル型の段は大小関係を持たない
+   * ため除く）。単調に上がるならup、単調に下がるならdown、どちらでもなければmixed。
+   * 深刻さが動かない（段が無い・全段が同じ域）場合は、満タンが良いという既定に合わせてdown。
+   */
+  private static deriveAlertDirection(stages: readonly PropertyStage[]): AlertDirection {
+    const severities = stages
       .filter((stage) => stage.eq === undefined)
-      .sort((a, b) => (a.min ?? Number.NEGATIVE_INFINITY) - (b.min ?? Number.NEGATIVE_INFINITY));
-    if (ordered.length < 2) return false;
+      .sort((a, b) => (a.min ?? Number.NEGATIVE_INFINITY) - (b.min ?? Number.NEGATIVE_INFINITY))
+      .map((stage) => ALERT_LEVELS.indexOf(stage.alert));
 
-    const severity = (stage: PropertyStage): number => ALERT_LEVELS.indexOf(stage.alert);
-    return severity(ordered[ordered.length - 1]) > severity(ordered[0]);
+    let rises = false;
+    let falls = false;
+    for (let i = 1; i < severities.length; i++) {
+      if (severities[i] > severities[i - 1]) rises = true;
+      if (severities[i] < severities[i - 1]) falls = true;
+    }
+
+    if (rises && falls) return 'mixed';
+    return rises ? 'up' : 'down';
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */
