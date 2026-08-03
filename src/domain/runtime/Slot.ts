@@ -94,6 +94,15 @@ export class Slot {
   }
 
   /**
+   * 中身の量（7.3節のsize）が上限（capacity）に対して占める割合（0〜1）。上限を持たないスロットは
+   * 割合を定義できないためundefined。
+   */
+  fillRatio(sizePropertyGlobalId: number): number | undefined {
+    if (this.def.capacity === undefined || this.def.capacity <= 0) return undefined;
+    return Math.min(1, this.sumSize(sizePropertyGlobalId) / this.def.capacity);
+  }
+
+  /**
    * 量的オブジェクトの合流先（同じ型の在中インスタンス）。同種は1インスタンスに保たれる前提のため
    * 最初の1つを返す。accepts制約を満たさない場合はundefined（異種の液体が既にいる場合など）。
    */

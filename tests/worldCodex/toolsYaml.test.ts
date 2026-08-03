@@ -27,6 +27,15 @@ describe('tools.yamlの道具定義', () => {
     expect(sharpStone.tags).toContain(codex.tagNames.getId('cutting_tool'));
   });
 
+  it('尖った石は、満タンから始まる耐久度を持つ', () => {
+    const session = new WorldSession(codex);
+    const sharpStone = session.spawn(codex.objectNames.getId('sharp_stone'));
+
+    const durability = sharpStone.readProperty(codex.propertyNames.getId('durability'));
+    expect(durability?.ratio, '打ち出したばかりの刃は減っていない').toBe(1);
+    expect(durability?.value, '上限は種類によらず統一（DurabilitySystem.md 1節）').toBe(960000);
+  });
+
   it('石へ石をドラッグすると、割られた側が尖った石になり、1時間が経つ', () => {
     const worldInstance = new WorldObject(
       0,

@@ -28,6 +28,9 @@ traits:
       # 単位量あたりの重さ。水を100とする＝100が1g/mL（ContainerSystem.md）。
       density:
         value: 100
+    # 見た目の色（color、0xRRGGBB）は種類ごとのtraitが宣言する。何色に見えるかは液体そのものの
+    # 性質で、共通の既定値には意味が無いため。容器カードの中身のバーがこの色で塗られる
+    # （ScreenLayout.md カードの状態バー節）。
     combinations:
       # 受け側が中身入りのとき、代表は中身の液体自身。移し先は自分ではなく容器なのでto: parent。
       # 異種の液体はcontentのaccepts（max 1）が拒むため、条件を書く必要がない。
@@ -46,6 +49,8 @@ traits:
 
   water_liquid:
     tags: [water_liquid]
+    props:
+      color: {value: 0x2f86d8}
     actions:
       # 1回の飲用 = 250mL。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
       drink:
@@ -57,6 +62,8 @@ traits:
 
   tea_liquid:
     tags: [tea_liquid]
+    props:
+      color: {value: 0x6f8f3c}
     actions:
       drink:
         transfer:
@@ -71,6 +78,8 @@ traits:
   # 飲めない液体はdrinkを定義しないだけでよい。
   oil_liquid:
     tags: [oil_liquid]
+    props:
+      color: {value: 0xe0b422}
 
   # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、sunlightのしきい値で決まる上乗せの和
   # （LiquidContainerSystem.md 6節）。密閉容器はどちらのゲートも成立しないため蒸発しない。

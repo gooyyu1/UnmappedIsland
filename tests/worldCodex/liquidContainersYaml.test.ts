@@ -166,6 +166,35 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(canteen.tryExecuteAction('drink', actor, session), '飲用不可の液体はdrinkを持たない').toBe(false);
   });
 
+  /**
+   * 中身のバーの色は液体自身が宣言する（ScreenLayout.md カードの状態バー節）。宣言し忘れた液体は
+   * 灰色で出るだけで画面を見ても気付けないため、ここで全ての液体が持っていることを検査する。
+   */
+  it('液体はすべて自分の色を宣言している', () => {
+    const colorId = codex.propertyNames.getId('color');
+    const liquids = codex.objectDefNamesWithTag('liquid');
+    expect(liquids.length, '検査対象が無い（liquidタグが変わっていないか）').toBeGreaterThan(0);
+
+    const colors = liquids.map((name) => {
+      const color = spawn(name).readProperty(colorId)?.value;
+      expect(color, `'${name}' が色を宣言していない`).toBeDefined();
+      return color;
+    });
+    expect(new Set(colors).size, '同じ色の液体は見分けが付かない').toBe(colors.length);
+  });
+
+  it('水は青、茶は茶緑、油は黄色に見える', () => {
+    const colorId = codex.propertyNames.getId('color');
+    const [water, tea, oil] = ['water', 'tea', 'oil'].map((kind) => {
+      const color = spawn(`${kind}_liquid`).getNumber(colorId);
+      return { red: (color >> 16) & 0xff, green: (color >> 8) & 0xff, blue: color & 0xff };
+    });
+
+    expect(water.blue, '水は青が最も強い').toBeGreaterThan(Math.max(water.red, water.green));
+    expect(tea.green, '茶は緑が最も強い').toBeGreaterThan(Math.max(tea.red, tea.blue));
+    expect(Math.min(oil.red, oil.green), '油は赤と緑が揃って強い＝黄色').toBeGreaterThan(oil.blue);
+  });
+
   // 昼のsunlightは cloudy 7 / clear 10 / sunny 12 / scorching 15。
   it.each([
     ['cloudy', -1],

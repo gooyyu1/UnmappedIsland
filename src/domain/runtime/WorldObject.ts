@@ -119,6 +119,19 @@ export class WorldObject {
     return property !== undefined && property.isInStage(stageName);
   }
 
+  /** 名指しした1つのプロパティの現在の状態。持たないオブジェクトではundefined。 */
+  readProperty(globalPropertyId: number): PropertyReading | undefined {
+    return this.tryGetProperty(globalPropertyId)?.read();
+  }
+
+  /**
+   * 指定したスロットが量（7.3節のsize）でどれだけ満たされているか（0〜1）。スロットを持たない、
+   * あるいは上限（capacity）が無く割合を定義できない場合はundefined。
+   */
+  fillRatioOfSlot(globalSlotId: number): number | undefined {
+    return this.tryGetSlot(globalSlotId)?.fillRatio(this.wellKnown.sizeId);
+  }
+
   /**
    * 指定したタグ（6.7節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
    * タグを1つも持たないオブジェクトでは空配列。

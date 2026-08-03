@@ -163,12 +163,10 @@ export class PropertyValue {
   }
 
   /**
-   * タグ（6.7節）が付いていれば今の値を読み取る。付いていなければundefined。実効値で読むのは、
-   * 画面に出すのが「今そう見えている値」（modify・inheritを加味した値）であるため。
+   * 今の値を読み取る。実効値で読むのは、画面に出すのが「今そう見えている値」（modify・inheritを
+   * 加味した値）であるため。
    */
-  readIfTagged(tagGlobalId: number): PropertyReading | undefined {
-    if (!this.def.hasTag(tagGlobalId)) return undefined;
-
+  read(): PropertyReading {
     const value = this.getEffectiveValue();
     return {
       name: this.def.name,
@@ -177,6 +175,11 @@ export class PropertyValue {
       alert: this.def.alertLevelOf(value),
       worsensUpward: this.def.worsensUpward,
     };
+  }
+
+  /** タグ（6.7節）が付いていれば今の値を読み取る。付いていなければundefined。 */
+  readIfTagged(tagGlobalId: number): PropertyReading | undefined {
+    return this.def.hasTag(tagGlobalId) ? this.read() : undefined;
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

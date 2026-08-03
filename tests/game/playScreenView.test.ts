@@ -214,6 +214,59 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     );
   });
 
+  it('耐久度を持つカードだけが、その残りの割合を持つ', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const handSlotId = codex.slotNames.getId('hand');
+    const durabilityId = codex.propertyNames.getId('durability');
+    const sharpStone = game.session.spawn(codex.objectNames.getId('sharp_stone'));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    for (const item of [sharpStone, stone]) {
+      expect(item.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
+    }
+
+    expect(fromGameSession(game, codex, locale).hand[0]?.durability, '作りたては満タン').toBe(1);
+    expect(fromGameSession(game, codex, locale).hand[1]?.durability, '石は耐久度を持たない').toBeUndefined();
+
+    sharpStone.addNumber(durabilityId, -sharpStone.getNumber(durabilityId) / 4, game.session);
+
+    expect(fromGameSession(game, codex, locale).hand[0]?.durability, '減った分だけ割合が下がる').toBe(0.75);
+  });
+
+  it('液体容器のカードは、中身の割合とその液体の識別子を持つ', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
+    expect(
+      bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).hand[0]?.fill, '空の容器も割合0のバーを出す').toEqual({
+      ratio: 0,
+      color: undefined,
+    });
+
+    // ヤシの器の容量は250mL（liquid_containers.yaml）なので、100mLで4割。
+    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
+    water.setNumber(codex.wellKnown.sizeId, 100, game.session);
+    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).hand[0]?.fill, '色は中身の液体が宣言したもの').toEqual({
+      ratio: 0.4,
+      color: water.getNumber(codex.propertyNames.getId('color')),
+    });
+  });
+
+  it('液体を入れられないカードは、中身のバーを持たない', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    expect(
+      basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    const [card] = fromGameSession(game, codex, locale).hand;
+    expect(card?.contents, '固形物の入れ物なので中身は子ウィンドウで見せる').toBeDefined();
+    expect(card?.fill, '量で満たされるものではないのでバーは出さない').toBeUndefined();
+  });
+
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
