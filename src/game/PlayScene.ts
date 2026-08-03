@@ -516,6 +516,8 @@ export class PlayScene extends ResponsiveScene {
           contents === undefined ? () => this.openObjectWindow(card) : () => this.openSlotWindow(contents),
         ),
         edge: direction === undefined ? undefined : this.cardEdge(card, direction),
+        // 経過を見せている間は行動の途中の値。状態バーは減った分の帯を縮めずに溜める（statusContentと同じ）。
+        midAction: this.passingTime,
       };
     });
   }

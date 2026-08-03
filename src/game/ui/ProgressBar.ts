@@ -28,9 +28,27 @@ const ALERT_BORDER_WIDTH = 5;
 /** 警戒の枠の下に敷く暗い線が、枠からはみ出す太さ（濃い塗りの上でも輪郭が残るように）。 */
 const ALERT_OUTLINE_EXTRA_WIDTH = 4;
 
+/** バーの見せ方の選択肢（既定はステータスバーの見せ方）。 */
+export interface ProgressBarOptions {
+  /** 増えるほど悪い値か（PropertyDef.worsensUpward）。塗りの色と、帯をどちら向きに出すかが変わる。 */
+  readonly worsensUpward?: boolean;
+
+  /**
+   * 今の満たされ具合から塗りの色を引く。省略すると域（alert）から引く（fillColorFor）。
+   * 域を持たない量——耐久度・液体の残量——を映すバーだけが渡す。
+   */
+  readonly fillColor?: (ratio: number) => number;
+
+  /**
+   * トラックの枠線を描かないか。数px（カードの耐久度バー）まで細くすると枠線が太さの大半を占め、
+   * 塗りが読めなくなるため。
+   */
+  readonly borderless?: boolean;
+}
+
 /**
- * 横方向の進捗バー（枠付きのトラックと、左詰めの塗り）。ステータスバー・探索ウィンドウのように
- * 「全体に対する割合」を見せる場所で共用する。
+ * 横方向の進捗バー（枠付きのトラックと、左詰めの塗り）。ステータスバー・探索ウィンドウ・カードの
+ * 状態バーのように「全体に対する割合」を見せる場所で共用する。
  *
  * 寸法はピクセルで受け取り、角の丸みだけを高さから決める（高さを変えても丸みの見え方が揃うため）。
  */
@@ -68,6 +86,12 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   /** 増えるほど悪い値か（PropertyDef.worsensUpward）。塗りの色と、帯をどちら向きに出すかが変わる。 */
   private readonly worsensUpward: boolean;
 
+  /** 塗りの色の引き方（ProgressBarOptions.fillColor）。 */
+  private readonly fillColor: ((ratio: number) => number) | undefined;
+
+  /** トラックの枠線を描かないか（ProgressBarOptions.borderless）。 */
+  private readonly borderless: boolean;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -76,10 +100,12 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     width: number,
     height: number,
     ratio: number,
-    worsensUpward = false,
+    options: ProgressBarOptions = {},
   ) {
     super(scene, x, y);
-    this.worsensUpward = worsensUpward;
+    this.worsensUpward = options.worsensUpward === true;
+    this.fillColor = options.fillColor;
+    this.borderless = options.borderless === true;
 
     this.barWidth = width;
     this.barHeight = height;
@@ -234,9 +260,11 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
     const fillWidth = width * this.ratio;
     if (fillWidth > 0) {
-      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill: fillColorFor(this.alert), radius });
+      const fill = this.fillColor?.(this.currentRatio) ?? fillColorFor(this.alert);
+      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill, radius });
     }
 
+    if (this.borderless) return;
     drawBox(
       this.bar,
       { x: 0, y: 0, width, height },

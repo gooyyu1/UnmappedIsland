@@ -4,7 +4,7 @@ import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { Localization } from '../locale/Localization';
-import type { CardContent } from './ui/Card';
+import type { CardContent, CardFill } from './ui/Card';
 import type { PropertyTab } from './ui/PropertyWindow';
 import type { StatusContent } from './ui/StatusBar';
 
@@ -241,6 +241,14 @@ const UNNAMED_LOCATION = '名もなき土地';
 const STATUS_TAG = 'status';
 
 /**
+ * カードの状態バーが映すプロパティ・スロットの名前（ScreenLayout.md カードの状態バー節）。
+ * どちらもGameElementDefinition.md・LiquidContainerSystem.mdが名前ごと決めている語彙で、UI側は
+ * 「その名前を持つ物が状態バーを出す」とだけ知っている。
+ */
+const DURABILITY_PROPERTY = 'durability';
+const CONTENT_SLOT = 'content';
+
+/**
  * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
  * レーンで常に見えているfixtures/items/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
  */
@@ -295,6 +303,27 @@ export function fromGameSession(
       });
   }
 
+  const durabilityPropertyId = codex.propertyNames.tryGetId(DURABILITY_PROPERTY);
+  /**
+   * カードの下端に出す耐久度（0〜1）。durabilityを持たない物と、持っていても上下限（range）が無く
+   * 割合を定義できない物はundefined。
+   */
+  const durabilityOf = (object: WorldObject): number | undefined =>
+    durabilityPropertyId === undefined ? undefined : object.readProperty(durabilityPropertyId)?.ratio;
+
+  const contentSlotId = codex.slotNames.tryGetId(CONTENT_SLOT);
+  /**
+   * 液体容器なら、中身の割合と中身の種類（LiquidContainerSystem.md 2節）。容量を持つcontentスロットが
+   * 液体容器の目印で、空の容器も割合0のバーとして出す（空であることも中身の情報のため）。
+   */
+  const fillOf = (object: WorldObject): CardFill | undefined => {
+    if (contentSlotId === undefined) return undefined;
+
+    const ratio = object.fillRatioOfSlot(contentSlotId);
+    if (ratio === undefined) return undefined;
+    return { ratio, content: object.tryGetSlot(contentSlotId)?.contents[0]?.def.name };
+  };
+
   const containerTagId = codex.tagNames.tryGetId('container');
   const contentsSlotId = codex.slotNames.tryGetId('contents');
   /** そのカードがコンテナなら、中身を映す場所。中身を持てるスロットが無いcodexではundefined。 */
@@ -333,6 +362,10 @@ export function fromGameSession(
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: instances[0].def.name,
+    // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
+    // 1枚に束ねたカードが映すのは代表の状態で揃える。
+    durability: durabilityOf(instances[0]),
+    fill: fillOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
     description: locale.object(instances[0].def.name).description,

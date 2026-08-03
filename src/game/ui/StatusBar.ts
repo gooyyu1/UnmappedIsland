@@ -148,16 +148,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
     }
 
     if (content.ratio !== undefined) {
-      this.bar = new ProgressBar(
-        scene,
-        metrics,
-        barX,
-        0,
-        barWidth,
-        height,
-        content.ratio,
-        this.worsensUpward,
-      );
+      this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, content.ratio, {
+        worsensUpward: this.worsensUpward,
+      });
       this.add(this.bar);
     } else {
       this.valueText = scene.add

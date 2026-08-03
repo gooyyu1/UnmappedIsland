@@ -9,3 +9,8 @@ object_defs:
     tags: [item, cutting_tool]
     props:
       weight: {value: 400}
+      # 刃こぼれするまでの余力。上限は種類によらず960,000で統一する（DurabilitySystem.md 1節）。
+      # 石は屋外に置いても劣化しない扱いなので、減らすのは使ったときだけ（同節の未決事項）。
+      durability:
+        value: 960000
+        range: {min: 0, max: 960000}

@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
+import { COLOR, FONT_FAMILY, SIZE, cssColor, durabilityColorFor } from './theme';
 import { drawBox } from './shapes';
 import { cardBackgroundTexture } from './backgroundArt';
+import { liquidColorOf } from './liquidColor';
 import { CARD_ART_WIDTH, objectTexture } from './objectArt';
+import { ProgressBar } from './ProgressBar';
 import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
 
@@ -61,6 +63,17 @@ const STACK_BADGE_SIZE = 56;
 const STACK_BADGE_OVERHANG = 8;
 const STACK_COUNT_SIZE = 32;
 
+/**
+ * 耐久度バーの高さ（u単位）。ステータスバー（36u）とは比べ物にならない細さにする——どの道具にも
+ * 常に出ているものなので、見に行けば読めるが視界には入らない、という控えめさに留める。
+ */
+const DURABILITY_BAR_HEIGHT = 6;
+
+/** 中身のバーの高さと、紙の左右から空ける余白・紙の下端から浮かせる高さ（u単位）。 */
+const FILL_BAR_HEIGHT = 15;
+const FILL_BAR_MARGIN = 28;
+const FILL_BAR_BOTTOM = 72;
+
 /** 移動先のレーンがカードのどちら側にあるか。 */
 export type CardEdgeDirection = 'up' | 'down';
 
@@ -71,6 +84,18 @@ export type CardEdgeDirection = 'up' | 'down';
 export interface CardEdgeAction {
   readonly direction: CardEdgeDirection;
   readonly onTap: () => void;
+}
+
+/** 液体容器のカードが出す、中身のバーの内容（ScreenLayout.md カードの状態バー節）。 */
+export interface CardFill {
+  /** 容量に対する中身の割合（0〜1）。空の容器は0。 */
+  readonly ratio: number;
+
+  /**
+   * 中身の液体のobject_defの識別子。バーの色はこれで決まる（liquidColor参照）。
+   * 空の容器はundefined（塗る中身が無いので色も要らない）。
+   */
+  readonly content?: string;
 }
 
 /** カード1枚の表示内容と操作。 */
@@ -106,6 +131,18 @@ export interface CardContent {
    * キャラクタの肖像——だけが下を選ぶ。物の札の下半分は劣化度などの情報のために空けておく。
    */
   readonly namePosition?: 'top' | 'bottom';
+
+  /** 耐久度（0〜1）。耐久度を持たないカードはundefined（バーそのものを出さない）。 */
+  readonly durability?: number;
+
+  /** 中身の割合（液体容器のカードだけが持つ）。 */
+  readonly fill?: CardFill;
+
+  /**
+   * その行動の途中の値か（trueの間は状態バーの赤い帯を縮めず、合計の減少量を残す。
+   * ProgressBar.setRatio参照）。
+   */
+  readonly midAction?: boolean;
 }
 
 /**
@@ -113,8 +150,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, namePosition } = content;
-  return { icon, name, art, background, namePosition };
+  const { icon, name, art, background, namePosition, durability, fill } = content;
+  return { icon, name, art, background, namePosition, durability, fill };
 }
 
 /**
@@ -134,6 +171,13 @@ export class Card extends Phaser.GameObjects.Container {
   /** スタック数の表示。個数は差し替えのたびに変わるので、作り直さず書き換える。 */
   private readonly stackBadge: Phaser.GameObjects.Container;
   private readonly stackCount: Phaser.GameObjects.Text;
+
+  /**
+   * 状態を表すバー（addStateBars参照）。その値を持たないカードには無い。値は差し替えのたびに
+   * 書き換える——作り直すと、減った分を遅れて縮める動き（ProgressBar.setRatio）が途中で消える。
+   */
+  private readonly durabilityBar: ProgressBar | undefined;
+  private readonly fillBar: ProgressBar | undefined;
 
   /** 端を押し続けている間の繰り返し（addEdge参照）と、次の1枚までの間隔、既に送ったかどうか。 */
   private edgeRepeat: Phaser.Time.TimerEvent | undefined;
@@ -199,6 +243,10 @@ export class Card extends Phaser.GameObjects.Container {
     nameText.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
 
     this.add(background === undefined ? [face, art, nameText] : [face, background, art, nameText]);
+    // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
+    this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height, content.durability);
+    this.fillBar = this.addFillBar(scene, metrics, width, height, content.fill);
+
     if (artTexture !== undefined && !scene.textures.exists(artTexture)) {
       this.swapArtWhenLoaded(scene, artTexture, art, width, height);
     }
@@ -249,11 +297,74 @@ export class Card extends Phaser.GameObjects.Container {
 
   /**
    * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・名前・端の向きは変わらない
-   * 前提で、スタック数と、操作の実体（毎回作り直されるクロージャ）だけを新しくする。
+   * 前提で、スタック数・状態のバー・操作の実体（毎回作り直されるクロージャ）だけを新しくする。
    */
   setContent(content: CardContent): void {
     this._content = content;
     this.showStackCount();
+
+    const hold = content.midAction === true;
+    if (content.durability !== undefined) this.durabilityBar?.setRatio(content.durability, hold);
+    if (content.fill !== undefined) this.fillBar?.setRatio(content.fill.ratio, hold);
+  }
+
+  /**
+   * 耐久度のバー。紙の下端の縁に接する形で、角の丸みに掛からない幅へ収める
+   * （ScreenLayout.md カードの状態バー節）。
+   */
+  private addDurabilityBar(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    width: number,
+    height: number,
+    durability: number | undefined,
+  ): ProgressBar | undefined {
+    if (durability === undefined) return undefined;
+
+    const paper = paperRect(metrics, width, height);
+    const barHeight = metrics.px(DURABILITY_BAR_HEIGHT);
+    const inset = metrics.px(FRAME_RADIUS);
+    const bar = new ProgressBar(
+      scene,
+      metrics,
+      paper.x + inset,
+      paper.y + paper.height - barHeight,
+      paper.width - inset * 2,
+      barHeight,
+      durability,
+      // 枠線は数pxの太さの大半を占めてしまうので描かない。
+      { fillColor: durabilityColorFor, borderless: true },
+    );
+    this.add(bar);
+    return bar;
+  }
+
+  /** 中身のバー。カードの主要情報なので、下端へは付けず絵の下へ置く。 */
+  private addFillBar(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    width: number,
+    height: number,
+    fill: CardFill | undefined,
+  ): ProgressBar | undefined {
+    if (fill === undefined) return undefined;
+
+    const paper = paperRect(metrics, width, height);
+    const barHeight = metrics.px(FILL_BAR_HEIGHT);
+    const margin = metrics.px(FILL_BAR_MARGIN);
+    const bar = new ProgressBar(
+      scene,
+      metrics,
+      paper.x + margin,
+      paper.y + paper.height - metrics.px(FILL_BAR_BOTTOM) - barHeight,
+      paper.width - margin * 2,
+      barHeight,
+      fill.ratio,
+      // 中身の種類は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身から引き直す。
+      { fillColor: () => liquidColorOf(this._content.fill?.content) },
+    );
+    this.add(bar);
+    return bar;
   }
 
   /**

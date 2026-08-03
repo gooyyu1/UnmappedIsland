@@ -80,6 +80,11 @@ export const COLOR = {
   statusBarFillFatal: 0x9c6b3f,
   /** 減った分を遅れて縮める帯（ProgressBar）。 */
   statusBarLag: 0xd93025,
+
+  // 耐久度バーの塗り（durabilityColorFor）。満タンの緑から尽きる直前の赤へ、琥珀を経て寄せる。
+  durabilityFull: 0x4caf50,
+  durabilityHalf: 0xf2b01e,
+  durabilityEmpty: 0xd93025,
   /** 直前の行動でその値が増えた／減ったことを示す三角（StatusBar）。 */
   statusIncreased: 0x2ecc40,
   statusDecreased: 0xd93025,
@@ -126,12 +131,37 @@ export const COLOR = {
  */
 export function fillColorFor(alert: AlertLevel): number {
   const severity = ALERT_LEVELS.indexOf(alert) / (ALERT_LEVELS.length - 1);
-  const mix = (shift: number): number => {
-    const from = (COLOR.statusBarFillSafe >> shift) & 0xff;
-    const to = (COLOR.statusBarFillFatal >> shift) & 0xff;
-    return Math.round(from + (to - from) * severity) << shift;
+  return mixColor(COLOR.statusBarFillSafe, COLOR.statusBarFillFatal, severity);
+}
+
+/** durabilityHalfへ寄せ切る耐久度。ここを境に、緑→琥珀と琥珀→赤の2区間へ分ける。 */
+const DURABILITY_HALF_RATIO = 0.5;
+
+/**
+ * 耐久度（0〜1）に応じたバーの塗りの色（ScreenLayout.md カードの状態バー節）。
+ *
+ * ステータスバーと違って域（alert）ではなく値そのものから引く。耐久度は「どれだけ残っているか」が
+ * そのまま深刻さで、段を分けても同じ順序にしかならないため。
+ */
+export function durabilityColorFor(ratio: number): number {
+  const clamped = Math.min(1, Math.max(0, ratio));
+  return clamped < DURABILITY_HALF_RATIO
+    ? mixColor(COLOR.durabilityEmpty, COLOR.durabilityHalf, clamped / DURABILITY_HALF_RATIO)
+    : mixColor(
+        COLOR.durabilityHalf,
+        COLOR.durabilityFull,
+        (clamped - DURABILITY_HALF_RATIO) / (1 - DURABILITY_HALF_RATIO),
+      );
+}
+
+/** 2色の間をtの割合で混ぜる（成分ごとの線形補間）。 */
+function mixColor(from: number, to: number, t: number): number {
+  const channel = (shift: number): number => {
+    const start = (from >> shift) & 0xff;
+    const end = (to >> shift) & 0xff;
+    return Math.round(start + (end - start) * t) << shift;
   };
-  return mix(16) | mix(8) | mix(0);
+  return channel(16) | channel(8) | channel(0);
 }
 
 /** Phaserのテキストスタイルは色を文字列で受け取るため、16進数値をCSS色へ直す。 */
