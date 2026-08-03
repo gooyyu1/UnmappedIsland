@@ -479,6 +479,7 @@ export class PlayScene extends ResponsiveScene {
    * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
    */
   private rebuildFieldArea(): void {
+    this.motion.release();
     this.fieldPanel.destroy();
     for (const lane of [this.fixtureLane, this.itemLane, this.handLane]) lane.destroy();
     this.buildFieldArea(this.layout);
@@ -903,6 +904,9 @@ export class PlayScene extends ResponsiveScene {
    */
   private applyToWorld(change: () => void, context: MotionContext = {}): void {
     if (this.busy) return;
+
+    // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
+    if (context.released !== undefined) this.motion.hold(this.openLanes, context.released);
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
