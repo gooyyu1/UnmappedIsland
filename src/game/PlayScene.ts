@@ -23,6 +23,7 @@ import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
+import { characterIcon } from './ui/characterArt';
 import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
@@ -1093,7 +1094,7 @@ export class PlayScene extends ResponsiveScene {
     const portraitHeight = this.metrics.px(SIZE.cardHeight);
     const portraitBottom = area.y + padding + portraitHeight;
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
-      icon: '🧍',
+      icon: characterIcon(this.view.characterArt),
       art: this.view.characterArt,
       name: this.view.characterName,
       onTap: this.whileIdle(() => this.openPropertyWindow()),

@@ -1,4 +1,3 @@
-import type Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
@@ -17,15 +16,14 @@ import {
   randomSeed,
 } from '../save/newGameInput';
 import { Button } from './ui/Button';
-import { characterIcon } from './ui/characterArt';
-import { objectTexture } from './ui/objectArt';
+import { Card } from './ui/Card';
+import { characterCardContent } from './ui/characterArt';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
 import { addLabel } from './ui/labels';
-import { addPanel, drawBox } from './ui/shapes';
+import { addPanel } from './ui/shapes';
 import { COLOR, SIZE } from './ui/theme';
-import { wrapByCharacter } from './ui/textLayout';
 
 /** 本文の余白と項目間の間隔（StartScreen_Mock.htmlの.newgame-body）。横型は左右を広く取る。 */
 const BODY_PADDING = 28;
@@ -36,7 +34,7 @@ const LABEL_GAP = 10;
 /** 入力欄・ランダムボタン・キャラクター選択肢・フッターボタンの寸法。 */
 const INPUT_HEIGHT = 72;
 const RANDOM_BUTTON_SIZE = 72;
-const CHARACTER_OPTION_WIDTH = 160;
+const CHARACTER_OPTION_PADDING = 12;
 const FOOTER_BUTTON_HEIGHT = 80;
 
 /** 新規ゲーム作成画面を開くときに渡す、書き込み先のスロット番号。 */
@@ -214,22 +212,16 @@ export class NewGameScene extends ResponsiveScene {
   private refreshCharacterOptions(): void {
     for (const option of this.characterOptions) option.destroy();
 
-    const optionWidth = this.metrics.px(CHARACTER_OPTION_WIDTH);
     const gap = this.metrics.px(SIZE.gap);
-    const padding = this.metrics.px(12);
-    const nameTop = padding + (optionWidth - padding * 2) + this.metrics.px(8);
-
-    // 名前の行数は選択肢ごとに違うが、横並びの高さは揃える（モックのflexアイテムと同じ）。
-    const names = this.characters.map((character) => {
-      const name = addLabel(this, this.metrics, 0, nameTop, this.locale.object(character).displayName, {
-        size: 20,
-      })
-        .setOrigin(0.5, 0)
-        .setAlign('center');
-      name.setWordWrapCallback(wrapByCharacter(optionWidth - padding * 2));
-      return name;
-    });
-    const height = nameTop + Math.max(...names.map((name) => name.height)) + padding;
+    const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
+    const cardWidth = this.metrics.px(SIZE.cardWidth);
+    // 札は原寸を上限に、全員が1行へ収まるところまで縮める（キャラクタが増えても溢れさせない）。
+    const optionWidth = Math.min(
+      cardWidth + padding * 2,
+      (this.characterOptionsOrigin.width - gap * (this.characters.length - 1)) / this.characters.length,
+    );
+    const cardScale = (optionWidth - padding * 2) / cardWidth;
+    const height = this.metrics.px(SIZE.cardHeight) * cardScale + padding * 2;
 
     this.characterOptions = this.characters.map((character, index) =>
       this.addCharacterOption(
@@ -238,7 +230,7 @@ export class NewGameScene extends ResponsiveScene {
         optionWidth,
         height,
         character,
-        names[index],
+        cardScale,
       ),
     );
   }
@@ -249,11 +241,8 @@ export class NewGameScene extends ResponsiveScene {
     width: number,
     height: number,
     character: string,
-    name: Phaser.GameObjects.Text,
+    cardScale: number,
   ): Button {
-    const padding = this.metrics.px(12);
-    const portraitSize = width - padding * 2;
-
     const selected = character === this.characterId;
     const button = new Button(
       this,
@@ -270,28 +259,9 @@ export class NewGameScene extends ResponsiveScene {
       },
     );
 
-    const portrait = this.add.graphics();
-    drawBox(
-      portrait,
-      { x: padding, y: padding, width: portraitSize, height: portraitSize },
-      {
-        fill: COLOR.slotPortrait,
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
-        radius: this.metrics.px(SIZE.radius),
-      },
-    );
-
-    // 絵があれば枠へ収め、無いあいだは絵文字で代用する（絵は少しずつ用意されるため）。
-    const texture = objectTexture(character);
-    const face = this.textures.exists(texture)
-      ? fitImage(this.add.image(width / 2, padding + portraitSize / 2, texture), portraitSize)
-      : addLabel(this, this.metrics, width / 2, padding + portraitSize / 2, characterIcon(character), {
-          size: 56,
-        }).setOrigin(0.5);
-
-    name.setX(width / 2);
-    button.addContent(portrait, face, name);
+    const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
+    const card = new Card(this, this.metrics, padding, padding, characterCardContent(character, this.locale));
+    button.addContent(card.setScale(cardScale));
     return button;
   }
 
@@ -369,10 +339,4 @@ export class NewGameScene extends ResponsiveScene {
       actions: [{ label: 'OK', style: 'primary' }],
     });
   }
-}
-
-/** 縦横比を保ったまま、一辺sizeの正方形へ収める。 */
-function fitImage(image: Phaser.GameObjects.Image, size: number): Phaser.GameObjects.Image {
-  const scale = Math.min(size / image.width, size / image.height);
-  return image.setOrigin(0.5).setDisplaySize(image.width * scale, image.height * scale);
 }
