@@ -14,6 +14,7 @@ import { SaveSlots } from '../save/SaveSlots';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
+import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import type { StatusDelta } from './statusChanges';
@@ -311,7 +312,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 今の世界で絵が要る土地——現在地と、発見済みの道の行き先——のロードを始める（冪等）。
+   * 今の世界で絵が要る土地——現在地と、道の行き先——のロードを始める（冪等）。
    * 道が見つかった瞬間・移動が確定した瞬間（ワールドを変えた直後）に呼ぶことで、その絵が大きく映る
    * 場面（行き先の土地カード・移動後のフィールド）までにロードを済ませておく。間に合わなかった絵は、
    * カードなら届いた時点で貼り替わり（Card）、移動なら暗転のまま待つ（transit）。
@@ -321,13 +322,27 @@ export class PlayScene extends ResponsiveScene {
     if (location === undefined) return;
 
     this.artLoader.request(location.instance.def.name);
+    // 発見済みの道の行き先は、移動に備えて絵を全部読む。
+    for (const name of this.pathDestinationNames(location.fixtures)) this.artLoader.request(name);
+    // 未発見の道の行き先は、土地カードの絵1枚だけ読んでおく。道は発見と同時に行き先の絵のカードと
+    // して現れるため、発見してからでは間に合わない。残りの背景は発見後（上のrequest）が受け持つ。
+    for (const name of this.pathDestinationNames(location.undiscoveredFixtures)) {
+      this.artLoader.requestCardArt(name);
+    }
+  }
+
+  /** 設置物の並びに含まれる道の、行き先の土地のobject_defの識別子。 */
+  private pathDestinationNames(fixtures: readonly WorldObject[]): readonly string[] {
     const pathTagId = this.codex.tagNames.tryGetId('path');
-    if (pathTagId === undefined) return;
-    for (const fixture of location.fixtures) {
+    if (pathTagId === undefined) return [];
+
+    const names: string[] = [];
+    for (const fixture of fixtures) {
       if (!fixture.def.tags.includes(pathTagId)) continue;
       const destination = new Path(fixture, this.codex.propertyNames).destination;
-      if (destination !== undefined) this.artLoader.request(destination.def.name);
+      if (destination !== undefined) names.push(destination.def.name);
     }
+    return names;
   }
 
   protected build(): void {
