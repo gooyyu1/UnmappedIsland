@@ -52,4 +52,21 @@ export class WorldCodex {
     this.wellKnown = wellKnown;
     this.generation = generation;
   }
+
+  /**
+   * タグ（4.1節）を持つobject_defの識別子を、宣言順（グローバルID順）で返す。未登録のタグでは空。
+   * タグは型のグループを指す唯一の手段なので、「locationな型の一覧」「選べるキャラクタの一覧」は
+   * いずれもこれで引く。
+   */
+  objectDefNamesWithTag(tagName: string): readonly string[] {
+    const tagId = this.tagNames.tryGetId(tagName);
+    if (tagId === undefined) return [];
+
+    const names: string[] = [];
+    for (let globalId = 0; globalId < this.objects.count; globalId++) {
+      const objectDef = this.objects.get(globalId);
+      if (objectDef.tags.includes(tagId)) names.push(objectDef.name);
+    }
+    return names;
+  }
 }

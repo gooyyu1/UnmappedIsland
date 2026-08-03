@@ -21,6 +21,22 @@ object_texts:
         display_name: 移動時間
       required_progress:
         display_name: 発見に必要な探索の進み具合
+      satiety:
+        display_name: 満腹度
+      hydration:
+        display_name: 水分
+      body_fat:
+        display_name: 体脂肪
+      wakefulness:
+        display_name: 覚醒度
+      stamina:
+        display_name: 体力
+      vegetable_nutrition:
+        display_name: 野菜の栄養
+      meat_nutrition:
+        display_name: 肉の栄養
+      grain_tuber_nutrition:
+        display_name: 穀物・イモの栄養
     actions:
       explore:
         display_name: 探索する
@@ -45,25 +61,20 @@ object_texts:
         display_name: 中に入れる
         description: この入れ物の中へしまう。持ち歩けるようになるが、取り出すまで使えない。
 
-  character:
-    display_name: 主人公
-    props:
-      satiety:
-        display_name: 満腹度
-      hydration:
-        display_name: 水分
-      body_fat:
-        display_name: 体脂肪
-      wakefulness:
-        display_name: 覚醒度
-      stamina:
-        display_name: 体力
-      vegetable_nutrition:
-        display_name: 野菜の栄養
-      meat_nutrition:
-        display_name: 肉の栄養
-      grain_tuber_nutrition:
-        display_name: 穀物・イモの栄養
+  # プレイヤーキャラクタ（characters/）。プロパティの表示名は全員共通なのでdefaultへ置く。
+  # 表示名は選択画面の狭い枠に入るため、肩書きだけの短さに保つ。
+  farmer:
+    display_name: 陽気な元農家
+    description: 畑仕事で作った丈夫な体と厚い蓄えを持つが、その体を動かすだけの量を食べないと保たない。
+  engineer:
+    display_name: 手先の器用な元エンジニア
+    description: 道具を持ち替えながら夜通し作業する暮らしが体に残っている。歩き回る体力と蓄えは乏しい。
+  captain:
+    display_name: 冷静な元船長
+    description: 長い航海で水の配分と当直の眠気に慣れている。蓄えは人並みよりやや薄い。
+  medic:
+    display_name: 頼れる元衛生兵
+    description: どこも欠けたところのない体と、現場を歩き回って培った体力を持つ。
 
   # 道（locations.yaml）。
   path:

@@ -1,9 +1,9 @@
 {
   "_comment": [
-    "src/assets/objects/character.png を作り直すためのレシピ。",
+    "src/assets/objects/medic.png を作り直すためのレシピ。",
     "レーンの背景（build.py）とは後処理が違うため、手順はREADMEの『カードの絵』節を参照。"
   ],
-  "output": "src/assets/objects/character.png",
+  "output": "src/assets/objects/medic.png",
   "prompts": "characters.json",
   "prompt": "castaway_man",
   "workflow": "lane_background_sdxl.api.json",

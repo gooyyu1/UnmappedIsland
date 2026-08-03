@@ -1,0 +1,72 @@
+# 元船長。長い航海で水の配分と当直の眠気に慣れているが、蓄えは基準よりやや薄い。
+# 各プロパティの意味・値の刻み方は docs/world/Characters.md 参照。
+
+object_defs:
+  captain:
+    singleton: true
+    traits: [player_character]
+    slots:
+      hand: {unit_capacity: 6}
+    props:
+      # 満腹から1日（96 tick）。
+      satiety:
+        tags: [status, nutrition]
+        value: 9600
+        range: {min: 0, max: 9600}
+        stages:
+          - {name: starving, alert: danger}
+          - {name: hungry, min: 1200, alert: caution}
+          - {name: peckish, min: 4800, alert: watch}
+          - {name: fed, min: 7680}
+        passives:
+          - accumulate:
+              self:
+                satiety: -100
+      # 限られた水で保たせる術が身についており、満水から3日半（336 tick）。
+      hydration:
+        tags: [status, nutrition]
+        value: 8400
+        range: {min: 0, max: 8400}
+        stages:
+          - {name: dehydrated, alert: fatal}
+          - {name: parched, min: 600, alert: danger}
+          - {name: thirsty, min: 2400, alert: caution}
+          - {name: dryish, min: 4800, alert: watch}
+          - {name: hydrated, min: 6720}
+        passives:
+          - accumulate:
+              self:
+                hydration: -25
+      # 最大限に肥えた状態から55日（5280 tick）。
+      body_fat:
+        tags: [nutrition]
+        value: 132000
+        range: {min: 0, max: 528000}
+        passives:
+          - accumulate:
+              self:
+                body_fat: -100
+      # 当直で刻む睡眠に慣れており、眠らずにいられるのは27時間（108 tick）。
+      wakefulness:
+        tags: [status, health]
+        value: 10800
+        range: {min: 0, max: 10800}
+        stages:
+          - {name: overtired, alert: danger}
+          - {name: sleepy, min: 1200, alert: caution}
+          - {name: yawning, min: 4800, alert: watch}
+          - {name: rested, min: 8640}
+        passives:
+          - accumulate:
+              self:
+                wakefulness: -100
+      # 甲板仕事で保った、基準どおりの体力。
+      stamina:
+        tags: [status, health]
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: exhausted, alert: danger}
+          - {name: tired, min: 20, alert: caution}
+          - {name: winded, min: 60, alert: watch}
+          - {name: fresh, min: 80}

@@ -67,10 +67,28 @@ const START_TIME_LATEST_MINUTES = 12 * 60;
  */
 
 /**
- * 新しいゲームを開始する。rngはpick抽選・初期値ロール・開始時刻用のWorldSession.rng（省略時は非決定。
+ * 選べるプレイヤーキャラクタ（characterタグを持つobject_def）の識別子を宣言順で返す
+ * （docs/world/Characters.md）。
+ */
+export function characterDefNames(codex: WorldCodex): readonly string[] {
+  return codex.objectDefNamesWithTag('character');
+}
+
+/**
+ * セーブに残っている識別子から、実際に動かすキャラクタを決める。未知の識別子（識別子の改名・旧セーブ）は
+ * 先頭のキャラクタで代替し、セーブが開けなくなることを避ける。
+ */
+export function resolveCharacterDefName(codex: WorldCodex, savedCharacterId: string): string {
+  const names = characterDefNames(codex);
+  return names.includes(savedCharacterId) ? savedCharacterId : names[0];
+}
+
+/**
+ * 新しいゲームを開始する。characterDefNameは操作するキャラクタのobject_defの識別子
+ * （characterDefNames参照）。rngはpick抽選・初期値ロール・開始時刻用のWorldSession.rng（省略時は非決定。
  * 地形レイアウト自体はseedのみで決まり、rngには依存しない）。
  */
-export function start(codex: WorldCodex, seed: number, rng?: Rng): NewGameSession {
+export function start(codex: WorldCodex, characterDefName: string, seed: number, rng?: Rng): NewGameSession {
   // worldはinstanceId 0で直接生成する（WorldSession.spawnの発行IDは1始まりのため衝突しない）。
   // 生成用の一時セッションを使うのは、WorldObjectの生成にsession（初期値ロール文脈）が必要で、
   // World付きセッション自体がworldインスタンスを必要とするという相互依存を断ち切るため。
@@ -81,7 +99,7 @@ export function start(codex: WorldCodex, seed: number, rng?: Rng): NewGameSessio
   const session = new WorldSession(codex, world, rng);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
 
-  const character = session.spawn(codex.objectNames.getId('character'));
+  const character = session.spawn(codex.objectNames.getId(characterDefName));
 
   const map = generate(codex.generation, 'island', seed);
   populate(session, map);

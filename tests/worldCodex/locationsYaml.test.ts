@@ -9,7 +9,7 @@ import { pathsIn } from '../support/paths';
 import { World } from '../../src/domain/runtime/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /** locations.yamlが定義する全土地。 */
 const LAND_NAMES = [
@@ -29,7 +29,7 @@ describe('locations.yamlの土地・道定義', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    // 土地の発見物（foods.yamlの食料等）・キャラクタ（characters.yaml）への参照があるため、
+    // 土地の発見物（foods.yamlの食料等）・キャラクタ（characters/）への参照があるため、
     // 単体ファイルではなくディレクトリ全体を一括ロードする。
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
   });
@@ -138,7 +138,7 @@ describe('locations.yamlの土地・道定義', () => {
 
     const grassland = session.spawn(codex.objectNames.getId('grassland'));
     const forest = session.spawn(codex.objectNames.getId('forest'));
-    const character = session.spawn(codex.objectNames.getId('character'));
+    const character = session.spawn(codex.objectNames.getId(SAMPLE_CHARACTER));
     const pathToForest = session.spawn(codex.objectNames.getId('path'));
 
     const locationsSlotId = codex.slotNames.getId('locations');

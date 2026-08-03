@@ -9,7 +9,7 @@ import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
 import { pathsIn } from '../support/paths';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
  * プレイ中の画面の表示内容が、ワールドの実際の状態（現在地・そのスロットの中身・手持ち）から
@@ -31,7 +31,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('開始直後は漂着地だけが出て、設置物・アイテムのレーンは空になる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
 
     const view = fromGameSession(game, codex, locale);
 
@@ -47,7 +47,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('手持ちは固定6枠ぶん並び、空きセルはundefinedになる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     expect(
       stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
@@ -70,7 +70,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('探索で見つかった発見物と道が、それぞれのレーンの内容になる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const location = game.startLocation;
     exploreToFull(game);
 
@@ -96,7 +96,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('行き先の違う道は、1枚のカードにまとまらない', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const paths = pathsIn(game.startLocation, codex);
     const destinations = new Set(
@@ -116,7 +116,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('道のカードは行き先の土地の絵を出し、他の設置物は自分の絵を出す', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
 
     const view = fromGameSession(game, codex, locale);
@@ -139,7 +139,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
 
     expect(fromGameSession(game, codex, locale).explorationRatio, '開始直後は未探索').toBe(0);
 
@@ -152,7 +152,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('アイテムのmoveで手持ちへ移り、手持ちのmoveでフィールドへ戻る', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const picked = game.startLocation.items[0];
 
@@ -168,7 +168,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('設置物のカードは移せないが、同じレーンの中でなら並び替えられる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(
       tree.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'), codex.wellKnown),
@@ -185,7 +185,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('設置物レーンのカードだけが、今いる土地を背景として持つ', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(
       tree.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'), codex.wellKnown),
@@ -205,7 +205,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('現在地のカードは、その土地の絵を持つ', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
 
     const view = fromGameSession(game, codex, locale);
 
@@ -215,7 +215,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
     const handSlotId = codex.slotNames.getId('hand');
     for (const name of ['stone', 'branch', 'thick_branch', 'coconut', 'taro', 'water_spinach']) {
@@ -239,7 +239,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('カードの識別子は、そのカードが映しているインスタンスのID一式になる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handSlotId = codex.slotNames.getId('hand');
     const stones = [0, 1].map(() => game.session.spawn(codex.objectNames.getId('stone')));
     for (const stone of stones) {
@@ -260,7 +260,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('手持ちのカードは装備へ移せる（装備固有の経路ではなく、場所を指すだけ）', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     expect(
       stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
@@ -284,7 +284,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('withFrozenCardsは、控えた時点の中身を返し続ける', () => {
     // 時間経過の再現（PlayScene）では、控えておいたviewをあとから表示する。cardsInだけは呼んだ時点の
     // 生きたワールドを読むため、固定しないとその部分に限って「今」の状態が出てしまう。
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     const equipment = codex.slotNames.getId('equipment');
     expect(stone.moveToSlot(game.player.instance, equipment, codex.wellKnown)).toBeUndefined();
@@ -307,14 +307,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('withFrozenCardsは、開いている場所が無ければviewをそのまま返す', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
 
     expect(withFrozenCards(view, undefined)).toBe(view);
   });
 
   it('怪我は移動も並び替えもできない', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     // 怪我のobject_defはまだ無いため、怪我スロットの中身としてitemを強制的に入れて代用する。
     expect(
@@ -330,7 +330,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handSlotId = codex.slotNames.getId('hand');
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
@@ -359,7 +359,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('コンテナを自分自身の中へは入れられない', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
     expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown)).toBe(
       undefined,
@@ -371,7 +371,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
     // water_liquidはwith: water_liquidのpour_inを持つ（liquid_containers.yaml）。
     const cardOf = (name: string) => ({
@@ -388,7 +388,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('同じカードへ重ねたときは、スタックの中の2つを組み合わせる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const itemsSlotId = codex.slotNames.getId('items');
     for (const name of ['stone', 'stone', 'thick_branch']) {
       const item = game.session.spawn(codex.objectNames.getId(name));
@@ -424,7 +424,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
         description: 石を打ち合わせて割る。
 `,
     );
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const itemsSlotId = codex.slotNames.getId('items');
     for (const name of ['stone', 'stone']) {
       const stone = game.session.spawn(codex.objectNames.getId(name));
@@ -453,7 +453,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
         description: そのまま口へ運ぶ。
 `,
     );
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const meat = game.session.spawn(codex.objectNames.getId('coconut_meat'));
     expect(
       meat.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
@@ -474,7 +474,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('アクションを持たないオブジェクトのカードは、アクションが空になる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const thickBranch = game.session.spawn(codex.objectNames.getId('thick_branch'));
     expect(
       thickBranch.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
@@ -487,7 +487,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('中身が代表するカード（液体容器）には、中身のアクションが並ぶ', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
     const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
     water.setNumber(codex.propertyNames.getId('size'), 1000, game.session);
@@ -510,7 +510,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('アクションはかかる時間を持つ（durationを持たなければ0）', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const path = pathsIn(game.startLocation, codex)[0];
     const meat = game.session.spawn(codex.objectNames.getId('coconut_meat'));
@@ -528,7 +528,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('combinationもかかる時間を持つ', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const itemsSlotId = codex.slotNames.getId('items');
     for (const name of ['stone', 'stone']) {
       const stone = game.session.spawn(codex.objectNames.getId(name));
@@ -543,7 +543,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('道のカードのアクションで、現在地が行き先へ移る', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
 
@@ -557,14 +557,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('ステータスエリアには、statusタグが付いたプロパティだけが実際の値で並ぶ', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const statusTagId = codex.propertyTagNames.getId('status');
     const tagged = game.player.instance.readPropertiesWithTag(statusTagId);
 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.statuses).toHaveLength(tagged.length);
-    // 初期値はどれもmax（characters.yaml）なので、バーは満タンで、どれも安全域に入る。
+    // 初期値はどれもmax（characters/）なので、バーは満タンで、どれも安全域に入る。
     expect(view.statuses.map((status) => status.ratio)).toEqual(tagged.map(() => 1));
     expect(view.statuses.map((status) => status.alert)).toEqual(tagged.map(() => 'safe'));
     expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((reading) => reading.name));
@@ -573,9 +573,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('ステータスの域は、値が減るとその区分に従って上がる', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const hydration = codex.propertyNames.getId('hydration');
-    // 残り6時間未満（600mL未満）で致命的域（characters.yaml）。
+    // 残り6時間未満（600mL未満）で致命的域（characters/）。
     game.player.instance.setNumber(hydration, 500, game.session);
 
     const view = fromGameSession(game, codex, locale);
@@ -584,7 +584,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('プロパティウィンドウのタブはproperty_tagsの宣言順で、中身のないタグは出ない', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const declared = [...Array(codex.propertyTagNames.count).keys()].map((id) =>
       codex.propertyTagNames.getName(id),
     );
@@ -599,19 +599,19 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('プロパティウィンドウには、ステータスエリアに出ないプロパティも出る', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
 
     const view = fromGameSession(game, codex, locale);
 
     const shown = new Set(view.propertyCategories.flatMap((c) => c.entries.map((e) => e.name)));
     const inStatusArea = new Set(view.statuses.map((status) => status.name));
-    // body_fatはnutritionタグだけを持つ（characters.yaml）ため、ウィンドウにだけ現れる。
+    // body_fatはnutritionタグだけを持つ（characters/）ため、ウィンドウにだけ現れる。
     expect(shown.has('body_fat')).toBe(true);
     expect(inStatusArea.has('body_fat')).toBe(false);
   });
 
   it('開始直後の地図は、現在地の土地だけを知っていて道は無い', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
 
     const view = fromGameSession(game, codex, locale);
 
@@ -624,7 +624,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('探索で道が見つかると、地図はその道と行き先の土地を知る', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
 
     const view = fromGameSession(game, codex, locale);
@@ -655,7 +655,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('地図の土地カードは、その土地の名前と絵を持つ', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
 
     const view = fromGameSession(game, codex, locale);
@@ -672,7 +672,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('移動しても、それまでに知った土地と道は地図に残る', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const before = fromGameSession(game, codex, locale);
     const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
@@ -693,7 +693,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('現在地は移動に追従する', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
     expect(path.travel(game.player.instance, game.session)).toBe(true);

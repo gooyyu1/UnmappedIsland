@@ -1,0 +1,57 @@
+# プレイヤーキャラクタに共通の骨組み。個体差を持つプロパティ（満腹度・水分・体脂肪・覚醒度・体力）は
+# ここに置かず、キャラクタごとのファイル（同じディレクトリの1キャラ1ファイル）へ全部書く。
+# 何を持っていなければならないか・各値の意味と刻み方は docs/world/Characters.md 参照。
+
+traits:
+  player_character:
+    # 土地のcharactersスロットのaccepts判定用（core.yaml）。プレイヤーが操作するキャラクタだけが
+    # 持つタグで、操作できない生物は持ち運べるならitem・持ち運べないならfixtureで表す。
+    tags: [character]
+    slots:
+      # 手持ち。枠の位置が持ち替えのたびに動かないよう固定型（fixed_positions）にする
+      # （ScreenLayout.md ハンドレーン・SlotSystem.md 3節）。枠数はキャラクタごとに決める。
+      hand:
+        accepts:
+          - {tag: item, max: 9999}
+        fixed_positions: true
+      # 身につけているもの。枠数の上限はまだ決めていないため前詰めスロットにする（子ウィンドウ側は
+      # はみ出した分を横スクロールで送る、ScreenLayout.md スロットの子ウィンドウ節）。
+      # 「何を装備できるか」の語彙（equippableタグ・部位）は未検討のため、暫定でitemを受け入れる。
+      # 上限の無いitemスロットなので、自動配置（7.7節）から外さないと、手持ちが埋まった時の
+      # 行き先を全部吸い込んでしまう（手元でクラフトした物が身につくことになる）。
+      equipment:
+        accepts:
+          - {tag: item, max: 9999}
+        auto_placement: false
+      # 怪我。プレイヤーが任意に出し入れするものではなく、ワールド側の効果だけが付け外しする
+      # （UIからの移動・並び替えを許さない、ScreenLayout.md 参照）。怪我のobject_defはまだ無い。
+      injuries:
+        accepts:
+          - {tag: injury, max: 9999}
+    props:
+      # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。食の好みではなく身体の仕組みを表すため、
+      # 満腹度などと違って個体差を持たせず全キャラクタで共通にする。
+      vegetable_nutrition:
+        tags: [nutrition]
+        value: 67200
+        range: {min: 0, max: 67200}
+        passives:
+          - accumulate:
+              self:
+                vegetable_nutrition: -100
+      meat_nutrition:
+        tags: [nutrition]
+        value: 67200
+        range: {min: 0, max: 67200}
+        passives:
+          - accumulate:
+              self:
+                meat_nutrition: -100
+      grain_tuber_nutrition:
+        tags: [nutrition]
+        value: 67200
+        range: {min: 0, max: 67200}
+        passives:
+          - accumulate:
+              self:
+                grain_tuber_nutrition: -100

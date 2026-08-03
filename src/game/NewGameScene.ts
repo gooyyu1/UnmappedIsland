@@ -1,12 +1,14 @@
 import type Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { ResponsiveScene } from './ResponsiveScene';
+import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
+import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { Localization } from '../locale/Localization';
+import { characterDefNames } from '../domain/generation/NewGame';
 import { randomRng } from '../domain/runtime/Rng';
 import { ISLAND_NAME_MAX_LENGTH, SEED_MAX } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
-import type { CharacterChoice } from '../save/newGameInput';
 import {
-  CHARACTER_CHOICES,
   createSaveData,
   normalizeIslandName,
   parseSeed,
@@ -15,6 +17,8 @@ import {
   randomSeed,
 } from '../save/newGameInput';
 import { Button } from './ui/Button';
+import { characterIcon } from './ui/characterArt';
+import { objectTexture } from './ui/objectArt';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
@@ -51,6 +55,10 @@ export class NewGameScene extends ResponsiveScene {
   private seedText = '';
   private characterId: string | undefined;
 
+  /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
+  private locale!: Localization;
+  private characters!: readonly string[];
+
   private nameInput: TextInput | undefined;
   private seedInput: TextInput | undefined;
 
@@ -63,6 +71,8 @@ export class NewGameScene extends ResponsiveScene {
   }
 
   init(data: NewGameSceneData): void {
+    this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
+    this.characters = characterDefNames(this.registry.get(WORLD_CODEX_KEY) as WorldCodex);
     this.slotIndex = data.slotIndex;
     this.islandName = '';
     this.characterId = undefined;
@@ -187,7 +197,7 @@ export class NewGameScene extends ResponsiveScene {
     });
     labelText.setY(y + (buttonSize - labelText.height) / 2);
     this.addRandomButton(x + width - buttonSize, y, () => {
-      this.characterId = randomCharacter(randomRng()).id;
+      this.characterId = randomCharacter(randomRng(), this.characters);
       this.refreshCharacterOptions();
     });
 
@@ -210,8 +220,10 @@ export class NewGameScene extends ResponsiveScene {
     const nameTop = padding + (optionWidth - padding * 2) + this.metrics.px(8);
 
     // 名前の行数は選択肢ごとに違うが、横並びの高さは揃える（モックのflexアイテムと同じ）。
-    const names = CHARACTER_CHOICES.map((choice) => {
-      const name = addLabel(this, this.metrics, 0, nameTop, choice.name, { size: 20 })
+    const names = this.characters.map((character) => {
+      const name = addLabel(this, this.metrics, 0, nameTop, this.locale.object(character).displayName, {
+        size: 20,
+      })
         .setOrigin(0.5, 0)
         .setAlign('center');
       name.setWordWrapCallback(wrapByCharacter(optionWidth - padding * 2));
@@ -219,13 +231,13 @@ export class NewGameScene extends ResponsiveScene {
     });
     const height = nameTop + Math.max(...names.map((name) => name.height)) + padding;
 
-    this.characterOptions = CHARACTER_CHOICES.map((choice, index) =>
+    this.characterOptions = this.characters.map((character, index) =>
       this.addCharacterOption(
         this.characterOptionsOrigin.x + index * (optionWidth + gap),
         this.characterOptionsOrigin.y,
         optionWidth,
         height,
-        choice,
+        character,
         names[index],
       ),
     );
@@ -236,13 +248,13 @@ export class NewGameScene extends ResponsiveScene {
     y: number,
     width: number,
     height: number,
-    choice: CharacterChoice,
+    character: string,
     name: Phaser.GameObjects.Text,
   ): Button {
     const padding = this.metrics.px(12);
     const portraitSize = width - padding * 2;
 
-    const selected = choice.id === this.characterId;
+    const selected = character === this.characterId;
     const button = new Button(
       this,
       { x, y, width, height },
@@ -253,7 +265,7 @@ export class NewGameScene extends ResponsiveScene {
         radius: this.metrics.px(SIZE.radius),
       },
       () => {
-        this.characterId = choice.id;
+        this.characterId = character;
         this.refreshCharacterOptions();
       },
     );
@@ -269,12 +281,17 @@ export class NewGameScene extends ResponsiveScene {
         radius: this.metrics.px(SIZE.radius),
       },
     );
-    const icon = addLabel(this, this.metrics, width / 2, padding + portraitSize / 2, choice.icon, {
-      size: 56,
-    }).setOrigin(0.5);
+
+    // 絵があれば枠へ収め、無いあいだは絵文字で代用する（絵は少しずつ用意されるため）。
+    const texture = objectTexture(character);
+    const face = this.textures.exists(texture)
+      ? fitImage(this.add.image(width / 2, padding + portraitSize / 2, texture), portraitSize)
+      : addLabel(this, this.metrics, width / 2, padding + portraitSize / 2, characterIcon(character), {
+          size: 56,
+        }).setOrigin(0.5);
 
     name.setX(width / 2);
-    button.addContent(portrait, icon, name);
+    button.addContent(portrait, face, name);
     return button;
   }
 
@@ -352,4 +369,10 @@ export class NewGameScene extends ResponsiveScene {
       actions: [{ label: 'OK', style: 'primary' }],
     });
   }
+}
+
+/** 縦横比を保ったまま、一辺sizeの正方形へ収める。 */
+function fitImage(image: Phaser.GameObjects.Image, size: number): Phaser.GameObjects.Image {
+  const scale = Math.min(size / image.width, size / image.height);
+  return image.setOrigin(0.5).setDisplaySize(image.width * scale, image.height * scale);
 }

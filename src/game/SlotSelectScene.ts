@@ -2,10 +2,10 @@ import type { Rect } from './layout/ScreenMetrics';
 import { ResponsiveScene } from './ResponsiveScene';
 import type { SaveData } from '../save/SaveData';
 import { SaveSlots, SLOT_COUNT } from '../save/SaveSlots';
-import { CHARACTER_CHOICES } from '../save/newGameInput';
 import { Button } from './ui/Button';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
+import { characterIcon } from './ui/characterArt';
 import { addLabel } from './ui/labels';
 import { addPanel, drawBox } from './ui/shapes';
 import { COLOR, SIZE } from './ui/theme';
@@ -88,7 +88,7 @@ export class SlotSelectScene extends ResponsiveScene {
       this.metrics,
       padding + portraitSize / 2,
       cell.height / 2,
-      SlotSelectScene.iconOf(slot.characterId),
+      characterIcon(slot.characterId),
       { size: 72 },
     ).setOrigin(0.5);
 
@@ -173,10 +173,5 @@ export class SlotSelectScene extends ResponsiveScene {
       color: COLOR.textMuted,
     }).setOrigin(0.5, 0);
     button.addContent(icon, label);
-  }
-
-  /** セーブに残っているキャラクターIDが未知でも一覧は開けるようにする。 */
-  private static iconOf(characterId: string): string {
-    return CHARACTER_CHOICES.find((choice) => choice.id === characterId)?.icon ?? '🧍';
   }
 }

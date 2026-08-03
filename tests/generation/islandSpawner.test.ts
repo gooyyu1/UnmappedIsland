@@ -6,7 +6,7 @@ import { Path } from '../../src/domain/runtime/views/Path';
 import type { World } from '../../src/domain/runtime/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 import { SeededRng } from '../support/SeededRng';
 import { pathsIn } from '../support/paths';
 
@@ -18,7 +18,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   });
 
   it('全サイトが土地として実体化され、辺1本につき両端へ1個ずつ道が作られる', () => {
-    const game = startNewGame(codex, 3, new SeededRng(99));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 3, new SeededRng(99));
     const map = game.map;
 
     const locationsSlotId = codex.slotNames.getId('locations');
@@ -48,7 +48,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   });
 
   it('道は隣接する土地を指し、探索進捗が最大へ達する前に見つかる範囲のrequired_progressを持つ', () => {
-    const game = startNewGame(codex, 5, new SeededRng(99));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 5, new SeededRng(99));
     const map = game.map;
     const progressId = codex.propertyNames.getId('exploration_progress');
 
@@ -82,7 +82,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   });
 
   it('辺の両端の道は互いをreturn_path_idで指す', () => {
-    const game = startNewGame(codex, 5, new SeededRng(99));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 5, new SeededRng(99));
     const map = game.map;
     const hiddenSlotId = codex.slotNames.getId('undiscovered_fixtures');
 
@@ -106,7 +106,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
   it('道を1本見つけると、渡った先から戻る道も同時に見つかる', () => {
     for (const seed of [3, 5, 11, 20]) {
-      const game = startNewGame(codex, seed, new SeededRng(99));
+      const game = startNewGame(codex, SAMPLE_CHARACTER, seed, new SeededRng(99));
       const start = game.startLocation;
 
       // 開始地点の道が1本見つかるまで探索する。
@@ -134,7 +134,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   });
 
   it('プレイヤーは海岸の土地（漂着地点）に配置される', () => {
-    const game = startNewGame(codex, 8, new SeededRng(99));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 8, new SeededRng(99));
 
     expect(game.startLocation.characters, 'プレイヤーは開始地点のcharactersスロットに居る').toContain(
       game.player.instance,
@@ -145,7 +145,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   });
 
   it('探索ですべての道が見つかり、その後の移動でプレイヤーと時間が進む', () => {
-    const game = startNewGame(codex, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const session = game.session;
     const start = game.startLocation;
     const actor = game.player.instance;
@@ -177,7 +177,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   });
 
   it('IslandMapは実体化された土地のinstanceIdから命名処理の付けた名前を引ける', () => {
-    const game = startNewGame(codex, 13, new SeededRng(99));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 13, new SeededRng(99));
 
     for (const site of game.map.sites)
       expect(game.map.nameOfInstance(game.map.siteInstanceIds[site.index])).toBe(site.name);
@@ -189,7 +189,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   it('亜種のプロパティが、実体化した土地へ書き込まれる', () => {
     // 亜種は「その土地らしさ」を発見量のつまみ（locations.yamlのweight: {prop:...}）で表す。
     // 素の値のままでは名前だけの飾りになるので、実体へ届いていることを確かめる。
-    const game = startNewGame(codex, 3, new SeededRng(99));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 3, new SeededRng(99));
 
     const withProps = game.map.sites.filter((site) => (site.variant?.props.size ?? 0) > 0);
     expect(withProps.length, 'propsを持つ亜種が出るシードで確かめる').toBeGreaterThan(0);
@@ -203,7 +203,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
   it('開始時刻は朝8:00〜正午12:00の間のtick刻みで決まる', () => {
     for (const seed of [3, 11, 21]) {
-      const world = startNewGame(codex, seed, new SeededRng(seed)).world;
+      const world = startNewGame(codex, SAMPLE_CHARACTER, seed, new SeededRng(seed)).world;
       const minutes = world.hour * 60 + world.minute;
 
       expect(world.day, '開始は1日目').toBe(1);
@@ -214,8 +214,8 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   });
 
   it('同じシードなら開始時刻も同じになる（開始状態はシードだけで決まる）', () => {
-    const first = startNewGame(codex, 21, new SeededRng(21));
-    const second = startNewGame(codex, 21, new SeededRng(21));
+    const first = startNewGame(codex, SAMPLE_CHARACTER, 21, new SeededRng(21));
+    const second = startNewGame(codex, SAMPLE_CHARACTER, 21, new SeededRng(21));
 
     expect(second.world.totalMinutes).toBe(first.world.totalMinutes);
   });
@@ -223,8 +223,8 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   it('同じシードなら、WorldSession.rngのシードが異なっても同じ島レイアウトになる', () => {
     // 地形レイアウト(IslandMap)はシードのみに依存し、WorldSession.rng（pick抽選など）には
     // 依存しない: rngのシードを変えても同じ島になる。
-    const first = startNewGame(codex, 21, new SeededRng(1));
-    const second = startNewGame(codex, 21, new SeededRng(2));
+    const first = startNewGame(codex, SAMPLE_CHARACTER, 21, new SeededRng(1));
+    const second = startNewGame(codex, SAMPLE_CHARACTER, 21, new SeededRng(2));
 
     expect(second.map.sites.map((s) => [s.x, s.y, s.type!.name, s.name])).toEqual(
       first.map.sites.map((s) => [s.x, s.y, s.type!.name, s.name]),

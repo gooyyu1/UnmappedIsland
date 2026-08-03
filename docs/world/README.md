@@ -9,6 +9,7 @@
 
 ## 収録ドキュメント
 
+- [プレイヤーキャラクタ](./Characters.md)
 - [道具・武器・容器・衣類 アイテム案](./SurvivalItems.md)
 - [コンテナ（かご・箱・そり）](./Containers.md)
 - [WorldCodex データベースビューア](./WorldCodexViewer.html) — 実際のゲームデータ

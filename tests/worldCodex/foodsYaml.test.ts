@@ -5,7 +5,12 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import {
+  loadYamlDirectory,
+  loadYamlFile,
+  SAMPLE_CHARACTER,
+  worldCodexPath,
+} from '../support/worldCodexFiles';
 
 describe('foods.yamlの食料定義', () => {
   let codex: WorldCodex;
@@ -13,7 +18,7 @@ describe('foods.yamlの食料定義', () => {
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();
     loadYamlFile(loader, worldCodexPath('core.yaml'));
-    loadYamlFile(loader, worldCodexPath('characters.yaml'));
+    loadYamlDirectory(loader, worldCodexPath('characters'));
     loadYamlFile(loader, worldCodexPath('foods.yaml'));
     codex = loader.build();
   });
@@ -34,13 +39,13 @@ describe('foods.yamlの食料定義', () => {
     '%sを食べるとsatietyと%sが加算され、食料自身は消滅する',
     (foodObjectName, nutritionPropertyName, expectedSatietyGain) => {
       const session = new WorldSession(codex);
-      const character = spawn('character', 1);
+      const character = spawn(SAMPLE_CHARACTER, 1);
       const food = spawn(foodObjectName, 2);
 
       const satietyId = codex.propertyNames.getId('satiety');
       const nutritionId = codex.propertyNames.getId(nutritionPropertyName);
 
-      // 栄養カテゴリはtickごとに減衰する（characters.yaml参照）ため、加算量だけを検証したい。
+      // 栄養カテゴリはtickごとに減衰する（characters/参照）ため、加算量だけを検証したい。
       // 一旦0まで下げてから食べさせ、増分だけを見る。
       character.setProperty(satietyId, 0);
       character.setProperty(nutritionId, 0);
@@ -53,7 +58,7 @@ describe('foods.yamlの食料定義', () => {
   );
 
   it('characterは3つの栄養カテゴリを持ち、初期値は満タンで1週間かけて減衰する', () => {
-    const character = codex.objects.get(codex.objectNames.getId('character'));
+    const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
     const instance = new WorldObject(1, character, new WorldSession(codex));
     for (const name of ['vegetable_nutrition', 'meat_nutrition', 'grain_tuber_nutrition']) {
       const id = codex.propertyNames.getId(name);

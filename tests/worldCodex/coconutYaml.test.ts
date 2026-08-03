@@ -6,7 +6,7 @@ import { Location } from '../../src/domain/runtime/views/Location';
 import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter';
 import { World } from '../../src/domain/runtime/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
  * coconut.yamlのヤシの実の加工の連鎖を、実ファイルの定義だけで検証する。
@@ -35,7 +35,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     session = new WorldSession(codex, worldView);
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
-    player = spawnInto('character', beach, 'characters');
+    player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {

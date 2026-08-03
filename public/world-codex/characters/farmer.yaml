@@ -1,0 +1,72 @@
+# 元農家。畑仕事で作った丈夫な体と厚い蓄えを持つが、その体を動かすだけの量を食べないと保たない。
+# 各プロパティの意味・値の刻み方は docs/world/Characters.md 参照。
+
+object_defs:
+  farmer:
+    singleton: true
+    traits: [player_character]
+    slots:
+      hand: {unit_capacity: 6}
+    props:
+      # 胃が大きく、満腹から1日3時間（120 tick）保つ。そのぶん満たすのに要る食料も多い。
+      satiety:
+        tags: [status, nutrition]
+        value: 12000
+        range: {min: 0, max: 12000}
+        stages:
+          - {name: starving, alert: danger}
+          - {name: hungry, min: 1200, alert: caution}
+          - {name: peckish, min: 4800, alert: watch}
+          - {name: fed, min: 9600}
+        passives:
+          - accumulate:
+              self:
+                satiety: -100
+      # 満水から3日（288 tick）。
+      hydration:
+        tags: [status, nutrition]
+        value: 7200
+        range: {min: 0, max: 7200}
+        stages:
+          - {name: dehydrated, alert: fatal}
+          - {name: parched, min: 600, alert: danger}
+          - {name: thirsty, min: 2400, alert: caution}
+          - {name: dryish, min: 4800, alert: watch}
+          - {name: hydrated, min: 5760}
+        passives:
+          - accumulate:
+              self:
+                hydration: -25
+      # よく食べる体は蓄えも厚い。最大限に肥えた状態から67日半（6480 tick）。
+      body_fat:
+        tags: [nutrition]
+        value: 162000
+        range: {min: 0, max: 648000}
+        passives:
+          - accumulate:
+              self:
+                body_fat: -100
+      # 日の出とともに働く暮らしのまま、眠らずにいられるのは24時間（96 tick）。
+      wakefulness:
+        tags: [status, health]
+        value: 9600
+        range: {min: 0, max: 9600}
+        stages:
+          - {name: overtired, alert: danger}
+          - {name: sleepy, min: 1200, alert: caution}
+          - {name: yawning, min: 4800, alert: watch}
+          - {name: rested, min: 7680}
+        passives:
+          - accumulate:
+              self:
+                wakefulness: -100
+      # 重い物を担ぎ慣れた、基準より2割高い体力。
+      stamina:
+        tags: [status, health]
+        value: 120
+        range: {min: 0, max: 120}
+        stages:
+          - {name: exhausted, alert: danger}
+          - {name: tired, min: 24, alert: caution}
+          - {name: winded, min: 72, alert: watch}
+          - {name: fresh, min: 96}
