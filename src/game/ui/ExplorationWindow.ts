@@ -94,12 +94,16 @@ export class ExplorationWindow {
 
     const slotWidth = (contentWidth - metrics.px(SIZE.gap) * (FOUND_SLOTS - 1)) / FOUND_SLOTS;
     const foundHeight = (slotWidth * SIZE.cardHeight) / SIZE.cardWidth;
+    // 発見物の枠は、レーンと同じくカードの下にスクロールバーのぶんを常に空けておく（ScreenLayout.md
+    // スクロールバー節）。送る必要が無い間は空くが、見つかった件数でウィンドウの高さは変わらない。
+    const scrollBarSpace = metrics.px(SIZE.scrollBarGap + SIZE.scrollBar);
 
     const windowHeight =
       padding * 2 +
       title.height +
       gap +
       foundHeight +
+      scrollBarSpace +
       gap +
       barHeight +
       gap +
@@ -121,7 +125,7 @@ export class ExplorationWindow {
       height: foundHeight,
     });
 
-    cursorY += foundHeight + gap;
+    cursorY += foundHeight + scrollBarSpace + gap;
     this.objects.push(
       new ProgressBar(scene, metrics, window.x + padding, cursorY, contentWidth, barHeight, options.ratio),
       addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(options.ratio), {
@@ -204,8 +208,7 @@ export class ExplorationWindow {
     strip.enableFilters();
     strip.filters?.internal.addMask(this.maskShape);
 
-    // 送り具合を示すバーは枠の下（進捗バーとの間隔の中）へ置く。枠の高さはカードちょうどなので、
-    // レーンと違って枠の中には余白が無い。
+    // バーはカードの下に空けてある場所（呼び出し側が確保するscrollBarSpace）へ置く。
     const indicator = new ScrollIndicator(
       scene,
       metrics,
