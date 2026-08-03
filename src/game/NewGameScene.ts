@@ -46,6 +46,16 @@ const FOOTER_PADDING_Y = 20;
 const CHARACTER_DESCRIPTION_SIZE = 26;
 const CHARACTER_DESCRIPTION_LINES = 3;
 
+/** 項目名（「島の名前」など）の文字の大きさ（u単位）。 */
+const FIELD_LABEL_SIZE = 26;
+
+/**
+ * 左右に分けるときの列の間隔と、入力欄の列に要る最低幅（u単位）。
+ * 札を原寸で並べたうえでこの幅が残らないなら、分けずに上から積む。
+ */
+const COLUMN_GAP = 40;
+const FIELD_COLUMN_MIN_WIDTH = 440;
+
 /** 新規ゲーム作成画面を開くときに渡す、書き込み先のスロット番号。 */
 export interface NewGameSceneData {
   readonly slotIndex: number;
@@ -96,13 +106,36 @@ export class NewGameScene extends ResponsiveScene {
 
     const paddingX = this.metrics.px(this.metrics.isLandscape ? BODY_PADDING_LANDSCAPE_X : BODY_PADDING);
     const contentWidth = width - paddingX * 2;
-    let cursorY = ScreenHeader.height(this.metrics) + this.metrics.px(BODY_PADDING);
+    const top = ScreenHeader.height(this.metrics) + this.metrics.px(BODY_PADDING);
 
     this.nameInput = undefined;
     this.seedInput = undefined;
     this.characterOptions = [];
 
-    cursorY += this.addTextField(paddingX, cursorY, contentWidth, '島の名前', {
+    // 横が余って縦が足りない画面では、入力欄とキャラクター選択を左右へ分ける。分けるのは、札を原寸で
+    // 並べたうえで入力欄に足る幅が残るときだけ——正方形に近い画面で無理に分けると札が原寸より小さくなる。
+    const columnGap = this.metrics.px(COLUMN_GAP);
+    const characterWidth = this.characterRowWidth();
+    const fieldWidth = contentWidth - columnGap - characterWidth;
+    if (this.metrics.isLandscape && fieldWidth >= this.metrics.px(FIELD_COLUMN_MIN_WIDTH)) {
+      // 縦は逆に余るので、背の高い方の列に合わせて、ヘッダーとフッターの間の中央へ両方を置く。
+      const band = height - this.footerHeight() - top - this.metrics.px(BODY_PADDING);
+      const used = Math.max(this.textFieldsHeight(), this.characterFieldHeight(characterWidth));
+      const y = top + Math.max(0, (band - used) / 2);
+      this.addTextFields(paddingX, y, fieldWidth);
+      this.addCharacterField(paddingX + fieldWidth + columnGap, y, characterWidth);
+    } else {
+      const used = this.addTextFields(paddingX, top, contentWidth);
+      this.addCharacterField(paddingX, top + used + this.metrics.px(FIELD_GAP), contentWidth);
+    }
+
+    this.addFooter();
+  }
+
+  /** 島の名前と乱数シードを縦に並べ、占有した高さを返す。 */
+  private addTextFields(x: number, y: number, width: number): number {
+    let cursorY = y;
+    cursorY += this.addTextField(x, cursorY, width, '島の名前', {
       value: this.islandName,
       placeholder: '例: 霧深い孤島',
       maxLength: ISLAND_NAME_MAX_LENGTH,
@@ -119,7 +152,7 @@ export class NewGameScene extends ResponsiveScene {
     });
 
     cursorY += this.metrics.px(FIELD_GAP);
-    cursorY += this.addTextField(paddingX, cursorY, contentWidth, '乱数シード', {
+    cursorY += this.addTextField(x, cursorY, width, '乱数シード', {
       value: this.seedText,
       placeholder: '例: 1837462519',
       maxLength: String(SEED_MAX).length,
@@ -136,10 +169,53 @@ export class NewGameScene extends ResponsiveScene {
       },
     });
 
-    cursorY += this.metrics.px(FIELD_GAP);
-    this.addCharacterField(paddingX, cursorY, contentWidth);
+    return cursorY - y;
+  }
 
-    this.addFooter();
+  /** 札を原寸で並べたときのキャラクター選択の幅。左右に分けるときはこの幅をそのまま右の列に使う。 */
+  private characterRowWidth(): number {
+    const option = this.metrics.px(SIZE.cardWidth) + this.metrics.px(CHARACTER_OPTION_PADDING) * 2;
+    return option * this.characters.length + this.metrics.px(SIZE.gap) * (this.characters.length - 1);
+  }
+
+  /** 入力欄2つぶんの高さ。 */
+  private textFieldsHeight(): number {
+    const row = this.labelHeight() + this.metrics.px(LABEL_GAP) + this.metrics.px(INPUT_HEIGHT);
+    return row * 2 + this.metrics.px(FIELD_GAP);
+  }
+
+  /** キャラクター選択（ラベルの行・札の行・説明）の高さ。 */
+  private characterFieldHeight(width: number): number {
+    const optionWidth = this.characterOptionWidth(width);
+    const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
+    const rowHeight =
+      ((optionWidth - padding * 2) / this.metrics.px(SIZE.cardWidth)) * this.metrics.px(SIZE.cardHeight) +
+      padding * 2;
+    const lineSpacing = this.metrics.px(LABEL_GAP);
+    return (
+      this.metrics.px(RANDOM_BUTTON_SIZE) +
+      lineSpacing +
+      rowHeight +
+      this.metrics.px(SIZE.gap) +
+      this.characterDescriptionHeight(lineSpacing)
+    );
+  }
+
+  /** 横幅だけで決まる選択肢1つの幅。札は原寸を上限に、全員が1行へ収まるところまで縮める。 */
+  private characterOptionWidth(width: number): number {
+    const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
+    return Math.min(
+      this.metrics.px(SIZE.cardWidth) + padding * 2,
+      (width - this.metrics.px(SIZE.gap) * (this.characters.length - 1)) / this.characters.length,
+    );
+  }
+
+  /** 項目名1行の高さ。組み立てる前に列の高さを見積もるために測る。 */
+  private labelHeight(): number {
+    const sample = addLabel(this, this.metrics, 0, 0, 'あ', { size: FIELD_LABEL_SIZE, bold: true });
+    const height = sample.height;
+    sample.destroy();
+    return height;
   }
 
   /** ラベル＋入力欄＋ランダムボタンの1項目を置き、占有した高さを返す。 */
@@ -158,7 +234,7 @@ export class NewGameScene extends ResponsiveScene {
       onRandom: () => void;
     },
   ): number {
-    const labelText = addLabel(this, this.metrics, x, y, label, { size: 26, bold: true });
+    const labelText = addLabel(this, this.metrics, x, y, label, { size: FIELD_LABEL_SIZE, bold: true });
     const rowY = y + labelText.height + this.metrics.px(LABEL_GAP);
     const inputHeight = this.metrics.px(INPUT_HEIGHT);
     const buttonSize = this.metrics.px(RANDOM_BUTTON_SIZE);
@@ -202,7 +278,7 @@ export class NewGameScene extends ResponsiveScene {
   private addCharacterField(x: number, y: number, width: number): void {
     const buttonSize = this.metrics.px(RANDOM_BUTTON_SIZE);
     const labelText = addLabel(this, this.metrics, x, 0, 'キャラクター選択', {
-      size: 26,
+      size: FIELD_LABEL_SIZE,
       bold: true,
     });
     labelText.setY(y + (buttonSize - labelText.height) / 2);
@@ -233,11 +309,9 @@ export class NewGameScene extends ResponsiveScene {
     // 説明とフッターに使う分を除いた、選択肢の1行が使える高さ。
     const room =
       this.metrics.height - this.footerHeight() - descriptionHeight - gap - this.characterOptionsOrigin.y;
-    // 札は原寸を上限に、全員が1行へ収まるところまで縮める（キャラクタが増えても溢れさせない）。
-    // 縦も同じで、説明の下がフッターへ潜り込まない大きさまで縮める。
+    // 横は原寸まで（characterOptionWidth）、縦は説明の下がフッターへ潜り込まないところまで縮める。
     const optionWidth = Math.min(
-      cardWidth + padding * 2,
-      (this.characterOptionsOrigin.width - gap * (this.characters.length - 1)) / this.characters.length,
+      this.characterOptionWidth(this.characterOptionsOrigin.width),
       ((room - padding * 2) / cardHeight) * cardWidth + padding * 2,
     );
     const cardScale = (optionWidth - padding * 2) / cardWidth;
