@@ -6,9 +6,8 @@ import { LOCALE_FILE, parseLocale } from '../locale/Localization';
 import cardFrameUrl from '../assets/card_frame.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
 import { INFORMATION_ART } from './ui/informationArt';
-import { BACKGROUND_ART } from './ui/backgroundArt';
 import { SEPARATOR_ART } from './ui/separatorArt';
-import { OBJECT_ART, objectTexture } from './ui/objectArt';
+import { commonArtFiles, locationDefNames } from './ui/locationArt';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 
 /** ゲーム本体に同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。 */
@@ -43,10 +42,6 @@ export class BootScene extends Phaser.Scene {
 
     // 読み込めなくてもカードは図形で描かれる（Card.addFrame）ため、失敗しても起動は止めない。
     this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
-    // object_defごとの絵。用意されているものだけが並ぶ（objectArt参照）。
-    for (const [name, url] of OBJECT_ART) this.load.image(objectTexture(name), url);
-    // レーンと設置物のカードに敷く背景。こちらも用意されているものだけが並ぶ（backgroundArt参照）。
-    for (const [texture, url] of BACKGROUND_ART) this.load.image(texture, url);
     // 情報エリア（フィールドエリアの左／上）の背景。向きごとに1枚ずつ。
     for (const [texture, url] of INFORMATION_ART) this.load.image(texture, url);
     // エリアの境目に敷く帯。
@@ -69,7 +64,12 @@ export class BootScene extends Phaser.Scene {
     this.registry.set(WORLD_CODEX_KEY, codex);
     this.registry.set(LOCALIZATION_KEY, localization);
 
-    this.scene.start('title');
+    // 土地の絵はここではロードせず、プレイ中に必要になった土地からロードする（locationArt参照）。
+    // それ以外の絵（キャラクター・アイテム・共通の背景）は開始時点の画面に出うるため、ここで読み切る。
+    // どの絵が土地のものかはCodexが要る（locationタグ）ので、preloadではなくYAMLを読み終えた後に行う。
+    for (const { key, url } of commonArtFiles(locationDefNames(codex))) this.load.image(key, url);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('title'));
+    this.load.start();
   }
 
   private buildCodex(): WorldCodex {

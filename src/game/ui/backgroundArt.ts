@@ -45,6 +45,16 @@ export function cardBackgroundTexture(location: string): string | undefined {
   return textureOf(`${location}_${CARD_BACKGROUND_SUFFIX}`);
 }
 
+/**
+ * 1つの土地に紐づく背景のテクスチャキー（用意されている絵だけ、最大3枚）。
+ * 土地の絵の遅延ロード（locationArt）が「その土地のぶん」をまとめて引くために使う。
+ */
+export function locationBackgroundTextures(location: string): readonly string[] {
+  return [`${location}_fixture`, `${location}_item`, `${location}_${CARD_BACKGROUND_SUFFIX}`]
+    .map((fileName) => `background:${fileName}`)
+    .filter((key) => BACKGROUND_ART.has(key));
+}
+
 function textureOf(fileName: string): string | undefined {
   const key = `background:${fileName}`;
   return BACKGROUND_ART.has(key) ? key : undefined;
