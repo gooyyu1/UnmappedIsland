@@ -30,3 +30,5 @@ object_defs:
   woven_basket:
     tags: [item]
     traits: [item_container]
+    props:
+      weight: {value: 800}

@@ -6,6 +6,7 @@ import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
+import type { Requirement } from './Requirement';
 import type { SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
 
@@ -137,6 +138,19 @@ export class ObjectDef {
     const resolved = self.resolveInteractionTarget();
     const action = resolved.def.actions.find((a) => a.name === actionName);
     return action !== undefined && action.tryExecute(resolved, actor, session);
+  }
+
+  /**
+   * actionNameを今実行できない理由（最初に落ちた要件、14節）。実行できる・宣言が無い場合はundefined。
+   * 対象の解決はtryExecuteActionと同じ。
+   */
+  actionUnmetRequirement(
+    self: WorldObject,
+    actor: WorldObject | undefined,
+    actionName: string,
+  ): Requirement | undefined {
+    const resolved = self.resolveInteractionTarget();
+    return resolved.def.actions.find((a) => a.name === actionName)?.unmetRequirement(resolved, actor);
   }
 
   /** actionNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。対象の解決はtryExecuteActionと同じ。 */

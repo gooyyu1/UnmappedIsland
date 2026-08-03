@@ -65,7 +65,7 @@ object_defs:
     actions:
       eat:
         conditions:
-          - {object: actor, prop: satiety, op: lt, value: 100}
+          - {object: actor, prop: satiety, lt: 100}
         add:
           actor:
             satiety: 10
@@ -496,7 +496,7 @@ object_defs:
       chop:
         with: axe_tool5
         conditions:
-          - {object: dragged, prop: durability, op: gt, value: 0}
+          - {object: dragged, prop: durability, gt: 0}
         destroy: self
   axe_tool5:
     tags: [axe_tool5]

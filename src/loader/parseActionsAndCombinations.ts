@@ -9,12 +9,12 @@ import {
   ACTION_CONDITION_ROOTS,
   COMBINATION_CONDITION_ROOTS,
   parseConditionObject,
-  parseConditionsField,
+  parseRequirementsField,
 } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyPath } from '../domain/defs/ReferenceRoot';
 import type { ActiveEffect } from '../domain/defs/ActiveEffect';
-import type { ConditionNode } from '../domain/defs/ConditionNode';
+import type { Requirements } from '../domain/defs/Requirement';
 import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/defs/PickEffect';
 import { ActionDef } from '../domain/defs/ActionDef';
 import { CombinationDef } from '../domain/defs/CombinationDef';
@@ -129,7 +129,7 @@ const COMBINATION_RESERVED_KEYS = ['with', 'conditions', 'duration', 'pick'] as 
 
 /** actions・combinationsに共通する中身（InteractionDefが持つもの）。 */
 interface InteractionBody {
-  readonly conditions: ConditionNode | undefined;
+  readonly requirements: Requirements | undefined;
   readonly effect: ActiveEffect | undefined;
   readonly duration: WeightSpec | undefined;
 }
@@ -145,7 +145,7 @@ function parseInteractionBody(
   allowDragged: boolean,
   reservedKeys: readonly string[],
 ): InteractionBody {
-  const conditions = parseConditionsField(
+  const requirements = parseRequirementsField(
     loader,
     context,
     tryGetSeq(map, 'conditions', context),
@@ -160,7 +160,7 @@ function parseInteractionBody(
       ? parseWeight(loader, `${context}.duration`, durationNode, allowDragged, 'duration')
       : undefined;
 
-  return { conditions, effect, duration };
+  return { requirements, effect, duration };
 }
 
 /** actions_map（11節）を読む。trait合成済みのノードを渡すこと。
@@ -184,7 +184,7 @@ export function parseActions(
       );
 
     const body = parseInteractionBody(loader, context, map, false, ACTION_RESERVED_KEYS);
-    result.push(new ActionDef(name, 'always', body.conditions, body.effect, body.duration));
+    result.push(new ActionDef(name, 'always', body.requirements, body.effect, body.duration));
   }
 
   return result;
@@ -205,7 +205,7 @@ export function parseCombinations(
 
     const withId = loader.tagNames.intern(requireScalar(map, 'with', context));
     const body = parseInteractionBody(loader, context, map, true, COMBINATION_RESERVED_KEYS);
-    result.push(new CombinationDef(name, withId, body.conditions, body.effect, body.duration));
+    result.push(new CombinationDef(name, withId, body.requirements, body.effect, body.duration));
   }
 
   return result;

@@ -165,7 +165,7 @@
       "additionalProperties": false
     },
     "condition_op": {
-      "description": "conditions の葉（プロパティ比較）で使う比較演算子（14.1節）。'between' 等の追加は未決定（17節）。",
+      "description": "conditionsの葉で使う比較演算子（14.1節、キーとして書く）。'between'等の追加は未決定（17節）。",
       "enum": [
         "lt",
         "lte",
@@ -188,7 +188,7 @@
       ]
     },
     "condition_property_leaf": {
-      "description": "{object, prop, op, value}形式のプロパティ比較（14.1節）。objectは省略可（既定値self）、opも省略可（既定値eq）。",
+      "description": "propを主語にした葉（14.1節）。演算子キー（lt/lte/gt/gte/eq/neq/in/not_in/in_stage）の値が比較の相手で、**複数書けば暗黙のAND**（範囲は{prop: x, gte: 100, lt: 200}）。最低1つ必要。objectは省略可（既定値self）。",
       "type": "object",
       "properties": {
         "object": {
@@ -198,69 +198,93 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$"
         },
-        "op": {
-          "$ref": "#/$defs/condition_op"
+        "lt": {
+          "$ref": "#/$defs/condition_comparison_value"
         },
-        "value": {
-          "$ref": "#/$defs/condition_value"
+        "lte": {
+          "$ref": "#/$defs/condition_comparison_value"
+        },
+        "gt": {
+          "$ref": "#/$defs/condition_comparison_value"
+        },
+        "gte": {
+          "$ref": "#/$defs/condition_comparison_value"
+        },
+        "eq": {
+          "$ref": "#/$defs/condition_comparison_value"
+        },
+        "neq": {
+          "$ref": "#/$defs/condition_comparison_value"
+        },
+        "in": {
+          "$ref": "#/$defs/condition_list_value"
+        },
+        "not_in": {
+          "$ref": "#/$defs/condition_list_value"
+        },
+        "in_stage": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "propの実効値が、その名前の段（6.4節）に該当しているか。"
+        },
+        "reason": {
+          "$ref": "#/$defs/condition_reason"
         }
       },
       "required": [
-        "prop",
-        "value"
+        "prop"
       ],
       "additionalProperties": false,
-      "allOf": [
+      "anyOf": [
         {
-          "$comment": "in/not_inのvalueは配列でなければならない（14.1節）",
-          "if": {
-            "properties": {
-              "op": {
-                "enum": [
-                  "in",
-                  "not_in"
-                ]
-              }
-            },
-            "required": [
-              "op"
-            ]
-          },
-          "then": {
-            "properties": {
-              "value": {
-                "type": "array"
-              }
-            }
-          }
+          "required": [
+            "lt"
+          ]
         },
         {
-          "$comment": "配列のvalueはin/not_inでのみ使える",
-          "if": {
-            "properties": {
-              "value": {
-                "type": "array"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "op"
-            ],
-            "properties": {
-              "op": {
-                "enum": [
-                  "in",
-                  "not_in"
-                ]
-              }
-            }
-          }
+          "required": [
+            "lte"
+          ]
+        },
+        {
+          "required": [
+            "gt"
+          ]
+        },
+        {
+          "required": [
+            "gte"
+          ]
+        },
+        {
+          "required": [
+            "eq"
+          ]
+        },
+        {
+          "required": [
+            "neq"
+          ]
+        },
+        {
+          "required": [
+            "in"
+          ]
+        },
+        {
+          "required": [
+            "not_in"
+          ]
+        },
+        {
+          "required": [
+            "in_stage"
+          ]
         }
       ]
     },
     "condition_node": {
-      "description": "conditions（14節）の1ノード。葉（プロパティ比較(14.1節)・スロット位置判定(in_slot、14.2節)・スロット中身判定(slot+tag、14.3節)・タグ判定(tag、14.4節)のいずれか）か、all/any/not（14.5節）による複合ノードのいずれか。",
+      "description": "conditions（14節）の1ノード。葉（propを主語にした比較・段判定(14.1節)・スロット位置判定(in_slot、14.2節)・スロット中身判定(slot+tag、14.3節)・タグ判定(tag、14.4節)のいずれか）か、all/any/not（14.5節）による複合ノードのいずれか。",
       "oneOf": [
         {
           "$ref": "#/$defs/condition_property_leaf"
@@ -282,6 +306,9 @@
               "items": {
                 "$ref": "#/$defs/condition_node"
               }
+            },
+            "reason": {
+              "$ref": "#/$defs/condition_reason"
             }
           },
           "required": [
@@ -297,6 +324,9 @@
               "items": {
                 "$ref": "#/$defs/condition_node"
               }
+            },
+            "reason": {
+              "$ref": "#/$defs/condition_reason"
             }
           },
           "required": [
@@ -309,6 +339,9 @@
           "properties": {
             "not": {
               "$ref": "#/$defs/condition_node"
+            },
+            "reason": {
+              "$ref": "#/$defs/condition_reason"
             }
           },
           "required": [
@@ -1183,54 +1216,6 @@
       ],
       "additionalProperties": false
     },
-    "condition_value": {
-      "description": "プロパティ比較のvalue。リテラル（整数・真偽値・シンボル名）、in/not_in用のリテラル配列、{object, prop}参照のいずれか。'max'/'min'は未対応（参照先rangeの上下限を指す規約が未確定のため、ロード時エラー。17節）。参照はlt/lte/gt/gte/eq/neqのみで使える。",
-      "oneOf": [
-        {
-          "type": [
-            "integer",
-            "boolean"
-          ]
-        },
-        {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$",
-          "not": {
-            "enum": [
-              "max",
-              "min"
-            ]
-          }
-        },
-        {
-          "type": "array",
-          "minItems": 1,
-          "items": {
-            "oneOf": [
-              {
-                "type": [
-                  "integer",
-                  "boolean"
-                ]
-              },
-              {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9_]*$",
-                "not": {
-                  "enum": [
-                    "max",
-                    "min"
-                  ]
-                }
-              }
-            ]
-          }
-        },
-        {
-          "$ref": "#/$defs/prop_ref"
-        }
-      ]
-    },
     "condition_in_slot_leaf": {
       "description": "{object, in_slot}形式の、objectが指すオブジェクト自身の現在のスロット位置判定（14.2節）。常に等価判定でopは持たない（否定はnotで包む）。objectにancestorは使えない（ロード時エラー）。",
       "type": "object",
@@ -1240,6 +1225,9 @@
         },
         "in_slot": {
           "$ref": "#/$defs/identifier"
+        },
+        "reason": {
+          "$ref": "#/$defs/condition_reason"
         }
       },
       "required": [
@@ -1259,6 +1247,9 @@
         },
         "tag": {
           "$ref": "#/$defs/identifier"
+        },
+        "reason": {
+          "$ref": "#/$defs/condition_reason"
         }
       },
       "required": [
@@ -1276,12 +1267,69 @@
         },
         "tag": {
           "$ref": "#/$defs/identifier"
+        },
+        "reason": {
+          "$ref": "#/$defs/condition_reason"
         }
       },
       "required": [
         "tag"
       ],
       "additionalProperties": false
+    },
+    "condition_comparison_value": {
+      "description": "lt/lte/gt/gte/eq/neqの比較の相手（14.1節）。リテラル（整数・真偽値・シンボル名）か{object, prop}参照。'max'/'min'は未対応（参照先rangeの上下限を指す規約が未確定のため、ロード時エラー。17節）。",
+      "oneOf": [
+        {
+          "type": [
+            "integer",
+            "boolean"
+          ]
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "not": {
+            "enum": [
+              "max",
+              "min"
+            ]
+          }
+        },
+        {
+          "$ref": "#/$defs/prop_ref"
+        }
+      ]
+    },
+    "condition_list_value": {
+      "description": "in/not_inの比較の相手（14.1節）。リテラルの配列のみで、{object, prop}参照は使えない（複数値との比較のため）。",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": [
+              "integer",
+              "boolean"
+            ]
+          },
+          {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "not": {
+              "enum": [
+                "max",
+                "min"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "condition_reason": {
+      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。actions/combinationsのconditionsの要素にだけ書ける（文言はlocaleのreason_textsが持つ）。",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
     }
   }
 }

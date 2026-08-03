@@ -7,3 +7,5 @@ object_defs:
   # 尖った石。石同士を打ち合わせて作る最初の刃物（locations.yamlのstone.combinations.knap）。
   sharp_stone:
     tags: [item, cutting_tool]
+    props:
+      weight: {value: 400}

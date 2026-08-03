@@ -1024,7 +1024,7 @@ object_defs:
         value: 0
         passives:
           - conditions:
-              - {prop: source, op: gte, value: 15}
+              - {prop: source, gte: 15}
             modify:
               self:
                 target: 100
@@ -1047,7 +1047,7 @@ object_defs:
         value: 0
         passives:
           - conditions:
-              - {prop: b, op: gte, value: 0}
+              - {prop: b, gte: 0}
             modify:
               self:
                 a: 1
@@ -1055,7 +1055,7 @@ object_defs:
         value: 0
         passives:
           - conditions:
-              - {prop: a, op: gte, value: 0}
+              - {prop: a, gte: 0}
             modify:
               self:
                 b: 1

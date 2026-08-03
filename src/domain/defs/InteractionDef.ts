@@ -1,9 +1,9 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { ConditionNode } from './ConditionNode';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
+import type { Requirement, Requirements } from './Requirement';
 import { spendDuration } from './actionTime';
 
 /**
@@ -16,8 +16,8 @@ import { spendDuration } from './actionTime';
 export abstract class InteractionDef {
   readonly name: string;
 
-  /** undefinedなら常に真（conditions省略）。 */
-  private readonly conditions: ConditionNode | undefined;
+  /** 実行するために満たすべき要件（14節）。undefinedなら常に真（conditions省略）。 */
+  private readonly requirements: Requirements | undefined;
 
   /** 条件成立時に適用する効果。undefinedなら何も起きない。 */
   private readonly effect: ActiveEffect | undefined;
@@ -31,12 +31,12 @@ export abstract class InteractionDef {
 
   protected constructor(
     name: string,
-    conditions: ConditionNode | undefined,
+    requirements: Requirements | undefined,
     effect: ActiveEffect | undefined,
     duration: WeightSpec | undefined,
   ) {
     this.name = name;
-    this.conditions = conditions;
+    this.requirements = requirements;
     this.effect = effect;
     this.duration = duration;
   }
@@ -52,6 +52,18 @@ export abstract class InteractionDef {
   }
 
   /**
+   * 宣言順で最初に満たしていない要件（14節）。すべて満たしていればundefined＝今この操作を実行できる。
+   * 実行できない理由をUIへ見せるためにも使う（ScreenLayout.md オブジェクトの子ウィンドウ節）。
+   */
+  protected firstUnmetRequirement(
+    self: WorldObject,
+    dragged: WorldObject | undefined,
+    actor: WorldObject | undefined,
+  ): Requirement | undefined {
+    return this.requirements?.firstUnmet((root) => resolveReferenceRoot(root, self, actor, dragged));
+  }
+
+  /**
    * conditionsを見て、時間を進め、効果を適用する（ActionSystem.md 2節）。順序に意味がある:
    * 所要時間は時間を進める前に解決し、時間は効果の適用より先に進める。経過中に関与オブジェクトが
    * 失われたら、その行動は成立しなかったものとして効果を適用しない（actionTime参照）。
@@ -62,11 +74,7 @@ export abstract class InteractionDef {
     actor: WorldObject | undefined,
     session: WorldSession,
   ): boolean {
-    if (
-      this.conditions !== undefined &&
-      !this.conditions.evaluate((root) => resolveReferenceRoot(root, self, actor, dragged))
-    )
-      return false;
+    if (this.firstUnmetRequirement(self, dragged, actor) !== undefined) return false;
 
     if (!spendDuration(this.minutesFor(self, dragged, actor), session, [self, dragged, actor])) return false;
 

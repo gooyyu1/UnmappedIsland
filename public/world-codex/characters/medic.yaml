@@ -71,3 +71,15 @@ object_defs:
           - {name: tired, min: 22, alert: caution}
           - {name: winded, min: 66, alert: watch}
           - {name: fresh, min: 88}
+      # 担架を運び慣れた、基準より1割多い持てる量。持ち物の重さ（g）は中身から導出されるので、valueは0のまま
+      # （ContainerSystem.md 2節）。増える側が悪いプロパティなので、段はmaxからの割合で刻む
+      # （docs/world/Characters.md）。
+      load:
+        tags: [status, health]
+        value: 0
+        range: {min: 0, max: 33000}
+        stages:
+          - {name: light}
+          - {name: laden, min: 8250, alert: watch}
+          - {name: heavy, min: 16500, alert: caution}
+          - {name: too_heavy, min: 27500, alert: danger}

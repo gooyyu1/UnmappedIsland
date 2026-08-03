@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
+import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import {
@@ -17,6 +18,7 @@ import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 import { wrapByCharacter } from './textLayout';
 import { Tooltip } from './Tooltip';
+import type { TooltipContent } from './Tooltip';
 
 /** 見出しと説明文の間隔。同じまとまりなので、内容同士の間隔より詰める。 */
 const TITLE_GAP = 12;
@@ -27,6 +29,9 @@ const WINDOW_WIDTH = 760;
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
 
+/** 実行できない理由（reason、14.6節）が宣言されていないアクションに出す、代わりの1行。 */
+const CANNOT_DO_NOW = '今はできない。';
+
 /** ボタンとして並べる1つの操作。説明文とかかる時間は、ボタンの長押しで吹き出しに出す。 */
 export interface ObjectWindowAction {
   readonly label: string;
@@ -34,6 +39,15 @@ export interface ObjectWindowAction {
   /** 実行にかかるゲーム内時間（分）。0なら吹き出しに時間の行を出さない。 */
   readonly minutes: number;
   readonly onTap: () => void;
+
+  /**
+   * 今この操作を実行できるか（conditionsを満たしているか、GameElementDefinition.md 14節）。
+   * falseなら押しても実行されず、押している間だけ理由（reason）を吹き出しに出す。
+   */
+  readonly enabled?: boolean;
+
+  /** 実行できない理由の文言。宣言が無ければundefined（理由を出さない）。 */
+  readonly reason?: string | undefined;
 }
 
 export interface ObjectWindowOptions {
@@ -157,31 +171,38 @@ export class ObjectWindow {
         width: buttonWidth,
         height: row.height,
       };
+      const disabled = action.enabled === false;
       this.objects.push(
         addTextButton(
           scene,
           metrics,
           rect,
           action.label,
-          { fill: action === close ? COLOR.button : COLOR.primaryButton },
-          action.onTap,
-          action === close
-            ? undefined
-            : {
-                onStart: () =>
-                  this.tooltip.show(
-                    {
-                      title: action.label,
-                      body: action.description,
-                      note: durationText(action.minutes),
-                    },
-                    rect,
-                  ),
-                onEnd: () => this.tooltip.hide(),
-              },
+          disabled
+            ? { fill: COLOR.buttonDisabled, textColor: COLOR.textMuted }
+            : { fill: action === close ? COLOR.button : COLOR.primaryButton },
+          // 押せないボタンは実行しない。押している間の吹き出し（下）だけが反応になる。
+          disabled ? () => {} : action.onTap,
+          action === close ? undefined : this.tooltipHandlers(action, rect, disabled),
         ),
       );
     });
+  }
+
+  /**
+   * ボタンを押している間だけ出す吹き出し。実行できるアクションは長押しで「何が起きるか・どれだけ時間を
+   * 取られるか」を、実行できないアクションは押した瞬間に「なぜできないか」を出す（待たせる理由が無いため）。
+   */
+  private tooltipHandlers(action: ObjectWindowAction, rect: Rect, disabled: boolean): HoldHandlers {
+    const content: TooltipContent = disabled
+      ? { title: action.label, body: action.reason ?? CANNOT_DO_NOW }
+      : { title: action.label, body: action.description, note: durationText(action.minutes) };
+
+    return {
+      onStart: () => this.tooltip.show(content, rect),
+      onEnd: () => this.tooltip.hide(),
+      delayMs: disabled ? 0 : undefined,
+    };
   }
 
   close(): void {

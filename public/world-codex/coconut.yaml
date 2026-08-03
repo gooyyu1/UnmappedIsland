@@ -24,6 +24,8 @@ object_defs:
   # 副産物の皮はactorへ渡す。same_slotは1つの位置を指すため、2つ以上を同じ場所へは置けない。
   coconut:
     tags: [item]
+    props:
+      weight: {value: 1400}
     combinations:
       husk:
         with: cutting_tool
@@ -36,10 +38,14 @@ object_defs:
   # ヤシの実の皮。はぎ取った繊維の塊（縄・火口などへの利用は今後の課題）。
   coconut_husk:
     tags: [item]
+    props:
+      weight: {value: 400}
 
   # 皮を剥いだヤシの実。刃物の先で殻に穴を開けられる。
   husked_coconut:
     tags: [item]
+    props:
+      weight: {value: 1000}
     combinations:
       bore:
         with: cutting_tool
@@ -54,6 +60,8 @@ object_defs:
   # （持ちきれなければactorの居る土地へ落ちる。9.4節の伝播）。
   holed_coconut:
     tags: [item]
+    props:
+      weight: {value: 1000}
     combinations:
       crack:
         with: stone
@@ -73,6 +81,8 @@ object_defs:
   # 割れたヤシの実。刃物で果肉を掻き出すと、器になる殻（coconut_bowl）が手元に残る。
   coconut_half:
     tags: [item]
+    props:
+      weight: {value: 450}
     combinations:
       scrape:
         with: cutting_tool
@@ -85,6 +95,8 @@ object_defs:
   # ヤシの果肉。実1個から2個採れる。満腹度・水分・栄養は実1個ぶんの半分。
   coconut_meat:
     tags: [item]
+    props:
+      weight: {value: 300}
     actions:
       eat:
         add:

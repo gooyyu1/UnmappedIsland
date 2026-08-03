@@ -312,7 +312,7 @@ object_defs:
       eat:
         showMenu: always
         conditions:
-          - {object: actor, prop: satiety, op: lt, value: 100}
+          - {object: actor, prop: satiety, lt: 100}
         add:
           actor:
             satiety: 10
@@ -343,7 +343,7 @@ object_defs:
       chop:
         with: axe_tool
         conditions:
-          - {object: dragged, prop: durability, op: gt, value: 0}
+          - {object: dragged, prop: durability, gt: 0}
         spawn: {object: logs}
         destroy: self
         add:
@@ -431,7 +431,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {object: world, prop: day, op: gt, value: 0}
+          - {object: world, prop: day, gt: 0}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/world/);
@@ -444,7 +444,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {object: actor, prop: satiety, op: lt, value: max}
+          - {object: actor, prop: satiety, lt: max}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/max/);
@@ -460,7 +460,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {prop: mode, value: 1}
+          - {prop: mode, eq: 1}
         destroy: self
 `;
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
@@ -482,23 +482,118 @@ object_defs:
     actions:
       use:
         conditions:
-          - {in_slot: equip, prop: hp, value: 1}
+          - {in_slot: equip, prop: hp, eq: 1}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/slot/);
   });
 
-  it('conditionのin_slotにopを同時に指定するとエラーになる', () => {
+  it('その主語では使えない演算子キーを書くとエラーになる', () => {
     const yaml = `
 object_defs:
   thing:
     actions:
       use:
         conditions:
-          - {in_slot: equip, op: eq}
+          - {in_slot: equip, lt: 5}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/未知のキー/);
+  });
+
+  it('演算子キーを1つも書かないとエラーになる', () => {
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      durability: {value: 10}
+    actions:
+      use:
+        conditions:
+          - {prop: durability}
+        destroy: self
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/演算子キー/);
+  });
+
+  it('1つの葉に演算子キーを並べると、そのすべてを満たすときだけ真になる（暗黙のAND）', () => {
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      temperature: {value: 25}
+    actions:
+      use:
+        conditions:
+          - {prop: temperature, gte: 20, lt: 30}
+        destroy: self
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const session = new WorldSession(codex);
+    const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
+    const temperature = codex.propertyNames.getId('temperature');
+
+    const inRange = new WorldObject(1, thingDef, session);
+    expect(inRange.tryExecuteAction('use', undefined, session), '20以上30未満').toBe(true);
+
+    const tooHot = new WorldObject(2, thingDef, session);
+    tooHot.setNumber(temperature, 30, session);
+    expect(tooHot.tryExecuteAction('use', undefined, session), '上限は含まない').toBe(false);
+
+    const tooCold = new WorldObject(3, thingDef, session);
+    tooCold.setNumber(temperature, 19, session);
+    expect(tooCold.tryExecuteAction('use', undefined, session)).toBe(false);
+  });
+
+  it('in_stageは、値が今その段にいるときだけ真になる', () => {
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      load:
+        value: 0
+        stages:
+          - {name: light}
+          - {name: too_heavy, min: 100}
+    actions:
+      use:
+        conditions:
+          - not: {prop: load, in_stage: too_heavy}
+        destroy: self
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const session = new WorldSession(codex);
+    const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
+    const load = codex.propertyNames.getId('load');
+
+    const light = new WorldObject(1, thingDef, session);
+    expect(light.tryExecuteAction('use', undefined, session)).toBe(true);
+
+    const heavy = new WorldObject(2, thingDef, session);
+    heavy.setNumber(load, 100, session);
+    expect(heavy.tryExecuteAction('use', undefined, session), '段に入ると実行できない').toBe(false);
+  });
+
+  it('満たしていない要件のreasonを、実行前に引ける', () => {
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      durability: {value: 0}
+    actions:
+      use:
+        conditions:
+          - {in_slot: hand}
+          - reason: broken
+            not: {prop: durability, lte: 0}
+        destroy: self
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const session = new WorldSession(codex);
+    const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
+
+    // 宣言順で最初に落ちるのはreasonを持たないin_slot判定なので、理由は出さない。
+    expect(thing.actionUnmetRequirement('use', undefined)?.reasonName).toBeUndefined();
   });
 
   it('スロット中身判定はタグ付きの子がスロットに居るときだけ真になる', () => {
@@ -604,7 +699,7 @@ object_defs:
       pour_in:
         with: liquid_container
         conditions:
-          - {prop: content, op: eq, value: {object: dragged, prop: content}}
+          - {prop: content, eq: {object: dragged, prop: content}}
         destroy: self
   bottle_source:
     tags: [liquid_container]
@@ -636,7 +731,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {prop: content, op: in, value: {object: dragged, prop: content}}
+          - {prop: content, in: {object: dragged, prop: content}}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/in/);
@@ -678,8 +773,8 @@ object_defs:
       use:
         conditions:
           - any:
-              - {prop: hp, op: gte, value: 100}
-              - {prop: mp, op: gte, value: 5}
+              - {prop: hp, gte: 100}
+              - {prop: mp, gte: 5}
         destroy: self
 `;
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
@@ -708,7 +803,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - not: {prop: locked, value: 1}
+          - not: {prop: locked, eq: 1}
         destroy: self
 `;
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
@@ -997,7 +1092,7 @@ object_defs:
     actions:
       check:
         conditions:
-          - {object: ancestor, prop: weather, op: eq, value: 1}
+          - {object: ancestor, prop: weather, eq: 1}
         destroy: self
 `;
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();

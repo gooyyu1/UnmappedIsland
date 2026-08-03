@@ -72,3 +72,15 @@ object_defs:
           - {name: tired, min: 18, alert: caution}
           - {name: winded, min: 54, alert: watch}
           - {name: fresh, min: 72}
+      # 机に向かう時間が長かったぶん、基準より1割少ない持てる量。持ち物の重さ（g）は中身から導出されるので、valueは0のまま
+      # （ContainerSystem.md 2節）。増える側が悪いプロパティなので、段はmaxからの割合で刻む
+      # （docs/world/Characters.md）。
+      load:
+        tags: [status, health]
+        value: 0
+        range: {min: 0, max: 27000}
+        stages:
+          - {name: light}
+          - {name: laden, min: 6750, alert: watch}
+          - {name: heavy, min: 13500, alert: caution}
+          - {name: too_heavy, min: 22500, alert: danger}

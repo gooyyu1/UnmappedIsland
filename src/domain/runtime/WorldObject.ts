@@ -6,6 +6,7 @@ import type { ReferenceRoot } from '../defs/ReferenceRoot';
 import type { WellKnownProperties } from '../defs/WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
 import type { PropertyReading, PropertyValue } from './PropertyValue';
+import type { Requirement } from '../defs/Requirement';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
 import { Slot } from './Slot';
 import type { WorldSession } from './WorldSession';
@@ -593,6 +594,14 @@ export class WorldObject {
 
   tryExecuteAction(actionName: string, actor: WorldObject | undefined, session: WorldSession): boolean {
     return this.def.tryExecuteAction(this, actor, actionName, session);
+  }
+
+  /**
+   * actionNameを今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。
+   * ボタンを押せなくし、押せない理由を見せるために使う。
+   */
+  actionUnmetRequirement(actionName: string, actor: WorldObject | undefined): Requirement | undefined {
+    return this.def.actionUnmetRequirement(this, actor, actionName);
   }
 
   /** actionNameの実行にかかるゲーム内時間（分）。実行前に所要時間を見せるために使う。 */

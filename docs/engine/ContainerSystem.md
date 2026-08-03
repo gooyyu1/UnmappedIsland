@@ -2,15 +2,15 @@
 
 ## 概要
 
-物の重さがどう積み上がり、それを担ぐ人がどれだけの負荷を感じるか（1〜4 節）と、入れ物が中身を環境から
-守ることをどう表すか（5 節）をまとめたものです。`capacity`（合計サイズの制約、
+物の重さがどう積み上がり、それを担ぐ人がどれだけの負荷を感じるか（1〜4 節）、負荷が移動へどう効くか
+（5 節）、入れ物が中身を環境から守ることをどう表すか（6 節）をまとめたものです。`capacity`（合計サイズの制約、
 [`GameElementDefinition.md`](./GameElementDefinition.md) 7.3 節）は `move_to_slot` が検証するだけの単純な
 仕組みなので、本書では扱いません。
 
 実際にゲームへ登場させる入れ物の一覧と比較は [`../world/Containers.md`](../world/Containers.md)、
 液体の量の扱いは [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) です。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節に整理しています。
+本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 7 節に整理しています。
 
 ## 1. weight は率をかけない純粋な合算
 
@@ -121,17 +121,43 @@ character:
           min: 60000
 ```
 
-移動可否は `{object: actor, prop: load, op: lt, value: 60000}` のように、道の `travel` アクションの
+移動可否は `{object: actor, prop: load, lt: 60000}` のように、道の `travel` アクションの
 `conditions` で直接書けます。
 
-## 5. 環境からの保護は sheltered プロパティ1つで表す
+## 5. 負荷が効くのは移動できるかどうか
+
+`load` の段（`stages`、[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4 節）の危険域に入ると、
+移動できなくなります。閾値はキャラクタごと（`characters/`）に置くので、担ぎ慣れの個人差はここに出ます。
+域そのものの見せ方は、ステータスの一種として [`../ui/ScreenLayout.md`](../ui/ScreenLayout.md)
+ステータスエリア節が扱います。
+
+書き方は、道の `travel` に `actor` の `load` を見る条件を足すだけです。
+
+```yaml
+actions:
+  travel:
+    conditions:
+      - {in_slot: fixtures}
+      - not: {object: actor, prop: load, in_stage: too_heavy}
+```
+
+閾値ではなく段の名前（`in_stage`）で見るのは、同じ境目を `stages` の `min` と条件の側に二重に書くと、
+片方だけ直したときに「バーは危険域なのに歩ける」が黙って成立するためです。段の名前は `too_heavy` で
+固定し、閾値だけをキャラクタごとに変えます（[`../world/Characters.md`](../world/Characters.md)）。
+
+実行できないアクションのボタンは押せない見た目になり、押している間だけ理由が出ます
+（`reason: too_heavy`、`GameElementDefinition.md` 14.6 節）。
+
+重い荷が移動時間や疲労に与える影響は、実現方法から検討し直します（7 節）。
+
+## 6. 環境からの保護は sheltered プロパティ1つで表す
 
 蓋のある入れ物に入れた物が天候から守られることは、`sheltered`（0/1）というプロパティ1つで表します。
 中身側の屋外劣化（`DurabilitySystem.md` 2 節）の `accumulate` を、次の条件でゲートするだけです。
 
 ```yaml
 conditions:
-  - {object: ancestor, prop: sheltered, value: 0}
+  - {object: ancestor, prop: sheltered, eq: 0}
 ```
 
 要点は、**守る入れ物だけが `sheltered: 1` を定義し、守らない入れ物は定義しない**ことです（`world` が
@@ -145,11 +171,14 @@ conditions:
 2.5日」に戻るだけで、保冷は別の軸のまま残ります。保護を強くしすぎない歯止めとして、この分離をそのまま
 使います。
 
-## 6. 未決事項・今後の検討課題
+## 7. 未決事項・今後の検討課題
 
 - 固形物の `size` の単位。液体の `size`（mL）と同じ体積として扱うか、入れ物の枠数のような別の尺度に
   するかは未決（`containers.yaml` の `capacity` は当面効かない）
-- 負荷が移動時間や疲労に与える影響。当面は移動可否だけを見て、時間の延長も疲労の蓄積も持たない
+- 重い荷が**移動時間**や**疲労**へ与える影響（移動できるかどうかだけは 5 節で実装済み）。実現方法から
+  検討し直す。`duration` は単一のプロパティ参照
+  （11.3 節）なので道ごとの所要時間と負荷を合流させる場所が無く、`set`/`add` の値はリテラルだけなので
+  （9.2 節）「移動のたびに負荷に応じた量を引く」も書けない。当面は移動の可否だけを見る
 - キャラクターの `load` を modify で調整して個人差や怪我を表す場合、`stages` の閾値は型定義なので動かせない。
   怪我は「荷が重く感じる」向きの modify として表すことになる
 - 中身の入った入れ物が壊れたときの中身の扱い。`destroy` は親スロットからの切り離しなので（9.3 節）中身も

@@ -114,7 +114,7 @@ object_defs:
       rest:
         duration: 30
         conditions:
-          - {prop: warmth, op: gt, value: 10}
+          - {prop: warmth, gt: 10}
 `);
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
     campfire.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);

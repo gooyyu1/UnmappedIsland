@@ -30,6 +30,11 @@ export function loadYamlDirectory(loader: WorldCodexYamlLoader, directory: strin
   return loader;
 }
 
+/** WORLD_CODEX_DIR以下のYAMLファイルのパス一覧（定義ファイルの字面を検査するテスト向け）。 */
+export function worldCodexYamlPaths(): readonly string[] {
+  return findYamlFiles(WORLD_CODEX_DIR);
+}
+
 function findYamlFiles(directory: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true, recursive: true })) {
