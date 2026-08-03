@@ -130,7 +130,7 @@ export function parseProp(
   const inherit = tryGetBool(node, 'inherit', context, false);
   const tags = parsePropertyTags(loader, context, node);
 
-  return new PropertyDef(
+  const def = new PropertyDef(
     propertyGlobalId,
     propName,
     initialValue,
@@ -142,6 +142,17 @@ export function parseProp(
     inherit,
     tags,
   );
+
+  // rangeを持つプロパティはバーとして描かれる（6.4節）。上下どちらの端も悪い並びでは、塗りの向きが
+  // 「良い方へ伸びる」とも「悪い方へ伸びる」とも決められない。両側が悪い量（体温など）は、値そのもの
+  // ではなく片側だけの度合い（熱中症・低体温症）を別のプロパティとして見せる。
+  if (range !== undefined && def.alertDirection === 'mixed')
+    throw new YamlLoadError(
+      `${context}: stagesのalertが上下どちらの端でも深刻になっています。rangeを持つプロパティは` +
+        `バーとして描かれるため、深刻さは下から上へ単調でなければなりません。`,
+    );
+
+  return def;
 }
 
 /**

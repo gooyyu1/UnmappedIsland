@@ -1,3 +1,6 @@
+import type { AlertLevel } from '../../domain/defs/AlertLevel';
+import { ALERT_LEVELS } from '../../domain/defs/AlertLevel';
+
 /**
  * docs/ui のモック（ScreenLayout_Mock.html・StartScreen_Mock.html）のCSSに対応する
  * 配色・寸法トークン。モック側の値を変えたときはここも合わせる。
@@ -71,9 +74,10 @@ export const COLOR = {
 
   statusBarTrack: 0xdddddd,
   statusBarTrackBorder: 0x999999,
-  statusBarFill: 0x4caf50,
-  // 増えると悪いステータス（負荷）の塗り。満タンを良いと読ませないため、緑とは別の色にする。
-  statusBarFillWorsening: 0x9c6b3f,
+  // ステータスバーの塗りは、域（alert）の深刻さで安全域の緑から致命的域の茶へ寄っていく。
+  // 満たされ具合の向きはステータスによって逆なので、塗りの長さではなく色が良し悪しを表す。
+  statusBarFillSafe: 0x4caf50,
+  statusBarFillFatal: 0x9c6b3f,
   /** 減った分を遅れて縮める帯（ProgressBar）。 */
   statusBarLag: 0xd93025,
   /** 直前の行動でその値が増えた／減ったことを示す三角（StatusBar）。 */
@@ -82,6 +86,8 @@ export const COLOR = {
   /** 危険域のバーの枠と、致命的域のバー・画面全体の枠（明滅させる、ScreenLayout.md ステータスエリア節）。 */
   statusAlertDanger: 0xffc400,
   statusAlertFatal: 0xd93025,
+  // 警戒の枠の下に敷く暗い線。塗りの色が濃いと明るい枠が沈むため、必ず暗い線の上に載せる。
+  statusAlertOutline: 0x1b1b1b,
 
   /** 時間経過のドーナツグラフ（画面に重ねて出すため、暗い輪に明るい塗りを載せる）。 */
   progressRingTrack: 0x1b3a4b,
@@ -109,6 +115,24 @@ export const COLOR = {
   textOnDark: 0xffffff,
   textMuted: 0x666666,
 } as const;
+
+/**
+ * 域（GameElementDefinition.md 6.4節のalert）に応じたステータスバーの塗りの色。安全域の緑から、
+ * 致命的域の茶へ深刻さのぶんだけ寄せる。
+ *
+ * **色が良し悪しを表すのは、塗りの長さでは表せないため。** 満タンが良いステータス（満腹度）と悪い
+ * ステータス（荷重）が同じ画面に並ぶので、長さだけでは良し悪しが読めません（ScreenLayout.md
+ * ステータスエリア節）。深刻さを引くのは値の位置ではなく域なので、まだ安全域なら満タンでなくても緑のままです。
+ */
+export function fillColorFor(alert: AlertLevel): number {
+  const severity = ALERT_LEVELS.indexOf(alert) / (ALERT_LEVELS.length - 1);
+  const mix = (shift: number): number => {
+    const from = (COLOR.statusBarFillSafe >> shift) & 0xff;
+    const to = (COLOR.statusBarFillFatal >> shift) & 0xff;
+    return Math.round(from + (to - from) * severity) << shift;
+  };
+  return mix(16) | mix(8) | mix(0);
+}
 
 /** Phaserのテキストスタイルは色を文字列で受け取るため、16進数値をCSS色へ直す。 */
 export function cssColor(color: number): string {
