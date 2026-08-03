@@ -14,10 +14,19 @@ export abstract class ResponsiveScene extends Phaser.Scene {
 
   create(): void {
     this.rebuild();
-    this.scale.on(Phaser.Scale.Events.RESIZE, this.rebuild, this);
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.rebuildOnResize, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.scale.off(Phaser.Scale.Events.RESIZE, this.rebuild, this);
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.rebuildOnResize, this);
     });
+  }
+
+  /**
+   * 寸法が本当に変わったときだけ作り直す。Phaserは1回の向きの変更で複数回RESIZEを出すため、
+   * そのまま繋ぐと画面全体の組み立てが毎回2度走る。
+   */
+  private rebuildOnResize(): void {
+    if (this.scale.width === this.metrics.width && this.scale.height === this.metrics.height) return;
+    this.rebuild();
   }
 
   /** 画面を組み立てる。作り直しのたびに呼ばれるので、前回の状態は残っていない前提で書く。 */
@@ -28,7 +37,10 @@ export abstract class ResponsiveScene extends Phaser.Scene {
    * 呼ぶ。開いている子ウィンドウも消えるため、buildは「今開いているもの」を毎回組み立て直す。
    */
   protected rebuild(): void {
-    this.children.removeAll(true);
+    // 表示物は一覧から外すだけでなく必ず壊す。DisplayList.removeAllの引数はdestroyChildではなく
+    // skipCallbackで（Containerのそれとは別物）、外しただけでは実体が残る。DOM要素で作る入力欄
+    // （TextInput）は画面に出たままになり、向きを変えるたびに増えていく。
+    for (const child of this.children.getAll()) child.destroy();
     this.cameras.resize(this.scale.width, this.scale.height);
     this.metrics = new ScreenMetrics(this.scale.width, this.scale.height);
     this.build();
