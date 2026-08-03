@@ -32,9 +32,11 @@ RADIUS = 12
 
 # 留具。リングは紙の上端の少し上を中心とする輪で、下側の線が穴の上半分を通る。
 # 線を穴の中心より上へ通すことで、穴の下側が開いて見える（中心を通すと穴がほぼ隠れて汚れに見えた）。
+# 穴に掛かったリングは横へ回った姿勢で落ち着くので、正面からは縦長の楕円に見える。
 RING_X = (26, WIDTH - 26)
 RING_CY = OVERHEAD + MARGIN - 6
-RING_RADIUS = 14
+RING_RX = 9
+RING_RY = 15
 RING_WIRE = 6
 HOLE_CY = OVERHEAD + MARGIN + 12
 HOLE_RADIUS = 8
@@ -92,22 +94,43 @@ def main() -> None:
         rim = np.clip(1 - (distance - HOLE_RADIUS) / HOLE_RIM, 0, 1)
         rgb *= (1 - HOLE_RIM_DARK * rim)[:, :, None]
 
-    # リング。上ほど明るい金属の輪として描き、紙の上へ重ねる（穴の中でも見える）。
-    torus = np.zeros((HEIGHT, WIDTH))
+    # リング。楕円の線を左右で手前と奥に分ける——輪は穴を通っているので、左（手前）の線は
+    # 紙の前に、右（奥）の線は紙の裏に来る。分け目は楕円の上下の頂点で、線幅ぶんなだらかに繋ぐ。
+    front = np.zeros((HEIGHT, WIDTH))
+    back = np.zeros((HEIGHT, WIDTH))
     for cx in RING_X:
-        distance = np.hypot(xx - cx, yy - RING_CY)
-        torus = np.maximum(torus, np.clip(RING_WIRE / 2 + 0.5 - np.abs(distance - RING_RADIUS), 0, 1))
-    shade = np.clip((yy - (RING_CY - RING_RADIUS)) / (2 * RING_RADIUS), 0, 1)
+        rho = np.hypot(xx - cx, yy - RING_CY)
+        f = np.hypot((xx - cx) / RING_RX, (yy - RING_CY) / RING_RY)
+        # 中心から楕円の輪郭までの距離。方向ごとの半径 rho/f との差で近似する（中心では未定義なので遠くとする）。
+        outline = np.divide(rho, f, out=np.full_like(f, 1e6), where=f > 1e-6)
+        band = np.clip(RING_WIRE / 2 + 0.5 - np.abs(rho - outline), 0, 1)
+        side = np.clip(0.5 + (cx - xx) / RING_WIRE, 0, 1)
+        front = np.maximum(front, band * side)
+        back = np.maximum(back, band * (1 - side))
+
+    # 上ほど明るい金属。奥側の線は陰になるぶん暗くする。
+    shade = np.clip((yy - (RING_CY - RING_RY)) / (2 * RING_RY), 0, 1)
     metal = 200 - 125 * shade + 35 * np.clip(1 - np.abs(shade - 0.15) / 0.15, 0, 1)
     metal_rgb = np.dstack([metal, metal + 2, metal + 5])
 
-    # リングが紙へ落とす小さな影。リング自身が覆う場所は後の合成で隠れる。
-    contact = gaussian_filter(torus, sigma=1.0) * 0.22
+    # 奥側の線を紙の下へ敷く。紙の無い場所（上のはみ出しと穴の中）でだけ見える。
+    visible_back = back * (1 - alpha)
+    merged = alpha + visible_back
+    rgb = np.divide(
+        rgb * alpha[:, :, None] + metal_rgb * 0.75 * visible_back[:, :, None],
+        merged[:, :, None],
+        out=np.zeros_like(rgb),
+        where=merged[:, :, None] > 0,
+    )
+    alpha = merged
+
+    # 手前の線が紙へ落とす小さな影。線自身が覆う場所は後の合成で隠れる。
+    contact = gaussian_filter(front, sigma=1.0) * 0.22
     rgb *= (1 - contact)[:, :, None]
 
-    merged = torus + alpha * (1 - torus)
+    merged = front + alpha * (1 - front)
     rgb = np.divide(
-        metal_rgb * torus[:, :, None] + rgb * (alpha * (1 - torus))[:, :, None],
+        metal_rgb * front[:, :, None] + rgb * (alpha * (1 - front))[:, :, None],
         merged[:, :, None],
         out=np.zeros_like(rgb),
         where=merged[:, :, None] > 0,
