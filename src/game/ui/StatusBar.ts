@@ -48,6 +48,9 @@ export interface StatusContent {
   /** 値がどの域にあるか（GameElementDefinition.md 6.4節のalert）。 */
   readonly alert: AlertLevel;
 
+  /** 増えるほど悪い値か（PropertyDef.worsensUpward）。バーの向きと増減の記号の色が変わる。 */
+  readonly worsensUpward?: boolean;
+
   /** 直前の行動での増減。undefinedなら記号を出さない。 */
   readonly change?: StatusChange;
 
@@ -98,6 +101,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
   /** 移動中の動き。画面を作り直すと捨てられるため、消えるときに止める。 */
   private moveTween: Phaser.Tweens.Tween | undefined;
 
+  /** 増えるほど悪い値か。プロパティごとに決まっていて動かないため、作るときに1回だけ受け取る。 */
+  private readonly worsensUpward: boolean;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -108,6 +114,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
     nameWidthU: number = NAME_WIDTH,
   ) {
     super(scene, x, y);
+    this.worsensUpward = content.worsensUpward === true;
 
     const height = metrics.px(BAR_HEIGHT);
     const pinWidth = metrics.px(PIN_WIDTH);
@@ -148,7 +155,16 @@ export class StatusBar extends Phaser.GameObjects.Container {
     }
 
     if (content.ratio !== undefined) {
-      this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, content.ratio);
+      this.bar = new ProgressBar(
+        scene,
+        metrics,
+        barX,
+        0,
+        barWidth,
+        height,
+        content.ratio,
+        this.worsensUpward,
+      );
       this.add(this.bar);
     } else {
       this.valueText = scene.add
@@ -247,6 +263,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
     this.showChange(content.change);
   }
 
+  /** 三角の向きは値の増減そのもの、色は良し悪し（増えると悪い値では緑と赤が入れ替わる）。 */
   private showChange(change: StatusChange | undefined): void {
     if (change === undefined) {
       this.changeMark.setText('');
@@ -254,8 +271,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
     }
 
     const increased = change === 'increased';
+    const worsened = increased === this.worsensUpward;
     this.changeMark
       .setText(increased ? '▲' : '▼')
-      .setColor(cssColor(increased ? COLOR.statusIncreased : COLOR.statusDecreased));
+      .setColor(cssColor(worsened ? COLOR.statusDecreased : COLOR.statusIncreased));
   }
 }

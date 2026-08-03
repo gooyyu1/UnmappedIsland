@@ -6,10 +6,22 @@ import type { Localization } from '../../src/locale/Localization';
 import { LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /** ゲーム本体に同梱される表示文字列ファイル（テストはリポジトリルートで実行される前提）。 */
 const LOCALE_PATH = `public/${LOCALE_FILE}`;
+
+/**
+ * WorldCodexのYAMLがconditionsに書いた理由（reason、14.6節）の識別子。ロード後のConditionNodeは
+ * 木に畳まれていて列挙できないため、定義ファイルの字面から拾う。
+ */
+function declaredReasonNames(): readonly string[] {
+  const found = new Set<string>();
+  for (const path of worldCodexYamlPaths())
+    for (const match of readFileSync(path, 'utf8').matchAll(/^\s*-?\s*reason:\s*([a-z][a-z0-9_]*)\s*$/gm))
+      found.add(match[1]);
+  return [...found];
+}
 
 describe('Localization(表示文字列の対応表)', () => {
   const locale = parseLocale(
@@ -87,6 +99,13 @@ object_texts:
     expect(parseLocale('ja.yaml', 'ui:\n  ok: OK\n').object('coconut').displayName).toBe('coconut');
   });
 
+  it('操作を実行できない理由の文言を引ける（未登録ならundefined）', () => {
+    const withReasons = parseLocale('ja.yaml', 'reason_texts:\n  too_heavy: 荷が重すぎる。\n');
+
+    expect(withReasons.reason('too_heavy')).toBe('荷が重すぎる。');
+    expect(withReasons.reason('unknown_reason'), '未登録なら理由を出さない').toBeUndefined();
+  });
+
   it('プロパティのタグの表示名を引ける（未登録なら識別子）', () => {
     const texts = parseLocale('ja.yaml', 'property_tag_texts:\n  nutrition:\n    display_name: 栄養\n');
 
@@ -131,6 +150,13 @@ describe('同梱の表示文字列ファイル', () => {
       const name = codex.propertyTagNames.getName(globalId);
       expect(locale.propertyTag(name).displayName, `${name} には表示名が必要`).not.toBe(name);
     }
+  });
+
+  it('conditionsが宣言する理由（reason）はすべて文言を持つ', () => {
+    // 欠けると、押せないアクションの吹き出しが「今はできない。」に落ちて理由が伝わらない
+    // （GameElementDefinition.md 14.6節）。
+    for (const reasonName of declaredReasonNames())
+      expect(locale.reason(reasonName), `reason '${reasonName}' には文言が必要`).toBeDefined();
   });
 
   it('存在しない識別子のエントリを持たない（WorldCodexの改名時の取り残しを防ぐ）', () => {

@@ -6,16 +6,18 @@ import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
 
 type ConditionNodeKind =
-  /** {object, prop, op, value}形式のプロパティ比較。 */
+  /** {object, prop, <比較演算子>: value}形式のプロパティ比較。 */
   | 'property'
+  /** {object, prop, in_stage}形式。propの実効値が、その名前の段（6.4節）に該当しているか。 */
+  | 'property_stage'
   /**
-   * {object, in_slot}形式。objectが今まさに親のin_slotに入っているか（常に等価判定でopは持たない。
+   * {object, in_slot}形式。objectが今まさに親のin_slotに入っているか（等価判定のみ。
    * 否定はnotで包む）。「objectが外から見てどこに位置するか」を見る。
    */
   | 'slot_position'
   /**
-   * {object, slot, tag}形式。object自身が持つslotの中に、tagを持つ子が1つでもあるか（存在判定でopは
-   * 持たない）。slot_positionとは向きが逆で「objectの内側、自分のスロットの中身」を見る。
+   * {object, slot, tag}形式。object自身が持つslotの中に、tagを持つ子が1つでもあるか（存在判定）。
+   * slot_positionとは向きが逆で「objectの内側、自分のスロットの中身」を見る。
    */
   | 'slot_content'
   /** {object, tag}形式。object自身がtagを持つか（存在判定）。 */
@@ -27,18 +29,31 @@ type ConditionNodeKind =
   /** 子ノード（常に1つ）の否定。 */
   | 'not';
 
+/** kindごとに使うフィールドだけを渡すための、生成時の入力（ConditionNodeの各staticが組み立てる）。 */
+interface ConditionNodeFields {
+  readonly root?: ReferenceRoot;
+  readonly propertyGlobalId?: number;
+  readonly op?: ConditionOp;
+  readonly values?: readonly number[];
+  readonly valueRef?: PropertyPath;
+  readonly stageName?: string;
+  readonly slotGlobalId?: number;
+  readonly tagGlobalId?: number;
+  readonly children?: readonly ConditionNode[];
+}
+
 /**
  * conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲートが
- * 同じ木を共用する。葉はproperty・slot_position・slot_content・object_tagの4種、複合はall/any/notの3種で、
- * kindに応じて使うフィールドが変わる（単一クラス+kindで判別）。
+ * 同じ木を共用する。葉はproperty・property_stage・slot_position・slot_content・object_tagの5種、
+ * 複合はall/any/notの3種で、kindに応じて使うフィールドが変わる（単一クラス+kindで判別）。
  */
 export class ConditionNode {
   private readonly kind: ConditionNodeKind;
 
-  /** property/slot_position/slot_content/object_tag葉のみ有効。 */
+  /** 葉（all/any/not以外）のみ有効。 */
   private readonly root: ReferenceRoot | undefined;
 
-  /** property葉のみ有効。 */
+  /** property/property_stage葉のみ有効。 */
   private readonly propertyGlobalId: number | undefined;
 
   /** property葉のみ有効。 */
@@ -53,6 +68,9 @@ export class ConditionNode {
    * （ロード時エラー）。 */
   private readonly valueRef: PropertyPath | undefined;
 
+  /** property_stage葉のみ有効。段は宣言したPropertyDefごとの名前なので、internせず文字列で持つ。 */
+  private readonly stageName: string | undefined;
+
   /** slot_position/slot_content葉のみ有効。slot_positionではobjectの親の中の位置、
    * slot_contentではobject自身が持つスロットを指す（向きが異なる）。 */
   private readonly slotGlobalId: number | undefined;
@@ -63,26 +81,17 @@ export class ConditionNode {
   /** all/any/notのみ有効。notは常に1要素。 */
   private readonly children: readonly ConditionNode[] | undefined;
 
-  private constructor(
-    kind: ConditionNodeKind,
-    root: ReferenceRoot | undefined,
-    propertyGlobalId: number | undefined,
-    op: ConditionOp | undefined,
-    values: readonly number[] | undefined,
-    valueRef: PropertyPath | undefined,
-    slotGlobalId: number | undefined,
-    tagGlobalId: number | undefined,
-    children: readonly ConditionNode[] | undefined,
-  ) {
+  private constructor(kind: ConditionNodeKind, fields: ConditionNodeFields) {
     this.kind = kind;
-    this.root = root;
-    this.propertyGlobalId = propertyGlobalId;
-    this.op = op;
-    this.values = values;
-    this.valueRef = valueRef;
-    this.slotGlobalId = slotGlobalId;
-    this.tagGlobalId = tagGlobalId;
-    this.children = children;
+    this.root = fields.root;
+    this.propertyGlobalId = fields.propertyGlobalId;
+    this.op = fields.op;
+    this.values = fields.values;
+    this.valueRef = fields.valueRef;
+    this.stageName = fields.stageName;
+    this.slotGlobalId = fields.slotGlobalId;
+    this.tagGlobalId = fields.tagGlobalId;
+    this.children = fields.children;
   }
 
   static property(
@@ -92,107 +101,43 @@ export class ConditionNode {
     values: readonly number[] | undefined,
     valueRef?: PropertyPath,
   ): ConditionNode {
-    return new ConditionNode(
-      'property',
-      root,
-      propertyGlobalId,
-      op,
-      values,
-      valueRef,
-      undefined,
-      undefined,
-      undefined,
-    );
+    return new ConditionNode('property', { root, propertyGlobalId, op, values, valueRef });
+  }
+
+  static propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): ConditionNode {
+    return new ConditionNode('property_stage', { root, propertyGlobalId, stageName });
   }
 
   static slotPosition(root: ReferenceRoot, slotGlobalId: number): ConditionNode {
-    return new ConditionNode(
-      'slot_position',
-      root,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      slotGlobalId,
-      undefined,
-      undefined,
-    );
+    return new ConditionNode('slot_position', { root, slotGlobalId });
   }
 
   static slotContent(root: ReferenceRoot, slotGlobalId: number, tagGlobalId: number): ConditionNode {
-    return new ConditionNode(
-      'slot_content',
-      root,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      slotGlobalId,
-      tagGlobalId,
-      undefined,
-    );
+    return new ConditionNode('slot_content', { root, slotGlobalId, tagGlobalId });
   }
 
   static objectTag(root: ReferenceRoot, tagGlobalId: number): ConditionNode {
-    return new ConditionNode(
-      'object_tag',
-      root,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      tagGlobalId,
-      undefined,
-    );
+    return new ConditionNode('object_tag', { root, tagGlobalId });
   }
 
   static all(children: readonly ConditionNode[]): ConditionNode {
-    return new ConditionNode(
-      'all',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      children,
-    );
+    return new ConditionNode('all', { children });
   }
 
   static any(children: readonly ConditionNode[]): ConditionNode {
-    return new ConditionNode(
-      'any',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      children,
-    );
+    return new ConditionNode('any', { children });
   }
 
   static not(inner: ConditionNode): ConditionNode {
-    return new ConditionNode(
-      'not',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      [inner],
-    );
+    return new ConditionNode('not', { children: [inner] });
   }
 
   evaluate(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
     switch (this.kind) {
       case 'property':
         return this.evaluateProperty(resolveRoot);
+      case 'property_stage':
+        return this.evaluatePropertyStage(resolveRoot);
       case 'slot_position':
         return this.evaluateSlotPosition(resolveRoot);
       case 'slot_content':
@@ -249,18 +194,34 @@ export class ConditionNode {
     }
   }
 
+  /**
+   * 段（6.4節）に該当しているか。プロパティを持たない・解決できない場合は偽で、他の葉と揃える
+   * （解決できない葉は偽、否定したければnotで包む）。
+   */
+  private evaluatePropertyStage(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
+    const owner = this.resolvePropertyOwner(this.root!, this.propertyGlobalId!, resolveRoot);
+    return owner !== undefined && owner.isInStage(this.propertyGlobalId!, this.stageName!);
+  }
+
   private resolvePropertyEffectiveValue(
     root: ReferenceRoot,
     propertyGlobalId: number,
     resolveRoot: (root: ReferenceRoot) => WorldObject | undefined,
   ): number | undefined {
-    const target =
-      root === 'ancestor'
-        ? resolveRoot('self')?.findAncestorWithProperty(propertyGlobalId)
-        : resolveRoot(root);
-    if (target === undefined) return undefined;
-    const value = target.tryGetProperty(propertyGlobalId);
+    const target = this.resolvePropertyOwner(root, propertyGlobalId, resolveRoot);
+    const value = target?.tryGetProperty(propertyGlobalId);
     return value !== undefined ? value.getEffectiveValue() : undefined;
+  }
+
+  /** そのプロパティを読む相手。ancestorだけは「そのプロパティを定義している最初の祖先」を探す（8.6節）。 */
+  private resolvePropertyOwner(
+    root: ReferenceRoot,
+    propertyGlobalId: number,
+    resolveRoot: (root: ReferenceRoot) => WorldObject | undefined,
+  ): WorldObject | undefined {
+    return root === 'ancestor'
+      ? resolveRoot('self')?.findAncestorWithProperty(propertyGlobalId)
+      : resolveRoot(root);
   }
 
   private evaluateSlotPosition(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {

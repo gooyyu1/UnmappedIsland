@@ -21,6 +21,9 @@ object_texts:
         display_name: 移動時間
       required_progress:
         display_name: 発見に必要な探索の進み具合
+      load:
+        display_name: 荷重
+        description: 今の担ぎ方で感じている、持ち物と装備の重さ。重すぎると歩けなくなる。
       satiety:
         display_name: 満腹度
       hydration:
@@ -319,3 +322,8 @@ location_texts:
       bare_rock: { display_name: 裸岩の山頂 }
       windy: { display_name: 風の山頂 }
       flat: { display_name: 平らな山頂 }
+
+# 操作を実行できない理由（GameElementDefinition.md 14.6節のreason）。実行できないアクションのボタンを
+# 押している間、吹き出しに出る。
+reason_texts:
+  too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。

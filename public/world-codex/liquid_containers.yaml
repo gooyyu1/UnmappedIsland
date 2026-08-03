@@ -80,13 +80,13 @@ traits:
       # 基礎。湿度が未実装のため、雨天は「湿度が高くて乾かない」の代理として除外する。
       - conditions:
           - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, op: not_in, value: [light_rain, heavy_rain, storm]}
+          - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         accumulate:
           self:
             size: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, op: not_in, value: [light_rain, heavy_rain, storm]}
+          - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         accumulate:
           self:
             size: -2
@@ -94,31 +94,31 @@ traits:
       # 最大6で最も低いしきい値10に届かないため、天候を見る必要がない。
       - conditions:
           - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: sunlight, op: gte, value: 10}
+          - {object: ancestor, prop: sunlight, gte: 10}
         accumulate:
           self:
             size: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: sunlight, op: gte, value: 12}
+          - {object: ancestor, prop: sunlight, gte: 12}
         accumulate:
           self:
             size: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: sunlight, op: gte, value: 12}
+          - {object: ancestor, prop: sunlight, gte: 12}
         accumulate:
           self:
             size: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: sunlight, op: gte, value: 15}
+          - {object: ancestor, prop: sunlight, gte: 15}
         accumulate:
           self:
             size: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: sunlight, op: gte, value: 15}
+          - {object: ancestor, prop: sunlight, gte: 15}
         accumulate:
           self:
             size: -2
@@ -127,6 +127,8 @@ object_defs:
   # 容量はcontentスロットのcapacityで持つ。単位はmLなので、1L = 1000。
   canteen:
     traits: [liquid_container, sealed_container]
+    props:
+      weight: {value: 300}
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
@@ -134,6 +136,8 @@ object_defs:
 
   pot:
     traits: [liquid_container, sealed_container]
+    props:
+      weight: {value: 1500}
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
@@ -141,6 +145,8 @@ object_defs:
 
   bottle:
     traits: [liquid_container, sealed_container]
+    props:
+      weight: {value: 500}
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
@@ -148,6 +154,8 @@ object_defs:
 
   jar:
     traits: [liquid_container, narrow_open_container]
+    props:
+      weight: {value: 1200}
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]
@@ -158,6 +166,8 @@ object_defs:
   coconut_bowl:
     tags: [item]
     traits: [liquid_container, wide_open_container]
+    props:
+      weight: {value: 200}
     slots:
       content:
         accepts: [{tag: liquid, max: 1}]

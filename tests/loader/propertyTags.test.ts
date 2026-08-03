@@ -188,8 +188,8 @@ object_defs:
 
     // stagesを持たないプロパティはどの域にも入らない扱い（safe）になる。
     expect(readings).toEqual([
-      { name: 'stamina', value: 25, ratio: 0.25, alert: 'safe' },
-      { name: 'tick_count', value: 7, ratio: undefined, alert: 'safe' },
+      { name: 'stamina', value: 25, ratio: 0.25, alert: 'safe', worsensUpward: false },
+      { name: 'tick_count', value: 7, ratio: undefined, alert: 'safe', worsensUpward: false },
     ]);
   });
 });

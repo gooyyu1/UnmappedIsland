@@ -1,6 +1,6 @@
 import { parseDocument } from 'yaml';
 import type { YAMLMap } from 'yaml';
-import { asMap, entriesInOrder, tryGetMap, tryGetScalar } from '../loader/yamlMapping';
+import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetScalar } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
 import type { LocationName } from '../domain/generation/IslandMap';
 
@@ -165,17 +165,20 @@ export class Localization {
   private readonly objects: ReadonlyMap<string, ObjectTextsEntry>;
   private readonly propertyTags: ReadonlyMap<string, DeclaredTexts>;
   private readonly locations: ReadonlyMap<string, LocationTextsEntry>;
+  private readonly reasons: ReadonlyMap<string, string>;
   private readonly ordinalSuffix: string;
 
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
     propertyTags: ReadonlyMap<string, DeclaredTexts> = new Map(),
     locations: ReadonlyMap<string, LocationTextsEntry> = new Map(),
+    reasons: ReadonlyMap<string, string> = new Map(),
     ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
     this.locations = locations;
+    this.reasons = reasons;
     this.ordinalSuffix = ordinalSuffix;
   }
 
@@ -192,6 +195,14 @@ export class Localization {
     const texts = this.location(name.typeName);
     const base = name.variantId === undefined ? texts.displayName : texts.variant(name.variantId).displayName;
     return name.ordinal === undefined ? base : base + this.ordinalSuffix.replace('{n}', String(name.ordinal));
+  }
+
+  /**
+   * 操作を実行できない理由（GameElementDefinition.md 14.6節のreason）の文言。未登録ならundefinedで、
+   * 呼び出し側は理由を出さない（識別子をそのまま画面へ出しても意味が通らないため）。
+   */
+  reason(reasonName: string): string | undefined {
+    return this.reasons.get(reasonName);
   }
 
   /** プロパティのタグ（GameElementDefinition.md 6.7節）の表示文字列。未登録なら識別子そのもの。 */
@@ -265,7 +276,13 @@ export function parseLocale(label: string, yamlText: string): Localization {
       locations.set(name, new LocationTextsEntry(parseTexts(entryNode, context), variants));
     }
 
-  return new Localization(objects, propertyTags, locations, ordinalSuffix);
+  const reasons = new Map<string, string>();
+  const reasonSection = tryGetMap(root, 'reason_texts', label);
+  if (reasonSection !== undefined)
+    for (const [name, node] of entriesInOrder(reasonSection))
+      reasons.set(name, asScalarText(node, `${label}.reason_texts.'${name}'`));
+
+  return new Localization(objects, propertyTags, locations, reasons, ordinalSuffix);
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

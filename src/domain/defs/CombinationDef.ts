@@ -1,10 +1,10 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { ConditionNode } from './ConditionNode';
 import { InteractionDef } from './InteractionDef';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
+import type { Requirements } from './Requirement';
 
 /**
  * ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の
@@ -16,11 +16,11 @@ export class CombinationDef extends InteractionDef {
   constructor(
     name: string,
     withTagGlobalId: number,
-    conditions: ConditionNode | undefined,
+    requirements: Requirements | undefined,
     effect: ActiveEffect | undefined,
     duration?: WeightSpec,
   ) {
-    super(name, conditions, effect, duration);
+    super(name, requirements, effect, duration);
     this.with = withTagGlobalId;
   }
 

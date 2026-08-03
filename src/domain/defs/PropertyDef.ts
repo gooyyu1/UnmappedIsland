@@ -4,6 +4,7 @@ import type { WorldSession } from '../runtime/WorldSession';
 import { INT32_MAX } from '../../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import type { AlertLevel } from './AlertLevel';
+import { ALERT_LEVELS } from './AlertLevel';
 
 /** 6.3節の値域。 */
 export class PropertyRange {
@@ -94,6 +95,15 @@ export class PropertyDef {
   private readonly fallbackStage: PropertyStage | undefined;
 
   /**
+   * 値が増えるほど悪いプロパティか（負荷など）。**専用の宣言は持たず、`stages`のalertから導く**:
+   * 最も上の段が最も下の段より深刻なら、増える側が悪い。「どちらが危ないか」は既にalertが宣言して
+   * いるので、同じことを二度書かせない（両端が同じ深刻さの段なら、既定の「減ると悪い」のまま）。
+   *
+   * 見せ方（バーの向き・増減の記号の色）だけがこれを見る（ScreenLayout.md ステータスエリア節）。
+   */
+  readonly worsensUpward: boolean;
+
+  /**
    * inherit: 同名プロパティを定義している最初の祖先（findAncestorWithProperty）の実効値を、自分の
    * 実効値に加算するか。祖先が見つからなければ寄与0。parentではなくancestorなのは、直接の親が
    * このプロパティを持たない場合に備えるため（例: ambient_temperatureは部屋が持つ）。
@@ -130,6 +140,18 @@ export class PropertyDef {
     this.tags = tags;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
+    this.worsensUpward = PropertyDef.derivesWorsensUpward(stages);
+  }
+
+  /** 数値の段を下から上へ並べ、両端のalertの深刻さを比べる（段が2つ未満・シンボル型の段では常に偽）。 */
+  private static derivesWorsensUpward(stages: readonly PropertyStage[]): boolean {
+    const ordered = stages
+      .filter((stage) => stage.eq === undefined)
+      .sort((a, b) => (a.min ?? Number.NEGATIVE_INFINITY) - (b.min ?? Number.NEGATIVE_INFINITY));
+    if (ordered.length < 2) return false;
+
+    const severity = (stage: PropertyStage): number => ALERT_LEVELS.indexOf(stage.alert);
+    return severity(ordered[ordered.length - 1]) > severity(ordered[0]);
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */

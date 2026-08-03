@@ -564,12 +564,46 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.statuses).toHaveLength(tagged.length);
-    // 初期値はどれもmax（characters/）なので、バーは満タンで、どれも安全域に入る。
-    expect(view.statuses.map((status) => status.ratio)).toEqual(tagged.map(() => 1));
+    // 満たされ具合を持つものは満タン、空身で始まる荷重だけが0（characters/）。どれも安全域に入る。
+    expect(view.statuses.map((status) => status.ratio)).toEqual(
+      tagged.map((reading) => (reading.name === 'load' ? 0 : 1)),
+    );
     expect(view.statuses.map((status) => status.alert)).toEqual(tagged.map(() => 'safe'));
     expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((reading) => reading.name));
     // localeに登録の無いcharacterでは識別子がそのまま出る（Localization.md）。
     expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((reading) => reading.name));
+  });
+
+  it('荷が重すぎると移動のアクションが押せなくなり、理由の文言が付く', () => {
+    // ContainerSystem.md 5節: 危険域（too_heavy）に入ると道のtravelのconditionsが落ちる。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const localeWithReason = parseLocale('ja.yaml', 'reason_texts:\n  too_heavy: 荷が重すぎて歩けない。\n');
+    const pathTagId = codex.tagNames.getId('path');
+    const travelOf = (view: ReturnType<typeof fromGameSession>) =>
+      view.fixtures.find((card) => card.objects[0].def.tags.includes(pathTagId))!.actions[0];
+
+    expect(travelOf(fromGameSession(game, codex, localeWithReason)).enabled, '空身なら歩ける').toBe(true);
+
+    // 装備スロットへ石（1kgずつ）を積んで、どのキャラクタでも危険域へ届く重さにする。
+    const equipmentId = codex.slotNames.getId('equipment');
+    for (let i = 0; i < 40; i++)
+      game.session
+        .spawn(codex.objectNames.getId('stone'))
+        .moveToSlot(game.player.instance, equipmentId, codex.wellKnown);
+    expect(
+      game.player.instance.getEffectiveValue(codex.propertyNames.getId('load')),
+      '装備の重さがそのまま負荷になる',
+    ).toBeGreaterThan(0);
+
+    const travel = travelOf(fromGameSession(game, codex, localeWithReason));
+    expect(travel.enabled).toBe(false);
+    expect(travel.reason).toBe('荷が重すぎて歩けない。');
+
+    travel.execute();
+    expect(game.player.location?.instance.instanceId, '押しても移動しない').toBe(
+      game.startLocation.instance.instanceId,
+    );
   });
 
   it('ステータスの域は、値が減るとその区分に従って上がる', () => {

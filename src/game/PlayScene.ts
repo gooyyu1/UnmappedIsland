@@ -683,6 +683,8 @@ export class PlayScene extends ResponsiveScene {
       label: action.name,
       description: action.description,
       minutes: action.minutes,
+      enabled: action.enabled,
+      reason: action.reason,
       onTap: () => {
         const origin = this.rectOf(card);
         this.closeObjectWindow();

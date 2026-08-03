@@ -56,6 +56,10 @@ object_defs:
         showMenu: always
         conditions:
           - {in_slot: fixtures}   # 未発見（undiscovered_fixtures側）の間は実行できない
+          # 荷が重すぎると動けない。段の名前で見るので、境目はキャラクタのloadのstagesだけが持つ
+          # （ContainerSystem.md 5節）。
+          - reason: too_heavy
+            not: {object: actor, prop: load, in_stage: too_heavy}
         duration: {prop: travel_minutes}
         move:
           object: actor
@@ -70,11 +74,15 @@ object_defs:
   # 太い枝。細い枝（branch）とは別のアイテム。
   thick_branch:
     tags: [item]
+    props:
+      weight: {value: 2000}
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
   # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
   stone:
     tags: [item, stone]
+    props:
+      weight: {value: 1000}
     combinations:
       knap:
         with: stone
@@ -85,6 +93,8 @@ object_defs:
   # 枝。
   branch:
     tags: [item]
+    props:
+      weight: {value: 300}
 
   # ------------------------------------------------------------------
   # 探索で見つかる設置物。fixtureタグによって土地のfixturesスロットへ振り分けられる。

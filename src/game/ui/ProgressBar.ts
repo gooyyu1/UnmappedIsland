@@ -31,7 +31,11 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   private readonly alertBorderWidth: number;
   private readonly radius: number;
 
-  /** 今の満たされ具合と、減る前の位置に残している赤い帯の右端（減っていなければ同じ値）。 */
+  /**
+   * 塗りの右端と、赤い帯の右端（悪化していなければ同じ値）。帯は常に両者の間に出る。
+   * どちらが「今の値」かは向きで変わる: 減ると悪いバーは塗り、増えると悪いバーは帯の側が今の値で、
+   * もう一方が遅れて追いつく（ScreenLayout.md ステータスエリア節）。
+   */
   private ratio: number;
   private lagRatio: number;
 
@@ -45,6 +49,9 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   private alertColor: number | undefined;
   private blinkTween: Phaser.Tweens.Tween | undefined;
 
+  /** 増えるほど悪い値か（PropertyDef.worsensUpward）。塗りの色と、帯をどちら向きに出すかが変わる。 */
+  private readonly worsensUpward: boolean;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -53,8 +60,10 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     width: number,
     height: number,
     ratio: number,
+    worsensUpward = false,
   ) {
     super(scene, x, y);
+    this.worsensUpward = worsensUpward;
 
     this.barWidth = width;
     this.barHeight = height;
@@ -94,39 +103,55 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.draw();
   }
 
+  /** 今の値。増えると悪いバーでは帯の側が先に動くので、そちらが今の値になる。 */
+  private get currentRatio(): number {
+    return this.worsensUpward ? this.lagRatio : this.ratio;
+  }
+
   /**
-   * 満たされ具合を変える。**減ったときは、減る前の位置まで赤い帯を残し、少し遅れて縮める**
-   * （格闘ゲームの体力バーと同じで、どれだけ減ったかを目で追えるようにするため）。
-   * 増えたときは赤い帯を残さない——増えた分は塗りそのものが伸びて分かるため。
+   * 満たされ具合を変える。**悪化した分は赤い帯として残し、少し遅れて追いつかせる**（格闘ゲームの
+   * 体力バーと同じで、どれだけ悪くなったかを目で追えるようにするため）。減ると悪いバーでは塗りが先に
+   * 縮んで帯が後から縮み、増えると悪いバーでは帯が先に伸びて塗りが後から伸びる。好転した分に帯は
+   * 残さない——良くなった分は塗りそのものの動きで分かるため。
    *
-   * holdは「まだ値が動き続けている最中か」。trueの間は縮め始めず、帯の右端を動き始めの位置に残したままに
-   * するので、何度かに分けて減った分が合計として読める（ScreenLayout.md ステータスエリア節）。
-   * holdをfalseに戻した時点から縮み始めるため、値が変わらないtrue→falseの呼び出しにも意味がある。
+   * holdは「まだ値が動き続けている最中か」。trueの間は追いつかせず、帯を動き始めの位置に残したままに
+   * するので、何度かに分けて悪化した分が合計として読める（ScreenLayout.md ステータスエリア節）。
+   * holdをfalseに戻した時点から動き始めるため、値が変わらないtrue→falseの呼び出しにも意味がある。
    */
   setRatio(ratio: number, hold = false): void {
     const next = Phaser.Math.Clamp(ratio, 0, 1);
-    if (next === this.ratio && hold === this.holding) return;
+    if (next === this.currentRatio && hold === this.holding) return;
 
-    // 縮み切る前にまた減ったら、前回の減り始めの位置から続ける（帯は右端が最も高かった位置に残る）。
+    // 追いつき切る前にまた悪化したら、前回の動き始めの位置から続ける（帯は最も悪かった位置に残る）。
     this.stopShrinking();
 
-    if (next < this.ratio) this.lagRatio = Math.max(this.lagRatio, this.ratio);
-    else if (next > this.ratio) this.lagRatio = next;
-    this.ratio = next;
+    if (this.worsensUpward) {
+      if (next > this.lagRatio) this.lagRatio = next;
+      else {
+        this.ratio = next;
+        this.lagRatio = next;
+      }
+    } else {
+      if (next < this.ratio) this.lagRatio = Math.max(this.lagRatio, this.ratio);
+      else if (next > this.ratio) this.lagRatio = next;
+      this.ratio = next;
+    }
     this.holding = hold;
     this.draw();
 
     if (this.holding || this.lagRatio <= this.ratio) return;
 
-    const lag = { value: this.lagRatio };
+    // 追いつくのは、悪化のときに置いていかれた側（減ると悪いバーは帯、増えると悪いバーは塗り）。
+    const lag = { value: this.worsensUpward ? this.ratio : this.lagRatio };
     this.lagTween = this.scene.tweens.add({
       targets: lag,
-      value: this.ratio,
+      value: this.worsensUpward ? this.lagRatio : this.ratio,
       delay: LAG_DELAY_MS,
       duration: LAG_DURATION_MS,
       ease: 'Sine.easeIn',
       onUpdate: () => {
-        this.lagRatio = lag.value;
+        if (this.worsensUpward) this.ratio = lag.value;
+        else this.lagRatio = lag.value;
         this.draw();
       },
       onComplete: () => {
@@ -186,7 +211,8 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
     const fillWidth = width * this.ratio;
     if (fillWidth > 0) {
-      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill: COLOR.statusBarFill, radius });
+      const fill = this.worsensUpward ? COLOR.statusBarFillWorsening : COLOR.statusBarFill;
+      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill, radius });
     }
 
     drawBox(

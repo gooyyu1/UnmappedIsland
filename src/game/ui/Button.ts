@@ -19,6 +19,8 @@ const HOLD_MS = 400;
 export interface HoldHandlers {
   readonly onStart: () => void;
   readonly onEnd: () => void;
+  /** 長押しと見なすまでの時間。0なら押した瞬間に始まる（押せないボタンが理由をすぐ出すため）。 */
+  readonly delayMs?: number;
 }
 
 /**
@@ -56,7 +58,7 @@ export class Button extends Phaser.GameObjects.Container {
       onPress: () => {
         this.setAlpha(PRESSED_ALPHA);
         if (hold !== undefined) {
-          this.holdTimer = scene.time.delayedCall(HOLD_MS, () => {
+          this.holdTimer = scene.time.delayedCall(hold.delayMs ?? HOLD_MS, () => {
             this.holding = true;
             hold.onStart();
           });

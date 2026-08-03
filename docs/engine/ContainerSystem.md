@@ -121,92 +121,34 @@ character:
           min: 60000
 ```
 
-移動可否は `{object: actor, prop: load, op: lt, value: 60000}` のように、道の `travel` アクションの
+移動可否は `{object: actor, prop: load, lt: 60000}` のように、道の `travel` アクションの
 `conditions` で直接書けます。
 
-## 5. 負荷が効くのは移動時間・疲労・移動可否の3つ
+## 5. 負荷が効くのは移動できるかどうか
 
-`load` の段（`stages`、[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4 節）が、移動へ 3 通りに
-効きます。閾値はキャラクタごと（`characters/`）に置くので、担ぎ慣れの個人差はここに出ます。
+`load` の段（`stages`、[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4 節）の危険域に入ると、
+移動できなくなります。閾値はキャラクタごと（`characters/`）に置くので、担ぎ慣れの個人差はここに出ます。
+域そのものの見せ方は、ステータスの一種として [`../ui/ScreenLayout.md`](../ui/ScreenLayout.md)
+ステータスエリア節が扱います。
 
-| 域 | 効くこと |
-|---|---|
-| 安全域・留意域 | 何も起きない |
-| 要注意域 | 移動に余計な時間がかかり、担いでいる間 `stamina` が削られる |
-| 危険域 | 上に加えて移動できない |
-
-いずれも新しい語彙は要りません。域そのものの見せ方は、ステータスの一種として
-[`../ui/ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節が扱います。
-
-### 5.1 移動できない: 道の conditions
-
-道の `travel` に、`actor` の `load` を見る条件を足すだけです。
+書き方は、道の `travel` に `actor` の `load` を見る条件を足すだけです。
 
 ```yaml
 actions:
   travel:
     conditions:
       - {in_slot: fixtures}
-      - {object: actor, prop: load, op: lt, value: 40000}   # 40kg以上は動けない
+      - not: {object: actor, prop: load, in_stage: too_heavy}
 ```
 
-**アクションのボタンは条件が偽でも出て、押しても黙って何も起きません**（`ObjectWindow` は `conditions` を
-見ません）。荷が重くて動けないことがプレイヤーに伝わらないため、押せない理由の見せ方が要ります（7 節）。
+閾値ではなく段の名前（`in_stage`）で見るのは、同じ境目を `stages` の `min` と条件の側に二重に書くと、
+片方だけ直したときに「バーは危険域なのに歩ける」が黙って成立するためです。段の名前は `too_heavy` で
+固定し、閾値だけをキャラクタごとに変えます（[`../world/Characters.md`](../world/Characters.md)）。
 
-### 5.2 移動時間が延びる: 土地を中継させる
+実行できないアクションのボタンは押せない見た目になり、押している間だけ理由が出ます
+（`reason: too_heavy`、`GameElementDefinition.md` 14.6 節）。
 
-`duration` は単一のプロパティ参照（11.3 節）なので、道ごとの所要時間と負荷による上乗せを合流させる場所が
-要ります。道の `travel_minutes` を `inherit`（6.5 節）にし、キャラクタの `load` の段が
-`modify: {ancestor: ...}`（8.6 節）で**今いる土地**の同名プロパティを押し上げると、両者が足し合わさります。
-
-```yaml
-location:              # 土地（core.yamlのlocation trait）
-  props:
-    travel_minutes:    # ここから出るとき、道の所要時間へ上乗せされる分
-      value: 0
-
-path:
-  props:
-    travel_minutes:
-      value: 60        # 生成時にインスタンスごとへ上書きされる
-      inherit: true    # 今いる土地の上乗せ分を足す
-
-character:
-  props:
-    load:
-      stages:
-        - {name: light}
-        - name: heavy
-          min: 25000
-          alert: caution
-          passives:
-            - modify: {ancestor: {travel_minutes: 15}}
-```
-
-キャラクタの直接の親は今いる土地（`characters` スロット）なので、`ancestor` は必ずその土地に届き、移動すれば
-行き先の土地へ張り替わります。道は同じ土地の `fixtures` にいるため、そこから出るすべての道が同じ上乗せを
-受けます。
-
-上乗せできるのは**一定の分数だけで、率では伸ばせません**。また `inherit` は同名のプロパティしか辿らないため、
-土地側の名前も `travel_minutes` になります（意味は「上乗せ分」であって、土地自身の所要時間ではありません）。
-
-### 5.3 疲労が増える: 段が accumulate を持つ
-
-`stamina` は tick では減りません（[`../world/Characters.md`](../world/Characters.md)）。負荷の段が
-`accumulate` を持てば、重い荷を担いでいる間だけ削られます。
-
-```yaml
-        - name: heavy
-          min: 25000
-          alert: caution
-          passives:
-            - accumulate: {self: {stamina: -1}}
-```
-
-移動のたびに 1 回引く形（`travel` の `add`）は採れません。`set`/`add` の値はリテラルだけなので（9.2 節）、
-負荷に応じた量にできないためです。tick 駆動にすると、**重いほど移動に時間がかかり、時間がかかるぶんだけ
-削られる**ので、5.2 と合わさって重さが二重に効きます。立ち止まっていても削られますが、荷を下ろせば止まるので
-そのまま受け入れます。
+重い荷が移動時間や疲労に与える影響は、実現方法から検討し直します（7 節）。
 
 ## 6. 環境からの保護は sheltered プロパティ1つで表す
 
@@ -215,7 +157,7 @@ character:
 
 ```yaml
 conditions:
-  - {object: ancestor, prop: sheltered, value: 0}
+  - {object: ancestor, prop: sheltered, eq: 0}
 ```
 
 要点は、**守る入れ物だけが `sheltered: 1` を定義し、守らない入れ物は定義しない**ことです（`world` が
@@ -233,11 +175,10 @@ conditions:
 
 - 固形物の `size` の単位。液体の `size`（mL）と同じ体積として扱うか、入れ物の枠数のような別の尺度に
   するかは未決（`containers.yaml` の `capacity` は当面効かない）
-- `load` を宣言したキャラクタはまだ無く、5 節はすべて未実装。閾値の刻み方は、実装する時点で
-  [`../world/Characters.md`](../world/Characters.md) の契約へ加える
-- 条件が偽で実行できないアクションを、押す前にどう見せるか（5.1 節）
-- 移動時間の上乗せを率で書けないこと（5.2 節）。荷の重さに比例させたくなった時点で、`duration` に
-  加算・乗算を持ち込むか、上乗せ側の段を細かく刻むかの選択になる
+- 重い荷が**移動時間**や**疲労**へ与える影響（移動できるかどうかだけは 5 節で実装済み）。実現方法から
+  検討し直す。`duration` は単一のプロパティ参照
+  （11.3 節）なので道ごとの所要時間と負荷を合流させる場所が無く、`set`/`add` の値はリテラルだけなので
+  （9.2 節）「移動のたびに負荷に応じた量を引く」も書けない。当面は移動の可否だけを見る
 - キャラクターの `load` を modify で調整して個人差や怪我を表す場合、`stages` の閾値は型定義なので動かせない。
   怪我は「荷が重く感じる」向きの modify として表すことになる
 - 中身の入った入れ物が壊れたときの中身の扱い。`destroy` は親スロットからの切り離しなので（9.3 節）中身も

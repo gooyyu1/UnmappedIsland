@@ -72,6 +72,21 @@ property_tag_texts:
     display_name: 栄養
 ```
 
+## reason_texts: 操作を実行できない理由
+
+`conditions` の要素が宣言する `reason`（[GameElementDefinition.md](./GameElementDefinition.md) 14.6節）も、
+どのオブジェクトにも属さない独立した識別子なので、独立した節に書きます。値は説明文だけなので、
+`display_name` を持たず**1行の文字列そのもの**を書きます。
+
+```yaml
+reason_texts:
+  too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
+```
+
+同じ理由を複数の操作が使えるよう、オブジェクトやアクションの下ではなくここへ集めます（「重すぎて
+歩けない」は道以外の操作でも起こりえます）。未登録の識別子は理由を出さない扱いになるため、綴り間違いは
+自動テスト（`tests/locale/localization.test.ts`）が捕まえます。
+
 ## location_texts: 土地の名前
 
 土地の名前は、生成のたびに**型と亜種の識別子の組み合わせ**として決まります

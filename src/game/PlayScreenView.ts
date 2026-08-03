@@ -93,6 +93,12 @@ export interface CardAction {
   readonly minutes: number;
   /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
   readonly execute: () => void;
+
+  /** 今この操作の要件（14節）を満たしているか。falseならボタンを押せなくする。 */
+  readonly enabled: boolean;
+
+  /** 満たしていない要件が宣言している理由の文言（14.6節）。宣言が無ければundefined。 */
+  readonly reason: string | undefined;
 }
 
 /**
@@ -275,6 +281,7 @@ export function fromGameSession(
           value: reading.value,
           ratio: reading.ratio,
           alert: reading.alert,
+          worsensUpward: reading.worsensUpward,
         }));
 
   // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
@@ -306,6 +313,7 @@ export function fromGameSession(
     const texts = locale.object(target.def.name);
     return target.def.actions.map((action) => {
       const declared = texts.action(action.name);
+      const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
       return {
         name: declared.displayName,
         description: declared.description,
@@ -313,6 +321,8 @@ export function fromGameSession(
         execute: () => {
           instance.tryExecuteAction(action.name, game.player.instance, game.session);
         },
+        enabled: unmet === undefined,
+        reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
       };
     });
   };

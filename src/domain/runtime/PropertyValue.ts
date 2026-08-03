@@ -19,6 +19,9 @@ export interface PropertyReading {
 
   /** 今の値がどの域にあるか（6.4節のalert）。表示するか・明滅させるかの判断はUI側（ScreenLayout.md）。 */
   readonly alert: AlertLevel;
+
+  /** 増えるほど悪い値か（PropertyDef.worsensUpward）。バーの向きと増減の記号の色だけがこれを見る。 */
+  readonly worsensUpward: boolean;
 }
 
 /**
@@ -172,6 +175,7 @@ export class PropertyValue {
       value,
       ratio: this.def.ratioOf(value),
       alert: this.def.alertLevelOf(value),
+      worsensUpward: this.def.worsensUpward,
     };
   }
 

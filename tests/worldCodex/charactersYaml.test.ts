@@ -85,6 +85,7 @@ describe('プレイヤーキャラクタの定義', () => {
       ['body_fat', ['nutrition']],
       ['wakefulness', ['status', 'health']],
       ['stamina', ['status', 'health']],
+      ['load', ['status', 'health']],
       ['vegetable_nutrition', ['nutrition']],
       ['meat_nutrition', ['nutrition']],
       ['grain_tuber_nutrition', ['nutrition']],
@@ -96,7 +97,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは4件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは5件で、並び順も揃っている', () => {
       // readPropertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（ScreenLayout.md）。
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
       const status = instance.readPropertiesWithTag(codex.propertyTagNames.getId('status'));
@@ -106,10 +107,11 @@ describe('プレイヤーキャラクタの定義', () => {
         'hydration',
         'wakefulness',
         'stamina',
+        'load',
       ]);
     });
 
-    it.each(['satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina'])(
+    it.each(['satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
       '%sは0を下限とするrangeを持つ',
       (propertyName) => {
         expect(propOf(def(character), propertyName).range?.min).toBe(0);
@@ -127,6 +129,8 @@ describe('プレイヤーキャラクタの定義', () => {
       ['hydration', 25],
       // 体力は行動で減るもので、時間では減らない。
       ['stamina', 0],
+      // 荷重は中身から導出されるので、自分では動かない。
+      ['load', 0],
     ])('%sはtickごとに%iずつ減る', (propertyName, expectedDecay) => {
       expect(decayPerTick(character, propertyName)).toBe(expectedDecay);
     });
@@ -157,6 +161,27 @@ describe('プレイヤーキャラクタの定義', () => {
         expect(prop.alertLevelOf(threshold - 1)).not.toBe('safe');
       },
     );
+
+    // 荷重だけは増える側が悪いので、境目は最大値からの割合で刻む（Characters.md）。
+    it('荷重の域は最大値からの割合で切られ、危険域の段だけがtoo_heavyという名前を持つ', () => {
+      const prop = propOf(def(character), 'load');
+      const max = maxOf(character, 'load');
+
+      expect(prop.alertLevelOf(0), '空身は安全域').toBe('safe');
+      expect(prop.alertLevelOf(max / 4), '1/4で留意域').toBe('watch');
+      expect(prop.alertLevelOf(max / 2), '1/2で要注意域').toBe('caution');
+      expect(prop.alertLevelOf((max * 5) / 6), '5/6で危険域').toBe('danger');
+
+      // 道のtravelがこの名前で見る（locations.yaml・ContainerSystem.md 5節）。
+      expect(prop.isInStage((max * 5) / 6, 'too_heavy')).toBe(true);
+      expect(prop.isInStage((max * 5) / 6 - 1, 'too_heavy')).toBe(false);
+    });
+
+    it('荷重は増えるほど悪い値として扱われる', () => {
+      // バーの向きと増減の記号の色が反転する（ScreenLayout.md ステータスエリア節）。
+      expect(propOf(def(character), 'load').worsensUpward).toBe(true);
+      expect(propOf(def(character), 'stamina').worsensUpward).toBe(false);
+    });
 
     // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。1時間 = 4 tick。
     it.each(['satiety', 'wakefulness'])('%sの域は残り時間で切られる', (propertyName) => {

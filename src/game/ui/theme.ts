@@ -72,6 +72,8 @@ export const COLOR = {
   statusBarTrack: 0xdddddd,
   statusBarTrackBorder: 0x999999,
   statusBarFill: 0x4caf50,
+  // 増えると悪いステータス（負荷）の塗り。満タンを良いと読ませないため、緑とは別の色にする。
+  statusBarFillWorsening: 0x9c6b3f,
   /** 減った分を遅れて縮める帯（ProgressBar）。 */
   statusBarLag: 0xd93025,
   /** 直前の行動でその値が増えた／減ったことを示す三角（StatusBar）。 */

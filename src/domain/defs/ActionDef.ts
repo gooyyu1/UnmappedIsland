@@ -1,9 +1,9 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { ConditionNode } from './ConditionNode';
 import { InteractionDef } from './InteractionDef';
 import type { WeightSpec } from './PickEffect';
+import type { Requirement, Requirements } from './Requirement';
 
 /** showMenuの値（11.1節）。現時点ではalwaysのみ（ActionSystem.md 7節）。 */
 export type ShowMenuMode = 'always';
@@ -18,15 +18,20 @@ export class ActionDef extends InteractionDef {
   constructor(
     name: string,
     showMenu: ShowMenuMode,
-    conditions: ConditionNode | undefined,
+    requirements: Requirements | undefined,
     effect: ActiveEffect | undefined,
     duration?: WeightSpec,
   ) {
-    super(name, conditions, effect, duration);
+    super(name, requirements, effect, duration);
     this.showMenu = showMenu;
   }
 
   tryExecute(self: WorldObject, actor: WorldObject | undefined, session: WorldSession): boolean {
     return this.apply(self, undefined, actor, session);
+  }
+
+  /** 今このアクションを実行できない理由（最初に落ちた要件）。実行できるならundefined。 */
+  unmetRequirement(self: WorldObject, actor: WorldObject | undefined): Requirement | undefined {
+    return this.firstUnmetRequirement(self, undefined, actor);
   }
 }
