@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "src/assets/objects/farmer.png を作り直すためのレシピ。",
+    "レーンの背景（build.py）とは後処理が違うため、手順はREADMEの『カードの絵』節を参照。"
+  ],
+  "output": "src/assets/objects/farmer.png",
+  "prompts": "characters.json",
+  "prompt": "castaway_cheerful_man",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "seed": 7006,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "_comment": [
+      "ポートレートはカード全面（size: card）。背景ごと紙へ溶かしたいのでmodeはluma。",
+      "featherが24なのは、12だと下端の切れ際が急で、40だと絵を削りすぎるため（絵の寸法410x640に対する値）。"
+    ],
+    "size": "card",
+    "mode": "luma",
+    "white": 250,
+    "opaque": 200,
+    "feather": 24
+  }
+}

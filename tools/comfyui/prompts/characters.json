@@ -6,20 +6,28 @@
     "肩から上が収まる寄りの構図にし、レーンの背景よりも筆致を強く出す。背景の絵は",
     "カードより手前に出ないよう淡くするが、こちらは主役なので逆に荒々しくてよい。",
     "",
-    "sharedNegative には、写真寄り・CG寄りに転ぶ語と、崩れやすい手足を入れている。"
+    "_baseNegative には、写真寄り・CG寄りに転ぶ語と、崩れやすい手足を入れている。"
   ],
   "_baseNegative": "photograph, photorealistic, 3d render, cgi, digital painting, airbrush, smooth gradient, glossy, plastic skin, anime, cel shading, thick black outlines, hands, fingers, full body, wide shot, text, letters, watermark, logo, signature, frame, border, extra limbs, deformed face, asymmetric eyes, blurry, low quality, jpeg artifacts",
   "_style": "全パターン共通の画風。荒い水彩を狙う語をまとめてある",
   "castaway_man": {
     "description": "漂着した男性。日焼けと無精髭。",
-    "positive": "loose rough watercolor portrait sketch, head and shoulders, a weathered castaway man in his thirties, sun-tanned skin, short unkempt beard, tousled dark hair, tired calm eyes, simple worn shirt, visible brush strokes, wet-on-wet color bleeding, unfinished edges fading into white paper, coarse paper grain, limited muted palette, minimal detail, plain pale background"
+    "positive": "loose rough watercolor portrait sketch, head and shoulders, a weathered castaway man in his thirties, sun-tanned skin, short unkempt beard, tousled dark hair, tired calm eyes, simple worn shirt, visible brush strokes, wet-on-wet color bleeding, unfinished edges fading into white paper, coarse paper grain, limited muted palette, minimal detail, plain pale background",
+    "negative": "photograph, photorealistic, 3d render, cgi, digital painting, airbrush, smooth gradient, glossy, plastic skin, anime, cel shading, thick black outlines, hands, fingers, full body, wide shot, text, letters, watermark, logo, signature, frame, border, extra limbs, deformed face, asymmetric eyes, blurry, low quality, jpeg artifacts"
   },
   "castaway_woman": {
     "description": "漂着した女性。髪を結んでいる。",
-    "positive": "loose rough watercolor portrait sketch, head and shoulders, a weathered castaway woman in her twenties, sun-tanned skin, dark hair tied back with loose strands, steady quiet eyes, simple worn shirt, visible brush strokes, wet-on-wet color bleeding, unfinished edges fading into white paper, coarse paper grain, limited muted palette, minimal detail, plain pale background"
+    "positive": "loose rough watercolor portrait sketch, head and shoulders, a weathered castaway woman in her twenties, sun-tanned skin, dark hair tied back with loose strands, steady quiet eyes, simple worn shirt, visible brush strokes, wet-on-wet color bleeding, unfinished edges fading into white paper, coarse paper grain, limited muted palette, minimal detail, plain pale background",
+    "negative": "photograph, photorealistic, 3d render, cgi, digital painting, airbrush, smooth gradient, glossy, plastic skin, anime, cel shading, thick black outlines, hands, fingers, full body, wide shot, text, letters, watermark, logo, signature, frame, border, extra limbs, deformed face, asymmetric eyes, blurry, low quality, jpeg artifacts"
   },
   "castaway_elder": {
-    "description": "年配の男性。白髪。作風が被写体でどう変わるかを見るための3つ目。",
-    "positive": "loose rough watercolor portrait sketch, head and shoulders, a weathered old castaway man, deeply lined sun-tanned face, gray beard and gray hair, quiet resigned eyes, simple worn shirt, visible brush strokes, wet-on-wet color bleeding, unfinished edges fading into white paper, coarse paper grain, limited muted palette, minimal detail, plain pale background"
+    "description": "年配の男性。白髪と深い皺。",
+    "positive": "loose rough watercolor portrait sketch, head and shoulders, a weathered old castaway man, deeply lined sun-tanned face, gray beard and gray hair, quiet resigned eyes, simple worn shirt, visible brush strokes, wet-on-wet color bleeding, unfinished edges fading into white paper, coarse paper grain, limited muted palette, minimal detail, plain pale background",
+    "negative": "photograph, photorealistic, 3d render, cgi, digital painting, airbrush, smooth gradient, glossy, plastic skin, anime, cel shading, thick black outlines, hands, fingers, full body, wide shot, text, letters, watermark, logo, signature, frame, border, extra limbs, deformed face, asymmetric eyes, blurry, low quality, jpeg artifacts"
+  },
+  "castaway_cheerful_man": {
+    "description": "陽気な男性。がっしりした体格と人懐こい笑顔。",
+    "positive": "loose rough watercolor portrait sketch, head and shoulders, a cheerful sturdy castaway man in his forties, broad shoulders, sun-tanned skin, short dark hair, warm friendly smile, laugh lines around the eyes, simple worn shirt, visible brush strokes, wet-on-wet color bleeding, unfinished edges fading into white paper, coarse paper grain, limited muted palette, minimal detail, plain pale background",
+    "negative": "photograph, photorealistic, 3d render, cgi, digital painting, airbrush, smooth gradient, glossy, plastic skin, anime, cel shading, thick black outlines, hands, fingers, full body, wide shot, text, letters, watermark, logo, signature, frame, border, extra limbs, deformed face, asymmetric eyes, blurry, low quality, jpeg artifacts"
   }
 }
