@@ -23,7 +23,7 @@ import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
-import { characterIcon } from './ui/characterArt';
+import { characterCardContent } from './ui/characterArt';
 import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
@@ -1095,9 +1095,9 @@ export class PlayScene extends ResponsiveScene {
     const portraitWidth = this.metrics.px(SIZE.cardWidth);
     const portraitHeight = this.metrics.px(SIZE.cardHeight);
     const portraitBottom = area.y + padding + portraitHeight;
+    // 名乗っている名前で見せる点だけが、キャラクタ選択やセーブスロットの札と違う。
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
-      icon: characterIcon(this.view.characterArt),
-      art: this.view.characterArt,
+      ...characterCardContent(this.view.characterArt, this.locale),
       name: this.view.characterName,
       onTap: this.whileIdle(() => this.openPropertyWindow()),
     });

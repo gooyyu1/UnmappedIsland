@@ -101,6 +101,11 @@ export interface CardContent {
   readonly edge?: CardEdgeAction;
   /** 掴んで他のカード・レーンへ落とせるカードか。ドラッグ中の扱いはCardDragController。 */
   readonly draggable?: boolean;
+  /**
+   * 名前を紙のどちら側へ寄せるか（既定は上）。主題が絵の上部にあるカード——顔が上端から始まる
+   * キャラクタの肖像——だけが下を選ぶ。物の札の下半分は劣化度などの情報のために空けておく。
+   */
+  readonly namePosition?: 'top' | 'bottom';
 }
 
 /**
@@ -108,8 +113,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background } = content;
-  return { icon, name, art, background };
+  const { icon, name, art, background, namePosition } = content;
+  return { icon, name, art, background, namePosition };
 }
 
 /**
@@ -174,14 +179,17 @@ export class Card extends Phaser.GameObjects.Container {
     const paper = paperRect(metrics, width, height);
     const margin = metrics.px(NAME_MARGIN);
     const stroke = Math.max(1, metrics.px(NAME_STROKE));
+    // 下寄せの名前は下端を固定して上へ伸ばす（行が増えても絵の下端との間が空かない）。
+    const bottom = content.namePosition === 'bottom';
     const nameText = scene.add
-      .text(paper.x + margin, paper.y + margin, name, {
+      .text(paper.x + margin, bottom ? paper.y + paper.height - margin : paper.y + margin, name, {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(30)}px`,
         fontStyle: 'bold',
         color: cssColor(COLOR.text),
         maxLines: NAME_MAX_LINES,
       })
+      .setOrigin(0, bottom ? 1 : 0)
       .setLineSpacing(metrics.px(2))
       .setStroke(cssColor(COLOR.cardFace), stroke);
     // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
