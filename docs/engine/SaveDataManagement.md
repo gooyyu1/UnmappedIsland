@@ -90,15 +90,21 @@ player:
   hand: [woven_basket]      # キャラクターのhandスロットへ、並べた順に入れる
   equipment: []             # 同じ名前が並んだ数だけ作られる
   props:
-    satiety: 1200           # プロパティの上書き（実体値）
+    satiety: 1200           # プロパティの上書き（実体値。整数かシンボル名）
 location:
   type: jungle              # 開始地点にする土地のobject_def（省略すると通常の漂着地）
   items: [stone x100, thick_branch]     # `x個数` で同じものをまとめて指定できる（1〜1000）
   fixtures: []
+world:
+  props:
+    weather: light_rain     # worldのプロパティの上書き（天候・季節・時刻）
 ```
 
 地形の種類はシードだけでは選べない（漂着地は砂浜優先で決まる）ため、特定の土地から試したい
 シナリオは `location.type` で開始地点を指定する。その土地がシードの島に無ければエラーにする。
+天候・季節も同じくシードでは選べないので、それらに依存する挙動（雨で水が溜まる、日差しで蒸発する）を
+試すシナリオは `world.props` で直接置く。置いた天候はそのまま続くわけではなく、`weather_remaining` が
+尽きた時点で通常の遷移（`ClimateSystem.md` 4節）に戻る。
 
 配置は通常のスロット移動（`WorldObject.moveToSlot`）そのもので、シナリオ専用の抜け道は
 持たない。受け入れられない指定（手持ちの上限超過、綴り違いのobject_def）はその場でエラーに

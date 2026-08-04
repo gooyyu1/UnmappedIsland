@@ -124,4 +124,35 @@ describe('テスト用シナリオ', () => {
 
     expect(game.player.satiety).toBe(1200);
   });
+
+  it('world.propsはシンボル型のプロパティも上書きできる（天候はシードで選べない）', () => {
+    const scenario = parseScenario('weather.yaml', 'seed: 1\nworld:\n  props:\n    weather: storm\n');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
+
+    applyScenario(game, scenario, codex);
+
+    const weatherId = codex.propertyNames.getId('weather');
+    expect(game.world.instance.getNumber(weatherId)).toBe(codex.symbolNames.getId('storm'));
+  });
+
+  it('シンボル名が違えばエラーになる（一生降らない雨を待たせない）', () => {
+    const scenario = parseScenario('bad.yaml', 'seed: 1\nworld:\n  props:\n    weather: rainy\n');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
+
+    expect(() => applyScenario(game, scenario, codex)).toThrow(/rainy/);
+  });
+
+  it('rain_collectingは、雨の中で空のヤシの殻を持たせる', () => {
+    const scenario = load('rain_collecting');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    const weatherId = codex.propertyNames.getId('weather');
+    expect(game.world.instance.getNumber(weatherId), '雨を待たずに試せる').toBe(
+      codex.symbolNames.getId('light_rain'),
+    );
+    expect(game.player.hand[0]?.def.name).toBe('coconut_bowl');
+    expect(game.startLocation.items.map((item) => item.def.name)).toEqual(['coconut_bowl']);
+  });
 });

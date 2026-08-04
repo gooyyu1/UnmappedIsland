@@ -53,6 +53,9 @@ object_texts:
       drink:
         display_name: 飲む
         description: 一口（250mL）飲む。残りが少なければ、残っている分だけ飲む。
+      collect_rain:
+        display_name: 雨を貯める
+        description: 空のまま置いて、降っている雨を受ける。降り続くかぎり、雨の強さのぶんだけ溜まっていく。
     combinations:
       pour_in:
         display_name: 注ぎ移す
@@ -328,3 +331,4 @@ location_texts:
 reason_texts:
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
+  not_raining: 雨は降っていない。溜められる雨がない。

@@ -86,6 +86,16 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     return world;
   }
 
+  function spawnEmptyUnderWorld(
+    containerName: string,
+    world: WorldObject,
+    session: WorldSession,
+  ): WorldObject {
+    const container = spawn(containerName);
+    container.moveToSlot(world, locationsSlotId, session.codex.wellKnown, true);
+    return container;
+  }
+
   function spawnContainerUnderWorld(
     containerName: string,
     liquidKind: string,
@@ -283,14 +293,120 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
 
-  it.each(['storm', 'heavy_rain', 'light_rain'])('雨天(%s)では昼でも蒸発しない', (weather) => {
+  // 雨天は蒸発せず（蒸発の基礎は雨天を除外する）、代わりに降った分だけ増える。
+  it.each([
+    ['light_rain', 10],
+    ['heavy_rain', 20],
+    ['storm', 40],
+  ])('coconut_bowlに溜まる雨の量は降り方(%s)で決まる', (weather, expectedDelta) => {
     const session = new WorldSession(codex);
     const world = spawnWorld(weather);
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world, session);
 
     bowl.tick(session);
 
+    expect(amountIn(bowl)).toBe(100 + expectedDelta);
+  });
+
+  it.each([
+    ['light_rain', 20],
+    ['heavy_rain', 40],
+    ['storm', 80],
+  ])('jarに溜まる雨の量は降り方(%s)で決まる', (weather, expectedDelta) => {
+    const session = new WorldSession(codex);
+    const world = spawnWorld(weather);
+    const jar = spawnContainerUnderWorld('jar', 'water', 100, world, session);
+
+    jar.tick(session);
+
+    expect(amountIn(jar)).toBe(100 + expectedDelta);
+  });
+
+  it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)には雨が溜まらない', (objectName) => {
+    const session = new WorldSession(codex);
+    const world = spawnWorld('storm');
+    const container = spawnContainerUnderWorld(objectName, 'water', 100, world, session);
+
+    container.tick(session);
+
+    expect(amountIn(container)).toBe(100);
+  });
+
+  it('雨で増えるのは水だけで、茶の入った容器は開いていても増えない', () => {
+    const session = new WorldSession(codex);
+    const world = spawnWorld('storm');
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'tea', 100, world, session);
+
+    bowl.tick(session);
+
     expect(amountIn(bowl)).toBe(100);
+  });
+
+  it('capacityを超えて降った分はあふれて失われる', () => {
+    const session = new WorldSession(codex);
+    const world = spawnWorld('storm'); // ヤシの器へ1tickに40mL
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 240, world, session);
+
+    bowl.tick(session);
+
+    expect(amountIn(bowl), '満杯(250)で止まる').toBe(250);
+  });
+
+  it('雨が降っていれば、空の容器に雨を貯め始められる', () => {
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    const world = spawnWorld('light_rain');
+    const bowl = spawnEmptyUnderWorld('coconut_bowl', world, session);
+
+    expect(bowl.actionUnmetRequirement('collect_rain', actor)).toBeUndefined();
+    expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(true);
+
+    expect(requireContent(bowl).def.name, '溜まるのは水').toBe('water_liquid');
+    expect(amountIn(bowl), '最少の量で始まり、以後は降っている間に増える').toBe(1);
+  });
+
+  it('貯め始めた雨は、そのまま降り続けるぶんだけ増える', () => {
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    const world = spawnWorld('light_rain');
+    const bowl = spawnEmptyUnderWorld('coconut_bowl', world, session);
+
+    bowl.tryExecuteAction('collect_rain', actor, session);
+    bowl.tick(session);
+
+    expect(amountIn(bowl)).toBe(1 + 10);
+  });
+
+  it('雨が降っていなければ貯められず、理由not_rainingを返す', () => {
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    const world = spawnWorld('clear');
+    const bowl = spawnEmptyUnderWorld('coconut_bowl', world, session);
+
+    expect(bowl.actionUnmetRequirement('collect_rain', actor)?.reasonName).toBe('not_raining');
+    expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(false);
+    expect(contentOf(bowl), '空のまま').toBeUndefined();
+  });
+
+  it('中身の入った容器では雨を貯めるアクションが出ない（操作が中身へ委譲されるため）', () => {
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    const world = spawnWorld('light_rain');
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world, session);
+
+    expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(false);
+
+    expect(amountIn(bowl), '溜まり続けるのはpassiveの仕事で、操作は要らない').toBe(100);
+  });
+
+  it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は雨を貯めるアクション自体を持たない', (name) => {
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    const world = spawnWorld('storm');
+    const container = spawnEmptyUnderWorld(name, world, session);
+
+    expect(container.tryExecuteAction('collect_rain', actor, session)).toBe(false);
+    expect(contentOf(container)).toBeUndefined();
   });
 
   it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は蒸発しない', (objectName) => {

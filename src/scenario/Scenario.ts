@@ -66,8 +66,13 @@ export interface Scenario {
   /** 開始地点の土地に置くもの。 */
   readonly items: SlotContents;
   readonly fixtures: SlotContents;
-  /** キャラクターのプロパティの上書き（実体値）。 */
-  readonly props: ReadonlyMap<string, number>;
+  /** キャラクターのプロパティの上書き。値はYAMLに書かれたまま（整数かシンボル名、6.6節）。 */
+  readonly props: ReadonlyMap<string, string>;
+  /**
+   * worldのプロパティの上書き。天候・季節・時刻はシードでは選べないため、それらに依存する挙動
+   * （雨で水が溜まる、日差しで蒸発する）を試すシナリオはここで直接置く。
+   */
+  readonly worldProps: ReadonlyMap<string, string>;
 }
 
 /** シナリオファイルを読む。書式の誤りはYamlLoadErrorで、読み込んだ側が画面に出す。 */
@@ -82,6 +87,7 @@ export function parseScenario(fileName: string, text: string): Scenario {
 
   const player = tryGetMap(root, 'player', fileName);
   const location = tryGetMap(root, 'location', fileName);
+  const world = tryGetMap(root, 'world', fileName);
 
   return {
     title: tryGetScalar(root, 'title', fileName) ?? fileName.replace(/^.*\/(.+)\.yaml$/, '$1'),
@@ -91,7 +97,8 @@ export function parseScenario(fileName: string, text: string): Scenario {
     locationType: location === undefined ? undefined : tryGetScalar(location, 'type', `${fileName}.location`),
     items: names(location, 'items', `${fileName}.location`),
     fixtures: names(location, 'fixtures', `${fileName}.location`),
-    props: numbers(player, 'props', `${fileName}.player`),
+    props: propertyValues(player, 'props', `${fileName}.player`),
+    worldProps: propertyValues(world, 'props', `${fileName}.world`),
   };
 }
 
@@ -117,24 +124,20 @@ function expandCount(text: string, context: string): readonly string[] {
   return Array.from({ length: count }, () => name);
 }
 
-function numbers(
+/** プロパティ名 → YAMLに書かれた値のまま。実体値への解決は適用時（codexが要るため、resolveValue）。 */
+function propertyValues(
   parent: ReturnType<typeof tryGetMap>,
   key: string,
   context: string,
-): ReadonlyMap<string, number> {
-  const values = new Map<string, number>();
+): ReadonlyMap<string, string> {
+  const values = new Map<string, string>();
   if (parent === undefined) return values;
 
   const map = tryGetMap(parent, key, context);
   if (map === undefined) return values;
 
   for (const [name, node] of entriesInOrder(map)) {
-    const raw = asScalarText(node, `${context}.${key}.'${name}'`);
-    const value = Number(raw);
-    if (!Number.isInteger(value)) {
-      throw new YamlLoadError(`${context}.${key}.'${name}': 整数である必要があります（値: '${raw}'）。`);
-    }
-    values.set(name, value);
+    values.set(name, asScalarText(node, `${context}.${key}.'${name}'`));
   }
   return values;
 }
@@ -159,9 +162,30 @@ export function applyScenario(game: NewGameSession, scenario: Scenario, codex: W
   place(game, codex, scenario.items, 'items');
   place(game, codex, scenario.fixtures, 'fixtures');
 
-  for (const [name, value] of scenario.props) {
-    game.player.instance.setProperty(propertyIdOf(codex, name), value);
+  for (const [name, raw] of scenario.props) {
+    game.player.instance.setProperty(propertyIdOf(codex, name), resolveValue(codex, name, raw));
   }
+  for (const [name, raw] of scenario.worldProps) {
+    game.world.instance.setProperty(propertyIdOf(codex, name), resolveValue(codex, name, raw));
+  }
+}
+
+/**
+ * プロパティへ書く実体値を決める。整数はそのまま、それ以外はシンボル名（6.6節）とみなしてIDへ直す。
+ * 未知のシンボル名はエラー——`weather: rainy` のような綴り間違いが「シンボルではない何か」として
+ * 黙って通ると、雨を待っているのに一生降らない世界で始まってしまうため。
+ */
+function resolveValue(codex: WorldCodex, propertyName: string, raw: string): number {
+  const asNumber = Number(raw);
+  if (Number.isInteger(asNumber)) return asNumber;
+
+  const symbolId = codex.symbolNames.tryGetId(raw);
+  if (symbolId === undefined) {
+    throw new YamlLoadError(
+      `シナリオ: プロパティ '${propertyName}' の値 '${raw}' は整数でもシンボル名でもありません。`,
+    );
+  }
+  return symbolId;
 }
 
 /** 名前で並べたobject_defを1つずつ生成し、そのスロットへ入れる。 */
