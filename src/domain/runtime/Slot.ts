@@ -130,13 +130,23 @@ export class Slot {
    * 末尾へ入れる。
    */
   addInternal(obj: WorldObject): void {
-    if (this.def.stackable) {
-      // tryInsertはmatchesを満たさない相手を弾くため、その場合は新規スタック生成へフォールバックする。
-      const existing = this.findMatchingStack(obj);
-      if (existing !== undefined && existing.tryInsert(obj)) return;
-    }
+    if (this.tryMergeIntoMatchingStack(obj)) return;
 
     this.placeNewStack(new ObjectStack(obj));
+  }
+
+  /**
+   * 合流できる既存スタックがあればそこへ入れる。「同種は1スタックにまとまる」という不変条件は位置の指定より
+   * 優先されるため、中身を加える経路は位置指定の有無によらず必ず最初にここを通す。
+   *
+   * 非stackableなスロット（同種でも個体ごとに別スタック）と、tryInsertがmatchesで弾いた相手は合流しない
+   * （呼び出し側は新規スタックの生成へ進む）。
+   */
+  private tryMergeIntoMatchingStack(obj: WorldObject): boolean {
+    if (!this.def.stackable) return false;
+
+    const existing = this.findMatchingStack(obj);
+    return existing !== undefined && existing.tryInsert(obj);
   }
 
   /** 新規スタックを最初の空きセルへ、無ければ末尾へ。 */
@@ -182,9 +192,9 @@ export class Slot {
   }
 
   /**
-   * same_slotによる置き換え（GameElementDefinition.md 9.4節）。置き換えオブジェクトを新規スタックとして、
-   * originが居たセル(originCellIndex)を基準に配置する（EffectSite参照）。自動整列は行わない（同種はObjectStack
-   * 内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
+   * same_slotによる置き換え（GameElementDefinition.md 9.4節）。合流先が無ければ置き換えオブジェクトを新規
+   * スタックとして、originが居たセル(originCellIndex)を基準に配置する（EffectSite参照）。自動整列は行わない
+   * （同種はObjectStack内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
    *
    * - kindRemains（originの同種がまだ残る＝selfが生き残る/同種の兄弟が残る）: 置き換え先はoriginの隣。非
    *   fixedPositionsはその添字へ挿入（後続が右へずれる）。fixedPositionsはoriginの右隣（無ければ左隣）へ、
@@ -193,6 +203,8 @@ export class Slot {
    *   fixedPositionsは空になったそのセル(undefined)を埋める。
    */
   placeSameSlot(obj: WorldObject, originCellIndex: number, kindRemains: boolean): boolean {
+    if (this.tryMergeIntoMatchingStack(obj)) return true;
+
     if (!this.def.fixedPositions) {
       const at = kindRemains ? originCellIndex + 1 : originCellIndex;
       this._cells.splice(Math.min(Math.max(at, 0), this._cells.length), 0, new ObjectStack(obj));
@@ -258,14 +270,10 @@ export class Slot {
    * fixedPositionsはまず右方向へ、それが無理なら左方向へ既存のセルをずらして場所を作る
    * （tryPlaceShifted）。どちらへもずらせなければfalse。前詰めスロットはその隙間へ挿入するだけ。
    *
-   * 合流できる既存スタックがあるときは、指定された位置よりも「同種は1スタックにまとまる」という不変条件を
-   * 優先してそちらへ入れる（addInternalと同じ扱い）。
+   * 合流が指定位置に優先することはtryMergeIntoMatchingStack参照。
    */
   tryInsertAtGap(obj: WorldObject, gapIndex: number): boolean {
-    if (this.def.stackable) {
-      const existing = this.findMatchingStack(obj);
-      if (existing !== undefined && existing.tryInsert(obj)) return true;
-    }
+    if (this.tryMergeIntoMatchingStack(obj)) return true;
 
     const stack = new ObjectStack(obj);
     if (!this.def.fixedPositions) {
@@ -282,10 +290,7 @@ export class Slot {
   tryInsertAtCell(obj: WorldObject, cellIndex: number): boolean {
     if (!this.def.fixedPositions) return false;
 
-    if (this.def.stackable) {
-      const existing = this.findMatchingStack(obj);
-      if (existing !== undefined && existing.tryInsert(obj)) return true;
-    }
+    if (this.tryMergeIntoMatchingStack(obj)) return true;
 
     return this.tryFillCell(new ObjectStack(obj), cellIndex);
   }

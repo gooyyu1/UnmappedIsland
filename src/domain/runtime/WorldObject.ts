@@ -242,9 +242,8 @@ export class WorldObject {
   }
 
   /**
-   * same_slot専用。置き換えオブジェクトを新規ObjectStackとして、originが居たセルを基準に配置する
-   * （Slot.placeSameSlot参照）。fixedPositionsで空きが作れず配置できない場合はエラーを返す（＝呼び出し側で
-   * fallbackへ委ねる）。
+   * same_slot専用。置き換えオブジェクトを、originが居たセルを基準に配置する（Slot.placeSameSlot参照）。
+   * fixedPositionsで空きが作れず配置できない場合はエラーを返す（＝呼び出し側でfallbackへ委ねる）。
    */
   insertSameSlot(
     newParent: WorldObject,
@@ -750,10 +749,10 @@ export class WorldObject {
   }
 
   /**
-   * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する（同種スタックへの
-   * 合流を除き、originが居たセルを基準にSlot.placeSameSlotへ委ねる）。self/actorなら対象のスロットを宣言順に
-   * 走査し、最初に配置できたスロットへ入れる。配置に失敗した場合は起点自身の親へ伝播し、accepts/capacityを
-   * 無視して強制配置する。伝播先の親も無ければ何もしない。
+   * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
+   * （Slot.placeSameSlotへ委ねる）。self/actorなら対象のスロットを宣言順に走査し、最初に配置できたスロットへ
+   * 入れる。配置に失敗した場合は起点自身の親へ伝播し、accepts/capacityを無視して強制配置する。伝播先の親も
+   * 無ければ何もしない。
    */
   private place(
     spawned: WorldObject,
@@ -770,21 +769,16 @@ export class WorldObject {
       primaryTarget = site.parent;
       const slot = site.parent.getSlotByLocalId(site.parentSlotLocalId);
 
-      if (slot.def.fixedPositions && slot.findMatchingStack(spawned) !== undefined) {
-        // 置き換え先の型が既にこのスロットに存在する（同種スタックへの合流）。位置操作は不要。
-        placed =
-          spawned.moveToSlot(site.parent, slot.def.globalId, session.codex.wellKnown, false) === undefined;
-      } else {
-        // originが居たセルを基準に置き換えを配置する（Slot.placeSameSlot参照）。
-        placed =
-          spawned.insertSameSlot(
-            site.parent,
-            slot.def.globalId,
-            new SameSlotPlacement(site.originCellIndex(slot), site.originKindRemains),
-            session.codex.wellKnown,
-            false,
-          ) === undefined;
-      }
+      // originが居たセルを基準に置き換えを配置する（合流できる同種スタックがあればそちらが優先される。
+      // Slot.placeSameSlot参照）。
+      placed =
+        spawned.insertSameSlot(
+          site.parent,
+          slot.def.globalId,
+          new SameSlotPlacement(site.originCellIndex(slot), site.originKindRemains),
+          session.codex.wellKnown,
+          false,
+        ) === undefined;
     } else {
       const target = into === 'self' ? this : actor;
       if (target === undefined) return;
