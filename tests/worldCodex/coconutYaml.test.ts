@@ -122,8 +122,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     combine(half, 'sharp_stone', 'scrape');
 
-    expect(itemsOn(beach), '殻は割れた実が居た場所へ置き換わる').toEqual(['coconut_bowl']);
-    expect(handOf(player)).toEqual(['sharp_stone', 'coconut_meat']);
+    expect(itemsOn(beach), '果肉は割れた実が居た場所へ置き換わる').toEqual(['coconut_meat']);
+    expect(handOf(player)).toEqual(['sharp_stone', 'coconut_bowl']);
   });
 
   it('ヤシの殻は液体を入れられ、持ち歩ける', () => {
