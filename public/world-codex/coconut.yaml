@@ -78,7 +78,7 @@ object_defs:
           - {object: coconut_half, into: actor}
           - {object: coconut_half, into: actor}
 
-  # 割れたヤシの実。刃物で果肉を掻き出すと、器になる殻（coconut_bowl）が手元に残り、果肉はもとの場所へ。
+  # 割れたヤシの実。刃物で果肉を掻き出すと、果肉と器になる殻が残る。
   coconut_half:
     tags: [item]
     props:
@@ -90,7 +90,7 @@ object_defs:
         destroy: self
         spawn:
           - {object: coconut_meat}
-          - {object: coconut_bowl, into: actor}
+          - {object: coconut_bowl}
 
   # ヤシの果肉。実1個から2個採れる。満腹度・水分・栄養は実1個ぶんの半分。
   coconut_meat:
