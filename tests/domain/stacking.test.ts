@@ -247,6 +247,45 @@ object_defs:
     expect(bInstance.parent, 'destroy: falseなのでB自身は破棄されない').not.toBeUndefined();
   });
 
+  it('same_slotは、同種の既存スタックがあれば位置指定より合流を優先する', () => {
+    const yaml = `
+object_defs:
+  loc_merge:
+    slots:
+      pile: {}
+  a_item4: {}
+  d_item4: {}
+  b_item4:
+    props:
+      life:
+        value: 0
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
+          destroy: self
+          spawn:
+            object: d_item4
+            into: same_slot
+`;
+    const codex = load(yaml);
+    const pileSlotId = codex.slotNames.getId('pile');
+
+    const session = new WorldSession(codex);
+    const locInstance = spawn(codex, 'loc_merge');
+
+    // D A B の並びで、Bが置き換わって生まれるDは、Bが居た位置ではなく既にあるDのスタックへ入る。
+    spawn(codex, 'd_item4').moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    spawn(codex, 'a_item4').moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    spawn(codex, 'b_item4').moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+
+    locInstance.tick(session);
+
+    const pile = locInstance.tryGetSlot(pileSlotId)!;
+    expect(
+      pile.cells.map((c) => c?.members.map((o) => o.def.name)),
+      'Dは2個で1スタックのまま、新しいスタックは生まれない',
+    ).toEqual([['d_item4', 'd_item4'], ['a_item4']]);
+  });
+
   // ------------------------------------------------------------------
   // UnitCapacity / Stackable（かまど型: 非スタック・個数固定）
   // ------------------------------------------------------------------
