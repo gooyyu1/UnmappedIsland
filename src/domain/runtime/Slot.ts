@@ -186,6 +186,8 @@ export class Slot {
    * originが居たセル(originCellIndex)を基準に配置する（EffectSite参照）。自動整列は行わない（同種はObjectStack
    * 内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
    *
+   * stackableかつ合流できる既存スタックがある場合は位置指定より合流を優先する（addInternalと同じ扱い）。
+   *
    * - kindRemains（originの同種がまだ残る＝selfが生き残る/同種の兄弟が残る）: 置き換え先はoriginの隣。非
    *   fixedPositionsはその添字へ挿入（後続が右へずれる）。fixedPositionsはoriginの右隣（無ければ左隣）へ、
    *   最寄りの空きセルをずらして場所を作って入れる。空きが無ければ配置失敗（false→呼び出し側でfallback）。
@@ -193,6 +195,11 @@ export class Slot {
    *   fixedPositionsは空になったそのセル(undefined)を埋める。
    */
   placeSameSlot(obj: WorldObject, originCellIndex: number, kindRemains: boolean): boolean {
+    if (this.def.stackable) {
+      const existing = this.findMatchingStack(obj);
+      if (existing !== undefined && existing.tryInsert(obj)) return true;
+    }
+
     if (!this.def.fixedPositions) {
       const at = kindRemains ? originCellIndex + 1 : originCellIndex;
       this._cells.splice(Math.min(Math.max(at, 0), this._cells.length), 0, new ObjectStack(obj));

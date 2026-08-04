@@ -247,6 +247,61 @@ object_defs:
     expect(bInstance.parent, 'destroy: falseなのでB自身は破棄されない').not.toBeUndefined();
   });
 
+  it('非fixedPositions+stackable+same_slotは、同種の既存スタックへ合流する', () => {
+    // Issue #299 の再現: スロットに「石・ヤシの実・割れたヤシの実」がある状態で
+    // 「ヤシの実」がトリガーで「割れたヤシの実(same_slot)」を生成すると、既存の
+    // 割れたヤシの実スタックへ合流せず新規スタックになってしまう問題。
+    const yaml = `
+object_defs:
+  loc_stack_merge:
+    slots:
+      pile:
+        stackable: true
+  cracked_coconut2: {}
+  stone_item: {}
+  holed_coconut2:
+    props:
+      freshness2:
+        value: 0
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
+          destroy: self
+          spawn:
+            object: cracked_coconut2
+            into: same_slot
+`;
+    const codex = load(yaml);
+    const pileSlotId = codex.slotNames.getId('pile');
+
+    const session = new WorldSession(codex);
+    const locInstance = spawn(codex, 'loc_stack_merge');
+
+    const stoneItem = spawn(codex, 'stone_item');
+    const holedCoconut = spawn(codex, 'holed_coconut2');
+    const existingCracked = spawn(codex, 'cracked_coconut2');
+
+    stoneItem.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    holedCoconut.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    existingCracked.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+
+    locInstance.tick(session);
+
+    const pile = locInstance.tryGetSlot(pileSlotId)!;
+
+    expect(
+      pile.cells.filter((c) => c !== undefined && c.members[0].def.name === 'cracked_coconut2').length,
+      '割れたヤシの実のスタックは1つに合流している',
+    ).toBe(1);
+    expect(
+      pile.cells.find((c) => c !== undefined && c.members[0].def.name === 'cracked_coconut2')?.members.length,
+      '既存の割れたヤシの実に新規生成分が加わり合計2個になる',
+    ).toBe(2);
+    expect(
+      pile.cells.filter((c) => c !== undefined).length,
+      'スタック総数はstone_item(1) + cracked_coconut(1) = 2',
+    ).toBe(2);
+  });
+
   // ------------------------------------------------------------------
   // UnitCapacity / Stackable（かまど型: 非スタック・個数固定）
   // ------------------------------------------------------------------
