@@ -19,9 +19,6 @@ object_defs:
 
   # 皮のついたヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
   # 皮をはぐと、中の実（husked_coconut）と皮（coconut_husk）に分かれる。
-  #
-  # 分かれた2つのうち、連鎖を継ぐ実だけを同じ場所へ置き換え（intoを省略＝same_slot）、
-  # 副産物の皮はactorへ渡す。same_slotは1つの位置を指すため、2つ以上を同じ場所へは置けない。
   coconut:
     tags: [item]
     props:
@@ -33,7 +30,7 @@ object_defs:
         destroy: self
         spawn:
           - {object: husked_coconut}
-          - {object: coconut_husk, into: actor}
+          - {object: coconut_husk}
 
   # ヤシの実の皮。はぎ取った繊維の塊（縄・火口などへの利用は今後の課題）。
   coconut_husk:
@@ -56,8 +53,7 @@ object_defs:
   # 穴を開けたヤシの実。穴が入った殻は衝撃で素直に割れる。石で叩いても刃物をこじ入れてもよいので、
   # 道具のタグごとに1つずつcombinationを持つ（withは1つのタグしか取らないため）。
   #
-  # 割れた実は2つ生まれる。same_slotは1つの位置しか指せないので、両方ともactorへ渡す
-  # （持ちきれなければactorの居る土地へ落ちる。9.4節の伝播）。
+  # 割れた実は2つ生まれるが、同種は1スタックにまとまるため、2つとも元の実が居た場所へ置き換わる。
   holed_coconut:
     tags: [item]
     props:
@@ -68,15 +64,15 @@ object_defs:
         duration: 15
         destroy: self
         spawn:
-          - {object: coconut_half, into: actor}
-          - {object: coconut_half, into: actor}
+          - {object: coconut_half}
+          - {object: coconut_half}
       pry_open:
         with: cutting_tool
         duration: 15
         destroy: self
         spawn:
-          - {object: coconut_half, into: actor}
-          - {object: coconut_half, into: actor}
+          - {object: coconut_half}
+          - {object: coconut_half}
 
   # 割れたヤシの実。刃物で果肉を掻き出すと、果肉と器になる殻が残る。
   coconut_half:

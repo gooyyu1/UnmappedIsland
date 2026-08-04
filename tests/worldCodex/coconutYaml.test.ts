@@ -49,6 +49,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
     return new Location(location, codex).items.map((object) => object.def.name);
   }
 
+  /** 土地のitemsスロットに並ぶカードの識別子と、そのカードが束ねている個数。 */
+  function itemStacksOn(location: WorldObject): string[] {
+    return new Location(location, codex).itemStacks.map((stack) => `${stack[0].def.name} x${stack.length}`);
+  }
+
   /** 手持ちに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
   function handOf(character: WorldObject): string[] {
     return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
@@ -93,8 +98,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     combine(coconut, 'sharp_stone', 'husk');
 
-    expect(itemsOn(beach), '連鎖を継ぐ実は、元の実が居た場所へ置き換わる').toEqual(['husked_coconut']);
-    expect(handOf(player), '副産物の皮はactorの手元へ入る').toEqual(['sharp_stone', 'coconut_husk']);
+    expect(itemsOn(beach), '実も皮も、元の実が居た場所へ置き換わる').toEqual([
+      'coconut_husk',
+      'husked_coconut',
+    ]);
+    expect(handOf(player), '道具以外は手元へ入らない').toEqual(['sharp_stone']);
   });
 
   it('皮を剥いだ実に刃物を当てると、穴が開く', () => {
@@ -113,8 +121,21 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     combine(holed, toolName, combinationName);
 
-    expect(itemsOn(beach), '割れた実は両方ともactorの手元へ入る').toEqual([]);
-    expect(handOf(player)).toEqual([toolName, 'coconut_half', 'coconut_half']);
+    expect(itemsOn(beach), '割れた実は2つとも、元の実が居た場所の1スタックへ収まる').toEqual([
+      'coconut_half',
+      'coconut_half',
+    ]);
+    expect(handOf(player)).toEqual([toolName]);
+  });
+
+  // issue #299 の再現手順。アイテムレーンで割ると、既存の割れた実のカードへ積み上がる。
+  it('レーンに割れた実があるとき、新たに割った実は既存のカードへスタックする', () => {
+    const holed = spawnInto('holed_coconut', beach, 'items');
+    spawnInto('coconut_half', beach, 'items');
+
+    combine(holed, 'sharp_stone', 'pry_open');
+
+    expect(itemStacksOn(beach), '割れた実のカードは1枚のまま3個に増える').toEqual(['coconut_half x3']);
   });
 
   it('割れた実に刃物を当てると、果肉が採れて殻が残る', () => {
