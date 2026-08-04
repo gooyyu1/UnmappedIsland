@@ -71,6 +71,38 @@ python build.py recipes/medic.json
 
 物ごとの当たり外れ（どの語がどう外すか）は `prompts/objects.json` の各エントリに書いてあります。
 
+### 既存の絵からの派生（Qwen Image Edit）
+
+同じ物の加工段階（ココナッツ → 皮を剥いだ実 → 剥いだ皮…）を別々に生成すると、色調も作風も
+個体も揃いません。基準の 1 枚から Qwen Image Edit 2511 で派生させると、同じ個体の連鎖として
+描けます。レシピは生成の指定の代わりに `edit` を持ちます。
+
+```json
+"edit": {
+  "source": "coconut.json",
+  "prompt": "Remove the smooth outer husk from this coconut. ...",
+  "seed": 1
+}
+```
+
+`source` は基準にするレシピ（同じ `recipes/` 内）。build.py が source の生データを先に作り、
+`qwen_edit.py` で編集します。source が edit を持つ連鎖も再帰的に解決されます。プロンプトには
+変化の内容に加えて、作風・背景・光・影を保つ指示を入れます（recipes/husked_coconut.json 参照）。
+
+モデルは ComfyUI の `models/` 配下に次の 3 点が要ります（Comfy-Org の Hugging Face リポジトリ
+Qwen-Image-Edit_ComfyUI / Qwen-Image_ComfyUI から取得。計約 28GB）。ノードは ComfyUI 本体に
+入っているので追加インストールは不要です。
+
+```
+diffusion_models/qwen_image_edit_2511_fp8mixed.safetensors
+text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors
+vae/qwen_image_vae.safetensors
+```
+
+ライセンスは Apache 2.0 で、生成画像の商用利用に制限はありません。1 枚あたり 90 秒ほど
+かかります（VRAM 16GB では一部が RAM へ退避されるため）。SDXL の生成と違い LoRA も
+ネガティブも使いません。
+
 ## カードの枠
 
 ```bash

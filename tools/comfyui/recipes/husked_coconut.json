@@ -2,18 +2,19 @@
   "_comment": [
     "src/assets/objects/husked_coconut.png を作り直すためのレシピ。build.py が読む。",
     "",
-    "皮を剥いだ実。皮つき（320）より小さくなったことが分かるよう256にする。",
+    "皮を剥いだ実。丸ごとの実（coconut.json）の生データを基準に、Qwen Image Edit で",
+    "「同じ実の皮を剥いだ姿」として派生させる。ココナッツの連鎖は同じ個体の加工段階なので、",
+    "全段をこの方式で coconut.json から派生させ、色調・作風・光を揃える。",
+    "",
+    "皮つき（320）より小さくなったことが分かるよう256にする。",
     "以降の穴を開けた実・割れた実・殻も、同じ実なので256で揃える。"
   ],
   "output": "src/assets/objects/husked_coconut.png",
-  "prompts": "objects.json",
-  "prompt": "husked_coconut",
-  "workflow": "lane_background_sdxl.api.json",
-  "loraStrength": 0,
-  "noTrigger": true,
-  "seed": 40205,
-  "width": 832,
-  "height": 1280,
+  "edit": {
+    "source": "coconut.json",
+    "prompt": "Remove the smooth outer husk from this coconut. Show the exact same coconut after husking: a slightly smaller, rounder brown nut covered in coarse shaggy fibers, with three dark germination pores on its shell. Keep the same hand painted illustration style, the same plain white background, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 1
+  },
   "cardArt": {
     "size": "256",
     "mode": "background",
