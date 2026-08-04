@@ -2,17 +2,18 @@
   "_comment": [
     "src/assets/objects/holed_coconut.png を作り直すためのレシピ。build.py が読む。",
     "",
-    "穴を開けた実。大きさの意図は husked_coconut.json を参照。"
+    "穴を開けた実。皮を剥いだ実（husked_coconut.json）の生データを基準に、Qwen Image Edit で",
+    "「同じ実に穴を開けた姿」として派生させる（連鎖の意図は husked_coconut.json を参照）。",
+    "seed 3 は基準の実の発芽孔2つがそのまま残り、連続性が最も出た。",
+    "",
+    "大きさの意図は husked_coconut.json を参照。"
   ],
   "output": "src/assets/objects/holed_coconut.png",
-  "prompts": "objects.json",
-  "prompt": "holed_coconut",
-  "workflow": "lane_background_sdxl.api.json",
-  "loraStrength": 0,
-  "noTrigger": true,
-  "seed": 40001,
-  "width": 832,
-  "height": 1280,
+  "edit": {
+    "source": "husked_coconut.json",
+    "prompt": "Drill one round hole into the top of this husked coconut. Show the exact same fibrous coconut, same size, tilted slightly so its top faces the viewer and the single dark round hole in the shell is clearly visible. Keep the same hand painted illustration style, the same plain white background, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 3
+  },
   "cardArt": {
     "size": "256",
     "mode": "background",
