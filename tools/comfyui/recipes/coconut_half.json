@@ -2,17 +2,17 @@
   "_comment": [
     "src/assets/objects/coconut_half.png を作り直すためのレシピ。build.py が読む。",
     "",
-    "割れた実。大きさの意図は husked_coconut.json を参照。"
+    "割れた実。皮を剥いだ実（husked_coconut.json）の生データを基準に、Qwen Image Edit で",
+    "「同じ実を割った片方」として派生させる（連鎖の意図は husked_coconut.json を参照）。",
+    "",
+    "大きさの意図は husked_coconut.json を参照。"
   ],
   "output": "src/assets/objects/coconut_half.png",
-  "prompts": "objects.json",
-  "prompt": "coconut_half",
-  "workflow": "lane_background_sdxl.api.json",
-  "loraStrength": 0,
-  "noTrigger": true,
-  "seed": 40001,
-  "width": 832,
-  "height": 1280,
+  "edit": {
+    "source": "husked_coconut.json",
+    "prompt": "Split this husked coconut in half. Show one half of the exact same fibrous coconut, tilted so the open cut side faces the viewer, the inside of the shell lined with thick bright white coconut flesh. Keep the same hand painted illustration style, the same plain white background, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 3
+  },
   "cardArt": {
     "size": "256",
     "mode": "background",

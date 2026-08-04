@@ -2,21 +2,24 @@
   "_comment": [
     "src/assets/objects/coconut_meat.png を作り直すためのレシピ。build.py が読む。",
     "",
-    "殻から掻き出した果肉。段は最小の256だが、絵の中の物が細いので、器（同じ256）より小さく見える。"
+    "殻から掻き出した果肉。割れた実（coconut_half.json）の生データを基準に、Qwen Image Edit で",
+    "「同じ実から外した果肉の一片」として派生させる（連鎖の意図は husked_coconut.json を参照）。",
+    "",
+    "tolerance は白い果肉が紙として透過されないよう 12 まで下げる（既定の 60 だと茶色い皮の縁",
+    "しか残らない）。背景は無地なので、下げても紙のムラは拾わない。",
+    "",
+    "段は最小の256だが、絵の中の物が細いので、器（同じ256）より小さく見える。"
   ],
   "output": "src/assets/objects/coconut_meat.png",
-  "prompts": "objects.json",
-  "prompt": "coconut_meat",
-  "workflow": "lane_background_sdxl.api.json",
-  "loraStrength": 0,
-  "noTrigger": true,
-  "seed": 40201,
-  "width": 832,
-  "height": 1280,
+  "edit": {
+    "source": "coconut_half.json",
+    "prompt": "Show only one thick wedge of white coconut meat that was pried out of this half coconut: the wedge is mostly bright white flesh, curved, with only a very thin brown skin on its outer back face, lying alone on the same plain white background. The brown shell is gone completely. Keep the same hand painted illustration style, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 4
+  },
   "cardArt": {
     "size": "256",
     "mode": "background",
-    "tolerance": 60,
+    "tolerance": 12,
     "edge": 4,
     "shadow": 1,
     "reach": 24
