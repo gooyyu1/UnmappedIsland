@@ -1,0 +1,21 @@
+# 雨を貯めるアクション（LiquidContainerSystem.md 7節）を試すための開始状態。
+# 小雨の中、空のヤシの殻を手に持ち、足元にもう1つ転がっている状態から始める。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 雨とヤシの殻
+
+# 3は開始地点が砂浜になるシード。
+seed: 3
+
+world:
+  props:
+    # 開始時から降らせる。weather_remainingが尽きる（4〜6時間後）まで続き、その後は通常の遷移に戻る。
+    weather: light_rain
+
+player:
+  hand: [coconut_bowl]
+
+location:
+  # 手に持っていても足元に置いていても雨は溜まる（どちらもworldの子孫）ことを見るための2つ目。
+  items: [coconut_bowl]

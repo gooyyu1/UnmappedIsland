@@ -26,7 +26,7 @@
 - [レシピシステム設計](./RecipeSystem.md)
 - [スロットシステム設計](./SlotSystem.md) — 固定位置・受け入れ制約・スタックのまとまりと並び順
 - [コンテナの容量・重さ・保護](./ContainerSystem.md)
-- [液体容器システム設計](./LiquidContainerSystem.md) — 量・飲用・注ぎ移し・蒸発の実現方法
+- [液体容器システム設計](./LiquidContainerSystem.md) — 量・飲用・注ぎ移し・蒸発・降雨の実現方法
 - [耐久値システム設計](./DurabilitySystem.md)
 - [アクションシステム設計](./ActionSystem.md) — actions / combinations の実行時の仕組み
 - [気候システム設計](./ClimateSystem.md)

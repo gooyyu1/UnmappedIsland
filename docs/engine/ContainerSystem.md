@@ -28,7 +28,7 @@ weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効�
 自重と荷物を合わせた重さがそのまま伝わります。
 
 液体は 1 個あたりではなく単位量あたりの重さを持つため、`size × density ÷ 100` として合算します（`density` は
-水を 100 とする単位量あたりの重さ、`LiquidContainerSystem.md` 7 節）。
+水を 100 とする単位量あたりの重さ、`LiquidContainerSystem.md` 8 節）。
 
 **`weight` の単位は g です（1 = 1g、1kg = 1000）。** 液体の量の単位（1 = 1mL）と対になっていて別々には
 選べません（`LiquidContainerSystem.md` 5 節）。

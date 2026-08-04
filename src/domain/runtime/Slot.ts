@@ -94,6 +94,14 @@ export class Slot {
   }
 
   /**
+   * 中身の量が上限（capacity）を超えている分。超えていなければ0。中身自身のaccumulateは上限を
+   * 知らずに量を増やせるため（降雨で溜まる水）、超過分を捨てる側がこの量を問い合わせる。
+   */
+  overflowingQuantity(sizePropertyGlobalId: number): number {
+    return Math.max(0, -this.remainingCapacity(sizePropertyGlobalId));
+  }
+
+  /**
    * 中身の量（7.3節のsize）が上限（capacity）に対して占める割合（0〜1）。上限を持たないスロットは
    * 割合を定義できないためundefined。
    */

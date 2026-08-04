@@ -23,8 +23,10 @@ traits:
     props:
       # 量。単位はmL（1 = 1mL、LiquidContainerSystem.md 5節）。
       # 上限は容器のcontentスロットのcapacityが決めるため、ここではrangeを持たない。
+      # 値が効くのはspawnで生まれたときだけ（注ぎ移しで生まれたインスタンスは移った量で上書きされる）。
+      # 0にできないのは、量が0の量的オブジェクトは存在しないため（quantitativeの不変条件）。
       size:
-        value: 0
+        value: 1
       # 単位量あたりの重さ。水を100とする＝100が1g/mL（ContainerSystem.md）。
       density:
         value: 100
@@ -46,6 +48,19 @@ traits:
 
   narrow_open_container:
     tags: [narrow_open_container]
+
+  # 空けたまま置いて雨を受けられる容器（LiquidContainerSystem.md 7節）。中身が入っている容器は
+  # 代表が中身の液体へ移る（3節）ため、このアクションは空のときにしか現れない。溜まり始めたあとの量は
+  # 水自身が増やす（rain_filled_liquid）。
+  rain_catching_container:
+    actions:
+      collect_rain:
+        conditions:
+          - reason: not_raining
+            object: ancestor
+            prop: weather
+            in: [light_rain, heavy_rain, storm]
+        spawn: {object: water_liquid, into: self}
 
   water_liquid:
     tags: [water_liquid]
@@ -140,6 +155,49 @@ traits:
           self:
             size: -2
 
+  # 開いた容器に置かれている間、降っている雨のぶんだけ増える（LiquidContainerSystem.md 7節）。
+  # 蒸発の裏返しで、ゲートは同じ「容器の開き方」と「天候」の2つ。雨の強さは3段しかないので、
+  # 蒸発のような基礎＋上乗せの形は取らず、1行が1つの降り方の量そのものを表す。
+  # capacityを超えた分はあふれて失われる（エンジンが戻す不変条件、GameElementDefinition.md 7.6節）。
+  rain_filled_liquid:
+    passives:
+      - conditions:
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: weather, eq: light_rain}
+        accumulate:
+          self:
+            size: 10
+      - conditions:
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: weather, eq: heavy_rain}
+        accumulate:
+          self:
+            size: 20
+      - conditions:
+          - {object: parent, tag: wide_open_container}
+          - {object: ancestor, prop: weather, eq: storm}
+        accumulate:
+          self:
+            size: 40
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, eq: light_rain}
+        accumulate:
+          self:
+            size: 20
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, eq: heavy_rain}
+        accumulate:
+          self:
+            size: 40
+      - conditions:
+          - {object: parent, tag: narrow_open_container}
+          - {object: ancestor, prop: weather, eq: storm}
+        accumulate:
+          self:
+            size: 80
+
 object_defs:
   # 容量はcontentスロットのcapacityで持つ。単位はmLなので、1L = 1000。
   canteen:
@@ -170,7 +228,7 @@ object_defs:
         capacity: 2000
 
   jar:
-    traits: [liquid_container, narrow_open_container]
+    traits: [liquid_container, narrow_open_container, rain_catching_container]
     props:
       weight: {value: 1200}
     slots:
@@ -182,7 +240,7 @@ object_defs:
   # 容器の中では唯一itemタグを持つ（他の容器はまだ入手手段が無い）。
   coconut_bowl:
     tags: [item]
-    traits: [liquid_container, wide_open_container]
+    traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
       weight: {value: 200}
     slots:
@@ -190,8 +248,10 @@ object_defs:
         accepts: [{tag: liquid, max: 1}]
         capacity: 250
 
+  # 雨として降るのは水なので、rain_filled_liquidを持つのは水だけ。茶・油が入っている容器は、
+  # 開いていても雨で増えない（異種は混ざらない、4節）。
   water_liquid:
-    traits: [liquid, water_liquid, evaporating_liquid]
+    traits: [liquid, water_liquid, evaporating_liquid, rain_filled_liquid]
 
   tea_liquid:
     traits: [liquid, tea_liquid, evaporating_liquid]

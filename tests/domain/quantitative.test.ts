@@ -155,3 +155,92 @@ object_defs:
     expect(loadBad).toThrowError(/振り直される/);
   });
 });
+
+/**
+ * accumulate（8.4節）は行き先のスロットの上限も下限も知らずに量を動かせるため、tickのたびに
+ * エンジンが不変条件へ戻す（WorldObject.settleQuantity）。降雨で増える水・蒸発で減る水が
+ * 実際に頼っているのはこの2つ。
+ */
+describe('量的オブジェクトのtick', () => {
+  const yaml = `
+traits:
+  liquid:
+    tags: [liquid]
+    quantitative: true
+    props:
+      size: {value: 1}
+
+object_defs:
+  cup:
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+        capacity: 100
+
+  puddle:
+    slots:
+      content:
+        accepts: [{tag: liquid, max: 1}]
+
+  rainwater:
+    traits: [liquid]
+    passives:
+      - accumulate:
+          self:
+            size: 30
+
+  drying_water:
+    traits: [liquid]
+    passives:
+      - accumulate:
+          self:
+            size: -30
+`;
+
+  function build(): { codex: WorldCodex; session: WorldSession; sizeId: number; contentId: number } {
+    const codex = new WorldCodexYamlLoader().load('tick.yaml', yaml).build();
+    return {
+      codex,
+      session: new WorldSession(codex),
+      sizeId: codex.propertyNames.getId('size'),
+      contentId: codex.slotNames.getId('content'),
+    };
+  }
+
+  function fill(
+    containerName: string,
+    liquidName: string,
+    size: number,
+  ): { container: WorldObject; liquid: WorldObject; session: WorldSession; sizeId: number } {
+    const { codex, session, sizeId, contentId } = build();
+    const container = session.spawn(codex.objectNames.getId(containerName));
+    const liquid = session.spawn(codex.objectNames.getId(liquidName));
+    liquid.setNumber(sizeId, size, session);
+    expect(liquid.moveToSlot(container, contentId, codex.wellKnown)).toBeUndefined();
+    return { container, liquid, session, sizeId };
+  }
+
+  it('capacityを超えて増えた分はあふれて失われる', () => {
+    const { liquid, session, sizeId } = fill('cup', 'rainwater', 90); // capacity 100
+
+    liquid.tick(session);
+
+    expect(liquid.getNumber(sizeId)).toBe(100);
+  });
+
+  it('上限の無いスロットでは、いくら増えても止まらない', () => {
+    const { liquid, session, sizeId } = fill('puddle', 'rainwater', 90);
+
+    liquid.tick(session);
+
+    expect(liquid.getNumber(sizeId)).toBe(120);
+  });
+
+  it('量が尽きたインスタンスは消える', () => {
+    const { liquid, session } = fill('cup', 'drying_water', 20);
+
+    liquid.tick(session);
+
+    expect(liquid.parent).toBeUndefined();
+  });
+});

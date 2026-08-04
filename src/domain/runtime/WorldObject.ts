@@ -654,11 +654,28 @@ export class WorldObject {
       for (const child of [...slot.contents]) child.tick(session);
     }
 
-    // 量的オブジェクト（7.6節）は「sizeが正であること」と「インスタンスが存在すること」が同値。
-    // 蒸発などで量が尽きたら、この不変条件を自分で回復する（on_shortfallの宣言を各液体に書かせない）。
-    if (this.def.isQuantitative && this.getNumber(session.codex.wellKnown.sizeId) <= 0) {
+    if (this.def.isQuantitative) this.settleQuantity(session);
+  }
+
+  /**
+   * 量的オブジェクト（7.6節）の量を、accumulateが動かしたあとの不変条件へ戻す。どちらもスロットの
+   * 上限・量の下限という、YAMLの著者ではなくエンジンが持つ約束事なので、各液体に宣言を書かせない。
+   *
+   * - 「sizeが正であること」と「インスタンスが存在すること」が同値: 量が尽きたら消える（蒸発）。
+   * - 中身の量の合計はcapacityを超えない（7.3節）: あふれた分は失われる（降雨）。moveは移し元に
+   *   残す（9.6節）が、こちらは移し元が無いため捨てるほかない。
+   */
+  private settleQuantity(session: WorldSession): void {
+    const sizeId = session.codex.wellKnown.sizeId;
+    const size = this.getNumber(sizeId);
+    if (size <= 0) {
       this.destroy();
+      return;
     }
+
+    if (this._parent === undefined) return;
+    const overflow = this._parent.getSlotByLocalId(this._parentSlotLocalId).overflowingQuantity(sizeId);
+    if (overflow > 0) this.setNumber(sizeId, Math.max(0, size - overflow), session);
   }
 
   /**

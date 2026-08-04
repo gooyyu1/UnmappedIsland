@@ -13,7 +13,7 @@
 - [`RecipeSystem.md`](./RecipeSystem.md) — アイテムの製作
 - [`SlotSystem.md`](./SlotSystem.md) — スロットの実行時実装（固定位置・受け入れ判定・スタック）
 - [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ・保護
-- [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) — 液体容器（量・飲用・注ぎ移し・蒸発）
+- [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) — 液体容器（量・飲用・注ぎ移し・蒸発・降雨）
 - [`ActionSystem.md`](./ActionSystem.md) — アクション実行の設計（`actions`/`combinations` の実行時の仕組み）
 - [`ClimateSystem.md`](./ClimateSystem.md) — 季節・天候
 - [`TerrainGeneration.md`](./TerrainGeneration.md) — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
@@ -631,6 +631,12 @@ object_defs:
 
   注ぐたびにインスタンスが生まれ直すため、**この型のプロパティに生成時ロールの範囲値（6.2節）は使えません**
   （移すたびに振り直されてしまうため、ロード時エラー）。
+
+  `accumulate`（8.4節）は移動ではないので、`capacity`（7.3節）も量の下限も見ずに `size` を動かせます。
+  そこで**この2つの不変条件は、tickのたびにエンジンが戻します**: 量が尽きたインスタンスは消え、`capacity` を
+  超えた分は失われます（`move` と違い、あふれた分を残しておく移し元がないため）。`spawn`（9.4節）で生まれる
+  量は型の既定値そのものなので、**量的な型の `size` の既定値は正の値にします**（0で生まれたインスタンスは
+  そのtickで消えます）。
 
 ```yaml
 object_defs:
