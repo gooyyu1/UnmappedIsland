@@ -3,7 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { RainStyle } from './rainStyle';
 import { rainStyleFor } from './rainStyle';
 import { skyTintFor } from './skyTint';
-import { COLOR } from './theme';
+import { COLOR, cssColor } from './theme';
 
 /** 画面へ映す空の様子。いずれも語彙を持たないCodexではundefinedになる。 */
 export interface SkyState {
@@ -12,6 +12,12 @@ export interface SkyState {
   /** 日射（時間帯と天気を畳んだ実効値）。明るさを決める。 */
   readonly sunlight: number | undefined;
 }
+
+/**
+ * 雨を敷き詰める絵の一辺（u単位）。**フィールドエリアより少し大きく取る**ので、画面に繰り返しの
+ * 継ぎ目が並んで見えることはない。u単位なので、この大きさは画面の解像度によらない。
+ */
+const RAIN_TILE = 1024;
 
 /** 風の筋の、雨粒に対する長さ・太さ・濃さ・速さの倍率。 */
 const GUST_LENGTH_SCALE = 5;
@@ -29,19 +35,22 @@ const SCATTER_SEED = 0x9e3779b9;
  * フィールドエリアへかぶせる、空の様子（ScreenLayout.md 空の演出節）。日射に応じた翳り・輝きと、
  * 雨天の雨から成る。見え方はskyTint.ts / rainStyle.tsが決め、こちらは「その通りに描く」ことだけを行う。
  *
- * 入力は遮らない（下のカードをそのまま操作できる）。フィールドエリアの外へはみ出さないよう、
- * 矩形で切り抜く。常にカードより手前・隣接エリアより奥へ置く必要があるため、depthは置く側が与える
- * （PlayScene参照）。
+ * 入力は遮らない（下のカードをそのまま操作できる）。常にカードより手前・隣接エリアより奥へ置く
+ * 必要があるため、depthは置く側が与える（PlayScene参照）。
+ *
+ * **フィルタを使わない。** フィルタを掛けた表示物は一度画面サイズの描画バッファへ描かれるため、
+ * 4Kでは1枚31MB・実測で221MBを占めていた。雨は敷き詰めた絵（TileSprite）が自分の矩形の外へ
+ * 描かないことを使って収め、翳り・輝きはもともとフィールドエリアと同じ大きさではみ出さない。
  */
 export class WeatherOverlay extends Phaser.GameObjects.Container {
   private readonly metrics: ScreenMetrics;
   private readonly rect: Rect;
   private readonly tint: Phaser.GameObjects.Rectangle;
-  private readonly maskShape: Phaser.GameObjects.Graphics;
 
   /** 今降らせている雨の見え方。undefinedなら降っていない。差が無ければ作り直さない。 */
   private style: RainStyle | undefined;
-  private layers: Phaser.GameObjects.Graphics[] = [];
+  private layers: Phaser.GameObjects.TileSprite[] = [];
+  private textureKeys: string[] = [];
   private tweens: Phaser.Tweens.Tween[] = [];
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, rect: Rect, sky: SkyState) {
@@ -54,17 +63,7 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
       .setVisible(false);
     this.add(this.tint);
 
-    // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用。CardLane参照）。
-    this.maskShape = scene.make.graphics({});
-    this.maskShape.fillStyle(COLOR.rain, 1);
-    this.maskShape.fillRect(rect.x, rect.y, rect.width, rect.height);
-    this.enableFilters();
-    this.filters?.internal.addMask(this.maskShape);
-
-    this.once(Phaser.GameObjects.Events.DESTROY, () => {
-      this.stopRain();
-      this.maskShape.destroy();
-    });
+    this.once(Phaser.GameObjects.Events.DESTROY, () => this.stopRain());
     scene.add.existing(this);
     this.setSky(sky);
   }
@@ -97,11 +96,12 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
 
     this.stopRain();
     this.style = style;
-    if (style === undefined) return;
+    if (style === undefined || weather === undefined) return;
 
-    this.addLayer(style, style.drops, style.length, style.thickness, style.alpha, style.fallMs);
+    this.addLayer(weather, style, style.drops, style.length, style.thickness, style.alpha, style.fallMs);
     if (style.gusts > 0)
       this.addLayer(
+        weather,
         style,
         style.gusts,
         style.length * GUST_LENGTH_SCALE,
@@ -114,63 +114,110 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
   /**
    * 同じ向き・同じ速さで落ちる筋を1層ぶん足す。
    *
-   * 1周期で「高さ1つぶん下・傾きのぶん横」へ動かし、そこで最初へ戻す。戻った瞬間に絵が飛ばないよう、
-   * 同じ散らばりをその移動量ぶんずらして2つ描いてあり、どの時点でも上下が繋がって見える。
+   * 敷き詰めた絵を縦横それぞれ1周ぶん送り、送り終えたら最初へ戻す。絵は継ぎ目なく繋がるので、
+   * 戻った瞬間も見た目は変わらない。縦横の周期を別々に取ることで、絵の縦横比によらず、
+   * 落ちる向きを筋の傾きへ合わせられる。
    */
   private addLayer(
+    weather: string,
     style: RainStyle,
     visibleCount: number,
     lengthUnits: number,
     thicknessUnits: number,
     alpha: number,
-    durationMs: number,
+    fallMs: number,
   ): void {
-    const { width, height } = this.rect;
-    const shift = height * Math.tan(Phaser.Math.DegToRad(style.slantDegrees));
-    const length = this.metrics.px(lengthUnits);
-    // 横へ広がったぶん薄まるので、画面に見えている本数が指定どおりになるよう本数を増やす。
-    const count = Math.round((visibleCount * (width + 2 * shift)) / width);
+    const key = `rain-${weather}-${this.layers.length}`;
+    const slant = Math.tan(Phaser.Math.DegToRad(style.slantDegrees));
+    // 画面に見えている本数が指定どおりになるよう、絵1枚が受け持つ面積のぶんだけ散らす。
+    const unitArea = (this.rect.width * this.rect.height) / this.metrics.u ** 2;
+    const count = Math.max(1, Math.round((visibleCount * RAIN_TILE ** 2) / unitArea));
+    if (!this.drawTile(key, count, slant, lengthUnits, thicknessUnits, alpha)) return;
 
-    const graphics = this.scene.add.graphics();
-    graphics.lineStyle(Math.max(1, this.metrics.px(thicknessUnits)), COLOR.rain, alpha);
+    const tile = this.scene.add
+      .tileSprite(this.rect.width / 2, this.rect.height / 2, this.rect.width, this.rect.height, key)
+      .setTileScale(this.metrics.u, this.metrics.u);
+    this.add(tile);
+    this.layers.push(tile);
+    this.textureKeys.push(key);
 
-    // 落ちる向きと筋の向きは常に一致させる（斜めに降る雨が縦に伸びていると、風の向きが読めない）。
-    const travel = Math.hypot(shift, height);
-    const random = scatter(SCATTER_SEED + this.layers.length);
-    for (let i = 0; i < count; i++) {
-      const x = random() * (width + 2 * shift) - shift;
-      const y = random() * height;
-      // 長さを散らす。すべて同じ長さだと、降っているというより破線が並んでいるように見える。
-      const scale = LENGTH_JITTER_MIN + random() * (1 - LENGTH_JITTER_MIN);
-      const tipX = (length * scale * shift) / travel;
-      const tipY = (length * scale * height) / travel;
-      // 折り返した瞬間に絵が飛ばないよう、同じ筋を移動量ぶんずらして2つ描く。
-      for (const copy of [-1, 0]) {
-        const originX = x + copy * shift;
-        const originY = y + copy * height;
-        graphics.lineBetween(originX, originY, originX + tipX, originY + tipY);
-      }
-    }
-
-    this.add(graphics);
-    this.layers.push(graphics);
+    // 落ちる速さは「フィールドエリアの高さぶんをfallMsで」。絵を送る量へ直すと、絵の大きさぶんを
+    // 送る時間になる。横は同じ速さに傾きを掛けたもの。
+    const fallPerTile = (fallMs * RAIN_TILE * this.metrics.u) / this.rect.height;
     this.tweens.push(
       this.scene.tweens.add({
-        targets: graphics,
-        x: shift,
-        y: height,
-        duration: durationMs,
+        targets: tile,
+        tilePositionY: -RAIN_TILE,
+        duration: fallPerTile,
         repeat: -1,
         ease: 'Linear',
       }),
     );
+    if (slant > 0)
+      this.tweens.push(
+        this.scene.tweens.add({
+          targets: tile,
+          tilePositionX: -RAIN_TILE,
+          duration: fallPerTile / slant,
+          repeat: -1,
+          ease: 'Linear',
+        }),
+      );
+  }
+
+  /**
+   * 敷き詰める絵を1枚描く。**上下左右で繋がるように、同じ筋を隣の位置にも描く**（端をまたぐ筋が
+   * 反対側へ続く）。描けなければfalse。
+   */
+  private drawTile(
+    key: string,
+    count: number,
+    slant: number,
+    lengthUnits: number,
+    thicknessUnits: number,
+    alpha: number,
+  ): boolean {
+    if (this.scene.textures.exists(key)) return true;
+
+    const canvas = this.scene.textures.createCanvas(key, RAIN_TILE, RAIN_TILE);
+    if (canvas === null) return false;
+
+    const context = canvas.context;
+    context.strokeStyle = cssColor(COLOR.rain);
+    context.globalAlpha = alpha;
+    context.lineWidth = Math.max(1, thicknessUnits);
+    context.lineCap = 'round';
+
+    const travel = Math.hypot(slant, 1);
+    const random = scatter(SCATTER_SEED + count);
+    context.beginPath();
+    for (let i = 0; i < count; i++) {
+      const x = random() * RAIN_TILE;
+      const y = random() * RAIN_TILE;
+      // 長さを散らす。すべて同じ長さだと、降っているというより破線が並んでいるように見える。
+      const length = lengthUnits * (LENGTH_JITTER_MIN + random() * (1 - LENGTH_JITTER_MIN));
+      const tipX = (length * slant) / travel;
+      const tipY = length / travel;
+      for (const dx of [-RAIN_TILE, 0]) {
+        for (const dy of [-RAIN_TILE, 0]) {
+          context.moveTo(x + dx, y + dy);
+          context.lineTo(x + dx + tipX, y + dy + tipY);
+        }
+      }
+    }
+    context.stroke();
+    canvas.refresh();
+    return true;
   }
 
   private stopRain(): void {
     for (const tween of this.tweens) tween.stop();
     for (const layer of this.layers) layer.destroy();
+    // 絵は天気ごとに違うので、降り終えたら手放す（降り直すときに描き直す方が、抱え続けるより軽い）。
+    for (const key of this.textureKeys) this.scene.textures.remove(key);
     this.tweens = [];
     this.layers = [];
+    this.textureKeys = [];
   }
 }
 
