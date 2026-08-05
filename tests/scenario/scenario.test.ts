@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import { heatHazeFor } from '../../src/game/ui/heatHaze';
 import { applyScenario, bundledScenario, parseScenario, scenarioNames } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
@@ -62,6 +63,38 @@ describe('テスト用シナリオ', () => {
 
     expect(game.startLocation.instance.def.name, '開始地点が密林になる').toBe('jungle');
     expect(game.player.location?.instance, 'プレイヤーもその土地に居る').toBe(game.startLocation.instance);
+  });
+
+  it('scorching_hazeは、陽炎が立つ暑さから始まり、時間が経っても暑いままになる', () => {
+    // 陽炎（ScreenLayout.md 空の演出節）を目で確かめるためのシナリオなので、開始直後だけでなく
+    // しばらく見ていられる必要がある。calmのままだと1tickで暑い季節を外れて消えてしまう。
+    const scenario = load('scorching_haze');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    expect(heatHazeFor(game.world.ambientTemperature), '開始時点で陽炎が立つ').toBeDefined();
+
+    game.session.advanceWorldTime(game.world.minutesPerTick * 4);
+
+    expect(heatHazeFor(game.world.ambientTemperature), '数tick経っても立ったまま').toBeDefined();
+  });
+
+  it('stormは嵐から始まり、天気が選び直されても雨系のままになる', () => {
+    // 嵐の演出を目で確かめるためのシナリオなので、見ている途中で晴れては困る。
+    const scenario = load('storm');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    expect(game.world.weather).toBe('storm');
+
+    // weather_remaining（初期20tick）が尽きて選び直されるまで進める。
+    game.session.advanceWorldTime(game.world.minutesPerTick * 24);
+
+    expect(['storm', 'heavy_rain', 'light_rain'], '飽和した大気では晴れ系が選ばれない').toContain(
+      game.world.weather,
+    );
   });
 
   it('土地の指定があると、置いたものはその土地に乗る', () => {
