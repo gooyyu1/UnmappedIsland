@@ -146,6 +146,14 @@ export class CardLane {
    */
   private readonly tiles: Phaser.GameObjects.TileSprite[] = [];
 
+  /**
+   * 敷かれている地面の絵。陽炎のように**カードではなく地面だけを歪ませたい**効果を掛けるための
+   * 口（PlayScene参照）。背景色だけのレーンでは空。
+   */
+  get ground(): readonly Phaser.GameObjects.TileSprite[] {
+    return this.tiles;
+  }
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,

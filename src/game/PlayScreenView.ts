@@ -167,10 +167,13 @@ export interface PlayScreenView {
   readonly hour: number;
   readonly minute: number;
   /**
-   * 今の天気の識別子（`light_rain`など、ClimateSystem.md 4.2節）。雨の演出が読む。
-   * 天気の語彙を持たないCodexではundefined。
+   * 空の演出（ScreenLayout.md）が読む、今の天気と日射。いずれも語彙を持たないCodexではundefined。
+   * 天気は識別子（`light_rain`など、ClimateSystem.md 4.2節）、日射は時間帯と天気を畳んだ実効値。
    */
   readonly weather: string | undefined;
+  readonly sunlight: number | undefined;
+  /** 陽炎が立つかを決める気温（ClimateSystem.md）。語彙を持たないCodexではundefined。 */
+  readonly ambientTemperature: number | undefined;
   /** 天候チップに出す文字列。表示できる形がドメインに無いため固定値のまま（ScreenLayout.md）。 */
   readonly weatherLabel: string;
   readonly currentLocation: CardContent;
@@ -558,6 +561,8 @@ export function fromGameSession(
     hour: game.world.hour,
     minute: game.world.minute,
     weather: game.world.weather,
+    sunlight: game.world.sunlight,
+    ambientTemperature: game.world.ambientTemperature,
     weatherLabel: '☀️ 灼熱の快晴',
     currentLocation: {
       icon: LOCATION_ICON,

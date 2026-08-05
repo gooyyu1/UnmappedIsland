@@ -17,8 +17,10 @@ export class World {
   private readonly hourId: number;
   private readonly minuteId: number;
   private readonly minutesPerTickId: number;
-  /** 天気の語彙を持たないCodex（時間だけを扱うテスト用など）ではundefined。 */
+  /** 気候の語彙を持たないCodex（時間だけを扱うテスト用など）ではundefined。 */
   private readonly weatherId: number | undefined;
+  private readonly sunlightId: number | undefined;
+  private readonly ambientTemperatureId: number | undefined;
   private readonly symbolNames: NameRegistry;
 
   constructor(instance: WorldObject, propertyNames: NameRegistry, symbolNames: NameRegistry) {
@@ -28,6 +30,8 @@ export class World {
     this.minuteId = propertyNames.getId('minute');
     this.minutesPerTickId = propertyNames.getId('minutes_per_tick');
     this.weatherId = propertyNames.tryGetId('weather');
+    this.sunlightId = propertyNames.tryGetId('sunlight');
+    this.ambientTemperatureId = propertyNames.tryGetId('ambient_temperature');
     this.symbolNames = symbolNames;
   }
 
@@ -59,6 +63,24 @@ export class World {
   get weather(): string | undefined {
     if (this.weatherId === undefined) return undefined;
     return this.symbolNames.getName(this.instance.getEffectiveValue(this.weatherId));
+  }
+
+  /**
+   * 今の日射（ClimateSystem.md）。時間帯と天気の寄与が重なった実効値で、夜は天気によらず0になる。
+   * 日射の語彙を持たないCodexではundefined。
+   */
+  get sunlight(): number | undefined {
+    return this.sunlightId === undefined ? undefined : this.instance.getEffectiveValue(this.sunlightId);
+  }
+
+  /**
+   * 今の気温（ClimateSystem.md）。日射と季節の寄与が重なった実効値。体温ではない。
+   * 気温の語彙を持たないCodexではundefined。
+   */
+  get ambientTemperature(): number | undefined {
+    return this.ambientTemperatureId === undefined
+      ? undefined
+      : this.instance.getEffectiveValue(this.ambientTemperatureId);
   }
 
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */
