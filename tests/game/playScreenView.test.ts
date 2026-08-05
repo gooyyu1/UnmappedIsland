@@ -562,6 +562,32 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(0);
   });
 
+  it('中身が代表するカードの名前は、中身の名前を差し込んだものになる', () => {
+    const texts = parseLocale(
+      'ja.yaml',
+      `object_texts:
+  default:
+    display_name_with_content: '%2入りの%1'
+  canteen:
+    display_name: 水筒
+  water_liquid:
+    display_name: 水
+`,
+    );
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
+    const handId = codex.slotNames.getId('hand');
+    expect(canteen.moveToSlot(game.player.instance, handId, codex.wellKnown, true)).toBeUndefined();
+
+    expect(fromGameSession(game, codex, texts).hand[0]?.name, '空なら入れ物の名前だけ').toBe('水筒');
+
+    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
+    water.setNumber(codex.propertyNames.getId('size'), 1000, game.session);
+    expect(water.moveToSlot(canteen, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
+
+    expect(fromGameSession(game, codex, texts).hand[0]?.name).toBe('水入りの水筒');
+  });
+
   it('アクションはかかる時間を持つ（durationを持たなければ0）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);

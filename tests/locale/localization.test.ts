@@ -94,6 +94,40 @@ object_texts:
     expect(locale.object('coconut').combination('mix').description).toBeUndefined();
   });
 
+  it('中身がいるオブジェクトの名前は、%1に自分の表示名・%2に中身の名前が入る', () => {
+    const texts = parseLocale(
+      'ja.yaml',
+      `object_texts:
+  default:
+    display_name_with_content: '%2入りの%1'
+  canteen:
+    display_name: 水筒
+  jar:
+    display_name: 甕
+    display_name_with_content: '%1（%2）'
+`,
+    );
+
+    expect(texts.object('canteen').displayNameWithContent('水'), 'defaultの書式').toBe('水入りの水筒');
+    expect(texts.object('jar').displayNameWithContent('水'), '自分の書式が優先される').toBe('甕（水）');
+  });
+
+  it('書式が無ければ、中身がいても表示名のまま', () => {
+    expect(locale.object('coconut').displayNameWithContent('水')).toBe('ヤシの実');
+    expect(locale.object('thick_branch').displayNameWithContent('水'), '未登録なら識別子').toBe(
+      'thick_branch',
+    );
+  });
+
+  it('差し込んだ名前の中のプレースホルダは置換されない', () => {
+    const texts = parseLocale(
+      'ja.yaml',
+      "object_texts:\n  default:\n    display_name_with_content: '%2入りの%1'\n  canteen:\n    display_name: '%2筒'\n",
+    );
+
+    expect(texts.object('canteen').displayNameWithContent('水')).toBe('水入りの%2筒');
+  });
+
   it('object_textsの節が無い・空のファイルでも読める', () => {
     expect(parseLocale('ja.yaml', '').object('coconut').displayName).toBe('coconut');
     expect(parseLocale('ja.yaml', 'ui:\n  ok: OK\n').object('coconut').displayName).toBe('coconut');
