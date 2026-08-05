@@ -2,17 +2,19 @@
   "_comment": [
     "src/assets/objects/coconut_bowl.png を作り直すためのレシピ。build.py が読む。",
     "",
-    "果肉を掻き出したあとの殻。大きさの意図は husked_coconut.json を参照。"
+    "果肉を掻き出したあとの殻。割れた実（coconut_half.json）の生データを基準に、Qwen Image Edit で",
+    "「同じ殻を空にして置いた器」として派生させる（連鎖の意図は husked_coconut.json を参照）。",
+    "水の入れ物としても使うので、開口部が上を向いた構図を指定する。seed 6 は水平な置きが",
+    "最もよく、白い果肉の取り残しも無い。",
+    "",
+    "大きさの意図は husked_coconut.json を参照。"
   ],
   "output": "src/assets/objects/coconut_bowl.png",
-  "prompts": "objects.json",
-  "prompt": "coconut_bowl",
-  "workflow": "lane_background_sdxl.api.json",
-  "loraStrength": 0,
-  "noTrigger": true,
-  "seed": 40001,
-  "width": 832,
-  "height": 1280,
+  "edit": {
+    "source": "coconut_half.json",
+    "prompt": "Scrape all the white flesh out of this half coconut and set it down as a bowl: the exact same half shell sitting level on the ground with its round opening facing straight up, seen from slightly above so the empty dark brown hollow inside is visible, no white flesh left, the outside keeping its coarse fibers. Keep the same hand painted illustration style, the same plain white background, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 6
+  },
   "cardArt": {
     "size": "256",
     "mode": "background",

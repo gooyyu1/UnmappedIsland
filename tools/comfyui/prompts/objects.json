@@ -83,79 +83,17 @@
   },
   "coconut": {
     "description": [
-      "皮のついたヤシの実。皮を剥いだ実（husked_coconut）とは別アイテムで、絵の描き分けが要る。",
+      "皮のついたヤシの実。ココナッツの連鎖の基準になる1枚で、加工段階（皮を剥いだ実・皮・",
+      "穴あけ・半割・果肉・器）はこの生データからの派生で作る（recipes/husked_coconut.json 参照）。",
       "",
-      "**ヤシの実は、素直に頼むと必ず割れて白い果肉の見える絵になる。** これはこの連鎖の実の系統",
-      "（coconut / husked_coconut / holed_coconut）すべてに共通する癖で、8枚振って丸ごとの実は",
+      "**ヤシの実は、素直に頼むと必ず割れて白い果肉の見える絵になる。** 8枚振って丸ごとの実は",
       "1枚も出なかった。割れ方を否定するだけでは足りず、本文で whole unopened と、seen from the",
       "outside with its surface closed and unbroken all around を言うと丸ごとの実が出るようになる。",
       "",
-      "皮を剥いだ実との描き分けは、こちらを滑らかな楕円（先が尖る・繊維が縦に走る）、あちらを",
-      "毛の生えた球（3つの目）として、互いの特徴を名指しで否定し合うことで作る。"
+      "皮を剥いだ実（毛の生えた球・3つの目）へ寄らないよう、その特徴を否定に名指しで入れてある。"
     ],
     "positive": "exactly one whole unopened coconut still in its thick husk alone on an empty white page, seen from the outside with its surface closed and unbroken all around, a big oval fruit tapering to a blunt point at one end, its whole surface a mat of dry tan brown fibres running lengthwise, warm tan and ochre brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "cut, cut open, cut in half, halved, sliced, cross section, opened, split, cracked, broken, chipped, hollow, interior, inside, rim, shell half, bowl, cup, white flesh, cream flesh, hairy shell, shaggy hair, coarse brown hair, three dark eyes, three holes, dark brown nut, small round nut, coconut water, drinking straw, leaves, palm frond, tree, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
-  },
-  "coconut_husk": {
-    "description": [
-      "はぎ取ったヤシの実の皮。",
-      "",
-      "**coconut を外すと繊維の塊にならない。** この語のせいで実の絵に寄るからと、頭の名詞を",
-      "thick fibrous bark（厚い繊維質の樹皮）にして coconut を1語も書かずに頼むと、灰色の流木の",
-      "破片になる（6枚とも）。coconut は残したまま、strip of thick orange peel のように「めくれた",
-      "皮の一片」として形だけを言い換えるのが当たり。",
-      "",
-      "**出てくる絵は橙が強い。** 皮の色をプロンプトで抑えると（dull greyish brown）今度は形が",
-      "崩れるので、色は card_art.py の --saturation で落とす（レシピ参照）。"
-    ],
-    "positive": "exactly one torn strip of coconut husk fibre alone on an empty white page, a long curved piece peeled off a coconut like a strip of thick orange peel, still curled to the shape it came off, coarse tan brown coir fibres running lengthwise along it, ragged shaggy fibre ends at both torn ends, warm tan and ochre brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "flat slab, rectangle, square, block, brick, cake, brownie, bread, chocolate, leather, felt, soil, dirt, whole coconut, round fruit, oval fruit, intact nut, bowl, cup, shell half, dome, hollow, ball of fibre, bundle, rope, coiled rope, doormat, brush, broom, nest, bird nest, straw, hay, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
-  },
-  "husked_coconut": {
-    "description": "皮を剥いだヤシの実。毛の生えた茶色い核。丸ごとの実を出させる書き方は coconut を参照。",
-    "positive": "exactly one whole unopened bare brown coconut alone on an empty white page, seen from the outside with its shell closed and unbroken all around, a round nut covered all over in coarse brown hair, three dark round eyes in a group at one end facing the viewer, dark warm brown tones, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "cut, cut open, cut in half, halved, sliced, cross section, opened, split, cracked, broken, chipped, hollow, interior, inside, rim, shell half, bowl, cup, white flesh, cream flesh, husk, fibrous husk, green husk, smooth skin, drinking straw, drilled hole, leaves, palm frond, tree, kiwi fruit, potato, stone, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
-  },
-  "holed_coconut": {
-    "description": [
-      "穴を開けたヤシの実。皮を剥いだ実（husked_coconut）との違いは穴だけなので、穴が見える",
-      "向き（上面が手前を向いた斜め上から）を本文で指定する。丸ごとの実を出させる書き方は",
-      "coconut を参照。",
-      "",
-      "**straw / drink と書かない。** 南国ドリンクの写真になり、ストローとパラソルが刺さる。"
-    ],
-    "positive": "exactly one bare brown coconut with a single hole bored into it alone on an empty white page, a round nut covered in coarse brown hair, seen from slightly above so its top faces the viewer, one clean dark round hole punched through the shell at the top, the rim of the hole showing the pale hard shell underneath, the rest of the shell unbroken, dark warm brown tones, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "drinking straw, straw, paper umbrella, cocktail, tropical drink, slice of fruit, two holes, three holes, many holes, cut open, cracked, split, halved, sawn open, hollow bowl, white flesh, husk, fibrous husk, leaves, palm frond, tree, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
-  },
-  "coconut_half": {
-    "description": [
-      "割れたヤシの実。空の殻（coconut_bowl）との違いは、内側に白い果肉が張り付いていること。",
-      "白い果肉を見せるため、内側が手前を向いた向きを指定する。",
-      "",
-      "白を否定しない（pale / whitish を否定に入れると果肉が消える）。"
-    ],
-    "positive": "exactly one half of a coconut alone on an empty white page, a bowl shaped shell broken in two, tilted so the open side faces the viewer, a thick layer of firm white flesh lining the whole inside, a thin dark brown shell around the outside with coarse brown hair on it, the broken rim uneven, white flesh against dark brown shell, matte surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "empty shell, hollow shell, bare inner shell, no flesh, whole coconut, intact nut, round fruit, two halves, both halves, pair, cup, mug, bowl of soup, milk, liquid inside, water inside, drinking straw, leaves, palm frond, tree, two objects, three objects, several objects, multiple objects, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
-  },
-  "coconut_bowl": {
-    "description": "ヤシの殻。果肉を掻き出したあとの器。白い果肉を名指しで否定して、割れた実と描き分ける。",
-    "positive": "exactly one empty coconut shell bowl alone on an empty white page, a half shell scraped clean and hollow inside, tilted so the open side faces the viewer, the bare inner wall a smooth pale tan brown with faint scrape marks, a thin dark brown shell around the outside with coarse brown hair on it, the broken rim uneven, warm brown tones, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "white flesh, white lining, thick white layer, coconut meat, milk, liquid inside, water inside, food inside, filled bowl, whole coconut, intact nut, round fruit, two halves, both halves, pair, ceramic bowl, wooden bowl, pottery, glazed, drinking straw, leaves, palm frond, tree, two objects, three objects, several objects, multiple objects, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
-  },
-  "coconut_meat": {
-    "description": [
-      "ヤシの果肉。殻から掻き出した白い一片。",
-      "",
-      "**白い物なので、白を落とすNGワード（pale / whitish / washed out）を入れない。** 代わりに",
-      "紙と溶けないよう、縁の茶色い皮と面の陰影を本文で頼む。",
-      "",
-      "**coconut を外してはいけない。** 実の絵に寄るからとこの語を落として white flesh の塊として",
-      "頼むと、6枚中4枚が人物の肖像画になる（flesh が人の肌として読まれる）。",
-      "",
-      "**濃い陰影を頼まない。** deep soft shading と書くと果肉ごと暗いオリーブ色になる。"
-    ],
-    "positive": "exactly one thick chunk of fresh coconut flesh alone on an empty white page, a solid wedge broken out of the shell, a thin dark brown skin along its one curved edge and straight broken faces elsewhere, the flesh creamy ivory with a soft grain, clearly three dimensional with soft grey shading down its sides, gentle light from the upper left, warm cream and beige against a dark brown rim, matte moist surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, high quality",
-    "negative": "dark, olive, brown flesh, muddy, murky, dull, seed, bean, nut kernel, pure white, bright white, glowing, overexposed, blown highlights, snow, chalk, flat silhouette, flat shading, two dimensional, paper cutout, shell, whole coconut, half coconut, bowl, hollow shell, brown nut, hairy shell, shredded coconut, grated coconut, flakes, crumbs, powder, milk, liquid, splash, cheese, bread, soap, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow"
   },
   "stone": {
     "description": "石。角の無い丸い灰色の河原石。艶を否定する（艶を描かせると白く飛ぶ）。",
