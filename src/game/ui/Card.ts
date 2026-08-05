@@ -174,23 +174,31 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly stackBadge: Phaser.GameObjects.Container;
   private readonly stackCount: Phaser.GameObjects.Text;
 
-  /**
-   * カードの名前。中身を代表にしているカード（水入りの水筒）は、中身が入れ替わると名前も変わる
-   * （Localization.mdのdisplay_name_with_content）ので、差し替えのたびに書き換える。
-   */
+  /** カードの名前。中身が入れ替われば同じインスタンスのままでも変わる（showName参照）。 */
   private readonly nameText: Phaser.GameObjects.Text;
 
   /**
-   * 状態を表すバー（addStateBars参照）。その値を持たないカードには無い。値は差し替えのたびに
-   * 書き換える——作り直すと、減った分を遅れて縮める動き（ProgressBar.setRatio）が途中で消える。
-   *
-   * 中身のバーだけは、映す中身そのものが出入りする（飲み干す・注がれる）ため、差し替えのたびに
-   * 作り直しと片付けが起こりうる（updateFillBar参照）。
+   * 中身を入れ替える器。重なりの順序を殻の側で固定しておくことで、中身（絵・背景・端の操作エリア）が
+   * 出入りしても順序が崩れない。
    */
-  private readonly durabilityBar: ProgressBar | undefined;
-  private fillBar: ProgressBar | undefined;
+  private readonly backgroundLayer: Phaser.GameObjects.Container;
+  private readonly artLayer: Phaser.GameObjects.Container;
+  private readonly edgeLayer: Phaser.GameObjects.Container;
 
-  /** バーを作り直すときに要る採寸（updateFillBar参照）。 */
+  /** 今その器に出しているもの。同じなら作り直さないための控え（showArt・showEdge参照）。 */
+  private shownArt: string | undefined;
+  private shownIcon: string | undefined;
+  private shownBackground: string | undefined;
+  private shownEdgeDirection: CardEdgeDirection | undefined;
+
+  /**
+   * 状態を表すバー。値を持たない間は隠すだけで、作り直さない——作り直すと、減った分を遅れて縮める
+   * 動き（ProgressBar.setRatio）が途中で消えるため。
+   */
+  private readonly durabilityBar: ProgressBar;
+  private readonly fillBar: ProgressBar;
+
+  /** 中身を入れ直すときに要る採寸。 */
   private readonly metrics: ScreenMetrics;
 
   /** 端を押し続けている間の繰り返し（addEdge参照）と、次の1枚までの間隔、既に送ったかどうか。 */
@@ -204,9 +212,13 @@ export class Card extends Phaser.GameObjects.Container {
   /** 押下中だけ出す黒枠（makeTappable参照）。押せないカードは持たない。 */
   private pressHighlight: Phaser.GameObjects.Graphics | undefined;
 
+  /**
+   * ここで組み立てるのは**殻**——重なりの順序と、中身を入れる器だけ。何がどう見えるかは
+   * `applyContent`（`setContent` と共通）が決める。初期表示も差し替えも同じ経路を通るので、
+   * 反映の書き忘れは「後から古くなる」ではなく「最初から出ない」として現れる。
+   */
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, content: CardContent) {
     super(scene, x, y);
-    const { icon, name } = content;
 
     const width = metrics.px(SIZE.cardWidth);
     const height = metrics.px(SIZE.cardHeight);
@@ -216,63 +228,35 @@ export class Card extends Phaser.GameObjects.Container {
     this.metrics = metrics;
 
     const face = addFrame(scene, metrics, width, height, false);
-
     // 土地の背景は絵より先に敷く。用意されていない土地では紙がそのまま地になる。
-    const backgroundTexture =
-      content.background === undefined ? undefined : cardBackgroundTexture(content.background);
-    const background =
-      backgroundTexture !== undefined && scene.textures.exists(backgroundTexture)
-        ? placeArt(scene, backgroundTexture, width, height)
-        : undefined;
+    this.backgroundLayer = scene.add.container(0, 0);
+    this.artLayer = scene.add.container(0, 0);
+    this.nameText = createNameText(scene, metrics, width, height);
+    this.add([face, this.backgroundLayer, this.artLayer, this.nameText]);
 
-    // 絵があれば枠に重ねる。無いあいだは絵文字で代用する（絵は少しずつ用意されるため）。
-    const artTexture = content.art === undefined ? undefined : objectTexture(content.art);
-    const art =
-      artTexture !== undefined && scene.textures.exists(artTexture)
-        ? placeArt(scene, artTexture, width, height)
-        : scene.add
-            .text(width / 2, height / 2, icon, {
-              fontFamily: FONT_FAMILY,
-              fontSize: `${metrics.fontPx(96)}px`,
-            })
-            .setOrigin(0.5)
-            .setAlpha(0.95);
-
-    const paper = paperRect(metrics, width, height);
-    const margin = metrics.px(NAME_MARGIN);
-    const stroke = Math.max(1, metrics.px(NAME_STROKE));
-    // 下寄せの名前は下端を固定して上へ伸ばす（行が増えても絵の下端との間が空かない）。
-    const bottom = content.namePosition === 'bottom';
-    const nameText = scene.add
-      .text(paper.x + margin, bottom ? paper.y + paper.height - margin : paper.y + margin, name, {
-        fontFamily: FONT_FAMILY,
-        fontSize: `${metrics.fontPx(30)}px`,
-        fontStyle: 'bold',
-        color: cssColor(COLOR.text),
-        maxLines: NAME_MAX_LINES,
-      })
-      .setOrigin(0, bottom ? 1 : 0)
-      .setLineSpacing(metrics.px(2))
-      .setStroke(cssColor(COLOR.cardFace), stroke);
-    // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
-    nameText.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
-    this.nameText = nameText;
-
-    this.add(background === undefined ? [face, art, nameText] : [face, background, art, nameText]);
     // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
-    this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height, content.durability);
-    this.fillBar = this.addFillBar(scene, metrics, width, height, content.fill);
+    this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height);
+    this.fillBar = this.addFillBar(scene, metrics, width, height);
+    this.edgeLayer = scene.add.container(0, 0);
+    this.add(this.edgeLayer);
 
-    if (artTexture !== undefined && !scene.textures.exists(artTexture)) {
-      this.swapArtWhenLoaded(scene, artTexture, art, width, height);
-    }
+    // 入力の配線だけは構築時に一度きり。押したときに何が起きるかは実行時に_contentから読む
+    // （onTap・edge.onTap）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
     if (content.onTap !== undefined) this.makeTappable(scene, metrics, width, height);
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
     // 入力を受け取る（InputPlugin.topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
     // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
     if (content.draggable === true) scene.input.setDraggable(this);
-    if (content.edge !== undefined) this.addEdge(scene, metrics, width, height, content.edge);
+
+    // 指を離した先がこのカードの外だと端のpointerupが来ないため、シーン全体の離上でも必ず止める。
+    // 送り続けるものが残っているので、止め損なうと押していないのに動き続けてしまう。
+    const stopEdgeRepeat = (): void => this.cancelEdgeRepeat();
+    scene.input.on(Phaser.Input.Events.POINTER_UP, stopEdgeRepeat);
+    this.once(Phaser.GameObjects.Events.DESTROY, () => {
+      this.cancelEdgeRepeat();
+      scene.input.off(Phaser.Input.Events.POINTER_UP, stopEdgeRepeat);
+    });
 
     // スタック数は端の操作エリアより後に足して、オーバーレイが出ている間も読めるようにする。
     this.stackCount = scene.add
@@ -285,64 +269,126 @@ export class Card extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
     this.stackBadge = this.addStackBadge(scene, metrics, width, height);
     this.add(this.stackBadge);
-    this.showStackCount();
 
+    this.applyContent(content, false);
     scene.add.existing(this);
+  }
+
+  /**
+   * 同じインスタンスを映し続けるカードの表示内容を差し替える。カードが何を映しているかは、代表
+   * （`represented_by`）が入れ替われば名前も絵も変わるため、**構築時の値をそのまま持ち続けてよい
+   * ものは無い**という前提で全部を貼り直す。
+   */
+  setContent(content: CardContent): void {
+    this.applyContent(content, true);
+  }
+
+  /**
+   * 今の内容を殻へ流し込む。構築時（`showDecrease: false`）と差し替え時の両方が通る唯一の経路。
+   *
+   * showDecreaseは「この反映で、悪化した分を赤い帯として見せるか」。現れたばかりのバーに帯を出すと、
+   * 見えていなかった間の減少が今この瞬間の減少として出てしまう（`StatusBar.show` と同じ理由）。
+   */
+  private applyContent(content: CardContent, showDecrease: boolean): void {
+    this._content = content;
+    this.showName(content);
+    this.showArt(content);
+    this.showBars(content, showDecrease);
+    this.showEdge(content);
+    this.showStackCount();
+  }
+
+  /** 名前と、その寄せ位置。中身が入れ替われば名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。 */
+  private showName(content: CardContent): void {
+    const paper = paperRect(this.metrics, this.cardWidth, this.cardHeight);
+    const margin = this.metrics.px(NAME_MARGIN);
+    // 下寄せの名前は下端を固定して上へ伸ばす（行が増えても絵の下端との間が空かない）。
+    const bottom = content.namePosition === 'bottom';
+    this.nameText
+      .setY(bottom ? paper.y + paper.height - margin : paper.y + margin)
+      .setOrigin(0, bottom ? 1 : 0);
+    if (this.nameText.text !== content.name) this.nameText.setText(content.name);
+  }
+
+  /**
+   * 絵と、その下に敷く土地の背景。絵があれば枠に重ね、無いあいだは絵文字で代用する
+   * （絵は少しずつ用意されるため）。同じものを出し続ける間は作り直さない。
+   */
+  private showArt(content: CardContent): void {
+    const scene = this.scene;
+    const background =
+      content.background === undefined ? undefined : cardBackgroundTexture(content.background);
+    if (background !== this.shownBackground) {
+      this.shownBackground = background;
+      this.backgroundLayer.removeAll(true);
+      if (background !== undefined && scene.textures.exists(background)) {
+        this.backgroundLayer.add(placeArt(scene, background, this.cardWidth, this.cardHeight));
+      }
+    }
+
+    const art = content.art === undefined ? undefined : objectTexture(content.art);
+    if (art === this.shownArt && content.icon === this.shownIcon) return;
+    this.shownArt = art;
+    this.shownIcon = content.icon;
+
+    this.artLayer.removeAll(true);
+    if (art !== undefined && scene.textures.exists(art)) {
+      this.artLayer.add(placeArt(scene, art, this.cardWidth, this.cardHeight));
+      return;
+    }
+    this.artLayer.add(createIconText(scene, this.metrics, content.icon, this.cardWidth, this.cardHeight));
+    if (art !== undefined) this.swapArtWhenLoaded(scene, art);
   }
 
   /**
    * 絵文字で代用中の絵が後から届いたら、自分で貼り替える。道のカードは行き先の土地の絵の
    * ロード完了（LocationArtLoader）を待たずに現れうるため。
    */
-  private swapArtWhenLoaded(
-    scene: Phaser.Scene,
-    texture: string,
-    placeholder: Phaser.GameObjects.GameObject,
-    width: number,
-    height: number,
-  ): void {
+  private swapArtWhenLoaded(scene: Phaser.Scene, texture: string): void {
     const event = Phaser.Textures.Events.ADD_KEY + texture;
     const swap = (): void => {
-      const index = this.getIndex(placeholder);
-      placeholder.destroy();
-      this.addAt(placeArt(scene, texture, width, height), index);
+      // 待っている間に映すものが変わっていれば、届いた絵はもうこのカードのものではない。
+      if (this.shownArt !== texture) return;
+      this.artLayer.removeAll(true);
+      this.artLayer.add(placeArt(scene, texture, this.cardWidth, this.cardHeight));
     };
     scene.textures.once(event, swap);
     this.once(Phaser.GameObjects.Events.DESTROY, () => scene.textures.off(event, swap));
   }
 
-  /**
-   * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・絵・端の向きは変わらない
-   * 前提で、名前・スタック数・状態のバー・操作の実体（毎回作り直されるクロージャ）だけを新しくする。
-   */
-  setContent(content: CardContent): void {
-    this._content = content;
-    this.showStackCount();
-    // 中身が入れ替われば同じインスタンスのままでも名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。
-    if (this.nameText.text !== content.name) this.nameText.setText(content.name);
-
+  /** 状態のバー。値を持たない間は隠す（映すものが無いカードにバーは出さない）。 */
+  private showBars(content: CardContent, showDecrease: boolean): void {
     const hold = content.midAction === true;
-    if (content.durability !== undefined) this.durabilityBar?.setRatio(content.durability, hold);
-    this.updateFillBar(hold);
+    this.showBar(this.durabilityBar, content.durability, showDecrease, hold);
+    this.showBar(this.fillBar, content.fill?.ratio, showDecrease, hold);
+  }
+
+  private showBar(bar: ProgressBar, ratio: number | undefined, showDecrease: boolean, hold: boolean): void {
+    if (ratio === undefined) {
+      bar.setVisible(false);
+      return;
+    }
+
+    // 隠れていたバーが現れるときは、見えていなかった間の増減を今の変化として見せない。
+    if (showDecrease && bar.visible) bar.setRatio(ratio, hold);
+    else bar.resetRatio(ratio);
+    bar.setVisible(true);
   }
 
   /**
-   * 中身のバーを今の内容へ合わせる。他のバーと違って、映す対象そのものが出入りする——飲み干せば
-   * 中身は消え、注がれれば現れる——ので、値の書き換えだけでなく作り直しと片付けも要る。
+   * 端の操作エリア。送れる先があるかどうかで付いたり外れたりする（`PlayScene.cardEdge`）ので、
+   * 向きが変わったときだけ中身を入れ直す。押したときに何が起きるかは実行時に`_content`から読む。
    */
-  private updateFillBar(hold: boolean): void {
-    const fill = this._content.fill;
-    if (fill === undefined) {
-      this.fillBar?.destroy();
-      this.fillBar = undefined;
-      return;
-    }
+  private showEdge(content: CardContent): void {
+    const direction = content.edge?.direction;
+    if (direction === this.shownEdgeDirection) return;
 
-    if (this.fillBar === undefined) {
-      this.fillBar = this.addFillBar(this.scene, this.metrics, this.cardWidth, this.cardHeight, fill);
-      return;
+    this.shownEdgeDirection = direction;
+    this.cancelEdgeRepeat();
+    this.edgeLayer.removeAll(true);
+    if (direction !== undefined) {
+      this.addEdge(this.scene, this.metrics, this.cardWidth, this.cardHeight, direction);
     }
-    this.fillBar.setRatio(fill.ratio, hold);
   }
 
   /**
@@ -354,10 +400,7 @@ export class Card extends Phaser.GameObjects.Container {
     metrics: ScreenMetrics,
     width: number,
     height: number,
-    durability: number | undefined,
-  ): ProgressBar | undefined {
-    if (durability === undefined) return undefined;
-
+  ): ProgressBar {
     const paper = paperRect(metrics, width, height);
     const barHeight = metrics.px(DURABILITY_BAR_HEIGHT);
     const inset = metrics.px(FRAME_RADIUS);
@@ -368,7 +411,7 @@ export class Card extends Phaser.GameObjects.Container {
       paper.y + paper.height - barHeight,
       paper.width - inset * 2,
       barHeight,
-      durability,
+      0,
       // 枠線は数pxの太さの大半を占めてしまうので描かない。
       { fillColor: durabilityColorFor, borderless: true },
     );
@@ -382,10 +425,7 @@ export class Card extends Phaser.GameObjects.Container {
     metrics: ScreenMetrics,
     width: number,
     height: number,
-    fill: CardFill | undefined,
-  ): ProgressBar | undefined {
-    if (fill === undefined) return undefined;
-
+  ): ProgressBar {
     const paper = paperRect(metrics, width, height);
     const barHeight = metrics.px(FILL_BAR_HEIGHT);
     const margin = metrics.px(FILL_BAR_MARGIN);
@@ -396,7 +436,7 @@ export class Card extends Phaser.GameObjects.Container {
       paper.y + paper.height - metrics.px(FILL_BAR_BOTTOM) - barHeight,
       paper.width - margin * 2,
       barHeight,
-      fill.ratio,
+      0,
       // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
       { fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown },
     );
@@ -493,9 +533,9 @@ export class Card extends Phaser.GameObjects.Container {
     metrics: ScreenMetrics,
     width: number,
     height: number,
-    edge: CardEdgeAction,
+    direction: CardEdgeDirection,
   ): void {
-    const up = edge.direction === 'up';
+    const up = direction === 'up';
     const paper = paperRect(metrics, width, height);
     const edgeHeight = paper.height * EDGE_RATIO;
     const top = up ? paper.y : paper.y + paper.height - edgeHeight;
@@ -544,16 +584,7 @@ export class Card extends Phaser.GameObjects.Container {
       },
     });
 
-    // 指を離した先がこのカードの外だと端のpointerupが来ないため、シーン全体の離上でも必ず止める。
-    // 送り続けるものが残っているので、止め損なうと押していないのに動き続けてしまう。
-    const stop = (): void => this.cancelEdgeRepeat();
-    scene.input.on(Phaser.Input.Events.POINTER_UP, stop);
-    this.once(Phaser.GameObjects.Events.DESTROY, () => {
-      this.cancelEdgeRepeat();
-      scene.input.off(Phaser.Input.Events.POINTER_UP, stop);
-    });
-
-    this.add([feedback, hitArea]);
+    this.edgeLayer.add([feedback, hitArea]);
   }
 
   /** 押し続けの繰り返しを始める。1枚目はEDGE_HOLD_MS後で、そこからは間隔を詰めていく。 */
@@ -658,6 +689,51 @@ function placeArt(
   const image = scene.add.image(width / 2, height / 2, texture).setOrigin(0.5);
   const scale = width / CARD_ART_WIDTH;
   return image.setDisplaySize(image.width * scale, image.height * scale);
+}
+
+/**
+ * 名前の文字。中身は空で作り、何を出すかはshowNameが決める（殻だけを組み立てる、constructor参照）。
+ * 折り返しの幅だけはカードの寸法で決まるのでここで与える。
+ */
+function createNameText(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Text {
+  const paper = paperRect(metrics, width, height);
+  const margin = metrics.px(NAME_MARGIN);
+  const stroke = Math.max(1, metrics.px(NAME_STROKE));
+  const text = scene.add
+    .text(paper.x + margin, 0, '', {
+      fontFamily: FONT_FAMILY,
+      fontSize: `${metrics.fontPx(30)}px`,
+      fontStyle: 'bold',
+      color: cssColor(COLOR.text),
+      maxLines: NAME_MAX_LINES,
+    })
+    .setLineSpacing(metrics.px(2))
+    .setStroke(cssColor(COLOR.cardFace), stroke);
+  // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
+  text.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
+  return text;
+}
+
+/** 絵の代わりに出す絵文字（showArt参照）。 */
+function createIconText(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  icon: string,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Text {
+  return scene.add
+    .text(width / 2, height / 2, icon, {
+      fontFamily: FONT_FAMILY,
+      fontSize: `${metrics.fontPx(96)}px`,
+    })
+    .setOrigin(0.5)
+    .setAlpha(0.95);
 }
 
 /** カードの矩形の中で、絵の紙が占める範囲（FRAME_INSET参照）。 */
