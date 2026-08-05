@@ -78,7 +78,7 @@ export const COLOR = {
   // 満たされ具合の向きはステータスによって逆なので、塗りの長さではなく色が良し悪しを表す。
   statusBarFillSafe: 0x4caf50,
   statusBarFillFatal: 0x9c6b3f,
-  /** 減った分を遅れて縮める帯（ProgressBar）。 */
+  /** 減った分の帯（ProgressBar。増えた分はfadedFillが塗りから引く）。 */
   statusBarLag: 0xd93025,
 
   // 耐久度バーの塗り（durabilityColorFor）。満タンの緑から尽きる直前の赤へ、琥珀を経て寄せる。
@@ -137,6 +137,19 @@ export const COLOR = {
 export function fillColorFor(alert: AlertLevel): number {
   const severity = ALERT_LEVELS.indexOf(alert) / (ALERT_LEVELS.length - 1);
   return mixColor(COLOR.statusBarFillSafe, COLOR.statusBarFillFatal, severity);
+}
+
+/** 増えた分の帯を、塗りからどれだけトラック寄りへ薄めるか（fadedFill）。 */
+const BAND_FADE = 0.55;
+
+/**
+ * 増えた分の帯の色（ScreenLayout.md ステータスエリア節）。塗りそのものをトラック側へ薄めた色にするのは、
+ * **これから満ちる分**を表すためです。固定の1色を置くと、塗りの色が別々のバー——水は青、油は黄色——で
+ * 帯だけが同じ色になり、何が増える途中なのか読めなくなります。減った分の赤（statusBarLag）が塗りの色に
+ * よらず同じなのは対照的ですが、失われたものはもう塗りではないので、こちらは色を共有しません。
+ */
+export function fadedFill(fill: number): number {
+  return mixColor(fill, COLOR.statusBarTrack, BAND_FADE);
 }
 
 /** durabilityHalfへ寄せ切る耐久度。ここを境に、緑→琥珀と琥珀→赤の2区間へ分ける。 */

@@ -6,7 +6,7 @@ export interface StatusDelta {
 
   /**
    * 行動を始める前の満たされ具合（rangeを持たないプロパティはundefined）。出ていなかった行を出すときに、
-   * この値から見せ始めて「この行動で減った分」だけを赤い帯にするために使う（StatusBar.show）。
+   * この値から見せ始めて「この行動で変わった分」だけを帯にするために使う（StatusBar.show）。
    */
   readonly ratioBefore: number | undefined;
 }
