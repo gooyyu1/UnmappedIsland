@@ -339,6 +339,119 @@ object_defs:
     ).toEqual(['hand_owner10']);
   });
 
+  it('same_slotで複数生まれるとき、合流したものはセルを消費せず、元の位置は次の1つが引き継ぐ', () => {
+    // 「meat(0) _(1) half(2) _(3)」→ halfが果肉と器に分かれる → 「meat x2(0) _(1) bowl(2) _(3)」。
+    // 1個目のmeatは離れた既存スタックへ合流するので、halfが空けた2番は2個目のbowlが引き継ぐ。
+    const yaml = `
+object_defs:
+  hand_owner11:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 4
+        fixed_positions: true
+  meat_item: {}
+  bowl_item: {}
+  half_item:
+    props:
+      freshness:
+        value: 0
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
+          destroy: self
+          spawn:
+            - {object: meat_item, into: same_slot}
+            - {object: bowl_item, into: same_slot}
+`;
+    const codex = load(yaml);
+    const handSlotId = codex.slotNames.getId('hand');
+    const meatId = codex.objectNames.getId('meat_item');
+    const bowlId = codex.objectNames.getId('bowl_item');
+
+    const session = new WorldSession(codex);
+    const handInstance = spawn(codex, 'hand_owner11');
+    spawn(codex, 'meat_item').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 0番
+    spawn(codex, 'half_item').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 1番
+
+    const hand11 = handInstance.tryGetSlot(handSlotId)!;
+    // 前提を「meat(0) _(1) half(2) _(3)」に合わせる。
+    expect(hand11.trySetManualPosition(hand11.cells[1]!, 2)).toBe(true);
+
+    handInstance.tick(session);
+
+    expect(gridIndexOfType(hand11, meatId), '1個目は既存の果肉のスタックへ合流する').toBe(0);
+    expect(
+      hand11.contents.filter((o) => o.def.globalId === meatId),
+      '合流先は2個になる',
+    ).toHaveLength(2);
+    expect(
+      gridIndexOfType(hand11, bowlId),
+      '合流した1個目はセルを消費していないので、2個目が元の位置(2番)を引き継ぐ',
+    ).toBe(2);
+  });
+
+  it('same_slotで複数生まれるとき、置き場所を失った1つ目に続く2つ目は合流先へ入る', () => {
+    // 手持ちが埋まったまま同種が残るため、1個目は隣の枠を作れずこぼれる。それでも、既存スタックへ
+    // 合流できる2個目は枠を消費しないので手持ちに残る。
+    const yaml = `
+object_defs:
+  loc_fallback3:
+    slots:
+      ground: {}
+  hand_owner12:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 3
+        fixed_positions: true
+  rotten_potato4: {}
+  potato_peel2: {}
+  filler_item3: {}
+  potato4:
+    props:
+      freshness:
+        value: 9
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
+          destroy: self
+          spawn:
+            - {object: rotten_potato4, into: same_slot}
+            - {object: potato_peel2, into: same_slot}
+`;
+    const codex = load(yaml);
+    const handSlotId = codex.slotNames.getId('hand');
+    const groundSlotId = codex.slotNames.getId('ground');
+    const freshnessId = codex.propertyNames.getId('freshness');
+    const peelId = codex.objectNames.getId('potato_peel2');
+
+    const session = new WorldSession(codex);
+    const locationInstance = spawn(codex, 'loc_fallback3');
+    const handInstance = spawn(codex, 'hand_owner12');
+    handInstance.moveToSlot(locationInstance, groundSlotId, session.codex.wellKnown);
+
+    // 「potato x2(0) peel(1) filler(2)」の3枠すべてが埋まった状態。
+    const rotting = spawn(codex, 'potato4');
+    const survivor = spawn(codex, 'potato4');
+    rotting.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    survivor.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    spawn(codex, 'potato_peel2').moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    spawn(codex, 'filler_item3').moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    survivor.setProperty(freshnessId, 9); // 生き残る方（同種が残るので、置き換えは隣の枠を要る）
+    rotting.setProperty(freshnessId, 0);
+
+    handInstance.tick(session);
+
+    const hand12 = handInstance.tryGetSlot(handSlotId)!;
+    expect(
+      hand12.contents.filter((o) => o.def.globalId === peelId),
+      '2個目は既存の皮へ合流する',
+    ).toHaveLength(2);
+    expect(
+      locationInstance.tryGetSlot(groundSlotId)!.contents.map((o) => o.def.name),
+      '空き枠を作れなかった1個目だけが親へこぼれる',
+    ).toEqual(['hand_owner12', 'rotten_potato4']);
+  });
+
   it('same_slotは、同種の既存スタックがあれば位置指定より合流を優先する', () => {
     const yaml = `
 object_defs:
