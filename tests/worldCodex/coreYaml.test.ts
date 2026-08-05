@@ -89,7 +89,7 @@ describe('core.yamlのworld定義', () => {
     const dayId = codex.propertyNames.getId('day');
 
     const worldInstance = new WorldObject(1, world, new WorldSession(codex));
-    const worldView = new World(worldInstance, codex.propertyNames);
+    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
     const session = new WorldSession(codex, worldView);
 
     session.advanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1

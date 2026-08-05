@@ -31,7 +31,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    worldView = new World(worldInstance, codex.propertyNames);
+    worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
     session = new WorldSession(codex, worldView);
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');

@@ -376,7 +376,7 @@ describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計�
 
     for (let seed = 1; seed <= SEED_COUNT; seed++) {
       const worldInstance = new WorldObject(1, worldDef, new WorldSession(codex));
-      const worldView = new World(worldInstance, codex.propertyNames);
+      const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
       const session = new WorldSession(codex, worldView, new SeededRng(seed));
 
       // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ

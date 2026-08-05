@@ -46,6 +46,18 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     );
   });
 
+  it('天気は、worldの今の天気の識別子をそのまま映す', () => {
+    // 雨の演出（ScreenLayout.md）がこの識別子を読むため、表示文字列ではなく識別子で持つ。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const weatherId = codex.propertyNames.getId('weather');
+
+    expect(fromGameSession(game, codex, locale).weather).toBe('clear');
+
+    game.world.instance.setNumber(weatherId, codex.symbolNames.getId('storm'), game.session);
+
+    expect(fromGameSession(game, codex, locale).weather).toBe('storm');
+  });
+
   it('手持ちは固定6枠ぶん並び、空きセルはundefinedになる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));

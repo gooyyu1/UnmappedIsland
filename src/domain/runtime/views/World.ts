@@ -17,13 +17,18 @@ export class World {
   private readonly hourId: number;
   private readonly minuteId: number;
   private readonly minutesPerTickId: number;
+  /** 天気の語彙を持たないCodex（時間だけを扱うテスト用など）ではundefined。 */
+  private readonly weatherId: number | undefined;
+  private readonly symbolNames: NameRegistry;
 
-  constructor(instance: WorldObject, propertyNames: NameRegistry) {
+  constructor(instance: WorldObject, propertyNames: NameRegistry, symbolNames: NameRegistry) {
     this.instance = instance;
     this.dayId = propertyNames.getId('day');
     this.hourId = propertyNames.getId('hour');
     this.minuteId = propertyNames.getId('minute');
     this.minutesPerTickId = propertyNames.getId('minutes_per_tick');
+    this.weatherId = propertyNames.tryGetId('weather');
+    this.symbolNames = symbolNames;
   }
 
   get day(): number {
@@ -44,6 +49,16 @@ export class World {
    */
   get totalMinutes(): number {
     return ((this.day - 1) * 24 + this.hour) * 60 + this.minute;
+  }
+
+  /**
+   * 今の天気の識別子（`light_rain`など、ClimateSystem.md 4.2節）。シンボル型プロパティ（6.6節）
+   * なので、実体は値の名前空間（symbolNames）が持つ名前を引き直したもの。天気の語彙を持たない
+   * Codexではundefined。
+   */
+  get weather(): string | undefined {
+    if (this.weatherId === undefined) return undefined;
+    return this.symbolNames.getName(this.instance.getEffectiveValue(this.weatherId));
   }
 
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */

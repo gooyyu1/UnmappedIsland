@@ -133,7 +133,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 探索 → 進捗が必要値に達した道の発見（隠しスロット→公開スロット） → 移動、の一連の流れを
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。
     const worldInstance = new WorldObject(0, def('world'), new WorldSession(codex));
-    const worldView = new World(worldInstance, codex.propertyNames);
+    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
     const session = new WorldSession(codex, worldView, new SeededRng(42));
 
     const grassland = session.spawn(codex.objectNames.getId('grassland'));
