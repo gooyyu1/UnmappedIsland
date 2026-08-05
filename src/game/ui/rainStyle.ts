@@ -1,10 +1,11 @@
 /**
- * 天気ごとの雨の見え方（ScreenLayout.md 雨の演出節）。強くなるほど、暗く・多く・長く・速く・
- * 斜めになる。値はu単位（ScreenMetrics）とミリ秒。
+ * 天気ごとの雨の見え方（ScreenLayout.md 雨の演出節）。強くなるほど、多く・長く・速く・斜めになる。
+ * 値はu単位（ScreenMetrics）とミリ秒。
+ *
+ * **暗さはここが持たない。** 明るさは日射（skyTint.ts）が一手に決める——雨が暗いのは雨雲が
+ * 陽を遮っているからで、それは天気からsunlightへの寄与（core.yaml）として既に表されている。
  */
 export interface RainStyle {
-  /** フィールドエリア全体へかぶせる黒の濃さ（0〜1）。 */
-  readonly dim: number;
   /** 1周期ぶんの帯に降らせる雨粒の数。 */
   readonly drops: number;
   /** 鉛直からの傾き（度）。雨粒の向きと落ちる向きは常に一致する。 */
@@ -30,7 +31,6 @@ export interface RainStyle {
  */
 const RAIN_STYLES: Readonly<Record<string, RainStyle>> = {
   light_rain: {
-    dim: 0.1,
     drops: 70,
     slantDegrees: 6,
     length: 26,
@@ -40,7 +40,6 @@ const RAIN_STYLES: Readonly<Record<string, RainStyle>> = {
     gusts: 0,
   },
   heavy_rain: {
-    dim: 0.2,
     drops: 160,
     slantDegrees: 18,
     length: 42,
@@ -50,7 +49,6 @@ const RAIN_STYLES: Readonly<Record<string, RainStyle>> = {
     gusts: 0,
   },
   storm: {
-    dim: 0.36,
     drops: 200,
     slantDegrees: 34,
     length: 62,

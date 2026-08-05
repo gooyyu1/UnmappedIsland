@@ -50,7 +50,10 @@ import { SlotWindow } from './ui/SlotWindow';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
+import type { SkyState } from './ui/WeatherOverlay';
 import { WeatherOverlay } from './ui/WeatherOverlay';
+import { GroundHaze } from './ui/GroundHaze';
+import { heatHazeFor } from './ui/heatHaze';
 import { durationText } from './ui/durationText';
 import { addLabel } from './ui/labels';
 import type { BoxStyle } from './ui/shapes';
@@ -189,8 +192,11 @@ export class PlayScene extends ResponsiveScene {
   /** フィールドエリアの背景板。レーンと合わせて、フィールドエリアだけを作り直すときに捨てる。 */
   private fieldPanel!: Phaser.GameObjects.Rectangle;
 
-  /** 雨天のあいだフィールドエリアへかぶせる翳りと雨。現在地には依らないので、作り直しの対象外。 */
+  /** 日射と天気に応じてフィールドエリアへかぶせる翳り・輝きと雨。現在地には依らないので、作り直しの対象外。 */
   private weatherOverlay!: WeatherOverlay;
+
+  /** 地面の絵に掛ける陽炎。掛ける対象（地面）はフィールドエリアの作り直しで入れ替わる。 */
+  private haze: GroundHaze | undefined;
 
   /** 各エリアの位置・大きさ。画面寸法から決まるので、buildのたびに作り直される。 */
   private layout!: PlayScreenLayout;
@@ -380,13 +386,10 @@ export class PlayScene extends ResponsiveScene {
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
     this.buildFieldArea(layout);
-    // 雨は自前の層（WEATHER_DEPTH）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
-    this.weatherOverlay = new WeatherOverlay(
-      this,
-      this.metrics,
-      layout.fieldArea,
-      this.view.weather,
-    ).setDepth(WEATHER_DEPTH);
+    // 空の演出は自前の層（WEATHER_DEPTH）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
+    this.weatherOverlay = new WeatherOverlay(this, this.metrics, layout.fieldArea, this.sky()).setDepth(
+      WEATHER_DEPTH,
+    );
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
     this.motion = new CardMotion(this, this.metrics);
     this.buildFilterBar(layout.filterBar);
@@ -481,6 +484,11 @@ export class PlayScene extends ResponsiveScene {
       { art: HAND_LANE_TEXTURE, depth: FIELD_DEPTH },
     );
 
+    // 陽炎は地面の絵だけを歪ませる（GroundHaze参照）。手持ちのレーンは外にある地面ではないので外す。
+    this.haze ??= new GroundHaze(this);
+    this.haze.setTargets([...this.fixtureLane.ground, ...this.itemLane.ground]);
+    this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
+
     // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
     this.drag ??= new CardDragController(this, () => this.metrics, {
       describeDrop: (drop) => this.describeDrop(drop),
@@ -495,6 +503,11 @@ export class PlayScene extends ResponsiveScene {
    *
    * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
    */
+  /** 空の演出（WeatherOverlay）へ渡す、今の空の様子。 */
+  private sky(): SkyState {
+    return { weather: this.view.weather, sunlight: this.view.sunlight };
+  }
+
   private rebuildFieldArea(): void {
     this.motion.release();
     this.fieldPanel.destroy();
@@ -977,7 +990,8 @@ export class PlayScene extends ResponsiveScene {
     this.artLoader.onceLoaded(this.view.locationArt, () => {
       if (wait !== this.artWait) return;
       this.rebuildFieldArea();
-      this.weatherOverlay.setWeather(this.view.weather);
+      this.weatherOverlay.setSky(this.sky());
+      this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
       this.showInformation();
       curtain.brighten(BRIGHTEN_MS, () => {
         this.transiting = false;
@@ -1000,7 +1014,8 @@ export class PlayScene extends ResponsiveScene {
     if (this.slotWindow !== undefined) contents.push(this.laneCards(this.slotWindowCards(), 'down'));
 
     this.motion.update(this.openLanes, contents, context);
-    this.weatherOverlay.setWeather(this.view.weather);
+    this.weatherOverlay.setSky(this.sky());
+    this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
     this.showInformation();
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }

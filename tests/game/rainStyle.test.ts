@@ -12,14 +12,13 @@ describe('rainStyle(天気ごとの雨の見え方)', () => {
     expect(rainStyleFor('hail')).toBeUndefined();
   });
 
-  it('雨天では、強いほど暗く・多く・長く・斜めになる', () => {
+  it('雨天では、強いほど多く・長く・速く・斜めになる', () => {
     const [light, heavy, storm] = rainy.map((weather) => rainStyleFor(weather)!);
 
     for (const [weaker, stronger] of [
       [light, heavy],
       [heavy, storm],
     ]) {
-      expect(stronger.dim).toBeGreaterThan(weaker.dim);
       expect(stronger.drops).toBeGreaterThan(weaker.drops);
       expect(stronger.length).toBeGreaterThan(weaker.length);
       expect(stronger.slantDegrees).toBeGreaterThan(weaker.slantDegrees);
@@ -33,7 +32,7 @@ describe('rainStyle(天気ごとの雨の見え方)', () => {
     expect(rainStyleFor('heavy_rain')!.gusts).toBe(0);
   });
 
-  it('翳りは画面が読めなくなるほど濃くしない', () => {
-    for (const weather of rainy) expect(rainStyleFor(weather)!.dim, weather).toBeLessThan(0.5);
+  it('暗さは持たない（明るさは日射が決める、skyTint.ts）', () => {
+    for (const weather of rainy) expect(rainStyleFor(weather)).not.toHaveProperty('dim');
   });
 });

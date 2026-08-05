@@ -72,9 +72,10 @@ export const COLOR = {
   flipDigitRing: 0x6b6b6b,
   weatherChip: 0xfff2e0,
 
-  /** 雨の筋と、雨天のあいだフィールドエリアへかぶせる翳り（WeatherOverlay）。 */
+  /** 雨の筋と、日射に応じてフィールドエリアへかぶせる翳り・輝き（WeatherOverlay）。 */
   rain: 0xe8f2ff,
-  rainDim: 0x0a1420,
+  skyShade: 0x0a1420,
+  skyGlow: 0xfff0c8,
 
   statusBarTrack: 0xdddddd,
   statusBarTrackBorder: 0x999999,
