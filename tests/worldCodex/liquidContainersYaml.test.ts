@@ -173,6 +173,18 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(canteen), '空き容量(100)の分だけ減る').toBe(900);
   });
 
+  it('残りを飲み切ると、中身のインスタンスごと消えて空の容器へ戻る', () => {
+    const session = new WorldSession(codex);
+    const actor = spawn(SAMPLE_CHARACTER);
+    actor.setProperty(hydrationId, 0);
+    const canteen = spawnContainer('canteen', 'water', 100); // 1回分(250)より少ない
+
+    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
+
+    expect(actor.getNumber(hydrationId), '残っている分だけ飲む').toBe(100);
+    expect(contentOf(canteen), 'tickを待たずに空へ戻る（0mLの水は存在しない）').toBeUndefined();
+  });
+
   it('お茶を飲むと追加の効果も適用できる', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);

@@ -157,11 +157,11 @@ object_defs:
 });
 
 /**
- * accumulate（8.4節）は行き先のスロットの上限も下限も知らずに量を動かせるため、tickのたびに
- * エンジンが不変条件へ戻す（WorldObject.settleQuantity）。降雨で増える水・蒸発で減る水が
- * 実際に頼っているのはこの2つ。
+ * 量を動かす経路（tickのaccumulateと、その場の書き換え）はどれも行き先のスロットの上限も下限も
+ * 知らないため、エンジンが不変条件へ戻す（WorldObject.settleQuantity）。降雨で増える水・蒸発で
+ * 減る水・飲み干した水が実際に頼っているのはこの2つ。
  */
-describe('量的オブジェクトのtick', () => {
+describe('量的オブジェクトの量の変化', () => {
   const yaml = `
 traits:
   liquid:
@@ -195,6 +195,9 @@ object_defs:
       - accumulate:
           self:
             size: -30
+
+  still_water:
+    traits: [liquid]
 `;
 
   function build(): { codex: WorldCodex; session: WorldSession; sizeId: number; contentId: number } {
@@ -238,6 +241,27 @@ object_defs:
 
   it('量が尽きたインスタンスは消える', () => {
     const { liquid, session } = fill('cup', 'drying_water', 20);
+
+    liquid.tick(session);
+
+    expect(liquid.parent).toBeUndefined();
+  });
+
+  it('量を0にした時点で消える（次のtickを待たない）', () => {
+    // 飲み干した水が0mLのまま残っていると、その間だけ「空なのに中身がいる容器」が見えてしまう。
+    const { liquid, session, sizeId } = fill('cup', 'rainwater', 20);
+
+    liquid.addNumber(sizeId, -20, session);
+
+    expect(liquid.parent, 'tickを回すまでもなく容器から消える').toBeUndefined();
+  });
+
+  it('sessionを渡さない書き換えは、その場では畳まない（tickでの判定に任せる）', () => {
+    const { container, liquid, session, sizeId } = fill('cup', 'still_water', 20);
+
+    liquid.setNumber(sizeId, 0);
+
+    expect(liquid.parent, 'range判定と同じく、判定はtickまで持ち越す').toBe(container);
 
     liquid.tick(session);
 

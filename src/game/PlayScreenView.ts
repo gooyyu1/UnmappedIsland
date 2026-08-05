@@ -241,13 +241,12 @@ const UNNAMED_LOCATION = '名もなき土地';
 const STATUS_TAG = 'status';
 
 /**
- * カードの状態バーが映すプロパティ・スロットの名前（ScreenLayout.md カードの状態バー節）。
+ * カードの状態バーが映すプロパティの名前（ScreenLayout.md カードの状態バー節）。
  * いずれもGameElementDefinition.md・LiquidContainerSystem.mdが名前ごと決めている語彙で、UI側は
  * 「その名前を持つ物が状態バーを出す」「バーの色はその名前のプロパティが決める」とだけ知っている。
  * 後から足された物——MODの液体——も、同じ名前で宣言するだけで同じように出る。
  */
 const DURABILITY_PROPERTY = 'durability';
-const CONTENT_SLOT = 'content';
 const COLOR_PROPERTY = 'color';
 
 /**
@@ -313,20 +312,23 @@ export function fromGameSession(
   const durabilityOf = (object: WorldObject): number | undefined =>
     durabilityPropertyId === undefined ? undefined : object.readProperty(durabilityPropertyId)?.ratio;
 
-  const contentSlotId = codex.slotNames.tryGetId(CONTENT_SLOT);
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
   /**
-   * 液体容器なら、中身の割合と中身が宣言している色（LiquidContainerSystem.md 2節）。容量を持つ
-   * contentスロットが液体容器の目印で、空の容器も割合0のバーとして出す（空であることも中身の情報）。
+   * 量として存在する中身（水・茶・油）の割合と、その中身が宣言している色
+   * （LiquidContainerSystem.md 2節・4.1節）。
+   *
+   * バーは中身自身の状態なので、代表（represented_by、7.6節）が量的オブジェクトかどうかだけで決まる。
+   * 空の容器は代表が自分自身になるため、バーは出ない——映す中身がいない。UI側は容器のスロット名を
+   * 知らない。
    */
   const fillOf = (object: WorldObject): CardFill | undefined => {
-    if (contentSlotId === undefined) return undefined;
+    const content = object.tryGetRepresentative();
+    if (content === undefined || !content.def.isQuantitative) return undefined;
 
-    const ratio = object.fillRatioOfSlot(contentSlotId);
+    const ratio = content.fillRatioInParentSlot();
     if (ratio === undefined) return undefined;
 
-    const content = object.tryGetSlot(contentSlotId)?.contents[0];
-    const color = colorPropertyId === undefined ? undefined : content?.readProperty(colorPropertyId)?.value;
+    const color = colorPropertyId === undefined ? undefined : content.readProperty(colorPropertyId)?.value;
     return { ratio, color };
   };
 

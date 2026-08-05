@@ -88,15 +88,15 @@ export interface CardEdgeAction {
   readonly onTap: () => void;
 }
 
-/** 液体容器のカードが出す、中身のバーの内容（ScreenLayout.md カードの状態バー節）。 */
+/**
+ * 量として存在する中身が入っているカードが出す、中身のバーの内容
+ * （ScreenLayout.md カードの状態バー節）。空の容器はバーごと持たない。
+ */
 export interface CardFill {
-  /** 容量に対する中身の割合（0〜1）。空の容器は0。 */
+  /** 容器の容量に対する中身の割合（0〜1）。 */
   readonly ratio: number;
 
-  /**
-   * 塗りの色。中身の液体が自分で宣言している色（`color`プロパティ）そのもの。
-   * 空の容器と、色を宣言していない液体はundefined。
-   */
+  /** 塗りの色。中身の液体が自分で宣言している色（`color`プロパティ）そのもの。宣言していない液体はundefined。 */
   readonly color?: number;
 }
 
@@ -175,11 +175,23 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly stackCount: Phaser.GameObjects.Text;
 
   /**
+   * カードの名前。中身を代表にしているカード（水入りの水筒）は、中身が入れ替わると名前も変わる
+   * （Localization.mdのdisplay_name_with_content）ので、差し替えのたびに書き換える。
+   */
+  private readonly nameText: Phaser.GameObjects.Text;
+
+  /**
    * 状態を表すバー（addStateBars参照）。その値を持たないカードには無い。値は差し替えのたびに
    * 書き換える——作り直すと、減った分を遅れて縮める動き（ProgressBar.setRatio）が途中で消える。
+   *
+   * 中身のバーだけは、映す中身そのものが出入りする（飲み干す・注がれる）ため、差し替えのたびに
+   * 作り直しと片付けが起こりうる（updateFillBar参照）。
    */
   private readonly durabilityBar: ProgressBar | undefined;
-  private readonly fillBar: ProgressBar | undefined;
+  private fillBar: ProgressBar | undefined;
+
+  /** バーを作り直すときに要る採寸（updateFillBar参照）。 */
+  private readonly metrics: ScreenMetrics;
 
   /** 端を押し続けている間の繰り返し（addEdge参照）と、次の1枚までの間隔、既に送ったかどうか。 */
   private edgeRepeat: Phaser.Time.TimerEvent | undefined;
@@ -201,6 +213,7 @@ export class Card extends Phaser.GameObjects.Container {
     this._content = content;
     this.cardWidth = width;
     this.cardHeight = height;
+    this.metrics = metrics;
 
     const face = addFrame(scene, metrics, width, height, false);
 
@@ -243,6 +256,7 @@ export class Card extends Phaser.GameObjects.Container {
       .setStroke(cssColor(COLOR.cardFace), stroke);
     // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
     nameText.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
+    this.nameText = nameText;
 
     this.add(background === undefined ? [face, art, nameText] : [face, background, art, nameText]);
     // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
@@ -298,16 +312,37 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・名前・端の向きは変わらない
-   * 前提で、スタック数・状態のバー・操作の実体（毎回作り直されるクロージャ）だけを新しくする。
+   * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・絵・端の向きは変わらない
+   * 前提で、名前・スタック数・状態のバー・操作の実体（毎回作り直されるクロージャ）だけを新しくする。
    */
   setContent(content: CardContent): void {
     this._content = content;
     this.showStackCount();
+    // 中身が入れ替われば同じインスタンスのままでも名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。
+    if (this.nameText.text !== content.name) this.nameText.setText(content.name);
 
     const hold = content.midAction === true;
     if (content.durability !== undefined) this.durabilityBar?.setRatio(content.durability, hold);
-    if (content.fill !== undefined) this.fillBar?.setRatio(content.fill.ratio, hold);
+    this.updateFillBar(hold);
+  }
+
+  /**
+   * 中身のバーを今の内容へ合わせる。他のバーと違って、映す対象そのものが出入りする——飲み干せば
+   * 中身は消え、注がれれば現れる——ので、値の書き換えだけでなく作り直しと片付けも要る。
+   */
+  private updateFillBar(hold: boolean): void {
+    const fill = this._content.fill;
+    if (fill === undefined) {
+      this.fillBar?.destroy();
+      this.fillBar = undefined;
+      return;
+    }
+
+    if (this.fillBar === undefined) {
+      this.fillBar = this.addFillBar(this.scene, this.metrics, this.cardWidth, this.cardHeight, fill);
+      return;
+    }
+    this.fillBar.setRatio(fill.ratio, hold);
   }
 
   /**
