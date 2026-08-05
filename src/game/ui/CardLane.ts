@@ -6,6 +6,7 @@ import { COLOR, SIZE } from './theme';
 import { addPanel, addTiledPanel } from './shapes';
 import { wheelPixels } from './scroll';
 import { ScrollIndicator } from './ScrollIndicator';
+import type { HazeSurface } from './LaneHaze';
 
 /**
  * ドロップ先として見たときの、レーン上の1点の意味。
@@ -147,11 +148,12 @@ export class CardLane {
   private readonly tiles: Phaser.GameObjects.TileSprite[] = [];
 
   /**
-   * 敷かれている地面の絵。陽炎のように**カードではなく地面だけを歪ませたい**効果を掛けるための
-   * 口（PlayScene参照）。背景色だけのレーンでは空。
+   * 陽炎を掛けるための面（LaneHaze参照）。地面の絵と、その上に並ぶカードを1枚の空気の下に置く。
+   * 地面の絵が無いレーン（背景色だけ）には掛けようがないのでundefined。
    */
-  get ground(): readonly Phaser.GameObjects.TileSprite[] {
-    return this.tiles;
+  get hazeSurface(): HazeSurface | undefined {
+    if (this.tiles.length === 0) return undefined;
+    return { objects: [...this.tiles, this.strip], rect: this.rect };
   }
 
   constructor(

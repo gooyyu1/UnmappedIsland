@@ -1,9 +1,10 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
+import type { Rect } from '../layout/ScreenMetrics';
 import type { HeatHaze } from './heatHaze';
 
 /** 変位マップの一辺（px）と、テクスチャマネージャへ入れるキー。 */
 const MAP_SIZE = 128;
-const MAP_KEY = 'ground-haze-map';
+const MAP_KEY = 'lane-haze-map';
 
 /** 変位マップの波の細かさ（縦・横それぞれ、1辺あたりの波の数）。 */
 const WAVE_ACROSS = 4;
@@ -21,27 +22,47 @@ const HORIZONTAL_RATIO = 0.35;
  */
 const EDGE_FADE = 0.25;
 
+/** 陽炎を掛けられる表示物（フィルタと位置を持つもの）。 */
+type HazeTarget = Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Transform;
+
 /**
- * 地面の絵だけを陽炎でゆがませる（ScreenLayout.md 空の演出節）。
+ * 陽炎を掛ける面。
  *
- * **カードには掛けない。** 画面全体を歪ませるとカードの名前まで揺れて読めなくなるうえ、実際の
- * 陽炎も焼けた地面の上に立つもので、手前の物が歪んで見えるわけではない。Phaserのフィルタは
- * 掛けた表示物の中だけを歪ませるので、レーンに敷かれた地面の絵（CardLane.ground）へ掛ける。
+ * objectsは、rectいっぱいに広がる**1枚の空気ごしに見えているもの**として歪む。波はrectの中に
+ * 並ぶので、地面とその上のカードは、同じ位置なら同じだけ揺れる。
  */
-export class GroundHaze {
+export interface HazeSurface {
+  readonly objects: readonly HazeTarget[];
+  readonly rect: Rect;
+}
+
+/**
+ * レーンを陽炎でゆがませる（ScreenLayout.md 空の演出節）。
+ *
+ * Phaserのフィルタは掛けた表示物の中だけを歪ませるので、地面とカードには別々に掛けることになる。
+ * 掛ける相手ごとに変位マップの写り方が変わると両者が別の周期で揺れてしまうため、どの表示物でも
+ * フィルタがレーンの矩形を写すように据える（focusOn）。
+ */
+export class LaneHaze {
   private readonly scene: Phaser.Scene;
-  private targets: readonly Phaser.GameObjects.TileSprite[] = [];
+  private surface: HazeSurface | undefined;
   private haze: HeatHaze | undefined;
   private tweens: Phaser.Tweens.Tween[] = [];
+
+  /** 掛けたフィルタ。外すときに、掛ける前からあったフィルタ（子ウィンドウの切り抜き）を巻き込まない。 */
+  private applied: { readonly target: HazeTarget; readonly filter: Phaser.Filters.Displacement }[] = [];
+
+  /** 据え直しを繋いだかどうか（focusOn参照）。 */
+  private refocusing = false;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
   }
 
-  /** 掛ける対象。フィールドエリアを作り直すと地面ごと入れ替わるので、その都度渡し直す。 */
-  setTargets(targets: readonly Phaser.GameObjects.TileSprite[]): void {
+  /** 掛ける面。フィールドエリアを作り直すとレーンごと入れ替わるので、その都度渡し直す。 */
+  setSurface(surface: HazeSurface | undefined): void {
     this.stop();
-    this.targets = targets;
+    this.surface = surface;
     this.apply();
   }
 
@@ -57,25 +78,53 @@ export class GroundHaze {
   stop(): void {
     for (const tween of this.tweens) tween.stop();
     this.tweens = [];
-    // 画面を作り直した後は、前の地面はもう破棄されている（sceneを失う）。
-    for (const target of this.targets) if (target.scene !== undefined) target.filters?.internal.clear();
+    // 画面を作り直した後は、前のレーンはもう破棄されている（sceneを失う）。
+    for (const { target, filter } of this.applied) {
+      if (target.scene !== undefined) target.filters?.internal.remove(filter);
+    }
+    this.applied = [];
+
+    if (!this.refocusing) return;
+    this.scene.events.off(Phaser.Scenes.Events.PRE_RENDER, this.focusOn, this);
+    this.refocusing = false;
+  }
+
+  /**
+   * フィルタが写す範囲をレーンの矩形へ据え直す。
+   *
+   * 対象の位置を矩形の中での位置として渡すと、フィルタのカメラはその矩形を写す。ただしPhaserは
+   * 「対象の今の位置」から写した結果を戻す先を決めるので、**動く対象では毎フレーム据え直す**
+   * 必要がある。据え置くと、カードが送られた量だけ戻す先までずれて、二重に動いて見える。
+   */
+  private focusOn(): void {
+    const rect = this.surface?.rect;
+    if (rect === undefined) return;
+    for (const { target } of this.applied) {
+      target.focusFiltersOverride(target.x - rect.x, target.y - rect.y, rect.width, rect.height);
+    }
   }
 
   private apply(): void {
     const haze = this.haze;
-    if (haze === undefined || this.targets.length === 0) return;
+    const surface = this.surface;
+    if (haze === undefined || surface === undefined || surface.objects.length === 0) return;
 
     const texture = this.ensureMap();
     if (texture === undefined) return;
 
-    for (const target of this.targets) {
+    for (const target of surface.objects) {
       target.enableFilters();
+      // 大きさを持たない表示物（カードを束ねるコンテナ）は、既定では画面全体を写す設定になる。
+      // 写す範囲はこちらで据えるので、その設定を降ろす。
+      target.setFiltersFocusContext(false);
+
       const displacement = target.filters?.internal.addDisplacement(
         texture,
         haze.strength * HORIZONTAL_RATIO,
         haze.strength,
       );
       if (displacement === undefined) continue;
+      this.applied.push({ target, filter: displacement });
 
       // ゆがみの量そのものを往復させて、立ち上る空気のゆらぎに見せる。縦横で周期をずらすと、
       // 同じ形が伸び縮みするだけの動きにならない。
@@ -98,6 +147,11 @@ export class GroundHaze {
         }),
       );
     }
+
+    if (this.applied.length === 0) return;
+    this.scene.events.on(Phaser.Scenes.Events.PRE_RENDER, this.focusOn, this);
+    this.refocusing = true;
+    this.focusOn();
   }
 
   /**
