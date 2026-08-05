@@ -56,11 +56,11 @@ export interface StatusContent {
 
   /**
    * 直前の行動を始める前の満たされ具合。出ていなかった行を出すときに、この値から見せ始めることで
-   * 「その行動で減った分」だけが赤い帯になる（show参照）。増減が無ければundefined。
+   * 「その行動で変わった分」だけが帯になる（show参照）。増減が無ければundefined。
    */
   readonly ratioBefore?: number;
 
-  /** その行動の途中の値か（trueの間は赤い帯を縮めず、合計の減少量を残す。ProgressBar.setRatio参照）。 */
+  /** その行動の途中の値か（trueの間は変化の帯を動かさず、合計の変化量を残す。ProgressBar.setRatio参照）。 */
   readonly midAction?: boolean;
 
   /** ユーザが固定表示にしているか。 */
@@ -181,9 +181,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
    * （並び順が変わったとき、どのバーがどこへ動いたのかを目で追えるようにするため）。
    * 出ていなかった場合は動かさずその位置に現れる（見えていなかった位置から飛んでこないように）。
    *
-   * 出ていなかった行は、直前の行動を始める前の値（ratioBefore）から見せ始める。こうすると赤い帯は
-   * 「その行動で減った分」だけになる。出ていなかった間の減少まで帯にすると、目で追えなかった減り方が
-   * 今この瞬間の減少として出てしまう（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
+   * 出ていなかった行は、直前の行動を始める前の値（ratioBefore）から見せ始める。こうすると帯は
+   * 「その行動で変わった分」だけになる。出ていなかった間の変化まで帯にすると、目で追えなかった動きが
+   * 今この瞬間の変化として出てしまう（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
    * 内容と位置を1つの操作にしているのは、呼び出し側が「出す前に中身を入れる」順序を覚えなくて済むよう。
    */
   show(y: number, content: StatusContent): void {
@@ -215,10 +215,10 @@ export class StatusBar extends Phaser.GameObjects.Container {
     this.applyContent(content, true);
   }
 
-  /** showDecreaseがfalseなら、減った分の赤い帯を出さずに値を今の状態にする（show参照）。 */
-  private applyContent(content: StatusContent, showDecrease: boolean): void {
+  /** showChangeがfalseなら、変化の帯を出さずに値を今の状態にする（show参照）。 */
+  private applyContent(content: StatusContent, showChange: boolean): void {
     if (content.ratio !== undefined) {
-      if (showDecrease) this.bar?.setRatio(content.ratio, content.midAction === true);
+      if (showChange) this.bar?.setRatio(content.ratio, content.midAction === true);
       else this.bar?.resetRatio(content.ratio);
     }
     this.valueText?.setText(String(content.value));

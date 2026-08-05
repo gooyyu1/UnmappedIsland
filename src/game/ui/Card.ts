@@ -141,7 +141,7 @@ export interface CardContent {
   readonly fill?: CardFill;
 
   /**
-   * その行動の途中の値か（trueの間は状態バーの赤い帯を縮めず、合計の減少量を残す。
+   * その行動の途中の値か（trueの間は状態バーの変化の帯を動かさず、合計の変化量を残す。
    * ProgressBar.setRatio参照）。
    */
   readonly midAction?: boolean;
@@ -192,8 +192,8 @@ export class Card extends Phaser.GameObjects.Container {
   private shownEdgeDirection: CardEdgeDirection | undefined;
 
   /**
-   * 状態を表すバー。値を持たない間は隠すだけで、作り直さない——作り直すと、減った分を遅れて縮める
-   * 動き（ProgressBar.setRatio）が途中で消えるため。
+   * 状態を表すバー。値を持たない間は隠すだけで、作り直さない——作り直すと、変わった分を遅れて
+   * 追いつかせる動き（ProgressBar.setRatio）が途中で消えるため。
    */
   private readonly durabilityBar: ProgressBar;
   private readonly fillBar: ProgressBar;
@@ -284,16 +284,16 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 今の内容を殻へ流し込む。構築時（`showDecrease: false`）と差し替え時の両方が通る唯一の経路。
+   * 今の内容を殻へ流し込む。構築時（`showChange: false`）と差し替え時の両方が通る唯一の経路。
    *
-   * showDecreaseは「この反映で、悪化した分を赤い帯として見せるか」。現れたばかりのバーに帯を出すと、
-   * 見えていなかった間の減少が今この瞬間の減少として出てしまう（`StatusBar.show` と同じ理由）。
+   * showChangeは「この反映を、変化として見せるか」。現れたばかりのバーに変化の帯を出すと、見えて
+   * いなかった間の増減が今この瞬間の変化として出てしまう（`StatusBar.show` と同じ理由）。
    */
-  private applyContent(content: CardContent, showDecrease: boolean): void {
+  private applyContent(content: CardContent, showChange: boolean): void {
     this._content = content;
     this.showName(content);
     this.showArt(content);
-    this.showBars(content, showDecrease);
+    this.showBars(content, showChange);
     this.showEdge(content);
     this.showStackCount();
   }
@@ -357,20 +357,20 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /** 状態のバー。値を持たない間は隠す（映すものが無いカードにバーは出さない）。 */
-  private showBars(content: CardContent, showDecrease: boolean): void {
+  private showBars(content: CardContent, showChange: boolean): void {
     const hold = content.midAction === true;
-    this.showBar(this.durabilityBar, content.durability, showDecrease, hold);
-    this.showBar(this.fillBar, content.fill?.ratio, showDecrease, hold);
+    this.showBar(this.durabilityBar, content.durability, showChange, hold);
+    this.showBar(this.fillBar, content.fill?.ratio, showChange, hold);
   }
 
-  private showBar(bar: ProgressBar, ratio: number | undefined, showDecrease: boolean, hold: boolean): void {
+  private showBar(bar: ProgressBar, ratio: number | undefined, showChange: boolean, hold: boolean): void {
     if (ratio === undefined) {
       bar.setVisible(false);
       return;
     }
 
     // 隠れていたバーが現れるときは、見えていなかった間の増減を今の変化として見せない。
-    if (showDecrease && bar.visible) bar.setRatio(ratio, hold);
+    if (showChange && bar.visible) bar.setRatio(ratio, hold);
     else bar.resetRatio(ratio);
     bar.setVisible(true);
   }

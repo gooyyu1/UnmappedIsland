@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
 import { drawBox } from './shapes';
-import { COLOR, fillColorFor } from './theme';
+import { COLOR, fadedFill, fillColorFor } from './theme';
 
 /** 域ごとの警戒の枠の色（明滅させない域はundefined）。 */
 function alertBorderColor(alert: AlertLevel): number | undefined {
@@ -12,8 +12,8 @@ function alertBorderColor(alert: AlertLevel): number | undefined {
 }
 
 /**
- * 減った分を赤い帯として残す時間と、それが縮み切るまでの時間（ScreenLayout.md ステータスエリア節）。
- * 溜めを置いてから縮めるのは、変化に気付く前に消えてしまわないようにするため。
+ * 変わった分を帯として残す時間と、それが追いつき切るまでの時間（ScreenLayout.md ステータスエリア節）。
+ * 溜めを置いてから動かすのは、変化に気付く前に消えてしまわないようにするため。
  */
 const LAG_DELAY_MS = 250;
 const LAG_DURATION_MS = 700;
@@ -64,16 +64,19 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   private readonly radius: number;
 
   /**
-   * 塗りの右端と、赤い帯の右端（悪化していなければ同じ値）。帯は常に両者の間に出る。
-   * どちらが「今の値」かは向きで変わる: 減ると悪いバーは塗り、増えると悪いバーは帯の側が今の値で、
-   * もう一方が遅れて追いつく（ScreenLayout.md ステータスエリア節）。
+   * 今の値と、そこへ遅れて追いつく側（変化前の値から動き出す）。**広い方が帯、狭い方が塗り**になるため、
+   * 悪化では塗りが先に動いて帯が残り、好転では帯が先に伸びて塗りが後から満ちる。どちら向きの変化でも
+   * 「変わった分」が帯として読める（ScreenLayout.md ステータスエリア節）。
    */
   private ratio: number;
-  private lagRatio: number;
+  private shownRatio: number;
 
   private lagTween: Phaser.Tweens.Tween | undefined;
 
-  /** 帯を縮め始めずに溜めている最中か（setRatioのhold）。 */
+  /** 直前の変化が好転だったか。帯の色（失った分か、これから満ちる分か）がこれで決まる。 */
+  private improving = false;
+
+  /** 帯を動かし始めずに溜めている最中か（setRatioのhold）。 */
   private holding = false;
 
   /** 警戒を示す枠。明滅は濃さのtweenだけで見せ、毎フレーム描き直さない。 */
@@ -114,7 +117,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.alertOutlineWidth = this.alertBorderWidth + Math.max(1, metrics.px(ALERT_OUTLINE_EXTRA_WIDTH));
     this.radius = height / 4;
     this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
-    this.lagRatio = this.ratio;
+    this.shownRatio = this.ratio;
 
     this.bar = scene.add.graphics();
     this.add(this.bar);
@@ -134,67 +137,55 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 満たされ具合を、減った様子を見せずに今の値にする。目で追えなかった変化（バーが出ていない間に
+   * 満たされ具合を、変化を見せずに今の値にする。目で追えなかった変化（バーが出ていない間に
    * 進んだ分）に使う（StatusBar.show参照）。
    */
   resetRatio(ratio: number): void {
-    this.stopShrinking();
+    this.stopChasing();
     this.holding = false;
 
     this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
-    this.lagRatio = this.ratio;
+    this.shownRatio = this.ratio;
     this.draw();
   }
 
-  /** 今の値。増えると悪いバーでは帯の側が先に動くので、そちらが今の値になる。 */
-  private get currentRatio(): number {
-    return this.worsensUpward ? this.lagRatio : this.ratio;
-  }
-
   /**
-   * 満たされ具合を変える。**悪化した分は赤い帯として残し、少し遅れて追いつかせる**（格闘ゲームの
-   * 体力バーと同じで、どれだけ悪くなったかを目で追えるようにするため）。減ると悪いバーでは塗りが先に
-   * 縮んで帯が後から縮み、増えると悪いバーでは帯が先に伸びて塗りが後から伸びる。好転した分に帯は
-   * 残さない——良くなった分は塗りそのものの動きで分かるため。
+   * 満たされ具合を変える。**変わった分は帯として残し、少し遅れて追いつかせる**（格闘ゲームの体力バーと
+   * 同じで、どれだけ変わったのかを目で追えるようにするため）。動くのは常に変化前の値の側で、今の値の側は
+   * すぐそこへ移る——値そのものは待たせず、変化の量だけを目で追わせる。結果として、増えたときは帯が先に
+   * 伸びて塗りが後から満ち、減ったときは塗りが先に縮んで帯が後から追いつく。
+   *
+   * 良し悪しを表すのは帯の色だけ（悪化なら赤、好転なら塗りを薄めた色）。増えると悪いバーでは、増えた分の
+   * 帯が赤くなる。
    *
    * holdは「まだ値が動き続けている最中か」。trueの間は追いつかせず、帯を動き始めの位置に残したままに
-   * するので、何度かに分けて悪化した分が合計として読める（ScreenLayout.md ステータスエリア節）。
+   * するので、何度かに分けて変わった分が合計として読める（ScreenLayout.md ステータスエリア節）。
    * holdをfalseに戻した時点から動き始めるため、値が変わらないtrue→falseの呼び出しにも意味がある。
    */
   setRatio(ratio: number, hold = false): void {
     const next = Phaser.Math.Clamp(ratio, 0, 1);
-    if (next === this.currentRatio && hold === this.holding) return;
+    if (next === this.ratio && hold === this.holding) return;
 
-    // 追いつき切る前にまた悪化したら、前回の動き始めの位置から続ける（帯は最も悪かった位置に残る）。
-    this.stopShrinking();
+    // 追いつき切る前にまた変わったら、今見えている位置から続ける（帯は変化の端に残る）。
+    this.stopChasing();
 
-    if (this.worsensUpward) {
-      if (next > this.lagRatio) this.lagRatio = next;
-      else {
-        this.ratio = next;
-        this.lagRatio = next;
-      }
-    } else {
-      if (next < this.ratio) this.lagRatio = Math.max(this.lagRatio, this.ratio);
-      else if (next > this.ratio) this.lagRatio = next;
-      this.ratio = next;
-    }
+    if (next !== this.ratio) this.improving = this.worsensUpward ? next < this.ratio : next > this.ratio;
+    this.ratio = next;
     this.holding = hold;
     this.draw();
 
-    if (this.holding || this.lagRatio <= this.ratio) return;
+    if (this.holding || this.shownRatio === this.ratio) return;
 
-    // 追いつくのは、悪化のときに置いていかれた側（減ると悪いバーは帯、増えると悪いバーは塗り）。
-    const lag = { value: this.worsensUpward ? this.ratio : this.lagRatio };
+    // 動かすのは変化前の値の側。今の値へ追いつくまでの差が帯になる。
+    const chasing = { value: this.shownRatio };
     this.lagTween = this.scene.tweens.add({
-      targets: lag,
-      value: this.worsensUpward ? this.lagRatio : this.ratio,
+      targets: chasing,
+      value: this.ratio,
       delay: LAG_DELAY_MS,
       duration: LAG_DURATION_MS,
       ease: 'Sine.easeIn',
       onUpdate: () => {
-        if (this.worsensUpward) this.ratio = lag.value;
-        else this.lagRatio = lag.value;
+        this.shownRatio = chasing.value;
         this.draw();
       },
       onComplete: () => {
@@ -203,7 +194,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     });
   }
 
-  private stopShrinking(): void {
+  private stopChasing(): void {
     this.lagTween?.stop();
     this.lagTween = undefined;
   }
@@ -246,21 +237,23 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     });
   }
 
-  /** トラック → 赤い帯 → 塗り → 枠線の順に重ねる。 */
+  /** トラック → 変化の帯 → 塗り → 枠線の順に重ねる。帯は塗りより広い側なので、はみ出した分だけが見える。 */
   private draw(): void {
     const { barWidth: width, barHeight: height, radius } = this;
 
     this.bar.clear();
     drawBox(this.bar, { x: 0, y: 0, width, height }, { fill: COLOR.statusBarTrack, radius });
 
-    const lagWidth = width * this.lagRatio;
-    if (lagWidth > 0) {
-      drawBox(this.bar, { x: 0, y: 0, width: lagWidth, height }, { fill: COLOR.statusBarLag, radius });
+    const fill = this.fillColor?.(this.ratio) ?? fillColorFor(this.alert);
+    const bandWidth = width * Math.max(this.ratio, this.shownRatio);
+    if (bandWidth > 0) {
+      // 失った分は赤、これから満ちる分は塗りを淡くした色（何が増える途中なのかが色で分かる）。
+      const band = this.improving ? fadedFill(fill) : COLOR.statusBarLag;
+      drawBox(this.bar, { x: 0, y: 0, width: bandWidth, height }, { fill: band, radius });
     }
 
-    const fillWidth = width * this.ratio;
+    const fillWidth = width * Math.min(this.ratio, this.shownRatio);
     if (fillWidth > 0) {
-      const fill = this.fillColor?.(this.currentRatio) ?? fillColorFor(this.alert);
       drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill, radius });
     }
 
