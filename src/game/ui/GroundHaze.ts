@@ -13,6 +13,15 @@ const WAVE_DOWN = 2;
 const HORIZONTAL_RATIO = 0.35;
 
 /**
+ * 変位を0へ落とす、四辺それぞれの帯の幅（一辺に対する割合）。
+ *
+ * 変位フィルタは掛けた絵の外から画素を引いてくるが、外側は透明なので、縁では欠けて背景が覗く
+ * （ゆらぎを強くするほど、レーンの縁が扇形に食われる）。縁での変位を0にすれば、引いてくる先が
+ * 絵の中に収まる。
+ */
+const EDGE_FADE = 0.25;
+
+/**
  * 地面の絵だけを陽炎でゆがませる（ScreenLayout.md 空の演出節）。
  *
  * **カードには掛けない。** 画面全体を歪ませるとカードの名前まで揺れて読めなくなるうえ、実際の
@@ -91,7 +100,10 @@ export class GroundHaze {
     }
   }
 
-  /** 変位マップを作る（1度だけ）。緑（縦の変位）を波打たせ、赤（横の変位）は控えめにする。 */
+  /**
+   * 変位マップを作る（1度だけ）。緑（縦の変位）を波打たせ、赤（横の変位）は控えめにする。
+   * 各成分は、それが動かす向きの縁（縦なら上下、横なら左右）で0へ落とす（EDGE_FADE参照）。
+   */
   private ensureMap(): string | undefined {
     if (this.scene.textures.exists(MAP_KEY)) return MAP_KEY;
 
@@ -104,8 +116,8 @@ export class GroundHaze {
         const across = (x / MAP_SIZE) * Math.PI * 2 * WAVE_ACROSS;
         const down = (y / MAP_SIZE) * Math.PI * 2 * WAVE_DOWN;
         const index = (y * MAP_SIZE + x) * 4;
-        image.data[index] = 128 + Math.sin(down) * 60;
-        image.data[index + 1] = 128 + Math.sin(across) * Math.cos(down) * 110;
+        image.data[index] = 128 + Math.sin(down) * 60 * edgeFade(x / MAP_SIZE);
+        image.data[index + 1] = 128 + Math.sin(across) * Math.cos(down) * 110 * edgeFade(y / MAP_SIZE);
         image.data[index + 2] = 128;
         image.data[index + 3] = 255;
       }
@@ -114,4 +126,13 @@ export class GroundHaze {
     canvas.refresh();
     return MAP_KEY;
   }
+}
+
+/**
+ * 一辺の中での位置（0〜1）に対する変位の倍率。両端で0、内側ではEDGE_FADEぶんかけて1へ上がる。
+ * 折れ線で繋ぐと倍率の変わり目に筋が見えるので、傾きも連続な曲線（smoothstep）を使う。
+ */
+function edgeFade(position: number): number {
+  const t = Math.min(position, 1 - position) / EDGE_FADE;
+  return t >= 1 ? 1 : t * t * (3 - 2 * t);
 }
