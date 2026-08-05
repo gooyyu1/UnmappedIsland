@@ -1,0 +1,18 @@
+# 嵐（ScreenLayout.md 空の演出節）の見え方を確かめるための開始状態。
+# 雨季の嵐の中から始め、斜めに降る雨と風の筋、翳りの濃さを見る。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 嵐の砂浜
+
+# 3は開始地点が砂浜になるシード。
+seed: 3
+
+world:
+  props:
+    weather: storm
+    # 見ている途中で晴れないよう、雨季の飽和した大気から始める。天気はweather_remainingが
+    # 尽きるたび大気水分量の段が持つ重みで選び直されるので、乾いた状態のままだと次は晴れ系になる
+    # （ClimateSystem.md 4.3節）。飽和（saturated）では晴れ系の重みが無く、嵐・大雨が選ばれ続ける。
+    season: wet
+    atmospheric_moisture: 9000

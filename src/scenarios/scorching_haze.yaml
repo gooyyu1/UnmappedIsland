@@ -1,0 +1,19 @@
+# 陽炎（ScreenLayout.md 空の演出節）の見え方を確かめるための開始状態。
+# 乾季後半の炎天の日中から始め、アイテムレーンの地面がゆらいでいることを見る。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 炎天の砂浜
+
+# 3は開始地点が砂浜になるシード。白い砂は、ゆらぎが最も読み取りやすい地面。
+seed: 3
+
+world:
+  props:
+    # 陽炎が立つのは気温27度から。気温は基準20に日射（明るいと+3）と季節（暑いと+8）が重なるので、
+    # 炎天だけでも、暑い季節だけでも届かない。開始時刻は必ず8〜12時（NewGame）なので日射は足りる。
+    weather: scorching
+    thermal_level: 1920
+    # 乾季はthermal_levelを毎tick+1して上限へ貼り付けておく。calmのままだと毎tick-1され、
+    # 1tick後には暑い季節を外れて陽炎が消える。
+    season: dry
