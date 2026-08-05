@@ -175,6 +175,12 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly stackCount: Phaser.GameObjects.Text;
 
   /**
+   * カードの名前。中身を代表にしているカード（水入りの水筒）は、中身が入れ替わると名前も変わる
+   * （Localization.mdのdisplay_name_with_content）ので、差し替えのたびに書き換える。
+   */
+  private readonly nameText: Phaser.GameObjects.Text;
+
+  /**
    * 状態を表すバー（addStateBars参照）。その値を持たないカードには無い。値は差し替えのたびに
    * 書き換える——作り直すと、減った分を遅れて縮める動き（ProgressBar.setRatio）が途中で消える。
    *
@@ -250,6 +256,7 @@ export class Card extends Phaser.GameObjects.Container {
       .setStroke(cssColor(COLOR.cardFace), stroke);
     // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
     nameText.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
+    this.nameText = nameText;
 
     this.add(background === undefined ? [face, art, nameText] : [face, background, art, nameText]);
     // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
@@ -305,12 +312,14 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・名前・端の向きは変わらない
-   * 前提で、スタック数・状態のバー・操作の実体（毎回作り直されるクロージャ）だけを新しくする。
+   * 同じインスタンスを映し続けるカードの表示内容を差し替える。アイコン・絵・端の向きは変わらない
+   * 前提で、名前・スタック数・状態のバー・操作の実体（毎回作り直されるクロージャ）だけを新しくする。
    */
   setContent(content: CardContent): void {
     this._content = content;
     this.showStackCount();
+    // 中身が入れ替われば同じインスタンスのままでも名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。
+    if (this.nameText.text !== content.name) this.nameText.setText(content.name);
 
     const hold = content.midAction === true;
     if (content.durability !== undefined) this.durabilityBar?.setRatio(content.durability, hold);
