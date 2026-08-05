@@ -52,7 +52,7 @@ import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
 import type { SkyState } from './ui/WeatherOverlay';
 import { WeatherOverlay } from './ui/WeatherOverlay';
-import { GroundHaze } from './ui/GroundHaze';
+import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './ui/heatHaze';
 import { durationText } from './ui/durationText';
 import { addLabel } from './ui/labels';
@@ -195,8 +195,8 @@ export class PlayScene extends ResponsiveScene {
   /** 日射と天気に応じてフィールドエリアへかぶせる翳り・輝きと雨。現在地には依らないので、作り直しの対象外。 */
   private weatherOverlay!: WeatherOverlay;
 
-  /** 地面の絵に掛ける陽炎。掛ける対象（地面）はフィールドエリアの作り直しで入れ替わる。 */
-  private haze: GroundHaze | undefined;
+  /** アイテムレーンに立てる陽炎。掛ける対象はフィールドエリアの作り直しで入れ替わる。 */
+  private haze: LaneHaze | undefined;
 
   /** 各エリアの位置・大きさ。画面寸法から決まるので、buildのたびに作り直される。 */
   private layout!: PlayScreenLayout;
@@ -484,11 +484,11 @@ export class PlayScene extends ResponsiveScene {
       { art: HAND_LANE_TEXTURE, depth: FIELD_DEPTH },
     );
 
-    // 陽炎は地面の絵だけを歪ませる（GroundHaze参照）。掛けた絵1枚ごとに描画バッファを使うので、
-    // 掛けるのはアイテムレーンだけにする。設置物レーンは現在地カードのぶん背景が固定と可動に
-    // 分かれていて、可動側だけが揺れると境目に段差が見える。
-    this.haze ??= new GroundHaze(this);
-    this.haze.setTargets(this.itemLane.ground);
+    // 陽炎はアイテムレーンだけに立てる（LaneHaze参照）。設置物レーンは現在地カードのぶん背景が
+    // 固定と可動に分かれていて、可動側だけが揺れると境目に段差が見える。手持ちのレーンは外にある
+    // 地面ではない。
+    this.haze ??= new LaneHaze(this);
+    this.haze.setSurface(this.itemLane.hazeSurface);
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
 
     // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
