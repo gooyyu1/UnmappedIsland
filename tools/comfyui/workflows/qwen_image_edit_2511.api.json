@@ -1,0 +1,78 @@
+{
+  "_comment": [
+    "Qwen Image Edit 2511 で既存の絵から派生画像を作る、API形式のワークフロー。",
+    "qwen_edit.py が $image / $prompt / $seed / $prefix を差し込んで /prompt へ投げる。",
+    "",
+    "モデル3点は ComfyUI の models/ 配下に置く（README「既存の絵からの派生」節）。",
+    "サンプラ設定（shift 3.1 / CFGNorm / 20 steps / cfg 2.5 / euler simple）は ComfyUI 公式の",
+    "Qwen Image Edit テンプレートに合わせてある。",
+    "",
+    "出力サイズは入力画像と同じ（入力を VAEEncode したものを初期潜在にする）。",
+    "ネガティブは空で足りている。参照画像は正負両方の条件に繋ぐ（テンプレートどおり）。"
+  ],
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": { "vae_name": "qwen_image_vae.safetensors" }
+  },
+  "4": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "$image" }
+  },
+  "5": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": { "model": ["1", 0], "shift": 3.1 }
+  },
+  "6": {
+    "class_type": "CFGNorm",
+    "inputs": { "model": ["5", 0], "strength": 1.0 }
+  },
+  "7": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": { "clip": ["2", 0], "prompt": "$prompt", "vae": ["3", 0], "image1": ["4", 0] }
+  },
+  "8": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": { "clip": ["2", 0], "prompt": "", "vae": ["3", 0], "image1": ["4", 0] }
+  },
+  "9": {
+    "class_type": "VAEEncode",
+    "inputs": { "pixels": ["4", 0], "vae": ["3", 0] }
+  },
+  "10": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["6", 0],
+      "positive": ["7", 0],
+      "negative": ["8", 0],
+      "latent_image": ["9", 0],
+      "seed": "$seed",
+      "steps": 20,
+      "cfg": 2.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0
+    }
+  },
+  "11": {
+    "class_type": "VAEDecode",
+    "inputs": { "samples": ["10", 0], "vae": ["3", 0] }
+  },
+  "12": {
+    "class_type": "SaveImage",
+    "inputs": { "images": ["11", 0], "filename_prefix": "$prefix" }
+  }
+}

@@ -2,27 +2,24 @@
   "_comment": [
     "src/assets/objects/coconut_husk.png を作り直すためのレシピ。build.py が読む。",
     "",
-    "はぎ取った皮。実と同じくらいの大きさの一片なので320。",
+    "はぎ取った皮。丸ごとの実（coconut.json）の生データを基準に、Qwen Image Edit で",
+    "「同じ実から剥いだ皮」として派生させる（連鎖の意図は husked_coconut.json を参照）。",
+    "seed 1 は輪がきれいに閉じすぎて装飾品に見えたため、C字に開いた 2 を使う。",
     "",
-    "生成された皮は橙が強い（プロンプトで抑えると形が崩れる。prompts/objects.json 参照）ので、",
-    "saturationで落として茶へ寄せる。"
+    "実と同じくらいの大きさの一片なので320。"
   ],
   "output": "src/assets/objects/coconut_husk.png",
-  "prompts": "objects.json",
-  "prompt": "coconut_husk",
-  "workflow": "lane_background_sdxl.api.json",
-  "loraStrength": 0,
-  "noTrigger": true,
-  "seed": 40101,
-  "width": 832,
-  "height": 1280,
+  "edit": {
+    "source": "coconut.json",
+    "prompt": "Remove the coconut itself and show only the husk that was peeled off it: a single large curved strip of thick fibrous coconut husk with torn ragged edges, brown fibers visible, the strip curls like a piece of thick peel, lying alone on the same plain white background. Keep the same hand painted illustration style, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 2
+  },
   "cardArt": {
     "size": "320",
     "mode": "background",
     "tolerance": 60,
     "edge": 4,
     "shadow": 1,
-    "reach": 24,
-    "saturation": 0.45
+    "reach": 24
   }
 }

@@ -6,7 +6,8 @@
     python build.py recipes/rocky_field_fixture.json
 
 後処理はレシピが postprocess を持つならレーンの背景として（postprocess.py）、cardArt を持つなら
-カードの絵として（card_art.py）扱う。
+カードの絵として（card_art.py）扱う。edit を持つレシピは、生成の代わりに別レシピの生データを
+基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。
 
 --keep-raw を付けると、後処理前の生成物を残す（プロンプトを詰め直すときに見比べられる）。
 ComfyUIは要るが、起動していなければこちらで起動する。
@@ -62,6 +63,59 @@ def restart_server(server: str) -> None:
     raise SystemExit("ComfyUIが起動しません")
 
 
+def base_workflow(recipe: dict, recipes_dir: Path) -> str:
+    """editの連鎖を根まで辿り、生成に使うワークフロー名を返す。"""
+    while "edit" in recipe:
+        recipe = json.loads((recipes_dir / recipe["edit"]["source"]).read_text("utf-8"))
+    return recipe["workflow"]
+
+
+def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> Path:
+    """レシピの生データ（後処理前の絵）を作り、そのパスを返す。
+
+    edit を持つレシピは source の生データを先に作り、それを基準に Qwen Image Edit で
+    派生させる（実 → 皮を剥いだ実 → … のような連鎖はここの再帰で解決される）。
+    """
+    edit = recipe.get("edit")
+    if edit is not None:
+        source = json.loads((recipes_dir / edit["source"]).read_text("utf-8"))
+        source_raw = produce_raw(source, recipes_dir, raw_dir, server)
+        edited = raw_dir / f"{Path(recipe['output']).stem}_edit_{edit['seed']}.png"
+        run(
+            "qwen_edit.py",
+            [
+                str(source_raw),
+                "--out", str(edited),
+                "--prompt", edit["prompt"],
+                "--seed", str(edit["seed"]),
+                "--server", server,
+            ],
+        )
+        return edited
+
+    run(
+        "generate.py",
+        [
+            recipe["prompt"],
+            "--out", str(raw_dir),
+            "--seed", str(recipe["seed"]),
+            "--width", str(recipe["width"]),
+            "--height", str(recipe["height"]),
+            "--workflow", recipe["workflow"],
+            *(["--prompts", recipe["prompts"]] if recipe.get("prompts") else []),
+            *(["--lora", recipe["lora"]] if recipe.get("lora") else []),
+            # 0は「LoRAを効かせない」という指定なので、getの真偽で見てはいけない。
+            *(["--lora-strength", str(recipe["loraStrength"])] if "loraStrength" in recipe else []),
+            *(["--no-trigger"] if recipe.get("noTrigger") else []),
+            "--server", server,
+        ],
+    )
+    raw = raw_dir / f"{recipe['prompt']}_{recipe['seed']}.png"
+    if not raw.exists():
+        raise SystemExit(f"生成物が見つかりません: {raw}")
+    return raw
+
+
 def ensure_fresh_process(workflow: str, server: str) -> None:
     """タイリングを使う生成と使わない生成が同じプロセスに混ざらないようにする。
 
@@ -83,35 +137,16 @@ def main() -> None:
     parser.add_argument("--server", default="http://127.0.0.1:8188")
     args = parser.parse_args()
 
-    recipe = json.loads(Path(args.recipe).read_text("utf-8"))
+    recipe_path = Path(args.recipe)
+    recipe = json.loads(recipe_path.read_text("utf-8"))
+    recipes_dir = recipe_path.resolve().parent
     output = REPO / recipe["output"]
-    workflow = recipe["workflow"]
-    ensure_fresh_process(workflow, args.server)
+    ensure_fresh_process(base_workflow(recipe, recipes_dir), args.server)
 
     with tempfile.TemporaryDirectory() as tmp:
         raw_dir = Path(args.keep_raw) if args.keep_raw else Path(tmp)
         raw_dir.mkdir(parents=True, exist_ok=True)
-
-        run(
-            "generate.py",
-            [
-                recipe["prompt"],
-                "--out", str(raw_dir),
-                "--seed", str(recipe["seed"]),
-                "--width", str(recipe["width"]),
-                "--height", str(recipe["height"]),
-                "--workflow", workflow,
-                *(["--prompts", recipe["prompts"]] if recipe.get("prompts") else []),
-                *(["--lora", recipe["lora"]] if recipe.get("lora") else []),
-                # 0は「LoRAを効かせない」という指定なので、getの真偽で見てはいけない。
-                *(["--lora-strength", str(recipe["loraStrength"])] if "loraStrength" in recipe else []),
-                *(["--no-trigger"] if recipe.get("noTrigger") else []),
-                "--server", args.server,
-            ],
-        )
-        raw = raw_dir / f"{recipe['prompt']}_{recipe['seed']}.png"
-        if not raw.exists():
-            raise SystemExit(f"生成物が見つかりません: {raw}")
+        raw = produce_raw(recipe, recipes_dir, raw_dir, args.server)
 
         # 後処理の設定は絵の隣ではなくレシピ側が持つので、書き出された .json は捨ててよい。
         processed = raw_dir / f"{raw.stem}_processed.png"
