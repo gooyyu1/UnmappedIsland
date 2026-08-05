@@ -50,6 +50,7 @@ import { SlotWindow } from './ui/SlotWindow';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { WeatherChip } from './ui/WeatherChip';
+import { WeatherOverlay } from './ui/WeatherOverlay';
 import { durationText } from './ui/durationText';
 import { addLabel } from './ui/labels';
 import type { BoxStyle } from './ui/shapes';
@@ -86,6 +87,12 @@ const ALERT_FRAME_DEPTH = 3;
  * 保証する——描画順に頼ると、作り直したぶんが背景板より手前へ入ってしまう。
  */
 const FIELD_DEPTH = -1;
+
+/**
+ * 雨の演出は、フィールドエリアの表示物（FIELD_DEPTH）より手前・隣接エリアの背景板（既定の層）より奥。
+ * カードの上に降らせつつ、はみ出したカードを隠す背景板の上には出さないため。
+ */
+const WEATHER_DEPTH = -0.5;
 
 /** 場面転換の明転にかける時間（ミリ秒）。 */
 const BRIGHTEN_MS = 320;
@@ -181,6 +188,9 @@ export class PlayScene extends ResponsiveScene {
 
   /** フィールドエリアの背景板。レーンと合わせて、フィールドエリアだけを作り直すときに捨てる。 */
   private fieldPanel!: Phaser.GameObjects.Rectangle;
+
+  /** 雨天のあいだフィールドエリアへかぶせる翳りと雨。現在地には依らないので、作り直しの対象外。 */
+  private weatherOverlay!: WeatherOverlay;
 
   /** 各エリアの位置・大きさ。画面寸法から決まるので、buildのたびに作り直される。 */
   private layout!: PlayScreenLayout;
@@ -370,6 +380,13 @@ export class PlayScene extends ResponsiveScene {
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
     this.buildFieldArea(layout);
+    // 雨は自前の層（WEATHER_DEPTH）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
+    this.weatherOverlay = new WeatherOverlay(
+      this,
+      this.metrics,
+      layout.fieldArea,
+      this.view.weather,
+    ).setDepth(WEATHER_DEPTH);
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
     this.motion = new CardMotion(this, this.metrics);
     this.buildFilterBar(layout.filterBar);
@@ -960,6 +977,7 @@ export class PlayScene extends ResponsiveScene {
     this.artLoader.onceLoaded(this.view.locationArt, () => {
       if (wait !== this.artWait) return;
       this.rebuildFieldArea();
+      this.weatherOverlay.setWeather(this.view.weather);
       this.showInformation();
       curtain.brighten(BRIGHTEN_MS, () => {
         this.transiting = false;
@@ -982,6 +1000,7 @@ export class PlayScene extends ResponsiveScene {
     if (this.slotWindow !== undefined) contents.push(this.laneCards(this.slotWindowCards(), 'down'));
 
     this.motion.update(this.openLanes, contents, context);
+    this.weatherOverlay.setWeather(this.view.weather);
     this.showInformation();
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
@@ -1431,7 +1450,7 @@ export class PlayScene extends ResponsiveScene {
 
     if (!withWeather) return;
 
-    const chip = new WeatherChip(this, this.metrics, 0, 0, this.view.weather);
+    const chip = new WeatherChip(this, this.metrics, 0, 0, this.view.weatherLabel);
     chip.setPosition(
       Math.max(
         calendar.x + calendar.contentWidth + this.metrics.px(24),
@@ -1448,7 +1467,7 @@ export class PlayScene extends ResponsiveScene {
       this.metrics,
       area.x + this.metrics.px(SITUATION_PADDING_LANDSCAPE.x),
       area.y + this.metrics.px(SITUATION_PADDING_LANDSCAPE.y),
-      this.view.weather,
+      this.view.weatherLabel,
     );
   }
 

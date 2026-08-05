@@ -166,7 +166,13 @@ export interface PlayScreenView {
   readonly elapsedDays: number;
   readonly hour: number;
   readonly minute: number;
-  readonly weather: string;
+  /**
+   * 今の天気の識別子（`light_rain`など、ClimateSystem.md 4.2節）。雨の演出が読む。
+   * 天気の語彙を持たないCodexではundefined。
+   */
+  readonly weather: string | undefined;
+  /** 天候チップに出す文字列。表示できる形がドメインに無いため固定値のまま（ScreenLayout.md）。 */
+  readonly weatherLabel: string;
   readonly currentLocation: CardContent;
   /** 現在地のobject_defの識別子（表示名ではない）。土地ごとに変わるレーンの背景を選ぶ（backgroundArt参照）。 */
   readonly locationArt: string;
@@ -551,7 +557,8 @@ export function fromGameSession(
     elapsedDays: game.world.day - 1,
     hour: game.world.hour,
     minute: game.world.minute,
-    weather: '☀️ 灼熱の快晴',
+    weather: game.world.weather,
+    weatherLabel: '☀️ 灼熱の快晴',
     currentLocation: {
       icon: LOCATION_ICON,
       name: locationNameOf(location.instance.instanceId),

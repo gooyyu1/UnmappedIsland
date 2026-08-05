@@ -94,7 +94,7 @@ export function start(codex: WorldCodex, characterDefName: string, seed: number,
   // World付きセッション自体がworldインスタンスを必要とするという相互依存を断ち切るため。
   const bootstrap = new WorldSession(codex);
   const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
-  const world = new World(worldInstance, codex.propertyNames);
+  const world = new World(worldInstance, codex.propertyNames, codex.symbolNames);
 
   const session = new WorldSession(codex, world, rng);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);

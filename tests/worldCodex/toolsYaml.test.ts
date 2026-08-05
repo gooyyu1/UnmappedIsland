@@ -42,7 +42,7 @@ describe('tools.yamlの道具定義', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex.propertyNames);
+    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
     const session = new WorldSession(codex, worldView);
 
     const beach = session.spawn(codex.objectNames.getId('sandy_beach'));

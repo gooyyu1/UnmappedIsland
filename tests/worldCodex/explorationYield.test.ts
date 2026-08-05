@@ -48,7 +48,7 @@ describe('探索で見つかる物の数', () => {
   function yieldsOf(landName: string): number[] {
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
-    const worldView = new World(worldInstance, codex.propertyNames);
+    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
     const explorer = new WorldSession(codex, worldView, new SeededRng(20250801));
 
     const instance = explorer.spawn(codex.objectNames.getId(landName));
@@ -98,7 +98,7 @@ describe('探索で見つかる物の数', () => {
   function countOf(landName: string, objectName: string, props: ReadonlyMap<number, number>): number {
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
-    const worldView = new World(worldInstance, codex.propertyNames);
+    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
     const explorer = new WorldSession(codex, worldView, new SeededRng(20250801));
 
     const instance = explorer.spawn(codex.objectNames.getId(landName));

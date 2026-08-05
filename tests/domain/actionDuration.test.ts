@@ -55,7 +55,7 @@ object_defs:
       .build();
     const bootstrap = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
-    const world = new World(instance, codex.propertyNames);
+    const world = new World(instance, codex.propertyNames, codex.symbolNames);
     const session = new WorldSession(codex, world);
     return { codex, session, world };
   }
