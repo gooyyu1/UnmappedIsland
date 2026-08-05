@@ -152,16 +152,19 @@ export class WorldObject {
   }
 
   /**
-   * interaction/stack判定の代表として採用する、represented_by先の最初の子を返す。represented_by未指定・対象
-   * スロット不存在・空スロットなら自分自身を返す。代表オブジェクトがさらにrepresented_byを持つ場合は、その
-   * 代表へ再帰的に委譲する。
+   * 自分を代表しているオブジェクト（represented_by先の最初の子）。represented_by未指定・対象スロット
+   * 不存在・空スロットならundefined。1段だけ辿るので、代表がさらに持つ代表は含まない。
+   */
+  tryGetRepresentative(): WorldObject | undefined {
+    if (this.def.representedBySlotGlobalId === undefined) return undefined;
+    return this.tryGetSlot(this.def.representedBySlotGlobalId)?.contents.at(0);
+  }
+
+  /**
+   * interaction/stack判定の代表として採用する、代表チェーンの末端を返す。代表がいなければ自分自身。
    */
   resolveInteractionTarget(): WorldObject {
-    if (this.def.representedBySlotGlobalId === undefined) return this;
-    const slot = this.tryGetSlot(this.def.representedBySlotGlobalId);
-    if (slot === undefined) return this;
-    const represented = slot.contents.at(0);
-    return represented !== undefined ? represented.resolveInteractionTarget() : this;
+    return this.tryGetRepresentative()?.resolveInteractionTarget() ?? this;
   }
 
   /**
@@ -185,22 +188,13 @@ export class WorldObject {
     if (index >= expected.length || expected[index] !== this.def.globalId) return -1;
     index++;
 
-    if (this.def.representedBySlotGlobalId === undefined) return index;
-    const slot = this.tryGetSlot(this.def.representedBySlotGlobalId);
-    if (slot === undefined) return index;
-
-    const represented = slot.contents.at(0);
+    const represented = this.tryGetRepresentative();
     return represented === undefined ? index : represented.matchRepresentationFrom(expected, index);
   }
 
   private appendRepresentationChain(chain: number[]): void {
     chain.push(this.def.globalId);
-    if (this.def.representedBySlotGlobalId === undefined) return;
-    const slot = this.tryGetSlot(this.def.representedBySlotGlobalId);
-    if (slot === undefined) return;
-
-    const represented = slot.contents.at(0);
-    represented?.appendRepresentationChain(chain);
+    this.tryGetRepresentative()?.appendRepresentationChain(chain);
   }
 
   /**

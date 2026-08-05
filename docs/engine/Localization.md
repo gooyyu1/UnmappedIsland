@@ -61,6 +61,26 @@ object_texts:
 `default` に書いた `display_name`/`description`（オブジェクト自身の組）は使いません。使ってしまうと
 未登録のオブジェクトがすべて同じ名前で表示されるため、`default` はメンバーのフォールバック専用です。
 
+## display_name_with_content: 中身がいるときの名前
+
+`represented_by`（[GameElementDefinition.md](./GameElementDefinition.md) 7.6節）で中身を代表にしている
+オブジェクトは、中身がいる間だけ名前が変わります。書式を `display_name_with_content` に書き、
+**`%1` が入れ物自身の表示名、`%2` が中身の名前**に置き換わります。
+
+```yaml
+object_texts:
+  default:
+    display_name_with_content: '%2入りの%1'   # 水筒 + 水 → 水入りの水筒
+```
+
+**この書式だけは `default` エントリを参照します。** `display_name` を `default` から採らないのは、
+未登録のオブジェクトがすべて同じ名前になってしまうからですが、こちらは名前ではなく書式で、`%1` は
+各オブジェクト自身の表示名から埋まります。中身を持つ入れ物はどれも同じ言い方でよいので、共通の
+書式を1回書けば済み、言い方を変えたい入れ物だけが自分のエントリで上書きします。
+
+書式が無ければ名前は変わりません（中身の有無で名前が動かない）。中身がさらに中身を持つ入れ子は、
+内側から順に畳んで1つの名前にします。
+
 ## property_tag_texts: プロパティのカテゴリ名
 
 プロパティのタグ（[GameElementDefinition.md](./GameElementDefinition.md) 6.7節）は、どのオブジェクトにも
@@ -117,6 +137,7 @@ location_texts:
 ```ts
 locale.object('coconut').displayName          // 'ヤシの実'
 locale.object('coconut').description          // '硬い殻に覆われた実。' / 未定義ならundefined
+locale.object('canteen').displayNameWithContent('水')   // '水入りの水筒'
 locale.object('coconut').action('eat').displayName
 locale.object('coconut').prop('freshness').displayName
 locale.object('coconut').combination('pour_in').displayName

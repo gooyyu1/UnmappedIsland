@@ -362,9 +362,19 @@ export function fromGameSession(
     });
   };
 
+  /**
+   * そのオブジェクトの表示名。中身を代表にしているもの（水入りの水筒）は、中身の名前を差し込んだ
+   * 名前になる（Localization.md）。代表がさらに中身を持つ入れ子は、内側から順に畳まれる。
+   */
+  const nameOf = (object: WorldObject): string => {
+    const texts = locale.object(object.def.name);
+    const content = object.tryGetRepresentative();
+    return content === undefined ? texts.displayName : texts.displayNameWithContent(nameOf(content));
+  };
+
   const stackOf = (instances: readonly WorldObject[], icon: string, place: CardPlace): ObjectCardStack => ({
     icon,
-    name: locale.object(instances[0].def.name).displayName,
+    name: nameOf(instances[0]),
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: instances[0].def.name,
@@ -590,10 +600,7 @@ export function fromGameSession(
         reorder: reorderIn(stack[0]),
       }));
     },
-    nameOf: (place) =>
-      typeof place === 'string'
-        ? (PLACE_NAMES[place] ?? place)
-        : locale.object(place.container.def.name).displayName,
+    nameOf: (place) => (typeof place === 'string' ? (PLACE_NAMES[place] ?? place) : nameOf(place.container)),
     acceptsCards: (place) => slotOf(place) !== undefined,
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを

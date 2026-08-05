@@ -36,10 +36,11 @@ export class Texts {
   }
 }
 
-/** localeファイルに書かれたままの表示文字列（どちらも省略可能）。識別子へのフォールバックは引く側が行う。 */
+/** localeファイルに書かれたままの表示文字列（いずれも省略可能）。識別子へのフォールバックは引く側が行う。 */
 interface DeclaredTexts {
   readonly displayName: string | undefined;
   readonly description: string | undefined;
+  readonly displayNameWithContent: string | undefined;
 }
 
 /** localeファイルの1エントリ（オブジェクト自身の文字列と、種類ごとのメンバーの文字列）。 */
@@ -87,6 +88,21 @@ export class ObjectTexts {
   /** オブジェクト自身の説明文。displayNameと同じくdefaultエントリは参照しない。 */
   get description(): string | undefined {
     return this.entry?.own?.description;
+  }
+
+  /**
+   * 中身（represented_byの代表、GameElementDefinition.md 7.6節）がいるときの表示名。
+   * display_name_with_content の `%1` が自分の表示名、`%2` が中身の名前になる。書式が無ければ
+   * 表示名のまま（中身の有無で名前が変わらない）。
+   *
+   * displayNameと違いdefaultエントリを参照する。書式であって名前ではなく、`%1` は各オブジェクト
+   * 自身の表示名から埋まるので、共通の書式を書いても全オブジェクトが同じ名前になることはない。
+   */
+  displayNameWithContent(contentName: string): string {
+    const format = this.entry?.own?.displayNameWithContent ?? this.defaults?.own?.displayNameWithContent;
+    if (format === undefined) return this.displayName;
+    // 置換は1回で走らせる。順に置き換えると、先に埋めた名前の中の`%2`まで置換対象になる。
+    return format.replace(/%[12]/g, (placeholder) => (placeholder === '%1' ? this.displayName : contentName));
   }
 
   prop(propertyName: string): Texts {
@@ -303,9 +319,12 @@ function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {
   return new ObjectTextsEntry(parseTexts(node, context), members);
 }
 
-/** display_name/descriptionを読む。どちらも無ければundefined。 */
+/** 1つの対象の表示文字列を読む。1つも書かれていなければundefined。 */
 function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   const displayName = tryGetScalar(node, 'display_name', context);
   const description = tryGetScalar(node, 'description', context);
-  return displayName === undefined && description === undefined ? undefined : { displayName, description };
+  const displayNameWithContent = tryGetScalar(node, 'display_name_with_content', context);
+  if (displayName === undefined && description === undefined && displayNameWithContent === undefined)
+    return undefined;
+  return { displayName, description, displayNameWithContent };
 }
