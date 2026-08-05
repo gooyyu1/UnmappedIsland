@@ -263,14 +263,13 @@ export class WorldObject {
     slotGlobalId: number,
     placement: SameSlotPlacement,
     wellKnown: WellKnownProperties,
-    force = false,
   ): string | undefined {
     return this.attachToSlot(
       newParent,
       slotGlobalId,
       (slot) => slot.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
       wellKnown,
-      force,
+      false,
     );
   }
 
@@ -779,9 +778,9 @@ export class WorldObject {
 
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
-   * （Slot.placeSameSlotへ委ねる）。self/actorなら対象のスロットを宣言順に走査し、最初に配置できたスロットへ
-   * 入れる。配置に失敗した場合は起点自身の親へ伝播し、accepts/capacityを無視して強制配置する。伝播先の親も
-   * 無ければ何もしない。
+   * （EffectSite.placeReplacementへ委ねる）。self/actorなら対象のスロットを宣言順に走査し、最初に配置できた
+   * スロットへ入れる。配置に失敗した場合は起点自身の親へ伝播し、accepts/capacityを無視して強制配置する。
+   * 伝播先の親も無ければ何もしない。
    */
   private place(
     spawned: WorldObject,
@@ -796,18 +795,7 @@ export class WorldObject {
     if (into === 'same_slot') {
       if (site === undefined) return;
       primaryTarget = site.parent;
-      const slot = site.parent.getSlotByLocalId(site.parentSlotLocalId);
-
-      // originが居たセルを基準に置き換えを配置する（合流できる同種スタックがあればそちらが優先される。
-      // Slot.placeSameSlot参照）。
-      placed =
-        spawned.insertSameSlot(
-          site.parent,
-          slot.def.globalId,
-          new SameSlotPlacement(site.originCellIndex(slot), site.originKindRemains),
-          session.codex.wellKnown,
-          false,
-        ) === undefined;
+      placed = site.placeReplacement(spawned, session.codex.wellKnown);
     } else {
       const target = into === 'self' ? this : actor;
       if (target === undefined) return;
@@ -846,7 +834,8 @@ export class SameSlotPlacement {
 /**
  * applyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉したスナップショット。same_slot spawnだけが
  * これを使い、置き換え先を決める。「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時の
- * スロットの状態から行う（originKindRemains参照）。
+ * スロットの状態から行う（originKindRemains参照）。1つの効果が複数のオブジェクトを生む場合、2個目以降の位置も
+ * ここが決めるため（placeReplacement）、置いた場所を覚えている。
  */
 export class EffectSite {
   readonly parent: WorldObject;
@@ -857,6 +846,9 @@ export class EffectSite {
 
   /** 捕捉時のoriginStackのセル位置。空セルが除去される非fixedPositionsでは、同種が消えた後はindexOfStackで引けなくなるため捕捉値が要る。 */
   private readonly stackIndexAtCapture: number;
+
+  /** 直前にこの位置へ置いた置き換えオブジェクトのスタック（まだ1つも置いていなければundefined）。 */
+  private lastPlacedStack: ObjectStack | undefined;
 
   constructor(
     parent: WorldObject,
@@ -871,17 +863,41 @@ export class EffectSite {
   }
 
   /**
+   * 置き換えオブジェクトをoriginが居た位置へ配置する（Slot.placeSameSlot参照）。1つの効果が複数のオブジェクトを
+   * 生む場合、2個目以降は直前に置いたものの隣へ続けて並ぶ。空いた1つのセルを取り合わせると、2個目以降は
+   * 置き場所を失ってfallbackで外へこぼれてしまうため（ヤシの実の皮がアイテムレーンへ落ちる）。
+   *
+   * 戻り値: 配置できたらtrue。falseなら呼び出し側がfallbackへ委ねる。
+   */
+  placeReplacement(spawned: WorldObject, wellKnown: WellKnownProperties): boolean {
+    const slot = this.parent.getSlotByLocalId(this.parentSlotLocalId);
+    const placed =
+      spawned.insertSameSlot(this.parent, slot.def.globalId, this.nextPlacement(slot), wellKnown) ===
+      undefined;
+    if (placed) this.lastPlacedStack = slot.findStackContaining(spawned);
+    return placed;
+  }
+
+  /** 次の置き換えオブジェクトの置き場所。2個目以降は「直前に置いたものの隣」＝同種が残っている場合と同じ扱いになる。 */
+  private nextPlacement(slot: Slot): SameSlotPlacement {
+    if (this.lastPlacedStack !== undefined) {
+      return new SameSlotPlacement(slot.indexOfStack(this.lastPlacedStack), true);
+    }
+    return new SameSlotPlacement(this.originCellIndex(slot), this.originKindRemains);
+  }
+
+  /**
    * 元のスタックにoriginと同種がまだ残っているか（selfが生き残る／同種の兄弟が残る）。残っていれば置き換え
    * オブジェクトは隣へ、残っていなければ空いたその位置をそのまま引き継ぐ。判定は在庫（members.length）で行う
    * ——「その位置が同種を受け入れられるか」ではない。空になったセルも同種を受け入れ可能だが、位置は引き継ぐ
    * べきだから。
    */
-  get originKindRemains(): boolean {
+  private get originKindRemains(): boolean {
     return this.originStack.members.length > 0;
   }
 
-  /** originが居たセルの位置。同種が残っていればoriginStackの現在位置、消えていれば捕捉時の位置。Slot.placeSameSlotがこれを基準に配置する。 */
-  originCellIndex(slot: Slot): number {
+  /** originが居たセルの位置。同種が残っていればoriginStackの現在位置、消えていれば捕捉時の位置。 */
+  private originCellIndex(slot: Slot): number {
     return this.originKindRemains ? slot.indexOfStack(this.originStack) : this.stackIndexAtCapture;
   }
 }

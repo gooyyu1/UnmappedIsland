@@ -247,6 +247,98 @@ object_defs:
     expect(bInstance.parent, 'destroy: falseなのでB自身は破棄されない').not.toBeUndefined();
   });
 
+  it('same_slot+destroyで複数生まれるとき、2個目以降は直前に置いたものの隣へ宣言順に並ぶ', () => {
+    const yaml = `
+object_defs:
+  loc_pair:
+    slots:
+      pile: {}
+  a_item5: {}
+  c_item5: {}
+  d_item5: {}
+  e_item5: {}
+  b_item5:
+    props:
+      life:
+        value: 0
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
+          destroy: self
+          spawn:
+            - {object: d_item5, into: same_slot}
+            - {object: e_item5, into: same_slot}
+`;
+    const codex = load(yaml);
+    const pileSlotId = codex.slotNames.getId('pile');
+
+    const session = new WorldSession(codex);
+    const locInstance = spawn(codex, 'loc_pair');
+
+    for (const name of ['a_item5', 'b_item5', 'c_item5'])
+      spawn(codex, name).moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+
+    locInstance.tick(session);
+
+    const pile = locInstance.tryGetSlot(pileSlotId)!;
+    expect(
+      pile.contents.map((o) => o.def.name),
+      'DがBの位置を引き継ぎ、EはDの直後へ続く（A D E C）',
+    ).toEqual(['a_item5', 'd_item5', 'e_item5', 'c_item5']);
+  });
+
+  it('fixedPositions+same_slotで複数生まれるとき、2個目以降は隣の固定番号へ入る', () => {
+    // 「filler(0) potato(1) _(2)」→ potatoが腐って皮と身に分かれる → 「filler rotten peel」。
+    // 2個目が1番を取り合って弾かれると、行き場を失って親（location）へこぼれてしまう。
+    const yaml = `
+object_defs:
+  loc_fallback2:
+    slots:
+      ground: {}
+  hand_owner10:
+    slots:
+      hand:
+        stackable: true
+        unit_capacity: 3
+        fixed_positions: true
+  filler_item2: {}
+  rotten_potato3: {}
+  potato_peel: {}
+  potato3:
+    props:
+      freshness:
+        value: 0
+        range: {min: 1, max: 2147483647}
+        on_shortfall:
+          destroy: self
+          spawn:
+            - {object: rotten_potato3, into: same_slot}
+            - {object: potato_peel, into: same_slot}
+`;
+    const codex = load(yaml);
+    const handSlotId = codex.slotNames.getId('hand');
+    const groundSlotId = codex.slotNames.getId('ground');
+    const rottenId = codex.objectNames.getId('rotten_potato3');
+    const peelId = codex.objectNames.getId('potato_peel');
+
+    const session = new WorldSession(codex);
+    const locationInstance = spawn(codex, 'loc_fallback2');
+    const handInstance = spawn(codex, 'hand_owner10');
+    handInstance.moveToSlot(locationInstance, groundSlotId, session.codex.wellKnown);
+
+    spawn(codex, 'filler_item2').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 0番
+    spawn(codex, 'potato3').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 1番
+
+    handInstance.tick(session);
+
+    const hand10 = handInstance.tryGetSlot(handSlotId)!;
+    expect(gridIndexOfType(hand10, rottenId), '1個目はpotatoの固定番号(1)を引き継ぐ').toBe(1);
+    expect(gridIndexOfType(hand10, peelId), '2個目は直前に置いた1番の右隣(2)へ入る').toBe(2);
+    expect(
+      locationInstance.tryGetSlot(groundSlotId)!.contents.map((o) => o.def.name),
+      '親へこぼれるものは無い',
+    ).toEqual(['hand_owner10']);
+  });
+
   it('same_slotは、同種の既存スタックがあれば位置指定より合流を優先する', () => {
     const yaml = `
 object_defs:

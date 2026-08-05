@@ -98,11 +98,42 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     combine(coconut, 'sharp_stone', 'husk');
 
-    expect(itemsOn(beach), '実も皮も、元の実が居た場所へ置き換わる').toEqual([
-      'coconut_husk',
+    expect(itemsOn(beach), '実も皮も、元の実が居た場所へ宣言順に並んで置き換わる').toEqual([
       'husked_coconut',
+      'coconut_husk',
     ]);
     expect(handOf(player), '道具以外は手元へ入らない').toEqual(['sharp_stone']);
+  });
+
+  it('手持ちのヤシの実の皮をはぐと、実も皮も手持ちに残る', () => {
+    const coconut = spawnInto('coconut', player, 'hand');
+
+    combine(coconut, 'sharp_stone', 'husk');
+
+    expect(handOf(player), '皮も手持ちに収まる（実の隣の枠へ入る）').toEqual([
+      'husked_coconut',
+      'coconut_husk',
+      'sharp_stone',
+    ]);
+    expect(itemsOn(beach), '足元へこぼれるものは無い').toEqual([]);
+  });
+
+  it('手持ちが埋まっていると、はいだ皮だけが足元へ落ちる', () => {
+    const coconut = spawnInto('coconut', player, 'hand');
+    // 実と道具を除く残り4枠を別々の型で埋める（同種は1枠にまとまるため、4種類必要）。
+    for (const name of ['stone', 'branch', 'thick_branch', 'taro']) spawnInto(name, player, 'hand');
+
+    combine(coconut, 'sharp_stone', 'husk');
+
+    expect(handOf(player), '実は元の実の枠を引き継ぎ、皮の入る枠は残っていない').toEqual([
+      'husked_coconut',
+      'stone',
+      'branch',
+      'thick_branch',
+      'taro',
+      'sharp_stone',
+    ]);
+    expect(itemsOn(beach)).toEqual(['coconut_husk']);
   });
 
   it('皮を剥いだ実に刃物を当てると、穴が開く', () => {
@@ -143,9 +174,9 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     combine(half, 'sharp_stone', 'scrape');
 
-    expect(itemsOn(beach), '果肉と殻は割れた実が居た場所へ置き換わる').toEqual([
-      'coconut_bowl',
+    expect(itemsOn(beach), '果肉と殻は割れた実が居た場所へ宣言順に並んで置き換わる').toEqual([
       'coconut_meat',
+      'coconut_bowl',
     ]);
     expect(handOf(player)).toEqual(['sharp_stone']);
   });
