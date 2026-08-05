@@ -232,17 +232,17 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(fromGameSession(game, codex, locale).hand[0]?.durability, '減った分だけ割合が下がる').toBe(0.75);
   });
 
-  it('液体容器のカードは、中身の割合とその液体の識別子を持つ', () => {
+  it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
     expect(
       bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
     ).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).hand[0]?.fill, '空の容器も割合0のバーを出す').toEqual({
-      ratio: 0,
-      color: undefined,
-    });
+    expect(
+      fromGameSession(game, codex, locale).hand[0]?.fill,
+      '空の容器は映す中身がいないのでバーを出さない',
+    ).toBeUndefined();
 
     // ヤシの器の容量は250mL（liquid_containers.yaml）なので、100mLで4割。
     const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
@@ -253,6 +253,13 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       ratio: 0.4,
       color: water.getNumber(codex.propertyNames.getId('color')),
     });
+
+    water.destroy();
+
+    expect(
+      fromGameSession(game, codex, locale).hand[0]?.fill,
+      '飲み干して空へ戻ればバーも消える',
+    ).toBeUndefined();
   });
 
   it('液体を入れられないカードは、中身のバーを持たない', () => {

@@ -88,15 +88,15 @@ export interface CardEdgeAction {
   readonly onTap: () => void;
 }
 
-/** 液体容器のカードが出す、中身のバーの内容（ScreenLayout.md カードの状態バー節）。 */
+/**
+ * 量として存在する中身が入っているカードが出す、中身のバーの内容
+ * （ScreenLayout.md カードの状態バー節）。空の容器はバーごと持たない。
+ */
 export interface CardFill {
-  /** 容量に対する中身の割合（0〜1）。空の容器は0。 */
+  /** 容器の容量に対する中身の割合（0〜1）。 */
   readonly ratio: number;
 
-  /**
-   * 塗りの色。中身の液体が自分で宣言している色（`color`プロパティ）そのもの。
-   * 空の容器と、色を宣言していない液体はundefined。
-   */
+  /** 塗りの色。中身の液体が自分で宣言している色（`color`プロパティ）そのもの。宣言していない液体はundefined。 */
   readonly color?: number;
 }
 
@@ -177,9 +177,15 @@ export class Card extends Phaser.GameObjects.Container {
   /**
    * 状態を表すバー（addStateBars参照）。その値を持たないカードには無い。値は差し替えのたびに
    * 書き換える——作り直すと、減った分を遅れて縮める動き（ProgressBar.setRatio）が途中で消える。
+   *
+   * 中身のバーだけは、映す中身そのものが出入りする（飲み干す・注がれる）ため、差し替えのたびに
+   * 作り直しと片付けが起こりうる（updateFillBar参照）。
    */
   private readonly durabilityBar: ProgressBar | undefined;
-  private readonly fillBar: ProgressBar | undefined;
+  private fillBar: ProgressBar | undefined;
+
+  /** バーを作り直すときに要る採寸（updateFillBar参照）。 */
+  private readonly metrics: ScreenMetrics;
 
   /** 端を押し続けている間の繰り返し（addEdge参照）と、次の1枚までの間隔、既に送ったかどうか。 */
   private edgeRepeat: Phaser.Time.TimerEvent | undefined;
@@ -201,6 +207,7 @@ export class Card extends Phaser.GameObjects.Container {
     this._content = content;
     this.cardWidth = width;
     this.cardHeight = height;
+    this.metrics = metrics;
 
     const face = addFrame(scene, metrics, width, height, false);
 
@@ -307,7 +314,26 @@ export class Card extends Phaser.GameObjects.Container {
 
     const hold = content.midAction === true;
     if (content.durability !== undefined) this.durabilityBar?.setRatio(content.durability, hold);
-    if (content.fill !== undefined) this.fillBar?.setRatio(content.fill.ratio, hold);
+    this.updateFillBar(hold);
+  }
+
+  /**
+   * 中身のバーを今の内容へ合わせる。他のバーと違って、映す対象そのものが出入りする——飲み干せば
+   * 中身は消え、注がれれば現れる——ので、値の書き換えだけでなく作り直しと片付けも要る。
+   */
+  private updateFillBar(hold: boolean): void {
+    const fill = this._content.fill;
+    if (fill === undefined) {
+      this.fillBar?.destroy();
+      this.fillBar = undefined;
+      return;
+    }
+
+    if (this.fillBar === undefined) {
+      this.fillBar = this.addFillBar(this.scene, this.metrics, this.cardWidth, this.cardHeight, fill);
+      return;
+    }
+    this.fillBar.setRatio(fill.ratio, hold);
   }
 
   /**

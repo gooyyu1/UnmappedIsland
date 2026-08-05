@@ -105,12 +105,27 @@ export class WorldObject {
   addNumber(globalPropertyId: number, delta: number, session?: WorldSession): void {
     const value = this.tryGetProperty(globalPropertyId);
     value?.add(delta, session);
+    this.settleChangedQuantity(globalPropertyId, session);
   }
 
   /** 数値プロパティへの不可逆な絶対値代入（9.2節の`set`）。対象プロパティを持たない場合は何もしない（addNumberと同じ規約）。 */
   setNumber(globalPropertyId: number, value: number, session?: WorldSession): void {
     const property = this.tryGetProperty(globalPropertyId);
     property?.setNumber(value, session);
+    this.settleChangedQuantity(globalPropertyId, session);
+  }
+
+  /**
+   * sizeを書き換えた直後に、量的オブジェクトの不変条件（settleQuantity）を戻す。飲み干した水が次のtickまで
+   * 0mLのまま残っていると、その間だけ「空なのに中身がいる容器」が見えてしまう。量を動かした側が後始末を
+   * 覚えておかなくて済むよう、動かされた側がその場で畳む。
+   *
+   * sessionを渡さない呼び出しは、その場では何も判定しない規約（addNumber参照）なのでtickに任せる。
+   */
+  private settleChangedQuantity(globalPropertyId: number, session: WorldSession | undefined): void {
+    if (session === undefined) return;
+    if (!this.def.isQuantitative || globalPropertyId !== this.wellKnown.sizeId) return;
+    this.settleQuantity(session);
   }
 
   /** 指定したプロパティが、今まさに指定した名前のstageに該当しているか（WhenOwnStageゲート専用、6.4節・8節）。 */
@@ -125,11 +140,15 @@ export class WorldObject {
   }
 
   /**
-   * 指定したスロットが量（7.3節のsize）でどれだけ満たされているか（0〜1）。スロットを持たない、
-   * あるいは上限（capacity）が無く割合を定義できない場合はundefined。
+   * 自分が入っているスロットを、自分の量（7.3節のsize）がどれだけ満たしているか（0〜1）。
+   * どこにも入っていない、あるいはスロットが上限（capacity）を持たず割合を定義できない場合はundefined。
+   *
+   * 上限は入れ物、量は中身が持つ（LiquidContainerSystem.md 2節）ので、割合はこの2つが出会う
+   * 「中身から見た自分の親スロット」でしか出せない。
    */
-  fillRatioOfSlot(globalSlotId: number): number | undefined {
-    return this.tryGetSlot(globalSlotId)?.fillRatio(this.wellKnown.sizeId);
+  fillRatioInParentSlot(): number | undefined {
+    if (this._parent === undefined) return undefined;
+    return this._parent.getSlotByLocalId(this._parentSlotLocalId).fillRatio(this.wellKnown.sizeId);
   }
 
   /**
@@ -550,9 +569,8 @@ export class WorldObject {
       if (born.moveToSlot(target, slotGlobalId, wellKnown) !== undefined) return false;
     }
 
-    const left = available - amount;
-    this.setNumber(wellKnown.sizeId, left, session);
-    if (left <= 0) this.destroy();
+    // 注ぎ切って量が尽きた移し元は、setNumberの中で自分を畳む（settleChangedQuantity）。
+    this.setNumber(wellKnown.sizeId, available - amount, session);
 
     return true;
   }
