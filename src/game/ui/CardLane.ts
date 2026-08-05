@@ -6,7 +6,7 @@ import { COLOR, SIZE } from './theme';
 import { addPanel, addTiledPanel } from './shapes';
 import { wheelPixels } from './scroll';
 import { ScrollIndicator } from './ScrollIndicator';
-import type { HazeSurface } from './LaneHaze';
+import type { HazeSurface, HazeTarget } from './LaneHaze';
 
 /**
  * ドロップ先として見たときの、レーン上の1点の意味。
@@ -148,12 +148,18 @@ export class CardLane {
   private readonly tiles: Phaser.GameObjects.TileSprite[] = [];
 
   /**
-   * 陽炎を掛けるための面（LaneHaze参照）。地面の絵と、その上に並ぶカードを1枚の空気の下に置く。
+   * 陽炎を掛ける表示物（LaneHaze参照）。ピン留め部分の背景板・現在地カード・区切り線も含めて、
+   * レーンに見えているものをすべて挙げる。一部だけを歪ませると、そこに境目が見えてしまう。
+   */
+  private readonly hazeTargets: HazeTarget[] = [];
+
+  /**
+   * 陽炎を掛けるための面（LaneHaze参照）。レーンに見えているものを1枚の空気の下に置く。
    * 地面の絵が無いレーン（背景色だけ）には掛けようがないのでundefined。
    */
   get hazeSurface(): HazeSurface | undefined {
     if (this.tiles.length === 0) return undefined;
-    return { objects: [...this.tiles, this.strip], rect: this.rect };
+    return { objects: this.hazeTargets, rect: this.rect };
   }
 
   constructor(
@@ -188,6 +194,7 @@ export class CardLane {
     this.trailingPlaceholder = options.trailingPlaceholder === true;
     this.stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
     this.strip = scene.add.container(stripX, cardY);
+    this.hazeTargets.push(this.strip);
 
     // バーはカードより後に作り、カードの上へ重ねる。
     this.scrollIndicator = new ScrollIndicator(
@@ -418,6 +425,7 @@ export class CardLane {
     const panel =
       texture === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, texture);
     if (panel instanceof Phaser.GameObjects.TileSprite && scrollsWithCards) this.tiles.push(panel);
+    if (panel instanceof Phaser.GameObjects.TileSprite) this.hazeTargets.push(panel);
     this.objects.push(panel);
     return panel;
   }
@@ -449,7 +457,9 @@ export class CardLane {
       art,
       false,
     );
-    this.objects.push(new Card(scene, metrics, rect.x + margin, cardY, pinned));
+    const pinnedCard = new Card(scene, metrics, rect.x + margin, cardY, pinned);
+    this.objects.push(pinnedCard);
+    this.hazeTargets.push(pinnedCard);
 
     const cardHeight = metrics.px(SIZE.cardHeight);
     const divider = scene.add.rectangle(
@@ -461,6 +471,7 @@ export class CardLane {
       0.35,
     );
     this.objects.push(divider);
+    this.hazeTargets.push(divider);
     return panel;
   }
 }

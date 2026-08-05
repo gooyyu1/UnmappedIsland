@@ -484,11 +484,13 @@ export class PlayScene extends ResponsiveScene {
       { art: HAND_LANE_TEXTURE, depth: FIELD_DEPTH },
     );
 
-    // 陽炎はアイテムレーンだけに立てる（LaneHaze参照）。設置物レーンは現在地カードのぶん背景が
-    // 固定と可動に分かれていて、可動側だけが揺れると境目に段差が見える。手持ちのレーンは外にある
-    // 地面ではない。
+    // 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。
     this.haze ??= new LaneHaze(this);
-    this.haze.setSurface(this.itemLane.hazeSurface);
+    this.haze.setSurfaces([
+      this.fixtureLane.hazeSurface,
+      this.itemLane.hazeSurface,
+      this.handLane.hazeSurface,
+    ]);
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
 
     // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
