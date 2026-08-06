@@ -3,12 +3,15 @@
     "状況エリアの窓に敷く、天気ごとの空の絵のプロンプト（docs/ui/ScreenLayout.md 空の絵 節）。",
     "キーは weather_<天気の識別子> で、出力するファイル名は識別子だけ（src/assets/weather/<識別子>.png）。",
     "",
-    "1枚を縦型・横型それぞれの窓へcoverで敷き、右上の角を合わせて切り出す。横型は全高が見えるが、",
-    "縦型は上端の4割ほどしか映らない。そのため**主題（太陽・雲）は必ず上寄り・右寄り**に置かせ、",
-    "海は下端の帯だけに留める（帯を厚くすると、横型が海の絵になる）。",
+    "**雲のある天気だけがここにある。** 雲の無い sunny と scorching は生成では出せず、sky_art.py で",
+    "下地を描いてQwen Image Editに質感を足させている（recipes/weather_sunny.json 参照）。",
     "",
-    "陸を入れない。土地はレーンの背景が受け持っており、ここに岸や木が映ると土地が変わっても",
-    "空だけ別の場所に見える。",
+    "1枚を縦型・横型それぞれの窓へcoverで敷き、右上の角を合わせて切り出す。横型は全高が見えるが、",
+    "縦型は上端の4割ほどしか映らない。そのため**主題（雲）は必ず上寄り・右寄り**に置かせる。",
+    "",
+    "**空だけの絵にする。** 海や陸を頼まなくても水平線から下が描かれるので、レシピのcropで落とす。",
+    "土地はレーンの背景が受け持っており、ここに海や岸が映ると土地が変わっても空だけ別の場所に見える。",
+    "プロンプト側で海を否定し切ることはできなかった（下端の帯として頼んだ方が構図は安定する）。",
     "",
     "時刻による明暗はフィールドエリアのskyTintが担当し、この絵には掛からない。どの天気も",
     "真昼の光で描かせ、朝焼け・夕焼けは否定する。",
@@ -18,36 +21,13 @@
   ],
   "_baseNegative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, birds, fish, buildings, structures, boats, ships, sails, land, island, coastline, shore, beach, cliffs, rocks, mountains, trees, palm trees, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, purple sky, night, stars, moon, rainbow, lens flare, vignette, frame, border, photograph, photorealistic, hdr, fisheye, high contrast, blurry, low quality, jpeg artifacts",
   "weather_clear": {
-    "description": "穏やかな晴れ。淡い青空に小さな白い雲が右上へ寄り、下端に静かな海の帯。",
+    "description": "穏やかな晴れ。淡い青空に小さな白い雲が右上へ集まる。",
     "_note": [
       "この島の標準的な天気（ClimateSystem.md 4.2節）なので、いちばん癖のない空にする。",
       "雲を大きくすると曇り（cloudy）と、青を濃くすると日差しの強い晴れ（sunny）と紛れる。"
     ],
     "positive": "a calm tropical sky at midday seen from the open sea, soft pale blue sky filling the upper three quarters of the frame, a few small soft white cumulus clouds gathered high in the upper right corner, the rest of the sky open and even, the blue deepening gently toward the lower part of the sky, a low flat horizon line across the lower quarter of the frame, a narrow calm band of pale turquoise sea below it along the bottom edge, no land in sight, neutral white midday light, painterly, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
     "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, birds, fish, buildings, structures, boats, ships, sails, land, island, coastline, shore, beach, cliffs, rocks, mountains, trees, palm trees, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, purple sky, night, stars, moon, rainbow, lens flare, vignette, frame, border, photograph, photorealistic, hdr, fisheye, high contrast, blurry, low quality, jpeg artifacts, sun in frame, sun disc, sunburst, glare, overcast, gray sky, dark clouds, heavy clouds, storm clouds, towering clouds, dramatic clouds, clouds dominating, clouds filling the frame, rain, drizzle, fog, mist, haze, big waves, whitecaps, rough sea, wide sea, sea filling the lower half, low horizon"
-  },
-  "weather_sunny": {
-    "description": "日差しの強い晴れ。濃い青空の右上に太陽が輝き、雲はほとんど無い。",
-    "_note": [
-      "clearとの差は青の濃さと太陽の有無で付ける。雲を残すとclearと見分けが付かない。",
-      "太陽を頼むと夕日へ寄りやすいので、暖色と斜光を negative で強く否定する。",
-      "海を明るくしすぎない。ここは横型で白い桁の紙が載る場所で、白い海だと紙が沈む。",
-      "**太陽は「円盤」として頼む。** 縁を持たない光として頼むと太陽そのものが消え、代わりに雲と陸が",
-      "湧く（12枚で全滅）。拡大すると月のように見えるが、窓の実寸では太陽として読める。"
-    ],
-    "positive": "a bright tropical sky under a strong midday sun seen from the open sea, deep saturated blue sky filling the upper three quarters of the frame, the small round white disc of the sun burning high up in the upper right corner of the sky, a wide soft circular glow of pale light spreading around it, an almost cloudless sky with only a few thin wisps near the horizon, the blue staying rich and saturated toward the lower part of the sky, a low flat horizon line across the lower quarter of the frame, a narrow band of deep blue sea below it along the bottom edge, no land in sight, intense neutral white daylight, painterly, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
-    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, birds, fish, buildings, structures, boats, ships, sails, land, island, coastline, shore, beach, cliffs, rocks, mountains, trees, palm trees, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, purple sky, warm glow, amber light, red light, low sun, sun near the horizon, sun touching the horizon, sun reflection on water, sun path on water, long shadows, night, stars, moon, rainbow, lens flare, starburst rays, sun rays, god rays, vignette, frame, border, photograph, photorealistic, hdr, fisheye, high contrast, blurry, low quality, jpeg artifacts, cumulus clouds, big clouds, clouds dominating, overcast, gray sky, dark clouds, storm, rain, fog, mist, haze, big waves, whitecaps, rough sea, wide sea, sea filling the lower half, low horizon, pale washed out sky, white sky, white sea, pale sea, silver water, empty sky"
-  },
-  "weather_scorching": {
-    "description": "灼熱。白く焼けた空の右上に強烈な太陽、地平線際は熱で歪んでいる。",
-    "_note": [
-      "sunnyとの差は「青くない」こと。白飛びと陽炎で暑さを出す。",
-      "空の下側まで白く抜くと、上に載る白い桁の紙が沈む。下側は琥珀色の霞で締める。",
-      "**太陽そのものは描かせない。** 円盤を頼むと必ず水平線際へ降りて、海に光の道を引いた夕景になる",
-      "（否定語を並べても効かない）。太陽は枠の外に置き、焼けた空と陽炎だけで暑さを見せる。"
-    ],
-    "positive": "a blazing tropical sky in extreme heat seen from the open sea, bleached whitish pale blue sky filling the upper three quarters of the frame, the sky burnt out to flat glaring white across the whole upper right corner where the light comes from, the sun itself outside the frame, not a single cloud anywhere, a dense band of amber and dusty ochre heat haze thickening across the lower part of the sky, air visibly shimmering and rippling just above the water, a low flat horizon line across the lower quarter of the frame smeared by the haze, a narrow band of dull hard-lit sea below it along the bottom edge, no land in sight, harsh white midday light, washed out pale colours, painterly, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
-    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, birds, fish, buildings, structures, boats, ships, sails, land, island, coastline, shore, beach, desert, dunes, sand, cliffs, rocks, mountains, trees, palm trees, sun, sun disc, round sun, glowing orb, bright disc in the sky, sun reflection on water, sun path on water, light path on water, glitter path, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, purple sky, red sky, low sun, sun near the horizon, long shadows, night, stars, moon, rainbow, lens flare, starburst rays, sun rays, god rays, vignette, frame, border, photograph, photorealistic, hdr, fisheye, high contrast, blurry, low quality, jpeg artifacts, deep blue sky, saturated blue, clouds, cloud bank, cumulus clouds, overcast, dark clouds, storm, rain, fog bank, white mist, smoke, fire, big waves, whitecaps, rough sea, wide sea, sea filling the lower half, low horizon"
   },
   "weather_cloudy": {
     "description": "曇り。切れ目の無い灰色の雲が空を覆い、右上ほど厚い。",
@@ -60,7 +40,7 @@
     "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, birds, fish, buildings, structures, boats, ships, sails, land, island, coastline, shore, beach, cliffs, rocks, mountains, trees, palm trees, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, purple sky, night, stars, moon, rainbow, lens flare, vignette, frame, border, photograph, photorealistic, hdr, fisheye, high contrast, blurry, low quality, jpeg artifacts, blue sky, patch of blue, break in the clouds, gap in the clouds, sunlight through clouds, sunbeams, light shafts, god rays, bright spot, sun in frame, rain, drizzle, falling rain, storm, lightning, dramatic clouds, towering thunderhead, fog, mist, haze, smoke, whiteout, formless, featureless, smooth gradient, flat wash, soft focus, out of focus, motion blur, smudge, big waves, whitecaps, rough sea, wide sea, sea filling the lower half, low horizon"
   },
   "weather_light_rain": {
-    "description": "小雨。灰色の雨雲から細い雨脚が斜めに落ち、海面に細かい波紋。",
+    "description": "小雨。灰色の雨雲から、細い雨脚がまばらに斜めへ落ちる。",
     "_note": [
       "雨脚を強く頼むと大雨（heavy_rain）と揃ってしまう。細く・まばらに、と言い続ける。",
       "雨を全面へ降らせると、雲の形まで縦縞のノイズに埋もれる。雨脚は下半分だけに留め、",
@@ -72,14 +52,14 @@
   "weather_heavy_rain": {
     "description": "大雨。低く垂れ込めた暗い雨雲から、密な雨脚が全面に降る。",
     "_note": [
-      "嵐（storm）との差は、風で流れていないこと。海は荒れさせず、雨の量だけで見せる。",
+      "嵐（storm）との差は、風で流れていないこと。雨の量だけで見せる。",
       "小雨（light_rain）との差は雨脚の密度だけでは足りない。雲を一段暗くして区別する。"
     ],
     "positive": "a tropical sky during heavy rain at midday seen from the open sea, dark charcoal gray-blue rain cloud hanging low and filling the upper three quarters of the frame, a dense near-black cloud mass in the upper right, thick steady rain falling straight down in close-packed pale streaks across the whole frame, the far distance dissolved into gray water haze, a low flat horizon line across the lower quarter of the frame, a band of dark gray sea below it along the bottom edge torn white by the falling rain, no land in sight, dim heavy daylight, deep muted gray-blue tones, painterly, soft low contrast, gently blended edges, subdued detail, calm horizontal composition with no single subject, game background art",
     "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, birds, fish, buildings, structures, boats, ships, sails, umbrellas, land, island, coastline, shore, beach, cliffs, rocks, mountains, trees, palm trees, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, purple sky, night, stars, moon, rainbow, lens flare, vignette, frame, border, photograph, photorealistic, hdr, fisheye, high contrast, blurry, low quality, jpeg artifacts, blue sky, sun in frame, sunlight, break in the clouds, bright spot, light drizzle, sparse rain, lightning, thunderbolt, tornado, waterspout, hurricane, strong wind, wind-driven rain, breaking waves, huge waves, whitecaps, spray, rough sea, window, raindrops on glass, wet glass, water droplets on the lens, wide sea, sea filling the lower half, low horizon"
   },
   "weather_storm": {
-    "description": "暴風雨。渦を巻く黒い雲と横殴りの雨、下端の海は白く砕けている。",
+    "description": "暴風雨。渦を巻く黒い雲と、横殴りの雨。",
     "_note": [
       "雨季後半の極端な天候（ClimateSystem.md 4.2節）。7枚のうちで最も暗くする。",
       "稲妻を入れると1枚の絵として印象が強すぎるうえ、常時光っているように見えるので否定する。"

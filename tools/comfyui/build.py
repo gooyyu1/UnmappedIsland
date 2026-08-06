@@ -63,22 +63,33 @@ def restart_server(server: str) -> None:
     raise SystemExit("ComfyUIが起動しません")
 
 
-def base_workflow(recipe: dict, recipes_dir: Path) -> str:
-    """editの連鎖を根まで辿り、生成に使うワークフロー名を返す。"""
+def base_workflow(recipe: dict, recipes_dir: Path) -> str | None:
+    """editの連鎖を根まで辿り、生成に使うワークフロー名を返す。生成しないレシピではNone。"""
     while "edit" in recipe:
-        recipe = json.loads((recipes_dir / recipe["edit"]["source"]).read_text("utf-8"))
-    return recipe["workflow"]
+        source = recipe["edit"].get("source")
+        if source is None:
+            recipe = {k: v for k, v in recipe.items() if k != "edit"}
+            break
+        recipe = json.loads((recipes_dir / source).read_text("utf-8"))
+    return recipe.get("workflow")
 
 
 def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> Path:
     """レシピの生データ（後処理前の絵）を作り、そのパスを返す。
 
-    edit を持つレシピは source の生データを先に作り、それを基準に Qwen Image Edit で
-    派生させる（実 → 皮を剥いだ実 → … のような連鎖はここの再帰で解決される）。
+    edit を持つレシピは基準の生データを先に作り、それを Qwen Image Edit で派生させる
+    （実 → 皮を剥いだ実 → … のような連鎖はここの再帰で解決される）。基準は source が指す別レシピで、
+    source を持たない edit は同じレシピの edit を外したもの——つまり自分の paint / 生成——を指す。
+
+    paint を持つレシピは、生成の代わりに sky_art.py で下地を描く。
     """
     edit = recipe.get("edit")
     if edit is not None:
-        source = json.loads((recipes_dir / edit["source"]).read_text("utf-8"))
+        source = (
+            json.loads((recipes_dir / edit["source"]).read_text("utf-8"))
+            if edit.get("source")
+            else {k: v for k, v in recipe.items() if k != "edit"}
+        )
         source_raw = produce_raw(source, recipes_dir, raw_dir, server)
         edited = raw_dir / f"{Path(recipe['output']).stem}_edit_{edit['seed']}.png"
         run(
@@ -92,6 +103,25 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
             ],
         )
         return edited
+
+    paint = recipe.get("paint")
+    if paint is not None:
+        painted = raw_dir / f"{Path(recipe['output']).stem}_base.png"
+        run(
+            "sky_art.py",
+            [
+                "--out", str(painted),
+                "--size", *map(str, paint["size"]),
+                *[str(v) for stop in paint["stops"] for v in ("--stop", stop)],
+                *(["--glow", ",".join(map(str, paint["glow"]))] if paint.get("glow") else []),
+                *(["--glow-color", paint["glowColor"]] if paint.get("glowColor") else []),
+                # 0は「中心を埋めない」という指定なので、getの真偽で見てはいけない。
+                *(["--core", str(paint["core"])] if "core" in paint else []),
+                *(["--noise", str(paint["noise"])] if "noise" in paint else []),
+                *(["--seed", str(paint["seed"])] if "seed" in paint else []),
+            ],
+        )
+        return painted
 
     run(
         "generate.py",
@@ -116,13 +146,18 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
     return raw
 
 
-def ensure_fresh_process(workflow: str, server: str) -> None:
+def ensure_fresh_process(workflow: str | None, server: str) -> None:
     """タイリングを使う生成と使わない生成が同じプロセスに混ざらないようにする。
 
     パディングの差し替えは掛けたぶんを戻しているが、それでも完全には元へ戻らない（実測で、
     タイリングを挟むと後続の生成が平均1.94ずれる。挟まなければ差は0）。絵としては同じでも
     レシピから同じPNGが得られなくなるので、種類が変わる境目でプロセスごと作り直す。
+
+    SDXLの生成を含まないレシピ（paintだけを基準にするもの）はパディングに触れないので、
+    種類の判定から外す。
     """
+    if workflow is None:
+        return
     kind = "tiling" if "tiling" in workflow else "plain"
     if STATE.exists() and STATE.read_text("utf-8").strip() == kind:
         return
@@ -232,6 +267,7 @@ def main() -> None:
                 [
                     str(raw),
                     "--out", str(processed),
+                    *(["--crop", *map(str, post["crop"])] if post.get("crop") else []),
                     "--width", str(post["width"]),
                     "--height", str(post["height"]),
                     "--oilify-radius", str(post["oilifyRadius"]),

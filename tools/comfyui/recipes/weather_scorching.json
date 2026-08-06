@@ -3,22 +3,27 @@
     "src/assets/weather/scorching.png を作り直すためのレシピ。build.py が読む。",
     "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 空の絵 節）。",
     "",
-    "レーンの背景と作風を揃えるため、LoRAは同じ watercolor を 0.8 で当てる（トリガー語は言わない）。",
-    "oilifyRadius が 0 なのも同じ理由で、輪郭を和らげる役目はLoRAが担う。",
+    "**この1枚もSDXLで生成しない**（理由と作りは weather_sunny.json と同じ）。灼熱は特に外れやすく、",
+    "太陽を頼めば夕景、外せば霧のような灰色の空になった。",
     "",
-    "左右へ繰り返さないので、タイリングのワークフローは使わない。",
-    "seedを選んでいるのは、琥珀色の霞の帯が出る絵を採るため。帯が無いと真っ平らな板になる。"
+    "太陽は枠の外に置き、右上の焼き切れた白と、下へ向かって濃くなる琥珀色の霞だけで暑さを見せる。",
+    "霞を下側へ置くのは、そこが横型で白い桁の紙が載る場所で、白いままだと紙が沈むため。",
+    "白飛びは右上の角だけに留める。広げると、縦型で天候名が載る右下まで白くなって字が沈む。"
   ],
   "output": "src/assets/weather/scorching.png",
-  "prompts": "weather.json",
-  "prompt": "weather_scorching",
-  "workflow": "lane_background_sdxl.api.json",
-  "lora": "watercolor_sdxl.safetensors",
-  "loraStrength": 0.8,
-  "noTrigger": true,
-  "width": 2048,
-  "height": 640,
-  "seed": 7301,
+  "paint": {
+    "size": [2048, 640],
+    "stops": ["#9aacb4@0", "#c3b085@0.5", "#a8814f@1"],
+    "glow": [0.92, 0.05, 0.34, 0.8],
+    "glowColor": "#fffcf0",
+    "core": 0,
+    "noise": 0.012,
+    "seed": 1
+  },
+  "edit": {
+    "prompt": "Repaint this image as a hand-painted watercolour sky in extreme heat, looking up at the sky from the open sea. Keep the existing composition and colours exactly as they are: a hazy pale sky at the top, a small tight blinding white glare only in the very top right corner, and amber and dusty ochre heat haze deepening toward the bottom. Keep the paint dense everywhere else, do not wash the rest of the frame out to plain white. Add soft painterly brush texture and faint shimmering distortion in the haze. The entire frame is sky: no sun disc, no sea, no water, no horizon line, no land, no clouds, no birds, no text. Muted desaturated colours, soft low contrast, gently blended edges, matte painting, game background art.",
+    "seed": 1
+  },
   "postprocess": {
     "width": 1024,
     "height": 320,

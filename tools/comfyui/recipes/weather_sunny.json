@@ -3,22 +3,28 @@
     "src/assets/weather/sunny.png を作り直すためのレシピ。build.py が読む。",
     "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 空の絵 節）。",
     "",
-    "レーンの背景と作風を揃えるため、LoRAは同じ watercolor を 0.8 で当てる（トリガー語は言わない）。",
-    "oilifyRadius が 0 なのも同じ理由で、輪郭を和らげる役目はLoRAが担う。",
+    "**この1枚はSDXLで生成しない。** 雲の無い青空に太陽だけ、という絵をSDXLに頼むと、太陽は",
+    "水平線際へ降りて夕景になり、外すと雲と陸が湧く（30枚振って全滅）。縦のグラデーションと",
+    "光の滲みしか無い絵なので、sky_art.pyで下地を描き、質感だけをQwen Image Editに足させる。",
     "",
-    "左右へ繰り返さないので、タイリングのワークフローは使わない。",
-    "seedを選んでいるのは、太陽が右上に来る絵を採るため。中央や左に出る絵の方が多い。"
+    "下地は空だけなので、海を落とす切り出し（他の天気のcrop）は要らない。",
+    "下地の青を抑えているのは、Qwenが下地の色をそのまま濃くするため。鮮やかな青のまま渡すと、",
+    "他の6枚（くすんだ絵の具の空）から1枚だけ浮く。"
   ],
   "output": "src/assets/weather/sunny.png",
-  "prompts": "weather.json",
-  "prompt": "weather_sunny",
-  "workflow": "lane_background_sdxl.api.json",
-  "lora": "watercolor_sdxl.safetensors",
-  "loraStrength": 0.8,
-  "noTrigger": true,
-  "width": 2048,
-  "height": 640,
-  "seed": 7203,
+  "paint": {
+    "size": [2048, 640],
+    "stops": ["#2c6a94@0", "#5f9cba@0.55", "#93bcd0@1"],
+    "glow": [0.8, 0.2, 0.45, 0.9],
+    "glowColor": "#fffdf4",
+    "core": 0.045,
+    "noise": 0.012,
+    "seed": 1
+  },
+  "edit": {
+    "prompt": "Repaint this image as a hand-painted watercolour sky at midday, looking up at the sky from the open sea. Keep the existing composition and colours exactly as they are: a muted deep blue at the top fading to a paler blue at the bottom, and the small bright white sun with its wide soft glow staying exactly where it is in the upper right. Add soft painterly brush texture and a few very thin wispy high cirrus streaks. The entire frame is sky: no sea, no water, no horizon line, no land, no birds, no text. Muted desaturated chalky colours, soft low contrast, gently blended edges, matte painting, game background art.",
+    "seed": 1
+  },
   "postprocess": {
     "width": 1024,
     "height": 320,
