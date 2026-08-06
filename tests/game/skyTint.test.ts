@@ -3,7 +3,7 @@ import { skyTintFor } from '../../src/game/ui/skyTint';
 
 /**
  * 日射に応じてフィールドエリアへかぶせる色（ScreenLayout.md 空の演出節）。
- * sunlightの値はcore.yamlの寄与から決まる（時間帯: 夜0/朝夕+2/日中+5、天気: 曇り+2/快晴+5/晴天+7/炎天+10）。
+ * sunlightの値はcore.yamlの寄与から決まる（時間帯: 夜0/朝夕+2/日中+5、天気: 曇り+2/快晴+5/晴天+7/灼熱+10）。
  */
 describe('skyTint(日射に応じた翳り・輝き)', () => {
   const alphaAt = (sunlight: number): number => skyTintFor(sunlight)?.alpha ?? 0;
@@ -25,7 +25,7 @@ describe('skyTint(日射に応じた翳り・輝き)', () => {
   });
 
   it('曇りの日中より明るいほど強く輝く', () => {
-    // 快晴の日中(10) < 晴天の日中(12) < 炎天の日中(15)。
+    // 快晴の日中(10) < 晴天の日中(12) < 灼熱の日中(15)。
     expect(alphaAt(10)).toBeGreaterThan(0);
     expect(alphaAt(12)).toBeGreaterThan(alphaAt(10));
     expect(alphaAt(15)).toBeGreaterThan(alphaAt(12));

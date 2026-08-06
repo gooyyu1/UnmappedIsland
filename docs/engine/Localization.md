@@ -92,6 +92,21 @@ property_tag_texts:
     display_name: 栄養
 ```
 
+## symbol_texts: シンボル型プロパティの値
+
+シンボル型プロパティ（[GameElementDefinition.md](./GameElementDefinition.md) 6.6節）の値——天気の
+`scorching`、季節の `dry` など——も、どのオブジェクトにも属さない独立した名前空間
+（`WorldCodex.symbolNames`）にあるので、独立した節に書きます。
+
+```yaml
+symbol_texts:
+  scorching:
+    display_name: 灼熱
+```
+
+天気の名前は状況エリアの空の窓に出ます（[ScreenLayout.md](../ui/ScreenLayout.md)）。絵だけでは
+晴天どうしを見分けられないため、名前が区別を引き受けます。
+
 ## reason_texts: 操作を実行できない理由
 
 `conditions` の要素が宣言する `reason`（[GameElementDefinition.md](./GameElementDefinition.md) 14.6節）も、
@@ -142,6 +157,7 @@ locale.object('coconut').action('eat').displayName
 locale.object('coconut').prop('freshness').displayName
 locale.object('coconut').combination('pour_in').displayName
 locale.propertyTag('nutrition').displayName   // '栄養'
+locale.symbol('scorching').displayName        // '灼熱'
 locale.location('sandy_beach').displayName    // '砂浜'
 locale.location('sandy_beach').variant('palm').displayName  // 'ヤシの浜'
 locale.locationName(name)                     // 生成された土地の名前（LocationName）を1つの文字列へ
@@ -153,9 +169,9 @@ locale.locationName(name)                     // 生成された土地の名前�
 
 知らない節・キーは無視するため、実装が追いつく前に対応表へ節を足しても壊れません。
 
-同梱の対応表については、カードに並ぶ型（`item`/`fixture` タグを持つ `object_def`）と土地（型・亜種）が
-漏れなく表示名を持つこと、および存在しない識別子のエントリが残っていないことを自動テストで検証します
-（`tests/locale/localization.test.ts`）。
+同梱の対応表については、カードに並ぶ型（`item`/`fixture` タグを持つ `object_def`）・土地（型・亜種）・
+シンボルが漏れなく表示名を持つこと、および存在しない識別子のエントリが残っていないことを自動テストで
+検証します（`tests/locale/localization.test.ts`）。
 
 ## 言語の切り替え
 

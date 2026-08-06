@@ -147,6 +147,13 @@ object_texts:
     expect(texts.propertyTag('health').displayName).toBe('health');
   });
 
+  it('シンボル型プロパティの値の表示名を引ける（未登録なら識別子）', () => {
+    const texts = parseLocale('ja.yaml', 'symbol_texts:\n  scorching:\n    display_name: 灼熱\n');
+
+    expect(texts.symbol('scorching').displayName).toBe('灼熱');
+    expect(texts.symbol('drizzle').displayName).toBe('drizzle');
+  });
+
   it('表示文字列がスカラーでなければエラーになる', () => {
     expect(() =>
       parseLocale('ja.yaml', 'object_texts:\n  coconut:\n    display_name: {ja: ヤシの実}\n'),
@@ -186,6 +193,25 @@ describe('同梱の表示文字列ファイル', () => {
     }
   });
 
+  it('宣言されたシンボル（天気・季節）はすべて表示名を持つ', () => {
+    // 天気は状況エリアの空の窓に名前として出るため、欠けると識別子（scorching等）がそのまま出る。
+    for (let globalId = 0; globalId < codex.symbolNames.count; globalId++) {
+      const name = codex.symbolNames.getName(globalId);
+      expect(locale.symbol(name).displayName, `${name} には表示名が必要`).not.toBe(name);
+    }
+  });
+
+  it('天気の名前に、気温の暑さの語と気象庁の定義を持つ語を使わない', () => {
+    // 天気が表すのは日射そのもの（＝原因）で、気温の暑さはそこから生まれる結果であり、別の
+    // プロパティ（ambient_temperature）が持つ。また気温を決める値はいずれも仮の値なので、
+    // 数値の定義を持つ名前は調整のたびに実態とずれる（ClimateSystem.md 4節）。
+    const FORBIDDEN = ['暑', '夏日', '熱帯夜', '冬日'];
+    for (const weather of ['storm', 'heavy_rain', 'light_rain', 'cloudy', 'clear', 'sunny', 'scorching']) {
+      const name = locale.symbol(weather).displayName;
+      for (const term of FORBIDDEN) expect(name.includes(term), `${weather}: '${name}'`).toBe(false);
+    }
+  });
+
   it('conditionsが宣言する理由（reason）はすべて文言を持つ', () => {
     // 欠けると、押せないアクションの吹き出しが「今はできない。」に落ちて理由が伝わらない
     // （GameElementDefinition.md 14.6節）。
@@ -194,8 +220,11 @@ describe('同梱の表示文字列ファイル', () => {
   });
 
   it('存在しない識別子のエントリを持たない（WorldCodexの改名時の取り残しを防ぐ）', () => {
-    for (const name of declaredObjectNames())
+    for (const name of declaredSectionKeys('object_texts'))
       expect(codex.objectNames.tryGetId(name), `'${name}' はWorldCodexに存在しない識別子`).toBeDefined();
+
+    for (const name of declaredSectionKeys('symbol_texts'))
+      expect(codex.symbolNames.tryGetId(name), `'${name}' はWorldCodexに存在しないシンボル`).toBeDefined();
 
     const types = new Map(codex.generation!.locationTypes.map((type) => [type.name, type]));
     for (const [typeName, variantIds] of declaredLocationNames()) {
@@ -235,15 +264,15 @@ describe('同梱の表示文字列ファイル', () => {
   });
 
   /**
-   * 対応表のobject_texts節に並ぶオブジェクト識別子（defaultを除く）。Localizationは引く側の口しか
-   * 持たないため、ファイルを直接読む。
+   * 対応表の1つの節に並ぶ識別子（defaultを除く）。Localizationは引く側の口しか持たないため、
+   * ファイルを直接読む。
    */
-  function declaredObjectNames(): string[] {
+  function declaredSectionKeys(sectionName: string): string[] {
     const root = parseDocument(readFileSync(LOCALE_PATH, 'utf8')).contents;
-    if (!isMap(root)) throw new Error('object_textsが見つかりません。');
+    if (!isMap(root)) throw new Error(`${sectionName}が見つかりません。`);
 
-    const section = root.get('object_texts', true);
-    if (!isMap(section)) throw new Error('object_textsが見つかりません。');
+    const section = root.get(sectionName, true);
+    if (!isMap(section)) throw new Error(`${sectionName}が見つかりません。`);
 
     return section.items
       .map((pair) => (isScalar(pair.key) ? String(pair.key.value) : ''))

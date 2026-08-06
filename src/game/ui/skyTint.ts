@@ -16,7 +16,7 @@ export interface SkyTint {
  */
 const NEUTRAL_SUNLIGHT = 7;
 
-/** 取りうる最大の明るさ。炎天（天気+10）の日中（時間帯+5）。 */
+/** 取りうる最大の明るさ。灼熱（天気+10）の日中（時間帯+5）。 */
 const BRIGHTEST_SUNLIGHT = 15;
 
 /** 真っ暗（sunlight 0）のときの翳りの濃さと、最も明るいときの輝きの強さ。 */

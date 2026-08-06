@@ -180,6 +180,7 @@ const DEFAULT_ORDINAL_SUFFIX = ' ({n})';
 export class Localization {
   private readonly objects: ReadonlyMap<string, ObjectTextsEntry>;
   private readonly propertyTags: ReadonlyMap<string, DeclaredTexts>;
+  private readonly symbols: ReadonlyMap<string, DeclaredTexts>;
   private readonly locations: ReadonlyMap<string, LocationTextsEntry>;
   private readonly reasons: ReadonlyMap<string, string>;
   private readonly ordinalSuffix: string;
@@ -187,12 +188,14 @@ export class Localization {
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
     propertyTags: ReadonlyMap<string, DeclaredTexts> = new Map(),
+    symbols: ReadonlyMap<string, DeclaredTexts> = new Map(),
     locations: ReadonlyMap<string, LocationTextsEntry> = new Map(),
     reasons: ReadonlyMap<string, string> = new Map(),
     ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
+    this.symbols = symbols;
     this.locations = locations;
     this.reasons = reasons;
     this.ordinalSuffix = ordinalSuffix;
@@ -225,6 +228,18 @@ export class Localization {
   propertyTag(tagName: string): Texts {
     const declared = this.propertyTags.get(tagName);
     return new Texts(declared?.displayName ?? tagName, declared?.description);
+  }
+
+  /**
+   * シンボル型プロパティの値（GameElementDefinition.md 6.6節。天気の`scorching`、季節の`dry`など）の
+   * 表示文字列。未登録なら識別子そのもの。
+   *
+   * 値はどのオブジェクトにも属さない独立した名前空間（`WorldCodex.symbolNames`）にあるので、
+   * プロパティのタグと同じく独立した節から引く。
+   */
+  symbol(symbolName: string): Texts {
+    const declared = this.symbols.get(symbolName);
+    return new Texts(declared?.displayName ?? symbolName, declared?.description);
   }
 
   /** 1つのobject_defの表示文字列。未登録のオブジェクトでも、識別子へフォールバックする窓口として必ず返る。 */
@@ -267,6 +282,15 @@ export function parseLocale(label: string, yamlText: string): Localization {
       if (texts !== undefined) propertyTags.set(name, texts);
     }
 
+  const symbols = new Map<string, DeclaredTexts>();
+  const symbolSection = tryGetMap(root, 'symbol_texts', label);
+  if (symbolSection !== undefined)
+    for (const [name, node] of entriesInOrder(symbolSection)) {
+      const context = `${label}.symbol_texts.'${name}'`;
+      const texts = parseTexts(asMap(node, context), context);
+      if (texts !== undefined) symbols.set(name, texts);
+    }
+
   const locations = new Map<string, LocationTextsEntry>();
   let ordinalSuffix = DEFAULT_ORDINAL_SUFFIX;
   const locationSection = tryGetMap(root, 'location_texts', label);
@@ -298,7 +322,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(reasonSection))
       reasons.set(name, asScalarText(node, `${label}.reason_texts.'${name}'`));
 
-  return new Localization(objects, propertyTags, locations, reasons, ordinalSuffix);
+  return new Localization(objects, propertyTags, symbols, locations, reasons, ordinalSuffix);
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

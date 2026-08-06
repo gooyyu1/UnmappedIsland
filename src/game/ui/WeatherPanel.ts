@@ -21,7 +21,8 @@ const PANEL_BORDER = 3;
 export interface WeatherPanelContent {
   /** 天気の識別子。これに対応する絵があれば敷き、無ければ単色の板になる（weatherArt参照）。 */
   readonly weather: string | undefined;
-  readonly weatherLabel: string;
+  /** 天気の名前。天気の語彙を持たないCodexではundefinedで、ラベルごと出さない。 */
+  readonly weatherLabel: string | undefined;
   readonly elapsedDays: number;
   readonly hour: number;
   readonly minute: number;
@@ -67,27 +68,31 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
     // 横型は日時が窓の幅をほぼ使い切るので、左右の余りを分けて中央へ寄せる。
     if (metrics.isLandscape) this.calendar.x = panel.x + (panel.width - this.calendar.contentWidth) / 2;
 
-    const label = addLabel(scene, metrics, 0, 0, content.weatherLabel, {
-      size: 38,
-      bold: true,
-      color: COLOR.textOnDark,
-    });
-    label.setShadow(0, metrics.px(2), 'rgba(0,0,0,0.7)', metrics.px(6), false, true);
-    if (metrics.isLandscape) {
-      // 日時が下端を占めるので、天候名は上の段へ。
-      label.setOrigin(0, 0).setPosition(panel.x + padX, panel.y + padY);
-    } else {
-      // 縦型は日時の右。下端を日時と揃えると、絵の空いた右上がひと続きになる。
-      //
-      // 文字の枠ではなくベースラインを桁の紙の下端に合わせる。枠の下端で揃えると、下に伸びる字を
-      // 持たない和文では枠の中のディセンダ分だけ文字が浮いて見えるため。
-      const baseline = calendarY + FlipCalendar.height(metrics) - label.getTextMetrics().ascent;
-      label.setOrigin(1, 0).setPosition(panel.x + panel.width - padX, baseline);
-    }
-
     // 絵の上に載せるものは絵と同じ器へ入れる。器を後から表示リストへ足すと、外に置いたものが
     // 絵の下へ潜ってしまう。
-    this.add([this.calendar, label]);
+    this.add(this.calendar);
+    // 天気の語彙を持たないCodexでは名前が無いので、ラベルごと出さない。
+    if (content.weatherLabel !== undefined) {
+      const label = addLabel(scene, metrics, 0, 0, content.weatherLabel, {
+        size: 38,
+        bold: true,
+        color: COLOR.textOnDark,
+      });
+      label.setShadow(0, metrics.px(2), 'rgba(0,0,0,0.7)', metrics.px(6), false, true);
+      if (metrics.isLandscape) {
+        // 日時が下端を占めるので、天候名は上の段へ。
+        label.setOrigin(0, 0).setPosition(panel.x + padX, panel.y + padY);
+      } else {
+        // 縦型は日時の右。下端を日時と揃えると、絵の空いた右上がひと続きになる。
+        //
+        // 文字の枠ではなくベースラインを桁の紙の下端に合わせる。枠の下端で揃えると、下に伸びる字を
+        // 持たない和文では枠の中のディセンダ分だけ文字が浮いて見えるため。
+        const baseline = calendarY + FlipCalendar.height(metrics) - label.getTextMetrics().ascent;
+        label.setOrigin(1, 0).setPosition(panel.x + panel.width - padX, baseline);
+      }
+      this.add(label);
+    }
+
     scene.add.existing(this);
   }
 

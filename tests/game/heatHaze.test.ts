@@ -56,7 +56,7 @@ describe('空の演出が、同梱のWorldCodexの値の上で成り立つ', () 
   });
 
   it('陽炎は、暑い季節の日中にだけ立つ', () => {
-    expect(heatHazeFor(skyWith('scorching', 11, HOT).temperature), '乾季後半の炎天').toBeDefined();
+    expect(heatHazeFor(skyWith('scorching', 11, HOT).temperature), '乾季後半の灼熱').toBeDefined();
     expect(heatHazeFor(skyWith('sunny', 11, HOT).temperature), '乾季後半の晴天でも立つ').toBeDefined();
     expect(heatHazeFor(skyWith('scorching', 2, HOT).temperature), '同じ季節でも夜は立たない').toBeUndefined();
     expect(

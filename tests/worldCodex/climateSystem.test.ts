@@ -358,8 +358,8 @@ describe('気候システム(ClimateSystem.md)', () => {
     });
   });
 
-  it('scorching(炎天)は乾季後半にだけ発生し、雨季には決して発生しない', () => {
-    // scorching（炎天）は蓄熱量（thermal_level）がhot帯に達した乾季後半にだけ抽選へ加わる
+  it('scorching(灼熱)は乾季後半にだけ発生し、雨季には決して発生しない', () => {
+    // scorching（灼熱）は蓄熱量（thermal_level）がhot帯に達した乾季後半にだけ抽選へ加わる
     // （雨季後半のstormと対称の扱い、ClimateSystem.md 4.3節）。初回サイクルでは、thermal_levelが
     // hot閾値(1920)へ達するのはdry開始から20日後=絶対81日目。
     const { first: lateFirst, last: lateLast } = dayRange(81, 90);
