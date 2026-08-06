@@ -154,8 +154,9 @@
       grid-template-columns: var(--portrait-w) 1fr;
       grid-template-rows: var(--portrait-h) auto;
       gap: var(--gap);
-      /* 下だけ広いのは、この辺が背景のページのフィールドエリア側の縁に当たるため */
-      padding: calc(16 * var(--u)) calc(16 * var(--u)) calc(32 * var(--u));
+      /* 下だけ広いのは、この辺が背景のページの下端（表紙の縁）に当たるため。縁ぎりぎりに置くと
+         中身が縁に載って見えるので、紙の余白（32u）より広く取る（横型メディアクエリで戻す） */
+      padding: calc(16 * var(--u)) calc(16 * var(--u)) calc(48 * var(--u));
       background: #d9f6ff;
     }
 
@@ -272,11 +273,13 @@
 
     /* ---- 状況エリア（空を映す1枚の窓。日時と天候名がその上に載る） ---- */
 
+    /* 上だけ広いのは、オプションバーの下の梁と接する辺だから。窓を梁から離さないと帯に
+       貼り付いて見える（日時の上の空きは要らないので、そのぶん窓を低くして回している） */
     .situation-area {
       position: relative;
       flex-shrink: 0;
-      height: calc(172 * var(--u));
-      padding: calc(8 * var(--u)) calc(16 * var(--u));
+      height: calc(156 * var(--u));
+      padding: calc(28 * var(--u)) calc(16 * var(--u)) calc(8 * var(--u));
     }
 
     /* 天気ごとの絵を敷く窓。絵だけでは晴天どうしを区別できないため、名前はラベルが受け持つ。
@@ -294,7 +297,7 @@
       align-items: flex-end;
       justify-content: space-between;
       gap: calc(24 * var(--u));
-      padding: calc(20 * var(--u)) calc(24 * var(--u));
+      padding: calc(16 * var(--u)) calc(24 * var(--u));
     }
 
     .weather-name {
@@ -499,6 +502,9 @@
         padding: calc(8 * var(--u));
       }
 
+      /* 横型の縁は右辺にあり、ダッシュボード列の幅が既に引いている。下は通常のパディングでよい */
+      .character-display { padding-bottom: calc(16 * var(--u)); }
+
       .weather-panel {
         flex-direction: column;
         align-items: stretch;
@@ -565,7 +571,7 @@
               <span class="flip-digit">5</span>
             </span>
           </button>
-          <div class="weather-name">灼熱の快晴</div>
+          <div class="weather-name">灼熱</div>
         </div>
       </section>
       <section class="character-area">

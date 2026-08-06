@@ -9,6 +9,14 @@ describe('ScreenMetrics', () => {
     expect(new ScreenMetrics(540, 960).u).toBe(0.5);
   });
 
+  it('9:16より正方形に近い縦型は、uを縮めて設計上の高さ1920uを確保する', () => {
+    // 短辺基準のままだと縦に積み切れず、3レーンが収まらない（PlayScreenLayoutの縦型の積み上げ）。
+    expect(new ScreenMetrics(1080, 1440).u, '3:4').toBe(1440 / 1920);
+    expect(new ScreenMetrics(1536, 2048).u, '3:4のタブレット').toBe(2048 / 1920);
+    // 横型は短辺が高さそのものなので、正方形に近くても短辺基準のまま。
+    expect(new ScreenMetrics(1440, 1080).u, '4:3の横型').toBe(1);
+  });
+
   it('正方形は横型として扱う', () => {
     expect(new ScreenMetrics(1080, 1080).isLandscape).toBe(true);
     expect(new ScreenMetrics(1079, 1080).isLandscape).toBe(false);
@@ -22,9 +30,9 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.optionsBar).toEqual({ x: 0, y: 0, width: 1080, height: 120 });
     expect(layout.fieldArea).toEqual({ x: 0, y: 720, width: 1080, height: 1080 });
     expect(layout.filterBar).toEqual({ x: 0, y: 1800, width: 1080, height: 120 });
-    expect(layout.situationArea.height).toBe(172);
-    // キャラクターエリア（キャラクター表示＋ステータス）は1032×428。
-    expect(layout.characterDisplay.height).toBe(428);
+    expect(layout.situationArea.height).toBe(156);
+    // キャラクターエリア（キャラクター表示＋ステータス）は1032×444。
+    expect(layout.characterDisplay.height).toBe(444);
     expect(layout.characterDisplay.width).toBe(460);
     expect(layout.statusArea.width).toBe(572);
   });
@@ -35,7 +43,7 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.situationArea.y).toBe(layout.informationContent.y);
     expect(layout.characterDisplay.y).toBe(layout.situationArea.y + layout.situationArea.height);
     expect(layout.statusArea.y).toBe(layout.characterDisplay.y);
-    // 下端はフィールドエリアの手前。紙の余白32uはキャラクター表示エリアの内側が受け持つ。
+    // 下端はフィールドエリアの手前。表紙の縁を避ける余白はキャラクター表示エリアの内側が受け持つ。
     expect(layout.characterDisplay.y + layout.characterDisplay.height).toBe(layout.fieldArea.y);
   });
 
@@ -46,8 +54,8 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.optionsBar).toEqual({ x: 1800, y: 0, width: 120, height: 444 });
     expect(layout.filterBar).toEqual({ x: 1800, y: 444, width: 120, height: 636 });
     expect(layout.situationArea).toEqual({ x: 0, y: 24, width: 446, height: 224 });
-    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 446, height: 428 });
-    expect(layout.statusArea).toEqual({ x: 0, y: 676, width: 446, height: 380 });
+    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 446, height: 412 });
+    expect(layout.statusArea).toEqual({ x: 0, y: 660, width: 446, height: 396 });
   });
 
   it('3レーンは向きによらずフィールドエリアを外周マージン込みで埋める', () => {
@@ -118,8 +126,8 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
   it('極端に縦長の縦型はキャラクターエリアを引き伸ばさず、オプションバーの上を余らせる', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 2400));
 
-    expect(layout.characterDisplay.height, '内容量ぶんのまま').toBe(428);
-    expect(layout.situationArea.height).toBe(172);
+    expect(layout.characterDisplay.height, '内容量ぶんのまま').toBe(444);
+    expect(layout.situationArea.height).toBe(156);
     expect(layout.optionsBar.y, '余りはオプションバーの上へ').toBe(480);
     expect(layout.informationArea.y, '情報エリアはオプションバーの下から').toBe(600);
     // 下から順に、フィルターバー・フィールドエリア・情報エリアが隙間なく積まれている。
@@ -156,11 +164,26 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(new PlayScreenLayout(new ScreenMetrics(1080, 1920)).sidebarSeparator).toBeUndefined();
   });
 
-  it('9:16より縦長でない縦型ではフィールドエリアを縮めてダッシュボード列を確保する', () => {
-    const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1400));
+  it('どの縦型でもフィールドエリアは3レーン分（1080u）を確保する', () => {
+    // 3レーンが無いとプレイ自体が成り立たないため、9:16より正方形に近い画面では全体を縮めて
+    // でも高さを取る（ScreenMetrics）。
+    for (const [width, height] of [
+      [1080, 1920], // 9:16（設計の基準）
+      [1080, 2400], // 9:20（余りはオプションバーの上へ）
+      [1080, 1440], // 3:4
+      [1536, 2048], // 3:4のタブレット
+      [1080, 1152], // ほぼ正方形
+    ]) {
+      const layout = new PlayScreenLayout(new ScreenMetrics(width, height));
+      const label = `${width}×${height}`;
 
-    expect(layout.fieldArea.height).toBeLessThan(1080);
-    expect(layout.characterDisplay.height).toBeGreaterThan(0);
-    expect(layout.filterBar.y + layout.filterBar.height).toBe(1400);
+      expect(layout.fieldArea.height / layout.metrics.u, label).toBeCloseTo(1080);
+      const handLane = layout.lanes[2];
+      expect(
+        handLane.y + handLane.height,
+        `${label}: ハンドレーンがフィールドエリアに収まる`,
+      ).toBeLessThanOrEqual(layout.fieldArea.y + layout.fieldArea.height);
+      expect(layout.filterBar.y + layout.filterBar.height, `${label}: 最下部はフィルターバー`).toBe(height);
+    }
   });
 });
