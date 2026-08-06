@@ -115,6 +115,7 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
                 *[str(v) for stop in paint["stops"] for v in ("--stop", stop)],
                 *(["--glow", ",".join(map(str, paint["glow"]))] if paint.get("glow") else []),
                 *(["--glow-color", paint["glowColor"]] if paint.get("glowColor") else []),
+                *(["--rays", ",".join(map(str, paint["rays"]))] if paint.get("rays") else []),
                 # 0は「中心を埋めない」という指定なので、getの真偽で見てはいけない。
                 *(["--core", str(paint["core"])] if "core" in paint else []),
                 *(["--noise", str(paint["noise"])] if "noise" in paint else []),
