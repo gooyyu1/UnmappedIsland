@@ -48,6 +48,8 @@ import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import { SlotWindow } from './ui/SlotWindow';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
+import type { IconName } from './ui/iconArt';
+import { iconTexture } from './ui/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
 import type { SkyState } from './ui/WeatherOverlay';
 import { WeatherOverlay } from './ui/WeatherOverlay';
@@ -1179,20 +1181,28 @@ export class PlayScene extends ResponsiveScene {
   private addSlotButtonColumn(column: Rect): void {
     const gap = this.metrics.px(SIZE.gap);
     const buttons = [
-      { label: '地図', icon: MAP_ICON, fill: COLOR.mapButton, onTap: () => this.openMapWindow() },
+      {
+        label: '地図',
+        art: 'map',
+        icon: MAP_ICON,
+        fill: COLOR.mapButton,
+        onTap: () => this.openMapWindow(),
+      },
       {
         label: '装備',
+        art: 'equipment',
         icon: this.view.equipmentIcon,
         fill: COLOR.equipmentButton,
         onTap: () => this.openSlotWindow('equipment'),
       },
       {
         label: '怪我',
+        art: 'injury',
         icon: this.view.injuryIcon,
         fill: COLOR.injuryButton,
         onTap: () => this.openSlotWindow('injuries'),
       },
-    ];
+    ] as const;
     const height = (column.height - gap * (buttons.length - 1)) / buttons.length;
     buttons.forEach((spec, index) => {
       this.addSlotButton(
@@ -1205,10 +1215,13 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 地図・装備・怪我の固定ラベル付きボタン（アイテム名は出さない）。縦積みで横幅が余るので、
    * アイコンの右にラベルを置き、3つの左端を揃える。
+   *
+   * アイコンの欄は絵の有無によらず同じ大きさ（SIZE.slotButtonIcon）を取る。絵文字の字幅で
+   * ラベルの位置が動くと、3つのラベルの左端が揃わないため。
    */
   private addSlotButton(
     rect: Rect,
-    spec: { label: string; icon: string; fill: number; onTap: () => void },
+    spec: { label: string; art: IconName; icon: string; fill: number; onTap: () => void },
   ): void {
     const button = new Button(this, rect, {
       fill: spec.fill,
@@ -1217,17 +1230,29 @@ export class PlayScene extends ResponsiveScene {
       radius: this.metrics.px(SIZE.radius),
     });
     const left = this.metrics.px(SLOT_BUTTON_PADDING_X);
-    const iconText = addLabel(this, this.metrics, left, rect.height / 2, spec.icon, {
-      size: 56,
-    }).setOrigin(0, 0.5);
+    const size = this.metrics.px(SIZE.slotButtonIcon);
     button.addContent(
-      iconText,
-      addLabel(this, this.metrics, left + iconText.width + this.metrics.px(12), rect.height / 2, spec.label, {
+      this.addSlotButtonIcon(spec, left + size / 2, rect.height / 2, size),
+      addLabel(this, this.metrics, left + size + this.metrics.px(12), rect.height / 2, spec.label, {
         size: 28,
         bold: true,
       }).setOrigin(0, 0.5),
     );
     button.on('pointerup', this.whileIdle(spec.onTap));
+  }
+
+  /** 絵があればそれを、無ければ絵文字を、同じ欄の中央へ置く（iconArt参照）。 */
+  private addSlotButtonIcon(
+    spec: { art: IconName; icon: string },
+    x: number,
+    y: number,
+    size: number,
+  ): Phaser.GameObjects.GameObject {
+    const texture = iconTexture(spec.art);
+    if (texture !== undefined && this.textures.exists(texture)) {
+      return this.add.image(x, y, texture).setOrigin(0.5).setDisplaySize(size, size);
+    }
+    return addLabel(this, this.metrics, x, y, spec.icon, { size: SIZE.slotButtonIcon }).setOrigin(0.5);
   }
 
   /**
