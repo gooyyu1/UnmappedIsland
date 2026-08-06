@@ -18,7 +18,7 @@ import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import type { StatusDelta } from './statusChanges';
-import { statusChangesBetween } from './statusChanges';
+import { statusChangesAfter, statusChangesBetween } from './statusChanges';
 import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
@@ -788,7 +788,7 @@ export class PlayScene extends ResponsiveScene {
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-      this.noteStatusChanges(statusesBefore);
+      this.noteStatusChanges(statusesBefore, startedAt);
       this.found = this.foundSince(shownBefore);
       this.showView({ origin: this.fixtureLane.pinnedRect });
     });
@@ -959,7 +959,7 @@ export class PlayScene extends ResponsiveScene {
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       // 増減はステータスへ反映する前に控える（showInformationがこれを見て記号を出す）。
-      this.noteStatusChanges(statusesBefore);
+      this.noteStatusChanges(statusesBefore, startedAt);
       if (curtain !== undefined) {
         this.transit(curtain);
         return;
@@ -1399,9 +1399,16 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 行動の前後でステータスを比べ、増減を控える。次の行動まで記号を出し続けるので、移動で
    * フィールドエリアを作り直してもそのまま出る。
+   *
+   * 時間を消費しない操作では記号を消さない（statusChangesAfter）。
    */
-  private noteStatusChanges(before: readonly StatusContent[]): void {
-    this.statusChanges = statusChangesBetween(before, this.allStatuses());
+  private noteStatusChanges(before: readonly StatusContent[], startedAt: number): void {
+    this.statusChanges = statusChangesAfter(
+      this.statusChanges,
+      before,
+      this.allStatuses(),
+      this.gameSession.world.totalMinutes > startedAt,
+    );
   }
 
   /**
