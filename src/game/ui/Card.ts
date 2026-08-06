@@ -50,6 +50,15 @@ const ROAD_ARROW_HEIGHT = 30;
 const ROAD_ARROW_STROKE = 2;
 
 /**
+ * 矢印を紙の左下の角から離す余白（u単位）。名前の余白（NAME_MARGIN）より広い。
+ *
+ * 絵は紙の縁の内側12uをかけて薄くなっていく（tools/comfyui/card_art.py の feather、410px幅で24px）。
+ * そこへ矢印を置くと、絵の薄い帯と重なって輪郭が濁る。角の丸み（FRAME_RADIUS）ぶん空ければ、
+ * 丸めた角でも縁までの距離が12uを下回らない。
+ */
+const ROAD_ARROW_MARGIN = FRAME_RADIUS;
+
+/**
  * 押下中に紙の縁へ重ねる黒枠の太さ（u単位。ドロップ先を示す枠と揃える）。
  * 半透明にはしない——札が透けるとカードらしさが損なわれるため。
  */
@@ -756,7 +765,7 @@ function createRoadArrow(
   height: number,
 ): Phaser.GameObjects.Graphics {
   const paper = paperRect(metrics, width, height);
-  const margin = metrics.px(NAME_MARGIN);
+  const margin = metrics.px(ROAD_ARROW_MARGIN);
   const w = metrics.px(ROAD_ARROW_WIDTH);
   const h = metrics.px(ROAD_ARROW_HEIGHT);
   const left = paper.x + margin;
