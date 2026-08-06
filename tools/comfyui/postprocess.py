@@ -1,14 +1,16 @@
 """生成した絵をレーンの背景として使える形に整える。
 
-やることは3つ。
+やることは4つ。
 
-1. 油絵風にぼかす（oilify）。生成直後の絵は背景にするには輪郭がはっきりしすぎていて、カードより
+1. 頼んでいない物を切り落とす（--crop）。空の絵に必ず映り込む海のように、否定語では消せず、
+   構図としては入っていた方が安定するものがある。
+2. 油絵風にぼかす（oilify）。生成直後の絵は背景にするには輪郭がはっきりしすぎていて、カードより
    目立ってしまうため。GIMPのFilters > Artistic > Oilifyと同じ「窓の中で最も多い明度帯の色を採る」
    アルゴリズムを実装している。
-2. 別の絵の色味へ寄せる（--match）。同じ土地の2つのレーンが別の場所に見えないようにするための調整。
+3. 別の絵の色味へ寄せる（--match）。同じ土地の2つのレーンが別の場所に見えないようにするための調整。
    プロンプトで色を動かすと題材ごと変わってしまう（土色を足すよう頼んだら熱帯林が落葉樹林になった）
    ので、構図は生成で決めて色だけここで合わせる。
-3. 保持する大きさへ縮小する。生成は破綻しない解像度で行い、常駐量はここで削る。レーンの背景は
+4. 保持する大きさへ縮小する。生成は破綻しない解像度で行い、常駐量はここで削る。レーンの背景は
    起動時に全土地ぶんを読み込む（BootScene参照）ので、1枚の大きさがそのまま常駐量に効く。
 
 左右は生成の時点で繋がっているので（workflows/*_tiling.api.json）、繋ぎ直す処理は要らない。
@@ -127,6 +129,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", help="generate.pyが出したPNG")
     parser.add_argument("--out", required=True)
+    parser.add_argument(
+        "--crop",
+        type=int,
+        nargs=4,
+        metavar=("X", "Y", "W", "H"),
+        help="縮小前に切り出す範囲。頼んでいない物（空の絵に映り込む海など）を落とすのに使う",
+    )
     parser.add_argument("--width", type=int, default=TARGET_WIDTH, help="保持する幅")
     parser.add_argument("--height", type=int, default=TARGET_HEIGHT, help="保持する高さ")
     parser.add_argument("--oilify-radius", type=int, default=3, help="0でoilifyを飛ばす")
@@ -137,6 +146,10 @@ def main() -> None:
     args = parser.parse_args()
 
     rgb = np.asarray(Image.open(args.source).convert("RGB"), dtype=np.float64)
+    # 切り出しは何よりも先。落とす範囲にoilifyや色味合わせを効かせても、結果に残らない。
+    if args.crop:
+        x, y, w, h = args.crop
+        rgb = rgb[y : y + h, x : x + w]
     # oilifyは縮小前にかける。縮小後だと、同じ半径でも画面上での効き方が保持サイズに左右される。
     if args.oilify_radius > 0:
         rgb = oilify(rgb, args.oilify_radius, args.oilify_levels)
@@ -153,6 +166,7 @@ def main() -> None:
     ratio = seam_ratio(rgb)
     settings = {
         "source": Path(args.source).name,
+        "crop": args.crop,
         "oilifyRadius": args.oilify_radius,
         "oilifyLevels": args.oilify_levels,
         "flatten": args.flatten,

@@ -123,6 +123,55 @@ python build.py recipes/card_frame.json
   ただし置ける場所は余白の 5px しかないため、広く薄く散らさず**狭く濃く**します（置き換え前の影が
   ほとんど見えなかったのは、狭い場所へ薄く散らしていたためです）。
 
+## 空の絵（状況エリア）
+
+天気ごとの `src/assets/weather/<天気の識別子>.png`（仕様は
+[docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) 空の絵 節）。レシピは
+`recipes/weather_<識別子>.json` で、保持サイズはレーンの背景と同じ 1024×320 です。
+
+```bash
+python build.py recipes/weather_storm.json
+```
+
+**作り方が 2 通りあります。** 雲のある 5 つ（`storm`/`heavy_rain`/`light_rain`/`cloudy`/`clear`）は
+SDXL で 2048×640 を生成し、雲の無い 2 つ（`sunny`/`scorching`）は `sky_art.py` で下地を描いて
+Qwen Image Edit に質感だけを足させます。
+
+左右へ繰り返さない絵なので、`postprocess.py` が出す継ぎ目の数値は見なくて構いません。
+
+判断は生成物の原寸ではなく、**窓の実寸（縦型 1000×120、横型 430×208）へ切り出して**行ってください。
+1 枚を両方の窓へ cover で敷くので、縦型では上端の 4 割ほどしか映りません。原寸では月に見えた太陽が
+実寸では太陽として読める、といった食い違いが出ます。
+
+### 生成する 5 つ
+
+プロンプトは `prompts/weather.json`。**構図の当たり外れが大きいので、必ずシードを振ってから
+選びます**（主題が右上に来る絵は 5〜6 枚に 1 枚）。天気ごとの外し方——雨を全面へ降らせると雲が縦縞に
+埋もれる、「一様な雲」と頼むと形が消えて灰色のぼかしになる——は各エントリの `_note` にあります。
+
+**空だけを残すのはレシピの `crop` です。** 海や陸を頼まなくても水平線から下が必ず描かれ、否定語では
+消せません（下端の帯として頼んだ方がむしろ構図が安定します）。水平線より上を、保持サイズと同じ
+3.2:1 のまま**右上の角を合わせて**切り出します（窓へも右上合わせで敷かれるため）。
+
+### 描く 2 つ
+
+**雲の無い空は SDXL に出せません。** 太陽の円盤を頼むと必ず水平線際へ降りて海に光の道を引いた
+夕景になり、縁を持たない光として頼むと太陽ごと消えて雲と陸が湧きます（`sunny` と `scorching` で
+30 枚振って全滅）。縦のグラデーションと光の滲みしか無い絵なので、`sky_art.py` で下地を計算で描き、
+Qwen Image Edit に絵の具の質感と巻雲だけを足させます。
+
+レシピは生成の指定の代わりに `paint`（下地）と、`source` を持たない `edit`（＝自分の下地を編集する）を
+持ちます。
+
+```json
+"paint": { "size": [2048, 640], "stops": ["#2c6a94@0", "#93bcd0@1"], "glow": [0.8, 0.2, 0.45, 0.9] },
+"edit": { "prompt": "Repaint this image as a hand-painted watercolour sky ...", "seed": 1 }
+```
+
+**下地の色は控えめにします。** Qwen は下地の色をそのまま濃くするので、鮮やかな青を渡すと 1 枚だけ
+他から浮きます。同じ理由で、白飛びさせるのは右上の角だけに留めます（広げると、縦型で天候名が載る
+右下まで白くなって字が沈む）。1 枚 5 分ほど掛かります。
+
 ## 情報エリアの背景（9patch）
 
 本のページを模した枠付きの面で、`NineSlice` で引き伸ばして使います（`informationArt.ts`）。
@@ -179,16 +228,18 @@ custom_nodes/unmapped_island_seamless  →  <インストール先>\ComfyUI\cust
 |---|---|
 | `build.py` | レシピ 1 つを読んで、生成と後処理を通す |
 | `generate.py` | ワークフローへプロンプトを差し込んで `/prompt` へ投げ、PNG を取ってくる |
-| `postprocess.py` | 油絵風 → 色味合わせ → 保持サイズへ縮小 |
+| `postprocess.py` | 切り出し → 油絵風 → 色味合わせ → 保持サイズへ縮小 |
 | `card_art.py` | カードに載る形へ整える（紙・物・影の分離と、出力サイズの決定） |
 | `prompts/objects.json` | アイテムごとのプロンプト |
 | `card_frame.py` | 紙のテクスチャからカードの枠を組み立てる |
 | `flip_card.py` | 紙のテクスチャから日時のフリップカード（穴・リング・影込み）を組み立てる |
 | `page_art.py` | 本の絵から片ページを切り出し、9patchの素材にする |
+| `sky_art.py` | 雲の無い空の下地を計算で描く（縦のグラデーション＋光の滲み） |
 | `custom_nodes/unmapped_island_seamless/` | 左右が繋がった絵を生成するための ComfyUI ノード |
 | `workflows/lane_background_sdxl.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ）。既定 |
 | `workflows/lane_background_sdxl_tiling.api.json` | 上記の、左右が繋がった絵を生成する版 |
 | `prompts/lane_backgrounds.json` | 土地ごとのプロンプト |
+| `prompts/weather.json` | 天気ごとの空のプロンプト（雲のある 5 つだけ） |
 | `recipes/*.json` | 出力 1 枚ぶんの、生成と後処理の設定 |
 
 ## 設計
