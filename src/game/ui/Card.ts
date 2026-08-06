@@ -37,13 +37,17 @@ const NAME_MARGIN = 8;
 const NAME_STROKE = 4;
 
 /**
- * 道のカードの左下に出す矢印の大きさ（u単位）。名前の文字（30u）と同じくらいに取る。
+ * 道のカードの左下に出す矢印の大きさと縁の太さ（u単位）。大きさは名前の文字（30u）と同じくらい。
  *
  * 絵文字（➡）ではなく図形で描く。字が無いフォントでは豆腐になるうえ、絵文字として描かれると
  * 環境ごとに色も形も変わってしまうため。
+ *
+ * 縁は名前の縁取り（NAME_STROKE）より細い。名前は文字の隙間を縁取りが埋めないよう太らせるが、
+ * 矢印は一続きの塗りなので、太らせると形そのものが鈍る。
  */
 const ROAD_ARROW_WIDTH = 34;
 const ROAD_ARROW_HEIGHT = 30;
+const ROAD_ARROW_STROKE = 2;
 
 /**
  * 押下中に紙の縁へ重ねる黒枠の太さ（u単位。ドロップ先を示す枠と揃える）。
@@ -740,8 +744,7 @@ function createNameText(
 }
 
 /**
- * 道のカードの左下に出す矢印。名前と同じ扱い——暗い塗りに紙の色の縁取りで、どんな絵の上でも
- * 輪郭が残るようにする。
+ * 道のカードの左下に出す矢印。**白い塗りに黒い縁**で、どんな絵の上でも輪郭が残るようにする。
  *
  * 塗り潰した太い矢羽根にするのは、名前の文字と同じくらいの大きさしか取らないため。細い線で描くと、
  * カードを縮めて並べたときに何の形か読み取れなくなる。
@@ -774,8 +777,8 @@ function createRoadArrow(
   ].map(([x, y]) => new Phaser.Math.Vector2(x, y));
 
   const arrow = scene.add.graphics();
-  arrow.fillStyle(COLOR.text, 1);
-  arrow.lineStyle(Math.max(1, metrics.px(NAME_STROKE)), COLOR.cardFace, 1);
+  arrow.fillStyle(COLOR.cardFace, 1);
+  arrow.lineStyle(Math.max(1, metrics.px(ROAD_ARROW_STROKE)), COLOR.cardBorder, 1);
   arrow.fillPoints(points, true);
   arrow.strokePoints(points, true);
   return arrow.setVisible(false);
