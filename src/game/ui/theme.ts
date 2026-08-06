@@ -18,8 +18,11 @@ export const SIZE = {
   iconButton: 88,
   /** 状況アイコン（条件）。今の状態を示すだけなので、押せるボタンの中では最も小さい。 */
   conditionButton: 48,
-  /** 地図・装備・怪我のボタンに載せるアイコンの一辺（絵でも絵文字でもこの大きさに揃える）。 */
-  slotButtonIcon: 64,
+  /**
+   * 地図・装備・怪我のボタンに載せるアイコンの一辺（絵でも絵文字でもこの大きさに揃える）。
+   * ボタン（高さ98u）の中央へ置き、上下に余白を残す大きさ。
+   */
+  slotButtonIcon: 80,
   radius: 12,
   /**
    * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md スクロールバー節）。
@@ -66,9 +69,13 @@ export const COLOR = {
   buttonActive: 0x3a3a3a,
   /** 実行中などで今は押せないボタン。 */
   buttonDisabled: 0xdedede,
-  equipmentButton: 0xd6fff0,
-  injuryButton: 0xffe0d6,
-  mapButton: 0xdbe7ff,
+  /**
+   * 地図・装備・怪我のボタンの地。**カードの紙と同じくすんだ白に、色相だけを載せた色**にする。
+   * 3つを見分けるのに要るのは色相の差だけで、彩度を上げると、載せるアイコンより地の方が目立つ。
+   */
+  equipmentButton: 0xe8f1ea,
+  injuryButton: 0xf5ece7,
+  mapButton: 0xe8edf4,
 
   /** 日時の桁の紙。画像（flip_digit.png）が読めなかったときの図形フォールバックにも使う。 */
   flipDigit: 0xffffff,

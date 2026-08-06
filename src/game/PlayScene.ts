@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { DISPLAY_PADDING, PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
@@ -1207,7 +1207,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 地図・装備・怪我のボタン。**絵がボタンの全面を覆い、文字は載らない**（ScreenLayout.md）。
+   * 地図・装備・怪我のボタン。**絵を中央に1つ置くだけで、文字は載せない**（ScreenLayout.md）。
    *
    * 3つとも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
    * ボタンの内側へ収める必要も無い（日時のフリップカードと同じ考え方）。
@@ -1216,58 +1216,30 @@ export class PlayScene extends ResponsiveScene {
     rect: Rect,
     spec: { art: IconName; icon: string; fill: number; onTap: () => void },
   ): void {
-    const radius = this.metrics.px(SIZE.radius);
-    const borderWidth = Math.max(1, this.metrics.px(2));
     const button = new Button(this, rect, {
       fill: spec.fill,
       border: COLOR.buttonBorder,
-      borderWidth,
-      radius,
+      borderWidth: Math.max(1, this.metrics.px(2)),
+      radius: this.metrics.px(SIZE.radius),
     });
-    button.addContent(...this.slotButtonFace(button, spec, rect, radius, borderWidth));
+    button.addContent(this.slotButtonIcon(spec, rect));
     button.on('pointerup', this.whileIdle(spec.onTap));
   }
 
   /**
-   * ボタンの面。絵があれば全面へ敷き、無ければ絵文字を中央へ置く（iconArt参照）。
+   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ同じ大きさで置く（iconArt参照）。
    *
-   * 絵は角丸で切り抜いたうえ、その上へ枠線を引き直す。Buttonが描く枠線は絵の下になるため。
+   * 絵は背景が透けているので、ボタンの地の色がそのまま下に出る。
    */
-  private slotButtonFace(
-    button: Button,
-    spec: { art: IconName; icon: string },
-    rect: Rect,
-    radius: number,
-    borderWidth: number,
-  ): Phaser.GameObjects.GameObject[] {
+  private slotButtonIcon(spec: { art: IconName; icon: string }, rect: Rect): Phaser.GameObjects.GameObject {
+    const x = rect.width / 2;
+    const y = rect.height / 2;
+    const size = this.metrics.px(SIZE.slotButtonIcon);
     const texture = iconTexture(spec.art);
-    if (texture === undefined || !this.textures.exists(texture)) {
-      return [
-        addLabel(this, this.metrics, rect.width / 2, rect.height / 2, spec.icon, {
-          size: SIZE.slotButtonIcon,
-        }).setOrigin(0.5),
-      ];
+    if (texture !== undefined && this.textures.exists(texture)) {
+      return this.add.image(x, y, texture).setOrigin(0.5).setDisplaySize(size, size);
     }
-
-    // 絵とボタンの比率は完全には一致しないので、覆い切る側へ合わせてはみ出しを切る。
-    const image = this.add.image(rect.width / 2, rect.height / 2, texture).setOrigin(0.5);
-    const scale = Math.max(rect.width / image.width, rect.height / image.height);
-    image.setDisplaySize(image.width * scale, image.height * scale);
-
-    // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用）。マスクの形は
-    // 画面座標で描く。表示物ではないので画面には出さない。
-    const face = this.add.container(0, 0, [image]);
-    const maskShape = this.make.graphics({});
-    maskShape.fillStyle(COLOR.cardFace, 1);
-    maskShape.fillRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
-    face.enableFilters();
-    face.filters?.internal.addMask(maskShape);
-    button.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
-
-    const frame = this.add.graphics();
-    frame.lineStyle(borderWidth, COLOR.buttonBorder, 1);
-    frame.strokeRoundedRect(0, 0, rect.width, rect.height, radius);
-    return [face, frame];
+    return addLabel(this, this.metrics, x, y, spec.icon, { size: SIZE.slotButtonIcon }).setOrigin(0.5);
   }
 
   /**
