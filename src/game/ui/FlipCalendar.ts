@@ -110,8 +110,9 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
   ): void {
     const width = metrics.px(size.width);
     const height = metrics.px(size.height);
-    // 日数と時刻は桁の高さが違うため、背の高い日数の桁を基準に上下中央へ揃える。
-    const top = (blockHeight - height) / 2;
+    // 日数と時刻は桁の高さが違うため、背の高い日数の桁を基準に下端で揃える。中央で揃えると、
+    // 小さい時刻の桁が宙に浮いて見える。
+    const top = blockHeight - height;
 
     const card = addCardPaper(scene, metrics, x, top, width, height);
 
@@ -128,11 +129,14 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     this.digits.push(text);
   }
 
-  /** 時・分の間の「:」。確保した幅（COLON_WIDTH）の中央へ置き、占有した幅（後ろの間隔込み）を返す。 */
+  /**
+   * 時・分の間の「:」。確保した幅（COLON_WIDTH）の中央へ置き、占有した幅（後ろの間隔込み）を返す。
+   * 高さは時刻の桁の中央に合わせる（桁は下端で揃うので、ブロックの中央とは一致しない）。
+   */
   private addColon(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, blockHeight: number): number {
     const width = metrics.px(COLON_WIDTH);
     const text = scene.add
-      .text(x + width / 2, blockHeight / 2, ':', {
+      .text(x + width / 2, blockHeight - metrics.px(TIME_DIGIT.height) / 2, ':', {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(32)}px`,
         fontStyle: 'bold',

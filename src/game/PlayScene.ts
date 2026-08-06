@@ -36,7 +36,6 @@ import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { ExplorationWindow } from './ui/ExplorationWindow';
-import { FlipCalendar } from './ui/FlipCalendar';
 import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
@@ -49,7 +48,7 @@ import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import { SlotWindow } from './ui/SlotWindow';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
-import { WeatherChip } from './ui/WeatherChip';
+import { WeatherPanel } from './ui/WeatherPanel';
 import type { SkyState } from './ui/WeatherOverlay';
 import { WeatherOverlay } from './ui/WeatherOverlay';
 import { LaneHaze } from './ui/LaneHaze';
@@ -107,9 +106,8 @@ const BRIGHTEN_MS = 320;
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
 
-/** 状況エリア・天候の帯のパディング（縦型は広め、横型は狭め）。 */
-const SITUATION_PADDING_PORTRAIT = { x: 32, y: 20 };
-const SITUATION_PADDING_LANDSCAPE = { x: 20, y: 12 };
+/** 地図・装備・怪我のボタンの、アイコンの左の余白。3つの左端が揃う。 */
+const SLOT_BUTTON_PADDING_X = 20;
 
 /** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
 const MENU_ICON = '☰';
@@ -187,7 +185,7 @@ export class PlayScene extends ResponsiveScene {
   private itemLane!: CardLane;
   private handLane!: CardLane;
   private motion!: CardMotion;
-  private calendar!: FlipCalendar;
+  private situation!: WeatherPanel;
 
   /** フィールドエリアの背景板。レーンと合わせて、フィールドエリアだけを作り直すときに捨てる。 */
   private fieldPanel!: Phaser.GameObjects.Rectangle;
@@ -919,10 +917,10 @@ export class PlayScene extends ResponsiveScene {
 
   /** 経過分を日数・時刻へ直して時計に出す。画面を作り直した直後はまだ時計が無いことがある。 */
   private showClock(totalMinutes: number): void {
-    if (this.calendar.scene === undefined) return;
+    if (this.situation.scene === undefined) return;
 
     const whole = Math.trunc(totalMinutes);
-    this.calendar.setTime(
+    this.situation.setTime(
       Math.trunc(whole / MINUTES_PER_DAY),
       Math.trunc((whole % MINUTES_PER_DAY) / 60),
       whole % 60,
@@ -1029,7 +1027,7 @@ export class PlayScene extends ResponsiveScene {
    * アイコンはまだ固定値（PlayScreenView参照）で、行動しても変わらないため。
    */
   private showInformation(): void {
-    this.calendar.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
+    this.situation.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
     this.showStatuses();
   }
 
@@ -1074,38 +1072,32 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * 情報エリアの中を仕切る区切り線。背景が1枚の紙になり、エリアごとの塗り分けが無くなったため、
-   * 意味のまとまり（日時／天候・キャラクター／ステータス）の境目だけを線で示す。
-   * 見た目は現在地カードの右の区切り線と同じ（CardLane.addPinnedSlot）。
+   * 意味のまとまり（キャラクター／ステータス）の境目だけを線で示す。見た目は現在地カードの右の
+   * 区切り線と同じ（CardLane.addPinnedSlot）。
+   *
+   * 状況エリアとの境目には引かない。空のパネルが自分の縁を持っていて、それが境目を兼ねるため。
    */
   private buildInformationDividers(layout: PlayScreenLayout): void {
     const thickness = this.metrics.px(4);
-    const content = layout.informationContent;
+    const padding = this.metrics.px(STATUS_PADDING);
 
     if (this.metrics.isLandscape) {
-      const padding = this.metrics.px(SITUATION_PADDING_LANDSCAPE.x);
-      const x = content.x + padding;
-      const width = Math.max(0, content.width - padding * 2);
-      for (const y of [layout.situationArea.y + layout.situationArea.height, layout.statusArea.y]) {
-        this.addDivider({ x, y: y - thickness / 2, width, height: thickness });
-      }
+      // 横型はキャラクター表示エリアとステータスエリアが上下に並ぶので、境目も横向き。
+      const x = layout.informationContent.x + padding;
+      this.addDivider({
+        x,
+        y: layout.statusArea.y - thickness / 2,
+        width: Math.max(0, layout.informationContent.width - padding * 2),
+        height: thickness,
+      });
       return;
     }
 
-    const padding = this.metrics.px(SITUATION_PADDING_PORTRAIT.x);
-    // 日時・天候の上。
-    this.addDivider({
-      x: content.x + padding,
-      y: layout.situationArea.y - thickness / 2,
-      width: Math.max(0, content.width - padding * 2),
-      height: thickness,
-    });
-    // ステータスエリアの左（キャラクター表示エリアとの境目）。
-    const verticalPadding = this.metrics.px(STATUS_PADDING);
     this.addDivider({
       x: layout.statusArea.x - thickness / 2,
-      y: layout.statusArea.y + verticalPadding,
+      y: layout.statusArea.y + padding,
       width: thickness,
-      height: Math.max(0, layout.statusArea.height - verticalPadding * 2),
+      height: Math.max(0, layout.statusArea.height - padding * 2),
     });
   }
 
@@ -1123,22 +1115,22 @@ export class PlayScene extends ResponsiveScene {
   private buildDashboard(layout: PlayScreenLayout): void {
     this.buildCharacterDisplay(layout.characterDisplay);
     this.buildStatusArea(layout.statusArea);
-    this.buildSituationArea(layout.situationArea, layout.weatherRow === undefined);
-    if (layout.weatherRow !== undefined) this.buildWeatherRow(layout.weatherRow);
+    this.buildSituationArea(layout.situationArea);
     this.buildInformationDividers(layout);
   }
 
   /**
-   * ポートレイトカードと条件・装備・怪我のボタン群。ポートレイトの方が背が高いので必ず余白が出るが、
-   * ボタン群同士が離れて浮いて見えないよう、余白はポートレイト上部（頭部側）へ集約する
-   * （ScreenLayout.md 設計原則）。
+   * ポートレイトカードと、地図・装備・怪我のボタン、条件のアイコン（ScreenLayout.md）。
+   *
+   * ボタンはポートレイトの**右へ縦積み**する。このエリアで最も背の高いポートレイト（320u）の
+   * 高さをボタンが使い切るので、下へ積むより1つあたりを大きく取れる。縦型・横型で同じ組み方に
+   * なるため、向きによる分岐も要らない。
    */
   private buildCharacterDisplay(area: Rect): void {
     const padding = this.metrics.px(DISPLAY_PADDING);
     const gap = this.metrics.px(SIZE.gap);
     const portraitWidth = this.metrics.px(SIZE.cardWidth);
     const portraitHeight = this.metrics.px(SIZE.cardHeight);
-    const portraitBottom = area.y + padding + portraitHeight;
     // 名乗っている名前で見せる点だけが、キャラクタ選択やセーブスロットの札と違う。
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
       ...characterCardContent(this.view.characterArt, this.locale),
@@ -1146,55 +1138,28 @@ export class PlayScene extends ResponsiveScene {
       onTap: this.whileIdle(() => this.openPropertyWindow()),
     });
 
-    const infoX = area.x + padding + portraitWidth + gap;
-    const infoWidth = area.x + area.width - padding - infoX;
-    const conditionSize = this.metrics.px(SIZE.conditionButton);
-    const conditionGap = this.metrics.px(8);
-    const buttonHeight = this.metrics.px(SIZE.iconButton);
-
-    // 条件は縦横どちらでも2列で折り返す。ダッシュボード列の幅では、ポートレイトの右へ横一列に
-    // 並べるだけの幅が無い。
-    const conditionColumns = 2;
-    const conditionRows = Math.ceil(Math.max(1, this.view.conditions.length) / conditionColumns);
-    const conditionBlockWidth = conditionColumns * conditionSize + (conditionColumns - 1) * conditionGap;
-    const conditionBlockHeight = conditionRows * conditionSize + (conditionRows - 1) * conditionGap;
-
-    if (this.metrics.isLandscape) {
-      // 横型: 条件の行と、装備・怪我・地図の1行を右の縦列に上から並べ、列の下端をポートレイトの
-      // 下端へ揃える。
-      const columnHeight = conditionBlockHeight + gap + buttonHeight;
-      let cursorY = portraitBottom - columnHeight;
-      this.addConditionRow(infoX, cursorY, conditionSize, conditionGap, conditionColumns);
-      cursorY += conditionBlockHeight + gap;
-      this.addSlotButtonRow({ x: infoX, y: cursorY, width: infoWidth, height: buttonHeight });
-      return;
-    }
-
-    // 縦型: 上段は「ポートレイト｜条件」、下段は両列にまたがる装備・怪我・地図の行。
-    this.addConditionRow(
-      infoX + (infoWidth - conditionBlockWidth) / 2,
-      portraitBottom - conditionBlockHeight,
-      conditionSize,
-      conditionGap,
-      conditionColumns,
-    );
-
-    this.addSlotButtonRow({
-      x: area.x + padding,
-      y: portraitBottom + gap,
-      width: area.width - padding * 2,
-      height: buttonHeight,
+    const columnX = area.x + padding + portraitWidth + gap;
+    this.addSlotButtonColumn({
+      x: columnX,
+      y: area.y + padding,
+      width: area.x + area.width - padding - columnX,
+      height: portraitHeight,
     });
+
+    this.addConditionRow(area.x + padding, area.y + padding + portraitHeight + gap);
   }
 
-  /** 条件はラベルなしのアイコンボタン。columnsごとに折り返す。 */
-  private addConditionRow(x: number, y: number, size: number, gap: number, columns: number): void {
+  /**
+   * 条件はラベルなしのアイコンボタン。ポートレイトの真下に1行で左詰めに並べる——キャラクターの
+   * 状態なので、カードの下に続けて置くと持ち主が読み取れる。
+   */
+  private addConditionRow(x: number, y: number): void {
+    const size = this.metrics.px(SIZE.conditionButton);
+    const gap = this.metrics.px(8);
     this.view.conditions.forEach((icon, index) => {
-      const column = index % columns;
-      const row = Math.trunc(index / columns);
       const button = new Button(
         this,
-        { x: x + column * (size + gap), y: y + row * (size + gap), width: size, height: size },
+        { x: x + index * (size + gap), y, width: size, height: size },
         {
           fill: COLOR.button,
           border: COLOR.buttonBorder,
@@ -1202,14 +1167,20 @@ export class PlayScene extends ResponsiveScene {
           radius: this.metrics.px(SIZE.radius),
         },
       );
-      button.addContent(addLabel(this, this.metrics, size / 2, size / 2, icon, { size: 36 }).setOrigin(0.5));
+      button.addContent(addLabel(this, this.metrics, size / 2, size / 2, icon, { size: 28 }).setOrigin(0.5));
     });
   }
 
-  /** 装備・怪我・地図の3ボタンを、渡した行の幅を均等に分けて並べる。 */
-  private addSlotButtonRow(row: Rect): void {
+  /**
+   * 地図・装備・怪我の3ボタンを、渡した列の高さを均等に分けて縦に並べる。
+   *
+   * 並びは持ち物の近さの順。地図と装備は身につけているもの、装備と怪我は開く子ウィンドウの形が
+   * 同じで、地図が最も押す頻度が低いので端に来る。
+   */
+  private addSlotButtonColumn(column: Rect): void {
     const gap = this.metrics.px(SIZE.gap);
     const buttons = [
+      { label: '地図', icon: MAP_ICON, fill: COLOR.mapButton, onTap: () => this.openMapWindow() },
       {
         label: '装備',
         icon: this.view.equipmentIcon,
@@ -1222,17 +1193,19 @@ export class PlayScene extends ResponsiveScene {
         fill: COLOR.injuryButton,
         onTap: () => this.openSlotWindow('injuries'),
       },
-      { label: '地図', icon: MAP_ICON, fill: COLOR.mapButton, onTap: () => this.openMapWindow() },
     ];
-    const width = (row.width - gap * (buttons.length - 1)) / buttons.length;
+    const height = (column.height - gap * (buttons.length - 1)) / buttons.length;
     buttons.forEach((spec, index) => {
-      this.addSlotButton({ x: row.x + index * (width + gap), y: row.y, width, height: row.height }, spec);
+      this.addSlotButton(
+        { x: column.x, y: column.y + index * (height + gap), width: column.width, height },
+        spec,
+      );
     });
   }
 
   /**
-   * 装備・怪我・地図の固定ラベル付きボタン（アイテム名は出さない）。3つ並べるため中身は幅で
-   * 組み替える——収まる幅ならアイコンの右にラベル、狭い幅（横型の右列）ならアイコンの下にラベル。
+   * 地図・装備・怪我の固定ラベル付きボタン（アイテム名は出さない）。縦積みで横幅が余るので、
+   * アイコンの右にラベルを置き、3つの左端を揃える。
    */
   private addSlotButton(
     rect: Rect,
@@ -1244,33 +1217,17 @@ export class PlayScene extends ResponsiveScene {
       borderWidth: Math.max(1, this.metrics.px(2)),
       radius: this.metrics.px(SIZE.radius),
     });
-    if (rect.width >= this.metrics.px(120)) {
-      const left = this.metrics.px(14);
-      const iconText = addLabel(this, this.metrics, left, rect.height / 2, spec.icon, {
-        size: 40,
-      }).setOrigin(0, 0.5);
-      button.addContent(
-        iconText,
-        addLabel(
-          this,
-          this.metrics,
-          left + iconText.width + this.metrics.px(8),
-          rect.height / 2,
-          spec.label,
-          { size: 24, bold: true },
-        ).setOrigin(0, 0.5),
-      );
-    } else {
-      button.addContent(
-        addLabel(this, this.metrics, rect.width / 2, rect.height * 0.32, spec.icon, { size: 30 }).setOrigin(
-          0.5,
-        ),
-        addLabel(this, this.metrics, rect.width / 2, rect.height * 0.74, spec.label, {
-          size: 20,
-          bold: true,
-        }).setOrigin(0.5),
-      );
-    }
+    const left = this.metrics.px(SLOT_BUTTON_PADDING_X);
+    const iconText = addLabel(this, this.metrics, left, rect.height / 2, spec.icon, {
+      size: 56,
+    }).setOrigin(0, 0.5);
+    button.addContent(
+      iconText,
+      addLabel(this, this.metrics, left + iconText.width + this.metrics.px(12), rect.height / 2, spec.label, {
+        size: 28,
+        bold: true,
+      }).setOrigin(0, 0.5),
+    );
     button.on('pointerup', this.whileIdle(spec.onTap));
   }
 
@@ -1454,40 +1411,14 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
-  private buildSituationArea(area: Rect, withWeather: boolean): void {
-    const padding = this.metrics.isLandscape ? SITUATION_PADDING_LANDSCAPE : SITUATION_PADDING_PORTRAIT;
-    const calendar = new FlipCalendar(
-      this,
-      this.metrics,
-      area.x + this.metrics.px(padding.x),
-      area.y + this.metrics.px(padding.y),
-      this.view.elapsedDays,
-      this.view.hour,
-      this.view.minute,
-    );
-    this.calendar = calendar;
-
-    if (!withWeather) return;
-
-    const chip = new WeatherChip(this, this.metrics, 0, 0, this.view.weatherLabel);
-    chip.setPosition(
-      Math.max(
-        calendar.x + calendar.contentWidth + this.metrics.px(24),
-        area.x + area.width - this.metrics.px(padding.x) - chip.contentWidth,
-      ),
-      // エリアではなく日時の帯に対して上下中央へ揃える（下パディングが広いため、エリア中央だと下へずれる）。
-      calendar.y + (FlipCalendar.height(this.metrics) - WeatherChip.height(this.metrics)) / 2,
-    );
-  }
-
-  private buildWeatherRow(area: Rect): void {
-    new WeatherChip(
-      this,
-      this.metrics,
-      area.x + this.metrics.px(SITUATION_PADDING_LANDSCAPE.x),
-      area.y + this.metrics.px(SITUATION_PADDING_LANDSCAPE.y),
-      this.view.weatherLabel,
-    );
+  private buildSituationArea(area: Rect): void {
+    this.situation = new WeatherPanel(this, this.metrics, area, {
+      weather: this.view.weather,
+      weatherLabel: this.view.weatherLabel,
+      elapsedDays: this.view.elapsedDays,
+      hour: this.view.hour,
+      minute: this.view.minute,
+    });
   }
 
   /** 縦型は画面最上部の横長バー（右寄せ）、横型は右サイドバー上段の縦積み。 */

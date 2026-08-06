@@ -6,25 +6,25 @@ import type { Rect, ScreenMetrics } from './ScreenMetrics';
 const BAR_THICKNESS = SIZE.iconButton + 32;
 
 /**
- * 縦型の状況エリア高（フリップカード88 + 上パディング20 + 下パディング40）。天候チップを同居させる。
+ * 状況エリア（＝空のパネル）の高さ。日時も天候名もこのパネルの中に載る。
  *
- * 下だけ広いのは、背景のページの下端が表紙の縁で、その内側（INFORMATION_PAPER_INSET）へ日時を
- * 収める必要があるため。エリアの下端はフィールドエリアに接しているので、高さを足すと中身が上へ寄る。
- * これ以上広げるとダッシュボード列の最小高が600uを超え、9:16の端末でフィールドエリアが1080uを
- * 割ってしまう（＝3レーンが収まらなくなる）ので、下パディングの上限は40u。
+ * 縦型は日時と天候名を左右に並べられるので低く、横型は幅が日時1つ分しかなく天候名を別の段へ
+ * 分けるぶんだけ高い。どちらも絵の主題（太陽・雲）を置く右上を空ける寸法。
  */
-const SITUATION_HEIGHT_PORTRAIT = SIZE.iconButton + 60;
+const SITUATION_HEIGHT_PORTRAIT = 172;
+const SITUATION_HEIGHT_LANDSCAPE = 224;
 
-/** 横型の状況エリア・天候の帯の高（フリップカード88 + 上下パディング12×2）。 */
-const SITUATION_HEIGHT_LANDSCAPE = SIZE.iconButton + 24;
+/**
+ * キャラクター表示エリア高（縦型・横型共通）。パディング16 + ポートレイト320 + ギャップ12 +
+ * 条件の行48 + 紙の余白32。地図・装備・怪我はポートレイトの右へ縦積みするので行を足さない。
+ *
+ * 下だけ32uなのは、このエリアの下端がフィールドエリア側の縁（INFORMATION_PAPER_INSET.field）に
+ * 当たるため。縦型はこの高さと状況エリアの和が600uちょうどで、9:16の端末でフィールドエリアが
+ * 1080uを割らない（＝3レーンが収まる）上限。
+ */
+const CHARACTER_DISPLAY_HEIGHT = SIZE.cardHeight + SIZE.gap + SIZE.conditionButton + 48;
 
-/** 横型のキャラクター表示エリア高（ポートレイトカード320 + 上下パディング16×2）。右の縦列はこの下端に揃う。 */
-const CHARACTER_DISPLAY_HEIGHT_LANDSCAPE = SIZE.cardHeight + 32;
-
-/** 縦型のキャラクター表示エリアの内容量（パディング16×2 + ポートレイト320 + ギャップ + 装備/怪我の行88）。 */
-const CHARACTER_DISPLAY_HEIGHT_PORTRAIT = SIZE.cardHeight + SIZE.gap + SIZE.iconButton + 32;
-
-/** 縦型のキャラクター表示エリア幅。ポートレイト205 + 条件2列 + ギャップ・パディング。 */
+/** 縦型のキャラクター表示エリア幅。ポートレイト205 + 地図・装備・怪我の列 + ギャップ・パディング。 */
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
 /**
@@ -40,7 +40,7 @@ const SIDEBAR_WIDTH_LANDSCAPE = 120;
 const OPTIONS_HEIGHT_LANDSCAPE = SIZE.iconButton * 4 + SIZE.barGap * 3 + 32;
 
 /** 縦型でフィールドエリアを縮めてでも確保するダッシュボード列の最小高（状況エリア + キャラクター表示エリアの内容量）。 */
-const DASHBOARD_MIN_HEIGHT_PORTRAIT = SITUATION_HEIGHT_PORTRAIT + CHARACTER_DISPLAY_HEIGHT_PORTRAIT;
+const DASHBOARD_MIN_HEIGHT_PORTRAIT = SITUATION_HEIGHT_PORTRAIT + CHARACTER_DISPLAY_HEIGHT;
 
 /**
  * プレイ中の画面（ScreenLayout.md）の各エリアの位置・大きさ。
@@ -52,10 +52,9 @@ export class PlayScreenLayout {
   readonly optionsBar: Rect;
   readonly filterBar: Rect;
   readonly fieldArea: Rect;
-  readonly situationArea: Rect;
 
-  /** 天候の帯は横型のみ。縦型では天候チップが状況エリアに同居するためundefinedになる。 */
-  readonly weatherRow: Rect | undefined;
+  /** 空を映すパネル。日時のフリップカードと天候名はこの中に載る（向きによらず1枚）。 */
+  readonly situationArea: Rect;
 
   readonly characterDisplay: Rect;
   readonly statusArea: Rect;
@@ -132,15 +131,9 @@ export class PlayScreenLayout {
 
       const situationHeight = u(SITUATION_HEIGHT_LANDSCAPE);
       this.situationArea = { x: content.x, y: content.y, width: content.width, height: situationHeight };
-      this.weatherRow = {
-        x: content.x,
-        y: content.y + situationHeight,
-        width: content.width,
-        height: situationHeight,
-      };
 
-      const characterAreaY = content.y + situationHeight * 2;
-      const displayHeight = u(CHARACTER_DISPLAY_HEIGHT_LANDSCAPE);
+      const characterAreaY = content.y + situationHeight;
+      const displayHeight = u(CHARACTER_DISPLAY_HEIGHT);
       this.characterDisplay = {
         x: content.x,
         y: characterAreaY,
@@ -165,12 +158,11 @@ export class PlayScreenLayout {
       // オプションバーの上の余白（画面外として塗り潰す）にする。上端は指が届きにくく、使い切る価値が薄いため。
       const available = Math.max(0, height - barHeight * 2 - fieldHeight);
       const situationHeight = Math.min(u(SITUATION_HEIGHT_PORTRAIT), available);
-      const displayHeight = Math.min(u(CHARACTER_DISPLAY_HEIGHT_PORTRAIT), available - situationHeight);
+      const displayHeight = Math.min(u(CHARACTER_DISPLAY_HEIGHT), available - situationHeight);
       const top = available - situationHeight - displayHeight;
 
       this.fieldArea = { x: 0, y: height - barHeight - fieldHeight, width, height: fieldHeight };
       this.filterBar = { x: 0, y: height - barHeight, width, height: barHeight };
-      this.weatherRow = undefined;
       // オプションバーは背景のページの外側なので、幅いっぱいのまま。ページはその下から始まる。
       this.optionsBar = { x: 0, y: top, width, height: barHeight };
       this.informationArea = {
@@ -180,7 +172,8 @@ export class PlayScreenLayout {
         height: Math.max(0, this.fieldArea.y - top - barHeight),
       };
 
-      // 左右はページの縁。下（フィールドエリア側の表紙の縁）は状況エリアの下パディングが受け持つ。
+      // 左右はページの縁。下（フィールドエリア側の表紙の縁）はキャラクター表示エリアの
+      // 下パディングが受け持つ。
       const edge = u(INFORMATION_PAPER_INSET.edge);
       const content = {
         x: edge,
@@ -190,23 +183,21 @@ export class PlayScreenLayout {
       };
       this.informationContent = content;
 
+      // 空のパネルが最上段。フィールドエリアの直上はキャラクターエリアになる。
+      this.situationArea = { x: content.x, y: content.y, width: content.width, height: situationHeight };
+
+      const characterAreaY = content.y + situationHeight;
       this.characterDisplay = {
         x: content.x,
-        y: content.y,
+        y: characterAreaY,
         width: Math.min(u(CHARACTER_DISPLAY_WIDTH_PORTRAIT), content.width),
         height: displayHeight,
       };
       this.statusArea = {
         x: content.x + this.characterDisplay.width,
-        y: content.y,
+        y: characterAreaY,
         width: content.width - this.characterDisplay.width,
         height: displayHeight,
-      };
-      this.situationArea = {
-        x: content.x,
-        y: content.y + displayHeight,
-        width: content.width,
-        height: situationHeight,
       };
     }
 

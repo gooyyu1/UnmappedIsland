@@ -22,15 +22,21 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.optionsBar).toEqual({ x: 0, y: 0, width: 1080, height: 120 });
     expect(layout.fieldArea).toEqual({ x: 0, y: 720, width: 1080, height: 1080 });
     expect(layout.filterBar).toEqual({ x: 0, y: 1800, width: 1080, height: 120 });
-    expect(layout.situationArea.height).toBe(148);
-    // キャラクターエリア（キャラクター表示＋ステータス）は1080×472。
-    expect(layout.characterDisplay.height).toBe(452);
+    expect(layout.situationArea.height).toBe(172);
+    // キャラクターエリア（キャラクター表示＋ステータス）は1032×428。
+    expect(layout.characterDisplay.height).toBe(428);
     expect(layout.characterDisplay.width).toBe(460);
     expect(layout.statusArea.width).toBe(572);
   });
 
-  it('縦型では天候の帯を使わず、天候チップは状況エリアに同居する', () => {
-    expect(new PlayScreenLayout(new ScreenMetrics(1080, 1920)).weatherRow).toBeUndefined();
+  it('縦型は空のパネルが最上段で、フィールドエリアの直上はキャラクターエリアになる', () => {
+    const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
+
+    expect(layout.situationArea.y).toBe(layout.informationContent.y);
+    expect(layout.characterDisplay.y).toBe(layout.situationArea.y + layout.situationArea.height);
+    expect(layout.statusArea.y).toBe(layout.characterDisplay.y);
+    // 下端はフィールドエリアの手前。紙の余白32uはキャラクター表示エリアの内側が受け持つ。
+    expect(layout.characterDisplay.y + layout.characterDisplay.height).toBe(layout.fieldArea.y);
   });
 
   it('横型1920×1080はダッシュボード478・フィールド1322・サイドバー120に分かれる', () => {
@@ -39,9 +45,9 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.fieldArea).toEqual({ x: 478, y: 0, width: 1322, height: 1080 });
     expect(layout.optionsBar).toEqual({ x: 1800, y: 0, width: 120, height: 444 });
     expect(layout.filterBar).toEqual({ x: 1800, y: 444, width: 120, height: 636 });
-    expect(layout.weatherRow).toEqual({ x: 0, y: 136, width: 446, height: 112 });
-    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 446, height: 352 });
-    expect(layout.statusArea).toEqual({ x: 0, y: 600, width: 446, height: 456 });
+    expect(layout.situationArea).toEqual({ x: 0, y: 24, width: 446, height: 224 });
+    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 446, height: 428 });
+    expect(layout.statusArea).toEqual({ x: 0, y: 676, width: 446, height: 380 });
   });
 
   it('3レーンは向きによらずフィールドエリアを外周マージン込みで埋める', () => {
@@ -112,8 +118,8 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
   it('極端に縦長の縦型はキャラクターエリアを引き伸ばさず、オプションバーの上を余らせる', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 2400));
 
-    expect(layout.characterDisplay.height, '内容量ぶんのまま').toBe(452);
-    expect(layout.situationArea.height).toBe(148);
+    expect(layout.characterDisplay.height, '内容量ぶんのまま').toBe(428);
+    expect(layout.situationArea.height).toBe(172);
     expect(layout.optionsBar.y, '余りはオプションバーの上へ').toBe(480);
     expect(layout.informationArea.y, '情報エリアはオプションバーの下から').toBe(600);
     // 下から順に、フィルターバー・フィールドエリア・情報エリアが隙間なく積まれている。

@@ -16,7 +16,8 @@ export const SIZE = {
   /** オプション・フィルターボタンの間隔。誤タップを防ぐためカード間ギャップより広い。 */
   barGap: 20,
   iconButton: 88,
-  conditionButton: 64,
+  /** 状況アイコン（条件）。今の状態を示すだけなので、押せるボタンの中では最も小さい。 */
+  conditionButton: 48,
   radius: 12,
   /**
    * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md スクロールバー節）。
@@ -70,7 +71,12 @@ export const COLOR = {
   /** 日時の桁の紙。画像（flip_digit.png）が読めなかったときの図形フォールバックにも使う。 */
   flipDigit: 0xffffff,
   flipDigitRing: 0x6b6b6b,
-  weatherChip: 0xfff2e0,
+  /**
+   * 空の絵がまだ無い天気で、状況エリアの窓に敷く板。天気そのものは表さないが、白い天候名と
+   * 白い桁の紙がどちらも読める暗さにする（絵が入れば空の暗さがその役目を引き継ぐ）。
+   */
+  weatherPanel: 0x7d94a4,
+  weatherPanelBorder: 0x000000,
 
   /** 雨の筋と、日射に応じてフィールドエリアへかぶせる翳り・輝き（WeatherOverlay）。 */
   rain: 0xe8f2ff,
