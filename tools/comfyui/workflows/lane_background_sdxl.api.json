@@ -12,7 +12,7 @@
   "18": {
     "class_type": "LoraLoader",
     "inputs": {
-      "lora_name": "ghibli watercolor_v0.2.safetensors",
+      "lora_name": "watercolor_sdxl.safetensors",
       "strength_model": 0.8,
       "strength_clip": 0.8,
       "model": ["4", 0],

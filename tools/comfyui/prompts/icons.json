@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "地図・装備・怪我のボタンに敷く絵のプロンプト（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "キーは icon_<アイコンの識別子> で、出力するファイル名は識別子だけ（src/assets/icons/<識別子>.png）。",
+    "",
+    "**ボタンの全面を覆う絵**なので、地の色まで絵が持つ。物は枠いっぱいに大きく、背景は無地に近い",
+    "一色にする。ボタンの上には何も載らないので、避けるべき場所は無い。",
+    "",
+    "**この3枚だけLoRAを当てない**（レシピの loraStrength が 0）。輪郭線のはっきりした平塗りにする",
+    "ためで、他の絵（レーンの背景・カード・空）の水彩とは作風を分けている。小さいボタンでは、",
+    "にじんだ絵より線画の方が何のボタンか読み取れる。",
+    "",
+    "**文字を描かせない。** 地図には地名や凡例が必ず湧く。ボタンは翻訳しないので、英字が焼き込まれると",
+    "言語を切り替えたときにそこだけ英語で残る。",
+    "",
+    "背景の色はボタンの地の色（theme.tsのmapButton/equipmentButton/injuryButton）へ寄せる。絵が",
+    "読めなかったときのフォールバックが同じ色なので、崩れても違和感が小さい。",
+    "",
+    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。"
+  ],
+  "icon_map": {
+    "description": "地図。折り畳んだ古い地図が枠いっぱいに。",
+    "_note": [
+      "**地図は文字が湧く。** 地名・凡例・方位の文字が入るので、negativeで強く否定する。",
+      "seedを選んでいるのは、折り畳んだ紙として出る絵を採るため。島の輪郭だけの絵も出るが、",
+      "ボタンの実寸では「土地の絵」に見えて地図と読みにくい。"
+    ],
+    "positive": "a simple old treasure map filling the whole frame from edge to edge with no paper edge in view, a pale parchment sheet with a curved blue coastline, a red dashed route line and a small compass rose, flat anime illustration, bold clean dark outlines, cel shaded with simple two tone shading, flat pastel colours, simple readable shapes, mobile game UI icon art",
+    "negative": "text, letters, numbers, words, writing, handwriting, calligraphy, typography, labels, captions, place names, legend, scale bar, grid numbers, watermark, logo, signature, people, characters, hands, arms, animals, photograph, photorealistic, hdr, high contrast, harsh shadows, vignette, frame, border, blurry, low quality, jpeg artifacts, table, desk, wood, book, rolled scroll, torn paper edge, curled corner, paper edge in view, ruler, dividers, magnifier, coins, treasure chest, ship, skull, dark brown, sepia photograph, heavy stains, watercolour, watercolor wash, paint splatter, paper texture, canvas texture, oil painting, brush strokes, realistic, 3d render, cgi, gradient mesh, noisy, sketchy, rough"
+  },
+  "icon_equipment": {
+    "description": "装備。無地のTシャツ1枚が枠いっぱいに、正面から。",
+    "_note": [
+      "人・ハンガー・胴体を否定しないと、着ている絵や吊るした絵になる。",
+      "seedを選んでいるのは、1枚だけの絵を採るため。**横長の枠は2枚並べたがる**（前身頃と後身頃、",
+      "あるいは色違い）。「1枚だけ」「左右に余白」と足すと、今度は服の一覧表や風景へ崩れた。"
+    ],
+    "positive": "a plain short sleeved t-shirt seen from the front, filling the whole frame, empty undecorated cloth with a few simple fold lines, plain flat pale mint green background, flat anime illustration, bold clean dark outlines, cel shaded with simple two tone shading, flat pastel colours, simple readable shapes, mobile game UI icon art",
+    "negative": "text, letters, numbers, words, writing, handwriting, typography, labels, captions, print on the shirt, graphic on the shirt, pattern, stripes, watermark, logo, signature, people, characters, person wearing it, model, mannequin, torso, body, head, neck, hands, arms, animals, coat hanger, hanging, rack, wardrobe, folded shirt, stack of clothes, several shirts, trousers, shoes, backpack, armour, photograph, photorealistic, hdr, high contrast, harsh shadows, vignette, frame, border, blurry, low quality, jpeg artifacts, product photo, studio lighting, catalogue photo, glossy, satin, sheen, shiny fabric, specular highlight, sharp focus, crisp edges, 3d render, cgi, watercolour, watercolor wash, paint splatter, paper texture, canvas texture, oil painting, brush strokes, realistic, 3d render, cgi, gradient mesh, noisy, sketchy, rough"
+  },
+  "icon_injury": {
+    "description": "怪我。巻いた包帯が枠いっぱいに。",
+    "_note": [
+      "**絆創膏は描けない。** 交差した2枚も1枚も、24枚振ってすべて別の物（帯・抽象図形・箱）になった。",
+      "巻いた包帯は一発で出る。傷や血は描かせない——ボタンとして見るには生々しい。"
+    ],
+    "positive": "a roll of white gauze bandage partly unrolled, the loose end curling across the frame, filling most of the frame, plain flat pale pink background, flat anime illustration, bold clean dark outlines, cel shaded with simple two tone shading, flat pastel colours, simple readable shapes, mobile game UI icon art",
+    "negative": "text, letters, numbers, words, writing, handwriting, typography, labels, captions, watermark, logo, signature, red cross, cross symbol, medical emblem, pharmacy sign, first aid kit, people, characters, skin, body, wound, cut, blood, bruise, hands, arms, animals, pills, syringe, scissors, bottle, gauze roll, bandage roll, many plasters, scattered plasters, photograph, photorealistic, hdr, high contrast, harsh shadows, vignette, frame, border, blurry, low quality, jpeg artifacts, brown background, mauve background, taupe, dull purple, dark background, muddy colours, beige background, grey background, ribbon, silk, satin, fabric swatch, torn paper, watercolour, watercolor wash, paint splatter, paper texture, canvas texture, oil painting, brush strokes, realistic, 3d render, cgi, gradient mesh, noisy, sketchy, rough, dark background, black background, green background, grey background, several plasters, row of plasters, grid of plasters, packaging, box, belt, strap, buckle, watch, abstract shapes"
+  }
+}

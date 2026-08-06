@@ -12,7 +12,11 @@
     "生成画像を配布・販売してよいかを表すのは Image。Rent/RentCivit は有料生成サービスで動かす権利、",
     "Sell はモデル自体を売る権利なので、このゲームで見るべきは Image だけ。",
     "credit が required のものは表記が要る（allowNoCredit: false）。",
-    "これはCivitaiが持つメタデータであって、法的な判断ではない。使う前にモデルページの現物を確認すること。"
+    "これはCivitaiが持つメタデータであって、法的な判断ではない。使う前にモデルページの現物を確認すること。",
+    "",
+    "**ghibli watercolor は使わない。** Civitaiの許諾は最大（Image/Sell、クレジット不要）だが、",
+    "実際に生成させるとトトロがそのまま出る。特定の作品を直接学習しているとしか考えられず、",
+    "Civitaiのメタデータが何と言っていようと、生成物を配布できる保証にはならない。手元からも消してある。"
   ],
   "watercolor_sdxl.safetensors": {
     "base": "sdxl",
@@ -33,7 +37,7 @@
     "credit": "required",
     "creator": "Husky_AI",
     "creatorSource": "モデル説明文の本文（APIのcreatorフィールドは無い）",
-    "risk": "説明文に reprinted（転載）の語がある。原著者が転載時の連絡を求めているのか、他所からの再アップロードなのか、英文が崩れていて確定できない。ポートレート用途なら ghibli watercolor（作者判明・許諾最大・クレジット不要）で代替できる",
+    "risk": "説明文に reprinted（転載）の語がある。原著者が転載時の連絡を求めているのか、他所からの再アップロードなのか、英文が崩れていて確定できない。",
     "url": "https://civitai.com/models/159766?modelVersionId=179712"
   },
   "oil_and_watercolor_painting.safetensors": {
@@ -67,14 +71,5 @@
     "warning": "商用の許諾が一切ない",
     "creator": "Someone97421",
     "url": "https://civitai.com/models/118223?modelVersionId=128212"
-  },
-  "ghibli watercolor_v0.2.safetensors": {
-    "base": "sdxl",
-    "trigger": "ghibli watercolor",
-    "bias": "人物（1girl）",
-    "commercial": ["Image", "RentCivit", "Rent", "Sell"],
-    "credit": "not required",
-    "creator": "Benny_w",
-    "url": "https://civitai.com/models/2063095?modelVersionId=2334545"
   }
 }

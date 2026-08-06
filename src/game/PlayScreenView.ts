@@ -557,7 +557,7 @@ export function fromGameSession(
     characterName: characterTexts.displayName,
     characterArt: game.player.instance.def.name,
     conditions: ['💭', '🥶', '😪', '🍽️'],
-    equipmentIcon: '🪑',
+    equipmentIcon: '👕',
     injuryIcon: '🩹',
     statuses: entriesWithTag(codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
