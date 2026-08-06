@@ -37,6 +37,28 @@ const NAME_MARGIN = 8;
 const NAME_STROKE = 4;
 
 /**
+ * 道のカードの左下に出す矢印の大きさと縁の太さ（u単位）。大きさは名前の文字（30u）と同じくらい。
+ *
+ * 絵文字（➡）ではなく図形で描く。字が無いフォントでは豆腐になるうえ、絵文字として描かれると
+ * 環境ごとに色も形も変わってしまうため。
+ *
+ * 縁は名前の縁取り（NAME_STROKE）より細い。名前は文字の隙間を縁取りが埋めないよう太らせるが、
+ * 矢印は一続きの塗りなので、太らせると形そのものが鈍る。
+ */
+const ROAD_ARROW_WIDTH = 34;
+const ROAD_ARROW_HEIGHT = 30;
+const ROAD_ARROW_STROKE = 2;
+
+/**
+ * 矢印を紙の左下の角から離す余白（u単位）。名前の余白（NAME_MARGIN）より広い。
+ *
+ * 絵は紙の縁の内側12uをかけて薄くなっていく（tools/comfyui/card_art.py の feather、410px幅で24px）。
+ * そこへ矢印を置くと、絵の薄い帯と重なって輪郭が濁る。角の丸み（FRAME_RADIUS）ぶん空ければ、
+ * 丸めた角でも縁までの距離が12uを下回らない。
+ */
+const ROAD_ARROW_MARGIN = FRAME_RADIUS;
+
+/**
  * 押下中に紙の縁へ重ねる黒枠の太さ（u単位。ドロップ先を示す枠と揃える）。
  * 半透明にはしない——札が透けるとカードらしさが損なわれるため。
  */
@@ -134,6 +156,12 @@ export interface CardContent {
    */
   readonly namePosition?: 'top' | 'bottom';
 
+  /**
+   * 道のカードか（domainのpathタグ）。道は行き先の土地の名前と絵を出すので、そのままでは土地の
+   * カードと見分けが付かない。左下の矢印だけがそれを区別する（ScreenLayout.md 設置物レーン節）。
+   */
+  readonly road?: boolean;
+
   /** 耐久度（0〜1）。耐久度を持たないカードはundefined（バーそのものを出さない）。 */
   readonly durability?: number;
 
@@ -152,8 +180,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, namePosition, durability, fill } = content;
-  return { icon, name, art, background, namePosition, durability, fill };
+  const { icon, name, art, background, namePosition, road, durability, fill } = content;
+  return { icon, name, art, background, namePosition, road, durability, fill };
 }
 
 /**
@@ -176,6 +204,9 @@ export class Card extends Phaser.GameObjects.Container {
 
   /** カードの名前。中身が入れ替われば同じインスタンスのままでも変わる（showName参照）。 */
   private readonly nameText: Phaser.GameObjects.Text;
+
+  /** 道のカードだけに出す左下の矢印。出し入れは差し替えのたびに決まる（showNameが切り替える）。 */
+  private readonly roadArrow: Phaser.GameObjects.Graphics;
 
   /**
    * 中身を入れ替える器。重なりの順序を殻の側で固定しておくことで、中身（絵・背景・端の操作エリア）が
@@ -232,7 +263,8 @@ export class Card extends Phaser.GameObjects.Container {
     this.backgroundLayer = scene.add.container(0, 0);
     this.artLayer = scene.add.container(0, 0);
     this.nameText = createNameText(scene, metrics, width, height);
-    this.add([face, this.backgroundLayer, this.artLayer, this.nameText]);
+    this.roadArrow = createRoadArrow(scene, metrics, width, height);
+    this.add([face, this.backgroundLayer, this.artLayer, this.nameText, this.roadArrow]);
 
     // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
     this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height);
@@ -308,6 +340,7 @@ export class Card extends Phaser.GameObjects.Container {
       .setY(bottom ? paper.y + paper.height - margin : paper.y + margin)
       .setOrigin(0, bottom ? 1 : 0);
     if (this.nameText.text !== content.name) this.nameText.setText(content.name);
+    this.roadArrow.setVisible(content.road === true);
   }
 
   /**
@@ -717,6 +750,47 @@ function createNameText(
   // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
   text.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
   return text;
+}
+
+/**
+ * 道のカードの左下に出す矢印。**白い塗りに黒い縁**で、どんな絵の上でも輪郭が残るようにする。
+ *
+ * 塗り潰した太い矢羽根にするのは、名前の文字と同じくらいの大きさしか取らないため。細い線で描くと、
+ * カードを縮めて並べたときに何の形か読み取れなくなる。
+ */
+function createRoadArrow(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Graphics {
+  const paper = paperRect(metrics, width, height);
+  const margin = metrics.px(ROAD_ARROW_MARGIN);
+  const w = metrics.px(ROAD_ARROW_WIDTH);
+  const h = metrics.px(ROAD_ARROW_HEIGHT);
+  const left = paper.x + margin;
+  const top = paper.y + paper.height - margin - h;
+
+  // 軸の高さは矢印の高さの42%。残りを矢尻の張り出しに使う。
+  const shaftTop = top + h * 0.29;
+  const shaftBottom = top + h * 0.71;
+  const headLeft = left + w * 0.55;
+  const points = [
+    [left, shaftTop],
+    [headLeft, shaftTop],
+    [headLeft, top],
+    [left + w, top + h / 2],
+    [headLeft, top + h],
+    [headLeft, shaftBottom],
+    [left, shaftBottom],
+  ].map(([x, y]) => new Phaser.Math.Vector2(x, y));
+
+  const arrow = scene.add.graphics();
+  arrow.fillStyle(COLOR.cardFace, 1);
+  arrow.lineStyle(Math.max(1, metrics.px(ROAD_ARROW_STROKE)), COLOR.cardBorder, 1);
+  arrow.fillPoints(points, true);
+  arrow.strokePoints(points, true);
+  return arrow.setVisible(false);
 }
 
 /** 絵の代わりに出す絵文字（showArt参照）。 */
