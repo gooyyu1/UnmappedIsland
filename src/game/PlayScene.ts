@@ -1,4 +1,4 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { DISPLAY_PADDING, PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
@@ -106,9 +106,6 @@ const BRIGHTEN_MS = 320;
  * 落ちていく途中を見せたいため。移動にかかる時間がこれより短ければ、その分だけで落とし切る。
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
-
-/** 地図・装備・怪我のボタンの、アイコンの左の余白。3つの左端が揃う。 */
-const SLOT_BUTTON_PADDING_X = 20;
 
 /** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
 const MENU_ICON = '☰';
@@ -1182,21 +1179,18 @@ export class PlayScene extends ResponsiveScene {
     const gap = this.metrics.px(SIZE.gap);
     const buttons = [
       {
-        label: '地図',
         art: 'map',
         icon: MAP_ICON,
         fill: COLOR.mapButton,
         onTap: () => this.openMapWindow(),
       },
       {
-        label: '装備',
         art: 'equipment',
         icon: this.view.equipmentIcon,
         fill: COLOR.equipmentButton,
         onTap: () => this.openSlotWindow('equipment'),
       },
       {
-        label: '怪我',
         art: 'injury',
         icon: this.view.injuryIcon,
         fill: COLOR.injuryButton,
@@ -1213,46 +1207,67 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 地図・装備・怪我の固定ラベル付きボタン（アイテム名は出さない）。縦積みで横幅が余るので、
-   * アイコンの右にラベルを置き、3つの左端を揃える。
+   * 地図・装備・怪我のボタン。**絵がボタンの全面を覆い、文字は載らない**（ScreenLayout.md）。
    *
-   * アイコンの欄は絵の有無によらず同じ大きさ（SIZE.slotButtonIcon）を取る。絵文字の字幅で
-   * ラベルの位置が動くと、3つのラベルの左端が揃わないため。
+   * 3つとも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
+   * ボタンの内側へ収める必要も無い（日時のフリップカードと同じ考え方）。
    */
   private addSlotButton(
     rect: Rect,
-    spec: { label: string; art: IconName; icon: string; fill: number; onTap: () => void },
+    spec: { art: IconName; icon: string; fill: number; onTap: () => void },
   ): void {
+    const radius = this.metrics.px(SIZE.radius);
+    const borderWidth = Math.max(1, this.metrics.px(2));
     const button = new Button(this, rect, {
       fill: spec.fill,
       border: COLOR.buttonBorder,
-      borderWidth: Math.max(1, this.metrics.px(2)),
-      radius: this.metrics.px(SIZE.radius),
+      borderWidth,
+      radius,
     });
-    const left = this.metrics.px(SLOT_BUTTON_PADDING_X);
-    const size = this.metrics.px(SIZE.slotButtonIcon);
-    button.addContent(
-      this.addSlotButtonIcon(spec, left + size / 2, rect.height / 2, size),
-      addLabel(this, this.metrics, left + size + this.metrics.px(12), rect.height / 2, spec.label, {
-        size: 28,
-        bold: true,
-      }).setOrigin(0, 0.5),
-    );
+    button.addContent(...this.slotButtonFace(button, spec, rect, radius, borderWidth));
     button.on('pointerup', this.whileIdle(spec.onTap));
   }
 
-  /** 絵があればそれを、無ければ絵文字を、同じ欄の中央へ置く（iconArt参照）。 */
-  private addSlotButtonIcon(
+  /**
+   * ボタンの面。絵があれば全面へ敷き、無ければ絵文字を中央へ置く（iconArt参照）。
+   *
+   * 絵は角丸で切り抜いたうえ、その上へ枠線を引き直す。Buttonが描く枠線は絵の下になるため。
+   */
+  private slotButtonFace(
+    button: Button,
     spec: { art: IconName; icon: string },
-    x: number,
-    y: number,
-    size: number,
-  ): Phaser.GameObjects.GameObject {
+    rect: Rect,
+    radius: number,
+    borderWidth: number,
+  ): Phaser.GameObjects.GameObject[] {
     const texture = iconTexture(spec.art);
-    if (texture !== undefined && this.textures.exists(texture)) {
-      return this.add.image(x, y, texture).setOrigin(0.5).setDisplaySize(size, size);
+    if (texture === undefined || !this.textures.exists(texture)) {
+      return [
+        addLabel(this, this.metrics, rect.width / 2, rect.height / 2, spec.icon, {
+          size: SIZE.slotButtonIcon,
+        }).setOrigin(0.5),
+      ];
     }
-    return addLabel(this, this.metrics, x, y, spec.icon, { size: SIZE.slotButtonIcon }).setOrigin(0.5);
+
+    // 絵とボタンの比率は完全には一致しないので、覆い切る側へ合わせてはみ出しを切る。
+    const image = this.add.image(rect.width / 2, rect.height / 2, texture).setOrigin(0.5);
+    const scale = Math.max(rect.width / image.width, rect.height / image.height);
+    image.setDisplaySize(image.width * scale, image.height * scale);
+
+    // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用）。マスクの形は
+    // 画面座標で描く。表示物ではないので画面には出さない。
+    const face = this.add.container(0, 0, [image]);
+    const maskShape = this.make.graphics({});
+    maskShape.fillStyle(COLOR.cardFace, 1);
+    maskShape.fillRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
+    face.enableFilters();
+    face.filters?.internal.addMask(maskShape);
+    button.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
+
+    const frame = this.add.graphics();
+    frame.lineStyle(borderWidth, COLOR.buttonBorder, 1);
+    frame.strokeRoundedRect(0, 0, rect.width, rect.height, radius);
+    return [face, frame];
   }
 
   /**

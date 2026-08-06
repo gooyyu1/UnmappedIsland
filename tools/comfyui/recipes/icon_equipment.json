@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "src/assets/icons/equipment.png を作り直すためのレシピ。build.py が読む。",
+    "地図・装備・怪我のボタンに敷く絵（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "",
+    "ボタンの全面を覆うので、絵はボタンと同じ比率（およそ2:1）で作る。保持サイズ512×256は、",
+    "ボタンの実寸（211×99u）を4Kのu＝2pxで賄える大きさ。",
+    "",
+    "**LoRAを当てない**（loraStrengthが0）。輪郭線のはっきりした平塗りにするためで、他の絵の",
+    "水彩とは作風を分けている（prompts/icons.json 参照）。oilifyも掛けない——線を潰すため。"
+  ],
+  "output": "src/assets/icons/equipment.png",
+  "prompts": "icons.json",
+  "prompt": "icon_equipment",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 1024,
+  "height": 512,
+  "seed": 8502,
+  "postprocess": {
+    "width": 512,
+    "height": 256,
+    "oilifyRadius": 0,
+    "oilifyLevels": 12
+  }
+}
