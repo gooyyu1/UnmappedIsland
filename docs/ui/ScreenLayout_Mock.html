@@ -143,61 +143,47 @@
       background: #ffe5d1;
     }
 
-    /* 縦型: 上段（キャラクターカード｜条件）と下段（装備｜怪我）は独立したレイアウト。
-       上段はグリッドの1行目、下段は grid-column:1/-1 で両列にまたがる独立の行とし、
-       上段の列幅（ポートレイト幅）に下段が引きずられないようにする。
-       横型では character-display の幅・高さだけを向きごとに変える */
+    /* 1行目は「ポートレイト｜地図・装備・怪我の縦列」、2行目は両列にまたがる条件の行。
+       このエリアで最も背の高いポートレイト（320u）の高さをボタンが使い切るので、下へ積むより
+       1つあたりを大きく取れる。縦型・横型で同じ組み方（横型は幅だけが変わる） */
     .character-display {
       position: relative;
       width: calc(460 * var(--u));
       flex-shrink: 0;
       display: grid;
       grid-template-columns: var(--portrait-w) 1fr;
-      grid-auto-rows: auto;
+      grid-template-rows: var(--portrait-h) auto;
       gap: var(--gap);
-      padding: calc(16 * var(--u));
+      /* 下だけ広いのは、この辺が背景のページのフィールドエリア側の縁に当たるため */
+      padding: calc(16 * var(--u)) calc(16 * var(--u)) calc(32 * var(--u));
       background: #d9f6ff;
     }
-
-    .portrait-wrap { position: relative; }
-
-    /* 縦型: display:contents で自身を消し、子（条件セル・装備/怪我の行）を
-       character-display のグリッドへそのまま参加させる。
-       横型ではこのラッパー自体が縦並びの列になる（横型メディアクエリ参照） */
-    .info-column { display: contents; }
 
     .portrait-card {
       width: var(--portrait-w);
       height: var(--portrait-h);
     }
 
-    /* 条件は複数同時に付き得るため、アイコンボタンを2列のグリッドで並べる。
-       個数が変わっても自動的に折り返される（横型は1行に並べる。横型メディアクエリ参照）。
-       行の下端に揃え、装備・怪我のボタン列と隣接させる。余白はポートレイト上部側に集約し、
-       ボタン群が離れて浮いて見えないようにする */
-    .condition-cell {
-      display: grid;
-      grid-template-columns: repeat(2, auto);
-      gap: calc(8 * var(--u));
-      align-content: end;
-      justify-content: center;
+    /* 地図・装備・怪我。並びは持ち物の近さの順で、押す頻度が最も低い地図が端に来る */
+    .slot-button-column {
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+      min-width: 0;
     }
 
-    /* 装備・怪我の行。縦型ではグリッドの両列にまたがる独立の行にし、
-       ポートレイト幅に関係なく2個で幅を均等に分け合う（横型は縦並びに切り替える。
-       横型メディアクエリ参照） */
-    .equip-injury-row {
+    .slot-button-column .icon-button { flex: 1; width: 100%; }
+
+    /* 条件はポートレイトの真下に1行で左詰め。キャラクターの状態なので、カードの下に
+       続けて置くと持ち主が読み取れる */
+    .condition-row {
       grid-column: 1 / -1;
       display: flex;
-      flex-direction: row;
-      gap: var(--gap);
-      width: 100%;
+      gap: calc(8 * var(--u));
     }
 
-    .equip-injury-row .icon-button { flex: 1; }
-
-    /* ラベルなしのアイコンのみボタン。装備・怪我はタップで子ウィンドウを開くための
-       最小タップ領域として --icon-button-size（88u）を確保する。条件は一回り小さい */
+    /* ラベルなしのアイコンのみボタン（オプション・フィルター）。最小タップ領域として
+       --icon-button-size（88u）を確保する。条件は状態を示すだけなので一回り小さい */
     .icon-button {
       width: var(--icon-button-size);
       height: var(--icon-button-size);
@@ -214,28 +200,31 @@
     }
 
     .icon-button--condition {
-      --icon-button-size: calc(64 * var(--u));
-      font-size: calc(36 * var(--u));
+      --icon-button-size: calc(48 * var(--u));
+      font-size: calc(28 * var(--u));
     }
 
-    /* 装備・怪我は種別が分かるよう「装備」「怪我」の固定ラベルをアイコンの右に付ける
-       （アイテム名は表示せず、タップ先の子ウィンドウで確認する想定）。
-       正方形ではなく横長のボタンにするため、幅はセル・列いっぱいに広げる */
+    /* 地図・装備・怪我は種別が分かるよう固定ラベルをアイコンの右に付ける（アイテム名は
+       表示せず、タップ先の子ウィンドウで確認する想定）。縦積みで横幅が余るので、
+       3つの左端が揃うように左詰めにする */
+    .icon-button--map,
     .icon-button--equipment,
     .icon-button--injury {
       justify-content: flex-start;
       gap: calc(12 * var(--u));
-      padding: 0 calc(18 * var(--u));
+      padding: 0 calc(20 * var(--u));
+      height: auto;
     }
 
-    .icon-button-icon { font-size: calc(44 * var(--u)); line-height: 1; }
+    .icon-button-icon { font-size: calc(56 * var(--u)); line-height: 1; }
 
     .icon-button-label {
-      font-size: calc(24 * var(--u));
+      font-size: calc(28 * var(--u));
       font-weight: 700;
       line-height: 1;
     }
 
+    .icon-button--map { background: #dbe7ff; }
     .icon-button--equipment { background: #d6fff0; }
     .icon-button--injury { background: #ffe0d6; }
 
@@ -281,17 +270,40 @@
       background: #4caf50;
     }
 
-    /* ---- 状況エリア（日めくりカレンダー・天候） ---- */
+    /* ---- 状況エリア（空を映す1枚の窓。日時と天候名がその上に載る） ---- */
 
     .situation-area {
       position: relative;
       flex-shrink: 0;
+      height: calc(172 * var(--u));
+      padding: calc(8 * var(--u)) calc(16 * var(--u));
+    }
+
+    /* 天気ごとの絵を敷く窓。絵だけでは晴天どうしを区別できないため、名前はラベルが受け持つ。
+       絵の主題（太陽・雲）は右上に描く約束なので、載せ物はそこを空ける
+       （縦型は日時を左下・天候名を右下、横型は天候名を左上・日時を下端。横型メディアクエリ参照） */
+    .weather-panel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border: calc(3 * var(--u)) solid rgba(0, 0, 0, 0.45);
+      border-radius: calc(10 * var(--u));
+      background: #7d94a4;
+      overflow: hidden;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between;
       gap: calc(24 * var(--u));
-      padding: calc(20 * var(--u)) calc(32 * var(--u));
-      background: #e8e2d4;
+      padding: calc(20 * var(--u)) calc(24 * var(--u));
+    }
+
+    .weather-name {
+      font-size: calc(38 * var(--u));
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      white-space: nowrap;
+      text-shadow: 0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(0, 0, 0, 0.7);
     }
 
     .flip-calendar {
@@ -302,14 +314,16 @@
       font: inherit;
       display: flex;
       flex-direction: row;
-      align-items: center;
+      align-items: flex-end;
       gap: calc(14 * var(--u));
       line-height: 1;
     }
 
+    /* 日数と時刻は桁の高さが違うため、背の高い日数の桁を基準に下端で揃える
+       （中央で揃えると、小さい時刻の桁が宙に浮いて見える） */
     .calendar-row {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: calc(2 * var(--u));
     }
 
@@ -354,42 +368,17 @@
       font-size: calc(36 * var(--u));
     }
 
-    .calendar-day-unit {
-      font-size: calc(26 * var(--u));
-      font-weight: 700;
-      color: #333;
-    }
-
+    /* 幅は固定（COLON_WIDTH）で取り、高さは時刻の桁に合わせる（桁は下端で揃うので、
+       日数の桁を含む行の中央とは一致しない） */
     .calendar-colon {
+      width: calc(10 * var(--u));
+      height: calc(60 * var(--u));
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: calc(32 * var(--u));
       font-weight: 700;
       color: #333;
-    }
-
-    .weather-chip {
-      display: flex;
-      align-items: center;
-      gap: calc(10 * var(--u));
-      height: calc(88 * var(--u));
-      padding: 0 calc(24 * var(--u));
-      border: 1px solid #000;
-      border-radius: calc(44 * var(--u));
-      background: #fff2e0;
-      font-size: calc(36 * var(--u));
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    /* 横型は状況エリアの横幅を日時だけに絞ってフィールドエリアへ回すため、天候は
-       状況エリア（日時）とキャラクターエリアの間の専用の帯へ移す。
-       縦型は状況エリアに横幅の余裕があるため据え置き */
-    .weather-row {
-      position: relative;
-      display: none;
-      flex-shrink: 0;
-      align-items: center;
-      padding: calc(12 * var(--u)) calc(20 * var(--u));
-      background: #e8e2d4;
     }
 
     /* ---- オプションバー ---- */
@@ -495,10 +484,7 @@
       /* 3列グリッドに変える: ダッシュボード｜フィールド｜オプション+フィルターの縦列。
          右列は上下2行（オプション=画面右上、フィルター=画面右下）で、
          ダッシュボード・フィールドはその2行にまたがる（縦型は1列の縦積み）。
-         天候を日時から切り離し、状況エリアを日時だけの幅で済ませることで
-         ダッシュボード列を絞り、浮いた横幅をフィールドエリアに回す。
-         キャラクター表示エリアは左にポートレイトカード、右の列に条件セル・
-         装備・怪我を縦に並べる構成に変える（縦型は2×2グリッドのまま） */
+         キャラクター表示エリアの組み方は縦型と同じで、幅だけが列いっぱいに広がる */
       .screen {
         grid-template-columns: calc(484 * var(--u)) 1fr calc(120 * var(--u));
         grid-template-rows: auto 1fr;
@@ -507,55 +493,28 @@
           "dashboard field filter";
       }
 
-      /* 天候が抜けて日時だけになった分、状況エリアの高さも内容に合わせて縮める。
-         浮いた高さはステータスエリアに回る */
+      /* 幅が日時1つ分しかないので、天候名を上・日時を下端へ分ける。そのぶん縦型より高い */
       .situation-area {
-        order: -2;
-        height: auto;
-        justify-content: flex-start;
-        padding: calc(12 * var(--u)) calc(20 * var(--u));
+        height: calc(224 * var(--u));
+        padding: calc(8 * var(--u));
       }
 
-      .situation-area .weather-chip { display: none; }
+      .weather-panel {
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: space-between;
+        padding: calc(16 * var(--u)) calc(20 * var(--u));
+      }
 
-      .weather-row { order: -1; display: flex; }
+      .weather-panel .flip-calendar { justify-content: center; }
 
       .character-area {
-        order: 0;
         flex-direction: column;
         flex: 1;
         min-height: 0;
       }
 
-      /* 右列（条件・装備・怪我）をポートレイトの下端に揃える。右列の内容量は
-         ポートレイトの高さより短いため、余白はポートレイト上部側（頭部側）に集約され、
-         ボタン群同士が離れて浮いて見えることを防ぐ */
-      .character-display {
-        width: 100%;
-        display: flex;
-        flex-direction: row;
-        align-items: flex-end;
-      }
-
-      .info-column {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-width: 0;
-        gap: var(--gap);
-      }
-
-      /* 横型は条件アイコンを1行に並べる（縦型は2列で折り返す） */
-      .condition-cell {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
-      }
-
-      /* 横型は装備・怪我を縦並びに切り替え、幅は列いっぱいに広げる
-         （縦型は grid-column:1/-1 の行で横並び・flex:1 の均等幅） */
-      .equip-injury-row { flex-direction: column; }
-      .equip-injury-row .icon-button { flex: none; width: 100%; }
+      .character-display { width: 100%; }
 
       .status-area {
         flex: 1;
@@ -589,27 +548,46 @@
 <body>
   <div class="screen">
     <div class="dashboard-column">
+      <section class="situation-area">
+        <div class="label">状況エリア</div>
+        <div class="weather-panel">
+          <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
+            <span class="calendar-row calendar-row-day">
+              <span class="flip-digit">0</span>
+              <span class="flip-digit">1</span>
+              <span class="flip-digit">1</span>
+            </span>
+            <span class="calendar-row calendar-row-time">
+              <span class="flip-digit">1</span>
+              <span class="flip-digit">0</span>
+              <span class="calendar-colon">:</span>
+              <span class="flip-digit">1</span>
+              <span class="flip-digit">5</span>
+            </span>
+          </button>
+          <div class="weather-name">灼熱の快晴</div>
+        </div>
+      </section>
       <section class="character-area">
         <div class="character-display">
           <div class="label">キャラクター表示エリア</div>
-          <div class="portrait-wrap">
-            <div class="card portrait-card"><span class="card-name">主人公</span></div>
+          <div class="card portrait-card"><span class="card-name">主人公</span></div>
+          <div class="slot-button-column">
+            <button class="icon-button icon-button--map" type="button" aria-label="地図" title="地図">
+              <span class="icon-button-icon">🗺️</span><span class="icon-button-label">地図</span>
+            </button>
+            <button class="icon-button icon-button--equipment" type="button" aria-label="装備" title="装備">
+              <span class="icon-button-icon">🪑</span><span class="icon-button-label">装備</span>
+            </button>
+            <button class="icon-button icon-button--injury" type="button" aria-label="怪我" title="怪我">
+              <span class="icon-button-icon">🩹</span><span class="icon-button-label">怪我</span>
+            </button>
           </div>
-          <div class="info-column">
-            <div class="condition-cell">
-              <button class="icon-button icon-button--condition" type="button" aria-label="高揚" title="高揚">💭</button>
-              <button class="icon-button icon-button--condition" type="button" aria-label="寒気" title="寒気">🥶</button>
-              <button class="icon-button icon-button--condition" type="button" aria-label="疲労" title="疲労">😪</button>
-              <button class="icon-button icon-button--condition" type="button" aria-label="空腹" title="空腹">🍽️</button>
-            </div>
-            <div class="equip-injury-row">
-              <button class="icon-button icon-button--equipment" type="button" aria-label="折りたたみ椅子" title="折りたたみ椅子">
-                <span class="icon-button-icon">🪑</span><span class="icon-button-label">装備</span>
-              </button>
-              <button class="icon-button icon-button--injury" type="button" aria-label="擦り傷" title="擦り傷">
-                <span class="icon-button-icon">🩹</span><span class="icon-button-label">怪我</span>
-              </button>
-            </div>
+          <div class="condition-row">
+            <button class="icon-button icon-button--condition" type="button" aria-label="高揚" title="高揚">💭</button>
+            <button class="icon-button icon-button--condition" type="button" aria-label="寒気" title="寒気">🥶</button>
+            <button class="icon-button icon-button--condition" type="button" aria-label="疲労" title="疲労">😪</button>
+            <button class="icon-button icon-button--condition" type="button" aria-label="空腹" title="空腹">🍽️</button>
           </div>
         </div>
         <!-- 表示するステータスの数は可変（変化があった／要注意／ユーザー固定のみ表示）想定。
@@ -633,29 +611,6 @@
             <div class="status-bar-container"><div class="status-bar" style="width:55%"></div></div>
           </div>
         </div>
-      </section>
-      <section class="situation-area">
-        <div class="label">状況エリア</div>
-        <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
-          <span class="calendar-row calendar-row-day">
-            <span class="flip-digit">0</span>
-            <span class="flip-digit">1</span>
-            <span class="flip-digit">1</span>
-            <span class="calendar-day-unit">日目</span>
-          </span>
-          <span class="calendar-row calendar-row-time">
-            <span class="flip-digit">1</span>
-            <span class="flip-digit">0</span>
-            <span class="calendar-colon">:</span>
-            <span class="flip-digit">1</span>
-            <span class="flip-digit">5</span>
-          </span>
-        </button>
-        <div class="weather-chip">☀️ 灼熱の快晴</div>
-      </section>
-      <section class="weather-row">
-        <div class="label">天候</div>
-        <div class="weather-chip">☀️ 灼熱の快晴</div>
       </section>
     </div>
     <section class="options-bar">

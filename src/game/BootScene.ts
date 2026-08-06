@@ -9,6 +9,7 @@ import { CARD_FRAME_TEXTURE } from './ui/Card';
 import { FLIP_DIGIT_TEXTURE } from './ui/FlipCalendar';
 import { INFORMATION_ART } from './ui/informationArt';
 import { SEPARATOR_ART } from './ui/separatorArt';
+import { WEATHER_ART } from './ui/weatherArt';
 import { commonArtFiles, locationDefNames } from './ui/locationArt';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
 
@@ -54,6 +55,8 @@ export class BootScene extends Phaser.Scene {
     for (const [texture, url] of INFORMATION_ART) this.load.image(texture, url);
     // エリアの境目に敷く帯。
     for (const [texture, url] of SEPARATOR_ART) this.load.image(texture, url);
+    // 状況エリアに敷く空の絵。天気は土地と違って移動を待たずに変わるので、全部を起動時に読み切る。
+    for (const [texture, url] of WEATHER_ART) this.load.image(texture, url);
   }
 
   create(): void {

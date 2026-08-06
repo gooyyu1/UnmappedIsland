@@ -174,7 +174,11 @@ export interface PlayScreenView {
   readonly sunlight: number | undefined;
   /** 陽炎が立つかを決める気温（ClimateSystem.md）。語彙を持たないCodexではundefined。 */
   readonly ambientTemperature: number | undefined;
-  /** 天候チップに出す文字列。表示できる形がドメインに無いため固定値のまま（ScreenLayout.md）。 */
+  /**
+   * 状況エリアの窓に出す天気の名前。絵だけでは晴天どうしを区別できないため、名前は必ず出す
+   * （ScreenLayout.md）。天気の名前は表示文字列だがLocalizationがプロパティの値を引ける形を
+   * まだ持たないため、固定値のプレースホルダーのまま。
+   */
   readonly weatherLabel: string;
   readonly currentLocation: CardContent;
   /** 現在地のobject_defの識別子（表示名ではない）。土地ごとに変わるレーンの背景を選ぶ（backgroundArt参照）。 */
@@ -563,7 +567,7 @@ export function fromGameSession(
     weather: game.world.weather,
     sunlight: game.world.sunlight,
     ambientTemperature: game.world.ambientTemperature,
-    weatherLabel: '☀️ 灼熱の快晴',
+    weatherLabel: '灼熱の快晴',
     currentLocation: {
       icon: LOCATION_ICON,
       name: locationNameOf(location.instance.instanceId),
