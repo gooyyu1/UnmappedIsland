@@ -101,7 +101,7 @@ property_tag_texts:
 ```yaml
 symbol_texts:
   scorching:
-    display_name: 炎天
+    display_name: 灼熱
 ```
 
 天気の名前は状況エリアの空の窓に出ます（[ScreenLayout.md](../ui/ScreenLayout.md)）。絵だけでは
@@ -157,7 +157,7 @@ locale.object('coconut').action('eat').displayName
 locale.object('coconut').prop('freshness').displayName
 locale.object('coconut').combination('pour_in').displayName
 locale.propertyTag('nutrition').displayName   // '栄養'
-locale.symbol('scorching').displayName        // '炎天'
+locale.symbol('scorching').displayName        // '灼熱'
 locale.location('sandy_beach').displayName    // '砂浜'
 locale.location('sandy_beach').variant('palm').displayName  // 'ヤシの浜'
 locale.locationName(name)                     // 生成された土地の名前（LocationName）を1つの文字列へ

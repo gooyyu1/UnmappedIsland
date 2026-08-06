@@ -214,9 +214,10 @@ property_tag_texts:
     display_name: 栄養
 
 # シンボル型プロパティの値（GameElementDefinition.md 6.6節）。天気は状況エリアの空の窓に名前として
-# 出るので、絵だけでは見分けられない晴天どうし（晴れ・快晴・炎天）を名前が区別する。
-# いずれも空の様子を表す語で揃える——気温は別のプロパティ（ambient_temperature）が持つため、
-# 「猛暑」のような気温の語をここへ混ぜない。
+# 出るので、絵だけでは見分けられない晴天どうし（晴れ・快晴・灼熱）を名前が区別する。
+# 天気の名前に、気象庁の定義を持つ語（猛暑日=35℃以上、真夏日=30℃以上）は使わない。気温を決める
+# 値（ambient_temperature・日射・蓄熱の補正）はいずれも仮の値なので、数値の定義を持つ名前は
+# 調整のたびに実態とずれる。
 symbol_texts:
   # 天気（ClimateSystem.md 4節）。日射の弱い順。
   storm:
@@ -232,7 +233,7 @@ symbol_texts:
   sunny:
     display_name: 快晴
   scorching:
-    display_name: 炎天
+    display_name: 灼熱
   # 季節（ClimateSystem.md 2節）。calm→wet→dryの固定順で巡回する。
   calm:
     display_name: 穏やかな季節

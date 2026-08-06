@@ -477,9 +477,9 @@ object_defs:
       # 加算すると±1/tickでも1季節で±2880になるため、atmospheric_moistureと同じ「スケールした
       # 貯水池のstagesが表向きの値をmodifyする」パターンを使う。dryで+1/tick（20日で0→上限1920）、
       # calm/wetで-1/tick。初期値1000は「開始時は補正なし（mild帯）」のため。
-      # hot stageはscorching_weightも駆動する（乾季後半だけ炎天が抽選に加わる。stageのminは
+      # hot stageはscorching_weightも駆動する（乾季後半だけ灼熱が抽選に加わる。stageのminは
       # その値を含む判定のため、上限=hot閾値でもhotは有効）。
-      # 上限をhot閾値1920と同値にするのは意図的: calmに入った最初のtickでmildへ落ち、炎天と気温+8が
+      # 上限をhot閾値1920と同値にするのは意図的: calmに入った最初のtickでmildへ落ち、灼熱と気温+8が
       # 乾季の終了と同時に消える（残暑を作らない。「暑さ=乾季」を体感と一致させるため）。
       thermal_level:
         value: 1000

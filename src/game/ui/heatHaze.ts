@@ -11,7 +11,7 @@ export interface HeatHaze {
  *
  * `ambient_temperature` は基準20に日射（暗い-3／明るい+3）と季節（涼しい-5／暑い+8）が重なった
  * 実効値（core.yaml）なので、27以上になるのは**暑い季節の日中**だけ。天気ではなく気温で決めるのは、
- * 陽炎が立つのは地面が焼けているからで、炎天という天気の名前そのものではないため。
+ * 陽炎が立つのは地面が焼けているからで、灼熱という天気の名前そのものではないため。
  */
 const HAZE_MIN_TEMPERATURE = 27;
 const HAZE_MAX_TEMPERATURE = 31;

@@ -148,9 +148,9 @@ object_texts:
   });
 
   it('シンボル型プロパティの値の表示名を引ける（未登録なら識別子）', () => {
-    const texts = parseLocale('ja.yaml', 'symbol_texts:\n  scorching:\n    display_name: 炎天\n');
+    const texts = parseLocale('ja.yaml', 'symbol_texts:\n  scorching:\n    display_name: 灼熱\n');
 
-    expect(texts.symbol('scorching').displayName).toBe('炎天');
+    expect(texts.symbol('scorching').displayName).toBe('灼熱');
     expect(texts.symbol('drizzle').displayName).toBe('drizzle');
   });
 
@@ -201,13 +201,13 @@ describe('同梱の表示文字列ファイル', () => {
     }
   });
 
-  it('天気の名前に気温の語を使わない', () => {
-    // 気温は別のプロパティ（ambient_temperature）が持つ。7段階はすべて空の様子を表す語で揃え、
-    // 気温の語が1つだけ混ざって分類がねじれるのを防ぐ（ClimateSystem.md 4節）。
-    const TEMPERATURE_WORDS = ['暑', '寒', '温', '度'];
+  it('天気の名前に、気象庁の定義を持つ語を使わない', () => {
+    // 気温を決める値（ambient_temperature・日射と蓄熱の補正）はいずれも仮の値なので、
+    // 数値の定義を持つ名前は調整のたびに実態とずれる（ClimateSystem.md 4節）。
+    const DEFINED_TERMS = ['猛暑', '夏日', '熱帯夜', '冬日'];
     for (const weather of ['storm', 'heavy_rain', 'light_rain', 'cloudy', 'clear', 'sunny', 'scorching']) {
       const name = locale.symbol(weather).displayName;
-      for (const word of TEMPERATURE_WORDS) expect(name.includes(word), `${weather}: '${name}'`).toBe(false);
+      for (const term of DEFINED_TERMS) expect(name.includes(term), `${weather}: '${name}'`).toBe(false);
     }
   });
 
