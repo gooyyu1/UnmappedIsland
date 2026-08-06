@@ -213,6 +213,34 @@ property_tag_texts:
   nutrition:
     display_name: 栄養
 
+# シンボル型プロパティの値（GameElementDefinition.md 6.6節）。天気は状況エリアの空の窓に名前として
+# 出るので、絵だけでは見分けられない晴天どうし（晴れ・快晴・炎天）を名前が区別する。
+# いずれも空の様子を表す語で揃える——気温は別のプロパティ（ambient_temperature）が持つため、
+# 「猛暑」のような気温の語をここへ混ぜない。
+symbol_texts:
+  # 天気（ClimateSystem.md 4節）。日射の弱い順。
+  storm:
+    display_name: 嵐
+  heavy_rain:
+    display_name: 大雨
+  light_rain:
+    display_name: 小雨
+  cloudy:
+    display_name: 曇り
+  clear:
+    display_name: 晴れ
+  sunny:
+    display_name: 快晴
+  scorching:
+    display_name: 炎天
+  # 季節（ClimateSystem.md 2節）。calm→wet→dryの固定順で巡回する。
+  calm:
+    display_name: 穏やかな季節
+  wet:
+    display_name: 雨季
+  dry:
+    display_name: 乾季
+
 # 土地の名前（TerrainGeneration.md 3.6節）。同じ型が島に1つだけならdisplay_nameが、複数あるなら
 # 亜種（variants）の名前がその土地の名前になる。亜種の名前は型の名前へ足すのではなく、置き換える。
 location_texts:
