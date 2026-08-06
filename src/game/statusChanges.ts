@@ -32,3 +32,20 @@ export function statusChangesBetween(
   }
   return changes;
 }
+
+/**
+ * 操作のあとの増減の記号を求める。`previous`は今出ている記号。
+ *
+ * **記号が消えるのは、時間が経過してなお値が動かなかったときだけです。** 時間を消費しない操作
+ * （箱へ入れる、並べ替える）は行動の区切りではないので、そこで値が動かなくても直前の行動の記号を
+ * 消しません。荷重のように時間を消費せずに動く項目もあるため、動いた項目だけは上書きします。
+ */
+export function statusChangesAfter(
+  previous: ReadonlyMap<string, StatusDelta>,
+  before: readonly StatusContent[],
+  after: readonly StatusContent[],
+  timePassed: boolean,
+): ReadonlyMap<string, StatusDelta> {
+  const changes = statusChangesBetween(before, after);
+  return timePassed ? changes : new Map([...previous, ...changes]);
+}
