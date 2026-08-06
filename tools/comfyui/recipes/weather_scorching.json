@@ -3,25 +3,29 @@
     "src/assets/weather/scorching.png を作り直すためのレシピ。build.py が読む。",
     "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 空の絵 節）。",
     "",
-    "**この1枚もSDXLで生成しない**（理由と作りは weather_sunny.json と同じ）。灼熱は特に外れやすく、",
-    "太陽を頼めば夕景、外せば霧のような灰色の空になった。",
+    "**この1枚もSDXLで生成しない**（理由と作りは weather_sunny.json と同じ）。",
     "",
-    "太陽は枠の外に置き、右上の焼き切れた白と、下へ向かって濃くなる琥珀色の霞だけで暑さを見せる。",
-    "霞を下側へ置くのは、そこが横型で白い桁の紙が載る場所で、白いままだと紙が沈むため。",
-    "白飛びは右上の角だけに留める。広げると、縦型で天候名が載る右下まで白くなって字が沈む。"
+    "灼熱は「暑い空」ではなく**強い日差し**として描く。大きく白く飛んだ太陽と、そこから画面を",
+    "横切る長い光条で見せる。日差しの強い晴れ（sunny）との差は、太陽の大きさと光条の有無。",
+    "",
+    "光条の向き・太さ・濃さは seed が振る。等間隔・等幅に並べると光ではなく星形の図形に見える。",
+    "",
+    "太陽を右端まで寄せない。縦型は絵の上端4割しか映らないので、右上へ寄せるほど、その真下にある",
+    "天候名の居場所が白飛びに飲まれる。"
   ],
   "output": "src/assets/weather/scorching.png",
   "paint": {
     "size": [2048, 640],
-    "stops": ["#9aacb4@0", "#c3b085@0.5", "#a8814f@1"],
-    "glow": [0.92, 0.05, 0.34, 0.8],
-    "glowColor": "#fffcf0",
-    "core": 0,
+    "stops": ["#2b74b4@0", "#4f92c6@0.55", "#7ab0d0@1"],
+    "glow": [0.78, 0.12, 0.5, 1.0],
+    "glowColor": "#fffdf2",
+    "core": 0.085,
+    "rays": [22, 2.2, 0.75],
     "noise": 0.012,
-    "seed": 1
+    "seed": 3
   },
   "edit": {
-    "prompt": "Repaint this image as a hand-painted watercolour sky in extreme heat, looking up at the sky from the open sea. Keep the existing composition and colours exactly as they are: a hazy pale sky at the top, a small tight blinding white glare only in the very top right corner, and amber and dusty ochre heat haze deepening toward the bottom. Keep the paint dense everywhere else, do not wash the rest of the frame out to plain white. Add soft painterly brush texture and faint shimmering distortion in the haze. The entire frame is sky: no sun disc, no sea, no water, no horizon line, no land, no clouds, no birds, no text. Muted desaturated colours, soft low contrast, gently blended edges, matte painting, game background art.",
+    "prompt": "Repaint this image as a hand-painted watercolour sky under a blinding scorching midday sun, looking up at the sky from the open sea. Keep the existing composition and colours exactly as they are: the blue sky, the big blazing white sun in the upper right, and the long straight rays of light radiating from it down across the frame. Keep the rays straight and distinct, keep the white glare tight around the sun, and keep the blue dense everywhere away from the sun, especially along the bottom edge and the lower right corner. Add soft painterly brush texture. The entire frame is sky: no clouds, no sea, no water, no horizon line, no land, no birds, no text. Soft low contrast, gently blended edges, matte painting, game background art.",
     "seed": 1
   },
   "postprocess": {

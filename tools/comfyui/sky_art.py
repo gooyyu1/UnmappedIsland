@@ -1,12 +1,12 @@
 """空の下地を描く（生成ではなく計算で作る）。
 
 雲の無い空——日差しの強い晴れと灼熱——は、SDXLに頼むと必ず余計な物が付いてくる。太陽の円盤は
-水平線際へ降りて夕景になり、外すと今度は雲と陸が湧く。**縦のグラデーションと光の滲みしか無い絵は、
+水平線際へ降りて夕景になり、外すと今度は雲と陸が湧く。**縦のグラデーションと光しか無い絵は、
 計算で描く方が速くて確実**なので、ここで下地を作り、質感だけをQwen Image Editに足させる
 （README「空の絵」節）。
 
     python sky_art.py --out base.png --size 2048 640 \
-        --stop "#1a5fa6@0" --stop "#9fc6dd@1" --glow 0.78,0.2,0.42,1.0 --core 0.05
+        --stop "#1a5fa6@0" --stop "#9fc6dd@1" --glow 0.78,0.2,0.42,1.0 --core 0.05 --rays 22,2.2,0.75
 
 PIL と numpy が要る。ComfyUI同梱の .venv のPythonで動く（README参照）。
 """
@@ -62,6 +62,41 @@ def add_glow(
     return result
 
 
+def add_rays(
+    rgb: np.ndarray,
+    x: float,
+    y: float,
+    count: int,
+    length: float,
+    strength: float,
+    color: np.ndarray,
+    seed: int,
+) -> np.ndarray:
+    """光条（太陽から放射状に伸びる筋）を載せる。中心と距離の測り方は add_glow と同じ。
+
+    筋の向き・太さ・濃さは種から振る。等間隔・等幅に並べると、光ではなく星形の図形に見えるため。
+    """
+    height, width = rgb.shape[:2]
+    dx = (np.arange(width) - x * width) / height
+    dy = (np.arange(height) - y * height) / height
+    distance = np.hypot(dx[None, :], dy[:, None])
+    angle = np.arctan2(dy[:, None], dx[None, :])
+
+    generator = np.random.default_rng(seed)
+    field = np.zeros_like(distance)
+    for _ in range(count):
+        direction = generator.uniform(-np.pi, np.pi)
+        spread = generator.uniform(0.012, 0.055)
+        weight = generator.uniform(0.4, 1.0)
+        offset = np.abs((angle - direction + np.pi) % (2 * np.pi) - np.pi)
+        field += weight * np.exp(-((offset / spread) ** 2))
+
+    # 根元は滲みが担うので、筋は距離で素直に細らせるだけでよい。
+    radial = np.clip(1.0 - distance / length, 0.0, 1.0) ** 1.5
+    amount = np.clip(field * radial * strength, 0.0, 1.0)
+    return rgb + (color - rgb) * amount[:, :, None]
+
+
 def add_noise(rgb: np.ndarray, amount: float, seed: int) -> np.ndarray:
     """一様な面のままだと、Qwen Image Editが掴む手掛かりが無く、絵として何も足されない。"""
     if amount <= 0:
@@ -78,15 +113,21 @@ def main() -> None:
     parser.add_argument("--glow", help="X,Y,半径,強さ（いずれも割合。半径は高さに対する割合）")
     parser.add_argument("--glow-color", default="#ffffff")
     parser.add_argument("--core", type=float, default=0.0, help="光の中心を色で埋める半径（高さに対する割合）")
+    parser.add_argument("--rays", help="本数,長さ,強さ。--glowと同じ中心から放射状に伸びる筋")
     parser.add_argument("--noise", type=float, default=0.01, help="面に載せる粒の強さ（0〜1）")
-    parser.add_argument("--seed", type=int, default=1, help="粒の並び。下地を選び直したいとき用")
+    parser.add_argument("--seed", type=int, default=1, help="粒の並びと光条の振り方。下地を選び直すとき用")
     args = parser.parse_args()
 
     width, height = args.size
+    color = parse_stop(f"{args.glow_color}@0")[1]
     rgb = gradient(width, height, [parse_stop(s) for s in args.stop])
     if args.glow:
         x, y, radius, strength = (float(v) for v in args.glow.split(","))
-        rgb = add_glow(rgb, x, y, radius, strength, parse_stop(f"{args.glow_color}@0")[1], args.core)
+        # 筋は滲みより先に置く。滲みを後から重ねることで、根元が光に飲まれて自然に繋がる。
+        if args.rays:
+            count, length, ray_strength = (float(v) for v in args.rays.split(","))
+            rgb = add_rays(rgb, x, y, int(count), length, ray_strength, color, args.seed)
+        rgb = add_glow(rgb, x, y, radius, strength, color, args.core)
     rgb = add_noise(rgb, args.noise, args.seed)
 
     out = Path(args.out)
