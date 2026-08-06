@@ -78,9 +78,11 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
       label.setOrigin(0, 0).setPosition(panel.x + padX, panel.y + padY);
     } else {
       // 縦型は日時の右。下端を日時と揃えると、絵の空いた右上がひと続きになる。
-      label
-        .setOrigin(1, 1)
-        .setPosition(panel.x + panel.width - padX, calendarY + FlipCalendar.height(metrics));
+      //
+      // 文字の枠ではなくベースラインを桁の紙の下端に合わせる。枠の下端で揃えると、下に伸びる字を
+      // 持たない和文では枠の中のディセンダ分だけ文字が浮いて見えるため。
+      const baseline = calendarY + FlipCalendar.height(metrics) - label.getTextMetrics().ascent;
+      label.setOrigin(1, 0).setPosition(panel.x + panel.width - padX, baseline);
     }
 
     // 絵の上に載せるものは絵と同じ器へ入れる。器を後から表示リストへ足すと、外に置いたものが
