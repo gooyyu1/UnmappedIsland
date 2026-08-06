@@ -201,13 +201,14 @@ describe('同梱の表示文字列ファイル', () => {
     }
   });
 
-  it('天気の名前に、気象庁の定義を持つ語を使わない', () => {
-    // 気温を決める値（ambient_temperature・日射と蓄熱の補正）はいずれも仮の値なので、
+  it('天気の名前に、気温の暑さの語と気象庁の定義を持つ語を使わない', () => {
+    // 天気が表すのは日射そのもの（＝原因）で、気温の暑さはそこから生まれる結果であり、別の
+    // プロパティ（ambient_temperature）が持つ。また気温を決める値はいずれも仮の値なので、
     // 数値の定義を持つ名前は調整のたびに実態とずれる（ClimateSystem.md 4節）。
-    const DEFINED_TERMS = ['猛暑', '夏日', '熱帯夜', '冬日'];
+    const FORBIDDEN = ['暑', '夏日', '熱帯夜', '冬日'];
     for (const weather of ['storm', 'heavy_rain', 'light_rain', 'cloudy', 'clear', 'sunny', 'scorching']) {
       const name = locale.symbol(weather).displayName;
-      for (const term of DEFINED_TERMS) expect(name.includes(term), `${weather}: '${name}'`).toBe(false);
+      for (const term of FORBIDDEN) expect(name.includes(term), `${weather}: '${name}'`).toBe(false);
     }
   });
 
