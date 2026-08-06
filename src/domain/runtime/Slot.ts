@@ -339,6 +339,15 @@ export class Slot {
     return this._cells.find((c) => c !== undefined && c.members.includes(obj));
   }
 
+  /**
+   * objが自分1個だけでセルを占めているなら、そのスタック。既存スタックへ合流していれば（＝新しいセルを
+   * 消費していなければ）undefined。「合流は枠を消費しない」を、位置を決める側が問い合わせるための口。
+   */
+  findOwnStack(obj: WorldObject): ObjectStack | undefined {
+    const stack = this.findStackContaining(obj);
+    return stack !== undefined && stack.members.length === 1 ? stack : undefined;
+  }
+
   /** candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければundefined）。 */
   findMatchingStack(candidate: WorldObject): ObjectStack | undefined {
     return this._cells.find((c) => c !== undefined && c.matches(candidate));

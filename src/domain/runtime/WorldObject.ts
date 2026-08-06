@@ -847,8 +847,8 @@ export class EffectSite {
   /** 捕捉時のoriginStackのセル位置。空セルが除去される非fixedPositionsでは、同種が消えた後はindexOfStackで引けなくなるため捕捉値が要る。 */
   private readonly stackIndexAtCapture: number;
 
-  /** 直前にこの位置へ置いた置き換えオブジェクトのスタック（まだ1つも置いていなければundefined）。 */
-  private lastPlacedStack: ObjectStack | undefined;
+  /** 次の1つを「その隣」へ並べる基準になるスタック。直前にセルを消費して置いた置き換えオブジェクトが入る（まだ誰も消費していなければundefined＝originの位置が基準）。 */
+  private anchorStack: ObjectStack | undefined;
 
   constructor(
     parent: WorldObject,
@@ -864,8 +864,9 @@ export class EffectSite {
 
   /**
    * 置き換えオブジェクトをoriginが居た位置へ配置する（Slot.placeSameSlot参照）。1つの効果が複数のオブジェクトを
-   * 生む場合、2個目以降は直前に置いたものの隣へ続けて並ぶ。空いた1つのセルを取り合わせると、2個目以降は
-   * 置き場所を失ってfallbackで外へこぼれてしまうため（ヤシの実の皮がアイテムレーンへ落ちる）。
+   * 生む場合、位置を引き継ぐのは新しいセルを要る最初の1つで、以降はその隣へ続けて並ぶ。空いた1つのセルを
+   * 取り合わせると、2個目以降は置き場所を失ってfallbackで外へこぼれてしまうため（ヤシの実の皮がアイテム
+   * レーンへ落ちる）。
    *
    * 戻り値: 配置できたらtrue。falseなら呼び出し側がfallbackへ委ねる。
    */
@@ -874,14 +875,19 @@ export class EffectSite {
     const placed =
       spawned.insertSameSlot(this.parent, slot.def.globalId, this.nextPlacement(slot), wellKnown) ===
       undefined;
-    if (placed) this.lastPlacedStack = slot.findStackContaining(spawned);
+
+    // 既存スタックへ合流したもの（findOwnStackがundefined）はセルを消費しないため基準にしない——originの
+    // 位置はまだ誰も引き継いでおらず、次の1つのために空けておく。配置に失敗したものも同じ扱いになる。
+    const ownStack = placed ? slot.findOwnStack(spawned) : undefined;
+    if (ownStack !== undefined) this.anchorStack = ownStack;
+
     return placed;
   }
 
-  /** 次の置き換えオブジェクトの置き場所。2個目以降は「直前に置いたものの隣」＝同種が残っている場合と同じ扱いになる。 */
+  /** 次の置き換えオブジェクトの置き場所。基準になるスタックが居れば「その隣」＝同種が残っている場合と同じ扱いになる。 */
   private nextPlacement(slot: Slot): SameSlotPlacement {
-    if (this.lastPlacedStack !== undefined) {
-      return new SameSlotPlacement(slot.indexOfStack(this.lastPlacedStack), true);
+    if (this.anchorStack !== undefined) {
+      return new SameSlotPlacement(slot.indexOfStack(this.anchorStack), true);
     }
     return new SameSlotPlacement(this.originCellIndex(slot), this.originKindRemains);
   }
