@@ -401,7 +401,7 @@ UI が切り替えるのは次の 2 点だけです。
 - 一覧はビルド時に作ります（`import.meta.glob`）。ファイル名が実在の天気かどうかは自動テスト
   （`tests/game/weatherArt.test.ts`）が検査します。理由は[カードの絵](#カードの絵)と同じです。
   天気は土地と違って移動を待たずに変わるため、遅延ロードはせず起動時に読み切ります。
-- 絵は `tools/comfyui/recipes/weather_<識別子>.json` から作り直せます（7 枚で 2.4MB）。
+- 絵は `tools/comfyui/recipes/weather_<識別子>.json` から作り直せます（7 枚で 2.6MB）。
 
 ### オプションバー (Options Bar)
 
