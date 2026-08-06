@@ -123,6 +123,25 @@ python build.py recipes/card_frame.json
   ただし置ける場所は余白の 5px しかないため、広く薄く散らさず**狭く濃く**します（置き換え前の影が
   ほとんど見えなかったのは、狭い場所へ薄く散らしていたためです）。
 
+## 空の絵（状況エリア）
+
+天気ごとの `src/assets/weather/<天気の識別子>.png`（仕様は
+[docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) 空の絵 節）。プロンプトは
+`prompts/weather.json`、レシピは `recipes/weather_<識別子>.json` です。後処理はレーンの背景と同じで、
+生成 2048×640・保持 1024×320。
+
+```bash
+python build.py recipes/weather_storm.json
+```
+
+**構図の当たり外れが大きいので、必ずシードを振ってから選びます。** 1 枚を縦型・横型それぞれの窓へ
+cover で敷くため、縦型では上端の 4 割ほどしか映りません。「主題が右上にあり、海が下端の帯に留まって
+いる」絵は 5〜6 枚に 1 枚です。判断は生成物の原寸ではなく、**窓の実寸（縦型 1000×120、横型
+430×208）へ切り出して**行ってください。原寸で月に見えた太陽が、実寸では太陽として読めます。
+
+天気ごとの外し方（太陽を頼むと夕景になる、雨を全面へ降らせると雲が縞に埋もれる、など）は
+`prompts/weather.json` の各エントリの `_note` にあります。
+
 ## 情報エリアの背景（9patch）
 
 本のページを模した枠付きの面で、`NineSlice` で引き伸ばして使います（`informationArt.ts`）。
@@ -189,6 +208,7 @@ custom_nodes/unmapped_island_seamless  →  <インストール先>\ComfyUI\cust
 | `workflows/lane_background_sdxl.api.json` | API 形式のワークフロー（`$名前` がプレースホルダ）。既定 |
 | `workflows/lane_background_sdxl_tiling.api.json` | 上記の、左右が繋がった絵を生成する版 |
 | `prompts/lane_backgrounds.json` | 土地ごとのプロンプト |
+| `prompts/weather.json` | 天気ごとの空のプロンプト |
 | `recipes/*.json` | 出力 1 枚ぶんの、生成と後処理の設定 |
 
 ## 設計

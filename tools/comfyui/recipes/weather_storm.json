@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "src/assets/weather/storm.png を作り直すためのレシピ。build.py が読む。",
+    "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 空の絵 節）。",
+    "",
+    "レーンの背景と作風を揃えるため、LoRAは同じ watercolor を 0.8 で当てる（トリガー語は言わない）。",
+    "oilifyRadius が 0 なのも同じ理由で、輪郭を和らげる役目はLoRAが担う。",
+    "",
+    "左右へ繰り返さないので、タイリングのワークフローは使わない。",
+    "seedを選んでいるのは、雲が右上で最も厚くなる絵を採るため。"
+  ],
+  "output": "src/assets/weather/storm.png",
+  "prompts": "weather.json",
+  "prompt": "weather_storm",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 7701,
+  "postprocess": {
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 0,
+    "oilifyLevels": 12
+  }
+}
