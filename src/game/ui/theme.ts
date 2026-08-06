@@ -18,6 +18,8 @@ export const SIZE = {
   iconButton: 88,
   /** 状況アイコン（条件）。今の状態を示すだけなので、押せるボタンの中では最も小さい。 */
   conditionButton: 48,
+  /** 地図・装備・怪我のボタンに載せるアイコンの一辺（絵でも絵文字でもこの大きさに揃える）。 */
+  slotButtonIcon: 64,
   radius: 12,
   /**
    * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md スクロールバー節）。
