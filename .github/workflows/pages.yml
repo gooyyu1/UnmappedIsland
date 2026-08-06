@@ -28,6 +28,8 @@ on:
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
+# ここの宣言は全ジョブへ継承される。ジョブ側でpermissionsを宣言すると、継承ではなくここの置き換えに
+# なる。deployにもid-token: write（Pagesへのデプロイに要る）が渡るよう、ジョブ側には置かない。
 permissions:
   contents: read
   pages: write
@@ -205,9 +207,6 @@ jobs:
     name: deploy
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
