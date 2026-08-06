@@ -37,7 +37,7 @@ const NAME_MARGIN = 8;
 const NAME_STROKE = 4;
 
 /**
- * 道のカードの左下に出す矢印の大きさと縁の太さ（u単位）。名前の文字（30u）の2倍ほど取り、
+ * 道のカードの左下に出す矢印の大きさと縁の太さ（u単位）。名前の文字（30u）の1.5倍ほど取り、
  * カードを縮めて並べても一目で道と分かるようにする。
  *
  * 絵文字（➡）ではなく図形で描く。字が無いフォントでは豆腐になるうえ、絵文字として描かれると
@@ -46,8 +46,8 @@ const NAME_STROKE = 4;
  * 縁は名前の縁取り（NAME_STROKE）より細い。名前は文字の隙間を縁取りが埋めないよう太らせるが、
  * 矢印は一続きの塗りなので、太らせると形そのものが鈍る。
  */
-const ROAD_ARROW_WIDTH = 68;
-const ROAD_ARROW_HEIGHT = 60;
+const ROAD_ARROW_WIDTH = 51;
+const ROAD_ARROW_HEIGHT = 45;
 const ROAD_ARROW_STROKE = 2;
 
 /**
