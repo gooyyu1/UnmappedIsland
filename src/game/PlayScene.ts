@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
-import { PlayScreenLayout } from './layout/PlayScreenLayout';
+import { DISPLAY_PADDING, PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
@@ -64,8 +64,7 @@ const BAR_PADDING = 16;
 const OPTIONS_BAR_PADDING_X = 24;
 const FILTER_BAR_PADDING_X = 20;
 
-/** キャラクター表示エリア・ステータスエリアの内側パディング。 */
-const DISPLAY_PADDING = 16;
+/** ステータスエリアの内側パディング（キャラクター表示エリア側はDISPLAY_PADDING）。 */
 const STATUS_PADDING = 24;
 
 /**

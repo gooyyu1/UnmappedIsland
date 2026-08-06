@@ -6,12 +6,17 @@ import { COLOR } from './theme';
 import { drawBox } from './shapes';
 import { weatherTexture } from './weatherArt';
 
-/** 状況エリアのうち、空の絵を敷く範囲までの余白（紙に貼った窓に見えるよう、四辺を少し残す）。 */
-const PANEL_INSET_PORTRAIT = { x: 16, y: 8 };
-const PANEL_INSET_LANDSCAPE = { x: 8, y: 8 };
+/**
+ * 状況エリアのうち、空の絵を敷く範囲までの余白（紙に貼った窓に見えるよう、四辺を少し残す）。
+ *
+ * 縦型の上だけが広い。ここはオプションバーの下の梁と接する辺で、窓を梁から離さないと
+ * 帯に貼り付いて見えるため。
+ */
+const PANEL_INSET_PORTRAIT = { x: 16, top: 28, bottom: 8 };
+const PANEL_INSET_LANDSCAPE = { x: 8, top: 8, bottom: 8 };
 
 /** 窓の内側の余白。日時と天候名はこの内側に収める。 */
-const CONTENT_PADDING_PORTRAIT = { x: 24, y: 20 };
+const CONTENT_PADDING_PORTRAIT = { x: 24, y: 16 };
 const CONTENT_PADDING_LANDSCAPE = { x: 20, y: 16 };
 
 /** 窓の角の丸めと縁の太さ。 */
@@ -44,9 +49,9 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
     const inset = metrics.isLandscape ? PANEL_INSET_LANDSCAPE : PANEL_INSET_PORTRAIT;
     const panel: Rect = {
       x: area.x + metrics.px(inset.x),
-      y: area.y + metrics.px(inset.y),
+      y: area.y + metrics.px(inset.top),
       width: Math.max(0, area.width - metrics.px(inset.x) * 2),
-      height: Math.max(0, area.height - metrics.px(inset.y) * 2),
+      height: Math.max(0, area.height - metrics.px(inset.top + inset.bottom)),
     };
 
     this.addSky(scene, metrics, panel, content.weather);

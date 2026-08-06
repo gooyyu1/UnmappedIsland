@@ -22,9 +22,9 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.optionsBar).toEqual({ x: 0, y: 0, width: 1080, height: 120 });
     expect(layout.fieldArea).toEqual({ x: 0, y: 720, width: 1080, height: 1080 });
     expect(layout.filterBar).toEqual({ x: 0, y: 1800, width: 1080, height: 120 });
-    expect(layout.situationArea.height).toBe(172);
-    // キャラクターエリア（キャラクター表示＋ステータス）は1032×428。
-    expect(layout.characterDisplay.height).toBe(428);
+    expect(layout.situationArea.height).toBe(156);
+    // キャラクターエリア（キャラクター表示＋ステータス）は1032×444。
+    expect(layout.characterDisplay.height).toBe(444);
     expect(layout.characterDisplay.width).toBe(460);
     expect(layout.statusArea.width).toBe(572);
   });
@@ -35,7 +35,7 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.situationArea.y).toBe(layout.informationContent.y);
     expect(layout.characterDisplay.y).toBe(layout.situationArea.y + layout.situationArea.height);
     expect(layout.statusArea.y).toBe(layout.characterDisplay.y);
-    // 下端はフィールドエリアの手前。紙の余白32uはキャラクター表示エリアの内側が受け持つ。
+    // 下端はフィールドエリアの手前。表紙の縁を避ける余白はキャラクター表示エリアの内側が受け持つ。
     expect(layout.characterDisplay.y + layout.characterDisplay.height).toBe(layout.fieldArea.y);
   });
 
@@ -46,8 +46,8 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
     expect(layout.optionsBar).toEqual({ x: 1800, y: 0, width: 120, height: 444 });
     expect(layout.filterBar).toEqual({ x: 1800, y: 444, width: 120, height: 636 });
     expect(layout.situationArea).toEqual({ x: 0, y: 24, width: 446, height: 224 });
-    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 446, height: 428 });
-    expect(layout.statusArea).toEqual({ x: 0, y: 676, width: 446, height: 380 });
+    expect(layout.characterDisplay).toEqual({ x: 0, y: 248, width: 446, height: 412 });
+    expect(layout.statusArea).toEqual({ x: 0, y: 660, width: 446, height: 396 });
   });
 
   it('3レーンは向きによらずフィールドエリアを外周マージン込みで埋める', () => {
@@ -118,8 +118,8 @@ describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
   it('極端に縦長の縦型はキャラクターエリアを引き伸ばさず、オプションバーの上を余らせる', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 2400));
 
-    expect(layout.characterDisplay.height, '内容量ぶんのまま').toBe(428);
-    expect(layout.situationArea.height).toBe(172);
+    expect(layout.characterDisplay.height, '内容量ぶんのまま').toBe(444);
+    expect(layout.situationArea.height).toBe(156);
     expect(layout.optionsBar.y, '余りはオプションバーの上へ').toBe(480);
     expect(layout.informationArea.y, '情報エリアはオプションバーの下から').toBe(600);
     // 下から順に、フィルターバー・フィールドエリア・情報エリアが隙間なく積まれている。
