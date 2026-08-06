@@ -420,7 +420,7 @@ export function fromGameSession(
    */
   const destinationOf = (
     fixture: WorldObject,
-  ): { icon: string; name: string; art: string | undefined } | undefined => {
+  ): { icon: string; name: string; art: string | undefined; road: true } | undefined => {
     if (pathTagId === undefined || !fixture.def.tags.includes(pathTagId)) return undefined;
 
     const path = new Path(fixture, codex.propertyNames);
@@ -428,6 +428,8 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: locationNameOf(path.destinationInstanceId),
       art: path.destination?.def.name,
+      // 名前も絵も行き先のものなので、道であることはカード側の矢印だけが示す。
+      road: true,
     };
   };
 
