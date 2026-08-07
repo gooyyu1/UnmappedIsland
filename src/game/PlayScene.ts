@@ -1235,19 +1235,25 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ同じ大きさで置く（iconArt参照）。
+   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ置く（iconArt参照）。
    *
-   * 絵は背景が透けているので、ボタンの地の色がそのまま下に出る。
+   * **どの絵も同じ大きさで敷く。** 3枚とも同じ寸法のキャンバスに、物だけが実物の大小——開いた地図 >
+   * Tシャツ > 巻いた包帯——のとおり描き分けてある（card_art.pyの--canvas）。UIが物の大きさを測って
+   * 揃えると、その差が消えてしまう。周りは透けているので、ボタンの地の色が下に出る。
    */
   private slotButtonIcon(spec: { art: IconName; icon: string }, rect: Rect): Phaser.GameObjects.GameObject {
     const x = rect.width / 2;
     const y = rect.height / 2;
-    const size = this.metrics.px(SIZE.slotButtonIcon);
+    const canvas = SIZE.slotButtonIcon;
     const texture = iconTexture(spec.art);
     if (texture !== undefined && this.textures.exists(texture)) {
-      return this.add.image(x, y, texture).setOrigin(0.5).setDisplaySize(size, size);
+      return this.add
+        .image(x, y, texture)
+        .setOrigin(0.5)
+        .setDisplaySize(this.metrics.px(canvas.width), this.metrics.px(canvas.height));
     }
-    return addLabel(this, this.metrics, x, y, spec.icon, { size: SIZE.slotButtonIcon }).setOrigin(0.5);
+    // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
+    return addLabel(this, this.metrics, x, y, spec.icon, { size: canvas.height }).setOrigin(0.5);
   }
 
   /**
