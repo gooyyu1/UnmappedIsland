@@ -1,0 +1,38 @@
+{
+  "_comment": [
+    "src/assets/objects/sprained_ankle.png（手当前の足首の捻挫）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "**捻挫は生成では出せない。** 素足（prompts/objects.json の bare_foot）を出させ、腫れと痣は",
+    "Qwen Image Edit で足す。48枚振って分かったことは同ファイルの description にある。",
+    "source を持たない edit は、同じレシピから edit を外したもの——つまり自分の生成——を基準にする。",
+    "",
+    "包帯を巻いた手当済みの絵は、この絵をさらに編集して作る（sprained_ankle_bandaged.json）。",
+    "同じ足から派生させるので、手当ての前後で足が入れ替わらない。"
+  ],
+  "output": "src/assets/objects/sprained_ankle.png",
+  "prompts": "objects.json",
+  "prompt": "bare_foot",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 5,
+  "width": 832,
+  "height": 1280,
+  "edit": {
+    "prompt": "Keep this foot exactly as it is in shape and pose, and move it onto a plain empty white page with a wide empty white margin all around it and a soft grey shadow directly beneath it. Repaint it as a hand painted illustration with warm living skin tones. The ankle is sprained: make the outer ankle swollen and puffy, with a dark bluish purple bruise spreading around the ankle bone and fading into a reddish flush over the top of the foot. The toes and the heel stay normal skin colour. Matte skin, flat even lighting. Nothing else in the image, no text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "_comment": [
+      "足は太い枝（400）よりわずかに小さい。canvas は手当済みと揃える——画像の寸法を揃えておけば、",
+      "手当ての前後で絵が入れ替わっても画面上の大きさが変わらない。"
+    ],
+    "size": "384",
+    "mode": "background",
+    "tolerance": 12,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "canvas": [416, 416]
+  }
+}
