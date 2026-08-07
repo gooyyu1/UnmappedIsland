@@ -400,11 +400,11 @@ export function fromGameSession(
   /**
    * カードを押したときに開く、そのオブジェクトの主要なスロット（持たなければundefined）。
    *
-   * **どのスロットかはワールド側が名指しする**（`item_slot`、GameElementDefinition.md 7.8節）。
+   * **どのスロットかはワールド側が名指しする**（`main_item_slot`、GameElementDefinition.md 7.8節）。
    * UIがスロット名で決めていた頃は、液体の容器のスロット（`content`）が入れ物のスロット（`contents`）と
    * 1文字違いだったおかげで開かれずに済んでいただけで、名前が揃えば水を取り出せてしまう。
    */
-  const openableSlotOf = (object: WorldObject): number | undefined => object.def.itemSlotGlobalId;
+  const openableSlotOf = (object: WorldObject): number | undefined => object.def.mainItemSlotGlobalId;
 
   /** そのカードが中身を持つなら、それを映す場所。持たなければundefined（押しても中身は開かない）。 */
   const contentsOf = (object: WorldObject): CardPlace | undefined =>

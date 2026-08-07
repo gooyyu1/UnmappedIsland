@@ -41,8 +41,8 @@ export class RawObjectDef {
   /** represented_by（7.6節）で指定されたスロット名。未指定ならundefined。 */
   representedBy: string | undefined;
 
-  /** item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
-  itemSlot: string | undefined;
+  /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
+  mainItemSlot: string | undefined;
 
   /** quantitative（7.6節）。個数ではなく量で存在する型か。traitのどれか1つでも宣言していれば真。 */
   quantitative = false;
@@ -65,7 +65,7 @@ export class RawObjectDef {
    * - props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
-   * - stack_order/represented_by/item_slot: 自分自身の指定を優先。無ければちょうど1つのtraitが
+   * - stack_order/represented_by/main_item_slot: 自分自身の指定を優先。無ければちょうど1つのtraitが
    *   指定している必要がある（複数ならエラー）。
    * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: recipes/covers/layer。
    */
@@ -77,7 +77,7 @@ export class RawObjectDef {
     const passiveNodes: YAMLMap[] = [];
     const stackOrderCandidates: Array<[string, YAMLMap]> = [];
     const representedByCandidates: Array<[string, string]> = [];
-    const itemSlotCandidates: Array<[string, string]> = [];
+    const mainItemSlotCandidates: Array<[string, string]> = [];
     const tags: string[] = [];
     let quantitative = this.quantitative;
 
@@ -95,7 +95,7 @@ export class RawObjectDef {
           passiveNodes.push(asMap(passiveNode, `traits.'${traitName}'.passives`));
       if (trait.stackOrder !== undefined) stackOrderCandidates.push([traitName, trait.stackOrder]);
       if (trait.representedBy !== undefined) representedByCandidates.push([traitName, trait.representedBy]);
-      if (trait.itemSlot !== undefined) itemSlotCandidates.push([traitName, trait.itemSlot]);
+      if (trait.mainItemSlot !== undefined) mainItemSlotCandidates.push([traitName, trait.mainItemSlot]);
       // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
       if (trait.quantitative) quantitative = true;
       tags.push(...trait.tags);
@@ -183,15 +183,16 @@ export class RawObjectDef {
     const representedBySlotGlobalId =
       representedByName !== undefined ? loader.slotNames.intern(representedByName) : undefined;
 
-    let itemSlotName = this.itemSlot;
-    if (itemSlotName === undefined) {
-      if (itemSlotCandidates.length > 1)
+    let mainItemSlotName = this.mainItemSlot;
+    if (mainItemSlotName === undefined) {
+      if (mainItemSlotCandidates.length > 1)
         throw new YamlLoadError(
-          `'${this.name}': item_slot が複数のtrait（'${itemSlotCandidates[0][0]}' と '${itemSlotCandidates[1][0]}'）で重複して宣言されています。`,
+          `'${this.name}': main_item_slot が複数のtrait（'${mainItemSlotCandidates[0][0]}' と '${mainItemSlotCandidates[1][0]}'）で重複して宣言されています。`,
         );
-      if (itemSlotCandidates.length === 1) itemSlotName = itemSlotCandidates[0][1];
+      if (mainItemSlotCandidates.length === 1) mainItemSlotName = mainItemSlotCandidates[0][1];
     }
-    const itemSlotGlobalId = itemSlotName !== undefined ? loader.slotNames.intern(itemSlotName) : undefined;
+    const mainItemSlotGlobalId =
+      mainItemSlotName !== undefined ? loader.slotNames.intern(mainItemSlotName) : undefined;
 
     // 量的オブジェクトは注ぐたびにインスタンスが生まれ直すため、生成時ロール（6.2節）を持てない
     // （移すたびに振り直されてしまう、7.6節）。
@@ -217,7 +218,7 @@ export class RawObjectDef {
       combinations,
       representedBySlotGlobalId,
       quantitative,
-      itemSlotGlobalId,
+      mainItemSlotGlobalId,
     );
   }
 }

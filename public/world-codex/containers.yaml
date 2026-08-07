@@ -9,8 +9,8 @@ traits:
   # （ScreenLayout.md スロットの子ウィンドウ節）。
   item_container:
     tags: [container]
-    # 物を出し入れするスロット（7.8節）。カードを押すとここの中身が並ぶ。
-    item_slot: contents
+    # かごを代表する物のスロット（7.8節）。カードを押すとここの中身が並ぶ。
+    main_item_slot: contents
     combinations:
       # 中へ入れる。カードを重ねるだけの操作なので時間はかからない（durationを持たない）。
       # 入るかどうかはcontentsスロットのaccepts/capacityが決めるので、ここでは条件を書かない。
