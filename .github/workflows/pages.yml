@@ -70,23 +70,38 @@ jobs:
           rm -rf site
           mkdir -p site/docs
 
-      - name: Convert markdown files to HTML
+      - name: Prepare shared page header
         run: |
-          # スマホでの表示崩れ対策（狭い画面でも余白を詰めてはみ出させない）。githubのviewport meta
-          # 自体はpandocの既定テンプレートが常に出力するため、ここではarticleラッパーの余白だけ補正する。
-          cat > /tmp/docs-mobile-header.html <<'EOF'
+          # 変換したページと索引ページで同じ見た目にするため、追加のスタイルはここだけに書く
+          # （後続のpandocの--include-in-headerと、索引ページの生成が同じファイルを読む）。
+          cat > /tmp/docs-header.html <<'EOF'
           <style>
+            /*
+             * github-markdown-cssが暗い地を敷くのは.markdown-bodyの内側だけで、その外側は
+             * ブラウザ既定の白のまま残る。articleの余白（margin）がそこに白い枠として出るため、
+             * ページ全体にも同じ地の色を敷く（色はgithub-markdown-darkの地の色と同じ値）。
+             */
+            html,
+            body {
+              margin: 0;
+              background: #0d1117;
+            }
+            /* スマホでの表示崩れ対策（狭い画面でも余白を詰めてはみ出させない）。 */
             @media (max-width: 600px) {
-              .markdown-body { padding: 1rem !important; }
+              .markdown-body {
+                padding: 1rem !important;
+              }
             }
           </style>
           EOF
 
+      - name: Convert markdown files to HTML
+        run: |
           PANDOC_OPTS=(
             --standalone
             --metadata charset=utf-8
             --css=https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css
-            --include-in-header=/tmp/docs-mobile-header.html
+            --include-in-header=/tmp/docs-header.html
             --variable=include-before='<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">'
             --variable=include-after='</article>'
           )
@@ -162,7 +177,7 @@ jobs:
               echo '<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />'
               echo "<title>${title}</title>"
               echo '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css" />'
-              echo '<style>@media (max-width: 600px) { .markdown-body { padding: 1rem !important; } }</style>'
+              cat /tmp/docs-header.html
               echo '</head><body>'
               echo '<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">'
               echo "<h1>${title}</h1>"
