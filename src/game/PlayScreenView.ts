@@ -70,12 +70,6 @@ export interface ObjectCardStack extends CardContent {
   readonly contents?: CardPlace;
 
   /**
-   * 中身の並びで子ウィンドウの右の段を使い切るか（ScreenLayout.md 子ウィンドウ節）。
-   * trueなら、そのカード自身は子ウィンドウに出ない。
-   */
-  readonly contentsFillsWidth?: boolean;
-
-  /**
    * 束のうち1つを別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
    * 動かせない束（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。
    */
@@ -289,12 +283,6 @@ const TREATMENT_SLOT = 'treatment';
 const TREATED_MARK = '🩹';
 
 /**
- * 中身の並びが4枠を超える（＝何枚入るか分からない）と見なす容量。これを超えるスロットは、
- * 子ウィンドウの右の段を並びだけで使い切る（ScreenLayout.md 子ウィンドウ節の枠の数）。
- */
-const WIDE_CONTENT_CAPACITY = 4;
-
-/**
  * そのスロットへ何枚入るか（無制限ならundefined）。acceptsを持たないスロットは無制限（7.1節）で、
  * 複数の規則があるなら一番緩いものが上限になる。
  */
@@ -406,17 +394,6 @@ export function fromGameSession(
     openableSlotOf(object) === undefined ? undefined : { container: object };
 
   /**
-   * 中身の並びへ幅を譲る対象か（子ウィンドウが自分のカードを出さない）。
-   * 何枚入るか分からない入れ物がこちらで、1枠しかない怪我の治療具はカードを出す側に残る。
-   */
-  const contentsFillsWidth = (object: WorldObject): boolean => {
-    const slotId = openableSlotOf(object);
-    if (slotId === undefined) return false;
-    const capacity = slotCapacity(object.def.getSlotDef(slotId));
-    return capacity === undefined || capacity > WIDE_CONTENT_CAPACITY;
-  };
-
-  /**
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
    * 1節）で、実行はカードが映しているオブジェクト自身へ頼む（代表の解決はエンジン側が行う）。
    * 水筒のカードに、中身の水のdrinkがボタンとして出る。
@@ -468,7 +445,6 @@ export function fromGameSession(
     actions: actionsOf(instances[0]),
     place,
     contents: contentsOf(instances[0]),
-    contentsFillsWidth: contentsFillsWidth(instances[0]),
   });
 
   /**
@@ -572,15 +548,23 @@ export function fromGameSession(
       case 'equipment':
         return { owner: game.player.instance, slotId: game.player.equipmentSlotId };
       case 'injuries':
-        return undefined;
+        return { owner: game.player.instance, slotId: game.player.injuriesSlotId };
     }
   };
+
+  /**
+   * プレイヤーがカードを入れられる場所のスロット。**読み取り専用の場所ではundefined**——怪我は
+   * ワールド側の効果だけが付け外しする（ScreenLayout.md）。見出しや容量はこの制限に関わらず
+   * 引きたいので、スロットそのものを返すslotOfとは別にする。
+   */
+  const writableSlotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined =>
+    place === 'injuries' ? undefined : slotOf(place);
 
   /** itemを場所placeへ入れる操作（そこへは入れられないならundefined）。 */
   const moveInto =
     (item: WorldObject, from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement): (() => void) | undefined => {
-      const dest = slotOf(place);
+      const dest = writableSlotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
       // 自分の中へは入れられない（籠を籠自身へ、また自分の子孫の中へ）。
       if (typeof place !== 'string' && item.contains(place.container)) return undefined;
@@ -695,7 +679,7 @@ export function fromGameSession(
       const owner = slot.owner === game.player.instance ? characterTexts.displayName : nameOf(slot.owner);
       return locale.slot(slotName).displayNameWithOwner(owner);
     },
-    acceptsCards: (place) => slotOf(place) !== undefined,
+    acceptsCards: (place) => writableSlotOf(place) !== undefined,
     capacityOf: (place) => {
       const slot = slotOf(place);
       return slot === undefined ? undefined : slotCapacity(slot.owner.def.getSlotDef(slot.slotId));

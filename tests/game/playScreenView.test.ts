@@ -301,10 +301,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(injuryCard.contents, '怪我は治療具のスロットを開く').toEqual({ container: injury });
     expect(view.capacityOf(injuryCard.contents!), '治療具は1つだけ').toBe(1);
-    expect(injuryCard.contentsFillsWidth, '1枠しか無いので自分のカードも出す').toBe(false);
 
     expect(basketCard.contents, 'コンテナは中身のスロットを開く').toEqual({ container: basket });
-    expect(basketCard.contentsFillsWidth, '何枚入るか分からないので幅を並びへ譲る').toBe(true);
+    expect(view.capacityOf(basketCard.contents!), 'かごは何枚入るか分からない').toBeGreaterThan(4);
   });
 
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {

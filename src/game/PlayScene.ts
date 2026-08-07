@@ -39,7 +39,7 @@ import { ExplorationWindow } from './ui/ExplorationWindow';
 import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
-import type { ObjectWindowAction } from './ui/ObjectWindow';
+import type { ObjectWindowAction, ObjectWindowTarget } from './ui/ObjectWindow';
 import { ObjectWindow } from './ui/ObjectWindow';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyTab } from './ui/PropertyWindow';
@@ -691,7 +691,15 @@ export class PlayScene extends ResponsiveScene {
    * カードは持たず、見出しと中身の並びだけを出す。
    */
   private openSlotWindow(place: CardPlace): void {
-    this.openChildWindow(undefined, place);
+    this.childWindowCard = undefined;
+    // 場所を開くときも映しているオブジェクトはある——その持ち主（キャラクタ）。
+    this.openChildWindow(
+      {
+        card: { ...characterCardContent(this.view.characterArt, this.locale), name: this.view.characterName },
+      },
+      [],
+      place,
+    );
   }
 
   /**
@@ -705,45 +713,51 @@ export class PlayScene extends ResponsiveScene {
    * 矩形を引くのはウィンドウを開いた時点ではなく押した時点——その間にレーンを送られていることがあるため。
    */
   private openObjectWindow(card: ObjectCardStack): void {
-    this.openChildWindow(card, card.contents);
+    this.childWindowCard = card;
+    this.openChildWindow({ card, description: card.description }, this.windowActions(card), card.contents);
   }
 
-  /**
-   * 子ウィンドウを開く。同時に開けるのは1つだけで、別のものを開くと入れ替わる（中身を映している間は
-   * 手持ちの端が指す先が1つに定まらなくなるため）。
-   */
-  private openChildWindow(card: ObjectCardStack | undefined, place: CardPlace | undefined): void {
-    this.childWindow?.close();
-    this.childWindowCard = card;
-    this.childWindowPlace = place;
-
-    const actions: ObjectWindowAction[] = (card?.actions ?? []).map((action) => ({
+  /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */
+  private windowActions(card: ObjectCardStack): ObjectWindowAction[] {
+    return card.actions.map((action) => ({
       label: action.name,
       description: action.description,
       minutes: action.minutes,
       enabled: action.enabled,
       reason: action.reason,
       onTap: () => {
-        const origin = card === undefined ? undefined : this.rectOf(card);
+        // 矩形を引くのは押した時点——開いてから押すまでにレーンを送られていることがあるため。
+        const origin = this.rectOf(card);
         this.closeChildWindow();
         this.applyToWorld(action.execute, { origin });
       },
     }));
+  }
+
+  /**
+   * 子ウィンドウを開く。同時に開けるのは1つだけで、別のものを開くと入れ替わる（中身を映している間は
+   * 手持ちの端が指す先が1つに定まらなくなるため）。
+   */
+  private openChildWindow(
+    object: ObjectWindowTarget,
+    actions: readonly ObjectWindowAction[],
+    place: CardPlace | undefined,
+  ): void {
+    this.childWindow?.close();
+    this.childWindowPlace = place;
 
     this.childWindow = new ObjectWindow(this, this.metrics, {
-      // 中身の並びへ幅を譲る対象（コンテナ）は、自分のカードを出さない（ScreenLayout.md 子ウィンドウ節）。
-      card: card?.contentsFillsWidth === true ? undefined : card,
-      title: card?.name ?? (place === undefined ? '' : this.view.nameOf(place)),
-      description: card?.description,
-      actions,
-      contents:
+      object,
+      slot:
         place === undefined
           ? undefined
           : {
+              title: this.view.nameOf(place),
               cards: this.laneCards(this.childWindowCards(), 'down'),
               acceptsCards: this.view.acceptsCards(place),
               capacity: this.view.capacityOf(place),
             },
+      actions,
       area: this.layout.slotWindowArea,
       onClose: () => this.closeChildWindow(),
     });

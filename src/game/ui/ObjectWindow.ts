@@ -63,8 +63,20 @@ export interface ObjectWindowAction {
   readonly reason?: string | undefined;
 }
 
-/** 中身のスロットを持つ対象で、その並びとして出すもの。 */
-export interface ObjectWindowContents {
+/** ウィンドウが映しているオブジェクト。 */
+export interface ObjectWindowTarget {
+  /** 左に置くカード。見た目だけを使う（操作は引き継がない）。見出しの名前もここから採る。 */
+  readonly card: CardContent;
+
+  /** 右の段に出す説明文。スロットを映すウィンドウでは使わない（そちらが右の段を使う）。 */
+  readonly description?: string;
+}
+
+/** ウィンドウが映しているスロット。 */
+export interface ObjectWindowSlot {
+  /** 最上段の見出し。スロットは必ず持ち主のものなので、持ち主込みの名前を呼び出し側が組み立てて渡す。 */
+  readonly title: string;
+
   /** 並べるカード。枠数は固定ではなく、はみ出した分は横スクロールで送る。 */
   readonly cards: readonly (CardContent | undefined)[];
 
@@ -74,25 +86,16 @@ export interface ObjectWindowContents {
    */
   readonly acceptsCards: boolean;
 
-  /** 何枚入るか（無制限ならundefined）。空けておく枠の数の上限になる（laneSlots）。 */
+  /** 何枚入るか（無制限ならundefined）。空けておく枠の数と、自分のカードを出すかを決める。 */
   readonly capacity?: number;
 }
 
 export interface ObjectWindowOptions {
-  /** 最上段の見出し。オブジェクトなら自分の名前、キャラクタのスロットならスロットの名前。 */
-  readonly title: string;
+  /** 映しているオブジェクト。**常に持つ**——どのウィンドウも「何の」ウィンドウかは決まっている。 */
+  readonly object: ObjectWindowTarget;
 
-  /**
-   * 左に置く、その対象自身のカード。見た目だけを使う（操作は引き継がない）。
-   * **右の段を中身の並びへ譲る対象（キャラクタのスロット・コンテナ）は持たない。**
-   */
-  readonly card?: CardContent;
-
-  /** 右の段に出す説明文。中身の並びを出すウィンドウでは使わない（下記）。 */
-  readonly description?: string;
-
-  /** 右の段に出す中身の並び。持つならこちらが説明文より優先される。 */
-  readonly contents?: ObjectWindowContents;
+  /** 映しているスロット。持てば右の段が中身の並びに、持たなければ説明文になる。 */
+  readonly slot?: ObjectWindowSlot;
 
   /** 最下段に横並びにする操作。空でも「閉じる」だけの行になる。 */
   readonly actions: readonly ObjectWindowAction[];
@@ -106,10 +109,11 @@ export interface ObjectWindowOptions {
 /**
  * カードやスロットのボタンを押すと開く子ウィンドウ（ScreenLayout.md 子ウィンドウ節）。
  *
- * **オブジェクト・コンテナ・キャラクタのスロットを1つの部品で扱う。** 組み方はどれも同じで、
- * 最上段が見出し、最下段が操作のボタン、間が「左の自分のカード（持てば）」と「右の説明文か中身の並び」。
+ * **受け取るのはオブジェクト（必須）とスロット（任意）の2つだけ。** 組み方はどれも同じ3段で、
+ * 最上段が見出し、最下段が操作のボタン、間が「左の自分のカード」と「右の説明文か中身の並び」。
+ * スロットを持つかで、見出しと真ん中の右側が決まる。
  *
- * **説明文と中身の並びは同時に出さない。** 縦にも横にも収まらないので、中身を持つ対象では並びを採る。
+ * **説明文と中身の並びは同時に出さない。** 縦にも横にも収まらないので、スロットがあればそちらを採る。
  */
 export class ObjectWindow {
   /**
@@ -124,7 +128,9 @@ export class ObjectWindow {
   private readonly tooltip: Tooltip;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
-    const { card, contents } = options;
+    const contents = options.slot;
+    // 何枚入るか分からないスロットは、右の段を並びだけで使い切る（自分のカードを出さない）。
+    const card = contents !== undefined && fillsWidth(contents) ? undefined : options.object.card;
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
     const actionHeight = metrics.px(ACTION_HEIGHT);
@@ -158,7 +164,10 @@ export class ObjectWindow {
     const board = scene.add.graphics();
     this.objects.push(board);
 
-    const title = addLabel(scene, metrics, 0, 0, options.title, { size: 34, bold: true })
+    const title = addLabel(scene, metrics, 0, 0, contents?.title ?? options.object.card.name, {
+      size: 34,
+      bold: true,
+    })
       .setOrigin(0.5, 0)
       .setAlign('center');
     title.setWordWrapCallback(wrapByCharacter(contentWidth));
@@ -166,9 +175,9 @@ export class ObjectWindow {
     const description =
       contents !== undefined
         ? undefined
-        : addLabel(scene, metrics, 0, 0, options.description ?? NO_DESCRIPTION, {
+        : addLabel(scene, metrics, 0, 0, options.object.description ?? NO_DESCRIPTION, {
             size: 26,
-            color: options.description === undefined ? COLOR.textMuted : COLOR.text,
+            color: options.object.description === undefined ? COLOR.textMuted : COLOR.text,
           }).setLineSpacing(metrics.px(6));
     description?.setWordWrapCallback(wrapByCharacter(columnWidth));
 
@@ -237,10 +246,11 @@ export class ObjectWindow {
     gap: number,
   ): number {
     const limit = Math.min(options.area.width, metrics.width * 0.92);
-    if (options.contents === undefined) return Math.min(metrics.px(DESCRIPTION_WIDTH), limit);
+    const slot = options.slot;
+    if (slot === undefined) return Math.min(metrics.px(DESCRIPTION_WIDTH), limit);
 
-    const own = options.card === undefined ? 0 : metrics.px(SIZE.cardWidth) + gap;
-    return Math.min(own + laneWidthFor(metrics, options.contents) + padding * 2, limit);
+    const own = fillsWidth(slot) ? 0 : metrics.px(SIZE.cardWidth) + gap;
+    return Math.min(own + laneWidthFor(metrics, slot) + padding * 2, limit);
   }
 
   /**
@@ -324,6 +334,14 @@ export class ObjectWindow {
 }
 
 /**
+ * そのスロットが、右の段を並びだけで使い切るか（自分のカードを出さないか）。
+ * 何枚入るか分からないスロット（かご・装備）がこちらで、1枠しかない治療具はカードを出す側に残る。
+ */
+function fillsWidth(slot: ObjectWindowSlot): boolean {
+  return slot.capacity === undefined || slot.capacity > MIN_SLOTS;
+}
+
+/**
  * その中身を並べるのに要るレーンの幅。
  *
  * **枠の数はスロットの容量で決まり、MIN_SLOTSで頭打ち**——1枚しか入らない場所に4枠空けると
@@ -331,7 +349,7 @@ export class ObjectWindow {
  *
  * レーンの左右の余白（CardLaneのSIZE.margin）も足す。カードの幅だけで決めると最後の枠がはみ出す。
  */
-function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowContents): number {
+function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowSlot): number {
   const used = contents.cards.length + (contents.acceptsCards ? 1 : 0);
   const wanted = Math.max(contents.capacity ?? Number.POSITIVE_INFINITY, used);
   const slots = Math.min(MIN_SLOTS, wanted);
