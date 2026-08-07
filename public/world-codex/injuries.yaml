@@ -1,0 +1,25 @@
+# 怪我（injuryタグ）の定義。キャラクタのinjuriesスロットにだけ入る（characters/player_character.yaml）。
+# 種類ごとの値の決め方は docs/world/Injuries.md 参照。
+
+object_defs:
+  # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_coconut）。
+  sprained_ankle:
+    tags: [injury]
+    props:
+      # 治りきるまでの残り。10日（960 tick）で引く（DurabilitySystem.md 1節の規約に載せ、
+      # -1000/tick = 寿命10日）。
+      durability:
+        value: 960000
+        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
+        range: {min: 1, max: 960000}
+        passives:
+          - accumulate:
+              self:
+                durability: -1000
+        on_shortfall:
+          destroy: self
+    passives:
+      # 怪我はinjuriesスロットにしか入らないので、親は常にそれを負ったキャラクタ。
+      - modify:
+          parent:
+            pain: 40

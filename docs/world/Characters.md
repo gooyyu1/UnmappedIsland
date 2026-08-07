@@ -30,12 +30,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`fixed_positions`・`item` を受け入れる・4〜8枠）、`equipment`、`injuries` |
-| プロパティ | `satiety` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
+| プロパティ | `pain` / `satiety` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterArt.ts`。絵が入るまでの繋ぎ） |
 
-`status` タグが付くのは `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の5つで、宣言順もこの順に
-揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
-[`ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節）。
+`status` タグが付くのは `pain` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の6つで、宣言順も
+この順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
+[`ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節）。`pain` が先頭なのは trait 由来の props が
+キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。
 
 ### 値の刻み方（キャラクタ間で共通の規約）
 
@@ -54,6 +55,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   `max` は「最大限に肥満した状態」から絶食で保つ日数、初期値はその1/4（標準体格）。
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る想定（未実装。致死性は無い）。`-100/tick`。
 - **`stamina`（体力）**: 疲労の逆で、tickでは減らない。
+- **`pain`（痛み）**: 負っている怪我（[`Injuries.md`](./Injuries.md)）が `modify` で押し上げる値。自分では
+  動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
+  身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
 - **`load`（荷重）**: 持ち物と装備の重さ（g）。自分では動かず、中身から導出される
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 2節）ので `value` は 0 のまま。`max` が
   「担げる量」そのもので、担ぎ慣れの個人差はここに出る。
@@ -76,10 +80,10 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - `hydration` も残り時間で切る: 残り2日未満で `caution`、残り1日未満で `danger`、
   残り6時間未満で `fatal`。
 - tickで減らない `stamina` は割合で切る: `max` の60%未満で `caution`、20%未満で `danger`。
-- **`load` だけは増える側が悪い**ので、上の「80%で安全域を外れる」は当てはまらない。`max` からの割合で
-  刻む: 1/4 で `watch`、1/2 で `caution`、5/6 で `danger`。空身から始まって荷造りの最中に現れるよう、
-  最初の境目は低めに置く。危険域の段の名前は **`too_heavy`** で固定する——道の `travel` がこの名前で
-  移動可否を見る（[`ContainerSystem.md`](../engine/ContainerSystem.md) 5節）。
+- **`load` と `pain` は増える側が悪い**ので、上の「80%で安全域を外れる」は当てはまらない。`max` からの
+  割合で刻む: 1/4 で `watch`、1/2 で `caution`、5/6 で `danger`。0 から始まって荷造り・怪我の最中に
+  現れるよう、最初の境目は低めに置く。`load` の危険域の段の名前は **`too_heavy`** で固定する——道の
+  `travel` がこの名前で移動可否を見る（[`ContainerSystem.md`](../engine/ContainerSystem.md) 5節）。
 
 ## 選択とセーブ
 

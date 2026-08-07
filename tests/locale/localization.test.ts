@@ -171,14 +171,13 @@ describe('同梱の表示文字列ファイル', () => {
     locale = parseLocale(LOCALE_PATH, readFileSync(LOCALE_PATH, 'utf8'));
   });
 
-  it('カードに並ぶ発見物（item/fixture）はすべて表示名を持つ', () => {
+  it('カードに並ぶもの（item/fixture/injury）はすべて表示名を持つ', () => {
     // 対応表に無いと識別子（thick_branch等）がそのままカードに出るため、UIに出る型には必須とする。
-    const itemTag = codex.tagNames.getId('item');
-    const fixtureTag = codex.tagNames.getId('fixture');
+    const carded = ['item', 'fixture', 'injury'].map((tag) => codex.tagNames.getId(tag));
 
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
       const objectDef = codex.objects.get(globalId);
-      if (!objectDef.tags.includes(itemTag) && !objectDef.tags.includes(fixtureTag)) continue;
+      if (!carded.some((tag) => objectDef.tags.includes(tag))) continue;
       expect(locale.object(objectDef.name).displayName, `${objectDef.name} には表示名が必要`).not.toBe(
         objectDef.name,
       );

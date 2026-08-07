@@ -24,11 +24,23 @@ traits:
           - {tag: item, max: 9999}
         auto_placement: false
       # 怪我。プレイヤーが任意に出し入れするものではなく、ワールド側の効果だけが付け外しする
-      # （UIからの移動・並び替えを許さない、ScreenLayout.md 参照）。怪我のobject_defはまだ無い。
+      # （UIからの移動・並び替えを許さない、ScreenLayout.md 参照）。中身はinjuries.yaml。
       injuries:
         accepts:
           - {tag: injury, max: 9999}
     props:
+      # 今感じている痛み。自分では動かず、injuriesスロットの中の怪我がmodifyで押し上げる
+      # （injuries.yaml）ので、valueは0のまま。増える側が悪いプロパティなので、段はmaxからの
+      # 割合で刻む（docs/world/Characters.md）。
+      pain:
+        tags: [status, health]
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: painless}
+          - {name: sore, min: 25, alert: watch}
+          - {name: hurting, min: 50, alert: caution}
+          - {name: unbearable, min: 83, alert: danger}
       # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。食の好みではなく身体の仕組みを表すため、
       # 満腹度などと違って個体差を持たせず全キャラクタで共通にする。
       vegetable_nutrition:

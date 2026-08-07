@@ -6,6 +6,7 @@ import { Location } from '../../src/domain/runtime/views/Location';
 import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter';
 import { World } from '../../src/domain/runtime/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
@@ -32,7 +33,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
       new WorldSession(codex),
     );
     worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
-    session = new WorldSession(codex, worldView);
+    // 実採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
+    session = new WorldSession(codex, worldView, fixedRng(0));
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');

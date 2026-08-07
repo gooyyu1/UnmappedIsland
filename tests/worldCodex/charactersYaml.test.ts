@@ -80,6 +80,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it.each([
+      ['pain', ['status', 'health']],
       ['satiety', ['status', 'nutrition']],
       ['hydration', ['status', 'nutrition']],
       ['body_fat', ['nutrition']],
@@ -97,12 +98,13 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは5件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは6件で、並び順も揃っている', () => {
       // readPropertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（ScreenLayout.md）。
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
       const status = instance.readPropertiesWithTag(codex.propertyTagNames.getId('status'));
 
       expect(status.map((reading) => reading.name)).toEqual([
+        'pain',
         'satiety',
         'hydration',
         'wakefulness',
@@ -111,7 +113,7 @@ describe('プレイヤーキャラクタの定義', () => {
       ]);
     });
 
-    it.each(['satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
+    it.each(['pain', 'satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
       '%sは0を下限とするrangeを持つ',
       (propertyName) => {
         expect(propOf(def(character), propertyName).range?.min).toBe(0);
@@ -131,6 +133,8 @@ describe('プレイヤーキャラクタの定義', () => {
       ['stamina', 0],
       // 荷重は中身から導出されるので、自分では動かない。
       ['load', 0],
+      // 痛みは負っている怪我から導出されるので、自分では動かない。
+      ['pain', 0],
     ])('%sはtickごとに%iずつ減る', (propertyName, expectedDecay) => {
       expect(decayPerTick(character, propertyName)).toBe(expectedDecay);
     });
@@ -178,24 +182,29 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.isInStage(max - 1, 'full')).toBe(false);
     });
 
-    // 荷重だけは増える側が悪いので、境目は最大値からの割合で刻む（Characters.md）。
-    it('荷重の域は最大値からの割合で切られ、危険域の段だけがtoo_heavyという名前を持つ', () => {
-      const prop = propOf(def(character), 'load');
-      const max = maxOf(character, 'load');
+    // 荷重と痛みは増える側が悪いので、境目は最大値からの割合で刻む（Characters.md）。
+    it.each(['load', 'pain'])('%sの域は最大値からの割合で切られる', (propertyName) => {
+      const prop = propOf(def(character), propertyName);
+      const max = maxOf(character, propertyName);
 
-      expect(prop.alertLevelOf(0), '空身は安全域').toBe('safe');
-      expect(prop.alertLevelOf(max / 4), '1/4で留意域').toBe('watch');
-      expect(prop.alertLevelOf(max / 2), '1/2で要注意域').toBe('caution');
-      expect(prop.alertLevelOf((max * 5) / 6), '5/6で危険域').toBe('danger');
-
-      // 道のtravelがこの名前で見る（locations.yaml・ContainerSystem.md 5節）。
-      expect(prop.isInStage((max * 5) / 6, 'too_heavy')).toBe(true);
-      expect(prop.isInStage((max * 5) / 6 - 1, 'too_heavy')).toBe(false);
+      expect(prop.alertLevelOf(0), '0は安全域').toBe('safe');
+      expect(prop.alertLevelOf(Math.trunc(max / 4)), '1/4で留意域').toBe('watch');
+      expect(prop.alertLevelOf(Math.trunc(max / 2)), '1/2で要注意域').toBe('caution');
+      expect(prop.alertLevelOf(Math.trunc((max * 5) / 6)), '5/6で危険域').toBe('danger');
     });
 
-    it('荷重は増えるほど悪い値として扱われる', () => {
+    it('荷重の危険域の段だけがtoo_heavyという名前を持つ', () => {
+      // 道のtravelがこの名前で見る（locations.yaml・ContainerSystem.md 5節）。
+      const prop = propOf(def(character), 'load');
+      const threshold = (maxOf(character, 'load') * 5) / 6;
+
+      expect(prop.isInStage(threshold, 'too_heavy')).toBe(true);
+      expect(prop.isInStage(threshold - 1, 'too_heavy')).toBe(false);
+    });
+
+    it.each(['load', 'pain'])('%sは増えるほど悪い値として扱われる', (propertyName) => {
       // バーの向きと増減の記号の色が反転する（ScreenLayout.md ステータスエリア節）。
-      expect(propOf(def(character), 'load').worsensUpward).toBe(true);
+      expect(propOf(def(character), propertyName).worsensUpward).toBe(true);
       expect(propOf(def(character), 'stamina').worsensUpward).toBe(false);
     });
 
