@@ -32,6 +32,13 @@ const DESCRIPTION_WIDTH = 760;
  */
 const MIN_SLOTS = 4;
 
+/**
+ * 4枠に収まらないスロットで、**次の枠の頭を覗かせる幅**（u単位）。ちょうど4枠ぶんで切ると、そこで
+ * 終わっているのか右へ送れるのかが分からない。カードの間隔（12u）より広く取って、覗いているのが
+ * 隙間ではなくカードの縁だと分かるようにする。
+ */
+const PEEK_WIDTH = 40;
+
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
 
@@ -186,7 +193,7 @@ export class ObjectWindow {
     if (contents !== undefined) {
       // 枠数の決まっているスロットは、レーンを枠の数まで縮めて中央へ寄せる。幅いっぱいのレーンに
       // 1枠だけ左詰めで置くと、どこへ落とすのかが読み取りにくい。
-      const laneWidth = Math.min(columnWidth, laneWidthFor(metrics, laneSlots(options)));
+      const laneWidth = Math.min(columnWidth, laneWidthFor(metrics, contents));
       this.lane = new CardLane(
         scene,
         metrics,
@@ -233,7 +240,7 @@ export class ObjectWindow {
     if (options.contents === undefined) return Math.min(metrics.px(DESCRIPTION_WIDTH), limit);
 
     const own = options.card === undefined ? 0 : metrics.px(SIZE.cardWidth) + gap;
-    return Math.min(own + laneWidthFor(metrics, laneSlots(options)) + padding * 2, limit);
+    return Math.min(own + laneWidthFor(metrics, options.contents) + padding * 2, limit);
   }
 
   /**
@@ -317,23 +324,19 @@ export class ObjectWindow {
 }
 
 /**
- * 並びに空けておく枠の数。**下限はMIN_SLOTSだが、スロットの容量を超えては空けない**——
- * 1枚しか入らない場所に4枠空けると「4つ入る」と誤って伝わる。
- */
-function laneSlots(options: ObjectWindowOptions): number {
-  const contents = options.contents;
-  if (contents === undefined) return 0;
-  const used = contents.cards.length + (contents.acceptsCards ? 1 : 0);
-  return Math.max(Math.min(MIN_SLOTS, contents.capacity ?? MIN_SLOTS), used);
-}
-
-/**
- * 枠を数えぶん並べるのに要るレーンの幅。
+ * その中身を並べるのに要るレーンの幅。
  *
- * **レーンの左右の余白（CardLaneのSIZE.margin）を足す。** カードの幅だけで決めると、最後の枠が
- * レーンからはみ出す。
+ * **枠の数はスロットの容量で決まり、MIN_SLOTSで頭打ち**——1枚しか入らない場所に4枠空けると
+ * 「4つ入る」と誤って伝わる。頭打ちに掛かるときは、右にまだ続くことが分かるよう次の枠の頭を覗かせる。
+ *
+ * レーンの左右の余白（CardLaneのSIZE.margin）も足す。カードの幅だけで決めると最後の枠がはみ出す。
  */
-function laneWidthFor(metrics: ScreenMetrics, slots: number): number {
+function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowContents): number {
+  const used = contents.cards.length + (contents.acceptsCards ? 1 : 0);
+  const wanted = Math.max(contents.capacity ?? Number.POSITIVE_INFINITY, used);
+  const slots = Math.min(MIN_SLOTS, wanted);
+
   const cards = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);
-  return cards + metrics.px(SIZE.margin) * 2;
+  const peek = wanted > MIN_SLOTS ? metrics.px(PEEK_WIDTH) : 0;
+  return cards + peek + metrics.px(SIZE.margin) * 2;
 }
