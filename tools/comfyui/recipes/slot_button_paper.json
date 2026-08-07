@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "src/assets/slot_button_paper.png を作り直すためのレシピ。build.py が読む。",
+    "地図・装備・怪我のボタンへ敷く紙（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "",
+    "**カードの枠（card_frame.json）と同じ紙から切り出す。** プロンプトもseedも色合わせも同じ値に",
+    "してあるので、生成物は同じ1枚になる。**同じ絵を参照するのは生成の話で、実行時にテクスチャを",
+    "共有はしない**——ボタンとカードは別の概念で、片方の都合がもう片方の描画を壊すため",
+    "（DesignNotes.md）。",
+    "",
+    "atはボタンごとの切り出し位置。同じ場所だと3つのボタンに同じ染みが並び、模様として目に付く。"
+  ],
+  "output": "src/assets/slot_button_paper.png",
+  "prompts": "cards.json",
+  "prompt": "card_paper",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 8102,
+  "buttonPaper": {
+    "at": ["37,40", "37,236", "37,432"],
+    "paper": "#fcf8e6",
+    "wash": 0.4
+  }
+}

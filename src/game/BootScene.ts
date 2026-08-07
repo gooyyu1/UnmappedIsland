@@ -5,7 +5,9 @@ import type { Localization } from '../locale/Localization';
 import { LOCALE_FILE, parseLocale } from '../locale/Localization';
 import cardFrameUrl from '../assets/card_frame.png';
 import flipDigitUrl from '../assets/flip_digit.png';
+import slotButtonPaperUrl from '../assets/slot_button_paper.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
+import { SLOT_BUTTON_PAPER_FRAME, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { FLIP_DIGIT_TEXTURE } from './ui/FlipCalendar';
 import { INFORMATION_ART } from './ui/informationArt';
 import { SEPARATOR_ART } from './ui/separatorArt';
@@ -53,6 +55,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
     // 日時のフリップカードの紙。こちらも読み込めなければ図形で描かれる（FlipCalendar）。
     this.load.image(FLIP_DIGIT_TEXTURE, flipDigitUrl);
+    // スロットボタンの地に敷く紙。ボタン1つぶんずつ縦に並んでいる（読めなければ地は平らな塗り）。
+    this.load.spritesheet(SLOT_BUTTON_PAPER_TEXTURE, slotButtonPaperUrl, {
+      frameWidth: SLOT_BUTTON_PAPER_FRAME.width,
+      frameHeight: SLOT_BUTTON_PAPER_FRAME.height,
+    });
     // 情報エリア（フィールドエリアの左／上）の背景。向きごとに1枚ずつ。
     for (const [texture, url] of INFORMATION_ART) this.load.image(texture, url);
     // エリアの境目に敷く帯。

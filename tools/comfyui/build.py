@@ -241,6 +241,18 @@ def main() -> None:
                     "--shadow-alpha", str(frame["shadowAlpha"]),
                 ],
             )
+        elif "buttonPaper" in recipe:
+            paper = recipe["buttonPaper"]
+            run(
+                "button_paper.py",
+                [
+                    str(raw),
+                    "--out", str(processed),
+                    *[str(v) for at in paper["at"] for v in ("--at", at)],
+                    "--paper", paper["paper"],
+                    "--wash", str(paper["wash"]),
+                ],
+            )
         elif "flipCard" in recipe:
             flip = recipe["flipCard"]
             run(

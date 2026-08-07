@@ -302,6 +302,7 @@ custom_nodes/unmapped_island_seamless  →  <インストール先>\ComfyUI\cust
 | `card_art.py` | カードに載る形へ整える（紙・物・影の分離と、出力サイズの決定） |
 | `prompts/objects.json` | アイテムごとのプロンプト |
 | `card_frame.py` | 紙のテクスチャからカードの枠を組み立てる |
+| `button_paper.py` | 同じ紙からスロットボタンの地を切り出す（カードとテクスチャを共有しないため） |
 | `flip_card.py` | 紙のテクスチャから日時のフリップカード（穴・リング・影込み）を組み立てる |
 | `page_art.py` | 本の絵から片ページを切り出し、9patchの素材にする |
 | `icon_mark.py` | アイコンへ絵文字の形を色替えして重ねる（血の印など） |

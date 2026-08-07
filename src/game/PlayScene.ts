@@ -21,10 +21,10 @@ import type { StatusDelta } from './statusChanges';
 import { statusChangesAfter, statusChangesBetween } from './statusChanges';
 import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
-import { Button } from './ui/Button';
+import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
 import { characterCardContent } from './ui/characterArt';
-import { Card, CARD_FRAME_TEXTURE, cardFace } from './ui/Card';
+import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
@@ -106,19 +106,6 @@ const BRIGHTEN_MS = 320;
  * 落ちていく途中を見せたいため。移動にかかる時間がこれより短ければ、その分だけで落とし切る。
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
-
-/**
- * 地図・装備・怪我のボタンへ敷く、カードの紙の切り出し（CARD_FRAME_TEXTURE内の範囲）。
- *
- * 枠の絵（410×640）は角丸と落ち影が焼き込んであるので、内側の紙だけを取る。**ボタンごとに別の
- * 場所を取る**——同じ場所だと3つに同じ染みが並び、模様として目に付く。ボタンと同じくらい横長の
- * 範囲にしておくと、引き伸ばしても紙の粒が一方向へ伸びない。
- */
-const SLOT_BUTTON_PAPER_RECTS = [
-  { x: 45, y: 40, width: 300, height: 170 },
-  { x: 45, y: 225, width: 300, height: 170 },
-  { x: 45, y: 410, width: 300, height: 170 },
-];
 
 /** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
 const MENU_ICON = '☰';
@@ -1255,12 +1242,12 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ボタンの地。**カードの紙を敷いて、ボタンの色を乗算で載せる**（染めた紙）。平らな塗りに淡い色を
+   * ボタンの地。**紙を敷いて、ボタンの色を乗算で載せる**（染めた紙）。平らな塗りに淡い色を
    * 置くとパステルに見え、汚れと滲みのある他の絵から浮くため。
    *
-   * 敷くのはカードの枠の絵の**内側の紙だけ**を切り出したもの。枠の絵は角丸と落ち影が焼き込んで
-   * あるので、そのまま横長へ引き伸ばすと角が楕円に潰れる。角丸はここで切り抜き直し、枠線もその上へ
-   * 引き直す（Buttonが描く枠線は紙の下になる）。
+   * 敷く紙はボタン専用の絵（`SLOT_BUTTON_PAPER_TEXTURE`）で、ボタン1つぶんが1枚。**カードの枠とは
+   * 別の絵**で、同じ紙から切り出してあるだけ（recipes/slot_button_paper.json）。角丸はここで
+   * 切り抜き、枠線もその上へ引き直す（Buttonが描く枠線は紙の下になる）。
    *
    * 紙が読めなければ何も敷かず、Buttonの平らな塗りがそのまま地になる。
    */
@@ -1272,18 +1259,12 @@ export class PlayScene extends ResponsiveScene {
     radius: number,
     borderWidth: number,
   ): Phaser.GameObjects.GameObject[] {
-    if (!this.textures.exists(CARD_FRAME_TEXTURE)) return [];
+    if (!this.textures.exists(SLOT_BUTTON_PAPER_TEXTURE)) return [];
 
-    // 切り出しはテクスチャのフレームとして1度だけ登録する（画像を複製しないため）。
-    const texture = this.textures.get(CARD_FRAME_TEXTURE);
-    const name = `slot-button-paper-${index}`;
-    if (!texture.has(name)) {
-      const { x, y, width, height } = SLOT_BUTTON_PAPER_RECTS[index % SLOT_BUTTON_PAPER_RECTS.length];
-      texture.add(name, 0, x, y, width, height);
-    }
-
+    // ボタンごとに別の1枚を敷く。同じ絵だと3つに同じ染みが並び、模様として目に付く。
+    const sheet = this.textures.get(SLOT_BUTTON_PAPER_TEXTURE);
     const paper = this.add
-      .image(0, 0, CARD_FRAME_TEXTURE, name)
+      .image(0, 0, SLOT_BUTTON_PAPER_TEXTURE, index % sheet.frameTotal)
       .setOrigin(0, 0)
       .setDisplaySize(rect.width, rect.height)
       .setTint(tint);
