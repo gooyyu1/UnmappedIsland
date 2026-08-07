@@ -4,7 +4,7 @@ import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { Localization } from '../locale/Localization';
-import type { CardContent, CardFill } from './ui/Card';
+import type { CardContent, CardFill, CardSeverity } from './ui/Card';
 import type { PropertyTab } from './ui/PropertyWindow';
 import type { StatusContent } from './ui/StatusBar';
 
@@ -259,6 +259,7 @@ const STATUS_TAG = 'status';
  * 後から足された物——MODの液体——も、同じ名前で宣言するだけで同じように出る。
  */
 const DURABILITY_PROPERTY = 'durability';
+const SEVERITY_PROPERTY = 'severity';
 const COLOR_PROPERTY = 'color';
 
 /**
@@ -323,6 +324,14 @@ export function fromGameSession(
    */
   const durabilityOf = (object: WorldObject): number | undefined =>
     durabilityPropertyId === undefined ? undefined : object.readProperty(durabilityPropertyId)?.ratio;
+
+  const severityPropertyId = codex.propertyNames.tryGetId(SEVERITY_PROPERTY);
+  /** 怪我のカードに出す、残っている傷（docs/world/Injuries.md）。severityを持たない物はundefined。 */
+  const severityOf = (object: WorldObject): CardSeverity | undefined => {
+    if (severityPropertyId === undefined) return undefined;
+    const reading = object.readProperty(severityPropertyId);
+    return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
+  };
 
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
   /**
@@ -396,6 +405,7 @@ export function fromGameSession(
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
     durability: durabilityOf(instances[0]),
     fill: fillOf(instances[0]),
+    severity: severityOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
     description: locale.object(instances[0].def.name).description,

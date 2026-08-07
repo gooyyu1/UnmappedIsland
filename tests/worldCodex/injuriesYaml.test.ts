@@ -15,7 +15,7 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
 describe('injuries.yamlの怪我', () => {
   /** pick_coconutで捻挫する側を引く重みの位置（成功90 : 失敗10）。 */
   const FALLS = 0.95;
-  /** 捻挫が治りきるまでのtick数（durability 960,000 ÷ 1,000）。 */
+  /** 捻挫が治りきるまでのtick数（severity 96,000 ÷ 100）。 */
   const HEALING_TICKS = 960;
 
   let codex: WorldCodex;
@@ -118,6 +118,23 @@ describe('injuries.yamlの怪我', () => {
 
     expect(injury.moveToSlot(player, codex.slotNames.getId('hand'), codex.wellKnown)).toBeDefined();
     expect(injury.moveToSlot(beach, codex.slotNames.getId('items'), codex.wellKnown)).toBeDefined();
+  });
+
+  it('傷の重さは道具の耐久度と別のプロパティで、引くほど軽い域へ移る', () => {
+    // 耐久値は多いほど良い量、傷は多いほど悪い量なので、同じ語彙には載せない（Injuries.md）。
+    pickCoconut();
+    const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
+
+    expect(injury.readProperty(codex.propertyNames.getId('durability'))).toBeUndefined();
+
+    const severityId = codex.propertyNames.getId('severity');
+    expect(injury.readProperty(severityId)?.alert, '負った直後は要注意域').toBe('caution');
+    expect(injury.readProperty(severityId)?.worsensUpward, '増えるほど悪い').toBe(true);
+
+    tick(HEALING_TICKS / 2);
+
+    expect(injury.readProperty(severityId)?.alert, '半分治れば留意域').toBe('watch');
+    expect(injury.readProperty(severityId)?.ratio).toBeCloseTo(0.5, 2);
   });
 
   it('怪我は荷重にならない', () => {

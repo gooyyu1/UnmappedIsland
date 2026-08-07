@@ -5,6 +5,8 @@ import { drawBox } from './shapes';
 import { cardBackgroundTexture } from './backgroundArt';
 import { CARD_ART_WIDTH, objectTexture } from './objectArt';
 import { ProgressBar } from './ProgressBar';
+import type { ProgressBarOptions } from './ProgressBar';
+import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
 
@@ -94,10 +96,13 @@ const STACK_COUNT_SIZE = 32;
  */
 const DURABILITY_BAR_HEIGHT = 6;
 
-/** 中身のバーの高さと、紙の左右から空ける余白・紙の下端から浮かせる高さ（u単位）。 */
-const FILL_BAR_HEIGHT = 15;
-const FILL_BAR_MARGIN = 28;
-const FILL_BAR_BOTTOM = 72;
+/**
+ * そのカードの主要情報を映すバーの高さと、紙の左右から空ける余白・紙の下端から浮かせる高さ（u単位）。
+ * 中身のバーと怪我のバーが同じ寸法・同じ位置を使う（1枚のカードが両方を出すことは無い）。
+ */
+const MAIN_BAR_HEIGHT = 15;
+const MAIN_BAR_MARGIN = 28;
+const MAIN_BAR_BOTTOM = 72;
 
 /** 移動先のレーンがカードのどちら側にあるか。 */
 export type CardEdgeDirection = 'up' | 'down';
@@ -121,6 +126,18 @@ export interface CardFill {
 
   /** 塗りの色。中身の液体が自分で宣言している色（`color`プロパティ）そのもの。宣言していない液体はundefined。 */
   readonly color?: number;
+}
+
+/**
+ * 怪我のカードが出す、残っている傷のバーの内容（ScreenLayout.md カードの状態バー節）。
+ * 耐久度と違って**減るほど良い**量なので、色は値そのものではなく域（alert）から引く。
+ */
+export interface CardSeverity {
+  /** 負った直後を1とした、残っている傷の割合（0〜1）。 */
+  readonly ratio: number;
+
+  /** 今の傷の重さの域。塗りの色になる。 */
+  readonly alert: AlertLevel;
 }
 
 /** カード1枚の表示内容と操作。 */
@@ -169,6 +186,9 @@ export interface CardContent {
   /** 中身の割合（液体容器のカードだけが持つ）。 */
   readonly fill?: CardFill;
 
+  /** 残っている傷（怪我のカードだけが持つ）。 */
+  readonly severity?: CardSeverity;
+
   /**
    * その行動の途中の値か（trueの間は状態バーの変化の帯を動かさず、合計の変化量を残す。
    * ProgressBar.setRatio参照）。
@@ -181,8 +201,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, namePosition, road, durability, fill } = content;
-  return { icon, name, art, background, namePosition, road, durability, fill };
+  const { icon, name, art, background, namePosition, road, durability, fill, severity } = content;
+  return { icon, name, art, background, namePosition, road, durability, fill, severity };
 }
 
 /**
@@ -229,6 +249,7 @@ export class Card extends Phaser.GameObjects.Container {
    */
   private readonly durabilityBar: ProgressBar;
   private readonly fillBar: ProgressBar;
+  private readonly severityBar: ProgressBar;
 
   /** 中身を入れ直すときに要る採寸。 */
   private readonly metrics: ScreenMetrics;
@@ -270,6 +291,7 @@ export class Card extends Phaser.GameObjects.Container {
     // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
     this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height);
     this.fillBar = this.addFillBar(scene, metrics, width, height);
+    this.severityBar = this.addSeverityBar(scene, metrics, width, height);
     this.edgeLayer = scene.add.container(0, 0);
     this.add(this.edgeLayer);
 
@@ -395,6 +417,9 @@ export class Card extends Phaser.GameObjects.Container {
     const hold = content.midAction === true;
     this.showBar(this.durabilityBar, content.durability, showChange, hold);
     this.showBar(this.fillBar, content.fill?.ratio, showChange, hold);
+    // 傷の重さは域が色を決めるので、割合より先に伝える（塗り直しを1回で済ませる）。
+    if (content.severity !== undefined) this.severityBar.setAlert(content.severity.alert);
+    this.showBar(this.severityBar, content.severity?.ratio, showChange, hold);
   }
 
   private showBar(bar: ProgressBar, ratio: number | undefined, showChange: boolean, hold: boolean): void {
@@ -460,19 +485,47 @@ export class Card extends Phaser.GameObjects.Container {
     width: number,
     height: number,
   ): ProgressBar {
+    return this.addMainBar(scene, metrics, width, height, {
+      // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
+      fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown,
+    });
+  }
+
+  /**
+   * 残っている傷のバー。治るまでの残りは怪我カードの主要情報なので、道具の耐久度のような
+   * 控えめな下端の細線ではなく、中身のバーと同じ太さ・同じ位置に出す。
+   */
+  private addSeverityBar(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    width: number,
+    height: number,
+  ): ProgressBar {
+    // 減るほど良い量なので、増えた分の帯が赤くなるようにする（ProgressBarOptions.worsensUpward）。
+    // 色は域から引く（fillColorを渡さない）ので、傷が引くほど緑へ寄る。
+    return this.addMainBar(scene, metrics, width, height, { worsensUpward: true });
+  }
+
+  /** 主要情報のバー（中身・怪我）。絵の下・下端との間を空けた位置に、同じ寸法で置く。 */
+  private addMainBar(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    width: number,
+    height: number,
+    options: ProgressBarOptions,
+  ): ProgressBar {
     const paper = paperRect(metrics, width, height);
-    const barHeight = metrics.px(FILL_BAR_HEIGHT);
-    const margin = metrics.px(FILL_BAR_MARGIN);
+    const barHeight = metrics.px(MAIN_BAR_HEIGHT);
+    const margin = metrics.px(MAIN_BAR_MARGIN);
     const bar = new ProgressBar(
       scene,
       metrics,
       paper.x + margin,
-      paper.y + paper.height - metrics.px(FILL_BAR_BOTTOM) - barHeight,
+      paper.y + paper.height - metrics.px(MAIN_BAR_BOTTOM) - barHeight,
       paper.width - margin * 2,
       barHeight,
       0,
-      // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
-      { fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown },
+      options,
     );
     this.add(bar);
     return bar;
