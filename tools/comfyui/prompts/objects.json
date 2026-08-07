@@ -98,7 +98,7 @@
   "bare_foot": {
     "description": [
       "素足。それ自体はカードにならず、怪我（injuries.yaml）の絵の下地になる",
-      "（recipes/sprained_ankle.json が痣を、recipes/sprained_ankle_bandaged.json が包帯を足す）。",
+      "（recipes/sprained_ankle.json が痣を skin_tint.py で載せる）。",
       "",
       "**足の指をまず見る。** 生成が最もしくじるのが指で、縮小したシートでは破綻が見えない。指の部分だけを",
       "等倍以上に切り出して確かめ、落ちた候補は後段（編集・切り出し・配置）へ回さない。",
