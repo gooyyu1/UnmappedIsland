@@ -76,6 +76,8 @@ export const COLOR = {
 
   button: 0xffffff,
   buttonBorder: 0x000000,
+  /** 押下中のボタンへ重ねる覆い。濃さはButtonが持つ（PRESSED_SHADE）。 */
+  pressedShade: 0x000000,
   buttonActive: 0x3a3a3a,
   /** 実行中などで今は押せないボタン。 */
   buttonDisabled: 0xdedede,
