@@ -67,9 +67,10 @@
       width: 100%;
       height: 100%;
       grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr calc(1080 * var(--u)) auto;
+      grid-template-rows: auto auto 1fr calc(1080 * var(--u)) auto;
       grid-template-areas:
         "options"
+        "situation"
         "dashboard"
         "field"
         "filter";
@@ -271,15 +272,15 @@
       background: #4caf50;
     }
 
-    /* ---- 状況エリア（空を映す1枚の窓。日時と天候名がその上に載る） ---- */
+    /* ---- 状況エリア（空を敷いた1本の帯。日時と天候名がその上に載る） ---- */
 
-    /* 上だけ広いのは、オプションバーの下の梁と接する辺だから。窓を梁から離さないと帯に
-       貼り付いて見える（日時の上の空きは要らないので、そのぶん窓を低くして回している） */
+    /* 本の外に置く帯なので、オプションバーと同じく角を丸めず、周囲に余白も残さない。
+       高さは載せ物の分しか取らない（日時の上に空を広く余らせても情報が増えないため） */
     .situation-area {
+      grid-area: situation;
       position: relative;
       flex-shrink: 0;
-      height: calc(156 * var(--u));
-      padding: calc(28 * var(--u)) calc(16 * var(--u)) calc(8 * var(--u));
+      height: calc(128 * var(--u));
     }
 
     /* 天気ごとの絵を敷く窓。絵だけでは晴天どうしを区別できないため、名前はラベルが受け持つ。
@@ -289,8 +290,6 @@
       position: relative;
       width: 100%;
       height: 100%;
-      border: calc(3 * var(--u)) solid rgba(0, 0, 0, 0.45);
-      border-radius: calc(10 * var(--u));
       background: #7d94a4;
       overflow: hidden;
       display: flex;
@@ -490,16 +489,17 @@
          キャラクター表示エリアの組み方は縦型と同じで、幅だけが列いっぱいに広がる */
       .screen {
         grid-template-columns: calc(484 * var(--u)) 1fr calc(120 * var(--u));
-        grid-template-rows: auto 1fr;
+        grid-template-rows: auto auto 1fr;
         grid-template-areas:
-          "dashboard field options"
-          "dashboard field filter";
+          "situation field options"
+          "dashboard  field options"
+          "dashboard  field filter";
       }
 
       /* 幅が日時1つ分しかないので、天候名を上・日時を下端へ分ける。そのぶん縦型より高い */
       .situation-area {
-        height: calc(224 * var(--u));
-        padding: calc(8 * var(--u));
+        grid-area: situation;
+        height: calc(184 * var(--u));
       }
 
       /* 横型の縁は右辺にあり、ダッシュボード列の幅が既に引いている。下は通常のパディングでよい */
@@ -553,40 +553,40 @@
 </head>
 <body>
   <div class="screen">
+    <section class="situation-area">
+      <div class="label">状況エリア</div>
+      <div class="weather-panel">
+        <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
+          <span class="calendar-row calendar-row-day">
+            <span class="flip-digit">0</span>
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">1</span>
+          </span>
+          <span class="calendar-row calendar-row-time">
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">0</span>
+            <span class="calendar-colon">:</span>
+            <span class="flip-digit">1</span>
+            <span class="flip-digit">5</span>
+          </span>
+        </button>
+        <div class="weather-name">灼熱</div>
+      </div>
+    </section>
     <div class="dashboard-column">
-      <section class="situation-area">
-        <div class="label">状況エリア</div>
-        <div class="weather-panel">
-          <button class="flip-calendar" type="button" aria-label="時間経過アクション" title="時間経過アクション">
-            <span class="calendar-row calendar-row-day">
-              <span class="flip-digit">0</span>
-              <span class="flip-digit">1</span>
-              <span class="flip-digit">1</span>
-            </span>
-            <span class="calendar-row calendar-row-time">
-              <span class="flip-digit">1</span>
-              <span class="flip-digit">0</span>
-              <span class="calendar-colon">:</span>
-              <span class="flip-digit">1</span>
-              <span class="flip-digit">5</span>
-            </span>
-          </button>
-          <div class="weather-name">灼熱</div>
-        </div>
-      </section>
       <section class="character-area">
         <div class="character-display">
           <div class="label">キャラクター表示エリア</div>
           <div class="card portrait-card"><span class="card-name">主人公</span></div>
           <div class="slot-button-column">
             <button class="icon-button icon-button--map" type="button" aria-label="地図" title="地図">
-              <span class="icon-button-icon">🗺️</span><span class="icon-button-label">地図</span>
+              <span class="icon-button-icon">🗺️</span>
             </button>
             <button class="icon-button icon-button--equipment" type="button" aria-label="装備" title="装備">
-              <span class="icon-button-icon">🪑</span><span class="icon-button-label">装備</span>
+              <span class="icon-button-icon">👕</span>
             </button>
             <button class="icon-button icon-button--injury" type="button" aria-label="怪我" title="怪我">
-              <span class="icon-button-icon">🩹</span><span class="icon-button-label">怪我</span>
+              <span class="icon-button-icon">🩹</span>
             </button>
           </div>
           <div class="condition-row">

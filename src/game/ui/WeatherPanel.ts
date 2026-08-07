@@ -6,22 +6,9 @@ import { COLOR } from './theme';
 import { drawBox } from './shapes';
 import { weatherTexture } from './weatherArt';
 
-/**
- * 状況エリアのうち、空の絵を敷く範囲までの余白（紙に貼った窓に見えるよう、四辺を少し残す）。
- *
- * 縦型の上だけが広い。ここはオプションバーの下の梁と接する辺で、窓を梁から離さないと
- * 帯に貼り付いて見えるため。
- */
-const PANEL_INSET_PORTRAIT = { x: 16, top: 28, bottom: 8 };
-const PANEL_INSET_LANDSCAPE = { x: 8, top: 8, bottom: 8 };
-
-/** 窓の内側の余白。日時と天候名はこの内側に収める。 */
+/** 空の絵の内側の余白。日時と天候名はこの内側に収める。 */
 const CONTENT_PADDING_PORTRAIT = { x: 24, y: 16 };
 const CONTENT_PADDING_LANDSCAPE = { x: 20, y: 16 };
-
-/** 窓の角の丸めと縁の太さ。 */
-const PANEL_RADIUS = 10;
-const PANEL_BORDER = 3;
 
 export interface WeatherPanelContent {
   /** 天気の識別子。これに対応する絵があれば敷き、無ければ単色の板になる（weatherArt参照）。 */
@@ -37,6 +24,9 @@ export interface WeatherPanelContent {
  * 状況エリア（ScreenLayout.md）。**空を1枚の絵として見せ、その上に日時と天候名を載せる**——
  * 絵だけでは晴天どうしの区別が付かないため、名前はラベルが受け持つ。
  *
+ * **本の外に置く帯**なので、オプションバーと同じく角を丸めず、周囲に余白も残さない。四辺いっぱいに
+ * 空を敷き、区切りは下端の帯（optionsBarSeparator）が受け持つ。
+ *
  * 載せ物は絵の主題（太陽・雲）を置く右上を必ず空ける。縦型は日時を左下・天候名を右下へ並べ、
  * 横型は幅が日時1つ分しかないので天候名を左上・日時を下端へ分ける。
  */
@@ -46,15 +36,9 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, area: Rect, content: WeatherPanelContent) {
     super(scene, 0, 0);
 
-    const inset = metrics.isLandscape ? PANEL_INSET_LANDSCAPE : PANEL_INSET_PORTRAIT;
-    const panel: Rect = {
-      x: area.x + metrics.px(inset.x),
-      y: area.y + metrics.px(inset.top),
-      width: Math.max(0, area.width - metrics.px(inset.x) * 2),
-      height: Math.max(0, area.height - metrics.px(inset.top + inset.bottom)),
-    };
+    const panel: Rect = area;
 
-    this.addSky(scene, metrics, panel, content.weather);
+    this.addSky(scene, panel, content.weather);
 
     const padding = metrics.isLandscape ? CONTENT_PADDING_LANDSCAPE : CONTENT_PADDING_PORTRAIT;
     const padX = metrics.px(padding.x);
@@ -112,13 +96,7 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
    *
    * 絵がまだ無い天気では単色の板になる（絵は少しずつ増える前提、weatherArt参照）。
    */
-  private addSky(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    panel: Rect,
-    weather: string | undefined,
-  ): void {
-    const radius = metrics.px(PANEL_RADIUS);
+  private addSky(scene: Phaser.Scene, panel: Rect, weather: string | undefined): void {
     const texture = weatherTexture(weather);
 
     if (texture !== undefined && scene.textures.exists(texture)) {
@@ -131,21 +109,15 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
       const sky = scene.add.container(0, 0, [image]);
       const maskShape = scene.make.graphics({});
       maskShape.fillStyle(COLOR.cardFace, 1);
-      maskShape.fillRoundedRect(panel.x, panel.y, panel.width, panel.height, radius);
+      maskShape.fillRect(panel.x, panel.y, panel.width, panel.height);
       sky.enableFilters();
       sky.filters?.internal.addMask(maskShape);
       this.add(sky);
       this.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
     } else {
       const fallback = scene.add.graphics();
-      drawBox(fallback, panel, { fill: COLOR.weatherPanel, radius });
+      drawBox(fallback, panel, { fill: COLOR.weatherPanel });
       this.add(fallback);
     }
-
-    // 縁は絵の上に描く。紙に貼った窓に見せると同時に、キャラクターエリアとの区切りを兼ねる。
-    const frame = scene.add.graphics();
-    frame.lineStyle(Math.max(1, metrics.px(PANEL_BORDER)), COLOR.weatherPanelBorder, 0.45);
-    frame.strokeRoundedRect(panel.x, panel.y, panel.width, panel.height, radius);
-    this.add(frame);
   }
 }

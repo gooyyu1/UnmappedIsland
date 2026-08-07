@@ -394,7 +394,11 @@ export class PlayScene extends ResponsiveScene {
     if (this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
     // 区切りの帯は隣接エリアへもかぶるため、それらの背景板を描き終えてから敷く。
     for (const rect of layout.laneSeparators) addTiledImage(this, rect, SEPARATOR_TEXTURE);
-    // フィールドエリアと右サイドバーの境目は、同じ絵を90度回して縦向きに敷く（横型のみ）。
+    // フィールドエリアの左右の境目は、同じ絵を90度回して縦向きに敷く（横型のみ）。左の帯が本の縁で
+    // 終わって見えるのは、この後に置くページが手前から覆うため。
+    if (layout.fieldLeftSeparator !== undefined) {
+      addTiledImageVertical(this, layout.fieldLeftSeparator, SEPARATOR_TEXTURE);
+    }
     if (layout.sidebarSeparator !== undefined) {
       addTiledImageVertical(this, layout.sidebarSeparator, SEPARATOR_TEXTURE);
     }
@@ -402,9 +406,13 @@ export class PlayScene extends ResponsiveScene {
     this.buildInformationArea(layout);
     this.buildDashboard(layout);
     if (!this.metrics.isLandscape) this.buildOptionsBar(layout.optionsBar);
-    // オプションバーと情報エリアの境目の帯は、バーの上に重ねるので最後に敷く（縦型のみ）。
+    // 本の外の帯どうしの境目は、バーの上に重ねるので最後に敷く（縦型のみ）。
     if (layout.optionsBarSeparator !== undefined) {
       addTiledImage(this, layout.optionsBarSeparator, SEPARATOR_TEXTURE);
+    }
+    // 状況エリアと本の境目も同じ層（縦型のみ）。
+    if (layout.situationSeparator !== undefined) {
+      addTiledImage(this, layout.situationSeparator, SEPARATOR_TEXTURE);
     }
     if (wasExploring) this.openExplorationWindow();
     if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
