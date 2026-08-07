@@ -195,7 +195,7 @@ def main() -> None:
                     "--out", str(processed),
                     "--size", str(card["size"]),
                     *(["--mode", card["mode"]] if card.get("mode") else []),
-                    *(["--trim"] if card.get("trim") else []),
+                    *(["--canvas", *map(str, card["canvas"])] if card.get("canvas") else []),
                     *(["--crop", *map(str, card["crop"])] if card.get("crop") else []),
                     *(["--diagonal"] if card.get("diagonal") else []),
                     *(["--tolerance", str(card["tolerance"])] if "tolerance" in card else []),

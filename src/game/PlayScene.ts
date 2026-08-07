@@ -1237,24 +1237,23 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 絵があればそれを、無ければ絵文字を、ボタンの中央へ置く（iconArt参照）。
    *
-   * **絵は縦横比のまま枠へ収める。** 絵は透明な余白を切り落としてあるので（card_art.pyの--trim）、
-   * 枠に対して痩せるのは物の形のぶんだけになる。背景は透けていて、ボタンの地の色が下に出る。
+   * **どの絵も同じ大きさで敷く。** 3枚とも同じ寸法のキャンバスに、物だけが実物の大小——開いた地図 >
+   * Tシャツ > 巻いた包帯——のとおり描き分けてある（card_art.pyの--canvas）。UIが物の大きさを測って
+   * 揃えると、その差が消えてしまう。周りは透けているので、ボタンの地の色が下に出る。
    */
   private slotButtonIcon(spec: { art: IconName; icon: string }, rect: Rect): Phaser.GameObjects.GameObject {
     const x = rect.width / 2;
     const y = rect.height / 2;
-    const box = SIZE.slotButtonIcon;
+    const canvas = SIZE.slotButtonIcon;
     const texture = iconTexture(spec.art);
     if (texture !== undefined && this.textures.exists(texture)) {
-      const image = this.add.image(x, y, texture).setOrigin(0.5);
-      const scale = Math.min(
-        this.metrics.px(box.width) / image.width,
-        this.metrics.px(box.height) / image.height,
-      );
-      return image.setDisplaySize(image.width * scale, image.height * scale);
+      return this.add
+        .image(x, y, texture)
+        .setOrigin(0.5)
+        .setDisplaySize(this.metrics.px(canvas.width), this.metrics.px(canvas.height));
     }
-    // 絵文字は正方形なので、枠の高さがそのまま大きさになる。
-    return addLabel(this, this.metrics, x, y, spec.icon, { size: box.height }).setOrigin(0.5);
+    // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
+    return addLabel(this, this.metrics, x, y, spec.icon, { size: canvas.height }).setOrigin(0.5);
   }
 
   /**

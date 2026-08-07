@@ -18,9 +18,10 @@
 
     python card_art.py stone.png --out ../../src/assets/objects/stone.png --size 256
 
---trim を付けると、仕上げに透明な余白を切り落とす。**キャンバスの一辺ではなく物そのものの大きさで
-置きたいとき**に使う。ボタンのアイコンがこれで、置き場所の枠へ縦横比のまま収めるため、正方形の
-キャンバスに余白を残したままだと、平たい物ほど小さく見えてしまう（--sizeは切り出しの解像度になる）。
+--canvas を付けると、仕上げに透明な余白を切り落としてから、指定した大きさの透明キャンバスの中央へ
+置き直す。**画像の寸法を揃えたまま、--size で物の大きさだけを変えたいとき**に使う（ボタンのアイコン）。
+正方形のキャンバスに fit_object の余白を残したままだと、物の形によって余白の量が変わるので、
+平たい物ほど小さく見えてしまう。
 
 絵に足りないものは、切り出したあとで足せる。落ち影が描かれていなければ --drop-shadow、色が
 薄ければ --saturation / --gamma（それぞれ drop_shadow / retone 参照）。
@@ -54,10 +55,44 @@ PAPER_MARGIN = 5
 PAPER_RADIUS = 32
 
 # 物を収める正方形キャンバスの段階。アイテムの絵はobject_defの数だけ増えるので、必要な段だけ使う。
+# ボタンのアイコン（--canvas）はこの段に縛られない。あちらは段の数ではなく物の大きさそのものを表す。
 OBJECT_SIZES = (256, 320, 400)
 
 # キャンバスの縁と物の間に残す余白。透過の立ち上がり（--edge）が切れないだけの幅。
 OBJECT_SLACK = 4
+
+
+def recentre(rgba: np.ndarray, width: int, height: int) -> np.ndarray:
+    """透明な余白を切り落として、指定の大きさの透明キャンバスの中央へ置き直す。
+
+    **画像の寸法を揃えたまま、物の大きさだけを変えられるようにするため。** 寸法そのものを物の
+    大きさにすると（切り落としただけの状態）、絵を差し替えるたびに画面上の大きさが暗黙に変わる。
+    寸法を固定しておけば、変わるのは中の画素だけになる。
+
+    fit_objectが空けた余白は物の大きさによって違うので、いったん切り落としてから置き直す。
+    """
+    left, top, right, bottom = bounds(rgba[:, :, 3])
+    piece = rgba[top:bottom, left:right]
+    if piece.shape[0] > height or piece.shape[1] > width:
+        raise SystemExit(
+            f"物がキャンバス({width}x{height})に収まらない: {piece.shape[1]}x{piece.shape[0]}。"
+            "--size を小さくしてください"
+        )
+    canvas = np.zeros((height, width, 4))
+    top_left = ((height - piece.shape[0]) // 2, (width - piece.shape[1]) // 2)
+    canvas[top_left[0] : top_left[0] + piece.shape[0], top_left[1] : top_left[1] + piece.shape[1]] = piece
+    return canvas
+
+
+def object_size(text: str) -> str:
+    """--size の値。"card" か正の整数。
+
+    アイテムの絵は OBJECT_SIZES の段から選ぶが（常駐量が object_def の数だけ効くため）、ボタンの
+    アイコンは3枚しか無く、段ではなく**物の実際の大きさ**を表す値を取る。
+    """
+    if text == "card" or (text.isdigit() and int(text) > 0):
+        return text
+    raise argparse.ArgumentTypeError(f"'card' か正の整数を指定してください（アイテムの絵は {OBJECT_SIZES} から）")
 
 
 def cover(image: Image.Image, width: int, height: int) -> Image.Image:
@@ -275,7 +310,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source")
     parser.add_argument("--out", required=True)
-    parser.add_argument("--size", default="320", choices=[*map(str, OBJECT_SIZES), "card"],
+    parser.add_argument("--size", default="320", type=object_size,
                         help="出力の一辺。cardは410x640でカード全面")
     parser.add_argument("--mode", choices=["background", "luma", "none"], default="background",
                         help="背景の抜き方。noneは縁の処理だけ")
@@ -294,9 +329,12 @@ def main() -> None:
     parser.add_argument("--opaque", type=float, default=200, help="luma: この明度以下を完全に不透明にする")
     parser.add_argument("--feather", type=int, default=24, help="紙の縁の内側で薄くしていく幅（px）")
     parser.add_argument(
-        "--trim",
-        action="store_true",
-        help="仕上げに透明な余白を切り落とす。キャンバスの一辺ではなく物そのものの大きさで置きたいとき用",
+        "--canvas",
+        type=int,
+        nargs=2,
+        metavar=("W", "H"),
+        help="仕上げに、透明な余白を切り落としてからこの大きさの透明キャンバスの中央へ置く。"
+        "画像の寸法を揃えたまま、--sizeで物の大きさだけを変えたいとき用（ボタンのアイコン）",
     )
     parser.add_argument("--crop", type=int, nargs=4, metavar=("X", "Y", "W", "H"),
                         help="使う範囲を先に切り出す（1枚に複数写ったときに1つだけ採る）")
@@ -334,9 +372,8 @@ def main() -> None:
 
     if args.saturation != 1.0 or args.gamma != 1.0:
         rgba[:, :, :3] = retone(rgba[:, :, :3], args.saturation, args.gamma)
-    if args.trim:
-        left, top, right, bottom = bounds(rgba[:, :, 3])
-        rgba = rgba[top:bottom, left:right]
+    if args.canvas:
+        rgba = recentre(rgba, *args.canvas)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -346,7 +383,7 @@ def main() -> None:
         "source": Path(args.source).name,
         "size": args.size,
         **({"crop": args.crop} if args.crop else {}),
-        **({"trim": True} if args.trim else {}),
+        **({"canvas": args.canvas} if args.canvas else {}),
         **({"diagonal": True} if args.diagonal else {}),
         **({"mode": args.mode, "feather": args.feather} if args.size == "card" else {}),
         **({"tolerance": args.tolerance, "edge": args.edge, "shadow": args.shadow, "reach": args.reach}
