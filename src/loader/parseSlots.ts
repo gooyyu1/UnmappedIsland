@@ -58,7 +58,6 @@ export function parseSlot(
   const unitCapacity = tryGetInt(node, 'unit_capacity', context);
   const fixedPositions = tryGetBool(node, 'fixed_positions', context, false);
   const autoPlacement = tryGetBool(node, 'auto_placement', context, true);
-  const showsContents = tryGetBool(node, 'show_contents', context, false);
 
   return new SlotDef(
     slotGlobalId,
@@ -69,6 +68,5 @@ export function parseSlot(
     unitCapacity,
     fixedPositions,
     autoPlacement,
-    showsContents,
   );
 }

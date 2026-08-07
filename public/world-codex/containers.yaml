@@ -9,6 +9,8 @@ traits:
   # （ScreenLayout.md スロットの子ウィンドウ節）。
   item_container:
     tags: [container]
+    # カードを押したら中身を並べる（7.8節）。入れ物と言えばこの中身、という1つ。
+    main_slot: contents
     combinations:
       # 中へ入れる。カードを重ねるだけの操作なので時間はかからない（durationを持たない）。
       # 入るかどうかはcontentsスロットのaccepts/capacityが決めるので、ここでは条件を書かない。
@@ -24,9 +26,6 @@ traits:
         accepts:
           - {tag: item, max: 9999}
         capacity: 1000
-        # カードを押したら中身を並べる（7.8節）。液体の容器のcontentのように、中身を見せない
-        # スロットもあるので、見せる側が名乗る。
-        show_contents: true
 
 object_defs:
   # 編み籠。蔓や草を編んで作る、最初の運搬用の入れ物。

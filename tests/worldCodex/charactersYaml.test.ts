@@ -79,13 +79,10 @@ describe('プレイヤーキャラクタの定義', () => {
         ).toBeDefined();
     });
 
-    it('装備と怪我は、中身を見せるスロットだと名乗る', () => {
-      // どこに出すか（専用のボタンから開く子ウィンドウ）はUI側の決めごとで、データ側はそれに
-      // 依らず「見せる」とだけ宣言する（GameElementDefinition.md 7.8節）。
-      for (const slotName of ['equipment', 'injuries']) {
-        const slot = def(character).getSlotDef(codex.slotNames.getId(slotName));
-        expect(slot?.showsContents, `${slotName} は中身を見せる`).toBe(true);
-      }
+    it('主要なスロット（main_slot）は持たない', () => {
+      // 手持ち・装備・怪我のどれも「キャラクタと言えばこれ」ではない（GameElementDefinition.md
+      // 7.8節）。装備・怪我のボタンは、開くスロットを固定で子ウィンドウへ渡すのでこれに依らない。
+      expect(def(character).mainSlotGlobalId).toBeUndefined();
     });
 
     it.each([

@@ -77,16 +77,6 @@ export class SlotDef {
    */
   readonly autoPlacement: boolean;
 
-  /**
-   * カードを押したとき、このスロットの中身を子ウィンドウに並べるか（既定false、
-   * docs/ui/ScreenLayout.md 子ウィンドウ節）。
-   *
-   * **見せない側を既定にする。** 見せるということは、プレイヤーがそこから取り出せるということでもある。
-   * 液体の容器（content）のように、中身が単独では存在してはいけないスロットを黙って開いてしまうより、
-   * 見せたいスロットだけが名乗る方が安全。
-   */
-  readonly showsContents: boolean;
-
   constructor(
     globalId: number,
     name: string,
@@ -96,7 +86,6 @@ export class SlotDef {
     unitCapacity?: number,
     fixedPositions = false,
     autoPlacement = true,
-    showsContents = false,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -106,6 +95,5 @@ export class SlotDef {
     this.unitCapacity = unitCapacity;
     this.fixedPositions = fixedPositions;
     this.autoPlacement = autoPlacement;
-    this.showsContents = showsContents;
   }
 }

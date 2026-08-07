@@ -4,14 +4,14 @@
 traits:
   # 手当てのできる怪我。治療具（treatments.yaml）を1つだけ当てておける。
   treatable:
+    # 怪我のカードを押したら、当てている治療具を並べる（7.8節）。付け外しの唯一の経路。
+    main_slot: treatment
     slots:
       # 当てている治療具。**1つだけ**——包帯の上から添え木を、のような重ね掛けは、効き目の
       # 足し合わせ方が決まっていない（docs/world/Injuries.md 手当て節）。
       treatment:
         accepts:
           - {tag: treatment, max: 1}
-        # 怪我のカードを押したら、当てている治療具を並べる（7.8節）。付け外しの唯一の経路。
-        show_contents: true
     combinations:
       # 治療具を当てる。何を当てられるかはtreatmentスロットのacceptsが決めるので、条件は書かない。
       #

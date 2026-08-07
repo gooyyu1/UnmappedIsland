@@ -54,6 +54,15 @@ export class ObjectDef {
    * interactionの実行対象・stack判定の識別に使われる。 */
   readonly representedBySlotGlobalId: number | undefined;
 
+  /**
+   * この型の**主要なスロット**のグローバルID（7.8節）。undefinedなら持たない。
+   *
+   * 「このオブジェクトと言えばこの中身」という1つを名指しするもので、画面はカードを押したときに
+   * ここの中身を並べる（かごの中身、怪我に当てている治療具）。複数のスロットを持つが、そのどれもが
+   * 主要ではない型（キャラクタ）は宣言しない。
+   */
+  readonly mainSlotGlobalId: number | undefined;
+
   /** このObjectDefが持つメニュー型操作（11節）。 */
   readonly actions: readonly ActionDef[];
 
@@ -81,6 +90,7 @@ export class ObjectDef {
     combinations: readonly CombinationDef[] = [],
     representedBySlotGlobalId?: number,
     isQuantitative = false,
+    mainSlotGlobalId?: number,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -96,6 +106,7 @@ export class ObjectDef {
     this.actions = actions;
     this.combinations = combinations;
     this.representedBySlotGlobalId = representedBySlotGlobalId;
+    this.mainSlotGlobalId = mainSlotGlobalId;
     this.isQuantitative = isQuantitative;
   }
 

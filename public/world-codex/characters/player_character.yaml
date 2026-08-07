@@ -23,17 +23,11 @@ traits:
         accepts:
           - {tag: item, max: 9999}
         auto_placement: false
-        # 中身はプレイヤーに見せ、出し入れさせる（7.8節）。どこに出すか——装備ボタンから開く
-        # 子ウィンドウ——はUI側の決めごとで、こちらはそれに依らず「見せる」とだけ宣言する。
-        show_contents: true
       # 怪我。プレイヤーが任意に出し入れするものではなく、ワールド側の効果だけが付け外しする
       # （UIからの移動・並び替えを許さない、ScreenLayout.md 参照）。中身はinjuries.yaml。
       injuries:
         accepts:
           - {tag: injury, max: 9999}
-        # 中身は見せる（7.8節）。ただし出し入れするのはワールド側の効果だけで、プレイヤーは
-        # 眺めるだけ（UIが移動と並び替えを与えない、ScreenLayout.md）。
-        show_contents: true
     props:
       # 今感じている痛み。自分では動かず、injuriesスロットの中の怪我がmodifyで押し上げる
       # （injuries.yaml）ので、valueは0のまま。増える側が悪いプロパティなので、段はmaxからの
