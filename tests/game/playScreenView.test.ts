@@ -307,6 +307,23 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basketCard.contentsFillsWidth, '何枚入るか分からないので幅を並びへ譲る').toBe(true);
   });
 
+  it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
+    // 見せるスロットはワールド側が名乗る（show_contents、GameElementDefinition.md 7.8節）。
+    // 液体の容器のcontentは名乗っていないので、押しても説明とアクションだけが出る。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
+    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
+    expect(
+      bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
+
+    const card = fromGameSession(game, codex, locale).hand.find((held) => held?.objects[0] === bowl)!;
+
+    expect(card.contents, '中身の並びは開かない').toBeUndefined();
+    expect(card.fill?.ratio, '入っていることはバーで見せる').toBeGreaterThan(0);
+  });
+
   it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));

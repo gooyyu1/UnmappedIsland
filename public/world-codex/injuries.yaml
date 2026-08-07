@@ -10,6 +10,8 @@ traits:
       treatment:
         accepts:
           - {tag: treatment, max: 1}
+        # 怪我のカードを押したら、当てている治療具を並べる（7.8節）。付け外しの唯一の経路。
+        show_contents: true
     combinations:
       # 治療具を当てる。何を当てられるかはtreatmentスロットのacceptsが決めるので、条件は書かない。
       #

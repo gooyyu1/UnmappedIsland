@@ -36,7 +36,8 @@ export class ObjectDef {
   readonly slotLayout: LocalIndexMap;
 
   /** ローカルindexで並ぶ密配列。slotLayout と対になる。 */
-  private readonly slotDefs: readonly SlotDef[];
+  /** このobject_defが持つスロットの定義（宣言順）。 */
+  readonly slotDefs: readonly SlotDef[];
 
   /** slotDefsのうち、自動配置（7.7節）を受け入れるものだけを宣言順に並べたもの。 */
   private readonly autoPlacementSlotDefs: readonly SlotDef[];

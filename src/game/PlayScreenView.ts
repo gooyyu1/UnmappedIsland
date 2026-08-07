@@ -1,3 +1,4 @@
+import type { SlotDef } from '../domain/defs/SlotDef';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
@@ -284,22 +285,19 @@ const TREATMENT_SLOT = 'treatment';
 const TREATED_MARK = '🩹';
 
 /**
- * カードを押すと中身を見せるスロットの名前（宣言順に、最初に持っているものを開く）。
- *
- * **タグではなくスロットで決める。** かつては`container`タグの有無で決めていたが、怪我の治療具のように
- * 「入れ物ではないが、プレイヤーが1つ入れる場所」を持つ物が出てきた。怪我に`container`タグを付けるのは
- * 筋が悪いので、判定の側を「プレイヤーが入れられるスロットを持つか」へ広げている。
+ * 中身の並びが4枠を超える（＝何枚入るか分からない）と見なす容量。これを超えるスロットは、
+ * 子ウィンドウの右の段を並びだけで使い切る（ScreenLayout.md 子ウィンドウ節の枠の数）。
  */
-const OPENABLE_SLOTS = ['contents', TREATMENT_SLOT];
+const WIDE_CONTENT_CAPACITY = 4;
 
 /**
- * そのうち、**子ウィンドウの右の段を並びだけで使い切る**スロット。開いたウィンドウに対象自身の
- * カードは出さず、幅を並びへ譲る（ScreenLayout.md 子ウィンドウ節）。
- *
- * 何枚入るか分からない入れ物がこちら。1枠しかない怪我の治療具は、何を治療しているのかが分からないと
- * 困るので、カードを出す側に残す。
+ * そのスロットへ何枚入るか（無制限ならundefined）。acceptsを持たないスロットは無制限（7.1節）で、
+ * 複数の規則があるなら一番緩いものが上限になる。
  */
-const WIDE_CONTENT_SLOTS = ['contents'];
+function slotCapacity(slot: SlotDef | undefined): number | undefined {
+  const rules = slot?.accepts ?? [];
+  return rules.length === 0 ? undefined : Math.max(...rules.map((rule) => rule.max));
+}
 
 /**
  * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
@@ -399,19 +397,30 @@ export function fromGameSession(
     return { ratio, color };
   };
 
-  const openableSlotIds = OPENABLE_SLOTS.map((name) => codex.slotNames.tryGetId(name));
-  /** そのオブジェクトが中身を見せるスロット（持たなければundefined）。 */
+  /**
+   * そのオブジェクトが中身を見せるスロット（持たなければundefined）。
+   *
+   * **どのスロットを開くかはワールド側が宣言する**（`show_contents`、GameElementDefinition.md 7.8節）。
+   * UIが名前で決めていた頃は、液体の容器のスロット（`content`）が入れ物のスロット（`contents`）と
+   * 1文字違いだったおかげで開かれずに済んでいただけで、名前が揃えば水を取り出せてしまう。
+   */
   const openableSlotOf = (object: WorldObject): number | undefined =>
-    openableSlotIds.find((id) => id !== undefined && object.tryGetSlot(id) !== undefined);
+    object.def.slotDefs.find((slot) => slot.showsContents)?.globalId;
 
   /** そのカードが中身を持つなら、それを映す場所。持たなければundefined（押しても中身は開かない）。 */
   const contentsOf = (object: WorldObject): CardPlace | undefined =>
     openableSlotOf(object) === undefined ? undefined : { container: object };
 
-  const wideSlotIds = WIDE_CONTENT_SLOTS.map((name) => codex.slotNames.tryGetId(name));
-  /** 中身の並びへ幅を譲る対象か（子ウィンドウが自分のカードを出さない）。 */
-  const contentsFillsWidth = (object: WorldObject): boolean =>
-    wideSlotIds.some((id) => id !== undefined && object.tryGetSlot(id) !== undefined);
+  /**
+   * 中身の並びへ幅を譲る対象か（子ウィンドウが自分のカードを出さない）。
+   * 何枚入るか分からない入れ物がこちらで、1枠しかない怪我の治療具はカードを出す側に残る。
+   */
+  const contentsFillsWidth = (object: WorldObject): boolean => {
+    const slotId = openableSlotOf(object);
+    if (slotId === undefined) return false;
+    const capacity = slotCapacity(object.def.getSlotDef(slotId));
+    return capacity === undefined || capacity > WIDE_CONTENT_CAPACITY;
+  };
 
   /**
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
@@ -689,11 +698,7 @@ export function fromGameSession(
     acceptsCards: (place) => slotOf(place) !== undefined,
     capacityOf: (place) => {
       const slot = slotOf(place);
-      if (slot === undefined) return undefined;
-      const def = slot.owner.def.getSlotDef(slot.slotId);
-      // acceptsを持たないスロットは無制限（7.1節）。複数の規則があるなら、一番緩いものが上限になる。
-      const rules = def?.accepts ?? [];
-      return rules.length === 0 ? undefined : Math.max(...rules.map((rule) => rule.max));
+      return slot === undefined ? undefined : slotCapacity(slot.owner.def.getSlotDef(slot.slotId));
     },
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを

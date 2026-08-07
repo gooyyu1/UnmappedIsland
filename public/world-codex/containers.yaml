@@ -24,6 +24,9 @@ traits:
         accepts:
           - {tag: item, max: 9999}
         capacity: 1000
+        # カードを押したら中身を並べる（7.8節）。液体の容器のcontentのように、中身を見せない
+        # スロットもあるので、見せる側が名乗る。
+        show_contents: true
 
 object_defs:
   # 編み籠。蔓や草を編んで作る、最初の運搬用の入れ物。
