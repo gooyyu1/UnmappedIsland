@@ -530,8 +530,8 @@ export function fromGameSession(
    * スロット移動（WorldObject.moveToSlot*）で、場所ごとの特別扱いは持たない。コンテナ（箱・かご）
    * を足すときも、この表に1行増やすだけで移動もドラッグも動く。
    *
-   * 怪我と設置物だけundefinedなのは「移動の宛先にならない」ことを表す（怪我はワールド側の効果だけが
-   * 付け外しし、設置物は持ち歩けない）。どちらも同じ場所の中での並び替えはできる（reorder）。
+   * **どこへ移せるかはこの表では決めない。** それはワールド側の宣言（accepts・bound_to_owner）から
+   * 引く（moveInto参照）。設置物のかごを持ち歩けるようにしたら、画面を直さずに外せるようになる。
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
     if (typeof place !== 'string') {
@@ -542,7 +542,7 @@ export function fromGameSession(
       case 'items':
         return { owner: location.instance, slotId: location.itemsSlotId };
       case 'fixtures':
-        return undefined;
+        return { owner: location.instance, slotId: location.fixturesSlotId };
       case 'hand':
         return { owner: game.player.instance, slotId: game.player.handSlotId };
       case 'equipment':
@@ -553,23 +553,19 @@ export function fromGameSession(
   };
 
   /**
-   * プレイヤーがカードを入れられる場所のスロット。**読み取り専用の場所ではundefined**——怪我は
-   * ワールド側の効果だけが付け外しする（ScreenLayout.md）。見出しや容量はこの制限に関わらず
-   * 引きたいので、スロットそのものを返すslotOfとは別にする。
+   * itemを場所placeへ入れる操作（そこへは入れられないならundefined）。入れられるかの判断はすべて
+   * ドメインに任せる（WorldObject.rejectionForMoveTo）——捻挫が身体から剥がれないのも、ヤシの木が
+   * 手に持てないのも、画面が場所ごとに覚えている決まりではなくワールド側の宣言の帰結。
    */
-  const writableSlotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined =>
-    place === 'injuries' ? undefined : slotOf(place);
-
-  /** itemを場所placeへ入れる操作（そこへは入れられないならundefined）。 */
   const moveInto =
     (item: WorldObject, from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement): (() => void) | undefined => {
-      const dest = writableSlotOf(place);
+      const dest = slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
-      // 自分の中へは入れられない（籠を籠自身へ、また自分の子孫の中へ）。
-      if (typeof place !== 'string' && item.contains(place.container)) return undefined;
 
       const wellKnown = game.session.codex.wellKnown;
+      if (item.rejectionForMoveTo(dest.owner, dest.slotId, wellKnown) !== undefined) return undefined;
+
       if (at === undefined) {
         return () => {
           item.moveToSlot(dest.owner, dest.slotId, wellKnown);
@@ -633,8 +629,8 @@ export function fromGameSession(
       location.explorationProgressMax === 0
         ? 0
         : location.explorationProgress / location.explorationProgressMax,
-    // 設置物は持ち歩けないのでmoveToを持たないが、並び方はプレイヤーが地形をどう捉えているかで
-    // 変わるため、同じスロットの中での並び替えだけは許す。
+    // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
+    // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     // このレーンに並ぶカードだけが、その土地の景色を地に敷く（backgroundArt参照）。オブジェクトの
     // 種類ではなくここに並ぶかどうかで決まる——背景が表すのは「今その土地に在るもの」だから。
     fixtures: location.fixtureStacks.map((stack) => ({
@@ -642,6 +638,7 @@ export function fromGameSession(
       background: location.instance.def.name,
       // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
+      moveTo: moveInto(stack[0], 'fixtures'),
       reorder: reorderIn(stack[0]),
     })),
     items: location.itemStacks.map((stack) => ({
@@ -661,13 +658,14 @@ export function fromGameSession(
     mapLands: discovered.lands,
     mapRoads: discovered.roads,
     cardsIn: (place) => {
-      // 怪我はワールド側の効果だけが付け外しするため、moveTo/reorderを持たせない。
-      if (place === 'injuries')
-        return game.player.injuryStacks.map((stack) => stackOf(stack, INJURY_ICON, 'injuries'));
-
-      const stacks = place === 'equipment' ? game.player.equipmentStacks : stacksIn(slotOf(place));
+      const stacks =
+        place === 'equipment'
+          ? game.player.equipmentStacks
+          : place === 'injuries'
+            ? game.player.injuryStacks
+            : stacksIn(slotOf(place));
       return stacks.map((stack) => ({
-        ...stackOf(stack, ITEM_ICON, place),
+        ...stackOf(stack, place === 'injuries' ? INJURY_ICON : ITEM_ICON, place),
         moveTo: moveInto(stack[0], place),
         reorder: reorderIn(stack[0]),
       }));
@@ -679,7 +677,11 @@ export function fromGameSession(
       const owner = slot.owner === game.player.instance ? characterTexts.displayName : nameOf(slot.owner);
       return locale.slot(slotName).displayNameWithOwner(owner);
     },
-    acceptsCards: (place) => writableSlotOf(place) !== undefined,
+    acceptsCards: (place) => {
+      const slot = slotOf(place);
+      const slotDef = slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId);
+      return slotDef !== undefined && codex.admitsBroughtObjects(slotDef);
+    },
     capacityOf: (place) => {
       const slot = slotOf(place);
       return slot === undefined ? undefined : slotCapacity(slot.owner.def.getSlotDef(slot.slotId));

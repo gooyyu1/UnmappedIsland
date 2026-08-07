@@ -198,10 +198,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.items, '設置物はアイテムのレーンには出ない').toEqual([]);
-    expect(
-      view.fixtures.map((card) => card.moveTo),
-      '持ち歩けないので移動の宛先を持たない',
-    ).toEqual([undefined]);
+    // 持ち歩けないのは「設置物レーンが読み取り専用だから」ではなく、ヤシの木がitemタグを持たず
+    // 手持ちのacceptsに掛からないから。itemも兼ねる設置物（持ち運べるかご）を足せば移せるようになる。
+    expect(view.fixtures[0].moveTo?.('hand'), '手には持てない').toBeUndefined();
+    expect(view.fixtures[0].moveTo?.('items'), '地面へも下ろせない').toBeUndefined();
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
@@ -345,7 +345,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       color: water.getNumber(codex.propertyNames.getId('color')),
     });
 
-    water.destroy();
+    water.destroy(codex.wellKnown);
 
     expect(
       fromGameSession(game, codex, locale).hand[0]?.fill,
@@ -464,16 +464,20 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(withFrozenCards(view, undefined)).toBe(view);
   });
 
-  it('怪我は移動も並び替えもできない', () => {
+  it('怪我は取り出せず、何も入れられない', () => {
+    // どちらもbound_to_owner（7.9節）の帰結——捻挫は身体から剥がせず、剥がせない以上プレイヤーが
+    // 怪我を手に持つこともない。画面側は場所ごとの読み取り専用フラグを持たない。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     injure(game);
 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.cardsIn('injuries')).toHaveLength(1);
-    expect(view.cardsIn('injuries')[0].moveTo, '取り出せない').toBeUndefined();
-    expect(view.cardsIn('injuries')[0].reorder, '並び替えもできない').toBeUndefined();
+    expect(view.cardsIn('injuries')[0].moveTo?.('hand'), '取り出せない').toBeUndefined();
+    expect(view.cardsIn('injuries')[0].moveTo?.('items'), '捨てることもできない').toBeUndefined();
     expect(view.hand[0]?.moveTo?.('injuries'), '怪我は移動の宛先にならない').toBeUndefined();
+    expect(view.acceptsCards('injuries'), '受け皿の空枠も出さない').toBe(false);
+    expect(view.acceptsCards('equipment'), '装備は落とせる場所なので空枠を出す').toBe(true);
   });
 
   it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {

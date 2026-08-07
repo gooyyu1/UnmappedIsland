@@ -441,6 +441,17 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(contentOf(bowl), '量が0の液体は存在しない（quantitativeの不変条件）').toBeUndefined();
   });
 
+  it('中身の液体は器から出せない', () => {
+    // bound_to_owner（7.9節）。器の無い水は存在しないので、別の器へ移すのはpour_inの仕事——
+    // 液体のインスタンスを掴んで運ぶことはできない。
+    const jar = spawnContainer('jar', 'water', 800);
+    const empty = spawn('canteen');
+
+    expect(requireContent(jar).moveToSlot(empty, contentSlotId, codex.wellKnown)).toContain('離せません');
+    expect(amountIn(jar), '注ぎ元に残る').toBe(800);
+    expect(contentOf(empty)).toBeUndefined();
+  });
+
   it('空の容器へ注ぐと、その量の液体が注ぎ先に生まれる', () => {
     const session = new WorldSession(codex);
     const empty = spawn('canteen');

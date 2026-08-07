@@ -338,6 +338,42 @@ export class WorldObject {
     return stack !== undefined && slot.trySetManualPosition(stack, cellIndex);
   }
 
+  /**
+   * このスロットへ移れない理由（移れるならundefined）。**移動を提示してよいかを、実際に動かさずに
+   * 訊くための入口**——画面はこれを使って、掴んだカードを落とせる場所を決める。
+   *
+   * 何が移せないかを画面側が場所ごとに覚えていると、ワールド側の宣言と食い違う（設置物のかごを
+   * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
+   */
+  rejectionForMoveTo(
+    newParent: WorldObject,
+    slotGlobalId: number,
+    wellKnown: WellKnownProperties,
+    force = false,
+  ): string | undefined {
+    // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
+    // forceでも許さない——forceが省くのはaccepts/capacityの判定であって、木構造の不変条件ではない。
+    if (this.contains(newParent)) {
+      return `'${this.def.name}' を自分自身の中へは入れられません。`;
+    }
+
+    // 単独で在れない物は、いったん持ち主に付いたら別の持ち主へは移せない（7.9節）。捻挫は身体から
+    // 剥がせないし、道は繋がる土地から外せない。forceでも許さない——accepts/capacityの判定ではなく、
+    // 「その物がどう存在するか」の不変条件だから。生まれた直後（親を持たない間）の配置は通す。
+    if (this.def.boundToOwner && this._parent !== undefined && this._parent !== newParent) {
+      return `'${this.def.name}' は '${this._parent.def.name}' から離せません。`;
+    }
+
+    if (newParent.def.slotLayout.toLocal(slotGlobalId) === LocalIndexMap.missing) {
+      return `'${newParent.def.name}' はスロット(id=${slotGlobalId})を持ちません。`;
+    }
+
+    if (force) return undefined;
+    return newParent
+      .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
+      .canAccept(this, wellKnown, newParent.def.name);
+  }
+
   /** placeは位置を指定する配置（上記のinsertSameSlot・moveToSlotAt*）専用。省略すると通常の追加（Slot.addInternal）になる。 */
   private attachToSlot(
     newParent: WorldObject,
@@ -346,23 +382,11 @@ export class WorldObject {
     wellKnown: WellKnownProperties,
     force: boolean,
   ): string | undefined {
-    // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
-    // forceでも許さない——forceが省くのはaccepts/capacityの判定であって、木構造の不変条件ではない。
-    if (this.contains(newParent)) {
-      return `'${this.def.name}' を自分自身の中へは入れられません。`;
-    }
+    const rejection = this.rejectionForMoveTo(newParent, slotGlobalId, wellKnown, force);
+    if (rejection !== undefined) return rejection;
 
     const localSlot = newParent.def.slotLayout.toLocal(slotGlobalId);
-    if (localSlot === LocalIndexMap.missing) {
-      return `'${newParent.def.name}' はスロット(id=${slotGlobalId})を持ちません。`;
-    }
-
     const targetSlot = newParent.getSlotByLocalId(localSlot);
-
-    if (!force) {
-      const error = targetSlot.canAccept(this, wellKnown, newParent.def.name);
-      if (error !== undefined) return error;
-    }
 
     this.detachFromParent();
 
@@ -391,9 +415,31 @@ export class WorldObject {
   /**
    * 現在の親から切り離す（destroy、9.3節）。切り離された時点でworldツリーから到達不能になり、tickの対象からも
    * 自然に外れる。既に親を持たない場合は何もしない（繰り返し実行しても安全、6.3節）。
+   *
+   * **中身は道連れにしない。** 単独で在れる子（bound_to_ownerでない子、7.9節）は、消える自分ではなく
+   * 自分の親——子から見た祖父——へこぼれ出す。治った怪我に当てていた包帯が消えてしまわないように、
+   * 壊れた籠の中身が地面に散らばるように。
    */
-  destroy(): void {
+  destroy(wellKnown: WellKnownProperties): void {
+    this.spillContentsTo(this._parent, wellKnown);
     this.detachFromParent();
+  }
+
+  /**
+   * 消えるときに中身を送り出す（destroy参照）。単独で在れない子（怪我・液体・道）は送り出さず、
+   * 自分にぶら下がったまま道連れにする——ただしその子の中身については同じことを行う（怪我が治れば、
+   * 当てていた包帯は身体の親である土地へこぼれる）。
+   *
+   * 行き先が受け入れられなくても押し込む（force）。既に世界に在る物なので、置き場所が無いことを
+   * 理由に消すわけにはいかない（spawnの伝播と同じ扱い、9.4節）。
+   */
+  private spillContentsTo(destination: WorldObject | undefined, wellKnown: WellKnownProperties): void {
+    for (const slot of this.slots) {
+      for (const child of [...slot.contents]) {
+        if (child.def.boundToOwner) child.spillContentsTo(destination, wellKnown);
+        else if (destination !== undefined) child.moveIntoFirstAcceptingSlot(destination, wellKnown, true);
+      }
+    }
   }
 
   private detachFromParent(): void {
@@ -680,7 +726,7 @@ export class WorldObject {
     const sizeId = session.codex.wellKnown.sizeId;
     const size = this.getNumber(sizeId);
     if (size <= 0) {
-      this.destroy();
+      this.destroy(session.codex.wellKnown);
       return;
     }
 
