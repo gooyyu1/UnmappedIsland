@@ -273,6 +273,56 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(healing?.alert, '治るほど軽い域へ移る').toBe('watch');
   });
 
+  it('治療具を当てた怪我のカードだけが、手当て済みの印を持つ', () => {
+    // 手当ての有無で絵は差し替えない（ScreenLayout.md カードの印 節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const injury = injure(game);
+
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBeUndefined();
+
+    const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
+    expect(bandage.moveToSlot(injury, codex.slotNames.getId('treatment'), codex.wellKnown)).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBe('🩹');
+  });
+
+  it('中身を持つカードは、それを映す場所と、空けておく枠の数の元になる容量を持つ', () => {
+    // 中身を見せるかはタグではなくスロットで決める（ScreenLayout.md 子ウィンドウ節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const injury = injure(game);
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    expect(
+      basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const injuryCard = view.cardsIn('injuries')[0];
+    const basketCard = view.hand.find((card) => card?.objects[0] === basket)!;
+
+    expect(injuryCard.contents, '怪我は治療具のスロットを開く').toEqual({ container: injury });
+    expect(view.capacityOf(injuryCard.contents!), '治療具は1つだけ').toBe(1);
+
+    expect(basketCard.contents, 'コンテナは中身のスロットを開く').toEqual({ container: basket });
+    expect(view.capacityOf(basketCard.contents!), 'かごは何枚入るか分からない').toBeGreaterThan(4);
+  });
+
+  it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
+    // 見せるスロットはワールド側が名乗る（show_contents、GameElementDefinition.md 7.8節）。
+    // 液体の容器のcontentは名乗っていないので、押しても説明とアクションだけが出る。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
+    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
+    expect(
+      bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
+
+    const card = fromGameSession(game, codex, locale).hand.find((held) => held?.objects[0] === bowl)!;
+
+    expect(card.contents, '中身の並びは開かない').toBeUndefined();
+    expect(card.fill?.ratio, '入っていることはバーで見せる').toBeGreaterThan(0);
+  });
+
   it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
@@ -444,9 +494,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
     expect(view.cardsIn(opened!).flatMap((card) => card.objects)).toEqual([stone]);
-    expect(view.nameOf(opened!), 'タイトルはコンテナ自身の表示名').toBe(
-      locale.object('woven_basket').displayName,
-    );
+    // 見出しはスロットの名前を持ち主込みで言ったもの。この対応表はどちらも未登録なので識別子のまま。
+    expect(view.nameOf(opened!)).toBe(locale.slot('contents').displayNameWithOwner('woven_basket'));
     expect(view.acceptsCards(opened!)).toBe(true);
     expect(view.hand[1], '石は手持ちから無くなる').toBeUndefined();
 
@@ -611,7 +660,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '%2入りの%1'
+    display_name_with_content: '{content}入りの{container}'
   canteen:
     display_name: 水筒
   water_liquid:

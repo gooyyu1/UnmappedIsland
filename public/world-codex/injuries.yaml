@@ -1,10 +1,32 @@
 # 怪我（injuryタグ）の定義。キャラクタのinjuriesスロットにだけ入る（characters/player_character.yaml）。
 # 種類ごとの値の決め方は docs/world/Injuries.md 参照。
 
+traits:
+  # 手当てのできる怪我。治療具（treatments.yaml）を1つだけ当てておける。
+  treatable:
+    # 怪我を代表する物のスロット（7.8節）。カードを押すと治療具が並ぶ——付け外しの唯一の経路。
+    main_item_slot: treatment
+    slots:
+      # 当てている治療具。**1つだけ**——包帯の上から添え木を、のような重ね掛けは、効き目の
+      # 足し合わせ方が決まっていない（docs/world/Injuries.md 手当て節）。
+      treatment:
+        accepts:
+          - {tag: treatment, max: 1}
+    combinations:
+      # 治療具を当てる。何を当てられるかはtreatmentスロットのacceptsが決めるので、条件は書かない。
+      #
+      # **durationは持たない。** 子ウィンドウのスロットへ落としても当てられる（そちらは通常のスロット
+      # 移動なので時間を取らない）ため、こちらだけ時間を取ると同じことが経路で違う値段になる。
+      # 手当てに時間をかけたくなったら、スロット移動の側にも時間を課す語彙が要る。
+      treat:
+        with: treatment
+        move: {object: dragged, to: self}
+
 object_defs:
   # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_coconut）。
   sprained_ankle:
     tags: [injury]
+    traits: [treatable]
     props:
       # 残っている傷の重さ。自然に治る速さを基準レートに置き（-100/tick、6.0節の量のクラス）、
       # maxが「その速さで何tickぶんか」＝ 960 tick（10日）を表す。

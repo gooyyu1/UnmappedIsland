@@ -21,6 +21,9 @@ export class RawTrait {
   /** represented_by（7.6節）で指定されたスロット名。未指定ならundefined。 */
   representedBy: string | undefined;
 
+  /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
+  mainItemSlot: string | undefined;
+
   /** quantitative（7.6節）。個数ではなく量で存在する型か。 */
   quantitative = false;
 

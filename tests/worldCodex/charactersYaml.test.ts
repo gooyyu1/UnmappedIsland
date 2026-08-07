@@ -79,6 +79,13 @@ describe('プレイヤーキャラクタの定義', () => {
         ).toBeDefined();
     });
 
+    it('代表する物のスロット（main_item_slot）は持たない', () => {
+      // 手持ち・装備・怪我はどれも物のスロットだが、そのどれもがキャラクタを代表しない
+      // （GameElementDefinition.md 7.8節）。装備・怪我のボタンは、開くスロットを固定で
+      // 子ウィンドウへ渡すのでこれに依らない。
+      expect(def(character).mainItemSlotGlobalId).toBeUndefined();
+    });
+
     it.each([
       ['pain', ['status', 'health']],
       ['satiety', ['status', 'nutrition']],

@@ -36,11 +36,48 @@ export class Texts {
   }
 }
 
+/**
+ * 書式へ名前で値を差し込む（`{name}` の形。ICU MessageFormatなどJSで広く使われている書き方に倣う）。
+ *
+ * **置換は1回で走らせる。** 順に置き換えると、先に差し込んだ名前の中の `{...}` まで置換対象になる。
+ * 知らない名前はそのまま残す——書式の書き間違いを、黙って空文字にするより気付けるようにするため。
+ */
+function format(text: string, values: Readonly<Record<string, string>>): string {
+  return text.replace(/\{(\w+)\}/g, (whole, name: string) => values[name] ?? whole);
+}
+
+/**
+ * 1つのスロットの表示文字列。
+ *
+ * スロットは必ず持ち主のものなので、名前は2通りある。`displayName` はスロットだけを指す短い言い方
+ * （「装備」）、`displayNameWithOwner` は持ち主込みの言い方（「マルコの装備」）で、後者は書式から
+ * 組み立てる。中身入りの入れ物の名前（`displayNameWithContent`）と同じ考え方。
+ */
+export class SlotTexts {
+  readonly displayName: string;
+  private readonly format: string | undefined;
+
+  constructor(displayName: string, format?: string) {
+    this.displayName = displayName;
+    this.format = format;
+  }
+
+  /**
+   * 持ち主込みの言い方。書式の `{slot}` がスロットの名前、`{owner}` が持ち主の名前。
+   * 書式が無ければスロットの名前だけを返す。
+   */
+  displayNameWithOwner(ownerName: string): string {
+    if (this.format === undefined) return this.displayName;
+    return format(this.format, { slot: this.displayName, owner: ownerName });
+  }
+}
+
 /** localeファイルに書かれたままの表示文字列（いずれも省略可能）。識別子へのフォールバックは引く側が行う。 */
 interface DeclaredTexts {
   readonly displayName: string | undefined;
   readonly description: string | undefined;
   readonly displayNameWithContent: string | undefined;
+  readonly displayNameWithOwner: string | undefined;
 }
 
 /** localeファイルの1エントリ（オブジェクト自身の文字列と、種類ごとのメンバーの文字列）。 */
@@ -99,10 +136,9 @@ export class ObjectTexts {
    * 自身の表示名から埋まるので、共通の書式を書いても全オブジェクトが同じ名前になることはない。
    */
   displayNameWithContent(contentName: string): string {
-    const format = this.entry?.own?.displayNameWithContent ?? this.defaults?.own?.displayNameWithContent;
-    if (format === undefined) return this.displayName;
-    // 置換は1回で走らせる。順に置き換えると、先に埋めた名前の中の`%2`まで置換対象になる。
-    return format.replace(/%[12]/g, (placeholder) => (placeholder === '%1' ? this.displayName : contentName));
+    const declared = this.entry?.own?.displayNameWithContent ?? this.defaults?.own?.displayNameWithContent;
+    if (declared === undefined) return this.displayName;
+    return format(declared, { container: this.displayName, content: contentName });
   }
 
   prop(propertyName: string): Texts {
@@ -184,6 +220,7 @@ export class Localization {
   private readonly locations: ReadonlyMap<string, LocationTextsEntry>;
   private readonly reasons: ReadonlyMap<string, string>;
   private readonly ordinalSuffix: string;
+  private readonly slots: ReadonlyMap<string, DeclaredTexts>;
 
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
@@ -192,6 +229,7 @@ export class Localization {
     locations: ReadonlyMap<string, LocationTextsEntry> = new Map(),
     reasons: ReadonlyMap<string, string> = new Map(),
     ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
+    slots: ReadonlyMap<string, DeclaredTexts> = new Map(),
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
@@ -199,6 +237,7 @@ export class Localization {
     this.locations = locations;
     this.reasons = reasons;
     this.ordinalSuffix = ordinalSuffix;
+    this.slots = slots;
   }
 
   /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */
@@ -222,6 +261,18 @@ export class Localization {
    */
   reason(reasonName: string): string | undefined {
     return this.reasons.get(reasonName);
+  }
+
+  /**
+   * スロット（GameElementDefinition.md 7節）の表示文字列。未登録なら識別子そのもの。
+   *
+   * スロットは必ず持ち主のものなので、名前も**持ち主込みの言い方**を持てる（`display_name_with_owner`、
+   * 中身入りの入れ物の名前と同じ考え方）。子ウィンドウの見出しがこれを使う。
+   */
+  slot(slotName: string): SlotTexts {
+    const declared = this.slots.get(slotName);
+    const format = declared?.displayNameWithOwner ?? this.slots.get(DEFAULT_KEY)?.displayNameWithOwner;
+    return new SlotTexts(declared?.displayName ?? slotName, format);
   }
 
   /** プロパティのタグ（GameElementDefinition.md 6.7節）の表示文字列。未登録なら識別子そのもの。 */
@@ -282,6 +333,15 @@ export function parseLocale(label: string, yamlText: string): Localization {
       if (texts !== undefined) propertyTags.set(name, texts);
     }
 
+  const slots = new Map<string, DeclaredTexts>();
+  const slotSection = tryGetMap(root, 'slot_texts', label);
+  if (slotSection !== undefined)
+    for (const [name, node] of entriesInOrder(slotSection)) {
+      const context = `${label}.slot_texts.'${name}'`;
+      const texts = parseTexts(asMap(node, context), context);
+      if (texts !== undefined) slots.set(name, texts);
+    }
+
   const symbols = new Map<string, DeclaredTexts>();
   const symbolSection = tryGetMap(root, 'symbol_texts', label);
   if (symbolSection !== undefined)
@@ -322,7 +382,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(reasonSection))
       reasons.set(name, asScalarText(node, `${label}.reason_texts.'${name}'`));
 
-  return new Localization(objects, propertyTags, symbols, locations, reasons, ordinalSuffix);
+  return new Localization(objects, propertyTags, symbols, locations, reasons, ordinalSuffix, slots);
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {
@@ -348,7 +408,13 @@ function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   const displayName = tryGetScalar(node, 'display_name', context);
   const description = tryGetScalar(node, 'description', context);
   const displayNameWithContent = tryGetScalar(node, 'display_name_with_content', context);
-  if (displayName === undefined && description === undefined && displayNameWithContent === undefined)
+  const displayNameWithOwner = tryGetScalar(node, 'display_name_with_owner', context);
+  if (
+    displayName === undefined &&
+    description === undefined &&
+    displayNameWithContent === undefined &&
+    displayNameWithOwner === undefined
+  )
     return undefined;
-  return { displayName, description, displayNameWithContent };
+  return { displayName, description, displayNameWithContent, displayNameWithOwner };
 }

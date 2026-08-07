@@ -61,20 +61,49 @@ object_texts:
 `default` に書いた `display_name`/`description`（オブジェクト自身の組）は使いません。使ってしまうと
 未登録のオブジェクトがすべて同じ名前で表示されるため、`default` はメンバーのフォールバック専用です。
 
+## 書式のプレースホルダは名前で書く
+
+差し込みのある書式（次の 2 つ）は、`{container}` のように**名前で**書きます。TypeScript には組み込みの
+書式規約が無いので、JS で広く使われている ICU MessageFormat 系の書き方に倣っています。位置で書く
+`%1`/`%2` は、翻訳する側が「2 番目は何だったか」を調べないと語順を変えられないため採りません。
+
+差し込みは 1 回で走らせます。順に置き換えると、先に差し込んだ名前の中の `{...}` まで置換対象に
+なるためです。書式に知らない名前が書かれていたら、空文字にせずそのまま残します——書き間違いに
+気付けるようにするためです。
+
+## slot_texts: スロットの名前
+
+スロットは必ず持ち主のものなので、名前も 2 通り持てます。`display_name` はスロットだけを指す短い
+言い方（「装備」）、`display_name_with_owner` は持ち主込みの言い方（「マルコの装備」）です。
+子ウィンドウの見出しが後者を使います（[`ScreenLayout.md`](../ui/ScreenLayout.md) 子ウィンドウ節）。
+
+```yaml
+slot_texts:
+  default:
+    display_name_with_owner: '{owner}の{slot}'   # 装備 + マルコ → マルコの装備
+  contents:
+    display_name: 中身                            # 中身 + 編み籠 → 編み籠の中身
+  equipment:
+    display_name: 装備
+```
+
+**書式だけは `default` エントリを参照します**（次節の `display_name_with_content` と同じ理由）。
+`{slot}` は各スロット自身の名前から埋まるので、共通の書式を書いてもすべてが同じ名前にはなりません。
+
 ## display_name_with_content: 中身がいるときの名前
 
 `represented_by`（[GameElementDefinition.md](./GameElementDefinition.md) 7.6節）で中身を代表にしている
 オブジェクトは、中身がいる間だけ名前が変わります。書式を `display_name_with_content` に書き、
-**`%1` が入れ物自身の表示名、`%2` が中身の名前**に置き換わります。
+**`{container}` が入れ物自身の表示名、`{content}` が中身の名前**に置き換わります。
 
 ```yaml
 object_texts:
   default:
-    display_name_with_content: '%2入りの%1'   # 水筒 + 水 → 水入りの水筒
+    display_name_with_content: '{content}入りの{container}'   # 水筒 + 水 → 水入りの水筒
 ```
 
 **この書式だけは `default` エントリを参照します。** `display_name` を `default` から採らないのは、
-未登録のオブジェクトがすべて同じ名前になってしまうからですが、こちらは名前ではなく書式で、`%1` は
+未登録のオブジェクトがすべて同じ名前になってしまうからですが、こちらは名前ではなく書式で、`{container}` は
 各オブジェクト自身の表示名から埋まります。中身を持つ入れ物はどれも同じ言い方でよいので、共通の
 書式を1回書けば済み、言い方を変えたい入れ物だけが自分のエントリで上書きします。
 

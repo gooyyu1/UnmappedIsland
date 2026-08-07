@@ -36,7 +36,8 @@ export class ObjectDef {
   readonly slotLayout: LocalIndexMap;
 
   /** ローカルindexで並ぶ密配列。slotLayout と対になる。 */
-  private readonly slotDefs: readonly SlotDef[];
+  /** このobject_defが持つスロットの定義（宣言順）。 */
+  readonly slotDefs: readonly SlotDef[];
 
   /** slotDefsのうち、自動配置（7.7節）を受け入れるものだけを宣言順に並べたもの。 */
   private readonly autoPlacementSlotDefs: readonly SlotDef[];
@@ -52,6 +53,15 @@ export class ObjectDef {
    * undefinedなら常に自分自身が代表。指定時は、そのスロットの先頭の1個（さらにその代表…）が
    * interactionの実行対象・stack判定の識別に使われる。 */
   readonly representedBySlotGlobalId: number | undefined;
+
+  /**
+   * この型を**代表する物のスロット**のグローバルID（7.8節）。undefinedなら持たない。
+   *
+   * 画面はカードを押したときにここの中身を並べる（かごの中身、怪我に当てている治療具）。
+   * 液体の容器は持たない——中身は物ではなく量で、1枚ずつ取り出せるものではないため。
+   * キャラクタも持たない——手持ち・装備・怪我はどれも物のスロットだが、そのどれもが代表ではない。
+   */
+  readonly mainItemSlotGlobalId: number | undefined;
 
   /** このObjectDefが持つメニュー型操作（11節）。 */
   readonly actions: readonly ActionDef[];
@@ -80,6 +90,7 @@ export class ObjectDef {
     combinations: readonly CombinationDef[] = [],
     representedBySlotGlobalId?: number,
     isQuantitative = false,
+    mainItemSlotGlobalId?: number,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -95,6 +106,7 @@ export class ObjectDef {
     this.actions = actions;
     this.combinations = combinations;
     this.representedBySlotGlobalId = representedBySlotGlobalId;
+    this.mainItemSlotGlobalId = mainItemSlotGlobalId;
     this.isQuantitative = isQuantitative;
   }
 

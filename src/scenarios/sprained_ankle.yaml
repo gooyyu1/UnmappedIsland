@@ -9,6 +9,8 @@ title: 足首を捻挫した状態
 seed: 3
 
 player:
+  # 手当てを試せるよう、治療具を持たせておく（怪我のカードへ重ねると当たる）。
+  hand: [bandage]
   injuries: [sprained_ankle]
 
 location:

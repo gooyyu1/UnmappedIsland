@@ -1,3 +1,4 @@
+import type { SlotDef } from '../domain/defs/SlotDef';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
@@ -204,6 +205,10 @@ export interface PlayScreenView {
   readonly cardsIn: (place: CardPlace) => readonly ObjectCardStack[];
 
   /** 子ウィンドウのタイトルに出す、その場所の名前。 */
+  /**
+   * その場所を映す子ウィンドウの見出し。**スロットの名前を持ち主込みで言う**（「マルコの装備」
+   * 「編み籠の中身」）。スロットは必ず持ち主のものなので、名前だけでは何のスロットか分からない。
+   */
   readonly nameOf: (place: CardPlace) => string;
 
   /**
@@ -211,6 +216,12 @@ export interface PlayScreenView {
    * 「落とせる場所かどうか」を見せるために、画面側が受け皿の空枠を出すかの判断に使う。
    */
   readonly acceptsCards: (place: CardPlace) => boolean;
+
+  /**
+   * その場所へ何枚入るか（無制限ならundefined）。子ウィンドウが空けておく枠の数を決めるのに使う
+   * ——1枚しか入らない場所に4枠空けると「4つ入る」と誤って伝わる。
+   */
+  readonly capacityOf: (place: CardPlace) => number | undefined;
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
@@ -263,13 +274,22 @@ const SEVERITY_PROPERTY = 'severity';
 const COLOR_PROPERTY = 'color';
 
 /**
- * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
- * レーンで常に見えているfixtures/items/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
+ * 治療具を当てておくスロットの名前と、当たっているカードへ出す印
+ * （injuries.yaml・ScreenLayout.md カードの印 節）。
+ *
+ * **手当ての有無で絵を差し替えない。** 差し替えると、怪我の部位 × 治療具の数だけ絵が要る。
  */
-const PLACE_NAMES: Partial<Record<CardPlace & string, string>> = {
-  equipment: '装備',
-  injuries: '怪我',
-};
+const TREATMENT_SLOT = 'treatment';
+const TREATED_MARK = '🩹';
+
+/**
+ * そのスロットへ何枚入るか（無制限ならundefined）。acceptsを持たないスロットは無制限（7.1節）で、
+ * 複数の規則があるなら一番緩いものが上限になる。
+ */
+function slotCapacity(slot: SlotDef | undefined): number | undefined {
+  const rules = slot?.accepts ?? [];
+  return rules.length === 0 ? undefined : Math.max(...rules.map((rule) => rule.max));
+}
 
 /** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
 function stacksIn(
@@ -333,6 +353,13 @@ export function fromGameSession(
     return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
   };
 
+  const treatmentSlotId = codex.slotNames.tryGetId(TREATMENT_SLOT);
+  /** 治療具が当たっているカードに出す印。当たっていなければundefined（印そのものを出さない）。 */
+  const markOf = (object: WorldObject): string | undefined =>
+    treatmentSlotId !== undefined && (object.tryGetSlot(treatmentSlotId)?.contents.length ?? 0) > 0
+      ? TREATED_MARK
+      : undefined;
+
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
   /**
    * 量として存在する中身（水・茶・油）の割合と、その中身が宣言している色
@@ -353,13 +380,18 @@ export function fromGameSession(
     return { ratio, color };
   };
 
-  const containerTagId = codex.tagNames.tryGetId('container');
-  const contentsSlotId = codex.slotNames.tryGetId('contents');
-  /** そのカードがコンテナなら、中身を映す場所。中身を持てるスロットが無いcodexではundefined。 */
+  /**
+   * カードを押したときに開く、そのオブジェクトの主要なスロット（持たなければundefined）。
+   *
+   * **どのスロットかはワールド側が名指しする**（`main_item_slot`、GameElementDefinition.md 7.8節）。
+   * UIがスロット名で決めていた頃は、液体の容器のスロット（`content`）が入れ物のスロット（`contents`）と
+   * 1文字違いだったおかげで開かれずに済んでいただけで、名前が揃えば水を取り出せてしまう。
+   */
+  const openableSlotOf = (object: WorldObject): number | undefined => object.def.mainItemSlotGlobalId;
+
+  /** そのカードが中身を持つなら、それを映す場所。持たなければundefined（押しても中身は開かない）。 */
   const contentsOf = (object: WorldObject): CardPlace | undefined =>
-    containerTagId !== undefined && contentsSlotId !== undefined && object.def.tags.includes(containerTagId)
-      ? { container: object }
-      : undefined;
+    openableSlotOf(object) === undefined ? undefined : { container: object };
 
   /**
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
@@ -406,6 +438,7 @@ export function fromGameSession(
     durability: durabilityOf(instances[0]),
     fill: fillOf(instances[0]),
     severity: severityOf(instances[0]),
+    mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
     description: locale.object(instances[0].def.name).description,
@@ -502,7 +535,8 @@ export function fromGameSession(
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
     if (typeof place !== 'string') {
-      return contentsSlotId === undefined ? undefined : { owner: place.container, slotId: contentsSlotId };
+      const slotId = openableSlotOf(place.container);
+      return slotId === undefined ? undefined : { owner: place.container, slotId };
     }
     switch (place) {
       case 'items':
@@ -514,15 +548,23 @@ export function fromGameSession(
       case 'equipment':
         return { owner: game.player.instance, slotId: game.player.equipmentSlotId };
       case 'injuries':
-        return undefined;
+        return { owner: game.player.instance, slotId: game.player.injuriesSlotId };
     }
   };
+
+  /**
+   * プレイヤーがカードを入れられる場所のスロット。**読み取り専用の場所ではundefined**——怪我は
+   * ワールド側の効果だけが付け外しする（ScreenLayout.md）。見出しや容量はこの制限に関わらず
+   * 引きたいので、スロットそのものを返すslotOfとは別にする。
+   */
+  const writableSlotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined =>
+    place === 'injuries' ? undefined : slotOf(place);
 
   /** itemを場所placeへ入れる操作（そこへは入れられないならundefined）。 */
   const moveInto =
     (item: WorldObject, from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement): (() => void) | undefined => {
-      const dest = slotOf(place);
+      const dest = writableSlotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
       // 自分の中へは入れられない（籠を籠自身へ、また自分の子孫の中へ）。
       if (typeof place !== 'string' && item.contains(place.container)) return undefined;
@@ -630,8 +672,18 @@ export function fromGameSession(
         reorder: reorderIn(stack[0]),
       }));
     },
-    nameOf: (place) => (typeof place === 'string' ? (PLACE_NAMES[place] ?? place) : nameOf(place.container)),
-    acceptsCards: (place) => slotOf(place) !== undefined,
+    nameOf: (place) => {
+      const slot = slotOf(place);
+      if (slot === undefined) return typeof place === 'string' ? place : nameOf(place.container);
+      const slotName = codex.slotNames.getName(slot.slotId);
+      const owner = slot.owner === game.player.instance ? characterTexts.displayName : nameOf(slot.owner);
+      return locale.slot(slotName).displayNameWithOwner(owner);
+    },
+    acceptsCards: (place) => writableSlotOf(place) !== undefined,
+    capacityOf: (place) => {
+      const slot = slotOf(place);
+      return slot === undefined ? undefined : slotCapacity(slot.owner.def.getSlotDef(slot.slotId));
+    },
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
