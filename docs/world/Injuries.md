@@ -34,5 +34,8 @@
 ## 今後の検討課題
 
 - 行動力（`stamina`）の消費増加・移動の制限といった、痛み以外の影響
-- 手当て（`medic` の心得を活かす治療。今は時間だけが治す）
+- 手当て（`medic` の心得を活かす治療。今は時間だけが治す）。包帯を巻いた絵のレシピ
+  （`tools/comfyui/recipes/sprained_ankle_bandaged.json`）は用意してあるので、手当済みの
+  `object_def` を足す段になったら `build.py` に渡せばよい。PNGを先に置かないのは、
+  `object_def` の無い絵をリポジトリに残さないため（`tests/game/objectArt.test.ts`）
 - 悪化（放置した怪我が別の怪我へ変わる）

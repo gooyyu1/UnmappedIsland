@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/objects/sprained_ankle_bandaged.png（手当済みの足首の捻挫）を作り直すためのレシピ。",
+    "build.py が読む。",
+    "",
+    "手当前の絵（sprained_ankle.json）の生データ——痣を載せる前の、白い紙に置き直しただけの足——を",
+    "基準に、Qwen Image Edit で包帯を巻く。同じ足から派生させるので、手当ての前後で足が入れ替わらない。",
+    "痣は包帯に隠れるので、こちらには載せない。",
+    "",
+    "**手当てをする仕組みはまだ無い**（docs/world/Injuries.md の今後の検討課題）ので、この出力先の",
+    "PNGはまだリポジトリに無い。object_defの無い絵は置けない（tests/game/objectArt.test.ts）ため、",
+    "手当済みのobject_defを足す段になったらこのレシピをbuild.pyへ渡す。"
+  ],
+  "output": "src/assets/objects/sprained_ankle_bandaged.png",
+  "edit": {
+    "source": "sprained_ankle.json",
+    "prompt": "Wrap a clean white cloth bandage firmly around this ankle and the top of the foot, with the toes and the heel left bare. Keep everything else exactly as it is: the same pose, the same leg, the same smooth rounded ankle, the same skin tones, the same plain empty white page with a wide white margin, and the same soft grey shadow beneath. Do not change the outline of the foot anywhere except where the bandage lies. Hand painted illustration, matte cloth, flat even lighting. Nothing else in the image, no text, no letters, no numbers.",
+    "seed": 3
+  },
+  "cardArt": {
+    "_comment": "手当前と同じ（sprained_ankle.json 参照）。揃えないと、手当ての前後で絵の大きさと作風が変わる。",
+    "size": "card",
+    "mode": "luma",
+    "white": 250,
+    "opaque": 200,
+    "feather": 24,
+    "oilify": [6, 12]
+  }
+}

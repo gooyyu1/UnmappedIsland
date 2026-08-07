@@ -46,6 +46,8 @@ from scipy.ndimage import (
     sum_labels,
 )
 
+from postprocess import oilify
+
 # カードの絵の寸法と、その中で紙が占める範囲（Card.ts の CARD_ART_WIDTH / FRAME_INSET /
 # FRAME_RADIUS と同じもの）。410x640は、カードの寸法205u x 320uのちょうど2倍。4K（u=2px）で等倍に
 # なる大きさで、これ以上はどの画面でも縮小されるだけの無駄になる。
@@ -340,6 +342,8 @@ def main() -> None:
                         help="使う範囲を先に切り出す（1枚に複数写ったときに1つだけ採る）")
     parser.add_argument("--diagonal", action="store_true",
                         help="物の長い向きを対角線へ倒す。細長い物を長く見せたいときに使う")
+    parser.add_argument("--oilify", type=int, nargs=2, metavar=("RADIUS", "LEVELS"),
+                        help="油絵風に潰す（postprocess.oilify）。写実的すぎる絵を他のカードへ寄せる")
     args = parser.parse_args()
 
     image = Image.open(args.source).convert("RGB")
@@ -348,6 +352,11 @@ def main() -> None:
         image = image.crop((x, y, x + width, y + height))
     if args.diagonal:
         image = align_to_diagonal(image, args.tolerance)
+    if args.oilify:
+        # 切り出しの前に掛ける。輪郭も一緒に絵の具の塊にしたいので、透過を決めたあとでは遅い。
+        radius, levels = args.oilify
+        painted = oilify(np.asarray(image, dtype=np.float64), radius, levels, ["reflect", "reflect"])
+        image = Image.fromarray(np.clip(painted, 0, 255).astype(np.uint8), "RGB")
 
     if args.size == "card":
         # 全面に敷くので、紙からはみ出した分を角丸で消す必要がある。
@@ -385,6 +394,7 @@ def main() -> None:
         **({"crop": args.crop} if args.crop else {}),
         **({"canvas": args.canvas} if args.canvas else {}),
         **({"diagonal": True} if args.diagonal else {}),
+        **({"oilify": args.oilify} if args.oilify else {}),
         **({"mode": args.mode, "feather": args.feather} if args.size == "card" else {}),
         **({"tolerance": args.tolerance, "edge": args.edge, "shadow": args.shadow, "reach": args.reach}
            if args.size != "card" or args.mode == "background" else {}),
