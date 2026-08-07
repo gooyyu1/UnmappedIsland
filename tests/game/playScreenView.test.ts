@@ -19,6 +19,15 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   let codex: WorldCodex;
   let locale: Localization;
 
+  /** プレイヤーに怪我（injuries.yaml）を1つ負わせ、そのインスタンスを返す。 */
+  function injure(game: NewGameSession) {
+    const injury = game.session.spawn(codex.objectNames.getId('sprained_ankle'));
+    expect(
+      injury.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'), codex.wellKnown),
+    ).toBeUndefined();
+    return injury;
+  }
+
   /** 現在地を探索率100%まで探索する。100%到達後も探索は続けられるため、回数で止める。 */
   function exploreToFull(game: NewGameSession): void {
     const location = game.player.location ?? game.startLocation;
@@ -244,6 +253,26 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(fromGameSession(game, codex, locale).hand[0]?.durability, '減った分だけ割合が下がる').toBe(0.75);
   });
 
+  it('怪我のカードは耐久度ではなく、残っている傷とその域を持つ', () => {
+    // 耐久度バーは道具の控えめな細線で、あとどれだけで治るかはそれとは別の見せ方をする
+    // （ScreenLayout.md カードの状態バー節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const injury = injure(game);
+
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].durability).toBeUndefined();
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].severity).toEqual({
+      ratio: 1,
+      alert: 'caution',
+    });
+
+    const severityId = codex.propertyNames.getId('severity');
+    injury.addNumber(severityId, -injury.getNumber(severityId) / 2, game.session);
+
+    const healing = fromGameSession(game, codex, locale).cardsIn('injuries')[0].severity;
+    expect(healing?.ratio, '半分治れば半分まで縮む').toBeCloseTo(0.5, 3);
+    expect(healing?.alert, '治るほど軽い域へ移る').toBe('watch');
+  });
+
   it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
@@ -387,11 +416,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
   it('怪我は移動も並び替えもできない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
-    const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    // 怪我のobject_defはまだ無いため、怪我スロットの中身としてitemを強制的に入れて代用する。
-    expect(
-      stone.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'), codex.wellKnown, true),
-    ).toBeUndefined();
+    injure(game);
 
     const view = fromGameSession(game, codex, locale);
 

@@ -6,16 +6,22 @@ object_defs:
   sprained_ankle:
     tags: [injury]
     props:
-      # 治りきるまでの残り。10日（960 tick）で引く（DurabilitySystem.md 1節の規約に載せ、
-      # -1000/tick = 寿命10日）。
-      durability:
-        value: 960000
+      # 残っている傷の重さ。自然に治る速さを基準レートに置き（-100/tick、6.0節の量のクラス）、
+      # maxが「その速さで何tickぶんか」＝ 960 tick（10日）を表す。
+      severity:
+        value: 96000
         # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
-        range: {min: 1, max: 960000}
+        range: {min: 1, max: 96000}
+        # 段はそのまま怪我カードのバーの色になる（ScreenLayout.md カードの状態バー節）。捻挫は
+        # 負った直後でも要注意域までで、危険域は骨折のようなより重い怪我のために空けておく。
+        stages:
+          - {name: mending}
+          - {name: sore, min: 32000, alert: watch}
+          - {name: acute, min: 64000, alert: caution}
         passives:
           - accumulate:
               self:
-                durability: -1000
+                severity: -100
         on_shortfall:
           destroy: self
     passives:
