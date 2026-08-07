@@ -27,6 +27,11 @@ object_texts:
       load:
         display_name: 荷重
         description: 今の担ぎ方で感じている、持ち物と装備の重さ。重すぎると歩けなくなる。
+      pain:
+        display_name: 痛み
+        description: 今感じている痛みの強さ。負っている怪我が重なるほど強くなり、治れば引く。
+      durability:
+        display_name: 耐久
       satiety:
         display_name: 満腹度
       hydration:
@@ -135,6 +140,15 @@ object_texts:
   coconut_meat:
     display_name: ヤシの果肉
     description: 殻から掻き出した白い果肉。ほのかに甘く、水気がある。
+
+  # 怪我（injuries.yaml）。
+  sprained_ankle:
+    display_name: 足首の捻挫
+    description: 踏み外した足首の腫れ。体重をかけるたびに痛みが走る。
+    props:
+      durability:
+        display_name: 傷の残り
+        description: 治りきるまでに残っている傷。時間とともに引いていき、尽きれば治る。
 
   # 探索で見つかるアイテム（locations.yaml・foods.yaml）。
   thick_branch:

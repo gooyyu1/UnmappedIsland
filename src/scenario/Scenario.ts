@@ -58,6 +58,8 @@ export interface Scenario {
   readonly seed: number;
   readonly hand: SlotContents;
   readonly equipment: SlotContents;
+  /** 負った状態で始める怪我（injuries.yaml）。実際に負う契機は確率なので、狙って再現できない。 */
+  readonly injuries: SlotContents;
   /**
    * 開始地点にする土地のobject_def名。省略すると通常の漂着地（砂浜優先、IslandSpawner.placePlayer）。
    * シードだけでは地形の種類を選べないため、特定の土地から試したいシナリオはこれで指定する。
@@ -94,6 +96,7 @@ export function parseScenario(fileName: string, text: string): Scenario {
     seed,
     hand: names(player, 'hand', `${fileName}.player`),
     equipment: names(player, 'equipment', `${fileName}.player`),
+    injuries: names(player, 'injuries', `${fileName}.player`),
     locationType: location === undefined ? undefined : tryGetScalar(location, 'type', `${fileName}.location`),
     items: names(location, 'items', `${fileName}.location`),
     fixtures: names(location, 'fixtures', `${fileName}.location`),
@@ -159,6 +162,7 @@ export function applyScenario(game: NewGameSession, scenario: Scenario, codex: W
 
   place(game, codex, scenario.hand, 'hand');
   place(game, codex, scenario.equipment, 'equipment');
+  place(game, codex, scenario.injuries, 'injuries');
   place(game, codex, scenario.items, 'items');
   place(game, codex, scenario.fixtures, 'fixtures');
 
@@ -188,12 +192,15 @@ function resolveValue(codex: WorldCodex, propertyName: string, raw: string): num
   return symbolId;
 }
 
+/** 土地ではなくキャラクター自身が持つスロット（place参照）。 */
+const PLAYER_SLOTS = ['hand', 'equipment', 'injuries'];
+
 /** 名前で並べたobject_defを1つずつ生成し、そのスロットへ入れる。 */
 function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, slot: string): void {
   if (contents.length === 0) return;
 
-  // 手持ち・装備はキャラクターのスロット、それ以外は開始地点の土地のスロット。
-  const owner = slot === 'hand' || slot === 'equipment' ? game.player.instance : game.startLocation.instance;
+  // 手持ち・装備・怪我はキャラクターのスロット、それ以外は開始地点の土地のスロット。
+  const owner = PLAYER_SLOTS.includes(slot) ? game.player.instance : game.startLocation.instance;
   const slotId = slotIdOf(codex, slot);
 
   for (const name of contents) {

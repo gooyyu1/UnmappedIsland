@@ -55,6 +55,17 @@ describe('テスト用シナリオ', () => {
     ]);
   });
 
+  it('sprained_ankleは、怪我を負い痛みを感じている状態から始める', () => {
+    // 負う契機は確率（coconut.yamlのpick_coconut）なので、見た目を確かめるにはここから始める。
+    const scenario = load('sprained_ankle');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    expect(game.player.injuryStacks.map((stack) => stack[0].def.name)).toEqual(['sprained_ankle']);
+    expect(game.player.instance.getEffectiveValue(codex.propertyNames.getId('pain'))).toBeGreaterThan(0);
+  });
+
   it('jungle_startは、漂着地ではなく密林から始める', () => {
     const scenario = load('jungle_start');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));

@@ -662,9 +662,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(view.statuses).toHaveLength(tagged.length);
-    // 満腹度と水分は開始直後からバーに出るよう安全域のやや下（75%）、荷重は空身の0、残りは満タンで始まる
+    // 満腹度と水分は開始直後からバーに出るよう安全域のやや下（75%）、荷重と痛みは0、残りは満タンで始まる
     // （characters/・Characters.md 域の区分節）。
-    const startRatios: Record<string, number> = { satiety: 0.75, hydration: 0.75, load: 0 };
+    const startRatios: Record<string, number> = { satiety: 0.75, hydration: 0.75, load: 0, pain: 0 };
     expect(view.statuses.map((status) => status.ratio)).toEqual(
       tagged.map((reading) => startRatios[reading.name] ?? 1),
     );

@@ -12,10 +12,15 @@ object_defs:
     tags: [fixture]
     actions:
       # 幹を登って実をもぎ取る。採れる数に上限は設けていない（採取ポイントの枯渇は今後の課題）。
+      # 足場の無い幹を登る以上、たまに踏み外す。失敗した回は実も採れない。
       pick_coconut:
         showMenu: always
         duration: 30
-        spawn: {object: coconut, into: actor}
+        pick:
+          - weight: 90
+            spawn: {object: coconut, into: actor}
+          - weight: 10
+            spawn: {object: sprained_ankle, into: actor}
 
   # 皮のついたヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
   # 皮をはぐと、中の実（husked_coconut）と皮（coconut_husk）に分かれる。
