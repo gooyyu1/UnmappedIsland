@@ -1,4 +1,4 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { DISPLAY_PADDING, PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
@@ -24,7 +24,7 @@ import { TickProgress } from './tickProgress';
 import { Button } from './ui/Button';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
 import { characterCardContent } from './ui/characterArt';
-import { Card, cardFace } from './ui/Card';
+import { Card, CARD_FRAME_TEXTURE, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
@@ -106,6 +106,19 @@ const BRIGHTEN_MS = 320;
  * 落ちていく途中を見せたいため。移動にかかる時間がこれより短ければ、その分だけで落とし切る。
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
+
+/**
+ * 地図・装備・怪我のボタンへ敷く、カードの紙の切り出し（CARD_FRAME_TEXTURE内の範囲）。
+ *
+ * 枠の絵（410×640）は角丸と落ち影が焼き込んであるので、内側の紙だけを取る。**ボタンごとに別の
+ * 場所を取る**——同じ場所だと3つに同じ染みが並び、模様として目に付く。ボタンと同じくらい横長の
+ * 範囲にしておくと、引き伸ばしても紙の粒が一方向へ伸びない。
+ */
+const SLOT_BUTTON_PAPER_RECTS = [
+  { x: 45, y: 40, width: 300, height: 170 },
+  { x: 45, y: 225, width: 300, height: 170 },
+  { x: 45, y: 410, width: 300, height: 170 },
+];
 
 /** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
 const MENU_ICON = '☰';
@@ -1205,12 +1218,13 @@ export class PlayScene extends ResponsiveScene {
         onTap: () => this.openSlotWindow('injuries'),
       },
     ] as const;
-    const height = (column.height - gap * (buttons.length - 1)) / buttons.length;
+    // 列の高さを3等分せず、内容量ぶんに留める。余った高さは列の中で上下に分ける。
+    const width = Math.min(this.metrics.px(SIZE.slotButton.width), column.width);
+    const height = this.metrics.px(SIZE.slotButton.height);
+    const stack = height * buttons.length + gap * (buttons.length - 1);
+    const top = column.y + Math.max(0, (column.height - stack) / 2);
     buttons.forEach((spec, index) => {
-      this.addSlotButton(
-        { x: column.x, y: column.y + index * (height + gap), width: column.width, height },
-        spec,
-      );
+      this.addSlotButton({ x: column.x, y: top + index * (height + gap), width, height }, spec, index);
     });
   }
 
@@ -1223,15 +1237,71 @@ export class PlayScene extends ResponsiveScene {
   private addSlotButton(
     rect: Rect,
     spec: { art: IconName; icon: string; fill: number; onTap: () => void },
+    index: number,
   ): void {
+    const radius = this.metrics.px(SIZE.radius);
+    const borderWidth = Math.max(1, this.metrics.px(2));
     const button = new Button(this, rect, {
       fill: spec.fill,
       border: COLOR.buttonBorder,
-      borderWidth: Math.max(1, this.metrics.px(2)),
-      radius: this.metrics.px(SIZE.radius),
+      borderWidth,
+      radius,
     });
-    button.addContent(this.slotButtonIcon(spec, rect));
+    button.addContent(
+      ...this.slotButtonPaper(button, rect, spec.fill, index, radius, borderWidth),
+      this.slotButtonIcon(spec, rect),
+    );
     button.on('pointerup', this.whileIdle(spec.onTap));
+  }
+
+  /**
+   * ボタンの地。**カードの紙を敷いて、ボタンの色を乗算で載せる**（染めた紙）。平らな塗りに淡い色を
+   * 置くとパステルに見え、汚れと滲みのある他の絵から浮くため。
+   *
+   * 敷くのはカードの枠の絵の**内側の紙だけ**を切り出したもの。枠の絵は角丸と落ち影が焼き込んで
+   * あるので、そのまま横長へ引き伸ばすと角が楕円に潰れる。角丸はここで切り抜き直し、枠線もその上へ
+   * 引き直す（Buttonが描く枠線は紙の下になる）。
+   *
+   * 紙が読めなければ何も敷かず、Buttonの平らな塗りがそのまま地になる。
+   */
+  private slotButtonPaper(
+    button: Button,
+    rect: Rect,
+    tint: number,
+    index: number,
+    radius: number,
+    borderWidth: number,
+  ): Phaser.GameObjects.GameObject[] {
+    if (!this.textures.exists(CARD_FRAME_TEXTURE)) return [];
+
+    // 切り出しはテクスチャのフレームとして1度だけ登録する（画像を複製しないため）。
+    const texture = this.textures.get(CARD_FRAME_TEXTURE);
+    const name = `slot-button-paper-${index}`;
+    if (!texture.has(name)) {
+      const { x, y, width, height } = SLOT_BUTTON_PAPER_RECTS[index % SLOT_BUTTON_PAPER_RECTS.length];
+      texture.add(name, 0, x, y, width, height);
+    }
+
+    const paper = this.add
+      .image(0, 0, CARD_FRAME_TEXTURE, name)
+      .setOrigin(0, 0)
+      .setDisplaySize(rect.width, rect.height)
+      .setTint(tint);
+
+    // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用）。マスクの形は
+    // 画面座標で描く。表示物ではないので画面には出さない。
+    const face = this.add.container(0, 0, [paper]);
+    const maskShape = this.make.graphics({});
+    maskShape.fillStyle(COLOR.cardFace, 1);
+    maskShape.fillRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
+    face.enableFilters();
+    face.filters?.internal.addMask(maskShape);
+    button.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
+
+    const frame = this.add.graphics();
+    frame.lineStyle(borderWidth, COLOR.buttonBorder, 1);
+    frame.strokeRoundedRect(0, 0, rect.width, rect.height, radius);
+    return [face, frame];
   }
 
   /**
