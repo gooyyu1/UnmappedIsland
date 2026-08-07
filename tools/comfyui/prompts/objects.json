@@ -95,6 +95,26 @@
     "positive": "exactly one whole unopened coconut still in its thick husk alone on an empty white page, seen from the outside with its surface closed and unbroken all around, a big oval fruit tapering to a blunt point at one end, its whole surface a mat of dry tan brown fibres running lengthwise, warm tan and ochre brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "cut, cut open, cut in half, halved, sliced, cross section, opened, split, cracked, broken, chipped, hollow, interior, inside, rim, shell half, bowl, cup, white flesh, cream flesh, hairy shell, shaggy hair, coarse brown hair, three dark eyes, three holes, dark brown nut, small round nut, coconut water, drinking straw, leaves, palm frond, tree, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
   },
+  "sprained_ankle": {
+    "description": [
+      "足首の捻挫（injuries.yaml）。怪我スロットのカードに載る。",
+      "",
+      "**物ではなく身体の一部なので、共通の否定から person / hands を外せない代わりに、描かせたい範囲を",
+      "本文で切る。** 膝から下だけ（cut off at the calf）と言わないと、全身か脚2本になる。",
+      "足の指は破綻しやすいので、包帯を足首から甲まで巻いて指だけを出す形にし、指の本数の異常を",
+      "否定に名指しで入れてある。",
+      "",
+      "**白を足すと足ごと白くなる。** 包帯を clean white bandage と言い、脛を the leg fading away into",
+      "the white page で終わらせ、white skin / grey skin を否定に足す——のいずれをやっても、肌の色が",
+      "抜けて白い靴下・石膏像・白いストッキングになる（12枚ずつ2回振って当たり0）。包帯の色は",
+      "本文の bruise に引かれて淡い紫になることがあるが、そちらの方が害が小さい。",
+      "",
+      "**脛が上端から画面外へ抜ける構図は、プロンプトでは直らない。** 白い余白の中に足が収まった絵は",
+      "20枚で1枚も出なかった。切り方は Qwen Image Edit に任せる（recipes/sprained_ankle.json）。"
+    ],
+    "positive": "exactly one bare human foot and ankle alone on an empty white page, just the foot and the lower shin cut off cleanly at the calf, seen from the side, the ankle and the top of the foot wrapped in a white cloth bandage with the toes and the heel left bare, the swollen ankle showing a faint reddish purple bruise through the edge of the bandage, warm skin tones, matte surface, it is small and rests in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "two feet, both feet, pair of feet, three feet, several feet, legs, whole leg, thigh, knee, standing, walking, full body, whole person, torso, head, face, arm, hand, fingers, wrist, extra toes, six toes, missing toes, deformed toes, fused toes, shoe, boot, sandal, sock, stocking, slipper, sports tape, plaster cast, splint, crutch, medical chart, anatomy diagram, skeleton, bones, x-ray, blood, gore, wound, open wound, cut skin, scar, rash, insect bite, clinic, hospital bed, doctor, nurse, bandage roll alone, filling the frame, close-up, cropped, cut off at the ankle, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, bed sheet, towel, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
   "stone": {
     "description": "石。角の無い丸い灰色の河原石。艶を否定する（艶を描かせると白く飛ぶ）。",
     "positive": "exactly one grey river stone alone on an empty white page, a rounded pebble, oval shape, no sharp edges, medium grey stone with darker mottling, matte dusty surface, the stone is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",

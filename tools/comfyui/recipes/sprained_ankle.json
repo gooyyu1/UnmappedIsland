@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "src/assets/objects/sprained_ankle.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "**2段構え。** 生成は包帯を巻いた足を出すところまでで、白い紙の上へ置き直すのは Qwen Image Edit",
+    "に任せる。source を持たない edit は、同じレシピから edit を外したもの——つまり自分の生成——を",
+    "基準にする（icon_injury.json と同じ形）。",
+    "",
+    "生成だけでは、脛が上端から画面外へ抜けた構図にしかならない。20枚振っても白い余白の中に足が",
+    "収まった絵は出ず、代わりに白い靴下・石膏像・手が現れた（prompts/objects.json の description）。",
+    "編集側で脛を包帯のすぐ上で終わらせ、余白を作らせる方が速い。"
+  ],
+  "output": "src/assets/objects/sprained_ankle.png",
+  "prompts": "objects.json",
+  "prompt": "sprained_ankle",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 6,
+  "width": 832,
+  "height": 1280,
+  "edit": {
+    "prompt": "Move this bare foot with its bandaged ankle onto a plain empty white page. Keep the foot and the white cloth bandage exactly as they are in shape, colour and painting style. End the leg just above the bandage with a clean rounded stump so that the whole foot fits inside the picture, and leave a wide empty white margin all around it. Remove the grey background completely and replace it with a plain empty white page, with a soft grey shadow directly beneath the foot. Warm skin tones, matte surface, flat even lighting. Nothing else in the image, no text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "_comment": [
+      "足は太い枝（400）よりわずかに小さい。",
+      "tolerance は白い包帯が紙として透過されないよう 12 まで下げる（既定の 60 だと包帯の縁が",
+      "食いちぎられる）。編集後の背景は無地なので、下げても紙のムラは拾わない。"
+    ],
+    "size": "384",
+    "mode": "background",
+    "tolerance": 12,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
