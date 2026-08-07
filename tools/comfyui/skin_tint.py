@@ -56,7 +56,9 @@ def apply_spot(rgb: np.ndarray, alpha: np.ndarray, target: Spot) -> None:
 
     # 縁で微分も0になる曲線（smoothstep）にする。単純な線形だと輪が見える。
     t = np.clip(1.0 - distance / target.radius, 0.0, 1.0)
-    weight = (t * t * (3.0 - 2.0 * t) * target.strength * alpha)[:, :, None]
+    # 不透明な画素にだけ載せる。切り出しの影は半透明なので、3乗すれば実質的に染まらない
+    # （物の色として置いた染みが、地に落ちた影まで染めるのはおかしい）。
+    weight = (t * t * (3.0 - 2.0 * t) * target.strength * alpha**3)[:, :, None]
 
     tint = np.array(target.rgb, dtype=np.float64) / 255
     rgb *= 1.0 - weight * (1.0 - tint)

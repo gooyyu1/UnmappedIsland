@@ -98,7 +98,13 @@
   "bare_foot": {
     "description": [
       "素足。それ自体はカードにならず、怪我（injuries.yaml）の絵の下地になる",
-      "（recipes/sprained_ankle.json が痣を、recipes/sprained_ankle_bandaged.json が包帯を Qwen で足す）。",
+      "（recipes/sprained_ankle.json が痣を、recipes/sprained_ankle_bandaged.json が包帯を足す）。",
+      "",
+      "**足の指をまず見る。** 生成が最もしくじるのが指で、縮小したシートでは破綻が見えない。指の部分だけを",
+      "等倍以上に切り出して確かめ、落ちた候補は後段（編集・切り出し・配置）へ回さない。",
+      "本文に five separate toes in a row / each toe fully modelled and clearly parted from the next /",
+      "a small pale nail on every toe まで書いて、ようやく24枚中6枚が使える形になった。これを書く前は、",
+      "指が1つの塊に融けた足（マネキンの足）ばかり出る。",
       "",
       "**捻挫そのものを生成させるのは諦めた。** 48枚振っての結果:",
       "  - 包帯を巻いた足は出る（当たり8枚に1枚）が、脛が必ず上端から画面外へ抜ける。",
@@ -107,14 +113,12 @@
       "    錨になっていた。錨を外すなら、代わりに肌の色を本文で言う必要がある。",
       "",
       "**肌の色は言う。ただし血管は言わない。** warm tan and pink skin with a healthy flush まで",
-      "で止める。soft veins over the top of the foot を足すと、腱と血管の浮いた解剖図になる",
-      "（12枚とも）。",
+      "で止める。soft veins over the top of the foot を足すと、腱と血管の浮いた解剖図になる（12枚とも）。",
       "",
-      "**足の裏は否定する。** 言わないと真上・真下からの土踏まずの絵が半分を占める。",
-      "指の本数の異常も否定に名指しで入れてある。"
+      "**足の裏は否定する。** 言わないと真上・真下からの土踏まずの絵が半分を占める。"
     ],
-    "positive": "exactly one bare human foot alone on an empty white page, just the foot and the lower shin cut off cleanly at the calf, seen from the side with the sole hidden, standing with the heel down and the toes forward, the ankle bone rounded under smooth skin, nothing worn on it, warm tan and pink skin with a healthy flush, smooth matte skin, it is small and rests in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "bandage, dressing, gauze, wrapping, tape, plaster cast, splint, sock, stocking, shoe, boot, sandal, watercolour splash, paint splash, ink blot, purple paint, dripping paint, two feet, both feet, pair of feet, three feet, several feet, legs, whole leg, thigh, knee, standing, walking, full body, whole person, torso, head, face, arm, hand, fingers, wrist, extra toes, six toes, missing toes, deformed toes, fused toes, anatomical illustration, medical illustration, anatomy plate, tendons, muscles, veins, flayed, greyscale, monochrome, black and white, marble statue, white sculpture, mannequin, prosthetic, sole of the foot, seen from below, footprint, crutch, medical chart, skeleton, bones, x-ray, blood, gore, open wound, cut skin, scar, rash, insect bite, clinic, hospital bed, doctor, nurse, filling the frame, close-up, cropped, cut off at the ankle, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, bed sheet, towel, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "positive": "exactly one bare human foot alone on an empty white page, just the foot and the lower shin cut off cleanly at the calf, seen from the side with the sole hidden, standing with the heel down and the toes forward, the ankle bone rounded under smooth skin, nothing worn on it, five separate toes in a row, each toe fully modelled and clearly parted from the next, the big toe largest and the little toe smallest, a small pale nail on every toe, warm tan and pink skin with a healthy flush, smooth matte skin, it is small and rests in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "fused toes, webbed toes, merged toes, toes blurred together, smooth toeless foot, extra toes, six toes, four toes, missing toes, deformed toes, stumpy toes, bandage, dressing, gauze, wrapping, tape, plaster cast, splint, sock, stocking, shoe, boot, sandal, watercolour splash, paint splash, ink blot, purple paint, dripping paint, two feet, both feet, pair of feet, three feet, several feet, legs, whole leg, thigh, knee, standing, walking, full body, whole person, torso, head, face, arm, hand, fingers, wrist, anatomical illustration, medical illustration, anatomy plate, tendons, muscles, veins, flayed, greyscale, monochrome, black and white, marble statue, white sculpture, mannequin, prosthetic, sole of the foot, seen from below, footprint, crutch, medical chart, skeleton, bones, x-ray, blood, gore, open wound, cut skin, scar, rash, insect bite, clinic, hospital bed, doctor, nurse, filling the frame, close-up, cropped, cut off at the ankle, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, bed sheet, towel, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
   "stone": {
     "description": "石。角の無い丸い灰色の河原石。艶を否定する（艶を描かせると白く飛ぶ）。",

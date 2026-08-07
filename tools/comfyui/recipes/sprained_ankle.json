@@ -19,19 +19,22 @@
   "workflow": "lane_background_sdxl.api.json",
   "loraStrength": 0,
   "noTrigger": true,
-  "seed": 5,
+  "seed": 116,
   "width": 832,
   "height": 1280,
   "edit": {
-    "prompt": "Keep this foot exactly as it is: the same silhouette, the same smooth rounded ankle, the same soft even shading, the same skin colour. Move it onto a plain empty white page with a wide empty white margin all around it and a soft grey shadow directly beneath it. Matte skin, flat even lighting. Nothing else in the image, no text, no letters, no numbers.",
+    "prompt": "Keep this foot exactly as it is: the same silhouette, the same smooth rounded ankle, the same five separate toes with their nails, the same soft even shading, the same skin colour. Move it onto a plain empty white page with a wide empty white margin all around it and a soft grey shadow directly beneath it. Matte skin, flat even lighting. Nothing else in the image, no text, no letters, no numbers.",
     "seed": 1
   },
   "cardArt": {
     "_comment": [
-      "足は太い枝（400）よりわずかに小さい。canvas は手当済みと揃える——画像の寸法を揃えておけば、",
-      "手当ての前後で絵が入れ替わっても画面上の大きさが変わらない。"
+      "サイズは足の指がカードの状態バーに隠れない大きさで決めた（384だと爪先が帯に掛かる、",
+      "ScreenLayout.md カードの状態バー節）。",
+      "canvas は手当済みと揃える——画像の寸法を揃えておけば、手当ての前後で絵が入れ替わっても",
+      "画面上の大きさが変わらない。",
+      "tolerance は白い包帯が紙として透過されないよう 12 まで下げる（既定の 60 だと縁が食いちぎられる）。"
     ],
-    "size": "384",
+    "size": "340",
     "mode": "background",
     "tolerance": 12,
     "edge": 4,
@@ -43,8 +46,9 @@
     "_comment": [
       "内出血の痣。芯はくるぶしの出っ張りの上、暈しはそこから踵と足の甲へ向けて下へ広げる",
       "（内出血は重力で下へ落ちる）。",
-      "カードの絵は実寸で1/3ほどに縮むので、拡大して濃さを決めると必ず薄すぎる。"
+      "カードの絵は実寸で1/3ほどに縮むので、拡大して濃さを決めると必ず薄すぎる。",
+      "暈しを足元まで届かせない——影は半透明なので3乗でほぼ落ちるが、踵の影は濃く、届くと桃色に染まる。"
     ],
-    "spots": ["246,252,92,0.75,#dc9ea6", "250,242,48,0.60,#c1849f"]
+    "spots": ["250,254,80,0.85,#d99aa2", "261,243,44,0.70,#ba7d9a"]
   }
 }
