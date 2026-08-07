@@ -18,6 +18,10 @@
 
     python card_art.py stone.png --out ../../src/assets/objects/stone.png --size 256
 
+--trim を付けると、仕上げに透明な余白を切り落とす。**キャンバスの一辺ではなく物そのものの大きさで
+置きたいとき**に使う。ボタンのアイコンがこれで、置き場所の枠へ縦横比のまま収めるため、正方形の
+キャンバスに余白を残したままだと、平たい物ほど小さく見えてしまう（--sizeは切り出しの解像度になる）。
+
 絵に足りないものは、切り出したあとで足せる。落ち影が描かれていなければ --drop-shadow、色が
 薄ければ --saturation / --gamma（それぞれ drop_shadow / retone 参照）。
 
@@ -289,6 +293,11 @@ def main() -> None:
     parser.add_argument("--white", type=float, default=250, help="luma: この明度以上を完全に透明にする")
     parser.add_argument("--opaque", type=float, default=200, help="luma: この明度以下を完全に不透明にする")
     parser.add_argument("--feather", type=int, default=24, help="紙の縁の内側で薄くしていく幅（px）")
+    parser.add_argument(
+        "--trim",
+        action="store_true",
+        help="仕上げに透明な余白を切り落とす。キャンバスの一辺ではなく物そのものの大きさで置きたいとき用",
+    )
     parser.add_argument("--crop", type=int, nargs=4, metavar=("X", "Y", "W", "H"),
                         help="使う範囲を先に切り出す（1枚に複数写ったときに1つだけ採る）")
     parser.add_argument("--diagonal", action="store_true",
@@ -325,6 +334,9 @@ def main() -> None:
 
     if args.saturation != 1.0 or args.gamma != 1.0:
         rgba[:, :, :3] = retone(rgba[:, :, :3], args.saturation, args.gamma)
+    if args.trim:
+        left, top, right, bottom = bounds(rgba[:, :, 3])
+        rgba = rgba[top:bottom, left:right]
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -334,6 +346,7 @@ def main() -> None:
         "source": Path(args.source).name,
         "size": args.size,
         **({"crop": args.crop} if args.crop else {}),
+        **({"trim": True} if args.trim else {}),
         **({"diagonal": True} if args.diagonal else {}),
         **({"mode": args.mode, "feather": args.feather} if args.size == "card" else {}),
         **({"tolerance": args.tolerance, "edge": args.edge, "shadow": args.shadow, "reach": args.reach}

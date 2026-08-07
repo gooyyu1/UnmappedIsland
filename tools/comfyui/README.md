@@ -182,7 +182,9 @@ Qwen へ渡してください。
 
 `src/assets/icons/<アイコンの識別子>.png`（仕様は
 [docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) ボタンの絵 節）。ボタンの中央へ置く
-アイコンで、背景は透過です。
+アイコンで、背景は透過です。**透明な余白は切り落とします**（`cardArt` の `trim`）——ボタン側は
+絵を縦横比のまま枠へ収めるので、正方形のキャンバスに余白が残っていると、平たい物ほど小さく
+見えてしまいます。
 
 ```bash
 python build.py recipes/icon_map.json

@@ -1235,19 +1235,26 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ同じ大きさで置く（iconArt参照）。
+   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ置く（iconArt参照）。
    *
-   * 絵は背景が透けているので、ボタンの地の色がそのまま下に出る。
+   * **絵は縦横比のまま枠へ収める。** 絵は透明な余白を切り落としてあるので（card_art.pyの--trim）、
+   * 枠に対して痩せるのは物の形のぶんだけになる。背景は透けていて、ボタンの地の色が下に出る。
    */
   private slotButtonIcon(spec: { art: IconName; icon: string }, rect: Rect): Phaser.GameObjects.GameObject {
     const x = rect.width / 2;
     const y = rect.height / 2;
-    const size = this.metrics.px(SIZE.slotButtonIcon);
+    const box = SIZE.slotButtonIcon;
     const texture = iconTexture(spec.art);
     if (texture !== undefined && this.textures.exists(texture)) {
-      return this.add.image(x, y, texture).setOrigin(0.5).setDisplaySize(size, size);
+      const image = this.add.image(x, y, texture).setOrigin(0.5);
+      const scale = Math.min(
+        this.metrics.px(box.width) / image.width,
+        this.metrics.px(box.height) / image.height,
+      );
+      return image.setDisplaySize(image.width * scale, image.height * scale);
     }
-    return addLabel(this, this.metrics, x, y, spec.icon, { size: SIZE.slotButtonIcon }).setOrigin(0.5);
+    // 絵文字は正方形なので、枠の高さがそのまま大きさになる。
+    return addLabel(this, this.metrics, x, y, spec.icon, { size: box.height }).setOrigin(0.5);
   }
 
   /**
