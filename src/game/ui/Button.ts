@@ -6,8 +6,14 @@ import { drawBox } from './shapes';
 import { onPressRelease } from './tap';
 import { COLOR, SIZE } from './theme';
 
-/** 押下中の沈み込み表現。実装が絵を持たないため、透過で押されたことを示す。 */
-const PRESSED_ALPHA = 0.6;
+/**
+ * 押下中の沈み込み表現。**暗い覆いを重ねる**（黒のこの濃さ）。
+ *
+ * かつてはボタン自体を透かしていたが、**下地が明るいと逆に明るく見える**。本のページの上に置いた
+ * くすんだ色のボタンでは、透かすほど紙の色が透けて浮き上がって見えた。重ねる向きを暗い側へ
+ * 固定すれば、地の色にも下地にもよらず「沈んだ」と読める。
+ */
+const PRESSED_SHADE = 0.18;
 
 /** 長押しと見なすまでの時間（カードの端を押し続けたときの1枚目と同じ）。 */
 const HOLD_MS = 400;
@@ -33,6 +39,8 @@ export class Button extends Phaser.GameObjects.Container {
   readonly boxHeight: number;
 
   private readonly background: Phaser.GameObjects.Graphics;
+  /** 押下中だけ見せる暗い覆い。中身より手前へ出すので、押すたびに最前面へ持ち上げる。 */
+  private readonly shade: Phaser.GameObjects.Graphics;
 
   /** 長押しの計時と、既に長押しになったか（なったなら離しても押されたことにしない）。 */
   private holdTimer: Phaser.Time.TimerEvent | undefined;
@@ -47,6 +55,18 @@ export class Button extends Phaser.GameObjects.Container {
     this.add(this.background);
     this.setBoxStyle(style);
 
+    this.shade = scene.add.graphics();
+    drawBox(
+      this.shade,
+      { x: 0, y: 0, width: rect.width, height: rect.height },
+      {
+        fill: COLOR.pressedShade,
+        radius: style.radius,
+      },
+    );
+    this.shade.setAlpha(PRESSED_SHADE).setVisible(false);
+    this.add(this.shade);
+
     // Containerのdisplay originはwidth/heightの半分に固定されている（読み取り専用）。
     // Phaserのヒット判定はローカル座標へdisplay originを足すため、setSizeするとヒット領域が
     // 半分ずれる。子を左上原点(0,0)で並べるこの実装では、サイズを設定しない。
@@ -56,7 +76,8 @@ export class Button extends Phaser.GameObjects.Container {
     );
     onPressRelease(this, {
       onPress: () => {
-        this.setAlpha(PRESSED_ALPHA);
+        this.shade.setVisible(true);
+        this.bringToTop(this.shade);
         if (hold !== undefined) {
           this.holdTimer = scene.time.delayedCall(hold.delayMs ?? HOLD_MS, () => {
             this.holding = true;
@@ -65,11 +86,11 @@ export class Button extends Phaser.GameObjects.Container {
         }
       },
       onCancel: () => {
-        this.setAlpha(1);
+        this.shade.setVisible(false);
         this.endHold(hold);
       },
       onRelease: () => {
-        this.setAlpha(1);
+        this.shade.setVisible(false);
         const held = this.holding;
         this.endHold(hold);
         if (!held) onTap?.();
