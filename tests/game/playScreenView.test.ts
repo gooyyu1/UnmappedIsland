@@ -495,9 +495,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
     expect(view.cardsIn(opened!).flatMap((card) => card.objects)).toEqual([stone]);
-    expect(view.nameOf(opened!), 'タイトルはコンテナ自身の表示名').toBe(
-      locale.object('woven_basket').displayName,
-    );
+    // 見出しはスロットの名前を持ち主込みで言ったもの。この対応表はどちらも未登録なので識別子のまま。
+    expect(view.nameOf(opened!)).toBe(locale.slot('contents').displayNameWithOwner('woven_basket'));
     expect(view.acceptsCards(opened!)).toBe(true);
     expect(view.hand[1], '石は手持ちから無くなる').toBeUndefined();
 
@@ -662,7 +661,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '%2入りの%1'
+    display_name_with_content: '{content}入りの{container}'
   canteen:
     display_name: 水筒
   water_liquid:

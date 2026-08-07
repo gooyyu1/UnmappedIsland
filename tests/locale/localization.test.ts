@@ -94,17 +94,17 @@ object_texts:
     expect(locale.object('coconut').combination('mix').description).toBeUndefined();
   });
 
-  it('中身がいるオブジェクトの名前は、%1に自分の表示名・%2に中身の名前が入る', () => {
+  it('中身がいるオブジェクトの名前は、{container}に自分の表示名・{content}に中身の名前が入る', () => {
     const texts = parseLocale(
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '%2入りの%1'
+    display_name_with_content: '{content}入りの{container}'
   canteen:
     display_name: 水筒
   jar:
     display_name: 甕
-    display_name_with_content: '%1（%2）'
+    display_name_with_content: '{container}（{content}）'
 `,
     );
 
@@ -122,10 +122,15 @@ object_texts:
   it('差し込んだ名前の中のプレースホルダは置換されない', () => {
     const texts = parseLocale(
       'ja.yaml',
-      "object_texts:\n  default:\n    display_name_with_content: '%2入りの%1'\n  canteen:\n    display_name: '%2筒'\n",
+      `object_texts:
+  default:
+    display_name_with_content: '{content}入りの{container}'
+  canteen:
+    display_name: '{content}筒'
+`,
     );
 
-    expect(texts.object('canteen').displayNameWithContent('水')).toBe('水入りの%2筒');
+    expect(texts.object('canteen').displayNameWithContent('水')).toBe('水入りの{content}筒');
   });
 
   it('object_textsの節が無い・空のファイルでも読める', () => {

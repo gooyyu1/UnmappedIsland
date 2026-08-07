@@ -7,13 +7,28 @@
 # フォールバック。同じ名前のプロパティ・アクションを多くのオブジェクトが共有するため、
 # 「特に断らなければこの文字列」をここへ1回だけ書く。
 
+# スロットの表示文字列（子ウィンドウの見出し）。スロットは必ず持ち主のものなので、持ち主込みの
+# 言い方をdefaultの書式から組み立てる（中身入りの入れ物の名前と同じ考え方）。
+slot_texts:
+  default:
+    # {slot}がスロットの名前、{owner}が持ち主の名前。
+    display_name_with_owner: '{owner}の{slot}'
+  contents:
+    display_name: 中身
+  treatment:
+    display_name: 手当て
+  equipment:
+    display_name: 装備
+  injuries:
+    display_name: 怪我
+
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
   # オブジェクト自身の表示名としては使われない（Localization.md 参照）。
   default:
-    # 中身を代表にしているオブジェクト（水入りの水筒など）の名前。%1が入れ物、%2が中身。
-    # 言い方を変えたい入れ物だけが、自分のエントリで上書きする。
-    display_name_with_content: '%2入りの%1'
+    # 中身を代表にしているオブジェクト（水入りの水筒など）の名前。
+    # {container}が入れ物、{content}が中身。言い方を変えたい入れ物だけが、自分のエントリで上書きする。
+    display_name_with_content: '{content}入りの{container}'
     props:
       exploration_progress:
         display_name: 探索の進み具合

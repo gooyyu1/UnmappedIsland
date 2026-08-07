@@ -211,6 +211,10 @@ export interface PlayScreenView {
   readonly cardsIn: (place: CardPlace) => readonly ObjectCardStack[];
 
   /** 子ウィンドウのタイトルに出す、その場所の名前。 */
+  /**
+   * その場所を映す子ウィンドウの見出し。**スロットの名前を持ち主込みで言う**（「マルコの装備」
+   * 「編み籠の中身」）。スロットは必ず持ち主のものなので、名前だけでは何のスロットか分からない。
+   */
   readonly nameOf: (place: CardPlace) => string;
 
   /**
@@ -298,15 +302,6 @@ function slotCapacity(slot: SlotDef | undefined): number | undefined {
   const rules = slot?.accepts ?? [];
   return rules.length === 0 ? undefined : Math.max(...rules.map((rule) => rule.max));
 }
-
-/**
- * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
- * レーンで常に見えているfixtures/items/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
- */
-const PLACE_NAMES: Partial<Record<CardPlace & string, string>> = {
-  equipment: '装備',
-  injuries: '怪我',
-};
 
 /** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
 function stacksIn(
@@ -693,7 +688,13 @@ export function fromGameSession(
         reorder: reorderIn(stack[0]),
       }));
     },
-    nameOf: (place) => (typeof place === 'string' ? (PLACE_NAMES[place] ?? place) : nameOf(place.container)),
+    nameOf: (place) => {
+      const slot = slotOf(place);
+      if (slot === undefined) return typeof place === 'string' ? place : nameOf(place.container);
+      const slotName = codex.slotNames.getName(slot.slotId);
+      const owner = slot.owner === game.player.instance ? characterTexts.displayName : nameOf(slot.owner);
+      return locale.slot(slotName).displayNameWithOwner(owner);
+    },
     acceptsCards: (place) => slotOf(place) !== undefined,
     capacityOf: (place) => {
       const slot = slotOf(place);
