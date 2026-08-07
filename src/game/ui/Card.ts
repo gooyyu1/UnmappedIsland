@@ -88,6 +88,15 @@ const EDGE_REPEAT_DECAY = 0.8;
 /** スタック数を囲む丸の直径・絵の右上の角から外へはみ出させる量・中の数字の大きさ（u単位）。 */
 const STACK_BADGE_SIZE = 56;
 const STACK_BADGE_OVERHANG = 8;
+
+/**
+ * 状態を表す印（手当て済みの怪我など）の大きさと、紙の左下からの余白（u単位）。
+ *
+ * **絵を差し替えるのではなく、印を重ねる。** 手当ての有無で絵を差し替えると、怪我の部位 × 治療具の
+ * 数だけ絵が要る（ScreenLayout.md カードの印 節）。
+ */
+const MARK_SIZE = 52;
+const MARK_MARGIN = 18;
 const STACK_COUNT_SIZE = 32;
 
 /**
@@ -190,6 +199,12 @@ export interface CardContent {
   readonly severity?: CardSeverity;
 
   /**
+   * そのカードが映しているものの状態を表す絵文字の印（手当て済みの怪我の🩹など）。紙の左下へ小さく
+   * 重ねる。持たないカードには何も出ない。
+   */
+  readonly mark?: string;
+
+  /**
    * その行動の途中の値か（trueの間は状態バーの変化の帯を動かさず、合計の変化量を残す。
    * ProgressBar.setRatio参照）。
    */
@@ -201,8 +216,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, namePosition, road, durability, fill, severity } = content;
-  return { icon, name, art, background, namePosition, road, durability, fill, severity };
+  const { icon, name, art, background, namePosition, road, durability, fill, severity, mark } = content;
+  return { icon, name, art, background, namePosition, road, durability, fill, severity, mark };
 }
 
 /**
@@ -222,6 +237,9 @@ export class Card extends Phaser.GameObjects.Container {
   /** スタック数の表示。個数は差し替えのたびに変わるので、作り直さず書き換える。 */
   private readonly stackBadge: Phaser.GameObjects.Container;
   private readonly stackCount: Phaser.GameObjects.Text;
+
+  /** 状態を表す絵文字の印（CardContent.mark）。持たないカードでは空文字で隠れる。 */
+  private readonly mark: Phaser.GameObjects.Text;
 
   /** カードの名前。中身が入れ替われば同じインスタンスのままでも変わる（showName参照）。 */
   private readonly nameText: Phaser.GameObjects.Text;
@@ -325,6 +343,17 @@ export class Card extends Phaser.GameObjects.Container {
     this.stackBadge = this.addStackBadge(scene, metrics, width, height);
     this.add(this.stackBadge);
 
+    // 状態の印もスタック数と同じく、端の操作エリアより後に足して隠れないようにする。
+    const paper = paperRect(metrics, width, height);
+    const markMargin = metrics.px(MARK_MARGIN);
+    this.mark = scene.add
+      .text(paper.x + markMargin, paper.y + paper.height - markMargin, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(MARK_SIZE)}px`,
+      })
+      .setOrigin(0, 1);
+    this.add(this.mark);
+
     this.applyContent(content, false);
     scene.add.existing(this);
   }
@@ -351,6 +380,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.showBars(content, showChange);
     this.showEdge(content);
     this.showStackCount();
+    this.mark.setText(content.mark ?? '');
   }
 
   /** 名前と、その寄せ位置。中身が入れ替われば名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。 */

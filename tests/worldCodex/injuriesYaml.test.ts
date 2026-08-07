@@ -55,6 +55,13 @@ describe('injuries.yamlの怪我', () => {
     return spawned;
   }
 
+  /** 手持ちに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
+  function handOf(character: WorldObject): string[] {
+    return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
+      stack.map((object) => object.def.name),
+    );
+  }
+
   /** 怪我スロットに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
   function injuriesOf(character: WorldObject): string[] {
     return new PlayerCharacter(character, codex).injuryStacks.flatMap((stack) =>
@@ -135,6 +142,98 @@ describe('injuries.yamlの怪我', () => {
 
     expect(injury.readProperty(severityId)?.alert, '半分治れば留意域').toBe('watch');
     expect(injury.readProperty(severityId)?.ratio).toBeCloseTo(0.5, 2);
+  });
+
+  describe('手当て', () => {
+    /** 捻挫を1つ負い、その怪我と、手持ちに持たせた包帯を返す。 */
+    function injured(): { injury: WorldObject; bandage: WorldObject } {
+      pickCoconut();
+      const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
+      return { injury, bandage: spawnInto('bandage', player, 'hand') };
+    }
+
+    /** その怪我に当たっている治療具の識別子（当てていなければ空）。 */
+    function treatmentOn(injury: WorldObject): string[] {
+      const slot = injury.tryGetSlot(codex.slotNames.getId('treatment'));
+      return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
+    }
+
+    it('包帯を怪我へ重ねると、その怪我に当たった状態になる', () => {
+      const { injury, bandage } = injured();
+
+      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+
+      expect(treatmentOn(injury)).toEqual(['bandage']);
+      expect(bandage.parent, '手持ちから怪我の中へ移る').toBe(injury);
+    });
+
+    it('当てられるのは1つだけ', () => {
+      const { injury, bandage } = injured();
+      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+      const second = spawnInto('bandage', player, 'hand');
+
+      injury.tryExecuteCombination(second, player, 'treat', session);
+
+      expect(treatmentOn(injury), '2つめは入らない').toEqual(['bandage']);
+      expect(second.parent, '入らなかった治療具は手元に残る').toBe(player);
+    });
+
+    it('治療具でない物は当てられない', () => {
+      const { injury } = injured();
+      const stone = spawnInto('stone', player, 'hand');
+
+      expect(stone.moveToSlot(injury, codex.slotNames.getId('treatment'), codex.wellKnown)).toBeDefined();
+      expect(treatmentOn(injury)).toEqual([]);
+    });
+
+    it('包帯を当てている間は、治りが速くなり痛みも減る', () => {
+      const { injury, bandage } = injured();
+      const severityId = codex.propertyNames.getId('severity');
+      const before = injury.getNumber(severityId);
+      expect(player.getEffectiveValue(painId)).toBe(40);
+
+      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+
+      expect(player.getEffectiveValue(painId), '当てている間だけ痛みが引く').toBe(30);
+      tick(10);
+      // 自然治癒の-100/tickに、包帯の-40/tickが重なる（8.4節）。
+      expect(before - injury.getNumber(severityId)).toBe(140 * 10);
+    });
+
+    it('外せば効き目も消える', () => {
+      const { injury, bandage } = injured();
+      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+
+      expect(bandage.moveToSlot(player, codex.slotNames.getId('hand'), codex.wellKnown)).toBeUndefined();
+
+      expect(player.getEffectiveValue(painId), '可逆な寄与なので戻る').toBe(40);
+      const severityId = codex.propertyNames.getId('severity');
+      const before = injury.getNumber(severityId);
+      tick(10);
+      expect(before - injury.getNumber(severityId), '治りの速さも元へ戻る').toBe(100 * 10);
+    });
+
+    it('手持ちに入れているだけの治療具は効かない', () => {
+      // ancestorはスロットを問わず祖先を辿るので、conditionsで当てている間に絞っている。
+      pickCoconut();
+      spawnInto('bandage', player, 'hand');
+
+      expect(player.getEffectiveValue(painId)).toBe(40);
+    });
+
+    it('怪我が治れば、当てていた治療具も世界から外れる', () => {
+      // 治った怪我はdestroy（＝親から外れる）される。中身の行き先を決めていないので、当てていた
+      // 治療具はその怪我にぶら下がったまま世界から切り離される（Injuries.md 手当て節）。
+      const { injury, bandage } = injured();
+      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+
+      tick(HEALING_TICKS);
+
+      expect(injuriesOf(player)).toEqual([]);
+      expect(injury.parent, '怪我は世界から外れる').toBeUndefined();
+      expect(bandage.parent, '包帯はその怪我に付いたまま').toBe(injury);
+      expect(handOf(player), '手元へは戻らない').toEqual([]);
+    });
   });
 
   it('怪我は荷重にならない', () => {

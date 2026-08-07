@@ -32,6 +32,7 @@ const WORLD_CODEX_FILES = [
   'locations.yaml',
   'terrain_generation.yaml',
   'tools.yaml',
+  'treatments.yaml',
 ];
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */

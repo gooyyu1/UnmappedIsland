@@ -273,6 +273,19 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(healing?.alert, '治るほど軽い域へ移る').toBe('watch');
   });
 
+  it('治療具を当てた怪我のカードだけが、手当て済みの印を持つ', () => {
+    // 手当ての有無で絵は差し替えない（ScreenLayout.md カードの印 節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const injury = injure(game);
+
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBeUndefined();
+
+    const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
+    expect(bandage.moveToSlot(injury, codex.slotNames.getId('treatment'), codex.wellKnown)).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBe('🩹');
+  });
+
   it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));

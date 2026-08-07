@@ -263,6 +263,15 @@ const SEVERITY_PROPERTY = 'severity';
 const COLOR_PROPERTY = 'color';
 
 /**
+ * 治療具を当てておくスロットの名前と、当たっているカードへ出す印
+ * （injuries.yaml・ScreenLayout.md カードの印 節）。
+ *
+ * **手当ての有無で絵を差し替えない。** 差し替えると、怪我の部位 × 治療具の数だけ絵が要る。
+ */
+const TREATMENT_SLOT = 'treatment';
+const TREATED_MARK = '🩹';
+
+/**
  * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
  * レーンで常に見えているfixtures/items/handは対象外。コンテナはその中身のオブジェクトの表示名を使う。
  */
@@ -332,6 +341,13 @@ export function fromGameSession(
     const reading = object.readProperty(severityPropertyId);
     return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
   };
+
+  const treatmentSlotId = codex.slotNames.tryGetId(TREATMENT_SLOT);
+  /** 治療具が当たっているカードに出す印。当たっていなければundefined（印そのものを出さない）。 */
+  const markOf = (object: WorldObject): string | undefined =>
+    treatmentSlotId !== undefined && (object.tryGetSlot(treatmentSlotId)?.contents.length ?? 0) > 0
+      ? TREATED_MARK
+      : undefined;
 
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
   /**
@@ -406,6 +422,7 @@ export function fromGameSession(
     durability: durabilityOf(instances[0]),
     fill: fillOf(instances[0]),
     severity: severityOf(instances[0]),
+    mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
     description: locale.object(instances[0].def.name).description,
