@@ -79,10 +79,10 @@ describe('プレイヤーキャラクタの定義', () => {
         ).toBeDefined();
     });
 
-    it('主要なスロット（main_slot）は持たない', () => {
-      // 手持ち・装備・怪我のどれも「キャラクタと言えばこれ」ではない（GameElementDefinition.md
+    it('物を出し入れするスロット（item_slot）は持たない', () => {
+      // 手持ち・装備・怪我のどれも「カードを押したら開く1つ」ではない（GameElementDefinition.md
       // 7.8節）。装備・怪我のボタンは、開くスロットを固定で子ウィンドウへ渡すのでこれに依らない。
-      expect(def(character).mainSlotGlobalId).toBeUndefined();
+      expect(def(character).itemSlotGlobalId).toBeUndefined();
     });
 
     it.each([

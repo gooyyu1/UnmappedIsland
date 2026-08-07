@@ -55,13 +55,13 @@ export class ObjectDef {
   readonly representedBySlotGlobalId: number | undefined;
 
   /**
-   * この型の**主要なスロット**のグローバルID（7.8節）。undefinedなら持たない。
+   * この型が**物を出し入れするスロット**のグローバルID（7.8節）。undefinedなら持たない。
    *
-   * 「このオブジェクトと言えばこの中身」という1つを名指しするもので、画面はカードを押したときに
-   * ここの中身を並べる（かごの中身、怪我に当てている治療具）。複数のスロットを持つが、そのどれもが
-   * 主要ではない型（キャラクタ）は宣言しない。
+   * 画面はカードを押したときにここの中身を並べる（かごの中身、怪我に当てている治療具）。液体の容器は
+   * 持たない——中身は物ではなく量で、1枚ずつ取り出せるものではないため。どのスロットもこれに
+   * あたらない型（キャラクタ）も持たない。
    */
-  readonly mainSlotGlobalId: number | undefined;
+  readonly itemSlotGlobalId: number | undefined;
 
   /** このObjectDefが持つメニュー型操作（11節）。 */
   readonly actions: readonly ActionDef[];
@@ -90,7 +90,7 @@ export class ObjectDef {
     combinations: readonly CombinationDef[] = [],
     representedBySlotGlobalId?: number,
     isQuantitative = false,
-    mainSlotGlobalId?: number,
+    itemSlotGlobalId?: number,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -106,7 +106,7 @@ export class ObjectDef {
     this.actions = actions;
     this.combinations = combinations;
     this.representedBySlotGlobalId = representedBySlotGlobalId;
-    this.mainSlotGlobalId = mainSlotGlobalId;
+    this.itemSlotGlobalId = itemSlotGlobalId;
     this.isQuantitative = isQuantitative;
   }
 

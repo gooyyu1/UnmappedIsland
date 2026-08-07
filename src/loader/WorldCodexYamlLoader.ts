@@ -179,7 +179,7 @@ export class WorldCodexYamlLoader {
     raw.passives = tryGetSeq(node, 'passives', context);
     raw.stackOrder = tryGetMap(node, 'stack_order', context);
     raw.representedBy = tryGetScalar(node, 'represented_by', context);
-    raw.mainSlot = tryGetScalar(node, 'main_slot', context);
+    raw.itemSlot = tryGetScalar(node, 'item_slot', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.actions = tryGetMap(node, 'actions', context);
     raw.combinations = tryGetMap(node, 'combinations', context);
@@ -205,7 +205,7 @@ export class WorldCodexYamlLoader {
     raw.passives = tryGetSeq(node, 'passives', context);
     raw.stackOrder = tryGetMap(node, 'stack_order', context);
     raw.representedBy = tryGetScalar(node, 'represented_by', context);
-    raw.mainSlot = tryGetScalar(node, 'main_slot', context);
+    raw.itemSlot = tryGetScalar(node, 'item_slot', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.actions = tryGetMap(node, 'actions', context);
     raw.combinations = tryGetMap(node, 'combinations', context);
