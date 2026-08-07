@@ -6,7 +6,8 @@
     python build.py recipes/rocky_field_fixture.json
 
 後処理はレシピが postprocess を持つならレーンの背景として（postprocess.py）、cardArt を持つなら
-カードの絵として（card_art.py）扱う。edit を持つレシピは、生成の代わりに別レシピの生データを
+カードの絵として（card_art.py）扱う。mark があれば、その後に絵文字の形を色替えして重ねる
+（icon_mark.py）。edit を持つレシピは、生成の代わりに別レシピの生データを
 基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。
 
 --keep-raw を付けると、後処理前の生成物を残す（プロンプトを詰め直すときに見比べられる）。
@@ -33,9 +34,19 @@ COMFY = Path(os.environ.get("LOCALAPPDATA", "")) / "Comfy-Desktop/ComfyUI-Instal
 STATE = Path(tempfile.gettempdir()) / "unmapped-island-comfyui-workflow.txt"
 
 
+def echo(text: str) -> None:
+    """コンソールの文字コードで出せない文字があっても落ちないように出す。
+
+    Windowsの既定はcp932で、絵文字（icon_mark.pyへ渡す形）を出そうとするとUnicodeEncodeErrorに
+    なる。**落ちるのは実行ではなく、実行したコマンドを見せる行**なので、出せない文字は潰してよい。
+    """
+    encoding = sys.stdout.encoding or "utf-8"
+    print(text.encode(encoding, "replace").decode(encoding), flush=True)
+
+
 def run(script: str, args: list[str]) -> None:
     command = [sys.executable, str(HERE / script), *args]
-    print("$", " ".join(command), flush=True)
+    echo("$ " + " ".join(command))
     subprocess.run(command, check=True, cwd=HERE)
 
 
@@ -278,6 +289,26 @@ def main() -> None:
                     # 色味を寄せる基準は、リポジトリ内の出来上がった絵を指す（同じ土地の別レーンなど）。
                     *(["--match", str(REPO / post["matchTone"]),
                        "--match-strength", str(post["matchStrength"])] if post.get("matchTone") else []),
+                ],
+            )
+
+        # 印（icon_mark.py）は切り出しの後。透過した絵の上へ重ねるので、順番を逆にすると
+        # 紙・物・影の分離が印まで拾ってしまう。
+        mark = recipe.get("mark")
+        if mark is not None:
+            run(
+                "icon_mark.py",
+                [
+                    str(processed),
+                    "--out", str(processed),
+                    "--emoji", mark["emoji"],
+                    "--size", str(mark["size"]),
+                    "--at", *map(str, mark["at"]),
+                    *(["--hue", str(mark["hue"])] if "hue" in mark else []),
+                    *(["--saturation", str(mark["saturation"])] if "saturation" in mark else []),
+                    *(["--value", str(mark["value"])] if "value" in mark else []),
+                    *(["--shift", str(mark["shift"])] if "shift" in mark else []),
+                    *(["--opacity", str(mark["opacity"])] if "opacity" in mark else []),
                 ],
             )
 
