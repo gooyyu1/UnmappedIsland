@@ -286,6 +286,27 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBe('🩹');
   });
 
+  it('中身を持つカードは、それを映す場所と、空けておく枠の数の元になる容量を持つ', () => {
+    // 中身を見せるかはタグではなくスロットで決める（ScreenLayout.md 子ウィンドウ節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const injury = injure(game);
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    expect(
+      basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const injuryCard = view.cardsIn('injuries')[0];
+    const basketCard = view.hand.find((card) => card?.objects[0] === basket)!;
+
+    expect(injuryCard.contents, '怪我は治療具のスロットを開く').toEqual({ container: injury });
+    expect(view.capacityOf(injuryCard.contents!), '治療具は1つだけ').toBe(1);
+    expect(injuryCard.contentsFillsWidth, '1枠しか無いので自分のカードも出す').toBe(false);
+
+    expect(basketCard.contents, 'コンテナは中身のスロットを開く').toEqual({ container: basket });
+    expect(basketCard.contentsFillsWidth, '何枚入るか分からないので幅を並びへ譲る').toBe(true);
+  });
+
   it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));

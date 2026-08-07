@@ -4,6 +4,7 @@ import { addTextButton } from './Button';
 import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
+import { CardLane } from './CardLane';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -20,11 +21,16 @@ import { wrapByCharacter } from './textLayout';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 
-/** 見出しと説明文の間隔。同じまとまりなので、内容同士の間隔より詰める。 */
-const TITLE_GAP = 12;
+/** 説明文を出すウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では中身ごと縮める。 */
+const DESCRIPTION_WIDTH = 760;
 
-/** ウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面ではカードごと縮める。 */
-const WINDOW_WIDTH = 760;
+/**
+ * 中身が空でも保つ枠の数。**空けておく枠の数はスロットの容量で決まり、この数で頭打ちにする。**
+ *
+ * 容量が3なら3枠、1なら1枠（怪我の治療具。4枠空けると「4つ当てられる」と誤って伝わる）。
+ * 5以上で頭打ちにするのは、それ以上並べると画面からはみ出すため——入り切らない分は横スクロールで送る。
+ */
+const MIN_SLOTS = 4;
 
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
@@ -50,14 +56,38 @@ export interface ObjectWindowAction {
   readonly reason?: string | undefined;
 }
 
+/** 中身のスロットを持つ対象で、その並びとして出すもの。 */
+export interface ObjectWindowContents {
+  /** 並べるカード。枠数は固定ではなく、はみ出した分は横スクロールで送る。 */
+  readonly cards: readonly (CardContent | undefined)[];
+
+  /**
+   * このスロットがカードを受け入れるか。受け入れる場合だけ、並びの末尾に受け皿の空枠を出す
+   * （中身が空でも落とせる場所だと分かるように、CardLaneOptions.trailingPlaceholder）。
+   */
+  readonly acceptsCards: boolean;
+
+  /** 何枚入るか（無制限ならundefined）。空けておく枠の数の上限になる（laneSlots）。 */
+  readonly capacity?: number;
+}
+
 export interface ObjectWindowOptions {
-  /** 左に置くカード。見た目だけを使う（操作は引き継がない）。 */
-  readonly card: CardContent;
+  /** 最上段の見出し。オブジェクトなら自分の名前、キャラクタのスロットならスロットの名前。 */
+  readonly title: string;
 
-  /** 右に置く説明文。無ければ代わりの1行を薄く出す。 */
-  readonly description: string | undefined;
+  /**
+   * 左に置く、その対象自身のカード。見た目だけを使う（操作は引き継がない）。
+   * **右の段を中身の並びへ譲る対象（キャラクタのスロット・コンテナ）は持たない。**
+   */
+  readonly card?: CardContent;
 
-  /** 下に横並びにする操作。空でも「閉じる」だけの行になる。 */
+  /** 右の段に出す説明文。中身の並びを出すウィンドウでは使わない（下記）。 */
+  readonly description?: string;
+
+  /** 右の段に出す中身の並び。持つならこちらが説明文より優先される。 */
+  readonly contents?: ObjectWindowContents;
+
+  /** 最下段に横並びにする操作。空でも「閉じる」だけの行になる。 */
   readonly actions: readonly ObjectWindowAction[];
 
   /** ウィンドウを収める領域。 */
@@ -67,70 +97,143 @@ export interface ObjectWindowOptions {
 }
 
 /**
- * カードを押すと開く、そのオブジェクトの子ウィンドウ（ScreenLayout.md オブジェクトの子ウィンドウ節）。
- * 左にカード、右に名前と説明文、その下に操作のボタンを横並びにする。
+ * カードやスロットのボタンを押すと開く子ウィンドウ（ScreenLayout.md 子ウィンドウ節）。
+ *
+ * **オブジェクト・コンテナ・キャラクタのスロットを1つの部品で扱う。** 組み方はどれも同じで、
+ * 最上段が見出し、最下段が操作のボタン、間が「左の自分のカード（持てば）」と「右の説明文か中身の並び」。
+ *
+ * **説明文と中身の並びは同時に出さない。** 縦にも横にも収まらないので、中身を持つ対象では並びを採る。
  */
 export class ObjectWindow {
+  /**
+   * 中身の並び。ドラッグの対象として呼び出し側（PlayScene）が受け取る。
+   * 中身を持たないウィンドウではundefined。
+   */
+  readonly lane: CardLane | undefined;
+
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
   /** アクションのボタンを長押ししている間だけ出す吹き出し（addActions参照）。 */
   private readonly tooltip: Tooltip;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
-    const { width, height } = metrics;
-    // 中身を出し入れしない読み取り専用のウィンドウなので、覆いは画面全体に敷く（プロパティウィンドウと同じ）。
-    this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
-
+    const { card, contents } = options;
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
     const actionHeight = metrics.px(ACTION_HEIGHT);
+    const laneHeight = metrics.px(SIZE.laneHeight);
 
-    const windowWidth = Math.min(metrics.px(WINDOW_WIDTH), options.area.width, width * 0.92);
+    // 中身を出し入れするウィンドウは、覆いを領域の中だけに敷く。画面全体を覆うと、開いている間も
+    // 操作できるはずの手持ちが覆いに入力を吸われる。読み取り専用なら画面全体でよい。
+    this.objects.push(
+      addPanel(
+        scene,
+        contents === undefined ? { x: 0, y: 0, width: metrics.width, height: metrics.height } : options.area,
+        COLOR.modalOverlay,
+        0.5,
+      ),
+    );
+
+    const windowWidth = this.decideWidth(metrics, options, padding, gap);
     const contentWidth = windowWidth - padding * 2;
-    // 横幅が足りない画面では、カードと説明文の取り分の比を保ったまま両方を縮める。
-    const scale = Math.min(1, contentWidth / metrics.px(WINDOW_WIDTH - WINDOW_PADDING * 2));
-    const cardWidth = metrics.px(SIZE.cardWidth) * scale;
-    const cardHeight = metrics.px(SIZE.cardHeight) * scale;
-    const textWidth = contentWidth - cardWidth - gap;
+    // 説明文を出すウィンドウは決まった幅なので、狭い画面ではカードと文の取り分の比を保ったまま縮める。
+    // 中身の並びを出すウィンドウは、**等倍のカードが並ぶ幅**で決めてあるので縮めない（レーンの中の
+    // カードは縮まないので、こちらだけ縮めると大きさが揃わない）。
+    const scale =
+      contents !== undefined
+        ? 1
+        : Math.min(1, contentWidth / metrics.px(DESCRIPTION_WIDTH - WINDOW_PADDING * 2));
+    const cardWidth = card === undefined ? 0 : metrics.px(SIZE.cardWidth) * scale;
+    const cardHeight = card === undefined ? 0 : metrics.px(SIZE.cardHeight) * scale;
+    const columnWidth = card === undefined ? contentWidth : contentWidth - cardWidth - gap;
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
     const board = scene.add.graphics();
     this.objects.push(board);
 
-    const title = addLabel(scene, metrics, 0, 0, options.card.name, { size: 34, bold: true });
-    title.setWordWrapCallback(wrapByCharacter(textWidth));
-    const description = addLabel(scene, metrics, 0, 0, options.description ?? NO_DESCRIPTION, {
-      size: 26,
-      color: options.description === undefined ? COLOR.textMuted : COLOR.text,
-    }).setLineSpacing(metrics.px(6));
-    description.setWordWrapCallback(wrapByCharacter(textWidth));
+    const title = addLabel(scene, metrics, 0, 0, options.title, { size: 34, bold: true })
+      .setOrigin(0.5, 0)
+      .setAlign('center');
+    title.setWordWrapCallback(wrapByCharacter(contentWidth));
 
-    const titleGap = metrics.px(TITLE_GAP);
-    const contentHeight = Math.max(cardHeight, title.height + titleGap + description.height);
-    const windowHeight = padding * 2 + contentHeight + gap + actionHeight;
+    const description =
+      contents !== undefined
+        ? undefined
+        : addLabel(scene, metrics, 0, 0, options.description ?? NO_DESCRIPTION, {
+            size: 26,
+            color: options.description === undefined ? COLOR.textMuted : COLOR.text,
+          }).setLineSpacing(metrics.px(6));
+    description?.setWordWrapCallback(wrapByCharacter(columnWidth));
+
+    const columnHeight = contents === undefined ? (description?.height ?? 0) : laneHeight;
+    const middleHeight = Math.max(cardHeight, columnHeight);
+    const windowHeight = padding * 2 + title.height + gap + middleHeight + gap + actionHeight;
     const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
     drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
-    this.objects.push(
-      new Card(scene, metrics, window.x + padding, window.y + padding, cardFace(options.card)).setScale(
-        scale,
-      ),
-    );
+    title.setPosition(window.x + windowWidth / 2, window.y + padding);
+    this.objects.push(title);
 
-    const textX = window.x + padding + cardWidth + gap;
-    title.setPosition(textX, window.y + padding);
-    description.setPosition(textX, title.y + title.height + titleGap);
-    this.objects.push(title, description);
+    const middleY = window.y + padding + title.height + gap;
+    if (card !== undefined) {
+      // レーンはカードを自分の高さの中央へ置く（CardLane）。並べるときは自分のカードも同じだけ
+      // 下げて、左右のカードの縦位置を揃える。
+      const cardY = middleY + (contents === undefined ? 0 : (laneHeight - cardHeight) / 2);
+      this.objects.push(new Card(scene, metrics, window.x + padding, cardY, cardFace(card)).setScale(scale));
+    }
+
+    const columnX = window.x + padding + (card === undefined ? 0 : cardWidth + gap);
+    if (contents !== undefined) {
+      // 枠数の決まっているスロットは、レーンを枠の数まで縮めて中央へ寄せる。幅いっぱいのレーンに
+      // 1枠だけ左詰めで置くと、どこへ落とすのかが読み取りにくい。
+      const laneWidth = Math.min(columnWidth, laneWidthFor(metrics, laneSlots(options)));
+      this.lane = new CardLane(
+        scene,
+        metrics,
+        {
+          x: columnX + (columnWidth - laneWidth) / 2,
+          y: middleY,
+          width: laneWidth,
+          height: laneHeight,
+        },
+        COLOR.slotWindowLane,
+        contents.cards,
+        { clip: true, trailingPlaceholder: contents.acceptsCards },
+      );
+    } else if (description !== undefined) {
+      description.setPosition(columnX, middleY);
+      this.objects.push(description);
+    }
 
     this.addActions(scene, metrics, options, {
       x: window.x + padding,
-      y: window.y + padding + contentHeight + gap,
+      y: middleY + middleHeight + gap,
       width: contentWidth,
       height: actionHeight,
     });
 
     // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
     this.tooltip = new Tooltip(scene, metrics);
+  }
+
+  /**
+   * ウィンドウの横幅。
+   *
+   * - 中身の並びを出すなら、カードの幅＋枠の数から決める。少ないときに間延びせず、多いときは
+   *   領域いっぱいまで広げて見える枚数を増やす（それでも収まらない分は横スクロールで送る）。
+   * - 説明文を出すなら決まった幅（DESCRIPTION_WIDTH）。
+   */
+  private decideWidth(
+    metrics: ScreenMetrics,
+    options: ObjectWindowOptions,
+    padding: number,
+    gap: number,
+  ): number {
+    const limit = Math.min(options.area.width, metrics.width * 0.92);
+    if (options.contents === undefined) return Math.min(metrics.px(DESCRIPTION_WIDTH), limit);
+
+    const own = options.card === undefined ? 0 : metrics.px(SIZE.cardWidth) + gap;
+    return Math.min(own + laneWidthFor(metrics, laneSlots(options)) + padding * 2, limit);
   }
 
   /**
@@ -206,8 +309,31 @@ export class ObjectWindow {
   }
 
   close(): void {
+    this.lane?.destroy();
     this.tooltip.destroy();
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
   }
+}
+
+/**
+ * 並びに空けておく枠の数。**下限はMIN_SLOTSだが、スロットの容量を超えては空けない**——
+ * 1枚しか入らない場所に4枠空けると「4つ入る」と誤って伝わる。
+ */
+function laneSlots(options: ObjectWindowOptions): number {
+  const contents = options.contents;
+  if (contents === undefined) return 0;
+  const used = contents.cards.length + (contents.acceptsCards ? 1 : 0);
+  return Math.max(Math.min(MIN_SLOTS, contents.capacity ?? MIN_SLOTS), used);
+}
+
+/**
+ * 枠を数えぶん並べるのに要るレーンの幅。
+ *
+ * **レーンの左右の余白（CardLaneのSIZE.margin）を足す。** カードの幅だけで決めると、最後の枠が
+ * レーンからはみ出す。
+ */
+function laneWidthFor(metrics: ScreenMetrics, slots: number): number {
+  const cards = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);
+  return cards + metrics.px(SIZE.margin) * 2;
 }

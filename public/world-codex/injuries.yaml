@@ -12,9 +12,12 @@ traits:
           - {tag: treatment, max: 1}
     combinations:
       # 治療具を当てる。何を当てられるかはtreatmentスロットのacceptsが決めるので、条件は書かない。
+      #
+      # **durationは持たない。** 子ウィンドウのスロットへ落としても当てられる（そちらは通常のスロット
+      # 移動なので時間を取らない）ため、こちらだけ時間を取ると同じことが経路で違う値段になる。
+      # 手当てに時間をかけたくなったら、スロット移動の側にも時間を課す語彙が要る。
       treat:
         with: treatment
-        duration: 5
         move: {object: dragged, to: self}
 
 object_defs:

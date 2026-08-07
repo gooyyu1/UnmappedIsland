@@ -69,6 +69,12 @@ export interface ObjectCardStack extends CardContent {
   readonly contents?: CardPlace;
 
   /**
+   * 中身の並びで子ウィンドウの右の段を使い切るか（ScreenLayout.md 子ウィンドウ節）。
+   * trueなら、そのカード自身は子ウィンドウに出ない。
+   */
+  readonly contentsFillsWidth?: boolean;
+
+  /**
    * 束のうち1つを別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
    * 動かせない束（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。
    */
@@ -213,6 +219,12 @@ export interface PlayScreenView {
   readonly acceptsCards: (place: CardPlace) => boolean;
 
   /**
+   * その場所へ何枚入るか（無制限ならundefined）。子ウィンドウが空けておく枠の数を決めるのに使う
+   * ——1枚しか入らない場所に4枠空けると「4つ入る」と誤って伝わる。
+   */
+  readonly capacityOf: (place: CardPlace) => number | undefined;
+
+  /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
    * 実行できる組み合わせが無ければundefined。draggedとtargetが同じ束（その束の上の1枚を元の位置へ
    * 重ねた）なら、束の中の2つを組み合わせる。
@@ -270,6 +282,24 @@ const COLOR_PROPERTY = 'color';
  */
 const TREATMENT_SLOT = 'treatment';
 const TREATED_MARK = '🩹';
+
+/**
+ * カードを押すと中身を見せるスロットの名前（宣言順に、最初に持っているものを開く）。
+ *
+ * **タグではなくスロットで決める。** かつては`container`タグの有無で決めていたが、怪我の治療具のように
+ * 「入れ物ではないが、プレイヤーが1つ入れる場所」を持つ物が出てきた。怪我に`container`タグを付けるのは
+ * 筋が悪いので、判定の側を「プレイヤーが入れられるスロットを持つか」へ広げている。
+ */
+const OPENABLE_SLOTS = ['contents', TREATMENT_SLOT];
+
+/**
+ * そのうち、**子ウィンドウの右の段を並びだけで使い切る**スロット。開いたウィンドウに対象自身の
+ * カードは出さず、幅を並びへ譲る（ScreenLayout.md 子ウィンドウ節）。
+ *
+ * 何枚入るか分からない入れ物がこちら。1枠しかない怪我の治療具は、何を治療しているのかが分からないと
+ * 困るので、カードを出す側に残す。
+ */
+const WIDE_CONTENT_SLOTS = ['contents'];
 
 /**
  * 子ウィンドウのタイトルに出す場所の名前。子ウィンドウになるのはキャラクター自身のスロットだけで、
@@ -369,13 +399,19 @@ export function fromGameSession(
     return { ratio, color };
   };
 
-  const containerTagId = codex.tagNames.tryGetId('container');
-  const contentsSlotId = codex.slotNames.tryGetId('contents');
-  /** そのカードがコンテナなら、中身を映す場所。中身を持てるスロットが無いcodexではundefined。 */
+  const openableSlotIds = OPENABLE_SLOTS.map((name) => codex.slotNames.tryGetId(name));
+  /** そのオブジェクトが中身を見せるスロット（持たなければundefined）。 */
+  const openableSlotOf = (object: WorldObject): number | undefined =>
+    openableSlotIds.find((id) => id !== undefined && object.tryGetSlot(id) !== undefined);
+
+  /** そのカードが中身を持つなら、それを映す場所。持たなければundefined（押しても中身は開かない）。 */
   const contentsOf = (object: WorldObject): CardPlace | undefined =>
-    containerTagId !== undefined && contentsSlotId !== undefined && object.def.tags.includes(containerTagId)
-      ? { container: object }
-      : undefined;
+    openableSlotOf(object) === undefined ? undefined : { container: object };
+
+  const wideSlotIds = WIDE_CONTENT_SLOTS.map((name) => codex.slotNames.tryGetId(name));
+  /** 中身の並びへ幅を譲る対象か（子ウィンドウが自分のカードを出さない）。 */
+  const contentsFillsWidth = (object: WorldObject): boolean =>
+    wideSlotIds.some((id) => id !== undefined && object.tryGetSlot(id) !== undefined);
 
   /**
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
@@ -429,6 +465,7 @@ export function fromGameSession(
     actions: actionsOf(instances[0]),
     place,
     contents: contentsOf(instances[0]),
+    contentsFillsWidth: contentsFillsWidth(instances[0]),
   });
 
   /**
@@ -519,7 +556,8 @@ export function fromGameSession(
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
     if (typeof place !== 'string') {
-      return contentsSlotId === undefined ? undefined : { owner: place.container, slotId: contentsSlotId };
+      const slotId = openableSlotOf(place.container);
+      return slotId === undefined ? undefined : { owner: place.container, slotId };
     }
     switch (place) {
       case 'items':
@@ -649,6 +687,14 @@ export function fromGameSession(
     },
     nameOf: (place) => (typeof place === 'string' ? (PLACE_NAMES[place] ?? place) : nameOf(place.container)),
     acceptsCards: (place) => slotOf(place) !== undefined,
+    capacityOf: (place) => {
+      const slot = slotOf(place);
+      if (slot === undefined) return undefined;
+      const def = slot.owner.def.getSlotDef(slot.slotId);
+      // acceptsを持たないスロットは無制限（7.1節）。複数の規則があるなら、一番緩いものが上限になる。
+      const rules = def?.accepts ?? [];
+      return rules.length === 0 ? undefined : Math.max(...rules.map((rule) => rule.max));
+    },
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
