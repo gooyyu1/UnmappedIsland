@@ -37,17 +37,18 @@ TARGET_WIDTH = 1024
 TARGET_HEIGHT = 320
 
 
-def oilify(rgb: np.ndarray, radius: int, levels: int) -> np.ndarray:
+def oilify(rgb: np.ndarray, radius: int, levels: int, modes: list[str] | None = None) -> np.ndarray:
     """窓の中で最も多い明度帯を選び、その帯に属する画素の平均色へ置き換える（GIMPのoilifyと同じ）。
 
     明度をlevels段に量子化し、段ごとに「窓内の個数」と「窓内の色の合計」を移動平均で求めて、
     個数が最大の段の平均色を採る。段の数だけ移動平均をかけるだけなので、画素ごとのループは要らない。
 
-    横だけ端を巻き込む（wrap）。絵は左右が繋がっているので、端で折り返すと継ぎ目だけ別の平均になり、
-    せっかくの繋がりが壊れる。縦は繋がっていないのでreflectのまま。
+    既定では横だけ端を巻き込む（wrap）。レーンの絵は左右が繋がっているので、端で折り返すと継ぎ目だけ
+    別の平均になり、せっかくの繋がりが壊れる。縦は繋がっていないのでreflect。繋がっていない絵
+    （カードの絵、card_art.py）は両方をreflectにして呼ぶ。
     """
     size = radius * 2 + 1
-    modes = ["reflect", "wrap"]
+    modes = ["reflect", "wrap"] if modes is None else modes
     luma = rgb @ np.array([0.299, 0.587, 0.114])
     bins = np.clip((luma / 256.0 * levels).astype(np.int32), 0, levels - 1)
 

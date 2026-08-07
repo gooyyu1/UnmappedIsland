@@ -18,19 +18,12 @@
     "seed": 3
   },
   "cardArt": {
-    "_comment": [
-      "サイズは足の指がカードの状態バーに隠れない大きさで決めた（384だと爪先が帯に掛かる、",
-      "ScreenLayout.md カードの状態バー節）。",
-      "canvas は手当済みと揃える——画像の寸法を揃えておけば、手当ての前後で絵が入れ替わっても",
-      "画面上の大きさが変わらない。",
-      "tolerance は白い包帯が紙として透過されないよう 12 まで下げる（既定の 60 だと縁が食いちぎられる）。"
-    ],
-    "size": "340",
-    "mode": "background",
-    "tolerance": 12,
-    "edge": 4,
-    "shadow": 1,
-    "reach": 24,
-    "canvas": [416, 416]
+    "_comment": "手当前と同じ（sprained_ankle.json 参照）。揃えないと、手当ての前後で絵の大きさと作風が変わる。",
+    "size": "card",
+    "mode": "luma",
+    "white": 250,
+    "opaque": 200,
+    "feather": 24,
+    "oilify": [6, 12]
   }
 }
