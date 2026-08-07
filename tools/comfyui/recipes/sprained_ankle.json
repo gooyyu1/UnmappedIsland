@@ -2,12 +2,16 @@
   "_comment": [
     "src/assets/objects/sprained_ankle.png（手当前の足首の捻挫）を作り直すためのレシピ。build.py が読む。",
     "",
-    "**捻挫は生成では出せない。** 素足（prompts/objects.json の bare_foot）を出させ、腫れと痣は",
-    "Qwen Image Edit で足す。48枚振って分かったことは同ファイルの description にある。",
-    "source を持たない edit は、同じレシピから edit を外したもの——つまり自分の生成——を基準にする。",
+    "**捻挫は生成でも編集でも出せない。** 素足（prompts/objects.json の bare_foot）を出させ、Qwen Image",
+    "Edit には白い紙の上へ置き直すことだけを頼み、痣は skin_tint.py で乗算で載せる。",
+    "生成で48枚振って分かったことは prompts/objects.json の description にある。",
     "",
-    "包帯を巻いた手当済みの絵は、この絵をさらに編集して作る（sprained_ankle_bandaged.json）。",
-    "同じ足から派生させるので、手当ての前後で足が入れ替わらない。"
+    "**痣を Qwen に描かせてはいけない。** 色を頼むと形と陰影まで描き直すので、くるぶしが腫れた塊に",
+    "なって出てくる（「形も陰影も変えるな、色だけ」と書いても、濃さが揃わない）。乗算で色を寄せる",
+    "だけなら、元の滑らかなくるぶしがそのまま残る。",
+    "",
+    "包帯を巻いた手当済みの絵は、痣を載せる前の生データから派生させる",
+    "（sprained_ankle_bandaged.json）。同じ足なので、手当ての前後で足が入れ替わらない。"
   ],
   "output": "src/assets/objects/sprained_ankle.png",
   "prompts": "objects.json",
@@ -19,7 +23,7 @@
   "width": 832,
   "height": 1280,
   "edit": {
-    "prompt": "Keep this foot exactly as it is in shape and pose, and move it onto a plain empty white page with a wide empty white margin all around it and a soft grey shadow directly beneath it. Repaint it as a hand painted illustration with warm living skin tones. The ankle is sprained: make the outer ankle swollen and puffy, with a dark bluish purple bruise spreading around the ankle bone and fading into a reddish flush over the top of the foot. The toes and the heel stay normal skin colour. Matte skin, flat even lighting. Nothing else in the image, no text, no letters, no numbers.",
+    "prompt": "Keep this foot exactly as it is: the same silhouette, the same smooth rounded ankle, the same soft even shading, the same skin colour. Move it onto a plain empty white page with a wide empty white margin all around it and a soft grey shadow directly beneath it. Matte skin, flat even lighting. Nothing else in the image, no text, no letters, no numbers.",
     "seed": 1
   },
   "cardArt": {
@@ -34,5 +38,13 @@
     "shadow": 1,
     "reach": 24,
     "canvas": [416, 416]
+  },
+  "tint": {
+    "_comment": [
+      "内出血の痣。芯はくるぶしの出っ張りの上、暈しはそこから踵と足の甲へ向けて下へ広げる",
+      "（内出血は重力で下へ落ちる）。",
+      "カードの絵は実寸で1/3ほどに縮むので、拡大して濃さを決めると必ず薄すぎる。"
+    ],
+    "spots": ["246,252,92,0.75,#dc9ea6", "250,242,48,0.60,#c1849f"]
   }
 }

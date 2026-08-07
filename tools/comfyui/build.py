@@ -6,8 +6,9 @@
     python build.py recipes/rocky_field_fixture.json
 
 後処理はレシピが postprocess を持つならレーンの背景として（postprocess.py）、cardArt を持つなら
-カードの絵として（card_art.py）扱う。mark があれば、その後に絵文字の形を色替えして重ねる
-（icon_mark.py）。edit を持つレシピは、生成の代わりに別レシピの生データを
+カードの絵として（card_art.py）扱う。mark があれば、その後に絵文字の形を色替えして重ね
+（icon_mark.py）、tint があれば陰影を残したまま一部の色を寄せる（skin_tint.py）。
+edit を持つレシピは、生成の代わりに別レシピの生データを
 基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。
 
 --keep-raw を付けると、後処理前の生成物を残す（プロンプトを詰め直すときに見比べられる）。
@@ -309,6 +310,19 @@ def main() -> None:
                     *(["--value", str(mark["value"])] if "value" in mark else []),
                     *(["--shift", str(mark["shift"])] if "shift" in mark else []),
                     *(["--opacity", str(mark["opacity"])] if "opacity" in mark else []),
+                ],
+            )
+
+        # 染み（skin_tint.py）も切り出しの後。切り出しは紙より暗い塊を物と見なすので、先に色を
+        # 沈めると輪郭の判定が変わってしまう。
+        tint = recipe.get("tint")
+        if tint is not None:
+            run(
+                "skin_tint.py",
+                [
+                    str(processed),
+                    "--out", str(processed),
+                    *[str(v) for spot in tint["spots"] for v in ("--spot", spot)],
                 ],
             )
 
