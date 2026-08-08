@@ -1,0 +1,41 @@
+# ヤシの葉を編む連鎖（docs/world/Skills.md「繊維・編み」）。
+#
+# ヤシの葉は羽状複葉で、1本の中軸に細長い小葉が左右2列に並んでいる。編むとは、その小葉を
+# 互い違いに組むこと。短冊が最初から軸に整列しているため、素手でも編める。
+#
+# 中軸で縦に割ると同じ葉から2枚取れるが、中軸は木質で丈夫なので刃物が要る。刃物は新しい物を
+# 解放するのではなく、同じ材料からの歩留まりを倍にする。
+#
+# 葉を採るヤシの木（palm_tree）はcoconut.yamlが定義する。
+
+object_defs:
+  # ヤシの葉。重さの大半は中軸で、編むときに捨てる（1枚4000g → パネル400g×2）。
+  # かさばるので、拠点へ運ぶ前にその場で編むと運ぶ重さが減る。
+  palm_frond:
+    tags: [item]
+    props:
+      weight: {value: 4000}
+    actions:
+      # 素手で編む。中軸を残したまま左右の小葉を組むので、幅広のパネルが1枚できる。
+      weave:
+        showMenu: always
+        duration: 90
+        destroy: self
+        spawn: {object: woven_leaf}
+    combinations:
+      # 中軸で割ってから左右をそれぞれ編む。細長いパネルが2枚とれる。屋根を葺くときは
+      # 軒から棟へ段を重ねるので、細長いほうが扱いやすい。
+      split_and_weave:
+        with: cutting_tool
+        duration: 60
+        destroy: self
+        spawn:
+          - {object: woven_leaf}
+          - {object: woven_leaf}
+
+  # 編んだ葉。籠・壁・屋根に共通で使う中間素材。
+  # 中間素材なので解放条件を持たない（docs/engine/SkillSystem.md 4.2節）。
+  woven_leaf:
+    tags: [item]
+    props:
+      weight: {value: 400}

@@ -6,6 +6,7 @@ import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
+import type { RecipeDef } from './RecipeDef';
 import type { Requirement } from './Requirement';
 import type { SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
@@ -44,6 +45,9 @@ export class ObjectDef {
 
   /** このObjectDefが宣言する持続効果（8節）の一式（PassiveEffects参照）。 */
   readonly passives: PassiveEffects;
+
+  /** この型を成果物とするレシピ（13節）。宣言順。 */
+  readonly recipes: readonly RecipeDef[];
 
   /** スタック内での並び順（表示専用）。undefined なら並び順は未定義で、常にスタックの末尾へ
    * 追加される（新規インスタンス同士の相対順序＝挿入順）。 */
@@ -110,6 +114,7 @@ export class ObjectDef {
     mainItemSlotGlobalId?: number,
     boundToOwner = false,
     stackable = true,
+    recipes: readonly RecipeDef[] = [],
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -129,6 +134,7 @@ export class ObjectDef {
     this.boundToOwner = boundToOwner;
     this.stackable = stackable;
     this.isQuantitative = isQuantitative;
+    this.recipes = recipes;
   }
 
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */

@@ -27,7 +27,7 @@ traits:
         capacity: 1000
 
 object_defs:
-  # 編み籠。蔓や草を編んで作る、最初の運搬用の入れ物。
+  # 編み籠。編んだヤシの葉（weaving.yaml）を綴じ合わせて作る、最初の運搬用の入れ物。
   # itemとfixtureを兼ねるので、持ち歩くことも地面へ据えることもできる（設置物レーンと
   # アイテムレーンの間を端の▲▼で行き来する）。
   woven_basket:
@@ -37,3 +37,11 @@ object_defs:
     traits: [item_container]
     props:
       weight: {value: 800}
+    # 解放条件（conditions、GameElementDefinition.md 13.3節）はまだ置かない。繊維・編みスキルの
+    # プロパティと、それを伸ばす経路が未実装のため、今条件を置くと永久に作れなくなる。
+    recipes:
+      woven:
+        steps:
+          - requires:
+              - {object: woven_leaf, quantity: 6, consume: true}
+            duration: 120

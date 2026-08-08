@@ -66,6 +66,14 @@ export const COMBINATION_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set([
   'dragged',
 ]);
 
+/**
+ * レシピの解放条件（SkillSystem.md 4節）で使えるobject。**actorのみ**。
+ *
+ * 解放条件は「このレシピを知っているか」の判定で、評価する時点では成果物のインスタンスがまだ無い。
+ * self/parent/ancestorはいずれも解決先を持たないため使えない（ancestorはselfから遡るので同様）。
+ */
+export const RECIPE_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set(['actor']);
+
 /** passivesのゲートで使えるobject。selfはSlotBearer、parentはその1つ上
  * （RegisteredPassiveEffect参照）、ancestorは祖先探索（WorldObject.FindAncestorWithProperty参照）。
  * actor/draggedは持続的な関係に紐づかないため未対応。 */

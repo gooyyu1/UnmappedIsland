@@ -15,25 +15,7 @@ import { ICON_ART } from './ui/iconArt';
 import { WEATHER_ART } from './ui/weatherArt';
 import { commonArtFiles, locationDefNames } from './ui/locationArt';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
-
-/** ゲーム本体に同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。 */
-const WORLD_CODEX_FILES = [
-  'characters/player_character.yaml',
-  'characters/captain.yaml',
-  'characters/engineer.yaml',
-  'characters/farmer.yaml',
-  'characters/medic.yaml',
-  'coconut.yaml',
-  'containers.yaml',
-  'core.yaml',
-  'foods.yaml',
-  'injuries.yaml',
-  'liquid_containers.yaml',
-  'locations.yaml',
-  'terrain_generation.yaml',
-  'tools.yaml',
-  'treatments.yaml',
-];
+import { WORLD_CODEX_FILES } from './worldCodexFiles';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
 export const WORLD_CODEX_KEY = 'worldCodex';

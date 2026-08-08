@@ -752,6 +752,10 @@
           "type": "string",
           "description": "自動生成される製作中オブジェクトの型へ引き継がれる、完成品ごとのアイコン指定（GameElementDefinition.md 13.2節、内部設計はRecipeSystem.md 1節）。"
         },
+        "conditions": {
+          "$ref": "#/$defs/conditions_list",
+          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。objectはactorのみ使える（成果物のインスタンスがまだ存在しないため）。素材の充足はsteps.requiresが見るので別物。"
+        },
         "steps": {
           "type": "array",
           "items": {
@@ -943,10 +947,6 @@
         "combinations": {
           "$ref": "#/$defs/combinations_map"
         },
-        "recipes": {
-          "$ref": "#/$defs/recipes_map",
-          "description": "ローダーは現時点でこのキーを解釈しない（文法として文書化済み・実装は今後）。"
-        },
         "slots": {
           "$ref": "#/$defs/slots_map"
         },
@@ -1015,7 +1015,7 @@
         },
         "recipes": {
           "$ref": "#/$defs/recipes_map",
-          "description": "ローダーは現時点でこのキーを解釈しない（文法として文書化済み・実装は今後）。"
+          "description": "この型を成果物とするレシピ（13節）。traitには書けない（成果物が決まらないため）。"
         },
         "slots": {
           "$ref": "#/$defs/slots_map"

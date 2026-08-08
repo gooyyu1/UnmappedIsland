@@ -185,6 +185,7 @@ export class WorldCodexYamlLoader {
     raw.notStackable = !tryGetBool(node, 'stackable', context, true);
     raw.actions = tryGetMap(node, 'actions', context);
     raw.combinations = tryGetMap(node, 'combinations', context);
+    raw.recipes = tryGetMap(node, 'recipes', context);
 
     const traits = tryGetSeq(node, 'traits', context);
     if (traits !== undefined)
@@ -213,6 +214,13 @@ export class WorldCodexYamlLoader {
     raw.notStackable = !tryGetBool(node, 'stackable', context, true);
     raw.actions = tryGetMap(node, 'actions', context);
     raw.combinations = tryGetMap(node, 'combinations', context);
+
+    // レシピは成果物のobject_defへ埋め込むもの（RecipeSystem.md）なので、複数の型へ混ぜるtraitには
+    // 書けない（どれが成果物か決まらない）。読み飛ばすと黙って消えるため、ロード時に弾く。
+    if (tryGetMap(node, 'recipes', context) !== undefined)
+      throw new YamlLoadError(
+        `${context}: recipesはtraitに書けません（成果物のobject_defへ書いてください）。`,
+      );
 
     const tags = tryGetSeq(node, 'tags', context);
     if (tags !== undefined) for (const t of tags.items as YamlNode[]) raw.tags.push(asScalarText(t, context));

@@ -6,6 +6,7 @@ import { parseProp } from './parseProperties';
 import { parseSlot } from './parseSlots';
 import { parsePassive } from './parsePassives';
 import { parseActions, parseCombinations } from './parseActionsAndCombinations';
+import { parseRecipes } from './parseRecipes';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
 import { LocalIndexMap } from '../domain/defs/LocalIndexMap';
@@ -56,6 +57,9 @@ export class RawObjectDef {
   actions: YAMLMap | undefined;
   combinations: YAMLMap | undefined;
 
+  /** recipes（13節）。成果物ごとの内容なのでtrait合成の対象にしない（resolve参照）。 */
+  recipes: YAMLMap | undefined;
+
   constructor(name: string, source: string, globalId: number, isSingleton: boolean) {
     this.name = name;
     this.source = source;
@@ -73,7 +77,8 @@ export class RawObjectDef {
    * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
    * - stack_order/represented_by/main_item_slot: 自分自身の指定を優先。無ければちょうど1つのtraitが
    *   指定している必要がある（複数ならエラー）。
-   * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: recipes/covers/layer。
+   * - recipes: 成果物ごとの内容なので合成せず、自分自身の宣言だけを読む。
+   * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: covers/layer。
    */
   resolve(traitsByName: ReadonlyMap<string, RawTrait>, loader: WorldCodexYamlLoader): ObjectDef {
     const traitProps: Array<[string, YAMLMap | undefined]> = [];
@@ -231,6 +236,7 @@ export class RawObjectDef {
       mainItemSlotGlobalId,
       boundToOwner,
       !notStackable,
+      parseRecipes(loader, this.name, this.recipes),
     );
   }
 }
