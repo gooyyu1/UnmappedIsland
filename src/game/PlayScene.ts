@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { DISPLAY_PADDING, PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
@@ -1267,26 +1267,25 @@ export class PlayScene extends ResponsiveScene {
       radius,
     });
     button.addContent(
-      ...this.slotButtonPaper(button, rect, spec.fill, index, radius, borderWidth),
+      ...this.slotButtonPaper(rect, index, radius, borderWidth),
       this.slotButtonIcon(spec, rect),
     );
     button.on('pointerup', this.whileIdle(spec.onTap));
   }
 
   /**
-   * ボタンの地。**紙を敷いて、ボタンの色を乗算で載せる**（染めた紙）。平らな塗りに淡い色を
-   * 置くとパステルに見え、汚れと滲みのある他の絵から浮くため。
+   * ボタンの地。**染めた紙を敷くだけ**——色も角丸も絵に焼いてある
+   * （recipes/slot_button_paper.json、カードの枠と同じ扱い）。実行時に染めて切り抜くと、
+   * どちらもWebGL専用の機能になり、WebGLの無い環境で色も角丸も消える。
    *
    * 敷く紙はボタン専用の絵（`SLOT_BUTTON_PAPER_TEXTURE`）で、ボタン1つぶんが1枚。**カードの枠とは
-   * 別の絵**で、同じ紙から切り出してあるだけ（recipes/slot_button_paper.json）。角丸はここで
-   * 切り抜き、枠線もその上へ引き直す（Buttonが描く枠線は紙の下になる）。
+   * 別の絵**で、同じ紙から切り出してあるだけ。枠線は紙の上へ引き直す（Buttonが描く枠線は紙の下に
+   * なる）。
    *
    * 紙が読めなければ何も敷かず、Buttonの平らな塗りがそのまま地になる。
    */
   private slotButtonPaper(
-    button: Button,
     rect: Rect,
-    tint: number,
     index: number,
     radius: number,
     borderWidth: number,
@@ -1298,23 +1297,12 @@ export class PlayScene extends ResponsiveScene {
     const paper = this.add
       .image(0, 0, SLOT_BUTTON_PAPER_TEXTURE, index % sheet.frameTotal)
       .setOrigin(0, 0)
-      .setDisplaySize(rect.width, rect.height)
-      .setTint(tint);
-
-    // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用）。マスクの形は
-    // 画面座標で描く。表示物ではないので画面には出さない。
-    const face = this.add.container(0, 0, [paper]);
-    const maskShape = this.make.graphics({});
-    maskShape.fillStyle(COLOR.cardFace, 1);
-    maskShape.fillRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
-    face.enableFilters();
-    face.filters?.internal.addMask(maskShape);
-    button.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
+      .setDisplaySize(rect.width, rect.height);
 
     const frame = this.add.graphics();
     frame.lineStyle(borderWidth, COLOR.buttonBorder, 1);
     frame.strokeRoundedRect(0, 0, rect.width, rect.height, radius);
-    return [face, frame];
+    return [paper, frame];
   }
 
   /**

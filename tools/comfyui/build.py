@@ -249,6 +249,8 @@ def main() -> None:
                     str(raw),
                     "--out", str(processed),
                     *[str(v) for at in paper["at"] for v in ("--at", at)],
+                    *[str(v) for tint in paper.get("tint", []) for v in ("--tint", tint)],
+                    *(["--radius", str(paper["radius"])] if "radius" in paper else []),
                     "--paper", paper["paper"],
                     "--wash", str(paper["wash"]),
                 ],
