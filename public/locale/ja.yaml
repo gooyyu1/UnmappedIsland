@@ -29,6 +29,9 @@ object_texts:
     # 中身を代表にしているオブジェクト（水入りの水筒など）の名前。
     # {container}が入れ物、{content}が中身。言い方を変えたい入れ物だけが、自分のエントリで上書きする。
     display_name_with_content: '{content}入りの{container}'
+    # 製作中オブジェクト（レシピから自動生成される型）の名前。{product}が完成品。
+    # この型は自動生成なので自分のエントリを持てず、必ずこの書式から組み立てる。
+    display_name_in_progress: '作りかけの{product}'
     props:
       exploration_progress:
         display_name: 探索の進み具合

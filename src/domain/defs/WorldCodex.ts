@@ -1,6 +1,6 @@
 import type { GenerationDefs } from './generation/GenerationDefs';
 import type { NameRegistry } from './NameRegistry';
-import type { ObjectDefTable } from './ObjectDef';
+import type { ObjectDef, ObjectDefTable } from './ObjectDef';
 import type { SlotDef } from './SlotDef';
 import type { WellKnownProperties } from './WellKnownProperties';
 
@@ -32,6 +32,14 @@ export class WorldCodex {
    * 生成定義を1つも含まないロードではundefined（地形生成を使わないCodexも成立する）。 */
   readonly generation: GenerationDefs | undefined;
 
+  /**
+   * 自動生成された製作中オブジェクト（RecipeSystem.md 1節）→ その完成品のグローバルID。
+   *
+   * 製作中オブジェクトは名前も表示名もレシピから導かれるため、完成品を指す手掛かりを型自身は
+   * 持てない（YAMLの語彙に無い）。生成した側だけが知っている対応をここへ残す。
+   */
+  private readonly inProgressProducts: ReadonlyMap<number, number>;
+
   constructor(
     objectNames: NameRegistry,
     propertyNames: NameRegistry,
@@ -42,7 +50,9 @@ export class WorldCodex {
     objects: ObjectDefTable,
     wellKnown: WellKnownProperties,
     generation?: GenerationDefs,
+    inProgressProducts?: ReadonlyMap<number, number>,
   ) {
+    this.inProgressProducts = inProgressProducts ?? new Map();
     this.objectNames = objectNames;
     this.propertyNames = propertyNames;
     this.slotNames = slotNames;
@@ -52,6 +62,12 @@ export class WorldCodex {
     this.objects = objects;
     this.wellKnown = wellKnown;
     this.generation = generation;
+  }
+
+  /** この型が製作中オブジェクトなら、その完成品の型。そうでなければundefined。 */
+  productOf(def: ObjectDef): ObjectDef | undefined {
+    const productGlobalId = this.inProgressProducts.get(def.globalId);
+    return productGlobalId === undefined ? undefined : this.objects.get(productGlobalId);
   }
 
   /**
