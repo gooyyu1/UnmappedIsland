@@ -44,6 +44,10 @@ import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
 import type { ObjectWindowAction, ObjectWindowTarget } from './ui/ObjectWindow';
 import { ObjectWindow } from './ui/ObjectWindow';
+import { RecipeWindow } from './ui/RecipeWindow';
+import { recipeCategories } from './recipeList';
+import { autoFillMaterials } from '../domain/runtime/autoFill';
+import { MATERIALS_SLOT } from '../loader/inProgressObjects';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
@@ -232,6 +236,9 @@ export class PlayScene extends ResponsiveScene {
 
   /** 開いている地図ウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
   private mapWindow: MapWindow | undefined;
+
+  /** 開いているレシピ一覧（RecipeWindow）。開いていなければundefined。 */
+  private recipeWindow: RecipeWindow | undefined;
 
   /**
    * ステータスエリアに出しうるバー（プロパティの識別子で引く）。出す行と並び順は行動のたびに変わるが、
@@ -740,7 +747,46 @@ export class PlayScene extends ResponsiveScene {
    */
   private openObjectWindow(card: ObjectCardStack): void {
     this.childWindowCard = card;
-    this.openChildWindow({ card, description: card.description }, this.windowActions(card), card.contents);
+    this.openChildWindow(
+      { card, description: card.description },
+      [...this.autoFillAction(card), ...this.windowActions(card)],
+      card.contents,
+    );
+  }
+
+  /**
+   * 製作中オブジェクトの子ウィンドウに出す「自動補充」。**ボタン行の左端**に置く。
+   *
+   * 枠ごとに何をいくつ入れるかの判断はYAMLの語彙で書けないため、プログラム側で行う
+   * （autoFillMaterials）。持たないカードでは空を返す。
+   */
+  private autoFillAction(card: ObjectCardStack): ObjectWindowAction[] {
+    const target = card.objects[0];
+    if (target === undefined || this.codex.productOf(target.def) === undefined) return [];
+
+    return [
+      {
+        label: '自動補充',
+        description: '手持ちと足元から、足りない素材を入れる。入れ物の中までは探さない。',
+        minutes: 0,
+        onTap: () => {
+          const player = this.gameSession.player.instance;
+          const location = this.gameSession.player.location;
+          autoFillMaterials(
+            target,
+            this.codex.slotNames.getId(MATERIALS_SLOT),
+            [
+              player.tryGetSlot(this.codex.slotNames.getId('hand'))?.contents ?? [],
+              location?.instance.tryGetSlot(this.codex.slotNames.getId('items'))?.contents ?? [],
+            ],
+            this.codex,
+          );
+          this.closeChildWindow();
+          this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+          this.showView();
+        },
+      },
+    ];
   }
 
   /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */
@@ -1203,16 +1249,21 @@ export class PlayScene extends ResponsiveScene {
       height: portraitHeight,
     });
 
-    this.addConditionRow(area.x + padding, area.y + padding + portraitHeight + gap);
+    this.addConditionRow(
+      area.x + padding,
+      area.y + padding + portraitHeight + gap,
+      area.x + area.width - padding,
+    );
   }
 
   /**
    * 条件はラベルなしのアイコンボタン。ポートレイトの真下に1行で左詰めに並べる——キャラクターの
    * 状態なので、カードの下に続けて置くと持ち主が読み取れる。
    */
-  private addConditionRow(x: number, y: number): void {
+  private addConditionRow(x: number, y: number, right: number): void {
     const size = this.metrics.px(SIZE.conditionButton);
     const gap = this.metrics.px(8);
+    this.addRecipeButton(right, y, size);
     this.view.conditions.forEach((icon, index) => {
       const button = new Button(
         this,
@@ -1506,6 +1557,59 @@ export class PlayScene extends ResponsiveScene {
    * キャラクターのプロパティをタグごとに見せるウィンドウ（ポートレイトカードのタップで開く）。
    * ステータスエリアに出ていない分も含めて、ここで全部のカテゴリを見られる。
    */
+  /**
+   * レシピボタン。条件の行の**右端**へ置く（ScreenLayout.md）。
+   *
+   * 地図・装備・怪我の縦積みへは足せない。あの3つはキャラクターのスロットの中身を開くもので、
+   * レシピは一覧を開いて現在地へ物を生む別の性質だから。列の高さもポートレイト（320u）ぶんしか
+   * 無く、4つ目を同じ大きさで積むと下の行へはみ出す。
+   */
+  private addRecipeButton(right: number, y: number, height: number): void {
+    const width = height * 2;
+    const button = new Button(
+      this,
+      { x: right - width, y, width, height },
+      {
+        fill: COLOR.button,
+        border: COLOR.buttonBorder,
+        borderWidth: Math.max(1, this.metrics.px(2)),
+        radius: this.metrics.px(SIZE.radius),
+      },
+      this.whileIdle(() => this.openRecipeWindow()),
+    );
+    button.addContent(addLabel(this, this.metrics, width / 2, height / 2, '🔨', { size: 28 }).setOrigin(0.5));
+  }
+
+  /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
+  private openRecipeWindow(): void {
+    this.recipeWindow?.destroy();
+    this.recipeWindow = new RecipeWindow(this, this.metrics, {
+      title: '作るもの',
+      categories: recipeCategories(this.gameSession, this.codex, this.locale, (defGlobalId) => {
+        this.closeRecipeWindow();
+        this.startCrafting(defGlobalId);
+      }),
+      emptyText: 'ここに並ぶものはまだ無い。',
+      onClose: () => this.closeRecipeWindow(),
+    });
+  }
+
+  private closeRecipeWindow(): void {
+    this.recipeWindow?.destroy();
+    this.recipeWindow = undefined;
+  }
+
+  /** 製作中オブジェクトを現在地のitemsスロットへ生む。 */
+  private startCrafting(inProgressDefGlobalId: number): void {
+    const location = this.gameSession.player.location;
+    if (location === undefined) return;
+
+    const spawned = this.gameSession.session.spawn(inProgressDefGlobalId);
+    spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'), this.codex.wellKnown);
+    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.showView();
+  }
+
   private openPropertyWindow(): void {
     if (this.propertyWindow !== undefined) return;
 
