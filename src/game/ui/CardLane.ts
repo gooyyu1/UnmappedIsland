@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card, EmptyCard } from './Card';
+import { clipToRect } from './clip';
 import { COLOR, SIZE } from './theme';
 import { addPanel, addTiledPanel } from './shapes';
 import { wheelPixels } from './scroll';
@@ -129,8 +130,8 @@ export class CardLane {
 
   private dragStartScrollX = 0;
 
-  /** はみ出しを切り抜くマスクの形（clipのときだけ持つ）。表示物ではないので破棄も自分で行う。 */
-  private readonly maskShape: Phaser.GameObjects.Graphics | undefined;
+  /** はみ出しの切り抜きを解く後始末（clipのときだけ持つ、clip.ts参照）。 */
+  private readonly unclip: (() => void) | undefined;
 
   /** 末尾に足す受け入れの空枠の数（CardLaneOptions.emptyCells）。 */
   private readonly emptyCells: number;
@@ -229,14 +230,7 @@ export class CardLane {
       });
     }
 
-    if (options.clip === true) {
-      // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用）。
-      this.maskShape = scene.make.graphics({});
-      this.maskShape.fillStyle(COLOR.cardFace, 1);
-      this.maskShape.fillRect(rect.x, rect.y, rect.width, rect.height);
-      this.strip.enableFilters();
-      this.strip.filters?.internal.addMask(this.maskShape);
-    }
+    if (options.clip === true) this.unclip = clipToRect(scene, this.strip, rect);
 
     // カードはstripの子なので、stripと自前の表示物を移せば並んでいるカードごと同じ層へ移る。
     if (options.depth !== undefined) {
@@ -250,7 +244,7 @@ export class CardLane {
     this.strip.destroy();
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
-    this.maskShape?.destroy();
+    this.unclip?.();
   }
 
   /**
