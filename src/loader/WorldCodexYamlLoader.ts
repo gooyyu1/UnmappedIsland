@@ -18,6 +18,7 @@ import { NameRegistry } from '../domain/defs/NameRegistry';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
 import { ObjectDefTable } from '../domain/defs/ObjectDef';
 import { WellKnownProperties } from '../domain/defs/WellKnownProperties';
+import { IN_PROGRESS_SOURCE, inProgressObjectsYaml, productGlobalIdOf } from './inProgressObjects';
 import { WorldCodex } from '../domain/defs/WorldCodex';
 import type { AxisDef } from '../domain/defs/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/defs/generation/GenerationScopeDef';
@@ -129,6 +130,26 @@ export class WorldCodexYamlLoader {
       objectDefsByGlobalId.set(def.globalId, def);
     }
 
+    // レシピを持つ型から製作中オブジェクトを生成する（RecipeSystem.md 1節）。build()の中でしか
+    // 行えない——objectNames.countはこの直後に密配列の長さとして確定し、build()後に型を足すと
+    // グローバルIDが配列からはみ出すため。
+    const generated = inProgressObjectsYaml(
+      [...objectDefsByGlobalId.values()],
+      this.tagNames,
+      this.objectNames,
+    );
+    const inProgressProducts = new Map<number, number>();
+    if (generated !== undefined) {
+      const authored = new Set(this.globalObjectDefs.keys());
+      this.load(IN_PROGRESS_SOURCE, generated);
+      for (const [name, raw] of this.globalObjectDefs) {
+        if (authored.has(name)) continue;
+        const def = raw.resolve(this.globalTraits, this);
+        objectDefsByGlobalId.set(def.globalId, def);
+        inProgressProducts.set(def.globalId, productGlobalIdOf(name, this.objectNames));
+      }
+    }
+
     // 全object_defの走査が終わったこの時点で、objectNames.countが最終値として確定する。
     const defsByGlobalId = new Array<ObjectDef>(this.objectNames.count);
     for (const [globalId, def] of objectDefsByGlobalId) defsByGlobalId[globalId] = def;
@@ -145,6 +166,7 @@ export class WorldCodexYamlLoader {
       new ObjectDefTable(defsByGlobalId),
       wellKnown,
       generation,
+      inProgressProducts,
     );
 
     this.reset();

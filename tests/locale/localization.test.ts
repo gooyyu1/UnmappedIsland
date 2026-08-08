@@ -183,6 +183,9 @@ describe('同梱の表示文字列ファイル', () => {
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
       const objectDef = codex.objects.get(globalId);
       if (!carded.some((tag) => objectDef.tags.includes(tag))) continue;
+      // 製作中オブジェクト（自動生成）は自分のエントリを持たず、完成品の名前と
+      // default.display_name_in_progress から組み立てる（PlayScreenViewのnameOf）。
+      if (codex.productOf(objectDef) !== undefined) continue;
       expect(locale.object(objectDef.name).displayName, `${objectDef.name} には表示名が必要`).not.toBe(
         objectDef.name,
       );
