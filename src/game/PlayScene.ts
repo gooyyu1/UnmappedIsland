@@ -1,4 +1,4 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import type { Rect } from './layout/ScreenMetrics';
 import { DISPLAY_PADDING, PlayScreenLayout } from './layout/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
