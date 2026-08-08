@@ -1277,7 +1277,8 @@ object_defs:
 
 ## 13. recipes（レシピ）
 
-レシピは、成果物の `object_defs` に、名前をキーとする辞書として埋め込みます。
+レシピは、成果物の `object_defs` に、名前をキーとする辞書として埋め込みます。**`traits` には書けません**
+（複数の型へ混ざる mixin では、どれが成果物か決まらないため。ロード時エラー）。
 
 ```yaml
 object_defs:
@@ -1285,6 +1286,8 @@ object_defs:
     recipes:
       basic:
         icon: axe_wip.png
+        conditions:
+          - {object: actor, prop: skill_knapping, in_stage: basic}
         steps:
           - requires:
               - {object: wood, quantity: 2, consume: true}
@@ -1303,10 +1306,24 @@ object_defs:
 - 各工程には所要**時間（`duration`）**が定義されます。
 - 最後の工程まで完了すると、目的のアイテムが生成されます。
 
+`quantity` は省略すると 1 です。`consume` は省略できません（素材か道具かに既定値を置くと、書き忘れが
+どちらかとして黙って通るため）。
+
 ### 13.2 icon
 
 完成品ごとのアイコン指定です。レシピから自動生成される製作中オブジェクトの型へ引き継がれます（詳細は
 `RecipeSystem.md`）。
+
+### 13.3 conditions（解放条件）
+
+そのレシピを**知っているか**の条件です（14 節の条件木。設計は [`SkillSystem.md`](./SkillSystem.md) 4 節）。
+省略すれば最初から作れます。素材が揃っているかは 13.1 節の `requires` が見るので、両者は別物です。
+
+**`object` に使えるのは `actor` だけです**（他はロード時エラー）。解放条件を評価する時点では成果物の
+インスタンスがまだ存在せず、`self`/`parent`/`ancestor` のいずれも解決先を持たないためです。
+
+`actions`/`combinations` の `conditions` と同じく、要素ごとに `reason`（14.6 節）を書けます。未解放の
+レシピは解放条件とともに一覧へ出すため、可否と理由が同じ 1 回の評価から得られます。
 
 レシピの内部設計（製作中オブジェクトの自動生成、枠の要件との連携など）は `RecipeSystem.md` を参照してください。
 
