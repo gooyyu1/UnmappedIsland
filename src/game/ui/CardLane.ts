@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
-import { Card, EmptyCard } from './Card';
+import { Card, CellOverlay, EmptyCard } from './Card';
+import type { LaneCell } from './laneCells';
 import { clipToRect } from './clip';
 import { COLOR, SIZE } from './theme';
 import { addPanel, addTiledPanel } from './shapes';
@@ -49,12 +50,6 @@ export interface CardLaneOptions {
    */
   readonly clip?: boolean;
   /**
-   * 並びの末尾に足す、受け皿の空枠の数（既定0。決め方はemptyCellsFor）。前詰めのレーンは中身が
-   * 空だと何も描かれず、操作を受け付けるかどうかが見て分からないため、落とせるレーンでは足す。
-   * 固定枠のレーンは空き枠そのものが常に見えているので0のまま。
-   */
-  readonly emptyCells?: number;
-  /**
    * 表示物を置く層（省略すると既定の0）。レーンだけを作り直しても描画順を保ちたい場合に、
    * 周りより奥の層を指定する（PlayScene.FIELD_DEPTH）。
    */
@@ -86,9 +81,11 @@ export interface LaneUpdate {
  * レーンからはみ出したカードは切り抜かず、隣接エリアの背景板が上から覆って隠す。
  * ロケーションレーンの現在地カードも同様に、スクロール領域より後に描いて上へ重ねる。
  *
- * cardsのundefinedは空きセルを表し、EmptyCard（枠だけの破線カード）として並べる。
+ * **並ぶ単位は枠（LaneCell）で、位置＝添字**。カードの居ない枠は破線の空き枠になり、枠自身が持つ
+ * 縁の色と重ねる文字は**背景 → カード → 重ねる物**の3層のうち最も手前へ置く（ScreenLayout.md
+ * 枠（セル）を一級の単位にする節）。
  *
- * 内容が変わったときは作り直さずsetCardsで差し替える。同じインスタンスを映しているカードは
+ * 内容が変わったときは作り直さずsetCellsで差し替える。同じインスタンスを映しているカードは
  * そのまま残して新しい位置へ滑らせ、出入りするカードだけを呼び出し側へ渡す。
  */
 export class CardLane {
@@ -102,14 +99,22 @@ export class CardLane {
   private readonly metrics: ScreenMetrics;
   private readonly strip: Phaser.GameObjects.Container;
 
-  /** 並んでいるカードの表示物。空きセルはundefined。位置＝添字。 */
+  /**
+   * 枠の3層（ScreenLayout.md）。器として先に作っておくことで、カードが出入りしても空き枠が手前へ
+   * 出たり、枠の縁と重ねた文字がカードの下へ潜ったりしない。
+   */
+  private readonly cellLayer: Phaser.GameObjects.Container;
+  private readonly cardLayer: Phaser.GameObjects.Container;
+  private readonly overlayLayer: Phaser.GameObjects.Container;
+
+  /** 並んでいる枠。位置＝添字。 */
+  private _cells: readonly LaneCell[] = [];
+
+  /** 並んでいるカードの表示物。空き枠はundefined。位置＝添字（_cellsと対応）。 */
   private _cardObjects: (Card | undefined)[] = [];
   get cardObjects(): readonly (Card | undefined)[] {
     return this._cardObjects;
   }
-
-  /** 空きセルの枠。カードと違って位置以外の状態を持たないので、差し替えのたびに作り直す。 */
-  private placeholders: EmptyCard[] = [];
 
   /** スクロール量0のときのstripの位置と、可視域の幅。 */
   private readonly originX: number;
@@ -132,9 +137,6 @@ export class CardLane {
 
   /** はみ出しの切り抜きを解く後始末（clipのときだけ持つ、clip.ts参照）。 */
   private readonly unclip: (() => void) | undefined;
-
-  /** 末尾に足す受け入れの空枠の数（CardLaneOptions.emptyCells）。 */
-  private readonly emptyCells: number;
 
   /**
    * stripに属さない表示物（背景板・ピン留め部分）。カードはstripごと消えるが、これらは
@@ -168,7 +170,7 @@ export class CardLane {
     metrics: ScreenMetrics,
     rect: Rect,
     background: number,
-    cards: readonly (CardContent | undefined)[],
+    cells: readonly LaneCell[],
     options: CardLaneOptions = {},
   ) {
     const { pinned } = options;
@@ -192,10 +194,14 @@ export class CardLane {
     this.cardY = cardY;
     this.insertMarkWidth = metrics.px(INSERT_MARK_WIDTH);
     this.originX = stripX;
-    this.emptyCells = options.emptyCells ?? 0;
     this.stripWidth = Math.max(0, rect.x + rect.width - margin - stripX);
     this.strip = scene.add.container(stripX, cardY);
     this.hazeTargets.push(this.strip);
+
+    this.cellLayer = scene.add.container(0, 0);
+    this.cardLayer = scene.add.container(0, 0);
+    this.overlayLayer = scene.add.container(0, 0);
+    this.strip.add([this.cellLayer, this.cardLayer, this.overlayLayer]);
 
     // バーはカードより後に作り、カードの上へ重ねる。
     this.scrollIndicator = new ScrollIndicator(
@@ -207,8 +213,8 @@ export class CardLane {
     );
     this.objects.push(this.scrollIndicator);
 
-    // 最初の1回だけは出どころが無いので、setCardsが伏せたカードをそのまま表に返す。
-    for (const { card } of this.setCards(cards).entered) card.setVisible(true);
+    // 最初の1回だけは出どころが無いので、setCellsが伏せたカードをそのまま表に返す。
+    for (const { card } of this.setCells(cells).entered) card.setVisible(true);
 
     this.pinnedRect =
       pinned === undefined
@@ -248,26 +254,27 @@ export class CardLane {
   }
 
   /**
-   * 並べるカードを差し替える。同じインスタンスを映しているカード（identityが1つでも重なるもの）は
+   * 並べる枠を差し替える。同じインスタンスを映しているカード（identityが1つでも重なるもの）は
    * 作り直さず、新しい位置へ滑らせる。新しく現れたカードは所定の位置に置くが、どこから来たのかは
    * このレーンには分からないので、非表示のまま呼び出し側へ渡す。
    *
    * releasedのカードは、そのインスタンスを持ったままこのレーンに残る場合だけ別扱いにする。掴んで
    * 離した1枚は元の枠にはもう居ないので、並びの詰め直しに混ぜて滑らせず、returnedとして渡す。
    */
-  setCards(cards: readonly (CardContent | undefined)[], released?: ReleasedCard): LaneUpdate {
+  setCells(cells: readonly LaneCell[], released?: ReleasedCard): LaneUpdate {
     const reusable = this._cardObjects.filter((card): card is Card => card !== undefined);
     const entered: { card: Card; index: number }[] = [];
     let returned: { card: Card; index: number } | undefined;
 
-    this._cardObjects = cards.map((content, index) => {
+    this._cells = cells;
+    this._cardObjects = cells.map(({ card: content }, index) => {
       if (content === undefined) return undefined;
 
       const found = reusable.findIndex((card) => sharesIdentity(card.content, content));
       if (found < 0) {
         const card = new Card(this.scene, this.metrics, index * this.pitch, 0, content);
         card.setVisible(false);
-        this.strip.add(card);
+        this.cardLayer.add(card);
         entered.push({ card, index });
         return card;
       }
@@ -283,12 +290,11 @@ export class CardLane {
       return card;
     });
 
-    for (const card of reusable) this.strip.remove(card);
-    this.resetPlaceholders();
+    for (const card of reusable) this.cardLayer.remove(card);
+    this.resetDecorations();
 
-    // 末尾の空枠も送れる範囲に含める（画面外に置いたままでは受け皿にならない）。
-    const slots = cards.length + this.emptyCells;
-    const contentWidth = slots === 0 ? 0 : slots * this.pitch - (this.pitch - this.cardWidth);
+    // 空き枠も送れる範囲に含める（画面外に置いたままでは受け皿にならない）。
+    const contentWidth = cells.length === 0 ? 0 : cells.length * this.pitch - (this.pitch - this.cardWidth);
     this.minScrollX = Math.min(0, this.stripWidth - contentWidth);
     this.scrollTo(this.strip.x - this.originX);
 
@@ -309,23 +315,28 @@ export class CardLane {
     card.setPosition(index * this.pitch, 0);
   }
 
-  private resetPlaceholders(): void {
-    for (const placeholder of this.placeholders) placeholder.destroy();
-    this.placeholders = this._cardObjects.flatMap((card, index) =>
-      card === undefined ? [new EmptyCard(this.scene, this.metrics, index * this.pitch, 0)] : [],
-    );
-    for (let i = 0; i < this.emptyCells; i++) {
-      const at = (this._cardObjects.length + i) * this.pitch;
-      this.placeholders.push(new EmptyCard(this.scene, this.metrics, at, 0));
-    }
-    // 空きセルの枠はカードより奥に敷く（飛んできたカードが枠に隠れないように）。
-    for (const placeholder of this.placeholders) {
-      this.strip.add(placeholder);
-      this.strip.sendToBack(placeholder);
-    }
+  /**
+   * 枠の1層目（空き枠の背景）と3層目（縁・重ねる文字）を作り直す。どちらも位置以外の状態を持たない
+   * ので、カードのように残して動かす必要が無い。
+   */
+  private resetDecorations(): void {
+    this.cellLayer.removeAll(true);
+    this.overlayLayer.removeAll(true);
+
+    this._cells.forEach((cell, index) => {
+      const x = index * this.pitch;
+      if (cell.card === undefined) {
+        this.cellLayer.add(new EmptyCard(this.scene, this.metrics, x, 0));
+      }
+      if (cell.borderColor !== undefined || cell.overlay !== undefined) {
+        this.overlayLayer.add(
+          new CellOverlay(this.scene, this.metrics, x, 0, cell.borderColor, cell.overlay),
+        );
+      }
+    });
   }
 
-  /** 添字の位置に並ぶカードの、画面上の矩形。 */
+  /** 添字の位置の枠の、画面上の矩形。 */
   slotRect(index: number): Rect {
     return {
       x: this.strip.x + index * this.pitch,
@@ -361,36 +372,38 @@ export class CardLane {
    * 画面上の1点が指すドロップ先（レーンの外ならundefined）。
    *
    * カードの中央部分だけを「そのカードに重ねた」とみなし、左右のGAP_EDGE_RATIO分とカード同士の隙間は
-   * 「隙間へ落とした」として扱う。空きセルは幅いっぱいが「その枠へ落とした」——枠が見えている以上、
-   * 狙うのは両隣の隙間ではなく枠そのものになるため。
+   * 「隙間へ落とした」として扱う。空き枠は送り幅いっぱいが「その枠へ落とした」——枠が見えている以上、
+   * 狙うのは両隣の隙間ではなく枠そのものになるため。**並びの末尾より右も、末尾が空き枠ならその枠**
+   * （受け皿の枠は並びの終わりそのもので、その先に別の落とし先は無い）。
    */
   dropTargetAt(x: number, y: number): LaneDropTarget | undefined {
     if (x < this.rect.x || x >= this.rect.x + this.rect.width) return undefined;
     if (y < this.rect.y || y >= this.rect.y + this.rect.height) return undefined;
 
-    const count = this.cardObjects.length;
+    const count = this._cells.length;
     const localX = x - this.strip.x;
     const index = Math.floor(localX / this.pitch);
     if (index < 0) return { kind: 'gap', index: 0 };
-    if (index >= count) return { kind: 'gap', index: count };
+    if (index >= count) {
+      const last = count - 1;
+      return last >= 0 && this._cells[last].card === undefined
+        ? { kind: 'cell', index: last }
+        : { kind: 'gap', index: count };
+    }
+
+    if (this._cells[index].card === undefined) return { kind: 'cell', index };
 
     // カード1枚分の送り幅のうち、カードの右側にはみ出した分がカード同士の実際の隙間。
     const offset = localX - index * this.pitch;
     if (offset >= this.cardWidth) return { kind: 'gap', index: index + 1 };
-
-    if (this.cardObjects[index] === undefined) return { kind: 'cell', index };
     if (offset < this.cardWidth * GAP_EDGE_RATIO) return { kind: 'gap', index };
     if (offset > this.cardWidth * (1 - GAP_EDGE_RATIO)) return { kind: 'gap', index: index + 1 };
     return { kind: 'combine', index };
   }
 
-  /** ドロップ先を示す枠の位置（カード・空きセルならその枠そのもの、隙間なら細い縦帯）。 */
+  /** ドロップ先を示す枠の位置（カード・空き枠ならその枠そのもの、隙間なら細い縦帯）。 */
   dropIndicatorRect(target: LaneDropTarget): Rect {
     if (target.kind !== 'gap') return this.slotRect(target.index);
-    // 末尾の空枠へ落とすときは、そこが受け皿なので帯ではなく枠そのものを示す。
-    if (this.emptyCells > 0 && target.index === this._cardObjects.length) {
-      return this.slotRect(target.index);
-    }
 
     // 隙間の中心は「右隣のカードの左端 - ギャップの半分」。両端の隙間はレーンからはみ出すので収める。
     const center = this.strip.x + target.index * this.pitch - (this.pitch - this.cardWidth) / 2;

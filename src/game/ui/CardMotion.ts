@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneUpdate, ReleasedCard } from './CardLane';
+import type { LaneCell } from './laneCells';
 
 /** カードが飛ぶ時間（ミリ秒）と加速の形。並びが詰め直される滑りより少しだけ長く取る。 */
 const FLY_MS = 260;
@@ -118,10 +118,10 @@ export class CardMotion {
     });
   }
 
-  /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcontentsは同じ順に対応する。 */
+  /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcellsは同じ順に対応する。 */
   update(
     lanes: readonly CardLane[],
-    contents: readonly (readonly (CardContent | undefined)[])[],
+    cells: readonly (readonly LaneCell[])[],
     context: MotionContext = {},
   ): void {
     // 経過し切った差し替えなら、置いたままの分身がそのインスタンスを運ぶ。運ぶぶんは他の経路では
@@ -131,7 +131,7 @@ export class CardMotion {
 
     const before = ownersOf(lanes);
     const released = releasedCard(before, remaining);
-    const updates = lanes.map((lane, index) => lane.setCards(contents[index], released));
+    const updates = lanes.map((lane, index) => lane.setCells(cells[index], released));
     const after = ownersOf(lanes);
 
     // 現れた側が飛ぶIDは、居なくなった側では改めて動かさない（同じ移動を二重に見せないため）。

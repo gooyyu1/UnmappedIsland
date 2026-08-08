@@ -282,6 +282,14 @@ const COLOR_PROPERTY = 'color';
 const TREATMENT_SLOT = 'treatment';
 const TREATED_MARK = '🩹';
 
+/**
+ * そのスロットの枠の位置が安定しているか（`cell_count`、SlotSystem.md 3節）。空き枠を指した
+ * ドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
+ */
+function hasFixedCells(owner: WorldObject, slotGlobalId: number): boolean {
+  return owner.tryGetSlot(slotGlobalId)?.def.cellCount !== undefined;
+}
+
 /** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
 function stacksIn(
   dest: { owner: WorldObject; slotId: number } | undefined,
@@ -584,16 +592,14 @@ export function fromGameSession(
         };
       }
 
-      if (at.kind === 'cell') {
-        // 空き枠を指せるのは固定枠スロットだけ（前詰めスロットに空き枠は無い）。
-        const fixed = dest.owner.tryGetSlot(dest.slotId)?.def.cellCount !== undefined;
-        return fixed
-          ? () => {
-              item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
-            }
-          : undefined;
+      if (at.kind === 'cell' && hasFixedCells(dest.owner, dest.slotId)) {
+        return () => {
+          item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
+        };
       }
 
+      // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
+      // （枠の位置がそのまま並びの終わりを指す）。
       return () => {
         item.moveToSlotAtGap(dest.owner, dest.slotId, at.index, wellKnown);
       };
@@ -603,7 +609,10 @@ export function fromGameSession(
   const reorderIn =
     (item: WorldObject) =>
     (at: CardPlacement): (() => void) | undefined => {
-      if (at.kind === 'cell') {
+      const parent = item.parent;
+      const fixed =
+        parent !== undefined && parent.getSlotByLocalId(item.parentSlotLocalId).def.cellCount !== undefined;
+      if (at.kind === 'cell' && fixed) {
         return () => {
           item.moveToCellInParentSlot(at.index);
         };
