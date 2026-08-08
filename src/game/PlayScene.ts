@@ -1306,8 +1306,8 @@ export class PlayScene extends ResponsiveScene {
       },
       {
         art: 'recipe',
-        // 下のフィルターバーが道具の絞り込みに🔨を使っているので、別の絵にする。
-        icon: '🧰',
+        // 下のフィルターバーが道具の絞り込みに🔨を使っているので、道具の絵は避ける。
+        icon: '📜',
         fill: COLOR.button,
         onTap: () => this.openRecipeWindow(),
       },
