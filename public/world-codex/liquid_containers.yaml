@@ -20,6 +20,8 @@ traits:
   liquid:
     tags: [liquid]
     quantitative: true
+    # 器の無い水は存在しない（7.9節）。器から出せず、器が壊れれば一緒に失われる。
+    bound_to_owner: true
     props:
       # 量。単位はmL（1 = 1mL、LiquidContainerSystem.md 5節）。
       # 上限は容器のcontentスロットのcapacityが決めるため、ここではrangeを持たない。

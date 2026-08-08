@@ -951,17 +951,19 @@ object_defs:
       const itemInstance = spawn(codex, 'trinket');
       expect(itemInstance.moveToSlot(boxInstance, contentsSlotId, codex.wellKnown)).toBeUndefined();
 
-      itemInstance.destroy();
+      itemInstance.destroy(codex.wellKnown);
       expect(itemInstance.parent).toBeUndefined();
 
-      itemInstance.destroy(); // 例外を投げればテスト自体が失敗する
+      itemInstance.destroy(codex.wellKnown); // 例外を投げればテスト自体が失敗する
       expect(itemInstance.parent).toBeUndefined();
     });
 
-    it('同じtick内で自分自身を破棄したオブジェクトの子も、問題なくtickされる', () => {
-      // innerBoxは自分自身のon_shortfallによって、outerBox.tick()の実行中に破棄される。それでも
-      // innerBoxがまだ持っている子(battery)は、同じtickの中で問題なくaccumulateされることを確認する
-      // （WorldObjectはtick内で自分や子がdestroyされる可能性に備える必要がある、という要件）。
+    it('tickの最中に親が破棄されても、子はこぼれ出て次のtickから動き続ける', () => {
+      // innerBoxは自分自身のon_shortfallによって、outerBox.tick()の実行中に破棄される。その子
+      // (battery)は単独で在れるので、道連れにならずouterBoxへこぼれ出る（7.9節）。
+      //
+      // こぼれた先はもう子を数え終えているので、そのtickの残りは動かない（1 tickぶんの取りこぼしは、
+      // 1日96 tickの刻みに対して無視できる）。**壊れないこと**がここでの要件で、値はその観測でしかない。
       const yaml = `
 object_defs:
   outer_box:
@@ -1000,8 +1002,11 @@ object_defs:
       outerInstance.tick(session);
 
       expect(innerInstance.parent).toBeUndefined(); // inner_boxは自分自身のon_shortfallにより破棄される
-      // 親(inner_box)が同じtick内で破棄されても、子(battery)は問題なくtickされる
-      expect(batteryInstance.getEffectiveValue(chargeId)).toBe(9);
+      expect(batteryInstance.parent, '子は道連れにならず、祖父へこぼれ出る').toBe(outerInstance);
+      expect(batteryInstance.getEffectiveValue(chargeId), 'こぼれたtickは動かない').toBe(10);
+
+      outerInstance.tick(session);
+      expect(batteryInstance.getEffectiveValue(chargeId), '次のtickからは動く').toBe(9);
     });
   });
 
@@ -1178,7 +1183,7 @@ object_defs:
       expect(fireplaceInstance.moveToSlot(roomInstance, contentsSlotId, codex.wellKnown)).toBeUndefined();
       expect(roomInstance.getEffectiveValue(temperatureId)).toBe(25); // 暖炉を置くと部屋の気温が+5される
 
-      fireplaceInstance.destroy();
+      fireplaceInstance.destroy(codex.wellKnown);
       expect(roomInstance.getEffectiveValue(temperatureId)).toBe(20); // 暖炉が無くなれば補正も消える
     });
 

@@ -116,6 +116,9 @@ const MAIN_BAR_BOTTOM = 72;
 /** 移動先のレーンがカードのどちら側にあるか。 */
 export type CardEdgeDirection = 'up' | 'down';
 
+/** 端の向き（上が先）。カードが出す端はこの順で調べる。 */
+export const EDGE_DIRECTIONS: readonly CardEdgeDirection[] = ['up', 'down'];
+
 /**
  * カードの端（上下1/6）を押したときの操作。1回の呼び出しで束のうち1つが動く。
  * 押し続けている間は繰り返し呼ばれる（addEdge参照）。
@@ -173,8 +176,11 @@ export interface CardContent {
   readonly background?: string;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
   readonly onTap?: () => void;
-  /** 端だけを押したときの動作。端ではカード全体の動作より優先される。 */
-  readonly edge?: CardEdgeAction;
+  /**
+   * 端だけを押したときの動作（向きごとに1つ、最大2つ）。端ではカード全体の動作より優先される。
+   * 上下の押せる範囲は重ならないので、両方向へ送れるカードは両方の端を持てる。
+   */
+  readonly edges?: readonly CardEdgeAction[];
   /** 掴んで他のカード・レーンへ落とせるカードか。ドラッグ中の扱いはCardDragController。 */
   readonly draggable?: boolean;
   /**
@@ -259,7 +265,7 @@ export class Card extends Phaser.GameObjects.Container {
   private shownArt: string | undefined;
   private shownIcon: string | undefined;
   private shownBackground: string | undefined;
-  private shownEdgeDirection: CardEdgeDirection | undefined;
+  private shownEdgeDirections = '';
 
   /**
    * 状態を表すバー。値を持たない間は隠すだけで、作り直さない——作り直すと、変わった分を遅れて
@@ -314,7 +320,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.add(this.edgeLayer);
 
     // 入力の配線だけは構築時に一度きり。押したときに何が起きるかは実行時に_contentから読む
-    // （onTap・edge.onTap）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
+    // （onTap・edges[].onTap）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
     if (content.onTap !== undefined) this.makeTappable(scene, metrics, width, height);
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
@@ -465,19 +471,26 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 端の操作エリア。送れる先があるかどうかで付いたり外れたりする（`PlayScene.cardEdge`）ので、
-   * 向きが変わったときだけ中身を入れ直す。押したときに何が起きるかは実行時に`_content`から読む。
+   * 端の操作エリア。送れる先があるかどうかで付いたり外れたりする（`PlayScene.cardEdges`）ので、
+   * 向きの組み合わせが変わったときだけ中身を入れ直す。押したときに何が起きるかは実行時に
+   * `_content`から読む。
    */
   private showEdge(content: CardContent): void {
-    const direction = content.edge?.direction;
-    if (direction === this.shownEdgeDirection) return;
+    const directions = EDGE_DIRECTIONS.filter((direction) => this.edgeActionFor(content, direction));
+    const key = directions.join();
+    if (key === this.shownEdgeDirections) return;
 
-    this.shownEdgeDirection = direction;
+    this.shownEdgeDirections = key;
     this.cancelEdgeRepeat();
     this.edgeLayer.removeAll(true);
-    if (direction !== undefined) {
+    for (const direction of directions) {
       this.addEdge(this.scene, this.metrics, this.cardWidth, this.cardHeight, direction);
     }
+  }
+
+  /** その向きの端を押したときの動作（その向きへ送れないならundefined）。 */
+  private edgeActionFor(content: CardContent, direction: CardEdgeDirection): CardEdgeAction | undefined {
+    return content.edges?.find((edge) => edge.direction === direction);
   }
 
   /**
@@ -687,7 +700,7 @@ export class Card extends Phaser.GameObjects.Container {
     onPressRelease(hitArea, {
       onPress: () => {
         feedback.setVisible(true);
-        this.startEdgeRepeat();
+        this.startEdgeRepeat(direction);
       },
       onCancel: () => {
         feedback.setVisible(false);
@@ -697,7 +710,7 @@ export class Card extends Phaser.GameObjects.Container {
         feedback.setVisible(false);
         const moved = this.edgeRepeated;
         this.cancelEdgeRepeat();
-        if (!moved) this._content.edge?.onTap();
+        if (!moved) this.edgeActionFor(this._content, direction)?.onTap();
       },
     });
 
@@ -705,15 +718,15 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /** 押し続けの繰り返しを始める。1枚目はEDGE_HOLD_MS後で、そこからは間隔を詰めていく。 */
-  private startEdgeRepeat(): void {
+  private startEdgeRepeat(direction: CardEdgeDirection): void {
     this.edgeRepeated = false;
     this.edgeRepeatDelay = EDGE_REPEAT_MS;
-    this.scheduleEdgeRepeat(EDGE_HOLD_MS);
+    this.scheduleEdgeRepeat(EDGE_HOLD_MS, direction);
   }
 
-  private scheduleEdgeRepeat(delay: number): void {
+  private scheduleEdgeRepeat(delay: number, direction: CardEdgeDirection): void {
     this.edgeRepeat = this.scene.time.delayedCall(delay, () => {
-      const edge = this._content.edge;
+      const edge = this.edgeActionFor(this._content, direction);
       if (edge === undefined) return;
 
       this.edgeRepeated = true;
@@ -723,7 +736,7 @@ export class Card extends Phaser.GameObjects.Container {
 
       const next = this.edgeRepeatDelay;
       this.edgeRepeatDelay = Math.max(EDGE_REPEAT_MIN_MS, this.edgeRepeatDelay * EDGE_REPEAT_DECAY);
-      this.scheduleEdgeRepeat(next);
+      this.scheduleEdgeRepeat(next, direction);
     });
   }
 

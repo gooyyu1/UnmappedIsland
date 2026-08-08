@@ -47,6 +47,9 @@ export class RawObjectDef {
   /** quantitative（7.6節）。個数ではなく量で存在する型か。traitのどれか1つでも宣言していれば真。 */
   quantitative = false;
 
+  /** bound_to_owner（7.9節）。単独では存在できない型か。quantitativeと同じくORで合成する。 */
+  boundToOwner = false;
+
   actions: YAMLMap | undefined;
   combinations: YAMLMap | undefined;
 
@@ -80,6 +83,7 @@ export class RawObjectDef {
     const mainItemSlotCandidates: Array<[string, string]> = [];
     const tags: string[] = [];
     let quantitative = this.quantitative;
+    let boundToOwner = this.boundToOwner;
 
     for (const traitName of this.traitNames) {
       const trait = traitsByName.get(traitName);
@@ -98,6 +102,7 @@ export class RawObjectDef {
       if (trait.mainItemSlot !== undefined) mainItemSlotCandidates.push([traitName, trait.mainItemSlot]);
       // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
       if (trait.quantitative) quantitative = true;
+      if (trait.boundToOwner) boundToOwner = true;
       tags.push(...trait.tags);
     }
 
@@ -219,6 +224,7 @@ export class RawObjectDef {
       representedBySlotGlobalId,
       quantitative,
       mainItemSlotGlobalId,
+      boundToOwner,
     );
   }
 }

@@ -39,6 +39,8 @@ object_defs:
     # fixtureは「持ち歩けない」という置き場所の分類、pathは「移動手段である」という役割。
     # 画面側は後者を見て、道のカードだけ移動先の土地名を表示する。
     tags: [fixture, path]
+    # 繋がる土地の無い道は存在しない（7.9節）。土地から外せず、土地が消えれば一緒に消える。
+    bound_to_owner: true
     props:
       travel_minutes:
         value: 60

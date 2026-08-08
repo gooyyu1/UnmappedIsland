@@ -118,13 +118,16 @@ describe('injuries.yamlの怪我', () => {
     expect(player.getEffectiveValue(painId), '可逆な寄与なので痛みも消える').toBe(0);
   });
 
-  it('怪我は手持ちにも足元にも置けない', () => {
-    // injuryタグはhand（itemのみ）・土地のitemsを通らないため、負った本人から離れられない。
+  it('怪我は負った本人から離せない', () => {
+    // bound_to_owner（7.9節）。身体から離れた「捻挫」は存在しないので、どこへも移せない
+    // ——手持ちや足元がinjuryタグを弾くからではなく、その物がそう在れないから。
     pickCoconut();
     const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
 
+    expect(injury.moveToSlot(beach, codex.slotNames.getId('items'), codex.wellKnown)).toContain('離せません');
+    // 同じ本人の中でも手持ちへは移らない。こちらを弾くのはhandのaccepts（itemのみ）。
     expect(injury.moveToSlot(player, codex.slotNames.getId('hand'), codex.wellKnown)).toBeDefined();
-    expect(injury.moveToSlot(beach, codex.slotNames.getId('items'), codex.wellKnown)).toBeDefined();
+    expect(injuriesOf(player), '弾かれた側は怪我スロットに残る').toEqual(['sprained_ankle']);
   });
 
   it('傷の重さは道具の耐久度と別のプロパティで、引くほど軽い域へ移る', () => {
@@ -221,9 +224,9 @@ describe('injuries.yamlの怪我', () => {
       expect(player.getEffectiveValue(painId)).toBe(40);
     });
 
-    it('怪我が治れば、当てていた治療具も世界から外れる', () => {
-      // 治った怪我はdestroy（＝親から外れる）される。中身の行き先を決めていないので、当てていた
-      // 治療具はその怪我にぶら下がったまま世界から切り離される（Injuries.md 手当て節）。
+    it('怪我が治れば、当てていた治療具はこぼれ出る', () => {
+      // 治った怪我はdestroyされるが、包帯は単独で在れるので道連れにならず、怪我の親——つまり
+      // 負っていた本人——へこぼれ出る（GameElementDefinition.md 7.9節）。
       const { injury, bandage } = injured();
       expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
 
@@ -231,8 +234,8 @@ describe('injuries.yamlの怪我', () => {
 
       expect(injuriesOf(player)).toEqual([]);
       expect(injury.parent, '怪我は世界から外れる').toBeUndefined();
-      expect(bandage.parent, '包帯はその怪我に付いたまま').toBe(injury);
-      expect(handOf(player), '手元へは戻らない').toEqual([]);
+      expect(bandage.parent, '包帯は本人の手元へ戻る').toBe(player);
+      expect(handOf(player)).toEqual(['bandage']);
     });
   });
 

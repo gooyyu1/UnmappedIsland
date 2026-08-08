@@ -24,6 +24,9 @@ export class RawTrait {
   /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
   mainItemSlot: string | undefined;
 
+  /** bound_to_owner（7.9節）。単独では存在できない型か。 */
+  boundToOwner = false;
+
   /** quantitative（7.6節）。個数ではなく量で存在する型か。 */
   quantitative = false;
 

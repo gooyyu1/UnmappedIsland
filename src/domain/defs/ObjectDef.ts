@@ -63,6 +63,14 @@ export class ObjectDef {
    */
   readonly mainItemSlotGlobalId: number | undefined;
 
+  /**
+   * **単独では存在できない型か**（7.9節、既定false）。trueなら、入っていた親が消えるとき一緒に消える。
+   *
+   * 身体から離れた「捻挫」も、器の無い水も、繋がる土地の無い道も存在しない。falseの物（包帯・石）は
+   * 親が消えるとその親の親へこぼれ出る。
+   */
+  readonly boundToOwner: boolean;
+
   /** このObjectDefが持つメニュー型操作（11節）。 */
   readonly actions: readonly ActionDef[];
 
@@ -91,6 +99,7 @@ export class ObjectDef {
     representedBySlotGlobalId?: number,
     isQuantitative = false,
     mainItemSlotGlobalId?: number,
+    boundToOwner = false,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -107,6 +116,7 @@ export class ObjectDef {
     this.combinations = combinations;
     this.representedBySlotGlobalId = representedBySlotGlobalId;
     this.mainItemSlotGlobalId = mainItemSlotGlobalId;
+    this.boundToOwner = boundToOwner;
     this.isQuantitative = isQuantitative;
   }
 

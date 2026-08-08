@@ -1,6 +1,7 @@
 import type { GenerationDefs } from './generation/GenerationDefs';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDefTable } from './ObjectDef';
+import type { SlotDef } from './SlotDef';
 import type { WellKnownProperties } from './WellKnownProperties';
 
 /**
@@ -68,5 +69,21 @@ export class WorldCodex {
       if (objectDef.tags.includes(tagId)) names.push(objectDef.name);
     }
     return names;
+  }
+
+  /**
+   * このスロットへ、外から持ち込める型が1つでもあるか。単独で在れない型（`bound_to_owner`、7.9節）
+   * しか受け付けないスロットは、持ち主の中で生まれる以外に入りようがない——怪我のスロットがこれ。
+   * 画面はこれを見て「落とせる場所」の空枠を出すかを決める。
+   */
+  admitsBroughtObjects(slotDef: SlotDef): boolean {
+    if (slotDef.accepts.length === 0) return true; // 無制限スロット（7.1節）
+
+    for (let globalId = 0; globalId < this.objects.count; globalId++) {
+      const objectDef = this.objects.get(globalId);
+      if (objectDef.boundToOwner) continue;
+      if (slotDef.accepts.some((rule) => rule.matches(objectDef))) return true;
+    }
+    return false;
   }
 }
