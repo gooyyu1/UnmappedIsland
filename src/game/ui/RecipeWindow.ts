@@ -1,7 +1,11 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
+import type { CardContent } from './Card';
+import { Card } from './Card';
+import { clipToRect } from './clip';
 import { addLabel } from './labels';
+import { wheelPixels } from './scroll';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 
@@ -11,13 +15,15 @@ const PADDING = 32;
 const GAP = 16;
 const TITLE_SIZE = 28;
 const TAB_HEIGHT = 64;
-const ENTRY_HEIGHT = 72;
+/** 折り返しで並べるカードの間隔と、スクロールせずに見せる段数。 */
+const CARD_GAP = 12;
+const VISIBLE_ROWS = 2;
 const CLOSE_HEIGHT = 72;
 
-/** 一覧に並ぶレシピ1つ。 */
+/** 一覧に並ぶレシピ1つ。完成品のカードとして出す。 */
 export interface RecipeEntry {
-  /** 完成品の表示名。 */
-  readonly label: string;
+  /** 完成品のカード（絵と名前）。押すとそのレシピを選ぶ。 */
+  readonly card: CardContent;
 
   /** 満たしていない解放条件の理由（SkillSystem.md 4節）。解放済みならundefined。 */
   readonly lockedReason: string | undefined;
@@ -80,19 +86,19 @@ export class RecipeWindow {
     const padding = metrics.px(PADDING);
     const gap = metrics.px(GAP);
     const width = Math.min(metrics.px(WINDOW_MAX_WIDTH), metrics.width * 0.9);
-    const rows = Math.max(
-      1,
-      options.categories.reduce((most, c) => Math.max(most, c.entries.length), 0),
-    );
     const tabsHeight = options.categories.length > 1 ? metrics.px(TAB_HEIGHT) + gap : 0;
+    const cardHeight = metrics.px(SIZE.cardHeight);
+    const cardGap = metrics.px(CARD_GAP);
+    // 段数はスクロールせずに見せるぶんで決め打つ。これを超える分は縦にスクロールさせる。
+    const rows = Math.min(VISIBLE_ROWS, Math.max(1, this.rowsNeeded(width - padding * 2, metrics)));
     const height = Math.min(
       metrics.height * 0.92,
       padding * 2 +
         metrics.px(TITLE_SIZE) +
         gap +
         tabsHeight +
-        rows * metrics.px(ENTRY_HEIGHT) +
-        (rows - 1) * gap +
+        rows * cardHeight +
+        (rows - 1) * cardGap +
         gap +
         metrics.px(CLOSE_HEIGHT),
     );
@@ -177,45 +183,122 @@ export class RecipeWindow {
     this.build();
   }
 
-  /** 選んだタブの中身へ差し替える。 */
+  /** 1列に何枚並ぶか。窓の内寸をカードの幅で割る（最低1枚）。 */
+  private columns(innerWidth: number, metrics: ScreenMetrics): number {
+    const cardWidth = metrics.px(SIZE.cardWidth);
+    const gap = metrics.px(CARD_GAP);
+    return Math.max(1, Math.floor((innerWidth + gap) / (cardWidth + gap)));
+  }
+
+  /** どのタブでも収まるだけの段数（窓の高さを決めるために、最も多いタブで測る）。 */
+  private rowsNeeded(innerWidth: number, metrics: ScreenMetrics): number {
+    const columns = this.columns(innerWidth, metrics);
+    return this.options.categories.reduce(
+      (most, category) => Math.max(most, Math.ceil(category.entries.length / columns)),
+      1,
+    );
+  }
+
+  /**
+   * 選んだタブの中身へ差し替える。完成品のカードを左から並べ、窓の幅で折り返す。
+   * 見せる段数（VISIBLE_ROWS）に収まらない分は、縦にスクロールして送る。
+   */
   private showCategory(index: number): void {
     this.clear(this.body);
     this.body = [];
 
-    const padding = this.metrics.px(PADDING);
-    const gap = this.metrics.px(GAP);
-    const width = this.area.width - padding * 2;
+    const { scene, metrics } = this;
+    const padding = metrics.px(PADDING);
+    const innerWidth = this.area.width - padding * 2;
     const entries = this.options.categories[index]?.entries ?? [];
 
     if (entries.length === 0) {
       this.body.push(
-        addLabel(this.scene, this.metrics, this.area.x + padding, this.bodyTop, this.options.emptyText, {
-          size: 22,
-        }),
+        addLabel(scene, metrics, this.area.x + padding, this.bodyTop, this.options.emptyText, { size: 22 }),
       );
       return;
     }
 
-    entries.forEach((entry, row) => {
-      const locked = entry.lockedReason !== undefined;
-      this.body.push(
-        addTextButton(
-          this.scene,
-          this.metrics,
-          {
-            x: this.area.x + padding,
-            y: this.bodyTop + row * (this.metrics.px(ENTRY_HEIGHT) + gap),
-            width,
-            height: this.metrics.px(ENTRY_HEIGHT),
-          },
-          locked ? `${entry.label}（${entry.lockedReason}）` : entry.label,
-          { fill: locked ? COLOR.buttonDisabled : COLOR.button },
-          () => {
-            if (!locked) entry.onSelect();
-          },
-        ),
-      );
+    const cardWidth = metrics.px(SIZE.cardWidth);
+    const cardHeight = metrics.px(SIZE.cardHeight);
+    const cardGap = metrics.px(CARD_GAP);
+    const columns = this.columns(innerWidth, metrics);
+    const viewHeight =
+      this.area.y + this.area.height - padding - metrics.px(CLOSE_HEIGHT) - metrics.px(GAP) - this.bodyTop;
+
+    // カードは1つのコンテナへ入れて、窓の中だけに切り抜く。スクロールはこのコンテナを上下へ送る。
+    const viewport = scene.add.container(0, 0);
+    const releaseClip = clipToRect(scene, viewport, {
+      x: this.area.x + padding,
+      y: this.bodyTop,
+      width: innerWidth,
+      height: viewHeight,
     });
+    this.body.push(viewport);
+
+    entries.forEach((entry, position) => {
+      const column = position % columns;
+      const row = Math.floor(position / columns);
+      const locked = entry.lockedReason !== undefined;
+      const card = new Card(
+        scene,
+        metrics,
+        this.area.x + padding + column * (cardWidth + cardGap),
+        this.bodyTop + row * (cardHeight + cardGap),
+        {
+          ...entry.card,
+          // 未解放のレシピも並べる。押せないことは名前の後ろの理由で伝える。
+          name: locked ? `${entry.card.name}（${entry.lockedReason}）` : entry.card.name,
+          onTap: locked ? undefined : entry.onSelect,
+        },
+      );
+      viewport.add(card);
+    });
+
+    const contentHeight = Math.ceil(entries.length / columns) * (cardHeight + cardGap) - cardGap;
+    this.addScrolling(viewport, contentHeight - viewHeight);
+    this.body.push({ destroy: releaseClip } as unknown as Phaser.GameObjects.GameObject);
+  }
+
+  /** はみ出した高さぶんだけ、ホイールとドラッグで送れるようにする。 */
+  private addScrolling(viewport: Phaser.GameObjects.Container, overflow: number): void {
+    if (overflow <= 0) return;
+
+    const move = (delta: number) => {
+      viewport.y = Math.min(0, Math.max(-overflow, viewport.y + delta));
+    };
+
+    const onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, deltaX: number, deltaY: number): void => {
+      move(-wheelPixels(pointer, deltaX, deltaY));
+    };
+    this.scene.input.on('wheel', onWheel);
+
+    let dragging = false;
+    let lastY = 0;
+    const onDown = (pointer: Phaser.Input.Pointer): void => {
+      dragging = true;
+      lastY = pointer.y;
+    };
+    const onMove = (pointer: Phaser.Input.Pointer): void => {
+      if (!dragging) return;
+      move(pointer.y - lastY);
+      lastY = pointer.y;
+    };
+    const onUp = (): void => {
+      dragging = false;
+    };
+    this.scene.input.on('pointerdown', onDown);
+    this.scene.input.on('pointermove', onMove);
+    this.scene.input.on('pointerup', onUp);
+
+    this.body.push({
+      destroy: () => {
+        this.scene.input.off('wheel', onWheel);
+        this.scene.input.off('pointerdown', onDown);
+        this.scene.input.off('pointermove', onMove);
+        this.scene.input.off('pointerup', onUp);
+      },
+    } as unknown as Phaser.GameObjects.GameObject);
   }
 
   private clear(objects: readonly Phaser.GameObjects.GameObject[]): void {

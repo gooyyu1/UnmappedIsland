@@ -9,6 +9,9 @@ import type { RecipeCategory, RecipeEntry } from './ui/RecipeWindow';
 /** 解放条件に理由（reason、14.6節）が書かれていないときに出す、代わりの1行。 */
 const LOCKED = 'まだ作り方が分からない';
 
+/** 完成品のカードの絵が無いときに代わりに出す絵文字。 */
+const PRODUCT_ICON = '📦';
+
 /**
  * レシピ一覧に並べるカテゴリを組み立てる（RecipeSystem.md）。
  *
@@ -37,7 +40,11 @@ export function recipeCategories(
       if (inProgressId === undefined) continue;
 
       const entry: RecipeEntry = {
-        label: locale.object(product.name).displayName,
+        card: {
+          icon: PRODUCT_ICON,
+          name: locale.object(product.name).displayName,
+          art: product.name,
+        },
         lockedReason:
           unmet === undefined
             ? undefined

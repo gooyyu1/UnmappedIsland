@@ -1242,28 +1242,26 @@ export class PlayScene extends ResponsiveScene {
     });
 
     const columnX = area.x + padding + portraitWidth + gap;
+    // 状況アイコンはポートレイトの下だけに置き、ボタンの列はその行の下端まで伸ばす。
+    // こうすると同じ大きさのボタンが4つ入る（ScreenLayout.md）。
+    const conditionSize = this.metrics.px(SIZE.conditionButton);
     this.addSlotButtonColumn({
       x: columnX,
       y: area.y + padding,
       width: area.x + area.width - padding - columnX,
-      height: portraitHeight,
+      height: portraitHeight + gap + conditionSize,
     });
 
-    this.addConditionRow(
-      area.x + padding,
-      area.y + padding + portraitHeight + gap,
-      area.x + area.width - padding,
-    );
+    this.addConditionRow(area.x + padding, area.y + padding + portraitHeight + gap);
   }
 
   /**
    * 条件はラベルなしのアイコンボタン。ポートレイトの真下に1行で左詰めに並べる——キャラクターの
    * 状態なので、カードの下に続けて置くと持ち主が読み取れる。
    */
-  private addConditionRow(x: number, y: number, right: number): void {
+  private addConditionRow(x: number, y: number): void {
     const size = this.metrics.px(SIZE.conditionButton);
     const gap = this.metrics.px(8);
-    this.addRecipeButton(right, y, size);
     this.view.conditions.forEach((icon, index) => {
       const button = new Button(
         this,
@@ -1305,6 +1303,13 @@ export class PlayScene extends ResponsiveScene {
         icon: this.view.injuryIcon,
         fill: COLOR.injuryButton,
         onTap: () => this.openSlotWindow('injuries'),
+      },
+      {
+        art: 'recipe',
+        // 下のフィルターバーが道具の絞り込みに🔨を使っているので、別の絵にする。
+        icon: '🧰',
+        fill: COLOR.button,
+        onTap: () => this.openRecipeWindow(),
       },
     ] as const;
     // 列の高さを3等分せず、内容量ぶんに留める。余った高さは列の中で上下に分ける。
@@ -1557,30 +1562,6 @@ export class PlayScene extends ResponsiveScene {
    * キャラクターのプロパティをタグごとに見せるウィンドウ（ポートレイトカードのタップで開く）。
    * ステータスエリアに出ていない分も含めて、ここで全部のカテゴリを見られる。
    */
-  /**
-   * レシピボタン。条件の行の**右端**へ置く（ScreenLayout.md）。
-   *
-   * 地図・装備・怪我の縦積みへは足せない。あの3つはキャラクターのスロットの中身を開くもので、
-   * レシピは一覧を開いて現在地へ物を生む別の性質だから。列の高さもポートレイト（320u）ぶんしか
-   * 無く、4つ目を同じ大きさで積むと下の行へはみ出す。
-   */
-  private addRecipeButton(right: number, y: number, height: number): void {
-    const width = height * 2;
-    const button = new Button(
-      this,
-      { x: right - width, y, width, height },
-      {
-        fill: COLOR.button,
-        border: COLOR.buttonBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
-        radius: this.metrics.px(SIZE.radius),
-      },
-      this.whileIdle(() => this.openRecipeWindow()),
-    );
-    // 下のフィルターバーが道具の絞り込みに🔨を使っているので、別の絵にする。
-    button.addContent(addLabel(this, this.metrics, width / 2, height / 2, '🧰', { size: 28 }).setOrigin(0.5));
-  }
-
   /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
   private openRecipeWindow(): void {
     this.recipeWindow?.destroy();
