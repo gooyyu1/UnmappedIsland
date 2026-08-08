@@ -47,7 +47,8 @@ import { ObjectWindow } from './ui/ObjectWindow';
 import { RecipeWindow } from './ui/RecipeWindow';
 import { recipeCategories } from './recipeList';
 import { autoFillMaterials } from '../domain/runtime/autoFill';
-import { MATERIALS_SLOT } from '../loader/inProgressObjects';
+import { inProgressObjectName, MATERIALS_SLOT } from '../loader/inProgressObjects';
+import { advanceCrafting, currentStep, stepIsSupplied } from '../domain/runtime/crafting';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
@@ -749,7 +750,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowCard = card;
     this.openChildWindow(
       { card, description: card.description },
-      [...this.autoFillAction(card), ...this.windowActions(card)],
+      [...this.autoFillAction(card), ...this.craftAction(card), ...this.windowActions(card)],
       card.contents,
     );
   }
@@ -784,6 +785,46 @@ export class PlayScene extends ResponsiveScene {
           this.closeChildWindow();
           this.view = fromGameSession(this.gameSession, this.codex, this.locale);
           this.showView();
+        },
+      },
+    ];
+  }
+
+  /**
+   * 製作中オブジェクトの「作業する」。工程の素材が揃っていれば、その工程ぶん時間と進捗を進める
+   * （RecipeSystem.md 4節。在庫確認と消費はYAMLの語彙で書けないためプログラム側）。
+   */
+  private craftAction(card: ObjectCardStack): ObjectWindowAction[] {
+    const target = card.objects[0];
+    if (target === undefined) return [];
+    const product = this.codex.productOf(target.def);
+    if (product === undefined) return [];
+
+    const recipe = product.recipes.find(
+      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
+    );
+    if (recipe === undefined) return [];
+
+    const materialsSlotId = this.codex.slotNames.getId(MATERIALS_SLOT);
+    const step = currentStep(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
+    const supplied = step !== undefined && stepIsSupplied(target, materialsSlotId, step);
+
+    return [
+      {
+        label: '作業する',
+        description: '揃っている素材を使って、次の工程を進める。',
+        minutes: step?.durationMinutes ?? 0,
+        enabled: supplied,
+        reason: supplied ? undefined : '素材が足りない。',
+        onTap: () => {
+          const origin = this.rectOf(card);
+          this.closeChildWindow();
+          this.applyToWorld(
+            () => {
+              advanceCrafting(target, recipe, materialsSlotId, this.codex, this.gameSession.session);
+            },
+            { origin },
+          );
         },
       },
     ];
