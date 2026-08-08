@@ -100,6 +100,18 @@ const MARK_MARGIN = 18;
 const STACK_COUNT_SIZE = 32;
 
 /**
+ * 枠が持つ縁の太さと、カードへ重ねる文字の大きさ・板の内側の余白・紙の下端からの浮かせ方（u単位）。
+ *
+ * 縁は押下中の黒枠（PRESSED_BORDER_WIDTH）と同じ太さにする。どちらもカードの紙の輪郭をなぞる線なので、
+ * 太さが違うと同じ位置に別の枠があるように見える。文字は紙の下端寄りに置き、絵の主題を隠さない。
+ */
+const CELL_BORDER_WIDTH = 6;
+const CELL_OVERLAY_SIZE = 40;
+const CELL_OVERLAY_PADDING = 14;
+const CELL_OVERLAY_BOTTOM = 20;
+const CELL_OVERLAY_PLATE_ALPHA = 0.72;
+
+/**
  * 耐久度バーの高さ（u単位）。ステータスバー（36u）とは比べ物にならない細さにする——どの道具にも
  * 常に出ているものなので、見に行けば読めるが視界には入らない、という控えめさに留める。
  */
@@ -759,6 +771,78 @@ export class EmptyCard extends Phaser.GameObjects.Container {
 
     this.add(face);
     scene.add.existing(this);
+  }
+}
+
+/**
+ * 枠がカードの上へ重ねるもの（ScreenLayout.md 枠（セル）を一級の単位にする節の3層目）。縁の色と、
+ * カードに重ねる短い文字を出す。**カードが入っていても隠れない**ことがこの層の役目なので、
+ * カードより手前へ置く（CardLane）。
+ */
+export class CellOverlay extends Phaser.GameObjects.Container {
+  constructor(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    x: number,
+    y: number,
+    borderColor: number | undefined,
+    overlay: string | undefined,
+  ) {
+    super(scene, x, y);
+
+    const width = metrics.px(SIZE.cardWidth);
+    const height = metrics.px(SIZE.cardHeight);
+    const paper = paperRect(metrics, width, height);
+
+    if (borderColor !== undefined) {
+      const border = scene.add.graphics();
+      drawBox(border, paper, {
+        border: borderColor,
+        borderWidth: Math.max(1, metrics.px(CELL_BORDER_WIDTH)),
+        radius: metrics.px(FRAME_RADIUS),
+      });
+      this.add(border);
+    }
+
+    if (overlay !== undefined) this.add(this.makeBadge(scene, metrics, paper, overlay));
+
+    scene.add.existing(this);
+  }
+
+  /**
+   * 重ねる文字。**暗い板に明るい文字**を載せる——下に来るのは絵のあるカードとも空き枠とも決まって
+   * いないので、地の明るさによらず読める組み合わせにする。板の幅は文字に合わせて決める。
+   */
+  private makeBadge(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    paper: Rect,
+    overlay: string,
+  ): Phaser.GameObjects.Container {
+    const text = scene.add
+      .text(0, 0, overlay, {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(CELL_OVERLAY_SIZE)}px`,
+        fontStyle: 'bold',
+        color: cssColor(COLOR.textOnDark),
+      })
+      .setOrigin(0.5);
+
+    const padding = metrics.px(CELL_OVERLAY_PADDING);
+    const badgeHeight = text.height + padding;
+    const badgeWidth = text.width + padding * 2;
+    const plate = scene.add.graphics();
+    drawBox(
+      plate,
+      { x: -badgeWidth / 2, y: -badgeHeight / 2, width: badgeWidth, height: badgeHeight },
+      { fill: COLOR.cellOverlayPlate, fillAlpha: CELL_OVERLAY_PLATE_ALPHA, radius: badgeHeight / 2 },
+    );
+
+    return scene.add.container(
+      paper.x + paper.width / 2,
+      paper.y + paper.height - metrics.px(CELL_OVERLAY_BOTTOM) - badgeHeight / 2,
+      [plate, text],
+    );
   }
 }
 

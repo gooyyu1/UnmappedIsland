@@ -14,6 +14,7 @@ import { SaveSlots } from '../save/SaveSlots';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
+import type { RecipeDef } from '../domain/defs/RecipeDef';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
@@ -29,7 +30,8 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
-import { emptyCellsFor } from './ui/laneCells';
+import type { LaneCell } from './ui/laneCells';
+import { cellsFor, unboundedSlot } from './ui/laneCells';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from './ui/informationArt';
@@ -480,7 +482,7 @@ export class PlayScene extends ResponsiveScene {
       fixtures,
       COLOR.fixtureLane,
       // 設置物は持ち出せないので、手持ちへ送る端の操作は付けない（並び替えのドラッグだけ）。
-      this.laneCards(this.view.fixtures),
+      this.plainCells(this.view.fixtures),
       {
         pinned: {
           ...this.view.currentLocation,
@@ -490,17 +492,11 @@ export class PlayScene extends ResponsiveScene {
         depth: FIELD_DEPTH,
       },
     );
-    this.itemLane = new CardLane(this, this.metrics, items, COLOR.itemLane, this.laneCards(this.view.items), {
-      // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
-      emptyCells: emptyCellsFor(
-        this.view.items.length,
-        this.view.cellCountOf('items'),
-        this.view.acceptsCards('items'),
-      ),
+    this.itemLane = new CardLane(this, this.metrics, items, COLOR.itemLane, this.itemCells(), {
       art: laneTexture('item', art),
       depth: FIELD_DEPTH,
     });
-    this.handLane = new CardLane(this, this.metrics, hand, COLOR.handLane, this.laneCards(this.view.hand), {
+    this.handLane = new CardLane(this, this.metrics, hand, COLOR.handLane, this.plainCells(this.view.hand), {
       art: HAND_LANE_TEXTURE,
       depth: FIELD_DEPTH,
     });
@@ -567,6 +563,36 @@ export class PlayScene extends ResponsiveScene {
         midAction: this.passingTime,
       };
     });
+  }
+
+  /**
+   * 受け皿の空枠を持たないレーンの枠（設置物・手持ち）。設置物レーンは前詰めだが末尾に受け皿を
+   * 出さず、手持ちは固定枠なので空き枠そのものが常に見えている。
+   */
+  private plainCells(cards: readonly (ObjectCardStack | undefined)[]): readonly LaneCell[] {
+    return this.laneCards(cards).map((card) => ({ card }));
+  }
+
+  /** アイテムレーンの枠。前詰めのレーンなので、末尾に受け皿の空枠が付く（cellsFor）。 */
+  private itemCells(): readonly LaneCell[] {
+    return cellsFor(
+      this.laneCards(this.view.items),
+      this.view.cellCountOf('items'),
+      this.view.acceptsCards('items'),
+    );
+  }
+
+  /**
+   * 子ウィンドウが映すスロットの枠。製作中オブジェクトの材料だけは、枠ごとに縁の色と残りの数を持つ
+   * （materialCells）。
+   */
+  private slotCells(place: CardPlace): readonly LaneCell[] {
+    const stacks = this.childWindowCards();
+    const cards = this.laneCards(stacks);
+    return (
+      this.materialCells(place, stacks, cards) ??
+      cellsFor(cards, this.view.cellCountOf(place), this.view.acceptsCards(place))
+    );
   }
 
   /**
@@ -803,12 +829,7 @@ export class PlayScene extends ResponsiveScene {
   private craftAction(card: ObjectCardStack): ObjectWindowAction[] {
     const target = card.objects[0];
     if (target === undefined) return [];
-    const product = this.codex.productOf(target.def);
-    if (product === undefined) return [];
-
-    const recipe = product.recipes.find(
-      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
-    );
+    const recipe = this.recipeOf(target);
     if (recipe === undefined) return [];
 
     const materialsSlotId = this.codex.slotNames.getId(MATERIALS_SLOT);
@@ -837,35 +858,69 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 製作中オブジェクトの材料スロットに見せる枠の数。製作中でなければundefined（通常の枠数）。
+   * 製作中オブジェクトの材料スロットの枠（製作中でなければundefined＝通常の枠）。
    *
-   * 静的な枠数（全工程の要求の合計）ではなく、**今入っている数＋残りの工程に足りない数**を返す。
-   * こうすると、出番の終わった型の空枠が並びから消える——こぼしたあとの空枠が残っていると、
-   * まだ何か入れられるように見えてしまう。
+   * **枠は残りの工程が要求する型ごとに1つ**で、その型が入っていなければ空き枠になる。要求の合計数ぶん
+   * 空き枠を並べる代わりに、**あと何枚要るかは枠へ重ねた「今／要求数」で出す**（ScreenLayout.md
+   * 製作中オブジェクトの材料節）。出番の終わった型の枠は並びから消える——こぼしたあとの空枠が
+   * 残っていると、まだ何か入れられるように見えてしまうため。
+   *
+   * どの枠を先に埋めればよいかは縁の色が示す（今の工程／後の工程）。塗りにしないのは、カードが
+   * 入った枠で隠れてしまうため。
    */
-  private materialsCellCount(place: CardPlace): number | undefined {
+  private materialCells(
+    place: CardPlace,
+    stacks: readonly ObjectCardStack[],
+    cards: readonly (CardContent | undefined)[],
+  ): readonly LaneCell[] | undefined {
     if (typeof place !== 'object' || !('container' in place)) return undefined;
 
-    const remaining = this.remainingFor(place.container);
-    if (remaining === undefined) return undefined;
+    const recipe = this.recipeOf(place.container);
+    if (recipe === undefined) return undefined;
 
-    const contents = place.container.tryGetSlot(this.codex.slotNames.getId(MATERIALS_SLOT))?.contents ?? [];
-    const shortfall = [...remaining].reduce((sum, [globalId, needed]) => {
-      const held = contents.filter((object) => object.def.globalId === globalId).length;
-      return sum + Math.max(0, needed - held);
-    }, 0);
+    const progress = place.container.getNumber(this.codex.propertyNames.getId('progress'));
+    const remaining = remainingRequirements(recipe, progress);
+    const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.objectGlobalId));
 
-    return contents.length + shortfall;
+    const typeOf = (index: number): number | undefined => stacks[index]?.objects[0]?.def.globalId;
+    const held = new Map<number, number>();
+    stacks.forEach((stack, index) => {
+      const globalId = typeOf(index);
+      if (globalId !== undefined) held.set(globalId, (held.get(globalId) ?? 0) + stack.objects.length);
+    });
+
+    const marksFor = (globalId: number | undefined): LaneCell => {
+      const needed = globalId === undefined ? undefined : remaining.get(globalId);
+      // もう要求されない型は、取り出すための枠が残るだけで印は持たない。
+      if (globalId === undefined || needed === undefined) return {};
+      return {
+        borderColor: inStep.has(globalId) ? COLOR.cellCurrentStep : COLOR.cellLaterStep,
+        // 1つしか要らない枠に数を出しても、枠そのものが既に言っていることの繰り返しにしかならない。
+        overlay: needed >= 2 ? `${held.get(globalId) ?? 0}/${needed}` : undefined,
+      };
+    };
+
+    const cells: LaneCell[] = cards.map((card, index) => ({ card, ...marksFor(typeOf(index)) }));
+    // まだ1つも入っていない型の空き枠を、要求の順に足す。
+    for (const globalId of remaining.keys()) {
+      if (!held.has(globalId)) cells.push(marksFor(globalId));
+    }
+    return cells;
   }
 
   /** 製作中オブジェクトなら、残りの工程が要求する型と数。そうでなければundefined。 */
   private remainingFor(target: WorldObject): ReadonlyMap<number, number> | undefined {
-    const product = this.codex.productOf(target.def);
-    const recipe = product?.recipes.find(
-      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
-    );
+    const recipe = this.recipeOf(target);
     if (recipe === undefined) return undefined;
     return remainingRequirements(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
+  }
+
+  /** その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。 */
+  private recipeOf(target: WorldObject): RecipeDef | undefined {
+    const product = this.codex.productOf(target.def);
+    return product?.recipes.find(
+      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
+    );
   }
 
   /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */
@@ -904,9 +959,8 @@ export class PlayScene extends ResponsiveScene {
           ? undefined
           : {
               title: this.view.nameOf(place),
-              cards: this.laneCards(this.childWindowCards()),
-              acceptsCards: this.view.acceptsCards(place),
-              cellCount: this.materialsCellCount(place) ?? this.view.cellCountOf(place),
+              cells: this.slotCells(place),
+              unbounded: unboundedSlot(this.view.cellCountOf(place)),
             },
       actions,
       area: this.layout.slotWindowArea,
@@ -928,7 +982,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 手持ちのカードに付いている操作だけを引き直す（並びは変わらないので動きは出ない）。 */
   private refreshHandLane(): void {
-    this.handLane.setCards(this.laneCards(this.view.hand));
+    this.handLane.setCells(this.plainCells(this.view.hand));
   }
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
@@ -1192,14 +1246,15 @@ export class PlayScene extends ResponsiveScene {
   private showView(context: MotionContext = {}): void {
     // 開いている子ウィンドウの中身も同じ差し替えに乗せる（openLanes）。手持ちとの間でカードが行き来する
     // ため、外していると出ていったカードがウィンドウ側に現れない。
-    const contents: (readonly (CardContent | undefined)[])[] = [
-      this.laneCards(this.view.fixtures),
-      this.laneCards(this.view.items),
-      this.laneCards(this.view.hand),
+    const cells: (readonly LaneCell[])[] = [
+      this.plainCells(this.view.fixtures),
+      this.itemCells(),
+      this.plainCells(this.view.hand),
     ];
-    if (this.childWindow?.lane !== undefined) contents.push(this.laneCards(this.childWindowCards()));
+    const place = this.childWindowPlace;
+    if (this.childWindow?.lane !== undefined && place !== undefined) cells.push(this.slotCells(place));
 
-    this.motion.update(this.openLanes, contents, context);
+    this.motion.update(this.openLanes, cells, context);
     this.showSky();
     this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
     this.showInformation();

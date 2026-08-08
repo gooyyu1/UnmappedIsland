@@ -5,7 +5,8 @@ import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import { CardLane } from './CardLane';
-import { emptyCellsFor, LANE_CELLS_MAX } from './laneCells';
+import type { LaneCell } from './laneCells';
+import { LANE_CELLS_MAX } from './laneCells';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -70,20 +71,14 @@ export interface ObjectWindowSlot {
   /** 最上段の見出し。スロットは必ず持ち主のものなので、持ち主込みの名前を呼び出し側が組み立てて渡す。 */
   readonly title: string;
 
-  /** 並べるカード。枠数は固定ではなく、はみ出した分は横スクロールで送る。 */
-  readonly cards: readonly (CardContent | undefined)[];
+  /** 並べる枠（cellsFor）。カードも空き枠も枠の縁もこの1本が持ち、はみ出した分は横スクロールで送る。 */
+  readonly cells: readonly LaneCell[];
 
   /**
-   * このスロットがカードを受け入れるか。受け入れる場合だけ、並びの末尾に受け皿の空枠を出す
-   * （中身が空でも落とせる場所だと分かるように、emptyCellsFor）。
+   * 枠の数が決まっていないスロットか（unboundedSlot）。**何枚並ぶか分からないので、右の段を並びへ
+   * 譲って自分のカードを出さず**、レーンは頭打ちの枠数まで広げる。
    */
-  readonly acceptsCards: boolean;
-
-  /**
-   * このスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
-   * 空けておく枠の数と、自分のカードを出すかを決める。
-   */
-  readonly cellCount?: number;
+  readonly unbounded: boolean;
 }
 
 export interface ObjectWindowOptions {
@@ -126,7 +121,7 @@ export class ObjectWindow {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
     const contents = options.slot;
     // 何枚入るか分からないスロットは、右の段を並びだけで使い切る（自分のカードを出さない）。
-    const card = contents !== undefined && fillsWidth(contents) ? undefined : options.object.card;
+    const card = contents?.unbounded === true ? undefined : options.object.card;
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
     const actionHeight = metrics.px(ACTION_HEIGHT);
@@ -209,11 +204,8 @@ export class ObjectWindow {
           height: laneHeight,
         },
         COLOR.slotWindowLane,
-        contents.cards,
-        {
-          clip: true,
-          emptyCells: emptyCellsFor(contents.cards.length, contents.cellCount, contents.acceptsCards),
-        },
+        contents.cells,
+        { clip: true },
       );
     } else if (description !== undefined) {
       description.setPosition(columnX, middleY);
@@ -248,7 +240,7 @@ export class ObjectWindow {
     const slot = options.slot;
     if (slot === undefined) return Math.min(metrics.px(DESCRIPTION_WIDTH), limit);
 
-    const own = fillsWidth(slot) ? 0 : metrics.px(SIZE.cardWidth) + gap;
+    const own = slot.unbounded ? 0 : metrics.px(SIZE.cardWidth) + gap;
     return Math.min(own + laneWidthFor(metrics, slot) + padding * 2, limit);
   }
 
@@ -333,25 +325,16 @@ export class ObjectWindow {
 }
 
 /**
- * そのスロットが、右の段を並びだけで使い切るか（自分のカードを出さないか）。
- * 何枚入るか分からないスロット（かご・装備）がこちらで、1枠しかない治療具はカードを出す側に残る。
- */
-function fillsWidth(slot: ObjectWindowSlot): boolean {
-  return slot.cellCount === undefined || slot.cellCount > LANE_CELLS_MAX;
-}
-
-/**
  * その中身を並べるのに要るレーンの幅。
  *
- * **枠の数はそのスロットへ入る枚数で決まり、LANE_CELLS_MAXで頭打ち**——1枚しか入らない場所に
- * 4枠空けると「4つ入る」と誤って伝わる。頭打ちに掛かるときは、右にまだ続くことが分かるよう
- * 次の枠の頭を覗かせる。
+ * **枠の数は並べる枠そのもので決まり、LANE_CELLS_MAXで頭打ち**——1枠しか無い場所に4枠空けると
+ * 「4つ入る」と誤って伝わる。頭打ちに掛かるときは、右にまだ続くことが分かるよう次の枠の頭を覗かせる。
  *
  * レーンの左右の余白（CardLaneのSIZE.margin）も足す。カードの幅だけで決めると最後の枠がはみ出す。
  */
 function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowSlot): number {
-  const used = contents.cards.length + (contents.acceptsCards ? 1 : 0);
-  const wanted = Math.max(contents.cellCount ?? Number.POSITIVE_INFINITY, used);
+  // 枠を1つも並べないスロット（要求を満たし切った材料）でも、レーンは1枠ぶんの幅を保つ。
+  const wanted = contents.unbounded ? Number.POSITIVE_INFINITY : Math.max(1, contents.cells.length);
   const slots = Math.min(LANE_CELLS_MAX, wanted);
 
   const cards = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);
