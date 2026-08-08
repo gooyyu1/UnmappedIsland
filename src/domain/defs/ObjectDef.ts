@@ -23,7 +23,7 @@ export class ObjectDef {
 
   /** この object_def が持つタグのグローバルIDの一覧（4節）。自分自身が直接宣言したタグと、参照した
    * trait（5節）が宣言していたタグの両方を合成済みで持つ（trait自体は合成後に消えるため、
-   * slots.accepts（7.2節）・combinations.with（12.1節）はこのタグ集合だけを見てマッチングする）。 */
+   * 枠のaccept（7.2節）・combinations.with（12.1節）はこのタグ集合だけを見てマッチングする）。 */
   readonly tags: readonly number[];
 
   /** グローバルなプロパティID → このObjectDefにおけるローカルindex。 */
@@ -71,6 +71,15 @@ export class ObjectDef {
    */
   readonly boundToOwner: boolean;
 
+  /**
+   * **同種と束ねてよい型か**（既定true）。falseなら、同じ型でも1個ずつ別の枠に並ぶ。
+   *
+   * 束ねたくないのは、その個体を名指しで操作する必要があるとき。道は行き先が個体ごとに違い、かごは
+   * 中身が個体ごとに違うので、束ねると代表の行き先・中身しか触れなくなる。**入れ物ではなく物の性質**
+   * なので、スロットではなくここで宣言する（SlotSystem.md 4節）。
+   */
+  readonly stackable: boolean;
+
   /** このObjectDefが持つメニュー型操作（11節）。 */
   readonly actions: readonly ActionDef[];
 
@@ -100,6 +109,7 @@ export class ObjectDef {
     isQuantitative = false,
     mainItemSlotGlobalId?: number,
     boundToOwner = false,
+    stackable = true,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -117,6 +127,7 @@ export class ObjectDef {
     this.representedBySlotGlobalId = representedBySlotGlobalId;
     this.mainItemSlotGlobalId = mainItemSlotGlobalId;
     this.boundToOwner = boundToOwner;
+    this.stackable = stackable;
     this.isQuantitative = isQuantitative;
   }
 

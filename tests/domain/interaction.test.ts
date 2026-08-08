@@ -183,7 +183,7 @@ object_defs:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: edible, max: 1}]
+        cell: {accept: {tag: edible}}
   apple_slice:
     tags: [edible]
     actions:
@@ -348,7 +348,8 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
 object_defs:
   receiver:
     traits: [liquid_container]
@@ -396,7 +397,8 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
 object_defs:
   receiver2:
     traits: [liquid_container]

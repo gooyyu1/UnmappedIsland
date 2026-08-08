@@ -22,22 +22,16 @@ traits:
     slots:
       # アイテム用スロット。
       items:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
       # 道・木・植物・建築物・家具・洞窟の入口など、持ち歩けないもののスロット。
-      # 設置物は同種でも1つずつ別のカードにする（stackable: false、SlotSystem.md 4節）。
-      # 道は行き先ごとに別物だが、同じobject_defなのでまとめると行き先を1つしか出せなくなる。
-      # 木や建物も、プレイヤーが地形として並べ替える対象なので個体ごとに見えている必要がある。
+      # 束ねるかどうかは物の側が決める（ObjectDefのstackable、SlotSystem.md 4節）——道は行き先が
+      # 個体ごとに違うので束ねない。木は束ねてよい。
       fixtures:
-        accepts:
-          - {tag: fixture, max: 9999}
-        stackable: false
-      # キャラクタ用スロット。固定型（fixed_positions）で、スタック枠は1つ（unit_capacity: 1）。
+        cell: {accept: {tag: fixture}}
+      # キャラクタ用スロット。1枠だけ（枠数を決めると位置も安定する、SlotSystem.md 3節）。
       characters:
-        accepts:
-          - {tag: character, max: 9999}
-        unit_capacity: 1
-        fixed_positions: true
+        cell_count: 1
+        cell: {accept: {tag: character}}
 
 object_defs:
   world:
@@ -566,7 +560,5 @@ object_defs:
             min: 6816
     slots:
       locations:
-        # locationタグを持つobject_defのみを受け入れる（max: 9999は実質無制限の意。
-        # acceptsは必須フィールドのため省略できない）。
-        accepts:
-          - {tag: location, max: 9999}
+        # locationタグを持つobject_defのみを受け入れる。
+        cell: {accept: {tag: location}}

@@ -770,8 +770,7 @@ object_defs:
   vein:
     slots:
       ore_pocket:
-        accepts:
-          - {tag: gold_nugget, max: 10, consume: false}
+        cell: {accept: {tag: gold_nugget}}
     props:
       yield:
         value: 0
@@ -800,17 +799,17 @@ object_defs:
       expect(floorSlot?.contents.some((c) => c.def.name === 'pebble')).toBe(true);
     });
 
-    it('accepts.objectは指定したObjectDefそのものにだけマッチする', () => {
+    it('accept.objectは指定したObjectDefそのものにだけマッチする', () => {
       // レシピ制作中オブジェクトが特定の素材の型だけを受け入れたい場合など、そのためだけの単発タグを
-      // 新設するまでもないケース向けにaccepts.objectを使う（タグとの混在も許容される）。
+      // 新設するまでもないケース向けにaccept.objectを使う。枠ごとに要件が違うので、cellsで並べる。
       const yaml = `
 object_defs:
   stew_in_progress:
     slots:
       ingredients:
-        accepts:
-          - {object: raw_meat, max: 1}
-          - {tag: spice, max: 4}
+        cells:
+          - {accept: {object: raw_meat}}
+          - {accept: {tag: spice}, max: 4}
   raw_meat: {}
   raw_fish: {}
   salt:

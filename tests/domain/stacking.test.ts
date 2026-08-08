@@ -6,7 +6,7 @@ import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
-// アイテムのスタック表示（Slot.contentsの並び順・SlotDefのstackable/unitCapacity/fixedPositions・
+// アイテムのスタック表示（Slot.contentsの並び順・SlotDefのcellCount・ObjectDefのstackable・
 // ObjectDef.stackOrder・same_slotとの相互作用）に対する自動テスト。
 describe('StackingTests', () => {
   let nextInstanceId: number;
@@ -297,9 +297,7 @@ object_defs:
   hand_owner10:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 3
-        fixed_positions: true
+        cell_count: 3
   filler_item2: {}
   rotten_potato3: {}
   potato_peel: {}
@@ -347,9 +345,7 @@ object_defs:
   hand_owner11:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 4
-        fixed_positions: true
+        cell_count: 4
   meat_item: {}
   bowl_item: {}
   half_item:
@@ -401,9 +397,7 @@ object_defs:
   hand_owner12:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 3
-        fixed_positions: true
+        cell_count: 3
   rotten_potato4: {}
   potato_peel2: {}
   filler_item3: {}
@@ -492,17 +486,16 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // UnitCapacity / Stackable（かまど型: 非スタック・個数固定）
+  // 枠の数と、束ねるかどうか（かまど型: 束ねない物・枠数固定）
   // ------------------------------------------------------------------
 
-  it('unitCapacity+stackableは、異なる型の種類数だけを制限し合計個数は制限しない', () => {
+  it('枠の数が制限するのは枠であって、束ねた個数は制限しない', () => {
     const yaml = `
 object_defs:
   hand_owner:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 2
+        cell_count: 2
   apple_h: {}
   pebble_h: {}
   twig_h: {}
@@ -520,24 +513,25 @@ object_defs:
     expect(apple1.moveToSlot(handInstance, handSlotId, codex.wellKnown)).toBeUndefined();
     expect(
       apple2.moveToSlot(handInstance, handSlotId, codex.wellKnown),
-      '同種の追加はunit_capacityの種類数を消費しない',
+      '同種は既存の枠へ合流するので、新しい枠を消費しない',
     ).toBeUndefined();
     expect(pebble1.moveToSlot(handInstance, handSlotId, codex.wellKnown)).toBeUndefined();
     expect(
       twig1.moveToSlot(handInstance, handSlotId, codex.wellKnown),
-      '3種類目はunit_capacity(2)を超えるため拒否される',
+      '3種類目は空き枠が無いので拒否される',
     ).toBeDefined();
   });
 
-  it('unitCapacity+非stackableは、同じ型でも個体ごとの個数を制限する', () => {
+  it('束ねない型は、同じ型でも1個ずつ枠を消費する', () => {
+    // 束ねるかどうかは物の側の性質（SlotSystem.md 4節）。スロットではなく型がstackable: falseを名乗る。
     const yaml = `
 object_defs:
   furnace:
     slots:
       intake:
-        stackable: false
-        unit_capacity: 2
-  fuel: {}
+        cell_count: 2
+  fuel:
+    stackable: false
 `;
     const codex = load(yaml);
     const intakeSlotId = codex.slotNames.getId('intake');
@@ -550,11 +544,11 @@ object_defs:
     expect(fuel1.moveToSlot(furnaceInstance, intakeSlotId, codex.wellKnown)).toBeUndefined();
     expect(
       fuel2.moveToSlot(furnaceInstance, intakeSlotId, codex.wellKnown),
-      '非stackableは同種でも個体ごとに枠を消費する',
+      '束ねない型は同種でも個体ごとに枠を消費する',
     ).toBeUndefined();
     expect(
       fuel3.moveToSlot(furnaceInstance, intakeSlotId, codex.wellKnown),
-      '同種であっても個数がunit_capacity(2)を超えるため3個目は拒否される',
+      '同種であっても2枠を使い切っているので3個目は拒否される',
     ).toBeDefined();
   });
 
@@ -568,9 +562,7 @@ object_defs:
   hand_owner2:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 3
-        fixed_positions: true
+        cell_count: 3
   type_a: {}
   type_b: {}
   type_c: {}
@@ -607,9 +599,7 @@ object_defs:
   hand_owner3:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 3
-        fixed_positions: true
+        cell_count: 3
   type_a2: {}
   type_b2: {}
 `;
@@ -641,9 +631,7 @@ object_defs:
   hand_owner4:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 3
-        fixed_positions: true
+        cell_count: 3
   filler_item: {}
   rotten_potato: {}
   potato:
@@ -689,9 +677,7 @@ object_defs:
   hand_owner5:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 3
-        fixed_positions: true
+        cell_count: 3
   rotten_potato2: {}
   potato2:
     props:
@@ -740,9 +726,7 @@ object_defs:
   hand_owner6:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 4
-        fixed_positions: true
+        cell_count: 4
   loc_fallback:
     slots:
       ground: {}
@@ -852,9 +836,7 @@ object_defs:
   hand_owner7:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 1
-        fixed_positions: true
+        cell_count: 1
   type_a4:
     props:
       spawn_a:
@@ -877,13 +859,13 @@ object_defs:
     const hand7 = handInstance.tryGetSlot(handSlotId)!;
     expect(gridIndexOfType(hand7, aTypeId)).toBe(0);
 
-    // unit_capacity=1なので、別の型なら絶対に入らないが、同種のスタックへの合流は
+    // 枠が1つなので、別の型なら絶対に入らないが、同種のスタックへの合流は
     // 新しい固定番号を消費しないため、あふれずに成功するはず。
     handInstance.tick(session);
 
     expect(
       hand7.contents.filter((o) => o.def.name === 'type_a4').length,
-      '同種はunit_capacity(1)を超えず、既存のグリッドへ合流する',
+      '同種は枠を増やさず、既存のグリッドへ合流する',
     ).toBe(2);
     expect(gridIndexOfType(hand7, aTypeId), '固定番号は変わらない').toBe(0);
   });
@@ -897,9 +879,7 @@ object_defs:
   hand_owner8:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 4
-        fixed_positions: true
+        cell_count: 4
   type_c4: {}
   type_d4: {}
   type_a5:
@@ -974,9 +954,7 @@ object_defs:
   hand_owner9:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 4
-        fixed_positions: true
+        cell_count: 4
   type_c5: {}
   type_d5: {}
   type_a6: {}

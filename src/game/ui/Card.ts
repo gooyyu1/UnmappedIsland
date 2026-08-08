@@ -748,7 +748,7 @@ export class Card extends Phaser.GameObjects.Container {
 }
 
 /**
- * 中身の無い固定枠を示すカード。固定枠スロット（fixed_positions、SlotSystem.md 3節）は空でも位置を
+ * 中身の無い固定枠を示すカード。枠数を決めたスロット（cell_count、SlotSystem.md 3節）は空でも位置を
  * 保つため、枠だけを破線で描いて「ここは空いている」と分かるようにする。
  */
 export class EmptyCard extends Phaser.GameObjects.Container {

@@ -37,7 +37,7 @@ traits:
     # （ScreenLayout.md カードの状態バー節）。
     combinations:
       # 受け側が中身入りのとき、代表は中身の液体自身。移し先は自分ではなく容器なのでto: parent。
-      # 異種の液体はcontentのaccepts（max 1）が拒むため、条件を書く必要がない。
+      # 異種の液体はcontentの枠が1つしかないため入らず、条件を書く必要がない。
       pour_in:
         with: liquid
         move: {object: dragged, to: parent}
@@ -208,7 +208,9 @@ object_defs:
       weight: {value: 300}
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 1000
 
   pot:
@@ -217,7 +219,9 @@ object_defs:
       weight: {value: 1500}
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 1000
 
   bottle:
@@ -226,7 +230,9 @@ object_defs:
       weight: {value: 500}
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 2000
 
   jar:
@@ -235,7 +241,9 @@ object_defs:
       weight: {value: 1200}
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 4000
 
   # ヤシの殻。割ったヤシの実から果肉を掻き出すと残る（coconut.yaml）。カードとして持ち歩けるよう、
@@ -247,7 +255,9 @@ object_defs:
       weight: {value: 200}
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 250
 
   # 雨として降るのは水なので、rain_filled_liquidを持つのは水だけ。茶・油が入っている容器は、

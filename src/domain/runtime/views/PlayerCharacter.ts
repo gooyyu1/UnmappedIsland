@@ -46,7 +46,7 @@ export class PlayerCharacter {
 
   /**
    * 手持ちスロットの各セルの中身（空きセルは空配列、先頭が代表）。固定枠スロットのため、
-   * 配列長は常にunit_capacityと等しく、位置＝添字が安定する（SlotSystem.md 3節）。
+   * 配列長は常にcellCountと等しく、位置＝添字が安定する（SlotSystem.md 3節）。
    * スロット自体を持たないcodexでは空配列。
    */
   get handStacks(): readonly (readonly WorldObject[])[] {
@@ -75,7 +75,7 @@ export class PlayerCharacter {
   }
 
   /**
-   * アイテムを手持ちスロットへ入れる。手持ちが受け入れられなければ（accepts制約・6枠の上限）false。
+   * アイテムを手持ちスロットへ入れる。手持ちが受け入れられなければ（枠の型・枠数の上限）false。
    *
    * gapIndexは枠と枠の隙間の番号（0=先頭の枠の前）で、渡すとその位置へ既存の枠を押し出して入れる
    * （Slot.tryInsertAtGap）。省略すると最初の空き枠へ入る。

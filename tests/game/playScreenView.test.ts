@@ -326,10 +326,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const basketCard = view.hand.find((card) => card?.objects[0] === basket)!;
 
     expect(injuryCard.contents, '怪我は治療具のスロットを開く').toEqual({ container: injury });
-    expect(view.capacityOf(injuryCard.contents!), '治療具は1つだけ').toBe(1);
+    expect(view.cellCountOf(injuryCard.contents!), '治療具の枠は1つだけ').toBe(1);
 
     expect(basketCard.contents, 'コンテナは中身のスロットを開く').toEqual({ container: basket });
-    expect(view.capacityOf(basketCard.contents!), 'かごは何枚入るか分からない').toBeGreaterThan(4);
+    expect(view.cellCountOf(basketCard.contents!), 'かごの枠数は決まっていない').toBeUndefined();
   });
 
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
@@ -504,6 +504,30 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.hand[0]?.moveTo?.('injuries'), '怪我は移動の宛先にならない').toBeUndefined();
     expect(view.acceptsCards('injuries'), '受け皿の空枠も出さない').toBe(false);
     expect(view.acceptsCards('equipment'), '装備は落とせる場所なので空枠を出す').toBe(true);
+  });
+
+  it('かごは束ねられないので、2つ持てば2枚のカードとして並ぶ', () => {
+    // 束ねると代表の中身しか開けない（SlotSystem.md 4節）。かごはstackable: falseを名乗る。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const handSlotId = codex.slotNames.getId('hand');
+    const baskets = [0, 1].map(() => game.session.spawn(codex.objectNames.getId('woven_basket')));
+    for (const basket of baskets)
+      expect(basket.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    expect(stone.moveToSlot(baskets[0], codex.slotNames.getId('contents'), codex.wellKnown)).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const cards = view.hand.filter((card) => card !== undefined);
+
+    expect(
+      cards.map((card) => card.objects),
+      '1つずつ別のカードになる',
+    ).toEqual([[baskets[0]], [baskets[1]]]);
+    expect(
+      view.cardsIn(cards[0].contents!).flatMap((card) => card.objects),
+      '石を入れた方を開けば石が見える',
+    ).toEqual([stone]);
+    expect(view.cardsIn(cards[1].contents!), 'もう一方は空のまま').toEqual([]);
   });
 
   it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {

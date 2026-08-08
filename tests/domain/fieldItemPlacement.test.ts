@@ -15,8 +15,7 @@ object_defs:
   clearing:
     slots:
       items:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
   a: {tags: [item]}
   b: {tags: [item]}
   c: {tags: [item]}

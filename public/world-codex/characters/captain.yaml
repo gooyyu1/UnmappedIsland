@@ -6,7 +6,7 @@ object_defs:
     singleton: true
     traits: [player_character]
     slots:
-      hand: {unit_capacity: 6}
+      hand: {cell_count: 6}
     props:
       # 満腹から1日（96 tick）。
       satiety:

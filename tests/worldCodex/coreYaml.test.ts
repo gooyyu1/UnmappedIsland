@@ -185,9 +185,10 @@ describe('core.yamlのworld定義', () => {
 
   it('locationsスロットはlocationタグを持つオブジェクトだけを受け入れる', () => {
     const world = codex.objects.get(codex.objectNames.getId('world'));
-    const locations = slotOf(world, 'locations');
-
-    expect(locations.accepts.length).toBe(1);
+    expect(
+      slotOf(world, 'locations').cellCount,
+      '枠数は決めない（島に土地がいくつ生まれるかは地形生成が決める）',
+    ).toBeUndefined();
 
     // locationタグを、traitを経由して持つobject_defと、traitを介さず直接tagsで持つobject_def、
     // どちらも同じように受け入れられることを確認する。
@@ -198,8 +199,7 @@ object_defs:
   test_world:
     slots:
       locations:
-        accepts:
-          - {tag: location, max: 9999}
+        cell: {accept: {tag: location}}
   test_forest:
     traits: [location]
   test_beach:
@@ -268,8 +268,7 @@ object_defs:
 
     const characters = hut.getSlotDef(testCodex.slotNames.getId('characters'));
     expect(characters).toBeDefined();
-    expect(characters?.fixedPositions, 'キャラクタスロットは固定型').toBe(true);
-    expect(characters?.unitCapacity, 'キャラクタスロットのスタック数は1').toBe(1);
+    expect(characters?.cellCount, 'キャラクタスロットは1枠').toBe(1);
 
     expect(
       testCodex.propertyNames.tryGetId('exploration_progress'),

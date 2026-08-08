@@ -22,7 +22,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   ままの内容でスキーマを満たすことを確認（ローダーで読み込めるファイルはスキーマも通る、が維持基準）
 - **不正な記述の拒否**: `set`/`add`/`destroy`/`spawn`/`transfer`/`move` と `pick` を同時に指定する、identifier の
   命名規則に反するキーを使う、未定義の比較演算子を使う、`set`/`add` に未対応の対象キー（`sibling`/`child` など)を
-  使う、`destroy` の対象に `ancestor` を使う、`accepts` に `tag` と `object` を同時指定する（またはどちらも省略する）、
+  使う、`destroy` の対象に `ancestor` を使う、枠の `accept` に `tag` と `object` を同時指定する（またはどちらも省略する）、
   `combinations` に `with` を書き忘れる、廃止済みの `active:` 入れ子を使う、`passives` を配列でなく単一マッピングで
   書く、`conditions` の葉に `slot` と `prop` を同時指定する、`conditions` の `value` に未対応の `max`/`min` を使う、
   `in`/`not_in` に配列でない `value` を渡す、`move` の `object` に `actor` 以外を使う、pick候補が active動詞と
@@ -55,10 +55,10 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 以下は、各ドキュメントの記述からは一意に決まらなかったものの、スキーマとして形にするために暫定的に判断した点です。
 実装時に見直してください。
 
-- `recipes.*.steps[].requires[].consume` と `slots.*.accepts[].consume` は、既存サンプルが常に明示している（省略例が
-  ない）ため、必須項目としました（`accepts[].consume` はローダー上は省略可・既定false）。`quantity` の省略時
+- `recipes.*.steps[].requires[].consume` は、既存サンプルが常に明示している（省略例が
+  ない）ため、必須項目としました。`quantity` の省略時
   デフォルト（`RecipeSystem.md` 5節で未決定）はスキーマ上も任意項目のままにしています。
-- `slots.*.accepts[].max` は、ローダーが必須としているため必須項目としました。
+- 枠（`slots.*.cells[]` / `slots.*.cell`）の `max` は省略可で、省略すると無制限です。
 - `actions.*.showMenu` の値は、現時点で確認されている `always` のみを列挙型にしています（ローダーも `always` 以外を
   エラーにします）。
 - シンボル型プロパティかどうかは `value` の形（識別子形の文字列）でしか判別できないため、「シンボル型の `stages` に

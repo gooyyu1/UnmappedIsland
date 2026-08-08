@@ -582,12 +582,16 @@ function renderInfluenceEntry(entry) {
   return sourceLabel + " " + viaPrefix + esc(entry.kind) + " " + sign + esc(entry.amount) + conditionsSuffix;
 }
 
-function renderAccepts(list) {
-  if (!list || list.length === 0) return "(無制限)";
-  return list.map(function (a) {
-    var target = a.tag !== undefined ? ("tag: " + a.tag) : ("object: " + a.object);
-    return target + " (max=" + a.max + (a.consume ? ", consume" : "") + ")";
-  }).join("<br>");
+function renderCell(c) {
+  var a = c.accept;
+  var target = a === undefined ? "(型を問わない)" : (a.tag !== undefined ? ("tag: " + a.tag) : ("object: " + a.object));
+  return target + (c.max != null ? " (max=" + c.max + ")" : "");
+}
+
+function renderCells(s) {
+  if (s.cells) return s.cells.map(renderCell).join("<br>");
+  if (s.cell) return renderCell(s.cell);
+  return "(型を問わない)";
 }
 
 function summarizeValue(p) {
@@ -642,11 +646,9 @@ function renderObjectDetailPage(name) {
     var s = o.slots[sname];
     return "<tr>" +
       "<td>" + esc(sname) + "</td>" +
-      "<td>" + renderAccepts(s.accepts) + "</td>" +
+      "<td>" + renderCells(s) + "</td>" +
       "<td>" + (s.capacity != null ? s.capacity : "") + "</td>" +
-      "<td>" + (s.stackable === false ? "×" : "○") + "</td>" +
-      "<td>" + (s.unit_capacity != null ? s.unit_capacity : "") + "</td>" +
-      "<td>" + (s.fixed_positions ? "○" : "") + "</td>" +
+      "<td>" + (s.cell_count != null ? s.cell_count : "") + "</td>" +
       "<td>" + (s.auto_placement === false ? "×" : "○") + "</td>" +
       "</tr>";
   }).join("");
@@ -685,7 +687,7 @@ function renderObjectDetailPage(name) {
     "<tbody>" + (propsRows || "<tr><td colspan=\"4\">(なし)</td></tr>") + "</tbody></table>" +
 
     "<h2>slots</h2>" +
-    "<table><thead><tr><th>名前</th><th>accepts</th><th>capacity</th><th>stackable</th><th>unit_capacity</th><th>fixed_positions</th><th>auto_placement</th></tr></thead>" +
+    "<table><thead><tr><th>名前</th><th>枠</th><th>capacity</th><th>枠数</th><th>auto_placement</th></tr></thead>" +
     "<tbody>" + (slotsRows || "<tr><td colspan=\"7\">(なし)</td></tr>") + "</tbody></table>" +
 
     "<h2>passives（オブジェクトレベル）</h2>" +

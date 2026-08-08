@@ -17,10 +17,8 @@ object_defs:
     singleton: true
     slots:
       hand:
-        accepts:
-          - {tag: item, max: 9999}
-        unit_capacity: 6
-        fixed_positions: true
+        cell: {accept: {tag: item}}
+        cell_count: 6
   a: {tags: [item]}
   b: {tags: [item]}
   c: {tags: [item]}

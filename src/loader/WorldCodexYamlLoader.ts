@@ -182,6 +182,7 @@ export class WorldCodexYamlLoader {
     raw.mainItemSlot = tryGetScalar(node, 'main_item_slot', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
+    raw.notStackable = !tryGetBool(node, 'stackable', context, true);
     raw.actions = tryGetMap(node, 'actions', context);
     raw.combinations = tryGetMap(node, 'combinations', context);
 
@@ -209,6 +210,7 @@ export class WorldCodexYamlLoader {
     raw.mainItemSlot = tryGetScalar(node, 'main_item_slot', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
+    raw.notStackable = !tryGetBool(node, 'stackable', context, true);
     raw.actions = tryGetMap(node, 'actions', context);
     raw.combinations = tryGetMap(node, 'combinations', context);
 

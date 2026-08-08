@@ -77,12 +77,10 @@ export class WorldCodex {
    * 画面はこれを見て「落とせる場所」の空枠を出すかを決める。
    */
   admitsBroughtObjects(slotDef: SlotDef): boolean {
-    if (slotDef.accepts.length === 0) return true; // 無制限スロット（7.1節）
-
     for (let globalId = 0; globalId < this.objects.count; globalId++) {
       const objectDef = this.objects.get(globalId);
       if (objectDef.boundToOwner) continue;
-      if (slotDef.accepts.some((rule) => rule.matches(objectDef))) return true;
+      if (slotDef.acceptsAnywhere(objectDef)) return true;
     }
     return false;
   }

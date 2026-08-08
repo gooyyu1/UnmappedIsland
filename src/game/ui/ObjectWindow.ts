@@ -5,6 +5,7 @@ import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import { CardLane } from './CardLane';
+import { emptyCellsFor, LANE_CELLS_MAX } from './laneCells';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -23,14 +24,6 @@ import type { TooltipContent } from './Tooltip';
 
 /** 説明文を出すウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では中身ごと縮める。 */
 const DESCRIPTION_WIDTH = 760;
-
-/**
- * 中身が空でも保つ枠の数。**空けておく枠の数はスロットの容量で決まり、この数で頭打ちにする。**
- *
- * 容量が3なら3枠、1なら1枠（怪我の治療具。4枠空けると「4つ当てられる」と誤って伝わる）。
- * 5以上で頭打ちにするのは、それ以上並べると画面からはみ出すため——入り切らない分は横スクロールで送る。
- */
-const MIN_SLOTS = 4;
 
 /**
  * 4枠に収まらないスロットで、**次の枠の頭を覗かせる幅**（u単位）。ちょうど4枠ぶんで切ると、そこで
@@ -82,12 +75,15 @@ export interface ObjectWindowSlot {
 
   /**
    * このスロットがカードを受け入れるか。受け入れる場合だけ、並びの末尾に受け皿の空枠を出す
-   * （中身が空でも落とせる場所だと分かるように、CardLaneOptions.trailingPlaceholder）。
+   * （中身が空でも落とせる場所だと分かるように、emptyCellsFor）。
    */
   readonly acceptsCards: boolean;
 
-  /** 何枚入るか（無制限ならundefined）。空けておく枠の数と、自分のカードを出すかを決める。 */
-  readonly capacity?: number;
+  /**
+   * このスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
+   * 空けておく枠の数と、自分のカードを出すかを決める。
+   */
+  readonly cellCount?: number;
 }
 
 export interface ObjectWindowOptions {
@@ -214,7 +210,10 @@ export class ObjectWindow {
         },
         COLOR.slotWindowLane,
         contents.cards,
-        { clip: true, trailingPlaceholder: contents.acceptsCards },
+        {
+          clip: true,
+          emptyCells: emptyCellsFor(contents.cards.length, contents.cellCount, contents.acceptsCards),
+        },
       );
     } else if (description !== undefined) {
       description.setPosition(columnX, middleY);
@@ -338,23 +337,24 @@ export class ObjectWindow {
  * 何枚入るか分からないスロット（かご・装備）がこちらで、1枠しかない治療具はカードを出す側に残る。
  */
 function fillsWidth(slot: ObjectWindowSlot): boolean {
-  return slot.capacity === undefined || slot.capacity > MIN_SLOTS;
+  return slot.cellCount === undefined || slot.cellCount > LANE_CELLS_MAX;
 }
 
 /**
  * その中身を並べるのに要るレーンの幅。
  *
- * **枠の数はスロットの容量で決まり、MIN_SLOTSで頭打ち**——1枚しか入らない場所に4枠空けると
- * 「4つ入る」と誤って伝わる。頭打ちに掛かるときは、右にまだ続くことが分かるよう次の枠の頭を覗かせる。
+ * **枠の数はそのスロットへ入る枚数で決まり、LANE_CELLS_MAXで頭打ち**——1枚しか入らない場所に
+ * 4枠空けると「4つ入る」と誤って伝わる。頭打ちに掛かるときは、右にまだ続くことが分かるよう
+ * 次の枠の頭を覗かせる。
  *
  * レーンの左右の余白（CardLaneのSIZE.margin）も足す。カードの幅だけで決めると最後の枠がはみ出す。
  */
 function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowSlot): number {
   const used = contents.cards.length + (contents.acceptsCards ? 1 : 0);
-  const wanted = Math.max(contents.capacity ?? Number.POSITIVE_INFINITY, used);
-  const slots = Math.min(MIN_SLOTS, wanted);
+  const wanted = Math.max(contents.cellCount ?? Number.POSITIVE_INFINITY, used);
+  const slots = Math.min(LANE_CELLS_MAX, wanted);
 
   const cards = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);
-  const peek = wanted > MIN_SLOTS ? metrics.px(PEEK_WIDTH) : 0;
+  const peek = wanted > LANE_CELLS_MAX ? metrics.px(PEEK_WIDTH) : 0;
   return cards + peek + metrics.px(SIZE.margin) * 2;
 }

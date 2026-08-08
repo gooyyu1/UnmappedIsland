@@ -29,7 +29,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | --- | --- |
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
-| スロット | `hand`（`fixed_positions`・`item` を受け入れる・4〜8枠）、`equipment`、`injuries` |
+| スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
 | プロパティ | `pain` / `satiety` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterArt.ts`。絵が入るまでの繋ぎ） |
 

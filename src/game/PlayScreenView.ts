@@ -1,4 +1,3 @@
-import type { SlotDef } from '../domain/defs/SlotDef';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
@@ -218,10 +217,11 @@ export interface PlayScreenView {
   readonly acceptsCards: (place: CardPlace) => boolean;
 
   /**
-   * その場所へ何枚入るか（無制限ならundefined）。子ウィンドウが空けておく枠の数を決めるのに使う
-   * ——1枚しか入らない場所に4枠空けると「4つ入る」と誤って伝わる。
+   * その場所が持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
+   * 子ウィンドウが空けておく枠の数を決めるのに使う——1枠しか無い場所に4枠空けると「4つ入る」と
+   * 誤って伝わる。中身のかさの合計の上限（`capacity`）とは別物。
    */
-  readonly capacityOf: (place: CardPlace) => number | undefined;
+  readonly cellCountOf: (place: CardPlace) => number | undefined;
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
@@ -281,15 +281,6 @@ const COLOR_PROPERTY = 'color';
  */
 const TREATMENT_SLOT = 'treatment';
 const TREATED_MARK = '🩹';
-
-/**
- * そのスロットへ何枚入るか（無制限ならundefined）。acceptsを持たないスロットは無制限（7.1節）で、
- * 複数の規則があるなら一番緩いものが上限になる。
- */
-function slotCapacity(slot: SlotDef | undefined): number | undefined {
-  const rules = slot?.accepts ?? [];
-  return rules.length === 0 ? undefined : Math.max(...rules.map((rule) => rule.max));
-}
 
 /** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
 function stacksIn(
@@ -547,7 +538,7 @@ export function fromGameSession(
    * スロット移動（WorldObject.moveToSlot*）で、場所ごとの特別扱いは持たない。コンテナ（箱・かご）
    * を足すときも、この表に1行増やすだけで移動もドラッグも動く。
    *
-   * **どこへ移せるかはこの表では決めない。** それはワールド側の宣言（accepts・bound_to_owner）から
+   * **どこへ移せるかはこの表では決めない。** それはワールド側の宣言（枠の型・bound_to_owner）から
    * 引く（moveInto参照）。設置物のかごを持ち歩けるようにしたら、画面を直さずに外せるようになる。
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
@@ -591,7 +582,7 @@ export function fromGameSession(
 
       if (at.kind === 'cell') {
         // 空き枠を指せるのは固定枠スロットだけ（前詰めスロットに空き枠は無い）。
-        const fixed = dest.owner.tryGetSlot(dest.slotId)?.def.fixedPositions === true;
+        const fixed = dest.owner.tryGetSlot(dest.slotId)?.def.cellCount !== undefined;
         return fixed
           ? () => {
               item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
@@ -699,9 +690,9 @@ export function fromGameSession(
       const slotDef = slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId);
       return slotDef !== undefined && codex.admitsBroughtObjects(slotDef);
     },
-    capacityOf: (place) => {
+    cellCountOf: (place) => {
       const slot = slotOf(place);
-      return slot === undefined ? undefined : slotCapacity(slot.owner.def.getSlotDef(slot.slotId));
+      return slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId)?.cellCount;
     },
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを

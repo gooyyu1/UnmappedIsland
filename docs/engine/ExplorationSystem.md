@@ -22,7 +22,7 @@
 なく `location` trait（`core.yaml`）側に置いています。
 
 - **`location`**（`core.yaml`）: あらゆる場所が共通して持つ構造。**3種のスロット**（`items`/`fixtures`/
-  `characters`）と、`world.locations` スロットの `accepts` 判定用のタグ配布。
+  `characters`）と、`world.locations` スロットの枠が受け入れる型のタグ配布。
 - **`explorable`**（`locations.yaml`）: 探索**できる**場所だけが追加で持つ構造。探索進捗プロパティと、
   未発見の設置物を隠しておくスロット（`undiscovered_fixtures`）。
 
@@ -33,13 +33,12 @@ traits:
     tags: [location]
     slots:
       items:
-        accepts: [{tag: item, max: 9999}]
+        cell: {accept: {tag: item}}
       fixtures:
-        accepts: [{tag: fixture, max: 9999}]
+        cell: {accept: {tag: fixture}}
       characters:
-        accepts: [{tag: character, max: 9999}]
-        unit_capacity: 1
-        fixed_positions: true
+        cell_count: 1
+        cell: {accept: {tag: character}}
 ```
 
 ```yaml
@@ -49,7 +48,7 @@ traits:
     slots:
       # locationのfixturesより後に宣言する（探索で湧く設置物が隠し側へ入らないように）。
       undiscovered_fixtures:
-        accepts: [{tag: fixture, max: 9999}]
+        cell: {accept: {tag: fixture}}
     props:
       exploration_progress: {}   # valueなし = 実装する側で必須（5節）
 ```
@@ -63,7 +62,7 @@ traits:
 
 - **`items`**: アイテムが置かれるスロット。
 - **`fixtures`**: 木や植物、建築物や家具、洞窟の入口などの設置物が置かれるスロット。
-- **`characters`**: キャラクタを入れるスロット。`fixed_positions: true`・`unit_capacity: 1`（固定型、
+- **`characters`**: キャラクタを入れるスロット。`cell_count: 1`（枠が1つなので位置も安定する、
   スタック数1つだけ）。
 
 `items`/`fixtures` の区別はタグ（`item`/`fixture`）だけで行い、探索の発見物（2 節）を `spawn` する際、

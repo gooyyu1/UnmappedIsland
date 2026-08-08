@@ -26,6 +26,7 @@ export class RawTrait {
 
   /** bound_to_owner（7.9節）。単独では存在できない型か。 */
   boundToOwner = false;
+  notStackable = false;
 
   /** quantitative（7.6節）。個数ではなく量で存在する型か。 */
   quantitative = false;
