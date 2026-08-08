@@ -209,7 +209,7 @@ export function durabilityColorFor(ratio: number): number {
 }
 
 /** 2色の間をtの割合で混ぜる（成分ごとの線形補間）。 */
-function mixColor(from: number, to: number, t: number): number {
+export function mixColor(from: number, to: number, t: number): number {
   const channel = (shift: number): number => {
     const start = (from >> shift) & 0xff;
     const end = (to >> shift) & 0xff;
