@@ -11,8 +11,10 @@
 
 - [プレイヤーキャラクタ](./Characters.md)
 - [怪我](./Injuries.md)
+- [スキル一覧](./Skills.md) — 用意するスキルと、その粒度・個数の決め方
 - [道具・武器・容器・衣類 アイテム案](./SurvivalItems.md)
 - [コンテナ（かご・箱・そり）](./Containers.md)
+- [住居（洞窟・小屋）](./Dwellings.md) — 部品の差し替えで段階を表す住居と、工法ごとの得意分野
 - [WorldCodex データベースビューア](./WorldCodexViewer.html) — 実際のゲームデータ
   （`public/world-codex/*.yaml`）を表示のたびにGitHubから直接取得して一覧・詳細表示する
   閲覧ツール（ビルド不要）。YAML文法リファレンスは
