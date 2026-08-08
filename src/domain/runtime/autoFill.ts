@@ -24,6 +24,8 @@ export function autoFillMaterials(
   materialsSlotGlobalId: number,
   sources: readonly (readonly WorldObject[])[],
   codex: WorldCodex,
+  /** 残りの工程が要求する型（crafting.remainingRequirements）。省略すると全ての枠を埋める。 */
+  stillNeeded?: ReadonlyMap<number, number>,
 ): number {
   const slot = inProgress.tryGetSlot(materialsSlotGlobalId);
   if (slot === undefined) return 0;
@@ -33,6 +35,12 @@ export function autoFillMaterials(
 
   for (let index = 0; index < (slot.def.cellCount ?? 0); index += 1) {
     const cell = slot.def.cellAt(index);
+    // 出番の終わった枠は埋めない。表示から消える枠なので、入れると取り出せなくなる。
+    const candidates = chooseCandidates(cell, 1, available).filter(
+      (object) => stillNeeded === undefined || stillNeeded.has(object.def.globalId),
+    );
+    if (candidates.length === 0) continue;
+
     const needed = (cell.max ?? 1) - (slot.cells[index]?.members.length ?? 0);
     if (needed <= 0) continue;
 

@@ -71,12 +71,17 @@ function inProgressObjectDef(
     tags: [...product.tags.map((id) => tagNames.getName(id)), IN_PROGRESS_TAG],
     // 個体ごとに進捗も中身も違うので束ねない（SlotSystem.md 4節）。
     stackable: false,
+    // カードを押したとき、材料スロットの中身をレーンに並べる（7.8節）。
+    main_item_slot: MATERIALS_SLOT,
     props: {
       [PROGRESS_PROPERTY]: {
         value: 0,
         // 完成はrangeの上限を超えた瞬間に起こす。stagesのpassivesにはspawn/destroyを書けない
         // （GameElementDefinition.md 9.7節・10節）ため、段ではなくrangeイベントで表す。
-        range: { min: 0, max: totalMinutes },
+        //
+        // 上限を合計より1つ内側に置くのは、境界値ちょうどでは発火しないため（同6.3節）。
+        // 全工程を終えると進捗は合計と等しくなるので、そこが上限だと完成しない。
+        range: { min: 0, max: totalMinutes - 1 },
         on_overflow: {
           destroy: 'self',
           // intoを省略しているので、自分がいたスロットへ完成品が生まれる（9.4節）。
@@ -87,7 +92,12 @@ function inProgressObjectDef(
     slots: {
       // 素材も道具も同じスロットへ入れる。何が何個要るかが、そのまま枠の形になる
       // （RecipeSystem.md 3節）。
-      [MATERIALS_SLOT]: { cells: materialCells(recipe, objectNames) },
+      [MATERIALS_SLOT]: {
+        cells: materialCells(recipe, objectNames),
+        // 自動配置（7.7節）から外す。終わった工程の枠は表示から消すので、そこへ勝手に物が
+        // 入ると取り出せなくなる。入れるのは投入操作と自動補充だけに限る。
+        auto_placement: false,
+      },
     },
   };
 }

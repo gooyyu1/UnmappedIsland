@@ -47,7 +47,13 @@ import { ObjectWindow } from './ui/ObjectWindow';
 import { RecipeWindow } from './ui/RecipeWindow';
 import { recipeCategories } from './recipeList';
 import { autoFillMaterials } from '../domain/runtime/autoFill';
-import { MATERIALS_SLOT } from '../loader/inProgressObjects';
+import { inProgressObjectName, MATERIALS_SLOT } from '../loader/inProgressObjects';
+import {
+  advanceCrafting,
+  currentStep,
+  remainingRequirements,
+  stepIsSupplied,
+} from '../domain/runtime/crafting';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
@@ -749,7 +755,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowCard = card;
     this.openChildWindow(
       { card, description: card.description },
-      [...this.autoFillAction(card), ...this.windowActions(card)],
+      [...this.autoFillAction(card), ...this.craftAction(card), ...this.windowActions(card)],
       card.contents,
     );
   }
@@ -780,6 +786,7 @@ export class PlayScene extends ResponsiveScene {
               location?.instance.tryGetSlot(this.codex.slotNames.getId('items'))?.contents ?? [],
             ],
             this.codex,
+            this.remainingFor(target),
           );
           this.closeChildWindow();
           this.view = fromGameSession(this.gameSession, this.codex, this.locale);
@@ -787,6 +794,78 @@ export class PlayScene extends ResponsiveScene {
         },
       },
     ];
+  }
+
+  /**
+   * 製作中オブジェクトの「作業する」。工程の素材が揃っていれば、その工程ぶん時間と進捗を進める
+   * （RecipeSystem.md 4節。在庫確認と消費はYAMLの語彙で書けないためプログラム側）。
+   */
+  private craftAction(card: ObjectCardStack): ObjectWindowAction[] {
+    const target = card.objects[0];
+    if (target === undefined) return [];
+    const product = this.codex.productOf(target.def);
+    if (product === undefined) return [];
+
+    const recipe = product.recipes.find(
+      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
+    );
+    if (recipe === undefined) return [];
+
+    const materialsSlotId = this.codex.slotNames.getId(MATERIALS_SLOT);
+    const step = currentStep(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
+    const supplied = step !== undefined && stepIsSupplied(target, materialsSlotId, step);
+
+    return [
+      {
+        label: '作業する',
+        description: '揃っている素材を使って、次の工程を進める。',
+        minutes: step?.durationMinutes ?? 0,
+        enabled: supplied,
+        reason: supplied ? undefined : '素材が足りない。',
+        onTap: () => {
+          const origin = this.rectOf(card);
+          this.closeChildWindow();
+          this.applyToWorld(
+            () => {
+              advanceCrafting(target, recipe, materialsSlotId, this.codex, this.gameSession.session);
+            },
+            { origin },
+          );
+        },
+      },
+    ];
+  }
+
+  /**
+   * 製作中オブジェクトの材料スロットに見せる枠の数。製作中でなければundefined（通常の枠数）。
+   *
+   * 静的な枠数（全工程の要求の合計）ではなく、**今入っている数＋残りの工程に足りない数**を返す。
+   * こうすると、出番の終わった型の空枠が並びから消える——こぼしたあとの空枠が残っていると、
+   * まだ何か入れられるように見えてしまう。
+   */
+  private materialsCellCount(place: CardPlace): number | undefined {
+    if (typeof place !== 'object' || !('container' in place)) return undefined;
+
+    const remaining = this.remainingFor(place.container);
+    if (remaining === undefined) return undefined;
+
+    const contents = place.container.tryGetSlot(this.codex.slotNames.getId(MATERIALS_SLOT))?.contents ?? [];
+    const shortfall = [...remaining].reduce((sum, [globalId, needed]) => {
+      const held = contents.filter((object) => object.def.globalId === globalId).length;
+      return sum + Math.max(0, needed - held);
+    }, 0);
+
+    return contents.length + shortfall;
+  }
+
+  /** 製作中オブジェクトなら、残りの工程が要求する型と数。そうでなければundefined。 */
+  private remainingFor(target: WorldObject): ReadonlyMap<number, number> | undefined {
+    const product = this.codex.productOf(target.def);
+    const recipe = product?.recipes.find(
+      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
+    );
+    if (recipe === undefined) return undefined;
+    return remainingRequirements(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
   }
 
   /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */
@@ -827,7 +906,7 @@ export class PlayScene extends ResponsiveScene {
               title: this.view.nameOf(place),
               cards: this.laneCards(this.childWindowCards()),
               acceptsCards: this.view.acceptsCards(place),
-              cellCount: this.view.cellCountOf(place),
+              cellCount: this.materialsCellCount(place) ?? this.view.cellCountOf(place),
             },
       actions,
       area: this.layout.slotWindowArea,

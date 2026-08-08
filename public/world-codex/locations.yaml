@@ -17,6 +17,9 @@ traits:
       # spawn）は宣言順で最初に受け入れたスロットへ入るため、先に置くと湧いた側まで隠れてしまう。
       undiscovered_fixtures:
         cell: {accept: {tag: fixture}}
+        # 自動配置（7.7節）から外す。fixtureを無条件に受け入れるうえUIに出さないので、
+        # 行き先の無い設置物がここへ落ちると、探索するまで画面から消えたままになる。
+        auto_placement: false
     props:
       # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索率100%=range.max）
       # を必ず与える（5節の「traitでvalueなし=継承先で必須」の規約）。

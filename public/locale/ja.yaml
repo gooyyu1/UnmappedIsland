@@ -15,6 +15,9 @@ slot_texts:
     display_name_with_owner: '{owner}の{slot}'
   contents:
     display_name: 中身
+  # 製作中オブジェクトの材料スロット（レシピから自動生成される、inProgressObjects.ts）。
+  materials:
+    display_name: 材料
   treatment:
     display_name: 手当て
   equipment:
