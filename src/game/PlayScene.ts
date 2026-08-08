@@ -53,8 +53,8 @@ import { StatusBar } from './ui/StatusBar';
 import type { IconName } from './ui/iconArt';
 import { iconTexture } from './ui/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
-import type { SkyState } from './ui/WeatherOverlay';
 import { WeatherOverlay } from './ui/WeatherOverlay';
+import { ScreenSkyTint } from './ui/ScreenSkyTint';
 import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './ui/heatHaze';
 import { durationText } from './ui/durationText';
@@ -98,6 +98,12 @@ const FIELD_DEPTH = -1;
  * カードの上に降らせつつ、はみ出したカードを隠す背景板の上には出さないため。
  */
 const WEATHER_DEPTH = -0.5;
+
+/**
+ * 日射に応じた翳り・輝きは画面全体にかぶるので、飛んでいるカードの層（CardMotion）より手前。
+ * ドーナツグラフと致命的域の枠だけは更に手前に残す——暗い時間帯でも変わらず読めている必要がある。
+ */
+const SKY_TINT_DEPTH = 1.5;
 
 /** 場面転換の明転にかける時間（ミリ秒）。 */
 const BRIGHTEN_MS = 320;
@@ -190,8 +196,11 @@ export class PlayScene extends ResponsiveScene {
   /** フィールドエリアの背景板。レーンと合わせて、フィールドエリアだけを作り直すときに捨てる。 */
   private fieldPanel!: Phaser.GameObjects.Rectangle;
 
-  /** 日射と天気に応じてフィールドエリアへかぶせる翳り・輝きと雨。現在地には依らないので、作り直しの対象外。 */
+  /** 天気に応じてフィールドエリアへ降らせる雨。現在地には依らないので、作り直しの対象外。 */
   private weatherOverlay!: WeatherOverlay;
+
+  /** 日射に応じて画面全体へかぶせる翳り・輝き。雨と同じく作り直しの対象外。 */
+  private skyTint!: ScreenSkyTint;
 
   /** アイテムレーンに立てる陽炎。掛ける対象はフィールドエリアの作り直しで入れ替わる。 */
   private haze: LaneHaze | undefined;
@@ -380,10 +389,15 @@ export class PlayScene extends ResponsiveScene {
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
     this.buildFieldArea(layout);
-    // 空の演出は自前の層（WEATHER_DEPTH）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
-    this.weatherOverlay = new WeatherOverlay(this, this.metrics, layout.fieldArea, this.sky()).setDepth(
-      WEATHER_DEPTH,
-    );
+    // 雨は自前の層（WEATHER_DEPTH）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
+    this.weatherOverlay = new WeatherOverlay(
+      this,
+      this.metrics,
+      layout.fieldArea,
+      this.view.weather,
+    ).setDepth(WEATHER_DEPTH);
+    // 翳り・輝きは画面全体にかぶるので、組み立ての順序ではなく深度で最前面近くへ出す。
+    this.skyTint = new ScreenSkyTint(this, this.metrics, this.view.sunlight).setDepth(SKY_TINT_DEPTH);
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
     this.motion = new CardMotion(this, this.metrics);
     this.buildFilterBar(layout.filterBar);
@@ -501,9 +515,10 @@ export class PlayScene extends ResponsiveScene {
    *
    * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
    */
-  /** 空の演出（WeatherOverlay）へ渡す、今の空の様子。 */
-  private sky(): SkyState {
-    return { weather: this.view.weather, sunlight: this.view.sunlight };
+  /** 今の空を画面へ映し直す（ScreenLayout.md 空の演出節）。 */
+  private showSky(): void {
+    this.weatherOverlay.setWeather(this.view.weather);
+    this.skyTint.setSunlight(this.view.sunlight);
   }
 
   private rebuildFieldArea(): void {
@@ -1036,7 +1051,7 @@ export class PlayScene extends ResponsiveScene {
     this.artLoader.onceLoaded(this.view.locationArt, () => {
       if (wait !== this.artWait) return;
       this.rebuildFieldArea();
-      this.weatherOverlay.setSky(this.sky());
+      this.showSky();
       this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
       this.showInformation();
       curtain.brighten(BRIGHTEN_MS, () => {
@@ -1060,7 +1075,7 @@ export class PlayScene extends ResponsiveScene {
     if (this.childWindow?.lane !== undefined) contents.push(this.laneCards(this.childWindowCards()));
 
     this.motion.update(this.openLanes, contents, context);
-    this.weatherOverlay.setSky(this.sky());
+    this.showSky();
     this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
     this.showInformation();
     if (this.explorationWindow !== undefined) this.openExplorationWindow();

@@ -2,16 +2,7 @@ import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { RainStyle } from './rainStyle';
 import { rainStyleFor } from './rainStyle';
-import { skyTintFor } from './skyTint';
 import { COLOR, cssColor } from './theme';
-
-/** 画面へ映す空の様子。いずれも語彙を持たないCodexではundefinedになる。 */
-export interface SkyState {
-  /** 天気の識別子（`light_rain`など）。降る雨を決める。 */
-  readonly weather: string | undefined;
-  /** 日射（時間帯と天気を畳んだ実効値）。明るさを決める。 */
-  readonly sunlight: number | undefined;
-}
 
 /**
  * 雨を敷き詰める絵の一辺（u単位）。**フィールドエリアより少し大きく取る**ので、画面に繰り返しの
@@ -32,20 +23,19 @@ const LENGTH_JITTER_MIN = 0.6;
 const SCATTER_SEED = 0x9e3779b9;
 
 /**
- * フィールドエリアへかぶせる、空の様子（ScreenLayout.md 空の演出節）。日射に応じた翳り・輝きと、
- * 雨天の雨から成る。見え方はskyTint.ts / rainStyle.tsが決め、こちらは「その通りに描く」ことだけを行う。
+ * フィールドエリアへ降らせる雨（ScreenLayout.md 空の演出節）。見え方はrainStyle.tsが決め、
+ * こちらは「その通りに降らせる」ことだけを行う。
  *
  * 入力は遮らない（下のカードをそのまま操作できる）。常にカードより手前・隣接エリアより奥へ置く
  * 必要があるため、depthは置く側が与える（PlayScene参照）。
  *
  * **フィルタを使わない。** フィルタを掛けた表示物は一度画面サイズの描画バッファへ描かれるため、
  * 4Kでは1枚31MB・実測で221MBを占めていた。雨は敷き詰めた絵（TileSprite）が自分の矩形の外へ
- * 描かないことを使って収め、翳り・輝きはもともとフィールドエリアと同じ大きさではみ出さない。
+ * 描かないことを使って収める。
  */
 export class WeatherOverlay extends Phaser.GameObjects.Container {
   private readonly metrics: ScreenMetrics;
   private readonly rect: Rect;
-  private readonly tint: Phaser.GameObjects.Rectangle;
 
   /** 今降らせている雨の見え方。undefinedなら降っていない。差が無ければ作り直さない。 */
   private style: RainStyle | undefined;
@@ -53,44 +43,18 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
   private textureKeys: string[] = [];
   private tweens: Phaser.Tweens.Tween[] = [];
 
-  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, rect: Rect, sky: SkyState) {
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, rect: Rect, weather: string | undefined) {
     super(scene, rect.x, rect.y);
     this.metrics = metrics;
     this.rect = rect;
 
-    this.tint = scene.add
-      .rectangle(rect.width / 2, rect.height / 2, rect.width, rect.height, COLOR.skyShade, 1)
-      .setVisible(false);
-    this.add(this.tint);
-
     this.once(Phaser.GameObjects.Events.DESTROY, () => this.stopRain());
     scene.add.existing(this);
-    this.setSky(sky);
-  }
-
-  /** 今の空に合わせて描き直す。 */
-  setSky(sky: SkyState): void {
-    this.showTint(sky.sunlight);
-    this.showRain(sky.weather);
-  }
-
-  /** 日射に応じた翳り・輝き。かぶせるものが無ければ隠す。 */
-  private showTint(sunlight: number | undefined): void {
-    const tint = skyTintFor(sunlight);
-    if (tint === undefined) {
-      this.tint.setVisible(false);
-      return;
-    }
-
-    this.tint
-      .setVisible(true)
-      .setFillStyle(tint.color, 1)
-      .setAlpha(tint.alpha)
-      .setBlendMode(tint.additive ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL);
+    this.setWeather(weather);
   }
 
   /** 今の天気に合わせて降らせ直す。雨の降らない天気にすると消える。 */
-  private showRain(weather: string | undefined): void {
+  setWeather(weather: string | undefined): void {
     const style = rainStyleFor(weather);
     if (style === this.style) return;
 
