@@ -8,7 +8,14 @@
     "共有はしない**——ボタンとカードは別の概念で、片方の都合がもう片方の描画を壊すため",
     "（DesignNotes.md）。",
     "",
-    "atはボタンごとの切り出し位置。同じ場所だと3つのボタンに同じ染みが並び、模様として目に付く。"
+    "atはボタンごとの切り出し位置。同じ場所だと3つのボタンに同じ染みが並び、模様として目に付く。",
+    "",
+    "tintは地図・装備・怪我の順（PlayScene.addSlotButtonColumnの並び）で、theme.tsの",
+    "mapButton / equipmentButton / injuryButton と同じ値。**色はここで焼く**ので、変えるときは",
+    "両方を直してこの絵を作り直す。theme.ts側は絵が読めなかったときの平らな塗りに残る。",
+    "",
+    "radiusはtheme.tsのSIZE.radius(12)の2倍。絵はuの2倍で描く約束なので、敷くときに比例縮小されて",
+    "ボタンの角丸と一致する。"
   ],
   "output": "src/assets/slot_button_paper.png",
   "prompts": "cards.json",
@@ -22,6 +29,8 @@
   "seed": 8102,
   "buttonPaper": {
     "at": ["37,40", "37,236", "37,432"],
+    "tint": ["#c2cdd8", "#c7d4c1", "#d7c2b5"],
+    "radius": 24,
     "paper": "#fcf8e6",
     "wash": 0.4
   }
