@@ -836,6 +836,28 @@ export class PlayScene extends ResponsiveScene {
     ];
   }
 
+  /**
+   * 製作中オブジェクトの材料スロットに見せる枠の数。製作中でなければundefined（通常の枠数）。
+   *
+   * 静的な枠数（全工程の要求の合計）ではなく、**今入っている数＋残りの工程に足りない数**を返す。
+   * こうすると、出番の終わった型の空枠が並びから消える——こぼしたあとの空枠が残っていると、
+   * まだ何か入れられるように見えてしまう。
+   */
+  private materialsCellCount(place: CardPlace): number | undefined {
+    if (typeof place !== 'object' || !('container' in place)) return undefined;
+
+    const remaining = this.remainingFor(place.container);
+    if (remaining === undefined) return undefined;
+
+    const contents = place.container.tryGetSlot(this.codex.slotNames.getId(MATERIALS_SLOT))?.contents ?? [];
+    const shortfall = [...remaining].reduce((sum, [globalId, needed]) => {
+      const held = contents.filter((object) => object.def.globalId === globalId).length;
+      return sum + Math.max(0, needed - held);
+    }, 0);
+
+    return contents.length + shortfall;
+  }
+
   /** 製作中オブジェクトなら、残りの工程が要求する型と数。そうでなければundefined。 */
   private remainingFor(target: WorldObject): ReadonlyMap<number, number> | undefined {
     const product = this.codex.productOf(target.def);
@@ -884,7 +906,7 @@ export class PlayScene extends ResponsiveScene {
               title: this.view.nameOf(place),
               cards: this.laneCards(this.childWindowCards()),
               acceptsCards: this.view.acceptsCards(place),
-              cellCount: this.view.cellCountOf(place),
+              cellCount: this.materialsCellCount(place) ?? this.view.cellCountOf(place),
             },
       actions,
       area: this.layout.slotWindowArea,
