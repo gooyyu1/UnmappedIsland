@@ -248,7 +248,7 @@ export function withFrozenCards(view: PlayScreenView, place: CardPlace | undefin
   return { ...view, cardsIn: (asked) => (samePlace(asked, place) ? frozen : view.cardsIn(asked)) };
 }
 
-/** アイテムの画像がまだ無いため、種別ごとの絵文字を仮のアイコンとして使う。 */
+/** 絵がまだ無いオブジェクトの、型ごとの仮のアイコン（iconOf参照）。 */
 const LOCATION_ICON = '🗺️';
 const ITEM_ICON = '📦';
 const FIXTURE_ICON = '🌳';
@@ -417,6 +417,10 @@ export function fromGameSession(
     });
   };
 
+  const itemTagId = codex.tagNames.tryGetId('item');
+  const fixtureTagId = codex.tagNames.tryGetId('fixture');
+  const injuryTagId = codex.tagNames.tryGetId('injury');
+
   /**
    * そのオブジェクトの表示名。中身を代表にしているもの（水入りの水筒）は、中身の名前を差し込んだ
    * 名前になる（Localization.md）。代表がさらに中身を持つ入れ子は、内側から順に畳まれる。
@@ -427,8 +431,21 @@ export function fromGameSession(
     return content === undefined ? texts.displayName : texts.displayNameWithContent(nameOf(content));
   };
 
-  const stackOf = (instances: readonly WorldObject[], icon: string, place: CardPlace): ObjectCardStack => ({
-    icon,
+  /**
+   * 絵がまだ無いオブジェクトの代替アイコン。**並ぶレーンではなく、その物の型から選ぶ**——
+   * itemとfixtureを兼ねる編み籠は、地面へ据えてもアイテムのまま持ち歩けるので、レーンを移った
+   * だけで別の物に見えては困る。持ち歩けるかどうかを先に見るのはそのため。
+   */
+  const iconOf = (object: WorldObject): string => {
+    const tags = object.def.tags;
+    if (injuryTagId !== undefined && tags.includes(injuryTagId)) return INJURY_ICON;
+    if (itemTagId !== undefined && tags.includes(itemTagId)) return ITEM_ICON;
+    if (fixtureTagId !== undefined && tags.includes(fixtureTagId)) return FIXTURE_ICON;
+    return ITEM_ICON;
+  };
+
+  const stackOf = (instances: readonly WorldObject[], place: CardPlace): ObjectCardStack => ({
+    icon: iconOf(instances[0]),
     name: nameOf(instances[0]),
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
@@ -634,7 +651,7 @@ export function fromGameSession(
     // このレーンに並ぶカードだけが、その土地の景色を地に敷く（backgroundArt参照）。オブジェクトの
     // 種類ではなくここに並ぶかどうかで決まる——背景が表すのは「今その土地に在るもの」だから。
     fixtures: location.fixtureStacks.map((stack) => ({
-      ...stackOf(stack, FIXTURE_ICON, 'fixtures'),
+      ...stackOf(stack, 'fixtures'),
       background: location.instance.def.name,
       // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
@@ -642,7 +659,7 @@ export function fromGameSession(
       reorder: reorderIn(stack[0]),
     })),
     items: location.itemStacks.map((stack) => ({
-      ...stackOf(stack, ITEM_ICON, 'items'),
+      ...stackOf(stack, 'items'),
       moveTo: moveInto(stack[0], 'items'),
       reorder: reorderIn(stack[0]),
     })),
@@ -650,7 +667,7 @@ export function fromGameSession(
       stack.length === 0
         ? undefined
         : {
-            ...stackOf(stack, ITEM_ICON, 'hand'),
+            ...stackOf(stack, 'hand'),
             moveTo: moveInto(stack[0], 'hand'),
             reorder: reorderIn(stack[0]),
           },
@@ -665,7 +682,7 @@ export function fromGameSession(
             ? game.player.injuryStacks
             : stacksIn(slotOf(place));
       return stacks.map((stack) => ({
-        ...stackOf(stack, place === 'injuries' ? INJURY_ICON : ITEM_ICON, place),
+        ...stackOf(stack, place),
         moveTo: moveInto(stack[0], place),
         reorder: reorderIn(stack[0]),
       }));

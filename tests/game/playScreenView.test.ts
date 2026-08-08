@@ -205,6 +205,32 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
+  it('itemとfixtureを兼ねる物は、設置物レーンとアイテムレーンを行き来できる', () => {
+    // 端の▲▼が出るかは「そこへ移せるか」で決まる（PlayScene.cardEdges）ので、両方のタグを持つ
+    // 編み籠は設置物レーンで▼、アイテムレーンで▲を出す。画面側に場所ごとの決まりは無い。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    expect(
+      basket.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'), codex.wellKnown),
+    ).toBeUndefined();
+
+    fromGameSession(game, codex, locale).items[0].moveTo?.('fixtures')?.();
+
+    const placed = fromGameSession(game, codex, locale);
+    expect(
+      placed.fixtures.map((card) => card.name),
+      '地面に据わる',
+    ).toEqual([placed.fixtures[0].name]);
+    expect(placed.items, 'アイテムレーンからは消える').toEqual([]);
+
+    placed.fixtures[0].moveTo?.('items')?.();
+
+    const lifted = fromGameSession(game, codex, locale);
+    expect(lifted.fixtures, '据えたものを拾い直せる').toEqual([]);
+    expect(lifted.items).toHaveLength(1);
+    expect(lifted.items[0].moveTo?.('hand'), 'そのまま手にも持てる').toBeTypeOf('function');
+  });
+
   it('設置物レーンのカードだけが、今いる土地を背景として持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));

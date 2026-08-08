@@ -22,6 +22,7 @@ import { statusChangesAfter, statusChangesBetween } from './statusChanges';
 import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
 import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
+import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
 import { characterCardContent } from './ui/characterArt';
 import { Card, cardFace } from './ui/Card';
@@ -450,7 +451,7 @@ export class PlayScene extends ResponsiveScene {
       fixtures,
       COLOR.fixtureLane,
       // 設置物は持ち出せないので、手持ちへ送る端の操作は付けない（並び替えのドラッグだけ）。
-      this.laneCards(this.view.fixtures, undefined),
+      this.laneCards(this.view.fixtures),
       {
         pinned: {
           ...this.view.currentLocation,
@@ -460,27 +461,16 @@ export class PlayScene extends ResponsiveScene {
         depth: FIELD_DEPTH,
       },
     );
-    this.itemLane = new CardLane(
-      this,
-      this.metrics,
-      items,
-      COLOR.itemLane,
-      this.laneCards(this.view.items, 'down'),
-      {
-        // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
-        trailingPlaceholder: this.view.acceptsCards('items'),
-        art: laneTexture('item', art),
-        depth: FIELD_DEPTH,
-      },
-    );
-    this.handLane = new CardLane(
-      this,
-      this.metrics,
-      hand,
-      COLOR.handLane,
-      this.laneCards(this.view.hand, 'up'),
-      { art: HAND_LANE_TEXTURE, depth: FIELD_DEPTH },
-    );
+    this.itemLane = new CardLane(this, this.metrics, items, COLOR.itemLane, this.laneCards(this.view.items), {
+      // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
+      trailingPlaceholder: this.view.acceptsCards('items'),
+      art: laneTexture('item', art),
+      depth: FIELD_DEPTH,
+    });
+    this.handLane = new CardLane(this, this.metrics, hand, COLOR.handLane, this.laneCards(this.view.hand), {
+      art: HAND_LANE_TEXTURE,
+      depth: FIELD_DEPTH,
+    });
 
     // 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。
     this.haze ??= new LaneHaze(this);
@@ -523,53 +513,68 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * アイテムのカードに、隣の場所への操作（端を押しての移動と、掴んでのドラッグ）を付ける。
-   * 端の向きは並びの上下関係を表す: フィールドは下端（▼）が手持ち、手持ちは上端（▲）が上の場所。
+   * カードに、隣の場所への操作（端を押しての移動と、掴んでのドラッグ）を付ける。
    *
-   * 手持ちの上端が指す先は、スロットの子ウィンドウを開いている間だけそちらへ切り替わる。カードを
-   * やり取りする相手が画面に出ているなら、端を押す操作もその相手を指すのが自然なため。
-   *
-   * 移せない設置物・怪我にもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
+   * 移せないカードにもドラッグは付ける。他のカードへ重ねるcombinationのドラッグ元にはなれるため。
    *
    * カードを押すと、そのオブジェクトの子ウィンドウが開く。コンテナのカードだけは中身の子ウィンドウを
    * 直接開く（中身を見る・出し入れするのがそのカードの主な用途のため）。端の操作エリアは中央より
    * 手前に居るので、端を押しての移動とは競合しない（Card参照）。
    */
-  private laneCards(
-    cards: readonly (ObjectCardStack | undefined)[],
-    direction: CardEdgeDirection | undefined,
-  ): readonly (CardContent | undefined)[] {
+  private laneCards(cards: readonly (ObjectCardStack | undefined)[]): readonly (CardContent | undefined)[] {
     return cards.map((card) => {
       if (card === undefined) return undefined;
       return {
         ...card,
         draggable: true,
         onTap: this.whileIdle(() => this.openObjectWindow(card)),
-        edge: direction === undefined ? undefined : this.cardEdge(card, direction),
+        edges: this.cardEdges(card),
         // 経過を見せている間は行動の途中の値。状態バーは減った分の帯を縮めずに溜める（statusContentと同じ）。
         midAction: this.passingTime,
       };
     });
   }
 
-  /** 端の操作（そのカードを移せないならundefined。行き先の決め方はedgeMove参照）。 */
-  private cardEdge(card: ObjectCardStack, direction: CardEdgeDirection): CardEdgeAction | undefined {
-    const move = this.edgeMove(card);
-    return move === undefined ? undefined : { direction, onTap: () => this.applyToWorld(move) };
+  /**
+   * そのカードが出す端の操作。**そこへ移せるカードだけが矢印を出す**ので、置ける設置物（設置もできる
+   * かご）を足せば、画面を直さずに設置物レーンとアイテムレーンの間を行き来できるようになる。
+   */
+  private cardEdges(card: ObjectCardStack): readonly CardEdgeAction[] {
+    const edges: CardEdgeAction[] = [];
+    for (const direction of EDGE_DIRECTIONS) {
+      const move = this.edgeMove(card, direction);
+      if (move !== undefined) edges.push({ direction, onTap: () => this.applyToWorld(move) });
+    }
+    return edges;
+  }
+
+  /** 端を押したときの移動（その向きへ移せないならundefined）。行き先は「空いている場所」なので位置は指定しない。 */
+  private edgeMove(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {
+    for (const place of this.edgeTargets(card.place, direction)) {
+      const move = card.moveTo?.(place);
+      if (move !== undefined) return move;
+    }
+    return undefined;
   }
 
   /**
-   * 端を押したときの移動（移せないカードならundefined）。行き先は「空いている場所」なので位置は指定しない。
+   * その向きの行き先の候補を、近い順に。フィールドの並びの上下関係（設置物→アイテム→手持ち）
+   * そのままで、子ウィンドウのカードの下は手持ち。
    *
-   * 手持ちの行き先は、子ウィンドウが開いていればそちらを優先する。ただし受け取れない場所（怪我）なら
-   * 元どおりフィールドへ戻す——開いているだけで手持ちの端が使えなくなるのは不便なため。
+   * 手持ちの上は、子ウィンドウを開いている間だけそちらを先に見る——カードをやり取りする相手が
+   * 画面に出ているなら、端を押す操作もその相手を指すのが自然なため。受け取れない相手（怪我）なら
+   * 元どおりアイテムへ落ちる。開いているだけで手持ちの端が使えなくなるのは不便なため。
    */
-  private edgeMove(card: ObjectCardStack): (() => void) | undefined {
-    if (card.place === 'hand' && this.childWindowPlace !== undefined) {
-      const intoWindow = card.moveTo?.(this.childWindowPlace);
-      if (intoWindow !== undefined) return intoWindow;
+  private edgeTargets(from: CardPlace, direction: CardEdgeDirection): readonly CardPlace[] {
+    if (direction === 'up') {
+      if (from === 'items') return ['fixtures'];
+      if (from !== 'hand') return [];
+      return this.childWindowPlace === undefined ? ['items'] : [this.childWindowPlace, 'items'];
     }
-    return card.moveTo?.(card.place === 'hand' ? 'items' : 'hand');
+    if (from === 'fixtures') return ['items'];
+    if (from === 'items') return ['hand'];
+    // 手持ちの下は無く、子ウィンドウのカード（装備・怪我・コンテナの中身）の下は手持ち。
+    return from === 'hand' ? [] : ['hand'];
   }
 
   /**
@@ -753,7 +758,7 @@ export class PlayScene extends ResponsiveScene {
           ? undefined
           : {
               title: this.view.nameOf(place),
-              cards: this.laneCards(this.childWindowCards(), 'down'),
+              cards: this.laneCards(this.childWindowCards()),
               acceptsCards: this.view.acceptsCards(place),
               capacity: this.view.capacityOf(place),
             },
@@ -777,7 +782,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 手持ちのカードに付いている操作だけを引き直す（並びは変わらないので動きは出ない）。 */
   private refreshHandLane(): void {
-    this.handLane.setCards(this.laneCards(this.view.hand, 'up'));
+    this.handLane.setCards(this.laneCards(this.view.hand));
   }
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
@@ -1042,11 +1047,11 @@ export class PlayScene extends ResponsiveScene {
     // 開いている子ウィンドウの中身も同じ差し替えに乗せる（openLanes）。手持ちとの間でカードが行き来する
     // ため、外していると出ていったカードがウィンドウ側に現れない。
     const contents: (readonly (CardContent | undefined)[])[] = [
-      this.laneCards(this.view.fixtures, undefined),
-      this.laneCards(this.view.items, 'down'),
-      this.laneCards(this.view.hand, 'up'),
+      this.laneCards(this.view.fixtures),
+      this.laneCards(this.view.items),
+      this.laneCards(this.view.hand),
     ];
-    if (this.childWindow?.lane !== undefined) contents.push(this.laneCards(this.childWindowCards(), 'down'));
+    if (this.childWindow?.lane !== undefined) contents.push(this.laneCards(this.childWindowCards()));
 
     this.motion.update(this.openLanes, contents, context);
     this.weatherOverlay.setSky(this.sky());

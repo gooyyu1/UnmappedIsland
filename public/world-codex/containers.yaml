@@ -29,8 +29,10 @@ traits:
 
 object_defs:
   # 編み籠。蔓や草を編んで作る、最初の運搬用の入れ物。
+  # itemとfixtureを兼ねるので、持ち歩くことも地面へ据えることもできる（設置物レーンと
+  # アイテムレーンの間を端の▲▼で行き来する）。
   woven_basket:
-    tags: [item]
+    tags: [item, fixture]
     traits: [item_container]
     props:
       weight: {value: 800}
