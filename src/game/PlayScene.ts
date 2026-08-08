@@ -48,7 +48,12 @@ import { RecipeWindow } from './ui/RecipeWindow';
 import { recipeCategories } from './recipeList';
 import { autoFillMaterials } from '../domain/runtime/autoFill';
 import { inProgressObjectName, MATERIALS_SLOT } from '../loader/inProgressObjects';
-import { advanceCrafting, currentStep, stepIsSupplied } from '../domain/runtime/crafting';
+import {
+  advanceCrafting,
+  currentStep,
+  remainingRequirements,
+  stepIsSupplied,
+} from '../domain/runtime/crafting';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
@@ -781,6 +786,7 @@ export class PlayScene extends ResponsiveScene {
               location?.instance.tryGetSlot(this.codex.slotNames.getId('items'))?.contents ?? [],
             ],
             this.codex,
+            this.remainingFor(target),
           );
           this.closeChildWindow();
           this.view = fromGameSession(this.gameSession, this.codex, this.locale);
@@ -828,6 +834,16 @@ export class PlayScene extends ResponsiveScene {
         },
       },
     ];
+  }
+
+  /** 製作中オブジェクトなら、残りの工程が要求する型と数。そうでなければundefined。 */
+  private remainingFor(target: WorldObject): ReadonlyMap<number, number> | undefined {
+    const product = this.codex.productOf(target.def);
+    const recipe = product?.recipes.find(
+      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
+    );
+    if (recipe === undefined) return undefined;
+    return remainingRequirements(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
   }
 
   /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */

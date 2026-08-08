@@ -88,12 +88,14 @@ object_defs:
     expect(wip.getNumber(progressId())).toBe(0);
   });
 
-  it('素材だけが消え、道具は残る', () => {
+  it('素材は消え、出番の終わった道具は足元へこぼれる', () => {
     put('wood', 2);
     put('knife', 1);
 
     expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(true);
-    expect(boxContents(), '木は消費され、刃物は残る').toEqual(['knife']);
+    // 木は消費される。刃物は2工程目が要求しないので、箱に留めず親へ返す。
+    expect(boxContents()).toEqual([]);
+    expect(onGround().sort()).toEqual([inProgressObjectName('axe', 'basic'), 'knife']);
     expect(wip.getNumber(progressId()), '工程の所要時間ぶん進む').toBe(30);
   });
 
@@ -113,10 +115,12 @@ object_defs:
     put('rope', 1);
 
     expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(true);
-    expect(onGround(), '途中はまだ製作中のまま').toEqual([inProgressObjectName('axe', 'basic')]);
+    expect(onGround().sort(), '途中はまだ製作中。用済みの刃物は先にこぼれる').toEqual([
+      inProgressObjectName('axe', 'basic'),
+      'knife',
+    ]);
 
     expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(true);
-    // 消費されなかった道具は、製作中オブジェクトが消えるときに親へこぼれる（RecipeSystem.md 3節）。
     expect(onGround().sort()).toEqual(['axe', 'knife']);
   });
 });

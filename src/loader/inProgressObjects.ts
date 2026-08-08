@@ -92,7 +92,12 @@ function inProgressObjectDef(
     slots: {
       // 素材も道具も同じスロットへ入れる。何が何個要るかが、そのまま枠の形になる
       // （RecipeSystem.md 3節）。
-      [MATERIALS_SLOT]: { cells: materialCells(recipe, objectNames) },
+      [MATERIALS_SLOT]: {
+        cells: materialCells(recipe, objectNames),
+        // 自動配置（7.7節）から外す。終わった工程の枠は表示から消すので、そこへ勝手に物が
+        // 入ると取り出せなくなる。入れるのは投入操作と自動補充だけに限る。
+        auto_placement: false,
+      },
     },
   };
 }

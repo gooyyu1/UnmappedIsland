@@ -18,6 +18,27 @@ export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef 
   return undefined;
 }
 
+/**
+ * まだ終わっていない工程が要求する型 → 残りの必要数の合計。
+ *
+ * 枠は型ごとにまとまっている（inProgressObjects.materialCells）ので、「この型はもう要らない」も
+ * 「あといくつ要る」も、この表だけで答えられる。
+ */
+export function remainingRequirements(recipe: RecipeDef, progress: number): Map<number, number> {
+  const remaining = new Map<number, number>();
+  let consumed = 0;
+  for (const step of recipe.steps) {
+    consumed += step.durationMinutes;
+    if (progress >= consumed) continue;
+    for (const requirement of step.requirements)
+      remaining.set(
+        requirement.objectGlobalId,
+        (remaining.get(requirement.objectGlobalId) ?? 0) + requirement.quantity,
+      );
+  }
+  return remaining;
+}
+
 /** その工程が要求する素材と道具が、材料スロットに揃っているか。 */
 export function stepIsSupplied(
   inProgress: WorldObject,
@@ -66,5 +87,36 @@ export function advanceCrafting(
   // 生まれた物が「作業を終えた時刻」に居るようにするため。
   session.advanceWorldTime(step.durationMinutes);
   inProgress.addNumber(progressGlobalId, step.durationMinutes, session);
+
+  spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
   return true;
+}
+
+/**
+ * どの残り工程も要求しなくなった型を、親へこぼす。
+ *
+ * 出番の終わった素材や道具を箱に留めると、劣化して消えるうえ、空にならない枠を表示から
+ * 隠せなくなる（隠すと取り出せなくなる）。完成時に残りがこぼれるのと同じ扱いを、工程の
+ * 区切りへ前倒ししている（RecipeSystem.md 3節）。
+ */
+function spillUnneeded(
+  inProgress: WorldObject,
+  materialsSlotGlobalId: number,
+  recipe: RecipeDef,
+  codex: WorldCodex,
+): void {
+  const parent = inProgress.parent;
+  // こぼす先は、製作中オブジェクト自身が居るスロット（足元なら足元、かごの中ならかごの中）。
+  const parentSlot = parent?.def.slotDefs[inProgress.parentSlotLocalId];
+  if (parent === undefined || parentSlot === undefined) return;
+
+  const stillNeeded = remainingRequirements(
+    recipe,
+    inProgress.getNumber(codex.propertyNames.getId('progress')),
+  );
+  const leftovers = (inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? []).filter(
+    (object) => !stillNeeded.has(object.def.globalId),
+  );
+
+  for (const object of leftovers) object.moveToSlot(parent, parentSlot.globalId, codex.wellKnown);
 }
