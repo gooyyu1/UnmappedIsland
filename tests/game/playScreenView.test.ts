@@ -326,10 +326,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const basketCard = view.hand.find((card) => card?.objects[0] === basket)!;
 
     expect(injuryCard.contents, '怪我は治療具のスロットを開く').toEqual({ container: injury });
-    expect(view.capacityOf(injuryCard.contents!), '治療具は1つだけ').toBe(1);
+    expect(view.unitCapacityOf(injuryCard.contents!), '治療具の枠は1つだけ').toBe(1);
 
     expect(basketCard.contents, 'コンテナは中身のスロットを開く').toEqual({ container: basket });
-    expect(view.capacityOf(basketCard.contents!), 'かごは何枚入るか分からない').toBeGreaterThan(4);
+    expect(view.unitCapacityOf(basketCard.contents!), 'かごの枠数は決まっていない').toBeUndefined();
   });
 
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {

@@ -7,11 +7,16 @@ traits:
     # 怪我を代表する物のスロット（7.8節）。カードを押すと治療具が並ぶ——付け外しの唯一の経路。
     main_item_slot: treatment
     slots:
-      # 当てている治療具。**1つだけ**——包帯の上から添え木を、のような重ね掛けは、効き目の
-      # 足し合わせ方が決まっていない（docs/world/Injuries.md 手当て節）。
+      # 当てている治療具。**1枠だけ**——包帯の上から添え木を、のような重ね掛けは、効き目の
+      # 足し合わせ方が決まっていない（docs/world/Injuries.md 手当て節）。枠の数はunit_capacity
+      # （SlotSystem.md 2節）で表す。acceptsのmaxは型ごとの個数の制約なので、ここでは効かせない。
+      # 同種でも1つずつ別の枠にする（stackable: false）。そうしないと「単位」が種類数になり、
+      # 包帯2つが1枠へ合流して当たってしまう（SlotSystem.md 4節）。
       treatment:
+        unit_capacity: 1
+        stackable: false
         accepts:
-          - {tag: treatment, max: 1}
+          - {tag: treatment, max: 9999}
     combinations:
       # 治療具を当てる。何を当てられるかはtreatmentスロットのacceptsが決めるので、条件は書かない。
       #

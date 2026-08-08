@@ -50,8 +50,9 @@
   （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 8.6節）。
 - **`conditions: [{in_slot: treatment}]` を必ず付ける。** `ancestor` はスロットを問わず祖先を辿るので、
   付けないと**手持ちに入れているだけの包帯が痛みを止める**。
-- **重ね掛けはできない**（`max: 1`）。包帯の上から添え木を、のような組み合わせは効き目の
-  足し合わせ方が決まっていない。
+- **重ね掛けはできない**（`unit_capacity: 1` と `stackable: false`）。包帯の上から添え木を、のような
+  組み合わせは効き目の足し合わせ方が決まっていない。スタックを許すと「単位」が種類数になり、
+  同じ包帯なら2つ当たってしまう（[`SlotSystem.md`](../engine/SlotSystem.md) 4節）。
 - **手当て済みかどうかは、カードの絵ではなく印で見せる**（[`ScreenLayout.md`](../ui/ScreenLayout.md)
   カードの印 節）。絵を差し替えると、怪我の部位 × 治療具の数だけ絵が要る。
 - **怪我が治ると、当てていた治療具は本人の手元へこぼれ出る**（`bound_to_owner`、

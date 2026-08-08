@@ -29,6 +29,7 @@ import { Card, cardFace } from './ui/Card';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
+import { emptyCellsFor } from './ui/laneCells';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from './ui/informationArt';
@@ -463,7 +464,11 @@ export class PlayScene extends ResponsiveScene {
     );
     this.itemLane = new CardLane(this, this.metrics, items, COLOR.itemLane, this.laneCards(this.view.items), {
       // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
-      trailingPlaceholder: this.view.acceptsCards('items'),
+      emptyCells: emptyCellsFor(
+        this.view.items.length,
+        this.view.unitCapacityOf('items'),
+        this.view.acceptsCards('items'),
+      ),
       art: laneTexture('item', art),
       depth: FIELD_DEPTH,
     });
@@ -760,7 +765,7 @@ export class PlayScene extends ResponsiveScene {
               title: this.view.nameOf(place),
               cards: this.laneCards(this.childWindowCards()),
               acceptsCards: this.view.acceptsCards(place),
-              capacity: this.view.capacityOf(place),
+              unitCapacity: this.view.unitCapacityOf(place),
             },
       actions,
       area: this.layout.slotWindowArea,
