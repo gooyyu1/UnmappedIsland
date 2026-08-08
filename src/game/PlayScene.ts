@@ -1577,7 +1577,8 @@ export class PlayScene extends ResponsiveScene {
       },
       this.whileIdle(() => this.openRecipeWindow()),
     );
-    button.addContent(addLabel(this, this.metrics, width / 2, height / 2, '🔨', { size: 28 }).setOrigin(0.5));
+    // 下のフィルターバーが道具の絞り込みに🔨を使っているので、別の絵にする。
+    button.addContent(addLabel(this, this.metrics, width / 2, height / 2, '🧰', { size: 28 }).setOrigin(0.5));
   }
 
   /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
