@@ -99,25 +99,23 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
   private addSky(scene: Phaser.Scene, panel: Rect, weather: string | undefined): void {
     const texture = weatherTexture(weather);
 
-    if (texture !== undefined && scene.textures.exists(texture)) {
-      const image = scene.add.image(panel.x + panel.width, panel.y, texture).setOrigin(1, 0);
-      const scale = Math.max(panel.width / image.width, panel.height / image.height);
-      image.setDisplaySize(image.width * scale, image.height * scale);
-
-      // 切り抜きはフィルタとしてのマスクで行う（Phaser 4のsetMaskはCanvas専用）。
-      // マスクの形は表示物ではないので画面には出さない。
-      const sky = scene.add.container(0, 0, [image]);
-      const maskShape = scene.make.graphics({});
-      maskShape.fillStyle(COLOR.cardFace, 1);
-      maskShape.fillRect(panel.x, panel.y, panel.width, panel.height);
-      sky.enableFilters();
-      sky.filters?.internal.addMask(maskShape);
-      this.add(sky);
-      this.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
-    } else {
+    if (texture === undefined || !scene.textures.exists(texture)) {
       const fallback = scene.add.graphics();
       drawBox(fallback, panel, { fill: COLOR.weatherPanel });
       this.add(fallback);
+      return;
     }
+
+    const image = scene.add.image(panel.x + panel.width, panel.y, texture).setOrigin(1, 0);
+    const scale = Math.max(panel.width / image.width, panel.height / image.height);
+    image.setDisplaySize(image.width * scale, image.height * scale);
+
+    // **切り抜きは絵そのものを切り詰めて行う（setCrop）。** フィルタとしてのマスクはWebGL専用で、
+    // WebGLの無い環境（Canvasレンダラへ落ちる）では効かず、窓に収まらない絵が下の情報エリアへ
+    // かぶって出てしまう。切り詰める幅・高さは絵の原寸（拡大率で割り戻した窓の大きさ）で指定する。
+    const cropWidth = Math.min(image.width, panel.width / scale);
+    const cropHeight = Math.min(image.height, panel.height / scale);
+    image.setCrop(image.width - cropWidth, 0, cropWidth, cropHeight);
+    this.add(image);
   }
 }

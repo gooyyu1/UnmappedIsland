@@ -2,7 +2,7 @@ import { ResponsiveScene } from './ResponsiveScene';
 import { scenarioNames } from '../scenario/Scenario';
 import { Button } from './ui/Button';
 import { addLabel } from './ui/labels';
-import { COLOR } from './ui/theme';
+import { COLOR, mixColor } from './ui/theme';
 
 /** 「はじめる」「設定」ボタンの寸法（StartScreen_Mock.htmlの.title-button）。 */
 const MENU_BUTTON_HEIGHT = 92;
@@ -66,27 +66,24 @@ export class TitleScene extends ResponsiveScene {
     });
   }
 
-  /** 上から順に空・海・砂浜へ移る縦のグラデーション。中間色で2枚に分けて3色を表現する。 */
+  /**
+   * 上から順に空・海・砂浜へ移る縦のグラデーション。中間色を境に2区間へ分けて3色を表現する。
+   *
+   * **色は行ごとに自分で混ぜて敷く。** Graphicsのグラデーション塗り（fillGradientStyle）はWebGL
+   * 専用で、WebGLの無い環境（Canvasレンダラへ落ちる）では塗りの色が決まらず背景が真っ黒になる。
+   */
   private drawBackground(): void {
     const { width, height } = this.metrics;
     const horizon = height * HORIZON_RATIO;
     const background = this.add.graphics();
-    background.fillGradientStyle(
-      COLOR.titleGradientTop,
-      COLOR.titleGradientTop,
-      COLOR.titleGradientMiddle,
-      COLOR.titleGradientMiddle,
-      1,
-    );
-    background.fillRect(0, 0, width, horizon);
-    background.fillGradientStyle(
-      COLOR.titleGradientMiddle,
-      COLOR.titleGradientMiddle,
-      COLOR.titleGradientBottom,
-      COLOR.titleGradientBottom,
-      1,
-    );
-    background.fillRect(0, horizon, width, height - horizon);
+    for (let y = 0; y < height; y++) {
+      const [from, to, ratio] =
+        y < horizon
+          ? [COLOR.titleGradientTop, COLOR.titleGradientMiddle, y / horizon]
+          : [COLOR.titleGradientMiddle, COLOR.titleGradientBottom, (y - horizon) / (height - horizon)];
+      background.fillStyle(mixColor(from, to, ratio), 1);
+      background.fillRect(0, y, width, 1);
+    }
   }
 
   private addMenuButton(
