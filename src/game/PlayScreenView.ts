@@ -418,6 +418,10 @@ export function fromGameSession(
    */
   const nameOf = (object: WorldObject): string => {
     const texts = locale.object(object.def.name);
+    // 製作中オブジェクトは自動生成なので対応表に載らない。完成品の名前から組み立てる。
+    const product = codex.productOf(object.def);
+    if (product !== undefined) return texts.displayNameInProgress(locale.object(product.name).displayName);
+
     const content = object.tryGetRepresentative();
     return content === undefined ? texts.displayName : texts.displayNameWithContent(nameOf(content));
   };

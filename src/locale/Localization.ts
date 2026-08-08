@@ -78,6 +78,7 @@ interface DeclaredTexts {
   readonly description: string | undefined;
   readonly displayNameWithContent: string | undefined;
   readonly displayNameWithOwner: string | undefined;
+  readonly displayNameInProgress: string | undefined;
 }
 
 /** localeファイルの1エントリ（オブジェクト自身の文字列と、種類ごとのメンバーの文字列）。 */
@@ -139,6 +140,18 @@ export class ObjectTexts {
     const declared = this.entry?.own?.displayNameWithContent ?? this.defaults?.own?.displayNameWithContent;
     if (declared === undefined) return this.displayName;
     return format(declared, { container: this.displayName, content: contentName });
+  }
+
+  /**
+   * 製作中オブジェクト（RecipeSystem.md 1節）の表示名。`{product}` に完成品の名前が入る。
+   *
+   * この型は自動生成なので対応表に自分のエントリを持てない。displayNameWithContentと同じく、
+   * 書式であって名前なのでdefaultエントリを参照する。
+   */
+  displayNameInProgress(productName: string): string {
+    const declared = this.entry?.own?.displayNameInProgress ?? this.defaults?.own?.displayNameInProgress;
+    if (declared === undefined) return productName;
+    return format(declared, { product: productName });
   }
 
   prop(propertyName: string): Texts {
@@ -409,12 +422,20 @@ function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   const description = tryGetScalar(node, 'description', context);
   const displayNameWithContent = tryGetScalar(node, 'display_name_with_content', context);
   const displayNameWithOwner = tryGetScalar(node, 'display_name_with_owner', context);
+  const displayNameInProgress = tryGetScalar(node, 'display_name_in_progress', context);
   if (
     displayName === undefined &&
     description === undefined &&
     displayNameWithContent === undefined &&
-    displayNameWithOwner === undefined
+    displayNameWithOwner === undefined &&
+    displayNameInProgress === undefined
   )
     return undefined;
-  return { displayName, description, displayNameWithContent, displayNameWithOwner };
+  return {
+    displayName,
+    description,
+    displayNameWithContent,
+    displayNameWithOwner,
+    displayNameInProgress,
+  };
 }
