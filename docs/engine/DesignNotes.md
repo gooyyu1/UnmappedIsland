@@ -105,6 +105,14 @@
   探すより早い。
 - 代わりの手段があるものは、そちらで組む。グラデーションは行ごとに色を混ぜて敷く（`mixColor`）、
   1枚の絵の切り抜きは`setCrop`で足りる。どちらもレンダラを問わないうえ、フィルタより安い。
+  染めと角丸は絵に焼く（`button_paper.py`）——実行時の`setTint`はCanvasで効かない。
+- **`NineSlice`はCanvasレンダラを持たない**（`renderCanvas`が`NOOP`）。9patchは自前で組む
+  （`nineSlice.ts`）。他にもCanvasの描画を持たないGameObjectがある（`Mesh2D`・`PointLight`・
+  `CaptureFrame`など）ので、使う前に`*Render.js`を見ること。
+- **コンテナの切り抜きだけは、レンダラごとに手段を使い分けるしかない**（`clip.ts`）。マスクは
+  WebGLではフィルタ（`filters.internal.addMask`）、Canvasでは`setMask`で、**互いに排他**
+  （`setMask`はWebGLで警告を出して何もしない）。Phaser 4はCanvasレンダラを非推奨としており、
+  機能の対等性を保証しない。
 
 ## Phaserのフィルタ（[ScreenLayout.md](../ui/ScreenLayout.md) 空の演出節）
 

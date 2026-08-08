@@ -3,6 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card, cardFace, EmptyCard } from './Card';
+import { clipToRect } from './clip';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -58,8 +59,8 @@ export interface ExplorationWindowOptions {
 export class ExplorationWindow {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
-  /** 発見物の並びを切り抜くマスクの形。表示物ではないので、閉じるときに個別に捨てる。 */
-  private maskShape: Phaser.GameObjects.Graphics | undefined;
+  /** 発見物の並びの切り抜きを解く後始末（送る必要があるときだけ持つ、clip.ts参照）。 */
+  private unclip: (() => void) | undefined;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ExplorationWindowOptions) {
     const { width, height } = metrics;
@@ -200,13 +201,8 @@ export class ExplorationWindow {
     const minScrollX = Math.min(0, viewport.width - contentWidth);
     if (minScrollX === 0) return;
 
-    // 送る必要があるときだけ、枠からはみ出す分を切り抜く。切り抜きはフィルタとしてのマスクで行う
-    // （Phaser 4のsetMaskはCanvas専用）。マスクの形は表示物ではないので画面には出さない。
-    this.maskShape = scene.make.graphics({});
-    this.maskShape.fillStyle(COLOR.cardFace, 1);
-    this.maskShape.fillRect(viewport.x, viewport.y, viewport.width, viewport.height);
-    strip.enableFilters();
-    strip.filters?.internal.addMask(this.maskShape);
+    // 送る必要があるときだけ、枠からはみ出す分を切り抜く（clip.ts参照）。
+    this.unclip = clipToRect(scene, strip, viewport);
 
     // バーはカードの下に空けてある余白（呼び出し側が確保するcardPadding）の上寄せに置く。
     const indicator = new ScrollIndicator(
@@ -243,8 +239,8 @@ export class ExplorationWindow {
   close(): void {
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
-    this.maskShape?.destroy();
-    this.maskShape = undefined;
+    this.unclip?.();
+    this.unclip = undefined;
   }
 }
 
