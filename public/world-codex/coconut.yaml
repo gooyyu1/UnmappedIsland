@@ -7,18 +7,37 @@
 # 液体の入れ物になる殻（coconut_bowl）は液体容器の一員なので、liquid_containers.yamlが持つ。
 
 object_defs:
-  # ヤシの木。実を採る採取ポイント。探索で見つかる設置物（locations.yamlのexplore）。
+  # ヤシの木。実と葉の採取ポイント。探索で見つかる設置物（locations.yamlのexplore）。
   palm_tree:
     tags: [fixture]
     actions:
       # 幹を登って実をもぎ取る。採れる数に上限は設けていない（採取ポイントの枯渇は今後の課題）。
-      # 足場の無い幹を登る以上、たまに踏み外す。失敗した回は実も採れない。
+      # 足場の無い幹を登る以上、たまに踏み外す。失敗した回は何も採れない。
+      #
+      # 1回登るのに30分かけて1個だけ持って降りることはしないので、成功した回はまとめて採る。
       pick_coconut:
         showMenu: always
         duration: 30
         pick:
           - weight: 90
-            spawn: {object: coconut, into: actor}
+            spawn:
+              - {object: coconut, into: actor}
+              - {object: coconut, into: actor}
+              - {object: coconut, into: actor}
+          - weight: 10
+            spawn: {object: sprained_ankle, into: actor}
+
+      # 葉を採る。枯れた葉は落ちる前に幹へ垂れ下がるので、刃物が無くても引き落とせる。
+      # 実採りと同じく幹を登るため、同じだけ踏み外す。葉はweaving.yamlが定義する。
+      pick_frond:
+        showMenu: always
+        duration: 30
+        pick:
+          - weight: 90
+            spawn:
+              - {object: palm_frond, into: actor}
+              - {object: palm_frond, into: actor}
+              - {object: palm_frond, into: actor}
           - weight: 10
             spawn: {object: sprained_ankle, into: actor}
 

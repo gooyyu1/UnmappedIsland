@@ -121,6 +121,9 @@ object_texts:
       pick_coconut:
         display_name: 実を採る
         description: 幹を登って、実をもぎ取る。
+      pick_frond:
+        display_name: 葉を採る
+        description: 幹を登って、垂れ下がった枯れ葉を引き落とす。
   coconut:
     display_name: ヤシの実
     description: 厚い繊維の皮に覆われた実。刃物ではがさないと中の殻に届かない。
@@ -198,10 +201,26 @@ object_texts:
     display_name: 尖った石
     description: 石を打ち割って作った刃物。切る作業に使える。
 
+  # 葉を編む連鎖（weaving.yaml）。
+  palm_frond:
+    display_name: ヤシの葉
+    description: 長い軸に細長い小葉が並んだ大きな葉。かさばるが、編めば小さくまとまる。
+    actions:
+      weave:
+        display_name: 編む
+        description: 中軸を残したまま、左右の小葉を互い違いに組む。
+    combinations:
+      split_and_weave:
+        display_name: 割って編む
+        description: 中軸を縦に割り、左右をそれぞれ編む。同じ葉から2枚とれる。
+  woven_leaf:
+    display_name: 編んだ葉
+    description: ヤシの葉を編んだ平たいパネル。籠にも壁にも屋根にも使える。
+
   # 入れ物（containers.yaml）。
   woven_basket:
     display_name: 編み籠
-    description: 蔓や草を編んだ入れ物。中に入れた物をまとめて持ち運べる。
+    description: 編んだ葉を綴じ合わせた入れ物。中に入れた物をまとめて持ち運べる。
 
   # 探索で見つかる設置物（locations.yaml）。
   berry_bush:

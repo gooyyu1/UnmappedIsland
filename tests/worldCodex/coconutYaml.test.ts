@@ -75,7 +75,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     expect(tree.tryExecuteAction('pick_coconut', player, session)).toBe(true);
 
-    expect(handOf(player)).toEqual(['coconut']);
+    expect(handOf(player), '1回登ればまとめて採れる').toEqual(['coconut', 'coconut', 'coconut']);
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
     expect(worldView.hour, 'durationの30分が経つ').toBe(0);
     expect(worldView.minute).toBe(30);
@@ -92,7 +92,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(new PlayerCharacter(player, codex).equipmentStacks, '装備欄は自動配置の対象外（7.7節）').toEqual(
       [],
     );
-    expect(itemsOn(beach)).toEqual(['coconut']);
+    expect(itemsOn(beach)).toEqual(['coconut', 'coconut', 'coconut']);
   });
 
   it('ヤシの実に刃物を当てると、皮を剥いだ実と皮に分かれる', () => {
