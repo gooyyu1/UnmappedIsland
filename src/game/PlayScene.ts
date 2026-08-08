@@ -32,6 +32,7 @@ import { CardLane } from './ui/CardLane';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from './ui/informationArt';
+import { addNineSlice } from './ui/nineSlice';
 import { HAND_LANE_TEXTURE, laneTexture } from './ui/backgroundArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
@@ -1090,12 +1091,10 @@ export class PlayScene extends ResponsiveScene {
     const scale = this.metrics.u;
     const along = (landscape ? area.width : area.height) / scale + INFORMATION_OVERLAP_PX;
     const across = (landscape ? area.height : area.width) / scale;
-    const border = INFORMATION_BORDER_PX;
-    const page = this.add
-      .nineslice(0, 0, INFORMATION_BACKGROUND, undefined, along, across, border, border, border, border)
-      .setOrigin(0, 0)
+    const page = addNineSlice(this, INFORMATION_BACKGROUND, along, across, INFORMATION_BORDER_PX)
       .setScale(scale)
-      .setInteractive();
+      // ページも背景板と同じく入力を遮る（addPanel参照）。コンテナは当たり判定の形を持たないので渡す。
+      .setInteractive(new Phaser.Geom.Rectangle(0, 0, along, across), Phaser.Geom.Rectangle.Contains);
     if (landscape) page.setPosition(area.x, area.y);
     // 原点(0,0)を軸に90度回すと、絵は右下方向ではなく左下方向へ広がる。右上の角を起点に置く。
     else page.setAngle(90).setPosition(area.x + area.width, area.y);
