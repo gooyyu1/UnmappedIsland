@@ -1317,8 +1317,11 @@ export class PlayScene extends ResponsiveScene {
     const height = this.metrics.px(SIZE.slotButton.height);
     const stack = height * buttons.length + gap * (buttons.length - 1);
     const top = column.y + Math.max(0, (column.height - stack) / 2);
+    // 余った幅は左右へ等分する。左詰めにするとポートレイトとの間だけが詰まって、
+    // 列全体が左へ寄って見えた。
+    const left = column.x + Math.max(0, (column.width - width) / 2);
     buttons.forEach((spec, index) => {
-      this.addSlotButton({ x: column.x, y: top + index * (height + gap), width, height }, spec, index);
+      this.addSlotButton({ x: left, y: top + index * (height + gap), width, height }, spec, index);
     });
   }
 
