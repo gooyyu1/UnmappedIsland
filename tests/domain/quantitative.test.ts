@@ -33,14 +33,16 @@ object_defs:
     traits: [liquid_container]
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 1000
 
   jar:
     traits: [liquid_container]
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 4000
 
   water:
@@ -174,13 +176,15 @@ object_defs:
   cup:
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
         capacity: 100
 
   puddle:
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell_count: 1
+        cell: {accept: {tag: liquid}}
 
   rainwater:
     traits: [liquid]

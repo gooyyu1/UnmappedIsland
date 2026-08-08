@@ -4,30 +4,26 @@
 
 traits:
   player_character:
-    # 土地のcharactersスロットのaccepts判定用（core.yaml）。プレイヤーが操作するキャラクタだけが
+    # 土地のcharactersスロットの枠が受け入れる型（core.yaml）。プレイヤーが操作するキャラクタだけが
     # 持つタグで、操作できない生物は持ち運べるならitem・持ち運べないならfixtureで表す。
     tags: [character]
     slots:
-      # 手持ち。枠の位置が持ち替えのたびに動かないよう固定型（fixed_positions）にする
-      # （ScreenLayout.md ハンドレーン・SlotSystem.md 3節）。枠数はキャラクタごとに決める。
+      # 手持ち。枠数はキャラクタごとに決める（cell_count）。数を決めると持ち替えても枠の位置が
+      # 動かない（ScreenLayout.md ハンドレーン・SlotSystem.md 3節）。
       hand:
-        accepts:
-          - {tag: item, max: 9999}
-        fixed_positions: true
+        cell: {accept: {tag: item}}
       # 身につけているもの。枠数の上限はまだ決めていないため前詰めスロットにする（子ウィンドウ側は
       # はみ出した分を横スクロールで送る、ScreenLayout.md スロットの子ウィンドウ節）。
       # 「何を装備できるか」の語彙（equippableタグ・部位）は未検討のため、暫定でitemを受け入れる。
       # 上限の無いitemスロットなので、自動配置（7.7節）から外さないと、手持ちが埋まった時の
       # 行き先を全部吸い込んでしまう（手元でクラフトした物が身につくことになる）。
       equipment:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
         auto_placement: false
       # 怪我。プレイヤーが任意に出し入れするものではなく、ワールド側の効果だけが付け外しする
       # （UIからの移動・並び替えを許さない、ScreenLayout.md 参照）。中身はinjuries.yaml。
       injuries:
-        accepts:
-          - {tag: injury, max: 9999}
+        cell: {accept: {tag: injury}}
     props:
       # 今感じている痛み。自分では動かず、injuriesスロットの中の怪我がmodifyで押し上げる
       # （injuries.yaml）ので、valueは0のまま。増える側が悪いプロパティなので、段はmaxからの

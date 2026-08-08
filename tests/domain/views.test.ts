@@ -112,10 +112,8 @@ object_defs:
   character:
     slots:
       hand:
-        accepts:
-          - {tag: item, max: 9999}
-        unit_capacity: 3
-        fixed_positions: true
+        cell: {accept: {tag: item}}
+        cell_count: 3
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
@@ -151,8 +149,7 @@ object_defs:
   clearing:
     slots:
       characters:
-        accepts:
-          - {tag: character, max: 1}
+        cell: {accept: {tag: character}}
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
@@ -179,8 +176,7 @@ object_defs:
         range: {min: 0, max: 2}
     slots:
       characters:
-        accepts:
-          - {tag: character, max: 1}
+        cell: {accept: {tag: character}}
     actions:
       explore:
         showMenu: always

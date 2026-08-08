@@ -66,11 +66,10 @@ describe('プレイヤーキャラクタの定義', () => {
       const hand = def(character).getSlotDef(codex.slotNames.getId('hand'));
 
       expect(hand, '手持ちスロットを持つ').toBeDefined();
-      expect(hand?.fixedPositions, '手持ちは枠の位置が動かない固定型').toBe(true);
-      expect(hand?.accepts.map((rule) => rule.targetKind)).toEqual(['tag']);
-      // 枠数は個体差にしてよいが、ハンドレーンに収まる範囲に留める（ScreenLayout.md）。
-      expect(hand?.unitCapacity, '手持ちは4〜8枠').toBeGreaterThanOrEqual(4);
-      expect(hand?.unitCapacity, '手持ちは4〜8枠').toBeLessThanOrEqual(8);
+      // 枠数は個体差にしてよいが、ハンドレーンに収まる範囲に留める（ScreenLayout.md）。数を決めて
+      // いるので、持ち替えても枠の位置は動かない（SlotSystem.md 3節）。
+      expect(hand?.cellCount, '手持ちは4〜8枠').toBeGreaterThanOrEqual(4);
+      expect(hand?.cellCount, '手持ちは4〜8枠').toBeLessThanOrEqual(8);
 
       for (const slotName of ['equipment', 'injuries'])
         expect(

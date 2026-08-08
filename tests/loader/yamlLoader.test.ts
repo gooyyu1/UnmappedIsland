@@ -243,6 +243,54 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/deadly/);
   });
 
+  it('廃止したスロットのキーは、書き換え先を示して落とす', () => {
+    // 黙って無視すると、制約が効いているつもりの宣言が通ってしまう（SlotSystem.md 2節）。
+    const retired: readonly (readonly [string, RegExp])[] = [
+      ['accepts:\n          - {tag: item, max: 1}', /accept/],
+      ['unit_capacity: 3', /cell_count/],
+      ['fixed_positions: true', /cell_count/],
+      ['stackable: false', /object_def/],
+    ];
+    for (const [line, expected] of retired) {
+      const yaml = `
+object_defs:
+  box:
+    slots:
+      contents:
+        ${line}
+`;
+      const load = (): unknown => new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+      expect(load, line).toThrow(YamlLoadError);
+      expect(load, line).toThrowError(expected);
+    }
+  });
+
+  it('cellsとcellは同時に書けない（枠の数がどちらで決まるか分からなくなる）', () => {
+    const yaml = `
+object_defs:
+  box:
+    slots:
+      contents:
+        cell: {accept: {tag: item}}
+        cells:
+          - {accept: {tag: item}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/同時に/);
+  });
+
+  it('cellsを並べた数がそのまま枠の数なので、cell_countは併記できない', () => {
+    const yaml = `
+object_defs:
+  box:
+    slots:
+      contents:
+        cell_count: 2
+        cells:
+          - {accept: {tag: item}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/cell_count/);
+  });
+
   it('passivesはマッピング形式を許容せず、常に配列である必要がある', () => {
     const yaml = `
 object_defs:
@@ -667,8 +715,7 @@ object_defs:
   box:
     slots:
       content:
-        accepts:
-          - {tag: marker, max: 1}
+        cell: {accept: {tag: marker}}
     actions:
       use:
         conditions:
@@ -696,8 +743,7 @@ object_defs:
   box2:
     slots:
       content:
-        accepts:
-          - {tag: marker, max: 1}
+        cell: {accept: {tag: marker}}
     actions:
       use:
         conditions:
@@ -954,8 +1000,7 @@ object_defs:
   cauldron2:
     slots:
       ingredients:
-        accepts:
-          - {tag: spice, object: raw_meat, max: 1}
+        cell: {accept: {tag: spice, object: raw_meat}}
   raw_meat: {}
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
@@ -969,8 +1014,7 @@ object_defs:
   cauldron3:
     slots:
       ingredients:
-        accepts:
-          - {max: 1}
+        cell: {accept: {}}
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
       /いずれかが必要です/,

@@ -14,23 +14,18 @@ object_defs:
   clearing:
     slots:
       items:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
       characters:
-        accepts:
-          - {tag: character, max: 9999}
+        cell: {accept: {tag: character}}
 
   character:
     tags: [character]
     slots:
       hand:
-        accepts:
-          - {tag: item, max: 9999}
-        unit_capacity: 1
-        fixed_positions: true
+        cell: {accept: {tag: item}}
+        cell_count: 1
       equipment:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
         auto_placement: false
     actions:
       craft:

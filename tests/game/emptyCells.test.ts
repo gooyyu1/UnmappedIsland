@@ -3,7 +3,7 @@ import { emptyCellsFor, LANE_CELLS_MAX } from '../../src/game/ui/laneCells';
 
 /**
  * レーンの末尾に出す受け皿の空枠の数（ScreenLayout.md スロットの子ウィンドウ節）。枠数
- * （unit_capacity、SlotSystem.md 2節）の決まったスロットはその数だけ、無制限なら1つだけ添える。
+ * （cell_count、SlotSystem.md 2節）の決まったスロットはその数だけ、決まっていなければ1つだけ添える。
  */
 describe('受け皿の空枠の数', () => {
   it('枠数の決まったスロットは、埋まるまで常にその数の枠を見せる', () => {

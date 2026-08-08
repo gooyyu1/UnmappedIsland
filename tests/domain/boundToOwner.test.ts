@@ -14,21 +14,21 @@ object_defs:
   world:
     singleton: true
     slots:
-      places: {accepts: [{tag: place, max: 9999}]}
-      stuff: {accepts: [{tag: item, max: 9999}]}
+      places: {cell: {accept: {tag: place}}}
+      stuff: {cell: {accept: {tag: item}}}
 
   land:
     tags: [place]
     slots:
-      roads: {accepts: [{tag: road, max: 9999}]}
-      stuff: {accepts: [{tag: item, max: 9999}]}
+      roads: {cell: {accept: {tag: road}}}
+      stuff: {cell: {accept: {tag: item}}}
 
   road:
     tags: [road]
     bound_to_owner: true
     slots:
       # 道そのものは持ち出せないが、道に置いた物は道と運命を共にしない。
-      stuff: {accepts: [{tag: item, max: 9999}]}
+      stuff: {cell: {accept: {tag: item}}}
 
   stone:
     tags: [item]

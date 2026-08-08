@@ -16,9 +16,7 @@ traits:
       # locationのfixturesスロットより後に宣言すること。探索でその場に湧く設置物（explore内の
       # spawn）は宣言順で最初に受け入れたスロットへ入るため、先に置くと湧いた側まで隠れてしまう。
       undiscovered_fixtures:
-        accepts:
-          - {tag: fixture, max: 9999}
-        stackable: false
+        cell: {accept: {tag: fixture}}
     props:
       # 探索の進捗。値なし（{}）のため、各土地のobject_def側でvalue/range（探索率100%=range.max）
       # を必ず与える（5節の「traitでvalueなし=継承先で必須」の規約）。
@@ -41,6 +39,8 @@ object_defs:
     tags: [fixture, path]
     # 繋がる土地の無い道は存在しない（7.9節）。土地から外せず、土地が消えれば一緒に消える。
     bound_to_owner: true
+    # 行き先が個体ごとに違うので束ねない。束ねると代表の行き先しかカードに出せなくなる（4節）。
+    stackable: false
     props:
       travel_minutes:
         value: 60

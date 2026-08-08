@@ -80,10 +80,10 @@ export interface ObjectWindowSlot {
   readonly acceptsCards: boolean;
 
   /**
-   * このスロットが持つ枠の数（`unit_capacity`、SlotSystem.md 2節。無制限ならundefined）。
+   * このスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
    * 空けておく枠の数と、自分のカードを出すかを決める。
    */
-  readonly unitCapacity?: number;
+  readonly cellCount?: number;
 }
 
 export interface ObjectWindowOptions {
@@ -212,7 +212,7 @@ export class ObjectWindow {
         contents.cards,
         {
           clip: true,
-          emptyCells: emptyCellsFor(contents.cards.length, contents.unitCapacity, contents.acceptsCards),
+          emptyCells: emptyCellsFor(contents.cards.length, contents.cellCount, contents.acceptsCards),
         },
       );
     } else if (description !== undefined) {
@@ -337,7 +337,7 @@ export class ObjectWindow {
  * 何枚入るか分からないスロット（かご・装備）がこちらで、1枠しかない治療具はカードを出す側に残る。
  */
 function fillsWidth(slot: ObjectWindowSlot): boolean {
-  return slot.unitCapacity === undefined || slot.unitCapacity > LANE_CELLS_MAX;
+  return slot.cellCount === undefined || slot.cellCount > LANE_CELLS_MAX;
 }
 
 /**
@@ -351,7 +351,7 @@ function fillsWidth(slot: ObjectWindowSlot): boolean {
  */
 function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowSlot): number {
   const used = contents.cards.length + (contents.acceptsCards ? 1 : 0);
-  const wanted = Math.max(contents.unitCapacity ?? Number.POSITIVE_INFINITY, used);
+  const wanted = Math.max(contents.cellCount ?? Number.POSITIVE_INFINITY, used);
   const slots = Math.min(LANE_CELLS_MAX, wanted);
 
   const cards = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);

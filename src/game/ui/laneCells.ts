@@ -15,15 +15,11 @@ export const LANE_CELLS_MAX = 4;
  * - **無制限のスロットは末尾に1枠だけ添える。** 前詰めのレーンは中身が空だと何も描かれず、
  *   落とせる場所かどうかが見て分からないため。
  *
- * unitCapacityはそのスロットが持つ枠の数（SlotSystem.md 2節）。中身の合計サイズの上限
- * （`capacity`）でも、型ごとの個数の制約（`accepts`の`max`）でもない。
+ * cellCountはそのスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節）。中身のかさの合計の
+ * 上限（`capacity`）とは別物。
  */
-export function emptyCellsFor(
-  cards: number,
-  unitCapacity: number | undefined,
-  acceptsCards: boolean,
-): number {
+export function emptyCellsFor(cards: number, cellCount: number | undefined, acceptsCards: boolean): number {
   if (!acceptsCards) return 0;
-  if (unitCapacity === undefined || unitCapacity > LANE_CELLS_MAX) return 1;
-  return Math.max(0, unitCapacity - cards);
+  if (cellCount === undefined || cellCount > LANE_CELLS_MAX) return 1;
+  return Math.max(0, cellCount - cards);
 }

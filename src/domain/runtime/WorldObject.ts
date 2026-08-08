@@ -19,7 +19,7 @@ import type { WorldSession } from './WorldSession';
  * 解決とグローバルAPIの提供に専念する（プロパティの読み書き）。represented_byによる代表・同種スタック判定では、
  * 自分の代表チェーンのスナップショット化・突き合わせと、中身が入れ替わったときの再スタック伝播を担う。
  * move_to_slotによる所属先の差し替え（旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録・
- * represented_by再判定）にも専念し、accepts/capacity検証は対象Slot自身へ委ねる。持続効果（modify/accumulate）の
+ * represented_by再判定）にも専念し、枠の要件・capacityの検証は対象Slot自身へ委ねる。持続効果（modify/accumulate）の
  * 登録・解除は、生成・エッジ形成/解消・トポロジ変化の契機で、Defが宣言する効果一式（PassiveEffects）へ
  * 「登録/解除してほしい」と依頼するだけで、どのtargetがどこへ紐付くかは効果自身が知る。能動効果
  * （set/add/destroy/spawn/transfer・actions/combinations・tick）は、適用の入口（applyActiveEffect）と対象解決、
@@ -237,7 +237,7 @@ export class WorldObject {
   }
 
   /**
-   * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。accepts/capacity/unitCapacityの検証は対象Slot
+   * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
    * 自身（Slot.canAccept）に委ねる。
    *
    * force=trueは検証を飛ばして必ず配置を成功させる（spawnのフォールバック、9.4節専用）。スロット自体が
@@ -352,13 +352,13 @@ export class WorldObject {
     force = false,
   ): string | undefined {
     // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
-    // forceでも許さない——forceが省くのはaccepts/capacityの判定であって、木構造の不変条件ではない。
+    // forceでも許さない——forceが省くのは枠の要件・capacityの判定であって、木構造の不変条件ではない。
     if (this.contains(newParent)) {
       return `'${this.def.name}' を自分自身の中へは入れられません。`;
     }
 
     // 単独で在れない物は、いったん持ち主に付いたら別の持ち主へは移せない（7.9節）。捻挫は身体から
-    // 剥がせないし、道は繋がる土地から外せない。forceでも許さない——accepts/capacityの判定ではなく、
+    // 剥がせないし、道は繋がる土地から外せない。forceでも許さない——枠の要件・capacityの判定ではなく、
     // 「その物がどう存在するか」の不変条件だから。生まれた直後（親を持たない間）の配置は通す。
     if (this.def.boundToOwner && this._parent !== undefined && this._parent !== newParent) {
       return `'${this.def.name}' は '${this._parent.def.name}' から離せません。`;
@@ -600,7 +600,7 @@ export class WorldObject {
     if (available <= 0) return false;
 
     const merged = slot.findQuantityMergeTarget(this);
-    // 合流先が無いときだけ、新しいインスタンスを置けるかをacceptsに問う（既にいるなら枠は増えない）。
+    // 合流先が無いときだけ、新しいインスタンスを置ける枠があるかを問う（既にいるなら枠は増えない）。
     if (merged === undefined && !slot.acceptsByRule(this)) return false;
 
     const amount = Math.min(available, slot.remainingCapacity(wellKnown.sizeId));
@@ -800,7 +800,7 @@ export class WorldObject {
   }
 
   /**
-   * spawn（9.4節）を実行する。intoへの配置に失敗した場合は起点自身の親へ伝播し、accepts/capacityを無視して
+   * spawn（9.4節）を実行する。intoへの配置に失敗した場合は起点自身の親へ伝播し、枠の要件・capacityを無視して
    * 強制配置する（place参照）。伝播先の親も無ければ、生成したオブジェクトはworldツリーに繋がらないまま消える。
    */
   executeSpawn(
@@ -825,7 +825,7 @@ export class WorldObject {
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
    * （EffectSite.placeReplacementへ委ねる）。self/actorなら対象のスロットを宣言順に走査し、最初に配置できた
-   * スロットへ入れる。配置に失敗した場合は起点自身の親へ伝播し、accepts/capacityを無視して強制配置する。
+   * スロットへ入れる。配置に失敗した場合は起点自身の親へ伝播し、枠の要件・capacityを無視して強制配置する。
    * 伝播先の親も無ければ何もしない。
    */
   private place(

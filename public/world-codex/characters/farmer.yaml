@@ -6,7 +6,7 @@ object_defs:
     singleton: true
     traits: [player_character]
     slots:
-      hand: {unit_capacity: 6}
+      hand: {cell_count: 6}
     props:
       # 胃が大きく、満腹から1日3時間（120 tick）保つ。そのぶん満たすのに要る食料も多い。
       satiety:

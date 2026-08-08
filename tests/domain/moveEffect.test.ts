@@ -21,8 +21,7 @@ object_defs:
     singleton: true
     slots:
       locations:
-        accepts:
-          - {tag: location, max: 9999}
+        cell: {accept: {tag: location}}
 
   meadow:
     traits: [location]
@@ -31,16 +30,14 @@ object_defs:
         value: 0
     slots:
       characters:
-        accepts:
-          - {tag: character, max: 9999}
+        cell: {accept: {tag: character}}
       stuff: {}
 
   hilltop:
     traits: [location]
     slots:
       characters:
-        accepts:
-          - {tag: character, max: 9999}
+        cell: {accept: {tag: character}}
       stuff: {}
 
   character:
@@ -131,8 +128,7 @@ object_defs:
     singleton: true
     slots:
       stuff:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
 
   stone:
     tags: [item]
@@ -145,8 +141,7 @@ object_defs:
         move: {object: dragged, to: self}
     slots:
       contents:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
 `,
       )
       .build();
@@ -178,8 +173,7 @@ object_defs:
     singleton: true
     slots:
       stuff:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
 
   basket:
     tags: [item]
@@ -189,8 +183,7 @@ object_defs:
         move: {object: dragged, to: self}
     slots:
       contents:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
 `,
       )
       .build();
@@ -296,8 +289,7 @@ object_defs:
   jar:
     slots:
       content:
-        accepts:
-          - {tag: liquid, max: 9999}
+        cell: {accept: {tag: liquid}}
   water:
     tags: [liquid]
     combinations:

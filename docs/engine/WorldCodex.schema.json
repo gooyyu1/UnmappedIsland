@@ -410,7 +410,7 @@
       "additionalProperties": false
     },
     "passives_list": {
-      "description": "passive_defの配列。オブジェクトレベル・プロパティレベル・stage内のいずれでも常に配列であり、単一マッピングでの省略記法は許可しない（conditions/stages/accepts/pick等、複数形キーは常に配列という規約に合わせる）。",
+      "description": "passive_defの配列。オブジェクトレベル・プロパティレベル・stage内のいずれでも常に配列であり、単一マッピングでの省略記法は許可しない（conditions/stages/cells/pick等、複数形キーは常に配列という規約に合わせる）。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/passive_def"
@@ -453,7 +453,7 @@
             "self",
             "actor"
           ],
-          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。self/actorは、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ解決できる。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、accepts/capacityを無視して強制的に伝播する。"
+          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。self/actorは、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ解決できる。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する。"
         }
       },
       "required": [
@@ -765,8 +765,8 @@
       ],
       "additionalProperties": false
     },
-    "slot_accept_entry": {
-      "description": "slotのaccepts（型・数量の制約、GameElementDefinition.md 7.2節）の1エントリ。tag（タグを持つ任意のobject_def）とobject（特定のobject_def）はどちらか一方のみ指定する。",
+    "cell_accept": {
+      "description": "枠が受け入れる型（GameElementDefinition.md 7.2節）。tag（タグを持つ任意のobject_def）とobject（特定のobject_def）はどちらか一方のみ指定する。",
       "type": "object",
       "properties": {
         "tag": {
@@ -776,18 +776,8 @@
         "object": {
           "$ref": "#/$defs/identifier",
           "description": "このobject_defだけを受け入れる。"
-        },
-        "max": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "consume": {
-          "type": "boolean"
         }
       },
-      "required": [
-        "max"
-      ],
       "oneOf": [
         {
           "required": [
@@ -802,39 +792,68 @@
       ],
       "additionalProperties": false
     },
-    "slot_def": {
-      "description": "スロット（7.1節）。accepts省略時は無制限（既存のinventory/equip等と同じ挙動）。",
+    "cell_def": {
+      "description": "1つの枠（セル）の定義（GameElementDefinition.md 7.2節）。何が入るかはaccept、その枠に何個積めるかはmaxが決める。",
       "type": "object",
       "properties": {
-        "accepts": {
-          "description": "型・数量の制約（GameElementDefinition.md 7.2節）。capacityとは独立した仕組みで、両方同時に持てる。",
+        "accept": {
+          "$ref": "#/$defs/cell_accept",
+          "description": "受け入れる型。省略すると型を問わない。"
+        },
+        "max": {
+          "description": "この枠に積める同種の個数（省略で無制限）。束ねられる型（object_defのstackable）にだけ効く。",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "slot_def": {
+      "description": "スロット（7.1節）。中身は枠（セル）の並びとして持つ。cell/cellsを省略すると、どんな型でも無制限に積める枠が必要なだけ増える。",
+      "type": "object",
+      "properties": {
+        "cell": {
+          "$ref": "#/$defs/cell_def",
+          "description": "すべての枠に共通する要件（GameElementDefinition.md 7.2節）。cellsとは同時に指定できない。"
+        },
+        "cells": {
+          "description": "枠ごとの要件（GameElementDefinition.md 7.2節）。並べた数がそのまま枠の数なので、cell_countとは同時に指定できない。",
           "type": "array",
           "items": {
-            "$ref": "#/$defs/slot_accept_entry"
-          }
+            "$ref": "#/$defs/cell_def"
+          },
+          "minItems": 1
+        },
+        "cell_count": {
+          "description": "枠の数（GameElementDefinition.md 7.2節）。省略すると枠数は決まらず、空いた枠は前詰めされる。決めると位置が安定する（SlotSystem.md 3節）。",
+          "type": "integer",
+          "minimum": 1
         },
         "capacity": {
           "description": "合計サイズの上限（GameElementDefinition.md 7.3節）。",
           "type": "number",
           "exclusiveMinimum": 0
         },
-        "stackable": {
-          "description": "同種オブジェクトを1つの単位としてまとめるか（GameElementDefinition.md 7.6節）。既定true。falseなら同種でも個体ごとに別単位として数える（例: かまどの投入口）。",
-          "type": "boolean"
-        },
-        "unit_capacity": {
-          "description": "このスロットに同時に存在できる「単位」の上限（GameElementDefinition.md 7.6節）。単位の意味はstackableに従う（trueなら型の種類数、falseなら個体数）。capacity（サイズ合計）とは独立した別軸の制約。",
-          "type": "integer",
-          "minimum": 1
-        },
-        "fixed_positions": {
-          "description": "前詰めしないか（GameElementDefinition.md 7.6節）。既定false。trueの場合、型ごとに固定番号（0始まり、unit_capacity個まで）が割り当てられ、空いた番号を保持したまま詰めない（例: プレイヤー手持ちの6枠）。",
-          "type": "boolean"
-        },
         "auto_placement": {
           "description": "spawn/moveの宣言順走査の対象になるか（GameElementDefinition.md 7.7節）。既定true。falseなら、プレイヤーの手動配置とスロット名を名指しした移動でしか物が入らない（例: キャラクターの装備欄）。",
           "type": "boolean"
         }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "cell",
+              "cells"
+            ]
+          },
+          {
+            "required": [
+              "cells",
+              "cell_count"
+            ]
+          }
+        ]
       },
       "additionalProperties": false
     },
@@ -938,7 +957,7 @@
           "$ref": "#/$defs/stack_order"
         },
         "tags": {
-          "description": "このobject_def/traitが持つタグのリスト（4節）。slotのaccepts・combinationsのwith等のマッチングに使う。",
+          "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
           "type": "array",
           "items": {
             "$ref": "#/$defs/identifier"
@@ -951,6 +970,10 @@
         "quantitative": {
           "type": "boolean",
           "description": "個数ではなく量で存在する型か（7.6節）。真ならsizeが量を表し、インスタンスの存在とsizeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
+        },
+        "stackable": {
+          "type": "boolean",
+          "description": "同種と束ねてよい型か（7.6節・SlotSystem.md 4節）。既定true。falseなら同じ型でも1個ずつ別の枠に並ぶ（道は行き先が、かごは中身が個体ごとに違うため）。"
         }
       },
       "additionalProperties": false
@@ -1004,7 +1027,7 @@
           "$ref": "#/$defs/stack_order"
         },
         "tags": {
-          "description": "このobject_def/traitが持つタグのリスト（4節）。slotのaccepts・combinationsのwith等のマッチングに使う。",
+          "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
           "type": "array",
           "items": {
             "$ref": "#/$defs/identifier"
@@ -1017,6 +1040,10 @@
         "quantitative": {
           "type": "boolean",
           "description": "個数ではなく量で存在する型か（7.6節）。真ならsizeが量を表し、インスタンスの存在とsizeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
+        },
+        "stackable": {
+          "type": "boolean",
+          "description": "同種と束ねてよい型か（7.6節・SlotSystem.md 4節）。既定true。falseなら同じ型でも1個ずつ別の枠に並ぶ（道は行き先が、かごは中身が個体ごとに違うため）。"
         }
       },
       "additionalProperties": false

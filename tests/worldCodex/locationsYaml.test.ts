@@ -62,8 +62,7 @@ describe('locations.yamlの土地・道定義', () => {
       ).toBeLessThan(slotNames.indexOf('undiscovered_fixtures'));
 
       const characters = land.getSlotDef(codex.slotNames.getId('characters'));
-      expect(characters?.fixedPositions, `${name} のキャラクタスロットは固定型`).toBe(true);
-      expect(characters?.unitCapacity, `${name} のキャラクタスロットのスタック数は1`).toBe(1);
+      expect(characters?.cellCount, `${name} のキャラクタスロットは1枠`).toBe(1);
 
       const items = land.getSlotDef(codex.slotNames.getId('items'));
       const fixtures = land.getSlotDef(codex.slotNames.getId('fixtures'));

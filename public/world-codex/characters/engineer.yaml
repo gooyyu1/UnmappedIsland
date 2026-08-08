@@ -8,7 +8,7 @@ object_defs:
     traits: [player_character]
     slots:
       # 道具を並べて持ち替えるのに慣れており、手持ちが1枠多い。
-      hand: {unit_capacity: 7}
+      hand: {cell_count: 7}
     props:
       # 小食で、満腹から21時間（84 tick）。少ない食料で満たせる。
       satiety:

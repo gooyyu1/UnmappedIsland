@@ -466,7 +466,7 @@ export class PlayScene extends ResponsiveScene {
       // 前詰めのレーンなので、末尾に受け皿の空枠を出す（中身が空でも落とせると分かるように）。
       emptyCells: emptyCellsFor(
         this.view.items.length,
-        this.view.unitCapacityOf('items'),
+        this.view.cellCountOf('items'),
         this.view.acceptsCards('items'),
       ),
       art: laneTexture('item', art),
@@ -765,7 +765,7 @@ export class PlayScene extends ResponsiveScene {
               title: this.view.nameOf(place),
               cards: this.laneCards(this.childWindowCards()),
               acceptsCards: this.view.acceptsCards(place),
-              unitCapacity: this.view.unitCapacityOf(place),
+              cellCount: this.view.cellCountOf(place),
             },
       actions,
       area: this.layout.slotWindowArea,

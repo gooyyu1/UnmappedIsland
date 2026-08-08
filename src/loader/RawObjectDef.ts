@@ -50,6 +50,9 @@ export class RawObjectDef {
   /** bound_to_owner（7.9節）。単独では存在できない型か。quantitativeと同じくORで合成する。 */
   boundToOwner = false;
 
+  /** stackable。同種と束ねてよい型か（既定true）。束ねない宣言が1つでもあれば束ねない。 */
+  notStackable = false;
+
   actions: YAMLMap | undefined;
   combinations: YAMLMap | undefined;
 
@@ -84,6 +87,7 @@ export class RawObjectDef {
     const tags: string[] = [];
     let quantitative = this.quantitative;
     let boundToOwner = this.boundToOwner;
+    let notStackable = this.notStackable;
 
     for (const traitName of this.traitNames) {
       const trait = traitsByName.get(traitName);
@@ -103,6 +107,7 @@ export class RawObjectDef {
       // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
       if (trait.quantitative) quantitative = true;
       if (trait.boundToOwner) boundToOwner = true;
+      if (trait.notStackable) notStackable = true;
       tags.push(...trait.tags);
     }
 
@@ -225,6 +230,7 @@ export class RawObjectDef {
       quantitative,
       mainItemSlotGlobalId,
       boundToOwner,
+      !notStackable,
     );
   }
 }

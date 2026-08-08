@@ -17,9 +17,9 @@ object_defs:
       load: {value: 0}
     slots:
       hand:
-        accepts: [{tag: item, max: 9999}]
+        cell: {accept: {tag: item}}
       equipment:
-        accepts: [{tag: item, max: 9999}]
+        cell: {accept: {tag: item}}
 
   stone:
     tags: [item]
@@ -38,7 +38,7 @@ object_defs:
             modify: {self: {load_reduction_rate: 90}}
     slots:
       cargo:
-        accepts: [{tag: item, max: 9999}]
+        cell: {accept: {tag: item}}
 
   # 車輪ぶん引きやすい。
   handcart:
@@ -52,7 +52,7 @@ object_defs:
             modify: {self: {load_reduction_rate: 95}}
     slots:
       cargo:
-        accepts: [{tag: item, max: 9999}]
+        cell: {accept: {tag: item}}
 
   # 背負えば楽だが、手に提げれば軽くならない。
   backpack:
@@ -66,7 +66,7 @@ object_defs:
             modify: {self: {load_reduction_rate: 50}}
     slots:
       contents:
-        accepts: [{tag: item, max: 9999}]
+        cell: {accept: {tag: item}}
 
   water:
     tags: [item]

@@ -217,13 +217,11 @@ export interface PlayScreenView {
   readonly acceptsCards: (place: CardPlace) => boolean;
 
   /**
-   * その場所が持つ枠の数（`unit_capacity`、SlotSystem.md 2節。無制限ならundefined）。子ウィンドウが
-   * 空けておく枠の数を決めるのに使う——1枠しか無い場所に4枠空けると「4つ入る」と誤って伝わる。
-   *
-   * スロットの制約は3つあり、これはそのうち**枠の数**。`capacity`は中身のsizeの合計の上限、
-   * `accepts`の`max`は「板1枚と棒4本」のような型ごとの個数で、どちらも枠の数ではない。
+   * その場所が持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
+   * 子ウィンドウが空けておく枠の数を決めるのに使う——1枠しか無い場所に4枠空けると「4つ入る」と
+   * 誤って伝わる。中身のかさの合計の上限（`capacity`）とは別物。
    */
-  readonly unitCapacityOf: (place: CardPlace) => number | undefined;
+  readonly cellCountOf: (place: CardPlace) => number | undefined;
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
@@ -540,7 +538,7 @@ export function fromGameSession(
    * スロット移動（WorldObject.moveToSlot*）で、場所ごとの特別扱いは持たない。コンテナ（箱・かご）
    * を足すときも、この表に1行増やすだけで移動もドラッグも動く。
    *
-   * **どこへ移せるかはこの表では決めない。** それはワールド側の宣言（accepts・bound_to_owner）から
+   * **どこへ移せるかはこの表では決めない。** それはワールド側の宣言（枠の型・bound_to_owner）から
    * 引く（moveInto参照）。設置物のかごを持ち歩けるようにしたら、画面を直さずに外せるようになる。
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
@@ -584,7 +582,7 @@ export function fromGameSession(
 
       if (at.kind === 'cell') {
         // 空き枠を指せるのは固定枠スロットだけ（前詰めスロットに空き枠は無い）。
-        const fixed = dest.owner.tryGetSlot(dest.slotId)?.def.fixedPositions === true;
+        const fixed = dest.owner.tryGetSlot(dest.slotId)?.def.cellCount !== undefined;
         return fixed
           ? () => {
               item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
@@ -692,9 +690,9 @@ export function fromGameSession(
       const slotDef = slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId);
       return slotDef !== undefined && codex.admitsBroughtObjects(slotDef);
     },
-    unitCapacityOf: (place) => {
+    cellCountOf: (place) => {
       const slot = slotOf(place);
-      return slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId)?.unitCapacity;
+      return slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId)?.cellCount;
     },
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを

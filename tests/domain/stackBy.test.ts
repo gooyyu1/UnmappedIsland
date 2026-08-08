@@ -41,7 +41,7 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell: {accept: {tag: liquid}}
 object_defs:
   bag_repr:
     slots:
@@ -82,7 +82,7 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell: {accept: {tag: liquid}}
 object_defs:
   bag_repr3:
     slots:
@@ -121,7 +121,7 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell: {accept: {tag: liquid}}
 object_defs:
   bag_remig:
     slots:
@@ -168,12 +168,12 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell: {accept: {tag: liquid}}
   represented_liquid:
     represented_by: essence
     slots:
       essence:
-        accepts: [{tag: essence, max: 1}]
+        cell: {accept: {tag: essence}}
 object_defs:
   bag_deep:
     slots:
@@ -233,12 +233,12 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell: {accept: {tag: liquid}}
   represented_liquid:
     represented_by: essence
     slots:
       essence:
-        accepts: [{tag: essence, max: 1}]
+        cell: {accept: {tag: essence}}
 object_defs:
   bag_repr2:
     slots:
@@ -296,14 +296,12 @@ traits:
     represented_by: content
     slots:
       content:
-        accepts: [{tag: liquid, max: 1}]
+        cell: {accept: {tag: liquid}}
 object_defs:
   hand_repr:
     slots:
       hand:
-        stackable: true
-        unit_capacity: 3
-        fixed_positions: true
+        cell_count: 3
   empty_liquid:
     tags: [liquid]
   water_liquid:

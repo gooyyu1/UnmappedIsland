@@ -13,7 +13,7 @@ traits:
     main_item_slot: contents
     combinations:
       # 中へ入れる。カードを重ねるだけの操作なので時間はかからない（durationを持たない）。
-      # 入るかどうかはcontentsスロットのaccepts/capacityが決めるので、ここでは条件を書かない。
+      # 入るかどうかはcontentsスロットの枠とcapacityが決めるので、ここでは条件を書かない。
       put_in:
         with: item
         move: {object: dragged, to: self}
@@ -23,8 +23,7 @@ traits:
       # 各アイテムのsizeもまだ決めていないため、当面この上限は効かない（どのアイテムもsize=0扱い）。
       # 値は「石や枝が十分入る」という想定の仮置きで、単位が決まったら見直す。
       contents:
-        accepts:
-          - {tag: item, max: 9999}
+        cell: {accept: {tag: item}}
         capacity: 1000
 
 object_defs:
@@ -33,6 +32,8 @@ object_defs:
   # アイテムレーンの間を端の▲▼で行き来する）。
   woven_basket:
     tags: [item, fixture]
+    # 中身が個体ごとに違うので束ねない。束ねると代表の中身しか開けなくなる（SlotSystem.md 4節）。
+    stackable: false
     traits: [item_container]
     props:
       weight: {value: 800}
