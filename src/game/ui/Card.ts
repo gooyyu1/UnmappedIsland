@@ -791,14 +791,24 @@ export class Card extends Phaser.GameObjects.Container {
 /**
  * 中身の無い固定枠を示すカード。枠数を決めたスロット（cell_count、SlotSystem.md 3節）は空でも位置を
  * 保つため、枠だけを破線で描いて「ここは空いている」と分かるようにする。
+ *
+ * acceptsを渡すと、紙の代わりにその物のカードを薄く敷く。何を入れる枠なのかは、名前と絵が一番早く
+ * 伝えるため。破線はどちらでも同じ濃さで重ねる——薄めると「まだ空いている」ことが読み取れなくなる。
  */
 export class EmptyCard extends Phaser.GameObjects.Container {
-  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number) {
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, accepts?: CardContent) {
     super(scene, x, y);
 
-    const face = addFrame(scene, metrics, metrics.px(SIZE.cardWidth), metrics.px(SIZE.cardHeight), true);
+    const width = metrics.px(SIZE.cardWidth);
+    const height = metrics.px(SIZE.cardHeight);
 
-    this.add(face);
+    if (accepts === undefined) {
+      this.add(addFrame(scene, metrics, width, height, true));
+    } else {
+      this.add(new Card(scene, metrics, 0, 0, cardFace(accepts)).setAlpha(EMPTY_FRAME_ALPHA));
+      this.add(emptyOutline(scene, metrics, width, height));
+    }
+
     scene.add.existing(this);
   }
 }
@@ -875,6 +885,23 @@ export class CellOverlay extends Phaser.GameObjects.Container {
   }
 }
 
+/** 空き枠であることを示す破線。薄く敷いたもの（紙・受け入れる物のカード）の上へ、薄めずに重ねる。 */
+function emptyOutline(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Graphics {
+  const outline = scene.add.graphics();
+  drawBox(outline, paperRect(metrics, width, height), {
+    border: COLOR.cardBorder,
+    borderWidth: Math.max(1, metrics.px(2)),
+    radius: metrics.px(FRAME_RADIUS),
+    dashed: true,
+  });
+  return outline;
+}
+
 /**
  * カードの枠。画像（CARD_FRAME_TEXTURE）があればそれを矩形いっぱいに貼り、無ければ図形で描く。
  * 画像を差し替えたり用意しなかったりしても画面が成り立つよう、図形の描画は残してある。
@@ -895,14 +922,7 @@ function addFrame(
     // 空き枠は紙を薄く敷いたうえに破線を重ねる。薄いだけだと明るい下地（子ウィンドウの台紙）で
     // ほとんど見えず、「枠がいくつあるか」が伝わらないため。
     image.setAlpha(EMPTY_FRAME_ALPHA);
-    const outline = scene.add.graphics();
-    drawBox(outline, paperRect(metrics, width, height), {
-      border: COLOR.cardBorder,
-      borderWidth: Math.max(1, metrics.px(2)),
-      radius: metrics.px(FRAME_RADIUS),
-      dashed: true,
-    });
-    return scene.add.container(0, 0, [image, outline]);
+    return scene.add.container(0, 0, [image, emptyOutline(scene, metrics, width, height)]);
   }
 
   const face = scene.add.graphics();

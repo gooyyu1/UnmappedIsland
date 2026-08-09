@@ -1,3 +1,4 @@
+import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
@@ -202,6 +203,12 @@ export interface PlayScreenView {
    * 空きセルは無い。レーンで常に見えているfixtures/items/handはこちらでは扱わない。
    */
   readonly cardsIn: (place: CardPlace) => readonly ObjectCardStack[];
+
+  /**
+   * その型（object_defのグローバルID）そのものを表すカード。インスタンスを持たないので、まだ在るとは
+   * 限らない物——枠が受け入れる素材（LaneCell.accepts）——を見せるのに使う。
+   */
+  readonly cardOfType: (objectGlobalId: number) => CardContent;
 
   /** 子ウィンドウのタイトルに出す、その場所の名前。 */
   /**
@@ -420,18 +427,28 @@ export function fromGameSession(
   const fixtureTagId = codex.tagNames.tryGetId('fixture');
   const injuryTagId = codex.tagNames.tryGetId('injury');
 
+  /** その型の表示名。インスタンスを見ないので、中身による差し替え（水入りの水筒）は含まない。 */
+  const typeNameOf = (def: ObjectDef): string => {
+    const texts = locale.object(def.name);
+    // 製作中オブジェクトは自動生成なので対応表に載らない。完成品の名前から組み立てる。
+    const product = codex.productOf(def);
+    return product === undefined
+      ? texts.displayName
+      : texts.displayNameInProgress(locale.object(product.name).displayName);
+  };
+
   /**
    * そのオブジェクトの表示名。中身を代表にしているもの（水入りの水筒）は、中身の名前を差し込んだ
    * 名前になる（Localization.md）。代表がさらに中身を持つ入れ子は、内側から順に畳まれる。
    */
   const nameOf = (object: WorldObject): string => {
-    const texts = locale.object(object.def.name);
-    // 製作中オブジェクトは自動生成なので対応表に載らない。完成品の名前から組み立てる。
-    const product = codex.productOf(object.def);
-    if (product !== undefined) return texts.displayNameInProgress(locale.object(product.name).displayName);
+    // 製作中オブジェクトも中身（材料）を持つが、名前は型のものをそのまま使う。
+    if (codex.productOf(object.def) !== undefined) return typeNameOf(object.def);
 
     const content = object.tryGetRepresentative();
-    return content === undefined ? texts.displayName : texts.displayNameWithContent(nameOf(content));
+    return content === undefined
+      ? typeNameOf(object.def)
+      : locale.object(object.def.name).displayNameWithContent(nameOf(content));
   };
 
   /**
@@ -439,16 +456,30 @@ export function fromGameSession(
    * itemとfixtureを兼ねる編み籠は、地面へ据えてもアイテムのまま持ち歩けるので、レーンを移った
    * だけで別の物に見えては困る。持ち歩けるかどうかを先に見るのはそのため。
    */
-  const iconOf = (object: WorldObject): string => {
-    const tags = object.def.tags;
+  const iconOf = (def: ObjectDef): string => {
+    const tags = def.tags;
     if (injuryTagId !== undefined && tags.includes(injuryTagId)) return INJURY_ICON;
     if (itemTagId !== undefined && tags.includes(itemTagId)) return ITEM_ICON;
     if (fixtureTagId !== undefined && tags.includes(fixtureTagId)) return FIXTURE_ICON;
     return ITEM_ICON;
   };
 
+  /**
+   * 型そのものを表すカード。インスタンスが1つも無くても作れるので、まだ在るとは限らない物
+   * （枠が受け入れる素材）を見せるのに使う。個体ごとに違い得る値は持たない。
+   */
+  const cardOfType = (objectGlobalId: number): CardContent => {
+    const def = codex.objects.get(objectGlobalId);
+    return {
+      icon: iconOf(def),
+      name: typeNameOf(def),
+      art: def.name,
+      inProgress: codex.productOf(def) !== undefined,
+    };
+  };
+
   const stackOf = (instances: readonly WorldObject[], place: CardPlace): ObjectCardStack => ({
-    icon: iconOf(instances[0]),
+    icon: iconOf(instances[0].def),
     name: nameOf(instances[0]),
     // 作りかけかどうかは物の型が決める。設置物として地面に据わっていても手に持っていても、
     // 同じ「まだ物になっていない」カードとして出す。
@@ -694,6 +725,7 @@ export function fromGameSession(
         reorder: reorderIn(stack[0]),
       }));
     },
+    cardOfType,
     nameOf: (place) => {
       const slot = slotOf(place);
       if (slot === undefined) return typeof place === 'string' ? place : nameOf(place.container);

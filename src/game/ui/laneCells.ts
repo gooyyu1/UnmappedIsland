@@ -21,6 +21,12 @@ export interface LaneCell {
   readonly card?: CardContent;
 
   /**
+   * その枠が受け入れる物（1つに決まっていなければundefined）。空き枠のときだけ、そのカードを薄く
+   * 敷いて何を入れる枠なのかを示す。
+   */
+  readonly accepts?: CardContent;
+
+  /**
    * 枠の縁を染める色（省略すると染めない）。**塗りではなく縁**なのは、塗るとカードが入った枠で
    * 隠れてしまうため。
    */

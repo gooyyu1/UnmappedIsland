@@ -326,7 +326,7 @@ export class CardLane {
     this._cells.forEach((cell, index) => {
       const x = index * this.pitch;
       if (cell.card === undefined) {
-        this.cellLayer.add(new EmptyCard(this.scene, this.metrics, x, 0));
+        this.cellLayer.add(new EmptyCard(this.scene, this.metrics, x, 0, cell.accepts));
       }
       if (cell.borderColor !== undefined || cell.overlay !== undefined) {
         this.overlayLayer.add(
