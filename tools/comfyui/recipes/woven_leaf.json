@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/woven_leaf.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "**アイテムでは初めての2段構え**（アイコンと同じ作り。README「ボタンの絵」節）。SDXLの生成は",
+    "写実的すぎて他のカードから浮くので、Qwen Image Edit で絵の具の質感へ描き直す。source を持たない",
+    "edit は、同じレシピから edit を外したもの——つまり自分の生成——を基準にする。",
+    "",
+    "編んだ葉が枠いっぱいの敷物になるのを抑えるため、下絵は横長（1152x896）で出す",
+    "（prompts/objects.json の woven_leaf 参照）。",
+    "",
+    "石（256）より大きいので400。カード幅410のほぼ全部を使う。"
+  ],
+  "output": "src/assets/objects/woven_leaf.png",
+  "prompts": "objects.json",
+  "prompt": "woven_leaf",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 1152,
+  "height": 896,
+  "seed": 9303,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the woven palm leaf mat as the only object, but tip it so it lies at a slight angle with the near corner curling up, and paint it with soft brush strokes and gentle natural shading instead of photographic detail. Muted olive green and dry straw colours, matte dry surface, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the mat small in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. No text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/woven_basket.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "**2段構え**（recipes/woven_leaf.json と同じ）。下絵は灰色のスタジオ写真として出るので、",
+    "Qwen Image Edit が絵の具の質感へ描き直しつつ白い紙の上へ置き直し、緑を落ち着かせる。",
+    "**色を落とすのは生成ではなくここ**——下絵の段階で色を抜くと生成りになり、白い紙から切り出せない",
+    "（prompts/objects.json の woven_basket 参照）。",
+    "",
+    "石（256）より大きいので400。編んだ葉と同じ大きさで、縦に高いぶん籠の方が大きく見える。"
+  ],
+  "output": "src/assets/objects/woven_basket.png",
+  "prompts": "objects.json",
+  "prompt": "woven_basket",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 9103,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the woven palm leaf basket exactly as it is in shape and layout, but paint it with soft brush strokes and gentle natural shading instead of photographic detail, and calm the colour down to a muted olive green with dry straw tones. Remove the background completely and replace it with a plain empty white page, leaving the basket alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Matte dry surface, flat even lighting. No text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
