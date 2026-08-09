@@ -1,18 +1,20 @@
 {
   "_comment": [
     "src/assets/slot_button_paper.png を作り直すためのレシピ。build.py が読む。",
-    "地図・装備・怪我のボタンへ敷く紙（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "地図・装備・怪我・レシピのボタンへ敷く紙（docs/ui/ScreenLayout.md ボタンの絵 節）。",
     "",
     "**カードの枠（card_frame.json）と同じ紙から切り出す。** プロンプトもseedも色合わせも同じ値に",
     "してあるので、生成物は同じ1枚になる。**同じ絵を参照するのは生成の話で、実行時にテクスチャを",
     "共有はしない**——ボタンとカードは別の概念で、片方の都合がもう片方の描画を壊すため",
     "（DesignNotes.md）。",
     "",
-    "atはボタンごとの切り出し位置。同じ場所だと3つのボタンに同じ染みが並び、模様として目に付く。",
+    "atはボタンごとの切り出し位置。同じ場所だと4つのボタンに同じ染みが並び、模様として目に付く。",
+    "**紙(410x640)から336x168を4枚は縦に並べきれない**ので、縦を目一杯に散らしたうえで、",
+    "隣り合う2枚の横位置をずらして重なりを減らしている。",
     "",
-    "tintは地図・装備・怪我の順（PlayScene.addSlotButtonColumnの並び）で、theme.tsの",
-    "mapButton / equipmentButton / injuryButton と同じ値。**色はここで焼く**ので、変えるときは",
-    "両方を直してこの絵を作り直す。theme.ts側は絵が読めなかったときの平らな塗りに残る。",
+    "tintは地図・装備・怪我・レシピの順（PlayScene.addSlotButtonColumnの並び）で、theme.tsの",
+    "mapButton / equipmentButton / injuryButton / recipeButton と同じ値。**色はここで焼く**ので、",
+    "変えるときは両方を直してこの絵を作り直す。theme.ts側は絵が読めなかったときの平らな塗りに残る。",
     "",
     "radiusはtheme.tsのSIZE.radius(12)の2倍。絵はuの2倍で描く約束なので、敷くときに比例縮小されて",
     "ボタンの角丸と一致する。"
@@ -28,8 +30,8 @@
   "height": 1280,
   "seed": 8102,
   "buttonPaper": {
-    "at": ["37,40", "37,236", "37,432"],
-    "tint": ["#c2cdd8", "#c7d4c1", "#d7c2b5"],
+    "at": ["0,0", "74,157", "0,314", "74,471"],
+    "tint": ["#c2cdd8", "#c7d4c1", "#d7c2b5", "#d4cdb2"],
     "radius": 24,
     "paper": "#fcf8e6",
     "wash": 0.4

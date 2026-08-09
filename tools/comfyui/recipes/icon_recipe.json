@@ -1,0 +1,43 @@
+{
+  "_comment": [
+    "src/assets/icons/recipe.png を作り直すためのレシピ。build.py が読む。",
+    "地図・装備・怪我・レシピのボタンに載せるアイコン（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "",
+    "**2段構え。** まず平塗りの輪郭線で下絵を生成し（prompts/icons.json）、それを Qwen Image Edit で",
+    "絵の具の質感へ描き直しつつ、白い紙の上へ置き直す。source を持たない edit は、同じレシピから",
+    "edit を外したもの——つまり自分の生成——を基準にする。",
+    "",
+    "白い紙へ置き直させるのは、card_art.py が紙・物・影を分けて切り出すため。ボタンには物と影だけが",
+    "透過で載り、地の色はボタン自身が持つ。",
+    "",
+    "**ページは生成りのまま白くしない。** 白い紙より暗くないと card_art.py が物として拾わない",
+    "（包帯と同じ制約）。編集のプロンプトで warm cream pages と言って留めている。",
+    "",
+    "**size がボタン上での物の大きさ**（画素数の半分がu。絵はuの2倍で描く約束）。",
+    "開いた本は開いた地図より小さく、Tシャツより大きい。",
+    "canvas は4枚とも同じ。画像の寸法を揃えておけば、絵を差し替えても画面上の大きさが暗黙に",
+    "変わらない（変わるのは中の画素だけ）。"
+  ],
+  "output": "src/assets/icons/recipe.png",
+  "prompts": "icons.json",
+  "prompt": "icon_recipe",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 1024,
+  "height": 512,
+  "seed": 9003,
+  "edit": {
+    "prompt": "Repaint this picture as a hand painted illustration on a plain empty white page. Keep the open book exactly as it is in shape and layout, but paint it with soft brush strokes and gentle natural shading instead of flat cel shading and hard black outlines. Remove the coloured background completely and replace it with a plain empty white page. Leave the book alone in the middle with a wide white margin all around it, and put a soft grey shadow directly beneath it. Warm cream pages, worn brown leather cover, muted natural colours, flat even lighting. No text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "240",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "canvas": [336, 144]
+  }
+}

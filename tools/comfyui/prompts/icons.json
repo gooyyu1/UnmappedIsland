@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "地図・装備・怪我のボタンに載せるアイコンの**下絵**のプロンプト（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "地図・装備・怪我・レシピのボタンに載せるアイコンの**下絵**のプロンプト（docs/ui/ScreenLayout.md ボタンの絵 節）。",
     "キーは icon_<アイコンの識別子> で、出力するファイル名は識別子だけ（src/assets/icons/<識別子>.png）。",
     "",
     "**ここで出すのは下絵で、そのままは使わない。** 平塗りの輪郭線で構図と題材だけを確実に出させ、",
@@ -44,5 +44,17 @@
     ],
     "positive": "a roll of white gauze bandage partly unrolled, the loose end curling across the frame, filling most of the frame, plain flat pale pink background, flat anime illustration, bold clean dark outlines, cel shaded with simple two tone shading, flat pastel colours, simple readable shapes, mobile game UI icon art",
     "negative": "text, letters, numbers, words, writing, handwriting, typography, labels, captions, watermark, logo, signature, red cross, cross symbol, medical emblem, pharmacy sign, first aid kit, people, characters, skin, body, wound, cut, blood, bruise, hands, arms, animals, pills, syringe, scissors, bottle, gauze roll, bandage roll, many plasters, scattered plasters, photograph, photorealistic, hdr, high contrast, harsh shadows, vignette, frame, border, blurry, low quality, jpeg artifacts, brown background, mauve background, taupe, dull purple, dark background, muddy colours, beige background, grey background, ribbon, silk, satin, fabric swatch, torn paper, watercolour, watercolor wash, paint splatter, paper texture, canvas texture, oil painting, brush strokes, realistic, 3d render, cgi, gradient mesh, noisy, sketchy, rough, dark background, black background, green background, grey background, several plasters, row of plasters, grid of plasters, packaging, box, belt, strap, buckle, watch, abstract shapes"
+  },
+  "icon_recipe": {
+    "description": "レシピ。開いた本が枠いっぱいに。",
+    "_note": [
+      "**巻物と籠は使えない。** 巻物は6枚とも軸のある別の機械や透けた布になり、籠は出はするが",
+      "ゲーム内のアイテムに見える（籠は作れる物なので、UIのボタンと紛れる）。開いた本は一発で出る。",
+      "**ページに文字と罫線が湧く。** negativeで否定したうえで実寸で確かめる。",
+      "seedを選んでいるのは、表紙の焦茶がはっきり出る絵を採るため。表紙の淡い絵（9001など）は",
+      "実寸だと白い塊に見える。簡素さでは9001も候補。"
+    ],
+    "positive": "a single open book lying flat, seen slightly from above, two empty blank facing pages with nothing written on them, a worn brown leather cover visible around the pages, filling the whole frame, plain flat pale blue background, flat anime illustration, bold clean dark outlines, cel shaded with simple two tone shading, flat pastel colours, simple readable shapes, mobile game UI icon art",
+    "negative": "text, letters, numbers, words, writing, handwriting, calligraphy, typography, labels, captions, page numbers, lines of text, ruled lines, musical notes, diagrams, drawings on the pages, pictures on the pages, watermark, logo, signature, people, characters, hands, arms, animals, bookshelf, stack of books, pile of books, several books, two books, closed book, table, desk, wood, candle, quill, pen, pencil, ink bottle, glasses, cup, flowers, rolled scroll, parchment, map, torn pages, photograph, photorealistic, hdr, high contrast, harsh shadows, vignette, frame, border, blurry, low quality, jpeg artifacts, product photo, studio lighting, glossy, sharp focus, watercolour, watercolor wash, paint splatter, paper texture, canvas texture, oil painting, brush strokes, realistic, 3d render, cgi, gradient mesh, noisy, sketchy, rough, dark background, black background"
   }
 }
