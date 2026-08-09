@@ -653,13 +653,15 @@ export class Card extends Phaser.GameObjects.Container {
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
   }
 
-  /** 押下中は紙の縁を黒枠でなぞる。枠は紙の輪郭（addFrameの図形と同じ矩形）に重ねる。 */
+  /** 押下中は紙の縁を黒枠でなぞる。枠は紙の内側へ収める（paperStroke参照）。 */
   private makeTappable(scene: Phaser.Scene, metrics: ScreenMetrics, width: number, height: number): void {
     const highlight = scene.add.graphics().setVisible(false);
-    drawBox(highlight, paperRect(metrics, width, height), {
+    const lineWidth = metrics.px(PRESSED_BORDER_WIDTH);
+    const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
+    drawBox(highlight, rect, {
       border: COLOR.cardBorder,
-      borderWidth: metrics.px(PRESSED_BORDER_WIDTH),
-      radius: metrics.px(FRAME_RADIUS),
+      borderWidth: lineWidth,
+      radius,
     });
     this.pressHighlight = highlight;
     this.add(highlight);
@@ -908,10 +910,12 @@ function emptyOutline(
   height: number,
 ): Phaser.GameObjects.Graphics {
   const outline = scene.add.graphics();
-  drawBox(outline, paperRect(metrics, width, height), {
+  const lineWidth = Math.max(1, metrics.px(2));
+  const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
+  drawBox(outline, rect, {
     border: COLOR.cardBorder,
-    borderWidth: Math.max(1, metrics.px(2)),
-    radius: metrics.px(FRAME_RADIUS),
+    borderWidth: lineWidth,
+    radius,
     dashed: true,
   });
   return outline;
@@ -1078,4 +1082,32 @@ function createIconText(
 function paperRect(metrics: ScreenMetrics, width: number, height: number): Rect {
   const inset = metrics.px(FRAME_INSET);
   return { x: inset, y: inset, width: width - inset * 2, height: height - inset * 2 };
+}
+
+/**
+ * 紙の輪郭をなぞる線の経路と角の丸み。**線の外周が紙の縁とちょうど重なる**よう、経路を線の太さの
+ * 半分だけ内側へ寄せる（角の丸みも同じだけ小さくして同心にする）。
+ *
+ * 絵の紙は縁からいきなり不透明で始まる（card_frame.pngの実測で、410px幅の絵の5px目でアルファが
+ * 255になる＝FRAME_INSETの2.5u）。線は経路の上に太さの半分ずつ広がるので、経路を紙の縁そのものに
+ * 置くと線の外半分が紙の外へ出て、輪郭が実物のカードより一回り大きく見える。塗り（inProgressVeil）は
+ * 経路が縁そのものなので、こちらを通さない。
+ */
+function paperStroke(
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+  lineWidth: number,
+): { readonly rect: Rect; readonly radius: number } {
+  const paper = paperRect(metrics, width, height);
+  const inset = lineWidth / 2;
+  return {
+    rect: {
+      x: paper.x + inset,
+      y: paper.y + inset,
+      width: paper.width - lineWidth,
+      height: paper.height - lineWidth,
+    },
+    radius: Math.max(0, metrics.px(FRAME_RADIUS) - inset),
+  };
 }
