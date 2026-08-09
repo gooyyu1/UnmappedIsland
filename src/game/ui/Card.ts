@@ -118,7 +118,7 @@ const CELL_OVERLAY_PLATE_ALPHA = 0.72;
  * 型ごとに染めた絵を焼くと製作中オブジェクトの数だけ絵が要るため。濃さは、絵が何かは読めるまま
  * 「まだ物になっていない」と分かる境で決める。
  */
-const IN_PROGRESS_VEIL_ALPHA = 0.34;
+const IN_PROGRESS_VEIL_ALPHA = 0.42;
 
 /**
  * 耐久度バーの高さ（u単位）。ステータスバー（36u）とは比べ物にならない細さにする——どの道具にも
