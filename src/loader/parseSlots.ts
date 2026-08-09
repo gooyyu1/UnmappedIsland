@@ -1,6 +1,7 @@
 import type { YAMLMap } from 'yaml';
 import {
   asMap,
+  entriesInOrder,
   tryGetBool,
   tryGetInt,
   tryGetMap,
@@ -10,9 +11,12 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
+import { tryGetNode } from './parseCommon';
+import { parseWeight } from './parseActionsAndCombinations';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellAcceptRule, CellDef, SlotDef } from '../domain/defs/SlotDef';
 import type { SlotAcceptTargetKind } from '../domain/defs/SlotDef';
+import type { WeightSpec } from '../domain/defs/PickEffect';
 
 /** 廃止したキーと、その内容を今どこへ書くか。黙って無視すると、効いているつもりの宣言が通ってしまう。 */
 const RETIRED_KEYS: readonly (readonly [string, string])[] = [
@@ -58,6 +62,8 @@ export function parseSlot(
   const sharedCell =
     sharedCellNode === undefined ? undefined : parseCell(loader, sharedCellNode, `${context}.cell`);
 
+  const putInNode = tryGetMap(node, 'put_in', context);
+
   return new SlotDef(
     slotGlobalId,
     slotName,
@@ -66,7 +72,21 @@ export function parseSlot(
     cellCount,
     tryGetNumber(node, 'capacity', context),
     tryGetBool(node, 'auto_placement', context, true),
+    putInNode === undefined ? undefined : parsePutIn(loader, putInNode, `${context}.put_in`),
   );
+}
+
+/** `put_in: {duration: ...}`（ここへ入れるのにかかる時間）を読む。出す側に時間は課さない。 */
+function parsePutIn(loader: WorldCodexYamlLoader, node: YAMLMap, context: string): WeightSpec {
+  const unknownKeys = entriesInOrder(node)
+    .map(([key]) => key)
+    .filter((key) => key !== 'duration');
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  const durationNode = tryGetNode(node, 'duration');
+  if (durationNode === undefined) throw new YamlLoadError(`${context}: 'duration'が必要です。`);
+  return parseWeight(loader, `${context}.duration`, durationNode, true, 'duration');
 }
 
 /** 1つの枠の定義（`{accept: {tag|object}, max: N}`）を読む。 */

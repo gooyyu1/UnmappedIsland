@@ -4,6 +4,7 @@ import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
+import { putIntoSlot } from '../domain/runtime/slotEntry';
 import type { Localization } from '../locale/Localization';
 import type { CardContent, CardFill, CardSeverity } from './ui/Card';
 import type { PropertyTab } from './ui/PropertyWindow';
@@ -76,6 +77,12 @@ export interface ObjectCardStack extends CardContent {
   readonly moveTo?: (place: CardPlace, at?: CardPlacement) => (() => void) | undefined;
 
   /**
+   * そこへ入れる操作の見せ方（枠が文言も時間も宣言していなければundefined）。moveToが「入れられるか」を
+   * 答えるのに対し、こちらは「入れると何が起きるか」を答える——ドラッグ中の吹き出しに出す。
+   */
+  readonly putInto?: (place: CardPlace) => CardPutIn | undefined;
+
+  /**
    * 同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
    * SlotSystem.md 3節）。
    */
@@ -119,6 +126,18 @@ export interface CardCombination {
   readonly source: WorldObject;
   /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
   readonly execute: () => void;
+}
+
+/**
+ * 物を枠へ入れる操作の見せ方（SlotDef.putInDuration・slot_textsのput_in）。かごへしまうのも怪我へ
+ * 治療具を当てるのも同じこの1つの操作で、値段と呼び名は枠が決める。
+ */
+export interface CardPutIn {
+  readonly name: string;
+  /** 説明文。localeに書かれていなければundefined。 */
+  readonly description: string | undefined;
+  /** 入れるのにかかるゲーム内時間（分）。一瞬で入る枠は0。 */
+  readonly minutes: number;
 }
 
 /**
@@ -620,22 +639,42 @@ export function fromGameSession(
       const wellKnown = game.session.codex.wellKnown;
       if (item.rejectionForMoveTo(dest.owner, dest.slotId, wellKnown) !== undefined) return undefined;
 
-      if (at === undefined) {
-        return () => {
+      const put = (): void => {
+        if (at === undefined) {
           item.moveToSlot(dest.owner, dest.slotId, wellKnown);
-        };
-      }
-
-      if (at.kind === 'cell' && hasFixedCells(dest.owner, dest.slotId)) {
-        return () => {
+        } else if (at.kind === 'cell' && hasFixedCells(dest.owner, dest.slotId)) {
           item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
-        };
-      }
+        } else {
+          // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
+          // （枠の位置がそのまま並びの終わりを指す）。
+          item.moveToSlotAtGap(dest.owner, dest.slotId, at.index, wellKnown);
+        }
+      };
 
-      // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
-      // （枠の位置がそのまま並びの終わりを指す）。
-      return () => {
-        item.moveToSlotAtGap(dest.owner, dest.slotId, at.index, wellKnown);
+      // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
+      return () => putIntoSlot(item, dest.owner, dest.slotId, game.player.instance, game.session, put);
+    };
+
+  /**
+   * itemをplaceへ入れるとどうなるか（吹き出しに出す文言と時間）。入れられない場所と、文言も時間も
+   * 宣言していない枠ではundefined——ただ位置が変わるだけの移動には説明が要らない。
+   */
+  const putIntoTexts =
+    (item: WorldObject, from: CardPlace) =>
+    (place: CardPlace): CardPutIn | undefined => {
+      const dest = slotOf(place);
+      if (dest === undefined || samePlace(place, from)) return undefined;
+
+      const slotDef = dest.owner.def.getSlotDef(dest.slotId);
+      if (slotDef === undefined) return undefined;
+
+      const texts = locale.slot(slotDef.name).putIn;
+      const minutes = slotDef.putInMinutes(dest.owner, item, game.player.instance);
+      if (texts === undefined && minutes === 0) return undefined;
+      return {
+        name: texts?.displayName ?? locale.slot(slotDef.name).displayName,
+        description: texts?.description,
+        minutes,
       };
     };
 
@@ -694,11 +733,13 @@ export function fromGameSession(
       // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
       moveTo: moveInto(stack[0], 'fixtures'),
+      putInto: putIntoTexts(stack[0], 'fixtures'),
       reorder: reorderIn(stack[0]),
     })),
     items: location.itemStacks.map((stack) => ({
       ...stackOf(stack, 'items'),
       moveTo: moveInto(stack[0], 'items'),
+      putInto: putIntoTexts(stack[0], 'items'),
       reorder: reorderIn(stack[0]),
     })),
     hand: game.player.handStacks.map((stack) =>
@@ -707,6 +748,7 @@ export function fromGameSession(
         : {
             ...stackOf(stack, 'hand'),
             moveTo: moveInto(stack[0], 'hand'),
+            putInto: putIntoTexts(stack[0], 'hand'),
             reorder: reorderIn(stack[0]),
           },
     ),
@@ -722,6 +764,7 @@ export function fromGameSession(
       return stacks.map((stack) => ({
         ...stackOf(stack, place),
         moveTo: moveInto(stack[0], place),
+        putInto: putIntoTexts(stack[0], place),
         reorder: reorderIn(stack[0]),
       }));
     },

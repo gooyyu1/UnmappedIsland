@@ -16,7 +16,13 @@ import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
 import type { RecipeDef } from '../domain/defs/RecipeDef';
 import type { WorldObject } from '../domain/runtime/WorldObject';
-import type { CardCombination, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
+import type {
+  CardCombination,
+  CardPlace,
+  CardPutIn,
+  ObjectCardStack,
+  PlayScreenView,
+} from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import type { StatusDelta } from './statusChanges';
 import { statusChangesAfter, statusChangesBetween } from './statusChanges';
@@ -638,17 +644,52 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、隙間・空き枠へ
-   * 落としたら位置を変える。同じレーンの中ならスタックごとの並び替え、レーンをまたぐならカード1枚の移動。
+   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、相手が入れ物なら
+   * その中へ入れる、隙間・空き枠へ落としたら位置を変える。同じレーンの中ならスタックごとの並び替え、
+   * レーンをまたぐならカード1枚の移動。
    */
   private dropAction(drop: CardDrop): (() => void) | undefined {
-    if (drop.target.kind === 'combine') return this.combinationAt(drop)?.execute;
+    if (drop.target.kind === 'combine') return this.combinationAt(drop)?.execute ?? this.putInto(drop);
 
     const dragged = this.cardsOf(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
     return drop.to === drop.from
       ? dragged.reorder?.(drop.target)
       : dragged.moveTo?.(this.placeOf(drop.to), drop.target);
+  }
+
+  /**
+   * カードに重ねたときに、そのカードの中へ入れる操作（入れ物でない・入らないならundefined）。
+   *
+   * かごも製作中オブジェクトも同じ扱い——「押すと中身が並ぶカード」（main_item_slot）の上へ落としたら、
+   * そのスロットへ入る。入るかどうかは枠の宣言（accept・max）が決めるので、ここでは場所を指すだけ。
+   */
+  private putInto(drop: CardDrop): (() => void) | undefined {
+    const into = this.contentsUnder(drop);
+    return into === undefined ? undefined : this.cardsOf(drop.from)[drop.fromIndex]?.moveTo?.(into);
+  }
+
+  /** カードに重ねたとき、そのカードが中身を映す場所（入れ物でなければundefined）。 */
+  private contentsUnder(drop: CardDrop): CardPlace | undefined {
+    if (drop.target.kind !== 'combine') return undefined;
+
+    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
+    const target = this.cardsOf(drop.to)[drop.target.index];
+    // 自分自身の中へは入れられない（1枚しか映していないカードを、そのカードへ重ねた場合）。
+    return dragged === undefined || dragged === target ? undefined : target?.contents;
+  }
+
+  /** そのドロップが「入れる」なら、その見せ方（枠が文言も時間も宣言していなければundefined）。 */
+  private putInAt(drop: CardDrop): CardPutIn | undefined {
+    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
+    if (dragged === undefined) return undefined;
+
+    if (drop.target.kind === 'combine') {
+      const into = this.contentsUnder(drop);
+      return into === undefined ? undefined : dragged.putInto?.(into);
+    }
+    // 枠・隙間へ落とすのも同じ「入れる」。同じレーンの中は並び替えなので値段は付かない。
+    return drop.to === drop.from ? undefined : dragged.putInto?.(this.placeOf(drop.to));
   }
 
   /** カードに重ねたときに実行できるcombination（重ねる操作でなければundefined）。 */
@@ -662,21 +703,16 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * そのドロップで何が起きるか（何も起きないならundefined）。combinationは名前と説明を返し、
-   * ドラッグ中の吹き出しになる。位置を変えるだけの移動には説明が要らないので中身は空。
+   * そのドロップで何が起きるか（何も起きないならundefined）。combinationと、文言や時間を宣言している
+   * 枠へ入れる操作（手当てなど）は名前・説明・かかる時間を返し、ドラッグ中の吹き出しになる。
+   * ただ位置を変えるだけの移動には説明が要らないので中身は空。
    */
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
-    const combination = this.combinationAt(drop);
-    if (combination !== undefined) {
-      return {
-        tooltip: {
-          title: combination.name,
-          body: combination.description,
-          note: durationText(combination.minutes),
-        },
-      };
-    }
-    return this.dropAction(drop) === undefined ? undefined : {};
+    if (this.dropAction(drop) === undefined) return undefined;
+
+    const told = this.combinationAt(drop) ?? this.putInAt(drop);
+    if (told === undefined) return {};
+    return { tooltip: { title: told.name, body: told.description, note: durationText(told.minutes) } };
   }
 
   private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {

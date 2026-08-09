@@ -13,15 +13,9 @@ traits:
       treatment:
         cell_count: 1
         cell: {accept: {tag: treatment}, max: 1}
-    combinations:
-      # 治療具を当てる。何を当てられるかはtreatmentスロットの枠が決めるので、条件は書かない。
-      #
-      # **durationは持たない。** 子ウィンドウのスロットへ落としても当てられる（そちらは通常のスロット
-      # 移動なので時間を取らない）ため、こちらだけ時間を取ると同じことが経路で違う値段になる。
-      # 手当てに時間をかけたくなったら、スロット移動の側にも時間を課す語彙が要る。
-      treat:
-        with: treatment
-        move: {object: dragged, to: self}
+        # 当てるのに手間がかかる（7.10節）。どの経路で入れても同じ値段になるので、怪我のカードへ
+        # 重ねても子ウィンドウの枠へ落としても30分。外すのは一瞬（枠は入る側にしか時間を課さない）。
+        put_in: {duration: 30}
 
 object_defs:
   # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_coconut）。

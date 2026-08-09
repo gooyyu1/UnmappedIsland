@@ -19,7 +19,11 @@ import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/defs/PickEff
 import { ActionDef } from '../domain/defs/ActionDef';
 import { CombinationDef } from '../domain/defs/CombinationDef';
 
-function parseWeight(
+/**
+ * リテラル数値か`{object, prop}`参照（GameElementDefinition.md 10.2節）を読む。durationもこの形で、
+ * 「今の状態から見ていくらか」を書けるようにするため（切れ味の悪い刃物ほど時間がかかる）。
+ */
+export function parseWeight(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,

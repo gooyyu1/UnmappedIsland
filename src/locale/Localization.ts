@@ -55,11 +55,20 @@ function format(text: string, values: Readonly<Record<string, string>>): string 
  */
 export class SlotTexts {
   readonly displayName: string;
+
+  /**
+   * ここへ物を入れる操作の文言（宣言が無ければundefined）。ドロップの吹き出しに出す
+   * （ScreenLayout.md カードのドラッグ＆ドロップ節）。スロットの名前（場所を指す「手当て」）とは
+   * 別の文字列——出すのは行為の名前（「手当てする」）だから。
+   */
+  readonly putIn: Texts | undefined;
+
   private readonly format: string | undefined;
 
-  constructor(displayName: string, format?: string) {
+  constructor(displayName: string, format?: string, putIn?: Texts) {
     this.displayName = displayName;
     this.format = format;
+    this.putIn = putIn;
   }
 
   /**
@@ -79,6 +88,17 @@ interface DeclaredTexts {
   readonly displayNameWithContent: string | undefined;
   readonly displayNameWithOwner: string | undefined;
   readonly displayNameInProgress: string | undefined;
+}
+
+/** localeファイルのslot_textsの1エントリ（スロット自身の文字列と、そこへ入れる操作の文字列）。 */
+class SlotTextsEntry {
+  readonly own: DeclaredTexts | undefined;
+  readonly putIn: DeclaredTexts | undefined;
+
+  constructor(own: DeclaredTexts | undefined, putIn: DeclaredTexts | undefined) {
+    this.own = own;
+    this.putIn = putIn;
+  }
 }
 
 /** localeファイルの1エントリ（オブジェクト自身の文字列と、種類ごとのメンバーの文字列）。 */
@@ -233,7 +253,7 @@ export class Localization {
   private readonly locations: ReadonlyMap<string, LocationTextsEntry>;
   private readonly reasons: ReadonlyMap<string, string>;
   private readonly ordinalSuffix: string;
-  private readonly slots: ReadonlyMap<string, DeclaredTexts>;
+  private readonly slots: ReadonlyMap<string, SlotTextsEntry>;
 
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
@@ -242,7 +262,7 @@ export class Localization {
     locations: ReadonlyMap<string, LocationTextsEntry> = new Map(),
     reasons: ReadonlyMap<string, string> = new Map(),
     ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
-    slots: ReadonlyMap<string, DeclaredTexts> = new Map(),
+    slots: ReadonlyMap<string, SlotTextsEntry> = new Map(),
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
@@ -284,8 +304,14 @@ export class Localization {
    */
   slot(slotName: string): SlotTexts {
     const declared = this.slots.get(slotName);
-    const format = declared?.displayNameWithOwner ?? this.slots.get(DEFAULT_KEY)?.displayNameWithOwner;
-    return new SlotTexts(declared?.displayName ?? slotName, format);
+    const format =
+      declared?.own?.displayNameWithOwner ?? this.slots.get(DEFAULT_KEY)?.own?.displayNameWithOwner;
+    const putIn = declared?.putIn;
+    return new SlotTexts(
+      declared?.own?.displayName ?? slotName,
+      format,
+      putIn === undefined ? undefined : new Texts(putIn.displayName ?? slotName, putIn.description),
+    );
   }
 
   /** プロパティのタグ（GameElementDefinition.md 6.7節）の表示文字列。未登録なら識別子そのもの。 */
@@ -346,13 +372,20 @@ export function parseLocale(label: string, yamlText: string): Localization {
       if (texts !== undefined) propertyTags.set(name, texts);
     }
 
-  const slots = new Map<string, DeclaredTexts>();
+  const slots = new Map<string, SlotTextsEntry>();
   const slotSection = tryGetMap(root, 'slot_texts', label);
   if (slotSection !== undefined)
     for (const [name, node] of entriesInOrder(slotSection)) {
       const context = `${label}.slot_texts.'${name}'`;
-      const texts = parseTexts(asMap(node, context), context);
-      if (texts !== undefined) slots.set(name, texts);
+      const entryNode = asMap(node, context);
+      const putInNode = tryGetMap(entryNode, 'put_in', context);
+      slots.set(
+        name,
+        new SlotTextsEntry(
+          parseTexts(entryNode, context),
+          putInNode === undefined ? undefined : parseTexts(putInNode, `${context}.put_in`),
+        ),
+      );
     }
 
   const symbols = new Map<string, DeclaredTexts>();

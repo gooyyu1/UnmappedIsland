@@ -2,6 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { putIntoSlot } from '../../src/domain/runtime/slotEntry';
 import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter';
 import { World } from '../../src/domain/runtime/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -161,10 +162,18 @@ describe('injuries.yamlの怪我', () => {
       return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
     }
 
+    /** 治療具を当てる。画面のドロップと同じ経路（枠が時間を課すので、そこを通さないと値段を払わない）。 */
+    function treat(injury: WorldObject, treatment: WorldObject): void {
+      const slotId = codex.slotNames.getId('treatment');
+      putIntoSlot(treatment, injury, slotId, player, session, () => {
+        treatment.moveToSlot(injury, slotId, codex.wellKnown);
+      });
+    }
+
     it('包帯を怪我へ重ねると、その怪我に当たった状態になる', () => {
       const { injury, bandage } = injured();
 
-      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+      treat(injury, bandage);
 
       expect(treatmentOn(injury)).toEqual(['bandage']);
       expect(bandage.parent, '手持ちから怪我の中へ移る').toBe(injury);
@@ -172,13 +181,29 @@ describe('injuries.yamlの怪我', () => {
 
     it('当てられるのは1つだけ', () => {
       const { injury, bandage } = injured();
-      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+      treat(injury, bandage);
       const second = spawnInto('bandage', player, 'hand');
+      const before = session.world!.totalMinutes;
 
-      injury.tryExecuteCombination(second, player, 'treat', session);
+      treat(injury, second);
 
       expect(treatmentOn(injury), '2つめは入らない').toEqual(['bandage']);
       expect(second.parent, '入らなかった治療具は手元に残る').toBe(player);
+      expect(session.world!.totalMinutes, '入らないと分かっているので時間も取らない').toBe(before);
+    });
+
+    it('当てるのに30分かかり、外すのは一瞬', () => {
+      const { injury, bandage } = injured();
+      const before = session.world!.totalMinutes;
+
+      treat(injury, bandage);
+
+      expect(session.world!.totalMinutes - before, '当てるのに30分').toBe(30);
+      const applied = session.world!.totalMinutes;
+
+      bandage.moveToSlot(player, codex.slotNames.getId('hand'), codex.wellKnown);
+
+      expect(session.world!.totalMinutes, '外すのは一瞬').toBe(applied);
     });
 
     it('治療具でない物は当てられない', () => {
@@ -192,10 +217,11 @@ describe('injuries.yamlの怪我', () => {
     it('包帯を当てている間は、治りが速くなり痛みも減る', () => {
       const { injury, bandage } = injured();
       const severityId = codex.propertyNames.getId('severity');
-      const before = injury.getNumber(severityId);
       expect(player.getEffectiveValue(painId)).toBe(40);
 
-      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+      treat(injury, bandage);
+      // 当て終わるまでの30分は当たっていないので、そこは効き目の外。数えるのは当ててからの分。
+      const before = injury.getNumber(severityId);
 
       expect(player.getEffectiveValue(painId), '当てている間だけ痛みが引く').toBe(30);
       tick(10);
@@ -205,7 +231,7 @@ describe('injuries.yamlの怪我', () => {
 
     it('外せば効き目も消える', () => {
       const { injury, bandage } = injured();
-      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+      treat(injury, bandage);
 
       expect(bandage.moveToSlot(player, codex.slotNames.getId('hand'), codex.wellKnown)).toBeUndefined();
 
@@ -228,7 +254,7 @@ describe('injuries.yamlの怪我', () => {
       // 治った怪我はdestroyされるが、包帯は単独で在れるので道連れにならず、怪我の親——つまり
       // 負っていた本人——へこぼれ出る（GameElementDefinition.md 7.9節）。
       const { injury, bandage } = injured();
-      expect(injury.tryExecuteCombination(bandage, player, 'treat', session)).toBe(true);
+      treat(injury, bandage);
 
       tick(HEALING_TICKS);
 

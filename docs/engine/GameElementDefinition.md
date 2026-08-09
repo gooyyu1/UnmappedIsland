@@ -781,6 +781,30 @@ object_defs:
 `bound_to_owner` だから、入れられないのは手元に怪我を持ちようがないから。スロット側に「書き込み禁止」
 のような別の属性は要りません。
 
+### 7.10 put_in（入れるのにかかる時間）
+
+**`put_in: {duration: ...}`** を書くと、そのスロットへ物を入れるのにゲーム内時間がかかります（既定は一瞬）。
+`duration` は `combinations` のそれと同じ形（リテラルか `{object, prop}` 参照、10.2 節）で、`self` が枠の
+持ち主、`dragged` が入れる物です。
+
+```yaml
+slots:
+  treatment:
+    cell_count: 1
+    cell: {accept: {tag: treatment}, max: 1}
+    put_in: {duration: 30}      # 包帯を当てるのに30分
+```
+
+**時間を課すのは入れる側だけ**で、出すのは常に一瞬です。当てるのに手間がかかっても外すのは一瞬、という
+非対称の方が普通のためです。
+
+**値段は枠が持ち、経路は持ちません。** プレイヤーが物を入れる操作はカードへ重ねる・レーンへ落とす・端の
+矢印で送るの3通りありますが、どれも同じだけかかります。`combinations` に `duration` を書いて同じことを
+表そうとすると、**スロットへ直接落とす経路だけが無料**になり、同じことが経路で違う値段になります。
+
+離す前に値段を見せるのは画面の責務です（[ScreenLayout.md](../ui/ScreenLayout.md) カードのドラッグ＆
+ドロップ節）。操作の呼び名と説明は `slot_texts` の `put_in`（[Localization.md](Localization.md)）に書きます。
+
 ## 8. passives（持続する影響）
 
 `passives` は、`self`/`parent`/`child` の関係とゲート（常時／`conditions`／プロパティの stage）に紐づいて
@@ -1058,16 +1082,21 @@ actions:
 一致する子孫を探すことで行います。解決できない場合（`to_prop` を持たない、該当インスタンスが世界のどこにも
 存在しない）は、他の対象解決の失敗（9.1 節）と同じく、何も起きません。
 
-`to: self` は、ドラッグして重ねたものを受け側の中へ入れる操作（かご等の入れ物）を書くための形です。
+`to: self` は、ドラッグして重ねたものを受け側の中へ入れる操作（液体を注ぎ移す等）を書くための形です。
 
 ```yaml
 traits:
-  item_container:
+  liquid_container:
     combinations:
-      put_in:
-        with: item
+      pour_in:
+        with: liquid
         move: {object: dragged, to: self}
 ```
+
+**物を入れ物へしまうだけなら、これを書く必要はありません。** 中身を持つカード（`main_item_slot`、
+7.8 節）へ重ねたらそのスロットへ入る、という動きが画面側にあります
+（[ScreenLayout.md](../ui/ScreenLayout.md) カードのドラッグ＆ドロップ節）。`combinations` を書くのは、
+入れる以上のこと（量として混ざる・時間がかかる・条件が要る）を起こしたいときだけです。
 
 移動対象が**量的オブジェクト**（`quantitative`、7.6 節）の場合、`move` はインスタンスではなく**量を移します**。
 移り先に同種がいなければその量で新しいインスタンスが生まれ、既にいればその `size` へ加算され、移し元は量が
