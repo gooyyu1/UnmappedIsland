@@ -60,6 +60,14 @@ export const COLOR = {
 
   cardFace: 0xffffff,
   cardBorder: 0x000000,
+  /**
+   * 製作中オブジェクトのカードにかぶせる青（ScreenLayout.md 製作中オブジェクトのカード節）。
+   * 濃さはCardが持つ（IN_PROGRESS_VEIL_ALPHA）。
+   *
+   * **どのカードにも同じ色をかぶせるので、物の色として読まれない色相を選ぶ。** 木にも石にも
+   * 掛かる覆いなので、素材の色（茶・灰・緑）と重なる色相だと「そういう物」に見えてしまう。
+   */
+  cardInProgress: 0x3f6ea8,
   /** カードの端を押している間だけ被せる、移動操作のオーバーレイ。 */
   cardEdgeOverlay: 0x1b3a4b,
   /** ドラッグ中に、落とせる先を示す枠。 */

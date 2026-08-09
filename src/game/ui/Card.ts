@@ -112,6 +112,15 @@ const CELL_OVERLAY_BOTTOM = 20;
 const CELL_OVERLAY_PLATE_ALPHA = 0.72;
 
 /**
+ * 製作中オブジェクトのカードにかぶせる青の濃さ（ScreenLayout.md 製作中オブジェクトのカード節）。
+ *
+ * **絵の上から重ねる**——`setTint`はCanvasレンダラで効かず（DesignNotes.md PhaserのWebGL専用機能節）、
+ * 型ごとに染めた絵を焼くと製作中オブジェクトの数だけ絵が要るため。濃さは、絵が何かは読めるまま
+ * 「まだ物になっていない」と分かる境で決める。
+ */
+const IN_PROGRESS_VEIL_ALPHA = 0.34;
+
+/**
  * 耐久度バーの高さ（u単位）。ステータスバー（36u）とは比べ物にならない細さにする——どの道具にも
  * 常に出ているものなので、見に行けば読めるが視界には入らない、という控えめさに留める。
  */
@@ -227,6 +236,12 @@ export interface CardContent {
    * ProgressBar.setRatio参照）。
    */
   readonly midAction?: boolean;
+
+  /**
+   * まだ出来上がっていないもの（製作中オブジェクト）のカードか。青をかぶせ、土地の背景は敷かない
+   * （ScreenLayout.md 製作中オブジェクトのカード節）。
+   */
+  readonly inProgress?: boolean;
 }
 
 /**
@@ -235,7 +250,8 @@ export interface CardContent {
  */
 export function cardFace(content: CardContent): CardContent {
   const { icon, name, art, background, namePosition, road, durability, fill, severity, mark } = content;
-  return { icon, name, art, background, namePosition, road, durability, fill, severity, mark };
+  const { inProgress } = content;
+  return { icon, name, art, background, namePosition, road, durability, fill, severity, mark, inProgress };
 }
 
 /**
@@ -272,6 +288,9 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly backgroundLayer: Phaser.GameObjects.Container;
   private readonly artLayer: Phaser.GameObjects.Container;
   private readonly edgeLayer: Phaser.GameObjects.Container;
+
+  /** 製作中オブジェクトにかぶせる青（CardContent.inProgress）。それ以外のカードでは隠れる。 */
+  private readonly inProgressVeil: Phaser.GameObjects.Graphics;
 
   /** 今その器に出しているもの。同じなら作り直さないための控え（showArt・showEdge参照）。 */
   private shownArt: string | undefined;
@@ -320,9 +339,12 @@ export class Card extends Phaser.GameObjects.Container {
     // 土地の背景は絵より先に敷く。用意されていない土地では紙がそのまま地になる。
     this.backgroundLayer = scene.add.container(0, 0);
     this.artLayer = scene.add.container(0, 0);
+    // 青は絵までを覆い、名前と状態のバーには掛けない。何が出来つつあるのかと、それが今どういう
+    // 状態なのかは、覆いの下へ沈めずに読めるままにする。
+    this.inProgressVeil = createInProgressVeil(scene, metrics, width, height);
     this.nameText = createNameText(scene, metrics, width, height);
     this.roadArrow = createRoadArrow(scene, metrics, width, height);
-    this.add([face, this.backgroundLayer, this.artLayer, this.nameText, this.roadArrow]);
+    this.add([face, this.backgroundLayer, this.artLayer, this.inProgressVeil, this.nameText, this.roadArrow]);
 
     // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
     this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height);
@@ -399,6 +421,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.showEdge(content);
     this.showStackCount();
     this.mark.setText(content.mark ?? '');
+    this.inProgressVeil.setVisible(content.inProgress === true);
   }
 
   /** 名前と、その寄せ位置。中身が入れ替われば名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。 */
@@ -417,11 +440,17 @@ export class Card extends Phaser.GameObjects.Container {
   /**
    * 絵と、その下に敷く土地の背景。絵があれば枠に重ね、無いあいだは絵文字で代用する
    * （絵は少しずつ用意されるため）。同じものを出し続ける間は作り直さない。
+   *
+   * 製作中オブジェクトには土地の背景を敷かない。青の覆いが読めるだけの無地の地が要るので、
+   * 「その土地に在るもの」を表す景色より覆いの方を優先する（ScreenLayout.md 製作中オブジェクトの
+   * カード節）。
    */
   private showArt(content: CardContent): void {
     const scene = this.scene;
     const background =
-      content.background === undefined ? undefined : cardBackgroundTexture(content.background);
+      content.background === undefined || content.inProgress === true
+        ? undefined
+        : cardBackgroundTexture(content.background);
     if (background !== this.shownBackground) {
       this.shownBackground = background;
       this.backgroundLayer.removeAll(true);
@@ -972,6 +1001,25 @@ function createRoadArrow(
   arrow.fillPoints(points, true);
   arrow.strokePoints(points, true);
   return arrow.setVisible(false);
+}
+
+/**
+ * 製作中オブジェクトのカードにかぶせる青（IN_PROGRESS_VEIL_ALPHA参照）。紙の輪郭に合わせて角を
+ * 丸め、枠の線の内側へ収める。
+ */
+function createInProgressVeil(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Graphics {
+  const veil = scene.add.graphics();
+  drawBox(veil, paperRect(metrics, width, height), {
+    fill: COLOR.cardInProgress,
+    fillAlpha: IN_PROGRESS_VEIL_ALPHA,
+    radius: metrics.px(FRAME_RADIUS),
+  });
+  return veil.setVisible(false);
 }
 
 /** 絵の代わりに出す絵文字（showArt参照）。 */
