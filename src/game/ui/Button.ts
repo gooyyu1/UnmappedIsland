@@ -7,7 +7,7 @@ import { onPressRelease } from './tap';
 import { COLOR, SIZE } from './theme';
 
 /**
- * スロットボタン（地図・装備・怪我）の地に敷く紙のテクスチャキー。
+ * スロットボタン（地図・装備・怪我・レシピ）の地に敷く紙のテクスチャキー。
  * 実体は `src/assets/slot_button_paper.png` で、BootSceneがボタン1つぶんずつの
  * スプライトシートとして読む。
  *

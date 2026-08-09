@@ -1392,7 +1392,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ポートレイトカードと、地図・装備・怪我のボタン、条件のアイコン（ScreenLayout.md）。
+   * ポートレイトカードと、地図・装備・怪我・レシピのボタン、条件のアイコン（ScreenLayout.md）。
    *
    * ボタンはポートレイトの**右へ縦積み**する。このエリアで最も背の高いポートレイト（320u）の
    * 高さをボタンが使い切るので、下へ積むより1つあたりを大きく取れる。縦型・横型で同じ組み方に
@@ -1447,10 +1447,10 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 地図・装備・怪我の3ボタンを、渡した列の高さを均等に分けて縦に並べる。
+   * 地図・装備・怪我・レシピの4ボタンを、渡した列へ縦に並べる。
    *
    * 並びは持ち物の近さの順。地図と装備は身につけているもの、装備と怪我は開く子ウィンドウの形が
-   * 同じで、地図が最も押す頻度が低いので端に来る。
+   * 同じで、地図が最も押す頻度が低いので端に来る。レシピは持ち物ではないので反対の端。
    */
   private addSlotButtonColumn(column: Rect): void {
     const gap = this.metrics.px(SIZE.gap);
@@ -1477,7 +1477,7 @@ export class PlayScene extends ResponsiveScene {
         art: 'recipe',
         // 下のフィルターバーが道具の絞り込みに🔨を使っているので、道具の絵は避ける。
         icon: '📜',
-        fill: COLOR.button,
+        fill: COLOR.recipeButton,
         onTap: () => this.openRecipeWindow(),
       },
     ] as const;
@@ -1495,9 +1495,9 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 地図・装備・怪我のボタン。**絵を中央に1つ置くだけで、文字は載せない**（ScreenLayout.md）。
+   * 地図・装備・怪我・レシピのボタン。**絵を中央に1つ置くだけで、文字は載せない**（ScreenLayout.md）。
    *
-   * 3つとも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
+   * 4つとも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
    * ボタンの内側へ収める必要も無い（日時のフリップカードと同じ考え方）。
    */
   private addSlotButton(
@@ -1539,7 +1539,7 @@ export class PlayScene extends ResponsiveScene {
   ): Phaser.GameObjects.GameObject[] {
     if (!this.textures.exists(SLOT_BUTTON_PAPER_TEXTURE)) return [];
 
-    // ボタンごとに別の1枚を敷く。同じ絵だと3つに同じ染みが並び、模様として目に付く。
+    // ボタンごとに別の1枚を敷く。同じ絵だと4つに同じ染みが並び、模様として目に付く。
     const sheet = this.textures.get(SLOT_BUTTON_PAPER_TEXTURE);
     const paper = this.add
       .image(0, 0, SLOT_BUTTON_PAPER_TEXTURE, index % sheet.frameTotal)
