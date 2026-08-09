@@ -71,16 +71,23 @@ export interface ObjectCardStack extends CardContent {
   readonly contents?: CardPlace;
 
   /**
-   * 束のうち1つを別の場所へ移す操作。atは移した先での置き場所で、省略すると空いている場所へ入る。
-   * 動かせない束（設置物・怪我）にはない。移せなかった場合（手持ちが埋まっている等）は何も起きない。
+   * 束のうち先頭のcount個を別の場所へ移す操作。atは移した先での置き場所（1つ目にだけ効く）で、
+   * 省略すると空いている場所へ入る。動かせない束（設置物・怪我）にはない。移せなかった場合
+   * （手持ちが埋まっている等）は何も起きない。
    */
-  readonly moveTo?: (place: CardPlace, at?: CardPlacement) => (() => void) | undefined;
+  readonly moveTo?: (place: CardPlace, at?: CardPlacement, count?: number) => (() => void) | undefined;
 
   /**
-   * そこへ入れる操作の見せ方（枠が文言も時間も宣言していなければundefined）。moveToが「入れられるか」を
-   * 答えるのに対し、こちらは「入れると何が起きるか」を答える——ドラッグ中の吹き出しに出す。
+   * そこへまとめて入れられる最大個数（入れられない場所では0）。**ドラッグ中に何枚ついてくるかを
+   * 決める**のに使う（CardDragController）。
    */
-  readonly putInto?: (place: CardPlace) => CardPutIn | undefined;
+  readonly acceptedCountAt?: (place: CardPlace) => number;
+
+  /**
+   * そこへcount個入れる操作の見せ方（枠が文言も時間も宣言していなければundefined）。moveToが
+   * 「入れられるか」を答えるのに対し、こちらは「入れると何が起きるか」を答える——ドラッグ中の吹き出し。
+   */
+  readonly putInto?: (place: CardPlace, count?: number) => CardPutIn | undefined;
 
   /**
    * 同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
@@ -631,16 +638,20 @@ export function fromGameSession(
    * 手に持てないのも、画面が場所ごとに覚えている決まりではなくワールド側の宣言の帰結。
    */
   const moveInto =
-    (item: WorldObject, from: CardPlace) =>
-    (place: CardPlace, at?: CardPlacement): (() => void) | undefined => {
+    (stack: readonly WorldObject[], from: CardPlace) =>
+    (place: CardPlace, at?: CardPlacement, count = 1): (() => void) | undefined => {
       const dest = slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
 
       const wellKnown = game.session.codex.wellKnown;
-      if (item.rejectionForMoveTo(dest.owner, dest.slotId, wellKnown) !== undefined) return undefined;
+      if (stack[0].rejectionForMoveTo(dest.owner, dest.slotId, wellKnown) !== undefined) return undefined;
 
-      const put = (): void => {
-        if (at === undefined) {
+      // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
+      // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。
+      const carried = stack.slice(0, Math.max(1, count));
+      const put = (item: WorldObject, first: boolean): void => {
+        // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
+        if (at === undefined || !first) {
           item.moveToSlot(dest.owner, dest.slotId, wellKnown);
         } else if (at.kind === 'cell' && hasFixedCells(dest.owner, dest.slotId)) {
           item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
@@ -652,7 +663,28 @@ export function fromGameSession(
       };
 
       // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
-      return () => putIntoSlot(item, dest.owner, dest.slotId, game.player.instance, game.session, put);
+      return () => {
+        carried.forEach((item, index) =>
+          putIntoSlot(item, dest.owner, dest.slotId, game.player.instance, game.session, () =>
+            put(item, index === 0),
+          ),
+        );
+      };
+    };
+
+  /** stackのうち、placeへまとめて入れられる個数（入れられない場所では0）。 */
+  const acceptedCountIn =
+    (stack: readonly WorldObject[], from: CardPlace) =>
+    (place: CardPlace): number => {
+      const dest = slotOf(place);
+      if (dest === undefined || samePlace(place, from)) return 0;
+
+      return stack[0].acceptedCountForMoveTo(
+        stack.slice(1),
+        dest.owner,
+        dest.slotId,
+        game.session.codex.wellKnown,
+      );
     };
 
   /**
@@ -660,8 +692,8 @@ export function fromGameSession(
    * 宣言していない枠ではundefined——ただ位置が変わるだけの移動には説明が要らない。
    */
   const putIntoTexts =
-    (item: WorldObject, from: CardPlace) =>
-    (place: CardPlace): CardPutIn | undefined => {
+    (stack: readonly WorldObject[], from: CardPlace) =>
+    (place: CardPlace, count = 1): CardPutIn | undefined => {
       const dest = slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
 
@@ -669,7 +701,10 @@ export function fromGameSession(
       if (slotDef === undefined) return undefined;
 
       const texts = locale.slot(slotDef.name).putIn;
-      const minutes = slotDef.putInMinutes(dest.owner, item, game.player.instance);
+      // まとめて入れるなら時間も個数ぶん。1つずつ入れるのと同じことをするため（moveInto参照）。
+      const minutes = stack
+        .slice(0, Math.max(1, count))
+        .reduce((total, item) => total + slotDef.putInMinutes(dest.owner, item, game.player.instance), 0);
       if (texts === undefined && minutes === 0) return undefined;
       return {
         name: texts?.displayName ?? locale.slot(slotDef.name).displayName,
@@ -732,14 +767,16 @@ export function fromGameSession(
       background: location.instance.def.name,
       // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
-      moveTo: moveInto(stack[0], 'fixtures'),
-      putInto: putIntoTexts(stack[0], 'fixtures'),
+      moveTo: moveInto(stack, 'fixtures'),
+      acceptedCountAt: acceptedCountIn(stack, 'fixtures'),
+      putInto: putIntoTexts(stack, 'fixtures'),
       reorder: reorderIn(stack[0]),
     })),
     items: location.itemStacks.map((stack) => ({
       ...stackOf(stack, 'items'),
-      moveTo: moveInto(stack[0], 'items'),
-      putInto: putIntoTexts(stack[0], 'items'),
+      moveTo: moveInto(stack, 'items'),
+      acceptedCountAt: acceptedCountIn(stack, 'items'),
+      putInto: putIntoTexts(stack, 'items'),
       reorder: reorderIn(stack[0]),
     })),
     hand: game.player.handStacks.map((stack) =>
@@ -747,8 +784,9 @@ export function fromGameSession(
         ? undefined
         : {
             ...stackOf(stack, 'hand'),
-            moveTo: moveInto(stack[0], 'hand'),
-            putInto: putIntoTexts(stack[0], 'hand'),
+            moveTo: moveInto(stack, 'hand'),
+            acceptedCountAt: acceptedCountIn(stack, 'hand'),
+            putInto: putIntoTexts(stack, 'hand'),
             reorder: reorderIn(stack[0]),
           },
     ),
@@ -763,8 +801,9 @@ export function fromGameSession(
             : stacksIn(slotOf(place));
       return stacks.map((stack) => ({
         ...stackOf(stack, place),
-        moveTo: moveInto(stack[0], place),
-        putInto: putIntoTexts(stack[0], place),
+        moveTo: moveInto(stack, place),
+        acceptedCountAt: acceptedCountIn(stack, place),
+        putInto: putIntoTexts(stack, place),
         reorder: reorderIn(stack[0]),
       }));
     },

@@ -64,11 +64,56 @@ export class Slot {
       }
     }
 
-    if (this.findCellFor(candidate) === undefined) {
+    if (this.vacancyFor(candidate) < 1) {
       return `'${ownerName}.${this.def.name}' に '${candidate.def.name}' を置ける枠が空いていません。`;
     }
 
     return undefined;
+  }
+
+  /**
+   * candidatesを先頭から順に入れていったとき、続けて受け取れる個数（1つ目で断るなら0）。
+   *
+   * 1つずつcanAcceptを訊いても答えは出ない——2つ目が入るかは、1つ目が入った後の空きで決まるため。
+   * まとめて入れる操作が「何個まで入るか」を、実際に動かす前に問うための入口。
+   *
+   * candidatesは同じ束の仲間（同じ型・同じ代表チェーン）であることを前提にする。置ける枠の数は
+   * 型だけで決まるので先頭の1つで代表して数え、かさ（capacity）だけを1つずつ積み上げる。
+   */
+  acceptedCount(candidates: readonly WorldObject[], wellKnown: WellKnownProperties): number {
+    if (candidates.length === 0 || !this.def.acceptsAnywhere(candidates[0].def)) return 0;
+
+    const vacancy = this.vacancyFor(candidates[0]);
+    let size = this.sumSize(wellKnown.sizeId);
+    let count = 0;
+    for (const candidate of candidates) {
+      if (count >= vacancy) break;
+      size += candidate.getNumber(wellKnown.sizeId);
+      if (this.def.capacity !== undefined && size > this.def.capacity) break;
+      count += 1;
+    }
+    return count;
+  }
+
+  /**
+   * candidateと同じ型のものを、かさを見ずにあと何個置けるか（findCellForが置き場所を見つけられる
+   * 回数）。合流できる枠の残りと、型の合う空き枠に入る数の合計。
+   *
+   * 枠数が決まっていないスロットは末尾に枠が増えるので上限が無い。束ねられない型（stackable=false）は
+   * 1枠に1個しか入らないので、maxがいくつでも空き枠の数がそのまま上限になる。
+   */
+  private vacancyFor(candidate: WorldObject): number {
+    if (!this.hasFixedCells) return Number.POSITIVE_INFINITY;
+
+    return this._cells.reduce((room, cell, index) => {
+      const max = this.def.cellAt(index).max ?? Number.POSITIVE_INFINITY;
+      if (cell === undefined) {
+        if (!this.def.cellAt(index).accepts(candidate.def)) return room;
+        return room + (candidate.def.stackable ? max : 1);
+      }
+      if (!candidate.def.stackable || !cell.matches(candidate)) return room;
+      return room + Math.max(0, max - cell.members.length);
+    }, 0);
   }
 
   /**

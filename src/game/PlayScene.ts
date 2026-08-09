@@ -655,7 +655,25 @@ export class PlayScene extends ResponsiveScene {
     if (dragged === undefined) return undefined;
     return drop.to === drop.from
       ? dragged.reorder?.(drop.target)
-      : dragged.moveTo?.(this.placeOf(drop.to), drop.target);
+      : dragged.moveTo?.(this.placeOf(drop.to), drop.target, drop.count);
+  }
+
+  /**
+   * そのドロップでまとめて動かせる最大枚数（1ならついてこない）。**combinationは常に1**——
+   * 条件は世界のどこでも見られ、1回実行するたびに世界が変わるので、2回目が成立するかは
+   * やってみるまで分からない。ついてきた枚数を約束にできるのは、枠が空きを答えられる「入れる」だけ。
+   */
+  private multiDropLimit(drop: CardDrop): number {
+    if (this.combinationAt(drop) !== undefined) return 1;
+
+    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
+    if (dragged === undefined) return 1;
+    if (drop.target.kind === 'combine') {
+      const into = this.contentsUnder(drop);
+      return into === undefined ? 1 : (dragged.acceptedCountAt?.(into) ?? 1);
+    }
+    // 同じ場所の中は並び替えで、束ごと動く（SlotSystem.md 3節）。
+    return drop.to === drop.from ? 1 : (dragged.acceptedCountAt?.(this.placeOf(drop.to)) ?? 1);
   }
 
   /**
@@ -666,7 +684,9 @@ export class PlayScene extends ResponsiveScene {
    */
   private putInto(drop: CardDrop): (() => void) | undefined {
     const into = this.contentsUnder(drop);
-    return into === undefined ? undefined : this.cardsOf(drop.from)[drop.fromIndex]?.moveTo?.(into);
+    return into === undefined
+      ? undefined
+      : this.cardsOf(drop.from)[drop.fromIndex]?.moveTo?.(into, undefined, drop.count);
   }
 
   /** カードに重ねたとき、そのカードが中身を映す場所（入れ物でなければundefined）。 */
@@ -686,10 +706,10 @@ export class PlayScene extends ResponsiveScene {
 
     if (drop.target.kind === 'combine') {
       const into = this.contentsUnder(drop);
-      return into === undefined ? undefined : dragged.putInto?.(into);
+      return into === undefined ? undefined : dragged.putInto?.(into, drop.count);
     }
     // 枠・隙間へ落とすのも同じ「入れる」。同じレーンの中は並び替えなので値段は付かない。
-    return drop.to === drop.from ? undefined : dragged.putInto?.(this.placeOf(drop.to));
+    return drop.to === drop.from ? undefined : dragged.putInto?.(this.placeOf(drop.to), drop.count);
   }
 
   /** カードに重ねたときに実行できるcombination（重ねる操作でなければundefined）。 */
@@ -710,9 +730,13 @@ export class PlayScene extends ResponsiveScene {
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
     if (this.dropAction(drop) === undefined) return undefined;
 
+    const maxCount = this.multiDropLimit(drop);
     const told = this.combinationAt(drop) ?? this.putInAt(drop);
-    if (told === undefined) return {};
-    return { tooltip: { title: told.name, body: told.description, note: durationText(told.minutes) } };
+    if (told === undefined) return { maxCount };
+    return {
+      maxCount,
+      tooltip: { title: told.name, body: told.description, note: durationText(told.minutes) },
+    };
   }
 
   private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
