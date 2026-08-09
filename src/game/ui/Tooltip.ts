@@ -85,6 +85,14 @@ export class Tooltip {
     this.shown = undefined;
   }
 
+  /**
+   * 表示順を最前面へ持ち上げる。吹き出しは基準にした物より手前に出なければならないが、順序は
+   * 生成順で決まるので、基準の側（ボタンなど）を作り直した呼び出し側がこれを呼ぶ。
+   */
+  bringToTop(): void {
+    this.scene.children.bringToTop(this.container);
+  }
+
   destroy(): void {
     this.container.destroy();
   }
