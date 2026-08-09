@@ -28,7 +28,11 @@ export interface RecipeEntry {
   /** 満たしていない解放条件の理由（SkillSystem.md 4節）。解放済みならundefined。 */
   readonly lockedReason: string | undefined;
 
-  readonly onSelect: () => void;
+  /**
+   * originは押した時点でそのカードが居た画面上の矩形。製作中オブジェクトのカードはここから
+   * 飛んでくる（ScreenLayout.md カードの移動アニメーション節）。
+   */
+  readonly onSelect: (origin: Rect) => void;
 }
 
 /** タブ1つ。カテゴリはタグ（GameElementDefinition.md 4.1節）で表す。 */
@@ -240,18 +244,17 @@ export class RecipeWindow {
       const column = position % columns;
       const row = Math.floor(position / columns);
       const locked = entry.lockedReason !== undefined;
-      const card = new Card(
-        scene,
-        metrics,
-        this.area.x + padding + column * (cardWidth + cardGap),
-        this.bodyTop + row * (cardHeight + cardGap),
-        {
-          ...entry.card,
-          // 未解放のレシピも並べる。押せないことは名前の後ろの理由で伝える。
-          name: locked ? `${entry.card.name}（${entry.lockedReason}）` : entry.card.name,
-          onTap: locked ? undefined : entry.onSelect,
-        },
-      );
+      const x = this.area.x + padding + column * (cardWidth + cardGap);
+      const y = this.bodyTop + row * (cardHeight + cardGap);
+      const card = new Card(scene, metrics, x, y, {
+        ...entry.card,
+        // 未解放のレシピも並べる。押せないことは名前の後ろの理由で伝える。
+        name: locked ? `${entry.card.name}（${entry.lockedReason}）` : entry.card.name,
+        // 送られていることがあるので、居場所は押した時点で測る（viewportの送り量を足す）。
+        onTap: locked
+          ? undefined
+          : () => entry.onSelect({ x, y: y + viewport.y, width: cardWidth, height: cardHeight }),
+      });
       viewport.add(card);
     });
 

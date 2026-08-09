@@ -4,6 +4,7 @@ import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { Localization } from '../locale/Localization';
 import { IN_PROGRESS_TAG, inProgressObjectName } from '../loader/inProgressObjects';
+import type { Rect } from './layout/ScreenMetrics';
 import type { RecipeCategory, RecipeEntry } from './ui/RecipeWindow';
 
 /** 解放条件に理由（reason、14.6節）が書かれていないときに出す、代わりの1行。 */
@@ -22,7 +23,7 @@ export function recipeCategories(
   game: NewGameSession,
   codex: WorldCodex,
   locale: Localization,
-  onSelect: (inProgressDefGlobalId: number) => void,
+  onSelect: (inProgressDefGlobalId: number, origin: Rect) => void,
 ): readonly RecipeCategory[] {
   const wipTagId = codex.tagNames.tryGetId(IN_PROGRESS_TAG);
   const resolveRoot = actorOnly(game.player.instance);
@@ -49,7 +50,7 @@ export function recipeCategories(
           unmet === undefined
             ? undefined
             : ((unmet.reasonName === undefined ? undefined : locale.reason(unmet.reasonName)) ?? LOCKED),
-        onSelect: () => onSelect(inProgressId),
+        onSelect: (origin) => onSelect(inProgressId, origin),
       };
 
       for (const tagId of product.tags) {
