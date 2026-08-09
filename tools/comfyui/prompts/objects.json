@@ -142,5 +142,38 @@
     ],
     "positive": "exactly one dark grey stone alone on an empty white page, a stone broken to a sharp point, angular flat faces, straight chipped edges, dark grey stone with darker mottling, matte dusty surface, clearly three dimensional with soft shading across each facet, gentle light from the upper left, the stone is small and lies flat on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, high quality",
     "negative": "flat silhouette, flat shading, two dimensional, paper cutout, monochrome, greyscale, ink wash painting, glossy, shiny, wet, polished, lacquered, reflection, specular highlight, glare, white stone, light grey, cream stone, chalk, marble, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, monolith, obelisk, rounded pebble, smooth stone, river stone, oval stone, egg, gravel, sand, crystal, gemstone, metal blade, modern knife, weapon handle, wooden handle, arrowhead on a shaft, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "woven_leaf": {
+    "description": [
+      "編んだ葉。ヤシの小葉を互い違いに組んだ平たいパネル。",
+      "",
+      "**織物は物にならず、枠いっぱいの敷物になる。** 「白い紙の上に小さく1つ」といういつもの頼み方でも、",
+      "12枚すべてが端から端まで詰まった絨毯・布のテクスチャになった（丸めた束・折り畳んだ形も同じ）。",
+      "**四隅が見えること・数歩下がった距離・四辺の余白**を本文で言って、ようやく物として出る。",
+      "",
+      "**枠は横長（1152x896）にする。** 縦長の枠だと、横に広いパネルが必ず左右の端まで届く。",
+      "",
+      "この絵はそのままでは使わない。写実的すぎて他のカードから浮くので、レシピの edit（Qwen Image",
+      "Edit）が絵の具の質感へ描き直す（recipes/woven_leaf.json）。"
+    ],
+    "positive": "exactly one small rectangular panel of plaited palm leaf alone on an empty white page, seen from a few steps back and slightly from the side so that all four corners of the panel are visible and the whole panel is well inside the page with a wide empty white margin on all four sides, woven from flat palm leaflets crossing over and under, the cut ends trimmed level along its edges, the panel rippling slightly and lifting at one corner, dull olive green and dry straw tones, matte dry surface, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "extreme close-up, macro, zoomed in, cropped, cut off, out of frame, filling the frame, edge to edge, rug, carpet, textile swatch, fabric, cloth, towel, napkin, seamless pattern, repeating pattern, background texture, wallpaper, bamboo blind, window blind, paper, envelope, book, basket, hat, fan, tree, plant, palm frond, feathery frond, single leaf, two panels, three panels, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, scenery, landscape, ground, floor, grass, water, sky, table, desk, grey background, studio backdrop, horizon line, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "woven_basket": {
+    "description": [
+      "編み籠。編んだ葉を綴じ合わせた入れ物。中身は描かせない（空の籠として見せる）。",
+      "",
+      "**籠は一発で物として出る**（編んだ葉と違い、頭の名詞が物なので枠いっぱいにならない）。",
+      "代わりに背景が灰色のスタジオ写真になるが、edit が白い紙へ置き直すので下絵では気にしない。",
+      "",
+      "**色を落とすと生成りになり、切り出せない。** muted / dull と頼むと緑が完全に抜けて枯れ草色に",
+      "なり、白い紙と同じ明るさで card_art.py の「紙より暗ければ物」に掛からない（包帯と同じ制約）。",
+      "**緑のまま出させて、落ち着かせるのは edit の側**でやる。",
+      "",
+      "seedを選んでいるのは、平たい葉を互い違いに組んだ編み目がはっきり出る絵を採るため",
+      "（編んだ葉の絵と同じ編み方に見えて、材料との繋がりが読める）。"
+    ],
+    "positive": "exactly one small empty woven basket alone on an empty white page, plaited from broad flat green palm leaf strips crossing over and under each other, a round open top with a rolled rim, straight sides tapering to a flat bottom, nothing inside it, seen from the side and slightly above so the empty inside shows, fresh green fading to straw yellow, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "fruit, vegetables, bread, eggs, flowers, plants, laundry, cloth inside, full basket, lid, cover, handle, hamper, picnic basket, wicker furniture, birdcage, bowl, plate, pot, vase, two baskets, three baskets, several baskets, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   }
 }
