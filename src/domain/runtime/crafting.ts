@@ -54,8 +54,8 @@ export function stepIsSupplied(
 }
 
 /**
- * 工程を1つ進める。素材（`consume: true`）を要求数だけ消費し、その工程の所要時間ぶん
- * ゲーム内時間と進捗を進める。道具（`consume: false`）は減らさない。
+ * 工程を1つ進める。その工程の所要時間ぶんゲーム内時間と進捗を進め、素材（`consume: true`）を
+ * 要求数だけ消費する。道具（`consume: false`）は減らさない。
  *
  * 「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という複合動作はYAMLの語彙では
  * 表せないため、ここに置く（RecipeSystem.md 2節・4節）。
@@ -74,6 +74,11 @@ export function advanceCrafting(
   if (step === undefined) return false;
   if (!stepIsSupplied(inProgress, materialsSlotGlobalId, step)) return false;
 
+  // 素材を消費するのも進捗を足すのも、所要時間を進め切ってから。素材は作業のあいだ材料スロットに
+  // 在り、無くなるのは作業を終えた時点で、完成品もその時刻に生まれる。消費が進捗より先なのは、
+  // 進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
+  session.advanceWorldTime(step.durationMinutes);
+
   const slot = inProgress.tryGetSlot(materialsSlotGlobalId);
   for (const requirement of step.requirements) {
     if (!requirement.consume) continue;
@@ -83,9 +88,6 @@ export function advanceCrafting(
     for (const object of spent) object.destroy(codex.wellKnown);
   }
 
-  // 時間を先に進めてから進捗を足す。進捗が上限を超えた瞬間に完成品が生まれるので、
-  // 生まれた物が「作業を終えた時刻」に居るようにするため。
-  session.advanceWorldTime(step.durationMinutes);
   inProgress.addNumber(progressGlobalId, step.durationMinutes, session);
 
   spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
