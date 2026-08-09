@@ -100,12 +100,16 @@ const MARK_MARGIN = 18;
 const STACK_COUNT_SIZE = 32;
 
 /**
- * 枠が持つ縁の太さと、カードへ重ねる文字の大きさ・板の内側の余白・紙の下端からの浮かせ方（u単位）。
+ * 枠の強調（CellHighlight）の太さ（u単位）。カードの矩形のすぐ外側にある余白——カード間ギャップの
+ * 半分であり、レーンの左右の余白（SIZE.margin）とも同じ——をちょうど埋める。
  *
- * 縁は押下中の黒枠（PRESSED_BORDER_WIDTH）と同じ太さにする。どちらもカードの紙の輪郭をなぞる線なので、
- * 太さが違うと同じ位置に別の枠があるように見える。文字は紙の下端寄りに置き、絵の主題を隠さない。
+ * **カードの外側へ出すことで、カードが入っても隠れない。** カードより手前へ上げる手もあるが、それだと
+ * 縁がスタック数の丸（addStackBadge）を横切る。数字はそのカードが何個かを表すもので、枠がどれかより
+ * 先に読めるべきなので、縁の方が下がる。
  */
-const CELL_BORDER_WIDTH = 6;
+const CELL_HIGHLIGHT_WIDTH = SIZE.gap / 2;
+
+/** カードへ重ねる文字の大きさ・板の内側の余白・紙の下端からの浮かせ方（u単位）。 */
 const CELL_OVERLAY_SIZE = 40;
 const CELL_OVERLAY_PADDING = 14;
 const CELL_OVERLAY_BOTTOM = 20;
@@ -814,36 +818,47 @@ export class EmptyCard extends Phaser.GameObjects.Container {
 }
 
 /**
- * 枠がカードの上へ重ねるもの（ScreenLayout.md 枠（セル）を一級の単位にする節の3層目）。縁の色と、
- * カードに重ねる短い文字を出す。**カードが入っていても隠れない**ことがこの層の役目なので、
- * カードより手前へ置く（CardLane）。
+ * 枠そのものを色で強調する縁（ScreenLayout.md 枠（セル）は一級の単位 節の1層目）。
+ * **カードの矩形の外側を回る**ので、枠にカードが入っても隠れない（CELL_HIGHLIGHT_WIDTH参照）。
+ */
+export class CellHighlight extends Phaser.GameObjects.Graphics {
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, color: number) {
+    super(scene, { x, y });
+
+    const width = Math.max(1, metrics.px(CELL_HIGHLIGHT_WIDTH));
+    // 線は経路の上に太さの半分ずつ広がるので、経路をカードの矩形から半分だけ外へ出すと、線は
+    // カードに一切かからずその外側だけを埋める。角の丸みも紙の輪郭と同心になるよう外へ足す。
+    const inset = width / 2;
+    drawBox(
+      this,
+      {
+        x: -inset,
+        y: -inset,
+        width: metrics.px(SIZE.cardWidth) + width,
+        height: metrics.px(SIZE.cardHeight) + width,
+      },
+      {
+        border: color,
+        borderWidth: width,
+        radius: metrics.px(FRAME_INSET + FRAME_RADIUS + CELL_HIGHLIGHT_WIDTH / 2),
+      },
+    );
+
+    scene.add.existing(this);
+  }
+}
+
+/**
+ * 枠がカードの上へ重ねる短い文字（ScreenLayout.md 枠（セル）は一級の単位 節の3層目）。
+ * **カードが入っていても隠れない**ことがこの層の役目なので、カードより手前へ置く（CardLane）。
  */
 export class CellOverlay extends Phaser.GameObjects.Container {
-  constructor(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    x: number,
-    y: number,
-    borderColor: number | undefined,
-    overlay: string | undefined,
-  ) {
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, overlay: string) {
     super(scene, x, y);
 
     const width = metrics.px(SIZE.cardWidth);
     const height = metrics.px(SIZE.cardHeight);
-    const paper = paperRect(metrics, width, height);
-
-    if (borderColor !== undefined) {
-      const border = scene.add.graphics();
-      drawBox(border, paper, {
-        border: borderColor,
-        borderWidth: Math.max(1, metrics.px(CELL_BORDER_WIDTH)),
-        radius: metrics.px(FRAME_RADIUS),
-      });
-      this.add(border);
-    }
-
-    if (overlay !== undefined) this.add(this.makeBadge(scene, metrics, paper, overlay));
+    this.add(this.makeBadge(scene, metrics, paperRect(metrics, width, height), overlay));
 
     scene.add.existing(this);
   }
