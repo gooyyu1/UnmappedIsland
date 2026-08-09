@@ -1,4 +1,6 @@
+import type { WorldObject } from '../runtime/WorldObject';
 import type { ObjectDef } from './ObjectDef';
+import type { WeightSpec } from './PickEffect';
 
 /** 1つのCellAcceptRuleが何を基準にマッチングするか。 */
 export type SlotAcceptTargetKind =
@@ -94,6 +96,15 @@ export class SlotDef {
    */
   readonly autoPlacement: boolean;
 
+  /**
+   * ここへ物を入れるのにかかるゲーム内時間（GameElementDefinition.md 7.10節）。undefinedなら一瞬。
+   *
+   * **時間を課すのは入れる側だけ**で、出すのは常に一瞬。当てるのに手間がかかっても外すのは一瞬、
+   * という非対称の方が普通のため。値の解決はcombinationのdurationと同じ形で、`self`が枠の持ち主、
+   * `dragged`が入れる物（putInMinutes参照）。
+   */
+  private readonly putInDuration: WeightSpec | undefined;
+
   constructor(
     globalId: number,
     name: string,
@@ -102,6 +113,7 @@ export class SlotDef {
     cellCount: number | undefined,
     capacity: number | undefined,
     autoPlacement = true,
+    putInDuration: WeightSpec | undefined = undefined,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -111,6 +123,12 @@ export class SlotDef {
       cells ?? (cellCount === undefined ? [] : Array.from({ length: cellCount }, () => this.sharedCell));
     this.capacity = capacity;
     this.autoPlacement = autoPlacement;
+    this.putInDuration = putInDuration;
+  }
+
+  /** itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。 */
+  putInMinutes(owner: WorldObject, item: WorldObject, actor: WorldObject | undefined): number {
+    return this.putInDuration === undefined ? 0 : Math.trunc(this.putInDuration.resolve(owner, actor, item));
   }
 
   /** index番目の枠の定義。枠数が決まっていないスロットではどの位置でも共通の定義。 */

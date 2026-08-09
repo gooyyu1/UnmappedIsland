@@ -781,6 +781,30 @@ object_defs:
 `bound_to_owner` だから、入れられないのは手元に怪我を持ちようがないから。スロット側に「書き込み禁止」
 のような別の属性は要りません。
 
+### 7.10 put_in（入れるのにかかる時間）
+
+**`put_in: {duration: ...}`** を書くと、そのスロットへ物を入れるのにゲーム内時間がかかります（既定は一瞬）。
+`duration` は `combinations` のそれと同じ形（リテラルか `{object, prop}` 参照、10.2 節）で、`self` が枠の
+持ち主、`dragged` が入れる物です。
+
+```yaml
+slots:
+  treatment:
+    cell_count: 1
+    cell: {accept: {tag: treatment}, max: 1}
+    put_in: {duration: 30}      # 包帯を当てるのに30分
+```
+
+**時間を課すのは入れる側だけ**で、出すのは常に一瞬です。当てるのに手間がかかっても外すのは一瞬、という
+非対称の方が普通のためです。
+
+**値段は枠が持ち、経路は持ちません。** プレイヤーが物を入れる操作はカードへ重ねる・レーンへ落とす・端の
+矢印で送るの3通りありますが、どれも同じだけかかります。`combinations` に `duration` を書いて同じことを
+表そうとすると、**スロットへ直接落とす経路だけが無料**になり、同じことが経路で違う値段になります。
+
+離す前に値段を見せるのは画面の責務です（[ScreenLayout.md](../ui/ScreenLayout.md) カードのドラッグ＆
+ドロップ節）。操作の呼び名と説明は `slot_texts` の `put_in`（[Localization.md](Localization.md)）に書きます。
+
 ## 8. passives（持続する影響）
 
 `passives` は、`self`/`parent`/`child` の関係とゲート（常時／`conditions`／プロパティの stage）に紐づいて

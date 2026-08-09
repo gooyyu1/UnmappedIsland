@@ -90,6 +90,23 @@ slot_texts:
 **書式だけは `default` エントリを参照します**（次節の `display_name_with_content` と同じ理由）。
 `{slot}` は各スロット自身の名前から埋まるので、共通の書式を書いてもすべてが同じ名前にはなりません。
 
+`put_in` は、**そこへ物を入れる操作**の呼び名と説明です。ドラッグ中の吹き出しに出ます
+（[`ScreenLayout.md`](../ui/ScreenLayout.md) カードのドラッグ＆ドロップ節）。スロットの名前が場所を指す
+名詞（「手当て」）なのに対し、こちらは行為の名前（「手当てする」）なので、別の文字列として持ちます。
+
+```yaml
+slot_texts:
+  treatment:
+    display_name: 手当て
+    put_in:
+      display_name: 手当てする
+      description: 治療具を当てる。当てている間だけ効き、外せば効き目も消える。
+```
+
+書かなければ吹き出しは出ません（ただ位置が変わるだけの移動には説明が要らないため）。ただし枠が
+時間を要求している場合（`put_in: {duration: ...}`、GameElementDefinition.md 7.10節）は、値段を伏せる
+わけにいかないので、スロットの名前を見出しにして時間だけを出します。
+
 ## display_name_with_content: 中身がいるときの名前
 
 `represented_by`（[GameElementDefinition.md](./GameElementDefinition.md) 7.6節）で中身を代表にしている
