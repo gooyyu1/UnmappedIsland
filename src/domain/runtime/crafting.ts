@@ -1,5 +1,6 @@
 import type { WorldCodex } from '../defs/WorldCodex';
 import type { RecipeDef, RecipeStepDef } from '../defs/RecipeDef';
+import { spendDuration } from '../defs/actionTime';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 
@@ -54,13 +55,15 @@ export function stepIsSupplied(
 }
 
 /**
- * 工程を1つ進める。素材（`consume: true`）を要求数だけ消費し、その工程の所要時間ぶん
- * ゲーム内時間と進捗を進める。道具（`consume: false`）は減らさない。
+ * 工程を1つ進める。その工程の所要時間ぶんゲーム内時間と進捗を進め、素材（`consume: true`）を
+ * 要求数だけ消費する。道具（`consume: false`）は減らさない。
  *
  * 「在庫を確認し、指定数量だけ消費し、足りなければ何もしない」という複合動作はYAMLの語彙では
- * 表せないため、ここに置く（RecipeSystem.md 2節・4節）。
+ * 表せないため、ここに置く（RecipeSystem.md 2節・4節）。**時間と効果の順序はactions/combinationsと
+ * 同じ**（ActionSystem.md 2節）。
  *
- * @returns 進めたら true。素材が足りない、または全工程を終えているなら false（何も起きない）。
+ * @returns 進めたら true。素材が足りない、全工程を終えている、経過中に製作中オブジェクト自身が
+ *   失われたなら false。最後の場合だけは時間が経過している（actionTime参照）。
  */
 export function advanceCrafting(
   inProgress: WorldObject,
@@ -74,6 +77,16 @@ export function advanceCrafting(
   if (step === undefined) return false;
   if (!stepIsSupplied(inProgress, materialsSlotGlobalId, step)) return false;
 
+  // actions/combinationsと同じ順序で、時間を進めてから効果（消費と進捗）を適用する
+  // （ActionSystem.md 2節）。素材は作業のあいだ材料スロットに在り、無くなるのは作業を終えた
+  // 時点で、完成品もその時刻に生まれる。
+  //
+  // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も
+  // 完成品の生まれる場所も無くなり、黙って何も起きない結果になる。素材は違う——経過中に失われても
+  // 打ち切らない。それは開始時に済ませた在庫確認（stepIsSupplied）の再判定にあたる（同6.1節）。
+  if (!spendDuration(step.durationMinutes, session, [inProgress])) return false;
+
+  // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
   const slot = inProgress.tryGetSlot(materialsSlotGlobalId);
   for (const requirement of step.requirements) {
     if (!requirement.consume) continue;
@@ -83,9 +96,6 @@ export function advanceCrafting(
     for (const object of spent) object.destroy(codex.wellKnown);
   }
 
-  // 時間を先に進めてから進捗を足す。進捗が上限を超えた瞬間に完成品が生まれるので、
-  // 生まれた物が「作業を終えた時刻」に居るようにするため。
-  session.advanceWorldTime(step.durationMinutes);
   inProgress.addNumber(progressGlobalId, step.durationMinutes, session);
 
   spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);

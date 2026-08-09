@@ -843,8 +843,8 @@ export class PlayScene extends ResponsiveScene {
    * 製作中オブジェクトの「作業する」。工程の素材が揃っていれば、その工程ぶん時間と進捗を進める
    * （RecipeSystem.md 4節。在庫確認と消費はYAMLの語彙で書けないためプログラム側）。
    *
-   * **閉じるのは経過し切ってから。** 他のアクションと違い、押した時点では閉じない——素材が減って
-   * 成果物が生まれるまでを、その材料のウィンドウを開いたまま見せる。
+   * **閉じるのは経過し切ってから。** 他のアクションと違い、押した時点では閉じない——作業のあいだ
+   * 素材は材料の枠に在る（advanceCrafting）ので、それを映したまま経過を見せる。
    */
   private craftAction(card: ObjectCardStack): ObjectWindowAction[] {
     const target = card.objects[0];
