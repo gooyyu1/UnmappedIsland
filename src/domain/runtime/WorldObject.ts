@@ -351,6 +351,43 @@ export class WorldObject {
     wellKnown: WellKnownProperties,
     force = false,
   ): string | undefined {
+    const rejection = this.rejectionBeforeSlot(newParent, slotGlobalId);
+    if (rejection !== undefined) return rejection;
+
+    if (force) return undefined;
+    return newParent
+      .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
+      .canAccept(this, wellKnown, newParent.def.name);
+  }
+
+  /**
+   * 自分に続けてfollowers（同じ束の仲間）を同じスロットへ入れるとき、続けて受け取ってもらえる個数
+   * （自分を含む。自分が入らなければ0）。
+   *
+   * 1つずつrejectionForMoveToを訊いても答えは出ない——2つ目が入るかは1つ目が入った後の空きで
+   * 決まるため（Slot.acceptedCount）。**束をまとめて落とす操作が、落とす前に「何枚ついてくるか」を
+   * 決めるための問い**で、ついてきた枚数はそのまま「これだけ入る」という約束になる。
+   */
+  acceptedCountForMoveTo(
+    followers: readonly WorldObject[],
+    newParent: WorldObject,
+    slotGlobalId: number,
+    wellKnown: WellKnownProperties,
+  ): number {
+    const candidates: WorldObject[] = [];
+    for (const candidate of [this as WorldObject, ...followers]) {
+      if (candidate.rejectionBeforeSlot(newParent, slotGlobalId) !== undefined) break;
+      candidates.push(candidate);
+    }
+    if (candidates.length === 0) return 0;
+
+    return newParent
+      .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
+      .acceptedCount(candidates, wellKnown);
+  }
+
+  /** 枠の空き（Slot.canAccept）を見るまでもなく移れない理由。移れる個数を数えるときも1つずつ見る。 */
+  private rejectionBeforeSlot(newParent: WorldObject, slotGlobalId: number): string | undefined {
     // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
     // forceでも許さない——forceが省くのは枠の要件・capacityの判定であって、木構造の不変条件ではない。
     if (this.contains(newParent)) {
@@ -368,10 +405,7 @@ export class WorldObject {
       return `'${newParent.def.name}' はスロット(id=${slotGlobalId})を持ちません。`;
     }
 
-    if (force) return undefined;
-    return newParent
-      .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
-      .canAccept(this, wellKnown, newParent.def.name);
+    return undefined;
   }
 
   /** placeは位置を指定する配置（上記のinsertSameSlot・moveToSlotAt*）専用。省略すると通常の追加（Slot.addInternal）になる。 */

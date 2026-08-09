@@ -7,6 +7,7 @@ import { CARD_ART_WIDTH, objectTexture } from './objectArt';
 import { ProgressBar } from './ProgressBar';
 import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
+import { HoldRepeat } from './holdRepeat';
 import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
 
@@ -73,17 +74,6 @@ const EDGE_RATIO = 1 / 6;
 /** 押している間だけ出す、端の操作エリアのオーバーレイの濃さと矢印の大きさ（u単位）。 */
 const EDGE_OVERLAY_ALPHA = 0.55;
 const EDGE_ARROW_SIZE = 44;
-
-/**
- * 端を押し続けたときの繰り返し（1枚ずつ送り続ける、addEdge参照）。
- *
- * HOLDは指を離さないまま1枚目が動くまで、REPEATは2枚目以降の間隔で、1枚送るごとにDECAYを掛けて
- * MINまで縮める。MINが最高速度で、50ミリ秒＝秒間20枚。100枚のスタックでも10秒はかからない。
- */
-const EDGE_HOLD_MS = 400;
-const EDGE_REPEAT_MS = 300;
-export const EDGE_REPEAT_MIN_MS = 50;
-const EDGE_REPEAT_DECAY = 0.8;
 
 /** スタック数を囲む丸の直径・絵の右上の角から外へはみ出させる量・中の数字の大きさ（u単位）。 */
 const STACK_BADGE_SIZE = 56;
@@ -313,9 +303,8 @@ export class Card extends Phaser.GameObjects.Container {
   /** 中身を入れ直すときに要る採寸。 */
   private readonly metrics: ScreenMetrics;
 
-  /** 端を押し続けている間の繰り返し（addEdge参照）と、次の1枚までの間隔、既に送ったかどうか。 */
-  private edgeRepeat: Phaser.Time.TimerEvent | undefined;
-  private edgeRepeatDelay = EDGE_REPEAT_MS;
+  /** 端を押し続けている間の繰り返し（addEdge参照）と、既に1枚でも送ったかどうか。 */
+  private readonly edgeRepeat: HoldRepeat;
   private edgeRepeated = false;
 
   /** 今の押下がタップでなくなったか（cancelTap参照）。押し始めるたびに戻す。 */
@@ -338,6 +327,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.cardWidth = width;
     this.cardHeight = height;
     this.metrics = metrics;
+    this.edgeRepeat = new HoldRepeat(scene);
 
     const face = addFrame(scene, metrics, width, height, false);
     // 土地の背景は絵より先に敷く。用意されていない土地では紙がそのまま地になる。
@@ -698,7 +688,7 @@ export class Card extends Phaser.GameObjects.Container {
    * どちら向きの操作なのかを示す。
    *
    * 押し続けると、指を離さないまま1枚目が動き、そのあとは間隔を詰めながら送り続ける
-   * （EDGE_HOLD_MS・EDGE_REPEAT_MS）。短く押して離した場合だけ、離した時点で1枚動かす——
+   * （HoldRepeat）。短く押して離した場合だけ、離した時点で1枚動かす——
    * 押し続けて既に動き出しているなら、離したぶんをもう1枚足すことにはならない。
    *
    * ヒット領域はカード本体の後に足す。重なった対象のうち描画順が最前面の1つだけが入力を受け取る
@@ -764,33 +754,23 @@ export class Card extends Phaser.GameObjects.Container {
     this.edgeLayer.add([feedback, hitArea]);
   }
 
-  /** 押し続けの繰り返しを始める。1枚目はEDGE_HOLD_MS後で、そこからは間隔を詰めていく。 */
+  /** 押し続けの繰り返しを始める。速さはHoldRepeatが持つ。 */
   private startEdgeRepeat(direction: CardEdgeDirection): void {
     this.edgeRepeated = false;
-    this.edgeRepeatDelay = EDGE_REPEAT_MS;
-    this.scheduleEdgeRepeat(EDGE_HOLD_MS, direction);
-  }
-
-  private scheduleEdgeRepeat(delay: number, direction: CardEdgeDirection): void {
-    this.edgeRepeat = this.scene.time.delayedCall(delay, () => {
+    this.edgeRepeat.start(() => {
       const edge = this.edgeActionFor(this._content, direction);
-      if (edge === undefined) return;
+      if (edge === undefined) return false;
 
       this.edgeRepeated = true;
       edge.onTap();
       // 送った結果このカードが空になっていれば、破棄されていてもう続けられない。
-      if (this.scene === undefined) return;
-
-      const next = this.edgeRepeatDelay;
-      this.edgeRepeatDelay = Math.max(EDGE_REPEAT_MIN_MS, this.edgeRepeatDelay * EDGE_REPEAT_DECAY);
-      this.scheduleEdgeRepeat(next, direction);
+      return this.scene !== undefined;
     });
   }
 
   /** 繰り返しを止める。edgeRepeatedは離したときの判断に使うので、ここでは触らない。 */
   private cancelEdgeRepeat(): void {
-    this.edgeRepeat?.remove();
-    this.edgeRepeat = undefined;
+    this.edgeRepeat.stop();
   }
 }
 
