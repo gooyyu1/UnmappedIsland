@@ -680,10 +680,18 @@ export class PlayScene extends ResponsiveScene {
   }
 
   private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
-    if (lane === this.handLane) return this.view.hand;
-    if (lane === this.itemLane) return this.view.items;
-    if (lane === this.fixtureLane) return this.view.fixtures;
-    return this.childWindowCards();
+    return this.cardsAt(this.placeOf(lane));
+  }
+
+  /**
+   * その場所に今並んでいる束。レーンで常に見えている3つ（設置物・アイテム・手持ち）はviewが
+   * 並びとして持ち、子ウィンドウが映す場所だけcardsInで引く（PlayScreenView参照）。
+   */
+  private cardsAt(place: CardPlace): readonly (ObjectCardStack | undefined)[] {
+    if (place === 'hand') return this.view.hand;
+    if (place === 'items') return this.view.items;
+    if (place === 'fixtures') return this.view.fixtures;
+    return this.view.cardsIn(place);
   }
 
   /** レーンが映している場所。 */
@@ -791,6 +799,9 @@ export class PlayScene extends ResponsiveScene {
    *
    * 枠ごとに何をいくつ入れるかの判断はYAMLの語彙で書けないため、プログラム側で行う
    * （autoFillMaterials）。持たないカードでは空を返す。
+   *
+   * 他のアクションと違い、押してもウィンドウを閉じない。補充の次にすることは同じウィンドウの
+   * 「作業する」なので、映しているものも場所も変わらないこの操作だけは開いたままにする。
    */
   private autoFillAction(card: ObjectCardStack): ObjectWindowAction[] {
     const target = card.objects[0];
@@ -814,12 +825,34 @@ export class PlayScene extends ResponsiveScene {
             this.codex,
             this.remainingFor(target),
           );
-          this.closeChildWindow();
-          this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-          this.showView();
+          this.reopenChildWindow();
         },
       },
     ];
+  }
+
+  /**
+   * 開いている子ウィンドウを、ワールドを変えたあとの姿へ開き直す。
+   *
+   * 中身の並びだけでなく「作業する」を押せるかも変わるが、ボタンは開いた時点の可否で作られている
+   * （ObjectWindow）ため、並びの差し替え（showView）では追いつかず作り直しになる。
+   *
+   * 並びを差し替える間はいったん閉じる——飛んでいるカードの行き先のレーンを、その途中で捨てないため。
+   */
+  private reopenChildWindow(): void {
+    const opened = this.childWindowCard;
+    this.closeChildWindow();
+    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.showView();
+
+    const card = opened === undefined ? undefined : this.restack(opened);
+    if (card !== undefined) this.openObjectWindow(card);
+  }
+
+  /** そのカードを今のviewで引き直した束（世界から消えていればundefined）。 */
+  private restack(card: ObjectCardStack): ObjectCardStack | undefined {
+    const ids = new Set(card.identity ?? []);
+    return this.cardsAt(card.place).find((stack) => stack?.identity?.some((id) => ids.has(id)) === true);
   }
 
   /**
@@ -1718,7 +1751,11 @@ export class PlayScene extends ResponsiveScene {
     this.recipeWindow = undefined;
   }
 
-  /** 製作中オブジェクトを現在地のitemsスロットへ生む。 */
+  /**
+   * 製作中オブジェクトを現在地のitemsスロットへ生み、その子ウィンドウを開く。
+   *
+   * 生んだ直後にすることは素材を入れることしかないので、アイテムレーンから探し直させない。
+   */
   private startCrafting(inProgressDefGlobalId: number): void {
     const location = this.gameSession.player.location;
     if (location === undefined) return;
@@ -1727,6 +1764,12 @@ export class PlayScene extends ResponsiveScene {
     spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'), this.codex.wellKnown);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.showView();
+
+    // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。
+    const card = this.view.items.find((stack) =>
+      stack.objects.some((object) => object.instanceId === spawned.instanceId),
+    );
+    if (card !== undefined) this.openObjectWindow(card);
   }
 
   private openPropertyWindow(): void {
