@@ -927,6 +927,8 @@ export class PlayScene extends ResponsiveScene {
       // もう要求されない型は、取り出すための枠が残るだけで印は持たない。
       if (globalId === undefined || needed === undefined) return {};
       return {
+        // 空き枠のうちに何を入れる枠なのかを見せる（EmptyCard）。
+        accepts: this.view.cardOfType(globalId),
         borderColor: inStep.has(globalId) ? COLOR.cellCurrentStep : COLOR.cellLaterStep,
         // 1つしか要らない枠に数を出しても、枠そのものが既に言っていることの繰り返しにしかならない。
         overlay: needed >= 2 ? `${held.get(globalId) ?? 0}/${needed}` : undefined,
