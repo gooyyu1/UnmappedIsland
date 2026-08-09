@@ -1718,7 +1718,11 @@ export class PlayScene extends ResponsiveScene {
     this.recipeWindow = undefined;
   }
 
-  /** 製作中オブジェクトを現在地のitemsスロットへ生む。 */
+  /**
+   * 製作中オブジェクトを現在地のitemsスロットへ生み、その子ウィンドウを開く。
+   *
+   * 生んだ直後にすることは素材を入れることしかないので、アイテムレーンから探し直させない。
+   */
   private startCrafting(inProgressDefGlobalId: number): void {
     const location = this.gameSession.player.location;
     if (location === undefined) return;
@@ -1727,6 +1731,12 @@ export class PlayScene extends ResponsiveScene {
     spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'), this.codex.wellKnown);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.showView();
+
+    // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。
+    const card = this.view.items.find((stack) =>
+      stack.objects.some((object) => object.instanceId === spawned.instanceId),
+    );
+    if (card !== undefined) this.openObjectWindow(card);
   }
 
   private openPropertyWindow(): void {
