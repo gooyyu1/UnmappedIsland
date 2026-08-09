@@ -1739,9 +1739,9 @@ export class PlayScene extends ResponsiveScene {
     this.recipeWindow?.destroy();
     this.recipeWindow = new RecipeWindow(this, this.metrics, {
       title: '作るもの',
-      categories: recipeCategories(this.gameSession, this.codex, this.locale, (defGlobalId) => {
+      categories: recipeCategories(this.gameSession, this.codex, this.locale, (defGlobalId, origin) => {
         this.closeRecipeWindow();
-        this.startCrafting(defGlobalId);
+        this.startCrafting(defGlobalId, origin);
       }),
       emptyText: 'ここに並ぶものはまだ無い。',
       onClose: () => this.closeRecipeWindow(),
@@ -1757,15 +1757,18 @@ export class PlayScene extends ResponsiveScene {
    * 製作中オブジェクトを現在地のitemsスロットへ生み、その子ウィンドウを開く。
    *
    * 生んだ直後にすることは素材を入れることしかないので、アイテムレーンから探し直させない。
+   *
+   * originは一覧で選んだカードの居場所。生まれたカードはそこから飛んでくる——一覧は閉じているので、
+   * 選んだ札がそのまま場に出た、という見え方になる。
    */
-  private startCrafting(inProgressDefGlobalId: number): void {
+  private startCrafting(inProgressDefGlobalId: number, origin: Rect): void {
     const location = this.gameSession.player.location;
     if (location === undefined) return;
 
     const spawned = this.gameSession.session.spawn(inProgressDefGlobalId);
     spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'), this.codex.wellKnown);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-    this.showView();
+    this.showView({ origin });
 
     // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。
     const card = this.view.items.find((stack) =>
