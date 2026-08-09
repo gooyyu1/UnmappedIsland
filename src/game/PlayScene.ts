@@ -825,28 +825,12 @@ export class PlayScene extends ResponsiveScene {
             this.codex,
             this.remainingFor(target),
           );
-          this.reopenChildWindow();
+          // 開いたまま差し替える。閉じて開き直すと、入っていく素材が飛ぶ先のレーンごと消えてしまう。
+          this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+          this.showView();
         },
       },
     ];
-  }
-
-  /**
-   * 開いている子ウィンドウを、ワールドを変えたあとの姿へ開き直す。
-   *
-   * 中身の並びだけでなく「作業する」を押せるかも変わるが、ボタンは開いた時点の可否で作られている
-   * （ObjectWindow）ため、並びの差し替え（showView）では追いつかず作り直しになる。
-   *
-   * 並びを差し替える間はいったん閉じる——飛んでいるカードの行き先のレーンを、その途中で捨てないため。
-   */
-  private reopenChildWindow(): void {
-    const opened = this.childWindowCard;
-    this.closeChildWindow();
-    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-    this.showView();
-
-    const card = opened === undefined ? undefined : this.restack(opened);
-    if (card !== undefined) this.openObjectWindow(card);
   }
 
   /** そのカードを今のviewで引き直した束（世界から消えていればundefined）。 */
@@ -858,6 +842,9 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 製作中オブジェクトの「作業する」。工程の素材が揃っていれば、その工程ぶん時間と進捗を進める
    * （RecipeSystem.md 4節。在庫確認と消費はYAMLの語彙で書けないためプログラム側）。
+   *
+   * **閉じるのは経過し切ってから。** 他のアクションと違い、押した時点では閉じない——素材が減って
+   * 成果物が生まれるまでを、その材料のウィンドウを開いたまま見せる。
    */
   private craftAction(card: ObjectCardStack): ObjectWindowAction[] {
     const target = card.objects[0];
@@ -878,12 +865,12 @@ export class PlayScene extends ResponsiveScene {
         reason: supplied ? undefined : '素材が足りない。',
         onTap: () => {
           const origin = this.rectOf(card);
-          this.closeChildWindow();
           this.applyToWorld(
             () => {
               advanceCrafting(target, recipe, materialsSlotId, this.codex, this.gameSession.session);
             },
             { origin },
+            () => this.closeChildWindow(),
           );
         },
       },
@@ -1208,8 +1195,11 @@ export class PlayScene extends ResponsiveScene {
    *
    * 移動を伴う操作かどうかはワールドを変えた時点で分かる（画面へ反映するのはその後なので、経過前の
    * 状態が出たまま）。そのため、場面転換の暗転を時間経過と並行して進められる（transit参照）。
+   *
+   * onDoneは、経過し切って結果を画面へ反映したあとに呼ぶ。**結果を見せてから片付けたいもの**
+   * （作業し終えてから閉じる子ウィンドウ）のための後始末で、実行しないと決めたとき（busy）は呼ばない。
    */
-  private applyToWorld(change: () => void, context: MotionContext = {}): void {
+  private applyToWorld(change: () => void, context: MotionContext = {}, onDone?: () => void): void {
     if (this.busy) return;
 
     // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
@@ -1234,9 +1224,11 @@ export class PlayScene extends ResponsiveScene {
       this.noteStatusChanges(statusesBefore, startedAt);
       if (curtain !== undefined) {
         this.transit(curtain);
+        onDone?.();
         return;
       }
       this.showView(context);
+      onDone?.();
     });
   }
 
@@ -1290,10 +1282,35 @@ export class PlayScene extends ResponsiveScene {
     if (this.childWindow?.lane !== undefined && place !== undefined) cells.push(this.slotCells(place));
 
     this.motion.update(this.openLanes, cells, context);
+    this.showChildWindowActions();
     this.showSky();
     this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
     this.showInformation();
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
+  }
+
+  /**
+   * 開いている子ウィンドウのボタンを、今のviewで引き直す。素材を入れれば「作業する」が押せるように
+   * なり、抜けば押せなくなる——**可否はボタンを作った時点で固まる**（ObjectWindow）ので、中身が
+   * 変わるたびに渡し直す必要がある。
+   *
+   * 映しているカードも引き直す。差し替えの前後で束は別物になっているので、そのまま使うと次の
+   * アクションが古いインスタンスに対して組まれる。世界から消えていれば触らない——このあと閉じる
+   * ことが決まっている（craftActionのonDone）。
+   */
+  private showChildWindowActions(): void {
+    const opened = this.childWindowCard;
+    if (this.childWindow === undefined || opened === undefined) return;
+
+    const card = this.restack(opened);
+    if (card === undefined) return;
+
+    this.childWindowCard = card;
+    this.childWindow.setActions([
+      ...this.autoFillAction(card),
+      ...this.craftAction(card),
+      ...this.windowActions(card),
+    ]);
   }
 
   /**

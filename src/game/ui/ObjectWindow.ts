@@ -115,10 +115,24 @@ export class ObjectWindow {
 
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
+  /** 最下段のボタン。setActionsで丸ごと作り直すので、他の表示物とは分けて持つ。 */
+  private actionObjects: Phaser.GameObjects.GameObject[] = [];
+
   /** アクションのボタンを長押ししている間だけ出す吹き出し（addActions参照）。 */
   private readonly tooltip: Tooltip;
 
+  private readonly scene: Phaser.Scene;
+  private readonly metrics: ScreenMetrics;
+  private readonly onClose: () => void;
+
+  /** ボタンを並べる行。作り直すときも同じ場所へ置く。 */
+  private readonly actionRow: Rect;
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
+    this.scene = scene;
+    this.metrics = metrics;
+    this.onClose = options.onClose;
+
     const contents = options.slot;
     // 何枚入るか分からないスロットは、右の段を並びだけで使い切る（自分のカードを出さない）。
     const card = contents?.unbounded === true ? undefined : options.object.card;
@@ -212,15 +226,29 @@ export class ObjectWindow {
       this.objects.push(description);
     }
 
-    this.addActions(scene, metrics, options, {
+    this.actionRow = {
       x: window.x + padding,
       y: middleY + middleHeight + gap,
       width: contentWidth,
       height: actionHeight,
-    });
+    };
+    this.addActions(options.actions);
 
     // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
     this.tooltip = new Tooltip(scene, metrics);
+  }
+
+  /**
+   * 最下段のボタンを差し替える。**ボタンは作った時点の可否で固まっている**ので、中身を出し入れ
+   * できるウィンドウでは、並びを差し替えるたびに呼び直す（PlayScene.showView）。素材を入れれば
+   * 「作業する」が押せるようになり、抜けば押せなくなる。
+   */
+  setActions(actions: readonly ObjectWindowAction[]): void {
+    for (const object of this.actionObjects) object.destroy();
+    this.actionObjects = [];
+    this.addActions(actions);
+    // 作り直したボタンは吹き出しより後に生まれた＝手前にいるので、吹き出しを持ち上げ直す。
+    this.tooltip.bringToTop();
   }
 
   /**
@@ -251,22 +279,18 @@ export class ObjectWindow {
    * アクションのボタンは、長押しの間だけ説明文とかかる時間を吹き出しに出す。ボタンには名前しか
    * 載らないので、実行する前に「何が起きるか・どれだけ時間を取られるか」を確かめられるようにする。
    */
-  private addActions(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    options: ObjectWindowOptions,
-    row: Rect,
-  ): void {
+  private addActions(actions: readonly ObjectWindowAction[]): void {
+    const { scene, metrics, actionRow: row } = this;
     const close: ObjectWindowAction = {
       label: '閉じる',
       description: undefined,
       minutes: 0,
       onTap: () => {
         this.close();
-        options.onClose();
+        this.onClose();
       },
     };
-    const buttons = [...options.actions, close];
+    const buttons = [...actions, close];
 
     const gap = metrics.px(ACTION_GAP);
     const buttonWidth = Math.min(
@@ -283,7 +307,7 @@ export class ObjectWindow {
         height: row.height,
       };
       const disabled = action.enabled === false;
-      this.objects.push(
+      this.actionObjects.push(
         addTextButton(
           scene,
           metrics,
@@ -319,8 +343,9 @@ export class ObjectWindow {
   close(): void {
     this.lane?.destroy();
     this.tooltip.destroy();
-    for (const object of this.objects) object.destroy();
+    for (const object of [...this.objects, ...this.actionObjects]) object.destroy();
     this.objects.length = 0;
+    this.actionObjects = [];
   }
 }
 
