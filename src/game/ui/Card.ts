@@ -82,7 +82,7 @@ const EDGE_ARROW_SIZE = 44;
  */
 const EDGE_HOLD_MS = 400;
 const EDGE_REPEAT_MS = 300;
-const EDGE_REPEAT_MIN_MS = 50;
+export const EDGE_REPEAT_MIN_MS = 50;
 const EDGE_REPEAT_DECAY = 0.8;
 
 /** スタック数を囲む丸の直径・絵の右上の角から外へはみ出させる量・中の数字の大きさ（u単位）。 */

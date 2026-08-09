@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
-import { Card, cardFace } from './Card';
+import { Card, cardFace, EDGE_REPEAT_MIN_MS } from './Card';
 import type { CardLane, LaneUpdate, ReleasedCard } from './CardLane';
 import type { LaneCell } from './laneCells';
 
@@ -11,6 +11,12 @@ const FLY_EASE = 'Quad.easeOut';
 
 /** 出現元が分からないカードが、その場で現れる時間（ミリ秒）。 */
 const FADE_MS = 200;
+
+/**
+ * 一度に複数生まれたとき、1枚目から順に飛び立たせる間隔（ミリ秒）。端を押し続けて送り続けるときの
+ * 最短間隔と揃える——どちらも「カードが1枚ずつ出てくる」速さなので、違うと別の出来事に見える。
+ */
+const BIRTH_GAP_MS = EDGE_REPEAT_MIN_MS;
 
 /**
  * 差し替えのきっかけ。どちらも「そのカードがどこから動き出すか」を決めるための情報。
@@ -39,6 +45,10 @@ export interface MotionContext {
  * **飛ばすのは常に見た目だけの分身**で、レーンに並ぶカード自身は枠に居るまま伏せて待つ（send）。
  * 分身は最前面の層に置く——レーンからはみ出したカードは隣接エリアの背景板に隠れる設計
  * （CardLane参照）のため、レーンの中に置いたままでは境界をまたげない。
+ *
+ * **一度に複数生まれたぶんは、1枚ずつ間を置いて飛ばす**（BIRTH_GAP_MS）。何個採れたのかを目で
+ * 数えられるようにするため。束ねて1枚に見えるものも中身の数だけ飛ぶ（bear）。出どころに積まれた
+ * まま順に飛び立つ姿になる。
  */
 export class CardMotion {
   private readonly scene: Phaser.Scene;
@@ -138,17 +148,27 @@ export class CardMotion {
     // 現れた側が飛ぶIDは、居なくなった側では改めて動かさない（同じ移動を二重に見せないため）。
     const entering = new Set(updates.flatMap((update) => update.entered).flatMap(({ card }) => idsOf(card)));
 
+    // 生まれた順に飛び立たせるための順番取り。1つのupdateの中で通し番号になる。
+    let born = 0;
+    const birthDelay = (): number => born++ * BIRTH_GAP_MS;
+
     updates.forEach((update, index) => {
       for (const { card, index: slot } of arrivals(update)) {
         // 分身が運ぶ先のカードは、着くまで伏せたまま待たせる（landHeldが表に戻す）。
         if (landing !== undefined && idsOf(card).includes(landing.id)) continue;
 
-        const from = releasedRect(idsOf(card), remaining) ?? rectOf(before, idsOf(card)) ?? context.origin;
-        this.fly(card, from, lanes[index].slotRect(slot));
+        // 差し替え前に画面のどこにも無かったカード＝新しく生まれたもの。出どころはorigin。
+        const to = lanes[index].slotRect(slot);
+        const known = releasedRect(idsOf(card), remaining) ?? rectOf(before, idsOf(card));
+        if (known === undefined && context.origin !== undefined) {
+          this.bear(card, context.origin, to, birthDelay);
+          continue;
+        }
+        this.fly(card, known, to, known === undefined ? birthDelay() : 0);
       }
     });
 
-    this.moveInstances(lanes, updates, before, remaining);
+    this.moveInstances(lanes, updates, before, remaining, birthDelay);
 
     for (const { left } of updates) {
       for (const card of left) {
@@ -188,6 +208,7 @@ export class CardMotion {
     updates: readonly LaneUpdate[],
     before: ReadonlyMap<number, Owner>,
     context: MotionContext,
+    birthDelay: () => number,
   ): void {
     // カードごと出入りするぶんは、そのカード自身が飛ぶ（fly・dismiss）ので数えない。
     const arriving = new Set(updates.flatMap(arrivals).map(({ card }) => card));
@@ -199,25 +220,47 @@ export class CardMotion {
 
         const to = lane.slotRect(slot);
         for (const from of arrivalsAt(card, before, left, context)) {
-          this.send(this.standAt(card.content, from), to);
+          // 既に居るカードへ合流する1つでも、originから来たなら新しく生まれたもの。
+          const delay = from === context.origin ? birthDelay() : 0;
+          this.send(this.standAt(card.content, from), to, undefined, delay);
         }
       });
     }
   }
 
-  /** 現れたカードをfromから来たものとして見せる。fromが無ければその場で浮かび上がらせる。 */
-  private fly(card: Card, from: Rect | undefined, to: Rect): void {
+  /**
+   * 現れたカードをfromから来たものとして見せる。fromが無ければその場で浮かび上がらせる。
+   * delayだけ待ってから動き出す（一度に複数生まれたときの順番、BIRTH_GAP_MS）。
+   */
+  private fly(card: Card, from: Rect | undefined, to: Rect, delay = 0): void {
     if (from === undefined) {
       card.setVisible(true);
       card.setAlpha(0);
-      this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS });
+      this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS, delay });
       return;
     }
 
     // 飛んでいる間は枠のカードを伏せる（新しく現れたカードは伏せて渡ってくるが、掴んで離したまま
     // レーンに残ったカードは見えている）。着いた時点でsendが表に戻す。
     card.setVisible(false);
-    this.send(this.standAt(card.content, from), to, card);
+    this.send(this.standAt(card.content, from), to, card, delay);
+  }
+
+  /**
+   * 新しく生まれたカードを、束ねているインスタンスの数だけ1枚ずつ飛ばす。
+   *
+   * **3個まとめて採れたヤシの実は、1枚に束ねて見せていても3枚飛ぶ。** 何個採れたのかを、飛ぶ枚数で
+   * 数えられるようにするため（分身は右上の数字を持たない、cardFace参照）。束のカードを表に戻すのは
+   * 最後の1枚が着いたとき。
+   */
+  private bear(card: Card, from: Rect, to: Rect, birthDelay: () => number): void {
+    card.setVisible(false);
+
+    const count = Math.max(1, idsOf(card).length);
+    for (let index = 0; index < count; index += 1) {
+      const last = index === count - 1;
+      this.send(this.standAt(card.content, from), to, last ? card : undefined, birthDelay());
+    }
   }
 
   /**
@@ -247,8 +290,11 @@ export class CardMotion {
    *
    * 飛ばすのは必ず分身で、レーンに並んでいるカード自身ではない。カードの居場所を決めるのはレーンの
    * 側（枠の並び）で、そこから持ち出すと、レーンが並びを詰め直したときに枠と無関係な場所へ動く。
+   *
+   * delayを渡すと、その間は出発点に置いたまま待つ。複数生まれたぶんは出どころに積まれて見え、
+   * 順に飛び立っていく。
    */
-  private send(stand: Card, to: Rect, covered?: Card): void {
+  private send(stand: Card, to: Rect, covered?: Card, delay = 0): void {
     this.layer.add(stand);
 
     const flight: Flight = { stand, covered };
@@ -258,6 +304,7 @@ export class CardMotion {
       x: to.x,
       y: to.y,
       duration: FLY_MS,
+      delay,
       ease: FLY_EASE,
       onComplete: () => this.land(flight),
     });
