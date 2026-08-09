@@ -95,9 +95,6 @@ object_texts:
       knap:
         display_name: 打ち割る
         description: 石を打ち合わせて割り、鋭い縁を作る。
-      put_in:
-        display_name: 中に入れる
-        description: この入れ物の中へしまう。持ち歩けるようになるが、取り出すまで使えない。
 
   # プレイヤーキャラクタ（characters/）。プロパティの表示名は全員共通なのでdefaultへ置く。
   # 表示名は肖像の札に載る名前。どういう人物かは説明の頭の肩書きで示す（選択画面の吹き出しに出る）。

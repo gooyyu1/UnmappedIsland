@@ -638,17 +638,33 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、隙間・空き枠へ
-   * 落としたら位置を変える。同じレーンの中ならスタックごとの並び替え、レーンをまたぐならカード1枚の移動。
+   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、相手が入れ物なら
+   * その中へ入れる、隙間・空き枠へ落としたら位置を変える。同じレーンの中ならスタックごとの並び替え、
+   * レーンをまたぐならカード1枚の移動。
    */
   private dropAction(drop: CardDrop): (() => void) | undefined {
-    if (drop.target.kind === 'combine') return this.combinationAt(drop)?.execute;
+    if (drop.target.kind === 'combine') return this.combinationAt(drop)?.execute ?? this.putInto(drop);
 
     const dragged = this.cardsOf(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
     return drop.to === drop.from
       ? dragged.reorder?.(drop.target)
       : dragged.moveTo?.(this.placeOf(drop.to), drop.target);
+  }
+
+  /**
+   * カードに重ねたときに、そのカードの中へ入れる操作（入れ物でない・入らないならundefined）。
+   *
+   * かごも製作中オブジェクトも同じ扱い——「押すと中身が並ぶカード」（main_item_slot）の上へ落としたら、
+   * そのスロットへ入る。入るかどうかは枠の宣言（accept・max）が決めるので、ここでは場所を指すだけ。
+   */
+  private putInto(drop: CardDrop): (() => void) | undefined {
+    if (drop.target.kind !== 'combine') return undefined;
+
+    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
+    const target = this.cardsOf(drop.to)[drop.target.index];
+    if (dragged === undefined || target?.contents === undefined || dragged === target) return undefined;
+    return dragged.moveTo?.(target.contents);
   }
 
   /** カードに重ねたときに実行できるcombination（重ねる操作でなければundefined）。 */
