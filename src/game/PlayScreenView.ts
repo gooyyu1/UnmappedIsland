@@ -450,6 +450,9 @@ export function fromGameSession(
   const stackOf = (instances: readonly WorldObject[], place: CardPlace): ObjectCardStack => ({
     icon: iconOf(instances[0]),
     name: nameOf(instances[0]),
+    // 作りかけかどうかは物の型が決める。設置物として地面に据わっていても手に持っていても、
+    // 同じ「まだ物になっていない」カードとして出す。
+    inProgress: codex.productOf(instances[0].def) !== undefined,
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: instances[0].def.name,
