@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneUpdate, ReleasedCard } from './CardLane';
 import type { LaneCell } from './laneCells';
@@ -32,11 +33,12 @@ export interface MotionContext {
  * スタックの代表の入れ替わりを、いずれも「同じカードが動いた」として扱える。差し替え後に
  * どのカードのIDでもなくなったものが破棄、差し替え前のどのIDでもないものが新しく生まれたもの。
  *
- * カードゲームらしく、スタックへの合流は薄れさせずに「上に重ねて」見せる（stackOnto）。重なった
+ * カードゲームらしく、スタックへの合流は薄れさせずに「上に重ねて」見せる（send）。重なった
  * カードは着いた時点で捨てるが、その下には合流先のカードが既に居るので、見た目は札束が増えたまま残る。
  *
- * 動いている間はカードを最前面の層へ預ける。レーンからはみ出したカードは隣接エリアの背景板に
- * 隠れる設計（CardLane参照）のため、レーンの中に置いたままでは境界をまたげないため。
+ * **飛ばすのは常に見た目だけの分身**で、レーンに並ぶカード自身は枠に居るまま伏せて待つ（send）。
+ * 分身は最前面の層に置く——レーンからはみ出したカードは隣接エリアの背景板に隠れる設計
+ * （CardLane参照）のため、レーンの中に置いたままでは境界をまたげない。
  */
 export class CardMotion {
   private readonly scene: Phaser.Scene;
@@ -46,8 +48,11 @@ export class CardMotion {
   /** 離した場所へ置いたままにしているもの（hold参照）。cardは分身の元になったレーンのカード。 */
   private held: { readonly id: number; readonly card: Card; readonly stand: Card } | undefined;
 
+  /** 今飛んでいる分身（send参照）。着く前に次の差し替えが来たらsettleが始末する。 */
+  private readonly flights: Flight[] = [];
+
   /**
-   * 動いているカードは常に最前面へ出す。探索の子ウィンドウを開いたまま探索したときに、見つけたものが
+   * 動いている分身は常に最前面へ出す。探索の子ウィンドウを開いたまま探索したときに、見つけたものが
    * ウィンドウの覆いに隠れてしまわないようにするため（他はすべて既定のdepth 0で描画順に従う）。
    */
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics) {
@@ -60,12 +65,9 @@ export class CardMotion {
    * 掴んで離したカードを、離した場所へ置いたままにする。時間のかかるcombinationでは経過を見せている
    * 間ずっとそこに在り、経過し切った差し替え（updateにreleasedが渡る）でそのインスタンスの居場所へ
    * 動く（ScreenLayout.md カードの移動アニメーション節）。
-   *
-   * 置くのは分身で、本体はレーンの枠に居るまま伏せる。レーンをまたぐ位置へ本体を出すと隣接エリアの
-   * 背景板に隠れてしまう（CardLane参照）ため。
    */
   hold(lanes: readonly CardLane[], released: NonNullable<MotionContext['released']>): void {
-    this.release();
+    this.releaseHeld();
 
     const card = ownersOf(lanes).get(released.id)?.card;
     if (card === undefined) return;
@@ -73,17 +75,22 @@ export class CardMotion {
     // 置きに行くのは1つだけなので、スタックは残りがそこに居る。枠から居なくなるのは1つしか
     // 映していないカードだけ。
     if ((card.content.count ?? 1) < 2) card.setVisible(false);
-    const { x, y } = released.rect;
-    const stand = new Card(this.scene, this.metrics, x, y, cardFace(card.content));
+    const stand = this.standAt(card.content, released.rect);
     this.layer.add(stand);
     this.held = { id: released.id, card, stand };
   }
 
   /**
-   * 置いたままにしていたカードを、動かさずに本体へ返す（分身を捨て、伏せていた本体を表に戻す）。
-   * レーンを作り直すときは、本体ごと捨てられる前にここで片付ける。
+   * 出している分身をすべて片付け、伏せていたカードを表に戻す。レーンを作り直すときは、本体ごと
+   * 捨てられる前にここを通す。
    */
   release(): void {
+    this.settle();
+    this.releaseHeld();
+  }
+
+  /** 置いたままにしていた分身を、動かさずに本体へ返す。 */
+  private releaseHeld(): void {
     const held = this.held;
     if (held === undefined) return;
 
@@ -105,17 +112,7 @@ export class CardMotion {
       return;
     }
 
-    this.scene.tweens.add({
-      targets: held.stand,
-      x: owner.rect.x,
-      y: owner.rect.y,
-      duration: FLY_MS,
-      ease: FLY_EASE,
-      onComplete: () => {
-        held.stand.destroy();
-        reveal(owner.card);
-      },
-    });
+    this.send(held.stand, owner.rect, owner.card);
   }
 
   /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcellsは同じ順に対応する。 */
@@ -124,6 +121,10 @@ export class CardMotion {
     cells: readonly (readonly LaneCell[])[],
     context: MotionContext = {},
   ): void {
+    // まだ飛んでいる分身はここで着かせる。行き先は飛び始めた時点の枠なので、これから並びが変わる
+    // 差し替えを跨がせると、カードの居なくなった枠へ着いて、そこでカードを表に戻すことになる。
+    this.settle();
+
     // 経過し切った差し替えなら、置いたままの分身がそのインスタンスを運ぶ。運ぶぶんは他の経路では
     // 動かさない（同じ移動を二重に見せないため）ので、以降はreleasedを渡さない。
     const landing = context.released === undefined ? undefined : this.takeHeld();
@@ -164,7 +165,7 @@ export class CardMotion {
 
     if (landing !== undefined) this.landHeld(landing, after);
     // 置いている途中でそのカードが失われたら（経過中に壊れた道具等）、立てていた分身も片付ける。
-    if (this.held !== undefined && this.held.card.scene === undefined) this.release();
+    if (this.held !== undefined && this.held.card.scene === undefined) this.releaseHeld();
   }
 
   /** 置いたままにしていたものを、片付けずに取り出す（運び先が決まってから始末するため）。 */
@@ -198,42 +199,25 @@ export class CardMotion {
 
         const to = lane.slotRect(slot);
         for (const from of arrivalsAt(card, before, left, context)) {
-          this.stackOnto(
-            new Card(this.scene, this.metrics, from.x, from.y, cardFace(card.content)),
-            from,
-            to,
-          );
+          this.send(this.standAt(card.content, from), to);
         }
       });
     }
   }
 
-  /** 現れたカードをfromからtoへ飛ばす。fromが無ければtoの位置で浮かび上がらせる。 */
+  /** 現れたカードをfromから来たものとして見せる。fromが無ければその場で浮かび上がらせる。 */
   private fly(card: Card, from: Rect | undefined, to: Rect): void {
-    const strip = card.parentContainer;
-    const home = { x: card.x, y: card.y };
-    card.setVisible(true);
-
     if (from === undefined) {
+      card.setVisible(true);
       card.setAlpha(0);
       this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS });
       return;
     }
 
-    this.layer.add(card);
-    card.setPosition(from.x, from.y);
-    this.scene.tweens.add({
-      targets: card,
-      x: to.x,
-      y: to.y,
-      duration: FLY_MS,
-      ease: FLY_EASE,
-      onComplete: () => {
-        if (card.scene === undefined) return;
-        strip.add(card);
-        card.setPosition(home.x, home.y);
-      },
-    });
+    // 飛んでいる間は枠のカードを伏せる（新しく現れたカードは伏せて渡ってくるが、掴んで離したまま
+    // レーンに残ったカードは見えている）。着いた時点でsendが表に戻す。
+    card.setVisible(false);
+    this.send(this.standAt(card.content, from), to, card);
   }
 
   /**
@@ -248,29 +232,60 @@ export class CardMotion {
       return;
     }
 
-    this.stackOnto(new Card(this.scene, this.metrics, from.x, from.y, cardFace(card.content)), from, to);
+    this.send(this.standAt(card.content, from), to);
     card.destroy();
   }
 
+  /** 見た目だけの分身を、その場所に作る。 */
+  private standAt(content: CardContent, at: Rect): Card {
+    return new Card(this.scene, this.metrics, at.x, at.y, cardFace(content));
+  }
+
   /**
-   * 見た目だけの分身をfromからtoへ飛ばして重ねる。着いた時点で捨てる——下には合流先のカードが
-   * 既に居るため。
+   * 分身をtoへ飛ばす。着いた時点で分身を捨て、coveredを渡してあればそこで表に戻す。渡さなければ
+   * 捨てるだけ——下には合流先のカードが既に居るため。
    *
-   * 飛ばすのは必ず分身で、レーンに並んでいたカード自身ではない。カードには押している間の表示
-   * （端のオーバーレイ）や端の繰り返しなど、そのレーンに居ることが前提の状態が乗っているため。
+   * 飛ばすのは必ず分身で、レーンに並んでいるカード自身ではない。カードの居場所を決めるのはレーンの
+   * 側（枠の並び）で、そこから持ち出すと、レーンが並びを詰め直したときに枠と無関係な場所へ動く。
    */
-  private stackOnto(card: Card, from: Rect, to: Rect): void {
-    this.layer.add(card);
-    card.setPosition(from.x, from.y);
+  private send(stand: Card, to: Rect, covered?: Card): void {
+    this.layer.add(stand);
+
+    const flight: Flight = { stand, covered };
+    this.flights.push(flight);
     this.scene.tweens.add({
-      targets: card,
+      targets: stand,
       x: to.x,
       y: to.y,
       duration: FLY_MS,
       ease: FLY_EASE,
-      onComplete: () => card.destroy(),
+      onComplete: () => this.land(flight),
     });
   }
+
+  /** 1つの飛びを終わらせる（分身を捨て、伏せて待たせていたカードを表に戻す）。 */
+  private land(flight: Flight): void {
+    const index = this.flights.indexOf(flight);
+    if (index < 0) return;
+
+    this.flights.splice(index, 1);
+    flight.stand.destroy();
+    if (flight.covered !== undefined) reveal(flight.covered);
+  }
+
+  /** 飛んでいる途中の分身を、その場で着かせる。 */
+  private settle(): void {
+    for (const flight of [...this.flights]) {
+      this.scene.tweens.killTweensOf(flight.stand);
+      this.land(flight);
+    }
+  }
+}
+
+/** 飛んでいる分身と、着いた時点で表に戻すカード（重ねるだけならundefined）。 */
+interface Flight {
+  readonly stand: Card;
+  readonly covered: Card | undefined;
 }
 
 /** 1つのインスタンスを、今どのカードがどこで映しているか。 */
