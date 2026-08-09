@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
-import { Card, CellOverlay, EmptyCard } from './Card';
+import { Card, CellHighlight, CellOverlay, EmptyCard } from './Card';
 import type { LaneCell } from './laneCells';
 import { clipToRect } from './clip';
 import { COLOR, SIZE } from './theme';
@@ -81,9 +81,9 @@ export interface LaneUpdate {
  * レーンからはみ出したカードは切り抜かず、隣接エリアの背景板が上から覆って隠す。
  * ロケーションレーンの現在地カードも同様に、スクロール領域より後に描いて上へ重ねる。
  *
- * **並ぶ単位は枠（LaneCell）で、位置＝添字**。カードの居ない枠は破線の空き枠になり、枠自身が持つ
- * 縁の色と重ねる文字は**背景 → カード → 重ねる物**の3層のうち最も手前へ置く（ScreenLayout.md
- * 枠（セル）を一級の単位にする節）。
+ * **並ぶ単位は枠（LaneCell）で、位置＝添字**。表示は**背景 → カード → 重ねる物**の3層で、カードの
+ * 居ない枠の破線と枠を強調する縁が1層目、カードに重ねる文字が3層目に入る（ScreenLayout.md
+ * 枠（セル）は一級の単位 節）。
  *
  * 内容が変わったときは作り直さずsetCellsで差し替える。同じインスタンスを映しているカードは
  * そのまま残して新しい位置へ滑らせ、出入りするカードだけを呼び出し側へ渡す。
@@ -316,8 +316,8 @@ export class CardLane {
   }
 
   /**
-   * 枠の1層目（空き枠の背景）と3層目（縁・重ねる文字）を作り直す。どちらも位置以外の状態を持たない
-   * ので、カードのように残して動かす必要が無い。
+   * 枠の1層目（空き枠の背景・強調の縁）と3層目（重ねる文字）を作り直す。どちらも位置以外の状態を
+   * 持たないので、カードのように残して動かす必要が無い。
    */
   private resetDecorations(): void {
     this.cellLayer.removeAll(true);
@@ -328,10 +328,11 @@ export class CardLane {
       if (cell.card === undefined) {
         this.cellLayer.add(new EmptyCard(this.scene, this.metrics, x, 0, cell.accepts));
       }
-      if (cell.borderColor !== undefined || cell.overlay !== undefined) {
-        this.overlayLayer.add(
-          new CellOverlay(this.scene, this.metrics, x, 0, cell.borderColor, cell.overlay),
-        );
+      if (cell.borderColor !== undefined) {
+        this.cellLayer.add(new CellHighlight(this.scene, this.metrics, x, 0, cell.borderColor));
+      }
+      if (cell.overlay !== undefined) {
+        this.overlayLayer.add(new CellOverlay(this.scene, this.metrics, x, 0, cell.overlay));
       }
     });
   }
