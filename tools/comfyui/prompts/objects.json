@@ -143,6 +143,23 @@
     "positive": "exactly one dark grey stone alone on an empty white page, a stone broken to a sharp point, angular flat faces, straight chipped edges, dark grey stone with darker mottling, matte dusty surface, clearly three dimensional with soft shading across each facet, gentle light from the upper left, the stone is small and lies flat on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, high quality",
     "negative": "flat silhouette, flat shading, two dimensional, paper cutout, monochrome, greyscale, ink wash painting, glossy, shiny, wet, polished, lacquered, reflection, specular highlight, glare, white stone, light grey, cream stone, chalk, marble, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, monolith, obelisk, rounded pebble, smooth stone, river stone, oval stone, egg, gravel, sand, crystal, gemstone, metal blade, modern knife, weapon handle, wooden handle, arrowhead on a shaft, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
+  "palm_frond": {
+    "description": [
+      "ヤシの葉。長い中軸の左右に細長い小葉が2列に並んだ羽状複葉。編んだ葉（woven_leaf）の材料。",
+      "",
+      "**dried と言うと、必ず漂白された飾りの葉になる。** 8枚とも象牙色〜金色で、白い紙と同じ明るさに",
+      "なり card_art.py の「紙より暗ければ物」に掛からない（編み籠と同じ制約）。頭を fallen green に",
+      "変え、bleached / ivory / pale gold / dried floral decoration を否定すると緑のまま出る。",
+      "落ち着かせるのはレシピの edit の側でやる。",
+      "",
+      "**1枚の葉になるのは24枚中3枚。** 残りは小葉がばらけた標本、枠いっぱいの接写、開いた本の上、",
+      "1枚だけの広い葉。数を否定しても減らないので、言い足さずにシードを振る。",
+      "",
+      "この絵はそのままでは使わない（recipes/palm_frond.json の edit が絵の具の質感へ描き直す）。"
+    ],
+    "positive": "exactly one fallen green palm frond alone on an empty white page, one long straight central rib with many narrow pointed leaflets in two neat rows along both sides of it, the whole frond visible from its cut base to its tip, seen from a few steps back and lying flat at a slight angle so that it is well inside the page with a wide empty white margin on all four sides, the leaflets narrow and separated and drooping, a few of them curled and split, deep olive green leaflets with their tips gone dry and brown, rich green and warm brown tones, matte dry surface, it is small and lies in the middle, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "bleached, sun bleached, ivory, cream, pale gold, golden, straw white, white leaf, dried floral decoration, dried arrangement, tree, palm tree, trunk, whole tree, crown of fronds, standing plant, growing plant, potted plant, plant pot, vase, fern, bracken, bird feather, quill, plume, banana leaf, broad single blade, monstera, philodendron, bamboo, grass, reed, wreath, garland, bouquet, hand fan, broom, two fronds, three fronds, several fronds, crossed leaves, pair, group, pile, stack, collection, scattered objects, repeated objects, pattern, filling the frame, edge to edge, close-up, macro, cropped, cut off, out of frame, herbarium sheet, pressed specimen, botanical plate, scenery, landscape, background scenery, ground, floor, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
   "woven_leaf": {
     "description": [
       "編んだ葉。ヤシの小葉を互い違いに組んだ平たいパネル。",
