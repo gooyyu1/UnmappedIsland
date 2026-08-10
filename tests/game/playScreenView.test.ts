@@ -631,6 +631,25 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBeUndefined();
   });
 
+  it('viewを作った後にワールドの束が空になっても、カードの操作の試し打ちは壊れない', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const itemsSlotId = codex.slotNames.getId('items');
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    expect(stone.moveToSlot(game.startLocation.instance, itemsSlotId, codex.wellKnown)).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const card = view.items.find((c) => c?.objects[0] === stone)!;
+
+    // 経過の途中経過（RecordedView）を再生する頃には、ワールド側の束は空になり得る。
+    // カードは作った時点の中身を写し取っているので、端の表示の試し打ち（moveTo）は壊れない。
+    expect(
+      stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+    expect(() => card.moveTo?.('hand')).not.toThrow();
+    expect(() => card.acceptedCountAt?.('hand')).not.toThrow();
+    expect(card.movedIds(1)).toEqual([stone.instanceId]);
+  });
+
   it('combinationOfは、ドラッグ中に見せる表示名と説明も返す', () => {
     // 吹き出しに出す文字列はlocale側から来る（Localization.md）。ここでは専用の対応表で確かめる。
     const texts = parseLocale(
