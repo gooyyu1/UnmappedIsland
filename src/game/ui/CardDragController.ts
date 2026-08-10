@@ -17,6 +17,13 @@ const LONG_PRESS_SLOP = 12;
 const DIRECTION_THRESHOLD = 20;
 const VERTICAL_RATIO = 1.5;
 
+/**
+ * 「落とし先の上で指を止めたまま待つ」の、止まっているとみなす揺れの上限（u単位）。これを超えて
+ * 動いている間は待ち時間を数えない——空き枠は当たり判定が広いので、上を通り過ぎるだけの時間まで
+ * 数えると、落とすつもりで横切っただけの指に2枚目がついてきてしまう。
+ */
+const CARRY_REST_SLOP = 12;
+
 /** ドロップ先を示す枠の太さ（u単位）と、塗りの濃さ。 */
 const INDICATOR_BORDER = 6;
 const INDICATOR_FILL_ALPHA = 0.3;
@@ -91,6 +98,8 @@ interface Gesture {
   /** ついてくる枚数を数え続けている落とし先と、数える時計。 */
   carryTarget: CarryTarget | undefined;
   carryHold: HoldRepeat | undefined;
+  /** 指が止まっているとみなしている位置。ここからCARRY_REST_SLOPを超えて動いたら数え直す。 */
+  carryAnchor: { readonly x: number; readonly y: number } | undefined;
 }
 
 /**
@@ -178,6 +187,7 @@ export class CardDragController {
       pointer: undefined,
       carryTarget: undefined,
       carryHold: undefined,
+      carryAnchor: undefined,
     };
     this.gesture = gesture;
 
@@ -279,7 +289,7 @@ export class CardDragController {
     gesture.indicator.clear();
     let found = this.dropAt(gesture, pointer);
     // 数え直したなら運ぶ枚数が変わったので、そのドロップが何をするのかも引き直す。
-    if (this.trackCarry(gesture, found)) found = this.dropAt(gesture, pointer);
+    if (this.trackCarry(gesture, found, pointer)) found = this.dropAt(gesture, pointer);
     if (found === undefined) {
       gesture.tooltip?.hide();
       return;
@@ -322,8 +332,9 @@ export class CardDragController {
   }
 
   /**
-   * 同じ落とし先の上に留まっている間、束の2枚目以降を1枚ずつ引き連れていく（レーンの端を押し続けて
-   * 送るのと同じ速さ、holdRepeat）。
+   * 同じ落とし先の上に指を止めて留まっている間、束の2枚目以降を1枚ずつ引き連れていく（レーンの端を
+   * 押し続けて送るのと同じ速さ、holdRepeat）。**待ち時間は指が止まってから数える**——動いている間に
+   * 時計を進めると、落とすつもりで空き枠を横切っただけでついてきてしまう（CARRY_REST_SLOP）。
    *
    * 落とし先が変わっても、**そこがそのまま受け取れるなら運んでいる枚数は保つ**。運んでいる枚数は
    * 「これだけ入る」という約束なので、守れなくなる枚数——新しい落とし先に入りきらないぶん——だけを
@@ -331,8 +342,17 @@ export class CardDragController {
    *
    * 戻り値は運ぶ枚数が変わったかどうか。
    */
-  private trackCarry(gesture: Gesture, found: { drop: CardDrop; info: CardDropInfo } | undefined): boolean {
-    if (sameTarget(gesture.carryTarget, found?.drop)) return false;
+  private trackCarry(
+    gesture: Gesture,
+    found: { drop: CardDrop; info: CardDropInfo } | undefined,
+    pointer: Phaser.Input.Pointer,
+  ): boolean {
+    const anchor = gesture.carryAnchor;
+    const resting =
+      anchor !== undefined &&
+      Math.hypot(pointer.x - anchor.x, pointer.y - anchor.y) <= this.metrics().px(CARRY_REST_SLOP);
+    if (!resting) gesture.carryAnchor = { x: pointer.x, y: pointer.y };
+    if (resting && sameTarget(gesture.carryTarget, found?.drop)) return false;
 
     gesture.carryTarget = found === undefined ? undefined : { to: found.drop.to, target: found.drop.target };
     const max = found?.info.maxCount ?? 1;
