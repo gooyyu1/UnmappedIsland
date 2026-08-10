@@ -25,8 +25,9 @@ const EMPTIED_ALPHA = 0.3;
  * 元の枠へ飛んで帰る（keepAtMost）。落とさずに離せば全部が帰る（disband）。**手から離れた札は
  * 指について行かない**——帰る札は静止した層へ移し、元の枠まで真っ直ぐ飛ぶ。
  *
- * 元の束の見え方（残って見える枚数・場所が空いたときの薄さ）もここが持つ。ついてきた札・帰る途中の
- * 札は束に居ないので、そのぶん数字が減る。掴んだ1枚は元のカードが場所に残ったままなので引かない。
+ * 元の束の見え方（残って見える枚数・場所が空いたときの薄さ）もここが持つ。手に在る札も帰り道の
+ * 空中の札もまだ束には居ないので、そのぶん数字が減る。全部持ち出して0になったときだけ、元のカードは
+ * 薄い姿で残る——それは札ではなく、帰ってくる場所を示す印（ScreenLayout.md ドラッグ＆ドロップ節）。
  */
 export class CarriedCards {
   private readonly scene: Phaser.Scene;
@@ -208,15 +209,15 @@ export class CarriedCards {
     // 画面を作り直していれば、元のカードはもう無い。
     if (this.source.scene === undefined) return;
 
-    const remaining = this.sourceCount - this.followers - this.flyingHome;
+    // 手に在る札（掴んだ1枚を含む）も帰り道の空中の札も、まだ束には居ない。
+    const remaining = this.sourceCount - (this.grabbed ? 1 : 0) - this.followers - this.flyingHome;
     if ((this.source.content.count ?? 1) !== remaining) {
       this.source.setContent({ ...this.source.content, count: remaining });
     }
 
-    // 薄くするのは場所ごと空くときだけ。束が残っているうちは、そこに在るのはまだ本物の札なので
-    // そのままの濃さで残す。丸ごと持ち出したときだけ、残るのは「帰ってくる場所」を示す姿になる。
-    const out = (this.grabbed ? 1 : 0) + this.followers + this.flyingHome;
-    this.source.setAlpha(out >= this.sourceCount ? EMPTIED_ALPHA : 1);
+    // 全部持ち出して0のときだけ薄くする。束が残っているうちは、そこに在るのはまだ本物の札なので
+    // そのままの濃さで残す。0のとき残るのは札ではなく、帰ってくる場所を示す姿（数字のバッジも出ない）。
+    this.source.setAlpha(remaining === 0 ? EMPTIED_ALPHA : 1);
   }
 }
 
