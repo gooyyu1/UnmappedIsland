@@ -7,6 +7,7 @@ import { CARD_ART_WIDTH, objectTexture } from './objectArt';
 import { ProgressBar } from './ProgressBar';
 import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
+import { noteOperation } from '../errorReport';
 import { HoldRepeat } from './holdRepeat';
 import { onPressRelease } from './tap';
 import { wrapByCharacter } from './textLayout';
@@ -664,7 +665,10 @@ export class Card extends Phaser.GameObjects.Container {
       onCancel: () => highlight.setVisible(false),
       onRelease: () => {
         highlight.setVisible(false);
-        if (!this.tapCancelled) this._content.onTap?.();
+        if (this.tapCancelled) return;
+
+        noteOperation(`カードを押した: ${this._content.name}`);
+        this._content.onTap?.();
       },
     });
   }

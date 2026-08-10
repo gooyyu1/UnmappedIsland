@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import { noteOperation } from '../errorReport';
 import { addLabel } from './labels';
 import type { BoxStyle } from './shapes';
 import { drawBox } from './shapes';
@@ -162,7 +163,11 @@ export function addTextButton(
       borderWidth: Math.max(1, metrics.px(2)),
       radius: metrics.px(SIZE.radius),
     },
-    onTap,
+    () => {
+      // ラベルがそのまま「何を押したか」になる（errorReport参照）。絵だけのボタンは押した結果の側で控える。
+      noteOperation(`ボタンを押した: ${label}`);
+      onTap();
+    },
     hold,
   );
   button.addContent(

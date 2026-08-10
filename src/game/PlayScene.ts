@@ -1085,6 +1085,7 @@ export class PlayScene extends ResponsiveScene {
     actions: readonly ObjectWindowAction[],
     place: CardPlace | undefined,
   ): void {
+    noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
     this.childWindow?.close();
     this.childWindowPlace = place;
 
@@ -1123,6 +1124,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
   private openExplorationWindow(): void {
+    if (this.explorationWindow === undefined) noteOperation('探索のウィンドウを開いた');
     this.explorationWindow?.close();
     this.explorationWindow = new ExplorationWindow(this, this.metrics, {
       locationName: this.view.currentLocation.name,
@@ -1886,6 +1888,7 @@ export class PlayScene extends ResponsiveScene {
    */
   /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
   private openRecipeWindow(): void {
+    noteOperation('レシピ一覧を開いた');
     this.recipeWindow?.destroy();
     this.recipeWindow = new RecipeWindow(this, this.metrics, {
       title: '作るもの',
@@ -1930,6 +1933,8 @@ export class PlayScene extends ResponsiveScene {
   private openPropertyWindow(): void {
     if (this.propertyWindow !== undefined) return;
 
+    noteOperation('体の状態を開いた');
+
     this.propertyWindow = new PropertyWindow(this, this.metrics, {
       title: this.view.characterName,
       tabs: this.propertyTabs(),
@@ -1942,6 +1947,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 地図ボタンから開く地図ウィンドウ。既知の土地と発見済みの道を、ユーザが並べた位置で見せる。 */
   private openMapWindow(): void {
+    noteOperation('地図を開いた');
     this.mapWindow?.close();
     this.mapWindow = new MapWindow(this, this.metrics, {
       lands: this.view.mapLands,
