@@ -213,6 +213,18 @@ export function fadedFill(fill: number): number {
   return mixColor(fill, COLOR.statusBarTrack, BAND_FADE);
 }
 
+/**
+ * 入れ物の詰まり具合（0〜1）に応じたバーの塗りの色（ScreenLayout.md カードの状態バー節）。
+ *
+ * 色域はステータスバーと同じ（安全域の緑から致命的域の茶）だが、辿るのは域ではなく値そのもの。
+ * 入れ物は満杯へ近づくほど物が入らなくなるので、値の位置がそのまま深刻さになる
+ * （durabilityColorForと同じ理由で、段を分けても同じ順序にしかならない）。
+ */
+export function capacityColorFor(ratio: number): number {
+  const clamped = Math.min(1, Math.max(0, ratio));
+  return mixColor(COLOR.statusBarFillSafe, COLOR.statusBarFillFatal, clamped);
+}
+
 /** durabilityHalfへ寄せ切る耐久度。ここを境に、緑→琥珀と琥珀→赤の2区間へ分ける。 */
 const DURABILITY_HALF_RATIO = 0.5;
 

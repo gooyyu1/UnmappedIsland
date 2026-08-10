@@ -429,6 +429,16 @@ export function fromGameSession(
   };
 
   /**
+   * 入れ物のカードに出す、中身が容量をどれだけ占めているか（ContainerSystem.md 1節）。上限
+   * （capacity）を持たない入れ物と、そもそも中身を持たない物ではundefined——あとどれだけ入るかが
+   * 決まっていないものに、満たされ具合は無い。
+   *
+   * 液体の容器はこのバーを持たない。上限は同じcapacityでも、量を持つのは中身の液体自身なので、
+   * 中身のバー（fillOf）が中身の色で映す側になる（LiquidContainerSystem.md 2節）。
+   */
+  const capacityRatioOf = (object: WorldObject): number | undefined => object.mainSlotFillRatio();
+
+  /**
    * カードを押したときに開く、そのオブジェクトの主要なスロット（持たなければundefined）。
    *
    * **どのスロットかはワールド側が名指しする**（`main_item_slot`、GameElementDefinition.md 7.8節）。
@@ -540,6 +550,7 @@ export function fromGameSession(
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
     durability: durabilityOf(instances[0]),
     fill: fillOf(instances[0]),
+    capacityRatio: capacityRatioOf(instances[0]),
     severity: severityOf(instances[0]),
     mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。

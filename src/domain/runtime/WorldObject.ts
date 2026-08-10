@@ -152,6 +152,19 @@ export class WorldObject {
   }
 
   /**
+   * 自分の主要なスロット（`main_item_slot`、7.8節）へ入っている物のかさが、そのスロットの上限
+   * （capacity）をどれだけ満たしているか（0〜1）。主要なスロットを持たない物、そのスロットが
+   * 上限を持たない入れ物ではundefined。
+   *
+   * fillRatioInParentSlotと表裏で、こちらは入れ物の側から自分の詰まり具合を見る。
+   */
+  mainSlotFillRatio(): number | undefined {
+    const slotGlobalId = this.def.mainItemSlotGlobalId;
+    if (slotGlobalId === undefined) return undefined;
+    return this.tryGetSlot(slotGlobalId)?.fillRatio(this.wellKnown.sizeId);
+  }
+
+  /**
    * 指定したタグ（6.7節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
    * タグを1つも持たないオブジェクトでは空配列。
    */
