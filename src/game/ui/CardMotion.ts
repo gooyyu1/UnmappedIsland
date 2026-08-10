@@ -3,12 +3,9 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneUpdate, ReleasedCard } from './CardLane';
+import { FLY_EASE, FLY_MS } from './cardFlight';
 import { REPEAT_MIN_MS } from './holdRepeat';
 import type { LaneCell } from './laneCells';
-
-/** カードが飛ぶ時間（ミリ秒）と加速の形。並びが詰め直される滑りより少しだけ長く取る。 */
-const FLY_MS = 260;
-const FLY_EASE = 'Quad.easeOut';
 
 /** 出現元が分からないカードが、その場で現れる時間（ミリ秒）。 */
 const FADE_MS = 200;
