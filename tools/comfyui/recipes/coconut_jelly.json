@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/coconut_jelly.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "青い実のゼリー状の果肉。水を飲んだ実（drained_green_coconut.json）の生データを基準に、",
+    "Qwen Image Edit で「同じ実から剥がした一片」として派生させる（連鎖の意図は",
+    "husked_coconut.json を参照）。",
+    "",
+    "**外側に薄い緑の皮を残させる。** 透き通った白いゼリーだけを頼むと、紙とほとんど同じ明るさに",
+    "なって切り出せない（白い物は切り出せない、README「ボタンの絵」節と同じ制約）。実際、",
+    "白だけで頼んだ4枚は輪郭が食い破られるか、カード上でただの霞になった。皮を1辺に残すと",
+    "果肉（coconut_meat）が茶色い皮で成り立っているのと同じ形になり、切り出しも構図も揃う。",
+    "",
+    "tolerance は白い果肉が紙として透過されないよう、果肉と同じ 12 まで下げる。",
+    "無彩色に近いので neutralShadow は使えない（README「透過」節）。",
+    "",
+    "段は果肉と同じ最小の256。"
+  ],
+  "output": "src/assets/objects/coconut_jelly.png",
+  "edit": {
+    "source": "drained_green_coconut.json",
+    "prompt": "Show only one thick curved piece of the soft jelly flesh that was lifted out of this young coconut: the piece is translucent milky white jelly, glistening and wobbly, curved like the inside of the shell it came off, with a thin pale green skin along its outer back face. It lies alone on the same plain white background. The green coconut is gone completely. Keep the same hand painted illustration style, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 2
+  },
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "tolerance": 12,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

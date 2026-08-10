@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/objects/drained_green_coconut.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "水を飲んだ青い実。青い実（green_coconut.json）の生データを基準に、Qwen Image Edit で",
+    "「同じ実に穴を開けた姿」として派生させる（連鎖の意図は husked_coconut.json を参照）。",
+    "",
+    "**seedは輪郭が変わらないものを選ぶ。** 穴を頼むと、実そのものを丸く描き直すseedがある",
+    "（4枚中2枚）。青い実と並ぶカードなので、同じ個体に見えないと穴だけの違いが読めない。",
+    "",
+    "穴あきでも殻の嵩は変わらないので、青い実と同じ320。重さ（1800g→1200g）は水が抜けたぶんで、",
+    "見た目の大きさとは別。"
+  ],
+  "output": "src/assets/objects/drained_green_coconut.png",
+  "edit": {
+    "source": "green_coconut.json",
+    "prompt": "Cut a hole into the top of this young green coconut and drain it. Show the exact same green coconut, in the same upright pose and the same place, now with one dark round hole about the width of a thumb cut through the husk near the top of it, turned slightly so that the hole is clearly visible, the cut rim showing the pale flesh of the husk and the hollow dark inside. Everything else is unchanged: the same smooth green husk, the same shape and size, the same hand painted illustration style, the same plain white background, the same lighting and a similar soft shadow beneath it. Nothing else in the image.",
+    "seed": 4
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "neutralShadow": 16
+  }
+}
