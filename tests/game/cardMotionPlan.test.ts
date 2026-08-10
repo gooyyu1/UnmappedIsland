@@ -167,6 +167,22 @@ describe('planMotion（ScreenLayout.md カードの移動アニメーション�
     expect(plan.fadeIns).toEqual([]);
   });
 
+  it('置いたままの分身が運ぶインスタンスは、releasedに混ざっていても便にならない', () => {
+    const plan = planMotion(
+      input({
+        before: [placed('石', [1, 2], 0)],
+        arriving: [placed('石', [1, 2], 500)],
+        released: { ids: [1, 2], rect: rect(300) },
+        heldId: 1,
+      }),
+    );
+
+    // 掴んでいた1つ（heldId）は分身の着地で、ついてきた1つだけが離した場所からの便で動く。
+    expect(plan.landing).toEqual({ to: rect(500), reveals: '石' });
+    expect(plan.flights).toHaveLength(1);
+    expect(plan.flights[0].from).toEqual(rect(300));
+  });
+
   it('置いたままの分身のインスタンスが失われていれば、着地先は無い', () => {
     const plan = planMotion(
       input({
