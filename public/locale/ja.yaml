@@ -123,17 +123,37 @@ object_texts:
   # ヤシの実の加工の連鎖（coconut.yaml）。
   palm_tree:
     display_name: ヤシの木
-    description: 高く伸びたヤシ。幹を登れば実がもげる。
+    description: 高く伸びたヤシ。青い実は登って切り落とし、熟した実は落ちたのを拾う。
     actions:
-      pick_coconut:
-        display_name: 実を採る
-        description: 幹を登って、実をもぎ取る。
+      pick_green_coconut:
+        display_name: 青い実を採る
+        description: 幹を登って、まだ落ちない青い実を切り落とす。
+      gather_fallen_coconut:
+        display_name: 落ちた実を拾う
+        description: 木の周りを探して、熟して落ちた実を拾う。登らないので踏み外さない。
       pick_frond:
         display_name: 葉を採る
         description: 幹を登って、垂れ下がった枯れ葉を引き落とす。
+  green_coconut:
+    display_name: 青いヤシの実
+    description: まだ熟していない実。皮も殻も柔らかく、中に飲める水を抱えている。
+    combinations:
+      bore:
+        display_name: 穴を開けて飲む
+        description: 皮の上から殻まで刃先を通し、中の水を飲む。開けた水は保たないので、その場で飲みきる。
+  drained_green_coconut:
+    display_name: 水を飲んだ青い実
+    description: 水の抜けた青い実。薄い殻は刃物だけで割れ、内側にゼリー状の果肉が張り付いている。
+    combinations:
+      split:
+        display_name: 割る
+        description: 刃物で薄い殻を割り、ゼリー状の果肉を取り出す。器になる殻は残らない。
+  coconut_jelly:
+    display_name: ヤシのゼリー
+    description: 青い実の柔らかい果肉。匙で掬えるほど柔らかく、ほとんどが水分。
   coconut:
-    display_name: ヤシの実
-    description: 厚い繊維の皮に覆われた実。刃物ではがさないと中の殻に届かない。
+    display_name: 熟したヤシの実
+    description: 厚い繊維の皮に覆われた実。刃物ではがさないと中の殻に届かない。飲める水は残っていない。
     combinations:
       husk:
         display_name: 皮をはぐ
@@ -143,21 +163,14 @@ object_texts:
     description: はぎ取った繊維の塊。硬く、ほぐれば長い繊維になる。
   husked_coconut:
     display_name: 皮を剥いだヤシの実
-    description: 皮を落として殻がむき出しになった実。殻は硬いが、刃先を当てれば穴が開く。
-    combinations:
-      bore:
-        display_name: 穴を開ける
-        description: 刃先を殻のくぼみへ当て、中まで貫く穴を開ける。
-  holed_coconut:
-    display_name: 穴を開けたヤシの実
-    description: 穴の開いた殻。強度が落ちていて、叩けば素直に二つに割れる。
+    description: 皮を落として殻がむき出しになった実。殻は硬いが、叩くかこじれば二つに割れる。
     combinations:
       crack:
         display_name: 叩き割る
-        description: 石を打ちつけ、穴から走る割れ目で二つに割る。
+        description: 石を打ちつけ、走った割れ目で二つに割る。
       pry_open:
         display_name: こじ開ける
-        description: 穴へ刃をねじ込み、こじって二つに割る。
+        description: 殻の継ぎ目へ刃をねじ込み、こじって二つに割る。
   coconut_half:
     display_name: 割れたヤシの実
     description: 半分になった実。殻の内側に白い果肉が張り付いている。
@@ -167,7 +180,7 @@ object_texts:
         description: 刃物で内側の果肉を掻き出す。あとには器になる殻が残る。
   coconut_meat:
     display_name: ヤシの果肉
-    description: 殻から掻き出した白い果肉。ほのかに甘く、水気がある。
+    description: 殻から掻き出した白く硬い果肉。脂が多く、腹に残る。
 
   # 怪我（injuries.yaml）。
   sprained_ankle:

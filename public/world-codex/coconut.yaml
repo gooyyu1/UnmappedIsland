@@ -1,31 +1,50 @@
-# ヤシの実の加工の連鎖（GameElementDefinition.md 11節・12節参照）。ヤシの木から実を採り、
-# 皮をはぎ、穴を開け、割り、果肉を掻き出すまでの一続きを1ファイルにまとめる。
+# ヤシの実の加工の連鎖（GameElementDefinition.md 11節・12節参照）。ヤシの木から実を採り、割り、
+# 中身を得るまでの一続きを1ファイルにまとめる。
 #
-# 生の実は食べられない。食べられるのは連鎖の終端の果肉（coconut_meat）だけで、実1個ぶんの
-# 満腹度・水分・栄養は、そこから採れる果肉2個へ等分してある。
+# 連鎖は熟度で2本に分かれる。同じ木から採れるが、採り方も採れる物も別で、これは実の生態そのままの分岐。
+#
+#   - 青い実（green_coconut）: まだ落ちないので、登って切り落とすしかない。穴を開ければその場で
+#     飲める水が取れる。果肉はゼリー状で水分が主。殻は薄く、器にならない。
+#   - 熟した実（coconut）: 熟すと自分から落ちるので、登らず拾える。飲める水は残っていない。果肉は
+#     脂質が多い。皮は繊維（coconut_husk）に、殻は液体の器（coconut_bowl）になる。
+#
+# つまり、水が欲しければ登って捻挫の危険を負い、素材と脂質が欲しければ拾う。
+#
+# 生の実はどちらも食べられない。食べられるのは連鎖の終端の果肉（coconut_meat・coconut_jelly）だけ。
 #
 # 液体の入れ物になる殻（coconut_bowl）は液体容器の一員なので、liquid_containers.yamlが持つ。
+#
+# 今後の課題: 花序を切って樹液（トディ）を採る。1本から1日1L以上採れ、数時間で発酵して酒になり
+# 数日で酢になるため、「器を木に括って一晩置く」形の、腐敗に必然性がある再生する液体源になる。
 
 object_defs:
   # ヤシの木。実と葉の採取ポイント。探索で見つかる設置物（locations.yamlのexplore）。
   palm_tree:
     tags: [fixture]
     actions:
-      # 幹を登って実をもぎ取る。採れる数に上限は設けていない（採取ポイントの枯渇は今後の課題）。
+      # 青い実を採る。熟していない実は自分から落ちないので、幹を登って切り落とすしかない。
       # 足場の無い幹を登る以上、たまに踏み外す。失敗した回は何も採れない。
       #
       # 1回登るのに30分かけて1個だけ持って降りることはしないので、成功した回はまとめて採る。
-      pick_coconut:
+      # 熟した実より数が少ないのは、水を抱えた青い実が重く、房から外すのに手間がかかるため。
+      pick_green_coconut:
         showMenu: always
         duration: 30
         pick:
           - weight: 90
             spawn:
-              - {object: coconut, into: actor}
-              - {object: coconut, into: actor}
-              - {object: coconut, into: actor}
+              - {object: green_coconut, into: actor}
+              - {object: green_coconut, into: actor}
           - weight: 10
             spawn: {object: sprained_ankle, into: actor}
+
+      # 熟した実を拾う。熟した実は自分から落ちるので、木の周りを探せば登らずに手に入る。
+      # 登らないので踏み外さない。そのぶん一度に見つかるのは1個で、数を揃えるには何度も探す
+      # （採取ポイントの枯渇は今後の課題）。
+      gather_fallen_coconut:
+        showMenu: always
+        duration: 10
+        spawn: {object: coconut, into: actor}
 
       # 葉を採る。枯れた葉は落ちる前に幹へ垂れ下がるので、刃物が無くても引き落とせる。
       # 実採りと同じく幹を登るため、同じだけ踏み外す。葉はweaving.yamlが定義する。
@@ -41,7 +60,59 @@ object_defs:
           - weight: 10
             spawn: {object: sprained_ankle, into: actor}
 
-  # 皮のついたヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
+  # 青いヤシの実。皮も殻も柔らかく、中に飲める水を抱えている。皮ごと刃先を通せるので、熟した実の
+  # ように皮をはぐ工程を挟まない。
+  green_coconut:
+    tags: [item]
+    props:
+      weight: {value: 1800}
+    combinations:
+      # 穴を開けて、その場で水を飲む。開けた実の水は数時間で発酵するため、汲み置きはできない
+      # ——だから水は液体（liquid_containers.yaml）として持たず、飲用をこの操作へ畳んでいる。
+      #
+      # 満水でも実行できる。飲みきれない分はhydrationのクランプに任せてこぼれる。条件で塞ぐと、
+      # 満水の間だけ連鎖が進まなくなる。
+      bore:
+        with: cutting_tool
+        duration: 15
+        add:
+          actor:
+            satiety: 1
+            hydration: 500
+            vegetable_nutrition: 300
+        destroy: self
+        spawn: {object: drained_green_coconut}
+
+  # 水を飲んだ青い実。殻が薄く柔らかいので刃物だけで割れ、割ればゼリー状の果肉がそのまま取れる。
+  # 熟した実のように掻き出す工程が要らない代わりに、器になる殻も残らない。
+  drained_green_coconut:
+    tags: [item]
+    props:
+      weight: {value: 1200}
+    combinations:
+      split:
+        with: cutting_tool
+        duration: 15
+        destroy: self
+        spawn:
+          - {object: coconut_jelly}
+          - {object: coconut_jelly}
+
+  # 青い実のゼリー状の果肉。ほとんどが水分で、熟した果肉ほどのカロリーは無い。
+  coconut_jelly:
+    tags: [item]
+    props:
+      weight: {value: 150}
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 2
+            hydration: 130
+            vegetable_nutrition: 800
+        destroy: self
+
+  # 熟したヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
   # 皮をはぐと、中の実（husked_coconut）と皮（coconut_husk）に分かれる。
   coconut:
     tags: [item]
@@ -62,23 +133,11 @@ object_defs:
     props:
       weight: {value: 400}
 
-  # 皮を剥いだヤシの実。刃物の先で殻に穴を開けられる。
-  husked_coconut:
-    tags: [item]
-    props:
-      weight: {value: 1000}
-    combinations:
-      bore:
-        with: cutting_tool
-        duration: 15
-        destroy: self
-        spawn: {object: holed_coconut}
-
-  # 穴を開けたヤシの実。穴が入った殻は衝撃で素直に割れる。石で叩いても刃物をこじ入れてもよいので、
-  # 道具のタグごとに1つずつcombinationを持つ（withは1つのタグしか取らないため）。
+  # 皮を剥いだ熟したヤシの実。硬い殻は、石で叩いても刃物をこじ入れても割れるので、道具のタグごとに
+  # 1つずつcombinationを持つ（withは1つのタグしか取らないため）。
   #
   # 割れた実は2つ生まれるが、同種は1スタックにまとまるため、2つとも元の実が居た場所へ置き換わる。
-  holed_coconut:
+  husked_coconut:
     tags: [item]
     props:
       weight: {value: 1000}
@@ -112,7 +171,8 @@ object_defs:
           - {object: coconut_meat}
           - {object: coconut_bowl}
 
-  # ヤシの果肉。実1個から2個採れる。満腹度・水分・栄養は実1個ぶんの半分。
+  # 熟したヤシの果肉。実1個から2個採れる。脂質が多くカロリーは高いが、水分は青い実に及ばない
+  # （熟した果肉の水分は半分ほどで、まとまった水が飲めるのは青い実だけ）。
   coconut_meat:
     tags: [item]
     props:
@@ -122,6 +182,6 @@ object_defs:
         add:
           actor:
             satiety: 6
-            hydration: 480
+            hydration: 150
             vegetable_nutrition: 2500
         destroy: self
