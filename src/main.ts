@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DeviceScreen } from './game/DeviceScreen';
+import { installErrorReport } from './game/errorReport';
 import { BootScene } from './game/BootScene';
 import { TitleScene } from './game/TitleScene';
 import { SlotSelectScene } from './game/SlotSelectScene';
@@ -7,6 +8,9 @@ import { NewGameScene } from './game/NewGameScene';
 import { ScenarioSelectScene } from './game/ScenarioSelectScene';
 import { PlayScene } from './game/PlayScene';
 import { COLOR, cssColor } from './game/ui/theme';
+
+// ゲームを組み立てる前に張る（組み立ての最中に投げられたものも受けたい）。
+installErrorReport();
 
 DeviceScreen.startGame('game', {
   type: Phaser.AUTO,

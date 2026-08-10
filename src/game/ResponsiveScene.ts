@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { noteOperation } from './errorReport';
 import { ScreenMetrics } from './layout/ScreenMetrics';
 
 /**
@@ -37,6 +38,9 @@ export abstract class ResponsiveScene extends Phaser.Scene {
    * 呼ぶ。開いている子ウィンドウも消えるため、buildは「今開いているもの」を毎回組み立て直す。
    */
   protected rebuild(): void {
+    // 画面の組み立ては、操作と同じくらい壊れる場所（向きを変えた直後だけ出る不具合等）。
+    noteOperation(`画面を組み立てた: ${this.scene.key} ${this.scale.width}x${this.scale.height}`);
+
     // 表示物は一覧から外すだけでなく必ず壊す。DisplayList.removeAllの引数はdestroyChildではなく
     // skipCallbackで（Containerのそれとは別物）、外しただけでは実体が残る。DOM要素で作る入力欄
     // （TextInput）は画面に出たままになり、向きを変えるたびに増えていく。

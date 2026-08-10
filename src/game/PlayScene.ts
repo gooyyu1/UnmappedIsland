@@ -24,6 +24,7 @@ import type {
   PlayScreenView,
 } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
+import { noteOperation, setStateReporter } from './errorReport';
 import type { StatusDelta } from './statusChanges';
 import { statusChangesAfter, statusChangesBetween } from './statusChanges';
 import { statusRows } from './statusRows';
@@ -355,6 +356,27 @@ export class PlayScene extends ResponsiveScene {
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.artLoader = new LocationArtLoader(this);
     this.requestLocationArt();
+
+    // エラー報告に載せる状態を、このシーンが居る間だけ答える（errorReport参照）。
+    const from =
+      data.scenario !== undefined
+        ? `シナリオ「${data.scenario.title}」`
+        : `セーブスロット${this.slotIndex + 1}`;
+    noteOperation(`プレイ画面を開いた: ${from} / シード ${data.save.seed}`);
+    setStateReporter(() => this.stateLines());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => setStateReporter(undefined));
+  }
+
+  /** エラー報告に載せる、今の画面の状態（errorReport.setStateReporter）。 */
+  private stateLines(): readonly string[] {
+    return [
+      `ワールド時刻: ${this.clockText()}`,
+      `現在地: ${this.view.currentLocation.name}`,
+      `演出中: ${this.passingTime ? '時間の経過' : this.transiting ? '場面転換' : 'なし'}`,
+      `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : JSON.stringify(this.childWindowPlace)}`,
+      `手持ち: ${this.view.hand.map((card) => card?.name ?? '空き').join(' / ')}`,
+      `アイテム: ${this.view.items.map((card) => card.name).join(' / ')}`,
+    ];
   }
 
   /**
@@ -609,7 +631,10 @@ export class PlayScene extends ResponsiveScene {
     const edges: CardEdgeAction[] = [];
     for (const direction of EDGE_DIRECTIONS) {
       const move = this.edgeMove(card, direction);
-      if (move !== undefined) edges.push({ direction, onTap: () => this.applyToWorld(move) });
+      if (move !== undefined) {
+        const label = `カードの端を押した: ${card.name}（${card.place} の ${direction}）`;
+        edges.push({ direction, onTap: () => this.applyToWorld(label, move) });
+      }
     }
     return edges;
   }
@@ -812,10 +837,24 @@ export class PlayScene extends ResponsiveScene {
     const action = this.dropAction(drop);
     if (action === undefined) return;
 
-    this.applyToWorld(action, {
+    this.applyToWorld(this.dropLabel(drop), action, {
       origin: drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined,
       released: this.releasedBy(drop, released),
     });
+  }
+
+  /** そのドロップを、再現手順として読める言葉にする（errorReport参照）。 */
+  private dropLabel(drop: CardDrop): string {
+    const dragged = this.cardsOf(drop.from)[drop.fromIndex]?.name ?? '?';
+    const count = drop.count > 1 ? ` ×${drop.count}` : '';
+    const to = this.placeOf(drop.to);
+    if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
+
+    const onto = this.cardsOf(drop.to)[drop.target.index]?.name ?? '?';
+    const combination = this.combinationAt(drop);
+    return combination !== undefined
+      ? `カードを重ねた: ${dragged} → ${onto}（${combination.name}）`
+      : `カードを入れた: ${dragged}${count} → ${onto}の中`;
   }
 
   /**
@@ -940,6 +979,7 @@ export class PlayScene extends ResponsiveScene {
         onTap: () => {
           const origin = this.rectOf(card);
           this.applyToWorld(
+            `作業した: ${card.name}`,
             () => {
               advanceCrafting(target, recipe, materialsSlotId, this.codex, this.gameSession.session);
             },
@@ -1031,7 +1071,7 @@ export class PlayScene extends ResponsiveScene {
         // 矩形を引くのは押した時点——開いてから押すまでにレーンを送られていることがあるため。
         const origin = this.rectOf(card);
         this.closeChildWindow();
-        this.applyToWorld(action.execute, { origin });
+        this.applyToWorld(`アクション: ${action.name}（${card.name}）`, action.execute, { origin });
       },
     }));
   }
@@ -1045,6 +1085,7 @@ export class PlayScene extends ResponsiveScene {
     actions: readonly ObjectWindowAction[],
     place: CardPlace | undefined,
   ): void {
+    noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
     this.childWindow?.close();
     this.childWindowPlace = place;
 
@@ -1083,6 +1124,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
   private openExplorationWindow(): void {
+    if (this.explorationWindow === undefined) noteOperation('探索のウィンドウを開いた');
     this.explorationWindow?.close();
     this.explorationWindow = new ExplorationWindow(this, this.metrics, {
       locationName: this.view.currentLocation.name,
@@ -1111,6 +1153,7 @@ export class PlayScene extends ResponsiveScene {
     const statusesBefore = this.allStatuses();
     const startedAt = this.gameSession.world.totalMinutes;
 
+    noteOperation(`探索した: ${this.view.currentLocation.name}（${this.clockText()}）`);
     this.searching = true;
     this.found = [];
     this.openExplorationWindow();
@@ -1261,6 +1304,14 @@ export class PlayScene extends ResponsiveScene {
     );
   }
 
+  /** 今のワールド時刻（エラー報告と操作の記録に添える）。 */
+  private clockText(): string {
+    const whole = Math.trunc(this.gameSession.world.totalMinutes);
+    const hour = Math.trunc((whole % MINUTES_PER_DAY) / 60);
+    const minute = whole % 60;
+    return `${Math.trunc(whole / MINUTES_PER_DAY)}日 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+
   /**
    * ワールドを変える操作を実行し、その結果を画面へ反映する。originは新しく生まれたカードの出どころ。
    *
@@ -1272,9 +1323,19 @@ export class PlayScene extends ResponsiveScene {
    *
    * onDoneは、経過し切って結果を画面へ反映したあとに呼ぶ。**結果を見せてから片付けたいもの**
    * （作業し終えてから閉じる子ウィンドウ）のための後始末で、実行しないと決めたとき（busy）は呼ばない。
+   *
+   * labelは、エラー報告に残す「何をしたか」（errorReport参照）。ワールドを変える操作はすべてここを
+   * 通るので、再現手順として読める言葉を渡す。
    */
-  private applyToWorld(change: () => void, context: MotionContext = {}, onDone?: () => void): void {
+  private applyToWorld(
+    label: string,
+    change: () => void,
+    context: MotionContext = {},
+    onDone?: () => void,
+  ): void {
     if (this.busy) return;
+
+    noteOperation(`${label}（${this.clockText()}）`);
 
     // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
     if (context.released !== undefined) this.motion.hold(this.openLanes, context.released);
@@ -1827,6 +1888,7 @@ export class PlayScene extends ResponsiveScene {
    */
   /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
   private openRecipeWindow(): void {
+    noteOperation('レシピ一覧を開いた');
     this.recipeWindow?.destroy();
     this.recipeWindow = new RecipeWindow(this, this.metrics, {
       title: '作るもの',
@@ -1871,6 +1933,8 @@ export class PlayScene extends ResponsiveScene {
   private openPropertyWindow(): void {
     if (this.propertyWindow !== undefined) return;
 
+    noteOperation('体の状態を開いた');
+
     this.propertyWindow = new PropertyWindow(this, this.metrics, {
       title: this.view.characterName,
       tabs: this.propertyTabs(),
@@ -1883,6 +1947,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 地図ボタンから開く地図ウィンドウ。既知の土地と発見済みの道を、ユーザが並べた位置で見せる。 */
   private openMapWindow(): void {
+    noteOperation('地図を開いた');
     this.mapWindow?.close();
     this.mapWindow = new MapWindow(this, this.metrics, {
       lands: this.view.mapLands,

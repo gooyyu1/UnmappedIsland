@@ -3,6 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { Card } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
 import { CarriedCards } from './CarriedCards';
+import { noteOperation } from '../errorReport';
 import { HoldRepeat } from './holdRepeat';
 import type { TooltipContent } from './Tooltip';
 import { Tooltip } from './Tooltip';
@@ -228,6 +229,7 @@ export class CardDragController {
     if (gesture === undefined) return;
 
     gesture.kind = 'dragging';
+    noteOperation(`カードを掴んだ: ${gesture.card.content.name}`);
     // 掴んで動かす操作になったので、掴んだカードの上で指を離してもタップにはしない（Card.cancelTap）。
     gesture.card.cancelTap();
 
@@ -379,6 +381,9 @@ export class CardDragController {
     const found = gesture.kind === 'dragging' ? this.dropAt(gesture, pointer) : undefined;
     if (found === undefined || gesture.carried === undefined) {
       // 落とさなかったので、運んでいた札は元の枠へ飛んで帰る（帰り着くまではCarriedCardsが生きる）。
+      if (gesture.kind === 'dragging') {
+        noteOperation(`カードを離した: ${gesture.card.content.name}（落とし先なし）`);
+      }
       gesture.carried?.disband();
       gesture.carried = undefined;
       this.cancel();
