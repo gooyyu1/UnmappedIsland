@@ -18,6 +18,12 @@ const LONG_PRESS_SLOP = 12;
 const DIRECTION_THRESHOLD = 20;
 const VERTICAL_RATIO = 1.5;
 
+/**
+ * 束を丸ごと持ち出して場所が空いた、元のカードの濃さ（showStack参照）。掴んでいるカード自身も、
+ * まだ束が残っている元のカードも不透明のまま——札が透けるのはカードゲームらしくないため。
+ */
+const EMPTIED_ALPHA = 0.3;
+
 /** ドロップ先を示す枠の太さ（u単位）と、塗りの濃さ。 */
 const INDICATOR_BORDER = 6;
 const INDICATOR_FILL_ALPHA = 0.3;
@@ -247,6 +253,8 @@ export class CardDragController {
     gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, gesture.face);
     gesture.tooltip = new Tooltip(this.scene, this.metrics());
     gesture.carryHold = new HoldRepeat(this.scene);
+    // 1枚しか映していないカードを掴んだ時点で、その場所はもう空（showStack）。
+    this.showCarried(gesture);
     this.follow(pointer);
   }
 
@@ -377,12 +385,17 @@ export class CardDragController {
   }
 
   /**
-   * 運んでいる枚数を、分身の右上の数字と、元の束の減りで見せる。**ついてきたぶんは元の束から
+   * 運んでいる枚数を、分身の右上の数字と、元の束の見え方で見せる。**ついてきたぶんは元の束から
    * 抜けて見える**（掴んだ1枚ぶんは元のカードが場所に残ったまま——ScreenLayout.md ドラッグ＆ドロップ節）。
    */
   private showCarried(gesture: Gesture): void {
     gesture.ghost?.setContent({ ...gesture.face, count: gesture.carried });
-    showStackCount(gesture.card, gesture.sourceCount - (gesture.carried - 1));
+    // 束を丸ごと運び出していれば、元の場所はもう空。
+    showStack(
+      gesture.card,
+      gesture.sourceCount - (gesture.carried - 1),
+      gesture.carried >= gesture.sourceCount,
+    );
   }
 
   /**
@@ -487,7 +500,7 @@ export class CardDragController {
     gesture.carryHold?.stop();
     // 減らして見せていた元の束を戻す。返す札が飛んでいる間も、数はここで戻る（飛んでいるのは
     // もう束に在るものの姿で、着けば重なって消える）。
-    showStackCount(gesture.card, gesture.sourceCount);
+    showStack(gesture.card, gesture.sourceCount, false);
     gesture.pile?.destroy();
     gesture.ghost?.destroy();
     gesture.indicator?.destroy();
@@ -498,10 +511,18 @@ export class CardDragController {
   }
 }
 
-/** レーンに残っている束が映す枚数を差し替える（画面を作り直していれば、そのカードはもう無い）。 */
-function showStackCount(card: Card, count: number): void {
-  if (card.scene === undefined || (card.content.count ?? 1) === count) return;
-  card.setContent({ ...card.content, count });
+/**
+ * 掴んでいる間の、元のカードの見え方（残って見える枚数と濃さ）。画面を作り直していれば、そのカードは
+ * もう無い。
+ *
+ * **薄くするのは場所ごと空くときだけ。** 束が残っているうちは、そこに在るのはまだ本物の札なので
+ * そのままの濃さで残す。丸ごと運び出したときだけ、残るのは「返ってくる場所」を示す姿になる。
+ */
+function showStack(card: Card, count: number, emptied: boolean): void {
+  if (card.scene === undefined) return;
+
+  if ((card.content.count ?? 1) !== count) card.setContent({ ...card.content, count });
+  card.setAlpha(emptied ? EMPTIED_ALPHA : 1);
 }
 
 /** 掴んでいる分身が今いる矩形（掴んでいなければundefined）。 */
