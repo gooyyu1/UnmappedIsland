@@ -1,0 +1,49 @@
+{
+  "_comment": [
+    "src/assets/objects/palm_frond.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "編んだ葉（woven_leaf.json）と同じ2段構え。素のSDXLは作り込まれた葉の商品写真を出すので、",
+    "Qwen Image Edit で絵の具の質感へ描き直す。source を持たない edit は自分の生成を基準にする。",
+    "",
+    "枠は横長（1152x896）。羽状複葉は長いので、縦長の枠だと必ず上下の端まで届く。",
+    "",
+    "1枚の葉になるseedは24枚中3枚（prompts/objects.json の palm_frond 参照）。",
+    "",
+    "束ねた材料ではなく1枚の大きな葉なので400。長さが見せ場なので、diagonalで長い向きを対角線へ",
+    "倒して伸ばす。",
+    "",
+    "**描かれた落ち影は使わない（shadow 0）。** 編集が描くのは葉の形をそのまま左下へずらした",
+    "シルエットで、拾うと灰色のもう1枚の葉として残る。影はdropShadowで描く（sharp_stoneと同じ）。",
+    "neutralShadowは残す——影を芯から外さないと、fit_objectの中央合わせと倍率、diagonalの向きまで",
+    "影ごみで決まる（葉の彩度57に対し影は2〜3なので16で分かれる）。",
+    "",
+    "**toleranceは70。** 40だと、葉と影に挟まれた白い隙間が「内側の穴」と見なされて埋まり、",
+    "小葉の切れ込みが白い塊で潰れる。"
+  ],
+  "output": "src/assets/objects/palm_frond.png",
+  "prompts": "objects.json",
+  "prompt": "palm_frond",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 1152,
+  "height": 896,
+  "seed": 2003,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the single palm frond as the only object, with its one long central rib and the narrow pointed leaflets in two rows along it, and paint it with soft brush strokes and gentle natural shading instead of photographic detail. Muted olive green with the leaflet tips gone dry and brown, matte dry surface, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the frond small in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. No text, no letters, no numbers.",
+    "seed": 2
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "diagonal": true,
+    "tolerance": 70,
+    "edge": 4,
+    "shadow": 0,
+    "reach": 24,
+    "neutralShadow": 16,
+    "dropShadow": 0.35,
+    "dropOffset": 10,
+    "dropBlur": 8
+  }
+}
