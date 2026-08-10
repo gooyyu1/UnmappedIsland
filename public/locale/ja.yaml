@@ -123,14 +123,11 @@ object_texts:
   # ヤシの実の加工の連鎖（coconut.yaml）。
   palm_tree:
     display_name: ヤシの木
-    description: 高く伸びたヤシ。青い実は登って切り落とし、熟した実は落ちたのを拾う。
+    description: 高く伸びたヤシ。幹を登れば、まだ落ちない青い実と枯れ葉が採れる。
     actions:
       pick_green_coconut:
-        display_name: 青い実を採る
+        display_name: 実を採る
         description: 幹を登って、まだ落ちない青い実を切り落とす。
-      gather_fallen_coconut:
-        display_name: 落ちた実を拾う
-        description: 木の周りを探して、熟して落ちた実を拾う。登らないので踏み外さない。
       pick_frond:
         display_name: 葉を採る
         description: 幹を登って、垂れ下がった枯れ葉を引き落とす。

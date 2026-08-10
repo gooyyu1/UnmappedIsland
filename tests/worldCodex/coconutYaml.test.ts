@@ -11,8 +11,8 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
 
 /**
  * coconut.yamlのヤシの実の加工の連鎖を、実ファイルの定義だけで検証する。熟度で分かれる2本
- * （青い実: 登って採り、穴を開けて水を飲み、割ってゼリーを採る／熟した実: 拾い、皮をはぎ、割り、
- * 果肉を掻き出して器を残す）をそれぞれ一続きで通す。
+ * （青い実: 木を登って採り、穴を開けて水を飲み、割ってゼリーを採る／熟した実: 皮をはぎ、割り、
+ * 果肉を掻き出して器を残す）をそれぞれ一続きで通す。熟した実の入手は土地の探索なので、ここでは扱わない。
  */
 describe('coconut.yamlのヤシの実の加工', () => {
   let codex: WorldCodex;
@@ -82,15 +82,6 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
     expect(worldView.hour, 'durationの30分が経つ').toBe(0);
     expect(worldView.minute).toBe(30);
-  });
-
-  it('落ちた実を拾うと、熟した実が手持ちに増える（登らないので捻挫しない）', () => {
-    const tree = spawnInto('palm_tree', beach, 'fixtures');
-
-    expect(tree.tryExecuteAction('gather_fallen_coconut', player, session)).toBe(true);
-
-    expect(handOf(player), '一度に見つかるのは1個').toEqual(['coconut']);
-    expect(worldView.minute, 'durationの10分だけ経つ').toBe(10);
   });
 
   it('手持ちが埋まっていると、採った実は装備欄ではなく足元へ落ちる', () => {
