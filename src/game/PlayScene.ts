@@ -806,16 +806,23 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。
-   * 掴んでいたカードは手を離した場所に居るので、そこから動き出す（releasedは分身が居た矩形）。
+   * 運んでいたカードは手を離した場所に居るので、そこから動き出す（releasedは分身が居た矩形）。
+   * ついてきたぶんも指の下に居たので同じ——動くのは束の先頭からdrop.count個（moveInto参照）。
    */
   private applyDrop(drop: CardDrop, released: Rect): void {
     const action = this.dropAction(drop);
     if (action === undefined) return;
 
-    const dragged = this.combinationAt(drop)?.source ?? this.cardsOf(drop.from)[drop.fromIndex]?.objects[0];
+    // 重ねて実行するcombinationの素材は、掴んでいた1つだけ（drop.countは常に1、multiDropLimit参照）。
+    const combination = this.combinationAt(drop);
+    const moved =
+      combination !== undefined
+        ? [combination.source]
+        : (this.cardsOf(drop.from)[drop.fromIndex]?.objects.slice(0, drop.count) ?? []);
     this.applyToWorld(action, {
       origin: drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined,
-      released: dragged === undefined ? undefined : { id: dragged.instanceId, rect: released },
+      released:
+        moved.length === 0 ? undefined : { ids: moved.map((object) => object.instanceId), rect: released },
     });
   }
 

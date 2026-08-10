@@ -71,7 +71,7 @@ describe('planMotion（ScreenLayout.md カードの移動アニメーション�
         before: [placed('石', [1], 0)],
         staying: [placed('地の石', [1, 2], 500)],
         left: [{ card: '石', ids: [1] }],
-        released: { id: 1, rect: rect(300) },
+        released: { ids: [1], rect: rect(300) },
       }),
     );
 
@@ -79,12 +79,28 @@ describe('planMotion（ScreenLayout.md カードの移動アニメーション�
     expect(flight).toMatchObject({ to: rect(500), face: '地の石' });
   });
 
+  it('ついてきて一緒に落とされたぶんも、指を離した場所から動き出す', () => {
+    const plan = planMotion(
+      input({
+        before: [placed('地の石', [1, 2, 3], 0), placed('手の石', [4], 500)],
+        staying: [placed('手の石', [1, 2, 4], 500)],
+        left: [],
+        released: { ids: [1, 2], rect: rect(300) },
+      }),
+    );
+
+    // 2枚とも離した場所から。元の枠（x=0）からは飛ばない。
+    expect(plan.flights).toHaveLength(2);
+    expect(plan.flights.map((flight) => flight.from.x)).toEqual([300, 300]);
+    expect(plan.flights.map((flight) => flight.delaySteps)).toEqual([0, 1]);
+  });
+
   it('掴んで離したまま残ったカードは、束の残りが元の枠から、離した1つが指の位置から飛ぶ', () => {
     const plan = planMotion(
       input({
         before: [placed('石', [1, 2, 3], 0)],
         arriving: [placed('石', [1, 2, 3], 500)],
-        released: { id: 1, rect: rect(300) },
+        released: { ids: [1], rect: rect(300) },
       }),
     );
 
