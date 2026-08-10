@@ -4,6 +4,8 @@ import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneUpdate, ReleasedCard } from './CardLane';
 import { FLY_EASE, FLY_MS } from './cardFlight';
+import type { PlacedCard } from './cardMotionPlan';
+import { planMotion } from './cardMotionPlan';
 import { REPEAT_MIN_MS } from './holdRepeat';
 import type { LaneCell } from './laneCells';
 
@@ -11,8 +13,8 @@ import type { LaneCell } from './laneCells';
 const FADE_MS = 200;
 
 /**
- * 一度に複数のインスタンスが動いたとき、1枚目から順に飛び立たせる間隔（ミリ秒）。押し続けて
- * 送り続けるときの最短間隔と揃える（holdRepeat参照）。
+ * 1枚ずつ間を置いて飛び立つときの間隔（ミリ秒）。押し続けて送り続けるときの最短間隔と揃える
+ * （holdRepeat参照）。
  */
 const GAP_MS = REPEAT_MIN_MS;
 
@@ -32,21 +34,16 @@ export interface MotionContext {
 /**
  * レーンの内容の差し替えを、カードの動きとして見せる。
  *
- * カードの同定はCardContent.identity（映しているインスタンスのID）で行う。差し替えの前後で
- * IDが1つでも重なるカード同士を同じカードとみなすので、レーン間の移動・スタックへの合流・
- * スタックの代表の入れ替わりを、いずれも「同じカードが動いた」として扱える。差し替え後に
- * どのカードのIDでもなくなったものが破棄、差し替え前のどのIDでもないものが新しく生まれたもの。
+ * どの札がどこからどこへ飛ぶのかの解釈は計画（cardMotionPlan）が行う。このクラスが扱うのは
+ * **レーンの並びから外れて宙に在る札**だけ——飛んでいる分身と、離した場所へ置いたままの分身
+ * （hold）。カードの同定はインスタンスのID（CardContent.identity）で行う。
  *
- * カードゲームらしく、スタックへの合流は薄れさせずに「上に重ねて」見せる（send）。重なった
- * カードは着いた時点で捨てるが、その下には合流先のカードが既に居るので、見た目は札束が増えたまま残る。
+ * カードゲームらしく、スタックへの合流は薄れさせずに「上に重ねて」見せる。重なった分身は着いた
+ * 時点で捨てるが、その下には合流先のカードが既に居るので、見た目は札束が増えたまま残る。
  *
  * **飛ばすのは常に見た目だけの分身**で、レーンに並ぶカード自身は枠に居るまま伏せて待つ（send）。
  * 分身は最前面の層に置く——レーンからはみ出したカードは隣接エリアの背景板に隠れる設計
  * （CardLane参照）のため、レーンの中に置いたままでは境界をまたげない。
- *
- * **一度に複数動いたぶんは、1枚ずつ間を置いて飛ばす**（GAP_MS）。何個動いたのかを目で数えられる
- * ようにするため。束ねて1枚に見えるものも中身の数だけ飛ぶ（enter）。出どころに積まれたまま順に
- * 飛び立つ姿になる。まとめて採れた実も、まとめてかごへ入れた実も同じ見え方をする。
  */
 export class CardMotion {
   private readonly scene: Phaser.Scene;
@@ -77,7 +74,7 @@ export class CardMotion {
   hold(lanes: readonly CardLane[], released: NonNullable<MotionContext['released']>): void {
     this.releaseHeld();
 
-    const card = ownersOf(lanes).get(released.id)?.card;
+    const card = placedCards(lanes).find(({ ids }) => ids.includes(released.id))?.card;
     if (card === undefined) return;
 
     // 置きに行くのは1つだけなので、スタックは残りがそこに居る。枠から居なくなるのは1つしか
@@ -107,22 +104,6 @@ export class CardMotion {
     reveal(held.card);
   }
 
-  /**
-   * 置いたままにしていた分身を、そのインスタンスの新しい居場所へ運ぶ。着いた時点で分身を捨て、
-   * そこに居るカード（伏せていた本体・新しく現れたカード・合流先）を表に戻す。
-   * インスタンスが失われていれば（使い切った・壊れた）その場で捨てる。
-   */
-  private landHeld(held: NonNullable<CardMotion['held']>, after: ReadonlyMap<number, Owner>): void {
-    const owner = after.get(held.id);
-    if (owner === undefined) {
-      held.stand.destroy();
-      reveal(held.card);
-      return;
-    }
-
-    this.send(held.stand, owner.rect, owner.card);
-  }
-
   /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcellsは同じ順に対応する。 */
   update(
     lanes: readonly CardLane[],
@@ -133,48 +114,48 @@ export class CardMotion {
     // 差し替えを跨がせると、カードの居なくなった枠へ着いて、そこでカードを表に戻すことになる。
     this.settle();
 
-    // 経過し切った差し替えなら、置いたままの分身がそのインスタンスを運ぶ。運ぶぶんは他の経路では
-    // 動かさない（同じ移動を二重に見せないため）ので、以降はreleasedを渡さない。
+    // 経過し切った差し替えなら、置いたままの分身がそのインスタンスを運ぶ。運ぶぶんは通常の便に
+    // しない（同じ移動を二重に見せないため）ので、以降はreleasedではなくheldIdとして渡す。
     const landing = context.released === undefined ? undefined : this.takeHeld();
-    const remaining = landing === undefined ? context : { ...context, released: undefined };
+    const released = landing === undefined ? context.released : undefined;
 
-    const before = ownersOf(lanes);
-    const released = releasedCard(before, remaining);
-    const updates = lanes.map((lane, index) => lane.setCells(cells[index], released));
-    const after = ownersOf(lanes);
+    const before = placedCards(lanes);
+    const releasedCard = releasedCardOf(before, released);
+    const updates = lanes.map((lane, index) => lane.setCells(cells[index], releasedCard));
 
-    // 現れた側が飛ぶIDは、居なくなった側では改めて動かさない（同じ移動を二重に見せないため）。
-    const entering = new Set(updates.flatMap((update) => update.entered).flatMap(({ card }) => idsOf(card)));
-
-    // 生まれた順に飛び立たせるための順番取り。1つのupdateの中で通し番号になる。
-    let born = 0;
-    const birthDelay = (): number => born++ * GAP_MS;
-
+    const arriving: PlacedCard<Card>[] = [];
     updates.forEach((update, index) => {
       for (const { card, index: slot } of arrivals(update)) {
-        // 分身が運ぶ先のカードは、着くまで伏せたまま待たせる（landHeldが表に戻す）。
-        if (landing !== undefined && idsOf(card).includes(landing.id)) continue;
-
-        this.enter(card, lanes[index].slotRect(slot), before, remaining, birthDelay);
+        arriving.push({ card, ids: idsOf(card), rect: lanes[index].slotRect(slot) });
       }
     });
+    const arrivingCards = new Set(arriving.map(({ card }) => card));
+    const staying = placedCards(lanes).filter(({ card }) => !arrivingCards.has(card));
+    const left = updates.flatMap((update) => update.left).map((card) => ({ card, ids: idsOf(card) }));
 
-    this.moveInstances(lanes, updates, before, remaining, birthDelay);
+    const plan = planMotion({
+      before,
+      arriving,
+      staying,
+      left,
+      origin: context.origin,
+      released,
+      heldId: landing?.id,
+    });
 
-    for (const { left } of updates) {
-      for (const card of left) {
-        const ids = idsOf(card);
-        // 分身が運んでいる1枚は、運ばれる姿でもう見えている。
-        const carried = card === landing?.card && ids.length === 1;
-        if (carried || ids.some((id) => entering.has(id))) {
-          card.destroy();
-          continue;
-        }
-        this.dismiss(card, rectOf(before, ids), rectOf(after, ids));
-      }
+    for (const card of plan.hidden) card.setVisible(false);
+    for (const flight of plan.flights) {
+      this.send(
+        this.standAt(flight.face.content, flight.from),
+        flight.to,
+        flight.reveals,
+        flight.delaySteps * GAP_MS,
+      );
     }
+    for (const card of plan.fadeIns) this.fadeIn(card);
+    for (const card of plan.discards) card.destroy();
 
-    if (landing !== undefined) this.landHeld(landing, after);
+    if (landing !== undefined) this.landHeld(landing, plan.landing);
     // 置いている途中でそのカードが失われたら（経過中に壊れた道具等）、立てていた分身も片付ける。
     if (this.held !== undefined && this.held.card.scene === undefined) this.releaseHeld();
   }
@@ -187,96 +168,27 @@ export class CardMotion {
   }
 
   /**
-   * カードそのものは動かない、インスタンス1つぶんの移動を見せる。
-   *
-   * 1枚のカードがスタック全体を映すため、居続けるカードの間でインスタンスが移った場合、どちらの
-   * カードも残ってしまい右上の数字が変わるだけになる（スタックの1つを、同じものが既に居る場所へ
-   * 移したとき）。発見済みのアイテムをもう一度発見したときも同じで、こちらは出どころがoriginになる。
-   * どちらも、移った1つぶんの分身を飛ばして移動先へ重ねる。
+   * 置いたままにしていた分身を、そのインスタンスの新しい居場所へ運ぶ。インスタンスが失われて
+   * いれば（使い切った・壊れた）その場で捨てる。
    */
-  private moveInstances(
-    lanes: readonly CardLane[],
-    updates: readonly LaneUpdate[],
-    before: ReadonlyMap<number, Owner>,
-    context: MotionContext,
-    birthDelay: () => number,
+  private landHeld(
+    held: NonNullable<CardMotion['held']>,
+    landing: { readonly to: Rect; readonly reveals: Card } | undefined,
   ): void {
-    // カードごと出入りするぶんは、そのカード自身が飛ぶ（fly・dismiss）ので数えない。
-    const arriving = new Set(updates.flatMap(arrivals).map(({ card }) => card));
-    const left = new Set(updates.flatMap((update) => update.left));
-
-    for (const lane of lanes) {
-      lane.cardObjects.forEach((card, slot) => {
-        if (card === undefined || arriving.has(card)) return;
-
-        const to = lane.slotRect(slot);
-        arrivalsAt(card, before, left, context).forEach((from, index) => {
-          // 既に居るカードへ合流する1つでも、originから来たなら新しく生まれたもの。
-          const delay = from === context.origin ? birthDelay() : index * GAP_MS;
-          this.send(this.standAt(card.content, from), to, undefined, delay);
-        });
-      });
-    }
-  }
-
-  /**
-   * 現れたカードを、映しているインスタンスの数だけ1枚ずつ飛ばす。
-   *
-   * **3個まとめて動いたヤシの実は、1枚に束ねて見せていても3枚飛ぶ。** 何個動いたのかを飛ぶ枚数で
-   * 数えられるようにするため（分身は右上の数字を持たない、cardFace参照）。束のカードを表に戻すのは
-   * 最後の1枚が着いたとき。
-   *
-   * 出どころはインスタンスごとに引く——掴んで離した1つは指を離した場所、一緒についてきたぶんは
-   * 元の枠から動き出す。差し替え前に画面のどこにも無かったなら新しく生まれたもので、出どころは
-   * origin。それも無ければどこから来たのか分からないので、その場で浮かび上がらせる。
-   */
-  private enter(
-    card: Card,
-    to: Rect,
-    before: ReadonlyMap<number, Owner>,
-    context: MotionContext,
-    birthDelay: () => number,
-  ): void {
-    const ids = idsOf(card);
-    // 何を映しているか分からないカード（identityを持たないもの）は、1枚として出どころから飛ばす。
-    const from = (
-      ids.length === 0
-        ? [context.origin]
-        : ids.map((id) => releasedRect([id], context) ?? before.get(id)?.rect ?? context.origin)
-    ).filter((rect): rect is Rect => rect !== undefined);
-
-    if (from.length === 0) {
-      card.setVisible(true);
-      card.setAlpha(0);
-      this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS });
+    if (landing === undefined) {
+      held.stand.destroy();
+      reveal(held.card);
       return;
     }
 
-    // 飛んでいる間は枠のカードを伏せる（新しく現れたカードは伏せて渡ってくるが、掴んで離したまま
-    // レーンに残ったカードは見えている）。着いた時点でsendが表に戻す。
-    card.setVisible(false);
-    from.forEach((rect, index) => {
-      const last = index === from.length - 1;
-      // 生まれたぶんは差し替え全体での順番を取る（別々のカードとして生まれても重ならないように）。
-      const delay = rect === context.origin ? birthDelay() : index * GAP_MS;
-      this.send(this.standAt(card.content, rect), to, last ? card : undefined, delay);
-    });
+    this.send(held.stand, landing.to, landing.reveals);
   }
 
-  /**
-   * 居なくなったカードを片付ける。同じインスタンスがまだ他のカードに映っているなら（スタックへの
-   * 合流）そこへ重ね、どこにも無いなら（破棄）その場で消す。
-   */
-  private dismiss(card: Card, from: Rect | undefined, to: Rect | undefined): void {
-    // 行き先が無い＝そのインスタンスが世界から消えた。カードもその場で消す（薄れさせると、掴んで
-    // 離したカードが即座に消えるのと食い違って見える）。
-    if (from === undefined || to === undefined) {
-      card.destroy();
-      return;
-    }
-
-    this.send(this.standAt(card.content, from), to);
-    card.destroy();
+  /** 出どころの無いカードを、その場で浮かび上がらせる。 */
+  private fadeIn(card: Card): void {
+    card.setVisible(true);
+    card.setAlpha(0);
+    this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS });
   }
 
   /** 見た目だけの分身を、その場所に作る。 */
@@ -287,9 +199,6 @@ export class CardMotion {
   /**
    * 分身をtoへ飛ばす。着いた時点で分身を捨て、coveredを渡してあればそこで表に戻す。渡さなければ
    * 捨てるだけ——下には合流先のカードが既に居るため。
-   *
-   * 飛ばすのは必ず分身で、レーンに並んでいるカード自身ではない。カードの居場所を決めるのはレーンの
-   * 側（枠の並び）で、そこから持ち出すと、レーンが並びを詰め直したときに枠と無関係な場所へ動く。
    *
    * delayを渡すと、その間は出発点に置いたまま待つ。複数生まれたぶんは出どころに積まれて見え、
    * 順に飛び立っていく。
@@ -335,46 +244,15 @@ interface Flight {
   readonly covered: Card | undefined;
 }
 
-/** 1つのインスタンスを、今どのカードがどこで映しているか。 */
-interface Owner {
-  readonly card: Card;
-  readonly rect: Rect;
-}
-
-/** レーンに並ぶカードが映しているインスタンスのIDから、そのカードと置き場所を引ける表。 */
-function ownersOf(lanes: readonly CardLane[]): Map<number, Owner> {
-  const owners = new Map<number, Owner>();
+/** レーンに並んでいるカードを、位置とインスタンスのID付きで挙げる（計画の入力）。 */
+function placedCards(lanes: readonly CardLane[]): PlacedCard<Card>[] {
+  const placed: PlacedCard<Card>[] = [];
   for (const lane of lanes) {
     lane.cardObjects.forEach((card, index) => {
-      const rect = lane.slotRect(index);
-      if (card !== undefined) for (const id of idsOf(card)) owners.set(id, { card, rect });
+      if (card !== undefined) placed.push({ card, ids: idsOf(card), rect: lane.slotRect(index) });
     });
   }
-  return owners;
-}
-
-/**
- * このカードが新しく受け取ったインスタンスの、それぞれの出どころ。
- *
- * 元のカードごと居なくなったぶんは、そのカード自身が飛ぶ（CardMotion.dismiss）ので含めない。
- * 差し替え前に画面のどこにも無かったインスタンス（探索・クラフトで生まれたもの）はoriginから来る。
- */
-function arrivalsAt(
-  card: Card,
-  before: ReadonlyMap<number, Owner>,
-  left: ReadonlySet<Card>,
-  context: MotionContext,
-): readonly Rect[] {
-  return idsOf(card).flatMap((id) => {
-    // 掴んで離したものは、指を離した場所から動き出す。元と同じカードへ戻る場合も同じで、これは
-    // 差し替えの時点＝時間のかかるcombinationなら経過し切ってからになる（使い終わってから手元へ戻る）。
-    if (id === context.released?.id) return [context.released.rect];
-
-    const previous = before.get(id);
-    if (previous === undefined) return context.origin === undefined ? [] : [context.origin];
-    if (previous.card === card || left.has(previous.card)) return [];
-    return [previous.rect];
-  });
+  return placed;
 }
 
 /**
@@ -385,19 +263,15 @@ function arrivals(update: LaneUpdate): readonly { readonly card: Card; readonly 
   return update.returned === undefined ? update.entered : [...update.entered, update.returned];
 }
 
-/** 掴んで離したインスタンスを、差し替え前に映していたカード。 */
-function releasedCard(before: ReadonlyMap<number, Owner>, context: MotionContext): ReleasedCard | undefined {
-  const { released } = context;
+/** 掴んで離したインスタンスを、差し替え前に映していたカード（CardLane.setCellsが別扱いする）。 */
+function releasedCardOf(
+  before: readonly PlacedCard<Card>[],
+  released: MotionContext['released'],
+): ReleasedCard | undefined {
   if (released === undefined) return undefined;
 
-  const card = before.get(released.id)?.card;
+  const card = before.find(({ ids }) => ids.includes(released.id))?.card;
   return card === undefined ? undefined : { card, id: released.id };
-}
-
-/** そのカードが、掴んで離したインスタンスを映しているなら、手を離した位置。 */
-function releasedRect(ids: readonly number[], context: MotionContext): Rect | undefined {
-  const { released } = context;
-  return released !== undefined && ids.includes(released.id) ? released.rect : undefined;
 }
 
 /** 伏せていたカードを表に戻す（画面を作り直していれば既に破棄されている＝sceneがundefined）。 */
@@ -407,12 +281,4 @@ function reveal(card: Card): void {
 
 function idsOf(card: Card): readonly number[] {
   return card.content.identity ?? [];
-}
-
-function rectOf(owners: ReadonlyMap<number, Owner>, ids: readonly number[]): Rect | undefined {
-  for (const id of ids) {
-    const owner = owners.get(id);
-    if (owner !== undefined) return owner.rect;
-  }
-  return undefined;
 }
