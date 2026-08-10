@@ -1,9 +1,8 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import type { CardContent } from './Card';
-import { Card, cardFace } from './Card';
+import type { Card } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
-import { FLY_EASE, FLY_MS } from './cardFlight';
+import { CarriedCards } from './CarriedCards';
 import { HoldRepeat } from './holdRepeat';
 import type { TooltipContent } from './Tooltip';
 import { Tooltip } from './Tooltip';
@@ -17,12 +16,6 @@ const LONG_PRESS_SLOP = 12;
 /** 方向で判断を始めるまでの移動距離（u単位）と、「明らかに縦」とみなす縦横比。 */
 const DIRECTION_THRESHOLD = 20;
 const VERTICAL_RATIO = 1.5;
-
-/**
- * 束を丸ごと持ち出して場所が空いた、元のカードの濃さ（showStack参照）。掴んでいるカード自身も、
- * まだ束が残っている元のカードも不透明のまま——札が透けるのはカードゲームらしくないため。
- */
-const EMPTIED_ALPHA = 0.3;
 
 /** ドロップ先を示す枠の太さ（u単位）と、塗りの濃さ。 */
 const INDICATOR_BORDER = 6;
@@ -39,13 +32,6 @@ const GLOW_LAYERS = [
 ];
 const GLOW_PULSE_MS = 1200;
 const GLOW_PULSE_ALPHA = 0.2;
-
-/**
- * まとめて運ぶとき、指の下の分身の後ろへ重ねて見せる枚数の上限と、1枚ごとのずらし幅（u単位）。
- * 何枚運んでいるかは右上の数字が正確に伝えるので、後ろの札は「1枚ではない」と分かれば足りる。
- */
-const CARRY_PILE_MAX = 4;
-const CARRY_PILE_OFFSET = 14;
 
 /** ドラッグしたカードを落とした先。 */
 export interface CardDrop {
@@ -78,20 +64,23 @@ export interface CardDragHandlers {
   readonly onDrop: (drop: CardDrop, released: Rect) => void;
 }
 
+/** ついてくる枚数を数え続けている落とし先。ここが変わらない限り数え続ける（trackCarry参照）。 */
+interface CarryTarget {
+  readonly to: CardLane;
+  readonly target: LaneDropTarget;
+}
+
 /** 押してから離すまでの1回の操作。カードのドラッグとレーンのスクロールのどちらになるかは押した後に決まる。 */
 interface Gesture {
   readonly lane: CardLane;
   readonly index: number;
   readonly card: Card;
-  /** 掴んだカードの見た目だけを写したもの。分身も、ついてくる札も、これで作る。 */
-  readonly face: CardContent;
-  /** 掴んだ時点で元の束が映していた枚数。ついてきたぶんを引いて見せる（showCarried参照）。 */
-  readonly sourceCount: number;
   readonly startX: number;
   readonly startY: number;
   kind: 'pending' | 'scrolling' | 'dragging';
   longPress: Phaser.Time.TimerEvent | undefined;
-  ghost: Card | undefined;
+  /** 指が運んでいる札（分身・ついてくる札・元の束の見え方はすべてこれが持つ）。 */
+  carried: CarriedCards | undefined;
   indicator: Phaser.GameObjects.Graphics | undefined;
   /** 受け入れられるカードのふちの光と、その明滅。 */
   glow: Phaser.GameObjects.Graphics | undefined;
@@ -99,19 +88,9 @@ interface Gesture {
   tooltip: Tooltip | undefined;
   /** 最後に指が居た場所。ついてくる枚数が増えたときに、そこから表示を作り直す。 */
   pointer: Phaser.Input.Pointer | undefined;
-  /** 今まとめて運んでいる枚数と、その落とし先が受け取れる最大枚数（trackCarry参照）。 */
-  carried: number;
-  carryMax: number;
-  /** 枚数を数え続けている落とし先（変われば1枚に戻す）と、数える時計。 */
-  carryKey: string | undefined;
+  /** ついてくる枚数を数え続けている落とし先と、数える時計。 */
+  carryTarget: CarryTarget | undefined;
   carryHold: HoldRepeat | undefined;
-  /** 分身の後ろへ重ねる札を入れる器（分身より奥に置くため、分身より先に作る）。 */
-  pile: Phaser.GameObjects.Container | undefined;
-  /**
-   * 今そこに重なって見えている札（後から来たものが先頭）。返り始めた札は器の中にまだ居る（着くまで
-   * 飛んでいる）ので、どれが重なっている札なのかは器とは別に持つ。
-   */
-  readonly pileCards: Card[];
 }
 
 /**
@@ -126,9 +105,8 @@ interface Gesture {
  *
  * **落とし先の上で待つと、同じ束の2枚目以降がついてくる**（trackCarry）。離せばついてきたぶんが
  * 一度に入る。ついてくるのは入る枚数までで、ついてきた枚数はそのまま「これだけ入る」という約束になる。
- *
- * ついてくる札は元の枠から飛んでくる（carryIn）。落とさずに離した・ついてこなくなったぶんは、同じ
- * 道を元の枠へ返る（returnAll・returnCarried）。指の下に出ている札は必ずどこかから来てどこかへ帰る。
+ * 運んでいる札そのもの（分身・ついてくる札・元の束の見え方）はCarriedCardsが持ち、ここは
+ * 「いつ増やすか・何枚まで許されるか」だけを決める。
  */
 export class CardDragController {
   private readonly scene: Phaser.Scene;
@@ -182,31 +160,24 @@ export class CardDragController {
     if (found === undefined) return;
 
     const { lane, index } = found;
-    const card = object as Card;
     lane.beginScroll();
 
     const gesture: Gesture = {
       lane,
       index,
-      card,
-      face: cardFace(card.content),
-      sourceCount: card.content.count ?? 1,
+      card: object as Card,
       startX: pointer.x,
       startY: pointer.y,
       kind: 'pending',
       longPress: undefined,
-      ghost: undefined,
+      carried: undefined,
       indicator: undefined,
       glow: undefined,
       glowPulse: undefined,
       tooltip: undefined,
       pointer: undefined,
-      carried: 1,
-      carryMax: 1,
-      carryKey: undefined,
+      carryTarget: undefined,
       carryHold: undefined,
-      pile: undefined,
-      pileCards: [],
     };
     this.gesture = gesture;
 
@@ -251,16 +222,14 @@ export class CardDragController {
     gesture.card.cancelTap();
 
     // 作る順がそのまま重なりの順になる。ふちの光もどこへ落ちるかの枠もレーンのカードの装飾なので
-    // 分身より奥（指が運んでいるカードは常に見えている必要がある）、説明だけが分身より手前。
-    // ついてきた札は分身のさらに奥なので、器を先に作っておく。
+    // 運んでいる札より奥（指が運んでいるカードは常に見えている必要がある）、説明だけが手前。
     this.showAcceptingCards(gesture);
     gesture.indicator = this.scene.add.graphics();
-    gesture.pile = this.scene.add.container(0, 0);
-    gesture.ghost = new Card(this.scene, this.metrics(), 0, 0, gesture.face);
+    gesture.carried = new CarriedCards(this.scene, this.metrics(), gesture.card, () =>
+      gesture.lane.slotRect(gesture.index),
+    );
     gesture.tooltip = new Tooltip(this.scene, this.metrics());
     gesture.carryHold = new HoldRepeat(this.scene);
-    // 1枚しか映していないカードを掴んだ時点で、その場所はもう空（showStack）。
-    this.showCarried(gesture);
     this.follow(pointer);
   }
 
@@ -299,17 +268,13 @@ export class CardDragController {
     });
   }
 
-  /** 分身をポインタの中心へ置き、今の位置で成立するドロップ先を枠で示す。 */
+  /** 運んでいる札をポインタの中心へ置き、今の位置で成立するドロップ先を枠で示す。 */
   private follow(pointer: Phaser.Input.Pointer): void {
     const gesture = this.gesture;
-    if (gesture?.ghost === undefined || gesture.indicator === undefined) return;
+    if (gesture?.carried === undefined || gesture.indicator === undefined) return;
 
     gesture.pointer = pointer;
-    gesture.ghost.setPosition(
-      pointer.x - gesture.ghost.cardWidth / 2,
-      pointer.y - gesture.ghost.cardHeight / 2,
-    );
-    gesture.pile?.setPosition(gesture.ghost.x, gesture.ghost.y);
+    gesture.carried.follow(pointer.x, pointer.y);
 
     gesture.indicator.clear();
     let found = this.dropAt(gesture, pointer);
@@ -331,7 +296,7 @@ export class CardDragController {
     });
 
     if (info.tooltip === undefined) gesture.tooltip?.hide();
-    else gesture.tooltip?.show(info.tooltip, ghostRect(gesture)!);
+    else gesture.tooltip?.show(info.tooltip, gesture.carried.rect);
   }
 
   /** 今のポインタ位置で成立するドロップと、そこで起きること（何も起きないものはundefined）。 */
@@ -348,7 +313,7 @@ export class CardDragController {
         fromIndex: gesture.index,
         to: lane,
         target,
-        count: gesture.carried,
+        count: gesture.carried?.count ?? 1,
       };
       const info = this.handlers.describeDrop(drop);
       return info === undefined ? undefined : { drop, info };
@@ -367,124 +332,23 @@ export class CardDragController {
    * 戻り値は運ぶ枚数が変わったかどうか。
    */
   private trackCarry(gesture: Gesture, found: { drop: CardDrop; info: CardDropInfo } | undefined): boolean {
-    const key =
-      found === undefined
-        ? undefined
-        : `${this.lanes.indexOf(found.drop.to)}:${found.drop.target.kind}:${found.drop.target.index}`;
-    if (key === gesture.carryKey) return false;
+    if (sameTarget(gesture.carryTarget, found?.drop)) return false;
 
-    gesture.carryKey = key;
-    gesture.carryMax = found?.info.maxCount ?? 1;
-    const carried = Math.min(gesture.carried, gesture.carryMax);
-    const changed = carried !== gesture.carried;
+    gesture.carryTarget = found === undefined ? undefined : { to: found.drop.to, target: found.drop.target };
+    const max = found?.info.maxCount ?? 1;
+    const changed = gesture.carried?.keepAtMost(max) ?? false;
     gesture.carryHold?.stop();
-    // あふれたぶんは元の枠へ返る。重ねて見せていた札も、その枚数に見合うところまで減らす。
-    if (changed) this.returnCarried(gesture, pileSize(gesture.carried) - pileSize(carried));
-    gesture.carried = carried;
-    if (carried < gesture.carryMax) gesture.carryHold?.start(() => this.carryOne(gesture));
-    this.showCarried(gesture);
+    if ((gesture.carried?.count ?? max) < max) {
+      gesture.carryHold?.start(() => this.carryOne(gesture, max));
+    }
     return changed;
   }
 
   /** ついてくる札を1枚増やす。入る枚数まで数えたら止まる（それ以上はついてこない）。 */
-  private carryOne(gesture: Gesture): boolean {
-    gesture.carried += 1;
-    this.showCarried(gesture);
-    this.carryIn(gesture);
+  private carryOne(gesture: Gesture, max: number): boolean {
+    gesture.carried?.addOne();
     if (gesture.pointer !== undefined) this.follow(gesture.pointer);
-    return gesture.carried < gesture.carryMax;
-  }
-
-  /**
-   * 運んでいる枚数を、分身の右上の数字と、元の束の見え方で見せる。**ついてきたぶんは元の束から
-   * 抜けて見える**（掴んだ1枚ぶんは元のカードが場所に残ったまま——ScreenLayout.md ドラッグ＆ドロップ節）。
-   */
-  private showCarried(gesture: Gesture): void {
-    gesture.ghost?.setContent({ ...gesture.face, count: gesture.carried });
-    // 束を丸ごと運び出していれば、元の場所はもう空。
-    showStack(
-      gesture.card,
-      gesture.sourceCount - (gesture.carried - 1),
-      gesture.carried >= gesture.sourceCount,
-    );
-  }
-
-  /**
-   * 増えた1枚を、元の枠から指の下へ飛ばして重ねる。重ねて見せるのはCARRY_PILE_MAX枚までで、それを
-   * 超えたぶんは着いた時点で捨てる——同じ場所には既に札が居るので、束の厚みは変わらない。
-   */
-  private carryIn(gesture: Gesture): void {
-    const { pile } = gesture;
-    if (pile === undefined) return;
-
-    const from = gesture.lane.slotRect(gesture.index);
-    const card = new Card(this.scene, this.metrics(), from.x - pile.x, from.y - pile.y, gesture.face);
-    // 器の並び順がそのまま重なりの順。後から来た札ほど奥へ入れる。
-    pile.addAt(card, 0);
-
-    const merges = pileSize(gesture.carried) === pileSize(gesture.carried - 1);
-    if (!merges) gesture.pileCards.unshift(card);
-
-    const rest = -this.metrics().px(CARRY_PILE_OFFSET) * pileSize(gesture.carried);
-    this.scene.tweens.add({
-      targets: card,
-      x: rest,
-      y: rest,
-      duration: FLY_MS,
-      ease: FLY_EASE,
-      onComplete: () => {
-        if (merges) card.destroy();
-      },
-    });
-  }
-
-  /**
-   * 重ねて見せている札のうち、先頭（後から来たぶん）から数枚を元の枠へ飛ばして返す。着いた時点で
-   * 捨てる——そこには元の束が居るので、束は戻ったままに見える。器は指について行くので、指を動かし
-   * ながら返せば帰り道もそのぶん引かれる。
-   */
-  private returnCarried(gesture: Gesture, count: number): void {
-    const { pile } = gesture;
-    if (pile === undefined) return;
-
-    const to = gesture.lane.slotRect(gesture.index);
-    for (const card of gesture.pileCards.splice(0, count)) {
-      this.scene.tweens.killTweensOf(card);
-      this.scene.tweens.add({
-        targets: card,
-        x: to.x - pile.x,
-        y: to.y - pile.y,
-        duration: FLY_MS,
-        ease: FLY_EASE,
-        onComplete: () => card.destroy(),
-      });
-    }
-  }
-
-  /**
-   * 落とさずに離したときは、指の下に出ていた札がすべて元の枠へ飛んで返る。返し終わるまで生かして
-   * おく必要があるので、ジェスチャからは取り上げておく（cancelが捨ててしまわないように）。
-   */
-  private returnAll(gesture: Gesture): void {
-    const { ghost, pile } = gesture;
-    if (ghost === undefined) return;
-
-    this.returnCarried(gesture, gesture.pileCards.length);
-    gesture.ghost = undefined;
-    gesture.pile = undefined;
-
-    const to = gesture.lane.slotRect(gesture.index);
-    this.scene.tweens.add({
-      targets: ghost,
-      x: to.x,
-      y: to.y,
-      duration: FLY_MS,
-      ease: FLY_EASE,
-      onComplete: () => {
-        ghost.destroy();
-        pile?.destroy();
-      },
-    });
+    return (gesture.carried?.count ?? max) < max;
   }
 
   /** ドロップの実行はカードを動かすので、その前にドラッグ中の表示物を片付けておく。 */
@@ -493,14 +357,16 @@ export class CardDragController {
     if (gesture === undefined) return;
 
     const found = gesture.kind === 'dragging' ? this.dropAt(gesture, pointer) : undefined;
-    // 分身はcancelで消えるので、その居場所を先に控える。落としたカードはここから動き出す。
-    const released = ghostRect(gesture);
-    if (found === undefined || released === undefined) {
-      this.returnAll(gesture);
+    if (found === undefined || gesture.carried === undefined) {
+      // 落とさなかったので、運んでいた札は元の枠へ飛んで帰る（帰り着くまではCarriedCardsが生きる）。
+      gesture.carried?.disband();
+      gesture.carried = undefined;
       this.cancel();
       return;
     }
 
+    // 運んでいた札はcancelで消えるので、その居場所を先に控える。落としたカードはここから動き出す。
+    const released = gesture.carried.rect;
     this.cancel();
     this.handlers.onDrop(found.drop, released);
   }
@@ -511,11 +377,7 @@ export class CardDragController {
 
     gesture.longPress?.remove();
     gesture.carryHold?.stop();
-    // 減らして見せていた元の束を戻す。返す札が飛んでいる間も、数はここで戻る（飛んでいるのは
-    // もう束に在るものの姿で、着けば重なって消える）。
-    showStack(gesture.card, gesture.sourceCount, false);
-    gesture.pile?.destroy();
-    gesture.ghost?.destroy();
+    gesture.carried?.dissolve();
     gesture.indicator?.destroy();
     gesture.glowPulse?.remove();
     gesture.glow?.destroy();
@@ -524,31 +386,14 @@ export class CardDragController {
   }
 }
 
-/** その枚数を運んでいるとき、分身の後ろへ重ねて見せる札の数（CARRY_PILE_MAXで頭打ち）。 */
-function pileSize(carried: number): number {
-  return Math.min(carried - 1, CARRY_PILE_MAX);
-}
-
-/**
- * 掴んでいる間の、元のカードの見え方（残って見える枚数と濃さ）。画面を作り直していれば、そのカードは
- * もう無い。
- *
- * **薄くするのは場所ごと空くときだけ。** 束が残っているうちは、そこに在るのはまだ本物の札なので
- * そのままの濃さで残す。丸ごと運び出したときだけ、残るのは「返ってくる場所」を示す姿になる。
- */
-function showStack(card: Card, count: number, emptied: boolean): void {
-  if (card.scene === undefined) return;
-
-  if ((card.content.count ?? 1) !== count) card.setContent({ ...card.content, count });
-  card.setAlpha(emptied ? EMPTIED_ALPHA : 1);
-}
-
-/** 掴んでいる分身が今いる矩形（掴んでいなければundefined）。 */
-function ghostRect(gesture: Gesture): Rect | undefined {
-  const { ghost } = gesture;
-  return ghost === undefined
-    ? undefined
-    : { x: ghost.x, y: ghost.y, width: ghost.cardWidth, height: ghost.cardHeight };
+/** 前回と同じ落とし先か（どちらも「無し」なら同じ）。 */
+function sameTarget(previous: CarryTarget | undefined, drop: CardDrop | undefined): boolean {
+  if (previous === undefined || drop === undefined) return previous === undefined && drop === undefined;
+  return (
+    previous.to === drop.to &&
+    previous.target.kind === drop.target.kind &&
+    previous.target.index === drop.target.index
+  );
 }
 
 /** レーンの添字のカードに重ねるドロップ先。 */
