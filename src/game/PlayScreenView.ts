@@ -78,6 +78,14 @@ export interface ObjectCardStack extends CardContent {
   readonly moveTo?: (place: CardPlace, at?: CardPlacement, count?: number) => (() => void) | undefined;
 
   /**
+   * countを渡した操作（moveTo・putInto）が動かすインスタンスのID。先頭は束の代表＝掴まれていた1つ。
+   * どの個体が動くのかの選び方はビューが1箇所で決め（carriedOf）、画面の移動アニメーション
+   * （MotionContext.released）はこれに合わせる——ワールドが動かすものと画面が飛ばすものを
+   * 食い違わせないため。
+   */
+  readonly movedIds: (count: number) => readonly number[];
+
+  /**
    * そこへまとめて入れられる最大個数（入れられない場所では0）。**ドラッグ中に何枚ついてくるかを
    * 決める**のに使う（CardDragController）。
    */
@@ -323,6 +331,14 @@ function hasFixedCells(owner: WorldObject, slotGlobalId: number): boolean {
   return owner.tryGetSlot(slotGlobalId)?.def.cellCount !== undefined;
 }
 
+/**
+ * 束のうち、まとめての操作が動かす先頭のcount個。**どの個体が動くのかはここだけが決める**——
+ * 実際に動かす側（moveTo・putInto）と、動きを見せる側（movedIds）の両方がここを通る。
+ */
+function carriedOf<T>(stack: readonly T[], count: number): readonly T[] {
+  return stack.slice(0, Math.max(1, count));
+}
+
 /** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
 function stacksIn(
   dest: { owner: WorldObject; slotId: number } | undefined,
@@ -528,6 +544,7 @@ export function fromGameSession(
     mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
+    movedIds: (count) => carriedOf(instances, count).map((instance) => instance.instanceId),
     description: locale.object(instances[0].def.name).description,
     actions: actionsOf(instances[0]),
     place,
@@ -655,7 +672,7 @@ export function fromGameSession(
 
       // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
       // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。
-      const carried = stack.slice(0, Math.max(1, count));
+      const carried = carriedOf(stack, count);
       const put = (item: WorldObject, first: boolean): void => {
         // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
         if (at === undefined || !first) {
@@ -709,9 +726,10 @@ export function fromGameSession(
 
       const texts = locale.slot(slotDef.name).putIn;
       // まとめて入れるなら時間も個数ぶん。1つずつ入れるのと同じことをするため（moveInto参照）。
-      const minutes = stack
-        .slice(0, Math.max(1, count))
-        .reduce((total, item) => total + slotDef.putInMinutes(dest.owner, item, game.player.instance), 0);
+      const minutes = carriedOf(stack, count).reduce(
+        (total, item) => total + slotDef.putInMinutes(dest.owner, item, game.player.instance),
+        0,
+      );
       if (texts === undefined && minutes === 0) return undefined;
       return {
         name: texts?.displayName ?? locale.slot(slotDef.name).displayName,

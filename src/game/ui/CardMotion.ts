@@ -25,10 +25,15 @@ export interface MotionContext {
   /** 差し替え前に画面に無かったカード（探索・クラフトで生まれたもの）の出発点。 */
   readonly origin?: Rect;
   /**
-   * 掴んで離したインスタンスと、手を離した時点の矩形。そのカードは元の枠ではなく、指を離した場所に
-   * 居るため、そこから動き出す（そこに置いたままにする間の居場所でもある。hold参照）。
+   * 手から放したもの——掴んでいた1つ・待ってついてきたぶん・手を離した時点の矩形。いずれの
+   * インスタンスも元の枠ではなく指の下に居たので、そこから動き出す。grabbedにとっては、
+   * そこに置いたままにする間の居場所でもある（hold参照）。
    */
-  readonly released?: { readonly id: number; readonly rect: Rect };
+  readonly released?: {
+    readonly grabbed: number;
+    readonly followers: readonly number[];
+    readonly rect: Rect;
+  };
 }
 
 /**
@@ -74,7 +79,9 @@ export class CardMotion {
   hold(lanes: readonly CardLane[], released: NonNullable<MotionContext['released']>): void {
     this.releaseHeld();
 
-    const card = placedCards(lanes).find(({ ids }) => ids.includes(released.id))?.card;
+    // 立てる分身は1枚——掴んでいた1つのもの。ついてきたぶんは分身を持たない（landHeld参照）。
+    const id = released.grabbed;
+    const card = placedCards(lanes).find(({ ids }) => ids.includes(id))?.card;
     if (card === undefined) return;
 
     // 置きに行くのは1つだけなので、スタックは残りがそこに居る。枠から居なくなるのは1つしか
@@ -82,7 +89,7 @@ export class CardMotion {
     if ((card.content.count ?? 1) < 2) card.setVisible(false);
     const stand = this.standAt(card.content, released.rect);
     this.layer.add(stand);
-    this.held = { id: released.id, card, stand };
+    this.held = { id, card, stand };
   }
 
   /**
@@ -114,13 +121,13 @@ export class CardMotion {
     // 差し替えを跨がせると、カードの居なくなった枠へ着いて、そこでカードを表に戻すことになる。
     this.settle();
 
-    // 経過し切った差し替えなら、置いたままの分身がそのインスタンスを運ぶ。運ぶぶんは通常の便に
-    // しない（同じ移動を二重に見せないため）ので、以降はreleasedではなくheldIdとして渡す。
+    // 経過し切った差し替えなら、置いたままの分身がgrabbedを運ぶ（heldId）。計画は置いたままの
+    // 分身が運ぶIDを通常の便にしない（planArrivalsTo）ので、releasedはそのまま全部渡してよい。
     const landing = context.released === undefined ? undefined : this.takeHeld();
-    const released = landing === undefined ? context.released : undefined;
 
     const before = placedCards(lanes);
-    const releasedCard = releasedCardOf(before, released);
+    // 「掴んで離したまま残ったカード」の扱い（滑らせずに置く）は、分身が運んで戻る場合には要らない。
+    const releasedCard = landing === undefined ? releasedCardOf(before, context.released) : undefined;
     const updates = lanes.map((lane, index) => lane.setCells(cells[index], releasedCard));
 
     const arriving: PlacedCard<Card>[] = [];
@@ -139,7 +146,7 @@ export class CardMotion {
       staying,
       left,
       origin: context.origin,
-      released,
+      released: releasedIdsOf(context.released),
       heldId: landing?.id,
     });
 
@@ -263,15 +270,24 @@ function arrivals(update: LaneUpdate): readonly { readonly card: Card; readonly 
   return update.returned === undefined ? update.entered : [...update.entered, update.returned];
 }
 
-/** 掴んで離したインスタンスを、差し替え前に映していたカード（CardLane.setCellsが別扱いする）。 */
+/** 掴んでいたインスタンスを、差し替え前に映していたカード（CardLane.setCellsが別扱いする）。 */
 function releasedCardOf(
   before: readonly PlacedCard<Card>[],
   released: MotionContext['released'],
 ): ReleasedCard | undefined {
   if (released === undefined) return undefined;
 
-  const card = before.find(({ ids }) => ids.includes(released.id))?.card;
-  return card === undefined ? undefined : { card, id: released.id };
+  const card = before.find(({ ids }) => ids.includes(released.grabbed))?.card;
+  return card === undefined ? undefined : { card, id: released.grabbed };
+}
+
+/** 手から放したインスタンス全部を、計画のreleased（離した場所から動き出すもの）に直す。 */
+function releasedIdsOf(
+  released: MotionContext['released'],
+): { readonly ids: readonly number[]; readonly rect: Rect } | undefined {
+  return released === undefined
+    ? undefined
+    : { ids: [released.grabbed, ...released.followers], rect: released.rect };
 }
 
 /** 伏せていたカードを表に戻す（画面を作り直していれば既に破棄されている＝sceneがundefined）。 */

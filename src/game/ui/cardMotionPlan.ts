@@ -33,8 +33,11 @@ export interface MotionInput<C> {
   readonly left: readonly { readonly card: C; readonly ids: readonly number[] }[];
   /** 差し替え前に画面のどこにも無かったインスタンスの出どころ（探索・クラフトで生まれたもの）。 */
   readonly origin?: Rect;
-  /** 掴んで離したインスタンスと、手を離した場所。 */
-  readonly released?: { readonly id: number; readonly rect: Rect };
+  /**
+   * 手から放したインスタンスたちと、手を離した場所。ついてきて一緒に落とされたぶんも、指の下に
+   * 居たのだから同じ場所から動き出す。heldIdが混ざっていてもよい——そちらの規則が先に効く。
+   */
+  readonly released?: { readonly ids: readonly number[]; readonly rect: Rect };
   /** 置いたままの分身（CardMotion.hold）が運ぶインスタンス。飛ぶのは分身なので、通常の便は立てない。 */
   readonly heldId?: number;
 }
@@ -80,7 +83,7 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
     to: PlacedCard<C>,
     arriving: boolean,
   ): { rect: Rect; born: boolean } | undefined => {
-    if (id === input.released?.id) return { rect: input.released.rect, born: false };
+    if (input.released?.ids.includes(id) === true) return { rect: input.released.rect, born: false };
 
     const previous = before.get(id);
     if (previous !== undefined) {

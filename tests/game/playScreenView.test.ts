@@ -590,13 +590,17 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
     // water_liquidはwith: water_liquidのpour_inを持つ（liquid_containers.yaml）。
-    const cardOf = (name: string) => ({
-      icon: '',
-      name,
-      place: 'items' as const,
-      objects: [game.session.spawn(codex.objectNames.getId(name))],
-      actions: [],
-    });
+    const cardOf = (name: string) => {
+      const objects = [game.session.spawn(codex.objectNames.getId(name))];
+      return {
+        icon: '',
+        name,
+        place: 'items' as const,
+        objects,
+        movedIds: () => objects.map((object) => object.instanceId),
+        actions: [],
+      };
+    };
     const water = cardOf('water_liquid');
 
     expect(view.combinationOf(water, cardOf('water_liquid'))?.execute).toBeTypeOf('function');
