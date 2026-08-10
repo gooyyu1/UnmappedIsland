@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/green_coconut.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "青い実。熟した実（coconut.json）の生データを基準に、Qwen Image Edit で「同じ実の若い姿」として",
+    "派生させる。連鎖は別でも同じ木の実なので、色調・作風・光を揃える意味は熟した側の連鎖と同じ。",
+    "",
+    "**切り口を頼んではいけない。** 「上に小さな切り軸の跡」と書くと、若い実の頭を削いで尖らせた",
+    "飲み口付きの姿になる（4枚中4枚）。この実は丸ごとで、穴を開けるのは別の工程（bore）なので、",
+    "『上まで緑で、切り取られた部分も乳白色の蓋も無い』と本文で打ち消す。",
+    "",
+    "**toleranceは40。** 熟した実と同じ60だと、黄緑に退色した尻が芯から外れて白く抜ける",
+    "（紙より40〜60暗い画素が5万ある）。下げたぶん影が芯へ入るので、neutralShadowで外す。",
+    "",
+    "熟した実と同じ320。重さは1800gと熟した実（1400g）より重いが、段を1つ上げると",
+    "カード幅いっぱいになり、同じ「ヤシの実」に見えなくなる。"
+  ],
+  "output": "src/assets/objects/green_coconut.png",
+  "edit": {
+    "source": "coconut.json",
+    "prompt": "Turn this coconut into a young unripe green coconut, whole and unopened, freshly cut down from the palm. Keep it the same size, in the same upright pose and the same place. Its surface is now a smooth waxy unbroken green husk with no fibres and no hair on it, faintly ridged along its length, rounded at the top and tapering to a blunt point at the bottom. It is green all over including its top: nothing has been cut away and there is no pale cream coloured cap, lid or point on it. Fresh grass green fading to pale yellow green near the bottom, matte surface. Keep the same hand painted illustration style, the same plain white background, the same lighting and the same soft shadow beneath it. Nothing else in the image.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "neutralShadow": 16
+  }
+}
