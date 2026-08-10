@@ -491,6 +491,13 @@ export function fromGameSession(
   };
 
   /**
+   * カードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の覆いが
+   * 示すので、絵は何が出来つつあるのかを出せばよい（ScreenLayout.md 製作中オブジェクトのカード節）。
+   * 自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
+   */
+  const artOf = (def: ObjectDef): string => (codex.productOf(def) ?? def).name;
+
+  /**
    * 型そのものを表すカード。インスタンスが1つも無くても作れるので、まだ在るとは限らない物
    * （枠が受け入れる素材）を見せるのに使う。個体ごとに違い得る値は持たない。
    */
@@ -499,7 +506,7 @@ export function fromGameSession(
     return {
       icon: iconOf(def),
       name: typeNameOf(def),
-      art: def.name,
+      art: artOf(def),
       inProgress: codex.productOf(def) !== undefined,
     };
   };
@@ -512,7 +519,7 @@ export function fromGameSession(
     inProgress: codex.productOf(instances[0].def) !== undefined,
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
-    art: instances[0].def.name,
+    art: artOf(instances[0].def),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
     durability: durabilityOf(instances[0]),

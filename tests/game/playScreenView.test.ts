@@ -4,6 +4,7 @@ import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { Path } from '../../src/domain/runtime/views/Path';
 import { fromGameSession, withFrozenCards } from '../../src/game/PlayScreenView';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -157,6 +158,21 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       '行き先は今いる土地とは限らない',
     ).toBe(true);
     expect(others.every((card) => card.art === card.objects[0].def.name)).toBe(true);
+  });
+
+  it('製作中オブジェクトのカードは、完成品の絵を映す', () => {
+    // 製作中の型はレシピから自動生成される（RecipeSystem.md）ので、その型あての絵は用意できない。
+    // 完成品の絵を映せば、絵文字の代用に落ちずに「何が出来つつあるのか」が見える。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const wip = game.session.spawn(codex.objectNames.getId(inProgressObjectName('woven_basket', 'woven')));
+    expect(
+      wip.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'), codex.wellKnown),
+    ).toBeUndefined();
+
+    const card = fromGameSession(game, codex, locale).items[0];
+
+    expect(card.art).toBe('woven_basket');
+    expect(card.inProgress, '完成品と同じ絵なので、作りかけであることは覆いだけが示す').toBe(true);
   });
 
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
