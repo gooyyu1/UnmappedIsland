@@ -10,8 +10,9 @@ import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * coconut.yamlのヤシの実の加工の連鎖を、実ファイルの定義だけで検証する。
- * ヤシの木から実を採り、皮をはぎ、穴を開け、割り、果肉を掻き出すまでを一続きで通す。
+ * coconut.yamlのヤシの実の加工の連鎖を、実ファイルの定義だけで検証する。熟度で分かれる2本
+ * （青い実: 登って採り、穴を開けて水を飲み、割ってゼリーを採る／熟した実: 拾い、皮をはぎ、割り、
+ * 果肉を掻き出して器を残す）をそれぞれ一続きで通す。
  */
 describe('coconut.yamlのヤシの実の加工', () => {
   let codex: WorldCodex;
@@ -19,11 +20,13 @@ describe('coconut.yamlのヤシの実の加工', () => {
   let worldView: World;
   let beach: WorldObject;
   let player: WorldObject;
+  let hydrationId: number;
 
   beforeAll(() => {
     // 刃物（tools.yaml）・土地（locations.yaml）・殻の容器（liquid_containers.yaml）への
     // ファイルをまたぐ参照があるため、ディレクトリ全体を一括ロードする。
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    hydrationId = codex.propertyNames.getId('hydration');
   });
 
   beforeEach(() => {
@@ -70,15 +73,24 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(tool.parent, '道具は消費されない').toBe(player);
   }
 
-  it('ヤシの木から実を採ると、手持ちにヤシの実が増える', () => {
+  it('ヤシの木に登ると、手持ちに青い実が増える', () => {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
 
-    expect(tree.tryExecuteAction('pick_coconut', player, session)).toBe(true);
+    expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
 
-    expect(handOf(player), '1回登ればまとめて採れる').toEqual(['coconut', 'coconut', 'coconut']);
+    expect(handOf(player), '1回登ればまとめて採れる').toEqual(['green_coconut', 'green_coconut']);
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
     expect(worldView.hour, 'durationの30分が経つ').toBe(0);
     expect(worldView.minute).toBe(30);
+  });
+
+  it('落ちた実を拾うと、熟した実が手持ちに増える（登らないので捻挫しない）', () => {
+    const tree = spawnInto('palm_tree', beach, 'fixtures');
+
+    expect(tree.tryExecuteAction('gather_fallen_coconut', player, session)).toBe(true);
+
+    expect(handOf(player), '一度に見つかるのは1個').toEqual(['coconut']);
+    expect(worldView.minute, 'durationの10分だけ経つ').toBe(10);
   });
 
   it('手持ちが埋まっていると、採った実は装備欄ではなく足元へ落ちる', () => {
@@ -87,15 +99,78 @@ describe('coconut.yamlのヤシの実の加工', () => {
     for (const name of ['stone', 'sharp_stone', 'branch', 'thick_branch', 'taro', 'water_spinach'])
       spawnInto(name, player, 'hand');
 
-    expect(tree.tryExecuteAction('pick_coconut', player, session)).toBe(true);
+    expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
 
     expect(new PlayerCharacter(player, codex).equipmentStacks, '装備欄は自動配置の対象外（7.7節）').toEqual(
       [],
     );
-    expect(itemsOn(beach)).toEqual(['coconut', 'coconut', 'coconut']);
+    expect(itemsOn(beach)).toEqual(['green_coconut', 'green_coconut']);
   });
 
-  it('ヤシの実に刃物を当てると、皮を剥いだ実と皮に分かれる', () => {
+  it('青い実に穴を開けると、その場で水を飲み、水の抜けた実が残る', () => {
+    const green = spawnInto('green_coconut', beach, 'items');
+    player.setProperty(hydrationId, 0);
+
+    combine(green, 'sharp_stone', 'bore');
+
+    expect(player.getNumber(hydrationId), '1個ぶんの水500mLがそのまま入る').toBe(500);
+    expect(itemsOn(beach), '実は元の実が居た場所へ置き換わる').toEqual(['drained_green_coconut']);
+  });
+
+  it('水分が満水でも穴は開けられる（飲みきれない分はこぼれる）', () => {
+    // 条件で塞ぐと満水の間だけ連鎖が止まるため、あえて条件を持たせていない（coconut.yaml）。
+    const green = spawnInto('green_coconut', beach, 'items');
+    const hydrationMax = codex.objects
+      .get(codex.objectNames.getId(SAMPLE_CHARACTER))
+      .getPropertyDef(hydrationId)!.range!.max;
+    player.setProperty(hydrationId, hydrationMax);
+
+    combine(green, 'sharp_stone', 'bore');
+
+    expect(player.getNumber(hydrationId), 'あふれる分は失われる').toBe(hydrationMax);
+    expect(itemsOn(beach)).toEqual(['drained_green_coconut']);
+  });
+
+  it('水を飲んだ青い実を割ると、ゼリー状の果肉が2つ採れる（器は残らない）', () => {
+    const drained = spawnInto('drained_green_coconut', beach, 'items');
+
+    combine(drained, 'sharp_stone', 'split');
+
+    expect(itemsOn(beach), '薄い殻は器にならないので、果肉だけが残る').toEqual([
+      'coconut_jelly',
+      'coconut_jelly',
+    ]);
+  });
+
+  it('ゼリー状の果肉を食べると、水分は入るが腹には残らない', () => {
+    const jelly = spawnInto('coconut_jelly', player, 'hand');
+    const satietyId = codex.propertyNames.getId('satiety');
+    for (const id of [satietyId, hydrationId]) player.setProperty(id, 0);
+
+    expect(jelly.tryExecuteAction('eat', player, session)).toBe(true);
+
+    expect(player.getNumber(hydrationId)).toBe(130);
+    expect(player.getNumber(satietyId), '熟した果肉（6）より少ない').toBe(2);
+    expect(jelly.parent, '食べた果肉は消える').toBeUndefined();
+  });
+
+  it('実1個ぶんの水分は、青い実が熟した実を上回る（登る理由になっている）', () => {
+    // 青い実 = 水500 + ゼリー2個×130、熟した実 = 果肉2個×150（coconut.yaml）。
+    const waterOf = (name: string, action: string) => {
+      const target = spawnInto(name, player, 'hand');
+      player.setProperty(hydrationId, 0);
+      expect(target.tryExecuteAction(action, player, session)).toBe(true);
+      return player.getNumber(hydrationId);
+    };
+
+    const green = 500 + 2 * waterOf('coconut_jelly', 'eat');
+    const mature = 2 * waterOf('coconut_meat', 'eat');
+
+    expect(green).toBe(760);
+    expect(mature).toBe(300);
+  });
+
+  it('熟したヤシの実に刃物を当てると、皮を剥いだ実と皮に分かれる', () => {
     const coconut = spawnInto('coconut', beach, 'items');
 
     combine(coconut, 'sharp_stone', 'husk');
@@ -138,19 +213,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(itemsOn(beach)).toEqual(['coconut_husk']);
   });
 
-  it('皮を剥いだ実に刃物を当てると、穴が開く', () => {
-    const husked = spawnInto('husked_coconut', beach, 'items');
-
-    combine(husked, 'sharp_stone', 'bore');
-
-    expect(itemsOn(beach)).toEqual(['holed_coconut']);
-  });
-
   it.each([
     ['stone', 'crack'],
     ['sharp_stone', 'pry_open'],
-  ])('穴を開けた実は%sで割れ、割れた実が2つできる', (toolName, combinationName) => {
-    const holed = spawnInto('holed_coconut', beach, 'items');
+  ])('皮を剥いだ実は%sで割れ、割れた実が2つできる', (toolName, combinationName) => {
+    const holed = spawnInto('husked_coconut', beach, 'items');
 
     combine(holed, toolName, combinationName);
 
@@ -163,10 +230,10 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   // issue #299 の再現手順。アイテムレーンで割ると、既存の割れた実のカードへ積み上がる。
   it('レーンに割れた実があるとき、新たに割った実は既存のカードへスタックする', () => {
-    const holed = spawnInto('holed_coconut', beach, 'items');
+    const husked = spawnInto('husked_coconut', beach, 'items');
     spawnInto('coconut_half', beach, 'items');
 
-    combine(holed, 'sharp_stone', 'pry_open');
+    combine(husked, 'sharp_stone', 'pry_open');
 
     expect(itemStacksOn(beach), '割れた実のカードは1枚のまま3個に増える').toEqual(['coconut_half x3']);
   });
@@ -194,21 +261,23 @@ describe('coconut.yamlのヤシの実の加工', () => {
   it('果肉を食べると満腹度・水分・栄養が増え、果肉は無くなる', () => {
     const meat = spawnInto('coconut_meat', player, 'hand');
     const satietyId = codex.propertyNames.getId('satiety');
-    const hydrationId = codex.propertyNames.getId('hydration');
     const nutritionId = codex.propertyNames.getId('vegetable_nutrition');
     for (const id of [satietyId, hydrationId, nutritionId]) player.setProperty(id, 0);
 
     expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
 
     expect(player.getNumber(satietyId)).toBe(6);
-    expect(player.getNumber(hydrationId)).toBe(480);
+    expect(player.getNumber(hydrationId)).toBe(150);
     expect(player.getNumber(nutritionId)).toBe(2500);
     expect(meat.parent, '食べた果肉は消える').toBeUndefined();
   });
 
-  it('生のヤシの実は食べられない（連鎖を通さないと栄養にならない）', () => {
-    const coconut = spawnInto('coconut', player, 'hand');
+  it.each(['coconut', 'green_coconut'])(
+    '生の実（%s）は食べられない（連鎖を通さないと栄養にならない）',
+    (name) => {
+      const raw = spawnInto(name, player, 'hand');
 
-    expect(coconut.tryExecuteAction('eat', player, session)).toBe(false);
-  });
+      expect(raw.tryExecuteAction('eat', player, session)).toBe(false);
+    },
+  );
 });

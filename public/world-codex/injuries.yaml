@@ -18,7 +18,7 @@ traits:
         put_in: {duration: 30}
 
 object_defs:
-  # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_coconut）。
+  # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_green_coconut）。
   sprained_ankle:
     tags: [injury]
     traits: [treatable]

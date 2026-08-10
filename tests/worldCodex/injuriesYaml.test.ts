@@ -14,7 +14,7 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * 負う契機（ヤシの木からの落下）・痛みへの影響・時間で治ることの3つを通す。
  */
 describe('injuries.yamlの怪我', () => {
-  /** pick_coconutで捻挫する側を引く重みの位置（成功90 : 失敗10）。 */
+  /** pick_green_coconutで捻挫する側を引く重みの位置（成功90 : 失敗10）。 */
   const FALLS = 0.95;
   /** 捻挫が治りきるまでのtick数（severity 96,000 ÷ 100）。 */
   const HEALING_TICKS = 960;
@@ -73,7 +73,7 @@ describe('injuries.yamlの怪我', () => {
   /** ヤシの実を採ろうとする。成否はopenへ渡したrollで決まっている。 */
   function pickCoconut(): void {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
-    expect(tree.tryExecuteAction('pick_coconut', player, session)).toBe(true);
+    expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
   }
 
   function tick(count: number): void {

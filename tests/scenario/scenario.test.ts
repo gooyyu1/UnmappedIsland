@@ -56,7 +56,7 @@ describe('テスト用シナリオ', () => {
   });
 
   it('sprained_ankleは、怪我を負い痛みを感じている状態から始める', () => {
-    // 負う契機は確率（coconut.yamlのpick_coconut）なので、見た目を確かめるにはここから始める。
+    // 負う契機は確率（coconut.yamlのpick_green_coconut）なので、見た目を確かめるにはここから始める。
     const scenario = load('sprained_ankle');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
 
