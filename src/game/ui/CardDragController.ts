@@ -105,8 +105,13 @@ interface Gesture {
   /** 枚数を数え続けている落とし先（変われば1枚に戻す）と、数える時計。 */
   carryKey: string | undefined;
   carryHold: HoldRepeat | undefined;
-  /** 分身の後ろへ重ねる札（分身より奥に置くため、先に作った器へ入れる）。 */
+  /** 分身の後ろへ重ねる札を入れる器（分身より奥に置くため、分身より先に作る）。 */
   pile: Phaser.GameObjects.Container | undefined;
+  /**
+   * 今そこに重なって見えている札（後から来たものが先頭）。返り始めた札は器の中にまだ居る（着くまで
+   * 飛んでいる）ので、どれが重なっている札なのかは器とは別に持つ。
+   */
+  readonly pileCards: Card[];
 }
 
 /**
@@ -201,6 +206,7 @@ export class CardDragController {
       carryKey: undefined,
       carryHold: undefined,
       pile: undefined,
+      pileCards: [],
     };
     this.gesture = gesture;
 
@@ -352,9 +358,13 @@ export class CardDragController {
 
   /**
    * 同じ落とし先の上に留まっている間、束の2枚目以降を1枚ずつ引き連れていく（レーンの端を押し続けて
-   * 送るのと同じ速さ、holdRepeat）。落とし先が変われば1枚に戻して数え直す。
+   * 送るのと同じ速さ、holdRepeat）。
    *
-   * 戻り値は数え直したかどうか（＝運ぶ枚数が変わったか）。
+   * 落とし先が変わっても、**そこがそのまま受け取れるなら運んでいる枚数は保つ**。運んでいる枚数は
+   * 「これだけ入る」という約束なので、守れなくなる枚数——新しい落とし先に入りきらないぶん——だけを
+   * 返せばよい。ハンドレーンの隣の空き枠へずらしただけで数え直しになると、枚数が多いほど待たされる。
+   *
+   * 戻り値は運ぶ枚数が変わったかどうか。
    */
   private trackCarry(gesture: Gesture, found: { drop: CardDrop; info: CardDropInfo } | undefined): boolean {
     const key =
@@ -365,12 +375,13 @@ export class CardDragController {
 
     gesture.carryKey = key;
     gesture.carryMax = found?.info.maxCount ?? 1;
-    const changed = gesture.carried !== 1;
-    gesture.carried = 1;
+    const carried = Math.min(gesture.carried, gesture.carryMax);
+    const changed = carried !== gesture.carried;
     gesture.carryHold?.stop();
-    // 数え直しでついてこなくなったぶんは、元の枠へ返る。
-    if (changed) this.returnCarried(gesture);
-    if (gesture.carryMax > 1) gesture.carryHold?.start(() => this.carryOne(gesture));
+    // あふれたぶんは元の枠へ返る。重ねて見せていた札も、その枚数に見合うところまで減らす。
+    if (changed) this.returnCarried(gesture, pileSize(gesture.carried) - pileSize(carried));
+    gesture.carried = carried;
+    if (carried < gesture.carryMax) gesture.carryHold?.start(() => this.carryOne(gesture));
     this.showCarried(gesture);
     return changed;
   }
@@ -411,9 +422,10 @@ export class CardDragController {
     // 器の並び順がそのまま重なりの順。後から来た札ほど奥へ入れる。
     pile.addAt(card, 0);
 
-    const depth = Math.min(gesture.carried - 1, CARRY_PILE_MAX);
-    const rest = -this.metrics().px(CARRY_PILE_OFFSET) * depth;
-    const merges = gesture.carried - 1 > CARRY_PILE_MAX;
+    const merges = pileSize(gesture.carried) === pileSize(gesture.carried - 1);
+    if (!merges) gesture.pileCards.unshift(card);
+
+    const rest = -this.metrics().px(CARRY_PILE_OFFSET) * pileSize(gesture.carried);
     this.scene.tweens.add({
       targets: card,
       x: rest,
@@ -427,15 +439,16 @@ export class CardDragController {
   }
 
   /**
-   * ついてきた札を元の枠へ飛ばして返す。着いた時点で捨てる——そこには元の束が居るので、束は戻った
-   * ままに見える。器は指について行くので、指を動かしながら返せば帰り道もそのぶん引かれる。
+   * 重ねて見せている札のうち、先頭（後から来たぶん）から数枚を元の枠へ飛ばして返す。着いた時点で
+   * 捨てる——そこには元の束が居るので、束は戻ったままに見える。器は指について行くので、指を動かし
+   * ながら返せば帰り道もそのぶん引かれる。
    */
-  private returnCarried(gesture: Gesture): void {
+  private returnCarried(gesture: Gesture, count: number): void {
     const { pile } = gesture;
     if (pile === undefined) return;
 
     const to = gesture.lane.slotRect(gesture.index);
-    for (const card of [...pile.list]) {
+    for (const card of gesture.pileCards.splice(0, count)) {
       this.scene.tweens.killTweensOf(card);
       this.scene.tweens.add({
         targets: card,
@@ -456,7 +469,7 @@ export class CardDragController {
     const { ghost, pile } = gesture;
     if (ghost === undefined) return;
 
-    this.returnCarried(gesture);
+    this.returnCarried(gesture, gesture.pileCards.length);
     gesture.ghost = undefined;
     gesture.pile = undefined;
 
@@ -509,6 +522,11 @@ export class CardDragController {
     gesture.tooltip?.destroy();
     this.gesture = undefined;
   }
+}
+
+/** その枚数を運んでいるとき、分身の後ろへ重ねて見せる札の数（CARRY_PILE_MAXで頭打ち）。 */
+function pileSize(carried: number): number {
+  return Math.min(carried - 1, CARRY_PILE_MAX);
 }
 
 /**
