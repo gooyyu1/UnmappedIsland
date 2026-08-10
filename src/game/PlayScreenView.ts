@@ -738,6 +738,25 @@ export function fromGameSession(
       };
     };
 
+  /**
+   * 束のカード1枚ぶん（表示内容と操作の一そろい）。
+   *
+   * **ワールドが渡してくる並びは、中身が入れ替わり続ける実体（ObjectStack.members）なので、
+   * ここで写し取る。** 操作の閉包（moveTo・movedIds等）まで写した並びを見ないと、経過の途中経過
+   * （RecordedView）を再生する頃には実体が空になっていて、端の表示の試し打ち（PlayScene.cardEdges）
+   * が先頭の無い束を踏む。
+   */
+  const cardOfStack = (live: readonly WorldObject[], place: CardPlace): ObjectCardStack => {
+    const stack = [...live];
+    return {
+      ...stackOf(stack, place),
+      moveTo: moveInto(stack, place),
+      acceptedCountAt: acceptedCountIn(stack, place),
+      putInto: putIntoTexts(stack, place),
+      reorder: reorderIn(stack[0]),
+    };
+  };
+
   /** itemを同じ場所の中で動かす操作（動かせない位置ならundefined）。今いるスロットの中だけで完結する。 */
   const reorderIn =
     (item: WorldObject) =>
@@ -788,32 +807,14 @@ export function fromGameSession(
     // このレーンに並ぶカードだけが、その土地の景色を地に敷く（backgroundArt参照）。オブジェクトの
     // 種類ではなくここに並ぶかどうかで決まる——背景が表すのは「今その土地に在るもの」だから。
     fixtures: location.fixtureStacks.map((stack) => ({
-      ...stackOf(stack, 'fixtures'),
+      ...cardOfStack(stack, 'fixtures'),
       background: location.instance.def.name,
       // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
-      moveTo: moveInto(stack, 'fixtures'),
-      acceptedCountAt: acceptedCountIn(stack, 'fixtures'),
-      putInto: putIntoTexts(stack, 'fixtures'),
-      reorder: reorderIn(stack[0]),
     })),
-    items: location.itemStacks.map((stack) => ({
-      ...stackOf(stack, 'items'),
-      moveTo: moveInto(stack, 'items'),
-      acceptedCountAt: acceptedCountIn(stack, 'items'),
-      putInto: putIntoTexts(stack, 'items'),
-      reorder: reorderIn(stack[0]),
-    })),
+    items: location.itemStacks.map((stack) => cardOfStack(stack, 'items')),
     hand: game.player.handStacks.map((stack) =>
-      stack.length === 0
-        ? undefined
-        : {
-            ...stackOf(stack, 'hand'),
-            moveTo: moveInto(stack, 'hand'),
-            acceptedCountAt: acceptedCountIn(stack, 'hand'),
-            putInto: putIntoTexts(stack, 'hand'),
-            reorder: reorderIn(stack[0]),
-          },
+      stack.length === 0 ? undefined : cardOfStack(stack, 'hand'),
     ),
     mapLands: discovered.lands,
     mapRoads: discovered.roads,
@@ -824,13 +825,7 @@ export function fromGameSession(
           : place === 'injuries'
             ? game.player.injuryStacks
             : stacksIn(slotOf(place));
-      return stacks.map((stack) => ({
-        ...stackOf(stack, place),
-        moveTo: moveInto(stack, place),
-        acceptedCountAt: acceptedCountIn(stack, place),
-        putInto: putIntoTexts(stack, place),
-        reorder: reorderIn(stack[0]),
-      }));
+      return stacks.map((stack) => cardOfStack(stack, place));
     },
     cardOfType,
     nameOf: (place) => {
