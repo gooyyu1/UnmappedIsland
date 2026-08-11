@@ -8,6 +8,7 @@ import {
   requireScalar,
   tryGetBool,
   tryGetMap,
+  tryGetNumber,
   tryGetScalar,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
@@ -81,7 +82,7 @@ export function parseActiveEffectBody(
   return new ActiveEffects(operations);
 }
 
-/** setの1エントリの値。リテラル（整数・真偽値・シンボル名）のみ（9.2節）。 */
+/** setの1エントリの値。リテラル（数値・真偽値・シンボル名）のみ（9.2節）。 */
 function parseSetEffect(
   loader: WorldCodexYamlLoader,
   context: string,
@@ -97,7 +98,8 @@ function parseSetEffect(
  * transfer（9.5節）。from/toの参照はフラットな2フィールド（from_object/from_prop,
  * to_object/to_prop）で表し、from_object/to_objectは省略時self。対象ルートはset/add/destroyと
  * 同じ制約（selfOnly・allowDragged）を共有する。linked_add（省略可）はaddと同じ構造で、
- * 実際の移動量に比例してスケールされる副効果。
+ * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
+ * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
  */
 function parseTransfer(
   loader: WorldCodexYamlLoader,
@@ -119,6 +121,9 @@ function parseTransfer(
   const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
 
   const amount = requireNumber(map, 'amount', context);
+  // 単位が同じなら省略できる（1対1）。0では移送先が増えないうえ割り戻しが割れないため弾く。
+  const toAmount = tryGetNumber(map, 'to_amount', context) ?? amount;
+  if (toAmount <= 0) throw new YamlLoadError(`${context}: 'to_amount' は正の数である必要があります。`);
   const allowOverflow = tryGetBool(map, 'allow_overflow', context, false);
 
   const linkedAddMap = tryGetMap(map, 'linked_add', context);
@@ -136,13 +141,23 @@ function parseTransfer(
         key !== 'to_object' &&
         key !== 'to_prop' &&
         key !== 'amount' &&
+        key !== 'to_amount' &&
         key !== 'allow_overflow' &&
         key !== 'linked_add',
     );
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
-  return new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd);
+  return new TransferEffect(
+    fromObject,
+    fromProp,
+    toObject,
+    toProp,
+    amount,
+    allowOverflow,
+    linkedAdd,
+    toAmount,
+  );
 }
 
 /** setを「対象付きの1操作(SetEffect)」の宣言順フラットリストへ読む。 */

@@ -98,8 +98,8 @@ export class AddEffect extends ActiveEffect {
   }
 
   /**
-   * transfer（9.5節）のlinked_add用: amount*numerator/denominator（整数除算）にスケールした量を
-   * 加減算する。スケール後が0なら何もしない。
+   * transfer（9.5節）のlinked_add用: amount*numerator/denominatorにスケールした量を加減算する。
+   * スケール後が0なら何もしない。
    */
   applyScaled(
     owner: WorldObject,
@@ -109,7 +109,7 @@ export class AddEffect extends ActiveEffect {
     numerator: number,
     denominator: number,
   ): void {
-    const scaled = Math.trunc((this.amount * numerator) / denominator);
+    const scaled = (this.amount * numerator) / denominator;
     if (scaled === 0) return;
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
     resolved?.addNumber(this.propertyGlobalId, scaled, session);
@@ -186,6 +186,9 @@ export class SpawnEffect extends ActiveEffect {
  * transfer（9.5節）の1命令。fromプロパティの実体値から、実際に出せる量とAmountの小さい方だけを
  * toプロパティへ移す（「在庫に応じて実際に動く量が変わる」移送）。YAMLはフラットな
  * `from_object`/`from_prop`/`to_object`/`to_prop`の4フィールドで表す。
+ *
+ * fromとtoの単位が違う場合（mLの水 → tick数のhydration）は、`amount`に対して受け取る側が
+ * どれだけ増えるかを`to_amount`が持つ。**換算率をエンジンは知らず、移送する側が宣言する**。
  */
 export class TransferEffect extends ActiveEffect {
   private readonly fromObject: ReferenceRoot;
@@ -193,6 +196,7 @@ export class TransferEffect extends ActiveEffect {
   private readonly toObject: ReferenceRoot;
   private readonly toPropertyGlobalId: number;
   private readonly amount: number;
+  private readonly toAmount: number;
   private readonly allowOverflow: boolean;
   private readonly linkedAdd: readonly AddEffect[];
 
@@ -204,6 +208,7 @@ export class TransferEffect extends ActiveEffect {
     amount: number,
     allowOverflow: boolean,
     linkedAdd: readonly AddEffect[] = [],
+    toAmount: number = amount,
   ) {
     super();
     this.fromObject = fromObject;
@@ -211,14 +216,17 @@ export class TransferEffect extends ActiveEffect {
     this.toObject = toObject;
     this.toPropertyGlobalId = toPropertyGlobalId;
     this.amount = amount;
+    this.toAmount = toAmount;
     this.allowOverflow = allowOverflow;
     this.linkedAdd = linkedAdd;
   }
 
   /**
-   * 移動量は「出せる量」（PropertyValue.availableToTransferOut）とAmountの小さい方。allow_overflowが
-   * falseならさらに「受け取れる量」（remainingTransferCapacity）でも制限する。linked_add（9.5節）は
-   * 実際に移動した量に比例（amount * actual_moved / Amount、整数除算）してスケール適用する。
+   * 出す量は「出せる量」（PropertyValue.availableToTransferOut）とAmountの小さい方。allow_overflowが
+   * falseならさらに「受け取れる量」（remainingTransferCapacity）でも制限するが、単位が違えば
+   * 受け取れる量は移送先の単位なので、**出す側の単位へ割り戻してから**比べる。
+   *
+   * linked_add（9.5節）は実際に出した量に比例（amount * actual_moved / Amount）してスケール適用する。
    * from/toが解決できない・対象がそのプロパティを持たない場合は何もしない。
    */
   apply(
@@ -239,14 +247,17 @@ export class TransferEffect extends ActiveEffect {
     const toValue: PropertyValue | undefined = to.tryGetProperty(this.toPropertyGlobalId);
     if (fromValue === undefined || toValue === undefined) return;
 
-    let moved = Math.min(this.amount, fromValue.availableToTransferOut());
-    if (!this.allowOverflow) moved = Math.min(moved, toValue.remainingTransferCapacity());
-    if (moved <= 0) return;
+    let taken = Math.min(this.amount, fromValue.availableToTransferOut());
+    if (!this.allowOverflow) {
+      const room = (toValue.remainingTransferCapacity() * this.amount) / this.toAmount;
+      taken = Math.min(taken, room);
+    }
+    if (taken <= 0) return;
 
-    from.addNumber(this.fromPropertyGlobalId, -moved, session);
-    to.addNumber(this.toPropertyGlobalId, moved, session);
+    from.addNumber(this.fromPropertyGlobalId, -taken, session);
+    to.addNumber(this.toPropertyGlobalId, (taken * this.toAmount) / this.amount, session);
 
     for (const linked of this.linkedAdd)
-      linked.applyScaled(owner, session, actor, dragged, moved, this.amount);
+      linked.applyScaled(owner, session, actor, dragged, taken, this.amount);
   }
 }
