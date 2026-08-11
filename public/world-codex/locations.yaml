@@ -81,7 +81,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 2000}
-      volume: {value: 2900}
+      volume: {value: 2300}
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
   # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。

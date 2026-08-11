@@ -8,7 +8,8 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 150}
-      volume: {value: 4000}
+      # 葉物の束も詰めて縮まないので、嵩そのままで見る。
+      volume: {value: 3000}
     actions:
       eat:
         add:
@@ -22,7 +23,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 2000}
-      volume: {value: 10000}
+      volume: {value: 1900}
     actions:
       eat:
         add:
@@ -36,7 +37,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 800}
-      volume: {value: 2400}
+      volume: {value: 800}
     actions:
       eat:
         add:

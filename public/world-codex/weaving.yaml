@@ -41,4 +41,5 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 400}
-      volume: {value: 5000}
+      # 平たい板なので重ねられる。
+      volume: {value: 1500}
