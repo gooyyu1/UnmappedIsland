@@ -41,6 +41,10 @@ export class PickEffect extends ActiveEffect {
     return this.candidates.some((candidate) => candidate.affects(propertyGlobalId, ownedByDeclarer));
   }
 
+  override spawns(objectGlobalId: number): boolean {
+    return this.candidates.some((candidate) => candidate.spawns(objectGlobalId));
+  }
+
   /** weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。 */
   private selectWeighted(
     self: WorldObject,
@@ -144,5 +148,9 @@ export class PickCandidateDef {
 
   affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
     return this.effect?.affects(propertyGlobalId, ownedByDeclarer) ?? false;
+  }
+
+  spawns(objectGlobalId: number): boolean {
+    return this.effect?.spawns(objectGlobalId) ?? false;
   }
 }

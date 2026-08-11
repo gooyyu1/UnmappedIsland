@@ -18,7 +18,8 @@ export function renderObjectListPage(view: CodexView): string {
   return (
     `<h1>オブジェクト一覧</h1>` +
     `<p class="muted" title="${escapeHtml(view.source.files.join(', '))}">` +
-    `${defs.length}件のobject_def（${view.source.files.length}ファイル）</p>` +
+    `${defs.length}件のobject_def（${view.source.files.length}ファイル）／` +
+    `<a href="#/tags">タグ一覧</a></p>` +
     `<p><input id="object-filter" type="search" placeholder="名前で絞り込む" autocomplete="off"></p>` +
     `<div class="object-grid">${cards}</div>` +
     `<p class="muted" id="object-filter-empty" hidden>該当するオブジェクトがありません。</p>`
@@ -60,7 +61,15 @@ export function renderObjectPage(view: CodexView, name: string): string {
     section('actions（メニューから選ぶ操作）', interactionsHtml(view, def, def.actions, false)) +
     section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations, true)) +
     section('recipes', recipesHtml(view, def)) +
-    variantsSection(view, name)
+    variantsSection(view, name) +
+    section(
+      'この型を生み出す操作',
+      reverseLookupHtml(view, (other, out) => other.describeCreationsOf(def.globalId, view.codex, out)),
+    ) +
+    section(
+      'この型を材料・道具に使うレシピ',
+      reverseLookupHtml(view, (other, out) => other.describeRecipesUsing(def.globalId, view.codex, out)),
+    )
   );
 }
 
@@ -123,8 +132,40 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
       '定義',
       view.describeHtml(objectName, (out) => propertyDef.describe(view.codex, out)),
     ) +
-    section('影響元', influencesHtml(view, def, propertyGlobalId)) +
+    section(
+      '影響元',
+      reverseLookupHtml(view, (other, out) =>
+        other.describeInfluencesOn(propertyGlobalId, other === def, view.codex, out),
+      ),
+    ) +
     section('同じ名前のpropを持つ他の型', others === '' ? EMPTY_HTML : `<ul class="plain">${others}</ul>`)
+  );
+}
+
+/**
+ * タグの一覧。タグは型のグループを指す唯一の手段（`WorldCodex.objectDefNamesWithTag`）なので、
+ * 「どんなまとまりがあるか」を見渡す入口になる。
+ */
+export function renderTagListPage(view: CodexView): string {
+  const rows = view
+    .tagNames()
+    .map((tag) => {
+      const owners = view.codex.objectDefNamesWithTag(tag);
+      return (
+        `<tr><td><a href="${view.tagHref(tag)}">${escapeHtml(tag)}</a></td>` +
+        `<td>${owners.length}</td>` +
+        `<td>${owners.map((name) => objectLinkHtml(view, name)).join('、')}</td></tr>`
+      );
+    })
+    .join('');
+
+  return (
+    `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
+    `<h1>タグ一覧</h1>` +
+    `<p class="muted">object_defのタグ（4.1節）。型のグループを指す唯一の手段で、` +
+    `スロットの受け入れ条件やcombinationsの相手もこれで書かれる。</p>` +
+    `<table><thead><tr><th>タグ</th><th>型の数</th><th>持っている型</th></tr></thead>` +
+    `<tbody>${rows}</tbody></table>`
   );
 }
 
@@ -132,7 +173,7 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
 export function renderTagPage(view: CodexView, tagName: string): string {
   const names = view.codex.objectDefNamesWithTag(tagName);
   return (
-    `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
+    `<p class="breadcrumb"><a href="#/tags">← タグ一覧</a></p>` +
     `<h1><span class="muted">tag: </span>${escapeHtml(tagName)}</h1>` +
     `<p class="muted">このタグを持つobject_def ${names.length}件</p>` +
     objectGridHtml(view, names)
@@ -198,6 +239,10 @@ export function renderNotFoundPage(): string {
 // ------------------------------------------------------------------
 // 部品
 // ------------------------------------------------------------------
+
+function objectLinkHtml(view: CodexView, name: string): string {
+  return `<a href="${view.objectHref(name)}">${escapeHtml(view.objectLabel(name))}</a>`;
+}
 
 function objectGridHtml(view: CodexView, names: readonly string[]): string {
   const cards = names
@@ -323,15 +368,19 @@ function recipesHtml(view: CodexView, def: ObjectDef): string {
 }
 
 /**
- * このプロパティを書き換えうる宣言を、宣言している型ごとにまとめる。型の側に「あなたはこの
- * プロパティに影響しますか」と尋ねるだけで、宣言の中身を覗かずに済む（ObjectDef.describeInfluencesOn）。
+ * 逆引き（「これに関わる宣言はどこにあるか」）の共通部分。すべての型に尋ね、1行でも書いた型だけを
+ * その型へのリンク付きで並べる。**尋ねるだけで宣言の中身は覗かない**——何をどう書き表すかは
+ * 型の側（ObjectDefのdescribe系）が知っている。
  */
-function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: number): string {
+function reverseLookupHtml(
+  view: CodexView,
+  describe: (def: ObjectDef, out: DescriptionWriter) => void,
+): string {
   const groups = view
     .objectDefs()
     .map((def) => {
       const writer = new DescriptionWriter();
-      def.describeInfluencesOn(propertyGlobalId, def === owner, view.codex, writer);
+      describe(def, writer);
       return { def, writer };
     })
     .filter(({ writer }) => !writer.isEmpty)
@@ -356,15 +405,15 @@ function card(heading: string, body: string): string {
   return `<div class="card"><h4>${heading}</h4>${body}</div>`;
 }
 
-/**
- * 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているとき（識別子表示モード、
- * または未翻訳）は繰り返さない。
- */
 /** 見出しの脇に小さく添える識別子。見出しがすでに識別子そのものなら何も足さない。 */
 function headingIdentifier(label: string, identifier: string): string {
   return label === identifier ? '' : ` <code>${escapeHtml(identifier)}</code>`;
 }
 
+/**
+ * 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているとき（識別子表示モード、
+ * または未翻訳）は繰り返さない。
+ */
 function identifierLine(view: CodexView, identifier: string, label: string, displayName: string): string {
   const code = label === identifier ? '' : `<code>${escapeHtml(identifier)}</code>`;
   const badge = untranslatedBadge(view, identifier, displayName);

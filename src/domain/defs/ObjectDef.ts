@@ -1,9 +1,11 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActionDef } from './ActionDef';
+import type { ActiveEffect } from './ActiveEffect';
 import type { CombinationDef } from './CombinationDef';
-import type { DefNames, DescriptionWriter } from './Description';
-import { propertyRef, slotRef, text } from './Description';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { actionRef, combinationRef, propertyRef, slotRef, text } from './Description';
+import type { InteractionDef } from './InteractionDef';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
@@ -182,22 +184,72 @@ export class ObjectDef {
   ): void {
     this.passives.describeAffecting(propertyGlobalId, ownedByThisDef, names, out);
 
+    const matches = (effect: ActiveEffect): boolean => effect.affects(propertyGlobalId, ownedByThisDef);
+
     for (const propertyDef of this.propertyDefs) {
       // 自分自身を値域へ丸めるon_overflow/on_shortfallは、そのプロパティの定義を見れば分かる
       // （「どこから影響されるか」を知りたい読み手には何も足さない）。
       if (ownedByThisDef && propertyDef.globalId === propertyGlobalId) continue;
-      if (!propertyDef.affectsViaRangeEvents(propertyGlobalId, ownedByThisDef)) continue;
-      out.write(propertyRef(propertyDef.name), text(':'));
-      out.indented(() =>
-        propertyDef.describeRangeEventsAffecting(propertyGlobalId, ownedByThisDef, names, out),
-      );
+      this.describeRangeEvents(propertyDef, matches, names, out);
     }
 
-    for (const interaction of [...this.actions, ...this.combinations]) {
-      if (!interaction.affects(propertyGlobalId, ownedByThisDef)) continue;
-      out.write(text(`${interaction.name}:`));
+    for (const [token, interaction] of this.matchingInteractions(matches)) {
+      out.write(token, text(':'));
       out.indented(() => interaction.describe(names, out));
     }
+  }
+
+  /**
+   * この型が、objectGlobalIdの型を生み出しうる箇所を書き出す（生まれる側からの逆引き）。
+   * 生むのはspawn（9.4節）だけなので、対象はactions・combinationsとrange系イベント。
+   *
+   * **書くのは場所の名前だけで、中身は書かない。** 探索のような大きなpickの木を丸ごと並べても、
+   * 「これはどこから手に入るのか」を知りたい読み手には多すぎる（中身は宣言元の型のページにある）。
+   */
+  describeCreationsOf(objectGlobalId: number, _names: DefNames, out: DescriptionWriter): void {
+    const matches = (effect: ActiveEffect): boolean => effect.spawns(objectGlobalId);
+
+    for (const propertyDef of this.propertyDefs)
+      for (const eventName of propertyDef.rangeEventNamesMatching(matches))
+        out.write(propertyRef(propertyDef.name), text(`の${eventName}`));
+
+    for (const [token] of this.matchingInteractions(matches)) out.write(token);
+  }
+
+  /**
+   * この型のレシピのうち、objectGlobalIdの型を素材か道具として要求するものを書き出す
+   * （材料側からの逆引き）。
+   */
+  describeRecipesUsing(objectGlobalId: number, names: DefNames, out: DescriptionWriter): void {
+    for (const recipe of this.recipes) {
+      if (!recipe.requires(objectGlobalId)) continue;
+      out.write(text(`${recipe.name}:`));
+      out.indented(() => recipe.describe(names, out));
+    }
+  }
+
+  /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */
+  private describeRangeEvents(
+    propertyDef: PropertyDef,
+    matches: (effect: ActiveEffect) => boolean,
+    names: DefNames,
+    out: DescriptionWriter,
+  ): void {
+    if (!propertyDef.hasRangeEventMatching(matches)) return;
+    out.write(propertyRef(propertyDef.name), text(':'));
+    out.indented(() => propertyDef.describeRangeEventsMatching(matches, names, out));
+  }
+
+  /** matchesが真になる操作を、その名前を指す断片（actions/combinationsの区別つき）とともに集める。 */
+  private matchingInteractions(
+    matches: (effect: ActiveEffect) => boolean,
+  ): readonly (readonly [DescriptionToken, InteractionDef])[] {
+    const found: (readonly [DescriptionToken, InteractionDef])[] = [];
+    for (const action of this.actions)
+      if (action.hasEffectMatching(matches)) found.push([actionRef(action.name), action]);
+    for (const combination of this.combinations)
+      if (combination.hasEffectMatching(matches)) found.push([combinationRef(combination.name), combination]);
+    return found;
   }
 
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */

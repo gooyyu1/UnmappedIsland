@@ -72,6 +72,14 @@ export class CodexView {
     return globalId === undefined ? undefined : this.codex.objects.get(globalId);
   }
 
+  /** 宣言されているobject_defのタグ（4.1節）を、宣言順（グローバルIDの順）に返す。 */
+  tagNames(): readonly string[] {
+    const names: string[] = [];
+    for (let globalId = 0; globalId < this.codex.tagNames.count; globalId++)
+      names.push(this.codex.tagNames.getName(globalId));
+    return names;
+  }
+
   /** propertyNameという名前のプロパティを持つobject_defの識別子（宣言順）。 */
   objectsWithProperty(propertyName: string): readonly string[] {
     const globalId = this.codex.propertyNames.tryGetId(propertyName);
@@ -253,6 +261,15 @@ export class CodexView {
         return this.refHtml('property-tag', token.name, this.propertyTagLabel(token.name), undefined);
       case 'stage':
         return this.refHtml('stage', token.name, token.name, undefined);
+      case 'action':
+      case 'combination': {
+        // 操作は宣言元の型のメンバー（Localization.md）。selfが指す型がその持ち主になる。
+        const label =
+          selfObjectName === undefined
+            ? token.name
+            : this.interactionLabel(selfObjectName, token.name, token.kind === 'combination');
+        return this.refHtml(token.kind, token.name, label, undefined);
+      }
       case 'reason':
         // 理由は識別子ではなく文言そのものが読みたい情報（Localization.md reason_texts節）。
         return this.refHtml('reason', token.name, this.locale.reason(token.name) ?? token.name, undefined);

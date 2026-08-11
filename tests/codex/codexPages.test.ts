@@ -7,6 +7,7 @@ import {
   renderObjectPage,
   renderPropertyPage,
   renderSlotPage,
+  renderTagListPage,
   renderTagPage,
 } from '../../src/codex/pages';
 import { LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
@@ -69,6 +70,34 @@ describe('WorldCodexビューアのページ', () => {
   it('タグ・スロットからその型を辿れる', () => {
     expect(renderTagPage(view, 'item')).toContain('#/object/coconut');
     expect(renderSlotPage(view, 'contents')).toContain('#/object/woven_basket');
+  });
+
+  it('タグ一覧を出し、一覧ページから辿れる', () => {
+    const html = renderTagListPage(view);
+
+    expect(html).toContain('#/tag/item');
+    expect(html).toContain('#/tag/location');
+    // 一覧には、そのタグを持つ型へのリンクも並ぶ。
+    expect(html).toContain('#/object/coconut');
+    expect(renderObjectListPage(view)).toContain('href="#/tags"');
+  });
+
+  it('生まれる側から、それを生み出す操作を辿れる', () => {
+    // 太い枝は土地の探索から手に入る（spawn元の逆引き）。
+    const html = renderObjectPage(view, 'thick_branch');
+
+    expect(html).toContain('この型を生み出す操作');
+    expect(html).toContain('#/object/sandy_beach');
+    expect(html).toContain('探索する');
+    // 場所の名前だけを出し、探索のpickの木（weightの並び）は持ち込まない。
+    expect(html).not.toContain('weight = ');
+  });
+
+  it('材料から、それを使うレシピの完成品を辿れる', () => {
+    const html = renderObjectPage(view, 'woven_leaf');
+
+    expect(html).toContain('この型を材料・道具に使うレシピ');
+    expect(html).toContain('#/object/woven_basket');
   });
 
   it('存在しない型・プロパティはエラーとして出す', () => {

@@ -21,6 +21,10 @@ export type DescriptionToken =
   | { readonly kind: 'property_tag'; readonly name: string }
   /** 段（6.4節）の名前。段は宣言したプロパティごとの名前で、独立した名前空間を持たない。 */
   | { readonly kind: 'stage'; readonly name: string }
+  /** メニュー型の操作（11節）。オブジェクトのメンバーなので、持ち主は文脈（宣言元）から決まる。 */
+  | { readonly kind: 'action'; readonly name: string }
+  /** ドラッグ型の操作（12節）。 */
+  | { readonly kind: 'combination'; readonly name: string }
   /** 要件が満たされない理由（14.6節）の識別子。 */
   | { readonly kind: 'reason'; readonly name: string };
 
@@ -54,6 +58,14 @@ export function propertyTagRef(name: string): DescriptionToken {
 
 export function stageRef(name: string): DescriptionToken {
   return { kind: 'stage', name };
+}
+
+export function actionRef(name: string): DescriptionToken {
+  return { kind: 'action', name };
+}
+
+export function combinationRef(name: string): DescriptionToken {
+  return { kind: 'combination', name };
 }
 
 export function reasonRef(name: string): DescriptionToken {

@@ -357,6 +357,12 @@ a.ref:hover {
   color: var(--chip-fg);
 }
 
+.ref-action,
+.ref-combination {
+  color: var(--fg);
+  font-weight: 600;
+}
+
 .ref-symbol,
 .ref-stage {
   color: var(--property-tag-fg);

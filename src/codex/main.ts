@@ -10,6 +10,7 @@ import {
   renderPropertyCandidatesPage,
   renderPropertyPage,
   renderSlotPage,
+  renderTagListPage,
   renderTagPage,
 } from './pages';
 
@@ -63,6 +64,7 @@ function renderRoute(view: CodexView, parts: readonly string[]): string {
     return renderPropertyPage(view, parts[1], parts[2]);
   if (parts[0] === 'prop-candidates' && parts[1] !== undefined)
     return renderPropertyCandidatesPage(view, parts[1]);
+  if (parts[0] === 'tags') return renderTagListPage(view);
   if (parts[0] === 'tag' && parts[1] !== undefined) return renderTagPage(view, parts[1]);
   if (parts[0] === 'slot' && parts[1] !== undefined) return renderSlotPage(view, parts[1]);
   return renderNotFoundPage();
