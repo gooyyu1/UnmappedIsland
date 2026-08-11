@@ -6,7 +6,7 @@ import type { NameRegistry } from './NameRegistry';
  *
  * - size: capacityの検証（Slot.canAccept）と、量的オブジェクト（7.6節）の量。
  * - weight: 物の重さ。子のweightをそのまま合算する（率はかけない）。
- * - density: 量的オブジェクトの単位量あたりの重さ（水=100）。
+ * - density: 量的オブジェクトの単位量あたりの重さ（g/mL。水=1）。
  * - load: 担いだ人が感じる負荷。直接の子のweightに、その子のload_reduction_rateを効かせた分。
  * - load_reduction_rate: 担ぎ方による体感の軽減率（%、既定0）。アイテムが持ちスロット位置で切り替える。
  */

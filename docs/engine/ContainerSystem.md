@@ -17,7 +17,7 @@
 オブジェクトの `weight` は、自分自身の重さに、中身の `weight` をそのまま足したものです。
 
 ```
-weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効値 ) + 量的オブジェクトなら size × density ÷ 100
+weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効値 ) + 量的オブジェクトなら size × density
 ```
 
 **ここに軽減率は一切かかりません。** そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものになります。
@@ -27,8 +27,9 @@ weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効�
 `weight` は物理量として素直に上へ伝わります。この一貫性のおかげで、将来キャラクターを担架やボートに乗せても、
 自重と荷物を合わせた重さがそのまま伝わります。
 
-液体は 1 個あたりではなく単位量あたりの重さを持つため、`size × density ÷ 100` として合算します（`density` は
-水を 100 とする単位量あたりの重さ、`LiquidContainerSystem.md` 8 節）。
+液体は 1 個あたりではなく単位量あたりの重さを持つため、`size × density` として合算します（`density` は
+単位量あたりの重さ = g/mL、`LiquidContainerSystem.md` 8 節）。**換算定数は要りません**——mL × g/mL = g が
+そのまま成立するよう、3 つの単位を噛み合わせて選んでいます。
 
 **`weight` の単位は g です（1 = 1g、1kg = 1000）。** 液体の量の単位（1 = 1mL）と対になっていて別々には
 選べません（`LiquidContainerSystem.md` 5 節）。
