@@ -44,8 +44,8 @@ describe('固形物のかさと入れ物の容量', () => {
   });
 
   it('かさは重さと釣り合っている（見かけの密度が石より重くならない）', () => {
-    // volumeは実占有体積ではなく外接直方体なので、見かけの密度は実際の比重より必ず小さく出る。
-    // 石（花崗岩 2.7g/mL）を超える値が出たら、どちらかの数値が桁違いになっている。
+    // 小さい物のvolumeは外接直方体なので、見かけの密度は実際の比重より小さく出る。大きい物は実占有
+    // 体積なので実際の比重に近い。石（花崗岩 2.7g/mL）を超える値が出たら、どちらかの数値が桁違い。
     const weightId = codex.propertyNames.getId('weight');
     const session = new WorldSession(codex);
 
@@ -70,21 +70,21 @@ describe('固形物のかさと入れ物の容量', () => {
     expect(inner.moveToSlot(outer, codex.slotNames.getId('contents'), codex.wellKnown)).toContain('容量');
   });
 
-  it('編み籠には熟したヤシの実が2個入り、3個は入らない', () => {
-    // 20Lの籠に7Lの実。隙間なく詰められないことは、かさを外接直方体で見積もることで表れる。
+  it('編み籠には熟したヤシの実が5個入り、6個は入らない', () => {
+    // 20Lの籠に3.8Lの実。大きい物は実占有体積で見るので、隙間ぶんの割り増しは乗らない。
     const session = new WorldSession(codex);
     const basket = session.spawn(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
     const put = (): string | undefined =>
       session.spawn(codex.objectNames.getId('coconut')).moveToSlot(basket, contentsId, codex.wellKnown);
 
-    expect(put(), '1個目').toBeUndefined();
-    expect(put(), '2個目').toBeUndefined();
-    expect(put(), '3個目は容量を超える').toContain('容量');
+    for (let i = 0; i < 5; i++) expect(put(), `${i + 1}個目`).toBeUndefined();
+
+    expect(put(), '6個目は容量を超える').toContain('容量');
   });
 
   it('編み籠には10種類まで入り、11種類目は入らない', () => {
-    // 入れ物の枠数は手持ちの6枠を上回る（docs/world/Containers.md 1節）。かさの合計は12.4Lで
+    // 入れ物の枠数は手持ちの6枠を上回る（docs/world/Containers.md 1節）。かさの合計は5.3Lで
     // 容量（20L）に届かないので、ここで効いているのは枠数だけ。
     const kinds = [
       'stone',

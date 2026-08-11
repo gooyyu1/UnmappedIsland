@@ -60,8 +60,9 @@ object_defs:
   green_coconut:
     tags: [item]
     props:
-      weight: {value: 1800}
-      volume: {value: 11000}
+      weight: {value: 2200}
+      # 湿った皮と500mLの水を抱えるので、乾いた熟した実より重く、少し大きい。
+      volume: {value: 4900}
     combinations:
       # 穴を開けて、その場で水を飲む。開けた実の水は数時間で発酵するため、汲み置きはできない
       # ——だから水は液体（liquid_containers.yaml）として持たず、飲用をこの操作へ畳んでいる。
@@ -84,9 +85,9 @@ object_defs:
   drained_green_coconut:
     tags: [item]
     props:
-      weight: {value: 1200}
+      weight: {value: 1600}
       # 水が抜けても外寸は変わらない。
-      volume: {value: 11000}
+      volume: {value: 4900}
     combinations:
       split:
         with: cutting_tool
@@ -117,7 +118,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 1400}
-      volume: {value: 7000}
+      volume: {value: 3800}
     combinations:
       husk:
         with: cutting_tool
@@ -132,8 +133,8 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 400}
-      # ほぐれた繊維なので、重さに対してかさばる。
-      volume: {value: 5000}
+      # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
+      volume: {value: 4000}
 
   # 皮を剥いだ熟したヤシの実。硬い殻は、石で叩いても刃物をこじ入れても割れるので、道具のタグごとに
   # 1つずつcombinationを持つ（withは1つのタグしか取らないため）。
@@ -143,7 +144,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 1000}
-      volume: {value: 1700}
+      volume: {value: 900}
     combinations:
       crack:
         with: stone

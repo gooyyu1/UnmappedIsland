@@ -101,7 +101,7 @@ axes:
 location_types:
   jungle:
     applicable_scopes: [island]
-    move_cost: 160                     # 移動コスト（100 = 等倍。3.5節のtravel_minutesに使う）
+    move_cost: 1.6                     # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
     axis_preferences:
       humidity:   {ideal: 90, tolerance: 20, weight: 120}
       elevation:  {ideal: 30, tolerance: 30, weight: 60}
@@ -147,7 +147,7 @@ D(type, site) = sqrt( Σ_i w_i * ((v_i - ideal_i) / tolerance_i)^2  /  Σ_i w_i 
 
 **同じ `LocationType` は `max_sites_per_type` 個までにします。** 同じ地形は環境も発見物も見た目も同じなので、
 並べても島は広くなりません。上限で急に打ち切るのではなく、既に置いた同じ型の個数に応じてマッチング距離へ
-割増（`crowding_penalty`、%）を掛け、上限へ届く前から他の型へ譲らせます。
+割増（`crowding_penalty`、率）を掛け、上限へ届く前から他の型へ譲らせます。
 
 - **割り当ての順番は最良距離の昇順**です。「その型らしさ」が濃い `Site` から決まるので、譲るのは環境の
   境目にいる `Site` になります（`Site` の並び順で決めると、譲る側が環境と無関係に決まってしまいます）。
@@ -209,7 +209,7 @@ generation_scopes:
 - 間引きは以下の2段階です。
   1. **最小全域木（MST、Kruskal法）**は必ず残します（到達性の保証）。
   2. MST 以外の Delaunay 辺は、距離の短い順に走査し、「現在のグラフでのその2点間最短距離（Dijkstra）が、
-     直結距離の `generation_scopes.island.extra_edge_detour_factor`（%）を超える」場合だけ復活させます
+     直結距離の `generation_scopes.island.extra_edge_detour_factor`（倍率）を超える」場合だけ復活させます
      （大回りを強いられている場合に、近道・分岐を作る）。復活させる辺も Delaunay 辺の部分集合であるため、
      グラフは常に交差なし（平面）のままです。この閾値は上げるほど道が減り、下限は MST だけが残る
      平均次数 ≒1.9 です。実測値は [`TerrainStats.md`](../diagnostics/TerrainStats.md)

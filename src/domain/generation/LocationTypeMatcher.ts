@@ -116,7 +116,7 @@ function pickNearest(
     const count = counts.get(type.name) ?? 0;
     if (respectMax && scope.maxSitesPerType > 0 && count >= scope.maxSitesPerType) continue;
 
-    const distance = normalizedDistance(type, site) * (1 + (scope.crowdingPenalty / 100) * count);
+    const distance = normalizedDistance(type, site) * (1 + scope.crowdingPenalty * count);
     if (distance < bestDistance) {
       // 同点は宣言順で先の型が勝つ
       bestDistance = distance;

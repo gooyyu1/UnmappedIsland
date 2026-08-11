@@ -4,7 +4,8 @@
 #
 # 数値の規約: 軸の値は 0〜100 の整数（百分率）。「プロパティ値は32bit整数のみ」の規約
 # （GameElementDefinition.md 6節）に合わせ、YAMLにfloatを書かせない。ノイズ等の計算の内部だけ
-# 実数を使い、サイトへ値を与える時点で整数へ量子化する。weight・move_cost も整数（100=等倍）。
+# 実数を使い、サイトへ値を与える時点で整数へ量子化する。move_costは倍率そのまま（1=等倍）で、
+# weightは相対値（合計で正規化されるので単位を持たない）。
 
 # ------------------------------------------------------------------
 # axes: 地点が持つ連続値パラメータ（TerrainGeneration.md 3.1節）。
@@ -66,8 +67,8 @@ axes:
 #     倍率も控えめ（素の重みの0.5〜2倍程度）にとどめる。
 #   - 1つの島で使うのはmax_sites_per_type個までだが、多く書いておくと島ごとに違う亜種が出る。
 #     足りない分は通し番号で埋まる（名前としては読めないので、余裕を持って用意する）。
-# - move_cost: 移動コスト（100=等倍）。道のtravel_minutes = 距離 × base_minutes_per_distance ×
-#   両端move_costの平均/100 で決まる（3.5節）。
+# - move_cost: 移動コストの倍率（1=等倍）。道のtravel_minutes = 距離 × base_minutes_per_distance ×
+#   両端move_costの平均 で決まる（3.5節）。
 # - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（3.3節）。
 #   priorityが最も高いfallbackが選ばれる。
 # - 海岸過多の防止: 海岸3種はhard_limits(coastal_distance.max=coast_band)で海岸帯にしか出ず、
@@ -86,7 +87,7 @@ location_types:
       - {id: rough_surf}
       - {id: quiet}
     applicable_scopes: [island]
-    move_cost: 100
+    move_cost: 1
     axis_preferences:
       ruggedness: {ideal: 15, tolerance: 30, weight: 100}
     hard_limits:
@@ -105,7 +106,7 @@ location_types:
       - {id: mossy}
       - {id: white_rock}
     applicable_scopes: [island]
-    move_cost: 130
+    move_cost: 1.3
     axis_preferences:
       ruggedness: {ideal: 60, tolerance: 30, weight: 100}
       elevation:  {ideal: 10, tolerance: 30, weight: 60}
@@ -120,7 +121,7 @@ location_types:
       - {id: sheared}
       - {id: windy}
     applicable_scopes: [island]
-    move_cost: 170
+    move_cost: 1.7
     axis_preferences:
       ruggedness: {ideal: 90, tolerance: 25, weight: 100}
       elevation:  {ideal: 45, tolerance: 25, weight: 80}
@@ -144,7 +145,7 @@ location_types:
       - {id: rough}
       - {id: insects}
     applicable_scopes: [island]
-    move_cost: 100
+    move_cost: 1
     axis_preferences:
       humidity:  {ideal: 45, tolerance: 20, weight: 100}
       elevation: {ideal: 30, tolerance: 25, weight: 80}
@@ -169,7 +170,7 @@ location_types:
       - {id: leaf_litter}
       - {id: thin_trees}
     applicable_scopes: [island]
-    move_cost: 120
+    move_cost: 1.2
     axis_preferences:
       humidity:  {ideal: 65, tolerance: 20, weight: 100}
       elevation: {ideal: 40, tolerance: 30, weight: 80}
@@ -189,7 +190,7 @@ location_types:
       - {id: damp}
       - {id: birds}
     applicable_scopes: [island]
-    move_cost: 160
+    move_cost: 1.6
     axis_preferences:
       humidity:  {ideal: 90, tolerance: 20, weight: 120}
       elevation: {ideal: 30, tolerance: 30, weight: 60}
@@ -208,7 +209,7 @@ location_types:
       - {id: mossy}
       - {id: white_rock}
     applicable_scopes: [island]
-    move_cost: 140
+    move_cost: 1.4
     axis_preferences:
       ruggedness: {ideal: 85, tolerance: 25, weight: 100}
       humidity:   {ideal: 35, tolerance: 30, weight: 50}
@@ -229,7 +230,7 @@ location_types:
     applicable_scopes: [island]
     is_fallback: true
     priority: 0
-    move_cost: 110
+    move_cost: 1.1
     axis_preferences:
       humidity: {ideal: 10, tolerance: 25, weight: 100}
     hard_limits:
@@ -247,7 +248,7 @@ location_types:
       - {id: grassy}
       - {id: stony}
     applicable_scopes: [island]
-    move_cost: 200
+    move_cost: 2
     axis_preferences:
       elevation: {ideal: 75, tolerance: 15, weight: 100}
     hard_limits:
@@ -261,7 +262,7 @@ location_types:
       - {id: windy}
       - {id: flat}
     applicable_scopes: [island]
-    move_cost: 250
+    move_cost: 2.5
     axis_preferences:
       elevation: {ideal: 100, tolerance: 15, weight: 100}
     hard_limits:
@@ -284,19 +285,19 @@ generation_scopes:
     hull_coast: true
     # サイト配置の内陸バイアス（0=一様、100=最大）。島の縁に張り付くサイトを減らし、
     # 海岸が多くなりすぎないようにする（普通に円盤へ一様散布すると面積比で外周が多数になるため）。
-    interior_bias: 60
+    interior_bias: 0.6
     # MST以外のDelaunay辺を復活させる迂回率の閾値（%）。現グラフでの2点間最短距離が
     # 直結距離のこの割合を超えるなら、その辺を近道として復活させる。上げるほど道は減る
     # （下限は全土地を繋ぐMSTの平均次数≒1.9）。200で平均次数2.5・行き止まり15%ほど。
     # 変えたら docs/diagnostics/TerrainStats.md を再生成する（npm run stats:terrain）。
-    extra_edge_detour_factor: 200
+    extra_edge_detour_factor: 2
     # 同じ土地を何個まで置いてよいか（0で無制限）。同じ地形は環境も発見物も見た目も同じなので、
     # 並べても島は広くならない。海岸帯のサイトは最大7個で海岸型は3種類、内陸は最大13個で内陸型は
     # 7種類あるので、3なら数の上で必ず収まる（実測はTerrainStats.md）。
     max_sites_per_type: 3
     # 同じ型が1個増えるごとにマッチング距離へ乗せる割増（%）。上限に当たる前から他の型へ譲らせ、
     # 「上限で打ち切られた」島ばかりにならないようにする。
-    crowding_penalty: 60
+    crowding_penalty: 0.6
     # 抽象座標の距離1あたりの基準移動時間（分）。島の直径=200単位を想定
     # （隣接する土地の典型的な距離は40前後 → 移動コスト等倍でおよそ45分）。
     base_minutes_per_distance: 1

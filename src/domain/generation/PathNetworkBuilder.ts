@@ -18,7 +18,7 @@ const MIN_TRAVEL_MINUTES = 15;
  * の2段で間引く。復活辺もDelaunay辺の部分集合であるため、グラフは常に交差なし（平面）のまま。
  *
  * 各辺のtravelMinutes（移動時間）は
- *     距離 × baseMinutesPerDistance × (両端のmoveCostの平均 / 100)
+ *     距離 × baseMinutesPerDistance × 両端のmoveCostの平均
  * で確定する。距離と移動難易度は保持せず、移動時間に代表させる。
  */
 export function build(
@@ -56,7 +56,7 @@ export function build(
   }
 
   // 2. 迂回率が閾値を超える辺を短い順に復活させる。
-  const detourFactor = scope.extraEdgeDetourFactor / 100;
+  const detourFactor = scope.extraEdgeDetourFactor;
   for (const edge of rest) {
     const viaGraph = shortestPathDistance(sites.length, chosen, edge.a, edge.b);
     if (viaGraph > edge.distance * detourFactor) chosen.push(edge);
@@ -75,7 +75,7 @@ function travelMinutes(
   scope: GenerationScopeDef,
 ): number {
   const moveCostAverage = (sites[a].type!.moveCost + sites[b].type!.moveCost) / 2;
-  let minutes = Math.round((distance * scope.baseMinutesPerDistance * moveCostAverage) / 100);
+  let minutes = Math.round(distance * scope.baseMinutesPerDistance * moveCostAverage);
   // tick（minutes_per_tick）単位の粗い時間経過と噛み合うよう、15分刻みへ丸める。
   minutes = Math.max(MIN_TRAVEL_MINUTES, Math.round(minutes / 15) * 15);
   return minutes;

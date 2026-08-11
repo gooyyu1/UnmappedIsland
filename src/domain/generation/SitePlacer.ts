@@ -52,8 +52,8 @@ export function place(scope: GenerationScopeDef, rng: Pcg32): Site[] {
   }
 
   // 2. 内陸: ベストキャンディデート法（既存サイトへの最小距離が最大の候補を採用）。
-  // interior_bias(0〜100)は半径分布の指数を0.5(一様)→1.0(中心寄り)へ動かす。
-  const radiusExponent = 0.5 + (scope.interiorBias / 100) * 0.5;
+  // interior_bias(0〜1)は半径分布の指数を0.5(一様)→1.0(中心寄り)へ動かす。
+  const radiusExponent = 0.5 + scope.interiorBias * 0.5;
   const interiorCount = total - coastCount;
   for (let i = 0; i < interiorCount; i++) {
     let bestX = 0;
