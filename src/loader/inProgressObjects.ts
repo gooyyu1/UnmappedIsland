@@ -115,7 +115,7 @@ function materialCells(
     for (const requirement of step.requirements)
       totalByObject.set(
         requirement.objectGlobalId,
-        (totalByObject.get(requirement.objectGlobalId) ?? 0) + requirement.quantity,
+        (totalByObject.get(requirement.objectGlobalId) ?? 0) + requirement.count,
       );
 
   return [...totalByObject].map(([objectGlobalId, max]) => ({

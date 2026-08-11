@@ -1334,11 +1334,11 @@ object_defs:
           - {object: actor, prop: skill_knapping, in_stage: basic}
         steps:
           - requires:
-              - {object: wood, quantity: 2, consume: true}
+              - {object: wood, count: 2, consume: true}
               - {object: stone_knife, consume: false}
             duration: 30
           - requires:
-              - {object: rope, quantity: 1, consume: true}
+              - {object: rope, count: 1, consume: true}
             duration: 10
 ```
 
@@ -1350,7 +1350,8 @@ object_defs:
 - 各工程には所要**時間（`duration`）**が定義されます。
 - 最後の工程まで完了すると、目的のアイテムが生成されます。
 
-`quantity` は省略すると 1 です。`consume` は省略できません（素材か道具かに既定値を置くと、書き忘れが
+`count`（要求する**個数**）は省略すると 1 です。かさ（`volume`、mL）とは別物なので、体積の語と
+混ざらない名前にしています。`consume` は省略できません（素材か道具かに既定値を置くと、書き忘れが
 どちらかとして黙って通るため）。
 
 ### 13.2 icon

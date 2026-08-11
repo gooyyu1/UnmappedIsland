@@ -7,14 +7,14 @@ export class RecipeRequirementDef {
   /** 要求する型のグローバルID。 */
   readonly objectGlobalId: number;
 
-  readonly quantity: number;
+  readonly count: number;
 
   /** trueなら素材（消費される）、falseなら道具（存在確認のみ）。 */
   readonly consume: boolean;
 
-  constructor(objectGlobalId: number, quantity: number, consume: boolean) {
+  constructor(objectGlobalId: number, count: number, consume: boolean) {
     this.objectGlobalId = objectGlobalId;
-    this.quantity = quantity;
+    this.count = count;
     this.consume = consume;
   }
 }

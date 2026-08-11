@@ -46,5 +46,5 @@ object_defs:
       woven:
         steps:
           - requires:
-              - {object: woven_leaf, quantity: 6, consume: true}
+              - {object: woven_leaf, count: 6, consume: true}
             duration: 120

@@ -98,7 +98,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
     const [requirement] = recipe.steps[0].requirements;
     expect(requirement.objectGlobalId).toBe(codex.objectNames.getId('woven_leaf'));
-    expect(requirement.quantity).toBe(6);
+    expect(requirement.count).toBe(6);
     expect(requirement.consume).toBe(true);
 
     // 繊維・編みスキルが未実装なので、今は誰でも作れる（containers.yamlのコメント参照）。

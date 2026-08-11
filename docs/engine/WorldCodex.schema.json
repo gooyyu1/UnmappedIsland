@@ -707,7 +707,7 @@
         "object": {
           "$ref": "#/$defs/identifier"
         },
-        "quantity": {
+        "count": {
           "type": "integer",
           "minimum": 1,
           "description": "省略時のデフォルト値は未決定（RecipeSystem.md 5節）。"

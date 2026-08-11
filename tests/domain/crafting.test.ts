@@ -45,7 +45,7 @@ object_defs:
       basic:
         steps:
           - requires:
-              - {object: crumbling_wood, quantity: 1, consume: true}
+              - {object: crumbling_wood, count: 1, consume: true}
             duration: 30
   axe:
     tags: [item]
@@ -53,11 +53,11 @@ object_defs:
       basic:
         steps:
           - requires:
-              - {object: wood, quantity: 2, consume: true}
+              - {object: wood, count: 2, consume: true}
               - {object: knife, consume: false}
             duration: 30
           - requires:
-              - {object: rope, quantity: 1, consume: true}
+              - {object: rope, count: 1, consume: true}
             duration: 10
 `;
 

@@ -17,7 +17,7 @@ import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/defs/R
 
 const RECIPE_KEYS = ['icon', 'steps', 'conditions'];
 const STEP_KEYS = ['requires', 'duration'];
-const REQUIREMENT_KEYS = ['object', 'quantity', 'consume'];
+const REQUIREMENT_KEYS = ['object', 'count', 'consume'];
 
 /** 宣言されたキーのうち、その文脈で認めていないものがあればエラーにする。 */
 function rejectUnknownKeys(map: YAMLMap, allowed: readonly string[], context: string): void {
@@ -37,16 +37,15 @@ function parseRequirement(
 
   const objectName = requireScalar(map, 'object', context);
 
-  const quantity = tryGetInt(map, 'quantity', context) ?? 1;
-  if (quantity < 1)
-    throw new YamlLoadError(`${context}: quantityは1以上である必要があります（値: ${quantity}）。`);
+  const count = tryGetInt(map, 'count', context) ?? 1;
+  if (count < 1) throw new YamlLoadError(`${context}: countは1以上である必要があります（値: ${count}）。`);
 
   if (tryGetScalar(map, 'consume', context) === undefined)
     throw new YamlLoadError(`${context}: consumeは省略できません（素材か道具かは既定値を置けないため）。`);
 
   return new RecipeRequirementDef(
     loader.objectNames.intern(objectName),
-    quantity,
+    count,
     tryGetBool(map, 'consume', context, true),
   );
 }

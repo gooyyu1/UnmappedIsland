@@ -26,7 +26,7 @@ object_defs:
         icon: axe_wip.png
         steps:
           - requires:
-              - {object: wood, quantity: 2, consume: true}
+              - {object: wood, count: 2, consume: true}
               - {object: stone_knife, consume: false}
             duration: 30
           - requires:
@@ -45,12 +45,12 @@ object_defs:
     const [first, second] = recipe.steps;
     expect(first.durationMinutes).toBe(30);
     expect(first.requirements[0].objectGlobalId).toBe(codex.objectNames.getId('wood'));
-    expect(first.requirements[0].quantity).toBe(2);
+    expect(first.requirements[0].count).toBe(2);
     expect(first.requirements[0].consume).toBe(true);
     expect(first.requirements[1].consume).toBe(false);
 
-    // quantityは省略すると1。
-    expect(second.requirements[0].quantity).toBe(1);
+    // countは省略すると1。
+    expect(second.requirements[0].count).toBe(1);
   });
 
   it('conditionsが無いレシピは最初から解放されている', () => {
@@ -86,7 +86,7 @@ object_defs:
         conditions:
           - {object: actor, prop: skill_cordage, in_stage: skilled}
         steps:
-          - requires: [{object: fiber, quantity: 4, consume: true}]
+          - requires: [{object: fiber, count: 4, consume: true}]
             duration: 60
 `);
 
