@@ -512,7 +512,7 @@ export class WorldObject {
    *
    * - weight: 物の重さ。子の weight をそのまま足す（率はかけない）。量的オブジェクト（7.6節）は
    *   自分の volume × density が自分の重さになる（mL × g/mL = g。換算定数は要らない）。
-   * - load: 担いだ人が感じる負荷。直接の子の weight に、その子の load_reduction_rate（%）を効かせた分だけ。
+   * - load: 担いだ人が感じる負荷。直接の子の weight に、その子の load_reduction_rate（率）を効かせた分だけ。
    *
    * 率をスロットではなく子（アイテム）が持つのは、同じ入れ物でも背負うか手に提げるかで体感が変わるため
    * （ContainerSystem.md 2節）。
@@ -531,8 +531,10 @@ export class WorldObject {
       let sum = 0;
       for (const slot of this.slots) {
         for (const child of slot.contents) {
-          const rate = Math.min(child.getEffectiveValue(wellKnown.loadReductionRateId), 100);
-          sum += Math.round((child.effectiveWeight() * (100 - rate)) / 100);
+          // 1で「まったく感じない」。1を超える宣言は0扱いにするが、負の値は通す——抱えにくい物を
+          // 「実際より重く感じる」向きへ書けるようにするため。
+          const rate = Math.min(child.getEffectiveValue(wellKnown.loadReductionRateId), 1);
+          sum += child.effectiveWeight() * (1 - rate);
         }
       }
       return sum;

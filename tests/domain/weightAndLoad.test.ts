@@ -35,7 +35,7 @@ object_defs:
         value: 0
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_reduction_rate: 90}}
+            modify: {self: {load_reduction_rate: 0.9}}
     slots:
       cargo:
         cell: {accept: {tag: item}}
@@ -49,7 +49,7 @@ object_defs:
         value: 0
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_reduction_rate: 95}}
+            modify: {self: {load_reduction_rate: 0.95}}
     slots:
       cargo:
         cell: {accept: {tag: item}}
@@ -63,7 +63,7 @@ object_defs:
         value: 0
         passives:
           - conditions: [{in_slot: equipment}]
-            modify: {self: {load_reduction_rate: 50}}
+            modify: {self: {load_reduction_rate: 0.5}}
     slots:
       contents:
         cell: {accept: {tag: item}}
@@ -117,7 +117,7 @@ object_defs:
 
     expect(sledge.getEffectiveValue(weightId)).toBe(1100);
     expect(character.getEffectiveValue(weightId), '自重70000 + そり1100').toBe(71100);
-    expect(character.getEffectiveValue(loadId), '1100 × (100-90) ÷ 100').toBe(110);
+    expect(character.getEffectiveValue(loadId), '1100 × (1 - 0.9)').toBeCloseTo(110, 6);
   });
 
   it('そりを台車に積むと、台車の重さはそりの重さをそのまま加えたものになる', () => {
@@ -130,7 +130,10 @@ object_defs:
     put(cart, character, 'hand');
 
     expect(cart.getEffectiveValue(weightId), '自重15000 + そり1100。そりの軽減率は効かない').toBe(16100);
-    expect(character.getEffectiveValue(loadId), '効くのは引いている台車の率だけ: 16100 × 5 ÷ 100').toBe(805);
+    expect(
+      character.getEffectiveValue(loadId),
+      '効くのは引いている台車の率だけ: 16100 × (1 - 0.95)',
+    ).toBeCloseTo(805, 6);
   });
 
   it('同じ入れ物でも、背負うか手に提げるかで体感が変わる', () => {
@@ -166,13 +169,13 @@ object_defs:
     const ground = make('character'); // 置き場所として使うだけ
 
     put(sledge, character, 'hand');
-    expect(character.getEffectiveValue(loadId)).toBe(100);
+    expect(character.getEffectiveValue(loadId)).toBeCloseTo(100, 6);
 
     put(sledge, ground, 'hand');
     expect(character.getEffectiveValue(weightId), '出したら自重だけに戻る').toBe(70000);
     expect(character.getEffectiveValue(loadId)).toBe(0);
 
     put(sledge, character, 'hand');
-    expect(character.getEffectiveValue(loadId), '入れ直しても同じ値').toBe(100);
+    expect(character.getEffectiveValue(loadId), '入れ直しても同じ値').toBeCloseTo(100, 6);
   });
 });

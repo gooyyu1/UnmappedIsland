@@ -31,7 +31,7 @@ location_types:
       elevation: {max: 60}
   peak:
     object_def: peak
-    move_cost: 250
+    move_cost: 2.5
     axis_preferences:
       elevation: {ideal: 100, tolerance: 15}
 
@@ -40,7 +40,7 @@ generation_scopes:
     site_count: {min: 10, max: 20}
     coast_band: 15
     hull_coast: true
-    interior_bias: 60
+    interior_bias: 0.6
     guarantees:
       - {location_type: peak, count: 1, axis: elevation, pick: max}
 `;
@@ -74,7 +74,7 @@ generation_scopes:
     expect(meadow.objectDefGlobalId).toBe(codex.objectNames.getId('meadow'));
     expect(meadow.appliesTo('island')).toBe(true);
     expect(meadow.appliesTo('structure_interior')).toBe(false);
-    expect(meadow.moveCost).toBe(100); // move_cost省略時は100(等倍)
+    expect(meadow.moveCost).toBe(1); // move_cost省略時は1(等倍)
     expect(meadow.preferences[0].tolerance).toBe(25);
     expect(meadow.hardLimits[0].allows(60)).toBe(true);
     expect(meadow.hardLimits[0].allows(61)).toBe(false);
@@ -90,7 +90,7 @@ generation_scopes:
     expect(island.siteCountMax).toBe(20);
     expect(island.coastBand).toBe(15);
     expect(island.hullCoast).toBe(true);
-    expect(island.interiorBias).toBe(60);
+    expect(island.interiorBias).toBe(0.6);
     expect(island.guarantees).toHaveLength(1);
     expect(island.guarantees[0].locationType).toBe('peak');
     expect(island.guarantees[0].pick).toBe('max');

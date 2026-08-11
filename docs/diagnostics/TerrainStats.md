@@ -28,7 +28,7 @@ npm run stats:terrain
 
 同じ地形は環境も発見物も見た目も同じなので、並べても島は広くならない。個数は
 `max_sites_per_type` で頭打ちにし、そこへ届く前から `crowding_penalty` で他の型へ譲らせている
-（TerrainGeneration.md 3.3節）。
+（TerrainGeneration.md 3.4節）。
 
 | 項目 | 平均 | 最小 | 5%ile | 95%ile | 最大 | 標準偏差 | n |
 | --- | --- | --- | --- | --- | --- | --- | --- |

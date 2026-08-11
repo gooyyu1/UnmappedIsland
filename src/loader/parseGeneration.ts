@@ -8,6 +8,7 @@ import {
   requireScalar,
   tryGetBool,
   tryGetInt,
+  tryGetNumber,
   tryGetMap,
   tryGetSeq,
 } from './yamlMapping';
@@ -174,8 +175,8 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
   if (scopesNode !== undefined)
     for (const scope of scopesNode.items as YamlNode[]) scopes.push(asScalarText(scope, context));
 
-  const moveCost = tryGetInt(node, 'move_cost', context) ?? 100;
-  if (moveCost < 1) throw new YamlLoadError(`${context}: move_costは1以上である必要があります。`);
+  const moveCost = tryGetNumber(node, 'move_cost', context) ?? 1;
+  if (moveCost <= 0) throw new YamlLoadError(`${context}: move_costは正の数である必要があります。`);
   const isFallback = tryGetBool(node, 'is_fallback', context, false);
   const priority = tryGetInt(node, 'priority', context) ?? 0;
 
@@ -297,16 +298,16 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
     siteCountMax,
     tryGetInt(node, 'coast_band', context) ?? 0,
     tryGetBool(node, 'hull_coast', context, false),
-    tryGetInt(node, 'interior_bias', context) ?? 0,
-    tryGetInt(node, 'extra_edge_detour_factor', context) ?? 150,
+    tryGetNumber(node, 'interior_bias', context) ?? 0,
+    tryGetNumber(node, 'extra_edge_detour_factor', context) ?? 1.5,
     tryGetInt(node, 'base_minutes_per_distance', context) ?? 1,
     tryGetInt(node, 'max_sites_per_type', context) ?? 0,
-    tryGetInt(node, 'crowding_penalty', context) ?? 0,
+    tryGetNumber(node, 'crowding_penalty', context) ?? 0,
     guarantees,
   );
 
-  if (scope.interiorBias < 0 || scope.interiorBias > 100)
-    throw new YamlLoadError(`${context}: interior_biasは0〜100である必要があります。`);
+  if (scope.interiorBias < 0 || scope.interiorBias > 1)
+    throw new YamlLoadError(`${context}: interior_biasは0〜1である必要があります。`);
   if (scope.maxSitesPerType < 0)
     throw new YamlLoadError(`${context}: max_sites_per_typeは0以上である必要があります（0で無制限）。`);
   if (scope.crowdingPenalty < 0)
