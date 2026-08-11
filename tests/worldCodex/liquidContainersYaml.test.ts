@@ -138,8 +138,8 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(canteen.tryExecuteAction('drink', actor, session), '容器への操作は中身へ委譲される').toBe(true);
 
-    expect(actor.getNumber(hydrationId)).toBe(250);
-    expect(amountIn(canteen)).toBe(750);
+    expect(actor.getNumber(hydrationId), '250mLは10 tick分（to_amount、9.5節）').toBe(10);
+    expect(amountIn(canteen), '減るのは液体の単位（mL）のまま').toBe(750);
   });
 
   it('水分が満水だと飲めず、理由not_thirstyを返す', () => {
@@ -163,14 +163,15 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .getPropertyDef(hydrationId)!.range!.max;
-    actor.setProperty(hydrationId, hydrationMax - 100);
+    actor.setProperty(hydrationId, hydrationMax - 4);
     const canteen = spawnContainer('canteen', 'water', 1000);
 
     expect(canteen.actionUnmetRequirement('drink', actor)).toBeUndefined();
     expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
 
     expect(actor.getNumber(hydrationId), 'あふれる分は飲まない').toBe(hydrationMax);
-    expect(amountIn(canteen), '空き容量(100)の分だけ減る').toBe(900);
+    // 空きは4 tick分。移送元の単位へ割り戻すと 4 × 250 / 10 = 100mL しか出ない（9.5節）。
+    expect(amountIn(canteen), '入る分だけ減る').toBe(900);
   });
 
   it('残りを飲み切ると、中身のインスタンスごと消えて空の容器へ戻る', () => {
@@ -181,7 +182,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
 
-    expect(actor.getNumber(hydrationId), '残っている分だけ飲む').toBe(100);
+    expect(actor.getNumber(hydrationId), '残っている分だけ飲む（100mL = 4 tick分）').toBe(4);
     expect(contentOf(canteen), 'tickを待たずに空へ戻る（0mLの水は存在しない）').toBeUndefined();
   });
 
@@ -194,8 +195,8 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
 
-    expect(actor.getNumber(hydrationId)).toBe(250);
-    expect(actor.getNumber(wakefulnessId)).toBe(200);
+    expect(actor.getNumber(hydrationId)).toBe(10);
+    expect(actor.getNumber(wakefulnessId)).toBe(2);
   });
 
   it('お茶のwakefulness効果は飲んだ量に比例する', () => {
@@ -207,8 +208,8 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
 
-    expect(actor.getNumber(hydrationId), '在庫の分だけ飲む').toBe(125);
-    expect(actor.getNumber(wakefulnessId), 'linked_addは実際に移った量に比例する').toBe(100);
+    expect(actor.getNumber(hydrationId), '在庫の分だけ飲む（125mL = 5 tick分）').toBe(5);
+    expect(actor.getNumber(wakefulnessId), 'linked_addは実際に移った量に比例する').toBe(1);
   });
 
   it('油にはdrinkアクションが無い', () => {

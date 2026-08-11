@@ -9,7 +9,7 @@ seed: 3
 
 player:
   props:
-    hydration: 400
-    satiety: 800
-    wakefulness: 3000
+    hydration: 16
+    satiety: 8
+    wakefulness: 30
     stamina: 70

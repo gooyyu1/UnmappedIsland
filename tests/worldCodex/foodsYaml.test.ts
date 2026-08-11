@@ -32,8 +32,9 @@ describe('foods.yamlの食料定義', () => {
   }
 
   it.each([
-    ['water_spinach', 'vegetable_nutrition', 8],
-    ['coconut_crab', 'meat_nutrition', 15],
+    // satietyは「1食で何tick分の腹持ちか」（6.0節）。
+    ['water_spinach', 'vegetable_nutrition', 4],
+    ['coconut_crab', 'meat_nutrition', 16],
     ['taro', 'grain_tuber_nutrition', 20],
   ])(
     '%sを食べるとsatietyと%sが加算され、食料自身は消滅する',
@@ -53,7 +54,7 @@ describe('foods.yamlの食料定義', () => {
       expect(food.tryExecuteAction('eat', character, session)).toBe(true);
 
       expect(character.getNumber(satietyId)).toBe(expectedSatietyGain);
-      expect(character.getNumber(nutritionId)).toBe(20000);
+      expect(character.getNumber(nutritionId)).toBe(200);
     },
   );
 
@@ -63,10 +64,10 @@ describe('foods.yamlの食料定義', () => {
     for (const name of ['vegetable_nutrition', 'meat_nutrition', 'grain_tuber_nutrition']) {
       const id = codex.propertyNames.getId(name);
       // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
-      expect(instance.getNumber(id), `${name}の初期値`).toBe(67200);
+      expect(instance.getNumber(id), `${name}の初期値`).toBe(672);
       const prop = propOf(character, name);
       expect(prop.range?.min).toBe(0);
-      expect(prop.range?.max).toBe(67200);
+      expect(prop.range?.max).toBe(672);
     }
   });
 

@@ -127,15 +127,19 @@ traits:
 実際の比重をそのまま書きます。容器の `capacity` は 1L = 1000、`ContainerSystem.md` の `weight` は
 1kg = 1000 です。
 
-`hydration`（`characters/`）も同じ mL のスケールに載せます。飲んだ量がそのまま体内の水分になり、
-残量を「あと何 L 分か」として読めるためで、`GameElementDefinition.md` 6.0 節の 100 分割の規約より
-こちらを優先しています。1日の必要量 2400mL を 96 tick で割った -25/tick で減り、3日分の `max` は 7200 です。
-2000mL ではなく 2400mL なのは、96 で割り切れる必要があるためです。
+**`hydration`（`characters/`）は mL には載せません。**「あと何 tick 保つか」を値がそのまま表す側
+（`GameElementDefinition.md` 6.0 節の時間を数えるクラス）に置き、`-1/tick` で減ります。飲んだ水が体重に
+反映されるわけでもないので、体内の水分を体積として持つ意味がありません。
 
-飲用は液体トレイト側の `actions`。`transfer` で自分の `size` から `actor.hydration` へ 1回 250（＝250mL）
-移します。`transfer` の在庫クランプにより、残量が 250 未満なら残っている分だけ飲みます。逆に
-`hydration` 側の空きが 250 未満なら入る分だけ飲み、あふれる分は容器に残ります（`allow_overflow` 既定の
-受け側クランプ）。
+**mL から tick 数への換算は、飲用の宣言が持ちます**（`transfer` の `amount`/`to_amount`、
+`GameElementDefinition.md` 9.5 節）。体は 1 tick に 25mL を失う（1日の必要量 2400mL ÷ 96 tick）ので、
+**250mL = 10 tick 分**です。3日分の `max` は 288 になります。**エンジンは換算率を知りません**——
+同じ 1 口でも水より寄与の小さい液体（酒）は、この比を小さくするだけで表せます。
+
+飲用は液体トレイト側の `actions`。`transfer` で自分の `size` から 1回 250（＝250mL）出し、
+`actor.hydration` を 10 増やします。`transfer` の在庫クランプにより、残量が 250mL 未満なら残っている分だけ
+飲みます（増える水分もその比で減ります）。逆に `hydration` 側の空きが 10 tick 分未満なら入る分だけ飲み、
+あふれる分は容器に残ります（`allow_overflow` 既定の受け側クランプ。空きは mL へ割り戻して比べられます）。
 
 - **満水のときは飲めません。** `hydration` が `full` 段（満水ちょうど、`Characters.md`）にある間は
   `conditions` が不成立になり、0mL の何も起きない飲用を実行させません（理由は `not_thirsty`）。

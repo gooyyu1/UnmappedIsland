@@ -408,8 +408,8 @@ object_defs:
     props:
       satiety:
         tags: [status, nutrition]
-        value: 9600
-        range: {min: 0, max: 9600}
+        value: 96
+        range: {min: 0, max: 96}
 ```
 
 - **`object_defs` のタグ（4.1 節）とは別の名前空間**です。枠の`accept`・`combinations.with`・
@@ -516,8 +516,8 @@ props:
 （内部設計は [`ContainerSystem.md`](./ContainerSystem.md)）。いずれも実効値として読むたびに導出されます。
 
 - **`weight`**: 物の重さ。自分の値に、**中身の `weight` をそのまま足します**（率はかけません）。量的
-  オブジェクト（`quantitative`、7.6 節）は `size × density ÷ 100` が自分の重さになります（`density` は
-  単位量あたりの重さ、水を 100 とする）。そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものです。
+  オブジェクト（`quantitative`、7.6 節）は `size × density` が自分の重さになります（`density` は
+  単位量あたりの重さ = g/mL、水は 1）。そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものです。
 - **`load`**: 担いだ人が感じる負荷。**直接の子**の `weight` に、その子の `load_reduction_rate`（%、
   既定 0 = 軽減なし、上限 100 でクランプ）を効かせた分の合計です。持つのはキャラクターだけで、他の
   オブジェクトは定義しません。
@@ -1394,7 +1394,7 @@ object_defs:
 
 ```yaml
 conditions:
-  - {object: actor, prop: satiety, lt: 1200}
+  - {object: actor, prop: satiety, lt: 12}
   - {object: actor, prop: load, in_stage: too_heavy}
 ```
 

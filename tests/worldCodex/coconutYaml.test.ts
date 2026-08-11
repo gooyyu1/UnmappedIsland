@@ -104,7 +104,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     combine(green, 'sharp_stone', 'bore');
 
-    expect(player.getNumber(hydrationId), '1個ぶんの水500mLがそのまま入る').toBe(500);
+    expect(player.getNumber(hydrationId), '1個ぶんの水500mL = 20 tick分').toBe(20);
     expect(itemsOn(beach), '実は元の実が居た場所へ置き換わる').toEqual(['drained_green_coconut']);
   });
 
@@ -140,13 +140,13 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     expect(jelly.tryExecuteAction('eat', player, session)).toBe(true);
 
-    expect(player.getNumber(hydrationId)).toBe(130);
+    expect(player.getNumber(hydrationId)).toBeCloseTo(5.2, 10);
     expect(player.getNumber(satietyId), '熟した果肉（6）より少ない').toBe(2);
     expect(jelly.parent, '食べた果肉は消える').toBeUndefined();
   });
 
   it('実1個ぶんの水分は、青い実が熟した実を上回る（登る理由になっている）', () => {
-    // 青い実 = 水500 + ゼリー2個×130、熟した実 = 果肉2個×150（coconut.yaml）。
+    // 青い実 = 水20 + ゼリー2個×5.2、熟した実 = 果肉2個×6（coconut.yaml。単位はtick分）。
     const waterOf = (name: string, action: string) => {
       const target = spawnInto(name, player, 'hand');
       player.setProperty(hydrationId, 0);
@@ -154,11 +154,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
       return player.getNumber(hydrationId);
     };
 
-    const green = 500 + 2 * waterOf('coconut_jelly', 'eat');
+    const green = 20 + 2 * waterOf('coconut_jelly', 'eat');
     const mature = 2 * waterOf('coconut_meat', 'eat');
 
-    expect(green).toBe(760);
-    expect(mature).toBe(300);
+    expect(green).toBeCloseTo(30.4, 10);
+    expect(mature).toBe(12);
   });
 
   it('熟したヤシの実に刃物を当てると、皮を剥いだ実と皮に分かれる', () => {
@@ -258,8 +258,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
 
     expect(player.getNumber(satietyId)).toBe(6);
-    expect(player.getNumber(hydrationId)).toBe(150);
-    expect(player.getNumber(nutritionId)).toBe(2500);
+    expect(player.getNumber(hydrationId)).toBe(6);
+    expect(player.getNumber(nutritionId)).toBe(25);
     expect(meat.parent, '食べた果肉は消える').toBeUndefined();
   });
 

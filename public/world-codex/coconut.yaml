@@ -73,8 +73,8 @@ object_defs:
         add:
           actor:
             satiety: 1
-            hydration: 500
-            vegetable_nutrition: 300
+            hydration: 20
+            vegetable_nutrition: 3
         destroy: self
         spawn: {object: drained_green_coconut}
 
@@ -103,8 +103,8 @@ object_defs:
         add:
           actor:
             satiety: 2
-            hydration: 130
-            vegetable_nutrition: 800
+            hydration: 5.2
+            vegetable_nutrition: 8
         destroy: self
 
   # 熟したヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
@@ -177,6 +177,6 @@ object_defs:
         add:
           actor:
             satiety: 6
-            hydration: 150
-            vegetable_nutrition: 2500
+            hydration: 6
+            vegetable_nutrition: 25
         destroy: self

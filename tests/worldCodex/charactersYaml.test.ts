@@ -127,14 +127,14 @@ describe('プレイヤーキャラクタの定義', () => {
     );
 
     it.each([
-      ['satiety', 100],
-      ['body_fat', 100],
-      ['wakefulness', 100],
-      ['vegetable_nutrition', 100],
-      ['meat_nutrition', 100],
-      ['grain_tuber_nutrition', 100],
-      // 水分だけは実単位のmLに載るため、1mLの意味が変わらないよう減り方に個体差を持たせない。
-      ['hydration', 25],
+      // 時間を数えるクラスは基準レートが1/tickで、maxが「何tick保つか」を直接表す（6.0節）。
+      ['satiety', 1],
+      ['body_fat', 1],
+      ['wakefulness', 1],
+      ['vegetable_nutrition', 1],
+      ['meat_nutrition', 1],
+      ['grain_tuber_nutrition', 1],
+      ['hydration', 1],
       // 体力は行動で減るもので、時間では減らない。
       ['stamina', 0],
       // 荷重は中身から導出されるので、自分では動かない。
@@ -172,7 +172,8 @@ describe('プレイヤーキャラクタの定義', () => {
       (propertyName) => {
         // 最大値だけ変えてstagesを直し忘れると、ステータスエリアに出始める位置がずれる。
         const prop = propOf(def(character), propertyName);
-        const threshold = Math.trunc(maxOf(character, propertyName) * 0.8);
+        // 端数は丸める（96の80%は76.8なので77）。段の閾値は人が読む数字なので小数にしない。
+        const threshold = Math.round(maxOf(character, propertyName) * 0.8);
 
         expect(prop.alertLevelOf(threshold), '80%ちょうどはまだ安全域').toBe('safe');
         expect(prop.alertLevelOf(threshold - 1)).not.toBe('safe');
