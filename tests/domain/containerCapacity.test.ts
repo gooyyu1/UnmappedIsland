@@ -30,7 +30,7 @@ object_defs:
   stone:
     tags: [item]
     props:
-      size: {value: 30}
+      volume: {value: 30}
   # かさを宣言していない物。上限のある枠へ入っても、詰まり具合は動かない。
   feather:
     tags: [item]

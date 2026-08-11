@@ -305,15 +305,15 @@ object_defs:
         value: 5
   other_with_size:
     props:
-      size:
+      volume:
         value: 1
 `;
       const codex = load(yaml);
-      const sizeId = codex.propertyNames.getId('size');
+      const volumeId = codex.propertyNames.getId('volume');
 
       const rockInstance = spawn(codex, 'rock');
 
-      expect(rockInstance.getEffectiveValue(sizeId)).toBe(0);
+      expect(rockInstance.getEffectiveValue(volumeId)).toBe(0);
     });
   });
 
@@ -724,7 +724,7 @@ object_defs:
       shelf: {}
   boulder:
     props:
-      size:
+      volume:
         value: 10
   geode:
     slots:
@@ -836,7 +836,7 @@ object_defs:
 object_defs:
   pebble2:
     props:
-      size:
+      volume:
         value: 10
   vein2:
     slots:

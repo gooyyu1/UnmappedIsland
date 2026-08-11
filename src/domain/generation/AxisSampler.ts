@@ -11,7 +11,7 @@ import { ISLAND_RADIUS } from './SitePlacer';
  */
 
 /** 海岸帯の判定（generation_scopesのcoast_band・hull_coast）が対象にする、
- * 生成側が規約として知っている軸名（WellKnownPropertiesの"size"/"weight"と同じ立ち位置）。
+ * 生成側が規約として知っている軸名（WellKnownPropertiesの"volume"/"weight"と同じ立ち位置）。
  * この名前の軸が定義されていなければ、海岸帯クランプは単に何もしない。 */
 export const COASTAL_DISTANCE_AXIS_NAME = 'coastal_distance';
 

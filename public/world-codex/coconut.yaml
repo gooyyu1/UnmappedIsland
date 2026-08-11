@@ -61,7 +61,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 1800}
-      size: {value: 11000}
+      volume: {value: 11000}
     combinations:
       # 穴を開けて、その場で水を飲む。開けた実の水は数時間で発酵するため、汲み置きはできない
       # ——だから水は液体（liquid_containers.yaml）として持たず、飲用をこの操作へ畳んでいる。
@@ -86,7 +86,7 @@ object_defs:
     props:
       weight: {value: 1200}
       # 水が抜けても外寸は変わらない。
-      size: {value: 11000}
+      volume: {value: 11000}
     combinations:
       split:
         with: cutting_tool
@@ -101,7 +101,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 150}
-      size: {value: 250}
+      volume: {value: 250}
     actions:
       eat:
         add:
@@ -117,7 +117,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 1400}
-      size: {value: 7000}
+      volume: {value: 7000}
     combinations:
       husk:
         with: cutting_tool
@@ -133,7 +133,7 @@ object_defs:
     props:
       weight: {value: 400}
       # ほぐれた繊維なので、重さに対してかさばる。
-      size: {value: 5000}
+      volume: {value: 5000}
 
   # 皮を剥いだ熟したヤシの実。硬い殻は、石で叩いても刃物をこじ入れても割れるので、道具のタグごとに
   # 1つずつcombinationを持つ（withは1つのタグしか取らないため）。
@@ -143,7 +143,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 1000}
-      size: {value: 1700}
+      volume: {value: 1700}
     combinations:
       crack:
         with: stone
@@ -165,7 +165,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 450}
-      size: {value: 900}
+      volume: {value: 900}
     combinations:
       scrape:
         with: cutting_tool
@@ -181,7 +181,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 300}
-      size: {value: 400}
+      volume: {value: 400}
     actions:
       eat:
         add:

@@ -969,7 +969,7 @@
         },
         "quantitative": {
           "type": "boolean",
-          "description": "個数ではなく量で存在する型か（7.6節）。真ならsizeが量を表し、インスタンスの存在とsizeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
+          "description": "個数ではなく量で存在する型か（7.6節）。真ならvolumeが量を表し、インスタンスの存在とvolumeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
         },
         "stackable": {
           "type": "boolean",
@@ -1039,7 +1039,7 @@
         },
         "quantitative": {
           "type": "boolean",
-          "description": "個数ではなく量で存在する型か（7.6節）。真ならsizeが量を表し、インスタンスの存在とsizeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
+          "description": "個数ではなく量で存在する型か（7.6節）。真ならvolumeが量を表し、インスタンスの存在とvolumeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
         },
         "stackable": {
           "type": "boolean",

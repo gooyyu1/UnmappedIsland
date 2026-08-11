@@ -105,27 +105,27 @@ export class WorldObject {
   addNumber(globalPropertyId: number, delta: number, session?: WorldSession): void {
     const value = this.tryGetProperty(globalPropertyId);
     value?.add(delta, session);
-    this.settleChangedQuantity(globalPropertyId, session);
+    this.settleChangedVolume(globalPropertyId, session);
   }
 
   /** 数値プロパティへの不可逆な絶対値代入（9.2節の`set`）。対象プロパティを持たない場合は何もしない（addNumberと同じ規約）。 */
   setNumber(globalPropertyId: number, value: number, session?: WorldSession): void {
     const property = this.tryGetProperty(globalPropertyId);
     property?.setNumber(value, session);
-    this.settleChangedQuantity(globalPropertyId, session);
+    this.settleChangedVolume(globalPropertyId, session);
   }
 
   /**
-   * sizeを書き換えた直後に、量的オブジェクトの不変条件（settleQuantity）を戻す。飲み干した水が次のtickまで
+   * volumeを書き換えた直後に、量的オブジェクトの不変条件（settleVolume）を戻す。飲み干した水が次のtickまで
    * 0mLのまま残っていると、その間だけ「空なのに中身がいる容器」が見えてしまう。量を動かした側が後始末を
    * 覚えておかなくて済むよう、動かされた側がその場で畳む。
    *
    * sessionを渡さない呼び出しは、その場では何も判定しない規約（addNumber参照）なのでtickに任せる。
    */
-  private settleChangedQuantity(globalPropertyId: number, session: WorldSession | undefined): void {
+  private settleChangedVolume(globalPropertyId: number, session: WorldSession | undefined): void {
     if (session === undefined) return;
-    if (!this.def.isQuantitative || globalPropertyId !== this.wellKnown.sizeId) return;
-    this.settleQuantity(session);
+    if (!this.def.isQuantitative || globalPropertyId !== this.wellKnown.volumeId) return;
+    this.settleVolume(session);
   }
 
   /** 指定したプロパティが、今まさに指定した名前のstageに該当しているか（WhenOwnStageゲート専用、6.4節・8節）。 */
@@ -140,7 +140,7 @@ export class WorldObject {
   }
 
   /**
-   * 自分が入っているスロットを、自分の量（7.3節のsize）がどれだけ満たしているか（0〜1）。
+   * 自分が入っているスロットを、自分のかさ（7.3節のvolume）がどれだけ満たしているか（0〜1）。
    * どこにも入っていない、あるいはスロットが上限（capacity）を持たず割合を定義できない場合はundefined。
    *
    * 上限は入れ物、量は中身が持つ（LiquidContainerSystem.md 2節）ので、割合はこの2つが出会う
@@ -148,7 +148,7 @@ export class WorldObject {
    */
   fillRatioInParentSlot(): number | undefined {
     if (this._parent === undefined) return undefined;
-    return this._parent.getSlotByLocalId(this._parentSlotLocalId).fillRatio(this.wellKnown.sizeId);
+    return this._parent.getSlotByLocalId(this._parentSlotLocalId).fillRatio(this.wellKnown.volumeId);
   }
 
   /**
@@ -161,7 +161,7 @@ export class WorldObject {
   mainSlotFillRatio(): number | undefined {
     const slotGlobalId = this.def.mainItemSlotGlobalId;
     if (slotGlobalId === undefined) return undefined;
-    return this.tryGetSlot(slotGlobalId)?.fillRatio(this.wellKnown.sizeId);
+    return this.tryGetSlot(slotGlobalId)?.fillRatio(this.wellKnown.volumeId);
   }
 
   /**
@@ -511,7 +511,7 @@ export class WorldObject {
    * weight と load だけが、中身から寄与を受ける。
    *
    * - weight: 物の重さ。子の weight をそのまま足す（率はかけない）。量的オブジェクト（7.6節）は
-   *   自分の size × density が自分の重さになる（mL × g/mL = g。換算定数は要らない）。
+   *   自分の volume × density が自分の重さになる（mL × g/mL = g。換算定数は要らない）。
    * - load: 担いだ人が感じる負荷。直接の子の weight に、その子の load_reduction_rate（%）を効かせた分だけ。
    *
    * 率をスロットではなく子（アイテム）が持つのは、同じ入れ物でも背負うか手に提げるかで体感が変わるため
@@ -521,7 +521,7 @@ export class WorldObject {
     const wellKnown = this.wellKnown;
     if (propertyGlobalId === wellKnown.weightId) {
       let sum = this.def.isQuantitative
-        ? this.getNumber(wellKnown.sizeId) * this.getNumber(wellKnown.densityId, 1)
+        ? this.getNumber(wellKnown.volumeId) * this.getNumber(wellKnown.densityId, 1)
         : 0;
       for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
       return sum;
@@ -543,7 +543,7 @@ export class WorldObject {
 
   /**
    * 中身と、量的オブジェクトなら自分の量を含めた重さ。weightプロパティを宣言していないオブジェクトでも、
-   * 中身の重さは上へ伝わる（液体は size × density が重さなので、weightを宣言する必要が無い）。
+   * 中身の重さは上へ伝わる（液体は volume × density が重さなので、weightを宣言する必要が無い）。
    */
   effectiveWeight(): number {
     const own = this.tryGetProperty(this.wellKnown.weightId);
@@ -615,7 +615,7 @@ export class WorldObject {
   ): boolean {
     for (const slotDef of target.def.enumerateAutoPlacementSlotDefs()) {
       if (this.def.isQuantitative && !force && session !== undefined) {
-        if (this.pourQuantityInto(target, slotDef.globalId, wellKnown, session)) return true;
+        if (this.pourVolumeInto(target, slotDef.globalId, wellKnown, session)) return true;
         continue;
       }
       if (this.moveToSlot(target, slotDef.globalId, wellKnown, force) === undefined) return true;
@@ -631,7 +631,7 @@ export class WorldObject {
    *
    * 戻り値: 1単位でも移せたか。
    */
-  private pourQuantityInto(
+  private pourVolumeInto(
     target: WorldObject,
     slotGlobalId: number,
     wellKnown: WellKnownProperties,
@@ -643,26 +643,26 @@ export class WorldObject {
     if (localSlot === LocalIndexMap.missing) return false;
     const slot = target.getSlotByLocalId(localSlot);
 
-    const available = this.getNumber(wellKnown.sizeId);
+    const available = this.getNumber(wellKnown.volumeId);
     if (available <= 0) return false;
 
-    const merged = slot.findQuantityMergeTarget(this);
+    const merged = slot.findVolumeMergeTarget(this);
     // 合流先が無いときだけ、新しいインスタンスを置ける枠があるかを問う（既にいるなら枠は増えない）。
     if (merged === undefined && !slot.acceptsByRule(this)) return false;
 
-    const amount = Math.min(available, slot.remainingCapacity(wellKnown.sizeId));
+    const amount = Math.min(available, slot.remainingCapacity(wellKnown.volumeId));
     if (amount <= 0) return false;
 
     if (merged !== undefined) {
-      merged.setNumber(wellKnown.sizeId, merged.getNumber(wellKnown.sizeId) + amount, session);
+      merged.setNumber(wellKnown.volumeId, merged.getNumber(wellKnown.volumeId) + amount, session);
     } else {
       const born = session.spawn(this.def.globalId);
-      born.setNumber(wellKnown.sizeId, amount, session);
+      born.setNumber(wellKnown.volumeId, amount, session);
       if (born.moveToSlot(target, slotGlobalId, wellKnown) !== undefined) return false;
     }
 
-    // 注ぎ切って量が尽きた移し元は、setNumberの中で自分を畳む（settleChangedQuantity）。
-    this.setNumber(wellKnown.sizeId, available - amount, session);
+    // 注ぎ切って量が尽きた移し元は、setNumberの中で自分を畳む（settleChangedVolume）。
+    this.setNumber(wellKnown.volumeId, available - amount, session);
 
     return true;
   }
@@ -758,28 +758,28 @@ export class WorldObject {
       for (const child of [...slot.contents]) child.tick(session);
     }
 
-    if (this.def.isQuantitative) this.settleQuantity(session);
+    if (this.def.isQuantitative) this.settleVolume(session);
   }
 
   /**
    * 量的オブジェクト（7.6節）の量を、accumulateが動かしたあとの不変条件へ戻す。どちらもスロットの
    * 上限・量の下限という、YAMLの著者ではなくエンジンが持つ約束事なので、各液体に宣言を書かせない。
    *
-   * - 「sizeが正であること」と「インスタンスが存在すること」が同値: 量が尽きたら消える（蒸発）。
+   * - 「volumeが正であること」と「インスタンスが存在すること」が同値: 量が尽きたら消える（蒸発）。
    * - 中身の量の合計はcapacityを超えない（7.3節）: あふれた分は失われる（降雨）。moveは移し元に
    *   残す（9.6節）が、こちらは移し元が無いため捨てるほかない。
    */
-  private settleQuantity(session: WorldSession): void {
-    const sizeId = session.codex.wellKnown.sizeId;
-    const size = this.getNumber(sizeId);
-    if (size <= 0) {
+  private settleVolume(session: WorldSession): void {
+    const volumeId = session.codex.wellKnown.volumeId;
+    const volume = this.getNumber(volumeId);
+    if (volume <= 0) {
       this.destroy(session.codex.wellKnown);
       return;
     }
 
     if (this._parent === undefined) return;
-    const overflow = this._parent.getSlotByLocalId(this._parentSlotLocalId).overflowingQuantity(sizeId);
-    if (overflow > 0) this.setNumber(sizeId, Math.max(0, size - overflow), session);
+    const overflow = this._parent.getSlotByLocalId(this._parentSlotLocalId).overflowingVolume(volumeId);
+    if (overflow > 0) this.setNumber(volumeId, Math.max(0, volume - overflow), session);
   }
 
   /**

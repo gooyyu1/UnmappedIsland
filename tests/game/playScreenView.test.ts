@@ -380,7 +380,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     // ヤシの器の容量は250mL（liquid_containers.yaml）なので、100mLで4割。
     const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
-    water.setNumber(codex.wellKnown.sizeId, 100, game.session);
+    water.setNumber(codex.wellKnown.volumeId, 100, game.session);
     expect(water.moveToSlot(bowl, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).hand[0]?.fill, '色は中身の液体が宣言したもの').toEqual({
@@ -409,7 +409,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('上限を持つ入れ物のカードだけが、容量の詰まり具合を持つ', () => {
-    // 割合が上限（capacity）とかさ（size）から出ていることは、tests/domain/containerCapacity.test.ts
+    // 割合が上限（capacity）とかさ（volume）から出ていることは、tests/domain/containerCapacity.test.ts
     // が受け持つ。ここで見るのは「どのカードがそれを出すか」だけ。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handSlotId = codex.slotNames.getId('hand');
@@ -769,7 +769,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
     const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
-    water.setNumber(codex.propertyNames.getId('size'), 1000, game.session);
+    water.setNumber(codex.propertyNames.getId('volume'), 1000, game.session);
     expect(water.moveToSlot(canteen, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
     // 液体容器にはまだitemタグが無く手持ちのaccepts制約に掛かるため、強制的に入れて手持ちのカードにする。
     expect(
@@ -808,7 +808,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(fromGameSession(game, codex, texts).hand[0]?.name, '空なら入れ物の名前だけ').toBe('水筒');
 
     const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
-    water.setNumber(codex.propertyNames.getId('size'), 1000, game.session);
+    water.setNumber(codex.propertyNames.getId('volume'), 1000, game.session);
     expect(water.moveToSlot(canteen, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
 
     expect(fromGameSession(game, codex, texts).hand[0]?.name).toBe('水入りの水筒');

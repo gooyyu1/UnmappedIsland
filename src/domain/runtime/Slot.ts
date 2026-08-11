@@ -57,9 +57,9 @@ export class Slot {
     }
 
     if (this.def.capacity !== undefined) {
-      const currentSize = this.sumSize(wellKnown.sizeId);
-      const addedSize = candidate.getNumber(wellKnown.sizeId);
-      if (currentSize + addedSize > this.def.capacity) {
+      const currentVolume = this.sumVolume(wellKnown.volumeId);
+      const addedVolume = candidate.getNumber(wellKnown.volumeId);
+      if (currentVolume + addedVolume > this.def.capacity) {
         return `'${ownerName}.${this.def.name}' の容量（${this.def.capacity}）を超えます。`;
       }
     }
@@ -78,18 +78,18 @@ export class Slot {
    * まとめて入れる操作が「何個まで入るか」を、実際に動かす前に問うための入口。
    *
    * candidatesは同じ束の仲間（同じ型・同じ代表チェーン）であることを前提にする。置ける枠の数は
-   * 型だけで決まるので先頭の1つで代表して数え、かさ（capacity）だけを1つずつ積み上げる。
+   * 型だけで決まるので先頭の1つで代表して数え、かさ（volume）だけを1つずつ積み上げる。
    */
   acceptedCount(candidates: readonly WorldObject[], wellKnown: WellKnownProperties): number {
     if (candidates.length === 0 || !this.def.acceptsAnywhere(candidates[0].def)) return 0;
 
     const vacancy = this.vacancyFor(candidates[0]);
-    let size = this.sumSize(wellKnown.sizeId);
+    let volume = this.sumVolume(wellKnown.volumeId);
     let count = 0;
     for (const candidate of candidates) {
       if (count >= vacancy) break;
-      size += candidate.getNumber(wellKnown.sizeId);
-      if (this.def.capacity !== undefined && size > this.def.capacity) break;
+      volume += candidate.getNumber(wellKnown.volumeId);
+      if (this.def.capacity !== undefined && volume > this.def.capacity) break;
       count += 1;
     }
     return count;
@@ -154,45 +154,45 @@ export class Slot {
     return index < 0 ? undefined : index;
   }
 
-  private sumSize(sizePropertyGlobalId: number): number {
-    return this.contents.reduce((sum, o) => sum + o.getNumber(sizePropertyGlobalId), 0);
+  private sumVolume(volumePropertyGlobalId: number): number {
+    return this.contents.reduce((sum, o) => sum + o.getNumber(volumePropertyGlobalId), 0);
   }
 
   /**
    * 量的オブジェクト（7.6節）をこのスロットへ何単位まで受け入れられるか。capacity未指定なら無制限
    * （Number.POSITIVE_INFINITY）。既に入っている量の分だけ空きが減る。
    */
-  remainingCapacity(sizePropertyGlobalId: number): number {
+  remainingCapacity(volumePropertyGlobalId: number): number {
     if (this.def.capacity === undefined) return Number.POSITIVE_INFINITY;
-    return this.def.capacity - this.sumSize(sizePropertyGlobalId);
+    return this.def.capacity - this.sumVolume(volumePropertyGlobalId);
   }
 
   /**
    * 中身の量が上限（capacity）を超えている分。超えていなければ0。中身自身のaccumulateは上限を
    * 知らずに量を増やせるため（降雨で溜まる水）、超過分を捨てる側がこの量を問い合わせる。
    */
-  overflowingQuantity(sizePropertyGlobalId: number): number {
-    return Math.max(0, -this.remainingCapacity(sizePropertyGlobalId));
+  overflowingVolume(volumePropertyGlobalId: number): number {
+    return Math.max(0, -this.remainingCapacity(volumePropertyGlobalId));
   }
 
   /**
-   * 中身の量（7.3節のsize）が上限（capacity）に対して占める割合（0〜1）。上限を持たないスロットは
+   * 中身のかさ（7.3節のvolume）が上限（capacity）に対して占める割合（0〜1）。上限を持たないスロットは
    * 割合を定義できないためundefined。
    */
-  fillRatio(sizePropertyGlobalId: number): number | undefined {
+  fillRatio(volumePropertyGlobalId: number): number | undefined {
     if (this.def.capacity === undefined || this.def.capacity <= 0) return undefined;
-    return Math.min(1, this.sumSize(sizePropertyGlobalId) / this.def.capacity);
+    return Math.min(1, this.sumVolume(volumePropertyGlobalId) / this.def.capacity);
   }
 
   /**
    * 量的オブジェクトの合流先（同じ型の在中インスタンス）。同種は1インスタンスに保たれる前提のため
    * 最初の1つを返す。枠に空きが無い場合はundefined（異種の液体が既にいる場合など）。
    */
-  findQuantityMergeTarget(candidate: WorldObject): WorldObject | undefined {
+  findVolumeMergeTarget(candidate: WorldObject): WorldObject | undefined {
     return this.contents.find((o) => o.def.globalId === candidate.def.globalId);
   }
 
-  /** 型だけを判定する（7.2節）。量的オブジェクトはcapacityを量として別に扱うため分けて使う。 */
+  /** 型だけを判定する（7.2節）。量的オブジェクトはcapacityをかさとして別に扱うため分けて使う。 */
   acceptsByRule(candidate: WorldObject): boolean {
     return this.def.acceptsAnywhere(candidate.def);
   }
