@@ -76,8 +76,8 @@ object_defs:
   });
 
   it('かさを宣言していない物を入れても増えない', () => {
-    // 固形物のsizeの単位は未決で、現在どのアイテムもsizeを持たない（ContainerSystem.md 7節）。
-    // その間はどれだけ入れても0のままで、決まった時点でそのまま動き出す。
+    // sizeを宣言し忘れた物はかさ0として扱われ、いくらでも入ってしまう。実ファイルの全アイテムが
+    // 宣言していることはtests/worldCodex/containersYaml.test.tsが検査する。
     const { container, put } = setUp('basket');
 
     expect(put('feather')).toBeUndefined();

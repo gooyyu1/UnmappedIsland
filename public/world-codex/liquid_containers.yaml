@@ -211,6 +211,7 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       weight: {value: 300}
+      size: {value: 1900}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -222,6 +223,7 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       weight: {value: 1500}
+      size: {value: 6000}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -233,6 +235,7 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       weight: {value: 500}
+      size: {value: 3600}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -244,6 +247,7 @@ object_defs:
     traits: [liquid_container, narrow_open_container, rain_catching_container]
     props:
       weight: {value: 1200}
+      size: {value: 19000}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -258,6 +262,7 @@ object_defs:
     traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
       weight: {value: 200}
+      size: {value: 900}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。

@@ -8,6 +8,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 150}
+      size: {value: 4000}
     actions:
       eat:
         add:
@@ -21,6 +22,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 2000}
+      size: {value: 10000}
     actions:
       eat:
         add:
@@ -34,6 +36,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 800}
+      size: {value: 2400}
     actions:
       eat:
         add:

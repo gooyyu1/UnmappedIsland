@@ -113,10 +113,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(canteen.representedBySlotGlobalId).toBe(contentSlotId);
     expect(canteen.actions, '容器本体は中身の行動を持たない').toHaveLength(0);
-    expect(
-      canteen.getPropertyDef(sizeId),
-      '量は中身が持つ。容器側にあるのは上限（capacity）だけ',
-    ).toBeUndefined();
+    // sizeは2つの役目を兼ねる（WellKnownProperties）。容器が持つのは「かさ」の側だけで、
+    // 「量」の側——quantitativeなオブジェクトの量——は中身の液体が持つ。
+    expect(canteen.isQuantitative, '容器は量として存在しない').toBe(false);
+    expect(canteen.getPropertyDef(codex.propertyNames.getId('density')), '密度も中身のもの').toBeUndefined();
     expect(
       canteen.combinations,
       '空のときに受け取るためのpour_inだけは容器本体が持つ（代表が自分自身になるため）',

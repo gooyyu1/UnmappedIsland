@@ -11,6 +11,7 @@ object_defs:
     tags: [item, treatment]
     props:
       weight: {value: 60}
+      size: {value: 300}
     passives:
       # **当てている間だけ**に絞る。conditionsが無いと、手持ちに入れているだけで効いてしまう
       # （ancestorはスロットを問わず祖先を辿るので、鞄の中の包帯が痛みを止める）。
