@@ -99,6 +99,8 @@ object_defs:
         spawn: {object: sharp_stone}
 
   # 細い枝。60cmほどで指の太さ。柄には細すぎて折れるので、火口や結びに使う想定。
+  # 槍や銛の柄になる2mほどの長い棒は、拾う物ではなく若木を刃物で切って採る別の物として後から入る
+  # （docs/world/SurvivalItems.md 0節）。ここを長くして兼ねさせない。
   branch:
     tags: [item]
     props:
