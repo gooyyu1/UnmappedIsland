@@ -14,12 +14,9 @@ traits:
     main_item_slot: contents
     slots:
       # 中身。前詰めスロットなので、出し入れしても詰まって並ぶ。
-      # capacityは中身のsizeの合計の上限（GameElementDefinition.md 7.3節）。sizeの単位も、
-      # 各アイテムのsizeもまだ決めていないため、当面この上限は効かない（どのアイテムもsize=0扱い）。
-      # 値は「石や枝が十分入る」という想定の仮置きで、単位が決まったら見直す。
+      # どれだけ入るか（capacity）は入れ物ごとに違うので、trait側では宣言しない。
       contents:
         cell: {accept: {tag: item}}
-        capacity: 1000
 
 object_defs:
   # 編み籠。編んだヤシの葉（weaving.yaml）を綴じ合わせて作る、最初の運搬用の入れ物。
@@ -32,6 +29,14 @@ object_defs:
     traits: [item_container]
     props:
       weight: {value: 800}
+      # 自分の容量（20L）より大きいので、籠の入れ子は物理的に成立しない。
+      size: {value: 35000}
+    slots:
+      # 中身のかさの合計の上限（7.3節）。手に提げる籠の内容積そのままで20L。
+      # 入る物のsizeは外接直方体で見積もる（ContainerSystem.md 7節）ため、実際に入る数は
+      # 20Lぶんより少なくなる——それが「隙間なく詰められない」ことの表現になっている。
+      contents:
+        capacity: 20000
     # 解放条件（conditions、GameElementDefinition.md 13.3節）はまだ置かない。繊維・編みスキルの
     # プロパティと、それを伸ばす経路が未実装のため、今条件を置くと永久に作れなくなる。
     recipes:
