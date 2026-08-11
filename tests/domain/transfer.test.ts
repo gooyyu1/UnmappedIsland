@@ -348,7 +348,7 @@ object_defs:
         range: {min: 0, max: ${hydrationMax}}
   cup:
     props:
-      size:
+      volume:
         value: ${water}
         range: {min: 0, max: 250}
     actions:
@@ -356,7 +356,7 @@ object_defs:
         transfer:
           amount: 250
           to_amount: ${toAmount}
-          from_prop: size
+          from_prop: volume
           to_object: actor
           to_prop: hydration
 `;
@@ -371,7 +371,7 @@ object_defs:
       expect(cup.tryExecuteAction('drink', actor, session)).toBe(true);
 
       return {
-        water: cup.getNumber(codex.propertyNames.getId('size')),
+        water: cup.getNumber(codex.propertyNames.getId('volume')),
         hydration: actor.getNumber(codex.propertyNames.getId('hydration')),
       };
     }

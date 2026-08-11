@@ -72,7 +72,7 @@ object_defs:
     tags: [item]
     quantitative: true
     props:
-      size: {value: 0}
+      volume: {value: 0}
       density: {value: 1}
 `;
 
@@ -150,12 +150,12 @@ object_defs:
     const { codex, session, weightId, make, put } = build();
     const sledge = make('sledge');
     const water = make('water');
-    water.setNumber(codex.wellKnown.sizeId, 1000, session);
+    water.setNumber(codex.wellKnown.volumeId, 1000, session);
     put(water, sledge, 'cargo');
 
     expect(sledge.getEffectiveValue(weightId), '自重1000 + 水1L(1000mL × 密度1 = 1000g)').toBe(2000);
 
-    water.setNumber(codex.wellKnown.sizeId, 500, session);
+    water.setNumber(codex.wellKnown.volumeId, 500, session);
     expect(sledge.getEffectiveValue(weightId), '蒸発しても読み直せば正しい').toBe(1500);
   });
 

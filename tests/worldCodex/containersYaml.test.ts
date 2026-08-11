@@ -7,17 +7,17 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 固形物のかさ（size）と入れ物の容量（capacity）を、実ファイルの定義だけで検証する
+ * 固形物のかさ（volume）と入れ物の容量（capacity）を、実ファイルの定義だけで検証する
  * （docs/engine/ContainerSystem.md 7節）。
  */
 describe('固形物のかさと入れ物の容量', () => {
   let codex: WorldCodex;
-  let sizeId: number;
+  let volumeId: number;
   let itemTagId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-    sizeId = codex.propertyNames.getId('size');
+    volumeId = codex.propertyNames.getId('volume');
     itemTagId = codex.tagNames.getId('item');
   });
 
@@ -37,25 +37,25 @@ describe('固形物のかさと入れ物の容量', () => {
     // 宣言し忘れた物はかさ0として扱われ、入れ物へ無限に入ってしまう。数が増えても気付けるよう、
     // ここで全数を検査する（絵の名前を検査するobjectArt.test.tsと同じ理由）。
     const missing = itemDefs()
-      .filter((def) => def.getPropertyDef(sizeId) === undefined)
+      .filter((def) => def.getPropertyDef(volumeId) === undefined)
       .map((def) => def.name);
 
-    expect(missing, 'sizeを持たないitem').toEqual([]);
+    expect(missing, 'volumeを持たないitem').toEqual([]);
   });
 
   it('かさは重さと釣り合っている（見かけの密度が石より重くならない）', () => {
-    // sizeは実占有体積ではなく外接直方体なので、見かけの密度は実際の比重より必ず小さく出る。
+    // volumeは実占有体積ではなく外接直方体なので、見かけの密度は実際の比重より必ず小さく出る。
     // 石（花崗岩 2.7g/mL）を超える値が出たら、どちらかの数値が桁違いになっている。
     const weightId = codex.propertyNames.getId('weight');
     const session = new WorldSession(codex);
 
     for (const def of itemDefs()) {
       const instance = new WorldObject(1, def, session);
-      const size = instance.getNumber(sizeId);
+      const volume = instance.getNumber(volumeId);
       const weight = instance.getNumber(weightId);
 
-      expect(size, `${def.name} のかさ`).toBeGreaterThan(0);
-      expect(weight / size, `${def.name} の見かけの密度`).toBeLessThan(2.7);
+      expect(volume, `${def.name} のかさ`).toBeGreaterThan(0);
+      expect(weight / volume, `${def.name} の見かけの密度`).toBeLessThan(2.7);
     }
   });
 

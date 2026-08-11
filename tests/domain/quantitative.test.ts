@@ -7,7 +7,7 @@ import { YamlLoadError } from '../../src/loader/YamlLoadError';
 
 /**
  * 量的オブジェクト（quantitative、GameElementDefinition.md 7.6節）に対する自動テスト。
- * 「sizeが正であること」と「インスタンスが存在すること」が同値、という不変条件を確かめる。
+ * 「volumeが正であること」と「インスタンスが存在すること」が同値、という不変条件を確かめる。
  */
 describe('量的オブジェクトの移動', () => {
   const yaml = `
@@ -48,39 +48,39 @@ object_defs:
   water:
     traits: [liquid]
     props:
-      size: {value: 0}
+      volume: {value: 0}
 
   tea:
     traits: [liquid]
     props:
-      size: {value: 0}
+      volume: {value: 0}
 `;
 
   function build(): {
     codex: WorldCodex;
     session: WorldSession;
-    sizeId: number;
+    volumeId: number;
     contentId: number;
-    spawnLiquid: (containerName: string, liquidName: string, size: number) => [WorldObject, WorldObject];
+    spawnLiquid: (containerName: string, liquidName: string, volume: number) => [WorldObject, WorldObject];
   } {
     const codex = new WorldCodexYamlLoader().load('liquids.yaml', yaml).build();
     const session = new WorldSession(codex);
-    const sizeId = codex.propertyNames.getId('size');
+    const volumeId = codex.propertyNames.getId('volume');
     const contentId = codex.slotNames.getId('content');
 
     const spawnLiquid = (
       containerName: string,
       liquidName: string,
-      size: number,
+      volume: number,
     ): [WorldObject, WorldObject] => {
       const container = session.spawn(codex.objectNames.getId(containerName));
       const liquid = session.spawn(codex.objectNames.getId(liquidName));
-      liquid.setNumber(sizeId, size, session);
+      liquid.setNumber(volumeId, volume, session);
       expect(liquid.moveToSlot(container, contentId, codex.wellKnown)).toBeUndefined();
       return [container, liquid];
     };
 
-    return { codex, session, sizeId, contentId, spawnLiquid };
+    return { codex, session, volumeId, contentId, spawnLiquid };
   }
 
   function contentOf(container: WorldObject, codex: WorldCodex): readonly WorldObject[] {
@@ -89,19 +89,19 @@ object_defs:
   }
 
   it('同種へ注ぐと、量が加算され注ぎ元のインスタンスは消える', () => {
-    const { codex, session, sizeId, spawnLiquid } = build();
+    const { codex, session, volumeId, spawnLiquid } = build();
     const [, receiver] = spawnLiquid('canteen', 'water', 300);
     const [source, poured] = spawnLiquid('jar', 'water', 200);
 
     expect(receiver.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
 
-    expect(receiver.getNumber(sizeId), '受け側に全量が加算される').toBe(500);
+    expect(receiver.getNumber(volumeId), '受け側に全量が加算される').toBe(500);
     expect(poured.parent, '空になった注ぎ元は消える').toBeUndefined();
     expect(contentOf(source, codex), '注ぎ元の容器は空になる').toHaveLength(0);
   });
 
   it('注ぎ先が空なら、その量の新しいインスタンスが生まれる', () => {
-    const { codex, session, sizeId, spawnLiquid } = build();
+    const { codex, session, volumeId, spawnLiquid } = build();
     const empty = session.spawn(codex.objectNames.getId('canteen'));
     const [, poured] = spawnLiquid('jar', 'water', 400);
 
@@ -110,31 +110,31 @@ object_defs:
     const born = contentOf(empty, codex);
     expect(born, '注ぎ先に1つ生まれる').toHaveLength(1);
     expect(born[0], '移動ではなく新しいインスタンス').not.toBe(poured);
-    expect(born[0].getNumber(sizeId)).toBe(400);
+    expect(born[0].getNumber(volumeId)).toBe(400);
     expect(poured.parent, '注ぎ元は消える').toBeUndefined();
   });
 
   it('capacityに入りきらない量は注ぎ元に残る', () => {
-    const { codex, session, sizeId, spawnLiquid } = build();
+    const { codex, session, volumeId, spawnLiquid } = build();
     const empty = session.spawn(codex.objectNames.getId('canteen')); // capacity 1000
     const [, poured] = spawnLiquid('jar', 'water', 4000);
 
     expect(empty.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
 
-    expect(contentOf(empty, codex)[0].getNumber(sizeId), '入る分だけ入る').toBe(1000);
-    expect(poured.getNumber(sizeId), '残りは注ぎ元に留まる').toBe(3000);
+    expect(contentOf(empty, codex)[0].getNumber(volumeId), '入る分だけ入る').toBe(1000);
+    expect(poured.getNumber(volumeId), '残りは注ぎ元に留まる').toBe(3000);
     expect(poured.parent, '量が残っているので注ぎ元は消えない').not.toBeUndefined();
   });
 
   it('異種の液体はacceptsが拒むため何も起きない', () => {
-    const { session, sizeId, spawnLiquid } = build();
+    const { session, volumeId, spawnLiquid } = build();
     const [, receiver] = spawnLiquid('canteen', 'tea', 300);
     const [, poured] = spawnLiquid('jar', 'water', 200);
 
     expect(receiver.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
 
-    expect(receiver.getNumber(sizeId), '受け側は変わらない').toBe(300);
-    expect(poured.getNumber(sizeId), '注ぎ元も変わらない').toBe(200);
+    expect(receiver.getNumber(volumeId), '受け側は変わらない').toBe(300);
+    expect(poured.getNumber(volumeId), '注ぎ元も変わらない').toBe(200);
   });
 
   it('quantitativeな型に生成時ロールの範囲値を使うとロードエラーになる', () => {
@@ -147,7 +147,7 @@ object_defs:
   water:
     quantitative: true
     props:
-      size: {value: 0}
+      volume: {value: 0}
       density: {value: {min: 0.9, max: 1.1}}
 `,
         )
@@ -160,7 +160,7 @@ object_defs:
 
 /**
  * 量を動かす経路（tickのaccumulateと、その場の書き換え）はどれも行き先のスロットの上限も下限も
- * 知らないため、エンジンが不変条件へ戻す（WorldObject.settleQuantity）。降雨で増える水・蒸発で
+ * 知らないため、エンジンが不変条件へ戻す（WorldObject.settleVolume）。降雨で増える水・蒸発で
  * 減る水・飲み干した水が実際に頼っているのはこの2つ。
  */
 describe('量的オブジェクトの量の変化', () => {
@@ -170,7 +170,7 @@ traits:
     tags: [liquid]
     quantitative: true
     props:
-      size: {value: 1}
+      volume: {value: 1}
 
 object_defs:
   cup:
@@ -191,25 +191,25 @@ object_defs:
     passives:
       - accumulate:
           self:
-            size: 30
+            volume: 30
 
   drying_water:
     traits: [liquid]
     passives:
       - accumulate:
           self:
-            size: -30
+            volume: -30
 
   still_water:
     traits: [liquid]
 `;
 
-  function build(): { codex: WorldCodex; session: WorldSession; sizeId: number; contentId: number } {
+  function build(): { codex: WorldCodex; session: WorldSession; volumeId: number; contentId: number } {
     const codex = new WorldCodexYamlLoader().load('tick.yaml', yaml).build();
     return {
       codex,
       session: new WorldSession(codex),
-      sizeId: codex.propertyNames.getId('size'),
+      volumeId: codex.propertyNames.getId('volume'),
       contentId: codex.slotNames.getId('content'),
     };
   }
@@ -217,30 +217,30 @@ object_defs:
   function fill(
     containerName: string,
     liquidName: string,
-    size: number,
-  ): { container: WorldObject; liquid: WorldObject; session: WorldSession; sizeId: number } {
-    const { codex, session, sizeId, contentId } = build();
+    volume: number,
+  ): { container: WorldObject; liquid: WorldObject; session: WorldSession; volumeId: number } {
+    const { codex, session, volumeId, contentId } = build();
     const container = session.spawn(codex.objectNames.getId(containerName));
     const liquid = session.spawn(codex.objectNames.getId(liquidName));
-    liquid.setNumber(sizeId, size, session);
+    liquid.setNumber(volumeId, volume, session);
     expect(liquid.moveToSlot(container, contentId, codex.wellKnown)).toBeUndefined();
-    return { container, liquid, session, sizeId };
+    return { container, liquid, session, volumeId };
   }
 
   it('capacityを超えて増えた分はあふれて失われる', () => {
-    const { liquid, session, sizeId } = fill('cup', 'rainwater', 90); // capacity 100
+    const { liquid, session, volumeId } = fill('cup', 'rainwater', 90); // capacity 100
 
     liquid.tick(session);
 
-    expect(liquid.getNumber(sizeId)).toBe(100);
+    expect(liquid.getNumber(volumeId)).toBe(100);
   });
 
   it('上限の無いスロットでは、いくら増えても止まらない', () => {
-    const { liquid, session, sizeId } = fill('puddle', 'rainwater', 90);
+    const { liquid, session, volumeId } = fill('puddle', 'rainwater', 90);
 
     liquid.tick(session);
 
-    expect(liquid.getNumber(sizeId)).toBe(120);
+    expect(liquid.getNumber(volumeId)).toBe(120);
   });
 
   it('量が尽きたインスタンスは消える', () => {
@@ -253,17 +253,17 @@ object_defs:
 
   it('量を0にした時点で消える（次のtickを待たない）', () => {
     // 飲み干した水が0mLのまま残っていると、その間だけ「空なのに中身がいる容器」が見えてしまう。
-    const { liquid, session, sizeId } = fill('cup', 'rainwater', 20);
+    const { liquid, session, volumeId } = fill('cup', 'rainwater', 20);
 
-    liquid.addNumber(sizeId, -20, session);
+    liquid.addNumber(volumeId, -20, session);
 
     expect(liquid.parent, 'tickを回すまでもなく容器から消える').toBeUndefined();
   });
 
   it('sessionを渡さない書き換えは、その場では畳まない（tickでの判定に任せる）', () => {
-    const { container, liquid, session, sizeId } = fill('cup', 'still_water', 20);
+    const { container, liquid, session, volumeId } = fill('cup', 'still_water', 20);
 
-    liquid.setNumber(sizeId, 0);
+    liquid.setNumber(volumeId, 0);
 
     expect(liquid.parent, 'range判定と同じく、判定はtickまで持ち越す').toBe(container);
 

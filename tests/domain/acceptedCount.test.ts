@@ -39,7 +39,7 @@ object_defs:
   coconut:
     tags: [item]
     props:
-      size: {value: 2}
+      volume: {value: 2}
 
   jar:
     tags: [item]

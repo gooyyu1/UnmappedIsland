@@ -27,7 +27,7 @@ object_defs:
     recipes:
       woven:
         steps:
-          - requires: [{object: woven_leaf, quantity: 3, consume: true}]
+          - requires: [{object: woven_leaf, count: 3, consume: true}]
             duration: 60
 `;
 

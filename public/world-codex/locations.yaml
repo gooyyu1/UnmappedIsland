@@ -81,7 +81,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 2000}
-      size: {value: 2900}
+      volume: {value: 2900}
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
   # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
@@ -89,7 +89,7 @@ object_defs:
     tags: [item, stone]
     props:
       weight: {value: 1000}
-      size: {value: 700}
+      volume: {value: 700}
     combinations:
       knap:
         with: stone
@@ -102,7 +102,7 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 300}
-      size: {value: 500}
+      volume: {value: 500}
 
   # ------------------------------------------------------------------
   # 探索で見つかる設置物。fixtureタグによって土地のfixturesスロットへ振り分けられる。

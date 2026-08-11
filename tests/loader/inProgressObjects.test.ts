@@ -25,11 +25,11 @@ object_defs:
       basic:
         steps:
           - requires:
-              - {object: wood, quantity: 2, consume: true}
+              - {object: wood, count: 2, consume: true}
               - {object: stone_knife, consume: false}
             duration: 30
           - requires:
-              - {object: wood, quantity: 1, consume: true}
+              - {object: wood, count: 1, consume: true}
             duration: 10
 `;
 

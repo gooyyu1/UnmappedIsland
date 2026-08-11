@@ -56,7 +56,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 実装時に見直してください。
 
 - `recipes.*.steps[].requires[].consume` は、既存サンプルが常に明示している（省略例が
-  ない）ため、必須項目としました。`quantity` の省略時
+  ない）ため、必須項目としました。`count` の省略時
   デフォルト（`RecipeSystem.md` 5節で未決定）はスキーマ上も任意項目のままにしています。
 - 枠（`slots.*.cells[]` / `slots.*.cell`）の `max` は省略可で、省略すると無制限です。
 - `actions.*.showMenu` の値は、現時点で確認されている `always` のみを列挙型にしています（ローダーも `always` 以外を

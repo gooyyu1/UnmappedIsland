@@ -34,7 +34,7 @@ export function remainingRequirements(recipe: RecipeDef, progress: number): Map<
     for (const requirement of step.requirements)
       remaining.set(
         requirement.objectGlobalId,
-        (remaining.get(requirement.objectGlobalId) ?? 0) + requirement.quantity,
+        (remaining.get(requirement.objectGlobalId) ?? 0) + requirement.count,
       );
   }
   return remaining;
@@ -50,7 +50,7 @@ export function stepIsSupplied(
   return step.requirements.every(
     (requirement) =>
       contents.filter((object) => object.def.globalId === requirement.objectGlobalId).length >=
-      requirement.quantity,
+      requirement.count,
   );
 }
 
@@ -92,7 +92,7 @@ export function advanceCrafting(
     if (!requirement.consume) continue;
     const spent = (slot?.contents ?? [])
       .filter((object) => object.def.globalId === requirement.objectGlobalId)
-      .slice(0, requirement.quantity);
+      .slice(0, requirement.count);
     for (const object of spent) object.destroy(codex.wellKnown);
   }
 

@@ -1,5 +1,5 @@
 # 液体容器の定義。液体は個数ではなく量で存在し（quantitative、GameElementDefinition.md 7.6節）、
-# 量は液体自身がsizeとして持つ。上限は容器のcontentスロットのcapacityが決める。
+# 量は液体自身がvolumeとして持つ。上限は容器のcontentスロットのcapacityが決める。
 # 設計の全体像はLiquidContainerSystem.mdを参照。
 #
 # 固形物を入れる容器（containers.yaml）とは構造が別。あちらは中身をスロットへそのまま入れるだけで、
@@ -27,11 +27,12 @@ traits:
       # 上限は容器のcontentスロットのcapacityが決めるため、ここではrangeを持たない。
       # 値が効くのはspawnで生まれたときだけ（注ぎ移しで生まれたインスタンスは移った量で上書きされる）。
       # 0にできないのは、量が0の量的オブジェクトは存在しないため（quantitativeの不変条件）。
-      size:
+      volume:
         value: 1
-      # 単位量あたりの重さ。水を100とする＝100が1g/mL（ContainerSystem.md）。
+      # 単位量あたりの重さ（g/mL）。水は1で、油のように軽い液体は0.92のように書く。
+      # volume × density がそのまま重さ（g）になる（ContainerSystem.md 1節）。
       density:
-        value: 100
+        value: 1
     # 見た目の色（color、0xRRGGBB）は種類ごとのtraitが宣言する。何色に見えるかは液体そのものの
     # 性質で、共通の既定値には意味が無いため。容器カードの中身のバーがこの色で塗られる
     # （ScreenLayout.md カードの状態バー節）。
@@ -82,7 +83,7 @@ traits:
         transfer:
           amount: 250
           to_amount: 10
-          from_prop: size
+          from_prop: volume
           to_object: actor
           to_prop: hydration
 
@@ -98,7 +99,7 @@ traits:
         transfer:
           amount: 250
           to_amount: 10
-          from_prop: size
+          from_prop: volume
           to_object: actor
           to_prop: hydration
           linked_add:
@@ -122,13 +123,13 @@ traits:
           - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         accumulate:
           self:
-            size: -1
+            volume: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         accumulate:
           self:
-            size: -2
+            volume: -2
       # 日射による上乗せ。夜はsunlightが0になる（core.yamlのhour）ため成立せず、雨天のsunlightは
       # 最大6で最も低いしきい値10に届かないため、天候を見る必要がない。
       - conditions:
@@ -136,31 +137,31 @@ traits:
           - {object: ancestor, prop: sunlight, gte: 10}
         accumulate:
           self:
-            size: -2
+            volume: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: sunlight, gte: 12}
         accumulate:
           self:
-            size: -1
+            volume: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: sunlight, gte: 12}
         accumulate:
           self:
-            size: -2
+            volume: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: sunlight, gte: 15}
         accumulate:
           self:
-            size: -1
+            volume: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: sunlight, gte: 15}
         accumulate:
           self:
-            size: -2
+            volume: -2
 
   # 開いた容器に置かれている間、降っている雨のぶんだけ増える（LiquidContainerSystem.md 7節）。
   # 蒸発の裏返しで、ゲートは同じ「容器の開き方」と「天候」の2つ。雨の強さは3段しかないので、
@@ -173,37 +174,37 @@ traits:
           - {object: ancestor, prop: weather, eq: light_rain}
         accumulate:
           self:
-            size: 10
+            volume: 10
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, eq: heavy_rain}
         accumulate:
           self:
-            size: 20
+            volume: 20
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, eq: storm}
         accumulate:
           self:
-            size: 40
+            volume: 40
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, eq: light_rain}
         accumulate:
           self:
-            size: 20
+            volume: 20
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, eq: heavy_rain}
         accumulate:
           self:
-            size: 40
+            volume: 40
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, eq: storm}
         accumulate:
           self:
-            size: 80
+            volume: 80
 
 object_defs:
   # 容量はcontentスロットのcapacityで持つ。単位はmLなので、1L = 1000。
@@ -211,7 +212,7 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       weight: {value: 300}
-      size: {value: 1900}
+      volume: {value: 1900}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -223,7 +224,7 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       weight: {value: 1500}
-      size: {value: 6000}
+      volume: {value: 6000}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -235,7 +236,7 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       weight: {value: 500}
-      size: {value: 3600}
+      volume: {value: 3600}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -247,7 +248,7 @@ object_defs:
     traits: [liquid_container, narrow_open_container, rain_catching_container]
     props:
       weight: {value: 1200}
-      size: {value: 19000}
+      volume: {value: 19000}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
@@ -262,7 +263,7 @@ object_defs:
     traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
       weight: {value: 200}
-      size: {value: 900}
+      volume: {value: 900}
     slots:
       content:
         # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。

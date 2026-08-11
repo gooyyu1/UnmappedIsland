@@ -19,7 +19,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   let hourId: number;
   let locationsSlotId: number;
   let contentSlotId: number;
-  let sizeId: number;
+  let volumeId: number;
 
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();
@@ -34,7 +34,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     hourId = codex.propertyNames.getId('hour');
     locationsSlotId = codex.slotNames.getId('locations');
     contentSlotId = codex.slotNames.getId('content');
-    sizeId = codex.propertyNames.getId('size');
+    volumeId = codex.propertyNames.getId('volume');
   });
 
   beforeEach(() => {
@@ -53,7 +53,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   function spawnContainer(containerName: string, liquidKind: string, size: number): WorldObject {
     const container = spawn(containerName);
     const content = spawn(`${liquidKind}_liquid`);
-    content.setProperty(sizeId, size);
+    content.setProperty(volumeId, size);
     content.moveToSlot(container, contentSlotId, codex.wellKnown);
     return container;
   }
@@ -64,7 +64,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   }
 
   function amountIn(container: WorldObject): number {
-    return contentOf(container)?.getNumber(sizeId) ?? 0;
+    return contentOf(container)?.getNumber(volumeId) ?? 0;
   }
 
   function capacityOf(containerName: string): number | undefined {
@@ -113,7 +113,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(canteen.representedBySlotGlobalId).toBe(contentSlotId);
     expect(canteen.actions, '容器本体は中身の行動を持たない').toHaveLength(0);
-    // sizeは2つの役目を兼ねる（WellKnownProperties）。容器が持つのは「かさ」の側だけで、
+    // volumeは2つの役目を兼ねる（WellKnownProperties）。容器が持つのは自分の外寸のかさだけで、
     // 「量」の側——quantitativeなオブジェクトの量——は中身の液体が持つ。
     expect(canteen.isQuantitative, '容器は量として存在しない').toBe(false);
     expect(canteen.getPropertyDef(codex.propertyNames.getId('density')), '密度も中身のもの').toBeUndefined();
@@ -123,6 +123,22 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ).toHaveLength(1);
   });
 
+  it('中身入りの容器の重さは、容器の自重と水の重さの和になる', () => {
+    // weight = volume × density（mL × g/mL = g、ContainerSystem.md 1節）。密度の桁が狂うと
+    // ここだけが静かに壊れる——実ファイルの値で確かめる場所を1つ持っておく。
+    const session = new WorldSession(codex);
+    const bowl = spawnContainer('coconut_bowl', 'water', 250);
+    const weightId = codex.propertyNames.getId('weight');
+    const densityId = codex.propertyNames.getId('density');
+
+    expect(contentOf(bowl)?.getNumber(densityId), '水は1g/mL').toBe(1);
+    expect(bowl.getEffectiveValue(weightId), 'ヤシの器200g + 水250mL = 450g').toBe(450);
+
+    contentOf(bowl)!.setNumber(codex.wellKnown.volumeId, 100, session);
+
+    expect(bowl.getEffectiveValue(weightId), '飲めばそのぶん軽くなる').toBe(300);
+  });
+
   it('容量は容器のcontentスロットのcapacityが決める', () => {
     expect(capacityOf('coconut_bowl'), 'ヤシの器は250mL').toBe(250);
     expect(capacityOf('canteen'), '水筒は1L').toBe(1000);
@@ -130,7 +146,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(capacityOf('jar'), '甕は4L').toBe(4000);
   });
 
-  it('水を飲むと中身のsizeからactorのhydrationへ移る', () => {
+  it('水を飲むと中身のvolumeからactorのhydrationへ移る', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
