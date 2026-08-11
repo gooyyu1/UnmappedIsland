@@ -32,9 +32,16 @@ describe('レーンの枠', () => {
   it('無制限のスロットは末尾に1枠だけ添える', () => {
     expect(emptyCells(cellsFor([], undefined, true))).toBe(1);
     expect(emptyCells(cellsFor([card('石'), card('葉')], undefined, true))).toBe(1);
-    // 並べ切れない枠数は無制限と区別が付かないので、同じ扱いにする。
-    expect(unboundedSlot(LANE_CELLS_MAX + 1)).toBe(true);
-    expect(emptyCells(cellsFor([card('石')], LANE_CELLS_MAX + 1, true))).toBe(1);
+    expect(unboundedSlot(undefined)).toBe(true);
+  });
+
+  it('一度に見せられる数を超える枠も、枠数のぶんだけ並べる', () => {
+    // 見える数（LANE_CELLS_MAX）は窓の幅の話で、枠数の上限ではない。入り切らない枠は横スクロールで
+    // 送れるので、10枠の編み籠でも「あと何枠空いているか」が見て取れる。
+    const cellCount = LANE_CELLS_MAX + 6;
+
+    expect(unboundedSlot(cellCount)).toBe(false);
+    expect(emptyCells(cellsFor([card('石')], cellCount, true))).toBe(cellCount - 1);
   });
 
   it('受け入れないスロットは空枠を出さない', () => {

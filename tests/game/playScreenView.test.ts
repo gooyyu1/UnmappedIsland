@@ -346,7 +346,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.cellCountOf(injuryCard.contents!), '治療具の枠は1つだけ').toBe(1);
 
     expect(basketCard.contents, 'コンテナは中身のスロットを開く').toEqual({ container: basket });
-    expect(view.cellCountOf(basketCard.contents!), 'かごの枠数は決まっていない').toBeUndefined();
+    expect(view.cellCountOf(basketCard.contents!), 'かごは10枠（Containers.md 1節）').toBe(10);
   });
 
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
