@@ -1,4 +1,5 @@
 import type { WorldObject } from '../runtime/WorldObject';
+import type { DefNames, DescriptionWriter } from './Description';
 import type { PassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
@@ -22,5 +23,21 @@ export class PassiveEffects {
   /** childがowner（親）に付く/離れる契機を全effectへ伝える（target=childのものだけが反応する）。 */
   registerChild(owner: WorldObject, child: WorldObject, register: boolean): void {
     for (const effect of this.effects) effect.registerChild(owner, child, register);
+  }
+
+  /** すべての効果を宣言順に書き出す（Description参照）。 */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    for (const effect of this.effects) effect.describe(names, out);
+  }
+
+  /** propertyGlobalIdを書き換えうる効果だけを書き出す（引数の意味はPassiveEffect.affects）。 */
+  describeAffecting(
+    propertyGlobalId: number,
+    ownedByDeclarer: boolean,
+    names: DefNames,
+    out: DescriptionWriter,
+  ): void {
+    for (const effect of this.effects)
+      if (effect.affects(propertyGlobalId, ownedByDeclarer)) effect.describe(names, out);
   }
 }

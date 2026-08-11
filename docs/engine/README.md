@@ -19,7 +19,7 @@
   機械的な検証
 
 実際のゲームデータ（`public/world-codex/*.yaml`）を閲覧するツールは
-[`../World/WorldCodexViewer.html`](../world/WorldCodexViewer.html) を参照してください。
+[`../World/WorldCodexViewer.md`](../world/WorldCodexViewer.md) を参照してください。
 
 ### 汎用サブシステム（文法を使って、どんな内容にも適用できる仕組みの設計）
 

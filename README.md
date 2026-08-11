@@ -48,12 +48,16 @@ UnmappedIsland/
 │   │   ├── runtime/      # 実行時状態（WorldObject・セッション・ビュー）
 │   │   └── generation/   # 地形生成（決定的な島レイアウト）
 │   ├── loader/           # WorldCodex YAMLローダー
+│   ├── locale/           # 表示文字列の対応表（言語ごと）
+│   ├── codex/            # ゲーム定義の閲覧ビューア（ゲームと同じローダー・表示文字列を使う）
 │   ├── game/             # Phaserシーン
 │   │   ├── layout/       # 画面寸法（u単位）とエリア配置の計算
 │   │   └── ui/           # 画面共通の部品（カード・ボタン・モーダルなど）
 │   ├── save/             # セーブデータ（localStorage、4スロット固定）
 │   └── util/             # 汎用ユーティリティ
+├── codex/                # 閲覧ビューアの入口HTML（本体はsrc/codex/）
 ├── public/
+│   ├── locale/           # 表示文字列YAML（そのまま配信される）
 │   └── world-codex/      # ゲーム定義YAML（そのまま配信される）
 ├── tests/                # テスト（Vitest）
 └── docs/                 # 開発ドキュメント（原稿）
@@ -66,7 +70,8 @@ UnmappedIsland/
 
 公開サイトは `site/` へ生成してGitHub Pagesへ直接デプロイするため、生成物はリポジトリに入らない
 （`.gitignore` 済み）。サイトは `/docs/`（`docs/` から生成したHTML）・`/reference/`（TypeDocの
-ソースリファレンス）・`/game/`（ビルド済みのゲーム本体）の3本立て。
+ソースリファレンス）・`/game/`（ビルド済みのゲーム本体）・`/codex/`（ゲーム定義の閲覧ビューア、
+[`docs/world/WorldCodexViewer.md`](./docs/world/WorldCodexViewer.md)）の4本立て。
 
 ## ドキュメント
 

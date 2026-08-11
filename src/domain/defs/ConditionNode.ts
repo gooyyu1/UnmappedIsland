@@ -1,9 +1,23 @@
 import type { WorldObject } from '../runtime/WorldObject';
+import type { DefNames, DescriptionToken } from './Description';
+import { propertyRef, slotRef, stageRef, tagRef, text } from './Description';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 
 /** GameElementDefinition.md 14.1節の比較演算子。 */
 export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
+
+/** 比較演算子の書き表し方（describe用）。 */
+const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
+  lt: '<',
+  lte: '<=',
+  gt: '>',
+  gte: '>=',
+  eq: '==',
+  neq: '!=',
+  in: 'in',
+  not_in: 'not in',
+};
 
 type ConditionNodeKind =
   /** {object, prop, <比較演算子>: value}形式のプロパティ比較。 */
@@ -130,6 +144,78 @@ export class ConditionNode {
 
   static not(inner: ConditionNode): ConditionNode {
     return new ConditionNode('not', { children: [inner] });
+  }
+
+  /**
+   * この条件を読める形に書き表す（Description参照）。1つの式なので行に分けず、断片の並びを返す。
+   * 複合ノード（all/any/not）は括弧で包み、入れ子の切れ目が読み取れるようにする。
+   */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    switch (this.kind) {
+      case 'property':
+        return this.describeProperty(names);
+      case 'property_stage':
+        return [
+          propertyRef(names.propertyName(this.propertyGlobalId!), this.root),
+          text('が段'),
+          stageRef(this.stageName!),
+          text('にある'),
+        ];
+      case 'slot_position':
+        return [
+          text(`${this.root}が`),
+          slotRef(names.slotName(this.slotGlobalId!)),
+          text('スロットに入っている'),
+        ];
+      case 'slot_content':
+        return [
+          text(`${this.root}の`),
+          slotRef(names.slotName(this.slotGlobalId!)),
+          text('スロットに'),
+          tagRef(names.tagName(this.tagGlobalId!)),
+          text('が入っている'),
+        ];
+      case 'object_tag':
+        return [text(`${this.root}が`), tagRef(names.tagName(this.tagGlobalId!)), text('を持つ')];
+      case 'all':
+        return this.describeChildren(names, 'かつ');
+      case 'any':
+        return this.describeChildren(names, 'または');
+      default:
+        return [text('not '), ...this.children![0].describe(names)];
+    }
+  }
+
+  private describeProperty(names: DefNames): readonly DescriptionToken[] {
+    const tokens: DescriptionToken[] = [
+      propertyRef(names.propertyName(this.propertyGlobalId!), this.root),
+      text(` ${OP_SYMBOLS[this.op!]} `),
+    ];
+
+    if (this.valueRef !== undefined) {
+      tokens.push(propertyRef(names.propertyName(this.valueRef.propertyGlobalId), this.valueRef.root));
+      return tokens;
+    }
+
+    const values = (this.values ?? []).map((value) => names.propertyValue(this.propertyGlobalId!, value));
+    const isList = this.op === 'in' || this.op === 'not_in';
+    if (isList) tokens.push(text('['));
+    for (const [index, value] of values.entries()) {
+      if (index > 0) tokens.push(text(', '));
+      tokens.push(value);
+    }
+    if (isList) tokens.push(text(']'));
+    return tokens;
+  }
+
+  private describeChildren(names: DefNames, conjunction: string): readonly DescriptionToken[] {
+    const tokens: DescriptionToken[] = [text('(')];
+    for (const [index, child] of this.children!.entries()) {
+      if (index > 0) tokens.push(text(` ${conjunction} `));
+      tokens.push(...child.describe(names));
+    }
+    tokens.push(text(')'));
+    return tokens;
   }
 
   evaluate(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {

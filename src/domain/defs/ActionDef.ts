@@ -1,6 +1,8 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
+import type { DefNames, DescriptionWriter } from './Description';
+import { text } from './Description';
 import { InteractionDef } from './InteractionDef';
 import type { WeightSpec } from './PickEffect';
 import type { Requirement, Requirements } from './Requirement';
@@ -24,6 +26,10 @@ export class ActionDef extends InteractionDef {
   ) {
     super(name, requirements, effect, duration);
     this.showMenu = showMenu;
+  }
+
+  protected describeTrigger(_names: DefNames, out: DescriptionWriter): void {
+    out.write(text(`show_menu: ${this.showMenu}`));
   }
 
   tryExecute(self: WorldObject, actor: WorldObject | undefined, session: WorldSession): boolean {

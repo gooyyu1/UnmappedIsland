@@ -5,6 +5,8 @@ import { INT32_MAX } from '../../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { propertyTagRef, stageRef, text } from './Description';
 
 /**
  * 値がどちらへ動くと悪いか（PropertyDef.alertDirection）。mixedは「両端が悪い」並びで、バーの
@@ -52,6 +54,20 @@ export class PropertyStage {
     this.min = min;
     this.eq = eq;
     this.alert = alert;
+  }
+
+  /** この段を書き表す（Description参照）。propertyGlobalIdは、eqの値をシンボル名へ戻すために要る。 */
+  describe(names: DefNames, propertyGlobalId: number): readonly DescriptionToken[] {
+    const tokens: DescriptionToken[] = [stageRef(this.name)];
+    if (this.eq !== undefined) {
+      // シンボル型の段は、段の名前がそのまま比較する値（6.4節）。同じ名前を二度書かない。
+      const value = names.propertyValue(propertyGlobalId, this.eq);
+      if (value.kind !== 'symbol' || value.name !== this.name) tokens.push(text(': '), value, text('のとき'));
+    } else if (this.min !== undefined) tokens.push(text(`: ${this.min}以上`));
+    else tokens.push(text(': どの段にも該当しないとき'));
+
+    if (this.alert !== 'safe') tokens.push(text(`（alert: ${this.alert}）`));
+    return tokens;
   }
 }
 
@@ -128,6 +144,12 @@ export class PropertyDef {
    */
   readonly tags: readonly number[];
 
+  /**
+   * 値がシンボル（6.6節。天気の`clear`、季節の`dry`）か。実行時の値は数値なので、シンボル名へ
+   * 戻せるかどうかはこの宣言だけが知っている（`WorldCodex.propertyValue`が使う）。
+   */
+  readonly isSymbolic: boolean;
+
   constructor(
     globalId: number,
     name: string,
@@ -139,6 +161,7 @@ export class PropertyDef {
     onShortfall?: ActiveEffect,
     inherit = false,
     tags: readonly number[] = [],
+    isSymbolic = false,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -150,6 +173,7 @@ export class PropertyDef {
     this.onShortfall = onShortfall;
     this.inherit = inherit;
     this.tags = tags;
+    this.isSymbolic = isSymbolic;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages);
@@ -175,6 +199,72 @@ export class PropertyDef {
 
     if (rises && falls) return 'mixed';
     return rises ? 'up' : 'down';
+  }
+
+  /**
+   * 初期値の書き表し（Description参照）。一覧の表など、1行で済ませたい場所向けに断片で返す。
+   */
+  describeInitialValue(names: DefNames): readonly DescriptionToken[] {
+    if (this.initialValueRange !== undefined)
+      return [text(`${this.initialValueRange.min}〜${this.initialValueRange.max}（生成時に1回抽選）`)];
+    return [names.propertyValue(this.globalId, this.initialValue)];
+  }
+
+  /** このプロパティの定義を書き出す（Description参照）。 */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    out.write(text('初期値: '), ...this.describeInitialValue(names));
+    if (this.range !== undefined) out.write(text(`range: ${this.range.min} 〜 ${this.range.max}`));
+    if (this.inherit) out.write(text('inherit: 同名プロパティを持つ最初の祖先の実効値を足す'));
+    if (this.tags.length > 0)
+      out.write(
+        text('tags: '),
+        ...this.tags.map((tagGlobalId) => propertyTagRef(names.propertyTagName(tagGlobalId))),
+      );
+
+    if (this.stages.length > 0) {
+      out.write(text('stages:'));
+      out.indented(() => {
+        for (const stage of this.stages) out.write(...stage.describe(names, this.globalId));
+      });
+    }
+
+    this.describeRangeEvent('on_overflow', this.onOverflow, names, out);
+    this.describeRangeEvent('on_shortfall', this.onShortfall, names, out);
+  }
+
+  private describeRangeEvent(
+    label: string,
+    effect: ActiveEffect | undefined,
+    names: DefNames,
+    out: DescriptionWriter,
+  ): void {
+    if (effect === undefined) return;
+    out.write(text(`${label}:`));
+    out.indented(() => effect.describe(names, out));
+  }
+
+  /**
+   * range系イベント（6.3節）がpropertyGlobalIdのプロパティを書き換えうるか。
+   * 対象は常にselfなので、宣言元のobject_def自身のプロパティを問うときだけ真になりうる。
+   */
+  affectsViaRangeEvents(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return (
+      (this.onOverflow?.affects(propertyGlobalId, ownedByDeclarer) ?? false) ||
+      (this.onShortfall?.affects(propertyGlobalId, ownedByDeclarer) ?? false)
+    );
+  }
+
+  /** range系イベント（6.3節）のうち、propertyGlobalIdを書き換えうるものだけを書き出す。 */
+  describeRangeEventsAffecting(
+    propertyGlobalId: number,
+    ownedByDeclarer: boolean,
+    names: DefNames,
+    out: DescriptionWriter,
+  ): void {
+    if (this.onOverflow?.affects(propertyGlobalId, ownedByDeclarer) ?? false)
+      this.describeRangeEvent('on_overflow', this.onOverflow, names, out);
+    if (this.onShortfall?.affects(propertyGlobalId, ownedByDeclarer) ?? false)
+      this.describeRangeEvent('on_shortfall', this.onShortfall, names, out);
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */

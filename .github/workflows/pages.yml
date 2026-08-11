@@ -18,6 +18,7 @@ on:
       - 'src/**'
       - 'public/**'
       - 'index.html'
+      - 'codex/**'
       - 'typedoc.json'
       - 'typedoc.readme.md'
       - 'scripts/**'
@@ -25,6 +26,7 @@ on:
       - 'package-lock.json'
       - 'tsconfig.json'
       - 'vite.config.ts'
+      - 'vite.codex.config.ts'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -155,6 +157,11 @@ jobs:
         # （https://<user>.github.io/<repo>/game/ でそのまま動く）。
         run: npx vite build --base=./ --outDir=site/game --emptyOutDir
 
+      - name: Build WorldCodex viewer into site/codex
+        # 出力先（site/codex）はvite.codex.config.tsに書いてある。ゲームと同じソース・同じYAMLを読む
+        # 別ページなので、ビルドだけを分ける。
+        run: npx vite build --config vite.codex.config.ts --base=./
+
       - name: Generate missing index.html files
         run: |
           # site/ 配下の全ディレクトリを走査し、index.html が存在しないフォルダにのみ生成する。
@@ -203,11 +210,12 @@ jobs:
             echo "Generated: $dir/index.html"
           }
 
-          # site/gameはViteの、site/referenceはTypeDocのビルド成果物で、どちらも自前の入口ページを
-          # 持つので索引ページを混ぜない（サイト直下のindex.htmlからは、他のフォルダと同じく
-          # game/・reference/へのリンクが張られる）。
+          # site/game・site/codexはViteの、site/referenceはTypeDocのビルド成果物で、どれも自前の
+          # 入口ページを持つので索引ページを混ぜない（サイト直下のindex.htmlからは、他のフォルダと
+          # 同じくgame/・codex/・reference/へのリンクが張られる）。
           find site -type d \
             -not -path 'site/game' -not -path 'site/game/*' \
+            -not -path 'site/codex' -not -path 'site/codex/*' \
             -not -path 'site/reference' -not -path 'site/reference/*' \
             | sort | while read -r d; do
             generate_index "$d"

@@ -15,9 +15,9 @@
 - [道具・武器・容器・衣類 アイテム案](./SurvivalItems.md)
 - [コンテナ（かご・箱・そり）](./Containers.md)
 - [住居（洞窟・小屋）](./Dwellings.md) — 部品の差し替えで段階を表す住居と、工法ごとの得意分野
-- [WorldCodex データベースビューア](./WorldCodexViewer.html) — 実際のゲームデータ
-  （`public/world-codex/*.yaml`）を表示のたびにGitHubから直接取得して一覧・詳細表示する
-  閲覧ツール（ビルド不要）。YAML文法リファレンスは
+- [WorldCodex データベースビューア](./WorldCodexViewer.md) — 実際のゲームデータ
+  （`public/world-codex/*.yaml`）を、ゲーム本体と同じローダー・同じ表示文字列・同じ絵で一覧・詳細
+  表示する閲覧ツール（公開先は [`../../codex/`](../../codex/)）。YAML文法リファレンスは
   [`../Engine/GameElementDefinition.md`](../engine/GameElementDefinition.md) を参照
 
 ## 含まれるドキュメント例
