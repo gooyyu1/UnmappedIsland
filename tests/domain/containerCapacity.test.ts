@@ -1,0 +1,99 @@
+import { describe, expect, it } from 'vitest';
+import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldObject } from '../../src/domain/runtime/WorldObject';
+import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+
+/**
+ * 入れ物が自分の詰まり具合を答えること（ContainerSystem.md 1節）。上限はスロットのcapacity、
+ * かさは中身のsizeが持つので、割合はその2つが出会う入れ物の主要なスロットでだけ出せる。
+ */
+describe('入れ物の詰まり具合', () => {
+  const codex: WorldCodex = new WorldCodexYamlLoader()
+    .load(
+      'containerCapacity.yaml',
+      `
+object_defs:
+  # 上限を持つ入れ物。押したときに開くスロット（main_item_slot）が詰まり具合の出所になる。
+  basket:
+    main_item_slot: contents
+    slots:
+      contents:
+        cell: {accept: {tag: item}}
+        capacity: 100
+  # 上限を持たない入れ物。いくらでも入るので、満たされ具合そのものが無い。
+  cart:
+    main_item_slot: contents
+    slots:
+      contents:
+        cell: {accept: {tag: item}}
+  stone:
+    tags: [item]
+    props:
+      size: {value: 30}
+  # かさを宣言していない物。上限のある枠へ入っても、詰まり具合は動かない。
+  feather:
+    tags: [item]
+`,
+    )
+    .build();
+
+  const contentsId = codex.slotNames.getId('contents');
+
+  const spawn = (name: string): { session: WorldSession; object: WorldObject } => {
+    const session = new WorldSession(codex);
+    return { session, object: session.spawn(codex.objectNames.getId(name)) };
+  };
+
+  /** 入れ物と、そこへ物を入れる手段。 */
+  const setUp = (containerName: string) => {
+    const { session, object: container } = spawn(containerName);
+    return {
+      container,
+      put: (name: string): string | undefined =>
+        session.spawn(codex.objectNames.getId(name)).moveToSlot(container, contentsId, codex.wellKnown),
+    };
+  };
+
+  it('入れた物のかさが上限を占めるぶんだけ増える', () => {
+    const { container, put } = setUp('basket');
+
+    expect(container.mainSlotFillRatio(), '空の入れ物は0（バーは出るが空）').toBe(0);
+
+    expect(put('stone')).toBeUndefined();
+    expect(container.mainSlotFillRatio()).toBeCloseTo(0.3, 5);
+
+    expect(put('stone')).toBeUndefined();
+    expect(container.mainSlotFillRatio()).toBeCloseTo(0.6, 5);
+  });
+
+  it('上限を超える物は入らないので、割合は1を超えない', () => {
+    const { container, put } = setUp('basket');
+    for (let i = 0; i < 3; i++) expect(put('stone'), `${i + 1}個目`).toBeUndefined();
+
+    expect(put('stone'), '4個目は容量を超えるので弾かれる').toContain('容量');
+    expect(container.mainSlotFillRatio()).toBeCloseTo(0.9, 5);
+  });
+
+  it('かさを宣言していない物を入れても増えない', () => {
+    // 固形物のsizeの単位は未決で、現在どのアイテムもsizeを持たない（ContainerSystem.md 7節）。
+    // その間はどれだけ入れても0のままで、決まった時点でそのまま動き出す。
+    const { container, put } = setUp('basket');
+
+    expect(put('feather')).toBeUndefined();
+
+    expect(container.mainSlotFillRatio()).toBe(0);
+  });
+
+  it('上限を持たない入れ物は、詰まり具合そのものを持たない', () => {
+    const { container, put } = setUp('cart');
+
+    expect(put('stone')).toBeUndefined();
+
+    expect(container.mainSlotFillRatio()).toBeUndefined();
+  });
+
+  it('中身を持たない物は、詰まり具合そのものを持たない', () => {
+    expect(spawn('stone').object.mainSlotFillRatio()).toBeUndefined();
+  });
+});

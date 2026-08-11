@@ -407,6 +407,45 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(card?.fill, '量で満たされるものではないのでバーは出さない').toBeUndefined();
   });
 
+  it('上限を持つ入れ物のカードだけが、容量の詰まり具合を持つ', () => {
+    // 割合が上限（capacity）とかさ（size）から出ていることは、tests/domain/containerCapacity.test.ts
+    // が受け持つ。ここで見るのは「どのカードがそれを出すか」だけ。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const handSlotId = codex.slotNames.getId('hand');
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    expect(basket.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance, handSlotId, codex.wellKnown)).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(
+      view.hand.find((card) => card?.objects[0] === basket)?.capacityRatio,
+      '編み籠のcontentsは容量を宣言している（containers.yaml）',
+    ).toBe(0);
+    expect(
+      view.hand.find((card) => card?.objects[0] === stone)?.capacityRatio,
+      '中身を持たない物に詰まり具合は無い',
+    ).toBeUndefined();
+  });
+
+  it('液体の容器は、詰まり具合ではなく中身のバーを出す', () => {
+    // 上限は同じcapacityでも、量を持つのは中身の液体自身なので、映すのは中身の色のバー1本だけ。
+    // 2本出ると同じ位置に重なる。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
+    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
+    expect(
+      bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), codex.wellKnown),
+    ).toBeUndefined();
+    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
+
+    const [card] = fromGameSession(game, codex, locale).hand;
+
+    expect(card?.capacityRatio).toBeUndefined();
+    expect(card?.fill?.ratio, '入っていることは中身のバーが見せる').toBeGreaterThan(0);
+  });
+
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
