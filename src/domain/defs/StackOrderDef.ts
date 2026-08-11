@@ -1,4 +1,6 @@
 import type { WorldObject } from '../runtime/WorldObject';
+import type { DefNames, DescriptionToken } from './Description';
+import { propertyRef, text } from './Description';
 
 /**
  * 同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（表示専用）。
@@ -18,6 +20,14 @@ export class StackOrderDef {
   constructor(propertyGlobalId: number, ascending: boolean) {
     this.propertyGlobalId = propertyGlobalId;
     this.ascending = ascending;
+  }
+
+  /** この並び順を書き表す（Description参照）。 */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    return [
+      propertyRef(names.propertyName(this.propertyGlobalId)),
+      text(this.ascending ? 'の昇順' : 'の降順'),
+    ];
   }
 
   /**

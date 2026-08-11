@@ -144,6 +144,7 @@ export function parseProp(
     onShortfall,
     inherit,
     tags,
+    isSymbolProperty,
   );
 
   // rangeを持つプロパティはバーとして描かれる（6.4節）。上下どちらの端も悪い並びでは、塗りの向きが

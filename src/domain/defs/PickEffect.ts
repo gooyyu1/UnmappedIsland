@@ -1,6 +1,8 @@
 import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { propertyRef, text } from './Description';
 import { resolveReferenceRoot } from './ReferenceRoot';
 import type { PropertyPath } from './ReferenceRoot';
 
@@ -26,6 +28,17 @@ export class PickEffect extends ActiveEffect {
     if (this.candidates.length === 0) return;
     const chosen = this.selectWeighted(owner, actor, dragged, session);
     chosen.apply(owner, session, actor, dragged, effectSite);
+  }
+
+  describe(names: DefNames, out: DescriptionWriter): void {
+    out.write(text('pick:'));
+    out.indented(() => {
+      for (const candidate of this.candidates) candidate.describe(names, out);
+    });
+  }
+
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return this.candidates.some((candidate) => candidate.affects(propertyGlobalId, ownedByDeclarer));
   }
 
   /** weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。 */
@@ -82,6 +95,13 @@ export class WeightSpec {
         : resolveReferenceRoot(path.root, self, actor, dragged);
     return target !== undefined ? target.getEffectiveValue(path.propertyGlobalId) : 0;
   }
+
+  /** この値の出どころを書き表す（Description参照）。リテラルなら数値、参照ならプロパティ。 */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    if (!this.isPathRef) return [text(String(this.literal))];
+    const path = this.path!;
+    return [propertyRef(names.propertyName(path.propertyGlobalId), path.root)];
+  }
 }
 
 /**
@@ -113,5 +133,16 @@ export class PickCandidateDef {
     effectSite: EffectSite | undefined,
   ): void {
     this.effect?.apply(owner, session, actor, dragged, effectSite);
+  }
+
+  /** この候補を「重み」の行と、その下の効果として書き出す（Description参照）。 */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    out.write(text('weight = '), ...this.weight.describe(names));
+    if (this.effect === undefined) return;
+    out.indented(() => this.effect!.describe(names, out));
+  }
+
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return this.effect?.affects(propertyGlobalId, ownedByDeclarer) ?? false;
   }
 }

@@ -1,4 +1,6 @@
 import type { WorldObject } from '../runtime/WorldObject';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { objectRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 
@@ -17,6 +19,15 @@ export class RecipeRequirementDef {
     this.count = count;
     this.consume = consume;
   }
+
+  /** この要求を書き表す（Description参照）。 */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    return [
+      text(this.consume ? '素材: ' : '道具: '),
+      objectRef(names.objectName(this.objectGlobalId)),
+      text(` ×${this.count}`),
+    ];
+  }
 }
 
 /** レシピの工程1つ（13.1節）。 */
@@ -29,6 +40,14 @@ export class RecipeStepDef {
   constructor(requirements: readonly RecipeRequirementDef[], durationMinutes: number) {
     this.requirements = requirements;
     this.durationMinutes = durationMinutes;
+  }
+
+  /** この工程を書き出す（Description参照）。stepNumberは1始まりの見出し用の番号。 */
+  describe(stepNumber: number, names: DefNames, out: DescriptionWriter): void {
+    out.write(text(`工程${stepNumber}（${this.durationMinutes}分）:`));
+    out.indented(() => {
+      for (const requirement of this.requirements) out.write(...requirement.describe(names));
+    });
   }
 }
 
@@ -60,6 +79,15 @@ export class RecipeDef {
     this.steps = steps;
     this.icon = icon;
     this.unlock = unlock;
+  }
+
+  /** このレシピを書き出す（Description参照）。 */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    if (this.unlock !== undefined) {
+      out.write(text('解放条件:'));
+      out.indented(() => this.unlock!.describe(names, out));
+    }
+    for (const [index, step] of this.steps.entries()) step.describe(index + 1, names, out);
   }
 
   /**

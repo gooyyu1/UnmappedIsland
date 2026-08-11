@@ -1,6 +1,8 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
+import type { DefNames, DescriptionWriter } from './Description';
+import { tagRef, text } from './Description';
 import { InteractionDef } from './InteractionDef';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
@@ -22,6 +24,10 @@ export class CombinationDef extends InteractionDef {
   ) {
     super(name, requirements, effect, duration);
     this.with = withTagGlobalId;
+  }
+
+  protected describeTrigger(names: DefNames, out: DescriptionWriter): void {
+    out.write(text('with: '), tagRef(names.tagName(this.with)), text('を持つカードのドロップ'));
   }
 
   /** draggedDefがこのcombinationのwithタグを持っていれば真（12.1節）。 */

@@ -1,6 +1,8 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
+import type { DefNames, DescriptionWriter } from './Description';
+import { text } from './Description';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
@@ -49,6 +51,32 @@ export abstract class InteractionDef {
    */
   minutesFor(self: WorldObject, dragged: WorldObject | undefined, actor: WorldObject | undefined): number {
     return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(self, actor, dragged));
+  }
+
+  /**
+   * この操作を書き表す（Description参照）。きっかけ（メニュー/相手のタグ）→要件→所要時間→効果の順で、
+   * プレイヤーがカードを触ってから起こることの順番に並べる。
+   */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    this.describeTrigger(names, out);
+
+    if (this.requirements !== undefined) {
+      out.write(text('conditions:'));
+      out.indented(() => this.requirements!.describe(names, out));
+    }
+
+    if (this.duration !== undefined)
+      out.write(text('所要時間: '), ...this.duration.describe(names), text('分'));
+
+    this.effect?.describe(names, out);
+  }
+
+  /** 何がこの操作のきっかけになるか（具象ごとに違う）。describeが先頭に書く。 */
+  protected abstract describeTrigger(names: DefNames, out: DescriptionWriter): void;
+
+  /** この操作がpropertyGlobalIdのプロパティを書き換えうるか（ActiveEffect.affects参照）。 */
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return this.effect?.affects(propertyGlobalId, ownedByDeclarer) ?? false;
   }
 
   /**

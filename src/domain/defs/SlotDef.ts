@@ -1,4 +1,6 @@
 import type { WorldObject } from '../runtime/WorldObject';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { objectRef, tagRef, text } from './Description';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
 
@@ -36,6 +38,13 @@ export class CellAcceptRule {
       ? candidateDef.tags.includes(this.with)
       : candidateDef.globalId === this.with;
   }
+
+  /** この受け入れ条件を書き表す（Description参照）。 */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    return this.targetKind === 'tag'
+      ? [tagRef(names.tagName(this.with)), text('を持つ型')]
+      : [objectRef(names.objectName(this.with)), text('そのもの')];
+  }
 }
 
 /**
@@ -60,6 +69,13 @@ export class CellDef {
   /** このセルがcandidateを受け入れる型か（個数は見ない）。 */
   accepts(candidateDef: ObjectDef): boolean {
     return this.accept === undefined || this.accept.matches(candidateDef);
+  }
+
+  /** この枠を書き表す（Description参照）。 */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    const tokens: DescriptionToken[] = [...(this.accept?.describe(names) ?? [text('どんな型でも')])];
+    if (this.max !== undefined) tokens.push(text(`（同種は${this.max}個まで）`));
+    return tokens;
   }
 }
 
@@ -129,6 +145,29 @@ export class SlotDef {
   /** itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。 */
   putInMinutes(owner: WorldObject, item: WorldObject, actor: WorldObject | undefined): number {
     return this.putInDuration === undefined ? 0 : Math.trunc(this.putInDuration.resolve(owner, actor, item));
+  }
+
+  /**
+   * このスロットを書き表す（Description参照）。枠ごとに違う要件を書けるため、枠の内訳は
+   * 位置ごとに違うときだけ位置を添えて並べる（同じなら1行で足りる）。
+   */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    if (this.cellCount !== undefined) out.write(text(`枠数: ${this.cellCount}`));
+    if (this.capacity !== undefined) out.write(text(`capacity: ${this.capacity}`));
+    if (!this.autoPlacement)
+      out.write(text('自動配置の対象にしない（手で入れるか、名指しの移動でだけ入る）'));
+    if (this.putInDuration !== undefined)
+      out.write(text('入れるのにかかる時間: '), ...this.putInDuration.describe(names), text('分'));
+
+    out.write(text('受け入れる型:'));
+    out.indented(() => {
+      if (this.cellDefs.every((cell) => cell === this.sharedCell)) {
+        out.write(...this.sharedCell.describe(names));
+        return;
+      }
+      for (const [index, cell] of this.cellDefs.entries())
+        out.write(text(`${index + 1}枠目: `), ...cell.describe(names));
+    });
   }
 
   /** index番目の枠の定義。枠数が決まっていないスロットではどの位置でも共通の定義。 */

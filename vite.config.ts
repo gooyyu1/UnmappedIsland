@@ -9,14 +9,15 @@ import sharp from 'sharp';
 const WEBP_QUALITY = 80;
 
 /**
- * ビルドで出力されるPNGをWebP（非可逆）へ変換するプラグイン。
+ * ビルドで出力されるPNGをWebP（非可逆）へ変換するプラグイン（ビューアのビルド
+ * （vite.codex.config.ts）も同じものを使う）。
  *
  * リポジトリのPNGはマスターとしてそのまま残し、配信物だけを軽くする。ソース側の規約
  * （`src/assets/` にPNGを置くだけ、objectArt/backgroundArt参照）は変わらず、変換は出力ファイル名の
  * 拡張子とチャンク内のURL文字列の書き換えで完結する。テクスチャキーはソースのパスから作られる
  * ため影響しない。開発サーバー（vite dev）は変換せずPNGをそのまま配る。
  */
-function pngToWebp(): Plugin {
+export function pngToWebp(): Plugin {
   return {
     name: 'png-to-webp',
     apply: 'build',

@@ -1,6 +1,8 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { propertyRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -51,6 +53,19 @@ export class MoveEffect extends ActiveEffect {
     if (destination === undefined) return;
 
     mover.moveIntoFirstAcceptingSlot(destination, session.codex.wellKnown, false, session);
+  }
+
+  describe(names: DefNames, out: DescriptionWriter): void {
+    const destination: DescriptionToken =
+      this.destination.kind === 'instance_id_prop'
+        ? propertyRef(names.propertyName(this.destination.propertyGlobalId), 'self')
+        : text(this.destination.kind);
+    out.write(text(`move ${this.target} → `), destination);
+  }
+
+  /** オブジェクトの居場所を変えるだけで、プロパティを書き換えはしない。 */
+  affects(): boolean {
+    return false;
   }
 
   private resolveDestination(owner: WorldObject): WorldObject | undefined {

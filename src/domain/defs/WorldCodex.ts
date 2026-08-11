@@ -1,3 +1,5 @@
+import type { DefNames, DescriptionToken } from './Description';
+import { symbolRef, text } from './Description';
 import type { GenerationDefs } from './generation/GenerationDefs';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
@@ -10,8 +12,11 @@ import type { WellKnownProperties } from './WellKnownProperties';
  * NameRegistry、およびWellKnownPropertiesを持つ。ロード完了後は不変として扱う。
  * symbolNamesはシンボル型props（6節）の値の名前空間。実行時状態（WorldObject）は含まない
  * （runtimeが担う）。
+ *
+ * 定義が自分を書き表す（`describe`、[`Description`](./Description.ts)）ときのグローバルID→識別子の
+ * 引き当ても引き受ける（DefNames）。名前空間を6つとも持つのはここだけのため。
  */
-export class WorldCodex {
+export class WorldCodex implements DefNames {
   readonly objectNames: NameRegistry;
   readonly propertyNames: NameRegistry;
   readonly slotNames: NameRegistry;
@@ -63,6 +68,51 @@ export class WorldCodex {
     this.wellKnown = wellKnown;
     this.generation = generation;
   }
+
+  objectName(globalId: number): string {
+    return this.objectNames.getName(globalId);
+  }
+
+  propertyName(globalId: number): string {
+    return this.propertyNames.getName(globalId);
+  }
+
+  slotName(globalId: number): string {
+    return this.slotNames.getName(globalId);
+  }
+
+  tagName(globalId: number): string {
+    return this.tagNames.getName(globalId);
+  }
+
+  propertyTagName(globalId: number): string {
+    return this.propertyTagNames.getName(globalId);
+  }
+
+  /**
+   * プロパティの値1つの書き表し方（DefNames参照）。シンボル型（6.6節）と宣言しているプロパティの値だけ
+   * シンボル名へ戻す。シンボル型でも数値リテラルが書かれている箇所（未登録のIDになる）は数値のまま出す。
+   */
+  propertyValue(propertyGlobalId: number, value: number): DescriptionToken {
+    if (!this.symbolicProperties.has(propertyGlobalId)) return text(String(value));
+    const name = this.symbolNames.getName(value);
+    return name === undefined ? text(String(value)) : symbolRef(name);
+  }
+
+  /** シンボル型と宣言されたプロパティのグローバルID。同じ名前でも型ごとに宣言が違いうるので、
+   * 1つでもシンボル型として宣言していれば含める。 */
+  private get symbolicProperties(): ReadonlySet<number> {
+    if (this.symbolicPropertyIds === undefined) {
+      const found = new Set<number>();
+      for (let globalId = 0; globalId < this.objects.count; globalId++)
+        for (const propertyDef of this.objects.get(globalId).enumeratePropertyDefs())
+          if (propertyDef.isSymbolic) found.add(propertyDef.globalId);
+      this.symbolicPropertyIds = found;
+    }
+    return this.symbolicPropertyIds;
+  }
+
+  private symbolicPropertyIds: ReadonlySet<number> | undefined;
 
   /** この型が製作中オブジェクトなら、その完成品の型。そうでなければundefined。 */
   productOf(def: ObjectDef): ObjectDef | undefined {

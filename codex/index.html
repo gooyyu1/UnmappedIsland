@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WorldCodex データベース</title>
+  </head>
+  <body>
+    <header>
+      <a class="title" href="#/">WorldCodex データベース</a>
+      <span class="toggle">
+        <button type="button" data-naming-mode="display">表示名</button>
+        <button type="button" data-naming-mode="identifier">識別子</button>
+      </span>
+      <span class="spacer"></span>
+      <span class="status" id="status"></span>
+    </header>
+    <main id="app"></main>
+    <!-- ビューアの本体はゲームと同じsrc/以下にある（このフォルダはViteのルートとして入口だけを置く）。 -->
+    <script type="module" src="/src/codex/main.ts"></script>
+  </body>
+</html>

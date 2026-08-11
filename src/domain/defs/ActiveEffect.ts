@@ -1,6 +1,8 @@
 import type { PropertyValue } from '../runtime/PropertyValue';
 import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { objectRef, propertyRef, signedNumber, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -21,6 +23,15 @@ export abstract class ActiveEffect {
     dragged: WorldObject | undefined,
     effectSite: EffectSite | undefined,
   ): void;
+
+  /** この効果を書き表す（Description参照）。命令1つにつき1行で、入れ子（pick・linked_add）は字下げする。 */
+  abstract describe(names: DefNames, out: DescriptionWriter): void;
+
+  /**
+   * この効果がpropertyGlobalIdのプロパティを書き換えうるか（プロパティ側からの逆引き用）。
+   * ownedByDeclarerの意味はPassiveEffect.affectsと同じ。
+   */
+  abstract affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean;
 }
 
 /**
@@ -49,6 +60,14 @@ export class ActiveEffects extends ActiveEffect {
   ): void {
     for (const operation of this.operations) operation.apply(owner, session, actor, dragged, effectSite);
   }
+
+  describe(names: DefNames, out: DescriptionWriter): void {
+    for (const operation of this.operations) operation.describe(names, out);
+  }
+
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return this.operations.some((operation) => operation.affects(propertyGlobalId, ownedByDeclarer));
+  }
 }
 
 /** set の1命令（対象プロパティへリテラルの絶対値を代入する、9.2節）。 */
@@ -72,6 +91,19 @@ export class SetEffect extends ActiveEffect {
   ): void {
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
     resolved?.setNumber(this.propertyGlobalId, this.value, session);
+  }
+
+  describe(names: DefNames, out: DescriptionWriter): void {
+    out.write(
+      text('set '),
+      propertyRef(names.propertyName(this.propertyGlobalId), this.target),
+      text(' = '),
+      names.propertyValue(this.propertyGlobalId, this.value),
+    );
+  }
+
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return this.propertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.target !== 'self');
   }
 }
 
@@ -114,6 +146,23 @@ export class AddEffect extends ActiveEffect {
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
     resolved?.addNumber(this.propertyGlobalId, scaled, session);
   }
+
+  describe(names: DefNames, out: DescriptionWriter): void {
+    out.write(...this.describeTokens(names));
+  }
+
+  /** transferのlinked_add（比例して効く）が、自分の行へ書き足せるように断片で返す。 */
+  describeTokens(names: DefNames): readonly DescriptionToken[] {
+    return [
+      text('add '),
+      propertyRef(names.propertyName(this.propertyGlobalId), this.target),
+      text(` ${signedNumber(this.amount)}`),
+    ];
+  }
+
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return this.propertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.target !== 'self');
+  }
 }
 
 /**
@@ -136,6 +185,15 @@ export class DestroyEffect extends ActiveEffect {
   ): void {
     const victim = owner.resolveEffectTarget(this.target, actor, dragged);
     victim?.destroy(session.codex.wellKnown);
+  }
+
+  describe(_names: DefNames, out: DescriptionWriter): void {
+    out.write(text(`destroy ${this.target}`));
+  }
+
+  /** オブジェクトごと消すだけで、個々のプロパティを書き換えはしない。 */
+  affects(): boolean {
+    return false;
   }
 }
 
@@ -179,6 +237,15 @@ export class SpawnEffect extends ActiveEffect {
     effectSite: EffectSite | undefined,
   ): void {
     owner.executeSpawn(this, session, actor, effectSite);
+  }
+
+  describe(names: DefNames, out: DescriptionWriter): void {
+    out.write(text('spawn '), objectRef(names.objectName(this.objectGlobalId)), text(` → ${this.into}`));
+  }
+
+  /** 新しいオブジェクトを生むだけで、既にあるプロパティを書き換えはしない。 */
+  affects(): boolean {
+    return false;
   }
 }
 
@@ -259,5 +326,34 @@ export class TransferEffect extends ActiveEffect {
 
     for (const linked of this.linkedAdd)
       linked.applyScaled(owner, session, actor, dragged, taken, this.amount);
+  }
+
+  describe(names: DefNames, out: DescriptionWriter): void {
+    const tokens: DescriptionToken[] = [
+      text('transfer '),
+      propertyRef(names.propertyName(this.fromPropertyGlobalId), this.fromObject),
+      text(' → '),
+      propertyRef(names.propertyName(this.toPropertyGlobalId), this.toObject),
+      text(`（最大${this.amount}`),
+    ];
+    // 単位が違う移送（水のmL → 水分のtick数）だけ、受け取る側の量も書く。
+    if (this.toAmount !== this.amount) tokens.push(text(` → ${this.toAmount}`));
+    if (this.allowOverflow) tokens.push(text('、あふれても移す'));
+    tokens.push(text('）'));
+    out.write(...tokens);
+
+    if (this.linkedAdd.length === 0) return;
+    out.indented(() => {
+      for (const linked of this.linkedAdd)
+        out.write(...linked.describeTokens(names), text('（実際に移した量に比例）'));
+    });
+  }
+
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    if (this.fromPropertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.fromObject !== 'self'))
+      return true;
+    if (this.toPropertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.toObject !== 'self'))
+      return true;
+    return this.linkedAdd.some((linked) => linked.affects(propertyGlobalId, ownedByDeclarer));
   }
 }

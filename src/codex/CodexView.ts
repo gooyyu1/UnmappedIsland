@@ -1,0 +1,290 @@
+import type { DescriptionLine, DescriptionToken } from '../domain/defs/Description';
+import { DescriptionWriter } from '../domain/defs/Description';
+import type { LocationTypeDef } from '../domain/defs/generation/LocationTypeDef';
+import type { ObjectDef } from '../domain/defs/ObjectDef';
+import type { Texts } from '../locale/Localization';
+import type { CodexSource } from './CodexSource';
+
+/**
+ * 参照（識別子）の見せ方。データを書く人は識別子で、遊ぶ人と訳す人は表示名で読みたいので、
+ * どちらで読むかを画面上で切り替えられるようにする。
+ */
+export type NamingMode = 'display' | 'identifier';
+
+/** 中身が1つも無いことを表すHTML。節ごと省くかの判断（pages.tsのsection）もこれを目印にする。 */
+export const EMPTY_HTML = '<p class="muted">（なし）</p>';
+
+/** HTMLへ文字列を埋め込む前の実体参照化。 */
+export function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] as string,
+  );
+}
+
+/**
+ * 読み込んだ定義を人間向けのHTMLに変換する窓口。
+ *
+ * 定義の中身をどう言い表すかは定義自身（`describe`、domain/defs/Description.ts）が知っているので、
+ * ここが担うのは**見せ方**だけ——表示名を引く、リンクを張る、識別子と表示名を切り替える。
+ */
+export class CodexView {
+  readonly source: CodexSource;
+  private readonly namingMode: NamingMode;
+
+  constructor(source: CodexSource, namingMode: NamingMode) {
+    this.source = source;
+    this.namingMode = namingMode;
+  }
+
+  get codex() {
+    return this.source.codex;
+  }
+
+  get locale() {
+    return this.source.locale;
+  }
+
+  // ------------------------------------------------------------------
+  // 定義の引き当て
+  // ------------------------------------------------------------------
+
+  /** 全object_defをグローバルIDの順（＝宣言順）に返す。 */
+  objectDefs(): readonly ObjectDef[] {
+    const defs: ObjectDef[] = [];
+    for (let globalId = 0; globalId < this.codex.objects.count; globalId++) {
+      const def: ObjectDef | undefined = this.codex.objects.get(globalId);
+      // 名前だけが登録されて定義が無いグローバルID（参照だけされた型）は飛ばす。
+      if (def !== undefined) defs.push(def);
+    }
+    return defs;
+  }
+
+  /** objectNameの型がpropertyNameのプロパティを持つか。 */
+  hasProperty(objectName: string, propertyName: string): boolean {
+    const globalId = this.codex.propertyNames.tryGetId(propertyName);
+    if (globalId === undefined) return false;
+    return this.objectDef(objectName)?.getPropertyDef(globalId) !== undefined;
+  }
+
+  objectDef(name: string): ObjectDef | undefined {
+    const globalId = this.codex.objectNames.tryGetId(name);
+    return globalId === undefined ? undefined : this.codex.objects.get(globalId);
+  }
+
+  /** propertyNameという名前のプロパティを持つobject_defの識別子（宣言順）。 */
+  objectsWithProperty(propertyName: string): readonly string[] {
+    const globalId = this.codex.propertyNames.tryGetId(propertyName);
+    if (globalId === undefined) return [];
+    return this.objectDefs()
+      .filter((def) => def.getPropertyDef(globalId) !== undefined)
+      .map((def) => def.name);
+  }
+
+  /** slotNameという名前のスロットを持つobject_defの識別子（宣言順）。 */
+  objectsWithSlot(slotName: string): readonly string[] {
+    const globalId = this.codex.slotNames.tryGetId(slotName);
+    if (globalId === undefined) return [];
+    return this.objectDefs()
+      .filter((def) => def.getSlotDef(globalId) !== undefined)
+      .map((def) => def.name);
+  }
+
+  // ------------------------------------------------------------------
+  // 表示名（識別子表示モードでは識別子そのもの）
+  // ------------------------------------------------------------------
+
+  objectLabel(name: string): string {
+    return this.label(name, this.objectDisplayName(name));
+  }
+
+  /**
+   * 土地の型（TerrainGeneration.md 1節）は表示名をlocation_textsが持つ（object_textsではない）ため、
+   * object_textsに宣言が無ければそちらを見る。宣言があればそちらが優先。
+   */
+  objectDisplayName(name: string): string {
+    const declared = this.locale.object(name).displayName;
+    if (declared !== name) return declared;
+
+    // 製作中オブジェクト（RecipeSystem.md 1節）は自動生成なので対応表に自分のエントリを持てず、
+    // 完成品の名前と書式から組み立てる。
+    const def = this.objectDef(name);
+    const product = def === undefined ? undefined : this.codex.productOf(def);
+    if (product !== undefined)
+      return this.locale.object(name).displayNameInProgress(this.objectDisplayName(product.name));
+
+    const locationType = this.locationTypeOf(name);
+    return locationType === undefined ? name : this.locale.location(locationType.name).displayName;
+  }
+
+  /** この型を実体とする土地の型。地形生成の定義を持たないCodexや、土地でない型ではundefined。 */
+  locationTypeOf(objectName: string): LocationTypeDef | undefined {
+    const globalId = this.codex.objectNames.tryGetId(objectName);
+    if (globalId === undefined) return undefined;
+    return this.codex.generation?.locationTypes.find((type) => type.objectDefGlobalId === globalId);
+  }
+
+  /**
+   * プロパティの表示名。同じ名前でもobject_defごとに文字列を変えられる（Localization.md）ため、
+   * 持ち主が分かっていればそれを使い、分からなければdefaultエントリだけで引く。
+   */
+  propertyLabel(objectName: string | undefined, propertyName: string): string {
+    return this.label(propertyName, this.propertyTexts(objectName, propertyName).displayName);
+  }
+
+  /** actions/combinations（操作）の表示名。オブジェクトのメンバーなので持ち主とセットで引く。 */
+  interactionLabel(objectName: string, name: string, isCombination: boolean): string {
+    return this.label(name, this.interactionTexts(objectName, name, isCombination).displayName);
+  }
+
+  interactionTexts(objectName: string, name: string, isCombination: boolean): Texts {
+    const objectTexts = this.locale.object(objectName);
+    return isCombination ? objectTexts.combination(name) : objectTexts.action(name);
+  }
+
+  slotLabel(name: string): string {
+    return this.label(name, this.locale.slot(name).displayName);
+  }
+
+  symbolLabel(name: string): string {
+    return this.label(name, this.locale.symbol(name).displayName);
+  }
+
+  propertyTagLabel(name: string): string {
+    return this.label(name, this.locale.propertyTag(name).displayName);
+  }
+
+  /** object_defのタグ（4.1節）は表示文字列を持たない（画面に出ない、データ側だけの語彙）。 */
+  tagLabel(name: string): string {
+    return name;
+  }
+
+  objectDescription(name: string): string | undefined {
+    const declared = this.locale.object(name).description;
+    if (declared !== undefined) return declared;
+    const locationType = this.locationTypeOf(name);
+    return locationType === undefined ? undefined : this.locale.location(locationType.name).description;
+  }
+
+  propertyDescription(objectName: string | undefined, propertyName: string): string | undefined {
+    return this.propertyTexts(objectName, propertyName).description;
+  }
+
+  /**
+   * 表示名が対応表に無いか。識別子がそのまま出ている状態を「未翻訳」とみなす目安で、
+   * 翻訳の抜けを見つける手掛かりとして印を付けるためだけに使う。
+   */
+  isUntranslated(identifier: string, displayName: string): boolean {
+    return identifier === displayName;
+  }
+
+  private propertyTexts(objectName: string | undefined, propertyName: string) {
+    // 未登録の識別子でも窓口は必ず返り、defaultエントリ→識別子の順にフォールバックする
+    // （Localization.md）。持ち主が分からないときは空文字を渡してdefaultだけを引く。
+    return this.locale.object(objectName ?? '').prop(propertyName);
+  }
+
+  private label(identifier: string, displayName: string): string {
+    return this.namingMode === 'identifier' ? identifier : displayName;
+  }
+
+  // ------------------------------------------------------------------
+  // リンク
+  // ------------------------------------------------------------------
+
+  objectHref(name: string): string {
+    return `#/object/${encodeURIComponent(name)}`;
+  }
+
+  tagHref(name: string): string {
+    return `#/tag/${encodeURIComponent(name)}`;
+  }
+
+  slotHref(name: string): string {
+    return `#/slot/${encodeURIComponent(name)}`;
+  }
+
+  propertyHref(objectName: string, propertyName: string): string {
+    return `#/property/${encodeURIComponent(objectName)}/${encodeURIComponent(propertyName)}`;
+  }
+
+  /**
+   * プロパティ参照のリンク先。持ち主が分かっていればそのページ、分からなければ同名のプロパティを
+   * 持つobject_defを探し、1つなら直接、複数なら候補一覧へ向ける（実行時にどのインスタンスが
+   * 相手になるかは、定義だけからは決まらないため）。
+   */
+  private propertyRefHref(objectName: string | undefined, propertyName: string): string | undefined {
+    if (objectName !== undefined && this.hasProperty(objectName, propertyName))
+      return this.propertyHref(objectName, propertyName);
+
+    const candidates = this.objectsWithProperty(propertyName);
+    if (candidates.length === 0) return undefined;
+    if (candidates.length === 1) return this.propertyHref(candidates[0], propertyName);
+    return `#/prop-candidates/${encodeURIComponent(propertyName)}`;
+  }
+
+  // ------------------------------------------------------------------
+  // 説明（DescriptionToken/DescriptionLine）のHTML化
+  // ------------------------------------------------------------------
+
+  /**
+   * 説明の断片1つをHTMLへ。selfObjectNameは`self`が指すobject_def（この説明を宣言している型）で、
+   * `self.温度`のような参照のリンク先を決めるのに要る。
+   */
+  tokenHtml(token: DescriptionToken, selfObjectName: string | undefined): string {
+    switch (token.kind) {
+      case 'text':
+        return escapeHtml(token.text);
+      case 'object':
+        return this.refHtml('object', token.name, this.objectLabel(token.name), this.objectHref(token.name));
+      case 'property': {
+        const owner = token.root === undefined || token.root === 'self' ? selfObjectName : undefined;
+        const prefix = token.root === undefined ? '' : `<span class="ref-root">${token.root}.</span>`;
+        const label = this.propertyLabel(owner, token.name);
+        return prefix + this.refHtml('property', token.name, label, this.propertyRefHref(owner, token.name));
+      }
+      case 'slot':
+        return this.refHtml('slot', token.name, this.slotLabel(token.name), this.slotHref(token.name));
+      case 'tag':
+        return this.refHtml('tag', token.name, this.tagLabel(token.name), this.tagHref(token.name));
+      case 'symbol':
+        return this.refHtml('symbol', token.name, this.symbolLabel(token.name), undefined);
+      case 'property_tag':
+        return this.refHtml('property-tag', token.name, this.propertyTagLabel(token.name), undefined);
+      case 'stage':
+        return this.refHtml('stage', token.name, token.name, undefined);
+      case 'reason':
+        // 理由は識別子ではなく文言そのものが読みたい情報（Localization.md reason_texts節）。
+        return this.refHtml('reason', token.name, this.locale.reason(token.name) ?? token.name, undefined);
+    }
+  }
+
+  tokensHtml(tokens: readonly DescriptionToken[], selfObjectName: string | undefined): string {
+    return tokens.map((token) => this.tokenHtml(token, selfObjectName)).join('');
+  }
+
+  /** 説明の行をリストへ。入れ子（pick候補・レシピの工程）は字下げで表す。 */
+  linesHtml(lines: readonly DescriptionLine[], selfObjectName: string | undefined): string {
+    if (lines.length === 0) return EMPTY_HTML;
+    const items = lines
+      .map((line) => `<li style="--depth:${line.depth}">${this.tokensHtml(line.tokens, selfObjectName)}</li>`)
+      .join('');
+    return `<ul class="description">${items}</ul>`;
+  }
+
+  /** 定義自身にwriterへ書かせ、その結果をリストへ（呼び出し側がwriterを持ち回らずに済む近道）。 */
+  describeHtml(selfObjectName: string | undefined, describe: (out: DescriptionWriter) => void): string {
+    const writer = new DescriptionWriter();
+    describe(writer);
+    return this.linesHtml(writer.toLines(), selfObjectName);
+  }
+
+  /** 参照1つのHTML。識別子は常に吹き出し（title）へ残し、表示名で見ていても元の名前を辿れるようにする。 */
+  private refHtml(kind: string, identifier: string, label: string, href: string | undefined): string {
+    const attributes = `class="ref ref-${kind}" title="${escapeHtml(identifier)}"`;
+    const body = escapeHtml(label);
+    return href === undefined
+      ? `<span ${attributes}>${body}</span>`
+      : `<a ${attributes} href="${href}">${body}</a>`;
+  }
+}

@@ -2,6 +2,8 @@ import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActionDef } from './ActionDef';
 import type { CombinationDef } from './CombinationDef';
+import type { DefNames, DescriptionWriter } from './Description';
+import { propertyRef, slotRef, text } from './Description';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
@@ -137,6 +139,67 @@ export class ObjectDef {
     this.recipes = recipes;
   }
 
+  /**
+   * この型そのものの性質（4節・7節の宣言）を書き出す（Description参照）。既定と同じ性質は書かない
+   * ——「特に断っていない」ことと同じ意味なので、並べても読み手の手掛かりにならないため。
+   */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    if (this.isSingleton) out.write(text('singleton: 世界にただ1つだけ存在する'));
+    if (this.isQuantitative) out.write(text('quantitative: 個数ではなく量で存在する'));
+    if (!this.stackable) out.write(text('stackable: false（同種でも1個ずつ別の枠に並ぶ）'));
+    if (this.boundToOwner) out.write(text('bound_to_owner: 入っていた親が消えるとき一緒に消える'));
+
+    if (this.representedBySlotGlobalId !== undefined)
+      out.write(
+        text('represented_by: '),
+        slotRef(names.slotName(this.representedBySlotGlobalId)),
+        text('の中身が代表になる'),
+      );
+
+    if (this.mainItemSlotGlobalId !== undefined)
+      out.write(
+        text('main_item_slot: '),
+        slotRef(names.slotName(this.mainItemSlotGlobalId)),
+        text('（カードを押すと並ぶ中身）'),
+      );
+
+    if (this.stackOrder !== undefined) out.write(text('stack_order: '), ...this.stackOrder.describe(names));
+  }
+
+  /**
+   * この型が、propertyGlobalIdのプロパティを書き換えうる箇所をすべて書き出す（プロパティ側からの
+   * 逆引き）。
+   *
+   * ownedByThisDefは、そのプロパティがこの型自身のものか。falseなら、他の型のプロパティを
+   * 書き換えうる宣言だけを書く（target=selfは常に宣言元自身のプロパティを指すため、
+   * 他の型の同名プロパティには届かない）。
+   */
+  describeInfluencesOn(
+    propertyGlobalId: number,
+    ownedByThisDef: boolean,
+    names: DefNames,
+    out: DescriptionWriter,
+  ): void {
+    this.passives.describeAffecting(propertyGlobalId, ownedByThisDef, names, out);
+
+    for (const propertyDef of this.propertyDefs) {
+      // 自分自身を値域へ丸めるon_overflow/on_shortfallは、そのプロパティの定義を見れば分かる
+      // （「どこから影響されるか」を知りたい読み手には何も足さない）。
+      if (ownedByThisDef && propertyDef.globalId === propertyGlobalId) continue;
+      if (!propertyDef.affectsViaRangeEvents(propertyGlobalId, ownedByThisDef)) continue;
+      out.write(propertyRef(propertyDef.name), text(':'));
+      out.indented(() =>
+        propertyDef.describeRangeEventsAffecting(propertyGlobalId, ownedByThisDef, names, out),
+      );
+    }
+
+    for (const interaction of [...this.actions, ...this.combinations]) {
+      if (!interaction.affects(propertyGlobalId, ownedByThisDef)) continue;
+      out.write(text(`${interaction.name}:`));
+      out.indented(() => interaction.describe(names, out));
+    }
+  }
+
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */
   getPropertyDef(globalPropertyId: number): PropertyDef | undefined {
     const local = this.propertyLayout.toLocal(globalPropertyId);
@@ -149,12 +212,12 @@ export class ObjectDef {
     return local === LocalIndexMap.missing ? undefined : this.slotDefs[local];
   }
 
-  /** 全PropertyDefを列挙する（WorldObject内部利用専用）。 */
+  /** 全PropertyDefを列挙する。 */
   enumeratePropertyDefs(): readonly PropertyDef[] {
     return this.propertyDefs;
   }
 
-  /** 全SlotDefを列挙する（WorldObject内部利用専用）。 */
+  /** 全SlotDefを列挙する。 */
   enumerateSlotDefs(): readonly SlotDef[] {
     return this.slotDefs;
   }

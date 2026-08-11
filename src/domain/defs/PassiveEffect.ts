@@ -2,6 +2,8 @@ import type { PropertyValue } from '../runtime/PropertyValue';
 import { RegisteredPassiveEffect } from '../runtime/RegisteredPassiveEffect';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { ConditionNode } from './ConditionNode';
+import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { propertyRef, signedNumber, stageRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -36,6 +38,24 @@ export class PassiveEffectGate {
       return false;
 
     return true;
+  }
+
+  /** このゲートを書き表す（Description参照）。常時有効なら空（条件が無いことを書き足さない）。 */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    const tokens: DescriptionToken[] = [];
+    if (this.stageName !== undefined && this.propertyGlobalId !== undefined)
+      tokens.push(
+        propertyRef(names.propertyName(this.propertyGlobalId)),
+        text('が段'),
+        stageRef(this.stageName),
+        text('にある'),
+      );
+
+    if (this.conditions !== undefined) {
+      if (tokens.length > 0) tokens.push(text(' かつ '));
+      tokens.push(...this.conditions.describe(names));
+    }
+    return tokens;
   }
 
   private static resolve(root: ReferenceRoot, slotBearer: WorldObject): WorldObject | undefined {
@@ -84,6 +104,33 @@ export abstract class PassiveEffect {
   /** この効果（registration）を、対象プロパティ値（target）のmodify用/accumulate用incomingのうち
    * 具象クラスに応じた側へ登録する。 */
   abstract registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void;
+
+  /** YAMLでの書き方の名前（modify/accumulate）。describeが対象の前に置く。 */
+  protected abstract get kindLabel(): string;
+
+  /**
+   * この効果がpropertyGlobalIdのプロパティを書き換えうるか（プロパティ側からの逆引き用）。
+   *
+   * ownedByDeclarerは、そのプロパティが宣言元のobject_def自身のものか。target=selfの効果は
+   * 宣言元自身のプロパティしか書き換えないため、他の型の同名プロパティは書き換え対象にならない。
+   */
+  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    if (this.targetPropertyGlobalId !== propertyGlobalId) return false;
+    return ownedByDeclarer || this.target !== 'self';
+  }
+
+  /** この効果を1行で書き表す（Description参照）。 */
+  describe(names: DefNames, out: DescriptionWriter): void {
+    const tokens: DescriptionToken[] = [
+      text(`${this.kindLabel} `),
+      propertyRef(names.propertyName(this.targetPropertyGlobalId), this.target),
+      text(` ${signedNumber(this.amount)}`),
+    ];
+
+    const gate = this.gate.describe(names);
+    if (gate.length > 0) tokens.push(text('（'), ...gate, text('間）'));
+    out.write(...tokens);
+  }
 
   /** declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
    * modifyでもaccumulateでも同じ量。 */
@@ -171,6 +218,10 @@ export class ModifyEffect extends PassiveEffect {
     super(target, targetPropertyGlobalId, amount, gate);
   }
 
+  protected get kindLabel(): string {
+    return 'modify';
+  }
+
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
     target.registerModify(registration);
   }
@@ -188,6 +239,10 @@ export class AccumulateEffect extends PassiveEffect {
     gate: PassiveEffectGate,
   ) {
     super(target, targetPropertyGlobalId, amount, gate);
+  }
+
+  protected get kindLabel(): string {
+    return 'accumulate';
   }
 
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
