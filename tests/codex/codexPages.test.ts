@@ -71,11 +71,15 @@ describe('WorldCodexビューアのページ', () => {
     expect(renderSlotPage(view, 'contents')).toContain('#/object/woven_basket');
   });
 
-  it('タグ一覧はタグと件数だけを出す（型そのものはタグ別の一覧が持つ）', () => {
+  it('タグ一覧はタグ・件数・そのタグの型の絵を出す（型の一覧はタグ別の一覧が持つ）', () => {
     const html = renderTagListPage(view);
 
     expect(html).toContain('#/by-tag/item');
-    expect(html).toContain('#/by-tag/location');
+    expect(html).toContain('item <span class="muted">(21)</span>');
+    // 絵は、そのタグを持つ型のうち絵が用意されている最初のものを借りる。
+    expect(html).toMatch(
+      /<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"[^>]*>[^<]*<span[^>]*>location/,
+    );
     expect(html).not.toContain('#/object/');
   });
 

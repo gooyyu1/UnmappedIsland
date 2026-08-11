@@ -170,13 +170,17 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
  * 「どんなまとまりがあるか」を見渡す入口になる。
  */
 export function renderTagListPage(view: CodexView): string {
-  const rows = view
+  const cards = view
     .tagNames()
-    .map(
-      (tag) =>
-        `<tr><td><a href="${view.tagHref(tag)}">${escapeHtml(tag)}</a></td>` +
-        `<td>${view.codex.objectDefNamesWithTag(tag).length}</td></tr>`,
-    )
+    .map((tag) => {
+      const owners = view.codex.objectDefNamesWithTag(tag);
+      return (
+        `<a class="object-card" href="${view.tagHref(tag)}">` +
+        tagArtHtml(view, owners) +
+        `<span class="object-card-name">${escapeHtml(tag)} ` +
+        `<span class="muted">(${owners.length})</span></span></a>`
+      );
+    })
     .join('');
 
   return (
@@ -185,8 +189,16 @@ export function renderTagListPage(view: CodexView): string {
     `<p class="muted">object_defのタグ（4.1節）。型のグループを指す唯一の手段で、` +
     `スロットの受け入れ条件やcombinationsの相手もこれで書かれる。` +
     `型そのものは<a href="#/by-tag">タグ別の一覧</a>で見られる。</p>` +
-    `<table><thead><tr><th>タグ</th><th>型の数</th></tr></thead><tbody>${rows}</tbody></table>`
+    `<div class="object-grid">${cards}</div>`
   );
+}
+
+/** タグの見出しに使う絵。そのタグを持つ型のうち、絵が用意されている最初のものを借りる。 */
+function tagArtHtml(view: CodexView, names: readonly string[]): string {
+  const def = view.objectDef(names.find((name) => OBJECT_ART.has(name)) ?? names[0] ?? '');
+  return def === undefined
+    ? '<span class="art art-thumb art-missing" aria-hidden="true"></span>'
+    : artHtml(view, def, 'thumb');
 }
 
 /**
