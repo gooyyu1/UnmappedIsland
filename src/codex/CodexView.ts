@@ -2,6 +2,7 @@ import type { DescriptionLine, DescriptionToken } from '../domain/defs/Descripti
 import { DescriptionWriter } from '../domain/defs/Description';
 import type { LocationTypeDef } from '../domain/defs/generation/LocationTypeDef';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
+import { OBJECT_ART } from '../game/ui/objectArt';
 import type { Texts } from '../locale/Localization';
 import type { CodexSource } from './CodexSource';
 
@@ -70,6 +71,14 @@ export class CodexView {
   objectDef(name: string): ObjectDef | undefined {
     const globalId = this.codex.objectNames.tryGetId(name);
     return globalId === undefined ? undefined : this.codex.objects.get(globalId);
+  }
+
+  /** 宣言されているobject_defのタグ（4.1節）を、宣言順（グローバルIDの順）に返す。 */
+  tagNames(): readonly string[] {
+    const names: string[] = [];
+    for (let globalId = 0; globalId < this.codex.tagNames.count; globalId++)
+      names.push(this.codex.tagNames.getName(globalId));
+    return names;
   }
 
   /** propertyNameという名前のプロパティを持つobject_defの識別子（宣言順）。 */
@@ -196,8 +205,9 @@ export class CodexView {
     return `#/object/${encodeURIComponent(name)}`;
   }
 
+  /** タグの行き先はタグ別の一覧（1ページ）の中のその節。タグごとにページを分けない。 */
   tagHref(name: string): string {
-    return `#/tag/${encodeURIComponent(name)}`;
+    return `#/by-tag/${encodeURIComponent(name)}`;
   }
 
   slotHref(name: string): string {
@@ -236,7 +246,14 @@ export class CodexView {
       case 'text':
         return escapeHtml(token.text);
       case 'object':
-        return this.refHtml('object', token.name, this.objectLabel(token.name), this.objectHref(token.name));
+        // 型の参照には絵を添える。何が生まれるのか・何を使うのかは、名前より絵のほうが速い。
+        return this.refHtml(
+          'object',
+          token.name,
+          this.objectLabel(token.name),
+          this.objectHref(token.name),
+          inlineArtHtml(token.name),
+        );
       case 'property': {
         const owner = token.root === undefined || token.root === 'self' ? selfObjectName : undefined;
         const prefix = token.root === undefined ? '' : `<span class="ref-root">${token.root}.</span>`;
@@ -253,6 +270,15 @@ export class CodexView {
         return this.refHtml('property-tag', token.name, this.propertyTagLabel(token.name), undefined);
       case 'stage':
         return this.refHtml('stage', token.name, token.name, undefined);
+      case 'action':
+      case 'combination': {
+        // 操作は宣言元の型のメンバー（Localization.md）。selfが指す型がその持ち主になる。
+        const label =
+          selfObjectName === undefined
+            ? token.name
+            : this.interactionLabel(selfObjectName, token.name, token.kind === 'combination');
+        return this.refHtml(token.kind, token.name, label, undefined);
+      }
       case 'reason':
         // 理由は識別子ではなく文言そのものが読みたい情報（Localization.md reason_texts節）。
         return this.refHtml('reason', token.name, this.locale.reason(token.name) ?? token.name, undefined);
@@ -279,12 +305,27 @@ export class CodexView {
     return this.linesHtml(writer.toLines(), selfObjectName);
   }
 
-  /** 参照1つのHTML。識別子は常に吹き出し（title）へ残し、表示名で見ていても元の名前を辿れるようにする。 */
-  private refHtml(kind: string, identifier: string, label: string, href: string | undefined): string {
+  /**
+   * 参照1つのHTML。識別子は常に吹き出し（title）へ残し、表示名で見ていても元の名前を辿れるようにする。
+   * prefixは名前の前に置くHTML（型の絵など。リンクの内側に入れて、絵からも辿れるようにする）。
+   */
+  private refHtml(
+    kind: string,
+    identifier: string,
+    label: string,
+    href: string | undefined,
+    prefix = '',
+  ): string {
     const attributes = `class="ref ref-${kind}" title="${escapeHtml(identifier)}"`;
-    const body = escapeHtml(label);
+    const body = prefix + escapeHtml(label);
     return href === undefined
       ? `<span ${attributes}>${body}</span>`
       : `<a ${attributes} href="${href}">${body}</a>`;
   }
+}
+
+/** 文中に置く型の絵（1文字ぶんの高さ）。絵が用意されていなければ何も置かない。 */
+function inlineArtHtml(objectName: string): string {
+  const url = OBJECT_ART.get(objectName);
+  return url === undefined ? '' : `<img class="ref-art" src="${url}" alt="">`;
 }

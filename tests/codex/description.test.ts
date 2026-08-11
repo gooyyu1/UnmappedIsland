@@ -63,9 +63,31 @@ object_defs:
         with: cutting_tool
         pick:
           - weight: 3
-            spawn: {object: coconut, into: same_slot}
+            spawn: {object: coconut_half, into: same_slot}
           - weight: {prop: freshness}
             add: {self: {freshness: -10}}
+
+  coconut_half:
+    tags: [item]
+    props:
+      freshness: {value: 100}
+
+  bowl:
+    tags: [item]
+    props:
+      volume: {value: 100}
+    recipes:
+      carved:
+        steps:
+          - requires:
+              - {object: coconut_half, count: 1, consume: true}
+              - {object: sharp_stone, count: 1, consume: false}
+            duration: 30
+
+  sharp_stone:
+    tags: [item, cutting_tool]
+    props:
+      weight: {value: 100}
 `;
 
 function describeToText(codex: WorldCodex, body: (out: DescriptionWriter) => void): string {
@@ -141,7 +163,7 @@ describe('定義の自己記述（describe）', () => {
     expect(text).toContain('with: cutting_toolを持つカードのドロップ');
     expect(text).toContain('pick:');
     // 候補の効果は候補（weight）より1段深い。
-    expect(text).toContain('\n  weight = 3\n    spawn coconut → same_slot');
+    expect(text).toContain('\n  weight = 3\n    spawn coconut_half → same_slot');
     // weightはリテラルだけでなくプロパティ参照にもなる（10.2節）。
     expect(text).toContain('weight = freshness');
   });
@@ -172,6 +194,30 @@ describe('プロパティの逆引き（describeInfluencesOn）', () => {
     expect(influences('world', 'world', 'hour')).toBe('');
     // 繰り上げ先（day）から見れば、hourのon_overflowは立派な影響元。
     expect(influences('world', 'world', 'day')).toContain('add day +1');
+  });
+});
+
+describe('生まれる側・材料側からの逆引き', () => {
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
+  const objectDef = (name: string) => codex.objects.get(codex.objectNames.getId(name));
+
+  it('pickの奥にあるspawnも、生み出す型として数える', () => {
+    // coconutのcutは、pickの候補の中でcoconut_halfをspawnする。
+    expect(objectDef('coconut').creates(codex.objectNames.getId('coconut_half'))).toBe(true);
+  });
+
+  it('生み出さない型には答えない', () => {
+    expect(objectDef('coconut').creates(codex.objectNames.getId('coconut'))).toBe(false);
+    expect(objectDef('bowl').creates(codex.objectNames.getId('coconut_half'))).toBe(false);
+  });
+
+  it('材料としても道具としても、使う型から完成品を辿れる', () => {
+    const bowl = objectDef('bowl');
+
+    expect(bowl.usesInRecipes(codex.objectNames.getId('coconut_half'))).toBe(true);
+    // 消費しない道具（consume: false）も、そのレシピに関わる型として数える。
+    expect(bowl.usesInRecipes(codex.objectNames.getId('sharp_stone'))).toBe(true);
+    expect(bowl.usesInRecipes(codex.objectNames.getId('coconut'))).toBe(false);
   });
 });
 

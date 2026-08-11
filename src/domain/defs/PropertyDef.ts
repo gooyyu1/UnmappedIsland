@@ -244,27 +244,30 @@ export class PropertyDef {
   }
 
   /**
-   * range系イベント（6.3節）がpropertyGlobalIdのプロパティを書き換えうるか。
-   * 対象は常にselfなので、宣言元のobject_def自身のプロパティを問うときだけ真になりうる。
+   * range系イベント（6.3節）に、matchesが真になる効果があるか（逆引きの絞り込み用）。
+   * 効果そのものを渡すので、何を尋ねるか（どのプロパティを書き換えるか・どの型を生むか）は
+   * 呼び出し側が決める。
    */
-  affectsViaRangeEvents(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    return (
-      (this.onOverflow?.affects(propertyGlobalId, ownedByDeclarer) ?? false) ||
-      (this.onShortfall?.affects(propertyGlobalId, ownedByDeclarer) ?? false)
-    );
+  hasRangeEventMatching(matches: (effect: ActiveEffect) => boolean): boolean {
+    return this.rangeEvents().some(([, effect]) => matches(effect));
   }
 
-  /** range系イベント（6.3節）のうち、propertyGlobalIdを書き換えうるものだけを書き出す。 */
-  describeRangeEventsAffecting(
-    propertyGlobalId: number,
-    ownedByDeclarer: boolean,
+  /** range系イベントのうち、matchesが真になるものだけを書き出す。 */
+  describeRangeEventsMatching(
+    matches: (effect: ActiveEffect) => boolean,
     names: DefNames,
     out: DescriptionWriter,
   ): void {
-    if (this.onOverflow?.affects(propertyGlobalId, ownedByDeclarer) ?? false)
-      this.describeRangeEvent('on_overflow', this.onOverflow, names, out);
-    if (this.onShortfall?.affects(propertyGlobalId, ownedByDeclarer) ?? false)
-      this.describeRangeEvent('on_shortfall', this.onShortfall, names, out);
+    for (const [label, effect] of this.rangeEvents())
+      if (matches(effect)) this.describeRangeEvent(label, effect, names, out);
+  }
+
+  /** 宣言されているrange系イベントとその名前。 */
+  private rangeEvents(): readonly (readonly [string, ActiveEffect])[] {
+    const events: (readonly [string, ActiveEffect])[] = [];
+    if (this.onOverflow !== undefined) events.push(['on_overflow', this.onOverflow]);
+    if (this.onShortfall !== undefined) events.push(['on_shortfall', this.onShortfall]);
+    return events;
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */

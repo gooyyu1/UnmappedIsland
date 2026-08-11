@@ -32,6 +32,16 @@ export abstract class ActiveEffect {
    * ownedByDeclarerの意味はPassiveEffect.affectsと同じ。
    */
   abstract affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean;
+
+  /**
+   * この効果がobjectGlobalIdの型を生み出しうるか（生まれる側からの逆引き用）。
+   *
+   * 生むのはspawn（9.4節）だけなので、既定は偽。中に他の効果を抱える合成（ActiveEffects・pick）は、
+   * 自分の中を見て答える。
+   */
+  spawns(_objectGlobalId: number): boolean {
+    return false;
+  }
 }
 
 /**
@@ -67,6 +77,10 @@ export class ActiveEffects extends ActiveEffect {
 
   affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
     return this.operations.some((operation) => operation.affects(propertyGlobalId, ownedByDeclarer));
+  }
+
+  override spawns(objectGlobalId: number): boolean {
+    return this.operations.some((operation) => operation.spawns(objectGlobalId));
   }
 }
 
@@ -246,6 +260,10 @@ export class SpawnEffect extends ActiveEffect {
   /** 新しいオブジェクトを生むだけで、既にあるプロパティを書き換えはしない。 */
   affects(): boolean {
     return false;
+  }
+
+  override spawns(objectGlobalId: number): boolean {
+    return this.objectGlobalId === objectGlobalId;
   }
 }
 

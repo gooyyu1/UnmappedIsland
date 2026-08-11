@@ -74,9 +74,12 @@ export abstract class InteractionDef {
   /** 何がこの操作のきっかけになるか（具象ごとに違う）。describeが先頭に書く。 */
   protected abstract describeTrigger(names: DefNames, out: DescriptionWriter): void;
 
-  /** この操作がpropertyGlobalIdのプロパティを書き換えうるか（ActiveEffect.affects参照）。 */
-  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    return this.effect?.affects(propertyGlobalId, ownedByDeclarer) ?? false;
+  /**
+   * この操作の効果にmatchesが真になるものがあるか（逆引きの絞り込み用）。効果そのものを渡すので、
+   * 何を尋ねるか（どのプロパティを書き換えるか・どの型を生むか）は呼び出し側が決める。
+   */
+  hasEffectMatching(matches: (effect: ActiveEffect) => boolean): boolean {
+    return this.effect !== undefined && matches(this.effect);
   }
 
   /**

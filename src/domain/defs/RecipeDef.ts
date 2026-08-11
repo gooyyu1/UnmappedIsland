@@ -20,6 +20,11 @@ export class RecipeRequirementDef {
     this.consume = consume;
   }
 
+  /** この要求がobjectGlobalIdの型を名指ししているか（素材・道具のどちらでも）。 */
+  requires(objectGlobalId: number): boolean {
+    return this.objectGlobalId === objectGlobalId;
+  }
+
   /** この要求を書き表す（Description参照）。 */
   describe(names: DefNames): readonly DescriptionToken[] {
     return [
@@ -40,6 +45,11 @@ export class RecipeStepDef {
   constructor(requirements: readonly RecipeRequirementDef[], durationMinutes: number) {
     this.requirements = requirements;
     this.durationMinutes = durationMinutes;
+  }
+
+  /** この工程がobjectGlobalIdの型を要求しているか。 */
+  requires(objectGlobalId: number): boolean {
+    return this.requirements.some((requirement) => requirement.requires(objectGlobalId));
   }
 
   /** この工程を書き出す（Description参照）。stepNumberは1始まりの見出し用の番号。 */
@@ -79,6 +89,11 @@ export class RecipeDef {
     this.steps = steps;
     this.icon = icon;
     this.unlock = unlock;
+  }
+
+  /** このレシピがobjectGlobalIdの型を、どこかの工程で素材か道具として要求しているか。 */
+  requires(objectGlobalId: number): boolean {
+    return this.steps.some((step) => step.requires(objectGlobalId));
   }
 
   /** このレシピを書き出す（Description参照）。 */

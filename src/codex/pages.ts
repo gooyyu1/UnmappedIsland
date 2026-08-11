@@ -18,7 +18,8 @@ export function renderObjectListPage(view: CodexView): string {
   return (
     `<h1>オブジェクト一覧</h1>` +
     `<p class="muted" title="${escapeHtml(view.source.files.join(', '))}">` +
-    `${defs.length}件のobject_def（${view.source.files.length}ファイル）</p>` +
+    `${defs.length}件のobject_def（${view.source.files.length}ファイル）／` +
+    `<a href="#/by-tag">タグ別の一覧</a>／<a href="#/tags">タグ一覧</a></p>` +
     `<p><input id="object-filter" type="search" placeholder="名前で絞り込む" autocomplete="off"></p>` +
     `<div class="object-grid">${cards}</div>` +
     `<p class="muted" id="object-filter-empty" hidden>該当するオブジェクトがありません。</p>`
@@ -60,7 +61,27 @@ export function renderObjectPage(view: CodexView, name: string): string {
     section('actions（メニューから選ぶ操作）', interactionsHtml(view, def, def.actions, false)) +
     section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations, true)) +
     section('recipes', recipesHtml(view, def)) +
-    variantsSection(view, name)
+    variantsSection(view, name) +
+    // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
+    section(
+      'この型を生み出すもの',
+      objectGridOf(view, (other) => other.creates(def.globalId)),
+    ) +
+    section(
+      'この型を材料・道具に使うもの',
+      objectGridOf(view, (other) => other.usesInRecipes(def.globalId)),
+    )
+  );
+}
+
+/** 条件に当てはまる型を、一覧と同じ絵つきのカードで並べる。 */
+function objectGridOf(view: CodexView, matches: (def: ObjectDef) => boolean): string {
+  return objectGridHtml(
+    view,
+    view
+      .objectDefs()
+      .filter(matches)
+      .map((def) => def.name),
   );
 }
 
@@ -128,15 +149,86 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
   );
 }
 
-/** タグを持つobject_defの一覧。 */
-export function renderTagPage(view: CodexView, tagName: string): string {
-  const names = view.codex.objectDefNamesWithTag(tagName);
+/**
+ * タグの一覧。タグは型のグループを指す唯一の手段（`WorldCodex.objectDefNamesWithTag`）なので、
+ * 「どんなまとまりがあるか」を見渡す入口になる。
+ */
+export function renderTagListPage(view: CodexView): string {
+  const cards = view
+    .tagNames()
+    .map((tag) => {
+      const owners = view.codex.objectDefNamesWithTag(tag);
+      return (
+        `<a class="object-card" href="${view.tagHref(tag)}">` +
+        tagArtHtml(view, owners) +
+        `<span class="object-card-name">${escapeHtml(tag)} ` +
+        `<span class="muted">(${owners.length})</span></span></a>`
+      );
+    })
+    .join('');
+
   return (
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
-    `<h1><span class="muted">tag: </span>${escapeHtml(tagName)}</h1>` +
-    `<p class="muted">このタグを持つobject_def ${names.length}件</p>` +
+    `<h1>タグ一覧</h1>` +
+    `<p class="muted">object_defのタグ（4.1節）。型のグループを指す唯一の手段で、` +
+    `スロットの受け入れ条件やcombinationsの相手もこれで書かれる。` +
+    `型そのものは<a href="#/by-tag">タグ別の一覧</a>で見られる。</p>` +
+    `<div class="object-grid">${cards}</div>`
+  );
+}
+
+/** タグの見出しに使う絵。そのタグを持つ型のうち、絵が用意されている最初のものを借りる。 */
+function tagArtHtml(view: CodexView, names: readonly string[]): string {
+  const def = view.objectDef(names.find((name) => OBJECT_ART.has(name)) ?? names[0] ?? '');
+  return def === undefined
+    ? '<span class="art art-thumb art-missing" aria-hidden="true"></span>'
+    : artHtml(view, def, 'thumb');
+}
+
+/**
+ * タグごとに分けたオブジェクトの一覧。**1ページにすべてのタグを並べる**——型は複数のタグを持つので、
+ * タグごとにページを分けると同じ型を何度も開くことになり、まとまりの違いも見比べられない。
+ *
+ * どの型もどこかの節には出るよう、タグを持たない型は最後にまとめる。
+ */
+export function renderObjectsByTagPage(view: CodexView): string {
+  const sections = view
+    .tagNames()
+    .map((tag) => tagSectionHtml(view, tag, escapeHtml(tag), view.codex.objectDefNamesWithTag(tag)))
+    .join('');
+
+  const untagged = view.objectDefs().filter((def) => def.tags.length === 0);
+  const untaggedSection =
+    untagged.length === 0
+      ? ''
+      : tagSectionHtml(
+          view,
+          '',
+          'タグなし',
+          untagged.map((def) => def.name),
+        );
+
+  return (
+    `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
+    `<h1>タグ別オブジェクト一覧</h1>` +
+    `<p class="muted">タグは型のグループを指す唯一の手段（4.1節）。1つの型が複数のタグを持つため、` +
+    `同じ型が複数の節に出る。タグそのものの一覧は<a href="#/tags">タグ一覧</a>。</p>` +
+    sections +
+    untaggedSection
+  );
+}
+
+/** タグ1つぶんの節。idはタグ名からのスクロール先（main.tsが#/by-tag/<タグ>で使う）。 */
+function tagSectionHtml(view: CodexView, tag: string, heading: string, names: readonly string[]): string {
+  return (
+    `<h2 id="${tagSectionId(tag)}">${heading}<span class="muted"> (${names.length})</span></h2>` +
     objectGridHtml(view, names)
   );
+}
+
+/** タグ別一覧の中の、そのタグの節のid。 */
+export function tagSectionId(tag: string): string {
+  return `tag-${tag}`;
 }
 
 /** スロットを持つobject_defの一覧と、それぞれの受け入れ方。 */
@@ -323,8 +415,11 @@ function recipesHtml(view: CodexView, def: ObjectDef): string {
 }
 
 /**
- * このプロパティを書き換えうる宣言を、宣言している型ごとにまとめる。型の側に「あなたはこの
- * プロパティに影響しますか」と尋ねるだけで、宣言の中身を覗かずに済む（ObjectDef.describeInfluencesOn）。
+ * このプロパティを書き換える宣言を、宣言している型ごとにまとめる。他の逆引きと違って量と条件まで
+ * 出すのは、「どれだけ動くのか」がこの節を見る目的そのものだから。
+ *
+ * すべての型に尋ね、1行でも書いた型だけを並べる。**尋ねるだけで宣言の中身は覗かない**——
+ * 何をどう書き表すかは型の側（ObjectDef.describeInfluencesOn）が知っている。
  */
 function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: number): string {
   const groups = view
@@ -356,15 +451,15 @@ function card(heading: string, body: string): string {
   return `<div class="card"><h4>${heading}</h4>${body}</div>`;
 }
 
-/**
- * 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているとき（識別子表示モード、
- * または未翻訳）は繰り返さない。
- */
 /** 見出しの脇に小さく添える識別子。見出しがすでに識別子そのものなら何も足さない。 */
 function headingIdentifier(label: string, identifier: string): string {
   return label === identifier ? '' : ` <code>${escapeHtml(identifier)}</code>`;
 }
 
+/**
+ * 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているとき（識別子表示モード、
+ * または未翻訳）は繰り返さない。
+ */
 function identifierLine(view: CodexView, identifier: string, label: string, displayName: string): string {
   const code = label === identifier ? '' : `<code>${escapeHtml(identifier)}</code>`;
   const badge = untranslatedBadge(view, identifier, displayName);

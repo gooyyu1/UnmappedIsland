@@ -5,9 +5,10 @@ import { CodexView } from '../../src/codex/CodexView';
 import {
   renderObjectListPage,
   renderObjectPage,
+  renderObjectsByTagPage,
   renderPropertyPage,
   renderSlotPage,
-  renderTagPage,
+  renderTagListPage,
 } from '../../src/codex/pages';
 import { LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -66,9 +67,61 @@ describe('WorldCodexビューアのページ', () => {
     expect(html).toContain('#/object/world');
   });
 
-  it('タグ・スロットからその型を辿れる', () => {
-    expect(renderTagPage(view, 'item')).toContain('#/object/coconut');
+  it('スロットからその型を辿れる', () => {
     expect(renderSlotPage(view, 'contents')).toContain('#/object/woven_basket');
+  });
+
+  it('タグ一覧はタグ・件数・そのタグの型の絵を出す（型の一覧はタグ別の一覧が持つ）', () => {
+    const html = renderTagListPage(view);
+
+    expect(html).toContain('#/by-tag/item');
+    expect(html).toContain('item <span class="muted">(21)</span>');
+    // 絵は、そのタグを持つ型のうち絵が用意されている最初のものを借りる。
+    expect(html).toMatch(
+      /<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"[^>]*>[^<]*<span[^>]*>location/,
+    );
+    expect(html).not.toContain('#/object/');
+  });
+
+  it('タグ別の一覧は、全タグの節を1ページに絵つきで並べる', () => {
+    const html = renderObjectsByTagPage(view);
+
+    expect(html).toContain('id="tag-item"');
+    expect(html).toContain('id="tag-location"');
+    // 節の中身は一覧と同じ絵つきのカード。
+    expect(html).toContain('data-name="coconut"');
+    expect(html).toMatch(/<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"/);
+    // どの型もどこかの節に出るよう、タグを持たない型（world）もまとめて出す。
+    expect(html).toContain('タグなし');
+    expect(html).toContain('data-name="world"');
+  });
+
+  it('オブジェクト一覧から、タグ別の一覧とタグ一覧の両方へ行ける', () => {
+    const html = renderObjectListPage(view);
+
+    expect(html).toContain('href="#/by-tag"');
+    expect(html).toContain('href="#/tags"');
+  });
+
+  it('生まれる側から、それを生み出す型を絵で辿れる', () => {
+    // 太い枝は土地の探索から手に入る（spawn元の逆引き）。
+    const html = renderObjectPage(view, 'thick_branch');
+
+    expect(html).toContain('この型を生み出すもの');
+    expect(html).toContain('#/object/sandy_beach');
+    expect(html).toMatch(/<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"/);
+    // 行き先の型を並べるだけで、操作の名前も探索のpickの木（weightの並び）も持ち込まない。
+    expect(html).not.toContain('探索する');
+    expect(html).not.toContain('weight = ');
+  });
+
+  it('材料から、それを使うレシピの完成品を絵で辿れる', () => {
+    const html = renderObjectPage(view, 'woven_leaf');
+
+    expect(html).toContain('この型を材料・道具に使うもの');
+    expect(html).toContain('#/object/woven_basket');
+    // 完成品を並べるだけで足りる（作り方は完成品のページにある）。
+    expect(html).not.toContain('工程1');
   });
 
   it('存在しない型・プロパティはエラーとして出す', () => {
