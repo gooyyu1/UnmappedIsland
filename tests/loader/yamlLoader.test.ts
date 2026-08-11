@@ -25,6 +25,42 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/シンボル名/);
   });
 
+  it('プロパティの値・範囲・段・量は小数で書ける', () => {
+    // 連続量は小数を持てる（GameElementDefinition.md 6節）。刻みを桁で稼ぐ必要が無くなるので、
+    // 「1tick分 = 1」のまま細かい傾きを直接書ける。
+    const yaml = `
+object_defs:
+  pond:
+    props:
+      moisture:
+        value: 0.5
+        range: {min: -1.5, max: 2.25}
+        stages:
+          - {name: shallow}
+          - {name: deep, min: 1.75}
+        passives:
+          - accumulate:
+              self:
+                moisture: -0.35
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const def = codex.objects.get(codex.objectNames.getId('pond'));
+    const moistureId = codex.propertyNames.getId('moisture');
+    const prop = def.getPropertyDef(moistureId)!;
+
+    expect(prop.range).toEqual({ min: -1.5, max: 2.25 });
+    expect(prop.isInStage(1.75, 'deep'), '段の閾値も小数で刻める').toBe(true);
+    expect(prop.isInStage(1.74, 'deep')).toBe(false);
+
+    const session = new WorldSession(codex);
+    const pond = session.spawn(codex.objectNames.getId('pond'));
+    expect(pond.getNumber(moistureId), '初期値も小数').toBe(0.5);
+
+    pond.tick(session);
+
+    expect(pond.getNumber(moistureId), '毎tickの加減算も小数で効く').toBeCloseTo(0.15, 10);
+  });
+
   // ------------------------------------------------------------------
   // 複数ファイル・複数回のload呼び出し: 分割してもまとめて読める
   // ------------------------------------------------------------------

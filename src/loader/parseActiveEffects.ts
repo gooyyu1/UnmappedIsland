@@ -4,7 +4,7 @@ import {
   asMap,
   asScalarText,
   entriesInOrder,
-  requireInt,
+  requireNumber,
   requireScalar,
   tryGetBool,
   tryGetMap,
@@ -12,7 +12,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { ACTIVE_VERB_KEYS, parseIntLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
+import { ACTIVE_VERB_KEYS, parseNumberLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
 import {
@@ -118,7 +118,7 @@ function parseTransfer(
     toObjectRaw !== undefined ? parseActiveTargetKey(context, toObjectRaw, allowDragged, selfOnly) : 'self';
   const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
 
-  const amount = requireInt(map, 'amount', context);
+  const amount = requireNumber(map, 'amount', context);
   const allowOverflow = tryGetBool(map, 'allow_overflow', context, false);
 
   const linkedAddMap = tryGetMap(map, 'linked_add', context);
@@ -187,7 +187,7 @@ function parseAdds(
         new AddEffect(
           target,
           loader.propertyNames.intern(propName),
-          parseIntLiteral(context, asScalarText(amountNode, context)),
+          parseNumberLiteral(context, asScalarText(amountNode, context)),
         ),
       );
   }

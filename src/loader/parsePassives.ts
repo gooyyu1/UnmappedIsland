@@ -1,7 +1,7 @@
 import type { YAMLMap } from 'yaml';
 import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseIntLiteral } from './parseCommon';
+import { parseNumberLiteral } from './parseCommon';
 import { parseConditionsField, PASSIVE_CONDITION_ROOTS } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
@@ -124,7 +124,7 @@ function parsePassiveOperationInto(
         makeEffect(
           target,
           loader.propertyNames.intern(propName),
-          parseIntLiteral(context, asScalarText(amountNode, context)),
+          parseNumberLiteral(context, asScalarText(amountNode, context)),
           gate,
         ),
       );

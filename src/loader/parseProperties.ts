@@ -4,11 +4,11 @@ import {
   asMap,
   asScalarText,
   entriesInOrder,
-  requireInt,
+  requireNumber,
   requireScalar,
   tryGetBool,
-  tryGetInt,
   tryGetMap,
+  tryGetNumber,
   tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
@@ -70,8 +70,8 @@ export function parseProp(
   let isSymbolProperty: boolean;
   if (isMap(valueNode)) {
     const initRange = new PropertyRange(
-      requireInt(valueNode, 'min', context),
-      requireInt(valueNode, 'max', context),
+      requireNumber(valueNode, 'min', context),
+      requireNumber(valueNode, 'max', context),
     );
     initialValueRange = initRange;
     // 初期値はspawn時に[min,max]の一様乱数で決まる（PropertyDef.createValue）。
@@ -85,7 +85,10 @@ export function parseProp(
   let range: PropertyRange | undefined;
   const rangeSpec = tryGetMap(node, 'range', context);
   if (rangeSpec !== undefined)
-    range = new PropertyRange(requireInt(rangeSpec, 'min', context), requireInt(rangeSpec, 'max', context));
+    range = new PropertyRange(
+      requireNumber(rangeSpec, 'min', context),
+      requireNumber(rangeSpec, 'max', context),
+    );
 
   let onOverflow: ActiveEffect | undefined;
   const onOverflowNode = tryGetMap(node, 'on_overflow', context);
@@ -222,7 +225,7 @@ function parseStage(
       );
     stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert);
   } else {
-    const min = tryGetInt(stageMap, 'min', context);
+    const min = tryGetNumber(stageMap, 'min', context);
     stage = new PropertyStage(stageName, min, undefined, alert);
   }
 
