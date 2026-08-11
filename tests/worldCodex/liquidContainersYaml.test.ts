@@ -123,6 +123,22 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ).toHaveLength(1);
   });
 
+  it('中身入りの容器の重さは、容器の自重と水の重さの和になる', () => {
+    // weight = volume × density（mL × g/mL = g、ContainerSystem.md 1節）。密度の桁が狂うと
+    // ここだけが静かに壊れる——実ファイルの値で確かめる場所を1つ持っておく。
+    const session = new WorldSession(codex);
+    const bowl = spawnContainer('coconut_bowl', 'water', 250);
+    const weightId = codex.propertyNames.getId('weight');
+    const densityId = codex.propertyNames.getId('density');
+
+    expect(contentOf(bowl)?.getNumber(densityId), '水は1g/mL').toBe(1);
+    expect(bowl.getEffectiveValue(weightId), 'ヤシの器200g + 水250mL = 450g').toBe(450);
+
+    contentOf(bowl)!.setNumber(codex.wellKnown.volumeId, 100, session);
+
+    expect(bowl.getEffectiveValue(weightId), '飲めばそのぶん軽くなる').toBe(300);
+  });
+
   it('容量は容器のcontentスロットのcapacityが決める', () => {
     expect(capacityOf('coconut_bowl'), 'ヤシの器は250mL').toBe(250);
     expect(capacityOf('canteen'), '水筒は1L').toBe(1000);

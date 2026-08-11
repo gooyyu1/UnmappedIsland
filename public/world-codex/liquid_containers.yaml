@@ -29,9 +29,10 @@ traits:
       # 0にできないのは、量が0の量的オブジェクトは存在しないため（quantitativeの不変条件）。
       volume:
         value: 1
-      # 単位量あたりの重さ。水を100とする＝100が1g/mL（ContainerSystem.md）。
+      # 単位量あたりの重さ（g/mL）。水は1で、油のように軽い液体は0.92のように書く。
+      # volume × density がそのまま重さ（g）になる（ContainerSystem.md 1節）。
       density:
-        value: 100
+        value: 1
     # 見た目の色（color、0xRRGGBB）は種類ごとのtraitが宣言する。何色に見えるかは液体そのものの
     # 性質で、共通の既定値には意味が無いため。容器カードの中身のバーがこの色で塗られる
     # （ScreenLayout.md カードの状態バー節）。
