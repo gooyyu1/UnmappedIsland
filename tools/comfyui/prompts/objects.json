@@ -54,7 +54,12 @@
       "プロンプトで粘らずに card_art.py の --saturation で足す**（レシピ参照）。",
       "",
       "**斧の柄（axe handle）の語は危うい。** 頭の名詞を club や billet にしてこの語を残すと、斧",
-      "そのものが描かれる（12枚で全滅）。log の下でだけ無事なので、頭の名詞を触るなら一緒に外すこと。"
+      "そのものが描かれる（12枚で全滅）。log の下でだけ無事なので、頭の名詞を触るなら一緒に外すこと。",
+      "**Qwen Image Edit の指示でも同じ**で、斧そのものや金具の付いた杖になる",
+      "（recipes/thick_branch.json）。",
+      "",
+      "**太さはこのプロンプトでは決まらない。** as thick as a wrist と書いても丸太に近い太さで出る。",
+      "細くするNGワードは足せない（上記のとおり葉の絵になる）ので、レシピの edit で削る。"
     ],
     "positive": "exactly one thick fallen branch alone on an empty white page, a stout piece of branch with an old knot where a side twig broke off, tapering slightly from one end to the other as thick as a wrist and about five times as long as it is thick, rough brown bark all over it, snapped and splintered at both ends, no leaves and no side twigs, straight and strong, dark brown weathered wood, rich warm brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, firewood round, leaves, foliage, blossom, flowers, twigs sticking out, thin twig, slender stick, long thin pole, wand, thin sliver, splinter of wood, wood shaving, bark shard, plank, board, feather, white wood, grey wood, bleached driftwood, glossy, varnished, wet, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, twisted branch, tangled branches, forked branch, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
