@@ -216,20 +216,13 @@ describe('生まれる側・材料側からの逆引き', () => {
     );
   });
 
-  it('材料・道具として要求するレシピを挙げる', () => {
-    const material = codex.objectNames.getId('coconut_half');
-    const tool = codex.objectNames.getId('sharp_stone');
+  it('材料としても道具としても、使う型から完成品を辿れる', () => {
+    const bowl = objectDef('bowl');
 
-    const fromMaterial = describeToText(codex, (out) =>
-      objectDef('bowl').describeRecipesUsing(material, codex, out),
-    );
-    expect(fromMaterial).toContain('carved:');
-    expect(fromMaterial).toContain('素材: coconut_half ×1');
-
-    // 消費しない道具（consume: false）も、そのレシピに関わる型として挙げる。
-    expect(
-      describeToText(codex, (out) => objectDef('bowl').describeRecipesUsing(tool, codex, out)),
-    ).toContain('道具: sharp_stone ×1');
+    expect(bowl.usesInRecipes(codex.objectNames.getId('coconut_half'))).toBe(true);
+    // 消費しない道具（consume: false）も、そのレシピに関わる型として数える。
+    expect(bowl.usesInRecipes(codex.objectNames.getId('sharp_stone'))).toBe(true);
+    expect(bowl.usesInRecipes(codex.objectNames.getId('coconut'))).toBe(false);
   });
 });
 

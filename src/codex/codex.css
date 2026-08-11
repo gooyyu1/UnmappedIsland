@@ -99,6 +99,8 @@ h2 {
   margin-top: 2rem;
   padding-bottom: 0.3rem;
   border-bottom: 1px solid var(--border);
+  /* タグ別一覧で節へ送ったとき、見出しが上部固定のヘッダーの下に隠れないよう余白を空ける。 */
+  scroll-margin-top: 4rem;
 }
 
 h4 {

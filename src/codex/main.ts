@@ -7,11 +7,12 @@ import {
   renderNotFoundPage,
   renderObjectListPage,
   renderObjectPage,
+  renderObjectsByTagPage,
   renderPropertyCandidatesPage,
   renderPropertyPage,
   renderSlotPage,
   renderTagListPage,
-  renderTagPage,
+  tagSectionId,
 } from './pages';
 
 /**
@@ -55,6 +56,16 @@ function render(): void {
   updateNamingToggle();
   wireObjectFilter();
   window.scrollTo(0, 0);
+  scrollToTagSection(parts);
+}
+
+/**
+ * タグ別一覧（1ページに全タグが並ぶ）で、`#/by-tag/<タグ>` の節まで送る。ハッシュはルーティングに
+ * 使っているので、ブラウザ任せのアンカー移動は使えない。
+ */
+function scrollToTagSection(parts: readonly string[]): void {
+  if (parts[0] !== 'by-tag' || parts[1] === undefined) return;
+  document.getElementById(tagSectionId(parts[1]))?.scrollIntoView();
 }
 
 function renderRoute(view: CodexView, parts: readonly string[]): string {
@@ -65,7 +76,7 @@ function renderRoute(view: CodexView, parts: readonly string[]): string {
   if (parts[0] === 'prop-candidates' && parts[1] !== undefined)
     return renderPropertyCandidatesPage(view, parts[1]);
   if (parts[0] === 'tags') return renderTagListPage(view);
-  if (parts[0] === 'tag' && parts[1] !== undefined) return renderTagPage(view, parts[1]);
+  if (parts[0] === 'by-tag') return renderObjectsByTagPage(view);
   if (parts[0] === 'slot' && parts[1] !== undefined) return renderSlotPage(view, parts[1]);
   return renderNotFoundPage();
 }

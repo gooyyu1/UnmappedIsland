@@ -217,15 +217,11 @@ export class ObjectDef {
   }
 
   /**
-   * この型のレシピのうち、objectGlobalIdの型を素材か道具として要求するものを書き出す
-   * （材料側からの逆引き）。
+   * この型のレシピが、objectGlobalIdの型を素材か道具として要求しているか（材料側からの逆引き）。
+   * 「何になるのか」を知りたい読み手には完成品＝この型が答えなので、どの工程で使うかまでは返さない。
    */
-  describeRecipesUsing(objectGlobalId: number, names: DefNames, out: DescriptionWriter): void {
-    for (const recipe of this.recipes) {
-      if (!recipe.requires(objectGlobalId)) continue;
-      out.write(text(`${recipe.name}:`));
-      out.indented(() => recipe.describe(names, out));
-    }
+  usesInRecipes(objectGlobalId: number): boolean {
+    return this.recipes.some((recipe) => recipe.requires(objectGlobalId));
   }
 
   /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */

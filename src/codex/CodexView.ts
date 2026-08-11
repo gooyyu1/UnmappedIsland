@@ -204,8 +204,9 @@ export class CodexView {
     return `#/object/${encodeURIComponent(name)}`;
   }
 
+  /** タグの行き先はタグ別の一覧（1ページ）の中のその節。タグごとにページを分けない。 */
   tagHref(name: string): string {
-    return `#/tag/${encodeURIComponent(name)}`;
+    return `#/by-tag/${encodeURIComponent(name)}`;
   }
 
   slotHref(name: string): string {

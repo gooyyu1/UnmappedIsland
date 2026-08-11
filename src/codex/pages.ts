@@ -19,7 +19,7 @@ export function renderObjectListPage(view: CodexView): string {
     `<h1>オブジェクト一覧</h1>` +
     `<p class="muted" title="${escapeHtml(view.source.files.join(', '))}">` +
     `${defs.length}件のobject_def（${view.source.files.length}ファイル）／` +
-    `<a href="#/tags">タグ一覧</a></p>` +
+    `<a href="#/by-tag">タグ別の一覧</a>／<a href="#/tags">タグ一覧</a></p>` +
     `<p><input id="object-filter" type="search" placeholder="名前で絞り込む" autocomplete="off"></p>` +
     `<div class="object-grid">${cards}</div>` +
     `<p class="muted" id="object-filter-empty" hidden>該当するオブジェクトがありません。</p>`
@@ -62,15 +62,43 @@ export function renderObjectPage(view: CodexView, name: string): string {
     section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations, true)) +
     section('recipes', recipesHtml(view, def)) +
     variantsSection(view, name) +
-    section(
-      'この型を生み出す操作',
-      reverseLookupHtml(view, (other, out) => other.describeCreationsOf(def.globalId, view.codex, out)),
-    ) +
-    section(
-      'この型を材料・道具に使うレシピ',
-      reverseLookupHtml(view, (other, out) => other.describeRecipesUsing(def.globalId, view.codex, out)),
-    )
+    section('この型を生み出す操作', creationsHtml(view, def)) +
+    section('この型を材料・道具に使うレシピ', recipeUsesHtml(view, def))
   );
+}
+
+/**
+ * この型を生み出す操作の箇条書き（「砂浜 の 探索する」）。**どの型のどの操作か、だけを出す**——
+ * 詳細はリンク先の型のページにあり、逆引きは数が増えるほど一覧性のほうが要る。
+ */
+function creationsHtml(view: CodexView, def: ObjectDef): string {
+  const items = view
+    .objectDefs()
+    .flatMap((other) => {
+      const writer = new DescriptionWriter();
+      other.describeCreationsOf(def.globalId, view.codex, writer);
+      return writer
+        .toLines()
+        .map(
+          (line) =>
+            `<li>${objectLinkHtml(view, other.name)}<span class="muted">の</span>` +
+            `${view.tokensHtml(line.tokens, other.name)}</li>`,
+        );
+    })
+    .join('');
+
+  return items === '' ? EMPTY_HTML : `<ul class="plain">${items}</ul>`;
+}
+
+/** この型を材料・道具に使うレシピの箇条書き。完成品の名前だけで足りる（作り方はその型のページにある）。 */
+function recipeUsesHtml(view: CodexView, def: ObjectDef): string {
+  const items = view
+    .objectDefs()
+    .filter((other) => other.usesInRecipes(def.globalId))
+    .map((other) => `<li>${objectLinkHtml(view, other.name)}</li>`)
+    .join('');
+
+  return items === '' ? EMPTY_HTML : `<ul class="plain">${items}</ul>`;
 }
 
 /**
@@ -132,12 +160,7 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
       '定義',
       view.describeHtml(objectName, (out) => propertyDef.describe(view.codex, out)),
     ) +
-    section(
-      '影響元',
-      reverseLookupHtml(view, (other, out) =>
-        other.describeInfluencesOn(propertyGlobalId, other === def, view.codex, out),
-      ),
-    ) +
+    section('影響元', influencesHtml(view, def, propertyGlobalId)) +
     section('同じ名前のpropを持つ他の型', others === '' ? EMPTY_HTML : `<ul class="plain">${others}</ul>`)
   );
 }
@@ -149,35 +172,67 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
 export function renderTagListPage(view: CodexView): string {
   const rows = view
     .tagNames()
-    .map((tag) => {
-      const owners = view.codex.objectDefNamesWithTag(tag);
-      return (
+    .map(
+      (tag) =>
         `<tr><td><a href="${view.tagHref(tag)}">${escapeHtml(tag)}</a></td>` +
-        `<td>${owners.length}</td>` +
-        `<td>${owners.map((name) => objectLinkHtml(view, name)).join('、')}</td></tr>`
-      );
-    })
+        `<td>${view.codex.objectDefNamesWithTag(tag).length}</td></tr>`,
+    )
     .join('');
 
   return (
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
     `<h1>タグ一覧</h1>` +
     `<p class="muted">object_defのタグ（4.1節）。型のグループを指す唯一の手段で、` +
-    `スロットの受け入れ条件やcombinationsの相手もこれで書かれる。</p>` +
-    `<table><thead><tr><th>タグ</th><th>型の数</th><th>持っている型</th></tr></thead>` +
-    `<tbody>${rows}</tbody></table>`
+    `スロットの受け入れ条件やcombinationsの相手もこれで書かれる。` +
+    `型そのものは<a href="#/by-tag">タグ別の一覧</a>で見られる。</p>` +
+    `<table><thead><tr><th>タグ</th><th>型の数</th></tr></thead><tbody>${rows}</tbody></table>`
   );
 }
 
-/** タグを持つobject_defの一覧。 */
-export function renderTagPage(view: CodexView, tagName: string): string {
-  const names = view.codex.objectDefNamesWithTag(tagName);
+/**
+ * タグごとに分けたオブジェクトの一覧。**1ページにすべてのタグを並べる**——型は複数のタグを持つので、
+ * タグごとにページを分けると同じ型を何度も開くことになり、まとまりの違いも見比べられない。
+ *
+ * どの型もどこかの節には出るよう、タグを持たない型は最後にまとめる。
+ */
+export function renderObjectsByTagPage(view: CodexView): string {
+  const sections = view
+    .tagNames()
+    .map((tag) => tagSectionHtml(view, tag, escapeHtml(tag), view.codex.objectDefNamesWithTag(tag)))
+    .join('');
+
+  const untagged = view.objectDefs().filter((def) => def.tags.length === 0);
+  const untaggedSection =
+    untagged.length === 0
+      ? ''
+      : tagSectionHtml(
+          view,
+          '',
+          'タグなし',
+          untagged.map((def) => def.name),
+        );
+
   return (
-    `<p class="breadcrumb"><a href="#/tags">← タグ一覧</a></p>` +
-    `<h1><span class="muted">tag: </span>${escapeHtml(tagName)}</h1>` +
-    `<p class="muted">このタグを持つobject_def ${names.length}件</p>` +
+    `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
+    `<h1>タグ別オブジェクト一覧</h1>` +
+    `<p class="muted">タグは型のグループを指す唯一の手段（4.1節）。1つの型が複数のタグを持つため、` +
+    `同じ型が複数の節に出る。タグそのものの一覧は<a href="#/tags">タグ一覧</a>。</p>` +
+    sections +
+    untaggedSection
+  );
+}
+
+/** タグ1つぶんの節。idはタグ名からのスクロール先（main.tsが#/by-tag/<タグ>で使う）。 */
+function tagSectionHtml(view: CodexView, tag: string, heading: string, names: readonly string[]): string {
+  return (
+    `<h2 id="${tagSectionId(tag)}">${heading}<span class="muted"> (${names.length})</span></h2>` +
     objectGridHtml(view, names)
   );
+}
+
+/** タグ別一覧の中の、そのタグの節のid。 */
+export function tagSectionId(tag: string): string {
+  return `tag-${tag}`;
 }
 
 /** スロットを持つobject_defの一覧と、それぞれの受け入れ方。 */
@@ -368,19 +423,18 @@ function recipesHtml(view: CodexView, def: ObjectDef): string {
 }
 
 /**
- * 逆引き（「これに関わる宣言はどこにあるか」）の共通部分。すべての型に尋ね、1行でも書いた型だけを
- * その型へのリンク付きで並べる。**尋ねるだけで宣言の中身は覗かない**——何をどう書き表すかは
- * 型の側（ObjectDefのdescribe系）が知っている。
+ * このプロパティを書き換える宣言を、宣言している型ごとにまとめる。他の逆引きと違って量と条件まで
+ * 出すのは、「どれだけ動くのか」がこの節を見る目的そのものだから。
+ *
+ * すべての型に尋ね、1行でも書いた型だけを並べる。**尋ねるだけで宣言の中身は覗かない**——
+ * 何をどう書き表すかは型の側（ObjectDef.describeInfluencesOn）が知っている。
  */
-function reverseLookupHtml(
-  view: CodexView,
-  describe: (def: ObjectDef, out: DescriptionWriter) => void,
-): string {
+function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: number): string {
   const groups = view
     .objectDefs()
     .map((def) => {
       const writer = new DescriptionWriter();
-      describe(def, writer);
+      def.describeInfluencesOn(propertyGlobalId, def === owner, view.codex, writer);
       return { def, writer };
     })
     .filter(({ writer }) => !writer.isEmpty)
