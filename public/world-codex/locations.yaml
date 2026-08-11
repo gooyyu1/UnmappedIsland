@@ -76,12 +76,13 @@ object_defs:
   # exploreが湧かせるヤシの実（coconut）はcoconut.yamlが定義する。
   # ------------------------------------------------------------------
 
-  # 太い枝。細い枝（branch）とは別のアイテム。
+  # 太い枝。腕ほどの太さで70cmほど、削れば道具の柄になる大きさ（細い枝は柄にすると折れる）。
+  # 建材の丸太はこれとは別の物として後から入るので、ここを丸太まで大きくしない。
   thick_branch:
     tags: [item]
     props:
-      weight: {value: 2000}
-      volume: {value: 2300}
+      weight: {value: 1000}
+      volume: {value: 1300}
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
   # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
@@ -97,7 +98,7 @@ object_defs:
         destroy: self
         spawn: {object: sharp_stone}
 
-  # 枝。
+  # 細い枝。60cmほどで指の太さ。柄には細すぎて折れるので、火口や結びに使う想定。
   branch:
     tags: [item]
     props:
