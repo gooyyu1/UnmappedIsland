@@ -4,6 +4,19 @@
     "",
     "細い小枝になるseedがほとんどなので、太い枝になったものを選んでいる（66枚中5〜6枚）。",
     "",
+    "**生成そのものは丸太に近い太さになるので、Qwen Image Edit で少しだけ削る。** 長さ/太さは",
+    "5.4→7.0で、細い枝（13.7）とは離れたまま、片手で握って柄にできる太さに見える。",
+    "太さはプロンプトで詰めても動かない（objects.json の thick_branch 参照）。",
+    "",
+    "**編集の指示にも「斧の柄」と書かない。** 生成のときと同じで、斧そのものや金具の付いた杖に",
+    "なる（4枚中2枚）。減らす量も「三分の二」と言うと細い棒になり、branchと見分けが付かなくなる。",
+    "",
+    "**seedは先細りにならないものを選ぶ。** 同じ指示でも片端へ細っていく棒になるseedがある",
+    "（4枚中1枚）。柄にする物なので、端まで同じ太さに見えるほうがよい。",
+    "",
+    "色は編集を挟んでも変わらないので、saturation/gammaはそのまま（物の画素で明度89.6・彩度79。",
+    "編集前の絵から作った今までのものは84.6・83）。",
+    "",
     "生成された枝は灰色がかっていて、そのままでは白けて見える。足りないのは明度ではなく彩度",
     "（物の画素で測ると、この絵は彩度20・明度104。茶色く見える丸太は彩度61・明度103）なので、",
     "saturationで伸ばす。gammaは彩度を上げたぶんの浮きを抑えるための微調整。"
@@ -17,6 +30,10 @@
   "seed": 26007,
   "width": 832,
   "height": 1280,
+  "edit": {
+    "prompt": "Shave this branch down a little. Show the exact same fallen branch, lying at the same angle in the same place and keeping the same length, but a little slimmer: about four fifths as thick as it is now. It is still a stout heavy branch, not a thin stick and not a twig. Keep the same rough cracked bark, the same broken ends, the same short side twig, the same hand painted illustration style, the same plain white background, the same lighting and a similar soft shadow beneath it. Nothing is attached to it: no tool, no blade, no metal, no fitting of any kind. Nothing else in the image.",
+    "seed": 2
+  },
   "cardArt": {
     "_comment": "細長いので400。カード幅410のほぼ全幅を使う。",
     "size": "400",
