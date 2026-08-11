@@ -311,7 +311,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     injury.addNumber(severityId, -injury.getNumber(severityId) / 2, game.session);
 
     const healing = fromGameSession(game, codex, locale).cardsIn('injuries')[0].severity;
-    expect(healing?.ratio, '半分治れば半分まで縮む').toBeCloseTo(0.5, 3);
+    // 傷の下限は0ではなく1（injuries.yaml）なので、割合はぴったり半分にはならない。
+    expect(healing?.ratio, '半分治れば半分まで縮む').toBeCloseTo(0.5, 2);
     expect(healing?.alert, '治るほど軽い域へ移る').toBe('watch');
   });
 
@@ -918,8 +919,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('ステータスの域は、値が減るとその区分に従って上がる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const hydration = codex.propertyNames.getId('hydration');
-    // 残り6時間未満（600mL未満）で致命的域（characters/）。
-    game.player.instance.setNumber(hydration, 500, game.session);
+    // 残り24 tick分（6時間）未満で致命的域（characters/）。
+    game.player.instance.setNumber(hydration, 20, game.session);
 
     const view = fromGameSession(game, codex, locale);
 

@@ -335,4 +335,76 @@ object_defs:
     ).toBe(100);
     expect(canteen.getNumber(teaId)).toBe(0);
   });
+
+  describe('to_amount（単位の違う移送）', () => {
+    /** 水（mL）を飲むと水分（tick分）が増える器。250mL = 10 tick分。 */
+    function drinkable(hydrationMax: number, water: number, toAmount = 10): string {
+      return `
+object_defs:
+  drinker:
+    props:
+      hydration:
+        value: 0
+        range: {min: 0, max: ${hydrationMax}}
+  cup:
+    props:
+      size:
+        value: ${water}
+        range: {min: 0, max: 250}
+    actions:
+      drink:
+        transfer:
+          amount: 250
+          to_amount: ${toAmount}
+          from_prop: size
+          to_object: actor
+          to_prop: hydration
+`;
+    }
+
+    function drink(yaml: string): { water: number; hydration: number } {
+      const codex = load(yaml);
+      const session = new WorldSession(codex);
+      const actor = spawn(codex, 'drinker');
+      const cup = spawn(codex, 'cup');
+
+      expect(cup.tryExecuteAction('drink', actor, session)).toBe(true);
+
+      return {
+        water: cup.getNumber(codex.propertyNames.getId('size')),
+        hydration: actor.getNumber(codex.propertyNames.getId('hydration')),
+      };
+    }
+
+    it('出した量は移送元の単位、増える量は移送先の単位になる', () => {
+      expect(drink(drinkable(288, 250))).toEqual({ water: 0, hydration: 10 });
+    });
+
+    it('在庫が足りなければ、出した分だけ比例して増える', () => {
+      // 130mL しか無い器 → 130 × 10 / 250 = 5.2 tick分。小数のまま入る。
+      const { water, hydration } = drink(drinkable(288, 130));
+
+      expect(water).toBe(0);
+      expect(hydration).toBeCloseTo(5.2, 10);
+    });
+
+    it('移送先の残りは、移送元の単位へ割り戻して比べる', () => {
+      // 残り4 tick分しか入らない体 → 出せるのは 4 × 250 / 10 = 100mL だけで、残りは器に残る。
+      const yaml = drinkable(4, 250);
+
+      expect(drink(yaml)).toEqual({ water: 150, hydration: 4 });
+    });
+
+    it('寄与の小さい液体は、同じ量でも増え方が小さい', () => {
+      // 酒は同じ250mLで水の65%（to_amount: 6.5）。換算率は移送する側が持つ。
+      const { water, hydration } = drink(drinkable(288, 250, 6.5));
+
+      expect(water).toBe(0);
+      expect(hydration).toBeCloseTo(6.5, 10);
+    });
+
+    it('to_amountが0以下ならロードエラーになる', () => {
+      expect(() => load(drinkable(288, 250, 0))).toThrowError(/'to_amount' は正の数/);
+    });
+  });
 });

@@ -16,7 +16,7 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
 describe('injuries.yamlの怪我', () => {
   /** pick_green_coconutで捻挫する側を引く重みの位置（成功90 : 失敗10）。 */
   const FALLS = 0.95;
-  /** 捻挫が治りきるまでのtick数（severity 96,000 ÷ 100）。 */
+  /** 捻挫が治りきるまでのtick数（severity 960 ÷ 1）。 */
   const HEALING_TICKS = 960;
 
   let codex: WorldCodex;
@@ -225,8 +225,8 @@ describe('injuries.yamlの怪我', () => {
 
       expect(player.getEffectiveValue(painId), '当てている間だけ痛みが引く').toBe(30);
       tick(10);
-      // 自然治癒の-100/tickに、包帯の-40/tickが重なる（8.4節）。
-      expect(before - injury.getNumber(severityId)).toBe(140 * 10);
+      // 自然治癒の-1/tickに、包帯の-0.4/tickが重なる（8.4節）。
+      expect(before - injury.getNumber(severityId)).toBeCloseTo(1.4 * 10, 10);
     });
 
     it('外せば効き目も消える', () => {
@@ -239,7 +239,7 @@ describe('injuries.yamlの怪我', () => {
       const severityId = codex.propertyNames.getId('severity');
       const before = injury.getNumber(severityId);
       tick(10);
-      expect(before - injury.getNumber(severityId), '治りの速さも元へ戻る').toBe(100 * 10);
+      expect(before - injury.getNumber(severityId), '治りの速さも元へ戻る').toBe(1 * 10);
     });
 
     it('手持ちに入れているだけの治療具は効かない', () => {

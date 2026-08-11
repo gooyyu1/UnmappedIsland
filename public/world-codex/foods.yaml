@@ -1,6 +1,6 @@
 # 食料のサンプル定義（GameElementDefinition.md参照）。栄養バランス（characters.yaml参照）の
 # 3カテゴリそれぞれに、南国の無人島で採取しやすい食材を1種類ずつ用意する。
-# satiety・各カテゴリへの加算量はいずれも仮の値。
+# satietyは「1食で何tick分の腹持ちか」（6.0節）。値はいずれも仮のもの。
 
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
@@ -12,8 +12,8 @@ object_defs:
       eat:
         add:
           actor:
-            satiety: 8
-            vegetable_nutrition: 20000
+            satiety: 4
+            vegetable_nutrition: 200
         destroy: self
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
@@ -25,8 +25,8 @@ object_defs:
       eat:
         add:
           actor:
-            satiety: 15
-            meat_nutrition: 20000
+            satiety: 16
+            meat_nutrition: 200
         destroy: self
 
   # タロイモ。太平洋の島々で主食とされてきた塊茎作物。自生しているものを採取できる。
@@ -39,5 +39,5 @@ object_defs:
         add:
           actor:
             satiety: 20
-            grain_tuber_nutrition: 20000
+            grain_tuber_nutrition: 200
         destroy: self

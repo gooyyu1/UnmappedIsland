@@ -19,7 +19,7 @@ object_defs:
           - {in_slot: treatment}
         accumulate:
           parent:
-            severity: -40
+            severity: -0.4
         modify:
           ancestor:
             pain: -10

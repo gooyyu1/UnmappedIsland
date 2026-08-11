@@ -41,25 +41,25 @@ traits:
       # 満腹度などと違って個体差を持たせず全キャラクタで共通にする。
       vegetable_nutrition:
         tags: [nutrition]
-        value: 67200
-        range: {min: 0, max: 67200}
+        value: 672
+        range: {min: 0, max: 672}
         passives:
           - accumulate:
               self:
-                vegetable_nutrition: -100
+                vegetable_nutrition: -1
       meat_nutrition:
         tags: [nutrition]
-        value: 67200
-        range: {min: 0, max: 67200}
+        value: 672
+        range: {min: 0, max: 672}
         passives:
           - accumulate:
               self:
-                meat_nutrition: -100
+                meat_nutrition: -1
       grain_tuber_nutrition:
         tags: [nutrition]
-        value: 67200
-        range: {min: 0, max: 67200}
+        value: 672
+        range: {min: 0, max: 672}
         passives:
           - accumulate:
               self:
-                grain_tuber_nutrition: -100
+                grain_tuber_nutrition: -1

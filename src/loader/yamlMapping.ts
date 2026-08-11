@@ -69,6 +69,16 @@ export function tryGetInt(map: YAMLMap, key: string, context: string): number | 
   return parseIntStrict(raw, key, context);
 }
 
+/**
+ * プロパティの値・量など、小数を許す場所の必須フィールド（GameElementDefinition.md 6節）。
+ * 枠数や分のような「数えるもの」はrequireIntのままにする。
+ */
+export function requireNumber(map: YAMLMap, key: string, context: string): number {
+  const value = tryGetNumber(map, key, context);
+  if (value === undefined) throw new YamlLoadError(`${context}: 必須フィールド '${key}' がありません。`);
+  return value;
+}
+
 export function tryGetNumber(map: YAMLMap, key: string, context: string): number | undefined {
   const raw = tryGetScalar(map, key, context);
   if (raw === undefined) return undefined;

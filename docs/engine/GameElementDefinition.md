@@ -129,42 +129,51 @@ object_defs:
 
 ## 6. props（プロパティ）
 
-数値プロパティの値は **32bit 整数**として扱います。小数を必要とする属性は登場しない前提であり、`value`/`range`/
-`modify`/`accumulate`/`add` など、数値を扱うすべての場所で整数のみを想定します。
+数値プロパティの値は**有限の数値**で、`value`/`range`/`stages`/`modify`/`accumulate`/`add`/`transfer` など、
+数値を扱うすべての場所で**小数を書けます**（値域は 32bit 整数の幅、精度は倍精度）。細かい傾きを
+「1 単位を何分割するか」で表す必要はありません——`-0.35/tick` と直接書けます。
+
+**ただし小数を持てるのは連続量だけです。** 数えるもの（`tick` や残り時間のようにプロパティ自身が刻みを
+持つもの）と、シンボル型（6.6 節）は整数で書きます。エンジンは境界を厳密比較（`> max`・`< min`）と
+完全一致（`stages` の `eq`）で判定するため、**「最小の刻みが 1」であることに依存した書き方は、整数で
+書くプロパティにだけ使えます**。
+
+- `range.min: 1` + `on_shortfall`（0 に達した瞬間に発火させる）
+- `range.max` を到達点より 1 つ内側に置く（製作中オブジェクトの完成、[`RecipeSystem.md`](./RecipeSystem.md) 1 節）
+- `stages` の `eq`（完全一致）
 
 ### 6.0 数値のスケール規約
 
-小数を持たないため、細かい傾きは「1 単位を何分割するか」で表します。数値プロパティは次の 3 クラスの
-いずれかに属し、書かれている数値の読み方はクラスで決まります。
+数値プロパティは次の 2 クラスのいずれかに属し、書かれている数値の読み方はクラスで決まります。
 
 | クラス | 基準 | 値の読み方 | 例 |
 |---|---|---|---|
-| **時間を数えるもの** | **±1/tick** | 値がそのまま tick 数 | `tick`・`season_remaining`・`weather_remaining`・`thermal_level`・`monsoon_level`・`exploration_progress` |
-| **量を溜めるもの** | **基準レートの 1 tick 分 = 100** | 値 ÷ 100 が「基準レートで何 tick 分か」 | `satiety`・`body_fat`・`wakefulness`・各栄養・`atmospheric_moisture` |
-| **現実の単位に載るもの** | **1 = 1mL / 1 = 1g** | 値がそのまま mL・g | `size`・`weight`・`hydration` |
+| **時間を数えるもの** | **1 = 1 tick** | 値がそのまま tick 数 | `tick`・`satiety`・`hydration`・`body_fat`・`wakefulness`・各栄養・`severity`・`durability`・`atmospheric_moisture`・`season_remaining`・`thermal_level` |
+| **現実の単位に載るもの** | **1 = 1mL / 1 = 1g / 1 = 1g/mL / 1 = 1℃** | 値がそのまま実単位 | `size`・`weight`・`density`・`ambient_temperature` |
 
-前 2 クラスのどちらに属するかは「**そのプロパティに『1.2 倍』のような割合の補正をかけたくなるか**」で
-決めます。時間の刻みが tick である以上、時間を数えるものに小数は生じないため ±1 で足ります。量には
-「暑いと渇きが速い」のような補正が乗りうるため、`modify`（8.3 節）で刻める余地として 100 分割を確保します。
-
-量のクラスでは、`range.max` が「基準レートで何 tick 保つか」を直接表します。
+**境界が「人や物の状態か、物の物理量か」と一致します。** 人の状態はすべて「基準のレートで何 tick 保つか」
+として読め、物の物理量だけが現実の単位に載ります。
 
 ```yaml
-# 満腹は1日（96 tick）で空になる → 96 × 100
+# 満腹は1日（96 tick）で空になる
 satiety:
-  value: 9600
-  range: {min: 0, max: 9600}
+  value: 96
+  range: {min: 0, max: 96}
   passives:
-    - accumulate: {self: {satiety: -100}}   # 1 tick 分 = 100
+    - accumulate: {self: {satiety: -1}}   # 基準レート = 1/tick
 ```
 
-「基準レート」が何かはプロパティごとに宣言側が決めます（`satiety` なら消費、`atmospheric_moisture` なら
-雨季の上昇）。どのレートを 100 に置いたのかは、そのプロパティのコメントに書きます。
+時間を数えるクラスでは、`range.max` が「基準レートで何 tick 保つか」を直接表します。「基準レート」が何かは
+プロパティごとに宣言側が決めます（`satiety` なら消費、`atmospheric_moisture` なら雨季の上昇）。基準から外れる
+レート（雨季以外の季節、素材ごとの劣化速度）は小数で書きます。
 
-第 3 のクラスは、現実の物理量に対応づくプロパティです。**単位の読みやすさをレートの都合より優先し、
-100 分割の規約には従いません。** 水 1L = 1000 = 1kg が定義から落ちてくることを最優先に置いた選択で、
-毎 tick 変化するもの（`hydration` は -25/tick）は補正の刻みが粗くなりますが、実害より数値の読みやすさを
-取ります。詳細は [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 5 節。
+物理量のクラスは、単位が互いに噛み合っている点が要です。`weight = size × density` が換算定数なしで
+成立します（[`ContainerSystem.md`](./ContainerSystem.md) 1 節）。**この 2 つのクラスの間の換算は、
+必要な場所が宣言として持ちます**——飲用が水分へどれだけ寄与するかは `transfer` の `amount`/`to_amount`
+（9.5 節）が持ち、エンジンは換算率を知りません。
+
+比率として読むものは、どちらのクラスにも属しません（`load_reduction_rate` は %、`pick` の `weight` は
+正規化される相対値、`*_weight` は天気候補の相対重み）。
 
 ### 6.1 固定値
 
@@ -362,7 +371,7 @@ object_defs:
 
 ### 6.6 シンボル型の値
 
-数値プロパティの値は 32bit 整数ですが、`value` に整数にも真偽値にもならない識別子（`^[a-z][a-z0-9_]*$`、
+`value` に数値にも真偽値にもならない識別子（`^[a-z][a-z0-9_]*$`、
 3.2 節と同じ命名規則）を書くと、その識別子を**シンボル名**として自動的に整数へ変換します。専用の宣言
 （`symbol: true` 等）は不要で、`value` の書き方だけで区別できます。液体の種類のような「離散した状態」を、
 enum 型等を新設せず既存の `props`/`conditions`/`set` の語彙だけで表現するための仕組みです。値の比較・代入は
@@ -371,7 +380,7 @@ enum 型等を新設せず既存の `props`/`conditions`/`set` の語彙だけ�
 ```yaml
 props:
   content:
-    value: water   # 整数にも真偽値にもならないため、シンボル名として登録される
+    value: water   # 数値にも真偽値にもならないため、シンボル名として登録される
 ```
 
 - シンボル名同士の大小関係（`lt`/`gt` 等）は、登録順に依存する恣意的なものであり意味を持ちません。
@@ -399,8 +408,8 @@ object_defs:
     props:
       satiety:
         tags: [status, nutrition]
-        value: 9600
-        range: {min: 0, max: 9600}
+        value: 96
+        range: {min: 0, max: 96}
 ```
 
 - **`object_defs` のタグ（4.1 節）とは別の名前空間**です。枠の`accept`・`combinations.with`・
@@ -507,8 +516,8 @@ props:
 （内部設計は [`ContainerSystem.md`](./ContainerSystem.md)）。いずれも実効値として読むたびに導出されます。
 
 - **`weight`**: 物の重さ。自分の値に、**中身の `weight` をそのまま足します**（率はかけません）。量的
-  オブジェクト（`quantitative`、7.6 節）は `size × density ÷ 100` が自分の重さになります（`density` は
-  単位量あたりの重さ、水を 100 とする）。そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものです。
+  オブジェクト（`quantitative`、7.6 節）は `size × density` が自分の重さになります（`density` は
+  単位量あたりの重さ = g/mL、水は 1）。そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものです。
 - **`load`**: 担いだ人が感じる負荷。**直接の子**の `weight` に、その子の `load_reduction_rate`（%、
   既定 0 = 軽減なし、上限 100 でクランプ）を効かせた分の合計です。持つのはキャラクターだけで、他の
   オブジェクトは定義しません。
@@ -948,7 +957,7 @@ actions:
 
 `conditions`/常時の継続的な加算は `accumulate`（8.4 節）が担うため、`set`/`add` は一時的な命令専用です。
 
-`set`/`add` の値は、どちらも**リテラル**（整数・真偽値・シンボル名、6.6 節）だけです。他のプロパティを指す
+`set`/`add` の値は、どちらも**リテラル**（数値・真偽値・シンボル名、6.6 節）だけです。他のプロパティを指す
 `{object, prop}` 参照は使えません（`conditions` の値参照・`weight`・`duration` とはここが異なります）。値の
 算出を YAML へ持ち込むと定義ファイルがプログラム化していくためです。在庫に応じて動く量が変わる移送は、
 専用の動詞である `transfer`（9.5 節）で表します。
@@ -1024,27 +1033,33 @@ actions:
   `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`actor`、`combinations` 内は
   `dragged` も）。
 - **`from_prop`**・**`to_prop`**: それぞれ移送元・移送先のプロパティ名。
-- **`amount`**: 一度に移送を試みる量の上限。
+- **`amount`**: 一度に `from` から出すことを試みる量の上限。
+- **`to_amount`**（省略可、既定値は `amount`）: `amount` の全量を出したときに `to` が増える量。
+  **`from` と `to` の単位が違う移送の換算率**を、比として表します。省略すれば 1 対 1（同じ単位）です。
+  実際に増える量は `実際に出した量 × to_amount / amount` で、`allow_overflow: false` のときの
+  「収まる分まで」の判定は、`to` の残り容量を `from` の単位へ割り戻してから行います。
+  **換算率をエンジンは知りません**——飲んだ水が体内の水分へどれだけ寄与するかは液体の性質なので、
+  移送する側の宣言が持ちます（酒は同じ 1 口でも水より寄与が小さい）。0 以下は書けません。
 - **`allow_overflow`**（省略可、既定値 `false`）: `to` の `range` に実際に収まる量までしか移動しません
   （収まらない分は `from` に残ります＝液体を無駄にしません）。`true` にすると、`from` の残量と `amount` だけで
   移動量が決まり、`to` の `range` を超えた分は `to` の `on_overflow`（未指定なら既定のクランプ、6.3 節）に
   委ねます（あふれた分は失われます）。
 - **`linked_add`**（省略可）: `add`（9.1 節）と同じ構造で、実際に移動した量に比例してスケールされる
-  追加の加減算を表します。各プロパティへの加減算量は `宣言値 × 実際に移動した量 / amount`（整数除算、
-  切り捨て）で確定します。固定の `add` では表現できない「飲んだ量に比例した副効果」（例: お茶の眠気改善）を
-  表すために使います。
+  追加の加減算を表します。各プロパティへの加減算量は `宣言値 × 実際に出した量 / amount` で確定します。
+  固定の `add` では表現できない「飲んだ量に比例した副効果」（例: お茶の眠気改善）を表すために使います。
 
 ```yaml
 actions:
   drink:
     transfer:
-      amount: 1200
+      amount: 250            # 水を250mL出す
+      to_amount: 10          # 飲みきると水分が10 tick分回復する
       from_prop: size
       to_object: actor
       to_prop: hydration
       linked_add:
         actor:
-          wakefulness: 200   # 実際に移送された量に比例: 1200 飲めば +200、600 飲めば +100
+          wakefulness: 2     # 実際に出した量に比例: 250 飲めば +2、125 飲めば +1
 ```
 
 `from_object`/`from_prop`/`to_object`/`to_prop` をフラットな4フィールドにしているのは、`conditions`（14.1 節）の
@@ -1379,7 +1394,7 @@ object_defs:
 
 ```yaml
 conditions:
-  - {object: actor, prop: satiety, lt: 1200}
+  - {object: actor, prop: satiety, lt: 12}
   - {object: actor, prop: load, in_stage: too_heavy}
 ```
 
@@ -1391,7 +1406,7 @@ conditions:
   `ancestor`で代替できる。
 - **`prop`**: 参照するプロパティ名。
 - **比較演算子のキー**: `lt` / `lte` / `gt` / `gte` / `eq` / `neq` / `in` / `not_in`。値が比較の相手で、
-  **リテラル**（整数・真偽値・シンボル名、6.6 節）か **`{object, prop}` 参照**（`weight` の path 参照、
+  **リテラル**（数値・真偽値・シンボル名、6.6 節）か **`{object, prop}` 参照**（`weight` の path 参照、
   10.2 節と同じ二択）のいずれか。参照は `lt`/`lte`/`gt`/`gte`/`eq`/`neq` でのみ使えます（`in`/`not_in` は
   複数値との比較のため、単一の参照とは噛み合わずロード時エラーになります。値は配列で書きます）。
 - **`in_stage`**: 値はその `prop` の段（6.4 節）の名前で、実効値が今その段に該当していれば真です。

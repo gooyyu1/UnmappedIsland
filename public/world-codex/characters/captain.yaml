@@ -11,56 +11,56 @@ object_defs:
       # 満腹から1日（96 tick）。
       satiety:
         tags: [status, nutrition]
-        value: 7200
-        range: {min: 0, max: 9600}
+        value: 72
+        range: {min: 0, max: 96}
         stages:
           - {name: starving, alert: danger}
-          - {name: hungry, min: 1200, alert: caution}
-          - {name: peckish, min: 4800, alert: watch}
-          - {name: fed, min: 7680}
+          - {name: hungry, min: 12, alert: caution}
+          - {name: peckish, min: 48, alert: watch}
+          - {name: fed, min: 77}
         passives:
           - accumulate:
               self:
-                satiety: -100
+                satiety: -1
       # 限られた水で保たせる術が身についており、満水から3日半（336 tick）。
       hydration:
         tags: [status, nutrition]
-        value: 6300
-        range: {min: 0, max: 8400}
+        value: 252
+        range: {min: 0, max: 336}
         stages:
           - {name: dehydrated, alert: fatal}
-          - {name: parched, min: 600, alert: danger}
-          - {name: thirsty, min: 2400, alert: caution}
-          - {name: dryish, min: 4800, alert: watch}
-          - {name: hydrated, min: 6720}
-          - {name: full, min: 8400}
+          - {name: parched, min: 24, alert: danger}
+          - {name: thirsty, min: 96, alert: caution}
+          - {name: dryish, min: 192, alert: watch}
+          - {name: hydrated, min: 269}
+          - {name: full, min: 336}
         passives:
           - accumulate:
               self:
-                hydration: -25
+                hydration: -1
       # 最大限に肥えた状態から55日（5280 tick）。
       body_fat:
         tags: [nutrition]
-        value: 132000
-        range: {min: 0, max: 528000}
+        value: 1320
+        range: {min: 0, max: 5280}
         passives:
           - accumulate:
               self:
-                body_fat: -100
+                body_fat: -1
       # 当直で刻む睡眠に慣れており、眠らずにいられるのは27時間（108 tick）。
       wakefulness:
         tags: [status, health]
-        value: 10800
-        range: {min: 0, max: 10800}
+        value: 108
+        range: {min: 0, max: 108}
         stages:
           - {name: overtired, alert: danger}
-          - {name: sleepy, min: 1200, alert: caution}
-          - {name: yawning, min: 4800, alert: watch}
-          - {name: rested, min: 8640}
+          - {name: sleepy, min: 12, alert: caution}
+          - {name: yawning, min: 48, alert: watch}
+          - {name: rested, min: 86}
         passives:
           - accumulate:
               self:
-                wakefulness: -100
+                wakefulness: -1
       # 甲板仕事で保った、基準どおりの体力。
       stamina:
         tags: [status, health]

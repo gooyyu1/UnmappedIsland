@@ -148,7 +148,7 @@ object_defs:
     quantitative: true
     props:
       size: {value: 0}
-      density: {value: {min: 90, max: 110}}
+      density: {value: {min: 0.9, max: 1.1}}
 `,
         )
         .build();

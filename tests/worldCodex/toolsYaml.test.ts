@@ -33,7 +33,7 @@ describe('tools.yamlの道具定義', () => {
 
     const durability = sharpStone.readProperty(codex.propertyNames.getId('durability'));
     expect(durability?.ratio, '打ち出したばかりの刃は減っていない').toBe(1);
-    expect(durability?.value, '上限は種類によらず統一（DurabilitySystem.md 1節）').toBe(960000);
+    expect(durability?.value, '上限は種類によらず統一（DurabilitySystem.md 1節）').toBe(960);
   });
 
   it('石へ石をドラッグすると、割られた側が尖った石になり、1時間が経つ', () => {

@@ -55,6 +55,23 @@ describe('テスト用シナリオ', () => {
     ]);
   });
 
+  it('failing_statusは、域が一通り出揃った状態にする', () => {
+    // ステータスエリアの色分け（ScreenLayout.md）を確かめるためのシナリオなので、狙った域に
+    // 入っていること自体がこのファイルの中身の意味。段のしきい値を刻み直したら必ずここで落ちる。
+    const scenario = load('failing_status');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    const alertOf = (propertyName: string): string | undefined =>
+      game.player.instance.readProperty(codex.propertyNames.getId(propertyName))?.alert;
+
+    expect(alertOf('hydration'), '水分は致命的域').toBe('fatal');
+    expect(alertOf('satiety'), '満腹度は危険域').toBe('danger');
+    expect(alertOf('wakefulness'), '覚醒度は要注意域').toBe('caution');
+    expect(alertOf('stamina'), '体力は留意域').toBe('watch');
+  });
+
   it('sprained_ankleは、怪我を負い痛みを感じている状態から始める', () => {
     // 負う契機は確率（coconut.yamlのpick_green_coconut）なので、見た目を確かめるにはここから始める。
     const scenario = load('sprained_ankle');
@@ -161,12 +178,12 @@ describe('テスト用シナリオ', () => {
   });
 
   it('propsはキャラクターのプロパティを上書きする', () => {
-    const scenario = parseScenario('props.yaml', 'seed: 1\nplayer:\n  props:\n    satiety: 1200\n');
+    const scenario = parseScenario('props.yaml', 'seed: 1\nplayer:\n  props:\n    satiety: 12\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
 
     applyScenario(game, scenario, codex);
 
-    expect(game.player.satiety).toBe(1200);
+    expect(game.player.satiety).toBe(12);
   });
 
   it('world.propsはシンボル型のプロパティも上書きできる（天候はシードで選べない）', () => {

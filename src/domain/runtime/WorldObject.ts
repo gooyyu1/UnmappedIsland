@@ -511,7 +511,7 @@ export class WorldObject {
    * weight と load だけが、中身から寄与を受ける。
    *
    * - weight: 物の重さ。子の weight をそのまま足す（率はかけない）。量的オブジェクト（7.6節）は
-   *   自分の size × density ÷ 100 が自分の重さになる。
+   *   自分の size × density が自分の重さになる（mL × g/mL = g。換算定数は要らない）。
    * - load: 担いだ人が感じる負荷。直接の子の weight に、その子の load_reduction_rate（%）を効かせた分だけ。
    *
    * 率をスロットではなく子（アイテム）が持つのは、同じ入れ物でも背負うか手に提げるかで体感が変わるため
@@ -521,7 +521,7 @@ export class WorldObject {
     const wellKnown = this.wellKnown;
     if (propertyGlobalId === wellKnown.weightId) {
       let sum = this.def.isQuantitative
-        ? Math.round((this.getNumber(wellKnown.sizeId) * this.getNumber(wellKnown.densityId, 100)) / 100)
+        ? this.getNumber(wellKnown.sizeId) * this.getNumber(wellKnown.densityId, 1)
         : 0;
       for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
       return sum;

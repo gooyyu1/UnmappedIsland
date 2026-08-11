@@ -91,7 +91,7 @@ player:
   equipment: []             # 同じ名前が並んだ数だけ作られる
   injuries: []              # 負った状態で始める怪我（docs/world/Injuries.md）
   props:
-    satiety: 1200           # プロパティの上書き（実体値。整数かシンボル名）
+    satiety: 12             # プロパティの上書き（実体値。数値かシンボル名）
 location:
   type: jungle              # 開始地点にする土地のobject_def（省略すると通常の漂着地）
   items: [stone x100, thick_branch]     # `x個数` で同じものをまとめて指定できる（1〜1000）
