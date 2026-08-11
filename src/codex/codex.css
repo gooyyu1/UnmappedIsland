@@ -322,6 +322,8 @@ ul.description li {
   padding-left: calc(var(--depth) * 1.2rem);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85rem;
+  /* 型の絵（.ref-art）が入る行があるため、行間はその高さを見込んでおく。 */
+  line-height: 2;
 }
 
 ul.plain {
@@ -337,6 +339,15 @@ ul.plain {
 
 .ref-root {
   color: var(--muted);
+}
+
+/* 説明の文中に置く型の絵。名前より先に目に入る大きさにしつつ、行の高さで収まる範囲に留める。 */
+.ref-art {
+  width: 2.2em;
+  height: 2.2em;
+  object-fit: contain;
+  vertical-align: -0.85em;
+  margin-right: 0.15em;
 }
 
 a.ref:hover {

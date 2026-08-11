@@ -200,20 +200,18 @@ export class ObjectDef {
   }
 
   /**
-   * この型が、objectGlobalIdの型を生み出しうる箇所を書き出す（生まれる側からの逆引き）。
-   * 生むのはspawn（9.4節）だけなので、対象はactions・combinationsとrange系イベント。
+   * この型が、objectGlobalIdの型を生み出しうるか（生まれる側からの逆引き）。生むのはspawn（9.4節）
+   * だけなので、探すのはactions・combinationsとrange系イベント。
    *
-   * **書くのは場所の名前だけで、中身は書かない。** 探索のような大きなpickの木を丸ごと並べても、
-   * 「これはどこから手に入るのか」を知りたい読み手には多すぎる（中身は宣言元の型のページにある）。
+   * どの操作で生まれるかまでは返さない——「これはどこから手に入るのか」を知りたい読み手には、
+   * 生む側の型が答えで、その先はその型のページにある。
    */
-  describeCreationsOf(objectGlobalId: number, _names: DefNames, out: DescriptionWriter): void {
+  creates(objectGlobalId: number): boolean {
     const matches = (effect: ActiveEffect): boolean => effect.spawns(objectGlobalId);
-
-    for (const propertyDef of this.propertyDefs)
-      for (const eventName of propertyDef.rangeEventNamesMatching(matches))
-        out.write(propertyRef(propertyDef.name), text(`の${eventName}`));
-
-    for (const [token] of this.matchingInteractions(matches)) out.write(token);
+    return (
+      this.propertyDefs.some((propertyDef) => propertyDef.hasRangeEventMatching(matches)) ||
+      this.matchingInteractions(matches).length > 0
+    );
   }
 
   /**

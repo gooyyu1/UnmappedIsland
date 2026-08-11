@@ -103,23 +103,24 @@ describe('WorldCodexビューアのページ', () => {
     expect(html).toContain('href="#/tags"');
   });
 
-  it('生まれる側から、それを生み出す操作を辿れる', () => {
+  it('生まれる側から、それを生み出す型を絵で辿れる', () => {
     // 太い枝は土地の探索から手に入る（spawn元の逆引き）。
     const html = renderObjectPage(view, 'thick_branch');
 
-    expect(html).toContain('この型を生み出す操作');
+    expect(html).toContain('この型を生み出すもの');
     expect(html).toContain('#/object/sandy_beach');
-    expect(html).toContain('探索する');
-    // 箇条書きにどの型のどの操作かだけを出し、探索のpickの木（weightの並び）は持ち込まない。
+    expect(html).toMatch(/<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"/);
+    // 行き先の型を並べるだけで、操作の名前も探索のpickの木（weightの並び）も持ち込まない。
+    expect(html).not.toContain('探索する');
     expect(html).not.toContain('weight = ');
   });
 
-  it('材料から、それを使うレシピの完成品を辿れる', () => {
+  it('材料から、それを使うレシピの完成品を絵で辿れる', () => {
     const html = renderObjectPage(view, 'woven_leaf');
 
-    expect(html).toContain('この型を材料・道具に使うレシピ');
+    expect(html).toContain('この型を材料・道具に使うもの');
     expect(html).toContain('#/object/woven_basket');
-    // 完成品の名前だけで足りる（作り方は完成品のページにある）。
+    // 完成品を並べるだけで足りる（作り方は完成品のページにある）。
     expect(html).not.toContain('工程1');
   });
 

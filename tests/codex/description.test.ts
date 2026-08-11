@@ -201,19 +201,14 @@ describe('生まれる側・材料側からの逆引き', () => {
   const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
   const objectDef = (name: string) => codex.objects.get(codex.objectNames.getId(name));
 
-  it('自分を生み出す操作を、名前だけで挙げる', () => {
-    const target = codex.objectNames.getId('coconut_half');
-    const text = describeToText(codex, (out) => objectDef('coconut').describeCreationsOf(target, codex, out));
-
-    // 探索のような大きなpickの木を丸ごと並べず、場所の名前だけを書く。
-    expect(text).toBe('cut');
+  it('pickの奥にあるspawnも、生み出す型として数える', () => {
+    // coconutのcutは、pickの候補の中でcoconut_halfをspawnする。
+    expect(objectDef('coconut').creates(codex.objectNames.getId('coconut_half'))).toBe(true);
   });
 
-  it('生み出さない型は何も書かない', () => {
-    const target = codex.objectNames.getId('coconut');
-    expect(describeToText(codex, (out) => objectDef('coconut').describeCreationsOf(target, codex, out))).toBe(
-      '',
-    );
+  it('生み出さない型には答えない', () => {
+    expect(objectDef('coconut').creates(codex.objectNames.getId('coconut'))).toBe(false);
+    expect(objectDef('bowl').creates(codex.objectNames.getId('coconut_half'))).toBe(false);
   });
 
   it('材料としても道具としても、使う型から完成品を辿れる', () => {

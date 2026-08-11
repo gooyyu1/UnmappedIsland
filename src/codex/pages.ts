@@ -62,43 +62,27 @@ export function renderObjectPage(view: CodexView, name: string): string {
     section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations, true)) +
     section('recipes', recipesHtml(view, def)) +
     variantsSection(view, name) +
-    section('この型を生み出す操作', creationsHtml(view, def)) +
-    section('この型を材料・道具に使うレシピ', recipeUsesHtml(view, def))
+    // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
+    section(
+      'この型を生み出すもの',
+      objectGridOf(view, (other) => other.creates(def.globalId)),
+    ) +
+    section(
+      'この型を材料・道具に使うもの',
+      objectGridOf(view, (other) => other.usesInRecipes(def.globalId)),
+    )
   );
 }
 
-/**
- * この型を生み出す操作の箇条書き（「砂浜 の 探索する」）。**どの型のどの操作か、だけを出す**——
- * 詳細はリンク先の型のページにあり、逆引きは数が増えるほど一覧性のほうが要る。
- */
-function creationsHtml(view: CodexView, def: ObjectDef): string {
-  const items = view
-    .objectDefs()
-    .flatMap((other) => {
-      const writer = new DescriptionWriter();
-      other.describeCreationsOf(def.globalId, view.codex, writer);
-      return writer
-        .toLines()
-        .map(
-          (line) =>
-            `<li>${objectLinkHtml(view, other.name)}<span class="muted">の</span>` +
-            `${view.tokensHtml(line.tokens, other.name)}</li>`,
-        );
-    })
-    .join('');
-
-  return items === '' ? EMPTY_HTML : `<ul class="plain">${items}</ul>`;
-}
-
-/** この型を材料・道具に使うレシピの箇条書き。完成品の名前だけで足りる（作り方はその型のページにある）。 */
-function recipeUsesHtml(view: CodexView, def: ObjectDef): string {
-  const items = view
-    .objectDefs()
-    .filter((other) => other.usesInRecipes(def.globalId))
-    .map((other) => `<li>${objectLinkHtml(view, other.name)}</li>`)
-    .join('');
-
-  return items === '' ? EMPTY_HTML : `<ul class="plain">${items}</ul>`;
+/** 条件に当てはまる型を、一覧と同じ絵つきのカードで並べる。 */
+function objectGridOf(view: CodexView, matches: (def: ObjectDef) => boolean): string {
+  return objectGridHtml(
+    view,
+    view
+      .objectDefs()
+      .filter(matches)
+      .map((def) => def.name),
+  );
 }
 
 /**
@@ -306,10 +290,6 @@ export function renderNotFoundPage(): string {
 // ------------------------------------------------------------------
 // 部品
 // ------------------------------------------------------------------
-
-function objectLinkHtml(view: CodexView, name: string): string {
-  return `<a href="${view.objectHref(name)}">${escapeHtml(view.objectLabel(name))}</a>`;
-}
 
 function objectGridHtml(view: CodexView, names: readonly string[]): string {
   const cards = names

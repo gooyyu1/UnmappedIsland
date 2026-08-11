@@ -252,13 +252,6 @@ export class PropertyDef {
     return this.rangeEvents().some(([, effect]) => matches(effect));
   }
 
-  /** range系イベントのうち、matchesが真になるものの名前（on_overflow/on_shortfall）。 */
-  rangeEventNamesMatching(matches: (effect: ActiveEffect) => boolean): readonly string[] {
-    return this.rangeEvents()
-      .filter(([, effect]) => matches(effect))
-      .map(([label]) => label);
-  }
-
   /** range系イベントのうち、matchesが真になるものだけを書き出す。 */
   describeRangeEventsMatching(
     matches: (effect: ActiveEffect) => boolean,
