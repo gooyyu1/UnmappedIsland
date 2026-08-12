@@ -131,6 +131,8 @@ td {
 
 th {
   background: var(--card-bg);
+  /* 見出しは短い語ばかりなので、列幅の都合で折り返させない（「枠数」が縦に割れるのを防ぐ）。 */
+  white-space: nowrap;
 }
 
 .muted {

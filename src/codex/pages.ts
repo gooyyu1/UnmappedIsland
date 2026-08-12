@@ -1,6 +1,7 @@
 import { DescriptionWriter } from '../domain/defs/Description';
 import type { InteractionDef } from '../domain/defs/InteractionDef';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
+import type { SlotDef } from '../domain/defs/SlotDef';
 import { OBJECT_ART } from '../game/ui/objectArt';
 import type { CodexView } from './CodexView';
 import { EMPTY_HTML, escapeHtml } from './CodexView';
@@ -234,15 +235,15 @@ export function tagSectionId(tag: string): string {
 /** スロットを持つobject_defの一覧と、それぞれの受け入れ方。 */
 export function renderSlotPage(view: CodexView, slotName: string): string {
   const globalId = view.codex.slotNames.tryGetId(slotName);
-  const owners = view.objectsWithSlot(slotName);
   const texts = view.locale.slot(slotName);
 
-  const cards = owners
+  const rows = view
+    .objectsWithSlot(slotName)
     .map((owner) => {
       const slotDef = globalId === undefined ? undefined : view.objectDef(owner)?.getSlotDef(globalId);
-      const body =
-        slotDef === undefined ? '' : view.describeHtml(owner, (out) => slotDef.describe(view.codex, out));
-      return card(`<a href="${view.objectHref(owner)}">${escapeHtml(view.objectLabel(owner))}</a>`, body);
+      return slotDef === undefined
+        ? ''
+        : `<tr><td>${objectLinkHtml(view, owner)}</td>${slotCellsHtml(view, owner, slotDef)}</tr>`;
     })
     .join('');
 
@@ -253,7 +254,30 @@ export function renderSlotPage(view: CodexView, slotName: string): string {
     (texts.putIn?.description === undefined
       ? ''
       : `<p class="lead">${escapeHtml(texts.putIn.description)}</p>`) +
-    section('このスロットを持つ型', cards === '' ? EMPTY_HTML : cards)
+    section('このスロットを持つ型', rows === '' ? EMPTY_HTML : slotTableHtml('型', rows))
+  );
+}
+
+/** スロットの表（1行が1スロット）。見出しの1列目だけが、型のページとスロットのページで変わる。 */
+function slotTableHtml(firstColumn: string, rows: string): string {
+  return (
+    `<table><thead><tr><th>${escapeHtml(firstColumn)}</th><th>受け入れる型</th>` +
+    `<th>枠数</th><th>capacity</th><th>備考</th></tr></thead><tbody>${rows}</tbody></table>`
+  );
+}
+
+/** スロット1つぶんのセル（1列目＝名前を除く）。 */
+function slotCellsHtml(view: CodexView, selfObjectName: string, slotDef: SlotDef): string {
+  const notes: string[] = [];
+  const putIn = slotDef.describePutInDuration(view.codex);
+  if (putIn !== undefined) notes.push(`入れるのに${view.tokensHtml(putIn, selfObjectName)}分かかる`);
+  if (!slotDef.autoPlacement) notes.push('自動配置の対象にしない（手で入れるか、名指しの移動でだけ入る）');
+
+  return (
+    `<td>${view.describeHtml(selfObjectName, (out) => slotDef.describeAccept(view.codex, out))}</td>` +
+    `<td>${slotDef.cellCount ?? ''}</td>` +
+    `<td>${slotDef.capacity ?? ''}</td>` +
+    `<td class="muted">${notes.join('<br>')}</td>`
   );
 }
 
@@ -290,6 +314,10 @@ export function renderNotFoundPage(): string {
 // ------------------------------------------------------------------
 // 部品
 // ------------------------------------------------------------------
+
+function objectLinkHtml(view: CodexView, name: string): string {
+  return `<a href="${view.objectHref(name)}">${escapeHtml(view.objectLabel(name))}</a>`;
+}
 
 function objectGridHtml(view: CodexView, names: readonly string[]): string {
   const cards = names
@@ -368,17 +396,17 @@ function propertiesHtml(view: CodexView, def: ObjectDef): string {
 }
 
 function slotsHtml(view: CodexView, def: ObjectDef): string {
-  const cards = def
+  const rows = def
     .enumerateSlotDefs()
-    .map((slotDef) =>
-      card(
-        `<a href="${view.slotHref(slotDef.name)}">${escapeHtml(view.slotLabel(slotDef.name))}</a>` +
-          headingIdentifier(view.slotLabel(slotDef.name), slotDef.name),
-        view.describeHtml(def.name, (out) => slotDef.describe(view.codex, out)),
-      ),
+    .map(
+      (slotDef) =>
+        `<tr><td><a href="${view.slotHref(slotDef.name)}">` +
+        `${escapeHtml(view.slotLabel(slotDef.name))}</a>` +
+        `${headingIdentifier(view.slotLabel(slotDef.name), slotDef.name)}</td>` +
+        `${slotCellsHtml(view, def.name, slotDef)}</tr>`,
     )
     .join('');
-  return cards === '' ? EMPTY_HTML : cards;
+  return rows === '' ? EMPTY_HTML : slotTableHtml('スロット', rows);
 }
 
 function interactionsHtml(

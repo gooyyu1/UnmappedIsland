@@ -447,6 +447,11 @@
         "object": {
           "$ref": "#/$defs/identifier"
         },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "生む個数（9.4節）。省略時は1。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する。"
+        },
         "into": {
           "enum": [
             "same_slot",
