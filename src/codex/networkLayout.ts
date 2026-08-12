@@ -30,7 +30,7 @@ export interface LayoutResult {
 }
 
 /** 列の間隔（線を描く余白）と、同じ列の中のノードの間隔。 */
-const COLUMN_GAP = 90;
+const COLUMN_GAP = 48;
 const ROW_GAP = 18;
 const PADDING = 24;
 

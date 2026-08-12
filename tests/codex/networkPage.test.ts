@@ -23,11 +23,20 @@ describe('クラフトネットワークのページ', () => {
     // 型は絵つきで、クリックでそのページへ。
     expect(html).toContain('id="net-o:coconut"');
     expect(html).toContain('href="#/object/coconut"');
-    // 工程は結節点として出て、宣言元の型のページへ。
-    expect(html).toMatch(/net-step[^>]*href="#\/object\/sandy_beach"/);
+    // 工程はラベル無しの丸として出て、名前はツールチップ、クリックで宣言元の型のページへ。
+    expect(html).toMatch(/net-step[^>]*href="#\/object\/sandy_beach"[^>]*><circle/);
+    expect(html).toContain('<title>探索する（sandy_beach.explore）</title>');
     // withタグは挟まって出る。
     expect(html).toContain('id="net-o:sharp_stone"');
     expect(html).toContain('>cutting_tool</text>');
+  });
+
+  it('拡大・縮小の操作が付く', () => {
+    const html = renderNetworkPage(view);
+
+    expect(html).toContain('data-network-zoom="in"');
+    expect(html).toContain('data-network-zoom="out"');
+    expect(html).toContain('data-network-zoom="reset"');
   });
 
   it('消費されない入力（道具）は破線になる', () => {

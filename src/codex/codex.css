@@ -388,12 +388,46 @@ a.ref:hover {
   color: var(--muted);
 }
 
-/* クラフトネットワーク（networkPage.ts）。図はページ幅に収まらないので横スクロールで見る。 */
+/*
+ * クラフトネットワーク（networkPage.ts）。図は横に長いので、mainの幅制限（980px）を抜けて
+ * 画面幅いっぱいへ広げ、横スクロールで見る。100%はmainの内容幅、100vwは画面幅なので、
+ * その差の半分だけ左へ張り出すと画面の左端に揃う。
+ */
 .network-scroll {
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
+  width: calc(100vw - 3rem);
+  margin-left: calc((100% - 100vw) / 2 + 1.5rem);
+}
+
+.network-toolbar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.network-toolbar button {
+  min-width: 2rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.network-toolbar button:hover {
+  border-color: var(--link);
+}
+
+.network-zoom-level {
+  min-width: 3.2rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .network .net-node-box {
@@ -405,12 +439,14 @@ a.ref:hover {
   stroke: var(--link);
 }
 
-.network .net-step .net-node-box {
+/* 工程の結節点。ラベルは持たず、重ねたときのツールチップ（title）だけが名前を出す。 */
+.network .net-step-dot {
   fill: var(--chip-bg);
-  stroke: none;
+  stroke: var(--chip-fg);
+  stroke-width: 1.5;
 }
 
-.network .net-step .net-label {
+.network .net-step:hover .net-step-dot {
   fill: var(--chip-fg);
 }
 
