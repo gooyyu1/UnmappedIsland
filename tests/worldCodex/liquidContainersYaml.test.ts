@@ -132,11 +132,11 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const densityId = codex.propertyNames.getId('density');
 
     expect(contentOf(bowl)?.getNumber(densityId), '水は1g/mL').toBe(1);
-    expect(bowl.getEffectiveValue(weightId), 'ヤシの器200g + 水250mL = 450g').toBe(450);
+    expect(bowl.getEffectiveValue(weightId), 'ヤシの器100g + 水250mL = 350g').toBe(350);
 
     contentOf(bowl)!.setNumber(codex.wellKnown.volumeId, 100, session);
 
-    expect(bowl.getEffectiveValue(weightId), '飲めばそのぶん軽くなる').toBe(300);
+    expect(bowl.getEffectiveValue(weightId), '飲めばそのぶん軽くなる').toBe(200);
   });
 
   it('容量は容器のcontentスロットのcapacityが決める', () => {

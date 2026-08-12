@@ -176,8 +176,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
       'husked_coconut',
       'coconut_husk',
     ]);
-    expect(weightsOn(beach), '1400gの実が1000gの実と400gの皮に分かれる（両方が元の重さを持たない）').toEqual([
-      1000, 400,
+    expect(weightsOn(beach), '1400gの実が800gの実と600gの皮に分かれる（重さが増えも減りもしない）').toEqual([
+      800, 600,
     ]);
     expect(handOf(player), '道具以外は手元へ入らない').toEqual(['sharp_stone']);
   });
@@ -225,6 +225,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
       'coconut_half',
       'coconut_half',
     ]);
+    expect(weightsOn(beach), '800gの実が300g×2になる（差の200gは割ってこぼれる水）').toEqual([300, 300]);
     expect(handOf(player)).toEqual([toolName]);
   });
 
@@ -246,6 +247,9 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(itemsOn(beach), '果肉と殻は割れた実が居た場所へ宣言順に並んで置き換わる').toEqual([
       'coconut_meat',
       'coconut_bowl',
+    ]);
+    expect(weightsOn(beach), '300gの実が200gの果肉と100gの殻に分かれる（掻き出しでは何も失わない）').toEqual([
+      200, 100,
     ]);
     expect(handOf(player)).toEqual(['sharp_stone']);
   });
