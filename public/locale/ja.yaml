@@ -38,7 +38,11 @@ object_texts:
     display_name_with_content: '{content}入りの{container}'
     # 製作中オブジェクト（レシピから自動生成される型）の名前。{product}が完成品。
     # この型は自動生成なので自分のエントリを持てず、必ずこの書式から組み立てる。
-    display_name_in_progress: '作りかけの{product}'
+    #
+    # **完成品と同じ名前にする。** カード名は枠の中の1行（全角10文字）に収まる長さで書いてあり、
+    # そこへ「作りかけの」の5文字を足すと、4文字より長い名前はすべてはみ出す。作りかけであることは
+    # 青い覆いが示す（ScreenLayout.md 製作中オブジェクトのカード節）ので、名前で言い直す必要はない。
+    display_name_in_progress: '{product}'
     props:
       exploration_progress:
         display_name: 探索の進み具合
