@@ -5,7 +5,10 @@ import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import { putIntoSlot } from '../domain/runtime/slotEntry';
+import { currentStep, finishedStepRatio, stepSupplyRatio } from '../domain/runtime/crafting';
+import { MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
+import { recipeOf } from './recipeList';
 import type { CardContent, CardFill, CardSeverity } from './ui/Card';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
@@ -447,6 +450,30 @@ export function fromGameSession(
    */
   const capacityRatioOf = (object: WorldObject): number | undefined => object.mainSlotFillRatio();
 
+  const progressPropertyId = codex.propertyNames.tryGetId(PROGRESS_PROPERTY);
+  const materialsSlotId = codex.slotNames.tryGetId(MATERIALS_SLOT);
+  /**
+   * 製作中オブジェクトのカードに出す2本（RecipeSystem.md、ScreenLayout.md 製作中オブジェクトの
+   * カード節）。製作中でない物ではどちらもundefined。
+   *
+   * - 材料の充足率は**今の工程が要求する分**。「作業する」が押せるかと一致させるため、残りの工程まで
+   *   数えない（残りを数えると、揃っているのに満たないバーが出る）。
+   * - 工程の進捗は**工程が2つ以上のレシピにだけ**出す。1つしか無いレシピでは、最初の作業でそのまま
+   *   完成してカードが入れ替わるので、この値は常に0のままになる（finishedStepRatio参照）。
+   */
+  const craftingOf = (object: WorldObject): { materialRatio?: number; stepRatio?: number } | undefined => {
+    if (progressPropertyId === undefined || materialsSlotId === undefined) return undefined;
+    const recipe = recipeOf(object, codex);
+    if (recipe === undefined) return undefined;
+
+    const progress = object.getNumber(progressPropertyId);
+    const step = currentStep(recipe, progress);
+    return {
+      materialRatio: step === undefined ? undefined : stepSupplyRatio(object, materialsSlotId, step),
+      stepRatio: recipe.steps.length < 2 ? undefined : finishedStepRatio(recipe, progress),
+    };
+  };
+
   /**
    * カードを押したときに開く、そのオブジェクトの主要なスロット（持たなければundefined）。
    *
@@ -565,6 +592,7 @@ export function fromGameSession(
     fill: fillOf(instances[0]),
     capacityRatio: capacityRatioOf(instances[0]),
     severity: severityOf(instances[0]),
+    ...craftingOf(instances[0]),
     mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
