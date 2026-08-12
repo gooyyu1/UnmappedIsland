@@ -50,15 +50,30 @@ export class CodexView {
   // 定義の引き当て
   // ------------------------------------------------------------------
 
-  /** 全object_defをグローバルIDの順（＝宣言順）に返す。 */
+  /**
+   * 一覧に出すobject_defを、グローバルIDの順（＝宣言順）に返す。
+   *
+   * **製作中オブジェクト（RecipeSystem.md 1節）は含めない。** レシピから自動生成された型で、
+   * 中身は完成品のrecipesの節にそのまま出ている——一覧に並べても、作りかけの姿という同じ物の
+   * 別の顔が増えるだけで、読み手には重複にしか見えない。識別子で名指しすれば個別のページは開ける。
+   */
   objectDefs(): readonly ObjectDef[] {
     const defs: ObjectDef[] = [];
     for (let globalId = 0; globalId < this.codex.objects.count; globalId++) {
       const def: ObjectDef | undefined = this.codex.objects.get(globalId);
       // 名前だけが登録されて定義が無いグローバルID（参照だけされた型）は飛ばす。
-      if (def !== undefined) defs.push(def);
+      if (def !== undefined && this.codex.productOf(def) === undefined) defs.push(def);
     }
     return defs;
+  }
+
+  /** タグ（4.1節）を持つobject_defの識別子（宣言順）。一覧に出さない型は含まない（objectDefs参照）。 */
+  objectNamesWithTag(tagName: string): readonly string[] {
+    const tagId = this.codex.tagNames.tryGetId(tagName);
+    if (tagId === undefined) return [];
+    return this.objectDefs()
+      .filter((def) => def.tags.includes(tagId))
+      .map((def) => def.name);
   }
 
   /** objectNameの型がpropertyNameのプロパティを持つか。 */

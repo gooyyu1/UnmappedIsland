@@ -151,21 +151,22 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
 }
 
 /**
- * タグの一覧。タグは型のグループを指す唯一の手段（`WorldCodex.objectDefNamesWithTag`）なので、
- * 「どんなまとまりがあるか」を見渡す入口になる。
+ * タグの一覧。タグは型のグループを指す唯一の手段（`CodexView.objectNamesWithTag`）なので、
+ * 「どんなまとまりがあるか」を見渡す入口になる。一覧に出す型が1つも無いタグ（製作中オブジェクト
+ * だけが持つwipなど）は、行き先が空になるので出さない。
  */
 export function renderTagListPage(view: CodexView): string {
   const cards = view
     .tagNames()
-    .map((tag) => {
-      const owners = view.codex.objectDefNamesWithTag(tag);
-      return (
+    .map((tag) => ({ tag, owners: view.objectNamesWithTag(tag) }))
+    .filter(({ owners }) => owners.length > 0)
+    .map(
+      ({ tag, owners }) =>
         `<a class="object-card" href="${view.tagHref(tag)}">` +
         tagArtHtml(view, owners) +
         `<span class="object-card-name">${escapeHtml(tag)} ` +
-        `<span class="muted">(${owners.length})</span></span></a>`
-      );
-    })
+        `<span class="muted">(${owners.length})</span></span></a>`,
+    )
     .join('');
 
   return (
@@ -195,7 +196,9 @@ function tagArtHtml(view: CodexView, names: readonly string[]): string {
 export function renderObjectsByTagPage(view: CodexView): string {
   const sections = view
     .tagNames()
-    .map((tag) => tagSectionHtml(view, tag, escapeHtml(tag), view.codex.objectDefNamesWithTag(tag)))
+    .map((tag) => ({ tag, names: view.objectNamesWithTag(tag) }))
+    .filter(({ names }) => names.length > 0)
+    .map(({ tag, names }) => tagSectionHtml(view, tag, escapeHtml(tag), names))
     .join('');
 
   const untagged = view.objectDefs().filter((def) => def.tags.length === 0);
