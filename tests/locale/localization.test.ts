@@ -11,6 +11,17 @@ import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../supp
 /** ゲーム本体に同梱される表示文字列ファイル（テストはリポジトリルートで実行される前提）。 */
 const LOCALE_PATH = `public/${LOCALE_FILE}`;
 
+/** カードのタイトルの板に収まる幅（全角の文字数ぶん。ScreenLayout.md カードの枠 節）。 */
+const NAME_MAX_WIDTH = 10;
+
+/**
+ * 名前の幅を全角の文字数として近似する（半角は0.5、それ以外は1.0）。
+ * 実測より大きめに出るので、これで収まれば実物も収まる。
+ */
+function nameWidth(label: string): number {
+  return [...label].reduce((total, char) => total + (/[ -~｡-ﾟ]/.test(char) ? 0.5 : 1), 0);
+}
+
 /**
  * WorldCodexのYAMLがconditionsに書いた理由（reason、14.6節）の識別子。ロード後のConditionNodeは
  * 木に畳まれていて列挙できないため、定義ファイルの字面から拾う。
@@ -224,6 +235,23 @@ describe('同梱の表示文字列ファイル', () => {
     // （GameElementDefinition.md 14.6節）。
     for (const reasonName of declaredReasonNames())
       expect(locale.reason(reasonName), `reason '${reasonName}' には文言が必要`).toBeDefined();
+  });
+
+  it('カードの名前は枠のタイトルの板に1行で収まる', () => {
+    // 板は高さ22uの固定で、名前は16uの1行（ScreenLayout.md カードの枠 節）。使える幅172uに対して
+    // 全角なら10文字ぶんにあたる。
+    //
+    // **幅はフォントを使わず近似で測る。** Nodeには文字の描画幅を測る手段が無く、そのために
+    // フォントを依存に加えたくない。全角1.0・半角0.5で数えると、実測（Noto Sans JP）に対して
+    // 常に大きめに出る——16uでの英字の平均は0.50字ぶんで、最も細い並び（illi…）は0.19字ぶん。
+    // つまり**この検査を通れば実物は必ず収まる**。
+    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+      const name = codex.objects.get(globalId).name;
+      const label = locale.object(name).displayName;
+      expect(nameWidth(label), `'${label}' (${name}) はカードのタイトルに収まらない`).toBeLessThanOrEqual(
+        NAME_MAX_WIDTH,
+      );
+    }
   });
 
   it('存在しない識別子のエントリを持たない（WorldCodexの改名時の取り残しを防ぐ）', () => {
