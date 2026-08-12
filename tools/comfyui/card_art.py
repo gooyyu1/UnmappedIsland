@@ -13,8 +13,13 @@
 
 - background: 紙・物・影の3つに分ける（separate参照）。アイテムのように、白地に置かれた1つの物を
   切り出す絵向け。
-- luma: 明るい画素ほど透かす。キャラクターのポートレートのように、背景ごと紙へ溶かしたい絵向け。
-  生成された絵の白い余白がカードの紙地に置き換わり、絵と紙が地続きになる。
+- luma: 明るい画素ほど透かす。**白い紙の上に主題だけが描かれた絵**（怪我の足）向け。生成された絵の
+  白い余白がカードの紙地に置き換わり、絵と紙が地続きになる。
+- none: 透かさない。地形やポートレートのように、**絵そのものがカードを埋める**もの向け。
+
+**背景が描き込まれた絵にlumaを使わないこと。** 明度でアルファを決めるので、透けるのは「背景」では
+なく「明るい画素」になる。紙の上では絵の明るい部分の色が抜け、暗い地の上では白く霞む。描かれた
+背景（灰色の空・滲み）は中間色なので残り、抜けた白との落差が四角い塊として見える。
 
     python card_art.py stone.png --out ../../src/assets/objects/stone.png --size 256
 
@@ -54,7 +59,9 @@ from postprocess import oilify
 CARD_WIDTH = 410
 CARD_HEIGHT = 640
 PAPER_MARGIN = 5
-PAPER_RADIUS = 32
+PAPER_RADIUS = 20
+# 角丸を滑らかにするための倍率。この倍で描いてから縮める（card_frame.py の SUPERSAMPLE と同じ）。
+MASK_SUPERSAMPLE = 4
 
 # 物を収める正方形キャンバスの段階。アイテムの絵はobject_defの数だけ増えるので、必要な段だけ使う。
 # ボタンのアイコン（--canvas）はこの段に縛られない。あちらは段の数ではなく物の大きさそのものを表す。
@@ -304,19 +311,22 @@ def paper_mask(width: int, height: int, feather: int) -> np.ndarray:
     乗ってしまうため。代わりに縁からの距離を測り、featherピクセルかけて内側で立ち上げる。
     境界のちょうど外側は必ず0になる。
     """
-    mask = Image.new("L", (width, height), 0)
-    ImageDraw.Draw(mask).rounded_rectangle(
-        [PAPER_MARGIN, PAPER_MARGIN, width - 1 - PAPER_MARGIN, height - 1 - PAPER_MARGIN],
-        radius=PAPER_RADIUS,
+    # 角の階段を消すため、拡大して描いてから縮める（card_frame.py の rounded_mask と同じ理由）。
+    # **featherが0のときはこれが唯一の平滑化**で、角丸がそのままカードの輪郭として見える。
+    big = Image.new("L", (width * MASK_SUPERSAMPLE, height * MASK_SUPERSAMPLE), 0)
+    edge = PAPER_MARGIN * MASK_SUPERSAMPLE
+    ImageDraw.Draw(big).rounded_rectangle(
+        [edge, edge, width * MASK_SUPERSAMPLE - 1 - edge, height * MASK_SUPERSAMPLE - 1 - edge],
+        radius=PAPER_RADIUS * MASK_SUPERSAMPLE,
         fill=255,
     )
-    inside = np.asarray(mask, dtype=bool)
+    smooth = np.asarray(big.resize((width, height), Image.LANCZOS), dtype=np.float64) / 255
     if feather <= 0:
-        return inside.astype(np.float64)
+        return np.clip(smooth, 0, 1)
 
     # 内側の各画素から、外側までの最短距離。
-    distance = distance_transform_edt(inside)
-    return np.clip(distance / feather, 0, 1)
+    distance = distance_transform_edt(smooth > 0.5)
+    return np.minimum(np.clip(distance / feather, 0, 1), np.clip(smooth, 0, 1))
 
 
 def main() -> None:
@@ -343,7 +353,8 @@ def main() -> None:
     parser.add_argument("--gamma", type=float, default=1.0, help="明度のガンマ。1より大きいと暗くなる")
     parser.add_argument("--white", type=float, default=250, help="luma: この明度以上を完全に透明にする")
     parser.add_argument("--opaque", type=float, default=200, help="luma: この明度以下を完全に不透明にする")
-    parser.add_argument("--feather", type=int, default=24, help="紙の縁の内側で薄くしていく幅（px）")
+    parser.add_argument("--feather", type=int, default=0,
+                        help="紙の縁の内側で薄くしていく幅（px）。既定の0は角丸でぱきっと切り落とす")
     parser.add_argument(
         "--canvas",
         type=int,

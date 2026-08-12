@@ -26,7 +26,7 @@ from scipy.ndimage import gaussian_filter
 CARD_WIDTH = 410
 CARD_HEIGHT = 640
 MARGIN = 5
-RADIUS = 32
+RADIUS = 20
 # 角丸の縁を滑らかにするための倍率。この倍で描いてから縮める。
 SUPERSAMPLE = 4
 

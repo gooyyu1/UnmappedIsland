@@ -26,7 +26,6 @@
     "tolerance": 60,
     "edge": 4,
     "shadow": 1,
-    "reach": 24,
-    "feather": 24
+    "reach": 24
   }
 }

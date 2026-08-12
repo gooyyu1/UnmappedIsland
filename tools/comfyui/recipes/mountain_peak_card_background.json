@@ -22,7 +22,6 @@
   "cardArt": {
     "size": "card",
     "mode": "none",
-    "crop": [1638, 0, 410, 640],
-    "feather": 24
+    "crop": [1638, 0, 410, 640]
   }
 }
