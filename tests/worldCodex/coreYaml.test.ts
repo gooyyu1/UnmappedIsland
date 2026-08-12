@@ -232,15 +232,15 @@ object_defs:
     );
 
     expect(
-      forestInstance.moveToSlot(worldInstance, locationsSlotId, testCodex.wellKnown),
+      forestInstance.moveToSlot(worldInstance, locationsSlotId),
       'traitを経由してlocationタグを持つオブジェクトは受け入れられる',
     ).toBeUndefined();
     expect(
-      beachInstance.moveToSlot(worldInstance, locationsSlotId, testCodex.wellKnown),
+      beachInstance.moveToSlot(worldInstance, locationsSlotId),
       'traitを介さず直接tagsでlocationタグを持つオブジェクトも、同一traitでなくても受け入れられる',
     ).toBeUndefined();
     expect(
-      rockInstance.moveToSlot(worldInstance, locationsSlotId, testCodex.wellKnown),
+      rockInstance.moveToSlot(worldInstance, locationsSlotId),
       'locationタグを持たないオブジェクトは拒否される',
     ).toBeDefined();
   });

@@ -44,7 +44,7 @@ object_defs:
 
     const bench = new WorldObject(1, codex.objects.get(codex.objectNames.getId('workbench')), session);
     const material = new WorldObject(2, codex.objects.get(codex.objectNames.getId('raw_material')), session);
-    material.moveToSlot(bench, itemsSlotId, codex.wellKnown);
+    material.moveToSlot(bench, itemsSlotId);
 
     // lifeがrangeの下限を割っているので、tickでon_shortfall（destroy+spawn）が発火する。
     bench.tick(session);

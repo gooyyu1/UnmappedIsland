@@ -9,6 +9,7 @@ import type { PropertyReading, PropertyValue } from './PropertyValue';
 import type { Requirement } from '../defs/Requirement';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
 import { Slot } from './Slot';
+import type { WorldPlace } from './WorldChange';
 import type { WorldSession } from './WorldSession';
 
 /**
@@ -46,14 +47,23 @@ export class WorldObject {
     return this._parentSlotLocalId;
   }
 
+  /**
+   * このオブジェクトが生きるセッション。**生成したセッションと、その後この物が居るセッションは同じ**
+   * ——だから配置の関門（attachToSlot・destroy）が、呼び出し側から渡されずに変化を記録できる
+   * （WorldSession.recordChange）。
+   */
+  private readonly session: WorldSession;
+
   /** weight/loadの実効値導出（containerContributionTo）が使う、規約で決まったプロパティ名のID。 */
-  private readonly wellKnown: WellKnownProperties;
+  private get wellKnown(): WellKnownProperties {
+    return this.session.codex.wellKnown;
+  }
 
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
   constructor(instanceId: number, def: ObjectDef, session: WorldSession) {
     this.instanceId = instanceId;
     this.def = def;
-    this.wellKnown = session.codex.wellKnown;
+    this.session = session;
 
     this.properties = def.enumeratePropertyDefs().map((pd) => pd.createValue(this, session));
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd));
@@ -258,13 +268,8 @@ export class WorldObject {
    *
    * 戻り値: 成功時はundefined、失敗時はその理由。
    */
-  moveToSlot(
-    newParent: WorldObject,
-    slotGlobalId: number,
-    wellKnown: WellKnownProperties,
-    force = false,
-  ): string | undefined {
-    return this.attachToSlot(newParent, slotGlobalId, undefined, wellKnown, force);
+  moveToSlot(newParent: WorldObject, slotGlobalId: number, force = false): string | undefined {
+    return this.attachToSlot(newParent, slotGlobalId, undefined, force);
   }
 
   /**
@@ -275,13 +280,11 @@ export class WorldObject {
     newParent: WorldObject,
     slotGlobalId: number,
     placement: SameSlotPlacement,
-    wellKnown: WellKnownProperties,
   ): string | undefined {
     return this.attachToSlot(
       newParent,
       slotGlobalId,
       (slot) => slot.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
-      wellKnown,
       false,
     );
   }
@@ -290,38 +293,16 @@ export class WorldObject {
    * プレイヤーが隙間を指定して入れる手動配置（Slot.tryInsertAtGap参照）。fixedPositionsのスロットで
    * 既存のセルをずらして場所を作れない場合はエラーを返す。
    */
-  moveToSlotAtGap(
-    newParent: WorldObject,
-    slotGlobalId: number,
-    gapIndex: number,
-    wellKnown: WellKnownProperties,
-  ): string | undefined {
-    return this.attachToSlot(
-      newParent,
-      slotGlobalId,
-      (slot) => slot.tryInsertAtGap(this, gapIndex),
-      wellKnown,
-      false,
-    );
+  moveToSlotAtGap(newParent: WorldObject, slotGlobalId: number, gapIndex: number): string | undefined {
+    return this.attachToSlot(newParent, slotGlobalId, (slot) => slot.tryInsertAtGap(this, gapIndex), false);
   }
 
   /**
    * プレイヤーが空きセルを指定して入れる手動配置（Slot.tryInsertAtCell参照）。fixedPositionsのスロット
    * 専用で、そのセルが空いていない場合はエラーを返す。
    */
-  moveToSlotAtCell(
-    newParent: WorldObject,
-    slotGlobalId: number,
-    cellIndex: number,
-    wellKnown: WellKnownProperties,
-  ): string | undefined {
-    return this.attachToSlot(
-      newParent,
-      slotGlobalId,
-      (slot) => slot.tryInsertAtCell(this, cellIndex),
-      wellKnown,
-      false,
-    );
+  moveToSlotAtCell(newParent: WorldObject, slotGlobalId: number, cellIndex: number): string | undefined {
+    return this.attachToSlot(newParent, slotGlobalId, (slot) => slot.tryInsertAtCell(this, cellIndex), false);
   }
 
   /**
@@ -358,19 +339,14 @@ export class WorldObject {
    * 何が移せないかを画面側が場所ごとに覚えていると、ワールド側の宣言と食い違う（設置物のかごを
    * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
    */
-  rejectionForMoveTo(
-    newParent: WorldObject,
-    slotGlobalId: number,
-    wellKnown: WellKnownProperties,
-    force = false,
-  ): string | undefined {
+  rejectionForMoveTo(newParent: WorldObject, slotGlobalId: number, force = false): string | undefined {
     const rejection = this.rejectionBeforeSlot(newParent, slotGlobalId);
     if (rejection !== undefined) return rejection;
 
     if (force) return undefined;
     return newParent
       .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
-      .canAccept(this, wellKnown, newParent.def.name);
+      .canAccept(this, this.wellKnown, newParent.def.name);
   }
 
   /**
@@ -385,7 +361,6 @@ export class WorldObject {
     followers: readonly WorldObject[],
     newParent: WorldObject,
     slotGlobalId: number,
-    wellKnown: WellKnownProperties,
   ): number {
     const candidates: WorldObject[] = [];
     for (const candidate of [this as WorldObject, ...followers]) {
@@ -396,7 +371,7 @@ export class WorldObject {
 
     return newParent
       .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
-      .acceptedCount(candidates, wellKnown);
+      .acceptedCount(candidates, this.wellKnown);
   }
 
   /** 枠の空き（Slot.canAccept）を見るまでもなく移れない理由。移れる個数を数えるときも1つずつ見る。 */
@@ -421,19 +396,25 @@ export class WorldObject {
     return undefined;
   }
 
-  /** placeは位置を指定する配置（上記のinsertSameSlot・moveToSlotAt*）専用。省略すると通常の追加（Slot.addInternal）になる。 */
+  /**
+   * placeは位置を指定する配置（上記のinsertSameSlot・moveToSlotAt*）専用。省略すると通常の追加
+   * （Slot.addInternal）になる。
+   *
+   * **配置を伴う変化の唯一の関門**なので、ここが出入りを記録する（WorldChange）。移動前の居場所は
+   * 切り離す前に控える——切り離した後では、どこから来たのかを誰も知らない。
+   */
   private attachToSlot(
     newParent: WorldObject,
     slotGlobalId: number,
     place: ((slot: Slot) => boolean) | undefined,
-    wellKnown: WellKnownProperties,
     force: boolean,
   ): string | undefined {
-    const rejection = this.rejectionForMoveTo(newParent, slotGlobalId, wellKnown, force);
+    const rejection = this.rejectionForMoveTo(newParent, slotGlobalId, force);
     if (rejection !== undefined) return rejection;
 
     const localSlot = newParent.def.slotLayout.toLocal(slotGlobalId);
     const targetSlot = newParent.getSlotByLocalId(localSlot);
+    const from = this.currentPlace();
 
     this.detachFromParent();
 
@@ -441,12 +422,14 @@ export class WorldObject {
       if (!place(targetSlot)) {
         // fixedPositionsで空きが作れず配置できなかった（呼び出し側でfallbackへ）。既に旧親から切り離し済みの
         // ため、この場合は未配置（どこにも属さない）で戻す。
+        this.session.recordChange(this, from, undefined);
         return `'${newParent.def.name}.${targetSlot.def.name}' に指定した位置の空きがありません。`;
       }
     } else {
       targetSlot.addInternal(this);
     }
 
+    this.session.recordChange(this, from, { parent: newParent, slotGlobalId });
     this.setParent(newParent, localSlot);
     this.registerEdgeWith(newParent, true);
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
@@ -467,9 +450,20 @@ export class WorldObject {
    * 自分の親——子から見た祖父——へこぼれ出す。治った怪我に当てていた包帯が消えてしまわないように、
    * 壊れた籠の中身が地面に散らばるように。
    */
-  destroy(wellKnown: WellKnownProperties): void {
-    this.spillContentsTo(this._parent, wellKnown);
+  destroy(): void {
+    this.spillContentsTo(this._parent);
+    const from = this.currentPlace();
     this.detachFromParent();
+    this.session.recordChange(this, from, undefined);
+  }
+
+  /** 今の居場所（WorldChange）。どこにも属していなければundefined。 */
+  private currentPlace(): WorldPlace | undefined {
+    if (this._parent === undefined) return undefined;
+    return {
+      parent: this._parent,
+      slotGlobalId: this._parent.getSlotByLocalId(this._parentSlotLocalId).def.globalId,
+    };
   }
 
   /**
@@ -480,11 +474,11 @@ export class WorldObject {
    * 行き先が受け入れられなくても押し込む（force）。既に世界に在る物なので、置き場所が無いことを
    * 理由に消すわけにはいかない（spawnの伝播と同じ扱い、9.4節）。
    */
-  private spillContentsTo(destination: WorldObject | undefined, wellKnown: WellKnownProperties): void {
+  private spillContentsTo(destination: WorldObject | undefined): void {
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) {
-        if (child.def.boundToOwner) child.spillContentsTo(destination, wellKnown);
-        else if (destination !== undefined) child.moveIntoFirstAcceptingSlot(destination, wellKnown, true);
+        if (child.def.boundToOwner) child.spillContentsTo(destination);
+        else if (destination !== undefined) child.moveIntoFirstAcceptingSlot(destination, true);
       }
     }
   }
@@ -609,18 +603,13 @@ export class WorldObject {
    * られたスロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
    * 9.4節）。force=trueは受け入れ判定を飛ばすため、自動配置スロットが1つでもあれば必ず成功する。
    */
-  moveIntoFirstAcceptingSlot(
-    target: WorldObject,
-    wellKnown: WellKnownProperties,
-    force = false,
-    session?: WorldSession,
-  ): boolean {
+  moveIntoFirstAcceptingSlot(target: WorldObject, force = false, session?: WorldSession): boolean {
     for (const slotDef of target.def.enumerateAutoPlacementSlotDefs()) {
       if (this.def.isQuantitative && !force && session !== undefined) {
-        if (this.pourVolumeInto(target, slotDef.globalId, wellKnown, session)) return true;
+        if (this.pourVolumeInto(target, slotDef.globalId, session)) return true;
         continue;
       }
-      if (this.moveToSlot(target, slotDef.globalId, wellKnown, force) === undefined) return true;
+      if (this.moveToSlot(target, slotDef.globalId, force) === undefined) return true;
     }
 
     return false;
@@ -633,18 +622,14 @@ export class WorldObject {
    *
    * 戻り値: 1単位でも移せたか。
    */
-  private pourVolumeInto(
-    target: WorldObject,
-    slotGlobalId: number,
-    wellKnown: WellKnownProperties,
-    session: WorldSession,
-  ): boolean {
+  private pourVolumeInto(target: WorldObject, slotGlobalId: number, session: WorldSession): boolean {
     if (target === this || this.contains(target)) return false;
 
     const localSlot = target.def.slotLayout.toLocal(slotGlobalId);
     if (localSlot === LocalIndexMap.missing) return false;
     const slot = target.getSlotByLocalId(localSlot);
 
+    const wellKnown = this.wellKnown;
     const available = this.getNumber(wellKnown.volumeId);
     if (available <= 0) return false;
 
@@ -660,7 +645,7 @@ export class WorldObject {
     } else {
       const born = session.spawn(this.def.globalId);
       born.setNumber(wellKnown.volumeId, amount, session);
-      if (born.moveToSlot(target, slotGlobalId, wellKnown) !== undefined) return false;
+      if (born.moveToSlot(target, slotGlobalId) !== undefined) return false;
     }
 
     // 注ぎ切って量が尽きた移し元は、setNumberの中で自分を畳む（settleChangedVolume）。
@@ -775,7 +760,7 @@ export class WorldObject {
     const volumeId = session.codex.wellKnown.volumeId;
     const volume = this.getNumber(volumeId);
     if (volume <= 0) {
-      this.destroy(session.codex.wellKnown);
+      this.destroy();
       return;
     }
 
@@ -791,6 +776,10 @@ export class WorldObject {
    *
    * destroyをspawnより先に行う（9.3節・9.4節）: 置き換え後のオブジェクトが破棄されるオブジェクトの位置を
    * 引き継げるよう、destroyで実際に位置が空いてから通常の（force無しの）配置を行う。
+   *
+   * **ここが「誰の仕業か」の境界**でもある。この中で起きた物の出入りは、すべてselfを主体として記録される
+   * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を
+   * 知らずに「このオブジェクトが何をしたか」を読める。
    */
   applyActiveEffect(
     effect: ActiveEffect,
@@ -802,7 +791,7 @@ export class WorldObject {
     // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（EffectSite
     // 参照）。
     const effectSite = this.captureEffectSite();
-    effect.apply(this, session, actor, dragged, effectSite);
+    session.withSubject(this, () => effect.apply(this, session, actor, dragged, effectSite));
   }
 
   /** 効果の対象キー(self/parent/actor/dragged)を解決する。ancestorはプロパティごとに解決先が変わりうるため扱わない（resolveEffectTargetOrAncestor参照）。 */
@@ -881,7 +870,7 @@ export class WorldObject {
     if (into === 'same_slot') {
       if (site === undefined) return;
       primaryTarget = site.parent;
-      placed = site.placeReplacement(spawned, session.codex.wellKnown);
+      placed = site.placeReplacement(spawned);
     } else {
       const target = into === 'self' ? this : actor;
       if (target === undefined) return;
@@ -902,7 +891,7 @@ export class WorldObject {
     session: WorldSession,
     force: boolean,
   ): boolean {
-    return spawned.moveIntoFirstAcceptingSlot(target, session.codex.wellKnown, force);
+    return spawned.moveIntoFirstAcceptingSlot(target, force);
   }
 }
 
@@ -956,11 +945,10 @@ export class EffectSite {
    *
    * 戻り値: 配置できたらtrue。falseなら呼び出し側がfallbackへ委ねる。
    */
-  placeReplacement(spawned: WorldObject, wellKnown: WellKnownProperties): boolean {
+  placeReplacement(spawned: WorldObject): boolean {
     const slot = this.parent.getSlotByLocalId(this.parentSlotLocalId);
     const placed =
-      spawned.insertSameSlot(this.parent, slot.def.globalId, this.nextPlacement(slot), wellKnown) ===
-      undefined;
+      spawned.insertSameSlot(this.parent, slot.def.globalId, this.nextPlacement(slot)) === undefined;
 
     // 既存スタックへ合流したもの（findOwnStackがundefined）はセルを消費しないため基準にしない——originの
     // 位置はまだ誰も引き継いでおらず、次の1つのために空けておく。配置に失敗したものも同じ扱いになる。

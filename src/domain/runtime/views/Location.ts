@@ -71,11 +71,10 @@ export class Location {
    * 省略すると末尾（合流できる同種があればそのスタック）へ入る。
    */
   receiveItem(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
-    const wellKnown = session.codex.wellKnown;
     const failure =
       gapIndex === undefined
-        ? item.moveToSlot(this.instance, this.itemsSlotId, wellKnown)
-        : item.moveToSlotAtGap(this.instance, this.itemsSlotId, gapIndex, wellKnown);
+        ? item.moveToSlot(this.instance, this.itemsSlotId)
+        : item.moveToSlotAtGap(this.instance, this.itemsSlotId, gapIndex);
     return failure === undefined;
   }
 
@@ -125,7 +124,7 @@ export class Location {
    */
   explore(actor: WorldObject | undefined, session: WorldSession): boolean {
     if (!this.instance.tryExecuteAction('explore', actor, session)) return false;
-    this.revealDueFixtures(session);
+    this.revealDueFixtures();
     return true;
   }
 
@@ -133,13 +132,13 @@ export class Location {
    * undiscovered_fixturesの設置物のうち、required_progressが現在の探索進捗以下のものをfixturesへ移して
    * 「発見」させる。冪等。進捗がYAML側の効果だけで動いた場合に備え、exploreを介さず単独でも呼べる。
    */
-  revealDueFixtures(session: WorldSession): void {
+  revealDueFixtures(): void {
     const hidden = this.instance.tryGetSlot(this.undiscoveredFixturesSlotId);
     if (hidden === undefined) return;
 
     const progress = this.explorationProgress;
     for (const fixture of [...hidden.contents]) {
-      if (fixture.getEffectiveValue(this.requiredProgressId) <= progress) this.reveal(fixture, session);
+      if (fixture.getEffectiveValue(this.requiredProgressId) <= progress) this.reveal(fixture);
     }
   }
 
@@ -148,28 +147,28 @@ export class Location {
    * 公開する。片側だけ見つかると、渡った先の土地を探索し直すまで戻れなくなるため
    * （ExplorationSystem.md 3.1節）。
    */
-  private reveal(fixture: WorldObject, session: WorldSession): void {
-    this.revealInOwnLocation(fixture, session);
+  private reveal(fixture: WorldObject): void {
+    this.revealInOwnLocation(fixture);
 
     const returnPathId = fixture.getEffectiveValue(this.returnPathIdId);
     if (returnPathId === 0) return;
 
     const returnPath = fixture.findRoot().findDescendantByInstanceId(returnPathId);
-    if (returnPath !== undefined) this.revealInOwnLocation(returnPath, session);
+    if (returnPath !== undefined) this.revealInOwnLocation(returnPath);
   }
 
   /**
    * 設置物を、それ自身が今属している土地の公開スロットへ移す。帰り道は別の土地に居るため、
    * 移し先はthis.instanceではなくその設置物の親を見る。既に公開済みなら何もしない（冪等）。
    */
-  private revealInOwnLocation(fixture: WorldObject, session: WorldSession): void {
+  private revealInOwnLocation(fixture: WorldObject): void {
     const owner = fixture.parent;
     if (owner === undefined) return;
 
     const hidden = owner.tryGetSlot(this.undiscoveredFixturesSlotId);
     if (hidden === undefined || !hidden.contents.includes(fixture)) return;
 
-    fixture.moveToSlot(owner, this.fixturesSlotId, session.codex.wellKnown);
+    fixture.moveToSlot(owner, this.fixturesSlotId);
   }
 
   private slotContents(slotGlobalId: number): readonly WorldObject[] {

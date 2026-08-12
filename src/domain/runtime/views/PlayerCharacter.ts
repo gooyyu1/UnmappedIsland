@@ -81,11 +81,10 @@ export class PlayerCharacter {
    * （Slot.tryInsertAtGap）。省略すると最初の空き枠へ入る。
    */
   take(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
-    const wellKnown = session.codex.wellKnown;
     const failure =
       gapIndex === undefined
-        ? item.moveToSlot(this.instance, this.handSlotId, wellKnown)
-        : item.moveToSlotAtGap(this.instance, this.handSlotId, gapIndex, wellKnown);
+        ? item.moveToSlot(this.instance, this.handSlotId)
+        : item.moveToSlotAtGap(this.instance, this.handSlotId, gapIndex);
     return failure === undefined;
   }
 
@@ -94,9 +93,7 @@ export class PlayerCharacter {
    * られない場合はfalse（Slot.tryInsertAtCell）。
    */
   takeIntoCell(item: WorldObject, session: WorldSession, cellIndex: number): boolean {
-    return (
-      item.moveToSlotAtCell(this.instance, this.handSlotId, cellIndex, session.codex.wellKnown) === undefined
-    );
+    return item.moveToSlotAtCell(this.instance, this.handSlotId, cellIndex) === undefined;
   }
 
   /**

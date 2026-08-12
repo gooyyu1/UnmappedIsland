@@ -48,14 +48,12 @@ describe('tools.yamlの道具定義', () => {
     const session = new WorldSession(codex, worldView);
 
     const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
-    expect(
-      beach.moveToSlot(worldInstance, codex.slotNames.getId('locations'), codex.wellKnown),
-    ).toBeUndefined();
+    expect(beach.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
 
     const itemsSlotId = codex.slotNames.getId('items');
     const target = session.spawn(codex.objectNames.getId('stone'));
     const hammer = session.spawn(codex.objectNames.getId('stone'));
-    expect(target.moveToSlot(beach, itemsSlotId, codex.wellKnown)).toBeUndefined();
+    expect(target.moveToSlot(beach, itemsSlotId)).toBeUndefined();
 
     const [combination] = target.findMatchingCombinations(hammer);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');

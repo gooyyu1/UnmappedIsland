@@ -205,7 +205,7 @@ function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, 
 
   for (const name of contents) {
     const spawned = game.session.spawn(objectIdOf(codex, name));
-    const failure = spawned.moveToSlot(owner, slotId, codex.wellKnown);
+    const failure = spawned.moveToSlot(owner, slotId);
     if (failure !== undefined) {
       throw new YamlLoadError(`シナリオ: '${name}' を '${slot}' へ置けません: ${failure}`);
     }

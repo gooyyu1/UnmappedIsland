@@ -68,9 +68,9 @@ object_defs:
     const log20 = spawn(codex, 'log');
     log20.setProperty(lifeId, 20);
 
-    log10.moveToSlot(groundInstance, pileSlotId, codex.wellKnown);
-    log5.moveToSlot(groundInstance, pileSlotId, codex.wellKnown);
-    log20.moveToSlot(groundInstance, pileSlotId, codex.wellKnown);
+    log10.moveToSlot(groundInstance, pileSlotId);
+    log5.moveToSlot(groundInstance, pileSlotId);
+    log20.moveToSlot(groundInstance, pileSlotId);
 
     const pile = groundInstance.tryGetSlot(pileSlotId)!;
 
@@ -97,9 +97,9 @@ object_defs:
     const wood2 = spawn(codex, 'wood');
     const rock1 = spawn(codex, 'rock');
 
-    wood1.moveToSlot(groundInstance, pileSlotId, codex.wellKnown);
-    wood2.moveToSlot(groundInstance, pileSlotId, codex.wellKnown);
-    rock1.moveToSlot(groundInstance, pileSlotId, codex.wellKnown);
+    wood1.moveToSlot(groundInstance, pileSlotId);
+    wood2.moveToSlot(groundInstance, pileSlotId);
+    rock1.moveToSlot(groundInstance, pileSlotId);
 
     const pile = groundInstance.tryGetSlot(pileSlotId)!;
     const stacks = pile.cells;
@@ -144,9 +144,9 @@ object_defs:
     const bInstance = spawn(codex, 'b_item');
     const cInstance = spawn(codex, 'c_item');
 
-    aInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    bInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    cInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    aInstance.moveToSlot(locInstance, pileSlotId);
+    bInstance.moveToSlot(locInstance, pileSlotId);
+    cInstance.moveToSlot(locInstance, pileSlotId);
 
     locInstance.tick(session);
 
@@ -188,10 +188,10 @@ object_defs:
     const bInstance2 = spawn(codex, 'b_item2'); // life=0 になり置き換わる方
     const cInstance = spawn(codex, 'c_item2');
 
-    aInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    bInstance1.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    bInstance2.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    cInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    aInstance.moveToSlot(locInstance, pileSlotId);
+    bInstance1.moveToSlot(locInstance, pileSlotId);
+    bInstance2.moveToSlot(locInstance, pileSlotId);
+    cInstance.moveToSlot(locInstance, pileSlotId);
 
     // bInstance1 は on_shortfall が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
     bInstance1.setProperty(lifeId, 5);
@@ -233,9 +233,9 @@ object_defs:
     const bInstance = spawn(codex, 'b_item3');
     const cInstance = spawn(codex, 'c_item3');
 
-    aInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    bInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    cInstance.moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    aInstance.moveToSlot(locInstance, pileSlotId);
+    bInstance.moveToSlot(locInstance, pileSlotId);
+    cInstance.moveToSlot(locInstance, pileSlotId);
 
     locInstance.tick(session);
 
@@ -275,7 +275,7 @@ object_defs:
     const locInstance = spawn(codex, 'loc_pair');
 
     for (const name of ['a_item5', 'b_item5', 'c_item5'])
-      spawn(codex, name).moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+      spawn(codex, name).moveToSlot(locInstance, pileSlotId);
 
     locInstance.tick(session);
 
@@ -321,10 +321,10 @@ object_defs:
     const session = new WorldSession(codex);
     const locationInstance = spawn(codex, 'loc_fallback2');
     const handInstance = spawn(codex, 'hand_owner10');
-    handInstance.moveToSlot(locationInstance, groundSlotId, session.codex.wellKnown);
+    handInstance.moveToSlot(locationInstance, groundSlotId);
 
-    spawn(codex, 'filler_item2').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 0番
-    spawn(codex, 'potato3').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 1番
+    spawn(codex, 'filler_item2').moveToSlot(handInstance, handSlotId); // 0番
+    spawn(codex, 'potato3').moveToSlot(handInstance, handSlotId); // 1番
 
     handInstance.tick(session);
 
@@ -366,8 +366,8 @@ object_defs:
 
     const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner11');
-    spawn(codex, 'meat_item').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 0番
-    spawn(codex, 'half_item').moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 1番
+    spawn(codex, 'meat_item').moveToSlot(handInstance, handSlotId); // 0番
+    spawn(codex, 'half_item').moveToSlot(handInstance, handSlotId); // 1番
 
     const hand11 = handInstance.tryGetSlot(handSlotId)!;
     // 前提を「meat(0) _(1) half(2) _(3)」に合わせる。
@@ -421,15 +421,15 @@ object_defs:
     const session = new WorldSession(codex);
     const locationInstance = spawn(codex, 'loc_fallback3');
     const handInstance = spawn(codex, 'hand_owner12');
-    handInstance.moveToSlot(locationInstance, groundSlotId, session.codex.wellKnown);
+    handInstance.moveToSlot(locationInstance, groundSlotId);
 
     // 「potato x2(0) peel(1) filler(2)」の3枠すべてが埋まった状態。
     const rotting = spawn(codex, 'potato4');
     const survivor = spawn(codex, 'potato4');
-    rotting.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    survivor.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    spawn(codex, 'potato_peel2').moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    spawn(codex, 'filler_item3').moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    rotting.moveToSlot(handInstance, handSlotId);
+    survivor.moveToSlot(handInstance, handSlotId);
+    spawn(codex, 'potato_peel2').moveToSlot(handInstance, handSlotId);
+    spawn(codex, 'filler_item3').moveToSlot(handInstance, handSlotId);
     survivor.setProperty(freshnessId, 9); // 生き残る方（同種が残るので、置き換えは隣の枠を要る）
     rotting.setProperty(freshnessId, 0);
 
@@ -472,9 +472,9 @@ object_defs:
     const locInstance = spawn(codex, 'loc_merge');
 
     // D A B の並びで、Bが置き換わって生まれるDは、Bが居た位置ではなく既にあるDのスタックへ入る。
-    spawn(codex, 'd_item4').moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    spawn(codex, 'a_item4').moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
-    spawn(codex, 'b_item4').moveToSlot(locInstance, pileSlotId, session.codex.wellKnown);
+    spawn(codex, 'd_item4').moveToSlot(locInstance, pileSlotId);
+    spawn(codex, 'a_item4').moveToSlot(locInstance, pileSlotId);
+    spawn(codex, 'b_item4').moveToSlot(locInstance, pileSlotId);
 
     locInstance.tick(session);
 
@@ -510,16 +510,13 @@ object_defs:
     const pebble1 = spawn(codex, 'pebble_h');
     const twig1 = spawn(codex, 'twig_h');
 
-    expect(apple1.moveToSlot(handInstance, handSlotId, codex.wellKnown)).toBeUndefined();
+    expect(apple1.moveToSlot(handInstance, handSlotId)).toBeUndefined();
     expect(
-      apple2.moveToSlot(handInstance, handSlotId, codex.wellKnown),
+      apple2.moveToSlot(handInstance, handSlotId),
       '同種は既存の枠へ合流するので、新しい枠を消費しない',
     ).toBeUndefined();
-    expect(pebble1.moveToSlot(handInstance, handSlotId, codex.wellKnown)).toBeUndefined();
-    expect(
-      twig1.moveToSlot(handInstance, handSlotId, codex.wellKnown),
-      '3種類目は空き枠が無いので拒否される',
-    ).toBeDefined();
+    expect(pebble1.moveToSlot(handInstance, handSlotId)).toBeUndefined();
+    expect(twig1.moveToSlot(handInstance, handSlotId), '3種類目は空き枠が無いので拒否される').toBeDefined();
   });
 
   it('束ねない型は、同じ型でも1個ずつ枠を消費する', () => {
@@ -541,13 +538,13 @@ object_defs:
     const fuel2 = spawn(codex, 'fuel');
     const fuel3 = spawn(codex, 'fuel');
 
-    expect(fuel1.moveToSlot(furnaceInstance, intakeSlotId, codex.wellKnown)).toBeUndefined();
+    expect(fuel1.moveToSlot(furnaceInstance, intakeSlotId)).toBeUndefined();
     expect(
-      fuel2.moveToSlot(furnaceInstance, intakeSlotId, codex.wellKnown),
+      fuel2.moveToSlot(furnaceInstance, intakeSlotId),
       '束ねない型は同種でも個体ごとに枠を消費する',
     ).toBeUndefined();
     expect(
-      fuel3.moveToSlot(furnaceInstance, intakeSlotId, codex.wellKnown),
+      fuel3.moveToSlot(furnaceInstance, intakeSlotId),
       '同種であっても2枠を使い切っているので3個目は拒否される',
     ).toBeDefined();
   });
@@ -577,17 +574,17 @@ object_defs:
     const a = spawn(codex, 'type_a');
     const b = spawn(codex, 'type_b');
 
-    a.moveToSlot(handInstance, handSlotId, codex.wellKnown);
-    b.moveToSlot(handInstance, handSlotId, codex.wellKnown);
+    a.moveToSlot(handInstance, handSlotId);
+    b.moveToSlot(handInstance, handSlotId);
 
     const hand2 = handInstance.tryGetSlot(handSlotId)!;
     expect(gridIndexOfType(hand2, typeAId)).toBe(0);
     expect(gridIndexOfType(hand2, typeBId)).toBe(1);
 
-    a.destroy(codex.wellKnown); // 0番が空く
+    a.destroy(); // 0番が空く
 
     const c = spawn(codex, 'type_c');
-    c.moveToSlot(handInstance, handSlotId, codex.wellKnown);
+    c.moveToSlot(handInstance, handSlotId);
 
     expect(gridIndexOfType(hand2, typeBId), '既存の型は前詰めされず番号を維持する').toBe(1);
     expect(gridIndexOfType(hand2, typeCId), '新しい型は空いている最小番号(0)へ入る').toBe(0);
@@ -612,8 +609,8 @@ object_defs:
     const a = spawn(codex, 'type_a2');
     const b = spawn(codex, 'type_b2');
 
-    a.moveToSlot(handInstance, handSlotId, codex.wellKnown);
-    b.moveToSlot(handInstance, handSlotId, codex.wellKnown);
+    a.moveToSlot(handInstance, handSlotId);
+    b.moveToSlot(handInstance, handSlotId);
 
     const hand3 = handInstance.tryGetSlot(handSlotId)!;
 
@@ -654,9 +651,9 @@ object_defs:
     const fillerInstance = spawn(codex, 'filler_item'); // 0番を先に占有
     const potatoInstance = spawn(codex, 'potato'); // 1番に入る
 
-    fillerInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    potatoInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    fillerInstance.destroy(codex.wellKnown); // 0番が空く（1番=potatoとは別に）
+    fillerInstance.moveToSlot(handInstance, handSlotId);
+    potatoInstance.moveToSlot(handInstance, handSlotId);
+    fillerInstance.destroy(); // 0番が空く（1番=potatoとは別に）
 
     const hand4 = handInstance.tryGetSlot(handSlotId)!;
     const potatoGridIndex = gridIndexOfType(hand4, codex.objectNames.getId('potato'))!;
@@ -701,8 +698,8 @@ object_defs:
     const potato1 = spawn(codex, 'potato2'); // freshness=5のまま生き残る方
     const potato2 = spawn(codex, 'potato2'); // freshness=0のまま置き換わる方
 
-    potato1.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    potato2.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    potato1.moveToSlot(handInstance, handSlotId);
+    potato2.moveToSlot(handInstance, handSlotId);
     potato1.setProperty(freshnessId, 5);
 
     const hand5 = handInstance.tryGetSlot(handSlotId)!;
@@ -772,12 +769,12 @@ object_defs:
     const session = new WorldSession(codex);
     const locationInstance = spawn(codex, 'loc_fallback');
     const handInstance = spawn(codex, 'hand_owner6');
-    handInstance.moveToSlot(locationInstance, groundSlotId, session.codex.wellKnown);
+    handInstance.moveToSlot(locationInstance, groundSlotId);
 
     const aInstance = spawn(codex, 'type_a3');
     const bInstance = spawn(codex, 'type_b3');
-    aInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // grid 0
-    bInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // grid 1
+    aInstance.moveToSlot(handInstance, handSlotId); // grid 0
+    bInstance.moveToSlot(handInstance, handSlotId); // grid 1
 
     const hand6 = handInstance.tryGetSlot(handSlotId)!;
     expect(gridIndexOfType(hand6, aTypeId)).toBe(0);
@@ -854,7 +851,7 @@ object_defs:
     const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner7');
     const aInstance = spawn(codex, 'type_a4');
-    aInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    aInstance.moveToSlot(handInstance, handSlotId);
 
     const hand7 = handInstance.tryGetSlot(handSlotId)!;
     expect(gridIndexOfType(hand7, aTypeId)).toBe(0);
@@ -914,8 +911,8 @@ object_defs:
     const handInstance = spawn(codex, 'hand_owner8');
     const aInstance = spawn(codex, 'type_a5');
     const bInstance = spawn(codex, 'type_b5');
-    aInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    bInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    aInstance.moveToSlot(handInstance, handSlotId);
+    bInstance.moveToSlot(handInstance, handSlotId);
 
     const hand8 = handInstance.tryGetSlot(handSlotId)!;
     // 前提を「_ _ A B」（A=2, B=3）に合わせる。
@@ -983,10 +980,10 @@ object_defs:
     const aInstance = spawn(codex, 'type_a6');
     const bInstance = spawn(codex, 'type_b6');
 
-    c1.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    c2.moveToSlot(handInstance, handSlotId, session.codex.wellKnown); // 既存のCスタックへ合流
-    aInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
-    bInstance.moveToSlot(handInstance, handSlotId, session.codex.wellKnown);
+    c1.moveToSlot(handInstance, handSlotId);
+    c2.moveToSlot(handInstance, handSlotId); // 既存のCスタックへ合流
+    aInstance.moveToSlot(handInstance, handSlotId);
+    bInstance.moveToSlot(handInstance, handSlotId);
 
     const hand9 = handInstance.tryGetSlot(handSlotId)!;
     // 前提を「_ C(x2) A B」（C=1, A=2, B=3）に合わせる。

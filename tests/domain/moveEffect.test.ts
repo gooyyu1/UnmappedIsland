@@ -75,12 +75,10 @@ object_defs:
     const path = session.spawn(codex.objectNames.getId('path'));
 
     const locationsId = codex.slotNames.getId('locations');
-    expect(meadow.moveToSlot(world, locationsId, codex.wellKnown)).toBeUndefined();
-    expect(hilltop.moveToSlot(world, locationsId, codex.wellKnown)).toBeUndefined();
-    expect(
-      character.moveToSlot(meadow, codex.slotNames.getId('characters'), codex.wellKnown),
-    ).toBeUndefined();
-    expect(path.moveToSlot(meadow, codex.slotNames.getId('stuff'), codex.wellKnown)).toBeUndefined();
+    expect(meadow.moveToSlot(world, locationsId)).toBeUndefined();
+    expect(hilltop.moveToSlot(world, locationsId)).toBeUndefined();
+    expect(character.moveToSlot(meadow, codex.slotNames.getId('characters'))).toBeUndefined();
+    expect(path.moveToSlot(meadow, codex.slotNames.getId('stuff'))).toBeUndefined();
 
     return { codex, session, world, meadow, hilltop, character, path };
   }
@@ -152,7 +150,7 @@ object_defs:
     const basket = session.spawn(codex.objectNames.getId('basket'));
     const stone = session.spawn(codex.objectNames.getId('stone'));
     for (const item of [basket, stone]) {
-      expect(item.moveToSlot(world, stuffSlot, codex.wellKnown)).toBeUndefined();
+      expect(item.moveToSlot(world, stuffSlot)).toBeUndefined();
     }
 
     expect(basket.tryExecuteCombination(stone, undefined, 'put_in', session)).toBe(true);
@@ -193,8 +191,8 @@ object_defs:
     const stuffSlot = codex.slotNames.getId('stuff');
     const outer = session.spawn(codex.objectNames.getId('basket'));
     const inner = session.spawn(codex.objectNames.getId('basket'));
-    expect(outer.moveToSlot(world, stuffSlot, codex.wellKnown)).toBeUndefined();
-    expect(inner.moveToSlot(world, stuffSlot, codex.wellKnown)).toBeUndefined();
+    expect(outer.moveToSlot(world, stuffSlot)).toBeUndefined();
+    expect(inner.moveToSlot(world, stuffSlot)).toBeUndefined();
 
     // かご同士も入れ子にできる。
     expect(outer.tryExecuteCombination(inner, undefined, 'put_in', session)).toBe(true);
@@ -305,7 +303,7 @@ object_defs:
     const receiver = session.spawn(codex.objectNames.getId('water'));
     const poured = session.spawn(codex.objectNames.getId('water'));
     const contentId = codex.slotNames.getId('content');
-    expect(receiver.moveToSlot(jar, contentId, codex.wellKnown)).toBeUndefined();
+    expect(receiver.moveToSlot(jar, contentId)).toBeUndefined();
 
     expect(receiver.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
 

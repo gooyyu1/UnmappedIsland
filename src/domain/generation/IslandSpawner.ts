@@ -42,7 +42,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
     if (site.variant !== undefined)
       for (const [propertyGlobalId, value] of site.variant.props)
         location.setProperty(propertyGlobalId, value);
-    const error = location.moveToSlot(world, locationsSlotId, codex.wellKnown);
+    const error = location.moveToSlot(world, locationsSlotId);
     if (error !== undefined) throw new Error(`土地 '${site.type!.name}' を配置できません: ${error}`);
     locations[site.index] = location;
     map.siteInstanceIds[site.index] = location.instanceId;
@@ -74,7 +74,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
       path.setProperty(travelMinutesId, edge.travelMinutes);
       path.setProperty(requiredProgressId, requiredProgress);
       path.setProperty(destinationIdId, locations[other].instanceId);
-      const error = path.moveToSlot(locations[site.index], undiscoveredFixturesSlotId, codex.wellKnown);
+      const error = path.moveToSlot(locations[site.index], undiscoveredFixturesSlotId);
       if (error !== undefined) throw new Error(`道を配置できません: ${error}`);
       pathsByEnds.set(endsKey(site.index, other), path);
     }
@@ -123,7 +123,7 @@ export function placePlayerAt(
   if (location === undefined)
     throw new Error('開始地点の土地が実体化されていません（先にpopulateを呼んでください）。');
 
-  const error = character.moveToSlot(location, codex.slotNames.getId('characters'), codex.wellKnown);
+  const error = character.moveToSlot(location, codex.slotNames.getId('characters'));
   if (error !== undefined) throw new Error(`プレイヤーを開始地点へ配置できません: ${error}`);
 
   return new Location(location, codex);

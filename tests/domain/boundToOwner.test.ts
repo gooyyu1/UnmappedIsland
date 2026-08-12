@@ -60,16 +60,16 @@ object_defs:
     const world = session.spawn(codex.objectNames.getId('world'));
     const lands = [0, 1].map(() => {
       const land = session.spawn(codex.objectNames.getId('land'));
-      expect(land.moveToSlot(world, placesId, codex.wellKnown)).toBeUndefined();
+      expect(land.moveToSlot(world, placesId)).toBeUndefined();
       return land;
     });
     const [here, there] = lands as [WorldObject, WorldObject];
 
     const road = session.spawn(codex.objectNames.getId('road'));
-    expect(road.moveToSlot(here, roadsId, codex.wellKnown), '生まれた直後の配置は通る').toBeUndefined();
+    expect(road.moveToSlot(here, roadsId), '生まれた直後の配置は通る').toBeUndefined();
 
     const stone = session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(road, stuffId, codex.wellKnown)).toBeUndefined();
+    expect(stone.moveToSlot(road, stuffId)).toBeUndefined();
 
     return { codex, world, here, there, road, stone };
   };
@@ -78,7 +78,7 @@ object_defs:
     const { codex, there, road } = setUp();
     const roadsId = codex.slotNames.getId('roads');
 
-    expect(road.moveToSlot(there, roadsId, codex.wellKnown)).toContain('離せません');
+    expect(road.moveToSlot(there, roadsId)).toContain('離せません');
     expect(road.parent?.def.name, '元の持ち主に留まる').toBe('land');
     expect(there.tryGetSlot(roadsId)?.contents).toEqual([]);
   });
@@ -86,30 +86,28 @@ object_defs:
   it('forceでも移せない（acceptsの判定ではなく、その物の在り方の制約だから）', () => {
     const { codex, there, road } = setUp();
 
-    expect(road.moveToSlot(there, codex.slotNames.getId('roads'), codex.wellKnown, true)).toContain(
-      '離せません',
-    );
+    expect(road.moveToSlot(there, codex.slotNames.getId('roads'), true)).toContain('離せません');
   });
 
   it('弾くのは持ち主が変わるときだけで、同じ持ち主の中では動かせる', () => {
     const { codex, here, road } = setUp();
 
-    expect(road.moveToSlot(here, codex.slotNames.getId('roads'), codex.wellKnown)).toBeUndefined();
+    expect(road.moveToSlot(here, codex.slotNames.getId('roads'))).toBeUndefined();
   });
 
   it('持ち主が消えれば道連れになるが、中身は道連れにならない', () => {
-    const { codex, here, road, stone } = setUp();
+    const { here, road, stone } = setUp();
 
-    road.destroy(codex.wellKnown);
+    road.destroy();
 
     expect(road.parent, '道は土地とともに世界から外れる').toBeUndefined();
     expect(stone.parent, '道の上の石はこぼれ出て土地に残る').toBe(here);
   });
 
   it('boundな子は持ち主に付いたまま世界を去るが、その中身は逃げ出す', () => {
-    const { codex, world, here, road, stone } = setUp();
+    const { world, here, road, stone } = setUp();
 
-    here.destroy(codex.wellKnown);
+    here.destroy();
 
     expect(here.parent, '土地が世界から外れる').toBeUndefined();
     expect(road.parent, '道はこぼれず、土地に付いたまま一緒に外れる').toBe(here);

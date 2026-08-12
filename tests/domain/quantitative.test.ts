@@ -76,7 +76,7 @@ object_defs:
       const container = session.spawn(codex.objectNames.getId(containerName));
       const liquid = session.spawn(codex.objectNames.getId(liquidName));
       liquid.setNumber(volumeId, volume, session);
-      expect(liquid.moveToSlot(container, contentId, codex.wellKnown)).toBeUndefined();
+      expect(liquid.moveToSlot(container, contentId)).toBeUndefined();
       return [container, liquid];
     };
 
@@ -223,7 +223,7 @@ object_defs:
     const container = session.spawn(codex.objectNames.getId(containerName));
     const liquid = session.spawn(codex.objectNames.getId(liquidName));
     liquid.setNumber(volumeId, volume, session);
-    expect(liquid.moveToSlot(container, contentId, codex.wellKnown)).toBeUndefined();
+    expect(liquid.moveToSlot(container, contentId)).toBeUndefined();
     return { container, liquid, session, volumeId };
   }
 

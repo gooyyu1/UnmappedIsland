@@ -54,7 +54,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const container = spawn(containerName);
     const content = spawn(`${liquidKind}_liquid`);
     content.setProperty(volumeId, size);
-    content.moveToSlot(container, contentSlotId, codex.wellKnown);
+    content.moveToSlot(container, contentSlotId);
     return container;
   }
 
@@ -86,13 +86,9 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     return world;
   }
 
-  function spawnEmptyUnderWorld(
-    containerName: string,
-    world: WorldObject,
-    session: WorldSession,
-  ): WorldObject {
+  function spawnEmptyUnderWorld(containerName: string, world: WorldObject): WorldObject {
     const container = spawn(containerName);
-    container.moveToSlot(world, locationsSlotId, session.codex.wellKnown, true);
+    container.moveToSlot(world, locationsSlotId, true);
     return container;
   }
 
@@ -101,10 +97,9 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     liquidKind: string,
     size: number,
     world: WorldObject,
-    session: WorldSession,
   ): WorldObject {
     const container = spawnContainer(containerName, liquidKind, size);
-    container.moveToSlot(world, locationsSlotId, session.codex.wellKnown, true);
+    container.moveToSlot(world, locationsSlotId, true);
     return container;
   }
 
@@ -274,7 +269,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   ])('coconut_bowlの昼の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
     const session = new WorldSession(codex);
     const world = spawnWorld(weather);
-    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world, session);
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world);
 
     bowl.tick(session);
 
@@ -289,7 +284,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   ])('jarの昼の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
     const session = new WorldSession(codex);
     const world = spawnWorld(weather);
-    const jar = spawnContainerUnderWorld('jar', 'water', 200, world, session);
+    const jar = spawnContainerUnderWorld('jar', 'water', 200, world);
 
     jar.tick(session);
 
@@ -302,7 +297,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   ])('夜(%s)は日射の上乗せが消え、基礎の蒸発だけが残る', (containerName, expectedDelta) => {
     const session = new WorldSession(codex);
     const world = spawnWorld('scorching', 0); // 夜はsunlightが0にクランプされる
-    const container = spawnContainerUnderWorld(containerName, 'water', 200, world, session);
+    const container = spawnContainerUnderWorld(containerName, 'water', 200, world);
 
     container.tick(session);
 
@@ -315,7 +310,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   ])('朝夕(%s)の日差しは昼より弱い', (containerName, expectedDelta) => {
     const session = new WorldSession(codex);
     const world = spawnWorld('scorching', 7); // sunlight 12（昼のsunnyと同値）
-    const container = spawnContainerUnderWorld(containerName, 'water', 200, world, session);
+    const container = spawnContainerUnderWorld(containerName, 'water', 200, world);
 
     container.tick(session);
 
@@ -330,7 +325,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   ])('coconut_bowlに溜まる雨の量は降り方(%s)で決まる', (weather, expectedDelta) => {
     const session = new WorldSession(codex);
     const world = spawnWorld(weather);
-    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world, session);
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world);
 
     bowl.tick(session);
 
@@ -344,7 +339,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   ])('jarに溜まる雨の量は降り方(%s)で決まる', (weather, expectedDelta) => {
     const session = new WorldSession(codex);
     const world = spawnWorld(weather);
-    const jar = spawnContainerUnderWorld('jar', 'water', 100, world, session);
+    const jar = spawnContainerUnderWorld('jar', 'water', 100, world);
 
     jar.tick(session);
 
@@ -354,7 +349,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)には雨が溜まらない', (objectName) => {
     const session = new WorldSession(codex);
     const world = spawnWorld('storm');
-    const container = spawnContainerUnderWorld(objectName, 'water', 100, world, session);
+    const container = spawnContainerUnderWorld(objectName, 'water', 100, world);
 
     container.tick(session);
 
@@ -364,7 +359,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   it('雨で増えるのは水だけで、茶の入った容器は開いていても増えない', () => {
     const session = new WorldSession(codex);
     const world = spawnWorld('storm');
-    const bowl = spawnContainerUnderWorld('coconut_bowl', 'tea', 100, world, session);
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'tea', 100, world);
 
     bowl.tick(session);
 
@@ -374,7 +369,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   it('capacityを超えて降った分はあふれて失われる', () => {
     const session = new WorldSession(codex);
     const world = spawnWorld('storm'); // ヤシの器へ1tickに40mL
-    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 240, world, session);
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 240, world);
 
     bowl.tick(session);
 
@@ -385,7 +380,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('light_rain');
-    const bowl = spawnEmptyUnderWorld('coconut_bowl', world, session);
+    const bowl = spawnEmptyUnderWorld('coconut_bowl', world);
 
     expect(bowl.actionUnmetRequirement('collect_rain', actor)).toBeUndefined();
     expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(true);
@@ -398,7 +393,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('light_rain');
-    const bowl = spawnEmptyUnderWorld('coconut_bowl', world, session);
+    const bowl = spawnEmptyUnderWorld('coconut_bowl', world);
 
     bowl.tryExecuteAction('collect_rain', actor, session);
     bowl.tick(session);
@@ -410,7 +405,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('clear');
-    const bowl = spawnEmptyUnderWorld('coconut_bowl', world, session);
+    const bowl = spawnEmptyUnderWorld('coconut_bowl', world);
 
     expect(bowl.actionUnmetRequirement('collect_rain', actor)?.reasonName).toBe('not_raining');
     expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(false);
@@ -421,7 +416,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('light_rain');
-    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world, session);
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world);
 
     expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(false);
 
@@ -432,7 +427,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('storm');
-    const container = spawnEmptyUnderWorld(name, world, session);
+    const container = spawnEmptyUnderWorld(name, world);
 
     expect(container.tryExecuteAction('collect_rain', actor, session)).toBe(false);
     expect(contentOf(container)).toBeUndefined();
@@ -441,7 +436,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は蒸発しない', (objectName) => {
     const session = new WorldSession(codex);
     const world = spawnWorld('scorching');
-    const container = spawnContainerUnderWorld(objectName, 'water', 100, world, session);
+    const container = spawnContainerUnderWorld(objectName, 'water', 100, world);
 
     container.tick(session);
 
@@ -451,7 +446,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   it('蒸発で量が尽きると中身のインスタンスごと消える', () => {
     const session = new WorldSession(codex);
     const world = spawnWorld('clear');
-    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 1, world, session);
+    const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 1, world);
 
     bowl.tick(session);
 
@@ -464,7 +459,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const jar = spawnContainer('jar', 'water', 800);
     const empty = spawn('canteen');
 
-    expect(requireContent(jar).moveToSlot(empty, contentSlotId, codex.wellKnown)).toContain('離せません');
+    expect(requireContent(jar).moveToSlot(empty, contentSlotId)).toContain('離せません');
     expect(amountIn(jar), '注ぎ元に残る').toBe(800);
     expect(contentOf(empty)).toBeUndefined();
   });

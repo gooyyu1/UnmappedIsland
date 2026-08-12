@@ -30,7 +30,7 @@ describe('RepresentedByTests', () => {
     const contentSlotId = codex.slotNames.getId('content');
     const container = spawn(codex, containerName);
     const content = spawn(codex, contentName);
-    content.moveToSlot(container, contentSlotId, codex.wellKnown);
+    content.moveToSlot(container, contentSlotId);
     return container;
   }
 
@@ -61,9 +61,9 @@ object_defs:
     const emptyJug2 = spawnRepresentedContainer(codex, 'jug', 'empty_liquid');
     const waterJug = spawnRepresentedContainer(codex, 'jug', 'water_liquid');
 
-    emptyJug1.moveToSlot(bag, pileSlotId, codex.wellKnown);
-    emptyJug2.moveToSlot(bag, pileSlotId, codex.wellKnown);
-    waterJug.moveToSlot(bag, pileSlotId, codex.wellKnown);
+    emptyJug1.moveToSlot(bag, pileSlotId);
+    emptyJug2.moveToSlot(bag, pileSlotId);
+    waterJug.moveToSlot(bag, pileSlotId);
 
     const pile = bag.tryGetSlot(pileSlotId)!;
     const stacks = pile.cells;
@@ -101,8 +101,8 @@ object_defs:
     const waterBowl = spawnRepresentedContainer(codex, 'bowl', 'water_liquid');
     const waterBottle = spawnRepresentedContainer(codex, 'bottle', 'water_liquid');
 
-    waterBowl.moveToSlot(bag, pileSlotId, codex.wellKnown);
-    waterBottle.moveToSlot(bag, pileSlotId, codex.wellKnown);
+    waterBowl.moveToSlot(bag, pileSlotId);
+    waterBottle.moveToSlot(bag, pileSlotId);
 
     const pile = bag.tryGetSlot(pileSlotId)!;
     const stacks = pile.cells;
@@ -139,10 +139,10 @@ object_defs:
     const emptyBowl = spawn(codex, 'bowl');
     const waterBowl = spawn(codex, 'bowl');
     const water = spawn(codex, 'water_liquid');
-    water.moveToSlot(waterBowl, contentSlotId, codex.wellKnown);
+    water.moveToSlot(waterBowl, contentSlotId);
 
-    emptyBowl.moveToSlot(bag, pileSlotId, codex.wellKnown);
-    waterBowl.moveToSlot(bag, pileSlotId, codex.wellKnown);
+    emptyBowl.moveToSlot(bag, pileSlotId);
+    waterBowl.moveToSlot(bag, pileSlotId);
 
     const pile = bag.tryGetSlot(pileSlotId)!;
     expect(
@@ -151,7 +151,7 @@ object_defs:
     ).toHaveLength(2);
 
     // 水入りボウルの中身を消す → 空ボウルになり、既存の空ボウルスタックへ再合流するはず。
-    water.destroy(codex.wellKnown);
+    water.destroy();
 
     const live = pile.cells.filter((c) => c !== undefined);
     expect(live, '空になったボウルは既存の空ボウルスタックへ合流し1スタックにまとまる').toHaveLength(1);
@@ -201,12 +201,12 @@ object_defs:
     const sweetA = spawn(codex, 'sweet_essence');
     const sweetB = spawn(codex, 'sweet_essence');
 
-    sweetA.moveToSlot(brothA, essenceSlotId, codex.wellKnown);
-    sweetB.moveToSlot(brothB, essenceSlotId, codex.wellKnown);
-    brothA.moveToSlot(bottleA, contentSlotId, codex.wellKnown);
-    brothB.moveToSlot(bottleB, contentSlotId, codex.wellKnown);
-    bottleA.moveToSlot(bag, pileSlotId, codex.wellKnown);
-    bottleB.moveToSlot(bag, pileSlotId, codex.wellKnown);
+    sweetA.moveToSlot(brothA, essenceSlotId);
+    sweetB.moveToSlot(brothB, essenceSlotId);
+    brothA.moveToSlot(bottleA, contentSlotId);
+    brothB.moveToSlot(bottleB, contentSlotId);
+    bottleA.moveToSlot(bag, pileSlotId);
+    bottleB.moveToSlot(bag, pileSlotId);
 
     const pile = bag.tryGetSlot(pileSlotId)!;
     expect(
@@ -215,9 +215,9 @@ object_defs:
     ).toHaveLength(1);
 
     // brothA の末端エッセンスを sweet → bitter に差し替える。
-    sweetA.destroy(codex.wellKnown);
+    sweetA.destroy();
     const bitterA = spawn(codex, 'bitter_essence');
-    bitterA.moveToSlot(brothA, essenceSlotId, codex.wellKnown);
+    bitterA.moveToSlot(brothA, essenceSlotId);
 
     const live = pile.cells.filter((c) => c !== undefined);
     expect(live, '末端の差し替えが最上位まで伝播し、2本の瓶が別スタックに分かれる').toHaveLength(2);
@@ -270,16 +270,16 @@ object_defs:
     const sweet2 = spawn(codex, 'sweet_essence');
     const bitter = spawn(codex, 'bitter_essence');
 
-    broth1.moveToSlot(bottle1, contentSlotId, codex.wellKnown);
-    broth2.moveToSlot(bottle2, contentSlotId, codex.wellKnown);
-    broth3.moveToSlot(bottle3, contentSlotId, codex.wellKnown);
-    sweet1.moveToSlot(broth1, essenceSlotId, codex.wellKnown);
-    sweet2.moveToSlot(broth2, essenceSlotId, codex.wellKnown);
-    bitter.moveToSlot(broth3, essenceSlotId, codex.wellKnown);
+    broth1.moveToSlot(bottle1, contentSlotId);
+    broth2.moveToSlot(bottle2, contentSlotId);
+    broth3.moveToSlot(bottle3, contentSlotId);
+    sweet1.moveToSlot(broth1, essenceSlotId);
+    sweet2.moveToSlot(broth2, essenceSlotId);
+    bitter.moveToSlot(broth3, essenceSlotId);
 
-    bottle1.moveToSlot(bag, pileSlotId, codex.wellKnown);
-    bottle2.moveToSlot(bag, pileSlotId, codex.wellKnown);
-    bottle3.moveToSlot(bag, pileSlotId, codex.wellKnown);
+    bottle1.moveToSlot(bag, pileSlotId);
+    bottle2.moveToSlot(bag, pileSlotId);
+    bottle3.moveToSlot(bag, pileSlotId);
 
     const pile = bag.tryGetSlot(pileSlotId)!;
     const stacks = pile.cells;
@@ -316,8 +316,8 @@ object_defs:
     const emptyJug = spawnRepresentedContainer(codex, 'jug_repr2', 'empty_liquid');
     const waterJug = spawnRepresentedContainer(codex, 'jug_repr2', 'water_liquid');
 
-    emptyJug.moveToSlot(hand, handSlotId, codex.wellKnown);
-    waterJug.moveToSlot(hand, handSlotId, codex.wellKnown);
+    emptyJug.moveToSlot(hand, handSlotId);
+    waterJug.moveToSlot(hand, handSlotId);
 
     const handSlot = hand.tryGetSlot(handSlotId)!;
     // fixedPositionsなのでcellsには空セル(undefined)も含まれる。実在スタックだけを見るためundefinedを除く。
