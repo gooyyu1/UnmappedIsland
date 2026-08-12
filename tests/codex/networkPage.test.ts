@@ -20,9 +20,8 @@ describe('クラフトネットワークのページ', () => {
   it('型・工程・タグのノードが1枚のSVGに出る', () => {
     const html = renderNetworkPage(view);
 
-    // 型は絵つきで、クリックでそのページへ。
-    expect(html).toContain('id="net-o:coconut"');
-    expect(html).toContain('href="#/object/coconut"');
+    // 型は絵つきで、強調前はクリックで強調表示（ページへは飛ばない）。
+    expect(html).toMatch(/id="net-o:coconut" href="#\/network\/coconut"/);
     // 工程はラベル無しの丸として出て、名前はツールチップ、クリックで宣言元の型のページへ。
     expect(html).toMatch(/net-step[^>]*href="#\/object\/sandy_beach"[^>]*><circle/);
     expect(html).toContain('<title>探索する（sandy_beach.explore）</title>');
@@ -56,6 +55,16 @@ describe('クラフトネットワークのページ', () => {
     expect(html).toContain('net-dim');
     // 解除の導線がある。
     expect(html).toContain('href="#/network"');
+  });
+
+  it('強調中の型はページへ、強調されていない型は強調表示へ飛ぶ', () => {
+    const html = renderNetworkPage(view, 'husked_coconut');
+
+    // 対象そのものと、チェーン上（強調中）の型はページへ。
+    expect(html).toMatch(/id="net-o:husked_coconut" href="#\/object\/husked_coconut"/);
+    expect(html).toMatch(/net-hl[^>]*id="net-o:coconut" href="#\/object\/coconut"/);
+    // チェーンの外（薄い側）の型は、押すとそちらの強調へ切り替わる。
+    expect(html).toMatch(/net-dim[^>]*id="net-o:woven_basket" href="#\/network\/woven_basket"/);
   });
 
   it('クラフトに関わる型のページからネットワークへ飛べる', () => {
