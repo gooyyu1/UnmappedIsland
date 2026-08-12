@@ -59,6 +59,12 @@ describe('coconut.yamlのヤシの実の加工', () => {
     return new Location(location, codex).itemStacks.map((stack) => `${stack[0].def.name} x${stack.length}`);
   }
 
+  /** 土地のitemsスロットに並ぶ物の重さ（g）。 */
+  function weightsOn(location: WorldObject): number[] {
+    const weightId = codex.propertyNames.getId('weight');
+    return new Location(location, codex).items.map((object) => object.getNumber(weightId));
+  }
+
   /** 手持ちに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
   function handOf(character: WorldObject): string[] {
     return new PlayerCharacter(character, codex).handStacks.flatMap((stack) =>
@@ -169,6 +175,9 @@ describe('coconut.yamlのヤシの実の加工', () => {
     expect(itemsOn(beach), '実も皮も、元の実が居た場所へ宣言順に並んで置き換わる').toEqual([
       'husked_coconut',
       'coconut_husk',
+    ]);
+    expect(weightsOn(beach), '1400gの実が1000gの実と400gの皮に分かれる（両方が元の重さを持たない）').toEqual([
+      1000, 400,
     ]);
     expect(handOf(player), '道具以外は手元へ入らない').toEqual(['sharp_stone']);
   });

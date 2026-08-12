@@ -859,16 +859,7 @@ export class WorldObject {
     effectSite: EffectSite | undefined,
   ): void {
     const spawned = session.spawn(effect.objectGlobalId);
-    if (effect.into === 'same_slot') this.copySharedPropertiesTo(spawned);
     this.place(spawned, effect.into, session, actor, effect.into === 'same_slot' ? effectSite : undefined);
-  }
-
-  private copySharedPropertiesTo(other: WorldObject): void {
-    for (const propertyDef of other.def.enumeratePropertyDefs()) {
-      const value = this.tryGetProperty(propertyDef.globalId);
-      if (value === undefined) continue;
-      other.setProperty(propertyDef.globalId, value.number);
-    }
   }
 
   /**
