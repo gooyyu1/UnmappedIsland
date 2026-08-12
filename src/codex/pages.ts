@@ -3,6 +3,7 @@ import type { InteractionDef } from '../domain/defs/InteractionDef';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { SlotDef } from '../domain/defs/SlotDef';
 import { OBJECT_ART } from '../game/ui/objectArt';
+import { isInCraftingNetwork } from './networkPage';
 import type { CodexView } from './CodexView';
 import { EMPTY_HTML, escapeHtml } from './CodexView';
 
@@ -20,7 +21,8 @@ export function renderObjectListPage(view: CodexView): string {
     `<h1>オブジェクト一覧</h1>` +
     `<p class="muted" title="${escapeHtml(view.source.files.join(', '))}">` +
     `${defs.length}件のobject_def（${view.source.files.length}ファイル）／` +
-    `<a href="#/by-tag">タグ別の一覧</a>／<a href="#/tags">タグ一覧</a></p>` +
+    `<a href="#/by-tag">タグ別の一覧</a>／<a href="#/tags">タグ一覧</a>／` +
+    `<a href="#/network">クラフトネットワーク</a></p>` +
     `<p><input id="object-filter" type="search" placeholder="名前で絞り込む" autocomplete="off"></p>` +
     `<div class="object-grid">${cards}</div>` +
     `<p class="muted" id="object-filter-empty" hidden>該当するオブジェクトがありません。</p>`
@@ -48,6 +50,9 @@ export function renderObjectPage(view: CodexView, name: string): string {
       ? ''
       : `<p class="muted">レシピから自動生成された製作中オブジェクト（完成品: ` +
         `<a href="${view.objectHref(product.name)}">${escapeHtml(view.objectLabel(product.name))}</a>）</p>`) +
+    (isInCraftingNetwork(view, name)
+      ? `<p><a href="#/network/${encodeURIComponent(name)}">クラフトネットワークで見る</a></p>`
+      : '') +
     `</div></div>` +
     section(
       '型の性質',

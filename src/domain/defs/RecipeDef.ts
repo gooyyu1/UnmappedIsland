@@ -1,4 +1,5 @@
 import type { WorldObject } from '../runtime/WorldObject';
+import type { CraftingStep } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { objectRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
@@ -94,6 +95,27 @@ export class RecipeDef {
   /** このレシピがobjectGlobalIdの型を、どこかの工程で素材か道具として要求しているか。 */
   requires(objectGlobalId: number): boolean {
     return this.steps.some((step) => step.requires(objectGlobalId));
+  }
+
+  /**
+   * このレシピをクラフトの1工程として見たもの（CraftingStep参照）。工程（steps）の別は畳む——
+   * 「何を使って何ができるか」の問いには、レシピ全体でひとつの答えで足りる。
+   * productGlobalIdは完成品（このレシピを宣言している型）。
+   */
+  craftingStep(productGlobalId: number): CraftingStep {
+    return {
+      kind: 'recipe',
+      name: this.name,
+      ownerGlobalId: productGlobalId,
+      inputs: this.steps.flatMap((step) =>
+        step.requirements.map((requirement) => ({
+          kind: 'object' as const,
+          objectGlobalId: requirement.objectGlobalId,
+          consumed: requirement.consume,
+        })),
+      ),
+      outputs: [{ objectGlobalId: productGlobalId, counts: [1] }],
+    };
   }
 
   /** このレシピを書き出す（Description参照）。 */

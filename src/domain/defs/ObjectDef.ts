@@ -3,6 +3,7 @@ import type { WorldSession } from '../runtime/WorldSession';
 import type { ActionDef } from './ActionDef';
 import type { ActiveEffect } from './ActiveEffect';
 import type { CombinationDef } from './CombinationDef';
+import type { CraftingStep } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { actionRef, combinationRef, propertyRef, slotRef, text } from './Description';
 import type { InteractionDef } from './InteractionDef';
@@ -220,6 +221,20 @@ export class ObjectDef {
    */
   usesInRecipes(objectGlobalId: number): boolean {
     return this.recipes.some((recipe) => recipe.requires(objectGlobalId));
+  }
+
+  /**
+   * この型が関わるクラフトの工程（CraftingStep参照）を宣言順に挙げる。actions・combinationsは
+   * 何かを生み出すものだけ（craftingStepがundefinedを返さないもの）、recipesはすべて。
+   */
+  craftingSteps(): readonly CraftingStep[] {
+    const steps: CraftingStep[] = [];
+    for (const interaction of [...this.actions, ...this.combinations]) {
+      const step = interaction.craftingStep(this.globalId);
+      if (step !== undefined) steps.push(step);
+    }
+    for (const recipe of this.recipes) steps.push(recipe.craftingStep(this.globalId));
+    return steps;
   }
 
   /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */

@@ -1,6 +1,8 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
+import type { CraftingInput, CraftingStep } from './CraftingStep';
+import { CraftingOutputCollector } from './CraftingStep';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
 import type { WeightSpec } from './PickEffect';
@@ -81,6 +83,40 @@ export abstract class InteractionDef {
   hasEffectMatching(matches: (effect: ActiveEffect) => boolean): boolean {
     return this.effect !== undefined && matches(this.effect);
   }
+
+  /**
+   * この操作をクラフトの1工程として見たもの（CraftingStep参照）。何も生み出さない操作は
+   * クラフトではないのでundefined（移動・食べるだけの操作は工程に数えない）。
+   *
+   * 入力は常にself（この操作を宣言した型）で、消費されるかはdestroyの有無から分かる。
+   * ドラッグ型の相手（withタグ）は具象（CombinationDef）が足す。
+   */
+  craftingStep(selfObjectGlobalId: number): CraftingStep | undefined {
+    if (this.effect === undefined) return undefined;
+    const outputs = new CraftingOutputCollector();
+    this.effect.collectSpawns(outputs.add);
+    if (outputs.toOutputs().length === 0) return undefined;
+
+    const inputs: CraftingInput[] = [
+      { kind: 'object', objectGlobalId: selfObjectGlobalId, consumed: this.effect.destroys('self') },
+      ...this.extraCraftingInputs(this.effect),
+    ];
+    return {
+      kind: this.craftingKind,
+      name: this.name,
+      ownerGlobalId: selfObjectGlobalId,
+      inputs,
+      outputs: outputs.toOutputs(),
+    };
+  }
+
+  /** self以外の入力（ドラッグ型のwithタグ）。メニュー型には無い。 */
+  protected extraCraftingInputs(_effect: ActiveEffect): readonly CraftingInput[] {
+    return [];
+  }
+
+  /** クラフト工程としての種別（表示名の引き方が違う、CraftingStep参照）。 */
+  protected abstract get craftingKind(): 'action' | 'combination';
 
   /**
    * 宣言順で最初に満たしていない要件（14節）。すべて満たしていればundefined＝今この操作を実行できる。
