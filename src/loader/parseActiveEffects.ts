@@ -210,6 +210,9 @@ function parseAdds(
   return adds;
 }
 
+/** spawn（9.4節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
+const SPAWN_KEYS = new Set(['object', 'into', 'count']);
+
 function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNode): SpawnEffect[] {
   if (isMap(node)) return [parseSpawn(loader, context, node)];
 
@@ -232,13 +235,18 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
 
   const unknownKeys = entriesInOrder(map)
     .map(([key]) => key)
-    .filter((key) => key !== 'object' && key !== 'into');
+    .filter((key) => !SPAWN_KEYS.has(key));
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  const count = tryGetNumber(map, 'count', context) ?? 1;
+  if (!Number.isInteger(count) || count < 1)
+    throw new YamlLoadError(`${context}: countは1以上の整数である必要があります（値: ${count}）。`);
 
   return new SpawnEffect(
     loader.objectNames.intern(requireScalar(map, 'object', context)),
     parseSpawnTargetRoot(context, into),
+    count,
   );
 }
 

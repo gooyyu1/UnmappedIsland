@@ -133,14 +133,15 @@ describe('定義の自己記述（describe）', () => {
     expect(text).toContain('hourが段nightにある');
   });
 
-  it('スロットは枠数・容量・受け入れる型を書き出す', () => {
+  it('スロットは受け入れる型を書き出す（枠数・容量は数そのものが答えるので持たない）', () => {
     const coconut = objectDef('coconut');
     const slot = coconut.getSlotDef(codex.slotNames.getId('contents'))!;
-    const text = describeToText(codex, (out) => slot.describe(codex, out));
 
-    expect(text).toContain('枠数: 2');
-    expect(text).toContain('capacity: 500');
-    expect(text).toContain('foodを持つ型（同種は3個まで）');
+    expect(describeToText(codex, (out) => slot.describeAccept(codex, out))).toBe(
+      'foodを持つ型（同種は3個まで）',
+    );
+    expect(slot.cellCount).toBe(2);
+    expect(slot.capacity).toBe(500);
   });
 
   it('アクションはきっかけ・要件・所要時間・効果をこの順で書き出す', () => {
@@ -232,7 +233,7 @@ describe('同梱のWorldCodex', () => {
       def.describe(codex, writer);
       def.passives.describe(codex, writer);
       for (const propertyDef of def.enumeratePropertyDefs()) propertyDef.describe(codex, writer);
-      for (const slotDef of def.enumerateSlotDefs()) slotDef.describe(codex, writer);
+      for (const slotDef of def.enumerateSlotDefs()) slotDef.describeAccept(codex, writer);
       for (const interaction of [...def.actions, ...def.combinations]) interaction.describe(codex, writer);
       for (const recipe of def.recipes) recipe.describe(codex, writer);
     }

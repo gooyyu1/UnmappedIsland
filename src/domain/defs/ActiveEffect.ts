@@ -237,10 +237,17 @@ export class SpawnEffect extends ActiveEffect {
   readonly objectGlobalId: number;
   readonly into: SpawnTargetRoot;
 
-  constructor(objectGlobalId: number, into: SpawnTargetRoot) {
+  /**
+   * 生む個数（9.4節、既定1）。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する
+   * ——「2個見つかる」を書くのに同じ行を2度書かせない。
+   */
+  readonly count: number;
+
+  constructor(objectGlobalId: number, into: SpawnTargetRoot, count = 1) {
     super();
     this.objectGlobalId = objectGlobalId;
     this.into = into;
+    this.count = count;
   }
 
   apply(
@@ -250,11 +257,15 @@ export class SpawnEffect extends ActiveEffect {
     dragged: WorldObject | undefined,
     effectSite: EffectSite | undefined,
   ): void {
-    owner.executeSpawn(this, session, actor, effectSite);
+    for (let i = 0; i < this.count; i++) owner.executeSpawn(this, session, actor, effectSite);
   }
 
   describe(names: DefNames, out: DescriptionWriter): void {
-    out.write(text('spawn '), objectRef(names.objectName(this.objectGlobalId)), text(` → ${this.into}`));
+    out.write(
+      text('spawn '),
+      objectRef(names.objectName(this.objectGlobalId)),
+      text(`${this.count === 1 ? '' : ` ×${this.count}`} → ${this.into}`),
+    );
   }
 
   /** 新しいオブジェクトを生むだけで、既にあるプロパティを書き換えはしない。 */

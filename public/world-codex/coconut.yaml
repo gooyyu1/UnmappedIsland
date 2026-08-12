@@ -35,9 +35,7 @@ object_defs:
         duration: 30
         pick:
           - weight: 90
-            spawn:
-              - {object: green_coconut, into: actor}
-              - {object: green_coconut, into: actor}
+            spawn: {object: green_coconut, count: 2, into: actor}
           - weight: 10
             spawn: {object: sprained_ankle, into: actor}
 
@@ -48,10 +46,7 @@ object_defs:
         duration: 30
         pick:
           - weight: 90
-            spawn:
-              - {object: palm_frond, into: actor}
-              - {object: palm_frond, into: actor}
-              - {object: palm_frond, into: actor}
+            spawn: {object: palm_frond, count: 3, into: actor}
           - weight: 10
             spawn: {object: sprained_ankle, into: actor}
 
@@ -93,9 +88,7 @@ object_defs:
         with: cutting_tool
         duration: 15
         destroy: self
-        spawn:
-          - {object: coconut_jelly}
-          - {object: coconut_jelly}
+        spawn: {object: coconut_jelly, count: 2}
 
   # 青い実のゼリー状の果肉。ほとんどが水分で、熟した果肉ほどのカロリーは無い。
   coconut_jelly:
@@ -150,16 +143,12 @@ object_defs:
         with: stone
         duration: 15
         destroy: self
-        spawn:
-          - {object: coconut_half}
-          - {object: coconut_half}
+        spawn: {object: coconut_half, count: 2}
       pry_open:
         with: cutting_tool
         duration: 15
         destroy: self
-        spawn:
-          - {object: coconut_half}
-          - {object: coconut_half}
+        spawn: {object: coconut_half, count: 2}
 
   # 割れたヤシの実。刃物で果肉を掻き出すと、果肉と器になる殻が残る。
   coconut_half:

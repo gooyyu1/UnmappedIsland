@@ -71,6 +71,22 @@ describe('WorldCodexビューアのページ', () => {
     expect(renderSlotPage(view, 'contents')).toContain('#/object/woven_basket');
   });
 
+  it('slotsは1スロット1行の表で出す', () => {
+    const html = renderObjectPage(view, 'woven_basket');
+    const slots = html.slice(html.indexOf('<h2>slots</h2>'));
+
+    expect(slots).toContain('<th>受け入れる型</th>');
+    expect(slots).toContain('<th>枠数</th>');
+    // 中身のスロットは枠10・capacity 20000で、itemタグを受け入れる。
+    expect(slots).toContain('<td>10</td><td>20000</td>');
+    expect(slots).toContain('#/by-tag/item');
+  });
+
+  it('同じものを複数spawnする操作は×Nで出す', () => {
+    // 皮を剥いだ実を割ると、割れた実が2つできる（spawnのcount、9.4節）。
+    expect(renderObjectPage(view, 'husked_coconut')).toContain('×2');
+  });
+
   it('タグ一覧はタグ・件数・そのタグの型の絵を出す（型の一覧はタグ別の一覧が持つ）', () => {
     const html = renderTagListPage(view);
 

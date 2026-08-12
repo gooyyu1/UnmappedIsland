@@ -148,26 +148,21 @@ export class SlotDef {
   }
 
   /**
-   * このスロットを書き表す（Description参照）。枠ごとに違う要件を書けるため、枠の内訳は
-   * 位置ごとに違うときだけ位置を添えて並べる（同じなら1行で足りる）。
+   * このスロットが受け入れる型を書き出す（Description参照）。枠ごとに違う要件を書けるため、
+   * 枠の内訳は位置ごとに違うときだけ位置を添えて並べる（同じなら1行で足りる）。
    */
-  describe(names: DefNames, out: DescriptionWriter): void {
-    if (this.cellCount !== undefined) out.write(text(`枠数: ${this.cellCount}`));
-    if (this.capacity !== undefined) out.write(text(`capacity: ${this.capacity}`));
-    if (!this.autoPlacement)
-      out.write(text('自動配置の対象にしない（手で入れるか、名指しの移動でだけ入る）'));
-    if (this.putInDuration !== undefined)
-      out.write(text('入れるのにかかる時間: '), ...this.putInDuration.describe(names), text('分'));
+  describeAccept(names: DefNames, out: DescriptionWriter): void {
+    if (this.cellDefs.every((cell) => cell === this.sharedCell)) {
+      out.write(...this.sharedCell.describe(names));
+      return;
+    }
+    for (const [index, cell] of this.cellDefs.entries())
+      out.write(text(`${index + 1}枠目: `), ...cell.describe(names));
+  }
 
-    out.write(text('受け入れる型:'));
-    out.indented(() => {
-      if (this.cellDefs.every((cell) => cell === this.sharedCell)) {
-        out.write(...this.sharedCell.describe(names));
-        return;
-      }
-      for (const [index, cell] of this.cellDefs.entries())
-        out.write(text(`${index + 1}枠目: `), ...cell.describe(names));
-    });
+  /** ここへ物を入れるのにかかる時間（7.10節）の書き表し。宣言が無ければundefined（一瞬で入る）。 */
+  describePutInDuration(names: DefNames): readonly DescriptionToken[] | undefined {
+    return this.putInDuration?.describe(names);
   }
 
   /** index番目の枠の定義。枠数が決まっていないスロットではどの位置でも共通の定義。 */
