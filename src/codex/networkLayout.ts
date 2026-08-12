@@ -45,11 +45,37 @@ export function layoutLayered(nodes: readonly LayoutNode[], edges: readonly Layo
   // 2. 最長経路で層（列）を決める。入ってくる辺が無いノード（土地など）が層0＝最左になる。
   const layers = assignLayers(nodeIds, forwardEdges, indexById);
 
-  // 3. 隣接ノードの位置の平均（バリセンタ）で層内の並びを整え、交差を減らす。
-  const ordered = orderWithinLayers(nodes, edges, layers, indexById);
+  const neighbors = buildNeighbors(edges, indexById);
 
-  // 4. 座標へ落とす。列のx幅はその列で最も広いノードに合わせ、列は縦方向に中央揃えする。
-  return toPositions(nodes, ordered, backEdgeIndexes);
+  // 3. 隣接ノードの位置の平均（バリセンタ）で層内の並びを整え、交差を減らす。
+  const ordered = orderWithinLayers(nodes, neighbors, layers);
+
+  // 4. 縦位置を隣接ノードの中心の平均へ寄せる（線がなるべく水平に走るように）。
+  const y = alignY(nodes, ordered, neighbors);
+
+  // 5. 座標へ落とす。列のx幅はその列で最も広いノードに合わせる。
+  return toPositions(nodes, ordered, y, backEdgeIndexes);
+}
+
+/** ノードindexごとの隣接ノードindex（向きを無視した両側）。並び・縦位置の両方がこれを見る。 */
+function buildNeighbors(
+  edges: readonly LayoutEdge[],
+  indexById: ReadonlyMap<string, number>,
+): ReadonlyMap<number, readonly number[]> {
+  const neighbors = new Map<number, number[]>();
+  const connect = (node: number, other: number): void => {
+    const list = neighbors.get(node);
+    if (list === undefined) neighbors.set(node, [other]);
+    else list.push(other);
+  };
+  for (const edge of edges) {
+    const from = indexById.get(edge.from);
+    const to = indexById.get(edge.to);
+    if (from === undefined || to === undefined) continue;
+    connect(from, to);
+    connect(to, from);
+  }
+  return neighbors;
 }
 
 function findBackEdges(
@@ -133,27 +159,12 @@ function assignLayers(
 /** 層ごとのノードindexの並び。バリセンタ（隣接ノードの並び位置の平均）で数回整える。 */
 function orderWithinLayers(
   nodes: readonly LayoutNode[],
-  edges: readonly LayoutEdge[],
+  neighbors: ReadonlyMap<number, readonly number[]>,
   layers: readonly number[],
-  indexById: ReadonlyMap<string, number>,
 ): number[][] {
   const layerCount = Math.max(0, ...layers) + 1;
   const ordered: number[][] = Array.from({ length: layerCount }, () => []);
   for (const [index, layer] of layers.entries()) ordered[layer].push(index);
-
-  const neighbors = new Map<number, number[]>();
-  const connect = (node: number, other: number): void => {
-    const list = neighbors.get(node);
-    if (list === undefined) neighbors.set(node, [other]);
-    else list.push(other);
-  };
-  for (const edge of edges) {
-    const from = indexById.get(edge.from);
-    const to = indexById.get(edge.to);
-    if (from === undefined || to === undefined) continue;
-    connect(from, to);
-    connect(to, from);
-  }
 
   // 並び位置（層内の何番目か）を全ノードで持ち、各層を「隣接ノードの並び位置の平均」で並べ直す。
   const rank = new Array<number>(nodes.length).fill(0);
@@ -177,26 +188,99 @@ function orderWithinLayers(
   return ordered;
 }
 
+/**
+ * 各ノードの縦位置（上端y）。繋がりのあるノードの上下位置が概ね揃うよう、「隣接ノードの中心の平均」を
+ * 目標位置として層ごとに寄せる。層内の並び順と重なり禁止は保ったまま、目標との二乗誤差が最小になる
+ * 配置（solveOrderedPlacement）を、左右の層を交互に見ながら数回繰り返して馴染ませる。
+ */
+function alignY(
+  nodes: readonly LayoutNode[],
+  ordered: readonly (readonly number[])[],
+  neighbors: ReadonlyMap<number, readonly number[]>,
+): number[] {
+  const y = new Array<number>(nodes.length).fill(0);
+  for (const layer of ordered) {
+    let cursor = 0;
+    for (const node of layer) {
+      y[node] = cursor;
+      cursor += nodes[node].height + ROW_GAP;
+    }
+  }
+  const centerOf = (node: number): number => y[node] + nodes[node].height / 2;
+
+  for (let sweep = 0; sweep < 10; sweep++) {
+    // 左→右と右→左を交互に。片方向だけだと、端の層の位置が反対側へ伝わらない。
+    const layersInOrder = sweep % 2 === 0 ? ordered : [...ordered].reverse();
+    for (const layer of layersInOrder) {
+      if (layer.length === 0) continue;
+      const desired = layer.map((node) => {
+        const adjacent = neighbors.get(node) ?? [];
+        if (adjacent.length === 0) return centerOf(node);
+        return adjacent.reduce((sum, other) => sum + centerOf(other), 0) / adjacent.length;
+      });
+      const centers = solveOrderedPlacement(
+        layer.map((node) => nodes[node].height),
+        desired,
+      );
+      for (const [position, node] of layer.entries()) y[node] = centers[position] - nodes[node].height / 2;
+    }
+  }
+  return y;
+}
+
+/**
+ * 1列ぶんの縦配置: 中心位置が目標（desired）へ最も近く（二乗誤差最小）、かつ並び順と最小間隔を
+ * 守る解を返す。単調制約つき最小二乗（isotonic regression）の隣接違反プール法。
+ *
+ * 中心間の最小間隔を先に累積し（cumulative）、z[i] = c[i] - cumulative[i] と変換すると
+ * 「zが単調非減少」という制約になる。目標を大きく外れた並びは、違反する隣接ブロックを
+ * 平均で潰していくと最適解になる。
+ */
+function solveOrderedPlacement(heights: readonly number[], desired: readonly number[]): number[] {
+  const cumulative = [0];
+  for (let index = 1; index < heights.length; index++)
+    cumulative.push(cumulative[index - 1] + (heights[index - 1] + heights[index]) / 2 + ROW_GAP);
+
+  const targets = desired.map((target, index) => target - cumulative[index]);
+
+  const blocks: { sum: number; count: number }[] = [];
+  for (const target of targets) {
+    let block = { sum: target, count: 1 };
+    while (blocks.length > 0) {
+      const previous = blocks[blocks.length - 1];
+      if (previous.sum / previous.count < block.sum / block.count) break;
+      blocks.pop();
+      block = { sum: previous.sum + block.sum, count: previous.count + block.count };
+    }
+    blocks.push(block);
+  }
+
+  const centers: number[] = [];
+  for (const block of blocks) {
+    const value = block.sum / block.count;
+    for (let repeat = 0; repeat < block.count; repeat++) centers.push(value + cumulative[centers.length]);
+  }
+  return centers;
+}
+
 function toPositions(
   nodes: readonly LayoutNode[],
   ordered: readonly (readonly number[])[],
+  y: readonly number[],
   backEdgeIndexes: ReadonlySet<number>,
 ): LayoutResult {
-  const layerHeights = ordered.map(
-    (layer) =>
-      layer.reduce((sum, node) => sum + nodes[node].height, 0) + ROW_GAP * Math.max(0, layer.length - 1),
-  );
-  const maxHeight = Math.max(0, ...layerHeights);
-
+  // alignYの結果は原点が揃っていないので、全体の最小値をPADDINGへ平行移動する。
+  const minY = y.length === 0 ? 0 : Math.min(...y);
   const positions = new Map<string, { x: number; y: number }>();
   let x = PADDING;
-  for (const [layerIndex, layer] of ordered.entries()) {
+  let bottom = 0;
+  for (const layer of ordered) {
     const layerWidth = Math.max(0, ...layer.map((node) => nodes[node].width));
-    let y = PADDING + (maxHeight - layerHeights[layerIndex]) / 2;
     for (const node of layer) {
       // 列の中では中央揃え（幅の違うノードが同じ列に混ざるため）。
-      positions.set(nodes[node].id, { x: x + (layerWidth - nodes[node].width) / 2, y });
-      y += nodes[node].height + ROW_GAP;
+      const top = y[node] - minY + PADDING;
+      positions.set(nodes[node].id, { x: x + (layerWidth - nodes[node].width) / 2, y: top });
+      bottom = Math.max(bottom, top + nodes[node].height);
     }
     x += layerWidth + COLUMN_GAP;
   }
@@ -205,6 +289,6 @@ function toPositions(
     positions,
     backEdgeIndexes,
     width: x - COLUMN_GAP + PADDING,
-    height: maxHeight + PADDING * 2,
+    height: bottom + PADDING,
   };
 }

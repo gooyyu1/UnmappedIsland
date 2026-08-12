@@ -65,6 +65,19 @@ describe('階層レイアウト（layoutLayered)', () => {
     expect(Math.abs(b.y - e.y)).toBeGreaterThanOrEqual(50);
   });
 
+  it('繋がりのあるノードは上下位置が概ね揃う', () => {
+    // 層0にa,b,cが縦に積まれ、層1にsinkとd。dはc（層0の一番下）としか繋がっていないので、
+    // 層の先頭や中央ではなくcの高さへ寄るべき（sinkはa,bの間に寄る）。
+    const result = layoutLayered(
+      [node('a'), node('b'), node('c'), node('d'), node('sink')],
+      [edge('a', 'sink'), edge('b', 'sink'), edge('c', 'd')],
+    );
+
+    const centerOf = (id: string): number => result.positions.get(id)!.y + 25;
+    expect(Math.abs(centerOf('d') - centerOf('c'))).toBeLessThan(10);
+    expect(Math.abs(centerOf('sink') - (centerOf('a') + centerOf('b')) / 2)).toBeLessThan(10);
+  });
+
   it('同じ入力からは同じ結果が返る（決定性）', () => {
     const nodes = [node('a'), node('b'), node('c'), node('d')];
     const edges = [edge('a', 'b'), edge('a', 'c'), edge('b', 'd'), edge('c', 'd')];
