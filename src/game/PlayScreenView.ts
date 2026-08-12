@@ -1,3 +1,4 @@
+import type { AlertLevel } from '../domain/defs/AlertLevel';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
@@ -299,13 +300,14 @@ const KIND_ICONS: Readonly<Record<ObjectKind, string>> = {
   item: '📦',
   fixture: '🌳',
   injury: '🩹',
+  animal: '🐾',
 };
 
 /**
  * 物そのものの型が決める種別（kindOf）。カードの枠の色にも仮のアイコンにもこれを使う。
  * 道とキャラクタはカードの見せ方であって物の型ではないので、ここには入らない。
  */
-type ObjectKind = Extract<CardKind, 'item' | 'fixture' | 'injury'>;
+type ObjectKind = Extract<CardKind, 'item' | 'fixture' | 'injury' | 'animal'>;
 
 /** 命名処理が名前を付けていない土地（テスト用の最小Codex等）の代替表示。 */
 const UNNAMED_LOCATION = '名もなき土地';
@@ -325,6 +327,15 @@ const STATUS_TAG = 'status';
 const DURABILITY_PROPERTY = 'durability';
 const SEVERITY_PROPERTY = 'severity';
 const COLOR_PROPERTY = 'color';
+
+/**
+ * カードの輪郭を明滅させるかを決めるプロパティの名前（animals.yaml・ScreenLayout.md
+ * 警戒している動物は輪郭を明滅させる 節）。安全域を外れている間だけ明滅する。
+ *
+ * UI側は「この名前のプロパティが安全域を外れたら明滅する」とだけ知っていて、何がどれだけ危ないかは
+ * 一切知らない（段のしきい値はワールド側の宣言）。
+ */
+const WARINESS_PROPERTY = 'wariness';
 
 /**
  * 治療具を当てておくスロットの名前と、当たっているカードへ出す印
@@ -412,6 +423,11 @@ export function fromGameSession(
     const reading = object.readProperty(severityPropertyId);
     return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
   };
+
+  const warinessPropertyId = codex.propertyNames.tryGetId(WARINESS_PROPERTY);
+  /** 輪郭を明滅させる域。warinessを持たない物はundefined（明滅しない）。 */
+  const alertOf = (object: WorldObject): AlertLevel | undefined =>
+    warinessPropertyId === undefined ? undefined : object.readProperty(warinessPropertyId)?.alert;
 
   const treatmentSlotId = codex.slotNames.tryGetId(TREATMENT_SLOT);
   /** 治療具が当たっているカードに出す印。当たっていなければundefined（印そのものを出さない）。 */
@@ -514,6 +530,7 @@ export function fromGameSession(
   const itemTagId = codex.tagNames.tryGetId('item');
   const fixtureTagId = codex.tagNames.tryGetId('fixture');
   const injuryTagId = codex.tagNames.tryGetId('injury');
+  const animalTagId = codex.tagNames.tryGetId('animal');
 
   /** その型の表示名。インスタンスを見ないので、中身による差し替え（水入りの水筒）は含まない。 */
   const typeNameOf = (def: ObjectDef): string => {
@@ -547,6 +564,8 @@ export function fromGameSession(
   const kindOf = (def: ObjectDef): ObjectKind => {
     const tags = def.tags;
     if (injuryTagId !== undefined && tags.includes(injuryTagId)) return 'injury';
+    // 動物はitemも兼ねる（HuntingSystem.md 1.1節）ので、itemより先に見る。
+    if (animalTagId !== undefined && tags.includes(animalTagId)) return 'animal';
     if (itemTagId !== undefined && tags.includes(itemTagId)) return 'item';
     if (fixtureTagId !== undefined && tags.includes(fixtureTagId)) return 'fixture';
     return 'item';
@@ -592,6 +611,7 @@ export function fromGameSession(
     fill: fillOf(instances[0]),
     capacityRatio: capacityRatioOf(instances[0]),
     severity: severityOf(instances[0]),
+    alert: alertOf(instances[0]),
     ...craftingOf(instances[0]),
     mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。

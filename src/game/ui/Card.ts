@@ -41,6 +41,14 @@ const FRAME_RADIUS = 10;
 const BORDER_WIDTH = 1.5;
 
 /**
+ * 警戒を知らせる輪郭の太さ（u単位）と、明滅の片道の時間・最も薄いときの濃さ。
+ * 枠の縁の線より太くして、明滅していることが形からも読めるようにする（値はProgressBarの警戒の枠と揃える）。
+ */
+const ALERT_OUTLINE_WIDTH = 5;
+const ALERT_BLINK_DURATION_MS = 450;
+const ALERT_BLINK_MIN_ALPHA = 0.15;
+
+/**
  * 枠の桟の幅と、タイトルの板の高さ、窓の角の丸み（u単位。ScreenLayout.md カードの枠 節）。
  *
  * 左右と上は無地の桟で、板はその内側の窓の上端に乗る。下の桟だけは中身で高さが変わるので、
@@ -202,6 +210,13 @@ export interface CardContent {
   readonly kind?: CardKind;
 
   /**
+   * そのカードが映しているものが、放っておいてよくない状態にあるか（警戒している動物の`wariness`）。
+   * 安全域を外れている間、カードの輪郭が赤く明滅する（ScreenLayout.md
+   * 警戒している動物は輪郭を明滅させる 節）。持たないカードは明滅しない。
+   */
+  readonly alert?: AlertLevel;
+
+  /**
    * 道のカードか（domainのpathタグ）。道は行き先の土地の名前と絵を出すので、そのままでは土地の
    * カードと見分けが付かない。枠の色（kind）と、桟の中央の矢印がそれを区別する。
    */
@@ -258,7 +273,7 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, road, durability, fill, severity, mark } = content;
+  const { icon, name, art, background, kind, alert, road, durability, fill, severity, mark } = content;
   const { capacityRatio, materialRatio, stepRatio, inProgress } = content;
   return {
     icon,
@@ -266,6 +281,7 @@ export function cardFace(content: CardContent): CardContent {
     art,
     background,
     kind,
+    alert,
     road,
     durability,
     fill,
@@ -307,6 +323,13 @@ export class Card extends Phaser.GameObjects.Container {
    * 差し替えのたびに引き直す（drawFrame参照）。
    */
   private readonly frame: Phaser.GameObjects.Graphics;
+
+  /**
+   * 警戒を知らせる輪郭と、その明滅。**枠とは別のGraphicsに持つ**——枠は差し替えのたびに引き直すので、
+   * 同じ図形へ混ぜると濃さのtweenが引き直しのたびに途切れる。
+   */
+  private readonly alertOutline: Phaser.GameObjects.Graphics;
+  private alertBlink: Phaser.Tweens.Tween | undefined;
 
   /**
    * 中身を入れ替える器。重なりの順序を殻の側で固定しておくことで、中身（絵・背景・端の操作エリア）が
@@ -375,8 +398,18 @@ export class Card extends Phaser.GameObjects.Container {
     // 枠は絵より後。**絵の上に枠が乗る**のがトレーディングカードの構造で、窓からはみ出した絵は
     // 枠が隠す（ScreenLayout.md カードの枠 節）。
     this.frame = scene.add.graphics();
+    // 輪郭は枠より後。枠が引く縁の線の上に乗せないと、明滅が線の下で沈む。
+    this.alertOutline = createAlertOutline(scene, metrics, width, height);
     this.nameText = createNameText(scene, metrics, width, height);
-    this.add([paper, this.backgroundLayer, this.artLayer, this.inProgressVeil, this.frame, this.nameText]);
+    this.add([
+      paper,
+      this.backgroundLayer,
+      this.artLayer,
+      this.inProgressVeil,
+      this.frame,
+      this.alertOutline,
+      this.nameText,
+    ]);
 
     // 状態のバーは枠より後に足して、桟の上へ重ねる。
     this.durabilityBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
@@ -411,6 +444,7 @@ export class Card extends Phaser.GameObjects.Container {
     scene.input.on(Phaser.Input.Events.POINTER_UP, stopEdgeRepeat);
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
       this.cancelEdgeRepeat();
+      this.alertBlink?.stop();
       scene.input.off(Phaser.Input.Events.POINTER_UP, stopEdgeRepeat);
     });
 
@@ -465,6 +499,7 @@ export class Card extends Phaser.GameObjects.Container {
       content.road === true,
     );
     this.drawFrame(colors, rail);
+    this.showAlert(content);
     this.showName(content, colors);
     this.showArt(content);
     this.showBars(bars, rail, showChange, content.midAction === true);
@@ -472,6 +507,36 @@ export class Card extends Phaser.GameObjects.Container {
     this.showStackCount();
     this.showMark(content, rail);
     this.inProgressVeil.setVisible(content.inProgress === true);
+  }
+
+  /**
+   * 放っておいてよくない状態にあるカードの輪郭を、赤く明滅させる（ScreenLayout.md
+   * 警戒している動物は輪郭を明滅させる 節）。
+   *
+   * **域の深さでは分けない。** 輪郭が言うのは「この札を放っておくな」の1つだけで、どれだけ気を
+   * 立てているかはカードを開けば読める。域ごとに色を変えると、バーの黄（危険域）・赤（致命的域）の
+   * 規約と混ざる。
+   */
+  private showAlert(content: CardContent): void {
+    const alerting = content.alert !== undefined && content.alert !== 'safe';
+    // 明滅は掛け続けるものなので、要否が変わった時だけ触る（差し替えごとに掛け直すと点滅が飛ぶ）。
+    if (alerting === (this.alertBlink !== undefined)) return;
+
+    if (!alerting) {
+      this.alertBlink?.stop();
+      this.alertBlink = undefined;
+      this.alertOutline.setVisible(false).setAlpha(1);
+      return;
+    }
+
+    this.alertOutline.setVisible(true);
+    this.alertBlink = this.scene.tweens.add({
+      targets: this.alertOutline,
+      alpha: ALERT_BLINK_MIN_ALPHA,
+      duration: ALERT_BLINK_DURATION_MS,
+      yoyo: true,
+      repeat: -1,
+    });
   }
 
   /**
@@ -985,6 +1050,26 @@ export class CellOverlay extends Phaser.GameObjects.Container {
       [plate, text],
     );
   }
+}
+
+/**
+ * 警戒を知らせる輪郭（showAlert）。**紙の縁をなぞる1本だけ**にする——枠の中へ何かを描き足すと、
+ * 絵の濃淡に埋もれるうえ、レーンを流し見しているときに気付けない。
+ *
+ * 描くのは一度きりで、あとは見せるか隠すかと濃さだけが動く。太さも位置も桟の高さに依らないため。
+ */
+function createAlertOutline(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Graphics {
+  const outline = scene.add.graphics();
+  const lineWidth = Math.max(1, metrics.px(ALERT_OUTLINE_WIDTH));
+  const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
+  outline.lineStyle(lineWidth, COLOR.statusAlertFatal, 1);
+  outline.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
+  return outline.setVisible(false);
 }
 
 /** 空き枠であることを示す破線。薄く敷いたもの（紙・受け入れる物のカード）の上へ、薄めずに重ねる。 */

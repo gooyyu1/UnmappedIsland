@@ -64,6 +64,9 @@ object_texts:
       severity:
         display_name: 傷の重さ
         description: 残っている傷。時間とともに引いていき、尽きれば治る。
+      wariness:
+        display_name: 警戒
+        description: この動物がどれだけ気を立てているか。傷を負わされれば上がり、放っておけば下がる。
       satiety:
         display_name: 満腹度
       hydration:
@@ -103,6 +106,9 @@ object_texts:
       knap:
         display_name: 打ち割る
         description: 石を打ち合わせて割り、鋭い縁を作る。
+      strike:
+        display_name: 殴る
+        description: 手にした武器で打ちかかる。当たれば傷を負わせられるが、外しても相手は気を立てる。
 
   # プレイヤーキャラクタ（characters/）。プロパティの表示名は全員共通なのでdefaultへ置く。
   # 表示名は肖像の札に載る名前。どういう人物かは説明の頭の肩書きで示す（選択画面の吹き出しに出る）。
@@ -187,6 +193,14 @@ object_texts:
   sprained_ankle:
     display_name: 足首の捻挫
     description: 踏み外した足首の腫れ。体重をかけるたびに痛みが走る。
+  laceration:
+    display_name: 切り傷
+    description: 刃物で切られた傷。浅いので捻挫より早く塞がる。
+
+  # 動物（animals.yaml）。
+  monkey:
+    display_name: サル
+    description: 群れで暮らす小柄なサル。目を離すと、足元に置いたものを持っていく。
 
   # 治療具（treatments.yaml）。
   bandage:

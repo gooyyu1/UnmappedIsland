@@ -203,6 +203,30 @@ describe('テスト用シナリオ', () => {
     expect(() => applyScenario(game, scenario, codex)).toThrow(/rainy/);
   });
 
+  it('monkey_raidは、警戒したサルと盗めるアイテムがある土地から始める', () => {
+    // 狩猟（HuntingSystem.md）を目で確かめるためのシナリオなので、始めた時点で殴れて、
+    // 輪郭が明滅している（＝警戒が安全域を外れている）必要がある。
+    const scenario = load('monkey_raid');
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+
+    applyScenario(game, scenario, codex);
+
+    const [monkey, ...loot] = game.startLocation.items;
+    expect(monkey.def.name).toBe('monkey');
+    expect(
+      loot.map((item) => item.def.name),
+      '持ち去られる候補が足元にある',
+    ).toEqual(['coconut', 'woven_basket', 'thick_branch']);
+
+    const weapon = game.player.hand[0];
+    expect(weapon?.def.name, '手元の武器で殴れる').toBe('sharp_stone');
+    expect(monkey.findMatchingCombinations(weapon!).map((c) => c.name)).toEqual(['strike']);
+    expect(
+      monkey.readProperty(codex.propertyNames.getId('wariness'))?.alert,
+      '始めた時点で警戒している',
+    ).not.toBe('safe');
+  });
+
   it('rain_collectingは、雨の中で空のヤシの殻を持たせる', () => {
     const scenario = load('rain_collecting');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));

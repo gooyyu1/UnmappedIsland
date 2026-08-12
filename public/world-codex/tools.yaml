@@ -6,7 +6,9 @@
 object_defs:
   # 尖った石。石同士を打ち合わせて作る最初の刃物（locations.yamlのstone.combinations.knap）。
   sharp_stone:
-    tags: [item, cutting_tool]
+    # weaponは動物へ重ねて殴れる物のタグ（animals.yamlのstrikeがこれで探す、
+    # docs/engine/HuntingSystem.md 1.2節）。刃物と武器は別のタグで、片方だけを持つ物もありうる。
+    tags: [item, cutting_tool, weapon]
     props:
       weight: {value: 400}
       volume: {value: 300}

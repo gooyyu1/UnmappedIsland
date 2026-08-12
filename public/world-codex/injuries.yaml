@@ -49,3 +49,31 @@ object_defs:
       - modify:
           parent:
             pain: 40
+
+  # 切り傷。刃物で切られた傷。キャラクタと動物が同じ物を負う（docs/engine/HuntingSystem.md 3節）
+  # ので、負わせる側（animals.yamlのstrike）は相手がどちらかを知らない。
+  laceration:
+    tags: [injury]
+    traits: [treatable]
+    bound_to_owner: true
+    props:
+      # 自然に治るまで480 tick（5日）。捻挫より浅い傷なので、同じ-1/tickでも早く引く。
+      severity:
+        value: 480
+        range: {min: 1, max: 480}
+        stages:
+          - {name: mending}
+          - {name: sore, min: 160, alert: watch}
+          - {name: acute, min: 320, alert: caution}
+        passives:
+          - accumulate:
+              self:
+                severity: -1
+        on_shortfall:
+          destroy: self
+    passives:
+      # 痛みを持たない相手——痛みのプロパティを宣言していない動物——に刺さった場合、この寄与は
+      # 宛先が無いので効かない。怪我の側は相手を選ばず、同じ1つの定義で両方に刺さる。
+      - modify:
+          parent:
+            pain: 50

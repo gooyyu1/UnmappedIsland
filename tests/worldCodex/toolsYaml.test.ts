@@ -20,11 +20,13 @@ describe('tools.yamlの道具定義', () => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
   });
 
-  it('尖った石は、ものを切る道具のタグを持つ', () => {
+  it('尖った石は、ものを切る道具のタグと武器のタグを持つ', () => {
     const sharpStone = codex.objects.get(codex.objectNames.getId('sharp_stone'));
 
     expect(sharpStone.tags).toContain(codex.tagNames.getId('item'));
     expect(sharpStone.tags).toContain(codex.tagNames.getId('cutting_tool'));
+    // 動物へ重ねて殴れる（animals.yamlのstrikeがこのタグで探す、HuntingSystem.md 1.2節）。
+    expect(sharpStone.tags).toContain(codex.tagNames.getId('weapon'));
   });
 
   it('尖った石は、満タンから始まる耐久度を持つ', () => {

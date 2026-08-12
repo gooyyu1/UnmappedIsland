@@ -11,6 +11,7 @@ export const WORLD_CODEX_FILES = [
   'characters/engineer.yaml',
   'characters/farmer.yaml',
   'characters/medic.yaml',
+  'animals.yaml',
   'coconut.yaml',
   'containers.yaml',
   'core.yaml',

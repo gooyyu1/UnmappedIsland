@@ -29,6 +29,15 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     return injury;
   }
 
+  /** 開始地点にサル（animals.yaml）を1匹置き、そのインスタンスを返す。 */
+  function placeMonkey(game: NewGameSession) {
+    const monkey = game.session.spawn(codex.objectNames.getId('monkey'));
+    expect(
+      monkey.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'), codex.wellKnown),
+    ).toBeUndefined();
+    return monkey;
+  }
+
   /** 現在地を探索率100%まで探索する。100%到達後も探索は続けられるため、回数で止める。 */
   function exploreToFull(game: NewGameSession): void {
     const location = game.player.location ?? game.startLocation;
@@ -314,6 +323,41 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 傷の下限は0ではなく1（injuries.yaml）なので、割合はぴったり半分にはならない。
     expect(healing?.ratio, '半分治れば半分まで縮む').toBeCloseTo(0.5, 2);
     expect(healing?.alert, '治るほど軽い域へ移る').toBe('watch');
+  });
+
+  it('動物のカードは、アイテムではなく動物として枠の色が決まる', () => {
+    // 動物はitemも兼ねるので、種別を決める順序が効いている（ScreenLayout.md 枠の色は種別で変える 節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    placeMonkey(game);
+
+    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].kind).toBe('animal');
+  });
+
+  it('警戒している動物のカードだけが、輪郭を明滅させる域を持つ', () => {
+    // 安全域を外れている間だけ明滅する（ScreenLayout.md 警戒している動物は輪郭を明滅させる 節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const monkey = placeMonkey(game);
+    const warinessId = codex.propertyNames.getId('wariness');
+
+    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].alert, '現れた時点で警戒している').toBe(
+      'caution',
+    );
+
+    monkey.setNumber(warinessId, 0, game.session);
+
+    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].alert, '落ち着けば明滅しない').toBe(
+      'safe',
+    );
+  });
+
+  it('警戒を持たないカードは、明滅させる域を持たない', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    expect(
+      stone.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'), codex.wellKnown),
+    ).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].alert).toBeUndefined();
   });
 
   it('治療具を当てた怪我のカードだけが、手当て済みの印を持つ', () => {
