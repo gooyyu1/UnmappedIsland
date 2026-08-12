@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "src/assets/objects/monkey.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "編んだ葉やボタンの絵と同じ2段構え（README「ボタンの絵」節）。素のSDXLは動物を毛の1本まで",
+    "描いた写実画にするので、Qwen Image Edit で絵の具の質感へ描き直しつつ白い紙の上へ置き直す。",
+    "下絵の背景が灰白色になるのはこの段で消えるため、生成側では白を粘らない。",
+    "",
+    "枠は正方形（1024x1024）。尾が体より長いので、縦長の枠だと必ず尾が下端から出る。",
+    "",
+    "seedを選んでいるのは、全身と尾の先が余白の内側に収まり、かつ手の指が融けていない絵を採るため",
+    "（prompts/objects.json の monkey 参照）。",
+    "",
+    "5kgの動物なので400。編み籠や太い枝と同じ段で、カード幅410のほぼ全部を使う。"
+  ],
+  "output": "src/assets/objects/monkey.png",
+  "prompts": "objects.json",
+  "prompt": "monkey",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 1024,
+  "height": 1024,
+  "seed": 9205,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same monkey in the same sitting pose, the same size and the same place, with its long tail complete to the very tip, and paint it with soft brush strokes and gentle natural shading instead of photographic fur detail. Muted warm grey brown fur with a pale cream chest and a dark grey face, matte fur, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the monkey in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

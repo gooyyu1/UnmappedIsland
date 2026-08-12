@@ -185,6 +185,24 @@
     "positive": "exactly one small rectangular panel of plaited palm leaf alone on an empty white page, seen from a few steps back and slightly from the side so that all four corners of the panel are visible and the whole panel is well inside the page with a wide empty white margin on all four sides, woven from flat palm leaflets crossing over and under, the cut ends trimmed level along its edges, the panel rippling slightly and lifting at one corner, dull olive green and dry straw tones, matte dry surface, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "extreme close-up, macro, zoomed in, cropped, cut off, out of frame, filling the frame, edge to edge, rug, carpet, textile swatch, fabric, cloth, towel, napkin, seamless pattern, repeating pattern, background texture, wallpaper, bamboo blind, window blind, paper, envelope, book, basket, hat, fan, tree, plant, palm frond, feathery frond, single leaf, two panels, three panels, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, scenery, landscape, ground, floor, grass, water, sky, table, desk, grey background, studio backdrop, horizon line, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
+  "monkey": {
+    "description": [
+      "サル（animals.yaml の monkey）。動物では最初の1枚。物を持ち去る中型で、実体は",
+      "カニクイザル（docs/world/Animals.md 4.1節。ゲーム内では『サル』としか呼ばない）。",
+      "",
+      "**カニクイザルを crab-eating macaque と書いてはいけない。** 食性がそのまま絵になり、",
+      "カニ・砂浜・磯が湧く。同じ種の別名 **long-tailed macaque** で頼めば食性の語が消え、",
+      "しかも尾の長さという見分けの付く特徴が本文に入る。念のためカニと海辺は否定にも入れてある。",
+      "",
+      "**macaque とだけ言うとニホンザルになる。** 赤い顔・短い尾・厚い体毛で、同じ属でも別の姿。",
+      "尾の長さ（体より長い）と灰褐色の毛、前へ突き出た口を本文で言い、赤い顔と短い尾を否定する。",
+      "",
+      "**手の指はまず等倍で確かめる**（素足と同じ。docs は prompts/objects.json の bare_foot 参照）。",
+      "縮小したシートでは融けた指が見えない。"
+    ],
+    "positive": "exactly one long-tailed macaque alone on an empty white page, a small slender monkey sitting upright on its haunches seen from the side, seen from a few steps back so that the whole animal from the crown of its head to the very tip of its tail is well inside the page with a wide empty white margin on all four sides, its very long thin tail curling round beside it well clear of the edges, short grizzled grey brown fur with a pale cream belly and chest, a dark grey bare face with a forward jutting muzzle and a low crest of hair swept back from the forehead, small rounded bare ears lying flat against the sides of its head, calm round amber eyes looking ahead, slim arms with small dark hands resting in front of it, each hand with five separate slender fingers clearly parted from one another, warm grey brown and cream tones, matte fur, it is small and sits in the middle, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "crab, crabs, crustacean, shellfish, lobster, prawn, shrimp, seafood, claws, pincers, shells, beach, sand, seashore, surf, rock pool, japanese macaque, snow monkey, hot spring, red face, bare red skin, thick shaggy fur, fluffy mane, short stubby tail, no tail, baboon, mandrill, chimpanzee, gorilla, orangutan, gibbon, ape, lemur, meerkat, cat, kitten, feline, cat face, whiskers, pointed ears, tufted ears, large upright ears, lynx, fox, dog, baby monkey, infant, mother and baby, two monkeys, three monkeys, several monkeys, pair, group, troop, family, collection, scattered objects, repeated objects, banana, fruit, food in its mouth, holding an object, human hand, held in hand, cage, bars, zoo enclosure, leash, collar, rope, clothes, hat, temple, statue, tree, branch, perch, foliage, leaves, jungle, forest, grey background, grey backdrop, grey wall, studio backdrop, shadow cast on a wall, tail cut off, tail touching the edge, filling the frame, edge to edge, close-up, portrait crop, head only, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
   "woven_basket": {
     "description": [
       "編み籠。編んだ葉を綴じ合わせた入れ物。中身は描かせない（空の籠として見せる）。",
