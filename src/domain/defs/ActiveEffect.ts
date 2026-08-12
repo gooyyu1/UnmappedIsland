@@ -42,6 +42,20 @@ export abstract class ActiveEffect {
   spawns(_objectGlobalId: number): boolean {
     return false;
   }
+
+  /**
+   * この効果が生み出しうる型と個数をすべて挙げる（クラフトネットワーク用）。pickの候補は
+   * 「起こりうる出力」としてすべて挙げる（どれが選ばれるかは実行時の抽選）。既定は何もしない。
+   */
+  collectSpawns(_add: (objectGlobalId: number, count: number) => void): void {}
+
+  /**
+   * この効果がtargetのオブジェクトを消しうるか（クラフトネットワークが「消費される入力」の判定に使う）。
+   * 消すのはdestroy（9.3節）だけなので、既定は偽。
+   */
+  destroys(_target: ReferenceRoot): boolean {
+    return false;
+  }
 }
 
 /**
@@ -81,6 +95,14 @@ export class ActiveEffects extends ActiveEffect {
 
   override spawns(objectGlobalId: number): boolean {
     return this.operations.some((operation) => operation.spawns(objectGlobalId));
+  }
+
+  override collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
+    for (const operation of this.operations) operation.collectSpawns(add);
+  }
+
+  override destroys(target: ReferenceRoot): boolean {
+    return this.operations.some((operation) => operation.destroys(target));
   }
 }
 
@@ -209,6 +231,10 @@ export class DestroyEffect extends ActiveEffect {
   affects(): boolean {
     return false;
   }
+
+  override destroys(target: ReferenceRoot): boolean {
+    return this.target === target;
+  }
 }
 
 /**
@@ -275,6 +301,10 @@ export class SpawnEffect extends ActiveEffect {
 
   override spawns(objectGlobalId: number): boolean {
     return this.objectGlobalId === objectGlobalId;
+  }
+
+  override collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
+    add(this.objectGlobalId, this.count);
   }
 }
 

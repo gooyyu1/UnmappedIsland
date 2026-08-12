@@ -4,7 +4,7 @@ import { ActiveEffect } from './ActiveEffect';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyRef, text } from './Description';
 import { resolveReferenceRoot } from './ReferenceRoot';
-import type { PropertyPath } from './ReferenceRoot';
+import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 
 /**
  * pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。候補の効果もActiveEffect
@@ -43,6 +43,14 @@ export class PickEffect extends ActiveEffect {
 
   override spawns(objectGlobalId: number): boolean {
     return this.candidates.some((candidate) => candidate.spawns(objectGlobalId));
+  }
+
+  override collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
+    for (const candidate of this.candidates) candidate.collectSpawns(add);
+  }
+
+  override destroys(target: ReferenceRoot): boolean {
+    return this.candidates.some((candidate) => candidate.destroys(target));
   }
 
   /** weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。 */
@@ -152,5 +160,13 @@ export class PickCandidateDef {
 
   spawns(objectGlobalId: number): boolean {
     return this.effect?.spawns(objectGlobalId) ?? false;
+  }
+
+  collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
+    this.effect?.collectSpawns(add);
+  }
+
+  destroys(target: ReferenceRoot): boolean {
+    return this.effect?.destroys(target) ?? false;
   }
 }

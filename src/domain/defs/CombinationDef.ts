@@ -1,6 +1,7 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
+import type { CraftingInput } from './CraftingStep';
 import type { DefNames, DescriptionWriter } from './Description';
 import { tagRef, text } from './Description';
 import { InteractionDef } from './InteractionDef';
@@ -28,6 +29,15 @@ export class CombinationDef extends InteractionDef {
 
   protected describeTrigger(names: DefNames, out: DescriptionWriter): void {
     out.write(text('with: '), tagRef(names.tagName(this.with)), text('を持つカードのドロップ'));
+  }
+
+  protected get craftingKind(): 'combination' {
+    return 'combination';
+  }
+
+  /** ドラッグされてくる相手はタグで指される。消費されるかはdraggedへのdestroyの有無から分かる。 */
+  protected override extraCraftingInputs(effect: ActiveEffect): readonly CraftingInput[] {
+    return [{ kind: 'tag', tagGlobalId: this.with, consumed: effect.destroys('dragged') }];
   }
 
   /** draggedDefがこのcombinationのwithタグを持っていれば真（12.1節）。 */

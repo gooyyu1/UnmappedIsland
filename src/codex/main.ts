@@ -3,6 +3,7 @@ import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
 import { CodexView, escapeHtml } from './CodexView';
+import { networkNodeDomId, renderNetworkPage } from './networkPage';
 import {
   renderNotFoundPage,
   renderObjectListPage,
@@ -57,6 +58,13 @@ function render(): void {
   wireObjectFilter();
   window.scrollTo(0, 0);
   scrollToTagSection(parts);
+  scrollToNetworkNode(parts);
+}
+
+/** クラフトネットワークのハイライト対象（#/network/<識別子>）を図の中央へ出す。 */
+function scrollToNetworkNode(parts: readonly string[]): void {
+  if (parts[0] !== 'network' || parts[1] === undefined) return;
+  document.getElementById(networkNodeDomId(parts[1]))?.scrollIntoView({ block: 'center', inline: 'center' });
 }
 
 /**
@@ -77,6 +85,7 @@ function renderRoute(view: CodexView, parts: readonly string[]): string {
     return renderPropertyCandidatesPage(view, parts[1]);
   if (parts[0] === 'tags') return renderTagListPage(view);
   if (parts[0] === 'by-tag') return renderObjectsByTagPage(view);
+  if (parts[0] === 'network') return renderNetworkPage(view, parts[1]);
   if (parts[0] === 'slot' && parts[1] !== undefined) return renderSlotPage(view, parts[1]);
   return renderNotFoundPage();
 }
