@@ -23,7 +23,6 @@
   "height": 1280,
   "cardArt": {
     "size": "card",
-    "mode": "none",
-    "feather": 24
+    "mode": "none"
   }
 }

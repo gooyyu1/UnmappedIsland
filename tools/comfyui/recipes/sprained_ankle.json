@@ -39,7 +39,6 @@
     "mode": "luma",
     "white": 250,
     "opaque": 200,
-    "feather": 24,
     "oilify": [6, 12]
   },
   "tint": {

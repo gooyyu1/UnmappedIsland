@@ -22,12 +22,24 @@ export const CARD_FRAME_TEXTURE = 'card-frame';
 const EMPTY_FRAME_ALPHA = 0.35;
 
 /**
- * カードの絵の中で紙そのものが占める範囲（u単位）。絵は820x1280pxで、紙は周囲に10pxの余白を空け、
- * 角の半径は64px。カードの実寸は絵と同じ比率なので、u単位へは1/4で直せる。
- * 図形で描く枠（破線の空き枠・画像が無いときの代用）を絵の輪郭に重ねるために使う。
+ * カードの絵の中で紙そのものが占める範囲（u単位）。絵は410x640pxで、紙は周囲に5pxの余白を空け、
+ * 角の半径は20px。カードの実寸は絵の半分なので、u単位へは1/2で直せる
+ * （tools/comfyui/card_frame.py の MARGIN / RADIUS、card_art.py の PAPER_RADIUS と揃えること）。
  */
 const FRAME_INSET = 2.5;
-const FRAME_RADIUS = 16;
+const FRAME_RADIUS = 10;
+
+/**
+ * 紙の縁をなぞる線の色と太さ（u単位）。**絵の上から引く。**
+ *
+ * 絵は紙いっぱいに角丸で切り落とされているので（card_art.py）、線を絵の下に置くと隠れてしまう。
+ * トレーディングカードは絵が枠の内側いっぱいまで来て、その上に枠が乗っている。
+ *
+ * 生成した紙（card_frame.png）は単色の線しか持たないので、ここで図形として引いても同じものになる。
+ * 枠に名前の欄などの意匠が入るようになったら、この線を画像へ差し替える。
+ */
+const BORDER_COLOR = 0x8a7156;
+const BORDER_WIDTH = 1.5;
 
 /** カード名の最大行数。これを超える分は表示しない（モックの-webkit-line-clamp: 3に対応）。 */
 const NAME_MAX_LINES = 3;
@@ -57,11 +69,10 @@ const ROAD_ARROW_STROKE = 2;
 /**
  * 矢印を紙の左下の角から離す余白（u単位）。名前の余白（NAME_MARGIN）より広い。
  *
- * 絵は紙の縁の内側12uをかけて薄くなっていく（tools/comfyui/card_art.py の feather、410px幅で24px）。
- * そこへ矢印を置くと、絵の薄い帯と重なって輪郭が濁る。角の丸み（FRAME_RADIUS）ぶん空ければ、
- * 丸めた角でも縁までの距離が12uを下回らない。
+ * 角の丸み（FRAME_RADIUS）には縛らない。丸みは意匠として小さくしてよいが、矢印を縁へ寄せると
+ * 絵の濃い部分と重なって輪郭が読めなくなる。距離のほうを名前の余白（NAME_MARGIN）の倍に取る。
  */
-const ROAD_ARROW_MARGIN = FRAME_RADIUS;
+const ROAD_ARROW_MARGIN = 16;
 
 /**
  * 押下中に紙の縁へ重ねる黒枠の太さ（u単位。ドロップ先を示す枠と揃える）。
@@ -367,7 +378,16 @@ export class Card extends Phaser.GameObjects.Container {
     this.inProgressVeil = createInProgressVeil(scene, metrics, width, height);
     this.nameText = createNameText(scene, metrics, width, height);
     this.roadArrow = createRoadArrow(scene, metrics, width, height);
-    this.add([face, this.backgroundLayer, this.artLayer, this.inProgressVeil, this.nameText, this.roadArrow]);
+    // 枠の線は絵より後。絵は紙いっぱいに切り落とされているので、下に置くと隠れる（addBorder参照）。
+    this.add([
+      face,
+      this.backgroundLayer,
+      this.artLayer,
+      addBorder(scene, metrics, width, height),
+      this.inProgressVeil,
+      this.nameText,
+      this.roadArrow,
+    ]);
 
     // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
     this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height);
@@ -988,6 +1008,25 @@ function addFrame(
     dashed: empty,
   });
   return face;
+}
+
+/**
+ * 紙の縁をなぞる線。**絵より後に足して上へ重ねる**（BORDER_COLOR 参照）。
+ *
+ * 空き枠には引かない。あちらは破線（emptyOutline）が輪郭を受け持つ。
+ */
+function addBorder(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Graphics {
+  const line = metrics.px(BORDER_WIDTH);
+  const { rect, radius } = paperStroke(metrics, width, height, line);
+  const border = scene.add.graphics();
+  border.lineStyle(line, BORDER_COLOR, 1);
+  border.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
+  return border;
 }
 
 /**
