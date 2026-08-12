@@ -47,6 +47,7 @@ export function renderNetworkPage(view: CodexView, highlightObjectName?: string)
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
     `<h1>クラフトネットワーク</h1>` +
     `<p class="muted">何から何が作れるか（探索・combination・レシピ）の全体図。素材ほど左に並ぶ。` +
+    `型は押すとそのチェーンを強調し、強調中の型をもう一度押すとその型のページへ。` +
     `小さな丸は操作の結節点（名前は重ねると出て、押すと宣言元の型のページへ）、破線は消費されない` +
     `入力（道具）やタグへの所属、点線の戻り線は循環。</p>` +
     highlightNote +
@@ -235,9 +236,16 @@ function objectNodeHtml(
       ? `<rect class="net-art-missing" x="${artX}" y="${position.y + 6}" width="${ART_SIZE}" height="${ART_SIZE}" rx="6"/>`
       : `<image href="${url}" x="${artX}" y="${position.y + 6}" width="${ART_SIZE}" height="${ART_SIZE}" preserveAspectRatio="xMidYMid meet"/>`;
 
+  // クリックの行き先は2段階: まだ強調されていない型はまず強調（このネットワークの中でチェーンを
+  // 見せる）、すでに強調されている型（対象とそのチェーン上）はその型のページへ。図を眺めている
+  // 段階でいきなりページへ飛ばされるより、まず文脈（チェーン）を見せるほうが探索の流れに合う。
+  const emphasized = state === ' net-target' || state === ' net-hl';
+  const href = emphasized
+    ? `#/object/${encodeURIComponent(objectName)}`
+    : `#/network/${encodeURIComponent(objectName)}`;
+
   return (
-    `<a class="net-node net-object${state}" id="${networkNodeDomId(objectName)}" ` +
-    `href="#/object/${encodeURIComponent(objectName)}">` +
+    `<a class="net-node net-object${state}" id="${networkNodeDomId(objectName)}" href="${href}">` +
     `<rect class="net-node-box" x="${position.x}" y="${position.y}" width="${width}" height="${height}" rx="8"/>` +
     `<title>${escapeHtml(objectName)}</title>` +
     art +
