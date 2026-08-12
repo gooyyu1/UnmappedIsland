@@ -263,13 +263,23 @@ export function mixColor(from: number, to: number, t: number): number {
  */
 export type CardKind = 'fixture' | 'road' | 'item' | 'injury' | 'character';
 
-/** 種別ごとの枠の面と縁の色。タイトルの板と文字の色はここから引く（cardFrameColors）。 */
-const CARD_FRAME_FACE: Readonly<Record<CardKind, { readonly face: number; readonly line: number }>> = {
+/**
+ * 枠の色を決める見た目の分類。種別に、製作中オブジェクトの**青写真**を足したもの。
+ *
+ * 青写真は種別と並ぶ選択肢ではなく、**種別を覆って**掛かる（作りかけの籠は青写真であってアイテムの
+ * 枠を持たない）。物の型が決める種別（CardKind）とは別の型にしてあるのはそのため。
+ */
+export type CardFrameKind = CardKind | 'blueprint';
+
+/** 分類ごとの枠の面と縁の色。タイトルの板と文字の色はここから引く（cardFrameColors）。 */
+const CARD_FRAME_FACE: Readonly<Record<CardFrameKind, { readonly face: number; readonly line: number }>> = {
   fixture: { face: 0x68804e, line: 0x3a4a2a },
   road: { face: 0xce943e, line: 0x7a5018 },
   item: { face: 0xa88a64, line: 0x6e563a },
   injury: { face: 0xae5c54, line: 0x68302c },
   character: { face: 0x6c7c9c, line: 0x38445e },
+  // キャラクタの青より彩度を上げる。並んだときに「くすんだ青」と「青写真の青」が混ざらない差を取る。
+  blueprint: { face: 0x3f7ec2, line: 0x1d4374 },
 };
 
 /**
@@ -296,7 +306,7 @@ export interface CardFrameColors {
   readonly ink: number;
 }
 
-export function cardFrameColors(kind: CardKind): CardFrameColors {
+export function cardFrameColors(kind: CardFrameKind): CardFrameColors {
   const { face, line } = CARD_FRAME_FACE[kind];
   return {
     face,

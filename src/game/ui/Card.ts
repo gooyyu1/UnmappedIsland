@@ -434,7 +434,8 @@ export class Card extends Phaser.GameObjects.Container {
    */
   private applyContent(content: CardContent, showChange: boolean): void {
     this._content = content;
-    const colors = cardFrameColors(content.kind ?? 'item');
+    // 製作中オブジェクトは種別に関わらず青写真の枠になる（まだその物ではないため）。
+    const colors = cardFrameColors(content.inProgress === true ? 'blueprint' : (content.kind ?? 'item'));
     const bars = this.barsFor(content);
     const rail = railMetrics(
       this.metrics,
