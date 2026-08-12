@@ -262,7 +262,7 @@ object_defs:
     tags: [item]
     traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
-      weight: {value: 200}
+      weight: {value: 100}
       # 半球の殻は重ねて入るので、1個ぶんの外寸より小さく見る。
       volume: {value: 200}
     slots:

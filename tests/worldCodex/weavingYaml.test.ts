@@ -56,6 +56,12 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     );
   }
 
+  /** 土地のitemsスロットに並ぶ物の重さ（g）。 */
+  function weightsOn(location: WorldObject): number[] {
+    const weightId = codex.propertyNames.getId('weight');
+    return new Location(location, codex).items.map((object) => object.getNumber(weightId));
+  }
+
   it('ヤシの木から葉を採ると、1回でまとめて手に入る', () => {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
 
@@ -72,6 +78,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(frond.tryExecuteAction('weave', player, session)).toBe(true);
 
     expect(itemsOn(beach)).toEqual(['woven_leaf']);
+    expect(weightsOn(beach), '重さの大半を占める中軸を捨てるので、葉4000gより軽くなる').toEqual([400]);
     expect(worldView.hour, '素手は時間がかかる（90分）').toBe(1);
     expect(worldView.minute).toBe(30);
   });
@@ -83,6 +90,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(frond.tryExecuteCombination(knife, player, 'split_and_weave', session)).toBe(true);
 
     expect(itemsOn(beach), '元の葉が居た場所へ2枚が並んで置き換わる').toEqual(['woven_leaf', 'woven_leaf']);
+    expect(weightsOn(beach), '2枚に増えても1枚ぶんの重さは変わらない').toEqual([400, 400]);
     expect(knife.parent, '刃物は消費されない').toBe(player);
     expect(worldView.hour, '割って編むほうが1枚あたりは速い（60分で2枚）').toBe(1);
     expect(worldView.minute).toBe(0);
