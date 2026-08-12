@@ -118,6 +118,12 @@ export class ObjectWindow {
   /** 最下段のボタン。setActionsで丸ごと作り直すので、他の表示物とは分けて持つ。 */
   private actionObjects: Phaser.GameObjects.GameObject[] = [];
 
+  /**
+   * 左に置く、そのオブジェクトのカード（持たないウィンドウではundefined）。**開いている間に中身が
+   * 変われば書き換わる**（setCard）——材料を入れれば充足のバーがその場で動く。
+   */
+  private card: Card | undefined;
+
   /** アクションのボタンを長押ししている間だけ出す吹き出し（addActions参照）。 */
   private readonly tooltip: Tooltip;
 
@@ -200,7 +206,8 @@ export class ObjectWindow {
       // レーンはカードを自分の高さの中央へ置く（CardLane）。並べるときは自分のカードも同じだけ
       // 下げて、左右のカードの縦位置を揃える。
       const cardY = middleY + (contents === undefined ? 0 : (laneHeight - cardHeight) / 2);
-      this.objects.push(new Card(scene, metrics, window.x + padding, cardY, cardFace(card)).setScale(scale));
+      this.card = new Card(scene, metrics, window.x + padding, cardY, cardFace(card)).setScale(scale);
+      this.objects.push(this.card);
     }
 
     const columnX = window.x + padding + (card === undefined ? 0 : cardWidth + gap);
@@ -243,6 +250,11 @@ export class ObjectWindow {
    * できるウィンドウでは、並びを差し替えるたびに呼び直す（PlayScene.showView）。素材を入れれば
    * 「作業する」が押せるようになり、抜けば押せなくなる。
    */
+  /** 左のカードを、今の中身へ書き換える（カードを持たないウィンドウでは何もしない）。 */
+  setCard(content: CardContent): void {
+    this.card?.setContent(cardFace(content));
+  }
+
   setActions(actions: readonly ObjectWindowAction[]): void {
     for (const object of this.actionObjects) object.destroy();
     this.actionObjects = [];

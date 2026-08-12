@@ -40,18 +40,53 @@ export function remainingRequirements(recipe: RecipeDef, progress: number): Map<
   return remaining;
 }
 
+/**
+ * その工程が要求する素材と道具のうち、材料スロットに揃っている割合（0〜1）。
+ *
+ * **道具（`consume: false`）も数に入れる。** 作業を止めるのは素材と同じで、揃っていなければ
+ * 工程は進まない。要求を持たない工程は1（揃っている）。
+ */
+export function stepSupplyRatio(
+  inProgress: WorldObject,
+  materialsSlotGlobalId: number,
+  step: RecipeStepDef,
+): number {
+  const contents = inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [];
+  let needed = 0;
+  let held = 0;
+  for (const requirement of step.requirements) {
+    const inSlot = contents.filter((object) => object.def.globalId === requirement.objectGlobalId).length;
+    needed += requirement.count;
+    // 要求数を超えて入っている分は数えない（余りは充足を進めない）。
+    held += Math.min(inSlot, requirement.count);
+  }
+  return needed === 0 ? 1 : held / needed;
+}
+
 /** その工程が要求する素材と道具が、材料スロットに揃っているか。 */
 export function stepIsSupplied(
   inProgress: WorldObject,
   materialsSlotGlobalId: number,
   step: RecipeStepDef,
 ): boolean {
-  const contents = inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [];
-  return step.requirements.every(
-    (requirement) =>
-      contents.filter((object) => object.def.globalId === requirement.objectGlobalId).length >=
-      requirement.count,
-  );
+  return stepSupplyRatio(inProgress, materialsSlotGlobalId, step) >= 1;
+}
+
+/**
+ * 終えた工程の数 ÷ 全工程数（0〜1）。
+ *
+ * **1にはならない。** 最後の工程を終えた瞬間に進捗がrangeを超え、製作中オブジェクトは完成品へ
+ * 置き換わるため（inProgressObjects.tsのon_overflow）。工程の途中という値も取らない——
+ * advanceCraftingが工程まるごとを一度に進めるため、単一工程のレシピではこの値は常に0になる。
+ */
+export function finishedStepRatio(recipe: RecipeDef, progress: number): number {
+  let consumed = 0;
+  let finished = 0;
+  for (const step of recipe.steps) {
+    consumed += step.durationMinutes;
+    if (progress >= consumed) finished += 1;
+  }
+  return finished / recipe.steps.length;
 }
 
 /**

@@ -31,7 +31,6 @@ export function characterCardContent(characterDefName: string, locale: Localizat
     icon: characterIcon(characterDefName),
     name: locale.object(characterDefName).displayName,
     art: characterDefName,
-    // 肖像は顔が絵の上端から始まるので、名前は下へ寄せて顔を隠さない。
-    namePosition: 'bottom',
+    kind: 'character',
   };
 }

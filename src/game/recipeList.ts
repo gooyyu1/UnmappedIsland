@@ -1,5 +1,6 @@
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
+import type { RecipeDef } from '../domain/defs/RecipeDef';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { Localization } from '../locale/Localization';
@@ -12,6 +13,19 @@ const LOCKED = 'まだ作り方が分からない';
 
 /** 完成品のカードの絵が無いときに代わりに出す絵文字。 */
 const PRODUCT_ICON = '📦';
+
+/**
+ * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
+ *
+ * 型自身はどのレシピから生まれたかを持てない（YAMLの語彙に無い、WorldCodex.productOf参照）ので、
+ * 完成品のレシピのうち、生成した型名（inProgressObjectName）が一致するものを引く。
+ */
+export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | undefined {
+  const product = codex.productOf(target.def);
+  return product?.recipes.find(
+    (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
+  );
+}
 
 /**
  * レシピ一覧に並べるカテゴリを組み立てる（RecipeSystem.md）。

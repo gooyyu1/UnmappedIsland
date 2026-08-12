@@ -14,7 +14,6 @@ import { SaveSlots } from '../save/SaveSlots';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
-import type { RecipeDef } from '../domain/defs/RecipeDef';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type {
   CardCombination,
@@ -54,9 +53,9 @@ import { ModalDialog } from './ui/ModalDialog';
 import type { ObjectWindowAction, ObjectWindowTarget } from './ui/ObjectWindow';
 import { ObjectWindow } from './ui/ObjectWindow';
 import { RecipeWindow } from './ui/RecipeWindow';
-import { recipeCategories } from './recipeList';
+import { recipeCategories, recipeOf } from './recipeList';
 import { autoFillMaterials } from '../domain/runtime/autoFill';
-import { inProgressObjectName, MATERIALS_SLOT } from '../loader/inProgressObjects';
+import { MATERIALS_SLOT } from '../loader/inProgressObjects';
 import {
   advanceCrafting,
   currentStep,
@@ -962,7 +961,7 @@ export class PlayScene extends ResponsiveScene {
   private craftAction(card: ObjectCardStack): ObjectWindowAction[] {
     const target = card.objects[0];
     if (target === undefined) return [];
-    const recipe = this.recipeOf(target);
+    const recipe = recipeOf(target, this.codex);
     if (recipe === undefined) return [];
 
     const materialsSlotId = this.codex.slotNames.getId(MATERIALS_SLOT);
@@ -1009,7 +1008,7 @@ export class PlayScene extends ResponsiveScene {
   ): readonly LaneCell[] | undefined {
     if (typeof place !== 'object' || !('container' in place)) return undefined;
 
-    const recipe = this.recipeOf(place.container);
+    const recipe = recipeOf(place.container, this.codex);
     if (recipe === undefined) return undefined;
 
     const progress = place.container.getNumber(this.codex.propertyNames.getId('progress'));
@@ -1046,17 +1045,9 @@ export class PlayScene extends ResponsiveScene {
 
   /** 製作中オブジェクトなら、残りの工程が要求する型と数。そうでなければundefined。 */
   private remainingFor(target: WorldObject): ReadonlyMap<number, number> | undefined {
-    const recipe = this.recipeOf(target);
+    const recipe = recipeOf(target, this.codex);
     if (recipe === undefined) return undefined;
     return remainingRequirements(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
-  }
-
-  /** その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。 */
-  private recipeOf(target: WorldObject): RecipeDef | undefined {
-    const product = this.codex.productOf(target.def);
-    return product?.recipes.find(
-      (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
-    );
   }
 
   /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */
@@ -1441,6 +1432,7 @@ export class PlayScene extends ResponsiveScene {
     if (card === undefined) return;
 
     this.childWindowCard = card;
+    this.childWindow.setCard(card);
     this.childWindow.setActions([
       ...this.autoFillAction(card),
       ...this.craftAction(card),

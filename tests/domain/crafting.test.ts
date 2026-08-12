@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { advanceCrafting, currentStep, stepIsSupplied } from '../../src/domain/runtime/crafting';
+import {
+  advanceCrafting,
+  currentStep,
+  finishedStepRatio,
+  stepIsSupplied,
+  stepSupplyRatio,
+} from '../../src/domain/runtime/crafting';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -59,6 +65,18 @@ object_defs:
           - requires:
               - {object: rope, count: 1, consume: true}
             duration: 10
+  # 2つの工程が同じ型を要求する。枠の上限は合計（3）なので、1工程目の要求（1）より多く入りうる。
+  raft:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires:
+              - {object: wood, count: 1, consume: true}
+            duration: 10
+          - requires:
+              - {object: wood, count: 2, consume: true}
+            duration: 10
 `;
 
   let codex: WorldCodex;
@@ -101,6 +119,42 @@ object_defs:
     expect(currentStep(recipe, 0)?.durationMinutes).toBe(30);
     expect(currentStep(recipe, 30), '1工程目を終えたら2工程目').toBe(recipe.steps[1]);
     expect(currentStep(recipe, 40), '全部終えていればundefined').toBeUndefined();
+  });
+
+  it('材料の充足率は、今の工程の要求を素材も道具も数える', () => {
+    put('wood', 1);
+    expect(stepSupplyRatio(wip, materialsId(), recipe.steps[0]), '木1/2、刃物0/1').toBeCloseTo(1 / 3);
+
+    put('knife', 1);
+    expect(stepSupplyRatio(wip, materialsId(), recipe.steps[0]), '道具も数に入る').toBeCloseTo(2 / 3);
+
+    put('wood', 1);
+    expect(stepSupplyRatio(wip, materialsId(), recipe.steps[0])).toBe(1);
+    expect(stepIsSupplied(wip, materialsId(), recipe.steps[0]), '揃った時点で作業できる').toBe(true);
+  });
+
+  it('要求数を超えて入っている分は、充足率を進めない', () => {
+    // 枠の上限は全工程の合計なので、1工程目の要求を超えて入れられる。
+    const raftWip = session.spawn(idOf(inProgressObjectName('raft', 'basic')));
+    raftWip.moveToSlot(ground, codex.slotNames.getId('items'), codex.wellKnown);
+    const raft = codex.objects.get(idOf('raft')).recipes[0];
+    for (let i = 0; i < 3; i += 1)
+      session.spawn(idOf('wood')).moveToSlot(raftWip, materialsId(), codex.wellKnown);
+
+    expect(stepSupplyRatio(raftWip, materialsId(), raft.steps[0]), '1工程目は1つで足りる').toBe(1);
+  });
+
+  it('工程の進捗は、終えた工程の数から決まる', () => {
+    expect(finishedStepRatio(recipe, 0)).toBe(0);
+    expect(finishedStepRatio(recipe, 30), '1工程目を終えた').toBe(0.5);
+  });
+
+  it('工程が1つのレシピでは、生きている間の進捗は0しか取らない', () => {
+    const spear = codex.objects.get(idOf('spear')).recipes[0];
+    // 唯一の工程を終えると進捗がrangeの上限（合計-1）を超え、その場で完成品へ置き換わる。
+    // 1を出す製作中オブジェクトは存在しないので、カードに出る値は0だけになる。
+    expect(finishedStepRatio(spear, 0)).toBe(0);
+    expect(finishedStepRatio(spear, spear.steps[0].durationMinutes)).toBe(1);
   });
 
   it('素材が足りなければ進まない', () => {
