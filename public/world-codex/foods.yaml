@@ -32,7 +32,7 @@ object_defs:
             meat_nutrition: 200
         destroy: self
 
-  # タロイモ。太平洋の島々で主食とされてきた塊茎作物。自生しているものを採取できる。
+  # タロイモ。東南アジア島嶼が原産の塊茎作物（docs/world/Animals.md 概要節）。野生形が自生している。
   taro:
     tags: [item]
     props:
