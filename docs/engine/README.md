@@ -33,6 +33,7 @@
 - [気候システム設計](./ClimateSystem.md)
 - [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
 - [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
+- [狩猟システム設計](./HuntingSystem.md) — 動物との対峙をターンや専用画面ではなく、怪我・時間・既存の操作へ載せる方法
 
 - [ローカライゼーション](./Localization.md) — 表示文字列をWorldCodexから切り離し、言語ごとの対応表から引く仕組み
 
