@@ -75,7 +75,7 @@ object_defs:
             warmth: 1
 `);
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
-    campfire.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+    campfire.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
     const executed = campfire.tryExecuteAction('rest', undefined, session);
 
@@ -97,7 +97,7 @@ object_defs:
         duration: {prop: travel_minutes}
 `);
     const trail = session.spawn(codex.objectNames.getId('trail'));
-    trail.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+    trail.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
     expect(trail.tryExecuteAction('travel', undefined, session)).toBe(true);
     expect(world.minute, 'self.travel_minutesの値だけ時間が進む').toBe(45);
@@ -117,7 +117,7 @@ object_defs:
           - {prop: warmth, gt: 10}
 `);
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
-    campfire.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+    campfire.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
     expect(campfire.tryExecuteAction('rest', undefined, session)).toBe(false);
     expect(world.minute, '条件不成立なら時間は進まない').toBe(0);
@@ -142,7 +142,7 @@ object_defs:
 `);
     const nut = session.spawn(codex.objectNames.getId('nut'));
     const hammer = session.spawn(codex.objectNames.getId('hammer'));
-    nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+    nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
     expect(nut.tryExecuteCombination(hammer, undefined, 'crack', session)).toBe(true);
 
@@ -166,7 +166,7 @@ object_defs:
 `);
     const nut = session.spawn(codex.objectNames.getId('nut'));
     const hammer = session.spawn(codex.objectNames.getId('blunt_hammer'));
-    nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+    nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
     expect(nut.tryExecuteCombination(hammer, undefined, 'crack', session)).toBe(true);
     expect(world.minute, 'dragged.swing_minutesの値だけ時間が進む').toBe(35);
@@ -193,7 +193,7 @@ object_defs:
       output: {}
 `);
     const oven = session.spawn(codex.objectNames.getId('oven'));
-    oven.moveToSlot(world.instance, codex.slotNames.getId('stuff'), codex.wellKnown);
+    oven.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
     expect(oven.tryExecuteAction('bake', undefined, session)).toBe(true);
 
@@ -229,7 +229,7 @@ object_defs:
 `);
     const stone = session.spawn(codex.objectNames.getId('crumbling_stone'));
     const stuffSlotId = codex.slotNames.getId('stuff');
-    stone.moveToSlot(world.instance, stuffSlotId, codex.wellKnown);
+    stone.moveToSlot(world.instance, stuffSlotId);
 
     expect(stone.tryExecuteAction('carve', undefined, session), '行動は成立しない').toBe(false);
 
@@ -273,7 +273,7 @@ object_defs:
     const chisel = session.spawn(codex.objectNames.getId('crumbling_chisel'));
     const stuffSlotId = codex.slotNames.getId('stuff');
     for (const object of [block, chisel]) {
-      expect(object.moveToSlot(world.instance, stuffSlotId, codex.wellKnown)).toBeUndefined();
+      expect(object.moveToSlot(world.instance, stuffSlotId)).toBeUndefined();
     }
 
     expect(block.tryExecuteCombination(chisel, undefined, 'carve', session)).toBe(false);

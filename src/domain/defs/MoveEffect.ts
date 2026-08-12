@@ -52,7 +52,7 @@ export class MoveEffect extends ActiveEffect {
     const destination = this.resolveDestination(owner);
     if (destination === undefined) return;
 
-    mover.moveIntoFirstAcceptingSlot(destination, session.codex.wellKnown, false, session);
+    mover.moveIntoFirstAcceptingSlot(destination, false, session);
   }
 
   describe(names: DefNames, out: DescriptionWriter): void {

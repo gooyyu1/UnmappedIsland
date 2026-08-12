@@ -119,7 +119,7 @@ object_defs:
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
     const stone = session.spawn(codex.objectNames.getId('stone'));
-    stone.moveToSlot(instance, codex.slotNames.getId('hand'), codex.wellKnown);
+    stone.moveToSlot(instance, codex.slotNames.getId('hand'));
 
     const actor = new PlayerCharacter(instance, codex);
 
@@ -159,7 +159,7 @@ object_defs:
 
     expect(actor.location).toBeUndefined();
 
-    instance.moveToSlot(clearing, codex.slotNames.getId('characters'), codex.wellKnown);
+    instance.moveToSlot(clearing, codex.slotNames.getId('characters'));
 
     expect(actor.location?.instance).toBe(clearing);
   });
@@ -192,7 +192,7 @@ object_defs:
 
     expect(actor.explore(session), '土地に居なければ探索できない').toBe(false);
 
-    instance.moveToSlot(clearing, codex.slotNames.getId('characters'), codex.wellKnown);
+    instance.moveToSlot(clearing, codex.slotNames.getId('characters'));
 
     expect(actor.explore(session)).toBe(true);
     expect(new Location(clearing, codex).explorationProgress, '今いる土地の進捗が進む').toBe(1);

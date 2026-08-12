@@ -49,7 +49,7 @@ object_defs:
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName), codex.wellKnown)).toBeUndefined();
+    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
     return spawned;
   }
 
@@ -79,7 +79,7 @@ object_defs:
   it('名指しの移動なら、自動配置の対象外のスロットにも入れられる', () => {
     const stone = spawnInto('stone', player, 'hand');
 
-    expect(stone.moveToSlot(player, codex.slotNames.getId('equipment'), codex.wellKnown)).toBeUndefined();
+    expect(stone.moveToSlot(player, codex.slotNames.getId('equipment'))).toBeUndefined();
 
     expect(contentsOf(player, 'equipment')).toEqual(['stone']);
   });

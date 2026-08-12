@@ -147,7 +147,7 @@ object_defs:
     const session = new WorldSession(codex);
     const basketInstance = spawn(codex, 'basket');
     const rockInstance = spawn(codex, 'rock_item');
-    expect(rockInstance.moveToSlot(basketInstance, itemsSlotId, session.codex.wellKnown)).toBeUndefined();
+    expect(rockInstance.moveToSlot(basketInstance, itemsSlotId)).toBeUndefined();
 
     const executed = rockInstance.tryExecuteAction('use', undefined, session);
 
@@ -200,7 +200,7 @@ object_defs:
     const actor = spawn(codex, 'player_repr');
     const container = spawn(codex, 'snack_container');
     const slice = spawn(codex, 'apple_slice');
-    expect(slice.moveToSlot(container, contentSlotId, codex.wellKnown)).toBeUndefined();
+    expect(slice.moveToSlot(container, contentSlotId)).toBeUndefined();
 
     const executed = container.tryExecuteAction('eat', actor, session);
 
@@ -380,8 +380,8 @@ object_defs:
     const sourceLiquid = spawn(codex, 'water_liquid');
     receiverLiquid.setProperty(amountId, 1);
     sourceLiquid.setProperty(amountId, 5);
-    expect(receiverLiquid.moveToSlot(receiver, contentSlotId, codex.wellKnown)).toBeUndefined();
-    expect(sourceLiquid.moveToSlot(source, contentSlotId, codex.wellKnown)).toBeUndefined();
+    expect(receiverLiquid.moveToSlot(receiver, contentSlotId)).toBeUndefined();
+    expect(sourceLiquid.moveToSlot(source, contentSlotId)).toBeUndefined();
 
     const executed = receiver.tryExecuteCombination(source, undefined, 'pour_in', session);
 
@@ -416,10 +416,8 @@ object_defs:
 
     const receiver = spawn(codex, 'receiver2');
     const source = spawn(codex, 'source2');
-    expect(
-      spawn(codex, 'water_liquid2').moveToSlot(receiver, contentSlotId, codex.wellKnown),
-    ).toBeUndefined();
-    expect(spawn(codex, 'water_liquid2').moveToSlot(source, contentSlotId, codex.wellKnown)).toBeUndefined();
+    expect(spawn(codex, 'water_liquid2').moveToSlot(receiver, contentSlotId)).toBeUndefined();
+    expect(spawn(codex, 'water_liquid2').moveToSlot(source, contentSlotId)).toBeUndefined();
     const names = receiver.findMatchingCombinations(source).map((c) => c.name);
     expect(names).toEqual(['pour_in']);
   });

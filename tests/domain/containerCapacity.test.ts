@@ -51,7 +51,7 @@ object_defs:
     return {
       container,
       put: (name: string): string | undefined =>
-        session.spawn(codex.objectNames.getId(name)).moveToSlot(container, contentsId, codex.wellKnown),
+        session.spawn(codex.objectNames.getId(name)).moveToSlot(container, contentsId),
     };
   };
 

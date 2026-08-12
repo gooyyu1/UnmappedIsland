@@ -740,9 +740,7 @@ export function fromGameSession(
     (place: CardPlace, at?: CardPlacement, count = 1): (() => void) | undefined => {
       const dest = slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
-
-      const wellKnown = game.session.codex.wellKnown;
-      if (stack[0].rejectionForMoveTo(dest.owner, dest.slotId, wellKnown) !== undefined) return undefined;
+      if (stack[0].rejectionForMoveTo(dest.owner, dest.slotId) !== undefined) return undefined;
 
       // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
       // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。
@@ -750,13 +748,13 @@ export function fromGameSession(
       const put = (item: WorldObject, first: boolean): void => {
         // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
         if (at === undefined || !first) {
-          item.moveToSlot(dest.owner, dest.slotId, wellKnown);
+          item.moveToSlot(dest.owner, dest.slotId);
         } else if (at.kind === 'cell' && hasFixedCells(dest.owner, dest.slotId)) {
-          item.moveToSlotAtCell(dest.owner, dest.slotId, at.index, wellKnown);
+          item.moveToSlotAtCell(dest.owner, dest.slotId, at.index);
         } else {
           // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
           // （枠の位置がそのまま並びの終わりを指す）。
-          item.moveToSlotAtGap(dest.owner, dest.slotId, at.index, wellKnown);
+          item.moveToSlotAtGap(dest.owner, dest.slotId, at.index);
         }
       };
 
@@ -777,12 +775,7 @@ export function fromGameSession(
       const dest = slotOf(place);
       if (dest === undefined || samePlace(place, from)) return 0;
 
-      return stack[0].acceptedCountForMoveTo(
-        stack.slice(1),
-        dest.owner,
-        dest.slotId,
-        game.session.codex.wellKnown,
-      );
+      return stack[0].acceptedCountForMoveTo(stack.slice(1), dest.owner, dest.slotId);
     };
 
   /**

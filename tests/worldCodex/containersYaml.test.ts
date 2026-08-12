@@ -67,7 +67,7 @@ describe('固形物のかさと入れ物の容量', () => {
     const outer = session.spawn(basket.globalId);
     const inner = session.spawn(basket.globalId);
 
-    expect(inner.moveToSlot(outer, codex.slotNames.getId('contents'), codex.wellKnown)).toContain('容量');
+    expect(inner.moveToSlot(outer, codex.slotNames.getId('contents'))).toContain('容量');
   });
 
   it('編み籠には熟したヤシの実が5個入り、6個は入らない', () => {
@@ -76,7 +76,7 @@ describe('固形物のかさと入れ物の容量', () => {
     const basket = session.spawn(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
     const put = (): string | undefined =>
-      session.spawn(codex.objectNames.getId('coconut')).moveToSlot(basket, contentsId, codex.wellKnown);
+      session.spawn(codex.objectNames.getId('coconut')).moveToSlot(basket, contentsId);
 
     for (let i = 0; i < 5; i++) expect(put(), `${i + 1}個目`).toBeUndefined();
 
@@ -102,7 +102,7 @@ describe('固形物のかさと入れ物の容量', () => {
     const basket = session.spawn(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
     const put = (name: string): string | undefined =>
-      session.spawn(codex.objectNames.getId(name)).moveToSlot(basket, contentsId, codex.wellKnown);
+      session.spawn(codex.objectNames.getId(name)).moveToSlot(basket, contentsId);
 
     expect(kinds.length, '手持ちの6枠を上回る').toBeGreaterThan(6);
     for (const name of kinds) expect(put(name), name).toBeUndefined();
@@ -118,7 +118,7 @@ describe('固形物のかさと入れ物の容量', () => {
 
     for (let i = 0; i < 20; i++)
       expect(
-        session.spawn(codex.objectNames.getId('stone')).moveToSlot(basket, contentsId, codex.wellKnown),
+        session.spawn(codex.objectNames.getId('stone')).moveToSlot(basket, contentsId),
         `${i + 1}個目の石`,
       ).toBeUndefined();
 
@@ -136,6 +136,6 @@ describe('固形物のかさと入れ物の容量', () => {
     const basket = session.spawn(codex.objectNames.getId('woven_basket'));
     const frond = session.spawn(codex.objectNames.getId('palm_frond'));
 
-    expect(frond.moveToSlot(basket, codex.slotNames.getId('contents'), codex.wellKnown)).toContain('容量');
+    expect(frond.moveToSlot(basket, codex.slotNames.getId('contents'))).toContain('容量');
   });
 });

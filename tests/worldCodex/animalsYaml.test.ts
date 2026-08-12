@@ -52,7 +52,7 @@ describe('animals.yamlの動物', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName), codex.wellKnown)).toBeUndefined();
+    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
     return spawned;
   }
 
@@ -157,7 +157,7 @@ describe('animals.yamlの動物', () => {
     expect(monkey.readProperty(codex.propertyNames.getId('pain')), 'サルは痛みを持たない').toBeUndefined();
 
     expect(
-      wound.moveToSlot(jungle, codex.slotNames.getId('items'), codex.wellKnown),
+      wound.moveToSlot(jungle, codex.slotNames.getId('items')),
       '負った本人から剥がせない（bound_to_owner）',
     ).toContain('離せません');
   });

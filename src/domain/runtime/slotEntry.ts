@@ -23,7 +23,7 @@ export function putIntoSlot(
   place: () => void,
 ): void {
   // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
-  if (item.rejectionForMoveTo(owner, slotGlobalId, session.codex.wellKnown) !== undefined) return;
+  if (item.rejectionForMoveTo(owner, slotGlobalId) !== undefined) return;
 
   const minutes = owner.def.getSlotDef(slotGlobalId)?.putInMinutes(owner, item, actor) ?? 0;
   if (!spendDuration(minutes, session, [item, owner])) return;

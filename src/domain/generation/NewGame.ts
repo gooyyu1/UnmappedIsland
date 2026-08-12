@@ -90,13 +90,13 @@ export function resolveCharacterDefName(codex: WorldCodex, savedCharacterId: str
  */
 export function start(codex: WorldCodex, characterDefName: string, seed: number, rng?: Rng): NewGameSession {
   // worldはinstanceId 0で直接生成する（WorldSession.spawnの発行IDは1始まりのため衝突しない）。
-  // 生成用の一時セッションを使うのは、WorldObjectの生成にsession（初期値ロール文脈）が必要で、
-  // World付きセッション自体がworldインスタンスを必要とするという相互依存を断ち切るため。
-  const bootstrap = new WorldSession(codex);
-  const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
+  // セッションを先に作ってworldを後から結び付けるのは、WorldObjectの生成にsession（初期値ロール文脈）が
+  // 必要で、World付きセッション自体がworldインスタンスを必要とするという相互依存を断つため
+  // （WorldSession.adoptWorld）。**この順序にすると、worldインスタンスも他の物と同じセッションに属する。**
+  const session = new WorldSession(codex, undefined, rng);
+  const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
   const world = new World(worldInstance, codex.propertyNames, codex.symbolNames);
-
-  const session = new WorldSession(codex, world, rng);
+  session.adoptWorld(world);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
 
   const character = session.spawn(codex.objectNames.getId(characterDefName));

@@ -1917,7 +1917,7 @@ export class PlayScene extends ResponsiveScene {
     if (location === undefined) return;
 
     const spawned = this.gameSession.session.spawn(inProgressDefGlobalId);
-    spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'), this.codex.wellKnown);
+    spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'));
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.showView({ origin });
 

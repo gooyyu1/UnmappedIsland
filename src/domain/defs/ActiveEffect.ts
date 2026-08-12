@@ -220,7 +220,7 @@ export class DestroyEffect extends ActiveEffect {
     dragged: WorldObject | undefined,
   ): void {
     const victim = owner.resolveEffectTarget(this.target, actor, dragged);
-    victim?.destroy(session.codex.wellKnown);
+    victim?.destroy();
   }
 
   describe(_names: DefNames, out: DescriptionWriter): void {

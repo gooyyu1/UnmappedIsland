@@ -45,7 +45,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName), codex.wellKnown)).toBeUndefined();
+    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
     return spawned;
   }
 
@@ -258,7 +258,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const bowl = spawnInto('coconut_bowl', player, 'hand');
     const water = session.spawn(codex.objectNames.getId('water_liquid'));
 
-    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'), codex.wellKnown)).toBeUndefined();
+    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
     expect(handOf(player), '手持ちのaccepts（itemタグ）を通る').toEqual(['coconut_bowl']);
   });
 

@@ -128,7 +128,7 @@ export function advanceCrafting(
     const spent = (slot?.contents ?? [])
       .filter((object) => object.def.globalId === requirement.objectGlobalId)
       .slice(0, requirement.count);
-    for (const object of spent) object.destroy(codex.wellKnown);
+    for (const object of spent) object.destroy();
   }
 
   inProgress.addNumber(progressGlobalId, step.durationMinutes, session);
@@ -163,5 +163,5 @@ function spillUnneeded(
     (object) => !stillNeeded.has(object.def.globalId),
   );
 
-  for (const object of leftovers) object.moveToSlot(parent, parentSlot.globalId, codex.wellKnown);
+  for (const object of leftovers) object.moveToSlot(parent, parentSlot.globalId);
 }
