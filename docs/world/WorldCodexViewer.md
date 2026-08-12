@@ -47,6 +47,7 @@ passivesやactionsの中身は見ません。
 | ページ | 内容 |
 | --- | --- |
 | `#/` | 型の一覧（カードの絵と名前、名前での絞り込み） |
+| — | 製作中オブジェクト（[RecipeSystem.md](../engine/RecipeSystem.md) 1節）は**どの一覧にも出しません**。レシピから自動生成された型で、中身は完成品の `recipes` の節にそのまま出ているためです（識別子で名指しすれば個別のページは開けます） |
 | `#/object/<識別子>` | 型の詳細（絵・説明文・props・slots・passives・actions・combinations・recipes・土地の亜種と、上の2つの逆引き） |
 | `#/property/<型>/<prop>` | プロパティの詳細（初期値・range・stages・range系イベント・影響元） |
 | `#/tags` | タグの一覧（タグ名・型の数と、そのタグを持つ型から借りた絵） |

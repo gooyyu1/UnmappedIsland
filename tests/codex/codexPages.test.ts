@@ -35,6 +35,15 @@ describe('WorldCodexビューアのページ', () => {
     expect(html).toMatch(/<img class="art art-thumb" src="[^"]*coconut[^"]*"/);
   });
 
+  it('製作中オブジェクトは一覧に出さない（完成品のrecipesに同じ内容が出ているため）', () => {
+    const inProgress = 'woven_basket__woven';
+
+    expect(renderObjectListPage(view)).not.toContain(inProgress);
+    expect(renderObjectsByTagPage(view)).not.toContain(inProgress);
+    // 識別子で名指しすれば個別のページは開ける（完成品への行き先つき）。
+    expect(renderObjectPage(view, inProgress)).toContain('#/object/woven_basket');
+  });
+
   it('オブジェクトのページに表示名・説明文・定義の中身が出る', () => {
     const html = renderObjectPage(view, 'coconut');
 
@@ -91,7 +100,9 @@ describe('WorldCodexビューアのページ', () => {
     const html = renderTagListPage(view);
 
     expect(html).toContain('#/by-tag/item');
-    expect(html).toContain('item <span class="muted">(21)</span>');
+    expect(html).toContain('item <span class="muted">(20)</span>');
+    // 製作中オブジェクトだけが持つタグは、行き先が空になるので出さない。
+    expect(html).not.toContain('#/by-tag/wip');
     // 絵は、そのタグを持つ型のうち絵が用意されている最初のものを借りる。
     expect(html).toMatch(
       /<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"[^>]*>[^<]*<span[^>]*>location/,
