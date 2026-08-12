@@ -1744,6 +1744,8 @@ export class PlayScene extends ResponsiveScene {
         this.statusRowsY,
         this.statusRowsWidth,
         status,
+        // 変化を見せ終わった行を並びから外すには、引き直す機会がここにしか無い（showStatuses）。
+        { onCaughtUp: () => this.showStatuses() },
       );
       bars.set(status.key, bar.setVisible(false));
     }
@@ -1760,7 +1762,11 @@ export class PlayScene extends ResponsiveScene {
    * StatusBar.show）。
    */
   private showStatuses(): void {
-    const rows = statusRows(this.statusContents(this.view.statuses), this.statusContents(this.allEntries()));
+    const rows = statusRows(
+      this.statusContents(this.view.statuses),
+      this.statusContents(this.allEntries()),
+      (status) => this.statusBars.get(status.key)?.isShowingChange(status) === true,
+    );
     const rowHeight = StatusBar.height(this.metrics);
 
     const shown = new Set<string>();

@@ -44,6 +44,12 @@ export interface ProgressBarOptions {
    * 塗りが読めなくなるため。
    */
   readonly borderless?: boolean;
+
+  /**
+   * 帯が今の値へ追いつき切ったときに呼ぶ。変化を見せ終わるまで並びに残している行を、そのとき
+   * 外すために使う（statusRows・PlayScene.showStatuses）。
+   */
+  readonly onCaughtUp?: () => void;
 }
 
 /**
@@ -95,6 +101,9 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   /** トラックの枠線を描かないか（ProgressBarOptions.borderless）。 */
   private readonly borderless: boolean;
 
+  /** 追いつき切ったときの通知（ProgressBarOptions.onCaughtUp）。 */
+  private readonly onCaughtUp: (() => void) | undefined;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -109,6 +118,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.worsensUpward = options.worsensUpward === true;
     this.fillColor = options.fillColor;
     this.borderless = options.borderless === true;
+    this.onCaughtUp = options.onCaughtUp;
 
     this.barWidth = width;
     this.barHeight = height;
@@ -134,6 +144,14 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     });
 
     scene.add.existing(this);
+  }
+
+  /**
+   * 渡した値に対して、帯がまだ追いついていないか（＝そこへ動かすとまだ見せる変化が残るか）。
+   * 見せ終わるまで消したくない側が、消す前に訊く（StatusBar.isShowingChange）。
+   */
+  isBehind(ratio: number): boolean {
+    return Phaser.Math.Clamp(ratio, 0, 1) !== this.shownRatio;
   }
 
   /**
@@ -190,6 +208,10 @@ export class ProgressBar extends Phaser.GameObjects.Container {
       },
       onComplete: () => {
         this.lagTween = undefined;
+        // 端数を残すとisBehindが真のままになるため、追いついたことを値で確定させる。
+        this.shownRatio = this.ratio;
+        this.draw();
+        this.onCaughtUp?.();
       },
     });
   }

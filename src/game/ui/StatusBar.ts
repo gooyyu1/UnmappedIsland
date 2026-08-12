@@ -70,10 +70,21 @@ export interface StatusContent {
   readonly onTogglePin?: () => void;
 }
 
+/** 行の見せ方の選択肢。 */
+export interface StatusBarOptions {
+  /** 名前欄の幅。長い表示名が並ぶプロパティウィンドウだけが広げる。 */
+  readonly nameWidth?: number;
+
+  /**
+   * 変化を見せ終わったときに呼ぶ。安全域へ戻った行はそれまで並びに残しているため、外す機会が
+   * ここにしか無い（isShowingChange・statusRows）。
+   */
+  readonly onCaughtUp?: () => void;
+}
+
 /**
  * ステータス1件分の「固定表示の印＋名前＋バー＋増減」。行の高さはバーの高さと等しい。
  * 割合を定義できないプロパティは、バーの代わりに実効値そのものを出す。
- * 名前欄の幅（nameWidthU）は、長い表示名が並ぶプロパティウィンドウだけが広げる。
  *
  * 危険域・致命的域のバーは枠を明滅させる（ScreenLayout.md ステータスエリア節）。名前欄をタップすると
  * 固定表示が切り替わる。
@@ -104,14 +115,14 @@ export class StatusBar extends Phaser.GameObjects.Container {
     y: number,
     width: number,
     content: StatusContent,
-    nameWidthU: number = NAME_WIDTH,
+    options: StatusBarOptions = {},
   ) {
     super(scene, x, y);
     this.worsensUpward = content.worsensUpward === true;
 
     const height = metrics.px(BAR_HEIGHT);
     const pinWidth = metrics.px(PIN_WIDTH);
-    const nameWidth = metrics.px(nameWidthU);
+    const nameWidth = metrics.px(options.nameWidth ?? NAME_WIDTH);
     const barX = pinWidth + nameWidth + metrics.px(NAME_GAP);
     const changeWidth = metrics.px(CHANGE_WIDTH);
     const barWidth = Math.max(0, width - barX - changeWidth - metrics.px(CHANGE_GAP));
@@ -150,6 +161,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
     if (content.ratio !== undefined) {
       this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, content.ratio, {
         worsensUpward: this.worsensUpward,
+        onCaughtUp: options.onCaughtUp,
       });
       this.add(this.bar);
     } else {
@@ -200,7 +212,19 @@ export class StatusBar extends Phaser.GameObjects.Container {
     this.setVisible(true).setY(y);
   }
 
-  /** 並びから外れた行にする（安全域に戻った、固定表示を外した）。 */
+  /**
+   * この行を渡した内容にしたとき、まだ見せ終わっていない変化が残るか。安全域へ戻った行を、変化を
+   * 見せ切るまで並びに残すかの判断に使う（statusRows）。
+   *
+   * 出ていない行は動かさずに現れる（show参照）ので、残す理由が無い——出ていない間に進んだ分は
+   * 見せない変化なので、バーが持っている値との差を変化として数えてはいけない。
+   */
+  isShowingChange(content: StatusContent): boolean {
+    if (!this.visible || content.ratio === undefined) return false;
+    return this.bar?.isBehind(content.ratio) === true;
+  }
+
+  /** 並びから外れた行にする（変化を見せ終わった、固定表示を外した）。 */
   hide(): void {
     this.stopMoving();
     this.setVisible(false);

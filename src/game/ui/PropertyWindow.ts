@@ -183,7 +183,7 @@ export class PropertyWindow {
           this.rowsY + index * (rowHeight + rowGap),
           this.rowsWidth,
           entry,
-          NAME_WIDTH,
+          { nameWidth: NAME_WIDTH },
         ),
     );
   }
