@@ -255,6 +255,57 @@ export function mixColor(from: number, to: number, t: number): number {
   return channel(16) | channel(8) | channel(0);
 }
 
+/**
+ * カードの枠の色を決める種別（ScreenLayout.md 枠の色は種別で変える 節）。
+ *
+ * **道を独立した種別にしているのは、道が設置物の中に埋没するのを色で解くため。** 道は行き先の名前と
+ * 絵を出すので、同じレーンに並ぶ設置物と形では見分けが付かない。
+ */
+export type CardKind = 'fixture' | 'road' | 'item' | 'injury' | 'character';
+
+/** 種別ごとの枠の面と縁の色。タイトルの板と文字の色はここから引く（cardFrameColors）。 */
+const CARD_FRAME_FACE: Readonly<Record<CardKind, { readonly face: number; readonly line: number }>> = {
+  fixture: { face: 0x68804e, line: 0x3a4a2a },
+  road: { face: 0xce943e, line: 0x7a5018 },
+  item: { face: 0xa88a64, line: 0x6e563a },
+  injury: { face: 0xae5c54, line: 0x68302c },
+  character: { face: 0x6c7c9c, line: 0x38445e },
+};
+
+/**
+ * タイトルの板を、枠の面から縁の側へどれだけ暗くするか。**枠より暗くする**——枠から強調したいのは
+ * 絵であって、名前は枠の一部（ScreenLayout.md 枠の色は種別で変える 節）。
+ */
+const CARD_PLATE_SHADE = 0.55;
+
+/** 板の文字を、紙の白から枠の面の側へどれだけ染めるか（板の上で浮かせないため）。 */
+const CARD_PLATE_INK_TINT = 0.15;
+
+/** カードの紙の地の色（card_frame.pngの実測）。板の文字はこれを枠の色で染めた色になる。 */
+const CARD_PAPER = 0xfcf8e6;
+
+/** 枠1つぶんの色（cardFrameColors）。 */
+export interface CardFrameColors {
+  /** 桟の面。 */
+  readonly face: number;
+  /** 枠と窓の縁をなぞる線。 */
+  readonly line: number;
+  /** タイトルの板。 */
+  readonly plate: number;
+  /** 板に載せる名前の文字。 */
+  readonly ink: number;
+}
+
+export function cardFrameColors(kind: CardKind): CardFrameColors {
+  const { face, line } = CARD_FRAME_FACE[kind];
+  return {
+    face,
+    line,
+    plate: mixColor(face, line, CARD_PLATE_SHADE),
+    ink: mixColor(CARD_PAPER, face, CARD_PLATE_INK_TINT),
+  };
+}
+
 /** Phaserのテキストスタイルは色を文字列で受け取るため、16進数値をCSS色へ直す。 */
 export function cssColor(color: number): string {
   return `#${color.toString(16).padStart(6, '0')}`;

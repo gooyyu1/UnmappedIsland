@@ -1,6 +1,15 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import { COLOR, FONT_FAMILY, SIZE, capacityColorFor, cssColor, durabilityColorFor } from './theme';
+import type { CardFrameColors, CardKind } from './theme';
+import {
+  COLOR,
+  FONT_FAMILY,
+  SIZE,
+  capacityColorFor,
+  cardFrameColors,
+  cssColor,
+  durabilityColorFor,
+} from './theme';
 import { drawBox } from './shapes';
 import { cardBackgroundTexture } from './backgroundArt';
 import { CARD_ART_WIDTH, objectTexture } from './objectArt';
@@ -10,7 +19,6 @@ import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import { noteOperation } from '../errorReport';
 import { HoldRepeat } from './holdRepeat';
 import { onPressRelease } from './tap';
-import { wrapByCharacter } from './textLayout';
 
 /**
  * カードの枠の画像のテクスチャキー（実体はsrc/assets/card_frame.png、BootSceneが読む）。
@@ -29,50 +37,32 @@ const EMPTY_FRAME_ALPHA = 0.35;
 const FRAME_INSET = 2.5;
 const FRAME_RADIUS = 10;
 
-/**
- * 紙の縁をなぞる線の色と太さ（u単位）。**絵の上から引く。**
- *
- * 絵は紙いっぱいに角丸で切り落とされているので（card_art.py）、線を絵の下に置くと隠れてしまう。
- * トレーディングカードは絵が枠の内側いっぱいまで来て、その上に枠が乗っている。
- *
- * 生成した紙（card_frame.png）は単色の線しか持たないので、ここで図形として引いても同じものになる。
- * 枠に名前の欄などの意匠が入るようになったら、この線を画像へ差し替える。
- */
-const BORDER_COLOR = 0x8a7156;
+/** 枠と、その内側の窓の縁をなぞる線の太さ（u単位）。 */
 const BORDER_WIDTH = 1.5;
 
-/** カード名の最大行数。これを超える分は表示しない（モックの-webkit-line-clamp: 3に対応）。 */
-const NAME_MAX_LINES = 3;
-
 /**
- * カード名を紙の縁から離す余白と、白い縁取りの太さ（u単位）。
- * 余白は角の丸み（FRAME_RADIUS）の内側へ収まる幅を取り、文字が枠の線に触れないようにする。
- * 縁取りは、絵の上に載った暗い文字の輪郭を保つためのもの。
+ * 枠の桟の幅と、タイトルの板の高さ、窓の角の丸み（u単位。ScreenLayout.md カードの枠 節）。
+ *
+ * 左右と上は無地の桟で、板はその内側の窓の上端に乗る。下の桟だけは中身で高さが変わるので、
+ * ここには持たない（railMetrics）。
  */
-const NAME_MARGIN = 8;
-const NAME_STROKE = 4;
+const FRAME_SIDE = 8;
+const FRAME_HEAD = 22;
+const WINDOW_RADIUS = 4;
+
+/** タイトルの板に載せる名前の大きさ（u単位。板の高さの7割。これ以上大きくすると字が板の縁に触る）。 */
+const NAME_SIZE = 16;
 
 /**
- * 道のカードの左下に出す矢印の大きさと縁の太さ（u単位）。名前の文字（30u）の1.5倍ほど取り、
- * カードを縮めて並べても一目で道と分かるようにする。
+ * 道のカードが桟に出す矢印の大きさと縁の太さ（u単位）。
  *
  * 絵文字（➡）ではなく図形で描く。字が無いフォントでは豆腐になるうえ、絵文字として描かれると
- * 環境ごとに色も形も変わってしまうため。
- *
- * 縁は名前の縁取り（NAME_STROKE）より細い。名前は文字の隙間を縁取りが埋めないよう太らせるが、
- * 矢印は一続きの塗りなので、太らせると形そのものが鈍る。
+ * 環境ごとに色も形も変わってしまうため。線ではなく塗り潰した矢羽根にするのは、細い線だとカードを
+ * 縮めて並べたときに何の形か読み取れなくなるため。
  */
-const ROAD_ARROW_WIDTH = 51;
-const ROAD_ARROW_HEIGHT = 45;
-const ROAD_ARROW_STROKE = 2;
-
-/**
- * 矢印を紙の左下の角から離す余白（u単位）。名前の余白（NAME_MARGIN）より広い。
- *
- * 角の丸み（FRAME_RADIUS）には縛らない。丸みは意匠として小さくしてよいが、矢印を縁へ寄せると
- * 絵の濃い部分と重なって輪郭が読めなくなる。距離のほうを名前の余白（NAME_MARGIN）の倍に取る。
- */
-const ROAD_ARROW_MARGIN = 16;
+const ROAD_ARROW_WIDTH = 22;
+const ROAD_ARROW_HEIGHT = 11;
+const ROAD_ARROW_STROKE = 1.5;
 
 /**
  * 押下中に紙の縁へ重ねる黒枠の太さ（u単位。ドロップ先を示す枠と揃える）。
@@ -88,18 +78,18 @@ const EDGE_OVERLAY_ALPHA = 0.55;
 const EDGE_ARROW_SIZE = 44;
 
 /** スタック数を囲む丸の直径・絵の右上の角から外へはみ出させる量・中の数字の大きさ（u単位）。 */
-const STACK_BADGE_SIZE = 56;
-const STACK_BADGE_OVERHANG = 8;
+const STACK_BADGE_SIZE = 28;
+const STACK_BADGE_OVERHANG = 6;
 
 /**
- * 状態を表す印（手当て済みの怪我など）の大きさと、紙の左下からの余白（u単位）。
+ * 状態を表す印（手当て済みの怪我など）の大きさと、窓の左下からの余白（u単位）。
  *
  * **絵を差し替えるのではなく、印を重ねる。** 手当ての有無で絵を差し替えると、怪我の部位 × 治療具の
  * 数だけ絵が要る（ScreenLayout.md カードの印 節）。
  */
 const MARK_SIZE = 52;
-const MARK_MARGIN = 18;
-const STACK_COUNT_SIZE = 32;
+const MARK_MARGIN = 12;
+const STACK_COUNT_SIZE = 16;
 
 /**
  * 枠の強調（CellHighlight）の太さ（u単位）。カードの矩形のすぐ外側にある余白——カード間ギャップの
@@ -127,26 +117,15 @@ const CELL_OVERLAY_PLATE_ALPHA = 0.72;
 const IN_PROGRESS_VEIL_ALPHA = 0.42;
 
 /**
- * 耐久度バーの高さ（u単位）。ステータスバー（36u）とは比べ物にならない細さにする——どの道具にも
- * 常に出ているものなので、見に行けば読めるが視界には入らない、という控えめさに留める。
+ * 桟に積む状態バーの高さ・間隔・紙の左右から空ける余白と、桟の中の上下の余白（u単位）。
+ *
+ * 4種（耐久度・中身・容量・傷）とも同じ寸法にする。**どれが主要情報かはカードごとに違う**——道具に
+ * とっての耐久度と入れ物にとっての容量は、どちらもそのカードの主役なので、太さで格を付けない。
  */
-const DURABILITY_BAR_HEIGHT = 6;
-
-/**
- * そのカードの主要情報を映すバーの高さと、紙の左右から空ける余白（u単位）。中身・容量・怪我のバーが
- * 同じ寸法を使う（1枚のカードが2本以上を出すことは無い）。
- */
-const MAIN_BAR_HEIGHT = 15;
-const MAIN_BAR_MARGIN = 28;
-
-/** 入れ物のバー（中身・容量）を紙の下端から浮かせる高さ（u単位）。 */
-const CONTENT_BAR_BOTTOM = 36;
-
-/**
- * 怪我のバーを紙の下端から浮かせる高さ（u単位）。入れ物のバーより高い位置で止めるのは、手当ての印
- * （MARK_MARGIN + MARK_SIZE = 70u）と同じカードに出るため。
- */
-const SEVERITY_BAR_BOTTOM = 72;
+const RAIL_BAR_HEIGHT = 6;
+const RAIL_BAR_GAP = 2;
+const RAIL_BAR_MARGIN = 7;
+const RAIL_PAD = 4.5;
 
 /** 移動先のレーンがカードのどちら側にあるか。 */
 export type CardEdgeDirection = 'up' | 'down';
@@ -218,15 +197,13 @@ export interface CardContent {
   readonly edges?: readonly CardEdgeAction[];
   /** 掴んで他のカード・レーンへ落とせるカードか。ドラッグ中の扱いはCardDragController。 */
   readonly draggable?: boolean;
-  /**
-   * 名前を紙のどちら側へ寄せるか（既定は上）。主題が絵の上部にあるカード——顔が上端から始まる
-   * キャラクタの肖像——だけが下を選ぶ。物の札の下半分は劣化度などの情報のために空けておく。
-   */
-  readonly namePosition?: 'top' | 'bottom';
+
+  /** 枠の色を決める種別（theme.tsのCardKind）。省略したカードはアイテムとして描く。 */
+  readonly kind?: CardKind;
 
   /**
    * 道のカードか（domainのpathタグ）。道は行き先の土地の名前と絵を出すので、そのままでは土地の
-   * カードと見分けが付かない。左下の矢印だけがそれを区別する（ScreenLayout.md 設置物レーン節）。
+   * カードと見分けが付かない。枠の色（kind）と、桟の中央の矢印がそれを区別する。
    */
   readonly road?: boolean;
 
@@ -269,14 +246,14 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, namePosition, road, durability, fill, severity, mark } = content;
+  const { icon, name, art, background, kind, road, durability, fill, severity, mark } = content;
   const { capacityRatio, inProgress } = content;
   return {
     icon,
     name,
     art,
     background,
-    namePosition,
+    kind,
     road,
     durability,
     fill,
@@ -311,8 +288,11 @@ export class Card extends Phaser.GameObjects.Container {
   /** カードの名前。中身が入れ替われば同じインスタンスのままでも変わる（showName参照）。 */
   private readonly nameText: Phaser.GameObjects.Text;
 
-  /** 道のカードだけに出す左下の矢印。出し入れは差し替えのたびに決まる（showNameが切り替える）。 */
-  private readonly roadArrow: Phaser.GameObjects.Graphics;
+  /**
+   * 枠そのもの。**種別で色が変わり、下の桟の高さが中身で変わる**ので、1枚絵ではなく図形として
+   * 差し替えのたびに引き直す（drawFrame参照）。
+   */
+  private readonly frame: Phaser.GameObjects.Graphics;
 
   /**
    * 中身を入れ替える器。重なりの順序を殻の側で固定しておくことで、中身（絵・背景・端の操作エリア）が
@@ -369,31 +349,30 @@ export class Card extends Phaser.GameObjects.Container {
     this.metrics = metrics;
     this.edgeRepeat = new HoldRepeat(scene);
 
-    const face = addFrame(scene, metrics, width, height, false);
+    const paper = addPaper(scene, metrics, width, height, false);
     // 土地の背景は絵より先に敷く。用意されていない土地では紙がそのまま地になる。
     this.backgroundLayer = scene.add.container(0, 0);
     this.artLayer = scene.add.container(0, 0);
     // 青は絵までを覆い、名前と状態のバーには掛けない。何が出来つつあるのかと、それが今どういう
-    // 状態なのかは、覆いの下へ沈めずに読めるままにする。
+    // 状態なのかは、覆いの下へ沈めずに読めるままにする。枠より先に置くので、覆いは窓の中だけに残る。
     this.inProgressVeil = createInProgressVeil(scene, metrics, width, height);
+    // 枠は絵より後。**絵の上に枠が乗る**のがトレーディングカードの構造で、窓からはみ出した絵は
+    // 枠が隠す（ScreenLayout.md カードの枠 節）。
+    this.frame = scene.add.graphics();
     this.nameText = createNameText(scene, metrics, width, height);
-    this.roadArrow = createRoadArrow(scene, metrics, width, height);
-    // 枠の線は絵より後。絵は紙いっぱいに切り落とされているので、下に置くと隠れる（addBorder参照）。
-    this.add([
-      face,
-      this.backgroundLayer,
-      this.artLayer,
-      addBorder(scene, metrics, width, height),
-      this.inProgressVeil,
-      this.nameText,
-      this.roadArrow,
-    ]);
+    this.add([paper, this.backgroundLayer, this.artLayer, this.inProgressVeil, this.frame, this.nameText]);
 
-    // 状態のバーは絵より後に足して上へ重ねる（絵の濃淡に埋もれないようにするため）。
-    this.durabilityBar = this.addDurabilityBar(scene, metrics, width, height);
-    this.fillBar = this.addFillBar(scene, metrics, width, height);
-    this.capacityBar = this.addCapacityBar(scene, metrics, width, height);
-    this.severityBar = this.addSeverityBar(scene, metrics, width, height);
+    // 状態のバーは枠より後に足して、桟の上へ重ねる。
+    this.durabilityBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
+    this.fillBar = this.addRailBar(scene, metrics, {
+      // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
+      fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown,
+    });
+    // 満杯へ近づくほど物が入らなくなるので、色は域ではなく値そのものから引く（capacityColorFor）。
+    this.capacityBar = this.addRailBar(scene, metrics, { fillColor: capacityColorFor });
+    // 傷は減るほど良い量なので、増えた分の帯が赤くなるようにする（worsensUpward）。色は域から引く
+    // （fillColorを渡さない）ので、傷が引くほど緑へ寄る。
+    this.severityBar = this.addRailBar(scene, metrics, { worsensUpward: true });
     this.edgeLayer = scene.add.container(0, 0);
     this.add(this.edgeLayer);
 
@@ -428,13 +407,9 @@ export class Card extends Phaser.GameObjects.Container {
     this.add(this.stackBadge);
 
     // 状態の印もスタック数と同じく、端の操作エリアより後に足して隠れないようにする。
-    const paper = paperRect(metrics, width, height);
-    const markMargin = metrics.px(MARK_MARGIN);
+    // 置く位置は窓の左下なので、桟の高さが決まる差し替えのたびに決め直す（showMark参照）。
     this.mark = scene.add
-      .text(paper.x + markMargin, paper.y + paper.height - markMargin, '', {
-        fontFamily: FONT_FAMILY,
-        fontSize: `${metrics.fontPx(MARK_SIZE)}px`,
-      })
+      .text(0, 0, '', { fontFamily: FONT_FAMILY, fontSize: `${metrics.fontPx(MARK_SIZE)}px` })
       .setOrigin(0, 1);
     this.add(this.mark);
 
@@ -459,26 +434,32 @@ export class Card extends Phaser.GameObjects.Container {
    */
   private applyContent(content: CardContent, showChange: boolean): void {
     this._content = content;
-    this.showName(content);
+    const colors = cardFrameColors(content.kind ?? 'item');
+    const bars = this.barsFor(content);
+    const rail = railMetrics(
+      this.metrics,
+      this.cardWidth,
+      this.cardHeight,
+      bars.length,
+      content.road === true,
+    );
+    this.drawFrame(colors, rail);
+    this.showName(content, colors);
     this.showArt(content);
-    this.showBars(content, showChange);
+    this.showBars(bars, rail, showChange, content.midAction === true);
     this.showEdge(content);
     this.showStackCount();
-    this.mark.setText(content.mark ?? '');
+    this.showMark(content, rail);
     this.inProgressVeil.setVisible(content.inProgress === true);
   }
 
-  /** 名前と、その寄せ位置。中身が入れ替われば名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。 */
-  private showName(content: CardContent): void {
-    const paper = paperRect(this.metrics, this.cardWidth, this.cardHeight);
-    const margin = this.metrics.px(NAME_MARGIN);
-    // 下寄せの名前は下端を固定して上へ伸ばす（行が増えても絵の下端との間が空かない）。
-    const bottom = content.namePosition === 'bottom';
-    this.nameText
-      .setY(bottom ? paper.y + paper.height - margin : paper.y + margin)
-      .setOrigin(0, bottom ? 1 : 0);
+  /**
+   * 名前。中身が入れ替われば名前は変わる（「ヤシの殻」⇔「水入りのヤシの殻」）。文字の色は枠の色から
+   * 引くので、種別が変われば書き換える。
+   */
+  private showName(content: CardContent, colors: CardFrameColors): void {
+    this.nameText.setColor(cssColor(colors.ink));
     if (this.nameText.text !== content.name) this.nameText.setText(content.name);
-    this.roadArrow.setVisible(content.road === true);
   }
 
   /**
@@ -533,27 +514,35 @@ export class Card extends Phaser.GameObjects.Container {
     this.once(Phaser.GameObjects.Events.DESTROY, () => scene.textures.off(event, swap));
   }
 
-  /** 状態のバー。値を持たない間は隠す（映すものが無いカードにバーは出さない）。 */
-  private showBars(content: CardContent, showChange: boolean): void {
-    const hold = content.midAction === true;
-    this.showBar(this.durabilityBar, content.durability, showChange, hold);
-    this.showBar(this.fillBar, content.fill?.ratio, showChange, hold);
-    this.showBar(this.capacityBar, content.capacityRatio, showChange, hold);
+  /**
+   * 桟へ積む状態バーを、上からの順に並べる。**値を持たないバーはここで隠して並びから外す**ので、
+   * 桟の高さも積む位置も「今いくつ出ているか」だけで決まる。
+   */
+  private barsFor(content: CardContent): readonly RailBar[] {
     // 傷の重さは域が色を決めるので、割合より先に伝える（塗り直しを1回で済ませる）。
     if (content.severity !== undefined) this.severityBar.setAlert(content.severity.alert);
-    this.showBar(this.severityBar, content.severity?.ratio, showChange, hold);
+
+    const all = [
+      { bar: this.durabilityBar, ratio: content.durability },
+      { bar: this.fillBar, ratio: content.fill?.ratio },
+      { bar: this.capacityBar, ratio: content.capacityRatio },
+      { bar: this.severityBar, ratio: content.severity?.ratio },
+    ];
+    for (const { bar, ratio } of all) {
+      if (ratio === undefined) bar.setVisible(false);
+    }
+    return all.filter((entry): entry is RailBar => entry.ratio !== undefined);
   }
 
-  private showBar(bar: ProgressBar, ratio: number | undefined, showChange: boolean, hold: boolean): void {
-    if (ratio === undefined) {
-      bar.setVisible(false);
-      return;
-    }
-
-    // 隠れていたバーが現れるときは、見えていなかった間の増減を今の変化として見せない。
-    if (showChange && bar.visible) bar.setRatio(ratio, hold);
-    else bar.resetRatio(ratio);
-    bar.setVisible(true);
+  /** 状態のバーを桟へ積む。 */
+  private showBars(bars: readonly RailBar[], rail: RailMetrics, showChange: boolean, hold: boolean): void {
+    bars.forEach(({ bar, ratio }, index) => {
+      bar.setY(rail.barTop + rail.barPitch * index);
+      // 隠れていたバーが現れるときは、見えていなかった間の増減を今の変化として見せない。
+      if (showChange && bar.visible) bar.setRatio(ratio, hold);
+      else bar.resetRatio(ratio);
+      bar.setVisible(true);
+    });
   }
 
   /**
@@ -580,104 +569,114 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 耐久度のバー。紙の下端の縁に接する形で、角の丸みに掛からない幅へ収める
-   * （ScreenLayout.md カードの状態バー節）。
+   * 桟へ積む状態バー1本。**縦の位置以外は4種とも同じ**なので、寸法はここで決め切り、どこへ積むかだけを
+   * 差し替えのたびに与える（showBars参照）。
    */
-  private addDurabilityBar(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    width: number,
-    height: number,
-  ): ProgressBar {
-    const paper = paperRect(metrics, width, height);
-    const barHeight = metrics.px(DURABILITY_BAR_HEIGHT);
-    const inset = metrics.px(FRAME_RADIUS);
-    const bar = new ProgressBar(
-      scene,
-      metrics,
-      paper.x + inset,
-      paper.y + paper.height - barHeight,
-      paper.width - inset * 2,
-      barHeight,
-      0,
-      // 枠線は数pxの太さの大半を占めてしまうので描かない。
-      { fillColor: durabilityColorFor, borderless: true },
-    );
-    this.add(bar);
-    return bar;
-  }
-
-  /** 中身のバー。カードの主要情報なので、下端へは付けず絵の下へ置く。 */
-  private addFillBar(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    width: number,
-    height: number,
-  ): ProgressBar {
-    return this.addMainBar(scene, metrics, width, height, CONTENT_BAR_BOTTOM, {
-      // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
-      fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown,
-    });
-  }
-
-  /**
-   * 入れ物の詰まり具合のバー。あとどれだけ入るかは入れ物のカードの主要情報なので、中身のバーと
-   * 同じ太さ・同じ位置に出す（1枚のカードが両方を出すことは無い、ScreenLayout.md）。
-   */
-  private addCapacityBar(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    width: number,
-    height: number,
-  ): ProgressBar {
-    // 満杯へ近づくほど物が入らなくなるので、色は域ではなく値そのものから引く（capacityColorFor）。
-    return this.addMainBar(scene, metrics, width, height, CONTENT_BAR_BOTTOM, {
-      fillColor: capacityColorFor,
-    });
-  }
-
-  /**
-   * 残っている傷のバー。治るまでの残りは怪我カードの主要情報なので、道具の耐久度のような
-   * 控えめな下端の細線ではなく、中身のバーと同じ太さで出す（位置だけは印を避けて高い、
-   * SEVERITY_BAR_BOTTOM）。
-   */
-  private addSeverityBar(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    width: number,
-    height: number,
-  ): ProgressBar {
-    // 減るほど良い量なので、増えた分の帯が赤くなるようにする（ProgressBarOptions.worsensUpward）。
-    // 色は域から引く（fillColorを渡さない）ので、傷が引くほど緑へ寄る。
-    return this.addMainBar(scene, metrics, width, height, SEVERITY_BAR_BOTTOM, {
-      worsensUpward: true,
-    });
-  }
-
-  /** 主要情報のバー（中身・容量・怪我）。絵の下・下端との間を空けた位置に、同じ寸法で置く。 */
-  private addMainBar(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    width: number,
-    height: number,
-    bottom: number,
-    options: ProgressBarOptions,
-  ): ProgressBar {
-    const paper = paperRect(metrics, width, height);
-    const barHeight = metrics.px(MAIN_BAR_HEIGHT);
-    const margin = metrics.px(MAIN_BAR_MARGIN);
+  private addRailBar(scene: Phaser.Scene, metrics: ScreenMetrics, options: ProgressBarOptions): ProgressBar {
+    const paper = paperRect(metrics, this.cardWidth, this.cardHeight);
+    const margin = metrics.px(RAIL_BAR_MARGIN);
     const bar = new ProgressBar(
       scene,
       metrics,
       paper.x + margin,
-      paper.y + paper.height - metrics.px(bottom) - barHeight,
-      paper.width - margin * 2,
-      barHeight,
       0,
-      options,
+      paper.width - margin * 2,
+      metrics.px(RAIL_BAR_HEIGHT),
+      0,
+      // 枠線は数pxの太さの大半を占めてしまうので描かない。
+      { ...options, borderless: true },
     );
     this.add(bar);
     return bar;
+  }
+
+  /**
+   * 枠を引く。**絵の上に乗る**ので、窓からはみ出した絵はここで隠れる（ScreenLayout.md カードの枠 節）。
+   *
+   * 桟の高さと色が差し替えで変わるため、1枚絵にはできず毎回引き直す。意匠が入る段になったら
+   * 9patch（nineSlice.ts）へ移す。
+   */
+  private drawFrame(colors: CardFrameColors, rail: RailMetrics): void {
+    const metrics = this.metrics;
+    const paper = paperRect(metrics, this.cardWidth, this.cardHeight);
+    const inner = windowRect(metrics, this.cardWidth, this.cardHeight, rail.height);
+    const side = metrics.px(FRAME_SIDE);
+    const head = metrics.px(FRAME_HEAD);
+    const radius = metrics.px(WINDOW_RADIUS);
+    const line = Math.max(1, metrics.px(BORDER_WIDTH));
+
+    const frame = this.frame;
+    frame.clear();
+
+    // 桟は紙の輪郭を太い線でなぞって描く。塗りで抜くのと違い、角の丸みが紙とそのまま揃う。
+    frame.lineStyle(side, colors.face, 1);
+    frame.strokeRoundedRect(
+      paper.x + side / 2,
+      paper.y + side / 2,
+      paper.width - side,
+      paper.height - side,
+      metrics.px(FRAME_RADIUS) - side / 2,
+    );
+    // 下の桟のうち、なぞった線からはみ出す分。角の丸みは下端から10uまでなので、ここは矩形でよい。
+    if (rail.height > side) {
+      frame.fillStyle(colors.face, 1);
+      frame.fillRect(paper.x, paper.y + paper.height - rail.height, paper.width, rail.height - side);
+    }
+
+    // タイトルの板。窓の上端に乗せ、枠より暗くする（cardFrameColors）。
+    frame.fillStyle(colors.plate, 1);
+    frame.fillRoundedRect(inner.x, inner.y, inner.width, head, { tl: radius, tr: radius, bl: 0, br: 0 });
+
+    frame.lineStyle(line, colors.line, 1);
+    frame.lineBetween(inner.x, inner.y + head, inner.x + inner.width, inner.y + head);
+    frame.strokeRoundedRect(
+      inner.x + line / 2,
+      inner.y + line / 2,
+      inner.width - line,
+      inner.height - line,
+      radius,
+    );
+    const outline = paperStroke(metrics, this.cardWidth, this.cardHeight, line);
+    frame.strokeRoundedRect(
+      outline.rect.x,
+      outline.rect.y,
+      outline.rect.width,
+      outline.rect.height,
+      outline.radius,
+    );
+
+    if (rail.arrowY !== undefined) this.drawRoadArrow(colors, rail.arrowY);
+  }
+
+  /**
+   * 道であることを示す矢印。桟の中央へ置く（左下へ寄せると、道であることが記号として読めない）。
+   * **紙の色の塗りに枠の色の縁**にして、桟の色が種別で変わっても形が残るようにする。
+   */
+  private drawRoadArrow(colors: CardFrameColors, centerY: number): void {
+    const metrics = this.metrics;
+    const width = metrics.px(ROAD_ARROW_WIDTH);
+    const height = metrics.px(ROAD_ARROW_HEIGHT);
+    const left = (this.cardWidth - width) / 2;
+    const top = centerY - height / 2;
+
+    // 軸の高さは矢印の高さの半分。残りを矢尻の張り出しに使う。
+    const shaftTop = top + height * 0.25;
+    const shaftBottom = top + height * 0.75;
+    const headLeft = left + width * 0.5625;
+    const points = [
+      [left, shaftTop],
+      [headLeft, shaftTop],
+      [headLeft, top],
+      [left + width, centerY],
+      [headLeft, top + height],
+      [headLeft, shaftBottom],
+      [left, shaftBottom],
+    ].map(([x, y]) => new Phaser.Math.Vector2(x, y));
+
+    this.frame.fillStyle(COLOR.cardFace, 1);
+    this.frame.lineStyle(Math.max(1, metrics.px(ROAD_ARROW_STROKE)), colors.line, 1);
+    this.frame.fillPoints(points, true);
+    this.frame.strokePoints(points, true);
   }
 
   /**
@@ -707,6 +706,13 @@ export class Card extends Phaser.GameObjects.Container {
     const count = this._content.count ?? 1;
     this.stackBadge.setVisible(count >= 2);
     this.stackCount.setText(String(count));
+  }
+
+  /** 状態の印。窓の左下へ置く（桟の高さで窓の下端が動くので、差し替えのたびに決め直す）。 */
+  private showMark(content: CardContent, rail: RailMetrics): void {
+    const inner = windowRect(this.metrics, this.cardWidth, this.cardHeight, rail.height);
+    const margin = this.metrics.px(MARK_MARGIN);
+    this.mark.setPosition(inner.x + margin, inner.y + inner.height - margin).setText(content.mark ?? '');
   }
 
   /** Containerのdisplay originによるヒット領域のずれを避ける理由はButtonと同じ（サイズを設定しない）。 */
@@ -863,7 +869,7 @@ export class EmptyCard extends Phaser.GameObjects.Container {
     const height = metrics.px(SIZE.cardHeight);
 
     if (accepts === undefined) {
-      this.add(addFrame(scene, metrics, width, height, true));
+      this.add(addPaper(scene, metrics, width, height, true));
     } else {
       this.add(new Card(scene, metrics, 0, 0, cardFace(accepts)).setAlpha(EMPTY_FRAME_ALPHA));
       this.add(emptyOutline(scene, metrics, width, height));
@@ -976,12 +982,12 @@ function emptyOutline(
 }
 
 /**
- * カードの枠。画像（CARD_FRAME_TEXTURE）があればそれを矩形いっぱいに貼り、無ければ図形で描く。
- * 画像を差し替えたり用意しなかったりしても画面が成り立つよう、図形の描画は残してある。
+ * カードの紙（枠と絵の下に敷く地）。画像（CARD_FRAME_TEXTURE）があればそれを矩形いっぱいに貼り、
+ * 無ければ図形で描く。画像を差し替えたり用意しなかったりしても画面が成り立つよう、図形の描画は残してある。
  *
  * emptyは中身の無い枠（EmptyCard）。画像なら薄く敷き、図形なら破線で描く。
  */
-function addFrame(
+function addPaper(
   scene: Phaser.Scene,
   metrics: ScreenMetrics,
   width: number,
@@ -1011,25 +1017,6 @@ function addFrame(
 }
 
 /**
- * 紙の縁をなぞる線。**絵より後に足して上へ重ねる**（BORDER_COLOR 参照）。
- *
- * 空き枠には引かない。あちらは破線（emptyOutline）が輪郭を受け持つ。
- */
-function addBorder(
-  scene: Phaser.Scene,
-  metrics: ScreenMetrics,
-  width: number,
-  height: number,
-): Phaser.GameObjects.Graphics {
-  const line = metrics.px(BORDER_WIDTH);
-  const { rect, radius } = paperStroke(metrics, width, height, line);
-  const border = scene.add.graphics();
-  border.lineStyle(line, BORDER_COLOR, 1);
-  border.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
-  return border;
-}
-
-/**
  * object_defの絵をカードの中央へ置く。
  *
  * 絵の大きさは画像そのものの寸法で決まる（CARD_ART_WIDTH参照）。小石は小さい画像、地形はカードと
@@ -1048,7 +1035,7 @@ function placeArt(
 
 /**
  * 名前の文字。中身は空で作り、何を出すかはshowNameが決める（殻だけを組み立てる、constructor参照）。
- * 折り返しの幅だけはカードの寸法で決まるのでここで与える。
+ * タイトルの板は高さも位置も動かないので、置き場所はここで決め切る。
  */
 function createNameText(
   scene: Phaser.Scene,
@@ -1057,62 +1044,13 @@ function createNameText(
   height: number,
 ): Phaser.GameObjects.Text {
   const paper = paperRect(metrics, width, height);
-  const margin = metrics.px(NAME_MARGIN);
-  const stroke = Math.max(1, metrics.px(NAME_STROKE));
-  const text = scene.add
-    .text(paper.x + margin, 0, '', {
+  return scene.add
+    .text(width / 2, paper.y + metrics.px(FRAME_SIDE) + metrics.px(FRAME_HEAD) / 2, '', {
       fontFamily: FONT_FAMILY,
-      fontSize: `${metrics.fontPx(30)}px`,
+      fontSize: `${metrics.fontPx(NAME_SIZE)}px`,
       fontStyle: 'bold',
-      color: cssColor(COLOR.text),
-      maxLines: NAME_MAX_LINES,
     })
-    .setLineSpacing(metrics.px(2))
-    .setStroke(cssColor(COLOR.cardFace), stroke);
-  // 縁取りは文字の外側へ太さの半分だけ広がる。折り返し幅から引いて、右端の余白を左端と揃える。
-  text.setWordWrapCallback(wrapByCharacter(paper.width - margin * 2 - stroke));
-  return text;
-}
-
-/**
- * 道のカードの左下に出す矢印。**白い塗りに黒い縁**で、どんな絵の上でも輪郭が残るようにする。
- *
- * 線ではなく塗り潰した矢羽根にするのは、細い線だとカードを縮めて並べたときに何の形か読み取れなく
- * なるため。
- */
-function createRoadArrow(
-  scene: Phaser.Scene,
-  metrics: ScreenMetrics,
-  width: number,
-  height: number,
-): Phaser.GameObjects.Graphics {
-  const paper = paperRect(metrics, width, height);
-  const margin = metrics.px(ROAD_ARROW_MARGIN);
-  const w = metrics.px(ROAD_ARROW_WIDTH);
-  const h = metrics.px(ROAD_ARROW_HEIGHT);
-  const left = paper.x + margin;
-  const top = paper.y + paper.height - margin - h;
-
-  // 軸の高さは矢印の高さの42%。残りを矢尻の張り出しに使う。
-  const shaftTop = top + h * 0.29;
-  const shaftBottom = top + h * 0.71;
-  const headLeft = left + w * 0.55;
-  const points = [
-    [left, shaftTop],
-    [headLeft, shaftTop],
-    [headLeft, top],
-    [left + w, top + h / 2],
-    [headLeft, top + h],
-    [headLeft, shaftBottom],
-    [left, shaftBottom],
-  ].map(([x, y]) => new Phaser.Math.Vector2(x, y));
-
-  const arrow = scene.add.graphics();
-  arrow.fillStyle(COLOR.cardFace, 1);
-  arrow.lineStyle(Math.max(1, metrics.px(ROAD_ARROW_STROKE)), COLOR.cardBorder, 1);
-  arrow.fillPoints(points, true);
-  arrow.strokePoints(points, true);
-  return arrow.setVisible(false);
+    .setOrigin(0.5);
 }
 
 /**
@@ -1155,6 +1093,62 @@ function createIconText(
 function paperRect(metrics: ScreenMetrics, width: number, height: number): Rect {
   const inset = metrics.px(FRAME_INSET);
   return { x: inset, y: inset, width: width - inset * 2, height: height - inset * 2 };
+}
+
+/** 枠の内側の、絵が見える窓。上端にはタイトルの板が乗り、下端は桟の高さで動く。 */
+function windowRect(metrics: ScreenMetrics, width: number, height: number, railHeight: number): Rect {
+  const paper = paperRect(metrics, width, height);
+  const side = metrics.px(FRAME_SIDE);
+  return {
+    x: paper.x + side,
+    y: paper.y + side,
+    width: paper.width - side * 2,
+    height: paper.height - side - railHeight,
+  };
+}
+
+/** 桟へ積む状態バー1本と、そのバーが今映す値。 */
+interface RailBar {
+  readonly bar: ProgressBar;
+  readonly ratio: number;
+}
+
+/** 下の桟の寸法（railMetrics）。 */
+interface RailMetrics {
+  /** 桟の高さ（px）。 */
+  readonly height: number;
+  /** 道の矢印の中心のy（px）。道でないカードはundefined。 */
+  readonly arrowY: number | undefined;
+  /** 状態バー1本目の上端（px）。2本目からはbarPitchずつ下がる。 */
+  readonly barTop: number;
+  readonly barPitch: number;
+}
+
+/**
+ * 下の桟の寸法。**中身——道の矢印と、値を持つ状態バー——を上から積み、その高さで桟の厚みが決まる**
+ * （ScreenLayout.md カードの枠 節）。何も積まないカードでは左右と同じ細さにして、間延びさせない。
+ */
+function railMetrics(
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+  barCount: number,
+  road: boolean,
+): RailMetrics {
+  const paper = paperRect(metrics, width, height);
+  const barHeight = metrics.px(RAIL_BAR_HEIGHT);
+  const gap = metrics.px(RAIL_BAR_GAP);
+  const arrowHeight = metrics.px(ROAD_ARROW_HEIGHT);
+  const rows = (road ? 1 : 0) + barCount;
+  const stack = (road ? arrowHeight : 0) + barCount * barHeight + Math.max(0, rows - 1) * gap;
+  const railHeight = rows === 0 ? metrics.px(FRAME_SIDE) : stack + metrics.px(RAIL_PAD) * 2;
+  const top = paper.y + paper.height - railHeight + (railHeight - stack) / 2;
+  return {
+    height: railHeight,
+    arrowY: road ? top + arrowHeight / 2 : undefined,
+    barTop: top + (road ? arrowHeight + gap : 0),
+    barPitch: barHeight + gap,
+  };
 }
 
 /**

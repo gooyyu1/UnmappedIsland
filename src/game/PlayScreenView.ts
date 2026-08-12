@@ -7,6 +7,7 @@ import type { WorldObject } from '../domain/runtime/WorldObject';
 import { putIntoSlot } from '../domain/runtime/slotEntry';
 import type { Localization } from '../locale/Localization';
 import type { CardContent, CardFill, CardSeverity } from './ui/Card';
+import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
 import type { StatusContent } from './ui/StatusBar';
 
@@ -289,11 +290,19 @@ export function withFrozenCards(view: PlayScreenView, place: CardPlace | undefin
   return { ...view, cardsIn: (asked) => (samePlace(asked, place) ? frozen : view.cardsIn(asked)) };
 }
 
-/** 絵がまだ無いオブジェクトの、型ごとの仮のアイコン（iconOf参照）。 */
+/** 絵がまだ無いオブジェクトの、種別ごとの仮のアイコン（iconOf参照）。 */
 const LOCATION_ICON = '🗺️';
-const ITEM_ICON = '📦';
-const FIXTURE_ICON = '🌳';
-const INJURY_ICON = '🩹';
+const KIND_ICONS: Readonly<Record<ObjectKind, string>> = {
+  item: '📦',
+  fixture: '🌳',
+  injury: '🩹',
+};
+
+/**
+ * 物そのものの型が決める種別（kindOf）。カードの枠の色にも仮のアイコンにもこれを使う。
+ * 道とキャラクタはカードの見せ方であって物の型ではないので、ここには入らない。
+ */
+type ObjectKind = Extract<CardKind, 'item' | 'fixture' | 'injury'>;
 
 /** 命名処理が名前を付けていない土地（テスト用の最小Codex等）の代替表示。 */
 const UNNAMED_LOCATION = '名もなき土地';
@@ -508,13 +517,15 @@ export function fromGameSession(
    * itemとfixtureを兼ねる編み籠は、地面へ据えてもアイテムのまま持ち歩けるので、レーンを移った
    * だけで別の物に見えては困る。持ち歩けるかどうかを先に見るのはそのため。
    */
-  const iconOf = (def: ObjectDef): string => {
+  const kindOf = (def: ObjectDef): ObjectKind => {
     const tags = def.tags;
-    if (injuryTagId !== undefined && tags.includes(injuryTagId)) return INJURY_ICON;
-    if (itemTagId !== undefined && tags.includes(itemTagId)) return ITEM_ICON;
-    if (fixtureTagId !== undefined && tags.includes(fixtureTagId)) return FIXTURE_ICON;
-    return ITEM_ICON;
+    if (injuryTagId !== undefined && tags.includes(injuryTagId)) return 'injury';
+    if (itemTagId !== undefined && tags.includes(itemTagId)) return 'item';
+    if (fixtureTagId !== undefined && tags.includes(fixtureTagId)) return 'fixture';
+    return 'item';
   };
+
+  const iconOf = (def: ObjectDef): string => KIND_ICONS[kindOf(def)];
 
   /**
    * カードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の覆いが
@@ -533,6 +544,7 @@ export function fromGameSession(
       icon: iconOf(def),
       name: typeNameOf(def),
       art: artOf(def),
+      kind: kindOf(def),
       inProgress: codex.productOf(def) !== undefined,
     };
   };
@@ -540,6 +552,7 @@ export function fromGameSession(
   const stackOf = (instances: readonly WorldObject[], place: CardPlace): ObjectCardStack => ({
     icon: iconOf(instances[0].def),
     name: nameOf(instances[0]),
+    kind: kindOf(instances[0].def),
     // 作りかけかどうかは物の型が決める。設置物として地面に据わっていても手に持っていても、
     // 同じ「まだ物になっていない」カードとして出す。
     inProgress: codex.productOf(instances[0].def) !== undefined,
@@ -578,7 +591,7 @@ export function fromGameSession(
    */
   const destinationOf = (
     fixture: WorldObject,
-  ): { icon: string; name: string; art: string | undefined; road: true } | undefined => {
+  ): { icon: string; name: string; art: string | undefined; kind: CardKind; road: true } | undefined => {
     if (pathTagId === undefined || !fixture.def.tags.includes(pathTagId)) return undefined;
 
     const path = new Path(fixture, codex.propertyNames);
@@ -586,7 +599,8 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: locationNameOf(path.destinationInstanceId),
       art: path.destination?.def.name,
-      // 名前も絵も行き先のものなので、道であることはカード側の矢印だけが示す。
+      // 名前も絵も行き先のものなので、道であることは枠の色と桟の矢印だけが示す。
+      kind: 'road',
       road: true,
     };
   };
@@ -622,7 +636,7 @@ export function fromGameSession(
       }
     }
 
-    const lands = [...known]
+    const lands: MapLandView[] = [...known]
       .sort((a, b) => a - b)
       .map((site) => {
         const instanceId = game.map.siteInstanceIds[site];
@@ -632,6 +646,7 @@ export function fromGameSession(
             icon: LOCATION_ICON,
             name: locationNameOf(instanceId),
             art: root.findDescendantByInstanceId(instanceId)?.def.name,
+            kind: 'fixture',
           },
           current: site === currentSite,
         };
@@ -806,6 +821,7 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: locationNameOf(location.instance.instanceId),
       art: location.instance.def.name,
+      kind: 'fixture',
     },
     locationArt: location.instance.def.name,
     // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
