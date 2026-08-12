@@ -12,10 +12,14 @@ import { layoutLayered } from './networkLayout';
  * ハイライトする。ページ全体の組み立てはpages.tsと同じく文字列を返すだけで、DOMには触らない。
  */
 
-/** ノードの寸法。オブジェクトは絵と名前、工程・タグは1行のラベルが収まる大きさ。 */
-const OBJECT_NODE = { width: 118, height: 92 };
-const STEP_NODE = { width: 112, height: 30 };
-const TAG_NODE = { width: 112, height: 26 };
+/**
+ * ノードの寸法。オブジェクトは絵と名前、タグは1行のラベルが収まる大きさ。
+ * 工程はラベルを持たない小さな丸——名前を並べても情報価値の割に横幅を食う。読み手に要るのは
+ * 「ここが合流・分岐の結節点」という印で、名前はツールチップ（title）で足りる。
+ */
+const OBJECT_NODE = { width: 104, height: 92 };
+const STEP_NODE = { width: 16, height: 16 };
+const TAG_NODE = { width: 84, height: 24 };
 const ART_SIZE = 56;
 const FONT_SIZE = 11;
 
@@ -43,9 +47,15 @@ export function renderNetworkPage(view: CodexView, highlightObjectName?: string)
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
     `<h1>クラフトネットワーク</h1>` +
     `<p class="muted">何から何が作れるか（探索・combination・レシピ）の全体図。素材ほど左に並ぶ。` +
-    `結節点は操作（正体はカードの型のページにある）、破線は消費されない入力（道具）や` +
-    `タグへの所属、点線の戻り線は循環。</p>` +
+    `小さな丸は操作の結節点（名前は重ねると出て、押すと宣言元の型のページへ）、破線は消費されない` +
+    `入力（道具）やタグへの所属、点線の戻り線は循環。</p>` +
     highlightNote +
+    `<p class="network-toolbar">` +
+    `<button type="button" data-network-zoom="out" aria-label="縮小">−</button>` +
+    `<span class="network-zoom-level" data-network-zoom-level>100%</span>` +
+    `<button type="button" data-network-zoom="in" aria-label="拡大">＋</button>` +
+    `<button type="button" data-network-zoom="reset">リセット</button>` +
+    `</p>` +
     `<div class="network-scroll">${svg}</div>`
   );
 }
@@ -236,6 +246,7 @@ function objectNodeHtml(
   );
 }
 
+/** 工程はラベル無しの小さな丸。名前はツールチップに置き、クリックで宣言元の型のページへ。 */
 function stepNodeHtml(
   view: CodexView,
   node: NetworkNode & { kind: 'step' },
@@ -246,14 +257,12 @@ function stepNodeHtml(
     node.stepKind === 'recipe'
       ? node.stepName
       : view.interactionLabel(node.ownerName, node.stepName, node.stepKind === 'combination');
-  return pillNodeHtml(
-    `#/object/${encodeURIComponent(node.ownerName)}`,
-    label,
-    `${node.ownerName}.${node.stepName}`,
-    STEP_NODE,
-    'net-step',
-    position,
-    state,
+  return (
+    `<a class="net-node net-step${state}" href="#/object/${encodeURIComponent(node.ownerName)}">` +
+    `<circle class="net-step-dot" cx="${position.x + STEP_NODE.width / 2}" ` +
+    `cy="${position.y + STEP_NODE.height / 2}" r="${STEP_NODE.width / 2}"/>` +
+    `<title>${escapeHtml(`${label}（${node.ownerName}.${node.stepName}）`)}</title>` +
+    `</a>`
   );
 }
 

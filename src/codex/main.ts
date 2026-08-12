@@ -56,9 +56,43 @@ function render(): void {
   app.innerHTML = renderRoute(view, parts);
   updateNamingToggle();
   wireObjectFilter();
+  wireNetworkZoom();
   window.scrollTo(0, 0);
   scrollToTagSection(parts);
   scrollToNetworkNode(parts);
+}
+
+/**
+ * クラフトネットワークの拡大・縮小。倍率はSVGの表示寸法（style）だけで変え、図の組み立ては
+ * 触らない。ページを離れて戻っても倍率が保たれるよう、モジュール変数に持つ。
+ */
+let networkZoom = 1;
+
+function wireNetworkZoom(): void {
+  const svg = document.querySelector<SVGSVGElement>('svg.network');
+  if (svg === null) return;
+
+  const naturalWidth = Number(svg.getAttribute('width'));
+  const naturalHeight = Number(svg.getAttribute('height'));
+  const apply = (): void => {
+    svg.style.width = `${naturalWidth * networkZoom}px`;
+    svg.style.height = `${naturalHeight * networkZoom}px`;
+    for (const level of document.querySelectorAll<HTMLElement>('[data-network-zoom-level]'))
+      level.textContent = `${Math.round(networkZoom * 100)}%`;
+  };
+  apply();
+
+  for (const button of document.querySelectorAll<HTMLElement>('[data-network-zoom]'))
+    button.addEventListener('click', () => {
+      const direction = button.dataset.networkZoom;
+      networkZoom =
+        direction === 'in'
+          ? Math.min(2, networkZoom * 1.25)
+          : direction === 'out'
+            ? Math.max(0.25, networkZoom / 1.25)
+            : 1;
+      apply();
+    });
 }
 
 /** クラフトネットワークのハイライト対象（#/network/<識別子>）を図の中央へ出す。 */
