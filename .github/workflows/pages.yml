@@ -101,6 +101,9 @@ jobs:
         run: |
           PANDOC_OPTS=(
             --standalone
+            # 見出しのアンカーIDをGitHub互換にする（tests/docs/docReferences.test.tsが検査する
+            # アンカーと、公開サイトのアンカーを一致させる）。
+            --from=markdown+gfm_auto_identifiers
             --metadata charset=utf-8
             --css=https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css
             --include-in-header=/tmp/docs-header.html

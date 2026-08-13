@@ -1,0 +1,218 @@
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { dirname, join, resolve, sep } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+/**
+ * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
+ *
+ * - Markdownリンク（ファイル・アンカー）が実在すること
+ * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
+ * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
+ *
+ * アンカーはGitHubのslug生成（gfm_auto_identifiers。公開サイトのpandocも同方式に揃えてある、
+ * .github/workflows/pages.yml）で照合する。
+ */
+
+const ROOT = resolve(__dirname, '../..');
+
+function listFiles(dir: string, exts: readonly string[]): string[] {
+  const result: string[] = [];
+  for (const entry of readdirSync(join(ROOT, dir))) {
+    const rel = join(dir, entry);
+    if (entry === 'node_modules' || entry.startsWith('.')) continue;
+    if (statSync(join(ROOT, rel)).isDirectory()) {
+      result.push(...listFiles(rel, exts));
+    } else if (exts.some((ext) => entry.endsWith(ext))) {
+      result.push(rel);
+    }
+  }
+  return result;
+}
+
+const DOC_FILES = listFiles('docs', ['.md']);
+
+/** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
+const REF_FILES = [
+  ...DOC_FILES,
+  'CLAUDE.md',
+  ...listFiles('src', ['.ts', '.yaml']),
+  ...listFiles('tests', ['.ts']),
+  ...listFiles('public', ['.yaml']),
+  ...listFiles('tools', ['.md', '.json']),
+].filter((rel) => !rel.startsWith(join('tests', 'docs'))); // 本テスト自身の例・正規表現は対象外
+
+/** インラインコード・コードフェンスを除いた本文（例示のリンクや参照を検査対象から外す）。 */
+function withoutCode(markdown: string): string {
+  return markdown
+    .split('\n')
+    .reduce<{ lines: string[]; inFence: boolean }>(
+      (state, line) => {
+        if (/^\s*```/.test(line)) return { lines: state.lines, inFence: !state.inFence };
+        if (!state.inFence) state.lines.push(line.replace(/`[^`]*`/g, ''));
+        return state;
+      },
+      { lines: [], inFence: false },
+    )
+    .lines.join('\n');
+}
+
+function read(rel: string): string {
+  return readFileSync(join(ROOT, rel), 'utf-8');
+}
+
+/** 見出し行（コードフェンス内は除外）。 */
+function headingsOf(markdown: string): string[] {
+  const headings: string[] = [];
+  let inFence = false;
+  for (const line of markdown.split('\n')) {
+    if (/^\s*```/.test(line)) inFence = !inFence;
+    else if (!inFence && /^#{1,6}\s/.test(line)) headings.push(line.replace(/^#{1,6}\s+/, '').trim());
+  }
+  return headings;
+}
+
+/** GitHubのアンカーID（gfm_auto_identifiers）。重複見出しの連番もGitHubと同じ。 */
+function slugsOf(headings: readonly string[]): Set<string> {
+  const seen = new Map<string, number>();
+  const slugs = new Set<string>();
+  for (const heading of headings) {
+    const text = heading
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // リンクは表示名だけが残る
+      .replace(/[`*]/g, '');
+    const base = text
+      .toLowerCase()
+      .replace(/[^\p{L}\p{M}\p{N}\p{Pc}\s-]/gu, '')
+      .replace(/ /g, '-');
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    slugs.add(count === 0 ? base : `${base}-${count}`);
+  }
+  return slugs;
+}
+
+const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
+const headingsByPath = new Map([...docByPath].map(([rel, text]) => [rel, headingsOf(text)]));
+
+/** ファイル名（basename）→ docs内の候補パス。 */
+const docsByBasename = new Map<string, string[]>();
+for (const rel of DOC_FILES) {
+  const base = rel.split(sep).pop() as string;
+  docsByBasename.set(base, [...(docsByBasename.get(base) ?? []), rel]);
+}
+
+/** その文書が番号 `num` の節を持つか。 */
+function hasNumberedSection(docRel: string, num: string): boolean {
+  return (headingsByPath.get(docRel) ?? []).some((h) => {
+    const match = /^(\d+(?:\.\d+)*)[.\s]/.exec(h);
+    return match !== null && match[1] === num;
+  });
+}
+
+/** その文書が、名前 `name`（空白除去済み）を含む見出しを持つか。 */
+function hasNamedSection(docRel: string, name: string): boolean {
+  return (headingsByPath.get(docRel) ?? []).some((h) => h.replace(/[\s「」]/g, '').includes(name));
+}
+
+describe('ドキュメントの参照', () => {
+  it('Markdownリンクの先のファイルが存在する', () => {
+    const broken: string[] = [];
+    for (const [rel, text] of docByPath) {
+      for (const match of withoutCode(text).matchAll(/\]\(([^)#\s]+)(#[^)\s]*)?\)/g)) {
+        const target = match[1];
+        if (/^[a-z]+:/.test(target)) continue; // http(s):等
+        const resolved = resolve(ROOT, dirname(rel), target);
+        if (!existsSync(resolved)) broken.push(`${rel}: ${target}`);
+      }
+    }
+    expect(broken, `リンク切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  it('Markdownリンクのアンカーが、リンク先の見出しに解決する', () => {
+    const broken: string[] = [];
+    for (const [rel, text] of docByPath) {
+      for (const match of withoutCode(text).matchAll(/\]\(([^)#\s]*)#([^)\s]+)\)/g)) {
+        const [, file, anchor] = match;
+        if (/^[a-z]+:/.test(file)) continue;
+        let targetRel = rel;
+        if (file !== '') {
+          if (!file.endsWith('.md')) continue; // HTML等のアンカーは対象外
+          targetRel = resolve(ROOT, dirname(rel), file).slice(ROOT.length + 1);
+        }
+        const headings = headingsByPath.get(targetRel);
+        if (headings === undefined || !slugsOf(headings).has(decodeURIComponent(anchor))) {
+          broken.push(`${rel}: ${file}#${anchor}`);
+        }
+      }
+    }
+    expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  it('「Foo.md N節」が実在の節番号に解決する', () => {
+    const broken: string[] = [];
+    for (const rel of REF_FILES) {
+      const text = read(rel).replace(/\n[\s*/#-]*/g, ' '); // コメントの継続行をまたぐ参照を繋ぐ
+      for (const match of text.matchAll(
+        /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?\s*(?:の)?\s*(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g,
+      )) {
+        const [, base, num, rangeEnd] = match;
+        const candidates = docsByBasename.get(base);
+        if (candidates === undefined) {
+          broken.push(`${rel}: ${base}（docsに無い）`);
+          continue;
+        }
+        for (const n of rangeEnd === undefined ? [num] : [num, rangeEnd]) {
+          if (!candidates.some((doc) => hasNumberedSection(doc, n))) {
+            broken.push(`${rel}: ${base} ${n}節`);
+          }
+        }
+      }
+    }
+    expect(broken, `節番号の参照切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  it('「Foo.md 〇〇節」（名前指し）が実在の見出しに解決する', () => {
+    const broken: string[] = [];
+    for (const rel of REF_FILES) {
+      const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
+      for (const match of text.matchAll(
+        /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「?([^\s\d「」、。：:（）()*`・—〜～-][^「」、。：:（）()*`・—〜～]{0,30}?)」?[ ]*節/g,
+      )) {
+        const [, base, rawName] = match;
+        if (/^の?\d/.test(rawName.trim())) continue; // 番号・範囲指しは前のテストが見る
+        const name = rawName.replace(/[\s「」]/g, '');
+        const candidates = docsByBasename.get(base);
+        if (candidates === undefined) {
+          broken.push(`${rel}: ${base}（docsに無い）`);
+        } else if (!candidates.some((doc) => hasNamedSection(doc, name))) {
+          broken.push(`${rel}: ${base} ${rawName}節`);
+        }
+      }
+    }
+    expect(broken, `節名の参照切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  it('【未実装: 識別子】ラベルの識別子が、実装に現れていない（剥がし忘れ検知）', () => {
+    const labels: { doc: string; ident: string }[] = [];
+    for (const [rel, text] of docByPath) {
+      for (const match of text.matchAll(/【未実装:\s*([\w.]+)\s*】/g)) {
+        labels.push({ doc: rel, ident: match[1] });
+      }
+    }
+    // コメントを除いた実装・データだけを見る（コメントはドキュメントへの言及でありうるため）。
+    const sources = [
+      ...listFiles('src', ['.ts']).map((rel) =>
+        read(rel)
+          .replace(/\/\*[\s\S]*?\*\//g, '')
+          .replace(/^\s*\/\/.*$/gm, ''),
+      ),
+      ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
+      ...listFiles('public', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
+    ].join('\n');
+    const stale = labels.filter(({ ident }) => new RegExp(`\\b${ident}\\b`).test(sources));
+    expect(
+      stale,
+      `実装済みの疑いがある【未実装】ラベル（ドキュメント側の剥がし忘れ？）:\n` +
+        stale.map(({ doc, ident }) => `${doc}: ${ident}`).join('\n'),
+    ).toEqual([]);
+  });
+});
