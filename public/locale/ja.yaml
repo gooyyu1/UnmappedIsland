@@ -64,6 +64,9 @@ object_texts:
       severity:
         display_name: 傷の重さ
         description: 残っている傷。時間とともに引いていき、尽きれば治る。
+      vulnerability:
+        display_name: 無防備さ
+        description: 狙って急所を打てる度合い。気を失っている相手ほど大きい。
       wariness:
         display_name: 警戒
         description: この動物がどれだけ気を立てているか。傷を負わされれば上がり、放っておけば下がる。
@@ -207,6 +210,9 @@ object_texts:
   monkey:
     display_name: サル
     description: 群れで暮らす小柄なサル。目を離すと、足元に置いたものを持っていく。
+  monkey_carcass:
+    display_name: サルの死体
+    description: 仕留めたサル。まだ解体していないので、重いまま運ぶしかない。
 
   # 治療具（treatments.yaml）。
   bandage:
@@ -469,4 +475,5 @@ stage_texts:
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
   hit: 手応え
+  killed: 仕留めた
   missed: 空振り

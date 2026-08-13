@@ -12,10 +12,16 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * docs/world/Animals.md）。武器で殴る→怪我が刺さる→警戒が上がる→時間で引く、の一巡を通す。
  */
 describe('animals.yamlの動物', () => {
-  /** strikeで当たる側を引く重みの位置（当たり70 : 外れ30）。 */
-  const HITS = 0.5;
-  /** 同じくの外れる側。 */
-  const MISSES = 0.95;
+  // strikeの候補は宣言順に「当たり70・外れ30・仕留め（無防備さ）」。無防備さは起きていれば5、
+  // 気を失っていれば205なので、同じ引きでも状態によって当たる候補が変わる。
+  /** 起きていても気を失っていても当たる引き。 */
+  const HITS = 0.2;
+  /** 起きている相手を外す引き。 */
+  const MISSES = 0.8;
+  /** 気を失っている相手なら仕留め、起きていれば当たるだけの引き。 */
+  const KILLS_IF_HELPLESS = 0.5;
+  /** 起きている相手でも仕留めてしまう、稀な引き。 */
+  const LUCKY_KILL = 0.99;
 
   let codex: WorldCodex;
   let session: WorldSession;
@@ -60,6 +66,11 @@ describe('animals.yamlの動物', () => {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
     expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
     return spawned;
+  }
+
+  /** 今この土地のアイテムスロットに並んでいる物の識別子。 */
+  function itemsInJungle(): string[] {
+    return jungle.tryGetSlot(codex.slotNames.getId('items'))!.contents.map((object) => object.def.name);
   }
 
   /** その動物に刺さっている怪我の識別子。 */
@@ -196,6 +207,31 @@ describe('animals.yamlの動物', () => {
       value: 100 - 45,
       alert: 'caution',
     });
+  });
+
+  it('気を失っている相手は仕留められる', () => {
+    // 仕留めは怪我にしない（残らないものだから、InjurySystem.md 4節）。pickの候補が直接、
+    // 死体へ置き換える（HuntingSystem.md 1.4節）。
+    open(KILLS_IF_HELPLESS);
+    strikeWithSharpStone();
+
+    expect(itemsInJungle(), '1発目は当たるだけ').toEqual(['monkey']);
+    expect(monkey.isInStage(consciousnessId, 'unconscious'), '気を失っている').toBe(true);
+
+    const killed = signalsOf(strikeWithSharpStone);
+
+    expect(itemsInJungle(), 'その枠のまま死体へ置き換わる').toEqual(['monkey_carcass']);
+    expect(killed).toEqual(['monkey: killed']);
+    expect(monkey.parent, '仕留めた個体は世界から出る').toBeUndefined();
+  });
+
+  it('起きている相手でも、まれに仕留まる', () => {
+    // 無防備さは起きていても0にしない——暴れる相手でも急所へ入ることはある。
+    open(LUCKY_KILL);
+
+    strikeWithSharpStone();
+
+    expect(itemsInJungle()).toEqual(['monkey_carcass']);
   });
 
   it('殴られ続ければ危険域まで気が立つ', () => {
