@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/rocky_field_fixtures_card.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味（背景を抜かない・タイリングを使わない・LoRAの当て方）は",
+    "sandy_beach_fixtures_card.json を参照。",
+    "",
+    "seedを選んでいるのは、上端に遠景の谷や明るい空が入る絵が混ざるため。50103は岩が上端まで続く。"
+  ],
+  "output": "src/assets/backgrounds/rocky_field_fixtures_card.png",
+  "prompts": "card_backgrounds.json",
+  "prompt": "rocky_field_fixtures_card",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 50103,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/monkey_injuries_card.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "怪我のカードの地に敷く、サルの毛皮（docs/ui/CardView.md 7 節）。動物も人と同じ構造の怪我を負う",
+    "（docs/engine/HuntingSystem.md 3 節）ので、地が変わるだけで傷の絵はそのまま使える。",
+    "",
+    "毛色は monkey.json のedit と揃える。同じ個体の別の場所を近くで見ている絵なので、",
+    "ずれると別の動物の毛に見える。他は medic_injuries_card.json と同じ扱い。"
+  ],
+  "output": "src/assets/backgrounds/monkey_injuries_card.png",
+  "prompts": "card_backgrounds.json",
+  "prompt": "monkey_injuries_card",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 60002,
+  "width": 832,
+  "height": 1280,
+  "edit": {
+    "_comment": [
+      "**うねりを消して平らにする。** 生成は「毛皮のアップ」を毛皮のコートとして描くので、房が",
+      "波打った絵になる。房の1つ1つが上に載る傷と同じくらいの大きさに見え、縮尺が合わない",
+      "（毛皮の絨毯の上に傷を置いたように見える）。",
+      "",
+      "**布にしない。** 平らにとだけ頼むとスエードのような無地の面になり、色も抜ける。毛が1本ずつ",
+      "見えること・濃淡が少し残ること・元の茶色のままであることを、そのつど言う。"
+    ],
+    "prompt": "Repaint this animal fur so that it becomes a flat even coat of short fine hair, like the fur on an animal's back. Remove all the large waves, ridges, rolls and folds completely, but keep it clearly fur and not fabric: individual soft hairs are visible everywhere, lying flat in the same direction, with gentle natural variation in tone so that some patches are a little darker and some a little lighter. Keep exactly the same warm brown fur colours as the original picture, the same warmth and the same soft even lighting. No swirls, no partings, no clumps. Matte fur, no shine, no highlights. No animal, no face, no outline, no background, no text.",
+    "_seedNote": "seed 9 は上端に大きな稜が、4 は渦が残る。1 だけが一面に均された。",
+    "seed": 1
+  },
+  "cardArt": {
+    "_comment": "oilifyは掛けない。描き直し（edit）が既に絵画的にしており、重ねると細い毛が斑に潰れる。",
+    "size": "card",
+    "mode": "none"
+  }
+}

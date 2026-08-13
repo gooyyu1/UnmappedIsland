@@ -10,6 +10,7 @@ import { currentStep, finishedStepRatio, stepSupplyRatio } from '../domain/runti
 import { MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
 import { recipeOf } from './recipeList';
+import type { SlotRef } from './ui/backgroundArt';
 import type { CardContent, CardFill, CardSeverity } from './ui/Card';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
@@ -220,8 +221,13 @@ export interface PlayScreenView {
    */
   readonly weatherLabel: string | undefined;
   readonly currentLocation: CardContent;
-  /** 現在地のobject_defの識別子（表示名ではない）。土地ごとに変わるレーンの背景を選ぶ（backgroundArt参照）。 */
+  /** 現在地のobject_defの識別子（表示名ではない）。土地の絵の遅延ロードの単位（locationArt参照）。 */
   readonly locationArt: string;
+  /**
+   * そのレーンが映しているスロット。レーンの全面に敷く絵を引くのに使う（backgroundArt参照）——
+   * どのスロットにどの絵を敷くかは、画面側ではなく絵のファイル名が決める。
+   */
+  readonly laneSlot: (place: CardPlace) => SlotRef | undefined;
   /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
   readonly explorationRatio: number;
   /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
@@ -579,6 +585,19 @@ export function fromGameSession(
   const artOf = (def: ObjectDef): string => (codex.productOf(def) ?? def).name;
 
   /**
+   * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。
+   *
+   * **地はスロットだけで決まる。** 設置物なら土地の`fixtures`、怪我なら負った本人の`injuries`で、
+   * どのスロットに何を敷くかは絵のファイル名が言う。ここに種別ごとの分岐は要らない。
+   */
+  const slotOfObject = (object: WorldObject): SlotRef | undefined => {
+    const parent = object.parent;
+    if (parent === undefined) return undefined;
+    const slot = parent.getSlotByLocalId(object.parentSlotLocalId).def.name;
+    return { owner: parent.def.name, slot };
+  };
+
+  /**
    * 型そのものを表すカード。インスタンスが1つも無くても作れるので、まだ在るとは限らない物
    * （枠が受け入れる素材）を見せるのに使う。個体ごとに違い得る値は持たない。
    */
@@ -603,6 +622,7 @@ export function fromGameSession(
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: artOf(instances[0].def),
+    background: slotOfObject(instances[0]),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
     durability: durabilityOf(instances[0]),
@@ -863,6 +883,12 @@ export function fromGameSession(
       kind: 'fixture',
     },
     locationArt: location.instance.def.name,
+    laneSlot: (place) => {
+      const found = slotOf(place);
+      if (found === undefined) return undefined;
+      const slot = found.owner.def.getSlotDef(found.slotId);
+      return slot === undefined ? undefined : { owner: found.owner.def.name, slot: slot.name };
+    },
     // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
     explorationRatio:
       location.explorationProgressMax === 0
@@ -870,11 +896,8 @@ export function fromGameSession(
         : location.explorationProgress / location.explorationProgressMax,
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
-    // このレーンに並ぶカードだけが、その土地の景色を地に敷く（backgroundArt参照）。オブジェクトの
-    // 種類ではなくここに並ぶかどうかで決まる——背景が表すのは「今その土地に在るもの」だから。
     fixtures: location.fixtureStacks.map((stack) => ({
       ...cardOfStack(stack, 'fixtures'),
-      background: location.instance.def.name,
       // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
     })),

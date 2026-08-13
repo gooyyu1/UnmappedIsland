@@ -1,16 +1,25 @@
-"""切り出し済みの絵の一部を、陰影を残したまま別の色へ寄せる。
+"""染みを、絵に焼くか、乗算で載る層として描く。
 
 痣のような**面の色だけが変わるもの**は、生成にも編集にも任せられない。Qwen Image Edit に頼むと、
 色と一緒に形と陰影まで描き直すので、くるぶしが腫れた塊になって出てくる。乗算で色を寄せるだけなら
 元の陰影がそのまま残り、形はまったく動かない。
 
     python skin_tint.py foot.png --out foot.png --spot 238,240,60,0.55,#c98fa6
+    python skin_tint.py --layer 410x640 --out bruise.png --spot 205,300,165,0.55,#dda6ab
+    python skin_tint.py --layer 410x640 --out cut.png --slash 150,150,262,490,7,0.9,#5d2a2b
 
 --spot は「中心X,中心Y,半径,濃さ,色」で、何度でも重ねられる（薄く広い暈しの上に濃い芯を置く、
 といった塗り方ができる）。半径の外側へ向かって滑らかに消える。
 
+--slash は「始点X,始点Y,終点X,終点Y,幅,濃さ,色」の線。**両端で幅が0になる**——太さの変わらない線は
+切り傷ではなく棒に見える。切り傷は、細く暗い芯の周りに広く赤い縁を重ねて作る。
+
 色は**乗算**で載る。指定した色が白に近いほど変化は小さく、暗く濁った色ほど強く沈む。透明な画素
 （切り抜きの外）は塗らない。
+
+**--layer は、焼く相手が実行時まで決まらないときに使う**（怪我の痣は、人にも動物にも載る）。
+掛かり具合をそのまま重ねられる形——色と濃さ（アルファ）——に直して出すので、乗算で重ねれば焼いたのと
+同じ絵になる。**白い画素は作らない**。「変わらない」は透明で表す（docs/ui/CardView.md 5 節）。
 
 PIL と numpy が要る。
 """
@@ -25,6 +34,9 @@ import numpy as np
 from PIL import Image
 
 SPOT_PATTERN = re.compile(r"^([\d.]+),([\d.]+),([\d.]+),([\d.]+),#([0-9a-fA-F]{6})$")
+SLASH_PATTERN = re.compile(
+    r"^([\d.]+),([\d.]+),([\d.]+),([\d.]+),([\d.]+),([\d.]+),#([0-9a-fA-F]{6})$"
+)
 
 
 class Spot:
@@ -64,30 +76,123 @@ def apply_spot(rgb: np.ndarray, alpha: np.ndarray, target: Spot) -> None:
     rgb *= 1.0 - weight * (1.0 - tint)
 
 
+class Slash:
+    """1本の線。両端・両側とも滑らかに消える。"""
+
+    def __init__(
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        width: float,
+        strength: float,
+        rgb: tuple[int, int, int],
+    ):
+        self.x1, self.y1, self.x2, self.y2 = x1, y1, x2, y2
+        self.width = width
+        self.strength = strength
+        self.rgb = rgb
+
+
+def slash(text: str) -> Slash:
+    matched = SLASH_PATTERN.match(text.strip())
+    if matched is None:
+        raise argparse.ArgumentTypeError(f"'{text}' は X1,Y1,X2,Y2,幅,濃さ,#rrggbb の形ではありません")
+    x1, y1, x2, y2, width, strength, colour = matched.groups()
+    rgb = (int(colour[0:2], 16), int(colour[2:4], 16), int(colour[4:6], 16))
+    return Slash(*(float(v) for v in (x1, y1, x2, y2, width, strength)), rgb)
+
+
+def apply_slash(rgb: np.ndarray, alpha: np.ndarray, target: Slash) -> None:
+    """線を1本載せる。中心線で最も濃く、両端では幅ごと消える。"""
+    height, width = alpha.shape
+    xs = np.arange(width)[None, :]
+    ys = np.arange(height)[:, None]
+
+    dx, dy = target.x2 - target.x1, target.y2 - target.y1
+    length_squared = max(dx * dx + dy * dy, 1e-6)
+    # 線分上のどこに一番近いか（0が始点、1が終点。外側は端へ丸める）。
+    along = np.clip(((xs - target.x1) * dx + (ys - target.y1) * dy) / length_squared, 0.0, 1.0)
+    distance = np.hypot(xs - (target.x1 + along * dx), ys - (target.y1 + along * dy))
+
+    # 幅は中ほどで最大、両端で0（レンズ形）。太さの変わらない線は棒に見える。
+    half = target.width * np.sqrt(np.clip(1.0 - (2.0 * along - 1.0) ** 2, 0.0, 1.0))
+    t = np.clip(1.0 - distance / np.maximum(half, 1e-6), 0.0, 1.0)
+    weight = (t * t * (3.0 - 2.0 * t) * target.strength * alpha**3)[:, :, None]
+
+    tint = np.array(target.rgb, dtype=np.float64) / 255
+    rgb *= 1.0 - weight * (1.0 - tint)
+
+
+def as_layer(rgb: np.ndarray) -> np.ndarray:
+    """白い紙に染みを載せた結果を、そのまま乗算で重ねられる層に直す。
+
+    濃さ（アルファ）は最も暗くなる成分の落ち込み、色はそこから逆算する。何も変わらない画素は
+    アルファ0——つまり透明であって、白ではない。
+    """
+    factor = rgb / 255
+    alpha = (1.0 - factor).max(axis=2)
+    # 変わらない画素での0除算を避ける。そこは透明なので、割った結果は出力に現れない。
+    colour = np.clip(1.0 - (1.0 - factor) / np.where(alpha == 0, 1.0, alpha)[:, :, None], 0, 1)
+    return np.rint(np.dstack([colour * 255, alpha * 255])).astype(np.uint8)
+
+
+def size(text: str) -> tuple[int, int]:
+    matched = re.match(r"^(\d+)x(\d+)$", text.strip())
+    if matched is None:
+        raise argparse.ArgumentTypeError(f"'{text}' は 幅x高さ の形ではありません")
+    return int(matched.group(1)), int(matched.group(2))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("source", help="切り出し済みの絵（透過PNG）")
+    parser.add_argument("source", nargs="?", help="切り出し済みの絵（透過PNG）")
+    parser.add_argument("--layer", type=size, metavar="幅x高さ", help="絵に焼かず、層として描く")
     parser.add_argument("--out", required=True)
     parser.add_argument(
         "--spot",
         type=spot,
         action="append",
-        required=True,
+        default=[],
         metavar="X,Y,R,S,#RRGGBB",
         help="染み1つ（中心X,中心Y,半径,濃さ,乗算する色）。重ねられる",
     )
+    parser.add_argument(
+        "--slash",
+        type=slash,
+        action="append",
+        default=[],
+        metavar="X1,Y1,X2,Y2,W,S,#RRGGBB",
+        help="線1本（始点,終点,幅,濃さ,乗算する色）。両端で幅0になる。重ねられる",
+    )
     args = parser.parse_args()
+    if (args.source is None) == (args.layer is None):
+        raise SystemExit("焼く相手（source）と --layer は、どちらか一方だけを指定します")
+    if not args.spot and not args.slash:
+        raise SystemExit("--spot か --slash を少なくとも1つ指定します")
 
-    image = Image.open(args.source).convert("RGBA")
-    rgba = np.asarray(image, dtype=np.float64)
-    rgb, alpha = rgba[:, :, :3].copy(), rgba[:, :, 3] / 255
+    if args.layer is None:
+        rgba = np.asarray(Image.open(args.source).convert("RGBA"), dtype=np.float64)
+        rgb, alpha, opacity = rgba[:, :, :3].copy(), rgba[:, :, 3] / 255, rgba[:, :, 3]
+    else:
+        width, height = args.layer
+        # 白い紙の上に染みを載せれば、そのまま「下地を何倍にするか」になる。
+        rgb, alpha = np.full((height, width, 3), 255.0), np.ones((height, width))
 
+    # 染みが先、線が後。傷の縁の赤みの上に、傷そのものの暗い芯が乗る。
     for target in args.spot:
         apply_spot(rgb, alpha, target)
+    for target in args.slash:
+        apply_slash(rgb, alpha, target)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    tinted = np.dstack([np.clip(rgb, 0, 255), rgba[:, :, 3]]).astype(np.uint8)
+    tinted = (
+        as_layer(np.clip(rgb, 0, 255))
+        if args.layer is not None
+        else np.dstack([np.clip(rgb, 0, 255), opacity]).astype(np.uint8)
+    )
     Image.fromarray(tinted, "RGBA").save(out)
     print(f"-> {out}")
 

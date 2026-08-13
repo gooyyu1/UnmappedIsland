@@ -3,13 +3,14 @@
 同じ絵をもう一度得るために必要な値は、すべて recipes/*.json に入っている。作り直したいときは
 このスクリプトを走らせるだけでよく、手順を覚えている必要はない。
 
-    python build.py recipes/rocky_field_fixture.json
+    python build.py recipes/rocky_field_fixtures_lane.json
 
 後処理はレシピが postprocess を持つならレーンの背景として（postprocess.py）、cardArt を持つなら
 カードの絵として（card_art.py）扱う。mark があれば、その後に絵文字の形を色替えして重ね
 （icon_mark.py）、tint があれば陰影を残したまま一部の色を寄せる（skin_tint.py）。
 edit を持つレシピは、生成の代わりに別レシピの生データを
-基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。
+基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。stain を持つレシピは
+生成も後処理もせず、乗算で載る染みの層を描くだけ（skin_tint.py --layer）。
 
 --keep-raw を付けると、後処理前の生成物を残す（プロンプトを詰め直すときに見比べられる）。
 ComfyUIは要るが、起動していなければこちらで起動する。
@@ -115,6 +116,42 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
             ],
         )
         return edited
+
+    under = recipe.get("underlay")
+    if under is not None:
+        cut = raw_dir / f"{Path(recipe['output']).stem}_underlay.png"
+        run(
+            "multiply_layer.py",
+            [
+                "underlay",
+                str(REPO / under["ground"]),
+                str(REPO / under["layer"]),
+                "--out", str(cut),
+            ],
+        )
+        return cut
+
+    stain = recipe.get("stain")
+    if stain is not None:
+        drawn = raw_dir / f"{Path(recipe['output']).stem}_stain.png"
+        run(
+            "skin_tint.py",
+            [
+                "--layer", stain["size"],
+                "--out", str(drawn),
+                *[str(v) for spot in stain.get("spots", []) for v in ("--spot", spot)],
+                *[str(v) for line in stain.get("slashes", []) for v in ("--slash", line)],
+            ],
+        )
+        # groundを持つレシピでは、描いたものは下絵。地に載せてQwenへ渡し、後で同じ地で割る。
+        if recipe.get("ground") is None:
+            return drawn
+        on_ground = raw_dir / f"{Path(recipe['output']).stem}_on_ground.png"
+        run(
+            "multiply_layer.py",
+            ["apply", str(REPO / recipe["ground"]), str(drawn), "--out", str(on_ground)],
+        )
+        return on_ground
 
     paint = recipe.get("paint")
     if paint is not None:
@@ -290,6 +327,15 @@ def main() -> None:
                     *[str(v) for start, end in page.get("cutRows", []) for v in ("--cut-rows", start, end)],
                 ],
             )
+        elif "ground" in recipe:
+            # 地の上で描き直させたものは、同じ地で割って層へ戻す。
+            run(
+                "multiply_layer.py",
+                ["extract", str(REPO / recipe["ground"]), str(raw), "--out", str(processed)],
+            )
+        elif "postprocess" not in recipe:
+            # 後処理の要らないレシピ（染みの層は、描いた時点で出来上がっている）。
+            processed = raw
         else:
             post = recipe["postprocess"]
             run(

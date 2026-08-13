@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../domain/defs/WorldCodex';
-import { BACKGROUND_ART, locationBackgroundTextures } from './backgroundArt';
+import { BACKGROUND_ART, backgroundTexturesOf } from './backgroundArt';
 import { OBJECT_ART, objectTexture } from './objectArt';
 
 /**
@@ -29,7 +29,7 @@ export function locationCardArtFiles(location: string): readonly ArtFile[] {
 /** 1つの土地に紐づく絵（用意されているものだけ。絵が1枚も無い土地では空）。 */
 export function locationArtFiles(location: string): readonly ArtFile[] {
   const files: ArtFile[] = [...locationCardArtFiles(location)];
-  for (const key of locationBackgroundTextures(location)) {
+  for (const key of backgroundTexturesOf(location)) {
     const backgroundUrl = BACKGROUND_ART.get(key);
     if (backgroundUrl !== undefined) files.push({ key, url: backgroundUrl });
   }

@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/wasteland_fixtures_lane.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "ひび割れが手前まで見えている絵を選んでいる。地面が均されて塩湖のようになった絵が混ざる。",
+    "",
+    "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixtures_lane.json / rocky_field_items_lane.json を参照。"
+  ],
+  "output": "src/assets/backgrounds/wasteland_fixtures_lane.png",
+  "prompt": "wasteland_fixtures_lane",
+  "workflow": "lane_background_sdxl_tiling.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 7001,
+  "postprocess": {
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 0,
+    "oilifyLevels": 12
+  }
+}

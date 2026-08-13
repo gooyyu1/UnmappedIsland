@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "src/assets/objects/laceration.png（切り傷の下に敷く肌）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "**傷が面を破っていることを、これが表す。** 乗算の層（laceration_multiply.json）だけだと、傷は",
+    "地を暗くするしかできない——毛皮の暗い所へ掛かると傷が見えなくなり、毛の上に線を引いただけに",
+    "見える。切り傷の辺りでは毛が分かれて肌が覗くはずなので、傷と同じアルファの肌を先に敷く。",
+    "",
+    "打撲や痣には要らない（sprained_ankle_multiply.json）。あれは皮膚の下の変色で、面は破れていない。",
+    "",
+    "肌は乗算の層を描いたときと同じもの（medic の地）。同じ肌を敷くので、**その肌を持つ相手の上では",
+    "何も変わらず**、毛皮のような別の地の上でだけ肌が覗く。"
+  ],
+  "output": "src/assets/objects/laceration.png",
+  "underlay": {
+    "ground": "src/assets/backgrounds/medic_injuries_card.png",
+    "layer": "src/assets/objects/laceration_multiply.png"
+  }
+}

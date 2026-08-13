@@ -1,35 +1,55 @@
 {
   "_comment": [
-    "設置物のカードの地に敷く、土地ごとの背景のプロンプト（src/game/ui/backgroundArt.ts）。",
-    "キーは出力するファイル名（<土地のobject_defの識別子>_card_background）と一致させる。",
+    "カードの地に敷く背景のプロンプト（src/game/ui/backgroundArt.ts）。キーは出力するファイル名",
+    "（<持ち主>_<スロット名>_card）と一致させる。ただし**複数の対象が同じ絵柄を共有するときは、",
+    "描くものの名前をキーにする**（human_skin をキャラクタ4人が使う）。同じプロンプトを人数ぶん",
+    "並べると、直すときに全部を直すことになる。",
     "",
-    "狙いはレーンの背景（lane_backgrounds.json の _fixture）と同じ「その土地の眺め」だが、",
-    "縦長のカード1枚に収まる構図にする。カードの上には物の絵と名前が載るので、レーンよりさらに",
+    "土地の絵は、レーンの背景（lane_backgrounds.json の _fixtures_lane）と同じ「その土地の眺め」を、",
+    "縦長のカード1枚に収まる構図で描く。カードの上には物の絵と名前が載るので、レーンよりさらに",
     "淡く・平らに描かせる（主題を作らない、影を作らない、空を広く取らない）。",
     "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
+    "身体の絵（怪我のカードの地）は、部位ではなく肌・毛皮そのものを枠いっぱいに描く。部位を描くと、",
+    "その上へ載る傷の層を身体ごとに位置合わせしなければならなくなる（docs/ui/CardView.md 7 節）。",
     "",
     "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
     "叩き台は _baseNegative にある（生成には使わない）。"
   ],
   "_baseNegative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts",
-  "rocky_field_card_background": {
+  "human_skin": {
+    "description": "人の肌。怪我のカードの地。キャラクタ4人が共有し、seedと切り出しだけを変える。",
+    "_note": [
+      "**部位の少ない場所を描かせ、その中の平らな所を切り出す**（レシピの cardArt.crop）。",
+      "「肌だけ」と頼むと砂丘や胴体が出て、「前腕」と部位を言うと背景の上に腕が1本立った絵になる",
+      "（輪郭が出ると、その上へ載る傷の層を身体ごとに位置合わせすることになる）。背中は目に見える",
+      "部品が少なく、広い平らな面が取れる。背骨・肩・背景はnegativeで抑えつつ、切り出しで外す。",
+      "照りも禁じる——つやが乗ると3D風になり、他のカードから浮くうえ痣の乗算が読めなくなる。",
+      "",
+      "**この文面はレシピのseedと対になっている。** 直すと、記録してあるseedが別の絵を出すように",
+      "なるので、直したら選び直す。振り直すときによく出る外れは、砂丘・脇・腕の縁の3つ",
+      "（negativeに sand, dune, desert, armpit, side of the body を足すと減る）。"
+    ],
+    "positive": "extreme close up of the bare skin of a human back completely filling the frame from edge to edge, a broad flat expanse of sun weathered skin seen straight on, uniform warm tan olive skin tone across the whole frame, fine skin texture with faint pores and a few soft body hairs, soft even diffuse daylight, matte skin, muted natural colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
+    "negative": "spine, backbone, shoulder blades, ribs, neck, nape, waist, buttocks, hips, arm, forearm, limb, leg, thigh, curved surface, rounded form, silhouette, outline, edge of the body, body against a background, whole figure, person seen from behind, portrait, face, head, hair, eyes, nose, mouth, ear, hand, fingers, thumb, palm, foot, toes, ankle, knee, elbow, shoulder, chest, nipple, navel, background, wall, floor, table, cloth, clothing, sleeve, fabric, jewellery, tattoo, wound, bruise, blood, scar, rash, veins, wrinkles, goosebumps, sweat, water drops, glossy, shiny, specular highlight, oiled skin, wet skin, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
+  },
+  "monkey_injuries_card": {
+    "description": "サルの毛皮。怪我のカードの地。カードの絵のサル（objects.jsonのmonkey）と毛色を揃える。",
+    "_note": [
+      "毛色は monkey.json のedit（muted warm grey brown fur）に合わせる。同じ個体の別の場所を",
+      "近くで見ている絵なので、ここがずれると別の動物の毛に見える。**放っておくと白い長毛になる**ので、",
+      "白・クリーム・ふさふさをnegativeで落とし、短く寝た毛だと言う。",
+      "",
+      "**猿を名指ししない。** 「猿の背中の毛」と言うと、毛ではなく猿の顔が出る（肌で「前腕」と",
+      "言ったときと同じ）。ここで頼むのは毛という素材までで、誰の毛かはファイル名が言う。",
+      "",
+      "**うねりは、ここでは消しきれない。** 「毛皮のアップ」は毛皮のコートの絵を引き寄せるので、",
+      "房が波打った絵が出る。房の1つ1つが傷と同じくらいの大きさに見え、上に載る傷と縮尺が合わない。",
+      "negativeで減らしたうえで、残りはレシピのeditで平らに描き直させる。"
+    ],
+    "positive": "extreme close up of very short dense fine animal fur completely filling the frame from edge to edge, a flat even patch of muted warm greyish brown fur seen straight on, very fine short hairs all lying flat in the same direction like a smooth combed pelt, uniform across the whole frame, soft even diffuse daylight, matte fur, muted earthy brown colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
+    "negative": "fur coat, fur collar, fur garment, fur trim, fur rug, pelt, hide, taxidermy, stuffed animal, plush, waves, wavy fur, rippled fur, tufts, clumps, curls, curly fur, cowlick, parting, swirl, whorl, ridges, folds, long hair, shaggy, mane, fluffy, white fur, cream fur, pale fur, blonde fur, silver fur, fox fur, rabbit fur, sheepskin, curved surface, rounded form, silhouette, outline, edge of the body, animal against a background, face, head, eyes, nose, mouth, ear, snout, muzzle, hand, paw, fingers, claws, tail, whole animal, background, branch, leaves, jungle, ground, sky, wound, bruise, blood, scar, bald patch, bare skin, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
+  },
+  "rocky_field_fixtures_card": {
     "description": "岩場の眺め。カード全面に岩と枯れ草。空は入れない。",
     "_note": [
       "空の帯を作らないのは、岩がちの土地を縦長で切り取ると地面だけで足りるため。",
@@ -38,52 +58,52 @@
     "positive": "a rocky field seen at eye level looking slightly down, weathered gray boulders of many sizes strewn all across the ground and filling the whole tall frame from edge to edge and from top to bottom, dry cracked stone surfaces, patches of pale dry grass in the gaps between the rocks, no sky and no horizon in view, overcast diffuse daylight, muted gray and warm beige tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, trees, bushes, shrubs, forest, empty grassland, rock pile, scree, rubble, stacked rocks, rocky wall, cliff, mountain peak, cave entrance, single hero rock in the center, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, low horizon, large sky, sky filling the frame, clouds dominating, sky, horizon, distant view, one large boulder in the center, close-up of a single rock, flowers, fallen branches, dead wood, bones, shells"
   },
-  "jungle_card_background": {
+  "jungle_fixtures_card": {
     "description": "密林の眺め。縦に伸びる幹の壁がカードを埋め、下端だけ落ち葉の地面。",
     "_note": ["縦長では幹が主役になりやすいので、手前に1本立たせない。奥まで幹で埋める。"],
     "positive": "dense jungle forest seen at eye level, a wall of tightly packed tall tree trunks and lush foliage filling the entire tall frame from top to bottom, many slender trunks of similar size spread evenly across the width, continuous vegetation with no open space, deep shade under a closed canopy, a dense mass of dark green undergrowth filling the lower third of the frame, well-lit green leaves standing out in front of it, soft diffused light with no strong sunbeams, damp leaf-covered ground along the bottom edge, an ordinary natural forest, shallow depth of field, soft focus, muted deep green colors, calm mood, painterly, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, gap between trees, open space, empty ground, distant view, deep background, receding forest, perspective corridor, bright background, glowing background, white background, pale background, luminous haze, backlight, silhouette, fog bank, white mist, fantasy, ethereal, dreamlike, magical, mystical, enchanted forest, otherworldly, dramatic, cathedral, hanging vines, spanish moss, ancient, ruins, water, river, stream, creek, pond, lake, waterfall, reflection, puddle, sunbeams, light shafts, god rays, sun rays, strong sunlight, direct sunlight, lens flare, night, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, one big tree in the front, a single trunk in the center, close-up of bark, sky, treetops, flowers, fruit, mushrooms, fallen branches"
   },
-  "sandy_beach_card_background": {
+  "sandy_beach_fixtures_card": {
     "description": "砂浜の眺め。カードの下2/3が砂、その上に海と空の帯。",
     "_note": [
-      "レーンの sandy_beach_fixture と同じ言い回しを縦長へ組み替えたもの。空の帯を上端だけに",
+      "レーンの sandy_beach_fixtures_lane と同じ言い回しを縦長へ組み替えたもの。空の帯を上端だけに",
       "留めるのは、縦長だと空を許した分だけ画面の上半分が空で埋まるため。"
     ],
     "positive": "a tropical sandy beach seen at eye level from the shore under bright midday sun, wide pale sand filling the lower two thirds of the frame from edge to edge, calm shallow turquoise sea in a narrow band beyond it, high horizon line in the upper third, only a thin strip of pale blue sky above the horizon, gentle small waves washing the sand, neutral white daylight, cool clean tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, sun reflection on water, long shadows, low horizon, large sky, sky filling the frame, clouds dominating, open ocean only, no beach, palm trees, trees, plants, driftwood, rocks, shells, boats, umbrellas, footprints"
   },
-  "rocky_coast_card_background": {
+  "rocky_coast_fixtures_card": {
     "description": "岩だらけの海岸の眺め。カードの下2/3が岩、その上に海と細い空。",
     "_note": ["砂浜のカード（sandy_beach）と同じ配分にして、海の見える土地どうしで作りを揃える。"],
     "positive": "a rocky shore seen at eye level, large rounded gray boulders and flat stone slabs covering the near shore from edge to edge and filling the lower two thirds of the frame, pale wet sand and shallow still water in the gaps between them, a calm band of pale turquoise sea beyond, high horizon line in the upper third, only a thin strip of pale sky above the horizon, bright neutral midday daylight, muted gray and pale turquoise tones, painterly, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, photograph, photorealistic, photography, fine art photo, long exposure, silky smooth water, motion blur, hdr, moody, gloomy, dark, deep shadows, storm, rough sea, big crashing waves, spray, whitewater, mist, fog, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, sun reflection on water, long shadows, lens flare, night, low horizon, large sky, sky filling the frame, open ocean only, no shore, sandy beach, dunes, sea stacks, rock spires, jagged pinnacles, cliff, sea wall, breakwater, harbour, pier, boats, palm trees, single hero rock in the center, clouds dominating, one large boulder in the center, close-up of a single rock, trees, plants, driftwood, shells, birds, footprints"
   },
-  "cliff_coast_card_background": {
+  "cliff_coast_fixtures_card": {
     "description": "岸壁の眺め。層になった岩壁がカードを埋め、下端に海が覗く。",
     "_note": ["縦長は岩壁と相性が良い。海の帯は下端だけに留め、崖の全景（遠景）にはしない。"],
     "positive": "a steep sea cliff seen at eye level from close by, a tall wall of layered weathered gray rock filling almost the entire tall frame from top to bottom, horizontal bands of stratified stone continuing past both side edges, sparse tufts of hardy grass rooted in the ledges, a narrow band of calm gray-blue sea along the very bottom edge, overcast diffuse daylight, cool gray and pale ochre tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, sky, large sky, distant view, aerial view, whole coastline, headland, bay, island seen from afar, cave, cave mouth, dark hole, arch, sea stack, sandy beach, big crashing waves, spray, whitewater, lighthouse, stairs, railing, trees, forest, low horizon, sky filling the frame, clouds dominating, the whole cliff seen from a distance, cliff edge, viewpoint, sea filling the frame, beach, boulders in the foreground, bushes, birds, waterfall"
   },
-  "grassland_card_background": {
+  "grassland_fixtures_card": {
     "description": "草原の眺め。カードの下2/3が丈の高い草、上に細い空。",
     "_note": ["草を縦長で切り取ると1本1本が目立つので、密度で埋めて穂を主役にしない。"],
     "positive": "an open grassland seen at eye level, waist-high grasses covering the ground from edge to edge and filling the lower two thirds of the frame, a mix of fresh green and pale straw-coloured blades leaning gently in the same direction, small low wildflowers scattered among them, high horizon line in the upper third, only a thin strip of overcast pale sky above it, neutral diffuse daylight, muted green and warm straw tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, low horizon, large sky, sky filling the frame, clouds dominating, rolling hills, mountains, distant range, trees, single tree, forest, treeline, bushes, fence, haystack, crop field, farmland, rows of plants, flower bed, mowed lawn, water, river, pond, one tall stalk in the center, close-up of a single blade, macro, hay bale, large flowers, insects, birds"
   },
-  "forest_card_background": {
+  "forest_fixtures_card": {
     "description": "森林の眺め。等間隔の幹がカードの高さいっぱいに立ち、下端に落ち葉。",
     "_note": ["密林（jungle）と紛れないよう、幹の間に明るさを残し、下生えを低く保つ。"],
     "positive": "an ordinary temperate forest seen at eye level, upright brown tree trunks running the full height of the tall frame, several trunks of similar thickness spread evenly across the width, further trunks layered behind them so nothing opens up, green canopy leaves along the top edge, low ferns and grass along the bottom, dry fallen leaves on the ground, overcast diffuse light, muted green and warm brown tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, warm glow, sun in frame, sunbeams, light shafts, god rays, strong sunlight, lens flare, night, jungle, tropical, palm, dense undergrowth, wall of leaves, hanging vines, spanish moss, fantasy, ethereal, dreamlike, magical, mystical, enchanted forest, ancient, ruins, fog bank, white mist, bright background, glowing background, white background, distant view, receding forest, autumn colours, red leaves, snow, water, river, stream, pond, one big trunk in the center, pink sky, long shadows, one big tree in the front, a single trunk in the center, close-up of bark, sky, treetops seen from below, flowers, mushrooms, fallen logs, stumps"
   },
-  "wasteland_card_background": {
+  "wasteland_fixtures_card": {
     "description": "荒野の眺め。カードの下2/3がひび割れた土、上に霞んだ空の帯。",
     "_note": ["枯れ枝や石は絵と紛れるので、レーンより数を減らして地面の割れ目で埋める。"],
     "positive": "a dry barren wasteland seen at eye level, cracked pale clay ground stretching from edge to edge and filling the lower two thirds of the frame, a fine network of dry cracks across it, thin dust in the air, high horizon line in the upper third, only a thin strip of hazy pale sky above it, flat overcast daylight, dusty pale ochre and washed gray tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, low horizon, large sky, sky filling the frame, dramatic clouds, storm, mesa, butte, canyon, mountains, dunes, sand desert, cactus, tumbleweed rolling, skull, bones, wreckage, ruins, post apocalyptic, green grass, meadow, trees, water, one dead tree in the center, clouds dominating, dead brush in the center, one prominent stone, close-up of a crack, macro, grass, tire tracks"
   },
-  "mountainside_card_background": {
+  "mountainside_fixtures_card": {
     "description": "山腹の眺め。砕けた石の斜面がカードを埋める。空は入れない。",
     "_note": [
       "縦長で mountain と言うと、山の全景（尾根・岩峰・霧・生えた松）になる。地面として頼み直す。",
@@ -92,7 +112,7 @@
     "positive": "the stony ground of a steep mountain slope seen from close above, looking down at the slope, coarse angular broken rock and loose scree covering the ground and filling the whole tall frame from edge to edge and from top to bottom, tufts of hardy grass and low woody shrubs rooted between the stones, patches of gray lichen on the larger rocks, no sky and no horizon in view, overcast diffuse daylight, cool gray with muted olive and brown tones, soft low contrast, gently blended edges, subdued detail, calm composition with no single subject, game background art",
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, warm glow, sun in frame, long shadows, lens flare, night, sky, large sky, clouds, distant view, aerial view, whole mountain, mountain range, peak, summit, valley below, snow, ice, glacier, cliff face, vertical wall, cave, dark hole, forest, dense trees, meadow, flowers, water, waterfall, stream, one big boulder in the center, pink sky, low horizon, sky filling the frame, clouds dominating, horizon, ridge, ridge line, crag, pinnacle, rock spire, outcrop, distant mountain range, dramatic vista, mist, fog, low cloud, one large boulder in the center, close-up of a single rock, trees, pine trees, bushes"
   },
-  "mountain_peak_card_background": {
+  "mountain_peak_fixtures_card": {
     "description": "山頂の眺め。平らな裸岩がカードの下2/3、上端に薄い空の帯。",
     "_note": [
       "雲や霞を入れると画面が霧で埋まる（レーンと同じ）。空は上端の一様な帯だけにする。",

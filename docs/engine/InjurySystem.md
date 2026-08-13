@@ -31,7 +31,7 @@
 | trait | `treatable`（治療具を1つ当てられる。3 節） |
 | `stackable` | `false`（同じ怪我を2つ負っても1つずつ並ぶ。手当ては1つずつ当てるため） |
 | `passives` | `modify` で `parent`（負ったキャラクタ）の `pain` を上げる |
-| 表示 | `ja.yaml` の表示名と説明 |
+| 表示 | `ja.yaml` の表示名と説明。絵は**傷そのものだけ**を描く（[`CardView.md`](../ui/CardView.md) 5 節・7 節）——誰の身体かはカードの地が言うので、人と動物で同じ絵を使える |
 
 `item` タグを付けないので `weight` は持ちません（怪我は荷重になりません）。また `bound_to_owner`
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 7.9節）なので、負った本人から剥がせません——

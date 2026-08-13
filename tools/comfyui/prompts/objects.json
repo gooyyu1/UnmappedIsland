@@ -106,8 +106,8 @@
   },
   "bare_foot": {
     "description": [
-      "素足。それ自体はカードにならず、怪我（injuries.yaml）の絵の下地になる",
-      "（recipes/sprained_ankle.json が痣を skin_tint.py で載せる）。",
+      "素足。**今はどのレシピからも使っていない**——怪我の絵は身体を描かなくなったため",
+      "（docs/ui/CardView.md 7 節）。足そのものが要るときのために、指の出し方だけ残す。",
       "",
       "**足の指をまず見る。** 生成が最もしくじるのが指で、縮小したシートでは破綻が見えない。指の部分だけを",
       "等倍以上に切り出して確かめ、落ちた候補は後段（編集・切り出し・配置）へ回さない。",
@@ -128,6 +128,17 @@
     ],
     "positive": "exactly one bare human foot alone on an empty white page, just the foot and the lower shin cut off cleanly at the calf, seen from the side with the sole hidden, standing with the heel down and the toes forward, the ankle bone rounded under smooth skin, nothing worn on it, five separate toes in a row, each toe fully modelled and clearly parted from the next, the big toe largest and the little toe smallest, a small pale nail on every toe, warm tan and pink skin with a healthy flush, smooth matte skin, it is small and rests in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "fused toes, webbed toes, merged toes, toes blurred together, smooth toeless foot, extra toes, six toes, four toes, missing toes, deformed toes, stumpy toes, bandage, dressing, gauze, wrapping, tape, plaster cast, splint, sock, stocking, shoe, boot, sandal, watercolour splash, paint splash, ink blot, purple paint, dripping paint, two feet, both feet, pair of feet, three feet, several feet, legs, whole leg, thigh, knee, standing, walking, full body, whole person, torso, head, face, arm, hand, fingers, wrist, anatomical illustration, medical illustration, anatomy plate, tendons, muscles, veins, flayed, greyscale, monochrome, black and white, marble statue, white sculpture, mannequin, prosthetic, sole of the foot, seen from below, footprint, crutch, medical chart, skeleton, bones, x-ray, blood, gore, open wound, cut skin, scar, rash, insect bite, clinic, hospital bed, doctor, nurse, filling the frame, close-up, cropped, cut off at the ankle, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, bed sheet, towel, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "laceration": {
+    "description": [
+      "切り傷。肌の上に1本だけ入った浅い切り傷を描かせ、あとから肌の色で割って",
+      "乗算の層（laceration_multiply.png）にする——身体は地が出すので、ここでは肌ごと描かせてよい。",
+      "",
+      "**1本だけと言い続ける。** 放っておくと引っ掻き傷が何本も入る。",
+      "**深さを否定する。** 深い傷を頼むと肉や骨まで描き出す。ja.yamlでは「浅いので早く塞がる」傷。"
+    ],
+    "positive": "extreme close up of exactly one shallow knife cut on bare human skin, a single clean straight incision running down the middle of the frame, the skin parted very slightly along the cut with a thin dark red line inside it, narrow reddened inflamed edges on both sides of the cut, a faint trace of dried blood, the rest of the frame is plain unbroken sun weathered skin filling it from edge to edge, soft even diffuse daylight, matte skin, muted natural colours, soft low contrast, hand painted illustration, game art",
+    "negative": "two cuts, three cuts, many cuts, several wounds, scratches, claw marks, crosshatch, stitches, sutures, staples, bandage, plaster, gore, blood pool, heavy bleeding, dripping blood, deep wound, open flesh, muscle, fat, bone, entrails, amputation, severed limb, burn, blister, rash, tattoo, ink drawing on skin, red paint, lipstick, zipper, old scar, keloid, face, eyes, mouth, hand, fingers, foot, toes, whole figure, person, background, wall, cloth, clothing, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts"
   },
   "stone": {
     "description": "石。角の無い丸い灰色の河原石。艶を否定する（艶を描かせると白く飛ぶ）。",
