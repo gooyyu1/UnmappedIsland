@@ -18,6 +18,12 @@ function alertBorderColor(alert: AlertLevel): number | undefined {
 const LAG_DELAY_MS = 250;
 const LAG_DURATION_MS = 700;
 
+/**
+ * トラックの枠線の太さ（u単位）。**枠線の外周を周りの何かに合わせる側**が、寄せる量を知るために
+ * 読む（Card.addRailBar）。
+ */
+export const TRACK_BORDER_WIDTH = 2;
+
 /** 警戒を示す枠の明滅（片道の時間と、最も薄いときの濃さ）。 */
 const BLINK_DURATION_MS = 450;
 const BLINK_MIN_ALPHA = 0.15;
@@ -38,12 +44,6 @@ export interface ProgressBarOptions {
    * 域を持たない量——耐久度・液体の残量——を映すバーだけが渡す。
    */
   readonly fillColor?: (ratio: number) => number;
-
-  /**
-   * トラックの枠線を描かないか。数px（カードの耐久度バー）まで細くすると枠線が太さの大半を占め、
-   * 塗りが読めなくなるため。
-   */
-  readonly borderless?: boolean;
 
   /**
    * 帯が今の値へ追いつき切ったときに呼ぶ。変化を見せ終わるまで並びに残している行を、そのとき
@@ -108,8 +108,8 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   /** 危険域でも明滅させないか（ProgressBarOptions.steady）。 */
   private readonly steady: boolean;
 
-  /** トラックの枠線を描かないか（ProgressBarOptions.borderless）。 */
-  private readonly borderless: boolean;
+  /** トラックの枠線の色（setBorderColor）。 */
+  private borderColor: number = COLOR.statusBarTrackBorder;
 
   /** 追いつき切ったときの通知（ProgressBarOptions.onCaughtUp）。 */
   private readonly onCaughtUp: (() => void) | undefined;
@@ -128,12 +128,11 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.worsensUpward = options.worsensUpward === true;
     this.fillColor = options.fillColor;
     this.steady = options.steady === true;
-    this.borderless = options.borderless === true;
     this.onCaughtUp = options.onCaughtUp;
 
     this.barWidth = width;
     this.barHeight = height;
-    this.borderWidth = Math.max(1, metrics.px(2));
+    this.borderWidth = Math.max(1, metrics.px(TRACK_BORDER_WIDTH));
     this.alertBorderWidth = Math.max(1, metrics.px(ALERT_BORDER_WIDTH));
     this.alertOutlineWidth = this.alertBorderWidth + Math.max(1, metrics.px(ALERT_OUTLINE_EXTRA_WIDTH));
     this.radius = height / 4;
@@ -163,6 +162,16 @@ export class ProgressBar extends Phaser.GameObjects.Container {
    */
   isBehind(ratio: number): boolean {
     return Phaser.Math.Clamp(ratio, 0, 1) !== this.shownRatio;
+  }
+
+  /**
+   * トラックの枠線の色を変える。**周りの意匠に合わせる必要がある置き場所が渡す**——カードの状態バーは
+   * 札の縁と同じ色で、種別（アイテム・動物・怪我…）ごとに変わる（CardView.md 8節）。
+   */
+  setBorderColor(color: number): void {
+    if (color === this.borderColor) return;
+    this.borderColor = color;
+    this.draw();
   }
 
   /**
@@ -290,11 +299,10 @@ export class ProgressBar extends Phaser.GameObjects.Container {
       drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill, radius });
     }
 
-    if (this.borderless) return;
     drawBox(
       this.bar,
       { x: 0, y: 0, width, height },
-      { border: COLOR.statusBarTrackBorder, borderWidth: this.borderWidth, radius },
+      { border: this.borderColor, borderWidth: this.borderWidth, radius },
     );
   }
 }
