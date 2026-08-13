@@ -98,6 +98,21 @@ const STACK_BADGE_OVERHANG = 6;
  */
 const MARK_SIZE = 52;
 const MARK_MARGIN = 12;
+
+/**
+ * 状態を言う覆いの文字（CardView.md 9.1節）。落ち着いた後の大きさ（u単位）と、白いふちの太さ。
+ * ふちは、絵の濃淡の上でも字形が切れないように付ける。
+ */
+const OVERLAY_SIZE = 34;
+const OVERLAY_STROKE = 5;
+
+/**
+ * 現れた瞬間の倍率と、大きいまま留まる時間・落ち着くまでの時間（ミリ秒）。**まず大きく出して気付かせ、
+ * それから状態の表示として上部へ収まる**——出っぱなしで大きいと絵を潰し、初めから小さいと気付けない。
+ */
+const OVERLAY_BURST_SCALE = 2.8;
+const OVERLAY_HOLD_MS = 900;
+const OVERLAY_SETTLE_MS = 280;
 const STACK_COUNT_SIZE = 16;
 
 /**
@@ -263,6 +278,13 @@ export interface CardContent {
   readonly mark?: string;
 
   /**
+   * そのカードが映しているものが**機能を止めている**ことを、絵の上へ大きく重ねる絵文字
+   * （気を失った動物の💤）。小さな印（mark）と違い、姿そのものが変わったことを言うので、
+   * レーンを流し見して気付ける大きさで出す（CardView.md 9.1節）。
+   */
+  readonly overlay?: string;
+
+  /**
    * その行動の途中の値か（trueの間は状態バーの変化の帯を動かさず、合計の変化量を残す。
    * ProgressBar.setRatio参照）。
    */
@@ -280,7 +302,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, alert, road, durability, fill, severity, mark } = content;
+  const { icon, name, art, background, kind, alert, road, durability, fill, severity, mark, overlay } =
+    content;
   const { capacityRatio, materialRatio, stepRatio, inProgress } = content;
   return {
     icon,
@@ -297,6 +320,7 @@ export function cardFace(content: CardContent): CardContent {
     materialRatio,
     stepRatio,
     mark,
+    overlay,
     inProgress,
   };
 }
@@ -321,6 +345,15 @@ export class Card extends Phaser.GameObjects.Container {
 
   /** 状態を表す絵文字の印（CardContent.mark）。持たないカードでは空文字で隠れる。 */
   private readonly mark: Phaser.GameObjects.Text;
+
+  /** 状態を言う、絵の上の覆い（CardContent.overlay）。持たないカードでは空文字で隠れる。 */
+  private readonly overlay: Phaser.GameObjects.Text;
+
+  /** 今出している覆いの文言。変わった時だけ現れ方（showOverlay）を掛け直す。 */
+  private overlayText = '';
+
+  /** 大きく出てから上部へ落ち着くまでの動き。走っている間は置き場所を触らない。 */
+  private overlayTween: Phaser.Tweens.Tween | undefined;
 
   /** カードの名前。中身が入れ替われば同じインスタンスのままでも変わる（showName参照）。 */
   private readonly nameText: Phaser.GameObjects.Text;
@@ -482,6 +515,18 @@ export class Card extends Phaser.GameObjects.Container {
       .text(0, 0, '', { fontFamily: FONT_FAMILY, fontSize: `${metrics.fontPx(MARK_SIZE)}px` })
       .setOrigin(0, 1);
     this.add(this.mark);
+
+    // 覆いは印よりさらに後（最前面）。絵の上に載って初めて「今こうなっている」と読める。
+    this.overlay = scene.add
+      .text(0, 0, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(OVERLAY_SIZE)}px`,
+        fontStyle: 'bold',
+        color: cssColor(COLOR.cardOverlayText),
+      })
+      .setOrigin(0.5)
+      .setStroke(cssColor(COLOR.cardFace), metrics.px(OVERLAY_STROKE));
+    this.add(this.overlay);
 
     this.applyContent(content, false);
     scene.add.existing(this);
@@ -836,6 +881,58 @@ export class Card extends Phaser.GameObjects.Container {
     const inner = windowRect(this.metrics, this.cardWidth, this.cardHeight, rail.height);
     const margin = this.metrics.px(MARK_MARGIN);
     this.mark.setPosition(inner.x + margin, inner.y + inner.height - margin).setText(content.mark ?? '');
+    this.showOverlay(content.overlay ?? '', inner, margin);
+  }
+
+  /**
+   * 状態を言う覆い（CardView.md 9.1節）。**立った瞬間だけ大きく出し、そのあと上部へ収まって残る。**
+   * 出っぱなしで大きいと絵を潰し、初めから小さいと気付けない。
+   *
+   * 文言が変わらない差し替えでは掛け直さない（動いている最中に何度も差し替わるため）。ただし収まる
+   * 位置は毎回決め直す——桟の高さで窓の下端が動くので、バーが増えれば置き場所も動く。
+   *
+   * **入り切らない文言は縮めて収める。** 言語によって長さが大きく違う（「気絶」と `unconscious`）ので、
+   * 幅からその場で倍率を決める。
+   */
+  private showOverlay(text: string, inner: Rect, margin: number): void {
+    const appeared = text !== '' && text !== this.overlayText;
+    this.overlayText = text;
+    this.overlay.setText(text).setVisible(text !== '');
+    if (text === '') {
+      this.overlayTween?.stop();
+      this.overlayTween = undefined;
+      return;
+    }
+
+    // 言語で長さが大きく違う（「気絶」と`unconscious`）ので、倍率は幅から決める。
+    const maxScale = (inner.width - margin * 2) / Math.max(1, this.overlay.width);
+    const restScale = Math.min(1, maxScale);
+    const rest = {
+      x: inner.x + inner.width / 2,
+      y: inner.y + margin + (this.overlay.height * restScale) / 2,
+    };
+    if (!appeared) {
+      // 動いている最中なら行き先を奪わない（着けば自分でrestに着く）。
+      if (this.overlayTween === undefined) this.overlay.setPosition(rest.x, rest.y).setScale(restScale);
+      return;
+    }
+
+    this.overlay
+      .setPosition(inner.x + inner.width / 2, inner.y + inner.height / 2)
+      .setScale(Math.min(OVERLAY_BURST_SCALE * restScale, maxScale));
+    this.overlayTween?.stop();
+    this.overlayTween = this.scene.tweens.add({
+      targets: this.overlay,
+      x: rest.x,
+      y: rest.y,
+      scale: restScale,
+      delay: OVERLAY_HOLD_MS,
+      duration: OVERLAY_SETTLE_MS,
+      ease: 'Quad.easeInOut',
+      onComplete: () => {
+        this.overlayTween = undefined;
+      },
+    });
   }
 
   /** Containerのdisplay originによるヒット領域のずれを避ける理由はButtonと同じ（サイズを設定しない）。 */

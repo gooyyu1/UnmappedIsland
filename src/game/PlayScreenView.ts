@@ -12,7 +12,6 @@ import type { Localization } from '../locale/Localization';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
 import type { CardAlertBar, CardContent, CardFill } from './ui/Card';
-import { artNameFor } from './ui/objectArt';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
 import type { StatusContent } from './ui/StatusBar';
@@ -354,6 +353,14 @@ const TREATMENT_SLOT = 'treatment';
 const TREATED_MARK = '🩹';
 
 /**
+ * 気を失っていることを言う覆いと、それを決める段の名前（VitalsSystem.md 6節）。
+ *
+ * UI側は「意識がこの名前の段に居たら覆いを出す」とだけ知っていて、何がどれだけ意識を奪ったかは
+ * 知らない。段の名前を宣言しているのはワールドの側だけ（`load`の`too_heavy`と同じ分担）。
+ */
+const UNCONSCIOUS_STAGE = 'unconscious';
+
+/**
  * そのスロットの枠の位置が安定しているか（`cell_count`、SlotSystem.md 3節）。空き枠を指した
  * ドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
  */
@@ -441,6 +448,12 @@ export function fromGameSession(
     const reading = object.readProperty(consciousnessPropertyId);
     return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
   };
+
+  /** 気を失っているカードへ出す覆い（CardView.md 9.1節）。意識を持たない物・起きている物はundefined。 */
+  const overlayOf = (object: WorldObject): string | undefined =>
+    consciousnessPropertyId !== undefined && object.isInStage(consciousnessPropertyId, UNCONSCIOUS_STAGE)
+      ? locale.stage(UNCONSCIOUS_STAGE)
+      : undefined;
 
   const warinessPropertyId = codex.propertyNames.tryGetId(WARINESS_PROPERTY);
   /** 輪郭を明滅させる域。warinessを持たない物はundefined（明滅しない）。 */
@@ -596,8 +609,6 @@ export function fromGameSession(
    * 自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
    */
   const artOf = (def: ObjectDef): string => (codex.productOf(def) ?? def).name;
-  /** 個体の絵。今の状態が別の姿を宣言していれば（VitalsSystem.md 2.1節の気絶など）そちらになる。 */
-  const instanceArtOf = (object: WorldObject): string => artNameFor(artOf(object.def), object.artName());
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。
@@ -636,7 +647,7 @@ export function fromGameSession(
     inProgress: codex.productOf(instances[0].def) !== undefined,
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
-    art: instanceArtOf(instances[0]),
+    art: artOf(instances[0].def),
     background: slotOfObject(instances[0]),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
@@ -645,6 +656,7 @@ export function fromGameSession(
     capacityRatio: capacityRatioOf(instances[0]),
     severity: severityOf(instances[0]),
     consciousness: consciousnessOf(instances[0]),
+    overlay: overlayOf(instances[0]),
     alert: alertOf(instances[0]),
     ...craftingOf(instances[0]),
     mark: markOf(instances[0]),

@@ -168,6 +168,22 @@ reason_texts:
 歩けない」は道以外の操作でも起こりえます）。未登録の識別子は理由を出さない扱いになるため、綴り間違いは
 自動テスト（`tests/locale/localization.test.ts`）が捕まえます。
 
+## stage_texts: 画面に出る段の文言
+
+段（[GameElementDefinition.md](./GameElementDefinition.md) 6.4節の`stages`）のうち、**UIが名前を読んで
+画面に出すもの**の文言です。`reason_texts` と同じく1行の文字列そのものを書きます。
+
+```yaml
+stage_texts:
+  unconscious: 気絶
+```
+
+出るのはカードの上（[CardView.md](../ui/CardView.md) 9.1節の覆い）なので、**離れて見ても読める短い語**を
+選びます。長い語は幅に合わせて縮むため、大きく出て気付かせる効果が薄れます。長さの上限も、未登録の
+識別子も、自動テスト（`tests/locale/localization.test.ts`）が捕まえます。
+
+段の名前はプロパティごとの名前空間ですが、対応表は平らに持ちます——同じ名前の段は同じ言葉で出します。
+
 ## signal_texts: 告げられた出来事の文言
 
 `signal`（[GameElementDefinition.md](./GameElementDefinition.md) 9.8節）が告げる出来事の識別子も、

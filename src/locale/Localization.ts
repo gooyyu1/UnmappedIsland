@@ -255,6 +255,7 @@ export class Localization {
   private readonly ordinalSuffix: string;
   private readonly slots: ReadonlyMap<string, SlotTextsEntry>;
   private readonly signals: ReadonlyMap<string, string>;
+  private readonly stages: ReadonlyMap<string, string>;
 
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
@@ -265,6 +266,7 @@ export class Localization {
     ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
     slots: ReadonlyMap<string, SlotTextsEntry> = new Map(),
     signals: ReadonlyMap<string, string> = new Map(),
+    stages: ReadonlyMap<string, string> = new Map(),
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
@@ -274,6 +276,7 @@ export class Localization {
     this.ordinalSuffix = ordinalSuffix;
     this.slots = slots;
     this.signals = signals;
+    this.stages = stages;
   }
 
   /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */
@@ -297,6 +300,16 @@ export class Localization {
    */
   reason(reasonName: string): string | undefined {
     return this.reasons.get(reasonName);
+  }
+
+  /**
+   * 段（GameElementDefinition.md 6.4節のstages）の文言。カードの覆いのように、UIが段の名前を読んで
+   * 出す場所で使う（CardView.md 9.1節）。未登録なら識別子そのもの。
+   *
+   * 段の名前はプロパティごとの名前空間だが、対応表は平らに持つ——同じ名前の段は同じ言葉で出す。
+   */
+  stage(stageName: string): string {
+    return this.stages.get(stageName) ?? stageName;
   }
 
   /**
@@ -447,7 +460,23 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(signalSection))
       signals.set(name, asScalarText(node, `${label}.signal_texts.'${name}'`));
 
-  return new Localization(objects, propertyTags, symbols, locations, reasons, ordinalSuffix, slots, signals);
+  const stages = new Map<string, string>();
+  const stageSection = tryGetMap(root, 'stage_texts', label);
+  if (stageSection !== undefined)
+    for (const [name, node] of entriesInOrder(stageSection))
+      stages.set(name, asScalarText(node, `${label}.stage_texts.'${name}'`));
+
+  return new Localization(
+    objects,
+    propertyTags,
+    symbols,
+    locations,
+    reasons,
+    ordinalSuffix,
+    slots,
+    signals,
+    stages,
+  );
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

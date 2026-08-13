@@ -46,6 +46,20 @@ function declaredSignalNames(): readonly string[] {
   return [...found];
 }
 
+/** 同梱の対応表がstage_textsに書いている段の名前（幅の検査に使う）。 */
+function declaredStageTextNames(): readonly string[] {
+  const found: string[] = [];
+  const section = /^stage_texts:$/m.exec(readFileSync(LOCALE_PATH, 'utf8'));
+  if (section === null) return found;
+  const rest = readFileSync(LOCALE_PATH, 'utf8').slice(section.index + section[0].length);
+  for (const line of rest.split('\n')) {
+    const match = /^ {2}([a-z][a-z0-9_]*):/.exec(line);
+    if (match === null) break;
+    found.push(match[1]);
+  }
+  return found;
+}
+
 describe('Localization(表示文字列の対応表)', () => {
   const locale = parseLocale(
     'ja.yaml',
@@ -168,6 +182,13 @@ object_texts:
     expect(withReasons.reason('unknown_reason'), '未登録なら理由を出さない').toBeUndefined();
   });
 
+  it('画面に出る段の文言を引ける（未登録なら識別子）', () => {
+    const texts = parseLocale('ja.yaml', 'stage_texts:\n  unconscious: 気絶\n');
+
+    expect(texts.stage('unconscious')).toBe('気絶');
+    expect(texts.stage('dazed'), '未登録でもカードには何か出す').toBe('dazed');
+  });
+
   it('告げられた出来事の文言を引ける（未登録なら識別子）', () => {
     const texts = parseLocale('ja.yaml', 'signal_texts:\n  missed: 空振り\n');
 
@@ -266,6 +287,20 @@ describe('同梱の表示文字列ファイル', () => {
       expect(label, `signal '${signalName}' には文言が必要`).not.toBe(signalName);
       expect(nameWidth(label), `signal '${signalName}': '${label}' は札に収まらない`).toBeLessThanOrEqual(
         SIGNAL_MAX_WIDTH,
+      );
+    }
+  });
+
+  it('画面に出る段（stage_texts）は、カードの上に収まる短い文言を持つ', () => {
+    // カードの覆いとして出る（CardView.md 9.1節）。長いと幅に合わせて縮み、大きく出て気付かせる
+    // 効果が薄れるので、全角3文字ぶんを上限にする。
+    const STAGE_MAX_WIDTH = 3;
+
+    expect(locale.stage('unconscious'), '気絶は覆いを出す段（VitalsSystem.md 6節）').not.toBe('unconscious');
+    for (const name of declaredStageTextNames()) {
+      const label = locale.stage(name);
+      expect(nameWidth(label), `stage '${name}': '${label}' はカードに収まらない`).toBeLessThanOrEqual(
+        STAGE_MAX_WIDTH,
       );
     }
   });

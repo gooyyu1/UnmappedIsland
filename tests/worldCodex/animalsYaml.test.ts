@@ -211,20 +211,20 @@ describe('animals.yamlの動物', () => {
     expect(monkey.readProperty(warinessId)?.alert).toBe('danger');
   });
 
-  it('気を失っている間は警戒が消え、絵が倒れた姿へ変わる', () => {
-    // 気絶した動物は放っておいてよい相手なので、縁の明滅（CardView.md 3節）を止める。姿が変わった
-    // ことは絵が言う（同 9.1節）——型は差し替えないので、刺さった傷も警戒の実体値も残る。
+  it('気を失っている間は警戒が消え、目覚めれば戻る', () => {
+    // 気絶した動物は放っておいてよい相手なので、縁の明滅（CardView.md 3節）を止める。気絶そのものは
+    // カードの覆いが言う（同 9.1節）——UIはunconsciousの段の名前だけを読む。
     strikeWithSharpStone();
 
     expect(monkey.getNumber(warinessId), '警戒そのものは上がっている').toBe(40 + 25 - 1);
     expect(monkey.readProperty(warinessId)?.value, '気絶が打ち消すので実効値は0').toBe(0);
     expect(monkey.readProperty(warinessId)?.alert, '縁は明滅しない').toBe('safe');
-    expect(monkey.artName(), '倒れた姿の絵になる').toBe('monkey_unconscious');
+    expect(monkey.isInStage(consciousnessId, 'unconscious'), '覆いを出す段に居る').toBe(true);
     expect(injuriesOf(monkey), '同じ個体なので傷は残る').toEqual(['laceration']);
 
     tick(13);
 
-    expect(monkey.artName(), '目覚めれば元の絵へ戻る').toBeUndefined();
+    expect(monkey.isInStage(consciousnessId, 'unconscious'), '目覚めれば覆いは消える').toBe(false);
     expect(monkey.readProperty(warinessId)?.alert, '警戒も戻る').toBe('caution');
   });
 
