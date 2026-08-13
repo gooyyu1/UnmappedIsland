@@ -67,6 +67,12 @@ object_texts:
       wariness:
         display_name: 警戒
         description: この動物がどれだけ気を立てているか。傷を負わされれば上がり、放っておけば下がる。
+      consciousness:
+        display_name: 意識
+        description: 起きていて動けるかどうか。痛みと衝撃で薄れ、どちらも引けば戻る。
+      shock:
+        display_name: 衝撃
+        description: 殴られた身体の揺れ。当たった瞬間に跳ね上がり、時間とともに引いていく。
       satiety:
         display_name: 満腹度
       hydration:

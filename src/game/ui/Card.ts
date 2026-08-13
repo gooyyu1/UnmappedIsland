@@ -164,14 +164,15 @@ export interface CardFill {
 }
 
 /**
- * 怪我のカードが出す、残っている傷のバーの内容（CardView.md 8節 カードの状態バー）。
- * 耐久度と違って**減るほど良い**量なので、色は値そのものではなく域（alert）から引く。
+ * 域から色を引くバーの内容（CardView.md 8節 カードの状態バー）。**塗りの長さだけでは良し悪しが
+ * 読めない量**——残っている傷は減るほど良く、意識は減るほど悪い——は、色を値そのものではなく
+ * 域（alert）から引く。
  */
-export interface CardSeverity {
-  /** 負った直後を1とした、残っている傷の割合（0〜1）。 */
+export interface CardAlertBar {
+  /** バーの満たされ具合（0〜1）。 */
   readonly ratio: number;
 
-  /** 今の傷の重さの域。塗りの色になる。 */
+  /** 今その値が居る域。塗りの色になる。 */
   readonly alert: AlertLevel;
 }
 
@@ -235,7 +236,13 @@ export interface CardContent {
   readonly capacityRatio?: number;
 
   /** 残っている傷（怪我のカードだけが持つ）。 */
-  readonly severity?: CardSeverity;
+  readonly severity?: CardAlertBar;
+
+  /**
+   * 今の意識（意識を持つカード——動物・キャラクタ——だけが持つ）。**あと何手で倒れるかを1本で言う**
+   * 統合指標で、痛み・衝撃がここへ合流する（VitalsSystem.md 9節）。
+   */
+  readonly consciousness?: CardAlertBar;
 
   /**
    * 今の工程が要求する素材と道具が、どれだけ揃っているか（0〜1）。製作中オブジェクトだけが持つ。
@@ -358,6 +365,7 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly fillBar: ProgressBar;
   private readonly capacityBar: ProgressBar;
   private readonly severityBar: ProgressBar;
+  private readonly consciousnessBar: ProgressBar;
   private readonly materialBar: ProgressBar;
   private readonly stepBar: ProgressBar;
 
@@ -428,6 +436,8 @@ export class Card extends Phaser.GameObjects.Container {
     // 傷は減るほど良い量なので、増えた分の帯が赤くなるようにする（worsensUpward）。色は域から引く
     // （fillColorを渡さない）ので、傷が引くほど緑へ寄る。
     this.severityBar = this.addRailBar(scene, metrics, { worsensUpward: true });
+    // 意識は減るほど悪い（既定のworsensUpward=false）。色は域から引くので塗りの色は渡さない。
+    this.consciousnessBar = this.addRailBar(scene, metrics, {});
     // 材料の充足は耐久度と同じ色域（満ちるほど緑）。**満ちた＝作業できる**を緑で言い切れる。
     this.materialBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
     // 工程の進捗は良し悪しではなく「ここまで終えた」量なので、値によらず1色。
@@ -622,8 +632,9 @@ export class Card extends Phaser.GameObjects.Container {
    * 桟の高さも積む位置も「今いくつ出ているか」だけで決まる。
    */
   private barsFor(content: CardContent): readonly RailBar[] {
-    // 傷の重さは域が色を決めるので、割合より先に伝える（塗り直しを1回で済ませる）。
+    // 域が色を決めるバーは、割合より先に域を伝える（塗り直しを1回で済ませる）。
     if (content.severity !== undefined) this.severityBar.setAlert(content.severity.alert);
+    if (content.consciousness !== undefined) this.consciousnessBar.setAlert(content.consciousness.alert);
 
     const all = [
       // 製作中の2本を先に積む。作りかけのカードではこの2本だけが出るので、順は互いの上下だけを
@@ -634,6 +645,7 @@ export class Card extends Phaser.GameObjects.Container {
       { bar: this.fillBar, ratio: content.fill?.ratio },
       { bar: this.capacityBar, ratio: content.capacityRatio },
       { bar: this.severityBar, ratio: content.severity?.ratio },
+      { bar: this.consciousnessBar, ratio: content.consciousness?.ratio },
     ];
     for (const { bar, ratio } of all) {
       if (ratio === undefined) bar.setVisible(false);

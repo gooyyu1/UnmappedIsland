@@ -23,10 +23,16 @@ describe('animals.yamlの動物', () => {
   let player: WorldObject;
   let monkey: WorldObject;
   let warinessId: number;
+  let painId: number;
+  let shockId: number;
+  let consciousnessId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
     warinessId = codex.propertyNames.getId('wariness');
+    painId = codex.propertyNames.getId('pain');
+    shockId = codex.propertyNames.getId('shock');
+    consciousnessId = codex.propertyNames.getId('consciousness');
   });
 
   beforeEach(() => {
@@ -71,6 +77,16 @@ describe('animals.yamlの動物', () => {
 
   function tick(count: number): void {
     for (let i = 0; i < count; i++) monkey.tick(session);
+  }
+
+  /** 今の実効値（modifyの寄与を加味した、画面に出るのと同じ値）。 */
+  const effective = (propertyGlobalId: number): number | undefined =>
+    monkey.readProperty(propertyGlobalId)?.value;
+
+  /** 今のサルの意識（実効値と域）。痛み・衝撃の寄与が合流した後の姿で、カードのバーに出るのと同じ。 */
+  function consciousness(): { value: number; alert: string } {
+    const reading = monkey.readProperty(consciousnessId)!;
+    return { value: reading.value, alert: reading.alert };
   }
 
   /** bodyの実行中に告げられた出来事（signal、9.8節）を「誰の身に・何が」の形で並べる。 */
@@ -141,6 +157,47 @@ describe('animals.yamlの動物', () => {
     expect(signalsOf(strikeWithSharpStone)).toEqual(['monkey: missed']);
   });
 
+  it('一撃で気を失い、時間をかけて戻る', () => {
+    // 狩りの決着は死ではなく気絶で付く（VitalsSystem.md 5節）ので、殴った瞬間に効く必要がある。
+    // 石1つでもサルの体格（shockのmax=100）には一撃。
+    expect(consciousness(), '殴る前ははっきりしている').toEqual({ value: 100, alert: 'safe' });
+
+    strikeWithSharpStone();
+
+    // 効果は時間が経ち切ってから適用される（ActionSystem.md 2節）ので、殴ったぶんはtickで引かれない。
+    expect(monkey.getNumber(shockId), '衝撃はaddで即座に立つ').toBe(80);
+    expect(consciousness(), 'reelingの-80と痛みの-20で底を打つ（unconsciousの段）').toEqual({
+      value: 0,
+      alert: 'danger',
+    });
+
+    // -4/tickで引く。60まで下がるとreeling（-80）を抜け、rattled（-30）と痛み（-20）だけが残る。
+    tick(5);
+
+    expect(consciousness(), '気絶からは45分で覚める（dazedの段）').toEqual({ value: 50, alert: 'caution' });
+
+    // 28まで引けばsteadyへ。残るのは痛みの-20だけで、意識ははっきりした域へ戻る。
+    tick(8);
+
+    expect(monkey.getNumber(shockId)).toBe(28);
+    expect(consciousness(), '残るのは痛みの-20だけ（clearの段）').toEqual({ value: 80, alert: 'safe' });
+  });
+
+  it('痛みも意識を下げるが、痛みだけでは気絶しない', () => {
+    // 寄与元は段が持つ（VitalsSystem.md 2節）。深手を2つ負えば痛みは耐えがたい域に入り、
+    // それでも朦朧に留まる——気絶させるのは衝撃の側。
+    strikeWithSharpStone();
+    strikeWithSharpStone();
+    tick(20); // 衝撃だけを引かせる（傷はまだ残る）。
+
+    expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(20);
+    expect(effective(painId), '裂傷2つで50+50').toBe(100);
+    expect(consciousness(), '痛みが最も深くても朦朧に留まる（dazedの段）').toEqual({
+      value: 100 - 45,
+      alert: 'caution',
+    });
+  });
+
   it('殴り続ければ危険域まで気が立つ', () => {
     // 段はワールド側の宣言なので、しきい値を刻み直したらここで落ちる。
     strikeWithSharpStone();
@@ -164,14 +221,14 @@ describe('animals.yamlの動物', () => {
   });
 
   it('動物の傷は、キャラクタの怪我と同じ物である', () => {
-    // 同じ定義を両方へ刺す（HuntingSystem.md 3節）。動物は痛みを持たないので、怪我が宣言している
-    // 痛みへの寄与は宛先が無く効かない——怪我の側は相手を選ばない。
+    // 同じ定義を両方へ刺す（HuntingSystem.md 3節）。痛みも動物が持つ（VitalsSystem.md 7節）ので、
+    // 怪我が宣言している痛みへの寄与はそのまま届く——怪我の側は相手を選ばない。
     strikeWithSharpStone();
     const wound = monkey.tryGetSlot(codex.slotNames.getId('injuries'))!.contents[0];
 
     expect(wound.def.tags).toContain(codex.tagNames.getId('injury'));
     expect(wound.readProperty(codex.propertyNames.getId('severity'))?.ratio).toBe(1);
-    expect(monkey.readProperty(codex.propertyNames.getId('pain')), 'サルは痛みを持たない').toBeUndefined();
+    expect(effective(codex.propertyNames.getId('pain')), '傷の痛みが届く').toBe(50);
 
     expect(
       wound.moveToSlot(jungle, codex.slotNames.getId('items')),

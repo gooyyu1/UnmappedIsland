@@ -11,7 +11,7 @@ import { MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
-import type { CardContent, CardFill, CardSeverity } from './ui/Card';
+import type { CardAlertBar, CardContent, CardFill } from './ui/Card';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
 import type { StatusContent } from './ui/StatusBar';
@@ -332,6 +332,7 @@ const STATUS_TAG = 'status';
  */
 const DURABILITY_PROPERTY = 'durability';
 const SEVERITY_PROPERTY = 'severity';
+const CONSCIOUSNESS_PROPERTY = 'consciousness';
 const COLOR_PROPERTY = 'color';
 
 /**
@@ -423,9 +424,20 @@ export function fromGameSession(
 
   const severityPropertyId = codex.propertyNames.tryGetId(SEVERITY_PROPERTY);
   /** 怪我のカードに出す、残っている傷（docs/engine/InjurySystem.md）。severityを持たない物はundefined。 */
-  const severityOf = (object: WorldObject): CardSeverity | undefined => {
+  const severityOf = (object: WorldObject): CardAlertBar | undefined => {
     if (severityPropertyId === undefined) return undefined;
     const reading = object.readProperty(severityPropertyId);
+    return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
+  };
+
+  const consciousnessPropertyId = codex.propertyNames.tryGetId(CONSCIOUSNESS_PROPERTY);
+  /**
+   * 動物のカードに出す意識（docs/engine/VitalsSystem.md 9節）。**バーはこれ1本だけ**——痛み・衝撃・
+   * 失血はいずれも意識へ合流するので、あと何手で倒れるかはここが答える。持たない物はundefined。
+   */
+  const consciousnessOf = (object: WorldObject): CardAlertBar | undefined => {
+    if (consciousnessPropertyId === undefined) return undefined;
+    const reading = object.readProperty(consciousnessPropertyId);
     return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
   };
 
@@ -629,6 +641,7 @@ export function fromGameSession(
     fill: fillOf(instances[0]),
     capacityRatio: capacityRatioOf(instances[0]),
     severity: severityOf(instances[0]),
+    consciousness: consciousnessOf(instances[0]),
     alert: alertOf(instances[0]),
     ...craftingOf(instances[0]),
     mark: markOf(instances[0]),
