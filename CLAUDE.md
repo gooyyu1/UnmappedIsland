@@ -74,3 +74,7 @@ TypeScriptのコーディング規約は [`docs/engine/CodingConventions.md`](do
   始める（過去のセッションでは、これを確認せずに古いブランチへプッシュしようとして
   non-fast-forwardで失敗し、リカバリに手間取ったことが複数回あった）。
 - 変更を加えたあとは、ユーザーに確認を取らずにPR作成まで進めてよい。
+- **作ったPRをウォッチしない。** マージはユーザーが自分で行うので、`subscribe_pr_activity` での購読も、
+  `send_later` / `create_trigger` による自己チェックインの予約もしない。CIの結果やレビューを見るなら、
+  そのセッションの中で見終えて報告する。予約は許可を求めるプロンプトを毎回出すため、
+  `.claude/settings.json` の `permissions.deny` でも同じツールを塞いである。
