@@ -742,8 +742,9 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: locationNameOf(path.destinationInstanceId),
       art: path.destination?.def.name,
-      // 名前も絵も行き先のものなので、道であることは枠の色と桟の矢印だけが示す。
-      kind: 'road',
+      // 名前も絵も行き先のものなので、道であることは桟の矢印だけが示す（枠の色は現在地と同じ、
+      // どちらも場所を映す札のため）。
+      kind: 'location',
       road: true,
     };
   };
@@ -789,7 +790,7 @@ export function fromGameSession(
             icon: LOCATION_ICON,
             name: locationNameOf(instanceId),
             art: root.findDescendantByInstanceId(instanceId)?.def.name,
-            kind: 'fixture',
+            kind: 'location',
           },
           current: site === currentSite,
         };
@@ -958,7 +959,7 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: locationNameOf(location.instance.instanceId),
       art: location.instance.def.name,
-      kind: 'fixture',
+      kind: 'location',
     },
     locationArt: location.instance.def.name,
     laneSlot: (place) => {

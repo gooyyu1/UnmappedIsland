@@ -11,8 +11,8 @@ import { cardFrameColors } from '../../src/game/ui/theme';
  */
 describe('カードの枠の色', () => {
   const KINDS: readonly CardFrameKind[] = [
+    'location',
     'fixture',
-    'road',
     'item',
     'food',
     'container',
