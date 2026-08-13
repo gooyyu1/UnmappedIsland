@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/monkey_carcass.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "仕留めたサル（docs/engine/HuntingSystem.md 1.4節）。生きているサル（monkey.json）の生データを",
+    "基準に、Qwen Image Edit で「同じ個体が倒れた姿」として派生させる（README「既存の絵からの派生」節）。",
+    "別々に生成すると毛色も作風も個体も揃わず、同じサルが死んだようには見えない。",
+    "",
+    "**傷も血も描かせない。** 急所への一撃は怪我として残らない（docs/engine/InjurySystem.md 4節）ので、",
+    "傷を描くと存在しないものを絵だけが言うことになる。倒れて動かないことだけで死は伝わる。",
+    "",
+    "**斜め上から見下ろす。** アイテムとして地面に置かれた物を見る角度で、座った横向きの生体とは",
+    "輪郭が完全に分かれる。真横から寝かせた姿を採らなかった理由はREADME「大きさ」節。真上",
+    "（腹を上に投げ出した姿）は最も死体らしいが、顔の濃い灰色と胸の生成りが抜けて別の個体になる。",
+    "",
+    "大きさは monkey.json と同じ400。死んで軽くなるわけではない。"
+  ],
+  "output": "src/assets/objects/monkey_carcass.png",
+  "edit": {
+    "_seedNote": "seed 2 は影が背景いっぱいの灰色の円になり、切り出しがそのまま拾う（札に灰色の円板が出る）。",
+    "source": "monkey.json",
+    "prompt": "Show the exact same monkey now dead, lying sprawled on the ground and seen from a high angle looking down on it from above and slightly to the side. The whole body lies flat on the ground, limp and lifeless: the back faces upwards, the head rests on its side with the eyes closed and the muzzle visible, the arms and legs are splayed loosely out from the body, and the very long thin tail curves loosely across the ground beside it, complete to the very tip. Keep the same monkey with the same muted warm grey brown fur, pale cream markings and dark grey face, the same soft hand painted illustration style with gentle natural shading, the same flat even lighting, and the same plain empty white page with a wide white margin all around it and a soft grey shadow around it on the ground. No blood, no wounds, no injuries, nothing else in the image. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
