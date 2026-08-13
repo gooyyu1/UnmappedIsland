@@ -68,7 +68,7 @@ axes:
 #   - 1つの島で使うのはmax_sites_per_type個までだが、多く書いておくと島ごとに違う亜種が出る。
 #     足りない分は通し番号で埋まる（名前としては読めないので、余裕を持って用意する）。
 # - move_cost: 移動コストの倍率（1=等倍）。道のtravel_minutes = 距離 × base_minutes_per_distance ×
-#   両端move_costの平均 で決まる（3.5節）。
+#   両端move_costの平均 で決まる（TerrainGeneration.md 3.5節）。
 # - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（3.3節）。
 #   priorityが最も高いfallbackが選ばれる。
 # - 海岸過多の防止: 海岸3種はhard_limits(coastal_distance.max=coast_band)で海岸帯にしか出ず、

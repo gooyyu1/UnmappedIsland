@@ -13,7 +13,7 @@ property_tags:
 
 traits:
   # あらゆる「場所」が探索の可否によらず共通して持つ構造（ExplorationSystem.md参照）。
-  # worldのlocationsスロットの受け入れ判定用のタグ（4節・7.2節）もこのtraitが配る。
+  # worldのlocationsスロットの受け入れ判定用のタグ（GameElementDefinition.md 4.1節・7.2節）もこのtraitが配る。
   # スロットの宣言順に意味がある: spawn（9.4節）は配置先スロットを宣言順に走査し、
   # 配置失敗時のフォールバックは先頭スロットへ入るため、itemsを先頭に置く
   # （「持ちきれない物は地面に落ちる」を実現する）。
@@ -319,7 +319,7 @@ object_defs:
       # 大気水分量（ClimateSystem.md 3節の貯水池）。季節レート＋降雨中の自己減算（weather参照）で駆動。
       # 基準レート（1/tick、GameElementDefinition.md 6.0節）は雨季の上昇。湿度が上がる季節を基準に置き、
       # calm/dryはその微変動として扱う。
-      # stagesは天気候補ごとの重み（*_weight）をmodifyで駆動する（4.3節）: saturatedでは晴れ系の重みなし、dryでは
+      # stagesは天気候補ごとの重み（*_weight）をmodifyで駆動する（ClimateSystem.md 4.3節）: saturatedでは晴れ系の重みなし、dryでは
       # heavy_rain/stormの重み0。晴れ系の中ではclearを最も重くする。moderateまでの雨は必ずlight_rain
       # （序盤の「軽めの雨」要件、3.2節）。scorching_weightのみthermal_levelのhot stageが駆動する。
       atmospheric_moisture:
