@@ -38,7 +38,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 [`StatusArea.md`](../ui/StatusArea.md)）。`pain` が先頭なのは trait 由来の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。
 
-気絶と死を決める `consciousness`・`vitality` も、`pain` と同じくキャラクタ間で共通の値として
+気絶と死を決める `consciousness`・`blood` も、`pain` と同じくキャラクタ間で共通の値として
 ここへ加わる予定である（刻み方と押し下げる側は
 [`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節・3 節。まだ実装していないため上の契約には含めない）。
 
