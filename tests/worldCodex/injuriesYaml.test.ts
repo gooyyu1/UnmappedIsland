@@ -192,6 +192,23 @@ describe('injuries.yamlの怪我', () => {
       expect(session.world!.totalMinutes, '入らないと分かっているので時間も取らない').toBe(before);
     });
 
+    it('同じ怪我を2つ負っても束ならず、1つずつ手当てする', () => {
+      // stackable: false（SlotSystem.md 4節）。束ねてしまうと代表の1つにしか治療具を当てられない。
+      const { injury, bandage } = injured();
+      pickCoconut();
+      const stacks = new PlayerCharacter(player, codex).injuryStacks;
+      expect(
+        stacks.map((stack) => stack.length),
+        '2つの枠に1つずつ並ぶ',
+      ).toEqual([1, 1]);
+
+      treat(injury, bandage);
+
+      expect(treatmentOn(injury)).toEqual(['bandage']);
+      const untouched = stacks.flat().find((object) => object !== injury)!;
+      expect(treatmentOn(untouched), 'もう一方は手当てされないまま残る').toEqual([]);
+    });
+
     it('当てるのに30分かかり、外すのは一瞬', () => {
       const { injury, bandage } = injured();
       const before = session.world!.totalMinutes;
