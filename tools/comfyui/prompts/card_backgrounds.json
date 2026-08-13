@@ -1,34 +1,40 @@
 {
   "_comment": [
-    "設置物のカードの地に敷く、土地ごとの背景のプロンプト（src/game/ui/backgroundArt.ts）。",
-    "キーは出力するファイル名（<土地のobject_defの識別子>_card_background）と一致させる。",
+    "カードの地に敷く背景のプロンプト（src/game/ui/backgroundArt.ts）。キーは出力するファイル名",
+    "（<対象のobject_defの識別子>_card_background）と一致させる。",
     "",
-    "狙いはレーンの背景（lane_backgrounds.json の _fixture）と同じ「その土地の眺め」だが、",
-    "縦長のカード1枚に収まる構図にする。カードの上には物の絵と名前が載るので、レーンよりさらに",
+    "土地の絵は、レーンの背景（lane_backgrounds.json の _fixture）と同じ「その土地の眺め」を、",
+    "縦長のカード1枚に収まる構図で描く。カードの上には物の絵と名前が載るので、レーンよりさらに",
     "淡く・平らに描かせる（主題を作らない、影を作らない、空を広く取らない）。",
     "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
-    "",
-    "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
-    "叩き台は _baseNegative にある（生成には使わない）。",
+    "身体の絵（怪我のカードの地）は、部位ではなく肌・毛皮そのものを枠いっぱいに描く。部位を描くと、",
+    "その上へ載る傷の層を身体ごとに位置合わせしなければならなくなる（docs/ui/CardView.md 7 節）。",
     "",
     "negative は各エントリが完全な形で持つ（lane_backgrounds.json と同じ理由）。新しく書くときの",
     "叩き台は _baseNegative にある（生成には使わない）。"
   ],
   "_baseNegative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts",
+  "medic_card_background": {
+    "description": "マルコの肌。怪我のカードの地。部位は描かず、肌そのものを枠いっぱいに。",
+    "_note": [
+      "**部位の名前を1つも出さない。** 「前腕」と言うと、背景の上に腕が1本立った絵になり、輪郭が出る。",
+      "輪郭が出ると、その上へ載る傷の層を身体ごとに位置合わせすることになる。",
+      "「真上から見た肌の面が枠を埋める」とだけ言って、面の話に閉じる。",
+      "照りも禁じる——つやが乗ると3D風になり、他のカードから浮くうえ痣の乗算が読めなくなる。"
+    ],
+    "positive": "extreme close up of bare human skin completely filling the frame from edge to edge, a flat patch of sun weathered skin seen straight on, uniform warm tan olive skin tone across the whole frame, fine skin texture with faint pores and a few soft body hairs, soft even diffuse daylight, matte skin, muted natural colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
+    "negative": "arm, forearm, limb, leg, thigh, curved surface, rounded form, silhouette, outline, edge of the body, body against a background, face, head, eyes, nose, mouth, ear, hand, fingers, fingertips, thumb, palm, knuckles, foot, toes, ankle, knee, elbow, shoulder, torso, chest, nipple, navel, whole figure, person, portrait, background, wall, floor, table, cloth, clothing, sleeve, fabric, jewellery, tattoo, wound, bruise, blood, scar, rash, veins, wrinkles, goosebumps, sweat, water drops, glossy, shiny, specular highlight, oiled skin, wet skin, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
+  },
+  "monkey_card_background": {
+    "description": "サルの毛皮。怪我のカードの地。カードの絵のサル（objects.jsonのmonkey）と毛色を揃える。",
+    "_note": [
+      "毛色は monkey.json のedit（muted warm grey brown fur）に合わせる。同じ個体の別の場所を",
+      "近くで見ている絵なので、ここがずれると別の動物の毛に見える。**放っておくと白い長毛になる**ので、",
+      "白・クリーム・ふさふさをnegativeで落とし、短く寝た毛だと言う。"
+    ],
+    "positive": "extreme close up of short dense animal fur completely filling the frame from edge to edge, a flat patch of muted warm greyish brown fur seen straight on, short coarse strands lying flat in one direction, soft even diffuse daylight, matte fur, muted earthy brown colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
+    "negative": "white fur, cream fur, pale fur, blonde fur, silver fur, fluffy, long hair, shaggy, fox fur, rabbit fur, curved surface, rounded form, silhouette, outline, edge of the body, animal against a background, face, head, eyes, nose, mouth, ear, snout, muzzle, hand, paw, fingers, claws, tail, whole animal, background, branch, leaves, jungle, ground, sky, wound, bruise, blood, scar, bald patch, bare skin, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
+  },
   "rocky_field_card_background": {
     "description": "岩場の眺め。カード全面に岩と枯れ草。空は入れない。",
     "_note": [

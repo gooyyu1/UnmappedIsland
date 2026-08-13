@@ -9,7 +9,8 @@
 カードの絵として（card_art.py）扱う。mark があれば、その後に絵文字の形を色替えして重ね
 （icon_mark.py）、tint があれば陰影を残したまま一部の色を寄せる（skin_tint.py）。
 edit を持つレシピは、生成の代わりに別レシピの生データを
-基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。
+基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。stain を持つレシピは
+生成も後処理もせず、乗算で載る染みの層を描くだけ（skin_tint.py --layer）。
 
 --keep-raw を付けると、後処理前の生成物を残す（プロンプトを詰め直すときに見比べられる）。
 ComfyUIは要るが、起動していなければこちらで起動する。
@@ -115,6 +116,19 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
             ],
         )
         return edited
+
+    stain = recipe.get("stain")
+    if stain is not None:
+        drawn = raw_dir / f"{Path(recipe['output']).stem}_stain.png"
+        run(
+            "skin_tint.py",
+            [
+                "--layer", stain["size"],
+                "--out", str(drawn),
+                *[str(v) for spot in stain["spots"] for v in ("--spot", spot)],
+            ],
+        )
+        return drawn
 
     paint = recipe.get("paint")
     if paint is not None:
@@ -290,6 +304,9 @@ def main() -> None:
                     *[str(v) for start, end in page.get("cutRows", []) for v in ("--cut-rows", start, end)],
                 ],
             )
+        elif "postprocess" not in recipe:
+            # 後処理の要らないレシピ（染みの層は、描いた時点で出来上がっている）。
+            processed = raw
         else:
             post = recipe["postprocess"]
             run(

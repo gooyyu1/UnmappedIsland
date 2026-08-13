@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/monkey_card_background.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "怪我のカードの地に敷く、サルの毛皮（docs/ui/CardView.md 7 節）。動物も人と同じ構造の怪我を負う",
+    "（docs/engine/HuntingSystem.md 3 節）ので、地が変わるだけで傷の絵はそのまま使える。",
+    "",
+    "毛色は monkey.json のedit と揃える。同じ個体の別の場所を近くで見ている絵なので、",
+    "ずれると別の動物の毛に見える。他は medic_card_background.json と同じ扱い。"
+  ],
+  "output": "src/assets/backgrounds/monkey_card_background.png",
+  "prompts": "card_backgrounds.json",
+  "prompt": "monkey_card_background",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 60002,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "oilify": [6, 12]
+  }
+}
