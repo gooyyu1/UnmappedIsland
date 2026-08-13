@@ -1,5 +1,5 @@
 # 怪我に当てる治療具（treatmentタグ）の定義。怪我のtreatmentスロットへ入れて使う
-# （injuries.yaml・docs/world/Injuries.md 手当て節）。
+# （injuries.yaml・docs/engine/InjurySystem.md 3節の手当て）。
 #
 # 効き目は「当てている間だけ」なので、すべてpassivesで書く。治した量を実体値へ焼き付けると、
 # 外したときに戻せない。

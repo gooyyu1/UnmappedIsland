@@ -18,8 +18,9 @@
 - [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)） — 上記文法の
   機械的な検証
 
-実際のゲームデータ（`public/world-codex/*.yaml`）を閲覧するツールは
-[`../World/WorldCodexViewer.md`](../world/WorldCodexViewer.md) を参照してください。
+実際のゲームデータ（`public/world-codex/*.yaml`）を型・プロパティ・スロット・操作の単位で辿って読むには、
+閲覧ビューア（`npm run dev:codex`、公開先は [`../../codex/`](../../codex/)）を開いてください。作りと設計判断は
+`src/codex/` の各ファイルのコメントにあります。
 
 ### 汎用サブシステム（文法を使って、どんな内容にも適用できる仕組みの設計）
 
@@ -34,6 +35,8 @@
 - [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
 - [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
 - [狩猟システム設計](./HuntingSystem.md) — 動物との対峙をターンや専用画面ではなく、怪我・時間・既存の操作へ載せる方法
+- [怪我システム設計](./InjurySystem.md) — 傷を専用の体力値ではなく1つのオブジェクトとして表し、手当てを枠へ載せる方法
+- [生命と意識のシステム設計](./VitalsSystem.md) — 何が意識を奪い、何が命を奪うか。気絶と死の表し方
 
 - [ローカライゼーション](./Localization.md) — 表示文字列をWorldCodexから切り離し、言語ごとの対応表から引く仕組み
 

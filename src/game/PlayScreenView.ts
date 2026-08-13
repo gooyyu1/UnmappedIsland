@@ -416,7 +416,7 @@ export function fromGameSession(
     durabilityPropertyId === undefined ? undefined : object.readProperty(durabilityPropertyId)?.ratio;
 
   const severityPropertyId = codex.propertyNames.tryGetId(SEVERITY_PROPERTY);
-  /** 怪我のカードに出す、残っている傷（docs/world/Injuries.md）。severityを持たない物はundefined。 */
+  /** 怪我のカードに出す、残っている傷（docs/engine/InjurySystem.md）。severityを持たない物はundefined。 */
   const severityOf = (object: WorldObject): CardSeverity | undefined => {
     if (severityPropertyId === undefined) return undefined;
     const reading = object.readProperty(severityPropertyId);

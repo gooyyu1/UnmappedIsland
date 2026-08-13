@@ -89,7 +89,7 @@ seed: 3
 player:
   hand: [woven_basket]      # キャラクターのhandスロットへ、並べた順に入れる
   equipment: []             # 同じ名前が並んだ数だけ作られる
-  injuries: []              # 負った状態で始める怪我（docs/world/Injuries.md）
+  injuries: []              # 負った状態で始める怪我（docs/engine/InjurySystem.md）
   props:
     satiety: 12             # プロパティの上書き（実体値。数値かシンボル名）
 location:
