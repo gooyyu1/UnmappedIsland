@@ -626,7 +626,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** ドラッグの対象になるレーン。設置物レーンも含める——持ち出せはしないが、同じレーンの中でなら並び替えられるため。 */
   private setDragLanes(): void {
-    this.drag.setLanes(this.lanesFrontFirst);
+    this.drag.setLanes(this.draggableLanes);
   }
 
   /**
@@ -868,18 +868,19 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ドロップ先を探す順。**画面で手前に重なっているものから**渡す。
+   * 今ドラッグの相手にできるレーンを、**画面で手前に重なっているものから**。
    *
-   * ドロップ先の判定は重なりを見ず「最初に当たったレーン」で決まる（CardDragController.dropAt）。
-   * 子ウィンドウはフィールドのレーンを覆っているので、openLanesの順（末尾）のまま渡すと、
-   * 覆われている側が先に当たり、**ウィンドウの中のカードへは落とせない**。
+   * 子ウィンドウは設置物とアイテムのレーンを覆っているので、開いている間その2つは外す。残すと
+   * ドロップ先の判定（重なりを見ず「最初に当たったレーン」、CardDragController.dropAt）で
+   * 覆われている側が先に当たり、ウィンドウの中のカードへ落とせないうえ、隠れているはずの枠に
+   * 「ここへ落とせる」という印が出る。手持ちはウィンドウの外なので残る（slotWindowArea）。
    *
    * openLanes自体は並べ替えられない——差し替えの中身と位置で対応付けている（showView）。
    */
-  private get lanesFrontFirst(): readonly CardLane[] {
-    const front = this.childWindow?.lane;
-    const lanes = this.openLanes;
-    return front === undefined ? lanes : [front, ...lanes.filter((lane) => lane !== front)];
+  private get draggableLanes(): readonly CardLane[] {
+    if (this.childWindow === undefined) return this.openLanes;
+    const front = this.childWindow.lane;
+    return front === undefined ? [this.handLane] : [front, this.handLane];
   }
 
   /**
