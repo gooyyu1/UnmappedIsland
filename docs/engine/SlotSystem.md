@@ -3,10 +3,17 @@
 ## 概要
 
 スロット（親子関係とコンテナ、[`GameElementDefinition.md`](./GameElementDefinition.md) 7節）が
-実行時にどう実装されているかを記述する設計ドキュメントです。定義は `Domain.Defs.SlotDef`、
-実行時状態は `Domain.Runtime.Slot` と `Domain.Runtime.ObjectStack`。重さの伝播は
+実行時にどう実装されているかを記述する設計ドキュメントです。重さの伝播は
 [`ContainerSystem.md`](./ContainerSystem.md)、`represented_by` を使う代表例は
 [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) を参照してください。
+
+**データ構造はセルの並びとスタックの2階層**（1 節）で、受け入れ判定は重ならない3つの問い——型が合うか
+（`accept`）・位置があるか（`cell_count`/`max`）・かさが入るか（`capacity`）——に分けます（2 節）。
+束ねてよいか（`stackable`）は枠ではなく物の性質です（4 節）。スロット専用の新しい文法はありません。
+
+定義は `Domain.Defs.SlotDef`、実行時状態は `Domain.Runtime.Slot` と `Domain.Runtime.ObjectStack`、
+検証は `tests/domain/cells.test.ts`・`stacking.test.ts`・`objectStack.test.ts` 等です。本書は実装済みの
+仕組みの記述で、未決事項は 7 節に整理しています。
 
 ## 1. データ構造: セルの並びとスタックの2階層
 

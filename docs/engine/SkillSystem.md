@@ -10,7 +10,10 @@
 [`ExplorationSystem.md`](./ExplorationSystem.md) と同じく、専用の新しい文法は導入せず、既存の
 `props`/`stages`/`conditions`/`passives`/`actions` の応用として組みます（唯一の例外は 4 節）。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 8 節に整理しています。
+本ドキュメントは検討結果であり、確定仕様書ではありません。解放条件の文法（`recipes` の `conditions`、
+`GameElementDefinition.md` 13.3 節）はローダーまで実装済みですが、スキルのプロパティと解放条件の
+データはまだ投入されていません（`containers.yaml` のレシピは解放条件を持ちません）。未決事項は
+8 節に整理しています。
 
 ## 1. 「研究」という別概念を持たない
 

@@ -147,23 +147,55 @@ describe('ドキュメントの参照', () => {
     expect(broken, `アンカー切れ:\n${broken.join('\n')}`).toEqual([]);
   });
 
-  it('「Foo.md N節」が実在の節番号に解決する', () => {
+  it('節番号の参照が実在の節に解決する（明示・同・裸の全形式）', () => {
+    // 参照の指し先の規約（docs/DocumentStyle.md 5節）:
+    // - 「Foo.md N節」= その文書の節
+    // - 「同 N節」= 同じファイル内で直前に名前を挙げた文書の節
+    // - 裸の「N節」= 読み手の解釈と同じ優先順で、自文書 → 直前に名前を挙げた文書 →
+    //   GameElementDefinition.md（WorldCodex文法の節）のどれか
+    // - 「・」「、」で続く番号の列挙は、直前の参照と同じ文書
     const broken: string[] = [];
+    const tokenPattern =
+      /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
+    const resolves = (base: string, nums: readonly string[]): boolean => {
+      const candidates = docsByBasename.get(base);
+      return (
+        candidates !== undefined &&
+        nums.every((n) => candidates.some((doc) => hasNumberedSection(doc, n)))
+      );
+    };
     for (const rel of REF_FILES) {
       const text = read(rel).replace(/\n[\s*/#-]*/g, ' '); // コメントの継続行をまたぐ参照を繋ぐ
-      for (const match of text.matchAll(
-        /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?\s*(?:の)?\s*(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g,
-      )) {
-        const [, base, num, rangeEnd] = match;
-        const candidates = docsByBasename.get(base);
-        if (candidates === undefined) {
-          broken.push(`${rel}: ${base}（docsに無い）`);
+      const selfBase = docByPath.has(rel) ? (rel.split(sep).pop() as string) : null;
+      let lastNamedBase: string | null = null;
+      let lastNamedEnd = -1;
+      let prevRef: { base: string | null; end: number } | null = null;
+      for (const match of text.matchAll(tokenPattern)) {
+        const [whole, namedBase, dou, num, rangeEnd] = match;
+        if (namedBase !== undefined) {
+          lastNamedBase = namedBase;
+          lastNamedEnd = match.index + whole.length;
           continue;
         }
-        for (const n of rangeEnd === undefined ? [num] : [num, rangeEnd]) {
-          if (!candidates.some((doc) => hasNumberedSection(doc, n))) {
-            broken.push(`${rel}: ${base} ${n}節`);
-          }
+        const nums = rangeEnd === undefined ? [num] : [num, rangeEnd];
+        const gap = text.slice(lastNamedEnd, match.index);
+        const sincePrev = prevRef === null ? null : text.slice(prevRef.end, match.index);
+        // 指し先の候補（先頭から順に試し、最初に解決した文書を採る）
+        let candidates: (string | null)[];
+        if (lastNamedBase !== null && /^[\s`の)）]*$/.test(gap)) {
+          candidates = [lastNamedBase]; // 明示: Foo.md N節（リンク形式の閉じ括弧は挟んでよい）
+        } else if (dou !== undefined) {
+          candidates = [lastNamedBase]; // 同 N節
+        } else if (sincePrev !== null && /^[・、]\s*$/.test(sincePrev)) {
+          candidates = [prevRef!.base]; // 列挙の続き: N節・M節
+        } else {
+          candidates = [selfBase, lastNamedBase, 'GameElementDefinition.md'];
+        }
+        const bases = [...new Set(candidates.filter((c): c is string => c !== null))];
+        const resolved = bases.find((base) => resolves(base, nums)) ?? null;
+        prevRef = { base: resolved, end: match.index + whole.length };
+        if (resolved === null) {
+          broken.push(`${rel}: 「${whole.trim()}」が解決しない（候補: ${bases.join('・')}）`);
         }
       }
     }
