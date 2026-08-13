@@ -218,7 +218,20 @@ object_texts:
     description: 群れで暮らす小柄なサル。目を離すと、足元に置いたものを持っていく。
   monkey_carcass:
     display_name: サルの死体
-    description: 仕留めたサル。まだ解体していないので、重いまま運ぶしかない。
+    description: 仕留めたサル。丸ごとでは重いが、刃物を当てれば肉と骨と皮に分けられる。
+    combinations:
+      butcher:
+        display_name: 解体する
+        description: 皮を剥ぎ、肉を外し、骨を落とす。血と内臓はその場に残す。
+  raw_meat:
+    display_name: 生肉
+    description: 獲物から外した肉。火が無いので、生のまま食べるしかない。
+  animal_bone:
+    display_name: 獣骨
+    description: 1頭ぶんの骨。硬く、削れば針にも道具の頭にもなる。
+  rawhide:
+    display_name: 生皮
+    description: 剥いだままの皮。乾けば板のように固まり、濡らせば傷む。
 
   # 治療具（treatments.yaml）。
   bandage:
