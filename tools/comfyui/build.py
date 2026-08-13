@@ -125,10 +125,19 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
             [
                 "--layer", stain["size"],
                 "--out", str(drawn),
-                *[str(v) for spot in stain["spots"] for v in ("--spot", spot)],
+                *[str(v) for spot in stain.get("spots", []) for v in ("--spot", spot)],
+                *[str(v) for line in stain.get("slashes", []) for v in ("--slash", line)],
             ],
         )
-        return drawn
+        # groundを持つレシピでは、描いたものは下絵。地に載せてQwenへ渡し、後で同じ地で割る。
+        if recipe.get("ground") is None:
+            return drawn
+        on_ground = raw_dir / f"{Path(recipe['output']).stem}_on_ground.png"
+        run(
+            "multiply_layer.py",
+            ["apply", str(REPO / recipe["ground"]), str(drawn), "--out", str(on_ground)],
+        )
+        return on_ground
 
     paint = recipe.get("paint")
     if paint is not None:
@@ -303,6 +312,12 @@ def main() -> None:
                     *[str(v) for start, end in page.get("cut", []) for v in ("--cut", start, end)],
                     *[str(v) for start, end in page.get("cutRows", []) for v in ("--cut-rows", start, end)],
                 ],
+            )
+        elif "ground" in recipe:
+            # 地の上で描き直させたものは、同じ地で割って層へ戻す。
+            run(
+                "multiply_layer.py",
+                ["extract", str(REPO / recipe["ground"]), str(raw), "--out", str(processed)],
             )
         elif "postprocess" not in recipe:
             # 後処理の要らないレシピ（染みの層は、描いた時点で出来上がっている）。

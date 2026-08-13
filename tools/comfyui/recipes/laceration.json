@@ -1,0 +1,40 @@
+{
+  "_comment": [
+    "src/assets/objects/laceration_multiply.png（切り傷）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "**傷は、生成でも計算でも単独では出せない。** 生成に頼むと傷ではなく「傷を負った人物の絵」が返り",
+    "（prompts/objects.json の laceration）、線として描くと構造の無い一本の線にしかならない。",
+    "そこで3段に分ける——線として下絵を描き、肌の上に載せてQwenに描き直させ、その肌で割って落とす。",
+    "残るのは傷だけなので、人にも動物にも同じ層が載る（docs/ui/CardView.md 5 節・7 節）。",
+    "",
+    "割る相手（ground）は載せる相手ではなく**下絵を置いた肌**。medic の地が変われば、この絵も",
+    "作り直しになる。"
+  ],
+  "output": "src/assets/objects/laceration_multiply.png",
+  "ground": "src/assets/backgrounds/medic_card_background.png",
+  "stain": {
+    "_comment": [
+      "Qwenへ渡す下絵。位置・角度・長さ・太さはここで決まる（描き直しは形をほぼ動かさない）。",
+      "",
+      "**線は1本。** 曲げようとして2本に分けると、端で幅0になる性質のせいで継ぎ目がくびれ、",
+      "2本の傷に見える。刃物で切られた傷（ja.yaml）なので、まっすぐで構わない。",
+      "",
+      "太さは下絵の時点で決める。細い下絵を渡すと、描き直しても引っ掻き傷のままになる。"
+    ],
+    "size": "410x640",
+    "spots": ["205,318,150,0.26,#e0b3ae"],
+    "slashes": ["158,178,256,462,46,0.44,#b06a6c", "158,178,256,462,18,0.88,#6e3733"]
+  },
+  "edit": {
+    "_comment": [
+      "**唇に見えると言われたら、そう言って否定する。** 縁がふくらんだ左右対称のピンクのレンズは",
+      "口に見える。「厚みのある対称な楕円ではなく細い不揃いな線」「縁は平ら、腫れていない、",
+      "ピンクではない、艶も無い」まで書いて収まった。",
+      "",
+      "凄惨にしないことも書く。放っておくと口を開けた傷と血の滴になる。ja.yamlでは「浅いので",
+      "早く塞がる」傷で、カードは1/3に縮んで並ぶ。"
+    ],
+    "prompt": "Keep this picture of bare skin exactly as it is: the same skin colour, the same skin texture, the same lighting, and the cut in the same place at the same angle and the same length. Repaint only the cut so that it looks like a real shallow knife cut on skin that has already stopped bleeding. It is a thin irregular slit with a dark red brown line inside and a narrow band of flat reddened skin along both sides that fades softly into the normal skin. Do not make it look like lips or a mouth: the shape is a thin uneven line, not a plump symmetrical oval, and the edges are flat, not swollen, not pink, not glossy. No gaping wound, no visible flesh, no blood drops, no gore. Matte skin, flat even lighting, no shine, no highlights. Nothing else in the picture changes. No text, no letters, no numbers.",
+    "seed": 5
+  }
+}
