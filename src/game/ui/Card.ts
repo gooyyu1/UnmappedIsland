@@ -141,14 +141,16 @@ const CELL_OVERLAY_PLATE_ALPHA = 0.72;
 const IN_PROGRESS_VEIL_ALPHA = 0.42;
 
 /**
- * 桟に積む状態バーの高さ・間隔・紙の左右から空ける余白と、桟の中の上下の余白（u単位）。
+ * 桟に積む状態バーの高さ・間隔と、桟の中の上下の余白（u単位）。
  *
- * 4種（耐久度・中身・容量・傷）とも同じ寸法にする。**どれが主要情報かはカードごとに違う**——道具に
- * とっての耐久度と入れ物にとっての容量は、どちらもそのカードの主役なので、太さで格を付けない。
+ * どの種類も同じ寸法にする。**どれが主要情報かはカードごとに違う**——道具にとっての耐久度と
+ * 入れ物にとっての容量は、どちらもそのカードの主役なので、太さで格を付けない。
+ *
+ * 左右は持たない。バーは窓（windowSpan）と同じ幅で引く——桟とその上の絵は縦に隣り合うので、
+ * 端が揃っていないと桟だけがはみ出して見える。
  */
-const RAIL_BAR_HEIGHT = 6;
+const RAIL_BAR_HEIGHT = 9;
 const RAIL_BAR_GAP = 2;
-const RAIL_BAR_MARGIN = 7;
 const RAIL_PAD = 4.5;
 
 /** 移動先のレーンがカードのどちら側にあるか。 */
@@ -733,22 +735,20 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 桟へ積む状態バー1本。**縦の位置以外は4種とも同じ**なので、寸法はここで決め切り、どこへ積むかだけを
+   * 桟へ積むバーを1本作る。**縦の位置以外はどれも同じ**なので、寸法はここで決め切り、どこへ積むかだけを
    * 差し替えのたびに与える（showBars参照）。
-   */
-  /**
-   * 桟へ積むバーを1本作る。**カードのバーは明滅させない**（steady）——明滅は「手を止めろ」という
-   * 催促で、それを言うのは札の縁（3節）とステータスエリアの役目だから（CardView.md 8節）。
+   *
+   * **カードのバーは明滅させない**（steady）——明滅は「手を止めろ」という催促で、それを言うのは
+   * 札の縁（3節）とステータスエリアの役目だから（CardView.md 8節）。
    */
   private addRailBar(scene: Phaser.Scene, metrics: ScreenMetrics, options: ProgressBarOptions): ProgressBar {
-    const paper = paperRect(metrics, this.cardWidth, this.cardHeight);
-    const margin = metrics.px(RAIL_BAR_MARGIN);
+    const span = windowSpan(metrics, this.cardWidth, this.cardHeight);
     const bar = new ProgressBar(
       scene,
       metrics,
-      paper.x + margin,
+      span.x,
       0,
-      paper.width - margin * 2,
+      span.width,
       metrics.px(RAIL_BAR_HEIGHT),
       0,
       // 枠線は数pxの太さの大半を占めてしまうので描かない。
@@ -1335,14 +1335,27 @@ function paperRect(metrics: ScreenMetrics, width: number, height: number): Rect 
   return { x: inset, y: inset, width: width - inset * 2, height: height - inset * 2 };
 }
 
+/**
+ * 窓の左右。**桟の高さに依らない**ので、桟を測る前——状態バーを作る時点——でも引ける
+ * （addRailBar参照）。
+ */
+function windowSpan(
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): { readonly x: number; readonly width: number } {
+  const paper = paperRect(metrics, width, height);
+  const side = metrics.px(FRAME_SIDE);
+  return { x: paper.x + side, width: paper.width - side * 2 };
+}
+
 /** 枠の内側の、絵が見える窓。上端にはタイトルの板が乗り、下端は桟の高さで動く。 */
 function windowRect(metrics: ScreenMetrics, width: number, height: number, railHeight: number): Rect {
   const paper = paperRect(metrics, width, height);
   const side = metrics.px(FRAME_SIDE);
   return {
-    x: paper.x + side,
+    ...windowSpan(metrics, width, height),
     y: paper.y + side,
-    width: paper.width - side * 2,
     height: paper.height - side - railHeight,
   };
 }
