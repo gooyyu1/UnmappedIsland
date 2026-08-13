@@ -1,7 +1,8 @@
 """乗算で載る層と、それを載せた絵の間を行き来する。
 
-    python multiply_layer.py apply   肌.png 傷.png --out 肌に傷.png
-    python multiply_layer.py extract 肌.png 描き直し.png --out 傷.png
+    python multiply_layer.py apply    肌.png 傷.png --out 肌に傷.png
+    python multiply_layer.py extract  肌.png 描き直し.png --out 傷.png
+    python multiply_layer.py underlay 肌.png 傷.png --out 傷の下地.png
 
 apply は実行時（Card.ts）と同じ計算で層を地へ載せる。extract はその逆で、描き直された絵を地で割り、
 **どの身体にも載る層へ戻す**。
@@ -11,6 +12,11 @@ apply は実行時（Card.ts）と同じ計算で層を地へ載せる。extract
 一本の線にしかならない。**下絵を肌の上に置いて描き直させ、その肌で割って落とせば、傷だけが残る。**
 
 割った結果には絵全体の寄り（描き直しは地の側も少し動かす）が混ざるので、浅い変化は捨てる。
+
+**underlay は、傷が面を破っていることを表すための下地。** 乗算だけだと、傷は地を暗くするしか
+できない——毛皮の暗い所へ掛かると傷が見えなくなり、毛の上に線を引いただけに見える。切り傷の
+辺りでは毛が分かれて肌が覗くはずなので、**傷と同じアルファの肌**を通常の重ねで先に敷く。
+これで傷は下地の明暗によらず同じに見え、面が破れているように読める。
 
 PIL と numpy が要る。
 """
@@ -63,15 +69,26 @@ def extract(ground: str, painted: str) -> Image.Image:
     )
 
 
+def underlay(ground: str, layer: str) -> Image.Image:
+    """乗算の層と同じ形で、地の絵を切り抜く（傷の下に敷く肌になる）。"""
+    ground_image = Image.open(ground).convert("RGB")
+    skin = np.asarray(ground_image, dtype=np.float64)
+    src = np.asarray(
+        Image.open(layer).convert("RGBA").resize(ground_image.size, Image.LANCZOS), dtype=np.float64
+    )
+    return Image.fromarray(np.dstack([skin, src[:, :, 3]]).astype(np.uint8), "RGBA")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("verb", choices=("apply", "extract"))
+    parser.add_argument("verb", choices=("apply", "extract", "underlay"))
     parser.add_argument("ground", help="地（肌・毛皮）の絵")
-    parser.add_argument("other", help="applyなら乗算の層、extractなら描き直された絵")
+    parser.add_argument("other", help="extractなら描き直された絵、他は乗算の層")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
-    result = apply(args.ground, args.other) if args.verb == "apply" else extract(args.ground, args.other)
+    verbs = {"apply": apply, "extract": extract, "underlay": underlay}
+    result = verbs[args.verb](args.ground, args.other)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     result.save(out)

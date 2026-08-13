@@ -117,6 +117,20 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
         )
         return edited
 
+    under = recipe.get("underlay")
+    if under is not None:
+        cut = raw_dir / f"{Path(recipe['output']).stem}_underlay.png"
+        run(
+            "multiply_layer.py",
+            [
+                "underlay",
+                str(REPO / under["ground"]),
+                str(REPO / under["layer"]),
+                "--out", str(cut),
+            ],
+        )
+        return cut
+
     stain = recipe.get("stain")
     if stain is not None:
         drawn = raw_dir / f"{Path(recipe['output']).stem}_stain.png"
