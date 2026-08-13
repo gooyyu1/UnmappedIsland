@@ -81,8 +81,8 @@ object_defs:
       # 400mL——ヒトの1/12しかないので、同じ傷でもよく効く。段のしきい値は失った割合（出血性
       # ショックの分類）から引くので、ヒトの5,000mLと同じ比率になる。
       #
-      # 戻す仕組みは持たない。血は水と食事から作られる（VitalsSystem.md 3節）が、動物は satiety も
-      # hydration も持たないため条件を書けない。手負いのまま逃げた個体は弱ったまま残る。
+      # 戻る速さも体格に比例する（ヒトの+2/tickに対し400/5000で+0.16）。餌をやる仕組みがまだ無いので
+      # 条件は付けず、常に戻す——手負いのまま逃げた個体は、追いつけなければ癒えてしまう。
       blood:
         value: 400
         # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
@@ -104,12 +104,16 @@ object_defs:
             passives:
               - modify: {self: {consciousness: -30}}
           - {name: low, min: 280, alert: watch}
-          - {name: replete, min: 340}
+          - {name: replete, min: 320}
         # 失血死。仕留めの一撃（HuntingSystem.md 1.4節）と同じく、自分が居た枠がそのまま死体に変わる
         # （destroyがspawnより先に走る、9.4節）。こちらは**逃げられた個体が後で倒れる道**。
         on_shortfall:
           destroy: self
           spawn: {object: monkey_carcass}
+        passives:
+          - accumulate:
+              self:
+                blood: 0.16
       # 無防備さ（HuntingSystem.md 1.4節）。仕留めの候補の重みそのもので、自分では動かず、状態が
       # 押し上げる。起きている間も0にはしない——暴れる相手でも、まれに急所へ入る。
       vulnerability:

@@ -87,6 +87,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
     it.each([
       ['pain', ['status', 'health']],
+      ['blood', ['status', 'health']],
       ['satiety', ['status', 'nutrition']],
       ['hydration', ['status', 'nutrition']],
       ['body_fat', ['nutrition']],
@@ -104,13 +105,14 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは6件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは7件で、並び順も揃っている', () => {
       // readPropertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
       const status = instance.readPropertiesWithTag(codex.propertyTagNames.getId('status'));
 
       expect(status.map((reading) => reading.name)).toEqual([
         'pain',
+        'blood',
         'satiety',
         'hydration',
         'wakefulness',
@@ -119,7 +121,7 @@ describe('プレイヤーキャラクタの定義', () => {
       ]);
     });
 
-    it.each(['pain', 'satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
+    it.each(['pain', 'blood', 'satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
       '%sは0を下限とするrangeを持つ',
       (propertyName) => {
         expect(propOf(def(character), propertyName).range?.min).toBe(0);
@@ -141,6 +143,8 @@ describe('プレイヤーキャラクタの定義', () => {
       ['load', 0],
       // 痛みは負っている怪我から導出されるので、自分では動かない。
       ['pain', 0],
+      // 血は自分で戻る唯一のステータスだが、満タンで始まるので上限で頭打ちになる（次のテスト）。
+      ['blood', 0],
     ])('%sはtickごとに%iずつ減る', (propertyName, expectedDecay) => {
       expect(decayPerTick(character, propertyName)).toBe(expectedDecay);
     });
@@ -167,7 +171,7 @@ describe('プレイヤーキャラクタの定義', () => {
       );
     });
 
-    it.each(['satiety', 'hydration', 'wakefulness', 'stamina'])(
+    it.each(['satiety', 'hydration', 'wakefulness', 'stamina', 'blood'])(
       '%sは最大値の80%%を下回ると安全域から外れる',
       (propertyName) => {
         // 最大値だけ変えてstagesを直し忘れると、ステータスエリアに出始める位置がずれる。
@@ -249,14 +253,32 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.alertLevelOf(Math.trunc(max * 0.2) - 1)).toBe('danger');
     });
 
-    it('致命的域を持つのは、放置すると死に至る水分だけ', () => {
+    it('血は自分で戻り、満タンで頭打ちになる', () => {
+      // 削るのは出血する怪我（injuries.yaml）だけで、戻すのは自分（Characters.md 値の刻み方節）。
+      // ステータスの中でここだけが自分で増える。
+      const session = new WorldSession(codex);
+      const instance = new WorldObject(1, def(character), session);
+      const bloodId = codex.propertyNames.getId('blood');
+      const max = maxOf(character, 'blood');
+      instance.setNumber(bloodId, max - 100, session);
+
+      instance.tick(session);
+
+      expect(instance.getNumber(bloodId), '1 tickで2mL戻る').toBe(max - 98);
+
+      for (let i = 0; i < 100; i++) instance.tick(session);
+
+      expect(instance.getNumber(bloodId), '満タンを超えては溜まらない').toBe(max);
+    });
+
+    it('致命的域を持つのは、放置すると死に至る水分と血だけ', () => {
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
 
       const fatal = instance
         .readPropertiesWithTag(codex.propertyTagNames.getId('status'))
         .filter((reading) => propOf(def(character), reading.name).alertLevelOf(0) === 'fatal');
 
-      expect(fatal.map((reading) => reading.name)).toEqual(['hydration']);
+      expect(fatal.map((reading) => reading.name)).toEqual(['blood', 'hydration']);
     });
 
     it('絵ができるまでの代替アイコンを持つ', () => {
