@@ -8,6 +8,8 @@
 traits:
   # 液体を1つ入れる容器。中身が代表（represented_by）となり、操作もスタック判定も中身へ委譲する。
   liquid_container:
+    # 液体を入れられること自体のタグ（固形物を入れるcontainerタグと対になる、containers.yaml）。
+    tags: [liquid_container]
     represented_by: content
     combinations:
       # 受け側が空のとき、代表は容器自身なのでこちらが発火する（中身入りならliquid側が発火する）。

@@ -1,11 +1,15 @@
 # 食料のサンプル定義（GameElementDefinition.md参照）。栄養バランス（characters.yaml参照）の
 # 3カテゴリそれぞれに、南国の無人島で採取しやすい食材を1種類ずつ用意する。
 # satietyは「1食で何tick分の腹持ちか」（6.0節）。値はいずれも仮のもの。
+#
+# foodタグは「そのカード自身を口に入れると体の値が動く物」に付ける（CardView.md 2.1節）。eatで食べる
+# 物だけでなく、青いヤシの実（coconut.yaml）のようにcombinationで飲む物にも付く。加工すれば食べられる
+# だけの物には付けない——熟したヤシの実は皮をはいでも自分は何も体へ入れない。
 
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
   water_spinach:
-    tags: [item]
+    tags: [item, food]
     props:
       weight: {value: 150}
       # 葉物の束も詰めて縮まないので、嵩そのままで見る。
@@ -20,7 +24,7 @@ object_defs:
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
   coconut_crab:
-    tags: [item]
+    tags: [item, food]
     props:
       weight: {value: 2000}
       volume: {value: 1900}
@@ -34,7 +38,7 @@ object_defs:
 
   # タロイモ。東南アジア島嶼が原産の塊茎作物（docs/world/Animals.md 概要節）。野生形が自生している。
   taro:
-    tags: [item]
+    tags: [item, food]
     props:
       weight: {value: 800}
       volume: {value: 800}

@@ -284,8 +284,13 @@ export function mixColor(from: number, to: number, t: number): number {
  *
  * **道を独立した種別にしているのは、道が設置物の中に埋没するのを色で解くため。** 道は行き先の名前と
  * 絵を出すので、同じレーンに並ぶ設置物と形では見分けが付かない。
+ *
+ * **アイテムは用途で分ける**（食事・入れ物・道具）。ゲーム内の物の大半はアイテムなので、1色のままだと
+ * レーンが同じ色で埋まる。素材に色を当てないのは、素材が物の性質ではなくレシピの中での役割だから
+ * ——尖った石は道具でありながら石斧の素材でもある。**残り全部が素材**で、それがitemの色になる。
  */
-export type CardKind = 'fixture' | 'road' | 'item' | 'injury' | 'animal' | 'character';
+export type CardKind =
+  'fixture' | 'road' | 'item' | 'food' | 'container' | 'tool' | 'injury' | 'animal' | 'character';
 
 /**
  * 枠の色を決める見た目の分類。種別に、製作中オブジェクトの**青写真**を足したもの。
@@ -300,6 +305,14 @@ const CARD_FRAME_FACE: Readonly<Record<CardFrameKind, { readonly face: number; r
   fixture: { face: 0x68804e, line: 0x3a4a2a },
   road: { face: 0xce943e, line: 0x7a5018 },
   item: { face: 0xa88a64, line: 0x6e563a },
+  // 食事は黄。空いていた色相であるうえ、実りの色として意味も持てる（動物の紫と違う点）。**道の琥珀
+  // （H36）から色相を離す**——設置物レーンへ置いた食料が道と並ぶため。彩度で開ける茶（S0.40）と違い、
+  // 琥珀とは彩度も明度も近いので、離せるのは色相だけ。
+  food: { face: 0xd2be40, line: 0x7a6414 },
+  // 入れ物は青緑。液体の容器も同じ色で、水が入っているかは中身のバーが液体自身の色で言う（8.3節）。
+  container: { face: 0x3f7f76, line: 0x1f453f },
+  // 道具は石と鋼の灰。色相を1つも使わずに済むので、他の色を圧迫しない。
+  tool: { face: 0x8a8a86, line: 0x4a4a47 },
   injury: { face: 0xae5c54, line: 0x68302c },
   // 動物であることを言い当てる色は無い（血の赤は怪我、毛皮の茶はアイテム、緑は設置物、青は
   // キャラクタが既に取っている）ので、残っている色相のうち他の4色から最も遠い紫を取る。
