@@ -57,7 +57,7 @@ object_defs:
   # 青いヤシの実。皮も殻も柔らかく、中に飲める水を抱えている。皮ごと刃先を通せるので、熟した実の
   # ように皮をはぐ工程を挟まない。
   green_coconut:
-    tags: [item]
+    tags: [item, food]
     props:
       weight: {value: 2200}
       # 湿った皮と500mLの水を抱えるので、乾いた熟した実より重く、少し大きい。
@@ -96,7 +96,7 @@ object_defs:
 
   # 青い実のゼリー状の果肉。ほとんどが水分で、熟した果肉ほどのカロリーは無い。
   coconut_jelly:
-    tags: [item]
+    tags: [item, food]
     props:
       weight: {value: 150}
       volume: {value: 250}
@@ -173,7 +173,7 @@ object_defs:
   # 熟したヤシの果肉。実1個から2個採れる。脂質が多くカロリーは高いが、水分は青い実に及ばない
   # （熟した果肉の水分は半分ほどで、まとまった水が飲めるのは青い実だけ）。
   coconut_meat:
-    tags: [item]
+    tags: [item, food]
     props:
       weight: {value: 200}
       volume: {value: 400}

@@ -2,13 +2,17 @@
 #
 # 道具は「何ができるか」をタグで表し、使う側（combinationsのwith・レシピの要求）はそのタグで探す。
 # 素材そのものを名指ししないことで、同じ用途の別の道具（後から追加されるもの・MOD）へそのまま置き換わる。
+#
+# toolタグは「道具であること」そのもので、能力のタグと重ねて付ける。何ができるかではなく何のための物かを
+# 言うタグなので、能力が増えても1つのままになる。付ける相手は、他の物の操作が使う側として指名し、
+# **使っても無くならない**物（CardView.md 2.1節）。注ぎ込む水のように指名されても移ってしまう物は付けない。
 
 object_defs:
   # 尖った石。石同士を打ち合わせて作る最初の刃物（locations.yamlのstone.combinations.knap）。
   sharp_stone:
     # weaponは動物へ重ねて殴れる物のタグ（animals.yamlのstrikeがこれで探す、
     # docs/engine/HuntingSystem.md 1.2節）。刃物と武器は別のタグで、片方だけを持つ物もありうる。
-    tags: [item, cutting_tool, weapon]
+    tags: [item, tool, cutting_tool, weapon]
     props:
       weight: {value: 400}
       volume: {value: 300}

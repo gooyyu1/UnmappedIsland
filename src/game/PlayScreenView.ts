@@ -7,7 +7,7 @@ import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import { putIntoSlot } from '../domain/runtime/slotEntry';
 import { currentStep, finishedStepRatio, stepSupplyRatio } from '../domain/runtime/crafting';
-import { MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
+import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
@@ -309,6 +309,9 @@ export function withFrozenCards(view: PlayScreenView, place: CardPlace | undefin
 const LOCATION_ICON = '🗺️';
 const KIND_ICONS: Readonly<Record<ObjectKind, string>> = {
   item: '📦',
+  food: '🍎',
+  container: '🧺',
+  tool: '🔨',
   fixture: '🌳',
   injury: '🩹',
   animal: '🐾',
@@ -318,7 +321,7 @@ const KIND_ICONS: Readonly<Record<ObjectKind, string>> = {
  * 物そのものの型が決める種別（kindOf）。カードの枠の色にも仮のアイコンにもこれを使う。
  * 道とキャラクタはカードの見せ方であって物の型ではないので、ここには入らない。
  */
-type ObjectKind = Extract<CardKind, 'item' | 'fixture' | 'injury' | 'animal'>;
+type ObjectKind = Extract<CardKind, 'item' | 'food' | 'container' | 'tool' | 'fixture' | 'injury' | 'animal'>;
 
 /** 命名処理が名前を付けていない土地（テスト用の最小Codex等）の代替表示。 */
 const UNNAMED_LOCATION = '名もなき土地';
@@ -591,6 +594,11 @@ export function fromGameSession(
   const fixtureTagId = codex.tagNames.tryGetId('fixture');
   const injuryTagId = codex.tagNames.tryGetId('injury');
   const animalTagId = codex.tagNames.tryGetId('animal');
+  const foodTagId = codex.tagNames.tryGetId('food');
+  const containerTagId = codex.tagNames.tryGetId('container');
+  const liquidContainerTagId = codex.tagNames.tryGetId('liquid_container');
+  const toolTagId = codex.tagNames.tryGetId('tool');
+  const wipTagId = codex.tagNames.tryGetId(IN_PROGRESS_TAG);
 
   /** その型の表示名。インスタンスを見ないので、中身による差し替え（水入りの水筒）は含まない。 */
   const typeNameOf = (def: ObjectDef): string => {
@@ -622,14 +630,25 @@ export function fromGameSession(
    * だけで別の物に見えては困る。持ち歩けるかどうかを先に見るのはそのため。
    */
   const kindOf = (def: ObjectDef): ObjectKind => {
-    const tags = def.tags;
-    if (injuryTagId !== undefined && tags.includes(injuryTagId)) return 'injury';
+    const has = (tagId: number | undefined): boolean => tagId !== undefined && def.tags.includes(tagId);
+    if (has(injuryTagId)) return 'injury';
     // 動物はitemも兼ねる（HuntingSystem.md 1.1節）ので、itemより先に見る。
-    if (animalTagId !== undefined && tags.includes(animalTagId)) return 'animal';
-    if (itemTagId !== undefined && tags.includes(itemTagId)) return 'item';
-    if (fixtureTagId !== undefined && tags.includes(fixtureTagId)) return 'fixture';
+    if (has(animalTagId)) return 'animal';
+    // アイテムの用途（CardView.md 2節）。**兼ねる物は、生存の時計に近いほうを先に見る**——中に水を
+    // 抱えた青いヤシの実は入れ物ではなく食事で、水があることは中身のバーが青で言う。
+    if (has(foodTagId)) return 'food';
+    if (has(containerTagId) || has(liquidContainerTagId)) return 'container';
+    if (has(toolTagId)) return 'tool';
+    if (has(itemTagId)) return 'item';
+    if (has(fixtureTagId)) return 'fixture';
     return 'item';
   };
+
+  /**
+   * 作りかけの物か（RecipeSystem.md 5節のwipタグ）。**完成品のタグを引き継ぐ型なので、種別の判定より
+   * 後から覆う**——作りかけの籠は入れ物の枠ではなく青写真の枠になる（CardView.md 10節）。
+   */
+  const inProgressDef = (def: ObjectDef): boolean => wipTagId !== undefined && def.tags.includes(wipTagId);
 
   const iconOf = (def: ObjectDef): string => KIND_ICONS[kindOf(def)];
 
@@ -664,7 +683,7 @@ export function fromGameSession(
       name: typeNameOf(def),
       art: artOf(def),
       kind: kindOf(def),
-      inProgress: codex.productOf(def) !== undefined,
+      inProgress: inProgressDef(def),
     };
   };
 
@@ -674,7 +693,7 @@ export function fromGameSession(
     kind: kindOf(instances[0].def),
     // 作りかけかどうかは物の型が決める。設置物として地面に据わっていても手に持っていても、
     // 同じ「まだ物になっていない」カードとして出す。
-    inProgress: codex.productOf(instances[0].def) !== undefined,
+    inProgress: inProgressDef(instances[0].def),
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: artOf(instances[0].def),
@@ -723,8 +742,9 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: locationNameOf(path.destinationInstanceId),
       art: path.destination?.def.name,
-      // 名前も絵も行き先のものなので、道であることは枠の色と桟の矢印だけが示す。
-      kind: 'road',
+      // 名前も絵も行き先のものなので、道であることは桟の矢印だけが示す（枠の色は現在地と同じ、
+      // どちらも場所を映す札のため）。
+      kind: 'location',
       road: true,
     };
   };
@@ -770,7 +790,7 @@ export function fromGameSession(
             icon: LOCATION_ICON,
             name: locationNameOf(instanceId),
             art: root.findDescendantByInstanceId(instanceId)?.def.name,
-            kind: 'fixture',
+            kind: 'location',
           },
           current: site === currentSite,
         };
@@ -939,7 +959,7 @@ export function fromGameSession(
       icon: LOCATION_ICON,
       name: locationNameOf(location.instance.instanceId),
       art: location.instance.def.name,
-      kind: 'fixture',
+      kind: 'location',
     },
     locationArt: location.instance.def.name,
     laneSlot: (place) => {

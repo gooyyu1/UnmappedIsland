@@ -24,6 +24,8 @@ describe('tools.yamlの道具定義', () => {
     const sharpStone = codex.objects.get(codex.objectNames.getId('sharp_stone'));
 
     expect(sharpStone.tags).toContain(codex.tagNames.getId('item'));
+    // 道具であること自体のタグ。能力のタグ（下）と重ねて付ける。
+    expect(sharpStone.tags).toContain(codex.tagNames.getId('tool'));
     expect(sharpStone.tags).toContain(codex.tagNames.getId('cutting_tool'));
     // 動物へ重ねて殴れる（animals.yamlのstrikeがこのタグで探す、HuntingSystem.md 1.2節）。
     expect(sharpStone.tags).toContain(codex.tagNames.getId('weapon'));

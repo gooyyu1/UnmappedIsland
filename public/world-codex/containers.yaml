@@ -5,8 +5,8 @@
 # 共通化できるのは名前だけなので、trait・タグとも分けている。
 
 traits:
-  # 中身をスロットに持つ入れ物。containerタグが付いたカードは、タップすると中身の子ウィンドウが開く
-  # （Windows.md 1節 スロットの子ウィンドウ）。
+  # 中身をスロットに持つ入れ物。containerタグは「物を入れる入れ物であること」を表す
+  # （液体の容器はliquid_containerタグ、liquid_containers.yaml）。
   item_container:
     tags: [container]
     # かごを代表する物のスロット（7.8節）。カードを押すとここの中身が並び、カードへ重ねた物は
