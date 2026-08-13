@@ -93,8 +93,14 @@ const FILTER_BAR_PADDING_X = 20;
 /** ステータスエリアの内側パディング（キャラクター表示エリア側はDISPLAY_PADDING）。 */
 const STATUS_PADDING = 24;
 
-/** 地図・装備・怪我・レシピのボタンが落とす影のずらし幅（u単位。addSlotButton参照）。 */
-const SLOT_BUTTON_SHADOW = 1.5;
+/** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
+const PAPER_BUTTON_SHADOW = 1.5;
+
+/**
+ * バーのアイコンボタンに載せる絵文字の大きさ（88u角のボタンに対して）。**ボタンの余白より絵が
+ * 目に入る大きさにする**——小さいと、押せる物ではなく白い四角の方が先に見える。
+ */
+const ICON_BUTTON_GLYPH = 58;
 
 /**
  * ゲーム内時間の経過を実時間で見せる速さ（ゲーム内15分＝現実0.5秒）。durationを持つアクションは、
@@ -1810,10 +1816,10 @@ export class PlayScene extends ResponsiveScene {
     const borderWidth = Math.max(1, this.metrics.px(2));
     const button = new Button(this, rect, {
       fill: spec.fill,
-      border: COLOR.slotButtonBorder,
+      border: COLOR.paperButtonBorder,
       borderWidth,
       radius,
-      shadow: this.metrics.px(SLOT_BUTTON_SHADOW),
+      shadow: this.metrics.px(PAPER_BUTTON_SHADOW),
     });
     button.addContent(
       ...this.slotButtonPaper(rect, index, radius, borderWidth),
@@ -1849,7 +1855,7 @@ export class PlayScene extends ResponsiveScene {
       .setDisplaySize(rect.width, rect.height);
 
     const frame = this.add.graphics();
-    frame.lineStyle(borderWidth, COLOR.slotButtonBorder, 1);
+    frame.lineStyle(borderWidth, COLOR.paperButtonBorder, 1);
     frame.strokeRoundedRect(0, 0, rect.width, rect.height, radius);
     return [paper, frame];
   }
@@ -2151,7 +2157,7 @@ export class PlayScene extends ResponsiveScene {
             width: size,
             height: size,
           };
-      const button = this.addIconButton(rect, icon, false);
+      const button = this.addIconButton(rect, icon, false, COLOR.paperButtonBorder);
       if (icon === MENU_ICON) button.on('pointerup', () => this.confirmReturnToTitle());
     });
   }
@@ -2178,7 +2184,7 @@ export class PlayScene extends ResponsiveScene {
             width: size,
             height: size,
           };
-      const button = this.addIconButton(rect, icon, index === this.selectedFilter);
+      const button = this.addIconButton(rect, icon, index === this.selectedFilter, COLOR.filterButtonBorder);
       button.on('pointerup', () => this.selectFilter(index));
       return button;
     });
@@ -2187,24 +2193,32 @@ export class PlayScene extends ResponsiveScene {
   private selectFilter(index: number): void {
     this.selectedFilter = index;
     this.filterButtons.forEach((button, i) => {
-      button.setBoxStyle(this.iconButtonStyle(i === index));
+      button.setBoxStyle(this.iconButtonStyle(i === index, COLOR.filterButtonBorder));
     });
   }
 
-  private addIconButton(rect: Rect, icon: string, active: boolean): Button {
-    const button = new Button(this, rect, this.iconButtonStyle(active));
+  /**
+   * バーのアイコンボタン。**枠線の色は置かれるバーが決める**（地の色に合わせるため。theme参照）。
+   *
+   * スロットボタンと同じく紙として置かれるので、同じ影を落とす（addSlotButton参照）。
+   */
+  private addIconButton(rect: Rect, icon: string, active: boolean, border: number): Button {
+    const button = new Button(this, rect, this.iconButtonStyle(active, border));
     button.addContent(
-      addLabel(this, this.metrics, rect.width / 2, rect.height / 2, icon, { size: 52 }).setOrigin(0.5),
+      addLabel(this, this.metrics, rect.width / 2, rect.height / 2, icon, {
+        size: ICON_BUTTON_GLYPH,
+      }).setOrigin(0.5),
     );
     return button;
   }
 
-  private iconButtonStyle(active: boolean): BoxStyle {
+  private iconButtonStyle(active: boolean, border: number): BoxStyle {
     return {
       fill: active ? COLOR.buttonActive : COLOR.button,
-      border: COLOR.buttonBorder,
+      border,
       borderWidth: Math.max(1, this.metrics.px(2)),
       radius: this.metrics.px(SIZE.radius),
+      shadow: this.metrics.px(PAPER_BUTTON_SHADOW),
     };
   }
 
