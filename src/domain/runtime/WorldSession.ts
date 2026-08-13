@@ -3,6 +3,7 @@ import { randomRng } from './Rng';
 import type { Rng } from './Rng';
 import type { World } from './views/World';
 import type { WorldChange, WorldPlace } from './WorldChange';
+import type { WorldSignal } from './WorldSignal';
 import { WorldObject } from './WorldObject';
 
 /**
@@ -28,6 +29,9 @@ export class WorldSession {
 
   /** 物の出入りを流す観測口（observeChanges）。 */
   private changeObserver: ((change: WorldChange) => void) | undefined;
+
+  /** 形を変えない出来事を流す観測口（observeSignals）。 */
+  private signalObserver: ((signal: WorldSignal) => void) | undefined;
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private subject: WorldObject | undefined;
@@ -94,6 +98,26 @@ export class WorldSession {
   }
 
   /**
+   * bodyの実行中に告げられた出来事（signal、9.8節）を、その1件ずつをonSignalへ流す（WorldSignal参照）。
+   * 観測の解除もここで行う（observeChangesと同じく、呼び出し側に外し忘れの余地を残さない）。
+   *
+   * **物の出入りとは別の観測口にする。** 出入りは世界の形が変わったことで、こちらは形が変わらない
+   * ままの出来事なので、同じログに混ぜると受け取る側が毎回どちらかを選り分けることになる。
+   *
+   * 観測できるのはbodyの実行中に起きた分だけで、溜め置きはしない。読み取り専用の観測口なので、
+   * onSignalから世界を変えてはならない。
+   */
+  observeSignals(onSignal: (signal: WorldSignal) => void, body: () => void): void {
+    const outer = this.signalObserver;
+    this.signalObserver = onSignal;
+    try {
+      body();
+    } finally {
+      this.signalObserver = outer;
+    }
+  }
+
+  /**
    * bodyの実行中に起きた変化の主体をsubjectにする（WorldObject.applyActiveEffectが囲う）。
    *
    * 入れ子は内側が勝つ。効果の適用中に別のオブジェクトのrangeイベントが走れば、そこで起きた変化は
@@ -119,6 +143,15 @@ export class WorldSession {
   recordChange(object: WorldObject, from: WorldPlace | undefined, to: WorldPlace | undefined): void {
     if (this.changeObserver === undefined || (from === undefined && to === undefined)) return;
     this.changeObserver({ object, subject: this.subject, from, to });
+  }
+
+  /**
+   * 形を変えない出来事1件を観測口へ流す（SignalEffectからのみ呼ぶ）。**誰の身に起きたかは効果が
+   * 指した対象**で、物の出入りの主体（今適用中の効果、recordChange）とは別に決まる——殴って外した
+   * 出来事は、殴った側ではなく殴られた側の上のことになる。
+   */
+  recordSignal(name: string, object: WorldObject): void {
+    this.signalObserver?.({ name, object });
   }
 
   /**

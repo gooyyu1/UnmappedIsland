@@ -44,6 +44,9 @@ object_defs:
       #
       # 警戒の上がりと刃の摩耗は当たり外れによらず起きるが、pickとaddを併記できないため
       # 各候補へ複製している（issue #415。動詞を順に並べられるようになったら1箇所へ寄せる）。
+      #
+      # どちらの回もsignal（9.8節）で結果を告げる。当たった回の傷は押して開くinjuriesスロットへ
+      # 入り、外した回は世界の形が何も変わらないため、どちらもレーンの上では見分けが付かない。
       strike:
         with: weapon
         duration: 15
@@ -53,8 +56,10 @@ object_defs:
               self: {wariness: 25}
               dragged: {durability: -20}
             spawn: {object: laceration, into: self}
+            signal: hit
           # 外した回。傷は付かないが、殴られたこと自体で警戒は上がる。
           - weight: 30
             add:
               self: {wariness: 25}
               dragged: {durability: -20}
+            signal: missed

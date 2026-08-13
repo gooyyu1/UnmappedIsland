@@ -379,7 +379,8 @@ a.ref:hover {
 }
 
 .ref-symbol,
-.ref-stage {
+.ref-stage,
+.ref-signal {
   color: var(--property-tag-fg);
 }
 

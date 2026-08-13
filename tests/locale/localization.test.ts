@@ -34,6 +34,18 @@ function declaredReasonNames(): readonly string[] {
   return [...found];
 }
 
+/**
+ * WorldCodexのYAMLが告げる出来事（signal、9.8節）の識別子。ロード後の効果は木に畳まれていて
+ * 列挙できないため、理由（reason）と同じく定義ファイルの字面から拾う。
+ */
+function declaredSignalNames(): readonly string[] {
+  const found = new Set<string>();
+  for (const path of worldCodexYamlPaths())
+    for (const match of readFileSync(path, 'utf8').matchAll(/^\s*-?\s*signal:\s*([a-z][a-z0-9_]*)\s*$/gm))
+      found.add(match[1]);
+  return [...found];
+}
+
 describe('Localization(表示文字列の対応表)', () => {
   const locale = parseLocale(
     'ja.yaml',
@@ -156,6 +168,13 @@ object_texts:
     expect(withReasons.reason('unknown_reason'), '未登録なら理由を出さない').toBeUndefined();
   });
 
+  it('告げられた出来事の文言を引ける（未登録なら識別子）', () => {
+    const texts = parseLocale('ja.yaml', 'signal_texts:\n  missed: 空振り\n');
+
+    expect(texts.signal('missed')).toBe('空振り');
+    expect(texts.signal('dodged'), '未登録でも札の上には何か出す').toBe('dodged');
+  });
+
   it('プロパティのタグの表示名を引ける（未登録なら識別子）', () => {
     const texts = parseLocale('ja.yaml', 'property_tag_texts:\n  nutrition:\n    display_name: 栄養\n');
 
@@ -235,6 +254,20 @@ describe('同梱の表示文字列ファイル', () => {
     // （GameElementDefinition.md 14.6節）。
     for (const reasonName of declaredReasonNames())
       expect(locale.reason(reasonName), `reason '${reasonName}' には文言が必要`).toBeDefined();
+  });
+
+  it('告げる出来事（signal）はすべて、札の上に収まる短い文言を持つ', () => {
+    // 欠けると識別子（missed等）がそのまま札の上に出る。文字はカードの幅（205u）へ52uで置くので、
+    // 全角4文字ぶんが収まる上限（CardView.md 14節）。
+    const SIGNAL_MAX_WIDTH = 4;
+
+    for (const signalName of declaredSignalNames()) {
+      const label = locale.signal(signalName);
+      expect(label, `signal '${signalName}' には文言が必要`).not.toBe(signalName);
+      expect(nameWidth(label), `signal '${signalName}': '${label}' は札に収まらない`).toBeLessThanOrEqual(
+        SIGNAL_MAX_WIDTH,
+      );
+    }
   });
 
   it('カードの名前は枠のタイトルの板に1行で収まる', () => {

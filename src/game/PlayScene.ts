@@ -15,6 +15,7 @@ import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldChange } from '../domain/runtime/WorldChange';
+import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type {
   CardCombination,
@@ -48,6 +49,7 @@ import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
 import { originInstances } from './ui/motionOrigins';
+import { floatSignalLabel } from './ui/signalLabel';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
@@ -102,6 +104,12 @@ const MINUTES_PER_DAY = 24 * 60;
 
 /** ドーナツグラフは、飛んでいるカードも探索の子ウィンドウも越えて最前面に出す。 */
 const RING_DEPTH = 2;
+
+/**
+ * 札の上に浮かぶ出来事の文字（signalLabel）は、ドーナツグラフより手前。一瞬しか出ないので、
+ * たまたま重なった物の陰に入ってはならない。致命的域の枠だけはさらに手前に残す。
+ */
+const SIGNAL_DEPTH = 2.5;
 
 /** 致命的域を伝える画面全体の枠は、そのドーナツグラフよりもさらに手前に出す。 */
 const ALERT_FRAME_DEPTH = 3;
@@ -161,6 +169,9 @@ interface RecordedView {
    * 画面（1つ前のtickの控え）にしか無い（HuntingSystem.md 6.1節）。
    */
   readonly changes: readonly WorldChange[];
+
+  /** このtickで告げられた出来事（WorldSignal）。出す場所の決め方は出入りと同じ。 */
+  readonly signals: readonly WorldSignal[];
 }
 
 /**
@@ -174,6 +185,11 @@ interface Recording {
   readonly ticks: readonly RecordedView[];
   /** 経過し切った時点で見せる分の出入り。 */
   readonly changes: readonly WorldChange[];
+  /**
+   * 同じく、経過し切った時点で見せる分の出来事。アクションの効果は時間が経ち切ってから適用される
+   * （ActionSystem.md 2節）ので、**操作が告げる出来事は通常こちらに入る**。
+   */
+  readonly signals: readonly WorldSignal[];
 }
 
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
@@ -1191,6 +1207,7 @@ export class PlayScene extends ResponsiveScene {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.noteStatusChanges(statusesBefore, startedAt);
       this.found = this.foundSince(shownBefore);
+      this.showSignals(recorded.signals);
       this.showView({ origins: this.originRectsOf(recorded.changes) });
     });
   }
@@ -1220,24 +1237,32 @@ export class PlayScene extends ResponsiveScene {
     const statusesBefore = this.allStatuses();
     const recorded: RecordedView[] = [];
     let changes: WorldChange[] = [];
+    let signals: WorldSignal[] = [];
 
     this.gameSession.session.observeChanges(
       (worldChange) => changes.push(worldChange),
       () => {
-        this.gameSession.session.observeTicks(() => {
-          // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
-          const view = withFrozenCards(
-            fromGameSession(this.gameSession, this.codex, this.locale),
-            this.childWindowPlace,
-          );
-          recorded.push({
-            minutes: this.gameSession.world.totalMinutes,
-            view,
-            statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
-            changes,
-          });
-          changes = [];
-        }, change);
+        this.gameSession.session.observeSignals(
+          (signal) => signals.push(signal),
+          () => {
+            this.gameSession.session.observeTicks(() => {
+              // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
+              const view = withFrozenCards(
+                fromGameSession(this.gameSession, this.codex, this.locale),
+                this.childWindowPlace,
+              );
+              recorded.push({
+                minutes: this.gameSession.world.totalMinutes,
+                view,
+                statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
+                changes,
+                signals,
+              });
+              changes = [];
+              signals = [];
+            }, change);
+          },
+        );
       },
     );
 
@@ -1246,6 +1271,7 @@ export class PlayScene extends ResponsiveScene {
     return {
       ticks: recorded.filter((snapshot) => snapshot.minutes < endedAt),
       changes: [...ended.flatMap((snapshot) => snapshot.changes), ...changes],
+      signals: [...ended.flatMap((snapshot) => snapshot.signals), ...signals],
     };
   }
 
@@ -1318,7 +1344,25 @@ export class PlayScene extends ResponsiveScene {
     const origins = this.originRectsOf(recorded.changes);
     this.view = recorded.view;
     this.statusChanges = recorded.statusChanges;
+    this.showSignals(recorded.signals);
     this.showView({ origins });
+  }
+
+  /**
+   * 告げられた出来事を、それが起きたオブジェクトの札の上に文字として浮かべる（CardView.md 14節）。
+   *
+   * **並びを差し替える前に呼ぶ。** 出どころの矩形（originRectsOf）と同じで、その出来事が起きたのは
+   * 今出ている並びの上——効果がその物を消していれば、差し替えた後の画面にその札はもう無い。
+   *
+   * 画面に出ていないもの（閉じた入れ物の中・別の土地）に起きた出来事は出さない。指すべき札が無く、
+   * 宙に文字だけが浮くことになるため。
+   */
+  private showSignals(signals: readonly WorldSignal[]): void {
+    for (const signal of signals) {
+      const rect = this.rectOfInstance(signal.object.instanceId);
+      if (rect === undefined) continue;
+      floatSignalLabel(this, this.metrics, this.locale.signal(signal.name), rect).setDepth(SIGNAL_DEPTH);
+    }
   }
 
   /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
@@ -1402,10 +1446,12 @@ export class PlayScene extends ResponsiveScene {
       // 増減はステータスへ反映する前に控える（showInformationがこれを見て記号を出す）。
       this.noteStatusChanges(statusesBefore, startedAt);
       if (curtain !== undefined) {
+        // 土地を移った場合は出さない。出来事が起きた札は置いてきた土地の並びに居る。
         this.transit(curtain);
         onDone?.();
         return;
       }
+      this.showSignals(recorded.signals);
       this.showView({ origins: this.originRectsOf(recorded.changes), released });
       onDone?.();
     });
