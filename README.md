@@ -71,7 +71,7 @@ UnmappedIsland/
 公開サイトは `site/` へ生成してGitHub Pagesへ直接デプロイするため、生成物はリポジトリに入らない
 （`.gitignore` 済み）。サイトは `/docs/`（`docs/` から生成したHTML）・`/reference/`（TypeDocの
 ソースリファレンス）・`/game/`（ビルド済みのゲーム本体）・`/codex/`（ゲーム定義の閲覧ビューア、
-[`docs/world/WorldCodexViewer.md`](./docs/world/WorldCodexViewer.md)）の4本立て。
+`src/codex/`）の4本立て。
 
 ## ドキュメント
 

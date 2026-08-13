@@ -18,8 +18,9 @@
 - [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)） — 上記文法の
   機械的な検証
 
-実際のゲームデータ（`public/world-codex/*.yaml`）を閲覧するツールは
-[`../World/WorldCodexViewer.md`](../world/WorldCodexViewer.md) を参照してください。
+実際のゲームデータ（`public/world-codex/*.yaml`）を型・プロパティ・スロット・操作の単位で辿って読むには、
+閲覧ビューア（`npm run dev:codex`、公開先は [`../../codex/`](../../codex/)）を開いてください。作りと設計判断は
+`src/codex/` の各ファイルのコメントにあります。
 
 ### 汎用サブシステム（文法を使って、どんな内容にも適用できる仕組みの設計）
 

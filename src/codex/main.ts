@@ -17,7 +17,8 @@ import {
 } from './pages';
 
 /**
- * WorldCodexデータベースビューアの入口（docs/world/WorldCodexViewer.md）。
+ * WorldCodexデータベースビューアの入口。実際のゲームデータ（public/world-codex/*.yaml）を、型・
+ * プロパティ・スロット・操作の単位で辿って読むための閲覧ツール（npm run dev:codex、公開先は/codex/）。
  *
  * ゲーム本体と同じYAMLを同じローダーで読み、同じ表示文字列・同じ絵で見せる。ここが持つのは
  * ルーティングと描き込みだけで、内容の組み立てはpages.ts、見せ方の判断はCodexViewにある。
