@@ -14,6 +14,7 @@ import { SaveSlots } from '../save/SaveSlots';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
+import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type {
   CardCombination,
@@ -46,6 +47,7 @@ import { HAND_LANE_TEXTURE, laneTexture } from './ui/backgroundArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
+import { originInstances } from './ui/motionOrigins';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
@@ -154,6 +156,24 @@ interface RecordedView {
   readonly view: PlayScreenView;
   /** 行動開始時からのステータスの増減。控えた時点までの分だけを見せる。 */
   readonly statusChanges: ReadonlyMap<string, StatusDelta>;
+  /**
+   * このtickで起きた物の出入り。**矩形に直すのは再生する時点**——出どころの札の位置は、その時点の
+   * 画面（1つ前のtickの控え）にしか無い（HuntingSystem.md 6.1節）。
+   */
+  readonly changes: readonly WorldChange[];
+}
+
+/**
+ * ワールドを変えた経過の控え（PlayScene.record）。
+ *
+ * 経過し切った時刻の控えは持たない（その並びは行動の効果まで含めてonElapsedが見せる）ため、
+ * そこで起きた出入りだけが控えから漏れる。changesがその分を引き取る。
+ */
+interface Recording {
+  /** 経過中の各tick境界の控え（実時間をかけて再生する分）。 */
+  readonly ticks: readonly RecordedView[];
+  /** 経過し切った時点で見せる分の出入り。 */
+  readonly changes: readonly WorldChange[];
 }
 
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
@@ -814,32 +834,49 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * そのカードが今出ている画面上の矩形（どのレーンにも出ていなければundefined）。カードの同定は
-   * CardMotionと同じくインスタンスのIDで行う——スタックの代表が入れ替わっても同じカードとみなせるため。
+   * 起きた変化を、新しく現れるインスタンスごとの出発点へ直す（MotionContext.origins）。
+   *
+   * **呼ぶのはレーンを差し替える前**（showViewの中）。出どころの札は差し替えで消えることも動くことも
+   * あるが、その時点の画面にはまだ居るので、壊された物や使い切った道具の枠も引ける。
    */
-  private rectOf(card: ObjectCardStack): Rect | undefined {
-    const ids = new Set(card.identity ?? []);
-    for (const lane of this.openLanes) {
-      const index = lane.cardObjects.findIndex(
-        (object) => object?.content.identity?.some((id) => ids.has(id)) === true,
-      );
-      if (index >= 0) return lane.slotRect(index);
+  private originRectsOf(changes: readonly WorldChange[]): ReadonlyMap<number, Rect> {
+    const rects = new Map<number, Rect>();
+    for (const [id, originId] of originInstances(changes)) {
+      const rect = this.rectOfInstance(originId);
+      if (rect !== undefined) rects.set(id, rect);
     }
-    return undefined;
+    return rects;
   }
 
   /**
-   * ドロップは、重ねた相手のカードを新しいカードの出どころとして扱う（combinationの成果物が出る位置）。
-   * 手から放したもの（releasedBy）は手を離した場所に居るので、そこから動き出す。
+   * そのインスタンスを今映しているカードの枠。どのレーンにも出ていなければundefined。
+   *
+   * 現在地だけはレーンに並ぶカードを持たない（設置物レーンのピン留めの枠に居る）ので、そこで答える。
+   * 探索で見つかった物が現在地から飛んでくるのはこの1行による。
+   */
+  private rectOfInstance(instanceId: number): Rect | undefined {
+    for (const lane of this.openLanes) {
+      const index = lane.cardObjects.findIndex(
+        (object) => object?.content.identity?.includes(instanceId) === true,
+      );
+      if (index >= 0) return lane.slotRect(index);
+    }
+    return this.gameSession.player.location?.instance.instanceId === instanceId
+      ? this.fixtureLane.pinnedRect
+      : undefined;
+  }
+
+  /**
+   * ドロップで手から放したもの（releasedBy）は手を離した場所に居るので、そこから動き出す。
+   *
+   * combinationの成果物がどこから出るかは渡さない。重ねた相手が効果を宣言している側なので、
+   * 世界の変化がその札を出どころとして答える（originRectsOf）。
    */
   private applyDrop(drop: CardDrop, released: Rect): void {
     const action = this.dropAction(drop);
     if (action === undefined) return;
 
-    this.applyToWorld(this.dropLabel(drop), action, {
-      origin: drop.target.kind === 'combine' ? drop.to.slotRect(drop.target.index) : undefined,
-      released: this.releasedBy(drop, released),
-    });
+    this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, released));
   }
 
   /** そのドロップを、再現手順として読める言葉にする（errorReport参照）。 */
@@ -894,8 +931,9 @@ export class PlayScene extends ResponsiveScene {
    * アクションを実行するとワールドが変わり、このカードが消えることも別の場所へ移ることもあるため、
    * 押した時点でウィンドウを閉じる。
    *
-   * アクションで生まれたものは、このカードを出どころとして飛ばす（ヤシの木から採った実は木から手元へ）。
-   * 矩形を引くのはウィンドウを開いた時点ではなく押した時点——その間にレーンを送られていることがあるため。
+   * アクションで生まれたものは、このカードを出どころとして飛ぶ（ヤシの木から採った実は木から手元へ）。
+   * それを決めるのはこのウィンドウではなく世界の変化——アクションを宣言しているのがこのカードの
+   * オブジェクトだから、主体としてそれが付く（originRectsOf）。
    */
   private openObjectWindow(card: ObjectCardStack): void {
     this.childWindowCard = card;
@@ -976,13 +1014,12 @@ export class PlayScene extends ResponsiveScene {
         enabled: supplied,
         reason: supplied ? undefined : '素材が足りない。',
         onTap: () => {
-          const origin = this.rectOf(card);
           this.applyToWorld(
             `作業した: ${card.name}`,
             () => {
               advanceCrafting(target, recipe, materialsSlotId, this.codex, this.gameSession.session);
             },
-            { origin },
+            undefined,
             () => this.closeChildWindow(),
           );
         },
@@ -1059,10 +1096,8 @@ export class PlayScene extends ResponsiveScene {
       enabled: action.enabled,
       reason: action.reason,
       onTap: () => {
-        // 矩形を引くのは押した時点——開いてから押すまでにレーンを送られていることがあるため。
-        const origin = this.rectOf(card);
         this.closeChildWindow();
-        this.applyToWorld(`アクション: ${action.name}（${card.name}）`, action.execute, { origin });
+        this.applyToWorld(`アクション: ${action.name}（${card.name}）`, action.execute);
       },
     }));
   }
@@ -1152,12 +1187,12 @@ export class PlayScene extends ResponsiveScene {
     const recorded = this.record(() => this.gameSession.player.explore(this.gameSession.session));
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
     this.requestLocationArt();
-    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded.ticks, () => {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.noteStatusChanges(statusesBefore, startedAt);
       this.found = this.foundSince(shownBefore);
-      this.showView({ origin: this.fixtureLane.pinnedRect });
+      this.showView({ origins: this.originRectsOf(recorded.changes) });
     });
   }
 
@@ -1179,27 +1214,40 @@ export class PlayScene extends ResponsiveScene {
    * ワールドはこの中で進み切る。経過中のtickは物を腐らせたり道具を壊したりするので、その変化が
    * 「45分の行動の15分目に起きた」と分かるよう、tickごとの表示内容を控えて実時間で再生する（passTime）。
    *
-   * 経過し切った時刻の控えは返さない。その瞬間の並びは、行動の効果まで含めてonElapsedが見せるため。
+   * **控えと並べて、そのtickで起きた出入りも運ぶ**（WorldChange）。控えだけでは絵になるが誰の仕業か
+   * 分からず、出入りだけでは絵にならない（HuntingSystem.md 6.1節）。
    */
-  private record(change: () => void): readonly RecordedView[] {
+  private record(change: () => void): Recording {
     const statusesBefore = this.allStatuses();
     const recorded: RecordedView[] = [];
+    let changes: WorldChange[] = [];
 
-    this.gameSession.session.observeTicks(() => {
-      // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
-      const view = withFrozenCards(
-        fromGameSession(this.gameSession, this.codex, this.locale),
-        this.childWindowPlace,
-      );
-      recorded.push({
-        minutes: this.gameSession.world.totalMinutes,
-        view,
-        statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
-      });
-    }, change);
+    this.gameSession.session.observeChanges(
+      (worldChange) => changes.push(worldChange),
+      () => {
+        this.gameSession.session.observeTicks(() => {
+          // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
+          const view = withFrozenCards(
+            fromGameSession(this.gameSession, this.codex, this.locale),
+            this.childWindowPlace,
+          );
+          recorded.push({
+            minutes: this.gameSession.world.totalMinutes,
+            view,
+            statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
+            changes,
+          });
+          changes = [];
+        }, change);
+      },
+    );
 
     const endedAt = this.gameSession.world.totalMinutes;
-    return recorded.filter((snapshot) => snapshot.minutes < endedAt);
+    const ended = recorded.filter((snapshot) => snapshot.minutes >= endedAt);
+    return {
+      ticks: recorded.filter((snapshot) => snapshot.minutes < endedAt),
+      changes: [...ended.flatMap((snapshot) => snapshot.changes), ...changes],
+    };
   }
 
   /**
@@ -1264,11 +1312,14 @@ export class PlayScene extends ResponsiveScene {
    *
    * 掴んで離したカードの出どころ（MotionContext.released）は渡さない。それは経過し切ったときに
    * 見せる動きで（道具は使い終わってから手元へ戻る、ScreenLayout.md）、途中で消費してはならない。
+   *
+   * そのtickで生まれた物は、控えと一緒に運んできた出入りが出どころを答える（RecordedView.changes）。
    */
   private showRecorded(recorded: RecordedView): void {
+    const origins = this.originRectsOf(recorded.changes);
     this.view = recorded.view;
     this.statusChanges = recorded.statusChanges;
-    this.showView();
+    this.showView({ origins });
   }
 
   /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
@@ -1304,7 +1355,10 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ワールドを変える操作を実行し、その結果を画面へ反映する。originは新しく生まれたカードの出どころ。
+   * ワールドを変える操作を実行し、その結果を画面へ反映する。
+   *
+   * releasedは、その操作で手から放したもの（MotionContext.released）。**画面の事実だけを受け取る**
+   * ——新しく現れるカードがどこから飛んでくるかは、この中で起きた世界の変化が答える（originRectsOf）。
    *
    * その操作がゲーム内時間を消費した場合（durationを持つcombination等）は、探索と同じく経過分だけ
    * 実時間をかけてから結果を見せる。時間を消費しない操作は待たずにそのまま反映される（passTime参照）。
@@ -1321,7 +1375,7 @@ export class PlayScene extends ResponsiveScene {
   private applyToWorld(
     label: string,
     change: () => void,
-    context: MotionContext = {},
+    released?: MotionContext['released'],
     onDone?: () => void,
   ): void {
     if (this.busy) return;
@@ -1329,7 +1383,7 @@ export class PlayScene extends ResponsiveScene {
     noteOperation(`${label}（${this.clockText()}）`);
 
     // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
-    if (context.released !== undefined) this.motion.hold(this.openLanes, context.released);
+    if (released !== undefined) this.motion.hold(this.openLanes, released);
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
@@ -1344,7 +1398,7 @@ export class PlayScene extends ResponsiveScene {
     // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
     curtain?.darken(Math.min(DARKEN_MS, elapsedMs));
 
-    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded.ticks, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       // 増減はステータスへ反映する前に控える（showInformationがこれを見て記号を出す）。
       this.noteStatusChanges(statusesBefore, startedAt);
@@ -1353,7 +1407,7 @@ export class PlayScene extends ResponsiveScene {
         onDone?.();
         return;
       }
-      this.showView(context);
+      this.showView({ origins: this.originRectsOf(recorded.changes), released });
       onDone?.();
     });
   }
@@ -1911,6 +1965,9 @@ export class PlayScene extends ResponsiveScene {
    *
    * originは一覧で選んだカードの居場所。生まれたカードはそこから飛んでくる——一覧は閉じているので、
    * 選んだ札がそのまま場に出た、という見え方になる。
+   *
+   * **これだけは出どころが世界の事実ではない。** プレイヤーの操作が直に生んだので主体が居らず、
+   * 出どころも閉じた一覧の中にしか無かった札の位置なので、その矩形を直に渡す（MotionContext.origins）。
    */
   private startCrafting(inProgressDefGlobalId: number, origin: Rect): void {
     const location = this.gameSession.player.location;
@@ -1919,7 +1976,7 @@ export class PlayScene extends ResponsiveScene {
     const spawned = this.gameSession.session.spawn(inProgressDefGlobalId);
     spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'));
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-    this.showView({ origin });
+    this.showView({ origins: new Map([[spawned.instanceId, origin]]) });
 
     // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。
     const card = this.view.items.find((stack) =>

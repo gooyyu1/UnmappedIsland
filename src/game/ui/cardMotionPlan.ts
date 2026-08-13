@@ -8,7 +8,7 @@ import type { Rect } from '../layout/ScreenMetrics';
  * 出どころを1通りの規則で引くので、同じ移動が二重に飛ぶことは構造上起きない。
  *
  * 出どころの規則（resolve）: 置いたままの分身が運ぶもの → 掴んで離した場所 → 差し替え前の
- * 持ち主の枠 → origin（探索・クラフトの出どころ）→ 不明。
+ * 持ち主の枠 → origins（世界の変化が言う出どころ）→ 不明。
  */
 
 /** 計画に映る1枚のカード。実体が何か（Card）は実行側だけが知る。 */
@@ -31,8 +31,11 @@ export interface MotionInput<C> {
   readonly staying: readonly PlacedCard<C>[];
   /** 居なくなったカード。 */
   readonly left: readonly { readonly card: C; readonly ids: readonly number[] }[];
-  /** 差し替え前に画面のどこにも無かったインスタンスの出どころ（探索・クラフトで生まれたもの）。 */
-  readonly origin?: Rect;
+  /**
+   * 差し替え前に画面のどこにも無かったインスタンスの出発点を、そのインスタンスごとに引いたもの
+   * （MotionContext.origins）。持たないインスタンスは、出どころが分からないものとして扱う。
+   */
+  readonly origins?: ReadonlyMap<number, Rect>;
   /**
    * 手から放したインスタンスたちと、手を離した場所。ついてきて一緒に落とされたぶんも、指の下に
    * 居たのだから同じ場所から動き出す。heldIdが混ざっていてもよい——そちらの規則が先に効く。
@@ -92,7 +95,9 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
       if (!arriving && previous.card === to.card) return undefined;
       return { rect: previous.rect, born: false };
     }
-    return input.origin === undefined ? undefined : { rect: input.origin, born: true };
+
+    const origin = input.origins?.get(id);
+    return origin === undefined ? undefined : { rect: origin, born: true };
   };
 
   const planArrivalsTo = (to: PlacedCard<C>, arriving: boolean): void => {
@@ -105,11 +110,6 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
         if (source !== undefined) sources.push(source);
       }
     }
-    // 何を映しているか分からないカード（identityを持たないもの）は、1枚として出どころから飛ばす。
-    if (to.ids.length === 0 && arriving && input.origin !== undefined) {
-      sources.push({ rect: input.origin, born: true });
-    }
-
     if (held) landing = { to: to.rect, reveals: to.card };
 
     if (sources.length === 0) {
