@@ -198,14 +198,34 @@ describe('animals.yamlの動物', () => {
     });
   });
 
-  it('殴り続ければ危険域まで気が立つ', () => {
-    // 段はワールド側の宣言なので、しきい値を刻み直したらここで落ちる。
+  it('殴られ続ければ危険域まで気が立つ', () => {
+    // 段はワールド側の宣言なので、しきい値を刻み直したらここで落ちる。**外した回で確かめる**——
+    // 当たると気を失い、その間は警戒が打ち消される（次のテスト）ため。
+    open(MISSES);
+
     strikeWithSharpStone();
     expect(monkey.readProperty(warinessId)?.alert, '1発では警戒のまま').toBe('caution');
 
     strikeWithSharpStone();
 
     expect(monkey.readProperty(warinessId)?.alert).toBe('danger');
+  });
+
+  it('気を失っている間は警戒が消え、絵が倒れた姿へ変わる', () => {
+    // 気絶した動物は放っておいてよい相手なので、縁の明滅（CardView.md 3節）を止める。姿が変わった
+    // ことは絵が言う（同 9.1節）——型は差し替えないので、刺さった傷も警戒の実体値も残る。
+    strikeWithSharpStone();
+
+    expect(monkey.getNumber(warinessId), '警戒そのものは上がっている').toBe(40 + 25 - 1);
+    expect(monkey.readProperty(warinessId)?.value, '気絶が打ち消すので実効値は0').toBe(0);
+    expect(monkey.readProperty(warinessId)?.alert, '縁は明滅しない').toBe('safe');
+    expect(monkey.artName(), '倒れた姿の絵になる').toBe('monkey_unconscious');
+    expect(injuriesOf(monkey), '同じ個体なので傷は残る').toEqual(['laceration']);
+
+    tick(13);
+
+    expect(monkey.artName(), '目覚めれば元の絵へ戻る').toBeUndefined();
+    expect(monkey.readProperty(warinessId)?.alert, '警戒も戻る').toBe('caution');
   });
 
   it('負わせた傷は時間で治り、治りきれば消える', () => {

@@ -83,7 +83,16 @@ object_defs:
         value: 100
         range: {min: 0, max: 100}
         stages:
-          - {name: unconscious, alert: danger}
+          # 気を失っている間は、絵が倒れた姿へ変わる（CardView.md 9.1節）。同じ個体のままなので
+          # 型は差し替えない——刺さっている傷も警戒の値もそのまま残す。
+          #
+          # 警戒はここで打ち消す。気を失った動物は警戒しておらず、放っておいてよい相手なので、
+          # 縁の明滅（CardView.md 3節）も止まる。実効値への寄与なので、目覚めれば元の警戒へ戻る。
+          - name: unconscious
+            alert: danger
+            art: monkey_unconscious
+            passives:
+              - modify: {self: {wariness: -100}}
           - {name: dazed, min: 25, alert: caution}
           - {name: foggy, min: 60, alert: watch}
           - {name: clear, min: 80}

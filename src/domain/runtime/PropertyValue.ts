@@ -158,6 +158,11 @@ export class PropertyValue {
    * 今まさに指定した名前のstage（6.4節）に該当しているか（WhenOwnStageゲート専用、8節）。生の値ではなく
    * 実効値で判定する（modifyだけで決まる派生プロパティ自身のstagesも判定できるようにするため）。
    */
+  /** 今いる段が宣言している絵（PropertyDef.artNameOf）。実効値で決まるので、寄与が消えれば元の絵へ戻る。 */
+  stageArtName(): string | undefined {
+    return this.def.artNameOf(this.getEffectiveValue());
+  }
+
   isInStage(stageName: string): boolean {
     return this.def.isInStage(this.getEffectiveValue(), stageName);
   }

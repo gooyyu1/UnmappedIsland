@@ -691,6 +691,10 @@ export class Card extends Phaser.GameObjects.Container {
    * 桟へ積む状態バー1本。**縦の位置以外は4種とも同じ**なので、寸法はここで決め切り、どこへ積むかだけを
    * 差し替えのたびに与える（showBars参照）。
    */
+  /**
+   * 桟へ積むバーを1本作る。**カードのバーは明滅させない**（steady）——明滅は「手を止めろ」という
+   * 催促で、それを言うのは札の縁（3節）とステータスエリアの役目だから（CardView.md 8節）。
+   */
   private addRailBar(scene: Phaser.Scene, metrics: ScreenMetrics, options: ProgressBarOptions): ProgressBar {
     const paper = paperRect(metrics, this.cardWidth, this.cardHeight);
     const margin = metrics.px(RAIL_BAR_MARGIN);
@@ -703,7 +707,7 @@ export class Card extends Phaser.GameObjects.Container {
       metrics.px(RAIL_BAR_HEIGHT),
       0,
       // 枠線は数pxの太さの大半を占めてしまうので描かない。
-      { ...options, borderless: true },
+      { ...options, borderless: true, steady: true },
     );
     this.add(bar);
     return bar;
