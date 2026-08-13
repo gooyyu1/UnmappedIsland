@@ -460,6 +460,11 @@ reason_texts:
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
   not_raining: 雨は降っていない。溜められる雨がない。
 
+# 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
+# 覆いとして出る（CardView.md 9.1節）ので、離れて見ても読める短い語にする。
+stage_texts:
+  unconscious: 気絶
+
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
