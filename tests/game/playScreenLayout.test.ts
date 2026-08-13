@@ -23,8 +23,8 @@ describe('ScreenMetrics', () => {
   });
 });
 
-describe('PlayScreenLayout(ScreenLayout.md エリア構成)', () => {
-  it('縦型1080×1920はScreenLayout.mdの表どおりの高さに分かれる', () => {
+describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
+  it('縦型1080×1920はScreenLayout.md 9節の表どおりの高さに分かれる', () => {
     const layout = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
 
     expect(layout.optionsBar).toEqual({ x: 0, y: 4, width: 1080, height: 120 });

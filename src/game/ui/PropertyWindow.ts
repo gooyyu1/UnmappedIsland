@@ -41,7 +41,7 @@ export interface PropertyWindowOptions {
 }
 
 /**
- * キャラクターのプロパティをタグごとにバーで見せる子ウィンドウ（ScreenLayout.md プロパティウィンドウ節）。
+ * キャラクターのプロパティをタグごとにバーで見せる子ウィンドウ（Windows.md 6節 プロパティウィンドウ）。
  * 高さはタブの中で最も件数が多いものに合わせて固定し、タブを切り替えても枠が伸び縮みしないようにする。
  */
 export class PropertyWindow {

@@ -11,7 +11,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../supp
 /** ゲーム本体に同梱される表示文字列ファイル（テストはリポジトリルートで実行される前提）。 */
 const LOCALE_PATH = `public/${LOCALE_FILE}`;
 
-/** カードのタイトルの板に収まる幅（全角の文字数ぶん。ScreenLayout.md カードの枠 節）。 */
+/** カードのタイトルの板に収まる幅（全角の文字数ぶん。CardView.md 1節 カードの枠）。 */
 const NAME_MAX_WIDTH = 10;
 
 /**
@@ -238,7 +238,7 @@ describe('同梱の表示文字列ファイル', () => {
   });
 
   it('カードの名前は枠のタイトルの板に1行で収まる', () => {
-    // 板は高さ22uの固定で、名前は16uの1行（ScreenLayout.md カードの枠 節）。使える幅172uに対して
+    // 板は高さ22uの固定で、名前は16uの1行（CardView.md 1節 カードの枠）。使える幅172uに対して
     // 全角なら10文字ぶんにあたる。
     //
     // **幅はフォントを使わず近似で測る。** Nodeには文字の描画幅を測る手段が無く、そのために

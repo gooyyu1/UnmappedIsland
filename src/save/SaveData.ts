@@ -34,11 +34,11 @@ export interface SaveData {
 
   /**
    * ユーザが固定表示にしたステータス（プロパティの識別子）。安全域でもステータスエリアへ出し続ける
-   * （ScreenLayout.md ステータスエリア節）。
+   * （StatusArea.md）。
    */
   readonly pinnedStatuses: readonly string[];
 
-  /** ユーザが地図画面で置いた土地カードの位置（ScreenLayout.md 地図ウィンドウ節）。 */
+  /** ユーザが地図画面で置いた土地カードの位置（Windows.md 7節 地図ウィンドウ）。 */
   readonly mapCardPositions: readonly MapCardPosition[];
 }
 

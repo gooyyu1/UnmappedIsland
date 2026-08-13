@@ -9,7 +9,7 @@ import type { CardContent } from './Card';
 export const LANE_CELLS_MAX = 4;
 
 /**
- * レーンに並ぶ枠1つ（ScreenLayout.md 枠（セル）を一級の単位にする節）。**位置＝添字**で、
+ * レーンに並ぶ枠1つ（CardView.md 11節 枠（セル）を一級の単位にする）。**位置＝添字**で、
  * カードが入っているかどうかによらず枠そのものが1つの単位になる。
  *
  * 縁の色も重ねる文字も枠が持ち、カード（CardContent）は持たない。Cardは設置物・アイテム・手持ち・

@@ -35,7 +35,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 `status` タグが付くのは `pain` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の6つで、宣言順も
 この順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
-[`ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節）。`pain` が先頭なのは trait 由来の props が
+[`StatusArea.md`](../ui/StatusArea.md)）。`pain` が先頭なのは trait 由来の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。
 
 ### 値の刻み方（キャラクタ間で共通の規約）
@@ -74,7 +74,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   全ステータス・全キャラクタで共通でなければ「まだ大丈夫」の感覚が崩れる。端数は丸める——段のしきい値は
   人が読む数字なので、小数が書けても整数に留める。
 - **`satiety` / `hydration` の初期値は `max` の75%**（安全域のやや下）。満タンで始めると alert が
-  `safe` でステータスバーに出ず（[`ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節）、
+  `safe` でステータスバーに出ず（[`StatusArea.md`](../ui/StatusArea.md)）、
   飲食の操作も最初は試せないため。tickで減らない `stamina` と、序盤に眠らせたくない `wakefulness` は
   満タンで始める。
 - tickで減るもの（`satiety` / `wakefulness`）は、80%より下を**残り時間**で切る:

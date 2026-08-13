@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TickProgress } from '../../src/game/tickProgress';
 
 /**
- * 時間経過の見せ方（ScreenLayout.md 時間経過のドーナツグラフ節）の自動テスト。
+ * 時間経過の見せ方（CardInteraction.md 7節 時間経過のドーナツグラフ）の自動テスト。
  *
  * 目盛りが実際のtick境界（WorldSession.advanceWorldTimeがtickを回す瞬間）と一致すること、
  * 各区切りの前半で進み後半で止まること、その進み方が加速・減速を伴うこと、塗りと時計が食い違わない

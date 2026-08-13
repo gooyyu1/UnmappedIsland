@@ -12,7 +12,7 @@ function alertBorderColor(alert: AlertLevel): number | undefined {
 }
 
 /**
- * 変わった分を帯として残す時間と、それが追いつき切るまでの時間（ScreenLayout.md ステータスエリア節）。
+ * 変わった分を帯として残す時間と、それが追いつき切るまでの時間（StatusArea.md）。
  * 溜めを置いてから動かすのは、変化に気付く前に消えてしまわないようにするため。
  */
 const LAG_DELAY_MS = 250;
@@ -72,7 +72,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   /**
    * 今の値と、そこへ遅れて追いつく側（変化前の値から動き出す）。**広い方が帯、狭い方が塗り**になるため、
    * 悪化では塗りが先に動いて帯が残り、好転では帯が先に伸びて塗りが後から満ちる。どちら向きの変化でも
-   * 「変わった分」が帯として読める（ScreenLayout.md ステータスエリア節）。
+   * 「変わった分」が帯として読める（StatusArea.md）。
    */
   private ratio: number;
   private shownRatio: number;
@@ -177,7 +177,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
    * 帯が赤くなる。
    *
    * holdは「まだ値が動き続けている最中か」。trueの間は追いつかせず、帯を動き始めの位置に残したままに
-   * するので、何度かに分けて変わった分が合計として読める（ScreenLayout.md ステータスエリア節）。
+   * するので、何度かに分けて変わった分が合計として読める（StatusArea.md）。
    * holdをfalseに戻した時点から動き始めるため、値が変わらないtrue→falseの呼び出しにも意味がある。
    */
   setRatio(ratio: number, hold = false): void {
@@ -223,7 +223,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
   /**
    * 今どの域にいるかを伝える。塗りの色（fillColorFor）が変わり、危険域・致命的域では枠が明滅する
-   * （ScreenLayout.md ステータスエリア節）。域を持たないバー（探索率）は安全域のままで、緑の塗りになる。
+   * （StatusArea.md）。域を持たないバー（探索率）は安全域のままで、緑の塗りになる。
    */
   setAlert(alert: AlertLevel): void {
     if (alert === this.alert) return;

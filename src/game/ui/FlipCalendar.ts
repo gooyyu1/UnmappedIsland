@@ -13,7 +13,7 @@ export const FLIP_DIGIT_TEXTURE = 'flip-digit';
 const IMAGE_PAPER_HEIGHT = 176;
 const IMAGE_RING_OVERHEAD = 20;
 
-/** 日数の桁・時刻の桁の寸法（ScreenLayout.md 寸法トークン節、縦型・横型共通）。 */
+/** 日数の桁・時刻の桁の寸法（ScreenLayout.md 2節 寸法トークン、縦型・横型共通）。 */
 const DAY_DIGIT = { width: 64, height: 88, fontSize: 56 };
 const TIME_DIGIT = { width: 44, height: 60, fontSize: 36 };
 
@@ -28,7 +28,7 @@ const BLOCK_GAP = 14;
 const COLON_WIDTH = 10;
 
 /**
- * 日時のぶら下げ式フリップカード（ScreenLayout.md 設計原則）。
+ * 日時のぶら下げ式フリップカード（ScreenLayout.md 1節）。
  * 各桁は上部の留具（リング）だけで吊り下げられ、台紙のような外枠は持たない。
  * タップで時間経過アクションを選ぶ入口になる想定のため、押しボタンとして振る舞う。
  */

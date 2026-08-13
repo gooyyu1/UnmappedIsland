@@ -34,7 +34,7 @@ export interface ExplorationWindowOptions {
   readonly ratio: number;
 
   /**
-   * ウィンドウを収める領域。フィールドエリアを渡す（ScreenLayout.md 探索ウィンドウ節）。
+   * ウィンドウを収める領域。フィールドエリアを渡す（Windows.md 5節 探索ウィンドウ）。
    * ウィンドウはこの中央へ置く——画面の中央に置くと、縦型では状況エリアの時計を覆ってしまうため。
    */
   readonly area: Rect;
@@ -95,8 +95,7 @@ export class ExplorationWindow {
 
     const slotWidth = (contentWidth - metrics.px(SIZE.gap) * (FOUND_SLOTS - 1)) / FOUND_SLOTS;
     const foundHeight = (slotWidth * SIZE.cardHeight) / SIZE.cardWidth;
-    // カードの下は、レーンのカードの余白と同じだけ空けてスクロールバーの場所にする（ScreenLayout.md
-    // スクロールバー節）。送る必要が無い間は空くが、見つかった件数でウィンドウの高さは変わらない。
+    // カードの下は、レーンのカードの余白と同じだけ空けてスクロールバーの場所にする（ScreenLayout.md 7.4節）。送る必要が無い間は空くが、見つかった件数でウィンドウの高さは変わらない。
     const cardPadding = metrics.px((SIZE.laneHeight - SIZE.cardHeight) / 2);
 
     const windowHeight =

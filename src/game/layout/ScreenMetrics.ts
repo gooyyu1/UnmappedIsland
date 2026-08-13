@@ -14,7 +14,7 @@ export interface Rect {
 const PORTRAIT_HEIGHT_UNITS = 1920;
 
 /**
- * 画面寸法と単位uの対応（ScreenLayout.md「短辺基準の単位」）。
+ * 画面寸法と単位uの対応（ScreenLayout.md 1節「短辺基準の単位」）。
  * u = 画面短辺 ÷ 1080 とすることで、同一端末ならカードの実寸が画面の向きによらず一致する。
  */
 export class ScreenMetrics {

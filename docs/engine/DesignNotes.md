@@ -73,7 +73,7 @@
   換算定数を式に足して独立に選べるようにはしない——mL × g/mL = g が定義から落ちてくることが、
   この 3 つを噛み合わせている理由そのもの。
 
-## レーンの並び（[ScreenLayout.md](../ui/ScreenLayout.md) スロットの子ウィンドウ節）
+## レーンの並び（[`Windows.md`](../ui/Windows.md) 1 節）
 
 - **1つの並びを、意味の違う2つの用途へ使い回さないこと。** `PlayScene.openLanes` は「差し替える中身と
   位置で対応付ける並び」（`showView` → `CardMotion.update` が `lanes[i]` と `contents[i]` を組にする）
@@ -84,7 +84,7 @@
   なった**（怪我のウィンドウにヤシの木が出た）。順番に意味がある並びは、用途ごとに別の getter で持つこと
   （`lanesFrontFirst`）。
 
-## Phaserのテクスチャ（[ScreenLayout.md](../ui/ScreenLayout.md) ボタンの絵 節）
+## Phaserのテクスチャ（[`ScreenLayout.md`](../ui/ScreenLayout.md) 4.2 節）
 
 - **別の概念の物へ、1枚のテクスチャを実行時に使い回さないこと。** ボタンの地にカードの紙が欲しかった
   ので、カードの枠のテクスチャへ切り出しをフレームとして足して共有した。**Phaserは最初に足された
@@ -130,7 +130,7 @@
   （`setMask`はWebGLで警告を出して何もしない）。Phaser 4はCanvasレンダラを非推奨としており、
   機能の対等性を保証しない。
 
-## Phaserのフィルタ（[ScreenLayout.md](../ui/ScreenLayout.md) 空の演出節）
+## Phaserのフィルタ（[`ScreenLayout.md`](../ui/ScreenLayout.md) 7.5 節）
 
 - **切り抜きのためにフィルタを使わないこと。** フィルタを掛けた表示物は、一度画面サイズの描画バッファへ
   描いてから合成される。4Kでは1枚31MBで、雨のはみ出しを隠すマスク1つのために**221MBを常時占めていた**
@@ -193,7 +193,7 @@
   統一してある。かごの手書きの `put_in` も、これに置き換えて消した——2経路あると、枠が受け入れない相手にも
   `with` だけで噛み合って「吹き出しは出るのに何も起きない」状態が作れてしまう。
 
-## まとめて入れる（[ScreenLayout.md](../ui/ScreenLayout.md) 落とし先の上で待つと、2 枚目以降がついてくる 節）
+## まとめて入れる（[`CardInteraction.md`](../ui/CardInteraction.md) 5 節）
 
 - **`combinations` に「ドロップした束の全員へ繰り返す」語彙（`accept_multiple` のような宣言）を足さないこと。**
   まとめて運ぶ操作は、**ついてきた枚数がそのまま「これだけ通る」という約束**になることで成立している。

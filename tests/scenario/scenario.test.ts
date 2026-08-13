@@ -56,7 +56,7 @@ describe('テスト用シナリオ', () => {
   });
 
   it('failing_statusは、域が一通り出揃った状態にする', () => {
-    // ステータスエリアの色分け（ScreenLayout.md）を確かめるためのシナリオなので、狙った域に
+    // ステータスエリアの色分け（StatusArea.md 7節）を確かめるためのシナリオなので、狙った域に
     // 入っていること自体がこのファイルの中身の意味。段のしきい値を刻み直したら必ずここで落ちる。
     const scenario = load('failing_status');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
@@ -94,7 +94,7 @@ describe('テスト用シナリオ', () => {
   });
 
   it('scorching_hazeは、陽炎が立つ暑さから始まり、時間が経っても暑いままになる', () => {
-    // 陽炎（ScreenLayout.md 空の演出節）を目で確かめるためのシナリオなので、開始直後だけでなく
+    // 陽炎（ScreenLayout.md 7.5節 空の演出）を目で確かめるためのシナリオなので、開始直後だけでなく
     // しばらく見ていられる必要がある。calmのままだと1tickで暑い季節を外れて消えてしまう。
     const scenario = load('scorching_haze');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));

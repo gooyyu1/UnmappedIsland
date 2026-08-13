@@ -113,7 +113,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
   （`weight` と同じ二択。`combinations` では `dragged` も指せる）で、省略時は時間を消費しない。
 - 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
   呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける
-  （`MinutesFor`。UI層が実行前に所要時間を見せるため、[ScreenLayout.md](../ui/ScreenLayout.md)）。
+  （`MinutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 - `AdvanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
   現状15分）を跨ぐたびに world ツリー全体の `Tick()` を1回実行する。長い `duration` の action は、
   その間の accumulate・rangeイベントをすべて経験する。

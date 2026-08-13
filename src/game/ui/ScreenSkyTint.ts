@@ -4,7 +4,7 @@ import { skyTintFor } from './skyTint';
 import { COLOR } from './theme';
 
 /**
- * 日射に応じて画面全体へかぶせる翳り・輝き（ScreenLayout.md 空の演出節）。見え方はskyTint.tsが
+ * 日射に応じて画面全体へかぶせる翳り・輝き（ScreenLayout.md 7.5節 空の演出）。見え方はskyTint.tsが
  * 決め、こちらは「その通りに描く」ことだけを行う。
  *
  * 入力は遮らない（下のカードもボタンもそのまま操作できる）。ほぼ全ての表示物より手前へ出す必要が

@@ -122,7 +122,7 @@ export class PropertyDef {
    * `up`（負荷など）、単調に下がるなら`down`（満腹度など）。上下どちらの端も悪い山なり・谷なりの並びは
    * `mixed`で、バーの向きを決められない（rangeを持つプロパティでは、ロード時にこれを拒む）。
    *
-   * 見せ方（帯の向き・増減の記号の色）だけがこれを見る（ScreenLayout.md ステータスエリア節）。
+   * 見せ方（帯の向き・増減の記号の色）だけがこれを見る（StatusArea.md）。
    */
   readonly alertDirection: AlertDirection;
 

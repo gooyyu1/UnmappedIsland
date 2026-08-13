@@ -58,7 +58,7 @@ export class SlotTexts {
 
   /**
    * ここへ物を入れる操作の文言（宣言が無ければundefined）。ドロップの吹き出しに出す
-   * （ScreenLayout.md カードのドラッグ＆ドロップ節）。スロットの名前（場所を指す「手当て」）とは
+   * （CardInteraction.md 2節 カードのドラッグ＆ドロップ）。スロットの名前（場所を指す「手当て」）とは
    * 別の文字列——出すのは行為の名前（「手当てする」）だから。
    */
   readonly putIn: Texts | undefined;

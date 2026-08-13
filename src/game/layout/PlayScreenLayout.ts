@@ -49,7 +49,7 @@ function characterDisplayHeight(bottomPadding: number): number {
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
 /**
- * 横型のダッシュボード列幅・右サイドバー幅（ScreenLayout.md 横型レイアウト節）。
+ * 横型のダッシュボード列幅・右サイドバー幅（ScreenLayout.md 10節 横型レイアウト）。
  *
  * 列幅は日時のフリップカード（406u）が背景のページの紙の内側に収まる幅で決まる。左右パディング
  * 20u×2と、フィールドエリア側の紙の余白（INFORMATION_PAPER_INSET.field）を足した幅が下限。
@@ -294,7 +294,7 @@ export class PlayScreenLayout {
   }
 
   /**
-   * レーンの区切りの帯（ScreenLayout.md エリアの区切り節）。
+   * レーンの区切りの帯（ScreenLayout.md 7.6節 エリアの区切り）。
    *
    * 帯は絵の中央半分だけが区切りそのもので、上下1/4ずつは隣のレーンへかぶせる前提で描かれている。
    * そのため高さはレーンの隙間の2倍を取り、隙間の中心線に対して上下対称に置く。
@@ -312,7 +312,7 @@ export class PlayScreenLayout {
 
 /**
  * 境目の線に対して上下対称に置く帯。絵は中央半分だけが区切りそのもので、上下1/4ずつは隣のエリアへ
- * かぶせる前提で描かれている（ScreenLayout.md）。
+ * かぶせる前提で描かれている（ScreenLayout.md 7.6節）。
  */
 function separatorAt(center: number, span: Rect, height: number): Rect {
   return { x: span.x, y: center - height / 2, width: span.width, height };

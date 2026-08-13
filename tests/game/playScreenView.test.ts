@@ -62,7 +62,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('天気は、worldの今の天気の識別子をそのまま映す', () => {
-    // 雨の演出（ScreenLayout.md）がこの識別子を読むため、表示文字列ではなく識別子で持つ。
+    // 雨の演出（ScreenLayout.md 7.5.3節）がこの識別子を読むため、表示文字列ではなく識別子で持つ。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const weatherId = codex.propertyNames.getId('weather');
 
@@ -292,7 +292,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
   it('怪我のカードは耐久度ではなく、残っている傷とその域を持つ', () => {
     // 耐久度バーは道具の控えめな細線で、あとどれだけで治るかはそれとは別の見せ方をする
-    // （ScreenLayout.md カードの状態バー節）。
+    // （CardView.md 8節 カードの状態バー）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
 
@@ -312,7 +312,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('動物のカードは、アイテムではなく動物として枠の色が決まる', () => {
-    // 動物はitemも兼ねるので、種別を決める順序が効いている（ScreenLayout.md 枠の色は種別で変える 節）。
+    // 動物はitemも兼ねるので、種別を決める順序が効いている（CardView.md 2節 枠の色は種別で変える）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     placeMonkey(game);
 
@@ -320,7 +320,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('警戒している動物のカードだけが、輪郭を明滅させる域を持つ', () => {
-    // 安全域を外れている間だけ明滅する（ScreenLayout.md 警戒している動物は輪郭を明滅させる 節）。
+    // 安全域を外れている間だけ明滅する（CardView.md 3節 警戒している動物は輪郭を明滅させる）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const monkey = placeMonkey(game);
     const warinessId = codex.propertyNames.getId('wariness');
@@ -345,7 +345,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('治療具を当てた怪我のカードだけが、手当て済みの印を持つ', () => {
-    // 手当ての有無で絵は差し替えない（ScreenLayout.md カードの印 節）。
+    // 手当ての有無で絵は差し替えない（CardView.md 9節 カードの印）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
 
@@ -358,7 +358,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('中身を持つカードは、それを映す場所と、空けておく枠の数の元になる容量を持つ', () => {
-    // 中身を見せるかはタグではなくスロットで決める（ScreenLayout.md 子ウィンドウ節）。
+    // 中身を見せるかはタグではなくスロットで決める（Windows.md 1節 子ウィンドウ）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));

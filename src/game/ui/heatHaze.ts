@@ -1,4 +1,4 @@
-/** 陽炎の強さ（ScreenLayout.md 空の演出節）。 */
+/** 陽炎の強さ（ScreenLayout.md 7.5節 空の演出）。 */
 export interface HeatHaze {
   /** ゆがみの量（Phaserの変位フィルタに渡す割合。画面幅の半分に対する比）。 */
   readonly strength: number;

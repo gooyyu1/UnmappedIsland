@@ -30,7 +30,7 @@ export interface RecipeEntry {
 
   /**
    * originは押した時点でそのカードが居た画面上の矩形。製作中オブジェクトのカードはここから
-   * 飛んでくる（ScreenLayout.md カードの移動アニメーション節）。
+   * 飛んでくる（CardInteraction.md 6節 カードの移動アニメーション）。
    */
   readonly onSelect: (origin: Rect) => void;
 }

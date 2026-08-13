@@ -83,7 +83,7 @@ describe('animals.yamlの動物', () => {
   });
 
   it('野生のサルは警戒した状態で現れ、放っておけば落ち着く', () => {
-    // 明滅（ScreenLayout.md）は域だけで決まるので、現れた時点で安全域を外れていることが要件。
+    // 明滅（CardView.md 3節）は域だけで決まるので、現れた時点で安全域を外れていることが要件。
     expect(monkey.readProperty(warinessId)?.alert, '現れた時点で安全域ではない').not.toBe('safe');
     expect(monkey.readProperty(warinessId)?.worsensUpward, '増えるほど悪い').toBe(true);
 

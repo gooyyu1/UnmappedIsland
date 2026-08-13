@@ -66,7 +66,7 @@ describe('プレイヤーキャラクタの定義', () => {
       const hand = def(character).getSlotDef(codex.slotNames.getId('hand'));
 
       expect(hand, '手持ちスロットを持つ').toBeDefined();
-      // 枠数は個体差にしてよいが、ハンドレーンに収まる範囲に留める（ScreenLayout.md）。数を決めて
+      // 枠数は個体差にしてよいが、ハンドレーンに収まる範囲に留める（ScreenLayout.md 7.3節）。数を決めて
       // いるので、持ち替えても枠の位置は動かない（SlotSystem.md 3節）。
       expect(hand?.cellCount, '手持ちは4〜8枠').toBeGreaterThanOrEqual(4);
       expect(hand?.cellCount, '手持ちは4〜8枠').toBeLessThanOrEqual(8);
@@ -105,7 +105,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('ステータスエリアに出るのは6件で、並び順も揃っている', () => {
-      // readPropertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（ScreenLayout.md）。
+      // readPropertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
       const status = instance.readPropertiesWithTag(codex.propertyTagNames.getId('status'));
 
@@ -210,7 +210,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it.each(['load', 'pain'])('%sは増えるほど悪い値として扱われる', (propertyName) => {
-      // バーの向きと増減の記号の色が反転する（ScreenLayout.md ステータスエリア節）。
+      // バーの向きと増減の記号の色が反転する（StatusArea.md）。
       expect(propOf(def(character), propertyName).worsensUpward).toBe(true);
       expect(propOf(def(character), 'stamina').worsensUpward).toBe(false);
     });

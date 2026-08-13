@@ -1,4 +1,4 @@
-# 子ウィンドウのレーンの送り（ScreenLayout.md スロットの子ウィンドウ節）を確かめるための開始状態。
+# 子ウィンドウのレーンの送り（Windows.md 1節）を確かめるための開始状態。
 # 装備を一度に見える枠数（LANE_CELLS_MAX = 4）より多く持ち、送らないと最後まで見えない状態から始める。
 #
 # 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。

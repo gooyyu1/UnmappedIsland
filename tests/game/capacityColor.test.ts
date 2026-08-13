@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { COLOR, capacityColorFor, fillColorFor } from '../../src/game/ui/theme';
 
 /**
- * 入れ物の詰まり具合のバーの塗りの色（ScreenLayout.md カードの状態バー節）。
+ * 入れ物の詰まり具合のバーの塗りの色（CardView.md 8節 カードの状態バー）。
  * ステータスバーと同じ色域を、域ではなく値そのもので辿る。
  */
 describe('入れ物の詰まり具合のバーの塗りの色', () => {
