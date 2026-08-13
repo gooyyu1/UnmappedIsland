@@ -93,6 +93,9 @@ const FILTER_BAR_PADDING_X = 20;
 /** ステータスエリアの内側パディング（キャラクター表示エリア側はDISPLAY_PADDING）。 */
 const STATUS_PADDING = 24;
 
+/** 地図・装備・怪我・レシピのボタンが落とす影のずらし幅（u単位。addSlotButton参照）。 */
+const SLOT_BUTTON_SHADOW = 1.5;
+
 /**
  * ゲーム内時間の経過を実時間で見せる速さ（ゲーム内15分＝現実0.5秒）。durationを持つアクションは、
  * この速さで時間が経ち切るまで結果を見せない。
@@ -1745,7 +1748,6 @@ export class PlayScene extends ResponsiveScene {
    * 同じで、地図が最も押す頻度が低いので端に来る。レシピは持ち物ではないので反対の端。
    */
   private addSlotButtonColumn(column: Rect): void {
-    const gap = this.metrics.px(SIZE.gap);
     const buttons = [
       {
         art: 'map',
@@ -1773,9 +1775,12 @@ export class PlayScene extends ResponsiveScene {
         onTap: () => this.openRecipeWindow(),
       },
     ] as const;
-    // 列の高さを3等分せず、内容量ぶんに留める。余った高さは列の中で上下に分ける。
+    // 列の高さを4等分せず、上下へ余白を空けた残りを間隔に回す（SIZE.slotButtonColumnInset）。
+    // **間隔を別の定数にはしない**——両方を定数にすると、片方を変えたときに列の高さと合わなくなる。
     const width = Math.min(this.metrics.px(SIZE.slotButton.width), column.width);
     const height = this.metrics.px(SIZE.slotButton.height);
+    const inset = this.metrics.px(SIZE.slotButtonColumnInset);
+    const gap = Math.max(0, (column.height - inset * 2 - height * buttons.length) / (buttons.length - 1));
     const stack = height * buttons.length + gap * (buttons.length - 1);
     const top = column.y + Math.max(0, (column.height - stack) / 2);
     // 余った幅は左右へ等分する。左詰めにするとポートレイトとの間だけが詰まって、
@@ -1791,6 +1796,10 @@ export class PlayScene extends ResponsiveScene {
    *
    * 4つとも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
    * ボタンの内側へ収める必要も無い（日時のフリップカードと同じ考え方）。
+   *
+   * **紙として置かれるので影を落とす**（drawBoxのshadow）。カードは絵に影が焼いてあり（card_frame.json）、
+   * このボタンだけが本のページに貼り付いて見えていた。立体的な縁は足さない——枠を持たせるとカードと
+   * 同じ格に見えて、画面のメリハリが消える。
    */
   private addSlotButton(
     rect: Rect,
@@ -1801,9 +1810,10 @@ export class PlayScene extends ResponsiveScene {
     const borderWidth = Math.max(1, this.metrics.px(2));
     const button = new Button(this, rect, {
       fill: spec.fill,
-      border: COLOR.buttonBorder,
+      border: COLOR.slotButtonBorder,
       borderWidth,
       radius,
+      shadow: this.metrics.px(SLOT_BUTTON_SHADOW),
     });
     button.addContent(
       ...this.slotButtonPaper(rect, index, radius, borderWidth),
@@ -1839,7 +1849,7 @@ export class PlayScene extends ResponsiveScene {
       .setDisplaySize(rect.width, rect.height);
 
     const frame = this.add.graphics();
-    frame.lineStyle(borderWidth, COLOR.buttonBorder, 1);
+    frame.lineStyle(borderWidth, COLOR.slotButtonBorder, 1);
     frame.strokeRoundedRect(0, 0, rect.width, rect.height, radius);
     return [paper, frame];
   }
