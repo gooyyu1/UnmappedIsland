@@ -10,16 +10,11 @@
 ## 収録ドキュメント
 
 - [プレイヤーキャラクタ](./Characters.md)
-- [怪我](./Injuries.md)
 - [スキル一覧](./Skills.md) — 用意するスキルと、その粒度・個数の決め方
 - [動物一覧](./Animals.md) — 島の位置づけと、拾える獲物から危険な大型までの役割分担
 - [道具・武器・容器・衣類 アイテム案](./SurvivalItems.md)
 - [コンテナ（かご・箱・そり）](./Containers.md)
 - [住居（洞窟・小屋）](./Dwellings.md) — 部品の差し替えで段階を表す住居と、工法ごとの得意分野
-- [WorldCodex データベースビューア](./WorldCodexViewer.md) — 実際のゲームデータ
-  （`public/world-codex/*.yaml`）を、ゲーム本体と同じローダー・同じ表示文字列・同じ絵で一覧・詳細
-  表示する閲覧ツール（公開先は [`../../codex/`](../../codex/)）。YAML文法リファレンスは
-  [`../Engine/GameElementDefinition.md`](../engine/GameElementDefinition.md) を参照
 
 ## 含まれるドキュメント例
 

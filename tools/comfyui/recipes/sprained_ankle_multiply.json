@@ -11,7 +11,7 @@
     "**白い画素は作らない。** 「変わらない」は透明で表す——乗算の効かない環境では白がそのまま出る",
     "（docs/engine/DesignNotes.md）。skin_tint.py --layer がこの形で書き出す。",
     "",
-    "**手当ての有無で絵は差し替えない。** 手当て済みはカードの印（🩹）で見せる（docs/world/Injuries.md）。"
+    "**手当ての有無で絵は差し替えない。** 手当て済みはカードの印（🩹）で見せる（docs/engine/InjurySystem.md 3節の手当て）。"
   ],
   "output": "src/assets/objects/sprained_ankle_multiply.png",
   "stain": {

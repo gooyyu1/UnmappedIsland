@@ -38,6 +38,10 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 [`StatusArea.md`](../ui/StatusArea.md)）。`pain` が先頭なのは trait 由来の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。
 
+気絶と死を決める `consciousness`・`vitality` も、`pain` と同じくキャラクタ間で共通の値として
+ここへ加わる予定である（刻み方と押し下げる側は
+[`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節・3 節。まだ実装していないため上の契約には含めない）。
+
 ### 値の刻み方（キャラクタ間で共通の規約）
 
 数値のスケールは [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.0節に従い、
@@ -56,7 +60,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   `max` は「最大限に肥満した状態」から絶食で保つ tick 数、初期値はその1/4（標準体格）。
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る想定（未実装。致死性は無い）。`-1/tick`。
 - **`stamina`（体力）**: 疲労の逆で、tickでは減らない。
-- **`pain`（痛み）**: 負っている怪我（[`Injuries.md`](./Injuries.md)）が `modify` で押し上げる値。自分では
+- **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
   動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
 - **`load`（荷重）**: 持ち物と装備の重さ（g）。自分では動かず、中身から導出される

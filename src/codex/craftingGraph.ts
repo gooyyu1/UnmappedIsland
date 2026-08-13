@@ -3,7 +3,7 @@ import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 
 /**
- * クラフトネットワークのグラフ構造（docs/world/WorldCodexViewer.md クラフトネットワーク節）。
+ * クラフトネットワークのグラフ構造。
  *
  * ノードは型・工程・タグの3種。線は必ず「入力 → 工程 → 出力」と工程を経由する——複数入力×複数出力の
  * クラフトを型どうし直結で描くと入力数×出力数のメッシュになるが、工程を結節点にすれば

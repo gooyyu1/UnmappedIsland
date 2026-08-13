@@ -1,4 +1,4 @@
-# 怪我（docs/world/Injuries.md）の見え方を確かめるための開始状態。足首を捻挫した状態から始める。
+# 怪我（docs/engine/InjurySystem.md）の見え方を確かめるための開始状態。足首を捻挫した状態から始める。
 # 実際に負う契機はヤシの実採りの失敗（10%）なので、狙って再現するにはここから始める。
 #
 # 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。

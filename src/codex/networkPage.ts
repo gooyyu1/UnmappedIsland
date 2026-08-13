@@ -7,7 +7,7 @@ import type { LayoutNode } from './networkLayout';
 import { layoutLayered } from './networkLayout';
 
 /**
- * クラフトネットワークのページ（docs/world/WorldCodexViewer.md クラフトネットワーク節）。
+ * クラフトネットワークのページ。
  * 全体図を1枚のSVGに描き、`#/network/<識別子>` ではその型の上流（材料側）・下流（成果物側）を
  * ハイライトする。ページ全体の組み立てはpages.tsと同じく文字列を返すだけで、DOMには触らない。
  */
