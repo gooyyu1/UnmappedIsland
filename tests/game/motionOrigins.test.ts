@@ -4,18 +4,18 @@ import type { WorldChange } from '../../src/domain/runtime/WorldChange';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { World } from '../../src/domain/runtime/views/World';
-import { originInstances } from '../../src/game/ui/motionOrigins';
+import { bornInstances, originInstances, vanishedInstances } from '../../src/game/ui/motionOrigins';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 
 /**
- * 世界に起きた変化から、カードの出どころを引く（originInstances、docs/engine/HuntingSystem.md 6.2節）
- * の自動テスト。
+ * 世界に起きた変化を、カードの動きの言葉へ直す（motionOrigins、docs/engine/HuntingSystem.md 6.2節と
+ * docs/ui/CardInteraction.md 6.1節）の自動テスト。
  *
- * 狙いは「新しく現れた札がどこから飛ぶか」をUIが知らずに済むこと。定義はこのファイル専用の最小Codexで
- * 書き、実データの変更に引きずられないようにする。
+ * 狙いは「新しく現れた札がどこから飛ぶか」「何が壊れて何が生まれたか」をUIが知らずに済むこと。定義は
+ * このファイル専用の最小Codexで書き、実データの変更に引きずられないようにする。
  */
-describe('originInstances（カードの出どころ）', () => {
+describe('世界の変化から引く、カードの動き', () => {
   const YAML = `
 object_defs:
   world:
@@ -139,6 +139,43 @@ object_defs:
     const origins = originsOf(() => basket.destroy());
 
     expect(origins.size).toBe(0);
+  });
+
+  describe('世界の出入り（CardInteraction.md 6.1節 砂埃）', () => {
+    /** bodyの実行中に起きた変化を、出入りしたインスタンスへ直す。 */
+    function movesOf(body: () => void): { born: readonly number[]; vanished: readonly number[] } {
+      const changes: WorldChange[] = [];
+      session.observeChanges((change) => changes.push(change), body);
+      return { born: bornInstances(changes), vanished: vanishedInstances(changes) };
+    }
+
+    it('壊れた物は世界から出たものとして挙がる', () => {
+      const basket = placeOnGround('basket');
+
+      expect(movesOf(() => basket.destroy())).toEqual({ born: [], vanished: [basket.instanceId] });
+    });
+
+    it('生まれた物は世界に入ったものとして挙がる', () => {
+      const moves = movesOf(() => {
+        const stone = spawn('stone');
+        expect(stone.moveToSlot(ground, slot('items'))).toBeUndefined();
+      });
+
+      expect(moves.born).toHaveLength(1);
+      expect(moves.vanished).toEqual([]);
+    });
+
+    it('移っただけの物は、どちらにも挙がらない', () => {
+      // 別のレーンへ移った札はレーンから見れば消えて現れるので、ここで分かれていることが要る。
+      const basket = placeOnGround('basket');
+      const stone = placeOnGround('stone');
+
+      const moves = movesOf(() => {
+        expect(stone.moveToSlot(basket, slot('contents'))).toBeUndefined();
+      });
+
+      expect(moves).toEqual({ born: [], vanished: [] });
+    });
   });
 
   it('一度の差し替えで何度も動いた物は、最初の出どころから飛ぶ', () => {

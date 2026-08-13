@@ -243,4 +243,76 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.fadeIns).toEqual(['見つけた物']);
     expect(plan.flights).toEqual([]);
   });
+
+  describe('砂埃（6.1節）', () => {
+    it('世界から出たインスタンスは、居た枠で砂埃が立つ', () => {
+      const plan = planMotion(
+        input({
+          before: [placed('実', [1], 0)],
+          left: [{ card: '実', ids: [1] }],
+          vanished: [1],
+        }),
+      );
+      expect(plan.puffs).toEqual([rect(0)]);
+    });
+
+    it('レーンを移っただけの札では立たない', () => {
+      // 居なくなったカード（left）は壊れた札と移った札の両方を含むので、これだけでは決められない。
+      const plan = planMotion(
+        input({
+          before: [placed('地の石', [1], 0)],
+          arriving: [placed('手の石', [1], 500)],
+          left: [{ card: '地の石', ids: [1] }],
+        }),
+      );
+      expect(plan.puffs).toEqual([]);
+      expect(plan.flights.map((flight) => flight.puffs)).toEqual([false]);
+    });
+
+    it('束が丸ごと消えても、砂埃は札1枚につき1回', () => {
+      const plan = planMotion(
+        input({
+          before: [placed('実', [1, 2, 3], 0)],
+          left: [{ card: '実', ids: [1, 2, 3] }],
+          vanished: [1, 2, 3],
+        }),
+      );
+      expect(plan.puffs).toEqual([rect(0)]);
+    });
+
+    it('画面に出ていなかった物が壊れても、立てる場所が無い', () => {
+      // 閉じた入れ物の中や未発見のスロットで壊れた物。枠を持たないので何も起きない。
+      const plan = planMotion(input({ vanished: [7] }));
+      expect(plan.puffs).toEqual([]);
+    });
+
+    it('生まれたインスタンスの砂埃は、その便が着いてから立つ', () => {
+      const plan = planMotion(
+        input({ arriving: [placed('実', [1], 500)], origins: origins([1], 0), born: [1] }),
+      );
+
+      expect(plan.puffs).toEqual([]);
+      expect(plan.flights.map((flight) => flight.puffs)).toEqual([true]);
+    });
+
+    it('既に居る束へ合流する生まれも、着いた先で立つ', () => {
+      const plan = planMotion(
+        input({
+          before: [placed('実', [1], 500)],
+          staying: [placed('実', [1, 2], 500)],
+          origins: origins([2], 0),
+          born: [2],
+        }),
+      );
+
+      expect(plan.flights.map((flight) => flight.puffs)).toEqual([true]);
+    });
+
+    it('出どころの分からない生まれは、浮かび上がるその場で立つ', () => {
+      const plan = planMotion(input({ arriving: [placed('実', [1], 500)], born: [1] }));
+
+      expect(plan.fadeIns).toEqual(['実']);
+      expect(plan.puffs).toEqual([rect(500)]);
+    });
+  });
 });

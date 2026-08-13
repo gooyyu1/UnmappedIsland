@@ -1,8 +1,16 @@
 import type { WorldChange } from '../../domain/runtime/WorldChange';
 
 /**
- * 世界に起きた変化（WorldChange）を「そのインスタンスは、どのインスタンスの札から飛び立つか」へ
- * 直す（HuntingSystem.md 6.2節）。矩形に直すのは、差し替え直前の並びを読める側（PlayScene）。
+ * 世界に起きた変化（WorldChange）を、カードの動きの言葉へ直す——どこから飛び立つか
+ * （originInstances）と、どのインスタンスが世界に出入りしたか（bornInstances / vanishedInstances）。
+ *
+ * **世界の出入りは、画面の出入りでは代われない。** 別のレーンへ移っただけのカードも、レーンから
+ * 見れば消えて現れる。壊れた・生まれたことを知っているのは変化のログだけ。
+ */
+
+/**
+ * 「そのインスタンスは、どのインスタンスの札から飛び立つか」
+ * （HuntingSystem.md 6.2節）。矩形に直すのは、差し替え直前の並びを読める側（PlayScene）。
  *
  * 出どころは主体——その変化を起こした効果を宣言していたオブジェクト。主体を持たない変化
  * （プレイヤーの操作が直に動かした分）は移動前の親を出どころにする。画面に出ていないスロット
@@ -23,4 +31,17 @@ export function originInstances(changes: readonly WorldChange[]): ReadonlyMap<nu
     if (!origins.has(id)) origins.set(id, origin.instanceId);
   }
   return origins;
+}
+
+/**
+ * 世界から出たインスタンス（壊れた・使い切った・食べられた）。同じ物が2度出ることはないので、
+ * そのまま並べてよい。
+ */
+export function vanishedInstances(changes: readonly WorldChange[]): readonly number[] {
+  return changes.filter((change) => change.to === undefined).map((change) => change.object.instanceId);
+}
+
+/** 世界に生まれたインスタンス。生まれるのも1度きり。 */
+export function bornInstances(changes: readonly WorldChange[]): readonly number[] {
+  return changes.filter((change) => change.from === undefined).map((change) => change.object.instanceId);
 }

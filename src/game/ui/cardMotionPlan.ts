@@ -8,6 +8,9 @@ import type { Rect } from '../layout/ScreenMetrics';
  *
  * 出どころの規則（resolve）: 置いたままの分身が運ぶもの → 掴んで離した場所 → 差し替え前の
  * 持ち主の枠 → origins（世界の変化が言う出どころ）→ 不明。
+ *
+ * 砂埃（6.1節）を立てる場所もここが決める。**立つのは世界の出入りだけ**で、レーンから居なくなった
+ * ことでも現れたことでもない（vanished / born）。
  */
 
 /** 計画に映る1枚のカード。実体が何か（Card）は実行側だけが知る。 */
@@ -42,6 +45,13 @@ export interface MotionInput<C> {
   readonly released?: { readonly ids: readonly number[]; readonly rect: Rect };
   /** 置いたままの分身（CardMotion.hold）が運ぶインスタンス。飛ぶのは分身なので、通常の便は立てない。 */
   readonly heldId?: number;
+  /**
+   * 世界から出たインスタンス（壊れた・使い切った）。**leftでは代われない**——別のレーンへ移った
+   * だけのカードもそこに並ぶので、消えたのか運ばれたのかは世界の変化だけが知っている。
+   */
+  readonly vanished?: readonly number[];
+  /** 世界に生まれたインスタンス。こちらもbeforeに居ないだけでは区別できない（移ってきた物と同じ）。 */
+  readonly born?: readonly number[];
 }
 
 /** 分身1枚の飛行。 */
@@ -54,6 +64,8 @@ export interface PlannedFlight<C> {
   readonly delaySteps: number;
   /** 着いた時点で表に返すカード（伏せて待たせた札束は、最後の1枚が着いたときに表へ返る）。 */
   readonly reveals?: C;
+  /** 着いた時点で砂埃を立てるか（生まれたインスタンスを運ぶ便）。 */
+  readonly puffs: boolean;
 }
 
 export interface MotionPlan<C> {
@@ -64,6 +76,8 @@ export interface MotionPlan<C> {
   readonly fadeIns: readonly C[];
   /** 即座に片付けるカード（居なくなったもの全部。残ったインスタンスの移動は便が見せている）。 */
   readonly discards: readonly C[];
+  /** その場ですぐ砂埃を立てる枠（消えた札の居場所と、飛ばずに現れた札の居場所）。 */
+  readonly puffs: readonly Rect[];
   /** 置いたままの分身の行き先（heldIdのインスタンスが差し替え後も居る場合だけ）。 */
   readonly landing?: { readonly to: Rect; readonly reveals: C };
 }
@@ -75,41 +89,59 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
   const flights: PlannedFlight<C>[] = [];
   const hidden: C[] = [];
   const fadeIns: C[] = [];
+  const puffs: Rect[] = [];
   let landing: MotionPlan<C>['landing'];
-  // 生まれたものは差し替え全体で通し番号を取り、1枚ずつ間を置いて飛び立つ。
-  let born = 0;
+  // 現れたものは差し替え全体で通し番号を取り、1枚ずつ間を置いて飛び立つ。
+  let appeared = 0;
+
+  // 消えた札は、差し替え前に居た枠で砂埃を立てる。**1枚の札につき1回**——3個の束が丸ごと
+  // 消えても、居なくなった札は1枚だから。画面に出ていなかったものは枠を持たず、何も立たない。
+  const dusted = new Set<C>();
+  const bornIds = new Set(input.born ?? []);
+  for (const id of input.vanished ?? []) {
+    const placed = before.get(id);
+    if (placed === undefined || dusted.has(placed.card)) continue;
+    dusted.add(placed.card);
+    puffs.push(placed.rect);
+  }
 
   /** そのインスタンスの出どころ（唯一の規則）。undefinedは「飛ばさない」。 */
   const resolve = (
     id: number,
     to: PlacedCard<C>,
     arriving: boolean,
-  ): { rect: Rect; born: boolean } | undefined => {
-    if (input.released?.ids.includes(id) === true) return { rect: input.released.rect, born: false };
+  ): { rect: Rect; appeared: boolean } | undefined => {
+    if (input.released?.ids.includes(id) === true) {
+      return { rect: input.released.rect, appeared: false };
+    }
 
     const previous = before.get(id);
     if (previous !== undefined) {
       // 居続けるカードが持ち続けているインスタンスは動いていない。枠の外から戻るカード（arriving）は
       // 同じカードでも置き直されているので、元の枠から飛ばす。
       if (!arriving && previous.card === to.card) return undefined;
-      return { rect: previous.rect, born: false };
+      return { rect: previous.rect, appeared: false };
     }
 
     const origin = input.origins?.get(id);
-    return origin === undefined ? undefined : { rect: origin, born: true };
+    return origin === undefined ? undefined : { rect: origin, appeared: true };
   };
 
   const planArrivalsTo = (to: PlacedCard<C>, arriving: boolean): void => {
     let held = false;
-    const sources: { rect: Rect; born: boolean }[] = [];
+    // 生まれたのに出どころが分からないもの。飛ぶ便が無いので、着いた先で砂埃だけを立てる。
+    let bornInPlace = false;
+    const sources: { rect: Rect; appeared: boolean; puffs: boolean }[] = [];
     for (const id of to.ids) {
       if (id === input.heldId) held = true;
       else {
         const source = resolve(id, to, arriving);
-        if (source !== undefined) sources.push(source);
+        if (source === undefined) bornInPlace ||= bornIds.has(id);
+        else sources.push({ ...source, puffs: bornIds.has(id) });
       }
     }
     if (held) landing = { to: to.rect, reveals: to.card };
+    if (bornInPlace) puffs.push(to.rect);
 
     if (sources.length === 0) {
       if (arriving && !held) fadeIns.push(to.card);
@@ -122,7 +154,8 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
       face: to.card,
       from: source.rect,
       to: to.rect,
-      delaySteps: source.born ? born++ : stagger++,
+      delaySteps: source.appeared ? appeared++ : stagger++,
+      puffs: source.puffs,
     }));
     // 伏せた札を表に返すのは、最も遅く飛び立つ1枚（＝最後に着く1枚）。置いたままの分身が
     // 着地するカードでは、分身の着地が表に返す（landing）。
@@ -147,6 +180,7 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
     // 見せているし、どこにも残らなかったのなら破棄（その場で消える。薄れさせると、掴んで
     // 離したカードが即座に消えるのと食い違って見える）。
     discards: input.left.map(({ card }) => card),
+    puffs,
     landing,
   };
 }
