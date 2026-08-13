@@ -37,10 +37,17 @@
     "_note": [
       "毛色は monkey.json のedit（muted warm grey brown fur）に合わせる。同じ個体の別の場所を",
       "近くで見ている絵なので、ここがずれると別の動物の毛に見える。**放っておくと白い長毛になる**ので、",
-      "白・クリーム・ふさふさをnegativeで落とし、短く寝た毛だと言う。"
+      "白・クリーム・ふさふさをnegativeで落とし、短く寝た毛だと言う。",
+      "",
+      "**猿を名指ししない。** 「猿の背中の毛」と言うと、毛ではなく猿の顔が出る（肌で「前腕」と",
+      "言ったときと同じ）。ここで頼むのは毛という素材までで、誰の毛かはファイル名が言う。",
+      "",
+      "**うねりは、ここでは消しきれない。** 「毛皮のアップ」は毛皮のコートの絵を引き寄せるので、",
+      "房が波打った絵が出る。房の1つ1つが傷と同じくらいの大きさに見え、上に載る傷と縮尺が合わない。",
+      "negativeで減らしたうえで、残りはレシピのeditで平らに描き直させる。"
     ],
-    "positive": "extreme close up of short dense animal fur completely filling the frame from edge to edge, a flat patch of muted warm greyish brown fur seen straight on, short coarse strands lying flat in one direction, soft even diffuse daylight, matte fur, muted earthy brown colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
-    "negative": "white fur, cream fur, pale fur, blonde fur, silver fur, fluffy, long hair, shaggy, fox fur, rabbit fur, curved surface, rounded form, silhouette, outline, edge of the body, animal against a background, face, head, eyes, nose, mouth, ear, snout, muzzle, hand, paw, fingers, claws, tail, whole animal, background, branch, leaves, jungle, ground, sky, wound, bruise, blood, scar, bald patch, bare skin, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
+    "positive": "extreme close up of very short dense fine animal fur completely filling the frame from edge to edge, a flat even patch of muted warm greyish brown fur seen straight on, very fine short hairs all lying flat in the same direction like a smooth combed pelt, uniform across the whole frame, soft even diffuse daylight, matte fur, muted earthy brown colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
+    "negative": "fur coat, fur collar, fur garment, fur trim, fur rug, pelt, hide, taxidermy, stuffed animal, plush, waves, wavy fur, rippled fur, tufts, clumps, curls, curly fur, cowlick, parting, swirl, whorl, ridges, folds, long hair, shaggy, mane, fluffy, white fur, cream fur, pale fur, blonde fur, silver fur, fox fur, rabbit fur, sheepskin, curved surface, rounded form, silhouette, outline, edge of the body, animal against a background, face, head, eyes, nose, mouth, ear, snout, muzzle, hand, paw, fingers, claws, tail, whole animal, background, branch, leaves, jungle, ground, sky, wound, bruise, blood, scar, bald patch, bare skin, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
   },
   "rocky_field_card_background": {
     "description": "岩場の眺め。カード全面に岩と枯れ草。空は入れない。",
