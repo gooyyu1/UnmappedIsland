@@ -39,6 +39,54 @@ object_defs:
           - accumulate:
               self:
                 wariness: -1
+      # 今感じている痛み（VitalsSystem.md 2節）。自分では動かず、刺さっている怪我がmodifyで
+      # 押し上げる。段が意識へ寄与する——ただし痛みだけでは気絶させない（最も深い段でもdazedに
+      # 留める）。刻みはキャラクタと同じ規約（docs/world/Characters.md 値の刻み方節）。
+      pain:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: painless}
+          - {name: sore, min: 25, alert: watch}
+          - name: hurting
+            min: 50
+            alert: caution
+            passives:
+              - modify: {self: {consciousness: -20}}
+          - name: unbearable
+            min: 83
+            alert: danger
+            passives:
+              - modify: {self: {consciousness: -45}}
+      # 殴られた衝撃（VitalsSystem.md 2.1節）。攻撃がaddで即座に上げ、自分で引いていく。
+      # maxが体格で、サルは小さいので石1つでも一撃で気を失う。
+      shock:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: steady}
+          - name: rattled
+            min: 30
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - name: reeling
+            min: 70
+            passives:
+              - modify: {self: {consciousness: -80}}
+        passives:
+          - accumulate:
+              self:
+                shock: -4
+      # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃の段が押し下げる。安全域を外れると
+      # カードにバーが出る（CardView.md 8節）。unconsciousの段の名前は固定（同6節）。
+      consciousness:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          - {name: unconscious, alert: danger}
+          - {name: dazed, min: 25, alert: caution}
+          - {name: foggy, min: 60, alert: watch}
+          - {name: clear, min: 80}
     combinations:
       # 武器を重ねて殴る（HuntingSystem.md 1.2節）。当たれば怪我が1つ刺さる。
       #
@@ -47,13 +95,17 @@ object_defs:
       #
       # どちらの回もsignal（9.8節）で結果を告げる。当たった回の傷は押して開くinjuriesスロットへ
       # 入り、外した回は世界の形が何も変わらないため、どちらもレーンの上では見分けが付かない。
+      #
+      # 当たれば衝撃で気を失う（VitalsSystem.md 5節）。狩りの決着は死ではなく気絶で付くので、
+      # 当たった瞬間に効かなければならない——addは実体値への即時の書き込みで、そこから意識への
+      # 寄与（shockの段）が同じ瞬間に立つ。
       strike:
         with: weapon
         duration: 15
         pick:
           - weight: 70
             add:
-              self: {wariness: 25}
+              self: {wariness: 25, shock: 80}
               dragged: {durability: -20}
             spawn: {object: laceration, into: self}
             signal: hit

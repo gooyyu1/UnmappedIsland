@@ -22,10 +22,15 @@
 | 段 `unconscious` | ここに落ちたら手番が回らない。名前を固定する（6 節） |
 | 段 `dying` | 瀕死。致命的域（`fatal`）を持つ唯一の段 |
 
-定義の置き場所は `player_character` trait（キャラクタ共通の props）と `animal` trait、削る側は
-`public/world-codex/injuries.yaml` の各傷、読む側は `PlayScene`（気絶した間の操作）と動物の1手を
-与える側です。**本ドキュメントは検討結果であり、全節が未実装です**（実装済みなのは、ここへ合流する
-手前の `pain` と `severity` だけ）。未決事項は末尾に整理しています。
+定義の置き場所は `public/world-codex/animals.yaml`（動物）と `characters/player_character.yaml`
+（キャラクタ共通の props）、削る側は `public/world-codex/injuries.yaml` の各傷、読む側は
+カードの状態バー（`PlayScreenView`）と、気絶した間の手番を飛ばす側です。
+
+本ドキュメントは検討結果であり、確定仕様書ではありません。**意識と衝撃（2 節・2.1 節）はサルで
+実装済みで**（検証は `tests/worldCodex/animalsYaml.test.ts`）、殴れば一撃で気を失い、時間をかけて
+戻ります。生命力（3 節）と出血（4 節）・死（6 節）はまだ入っていません——倒れた後の死体をどう扱うか
+（[`HuntingSystem.md`](./HuntingSystem.md) 未決事項節の解体・腐敗）が決まっていないためです。
+キャラクタ側もまだ配っていません（7 節）。未決事項は末尾に整理しています。
 
 ## 1. 意識と生命力は分ける
 
