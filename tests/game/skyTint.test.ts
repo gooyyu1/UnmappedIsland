@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { skyTintFor } from '../../src/game/ui/skyTint';
 
 /**
- * 日射に応じてフィールドエリアへかぶせる色（ScreenLayout.md 空の演出節）。
+ * 日射に応じてフィールドエリアへかぶせる色（ScreenLayout.md 7.5節 空の演出）。
  * sunlightの値はcore.yamlの寄与から決まる（時間帯: 夜0/朝夕+2/日中+5、天気: 曇り+2/快晴+5/晴天+7/灼熱+10）。
  */
 describe('skyTint(日射に応じた翳り・輝き)', () => {

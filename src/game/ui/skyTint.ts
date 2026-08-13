@@ -1,6 +1,6 @@
 import { COLOR } from './theme';
 
-/** フィールドエリア全体にかぶせる1枚の色（ScreenLayout.md 空の明るさ節）。 */
+/** フィールドエリア全体にかぶせる1枚の色（ScreenLayout.md 7.5.1節 空の明るさ）。 */
 export interface SkyTint {
   readonly color: number;
   readonly alpha: number;

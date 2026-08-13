@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/icons/map.png を作り直すためのレシピ。build.py が読む。",
-    "地図・装備・怪我のボタンに載せるアイコン（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "地図・装備・怪我のボタンに載せるアイコン（docs/ui/ScreenLayout.md 4.2節）。",
     "",
     "**2段構え。** まず平塗りの輪郭線で下絵を生成し（prompts/icons.json）、それを Qwen Image Edit で",
     "絵の具の質感へ描き直しつつ、白い紙の上へ置き直す。source を持たない edit は、同じレシピから",

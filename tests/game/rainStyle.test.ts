@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { rainStyleFor } from '../../src/game/ui/rainStyle';
 
-/** 雨天ごとの雨の見え方（ScreenLayout.md 雨の演出節）。 */
+/** 雨天ごとの雨の見え方（ScreenLayout.md 7.5.3節 雨の演出）。 */
 describe('rainStyle(天気ごとの雨の見え方)', () => {
   const rainy = ['light_rain', 'heavy_rain', 'storm'] as const;
 

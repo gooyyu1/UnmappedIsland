@@ -41,7 +41,7 @@ object_texts:
     #
     # **完成品と同じ名前にする。** カード名は枠の中の1行（全角10文字）に収まる長さで書いてあり、
     # そこへ「作りかけの」の5文字を足すと、4文字より長い名前はすべてはみ出す。作りかけであることは
-    # 青い覆いが示す（ScreenLayout.md 製作中オブジェクトのカード節）ので、名前で言い直す必要はない。
+    # 青い覆いが示す（CardView.md 10節）ので、名前で言い直す必要はない。
     display_name_in_progress: '{product}'
     props:
       exploration_progress:

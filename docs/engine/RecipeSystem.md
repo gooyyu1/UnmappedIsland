@@ -59,8 +59,7 @@ slots:
 
 **素材が箱から無くなるのは、工程の所要時間を経過し切った時点です。** 時間と効果（消費・完成）の順序は
 actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）、作業のあいだ素材は箱に在り、
-使い切られるのは終えたときです（画面もその通りに見せます、[ScreenLayout.md](../ui/ScreenLayout.md)
-子ウィンドウ節）。
+使い切られるのは終えたときです（画面もその通りに見せます、[`Windows.md`](../ui/Windows.md) 1 節）。
 
 打ち切るのは、経過中に**製作中オブジェクト自身**が失われた場合だけです（`self` にあたるもの。同 6.1 節）。
 素材が経過中に失われても工程は成立します——それは開始時に済ませた在庫確認の再判定にあたるためです。
@@ -68,8 +67,7 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 ## 4. 投入操作は「入れ物へ落とす」そのもの
 
 箱へのアイテム投入は、製作中オブジェクト（1 節）専用の操作ではありません。**中身を持つカードへ重ねたら
-そのスロットへ入る**という、かごと共通の 1 つの動きです（[ScreenLayout.md](../ui/ScreenLayout.md)
-カードのドラッグ＆ドロップ節）。行き先は `main_item_slot`（`GameElementDefinition.md` 7.8 節）、入るか
+そのスロットへ入る**という、かごと共通の 1 つの動きです（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。行き先は `main_item_slot`（`GameElementDefinition.md` 7.8 節）、入るか
 どうかは枠の `accept` と `max` が答えるので、レシピ側に宣言は要りません。
 
 素材が揃っているかの確認・消費・進捗更新（`actions.work` 相当）は、通常の `actions` の `conditions`/`active`

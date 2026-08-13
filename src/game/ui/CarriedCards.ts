@@ -19,7 +19,7 @@ const EMPTIED_ALPHA = 0.3;
 
 /**
  * 指が運んでいる札——ポインタに追従する分身と、その後ろへ重ねてついてきた札
- * （ScreenLayout.md カードのドラッグ＆ドロップ節）。
+ * （CardInteraction.md 2節 カードのドラッグ＆ドロップ）。
  *
  * 札の出入りは必ず飛んで見せる。増えた1枚は元の枠から飛んできて（addOne）、あふれたぶんは
  * 元の枠へ飛んで帰る（keepAtMost）。落とさずに離せば全部が帰る（disband）。**手から離れた札は
@@ -27,7 +27,7 @@ const EMPTIED_ALPHA = 0.3;
  *
  * 元の束の見え方（残って見える枚数・場所が空いたときの薄さ）もここが持つ。手に在る札も帰り道の
  * 空中の札もまだ束には居ないので、そのぶん数字が減る。全部持ち出して0になったときだけ、元のカードは
- * 薄い姿で残る——それは札ではなく、帰ってくる場所を示す印（ScreenLayout.md ドラッグ＆ドロップ節）。
+ * 薄い姿で残る——それは札ではなく、帰ってくる場所を示す印（CardInteraction.md 2節 ドラッグ＆ドロップ）。
  */
 export class CarriedCards {
   private readonly scene: Phaser.Scene;

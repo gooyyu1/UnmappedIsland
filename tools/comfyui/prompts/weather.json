@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "状況エリアの窓に敷く、天気ごとの空の絵のプロンプト（docs/ui/ScreenLayout.md 空の絵 節）。",
+    "状況エリアの窓に敷く、天気ごとの空の絵のプロンプト（docs/ui/ScreenLayout.md 5.1節）。",
     "キーは weather_<天気の識別子> で、出力するファイル名は識別子だけ（src/assets/weather/<識別子>.png）。",
     "",
     "**雲のある天気だけがここにある。** 雲の無い sunny と scorching は生成では出せず、sky_art.py で",

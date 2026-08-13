@@ -8,7 +8,7 @@ const BLINK_DURATION_MS = 450;
 const BLINK_MIN_ALPHA = 0.1;
 
 /**
- * 致命的域のステータスがある間、画面全体の内周を赤く明滅させる枠（ScreenLayout.md ステータスエリア節）。
+ * 致命的域のステータスがある間、画面全体の内周を赤く明滅させる枠（StatusArea.md）。
  * 画面のどこを見ていても気付けるようにするためのもので、入力は遮らない。
  *
  * 常に最前面へ出す必要があるため、置く側がdepthを与える（PlayScene参照）。

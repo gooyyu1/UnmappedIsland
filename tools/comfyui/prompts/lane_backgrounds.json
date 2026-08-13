@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "レーンの背景画像のプロンプト（docs/ui/ScreenLayout.md レーンの背景 節）。",
+    "レーンの背景画像のプロンプト（docs/ui/CardView.md 7節）。",
     "キーは <土地のobject_defの識別子>_<レーン> で、出力するファイル名と一致させる。土地によらない",
     "レーン（hand）は <レーン> だけ。",
     "negative は sharedNegative + 各エントリの negativeExtra を繋いだもの。",

@@ -7,7 +7,7 @@ function channels(color: number): { red: number; green: number; blue: number } {
 }
 
 /**
- * 耐久度バーの塗りの色（ScreenLayout.md カードの状態バー節）。残りが減るほど緑から赤へ寄る。
+ * 耐久度バーの塗りの色（CardView.md 8節 カードの状態バー）。残りが減るほど緑から赤へ寄る。
  */
 describe('耐久度バーの塗りの色', () => {
   it('満タンは緑、尽きる直前は赤で、両端は定義した色そのものになる', () => {

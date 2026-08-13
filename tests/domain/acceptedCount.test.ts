@@ -8,7 +8,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * 「まとめて何個入るか」の問い（WorldObject.acceptedCountForMoveTo）に対する自動テスト。
  *
  * 束をコンテナへまとめて落とす操作は、この答えをそのまま「ついてくる枚数」にする
- * （ScreenLayout.md カードのドラッグ＆ドロップ節）。入らないぶんは最初からついてこない、という
+ * （CardInteraction.md 2節 カードのドラッグ＆ドロップ）。入らないぶんは最初からついてこない、という
  * 約束が成り立つかを確かめる。
  */
 describe('まとめて入る個数', () => {

@@ -1,4 +1,4 @@
-# 嵐（ScreenLayout.md 空の演出節）の見え方を確かめるための開始状態。
+# 嵐（ScreenLayout.md 7.5.3節）の見え方を確かめるための開始状態。
 # 雨季の嵐の中から始め、斜めに降る雨と風の筋、翳りの濃さを見る。
 #
 # 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。

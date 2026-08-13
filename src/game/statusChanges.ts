@@ -1,6 +1,6 @@
 import type { StatusChange, StatusContent } from './ui/StatusBar';
 
-/** 行動の前後で変わった1件分（ScreenLayout.md ステータスエリア節）。 */
+/** 行動の前後で変わった1件分（StatusArea.md）。 */
 export interface StatusDelta {
   readonly change: StatusChange;
 
@@ -13,7 +13,7 @@ export interface StatusDelta {
 
 /**
  * 行動の前後でステータスを比べ、増減した項目だけをプロパティの識別子で引ける形にする
- * （ScreenLayout.md ステータスエリア節の増減の記号）。
+ * （StatusArea.mdの増減の記号）。
  *
  * 値が変わらなかった項目と、前後のどちらかにしか無い項目は含めない（比べる相手が無い）。
  */

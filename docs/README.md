@@ -31,4 +31,7 @@ docs/
 `Diagnostics/` のみ性質が異なり、設計判断ではなく実装の測定結果を格納します
 （詳細は [`Diagnostics/README.md`](./diagnostics/README.md)）。
 
+各ドキュメントの構造（見出し・節番号・概要の定型・実装状況の表記）は
+[`DocumentStyle.md`](./DocumentStyle.md) に従います。
+
 > **備考**: ユーザー向けのゲーム内ヘルプやチュートリアルはゲームコンテンツとして実装するため、このフォルダには含まれません。

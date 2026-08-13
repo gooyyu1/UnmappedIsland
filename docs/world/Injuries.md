@@ -24,8 +24,7 @@
 - **減り方が自然治癒の速さ**で、これを基準レートに置く（`-1/tick`）。`max` はそのまま「その速さで
   何 tick かかるか」を表す（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.0節の
   時間を数えるクラス。捻挫は 960 tick = 10日）。
-- **`stages` は怪我カードのバーの色になる**（[`ScreenLayout.md`](../ui/ScreenLayout.md) カードの状態バー
-  節）。怪我ごとに絶対値で刻むので、軽い怪我は負った直後でも危険域に入らない。危険域は骨折のような
+- **`stages` は怪我カードのバーの色になる**（[`CardView.md`](../ui/CardView.md) 8 節）。怪我ごとに絶対値で刻むので、軽い怪我は負った直後でも危険域に入らない。危険域は骨折のような
   重い怪我のために空けておく。
 - **`pain` の量**は、`player_character` の `max`（100）に対する割合で決める。同じ怪我を2つ負えば
   2つぶんの `modify` が単純加算される（同 8.3節）ので、1つで危険域に届く量は重い怪我のために取っておく。
@@ -38,7 +37,7 @@
 
 怪我は `treatment` スロットを1つ持ち、そこへ**治療具**（`treatment` タグ、`treatments.yaml`）を
 1つだけ当てておける。付け外しは怪我のカードを押して開く子ウィンドウで行う
-（[`ScreenLayout.md`](../ui/ScreenLayout.md) 子ウィンドウ節）。怪我のカードへ治療具を重ねても当てられる。
+（[`Windows.md`](../ui/Windows.md) 1 節）。怪我のカードへ治療具を重ねても当てられる。
 
 **当てるのに30分かかり、外すのは一瞬**（`treatment` スロットの `put_in`、
 [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7.10節）。**値段は枠が持つので、どちらの
@@ -53,8 +52,7 @@
 - **重ね掛けはできない**（`cell_count: 1` の枠に `max: 1`）。包帯の上から添え木を、のような組み合わせは
   効き目の足し合わせ方が決まっていない。`max` が要るのは、包帯自体は手持ちで束ねたい物だから
   （[`SlotSystem.md`](../engine/SlotSystem.md) 4節）。
-- **手当て済みかどうかは、カードの絵ではなく印で見せる**（[`ScreenLayout.md`](../ui/ScreenLayout.md)
-  カードの印 節）。絵を差し替えると、怪我の部位 × 治療具の数だけ絵が要る。
+- **手当て済みかどうかは、カードの絵ではなく印で見せる**（[`CardView.md`](../ui/CardView.md) 9 節）。絵を差し替えると、怪我の部位 × 治療具の数だけ絵が要る。
 - **怪我が治ると、当てていた治療具は本人の手元へこぼれ出る**（`bound_to_owner`、
   [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7.9節）。治る直前なら外せるのに
   治った瞬間に消えるのでは筋が通らない。使い切りの治療具が要るなら、その治療具の側で消えさせる。

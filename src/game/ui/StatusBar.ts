@@ -86,7 +86,7 @@ export interface StatusBarOptions {
  * ステータス1件分の「固定表示の印＋名前＋バー＋増減」。行の高さはバーの高さと等しい。
  * 割合を定義できないプロパティは、バーの代わりに実効値そのものを出す。
  *
- * 危険域・致命的域のバーは枠を明滅させる（ScreenLayout.md ステータスエリア節）。名前欄をタップすると
+ * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。名前欄をタップすると
  * 固定表示が切り替わる。
  */
 export class StatusBar extends Phaser.GameObjects.Container {

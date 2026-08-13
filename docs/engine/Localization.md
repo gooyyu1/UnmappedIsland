@@ -75,7 +75,7 @@ object_texts:
 
 スロットは必ず持ち主のものなので、名前も 2 通り持てます。`display_name` はスロットだけを指す短い
 言い方（「装備」）、`display_name_with_owner` は持ち主込みの言い方（「マルコの装備」）です。
-子ウィンドウの見出しが後者を使います（[`ScreenLayout.md`](../ui/ScreenLayout.md) 子ウィンドウ節）。
+子ウィンドウの見出しが後者を使います（[`Windows.md`](../ui/Windows.md) 1 節）。
 
 ```yaml
 slot_texts:
@@ -91,7 +91,7 @@ slot_texts:
 `{slot}` は各スロット自身の名前から埋まるので、共通の書式を書いてもすべてが同じ名前にはなりません。
 
 `put_in` は、**そこへ物を入れる操作**の呼び名と説明です。ドラッグ中の吹き出しに出ます
-（[`ScreenLayout.md`](../ui/ScreenLayout.md) カードのドラッグ＆ドロップ節）。スロットの名前が場所を指す
+（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。スロットの名前が場所を指す
 名詞（「手当て」）なのに対し、こちらは行為の名前（「手当てする」）なので、別の文字列として持ちます。
 
 ```yaml
@@ -150,7 +150,7 @@ symbol_texts:
     display_name: 灼熱
 ```
 
-天気の名前は状況エリアの空の窓に出ます（[ScreenLayout.md](../ui/ScreenLayout.md)）。絵だけでは
+天気の名前は状況エリアの空の窓に出ます（[`ScreenLayout.md`](../ui/ScreenLayout.md) 5 節）。絵だけでは
 晴天どうしを見分けられないため、名前が区別を引き受けます。
 
 ## reason_texts: 操作を実行できない理由

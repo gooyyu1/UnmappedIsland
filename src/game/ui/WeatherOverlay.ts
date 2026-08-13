@@ -23,7 +23,7 @@ const LENGTH_JITTER_MIN = 0.6;
 const SCATTER_SEED = 0x9e3779b9;
 
 /**
- * フィールドエリアへ降らせる雨（ScreenLayout.md 空の演出節）。見え方はrainStyle.tsが決め、
+ * フィールドエリアへ降らせる雨（ScreenLayout.md 7.5節 空の演出）。見え方はrainStyle.tsが決め、
  * こちらは「その通りに降らせる」ことだけを行う。
  *
  * 入力は遮らない（下のカードをそのまま操作できる）。常にカードより手前・隣接エリアより奥へ置く

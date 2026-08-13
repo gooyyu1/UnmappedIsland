@@ -1,7 +1,7 @@
 # ComfyUI でレーンの背景画像を作る
 
 `src/assets/backgrounds/<土地>_fixture.png` / `<土地>_item.png`（仕様は
-[docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) レーンの背景 節）を、ComfyUI の HTTP API
+[docs/ui/CardView.md](../../docs/ui/CardView.md) 7 節）を、ComfyUI の HTTP API
 経由で作るための一式です。**画面を操作せず、ワークフローを JSON として投げます。**
 
 ## 作り直す
@@ -159,7 +159,7 @@ python build.py recipes/card_frame.json
 ## 空の絵（状況エリア）
 
 天気ごとの `src/assets/weather/<天気の識別子>.png`（仕様は
-[docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) 空の絵 節）。レシピは
+[docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) 5.1 節）。レシピは
 `recipes/weather_<識別子>.json` で、保持サイズはレーンの背景と同じ 1024×320 です。
 
 ```bash
@@ -214,7 +214,7 @@ Qwen へ渡してください。
 ## ボタンの絵（地図・装備・怪我・レシピ）
 
 `src/assets/icons/<アイコンの識別子>.png`（仕様は
-[docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) ボタンの絵 節）。ボタンの中央へ置く
+[docs/ui/ScreenLayout.md](../../docs/ui/ScreenLayout.md) 4.2 節）。ボタンの中央へ置く
 アイコンで、背景は透過です。
 
 **`size` は物の大きさ、`canvas` は画像の寸法**で、`canvas` は 4 枚とも同じ 336×144px（＝168×72u）

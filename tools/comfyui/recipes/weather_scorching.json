@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/weather/scorching.png を作り直すためのレシピ。build.py が読む。",
-    "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 空の絵 節）。",
+    "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 5.1節）。",
     "",
     "**この1枚もSDXLで生成しない**（理由と作りは weather_sunny.json と同じ）。",
     "",

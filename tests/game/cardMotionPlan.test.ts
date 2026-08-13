@@ -22,7 +22,7 @@ function origins(ids: readonly number[], x: number): ReadonlyMap<number, Rect> {
   return new Map(ids.map((id) => [id, rect(x)]));
 }
 
-describe('planMotion（ScreenLayout.md カードの移動アニメーション節）', () => {
+describe('planMotion（CardInteraction.md 6節 カードの移動アニメーション）', () => {
   it('何も動いていなければ、何も起きない', () => {
     const plan = planMotion(input({ before: [placed('石', [1, 2], 0)], staying: [placed('石', [1, 2], 0)] }));
     expect(plan.flights).toEqual([]);

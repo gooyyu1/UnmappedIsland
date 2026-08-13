@@ -83,7 +83,7 @@ export class CardMotion {
   /**
    * 掴んで離したカードを、離した場所へ置いたままにする。時間のかかるcombinationでは経過を見せている
    * 間ずっとそこに在り、経過し切った差し替え（updateにreleasedが渡る）でそのインスタンスの居場所へ
-   * 動く（ScreenLayout.md カードの移動アニメーション節）。
+   * 動く（CardInteraction.md 6節 カードの移動アニメーション）。
    */
   hold(lanes: readonly CardLane[], released: NonNullable<MotionContext['released']>): void {
     this.releaseHeld();

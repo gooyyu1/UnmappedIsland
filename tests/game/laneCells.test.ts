@@ -9,7 +9,7 @@ const emptyCells = (cells: readonly { readonly card?: CardContent }[]): number =
   cells.filter((cell) => cell.card === undefined).length;
 
 /**
- * カードの並びから作る枠の並び（ScreenLayout.md スロットの子ウィンドウ節）。枠数
+ * カードの並びから作る枠の並び（Windows.md 1節 スロットの子ウィンドウ）。枠数
  * （cell_count、SlotSystem.md 2節）の決まったスロットはその数だけ、決まっていなければ末尾に
  * 1つだけ受け皿の空枠を添える。
  */

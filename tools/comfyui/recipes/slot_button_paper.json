@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/slot_button_paper.png を作り直すためのレシピ。build.py が読む。",
-    "地図・装備・怪我・レシピのボタンへ敷く紙（docs/ui/ScreenLayout.md ボタンの絵 節）。",
+    "地図・装備・怪我・レシピのボタンへ敷く紙（docs/ui/ScreenLayout.md 4.2節）。",
     "",
     "**カードの枠（card_frame.json）と同じ紙から切り出す。** プロンプトもseedも色合わせも同じ値に",
     "してあるので、生成物は同じ1枚になる。**同じ絵を参照するのは生成の話で、実行時にテクスチャを",

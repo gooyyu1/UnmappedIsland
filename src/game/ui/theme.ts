@@ -6,7 +6,7 @@ import { ALERT_LEVELS } from '../../domain/defs/AlertLevel';
  * 配色・寸法トークン。モック側の値を変えたときはここも合わせる。
  */
 
-/** カードのアスペクト比は58:89（ポーカーサイズ）。寸法は全てu単位（ScreenLayout.md 寸法トークン節）。 */
+/** カードのアスペクト比は58:89（ポーカーサイズ）。寸法は全てu単位（ScreenLayout.md 2節 寸法トークン）。 */
 export const SIZE = {
   cardWidth: 205,
   cardHeight: 320,
@@ -35,7 +35,7 @@ export const SIZE = {
   slotButtonIcon: { width: 136, height: 60 },
   radius: 12,
   /**
-   * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md スクロールバー節）。
+   * スクロールバーの厚みと、送られるカードの下端との間隔（ScreenLayout.md 7.4節 スクロールバー）。
    * レーンではこの位置がカードの下の余白（16u）に収まり、区切りの帯がかぶる3uにも掛からない。
    */
   scrollBar: 8,
@@ -61,7 +61,7 @@ export const COLOR = {
   cardFace: 0xffffff,
   cardBorder: 0x000000,
   /**
-   * 製作中オブジェクトのカードにかぶせる青（ScreenLayout.md 製作中オブジェクトのカード節）。
+   * 製作中オブジェクトのカードにかぶせる青（CardView.md 10節 製作中オブジェクトのカード）。
    * 濃さはCardが持つ（IN_PROGRESS_VEIL_ALPHA）。
    *
    * **どのカードにも同じ色をかぶせるので、物の色として読まれない色相を選ぶ。** 木にも石にも
@@ -79,7 +79,7 @@ export const COLOR = {
   cardDropAccept: 0xffc23e,
   laneDivider: 0x000000,
   /**
-   * 材料の枠の縁（ScreenLayout.md 製作中オブジェクトの材料節）。今の工程で要る枠を暖色、後の工程で
+   * 材料の枠の縁（CardView.md 13節 製作中オブジェクトの材料）。今の工程で要る枠を暖色、後の工程で
    * 要る枠を寒色にして、どちらを先に埋めればよいかを色相で分ける。
    *
    * **落とし先の枠（cardDropTarget・cardDropAccept）とは色相を分ける。** ドラッグ中は両方が同時に
@@ -154,7 +154,7 @@ export const COLOR = {
   /** 直前の行動でその値が増えた／減ったことを示す三角（StatusBar）。 */
   statusIncreased: 0x2ecc40,
   statusDecreased: 0xd93025,
-  /** 危険域のバーの枠と、致命的域のバー・画面全体の枠（明滅させる、ScreenLayout.md ステータスエリア節）。 */
+  /** 危険域のバーの枠と、致命的域のバー・画面全体の枠（明滅させる、StatusArea.md）。 */
   statusAlertDanger: 0xffc400,
   statusAlertFatal: 0xd93025,
   // 警戒の枠の下に敷く暗い線。塗りの色が濃いと明るい枠が沈むため、必ず暗い線の上に載せる。
@@ -192,8 +192,7 @@ export const COLOR = {
  * 致命的域の茶へ深刻さのぶんだけ寄せる。
  *
  * **色が良し悪しを表すのは、塗りの長さでは表せないため。** 満タンが良いステータス（満腹度）と悪い
- * ステータス（荷重）が同じ画面に並ぶので、長さだけでは良し悪しが読めません（ScreenLayout.md
- * ステータスエリア節）。深刻さを引くのは値の位置ではなく域なので、まだ安全域なら満タンでなくても緑のままです。
+ * ステータス（荷重）が同じ画面に並ぶので、長さだけでは良し悪しが読めません（StatusArea.md 7節）。深刻さを引くのは値の位置ではなく域なので、まだ安全域なら満タンでなくても緑のままです。
  */
 export function fillColorFor(alert: AlertLevel): number {
   const severity = ALERT_LEVELS.indexOf(alert) / (ALERT_LEVELS.length - 1);
@@ -204,7 +203,7 @@ export function fillColorFor(alert: AlertLevel): number {
 const BAND_FADE = 0.55;
 
 /**
- * 増えた分の帯の色（ScreenLayout.md ステータスエリア節）。塗りそのものをトラック側へ薄めた色にするのは、
+ * 増えた分の帯の色（StatusArea.md）。塗りそのものをトラック側へ薄めた色にするのは、
  * **これから満ちる分**を表すためです。固定の1色を置くと、塗りの色が別々のバー——水は青、油は黄色——で
  * 帯だけが同じ色になり、何が増える途中なのか読めなくなります。減った分の赤（statusBarLag）が塗りの色に
  * よらず同じなのは対照的ですが、失われたものはもう塗りではないので、こちらは色を共有しません。
@@ -214,7 +213,7 @@ export function fadedFill(fill: number): number {
 }
 
 /**
- * 入れ物の詰まり具合（0〜1）に応じたバーの塗りの色（ScreenLayout.md カードの状態バー節）。
+ * 入れ物の詰まり具合（0〜1）に応じたバーの塗りの色（CardView.md 8節 カードの状態バー）。
  *
  * 色域はステータスバーと同じ（安全域の緑から致命的域の茶）だが、辿るのは域ではなく値そのもの。
  * 入れ物は満杯へ近づくほど物が入らなくなるので、値の位置がそのまま深刻さになる
@@ -229,7 +228,7 @@ export function capacityColorFor(ratio: number): number {
 const DURABILITY_HALF_RATIO = 0.5;
 
 /**
- * 耐久度（0〜1）に応じたバーの塗りの色（ScreenLayout.md カードの状態バー節）。
+ * 耐久度（0〜1）に応じたバーの塗りの色（CardView.md 8節 カードの状態バー）。
  *
  * ステータスバーと違って域（alert）ではなく値そのものから引く。耐久度は「どれだけ残っているか」が
  * そのまま深刻さで、段を分けても同じ順序にしかならないため。
@@ -256,7 +255,7 @@ export function mixColor(from: number, to: number, t: number): number {
 }
 
 /**
- * カードの枠の色を決める種別（ScreenLayout.md 枠の色は種別で変える 節）。
+ * カードの枠の色を決める種別（CardView.md 2節 枠の色は種別で変える）。
  *
  * **道を独立した種別にしているのは、道が設置物の中に埋没するのを色で解くため。** 道は行き先の名前と
  * 絵を出すので、同じレーンに並ぶ設置物と形では見分けが付かない。
@@ -288,7 +287,7 @@ const CARD_FRAME_FACE: Readonly<Record<CardFrameKind, { readonly face: number; r
 
 /**
  * タイトルの板を、枠の面から縁の側へどれだけ暗くするか。**枠より暗くする**——枠から強調したいのは
- * 絵であって、名前は枠の一部（ScreenLayout.md 枠の色は種別で変える 節）。
+ * 絵であって、名前は枠の一部（CardView.md 2節 枠の色は種別で変える）。
  */
 const CARD_PLATE_SHADE = 0.55;
 

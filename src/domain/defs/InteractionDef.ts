@@ -120,7 +120,7 @@ export abstract class InteractionDef {
 
   /**
    * 宣言順で最初に満たしていない要件（14節）。すべて満たしていればundefined＝今この操作を実行できる。
-   * 実行できない理由をUIへ見せるためにも使う（ScreenLayout.md オブジェクトの子ウィンドウ節）。
+   * 実行できない理由をUIへ見せるためにも使う（Windows.md 1節 オブジェクトの子ウィンドウ）。
    */
   protected firstUnmetRequirement(
     self: WorldObject,

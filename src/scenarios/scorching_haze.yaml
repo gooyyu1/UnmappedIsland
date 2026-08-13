@@ -1,4 +1,4 @@
-# 陽炎（ScreenLayout.md 空の演出節）の見え方を確かめるための開始状態。
+# 陽炎（ScreenLayout.md 7.5.4節）の見え方を確かめるための開始状態。
 # 乾季後半の灼熱の日中から始め、フィールドエリアの3レーンがそれぞれゆらいでいることを見る。
 #
 # 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。

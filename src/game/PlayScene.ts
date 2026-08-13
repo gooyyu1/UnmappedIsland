@@ -571,7 +571,7 @@ export class PlayScene extends ResponsiveScene {
    *
    * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
    */
-  /** 今の空を画面へ映し直す（ScreenLayout.md 空の演出節）。 */
+  /** 今の空を画面へ映し直す（ScreenLayout.md 7.5節 空の演出）。 */
   private showSky(): void {
     this.weatherOverlay.setWeather(this.view.weather);
     this.skyTint.setSunlight(this.view.sunlight);
@@ -1031,8 +1031,7 @@ export class PlayScene extends ResponsiveScene {
    * 製作中オブジェクトの材料スロットの枠（製作中でなければundefined＝通常の枠）。
    *
    * **枠は残りの工程が要求する型ごとに1つ**で、その型が入っていなければ空き枠になる。要求の合計数ぶん
-   * 空き枠を並べる代わりに、**あと何枚要るかは枠へ重ねた「今／要求数」で出す**（ScreenLayout.md
-   * 製作中オブジェクトの材料節）。出番の終わった型の枠は並びから消える——こぼしたあとの空枠が
+   * 空き枠を並べる代わりに、**あと何枚要るかは枠へ重ねた「今／要求数」で出す**（CardView.md 13節）。出番の終わった型の枠は並びから消える——こぼしたあとの空枠が
    * 残っていると、まだ何か入れられるように見えてしまうため。
    *
    * どの枠を先に埋めればよいかは縁の色が示す（今の工程／後の工程）。塗りにしないのは、カードが
@@ -1311,7 +1310,7 @@ export class PlayScene extends ResponsiveScene {
    * 経過中に壊れた道具はその瞬間に消える。
    *
    * 掴んで離したカードの出どころ（MotionContext.released）は渡さない。それは経過し切ったときに
-   * 見せる動きで（道具は使い終わってから手元へ戻る、ScreenLayout.md）、途中で消費してはならない。
+   * 見せる動きで（道具は使い終わってから手元へ戻る、CardInteraction.md 6節）、途中で消費してはならない。
    *
    * そのtickで生まれた物は、控えと一緒に運んできた出入りが出どころを答える（RecordedView.changes）。
    */
@@ -1590,7 +1589,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ポートレイトカードと、地図・装備・怪我・レシピのボタン、条件のアイコン（ScreenLayout.md）。
+   * ポートレイトカードと、地図・装備・怪我・レシピのボタン、条件のアイコン（ScreenLayout.md 4.1節）。
    *
    * ボタンはポートレイトの**右へ縦積み**する。このエリアで最も背の高いポートレイト（320u）の
    * 高さをボタンが使い切るので、下へ積むより1つあたりを大きく取れる。縦型・横型で同じ組み方に
@@ -1610,7 +1609,7 @@ export class PlayScene extends ResponsiveScene {
 
     const columnX = area.x + padding + portraitWidth + gap;
     // 状況アイコンはポートレイトの下だけに置き、ボタンの列はその行の下端まで伸ばす。
-    // こうすると同じ大きさのボタンが4つ入る（ScreenLayout.md）。
+    // こうすると同じ大きさのボタンが4つ入る（ScreenLayout.md 4.1節）。
     const conditionSize = this.metrics.px(SIZE.conditionButton);
     this.addSlotButtonColumn({
       x: columnX,
@@ -1693,7 +1692,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 地図・装備・怪我・レシピのボタン。**絵を中央に1つ置くだけで、文字は載せない**（ScreenLayout.md）。
+   * 地図・装備・怪我・レシピのボタン。**絵を中央に1つ置くだけで、文字は載せない**（ScreenLayout.md 4.2節）。
    *
    * 4つとも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
    * ボタンの内側へ収める必要も無い（日時のフリップカードと同じ考え方）。
@@ -1773,7 +1772,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * バーは上端に揃える。表示件数が変わっても位置が動かないようにするため（ScreenLayout.md）。
+   * バーは上端に揃える。表示件数が変わっても位置が動かないようにするため（StatusArea.md 1節）。
    *
    * 出す行は行動のたびに変わる（安全域のステータスは出さない）が、バーはここで全プロパティ分を作って
    * おき、以後は見せ方と位置だけを変える。あとから作ると、開いている子ウィンドウの覆いより手前へ
@@ -1874,7 +1873,7 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * ステータス名をタップしたときの固定表示の切り替え。固定表示にしたステータスは、安全域でも
-   * ステータスエリアの先頭に出続ける（ScreenLayout.md ステータスエリア節）。
+   * ステータスエリアの先頭に出続ける（StatusArea.md）。
    */
   private togglePinnedStatus(key: string): void {
     if (!this.pinnedStatuses.delete(key)) this.pinnedStatuses.add(key);
@@ -2052,7 +2051,7 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
-  /** 選択中のタグは背景色を反転させて強調する（ScreenLayout.md フィルターバー節）。 */
+  /** 選択中のタグは背景色を反転させて強調する（ScreenLayout.md 8節）。 */
   private buildFilterBar(area: Rect): void {
     addPanel(this, area, COLOR.filterBar);
 

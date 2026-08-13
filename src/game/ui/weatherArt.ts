@@ -7,7 +7,7 @@
  *
  * **1枚の絵を縦型・横型それぞれの枠へcoverで敷く**ので、切り出される範囲は向きによって大きく違う。
  * 主題（太陽・雲）は絵の右上へ寄せて描く——載せる日時と天候名がその位置を避けている
- * （ScreenLayout.md 状況エリア節）。
+ * （ScreenLayout.md 5節 状況エリア）。
  */
 const FILES = import.meta.glob('../../assets/weather/*.png', {
   eager: true,

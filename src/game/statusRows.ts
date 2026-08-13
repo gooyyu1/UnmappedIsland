@@ -1,7 +1,7 @@
 import type { StatusContent } from './ui/StatusBar';
 
 /**
- * ステータスエリアに並べる行を、出すものだけ表示順に選ぶ（ScreenLayout.md ステータスエリア節）。
+ * ステータスエリアに並べる行を、出すものだけ表示順に選ぶ（StatusArea.md）。
  *
  * taggedはstatusタグが付いたもの（常に候補）、othersはプロパティウィンドウにだけ出るもので、
  * 固定表示にされたものだけが候補に加わる。安全域は固定表示でなければ出さない。

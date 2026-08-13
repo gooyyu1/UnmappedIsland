@@ -193,7 +193,7 @@ export interface PlayScreenView {
   readonly equipmentIcon: string;
   readonly injuryIcon: string;
   /**
-   * ステータスエリアに出す候補（statusタグが付いたもの、ScreenLayout.md ステータスエリア節）。
+   * ステータスエリアに出す候補（statusタグが付いたもの、StatusArea.md）。
    * このうち実際に出すのは、安全域を外れたものと固定表示にされたものだけ（statusRows参照）。
    */
   readonly statuses: readonly StatusContent[];
@@ -207,7 +207,7 @@ export interface PlayScreenView {
   readonly hour: number;
   readonly minute: number;
   /**
-   * 空の演出（ScreenLayout.md）が読む、今の天気と日射。いずれも語彙を持たないCodexではundefined。
+   * 空の演出（ScreenLayout.md 7.5節）が読む、今の天気と日射。いずれも語彙を持たないCodexではundefined。
    * 天気は識別子（`light_rain`など、ClimateSystem.md 4.2節）、日射は時間帯と天気を畳んだ実効値。
    */
   readonly weather: string | undefined;
@@ -216,7 +216,7 @@ export interface PlayScreenView {
   readonly ambientTemperature: number | undefined;
   /**
    * 状況エリアの窓に出す天気の名前（Localizationのsymbol_texts節）。絵だけでは晴天どうしを
-   * 区別できないため、名前は必ず出す（ScreenLayout.md）。天気の語彙を持たないCodexではundefined。
+   * 区別できないため、名前は必ず出す（ScreenLayout.md 5節）。天気の語彙を持たないCodexではundefined。
    */
   readonly weatherLabel: string | undefined;
   readonly currentLocation: CardContent;
@@ -319,7 +319,7 @@ const UNNAMED_LOCATION = '名もなき土地';
 const STATUS_TAG = 'status';
 
 /**
- * カードの状態バーが映すプロパティの名前（ScreenLayout.md カードの状態バー節）。
+ * カードの状態バーが映すプロパティの名前（CardView.md 8節 カードの状態バー）。
  * いずれもGameElementDefinition.md・LiquidContainerSystem.mdが名前ごと決めている語彙で、UI側は
  * 「その名前を持つ物が状態バーを出す」「バーの色はその名前のプロパティが決める」とだけ知っている。
  * 後から足された物——MODの液体——も、同じ名前で宣言するだけで同じように出る。
@@ -329,8 +329,7 @@ const SEVERITY_PROPERTY = 'severity';
 const COLOR_PROPERTY = 'color';
 
 /**
- * カードの輪郭を明滅させるかを決めるプロパティの名前（animals.yaml・ScreenLayout.md
- * 警戒している動物は輪郭を明滅させる 節）。安全域を外れている間だけ明滅する。
+ * カードの輪郭を明滅させるかを決めるプロパティの名前（animals.yaml・CardView.md 3節）。安全域を外れている間だけ明滅する。
  *
  * UI側は「この名前のプロパティが安全域を外れたら明滅する」とだけ知っていて、何がどれだけ危ないかは
  * 一切知らない（段のしきい値はワールド側の宣言）。
@@ -339,7 +338,7 @@ const WARINESS_PROPERTY = 'wariness';
 
 /**
  * 治療具を当てておくスロットの名前と、当たっているカードへ出す印
- * （injuries.yaml・ScreenLayout.md カードの印 節）。
+ * （injuries.yaml・CardView.md 9節 カードの印）。
  *
  * **手当ての有無で絵を差し替えない。** 差し替えると、怪我の部位 × 治療具の数だけ絵が要る。
  */
@@ -469,8 +468,7 @@ export function fromGameSession(
   const progressPropertyId = codex.propertyNames.tryGetId(PROGRESS_PROPERTY);
   const materialsSlotId = codex.slotNames.tryGetId(MATERIALS_SLOT);
   /**
-   * 製作中オブジェクトのカードに出す2本（RecipeSystem.md、ScreenLayout.md 製作中オブジェクトの
-   * カード節）。製作中でない物ではどちらもundefined。
+   * 製作中オブジェクトのカードに出す2本（RecipeSystem.md、CardView.md 10.1節）。製作中でない物ではどちらもundefined。
    *
    * - 材料の充足率は**今の工程が要求する分**。「作業する」が押せるかと一致させるため、残りの工程まで
    *   数えない（残りを数えると、揃っているのに満たないバーが出る）。
@@ -575,7 +573,7 @@ export function fromGameSession(
 
   /**
    * カードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の覆いが
-   * 示すので、絵は何が出来つつあるのかを出せばよい（ScreenLayout.md 製作中オブジェクトのカード節）。
+   * 示すので、絵は何が出来つつあるのかを出せばよい（CardView.md 10節 製作中オブジェクトのカード）。
    * 自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
    */
   const artOf = (def: ObjectDef): string => (codex.productOf(def) ?? def).name;

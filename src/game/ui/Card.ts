@@ -49,7 +49,7 @@ const ALERT_BLINK_DURATION_MS = 450;
 const ALERT_BLINK_MIN_ALPHA = 0.15;
 
 /**
- * 枠の桟の幅と、タイトルの板の高さ、窓の角の丸み（u単位。ScreenLayout.md カードの枠 節）。
+ * 枠の桟の幅と、タイトルの板の高さ、窓の角の丸み（u単位。CardView.md 1節 カードの枠）。
  *
  * 左右と上は無地の桟で、板はその内側の窓の上端に乗る。下の桟だけは中身で高さが変わるので、
  * ここには持たない（railMetrics）。
@@ -93,7 +93,7 @@ const STACK_BADGE_OVERHANG = 6;
  * 状態を表す印（手当て済みの怪我など）の大きさと、窓の左下からの余白（u単位）。
  *
  * **絵を差し替えるのではなく、印を重ねる。** 手当ての有無で絵を差し替えると、怪我の部位 × 治療具の
- * 数だけ絵が要る（ScreenLayout.md カードの印 節）。
+ * 数だけ絵が要る（CardView.md 9節 カードの印）。
  */
 const MARK_SIZE = 52;
 const MARK_MARGIN = 12;
@@ -116,7 +116,7 @@ const CELL_OVERLAY_BOTTOM = 20;
 const CELL_OVERLAY_PLATE_ALPHA = 0.72;
 
 /**
- * 製作中オブジェクトのカードにかぶせる青の濃さ（ScreenLayout.md 製作中オブジェクトのカード節）。
+ * 製作中オブジェクトのカードにかぶせる青の濃さ（CardView.md 10節 製作中オブジェクトのカード）。
  *
  * **絵の上から重ねる**——`setTint`はCanvasレンダラで効かず（DesignNotes.md PhaserのWebGL専用機能節）、
  * 型ごとに染めた絵を焼くと製作中オブジェクトの数だけ絵が要るため。濃さは、絵が何かは読めるまま
@@ -152,7 +152,7 @@ export interface CardEdgeAction {
 
 /**
  * 量として存在する中身が入っているカードが出す、中身のバーの内容
- * （ScreenLayout.md カードの状態バー節）。空の容器はバーごと持たない。
+ * （CardView.md 8節 カードの状態バー）。空の容器はバーごと持たない。
  */
 export interface CardFill {
   /** 容器の容量に対する中身の割合（0〜1）。 */
@@ -163,7 +163,7 @@ export interface CardFill {
 }
 
 /**
- * 怪我のカードが出す、残っている傷のバーの内容（ScreenLayout.md カードの状態バー節）。
+ * 怪我のカードが出す、残っている傷のバーの内容（CardView.md 8節 カードの状態バー）。
  * 耐久度と違って**減るほど良い**量なので、色は値そのものではなく域（alert）から引く。
  */
 export interface CardSeverity {
@@ -211,8 +211,7 @@ export interface CardContent {
 
   /**
    * そのカードが映しているものが、放っておいてよくない状態にあるか（警戒している動物の`wariness`）。
-   * 安全域を外れている間、カードの輪郭が赤く明滅する（ScreenLayout.md
-   * 警戒している動物は輪郭を明滅させる 節）。持たないカードは明滅しない。
+   * 安全域を外れている間、カードの輪郭が赤く明滅する（CardView.md 3節）。持たないカードは明滅しない。
    */
   readonly alert?: AlertLevel;
 
@@ -230,7 +229,7 @@ export interface CardContent {
 
   /**
    * 入れ物の詰まり具合（0〜1）。上限（capacity）を持つ入れ物のカードだけが持つ
-   * （ScreenLayout.md カードの状態バー節）。
+   * （CardView.md 8節 カードの状態バー）。
    */
   readonly capacityRatio?: number;
 
@@ -239,7 +238,7 @@ export interface CardContent {
 
   /**
    * 今の工程が要求する素材と道具が、どれだけ揃っているか（0〜1）。製作中オブジェクトだけが持つ。
-   * 満ちた時点で「作業する」が押せるようになる（ScreenLayout.md 製作中オブジェクトのカード節）。
+   * 満ちた時点で「作業する」が押せるようになる（CardView.md 10節 製作中オブジェクトのカード）。
    */
   readonly materialRatio?: number;
 
@@ -263,7 +262,7 @@ export interface CardContent {
 
   /**
    * まだ出来上がっていないもの（製作中オブジェクト）のカードか。青をかぶせ、土地の背景は敷かない
-   * （ScreenLayout.md 製作中オブジェクトのカード節）。
+   * （CardView.md 10節 製作中オブジェクトのカード）。
    */
   readonly inProgress?: boolean;
 }
@@ -296,7 +295,7 @@ export function cardFace(content: CardContent): CardContent {
 
 /**
  * フィールド・ハンド・ポートレイトに共通のカード。
- * 大きなアイコンを中央に敷き、名前を左上へ重ねる（ScreenLayout.md デザインメモ）。
+ * 大きなアイコンを中央に敷き、名前を左上へ重ねる（CardView.md 5節の絵文字代用）。
  */
 export class Card extends Phaser.GameObjects.Container {
   private _content: CardContent;
@@ -396,7 +395,7 @@ export class Card extends Phaser.GameObjects.Container {
     // 状態なのかは、覆いの下へ沈めずに読めるままにする。枠より先に置くので、覆いは窓の中だけに残る。
     this.inProgressVeil = createInProgressVeil(scene, metrics, width, height);
     // 枠は絵より後。**絵の上に枠が乗る**のがトレーディングカードの構造で、窓からはみ出した絵は
-    // 枠が隠す（ScreenLayout.md カードの枠 節）。
+    // 枠が隠す（CardView.md 1節 カードの枠）。
     this.frame = scene.add.graphics();
     // 輪郭は枠より後。枠が引く縁の線の上に乗せないと、明滅が線の下で沈む。
     this.alertOutline = createAlertOutline(scene, metrics, width, height);
@@ -510,8 +509,7 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 放っておいてよくない状態にあるカードの輪郭を、赤く明滅させる（ScreenLayout.md
-   * 警戒している動物は輪郭を明滅させる 節）。
+   * 放っておいてよくない状態にあるカードの輪郭を、赤く明滅させる（CardView.md 3節）。
    *
    * **域の深さでは分けない。** 輪郭が言うのは「この札を放っておくな」の1つだけで、どれだけ気を
    * 立てているかはカードを開けば読める。域ごとに色を変えると、バーの黄（危険域）・赤（致命的域）の
@@ -553,8 +551,7 @@ export class Card extends Phaser.GameObjects.Container {
    * （絵は少しずつ用意されるため）。同じものを出し続ける間は作り直さない。
    *
    * 製作中オブジェクトには土地の背景を敷かない。青の覆いが読めるだけの無地の地が要るので、
-   * 「その土地に在るもの」を表す景色より覆いの方を優先する（ScreenLayout.md 製作中オブジェクトの
-   * カード節）。
+   * 「その土地に在るもの」を表す景色より覆いの方を優先する（CardView.md 10節）。
    */
   private showArt(content: CardContent): void {
     const scene = this.scene;
@@ -610,7 +607,7 @@ export class Card extends Phaser.GameObjects.Container {
 
     const all = [
       // 製作中の2本を先に積む。作りかけのカードではこの2本だけが出るので、順は互いの上下だけを
-      // 決めている（材料が上、工程が下。ScreenLayout.md 製作中オブジェクトのカード節）。
+      // 決めている（材料が上、工程が下。CardView.md 10節 製作中オブジェクトのカード）。
       { bar: this.materialBar, ratio: content.materialRatio },
       { bar: this.stepBar, ratio: content.stepRatio },
       { bar: this.durabilityBar, ratio: content.durability },
@@ -681,7 +678,7 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 枠を引く。**絵の上に乗る**ので、窓からはみ出した絵はここで隠れる（ScreenLayout.md カードの枠 節）。
+   * 枠を引く。**絵の上に乗る**ので、窓からはみ出した絵はここで隠れる（CardView.md 1節 カードの枠）。
    *
    * 桟の高さと色が差し替えで変わるため、1枚絵にはできず毎回引き直す。意匠が入る段になったら
    * 9patch（nineSlice.ts）へ移す。
@@ -970,7 +967,7 @@ export class EmptyCard extends Phaser.GameObjects.Container {
 }
 
 /**
- * 枠そのものを色で強調する縁（ScreenLayout.md 枠（セル）は一級の単位 節の1層目）。
+ * 枠そのものを色で強調する縁（CardView.md 11節 枠（セル）は一級の単位の1層目）。
  * **カードの矩形の外側を回る**ので、枠にカードが入っても隠れない（CELL_HIGHLIGHT_WIDTH参照）。
  */
 export class CellHighlight extends Phaser.GameObjects.Graphics {
@@ -1001,7 +998,7 @@ export class CellHighlight extends Phaser.GameObjects.Graphics {
 }
 
 /**
- * 枠がカードの上へ重ねる短い文字（ScreenLayout.md 枠（セル）は一級の単位 節の3層目）。
+ * 枠がカードの上へ重ねる短い文字（CardView.md 11節 枠（セル）は一級の単位の3層目）。
  * **カードが入っていても隠れない**ことがこの層の役目なので、カードより手前へ置く（CardLane）。
  */
 export class CellOverlay extends Phaser.GameObjects.Container {
@@ -1236,7 +1233,7 @@ interface RailMetrics {
 
 /**
  * 下の桟の寸法。**中身——道の矢印と、値を持つ状態バー——を上から積み、その高さで桟の厚みが決まる**
- * （ScreenLayout.md カードの枠 節）。何も積まないカードでは左右と同じ細さにして、間延びさせない。
+ * （CardView.md 1節 カードの枠）。何も積まないカードでは左右と同じ細さにして、間延びさせない。
  */
 function railMetrics(
   metrics: ScreenMetrics,

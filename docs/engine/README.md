@@ -23,14 +23,14 @@
 
 ### 汎用サブシステム（文法を使って、どんな内容にも適用できる仕組みの設計）
 
-- [レシピシステム設計](./RecipeSystem.md)
+- [レシピシステム設計](./RecipeSystem.md) — 作りかけを「製作中オブジェクト」という普通の物として扱い、材料投入を「入れ物へ落とす」に載せる方法
 - [スキルシステム設計](./SkillSystem.md) — レシピをいつ作れるようになるかを決める、習熟度の成長と解放条件
 - [スロットシステム設計](./SlotSystem.md) — 固定位置・受け入れ制約・スタックのまとまりと並び順
-- [コンテナの容量・重さ・保護](./ContainerSystem.md)
+- [コンテナの容量・重さ・保護](./ContainerSystem.md) — 重さの純粋な合算と、担ぎ方で変わる負荷（load）。持てるか・運べるかをどちらで決めるか
 - [液体容器システム設計](./LiquidContainerSystem.md) — 量・飲用・注ぎ移し・蒸発・降雨の実現方法
-- [耐久値システム設計](./DurabilitySystem.md)
+- [耐久値システム設計](./DurabilitySystem.md) — 素材の屋外劣化と食料の腐敗を単一の durability で表す場合の減少量の目安
 - [アクションシステム設計](./ActionSystem.md) — actions / combinations の実行時の仕組み
-- [気候システム設計](./ClimateSystem.md)
+- [気候システム設計](./ClimateSystem.md) — 季節・天気を world のプロパティと貯水池モデルで駆動する方法
 - [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
 - [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
 - [狩猟システム設計](./HuntingSystem.md) — 動物との対峙をターンや専用画面ではなく、怪我・時間・既存の操作へ載せる方法

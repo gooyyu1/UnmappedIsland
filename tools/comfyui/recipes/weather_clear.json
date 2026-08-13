@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/weather/clear.png を作り直すためのレシピ。build.py が読む。",
-    "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 空の絵 節）。",
+    "状況エリアの窓に敷く空の絵（docs/ui/ScreenLayout.md 5.1節）。",
     "",
     "レーンの背景と作風を揃えるため、LoRAは同じ watercolor を 0.8 で当てる（トリガー語は言わない）。",
     "oilifyRadius が 0 なのも同じ理由で、輪郭を和らげる役目はLoRAが担う。",
