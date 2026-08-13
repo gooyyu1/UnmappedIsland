@@ -10,7 +10,7 @@ import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * injuries.yamlの怪我を、実ファイルの定義だけで検証する（docs/world/Injuries.md）。
+ * injuries.yamlの怪我を、実ファイルの定義だけで検証する（docs/engine/InjurySystem.md）。
  * 負う契機（ヤシの木からの落下）・痛みへの影響・時間で治ることの3つを通す。
  */
 describe('injuries.yamlの怪我', () => {
@@ -132,7 +132,7 @@ describe('injuries.yamlの怪我', () => {
   });
 
   it('傷の重さは道具の耐久度と別のプロパティで、引くほど軽い域へ移る', () => {
-    // 耐久値は多いほど良い量、傷は多いほど悪い量なので、同じ語彙には載せない（Injuries.md）。
+    // 耐久値は多いほど良い量、傷は多いほど悪い量なので、同じ語彙には載せない（InjurySystem.md 2節）。
     pickCoconut();
     const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
 

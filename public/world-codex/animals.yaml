@@ -26,7 +26,7 @@ object_defs:
       # （CardView.md 3節 警戒している動物は輪郭を明滅させる）。
       #
       # **野生の個体は警戒した状態で現れる。** 放っておけば落ち着くが、減り方は自然治癒と同じ
-      # 基準レート（-1/tick、docs/world/Injuries.md 値の決め方 節）なので10時間かかる。
+      # 基準レート（-1/tick、docs/engine/InjurySystem.md 2節の値の決め方）なので10時間かかる。
       # 待つより追い払うほうが速い、が値だけで成り立つ。
       wariness:
         value: 40

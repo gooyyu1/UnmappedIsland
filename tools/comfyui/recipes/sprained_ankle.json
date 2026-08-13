@@ -11,7 +11,7 @@
     "だけなら、元の滑らかなくるぶしがそのまま残る。",
     "",
     "**手当ての有無で絵は差し替えない。** 手当て済みはカードの印（🩹）で見せる——絵を差し替えると、",
-    "怪我の部位 × 治療具の数だけ絵が要る（docs/world/Injuries.md 手当て節）。"
+    "怪我の部位 × 治療具の数だけ絵が要る（docs/engine/InjurySystem.md 3節の手当て）。"
   ],
   "output": "src/assets/objects/sprained_ankle.png",
   "prompts": "objects.json",
