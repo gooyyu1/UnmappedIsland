@@ -30,17 +30,17 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `pain` / `satiety` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
+| プロパティ | `pain` / `blood` / `satiety` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterArt.ts`。絵が入るまでの繋ぎ） |
 
-`status` タグが付くのは `pain` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の6つで、宣言順も
-この順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
-[`StatusArea.md`](../ui/StatusArea.md)）。`pain` が先頭なのは trait 由来の props が
+`status` タグが付くのは `pain` / `blood` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の7つで、
+宣言順もこの順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
+[`StatusArea.md`](../ui/StatusArea.md)）。`pain` と `blood` が先頭なのは trait 由来の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。
 
-気絶と死を決める `consciousness`・`blood` も、`pain` と同じくキャラクタ間で共通の値として
-ここへ加わる予定である（刻み方と押し下げる側は
-[`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節・3 節。まだ実装していないため上の契約には含めない）。
+気絶を決める `consciousness` は、`pain` と同じくキャラクタ間で共通の値としてここへ加わる予定である
+（押し下げる側は [`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節。気を失った手番の飛ばし方が
+決まっていないため、まだ実装しておらず上の契約にも含めない）。
 
 ### 値の刻み方（キャラクタ間で共通の規約）
 
@@ -63,6 +63,10 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
   動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
+- **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**唯一、
+  自分で戻るステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
+  怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——失った1,000mLに5日かかる。刻み方は
+  [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節、これも個体差を持たせず trait が配る。
 - **`load`（荷重）**: 持ち物と装備の重さ（g）。自分では動かず、中身から導出される
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 2節）ので `value` は 0 のまま。`max` が
   「担げる量」そのもので、担ぎ慣れの個人差はここに出る。
@@ -86,6 +90,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - `hydration` も残り時間で切る: 残り2日未満で `caution`、残り1日未満で `danger`、
   残り6時間未満で `fatal`。
 - tickで減らない `stamina` は割合で切る: `max` の60%未満で `caution`、20%未満で `danger`。
+- `blood` は**失った割合**で切る（臨床の出血性ショックの分類、
+  [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節）。2割失って安全域を外れるので、上の80%の境界と
+  ちょうど一致する。以降 3割で `caution`、4割で `danger`、6割で `fatal`。
 - **`load` と `pain` は増える側が悪い**ので、上の「80%で安全域を外れる」は当てはまらない。`max` からの
   割合で刻む: 1/4 で `watch`、1/2 で `caution`、5/6 で `danger`。0 から始まって荷造り・怪我の最中に
   現れるよう、最初の境目は低めに置く。`load` の危険域の段の名前は **`too_heavy`** で固定する——道の

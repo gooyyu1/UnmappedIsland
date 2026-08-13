@@ -212,6 +212,8 @@ describe('animals.yamlの動物', () => {
   describe('出血', () => {
     /** 傷1つが固まるまでに失う血（-15/tick × 4 tick、injuries.yaml）。 */
     const LOST_PER_WOUND = 60;
+    /** 自然回復（animals.yaml）。出血と同時に走るので、失う量からわずかに差し引かれる。 */
+    const RECOVERED_PER_TICK = 0.16;
 
     let bloodId: number;
     let bleedingId: number;
@@ -236,11 +238,16 @@ describe('animals.yamlの動物', () => {
       tick(4);
 
       expect(firstWound().getNumber(bleedingId), '1時間で固まる').toBe(0);
-      expect(monkey.getNumber(bloodId)).toBe(400 - LOST_PER_WOUND);
+      const afterClotting = monkey.getNumber(bloodId);
+      expect(afterClotting).toBeCloseTo(400 - LOST_PER_WOUND + 4 * RECOVERED_PER_TICK, 5);
 
       tick(100);
 
-      expect(monkey.getNumber(bloodId), '固まった後はもう減らない').toBe(400 - LOST_PER_WOUND);
+      // 削るのは一瞬でも戻るのは桁違いに遅い（VitalsSystem.md 3節）——1日かけて16mLしか戻らない。
+      expect(monkey.getNumber(bloodId) - afterClotting, '止まった後は少しずつ戻る').toBeCloseTo(
+        100 * RECOVERED_PER_TICK,
+        5,
+      );
       expect(injuriesOf(monkey), '血が止まっても傷そのものは残る').toEqual(['laceration']);
     });
 
@@ -254,7 +261,7 @@ describe('animals.yamlの動物', () => {
     });
 
     it('衝撃が引いても、失った血が意識を奪い続ける', () => {
-      // 気絶させるのは衝撃だが、そちらは自分で引く（2.1節）。失った血は戻らないので、
+      // 気絶させるのは衝撃だが、そちらは自分で引く（2.1節）。血の戻りは桁違いに遅いので、
       // **目覚めるはずの時刻を過ぎても倒れたまま**になる。
       strikeWithSharpStone();
       strikeWithSharpStone();
@@ -262,7 +269,7 @@ describe('animals.yamlの動物', () => {
       tick(24);
 
       expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(4);
-      expect(monkey.getNumber(bloodId), '3つぶん失った').toBe(400 - 3 * LOST_PER_WOUND);
+      expect(monkey.getNumber(bloodId), '3つぶん失った').toBeLessThan(400 - 3 * LOST_PER_WOUND + 5);
       expect(monkey.readProperty(bloodId)?.alert, '危険域').toBe('danger');
       expect(monkey.isInStage(consciousnessId, 'unconscious'), '目覚めない').toBe(true);
     });
@@ -287,7 +294,10 @@ describe('animals.yamlの動物', () => {
 
       tick(4);
 
-      expect(monkey.getNumber(bloodId), '固まるのが倍速なので失うのは半分').toBe(400 - LOST_PER_WOUND / 2);
+      expect(monkey.getNumber(bloodId), '固まるのが倍速なので失うのは半分').toBeCloseTo(
+        400 - LOST_PER_WOUND / 2 + 4 * RECOVERED_PER_TICK,
+        5,
+      );
     });
   });
 
