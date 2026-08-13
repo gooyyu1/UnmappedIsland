@@ -975,13 +975,19 @@ export class PlayScene extends ResponsiveScene {
   private openSlotWindow(place: CardPlace): void {
     this.childWindowCard = undefined;
     // 場所を開くときも映しているオブジェクトはある——その持ち主（キャラクタ）。
-    this.openChildWindow(
-      {
-        card: { ...characterCardContent(this.view.characterArt, this.locale), name: this.view.characterName },
-      },
-      [],
-      place,
-    );
+    this.openChildWindow({ card: this.portraitCard() }, [], place);
+  }
+
+  /**
+   * キャラクタ本人を映す札の中身。ポートレイトと、装備・怪我の子ウィンドウの見出しが同じ姿になる
+   * ようにここへ寄せる（名乗っている名前で見せる点だけが、選択画面の札と違う）。
+   */
+  private portraitCard(): CardContent {
+    return {
+      ...characterCardContent(this.view.characterArt, this.locale),
+      name: this.view.characterName,
+      mark: this.view.characterMark,
+    };
   }
 
   /**
@@ -1690,10 +1696,8 @@ export class PlayScene extends ResponsiveScene {
     const gap = this.metrics.px(SIZE.gap);
     const portraitWidth = this.metrics.px(SIZE.cardWidth);
     const portraitHeight = this.metrics.px(SIZE.cardHeight);
-    // 名乗っている名前で見せる点だけが、キャラクタ選択やセーブスロットの札と違う。
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
-      ...characterCardContent(this.view.characterArt, this.locale),
-      name: this.view.characterName,
+      ...this.portraitCard(),
       onTap: this.whileIdle(() => this.openPropertyWindow()),
     });
 

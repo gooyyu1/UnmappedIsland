@@ -391,6 +391,47 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBe('🩹');
   });
 
+  it('出血の印は、負っている本人のポートレイトにも出る', () => {
+    // 傷のカードは開かないと見えないので、そこだけに出していると流し見のあいだに失血が進む
+    // （VitalsSystem.md 9節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    expect(fromGameSession(game, codex, locale).characterMark, '無傷なら何も出ない').toBeUndefined();
+
+    const wound = game.session.spawn(codex.objectNames.getId('laceration'));
+    expect(wound.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'))).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).characterMark).toBe('🩸');
+
+    wound.setNumber(codex.propertyNames.getId('bleeding'), 0, game.session);
+
+    expect(fromGameSession(game, codex, locale).characterMark, '止まれば消える').toBeUndefined();
+  });
+
+  it('血が流れている傷を負った動物は、そのカードに出血の印を出す', () => {
+    // 傷は動物のinjuriesスロットの中なので、レーンに並ぶ1枚を見ているだけでは分からない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const monkey = placeMonkey(game);
+    expect(
+      fromGameSession(game, codex, locale).cardsIn('items')[0].mark,
+      '無傷なら何も出ない',
+    ).toBeUndefined();
+
+    const wound = game.session.spawn(codex.objectNames.getId('laceration'));
+    expect(wound.moveToSlot(monkey, codex.slotNames.getId('injuries'))).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].mark).toBe('🩸');
+  });
+
+  it('手当て済みの印は、負っている本人までは上がらない', () => {
+    // 上げるのは出血だけ。手当て済みは「もう手を打った」を言うもので、急がせる必要がない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const injury = injure(game);
+    const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
+    expect(bandage.moveToSlot(injury, codex.slotNames.getId('treatment'))).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).characterMark).toBeUndefined();
+  });
+
   it('中身を持つカードは、それを映す場所と、空けておく枠の数の元になる容量を持つ', () => {
     // 中身を見せるかはタグではなくスロットで決める（Windows.md 1節 子ウィンドウ）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
