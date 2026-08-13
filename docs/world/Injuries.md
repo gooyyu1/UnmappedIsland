@@ -13,6 +13,7 @@
 | タグ | `injury`（`item` は付けない——手持ちへ入ってしまう） |
 | プロパティ | `severity`（`range.min` は 1、`stages` を持ち、`on_shortfall` に `destroy: self`） |
 | trait | `treatable`（治療具を1つ当てられる。次節） |
+| `stackable` | `false`（同じ怪我を2つ負っても1つずつ並ぶ。手当ては1つずつ当てるため） |
 | `passives` | `modify` で `parent`（負ったキャラクタ）の `pain` を上げる |
 | 表示 | `ja.yaml` の表示名と説明 |
 
