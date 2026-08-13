@@ -28,6 +28,9 @@
 正方形のキャンバスに fit_object の余白を残したままだと、物の形によって余白の量が変わるので、
 平たい物ほど小さく見えてしまう。
 
+--below-plate は、カード全面の絵を名前の板の下まで下げる。主題が絵の上端の近くに来るポートレート
+向け（below_plate参照）。
+
 絵に足りないものは、切り出したあとで足せる。落ち影が描かれていなければ --drop-shadow、色が
 薄ければ --saturation / --gamma（それぞれ drop_shadow / retone 参照）。
 
@@ -60,6 +63,9 @@ CARD_WIDTH = 410
 CARD_HEIGHT = 640
 PAPER_MARGIN = 5
 PAPER_RADIUS = 20
+# 名前の板の下端（Card.ts の FRAME_INSET + FRAME_SIDE + FRAME_HEAD = 32.5u）。板は不透明なので、
+# ここより上に描かれたものはカードでは見えない（--below-plate）。
+PLATE_BOTTOM = 65
 # 角丸を滑らかにするための倍率。この倍で描いてから縮める（card_frame.py の SUPERSAMPLE と同じ）。
 MASK_SUPERSAMPLE = 4
 
@@ -111,6 +117,18 @@ def cover(image: Image.Image, width: int, height: int) -> Image.Image:
     left = (resized.width - width) // 2
     top = (resized.height - height) // 2
     return resized.crop((left, top, left + width, top + height))
+
+
+def below_plate(rgb: np.ndarray) -> np.ndarray:
+    """絵を名前の板の下まで下げ、空いた上端は最上行を伸ばして埋める。
+
+    ポートレートは頭が絵の上端の近くに来るので、そのまま敷くと不透明な名前の板が顔を切る。下がった
+    ぶん下端は失われるが、胸から下の余りより顔のほうが要る。
+
+    埋めた帯は板に隠れて見えない。**それでも単色で塗らないのは、コーデックスが同じ絵をそのまま
+    並べるため**（src/codex/pages.ts）。最上行を伸ばせば、そこだけ色が切り替わった帯にはならない。
+    """
+    return np.vstack([np.repeat(rgb[:1], PLATE_BOTTOM, axis=0), rgb[:-PLATE_BOTTOM]])
 
 
 def bounds(mask: np.ndarray) -> tuple[int, int, int, int]:
@@ -367,6 +385,8 @@ def main() -> None:
                         help="使う範囲を先に切り出す（1枚に複数写ったときに1つだけ採る）")
     parser.add_argument("--diagonal", action="store_true",
                         help="物の長い向きを対角線へ倒す。細長い物を長く見せたいときに使う")
+    parser.add_argument("--below-plate", action="store_true",
+                        help="card: 絵を名前の板の下まで下げる。頭が板に切られるポートレート向け")
     parser.add_argument("--oilify", type=int, nargs=2, metavar=("RADIUS", "LEVELS"),
                         help="油絵風に潰す（postprocess.oilify）。写実的すぎる絵を他のカードへ寄せる")
     args = parser.parse_args()
@@ -386,6 +406,8 @@ def main() -> None:
     if args.size == "card":
         # 全面に敷くので、紙からはみ出した分を角丸で消す必要がある。
         rgb = np.asarray(cover(image, CARD_WIDTH, CARD_HEIGHT), dtype=np.float64)
+        if args.below_plate:
+            rgb = below_plate(rgb)
         mask = paper_mask(CARD_WIDTH, CARD_HEIGHT, args.feather)
         if args.mode == "background":
             alpha, premultiplied = separate(rgb, args.tolerance, args.edge, args.shadow, args.reach)
@@ -419,6 +441,7 @@ def main() -> None:
         **({"crop": args.crop} if args.crop else {}),
         **({"canvas": args.canvas} if args.canvas else {}),
         **({"diagonal": True} if args.diagonal else {}),
+        **({"belowPlate": True} if args.below_plate else {}),
         **({"oilify": args.oilify} if args.oilify else {}),
         **({"mode": args.mode, "feather": args.feather} if args.size == "card" else {}),
         **({"tolerance": args.tolerance, "edge": args.edge, "shadow": args.shadow, "reach": args.reach}

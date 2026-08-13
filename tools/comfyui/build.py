@@ -265,6 +265,7 @@ def main() -> None:
                     *(["--canvas", *map(str, card["canvas"])] if card.get("canvas") else []),
                     *(["--crop", *map(str, card["crop"])] if card.get("crop") else []),
                     *(["--diagonal"] if card.get("diagonal") else []),
+                    *(["--below-plate"] if card.get("belowPlate") else []),
                     *(["--oilify", *map(str, card["oilify"])] if card.get("oilify") else []),
                     *(["--tolerance", str(card["tolerance"])] if "tolerance" in card else []),
                     *(["--edge", str(card["edge"])] if "edge" in card else []),
