@@ -14,7 +14,7 @@ import { drawBox } from './shapes';
 import type { SlotRef } from './backgroundArt';
 import { cardBackgroundTexture } from './backgroundArt';
 import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from './objectArt';
-import { ProgressBar } from './ProgressBar';
+import { ProgressBar, TRACK_BORDER_WIDTH } from './ProgressBar';
 import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import { noteOperation } from '../errorReport';
@@ -141,14 +141,16 @@ const CELL_OVERLAY_PLATE_ALPHA = 0.72;
 const IN_PROGRESS_VEIL_ALPHA = 0.42;
 
 /**
- * 桟に積む状態バーの高さ・間隔・紙の左右から空ける余白と、桟の中の上下の余白（u単位）。
+ * 桟に積む状態バーの高さ・間隔と、絵とバーの間の余白（u単位）。
  *
- * 4種（耐久度・中身・容量・傷）とも同じ寸法にする。**どれが主要情報かはカードごとに違う**——道具に
- * とっての耐久度と入れ物にとっての容量は、どちらもそのカードの主役なので、太さで格を付けない。
+ * どの種類も同じ寸法にする。**どれが主要情報かはカードごとに違う**——道具にとっての耐久度と
+ * 入れ物にとっての容量は、どちらもそのカードの主役なので、太さで格を付けない。
+ *
+ * 左右は持たない。バーは窓（windowSpan）に合わせて引く——桟とその上の絵は縦に隣り合うので、
+ * 端が揃っていないと桟だけがはみ出して見える。バーの下も持たない（railMetrics）。
  */
-const RAIL_BAR_HEIGHT = 6;
+const RAIL_BAR_HEIGHT = 12;
 const RAIL_BAR_GAP = 2;
-const RAIL_BAR_MARGIN = 7;
 const RAIL_PAD = 4.5;
 
 /** 移動先のレーンがカードのどちら側にあるか。 */
@@ -563,7 +565,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.showAlert(content);
     this.showName(content, colors);
     this.showArt(content);
-    this.showBars(bars, rail, showChange, content.midAction === true);
+    this.showBars(bars, rail, colors, showChange, content.midAction === true);
     this.showEdge(content);
     this.showStackCount();
     this.showMark(content, rail);
@@ -698,10 +700,17 @@ export class Card extends Phaser.GameObjects.Container {
     return all.filter((entry): entry is RailBar => entry.ratio !== undefined);
   }
 
-  /** 状態のバーを桟へ積む。 */
-  private showBars(bars: readonly RailBar[], rail: RailMetrics, showChange: boolean, hold: boolean): void {
+  /** 状態のバーを桟へ積む。枠線は札の縁と同じ色にする（種別で変わるので、差し替えのたびに渡す）。 */
+  private showBars(
+    bars: readonly RailBar[],
+    rail: RailMetrics,
+    colors: CardFrameColors,
+    showChange: boolean,
+    hold: boolean,
+  ): void {
     bars.forEach(({ bar, ratio }, index) => {
       bar.setY(rail.barTop + rail.barPitch * index);
+      bar.setBorderColor(colors.line);
       // 隠れていたバーが現れるときは、見えていなかった間の増減を今の変化として見せない。
       if (showChange && bar.visible) bar.setRatio(ratio, hold);
       else bar.resetRatio(ratio);
@@ -733,26 +742,27 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 桟へ積む状態バー1本。**縦の位置以外は4種とも同じ**なので、寸法はここで決め切り、どこへ積むかだけを
+   * 桟へ積むバーを1本作る。**縦の位置以外はどれも同じ**なので、寸法はここで決め切り、どこへ積むかだけを
    * 差し替えのたびに与える（showBars参照）。
-   */
-  /**
-   * 桟へ積むバーを1本作る。**カードのバーは明滅させない**（steady）——明滅は「手を止めろ」という
-   * 催促で、それを言うのは札の縁（3節）とステータスエリアの役目だから（CardView.md 8節）。
+   *
+   * **カードのバーは明滅させない**（steady）——明滅は「手を止めろ」という催促で、それを言うのは
+   * 札の縁（3節）とステータスエリアの役目だから（CardView.md 8節）。
+   *
+   * バーの枠線は経路の上へ太さの半分ずつ広がるので、その分だけ内側へ寄せて、**枠線の外周が窓の縁と
+   * 重なる**ようにする（窓の縁の線も同じ寄せ方をしている。drawFrame参照）。
    */
   private addRailBar(scene: Phaser.Scene, metrics: ScreenMetrics, options: ProgressBarOptions): ProgressBar {
-    const paper = paperRect(metrics, this.cardWidth, this.cardHeight);
-    const margin = metrics.px(RAIL_BAR_MARGIN);
+    const span = windowSpan(metrics, this.cardWidth, this.cardHeight);
+    const line = Math.max(1, metrics.px(TRACK_BORDER_WIDTH));
     const bar = new ProgressBar(
       scene,
       metrics,
-      paper.x + margin,
+      span.x + line / 2,
       0,
-      paper.width - margin * 2,
+      span.width - line,
       metrics.px(RAIL_BAR_HEIGHT),
       0,
-      // 枠線は数pxの太さの大半を占めてしまうので描かない。
-      { ...options, borderless: true, steady: true },
+      { ...options, steady: true },
     );
     this.add(bar);
     return bar;
@@ -1335,14 +1345,27 @@ function paperRect(metrics: ScreenMetrics, width: number, height: number): Rect 
   return { x: inset, y: inset, width: width - inset * 2, height: height - inset * 2 };
 }
 
+/**
+ * 窓の左右。**桟の高さに依らない**ので、桟を測る前——状態バーを作る時点——でも引ける
+ * （addRailBar参照）。
+ */
+function windowSpan(
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): { readonly x: number; readonly width: number } {
+  const paper = paperRect(metrics, width, height);
+  const side = metrics.px(FRAME_SIDE);
+  return { x: paper.x + side, width: paper.width - side * 2 };
+}
+
 /** 枠の内側の、絵が見える窓。上端にはタイトルの板が乗り、下端は桟の高さで動く。 */
 function windowRect(metrics: ScreenMetrics, width: number, height: number, railHeight: number): Rect {
   const paper = paperRect(metrics, width, height);
   const side = metrics.px(FRAME_SIDE);
   return {
-    x: paper.x + side,
+    ...windowSpan(metrics, width, height),
     y: paper.y + side,
-    width: paper.width - side * 2,
     height: paper.height - side - railHeight,
   };
 }
@@ -1381,8 +1404,12 @@ function railMetrics(
   const arrowHeight = metrics.px(ROAD_ARROW_HEIGHT);
   const rows = (road ? 1 : 0) + barCount;
   const stack = (road ? arrowHeight : 0) + barCount * barHeight + Math.max(0, rows - 1) * gap;
-  const railHeight = rows === 0 ? metrics.px(FRAME_SIDE) : stack + metrics.px(RAIL_PAD) * 2;
-  const top = paper.y + paper.height - railHeight + (railHeight - stack) / 2;
+  // **バーの下は左右の桟と同じ厚みにする。** 中身の上下へ同じ余白を取ると、バーを持つカードだけ
+  // 下の枠が細くなり、持たないカードと並んだときに枠が痩せて見える。上は枠ではなく絵との間隔なので、
+  // 揃える相手が違う。
+  const side = metrics.px(FRAME_SIDE);
+  const railHeight = rows === 0 ? side : metrics.px(RAIL_PAD) + stack + side;
+  const top = paper.y + paper.height - railHeight + metrics.px(RAIL_PAD);
   return {
     height: railHeight,
     arrowY: road ? top + arrowHeight / 2 : undefined,
