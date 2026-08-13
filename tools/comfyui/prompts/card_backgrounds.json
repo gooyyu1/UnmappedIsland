@@ -17,13 +17,14 @@
   "medic_card_background": {
     "description": "マルコの肌。怪我のカードの地。部位は描かず、肌そのものを枠いっぱいに。",
     "_note": [
-      "**部位の名前を1つも出さない。** 「前腕」と言うと、背景の上に腕が1本立った絵になり、輪郭が出る。",
-      "輪郭が出ると、その上へ載る傷の層を身体ごとに位置合わせすることになる。",
-      "「真上から見た肌の面が枠を埋める」とだけ言って、面の話に閉じる。",
+      "**部位の少ない場所を描かせ、その中の平らな所を切り出す**（レシピの cardArt.crop）。",
+      "「肌だけ」と頼むと砂丘や胴体が出て、「前腕」と部位を言うと背景の上に腕が1本立った絵になる",
+      "（輪郭が出ると、その上へ載る傷の層を身体ごとに位置合わせすることになる）。背中は目に見える",
+      "部品が少なく、広い平らな面が取れる。背骨・肩・背景はnegativeで抑えつつ、切り出しで外す。",
       "照りも禁じる——つやが乗ると3D風になり、他のカードから浮くうえ痣の乗算が読めなくなる。"
     ],
-    "positive": "extreme close up of bare human skin completely filling the frame from edge to edge, a flat patch of sun weathered skin seen straight on, uniform warm tan olive skin tone across the whole frame, fine skin texture with faint pores and a few soft body hairs, soft even diffuse daylight, matte skin, muted natural colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
-    "negative": "arm, forearm, limb, leg, thigh, curved surface, rounded form, silhouette, outline, edge of the body, body against a background, face, head, eyes, nose, mouth, ear, hand, fingers, fingertips, thumb, palm, knuckles, foot, toes, ankle, knee, elbow, shoulder, torso, chest, nipple, navel, whole figure, person, portrait, background, wall, floor, table, cloth, clothing, sleeve, fabric, jewellery, tattoo, wound, bruise, blood, scar, rash, veins, wrinkles, goosebumps, sweat, water drops, glossy, shiny, specular highlight, oiled skin, wet skin, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
+    "positive": "extreme close up of the bare skin of a human back completely filling the frame from edge to edge, a broad flat expanse of sun weathered skin seen straight on, uniform warm tan olive skin tone across the whole frame, fine skin texture with faint pores and a few soft body hairs, soft even diffuse daylight, matte skin, muted natural colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
+    "negative": "spine, backbone, shoulder blades, ribs, neck, nape, waist, buttocks, hips, arm, forearm, limb, leg, thigh, curved surface, rounded form, silhouette, outline, edge of the body, body against a background, whole figure, person seen from behind, portrait, face, head, hair, eyes, nose, mouth, ear, hand, fingers, thumb, palm, foot, toes, ankle, knee, elbow, shoulder, chest, nipple, navel, background, wall, floor, table, cloth, clothing, sleeve, fabric, jewellery, tattoo, wound, bruise, blood, scar, rash, veins, wrinkles, goosebumps, sweat, water drops, glossy, shiny, specular highlight, oiled skin, wet skin, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
   },
   "monkey_card_background": {
     "description": "サルの毛皮。怪我のカードの地。カードの絵のサル（objects.jsonのmonkey）と毛色を揃える。",
