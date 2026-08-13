@@ -447,13 +447,7 @@ first_dry_rain_calibration:
   前提が変わった場合はこの節も再計算が必要
 - storm・scorching への「特別な対策が必要な極端な天候」としてのゲームプレイ上の意味づけ（現状は天気の値が
   変わるだけで、sunlight 以外への影響は未実装）
-
-## 8. 参考: 既存プロジェクト方針との整合性
-
-- `world` が `day`/`hour`/`minute`/`weather` を直接プロパティとして持つ `core.yaml` の既存実装の延長線上に、
-  季節・天気のプロパティを追加している。
-- `object: world` を他オブジェクトから条件・重みとして参照する仕組みは未実装（`GameElementDefinition.md`
-  14.1 節・15 節・17 節）。本書の季節・天気遷移ロジックはすべて `world` 自身の `on_shortfall`（対象は常に `self`）
-  として完結するため影響を受けないが、将来、天気に反応する別オブジェクト（例: 装備の防水性）を作る場合は
-  `ancestor` 経由での参照が必要になる。
-- 本書全体を通じて `derived`（GameElementDefinition.md 16 節・17 節）を一切使用していない。
+- 天気に反応する別オブジェクト（例: 装備の防水性）を作る場合の参照経路。`object: world` を条件・重みから
+  参照する仕組みが未実装（`GameElementDefinition.md` 14.1 節・15 節・17 節）のため、`ancestor` 経由での
+  参照が必要になる。本書の季節・天気遷移ロジック自体はすべて `world` 自身の `on_shortfall`（対象は常に
+  `self`）で完結しており、影響を受けない

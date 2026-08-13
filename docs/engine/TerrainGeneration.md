@@ -4,7 +4,7 @@
 
 本ドキュメントは、島の地形生成システムに関する設計と実装をまとめたものです。
 [`GameElementDefinition.md`](./GameElementDefinition.md) が掲げる「ハードコードしない」「汎用エンジンに
-任せる」「ファイル追加だけで拡張できる」という設計方針（2.4 節）に準拠し、以下を目的とします。
+任せる」「ファイル追加だけで拡張できる」という設計方針（2 節）に準拠し、以下を目的とします。
 
 - シード値ありのランダム生成で無人島の地形を生成する
 - 地形・構造物はすべて YAML でオブジェクト定義し、MOD 作成者がコードに触れずに拡張できる状態を保つ
@@ -100,6 +100,8 @@ axes:
 ```yaml
 location_types:
   jungle:
+    object_def: jungle                 # 実体化に使う型（locations.yamlのobject_defsのid）。土地も他の
+                                       # あらゆる要素と同じobject_defsで表現される
     applicable_scopes: [island]
     move_cost: 1.6                     # 移動コストの倍率（1 = 等倍。3.5節のtravel_minutesに使う）
     axis_preferences:
@@ -317,15 +319,3 @@ sandy_beach:
 - **`generation_scopes.island` 以外の生成パラメータのバランス調整**: `interior_bias`・
   `extra_edge_detour_factor`・`base_minutes_per_distance` 等の具体的な数値は、実際にプレイしての調整が必要。
 
-## 7. 参考: 既存プロジェクト方針との整合性
-
-[`GameElementDefinition.md`](./GameElementDefinition.md) に示されている以下の原則と、本設計は整合しています。
-
-- すべての概念を YAML で定義し、複数ファイル分割・MOD 追加は別ディレクトリへのファイル追加のみで実現する
-  （3.3 節）。地形生成の3つのルートキー（`axes`/`location_types`/`generation_scopes`）は、`object_defs`/
-  `traits` と対等なトップレベルキーとして `parseGeneration.ts`（`loadGenerationSections`）が実際にロードします
-  （`GameElementDefinition.md` 16 節参照）。
-- `Location`/`LocationType` も、他のあらゆる要素と同じ `object_defs` として表現されます（`location_types` の
-  各エントリは `object_def` フィールドで、実体化に使う `locations.yaml` の `object_defs` の id を指します）。
-- 「範囲（値域）による状態の決定」という汎用パターン（`stages`、6 節）とは別の専用マッチング処理
-  （3.2 節）として実装しましたが、これは多次元の最近傍探索という性質上の違いによるものです。

@@ -4,7 +4,20 @@
 
 プレイヤーがカードに対して行う操作が、実行時にどう実装されているかを記述する設計ドキュメントです。
 YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefinition.md)（`actions` は 11 節、
-`combinations` は 12 節、`active` は 9 節、`pick` は 10 節、`conditions` は 14 節）を参照してください。
+`combinations` は 12 節、`active` は 9 節、`pick` は 10 節、`conditions` は 14 節）、操作の画面側の
+入口（アクションの行・ドラッグ＆ドロップ）は [`../ui/Windows.md`](../ui/Windows.md) 4 節・
+[`../ui/CardInteraction.md`](../ui/CardInteraction.md) が扱います。
+
+**入口は2種でも、実行は1本です。** メニュー型（`actions`）とドラッグ型（`combinations`）は
+「どう選ばれるか」だけが違い、どちらも `InteractionDef` を基底として、同じ実行パイプライン
+（マッチング → `conditions` → `duration` の解決 → 時間進行 → 生存確認 → 効果の適用、2 節）を通ります。
+実行前には代表（`represented_by`）の解決が入り、起きたことは分岐名ではなく世界に起きた変化として
+観測します（7 節）。操作専用の新しい文法はありません。
+
+実装は `src/domain/defs/InteractionDef.ts`（`ActionDef`・`CombinationDef` の基底）と
+`src/domain/runtime/WorldObject.ts`・`WorldSession.ts`、検証は `tests/domain/interaction.test.ts`・
+`actionDuration.test.ts`・`worldChanges.test.ts` です。本書は実装済みの仕組みの記述で、
+未決事項は 8 節に整理しています。
 
 ## 1. 2つの入口: actions と combinations
 

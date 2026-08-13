@@ -4,9 +4,17 @@
 
 本ドキュメントは、`recipes`（`GameElementDefinition.md` 13 節）の文法を使って、2つ以上のアイテムを組み合わせて
 新しいアイテムを作成する仕組み（道具の生成・建物の建築の両方に使う）をどう成立させるかをまとめたものです。
-`recipes`/`steps`/`requires`/`icon` 自体の文法は `GameElementDefinition.md` 13 節を参照してください。
+`recipes`/`steps`/`requires`/`icon` 自体の文法は `GameElementDefinition.md` 13 節、いつ作れるように
+なるか（解放条件）は [`SkillSystem.md`](./SkillSystem.md) を参照してください。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節に整理しています。
+**作りかけは「製作中オブジェクト」という普通の物です**（1 節）。レシピから自動生成される、完成品とは
+別の `object_def` で、材料を受け取る箱は `slots` の枠そのもの（3 節）、投入は「入れ物へ落とす」既存
+操作そのもの（4 節）です。専用スキーマは要求の宣言（`steps`/`requires`）だけで、製作の実行に新しい
+操作の語彙を持ち込みません。
+
+定義は `Domain.Defs.RecipeDef`・`CraftingStep`、実行時は `Domain.Runtime` の `crafting.ts`、レシピの
+データは `public/world-codex/containers.yaml` 等、検証は `tests/domain/crafting.test.ts` です。本書は
+実装済みの仕組みの記述で、未決事項は 6 節に整理しています。
 
 ## 1. 製作中オブジェクトは、完成品とは別オブジェクト
 
