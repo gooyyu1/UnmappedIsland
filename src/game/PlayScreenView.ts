@@ -579,6 +579,15 @@ export function fromGameSession(
   const artOf = (def: ObjectDef): string => (codex.productOf(def) ?? def).name;
 
   /**
+   * 怪我のカードの地に敷く身体（怪我でなければundefined）。傷の絵は傷そのものだけを描き、それが
+   * 誰の身体に在るのかは地が言う——同じ傷の絵を人にも動物にも使うため（CardView.md 7節）。
+   *
+   * 怪我は身体から離れないので（bound_to_owner）、負った本人は常に親。
+   */
+  const bodyOf = (object: WorldObject): string | undefined =>
+    kindOf(object.def) === 'injury' ? object.parent?.def.name : undefined;
+
+  /**
    * 型そのものを表すカード。インスタンスが1つも無くても作れるので、まだ在るとは限らない物
    * （枠が受け入れる素材）を見せるのに使う。個体ごとに違い得る値は持たない。
    */
@@ -603,6 +612,7 @@ export function fromGameSession(
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
     art: artOf(instances[0].def),
+    background: bodyOf(instances[0]),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
     durability: durabilityOf(instances[0]),

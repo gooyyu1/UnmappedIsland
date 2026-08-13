@@ -12,7 +12,7 @@ import {
 } from './theme';
 import { drawBox } from './shapes';
 import { cardBackgroundTexture } from './backgroundArt';
-import { CARD_ART_WIDTH, objectTexture } from './objectArt';
+import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from './objectArt';
 import { ProgressBar } from './ProgressBar';
 import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
@@ -192,8 +192,9 @@ export interface CardContent {
    */
   readonly art?: string;
   /**
-   * 地に敷く背景を引くための土地のobject_defの識別子（backgroundArt参照）。カードが「その土地に
-   * 在るもの」だと分かるよう、絵の下に土地の景色を敷く。絵が無い土地では紙のまま。
+   * 地に敷く背景を引くためのobject_defの識別子（backgroundArt参照）。**そのカードが何の上に
+   * 在るか**——設置物なら土地、怪我なら負った本人の身体——を、絵の下に敷いて示す。絵が無ければ
+   * 紙のまま。
    */
   readonly background?: string;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
@@ -261,7 +262,7 @@ export interface CardContent {
   readonly midAction?: boolean;
 
   /**
-   * まだ出来上がっていないもの（製作中オブジェクト）のカードか。青をかぶせ、土地の背景は敷かない
+   * まだ出来上がっていないもの（製作中オブジェクト）のカードか。青をかぶせ、地は敷かない
    * （CardView.md 10節 製作中オブジェクトのカード）。
    */
   readonly inProgress?: boolean;
@@ -336,6 +337,8 @@ export class Card extends Phaser.GameObjects.Container {
    */
   private readonly backgroundLayer: Phaser.GameObjects.Container;
   private readonly artLayer: Phaser.GameObjects.Container;
+  /** 絵の上へ乗算で重なる絵（objectArtのMULTIPLY_SUFFIX）。持たない絵では空のまま。 */
+  private readonly multiplyLayer: Phaser.GameObjects.Container;
   private readonly edgeLayer: Phaser.GameObjects.Container;
 
   /** 製作中オブジェクトにかぶせる青（CardContent.inProgress）。それ以外のカードでは隠れる。 */
@@ -388,9 +391,12 @@ export class Card extends Phaser.GameObjects.Container {
     this.edgeRepeat = new HoldRepeat(scene);
 
     const paper = addPaper(scene, metrics, width, height, false);
-    // 土地の背景は絵より先に敷く。用意されていない土地では紙がそのまま地になる。
+    // 地は絵より先に敷く。用意されていなければ紙がそのまま地になる。
     this.backgroundLayer = scene.add.container(0, 0);
     this.artLayer = scene.add.container(0, 0);
+    // 乗算の絵は、地と絵の両方を暗くする。どちらの色が変わったのかを描き分けられないので、
+    // 「その位置の見た目がこう変わる」として一度に載せる。
+    this.multiplyLayer = scene.add.container(0, 0);
     // 青は絵までを覆い、名前と状態のバーには掛けない。何が出来つつあるのかと、それが今どういう
     // 状態なのかは、覆いの下へ沈めずに読めるままにする。枠より先に置くので、覆いは窓の中だけに残る。
     this.inProgressVeil = createInProgressVeil(scene, metrics, width, height);
@@ -404,6 +410,7 @@ export class Card extends Phaser.GameObjects.Container {
       paper,
       this.backgroundLayer,
       this.artLayer,
+      this.multiplyLayer,
       this.inProgressVeil,
       this.frame,
       this.alertOutline,
@@ -547,11 +554,11 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 絵と、その下に敷く土地の背景。絵があれば枠に重ね、無いあいだは絵文字で代用する
+   * 絵と、その下に敷く地。絵があれば枠に重ね、無いあいだは絵文字で代用する
    * （絵は少しずつ用意されるため）。同じものを出し続ける間は作り直さない。
    *
-   * 製作中オブジェクトには土地の背景を敷かない。青の覆いが読めるだけの無地の地が要るので、
-   * 「その土地に在るもの」を表す景色より覆いの方を優先する（CardView.md 10節）。
+   * 製作中オブジェクトには地を敷かない。青の覆いが読めるだけの無地の地が要るので、
+   * 「何の上に在るか」を表す景色より覆いの方を優先する（CardView.md 10節）。
    */
   private showArt(content: CardContent): void {
     const scene = this.scene;
@@ -573,11 +580,24 @@ export class Card extends Phaser.GameObjects.Container {
     this.shownIcon = content.icon;
 
     this.artLayer.removeAll(true);
+    // 乗算の絵は通常の絵と対で決まる（同じ識別子から引く）ので、貼り替えも一緒に行う。
+    const multiply = content.art === undefined ? undefined : objectMultiplyTexture(content.art);
+    this.multiplyLayer.removeAll(true);
+    if (multiply !== undefined && scene.textures.exists(multiply)) {
+      this.multiplyLayer.add(
+        placeArt(scene, multiply, this.cardWidth, this.cardHeight).setBlendMode(Phaser.BlendModes.MULTIPLY),
+      );
+    }
+
     if (art !== undefined && scene.textures.exists(art)) {
       this.artLayer.add(placeArt(scene, art, this.cardWidth, this.cardHeight));
       return;
     }
-    this.artLayer.add(createIconText(scene, this.metrics, content.icon, this.cardWidth, this.cardHeight));
+    // 乗算の絵だけで成り立つもの（痣のような、肌の変色そのもの）には絵がもう在る。絵文字は
+    // 「まだ一枚も無い」ことの代用なので出さない。
+    if (multiply === undefined) {
+      this.artLayer.add(createIconText(scene, this.metrics, content.icon, this.cardWidth, this.cardHeight));
+    }
     if (art !== undefined) this.swapArtWhenLoaded(scene, art);
   }
 

@@ -1,10 +1,10 @@
 /**
  * 背景の絵（レーンの全面に敷くもの・設置物のカードの地に敷くもの）の解決。
  *
- * 置き場所と名前の規約は、土地ごとに絵が変わるものが
- * `src/assets/backgrounds/<土地のobject_defの識別子>_<用途>.png`、変わらないものが
- * `src/assets/backgrounds/<用途>.png` のみで、コード側への登録は要らない。土地を先に置くのは、
- * 同じ土地の絵がファイル一覧で隣り合うようにするため。
+ * 置き場所と名前の規約は、敷く対象ごとに絵が変わるものが
+ * `src/assets/backgrounds/<対象のobject_defの識別子>_<用途>.png`、変わらないものが
+ * `src/assets/backgrounds/<用途>.png` のみで、コード側への登録は要らない。対象を先に置くのは、
+ * 同じ対象の絵がファイル一覧で隣り合うようにするため。
  *
  * **土地ごとの背景は用途をまたいで対で必要になる**（土地を1つ足すと、レーン2枚とカード1枚が
  * 同時に要る）ので、用途ごとにディレクトリを分けず1つに集める。用途はファイル名の接尾辞が表す。
@@ -21,7 +21,13 @@ const FILES = import.meta.glob('../../assets/backgrounds/*.png', {
 /** 土地ごとに背景が変わるレーン。値はそのままファイル名の接尾辞。 */
 export type LocationLane = 'fixture' | 'item';
 
-/** 設置物のカードの地に敷く絵のファイル名の接尾辞。 */
+/**
+ * カードの地に敷く絵のファイル名の接尾辞。
+ *
+ * 敷くのは土地の眺めだけではない——**そのカードが何の上に在るか**を表す絵で、怪我のカードなら
+ * 負った本人の肌・毛皮になる（CardView.md 7節）。傷の絵を身体ごとに描き分けずに済ませるための
+ * 分け方で、絵の枚数が「怪我の数 × 身体の数」ではなく足し算で収まる。
+ */
 const CARD_BACKGROUND_SUFFIX = 'card_background';
 
 /** ハンドレーンの背景のテクスチャキー（プレイヤーの手なので土地によらない）。 */
@@ -40,9 +46,9 @@ export function laneTexture(lane: LocationLane, location: string): string | unde
   return textureOf(`${location}_${lane}`);
 }
 
-/** 土地に応じたカードの背景のテクスチャキー。絵がまだ無い土地ではundefinedを返す。 */
-export function cardBackgroundTexture(location: string): string | undefined {
-  return textureOf(`${location}_${CARD_BACKGROUND_SUFFIX}`);
+/** カードの地に敷く絵のテクスチャキー。絵がまだ無ければundefinedを返す（呼び出し側は紙のまま）。 */
+export function cardBackgroundTexture(subject: string): string | undefined {
+  return textureOf(`${subject}_${CARD_BACKGROUND_SUFFIX}`);
 }
 
 /**

@@ -125,6 +125,12 @@
 - **`NineSlice`はCanvasレンダラを持たない**（`renderCanvas`が`NOOP`）。9patchは自前で組む
   （`nineSlice.ts`）。他にもCanvasの描画を持たないGameObjectがある（`Mesh2D`・`PointLight`・
   `CaptureFrame`など）ので、使う前に`*Render.js`を見ること。
+- **`BlendModes.MULTIPLY`はCanvasレンダラで通常の重ねに落ちる。** 対応表（`GetBlendModes`）が
+  `Device.canvasFeatures.supportNewBlendModes`を見ており、そこが偽なら`source-over`になる。**落ちても
+  壊れないことを、絵の描き方で担保する**——乗算の層は色と濃さ（アルファ）だけで描き、「変わらない」は
+  透明で表す。白を「変わらない」の意味で使うと、落ちた環境で白い塊がそのまま出る（実測。透明・白・灰の
+  3等分のプローブで、Canvasでは白い帯がカードを覆った）。この描き方なら、落ちても痣が少し平たく
+  見えるだけで済む。
 - **コンテナの切り抜きだけは、レンダラごとに手段を使い分けるしかない**（`clip.ts`）。マスクは
   WebGLではフィルタ（`filters.internal.addMask`）、Canvasでは`setMask`で、**互いに排他**
   （`setMask`はWebGLで警告を出して何もしない）。Phaser 4はCanvasレンダラを非推奨としており、
