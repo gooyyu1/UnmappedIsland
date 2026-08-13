@@ -2,15 +2,27 @@
 
 ## 概要
 
-物の重さがどう積み上がり、それを担ぐ人がどれだけの負荷を感じるか（1〜4 節）、負荷が移動へどう効くか
-（5 節）、入れ物が中身を環境から守ることをどう表すか（6 節）、物のかさと入れ物の容量をどう見積もるか
-（7 節）をまとめたものです。`capacity` そのものの検証（[`GameElementDefinition.md`](./GameElementDefinition.md)
-7.3 節）は `move_to_slot` がするだけの単純な仕組みで、本書が扱うのは**その数値をどう決めるか**です。
+物を入れて運ぶ・しまう入れ物（かご・箱・そり）を、どう成立させるかのドキュメントです。実際に
+ゲームへ登場させる入れ物の一覧と比較は [`../world/Containers.md`](../world/Containers.md)、
+液体の容器は構造が別で [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) が扱います。
 
-実際にゲームへ登場させる入れ物の一覧と比較は [`../world/Containers.md`](../world/Containers.md)、
-液体の量の扱いは [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) です。
+**入れ物は専用の仕組みを持たず、スロット（[`GameElementDefinition.md`](./GameElementDefinition.md)
+7 節）そのもので表します。** `item_container` trait が `container` タグと中身のスロット `contents` を
+与え、そのスロットを `main_item_slot`（同 7.8 節）として宣言することで、カードを押すと中身が並び、
+カードへ重ねた物はそこへ入ります（投入用の `combination` は要りません）。入れ物ごとに決めるのは、
+何種類入るか（`cell_count`）と、どれだけのかさが入るか（`capacity`）の 2 つだけです。液体の容器は
+「中身の液体が容器を代表し、量は中身自身が持つ」逆向きの構造なので、trait もタグも分けています。
+スロット名も、複数種が入る固形物側は `contents`、1 種類しか入らない液体側は `content` と単複で
+使い分けます。定義は `public/world-codex/containers.yaml`、検証は
+`tests/worldCodex/containersYaml.test.ts` です。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 7 節に整理しています。
+この構造の上で本書が扱うのは**数値をどう決めるか**です——物の重さがどう積み上がり、それを担ぐ人が
+どれだけの負荷を感じるか（1〜4 節）、負荷が移動へどう効くか（5 節）、入れ物が中身を環境から守ることを
+どう表すか（6 節）、物のかさと入れ物の容量をどう見積もるか（7 節）。`capacity` そのものの検証
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.3 節）は `move_to_slot` がするだけの
+単純な仕組みです。
+
+本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 8 節に整理しています。
 
 ## 1. weight は率をかけない純粋な合算
 
@@ -129,8 +141,7 @@ character:
 
 `load` の段（`stages`、[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4 節）の危険域に入ると、
 移動できなくなります。閾値はキャラクタごと（`characters/`）に置くので、担ぎ慣れの個人差はここに出ます。
-域そのものの見せ方は、ステータスの一種として [`../ui/ScreenLayout.md`](../ui/ScreenLayout.md)
-ステータスエリア節が扱います。
+域そのものの見せ方は、ステータスの一種として [`StatusArea.md`](../ui/StatusArea.md)が扱います。
 
 書き方は、道の `travel` に `actor` の `load` を見る条件を足すだけです。
 

@@ -10,8 +10,9 @@
 [`GameElementDefinition.md`](./GameElementDefinition.md)）をそのまま使います。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 9 節に整理しています。1 節の
-`quantitative` と 4 節の `move` の `to: parent` は文法の拡張を伴うため、`GameElementDefinition.md`
-（確定した文法のみを記述）にはまだ載っておらず、実装も済んでいません。
+`quantitative`（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.6 節）と 4 節の `move` の
+`to: parent`（同 9.6 節）は文法として確定し、実装済みです。固形物の入れ物（重さ・負荷・かさ）は
+[`ContainerSystem.md`](./ContainerSystem.md) が扱います。
 
 ## 1. 液体は量で存在する（quantitative）
 
@@ -54,7 +55,7 @@
   空なら容器自身が代表になります。
 - **スタック判定**: 代表チェーンの完全一致を要求するため、水入り水筒と茶入り水筒は別スタックです。
 - **中身のバー**: 代表が量的オブジェクトのときだけ、カードに中身のバーが出ます
-  （[`ScreenLayout.md`](../ui/ScreenLayout.md) カードの状態バー節）。空の容器に出ないことも、
+  （[`CardView.md`](../ui/CardView.md) 8 節）。空の容器に出ないことも、
   容器のスロット名をUIが知らずに済むことも、この1つの条件から出ます。
 
 代表が「容器自身か中身か」で切り替わることが、4節の書き分けの土台になります。
@@ -108,8 +109,7 @@ traits:
 ## 4.1 色（color）
 
 液体は**自分の色を `color` プロパティ（`0xRRGGBB` の整数）として宣言します**。容器カードに出る
-「中身の割合を示すバー」がこの色で塗られます（[`ScreenLayout.md`](../ui/ScreenLayout.md) カードの
-状態バー節）。
+「中身の割合を示すバー」がこの色で塗られます（[`CardView.md`](../ui/CardView.md) 8.3 節）。
 
 **UI 側に液体ごとの対応表を持ちません。** 表を持つと、後から足された液体が必ず「色の分からない液体」に
 なり、YAML を書くだけでは画面に出せなくなるためです。UI が知っているのは「`color` という名前の

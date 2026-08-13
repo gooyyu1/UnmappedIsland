@@ -309,12 +309,12 @@ props:
 - ステージは **`alert`** で「その段階にいる間、値がどの域にあると見なすか」を宣言できます。値は
   `safe`（安全域）・`watch`（留意域）・`caution`（要注意域）・`danger`（危険域）・`fatal`（致命的域）の
   いずれかで、省略時は `safe` です。UI はこの宣言だけを見てステータスの見せ方（非表示・表示・明滅）を
-  決めます（[`ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節）。`watch` と `caution` は
+  決めます（[`StatusArea.md`](../ui/StatusArea.md)）。`watch` と `caution` は
   今のところ同じ見せ方（出すだけ）ですが、深刻さの違いを段の側で表しておくことで、見せ方を分けたく
   なったときに YAML を書き直さずに済みます。`fatal` は**放置すると死に至る**プロパティ（水分など）に
   だけ付けます。UI は `alert` から**バーの塗りの色**（深刻さで緑から茶へ）と、**どちら向きが悪化か**
   （段を下から上へ見て深刻さが単調に上がるなら、増える側が悪い）を導きます
-  （[`../ui/ScreenLayout.md`](../ui/ScreenLayout.md) ステータスエリア節）。
+  （[`StatusArea.md`](../ui/StatusArea.md)）。
 - **`range` を持つプロパティでは、`alert` の深刻さは下から上へ単調でなければなりません**（ロード時
   エラー）。体温のように上下どちらの端も悪い量はバーの向きを決められないため、片側だけの度合い
   （熱中症・低体温症）を別のプロパティとして持たせます。`range` を持たない（＝バーにならない）
@@ -547,7 +547,9 @@ object_defs:
 石（`weight` 100）を載せたそり（自重 1000）を手で引くと、そりの `weight` は 1100、キャラクターの `weight` は
 自重込みの 71100、`load` は 1100 × (1 − 0.9) = 110 になります。
 
-### 7.5 装備の排他制御（covers / layer）
+### 7.5 装備の排他制御（covers / layer）【未実装: covers】
+
+ローダーは `covers` / `layer` を読み飛ばします（`RawObjectDef`）。本節は文法の検討結果です。
 
 - `equip` スロットには複数のアイテムを同時に格納できます。排他制御はスロットの数ではなく、アイテムが持つ属性で
   行います。
@@ -726,7 +728,7 @@ slots:
 
 **`main_item_slot`** は、その型を**代表する物のスロットを1つだけ名指しする**オブジェクトレベルのキーです
 （`represented_by`（7.6 節）と同じ位置に書き、trait からの合成規則も同じ）。画面はカードを押したとき、
-ここの中身をカードとして並べます（[`ScreenLayout.md`](../ui/ScreenLayout.md) 子ウィンドウ節）。並べば、
+ここの中身をカードとして並べます（[`Windows.md`](../ui/Windows.md) 1 節）。並べば、
 プレイヤーはそこへ入れることも、そこから取り出すこともできます。
 
 ```yaml
@@ -813,8 +815,7 @@ slots:
 矢印で送るの3通りありますが、どれも同じだけかかります。`combinations` に `duration` を書いて同じことを
 表そうとすると、**スロットへ直接落とす経路だけが無料**になり、同じことが経路で違う値段になります。
 
-離す前に値段を見せるのは画面の責務です（[ScreenLayout.md](../ui/ScreenLayout.md) カードのドラッグ＆
-ドロップ節）。操作の呼び名と説明は `slot_texts` の `put_in`（[Localization.md](Localization.md)）に書きます。
+離す前に値段を見せるのは画面の責務です（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。操作の呼び名と説明は `slot_texts` の `put_in`（[Localization.md](Localization.md)）に書きます。
 
 ## 8. passives（持続する影響）
 
@@ -1121,7 +1122,7 @@ traits:
 
 **物を入れ物へしまうだけなら、これを書く必要はありません。** 中身を持つカード（`main_item_slot`、
 7.8 節）へ重ねたらそのスロットへ入る、という動きが画面側にあります
-（[ScreenLayout.md](../ui/ScreenLayout.md) カードのドラッグ＆ドロップ節）。`combinations` を書くのは、
+（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。`combinations` を書くのは、
 入れる以上のこと（量として混ざる・時間がかかる・条件が要る）を起こしたいときだけです。
 
 移動対象が**量的オブジェクト**（`quantitative`、7.6 節）の場合、`move` はインスタンスではなく**量を移します**。
@@ -1538,7 +1539,7 @@ actions:
 ```
 
 UI は、実行できないアクションのボタンを押せない見た目にし、宣言順で**最初に満たしていない要素**の文言を
-出します（[`../ui/ScreenLayout.md`](../ui/ScreenLayout.md)）。`reason` を持たない要素は理由を出しません
+出します（[`Windows.md`](../ui/Windows.md) 4 節）。`reason` を持たない要素は理由を出しません
 （未発見の道の `in_slot` のように、そもそもプレイヤーへ見せる必要が無い前提条件のためです）。
 
 書けるのは `conditions:` の**要素**にだけで、入れ子の `all`/`any`/`not` の中には書けません。条件木の形から
