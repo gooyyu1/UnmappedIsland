@@ -48,7 +48,7 @@ import { laneTexture } from './ui/backgroundArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
-import { originInstances } from './ui/motionOrigins';
+import { bornInstances, originInstances, vanishedInstances } from './ui/motionOrigins';
 import { floatSignalLabel } from './ui/signalLabel';
 import { ExplorationWindow } from './ui/ExplorationWindow';
 import type { MapPlacement } from './ui/MapWindow';
@@ -857,10 +857,21 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
+   * 起きた変化を、カードの動きの文脈へ直す（MotionContext）。**呼ぶのはレーンを差し替える前**
+   * ——出どころの札は差し替えで消えることも動くこともあるが、その時点の画面にはまだ居る。
+   */
+  private motionOf(changes: readonly WorldChange[]): MotionContext {
+    return {
+      origins: this.originRectsOf(changes),
+      vanished: vanishedInstances(changes),
+      born: bornInstances(changes),
+    };
+  }
+
+  /**
    * 起きた変化を、新しく現れるインスタンスごとの出発点へ直す（MotionContext.origins）。
    *
-   * **呼ぶのはレーンを差し替える前**（showViewの中）。出どころの札は差し替えで消えることも動くことも
-   * あるが、その時点の画面にはまだ居るので、壊された物や使い切った道具の枠も引ける。
+   * 壊された物や使い切った道具の枠も引ける（motionOfの呼ぶ時点による）。
    */
   private originRectsOf(changes: readonly WorldChange[]): ReadonlyMap<number, Rect> {
     const rects = new Map<number, Rect>();
@@ -1215,7 +1226,7 @@ export class PlayScene extends ResponsiveScene {
       this.noteStatusChanges(statusesBefore, startedAt);
       this.found = this.foundSince(shownBefore);
       this.showSignals(recorded.signals);
-      this.showView({ origins: this.originRectsOf(recorded.changes) });
+      this.showView(this.motionOf(recorded.changes));
     });
   }
 
@@ -1348,11 +1359,11 @@ export class PlayScene extends ResponsiveScene {
    * そのtickで生まれた物は、控えと一緒に運んできた出入りが出どころを答える（RecordedView.changes）。
    */
   private showRecorded(recorded: RecordedView): void {
-    const origins = this.originRectsOf(recorded.changes);
+    const context = this.motionOf(recorded.changes);
     this.view = recorded.view;
     this.statusChanges = recorded.statusChanges;
     this.showSignals(recorded.signals);
-    this.showView({ origins });
+    this.showView(context);
   }
 
   /**
@@ -1459,7 +1470,7 @@ export class PlayScene extends ResponsiveScene {
         return;
       }
       this.showSignals(recorded.signals);
-      this.showView({ origins: this.originRectsOf(recorded.changes), released });
+      this.showView({ ...this.motionOf(recorded.changes), released });
       onDone?.();
     });
   }
@@ -2028,7 +2039,7 @@ export class PlayScene extends ResponsiveScene {
     const spawned = this.gameSession.session.spawn(inProgressDefGlobalId);
     spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'));
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-    this.showView({ origins: new Map([[spawned.instanceId, origin]]) });
+    this.showView({ origins: new Map([[spawned.instanceId, origin]]), born: [spawned.instanceId] });
 
     // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。
     const card = this.view.items.find((stack) =>

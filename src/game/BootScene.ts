@@ -6,7 +6,9 @@ import { LOCALE_FILE, parseLocale } from '../locale/Localization';
 import cardFrameUrl from '../assets/card_frame.png';
 import flipDigitUrl from '../assets/flip_digit.png';
 import slotButtonPaperUrl from '../assets/slot_button_paper.png';
+import dustPuffUrl from '../assets/dust_puff.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
+import { DUST_PUFF_TEXTURE } from './ui/DustPuff';
 import { SLOT_BUTTON_PAPER_FRAME, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { FLIP_DIGIT_TEXTURE } from './ui/FlipCalendar';
 import { INFORMATION_ART } from './ui/informationArt';
@@ -43,6 +45,8 @@ export class BootScene extends Phaser.Scene {
       frameWidth: SLOT_BUTTON_PAPER_FRAME.width,
       frameHeight: SLOT_BUTTON_PAPER_FRAME.height,
     });
+    // 生まれた・壊れた札から散る砂埃の粒（読めなければ砂埃が立たないだけ、DustPuff）。
+    this.load.image(DUST_PUFF_TEXTURE, dustPuffUrl);
     // 情報エリア（フィールドエリアの左／上）の背景。向きごとに1枚ずつ。
     for (const [texture, url] of INFORMATION_ART) this.load.image(texture, url);
     // エリアの境目に敷く帯。

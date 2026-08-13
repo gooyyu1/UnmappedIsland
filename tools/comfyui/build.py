@@ -10,7 +10,8 @@
 （icon_mark.py）、tint があれば陰影を残したまま一部の色を寄せる（skin_tint.py）。
 edit を持つレシピは、生成の代わりに別レシピの生データを
 基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。stain を持つレシピは
-生成も後処理もせず、乗算で載る染みの層を描くだけ（skin_tint.py --layer）。
+生成も後処理もせず、乗算で載る染みの層を描くだけ（skin_tint.py --layer）。puff も同じく描くだけで、
+砂埃の粒を1枚出す（dust_puff.py）。
 
 --keep-raw を付けると、後処理前の生成物を残す（プロンプトを詰め直すときに見比べられる）。
 ComfyUIは要るが、起動していなければこちらで起動する。
@@ -152,6 +153,23 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
             ["apply", str(REPO / recipe["ground"]), str(drawn), "--out", str(on_ground)],
         )
         return on_ground
+
+    puff = recipe.get("puff")
+    if puff is not None:
+        grain = raw_dir / f"{Path(recipe['output']).stem}_puff.png"
+        run(
+            "dust_puff.py",
+            [
+                "--out", str(grain),
+                "--size", str(puff["size"]),
+                "--colour", puff["colour"],
+                "--lit", puff["lit"],
+                "--feather", str(puff["feather"]),
+                "--core", str(puff["core"]),
+                *(["--opacity", str(puff["opacity"])] if "opacity" in puff else []),
+            ],
+        )
+        return grain
 
     paint = recipe.get("paint")
     if paint is not None:

@@ -4,6 +4,7 @@ import type { CardContent } from './Card';
 import { Card, cardFace } from './Card';
 import type { CardLane, LaneUpdate, ReleasedCard } from './CardLane';
 import { FLY_EASE, FLY_MS } from './cardFlight';
+import { DustPuff } from './DustPuff';
 import type { PlacedCard } from './cardMotionPlan';
 import { planMotion } from './cardMotionPlan';
 import { REPEAT_MIN_MS } from './holdRepeat';
@@ -43,6 +44,13 @@ export interface MotionContext {
     readonly followers: readonly number[];
     readonly rect: Rect;
   };
+  /**
+   * 世界から出たインスタンスと、世界に生まれたインスタンス（motionOrigins）。砂埃を立てる場所を
+   * 決めるのに使う（cardMotionPlan）。**画面の出入りでは代われない**——別のレーンへ移っただけの
+   * カードも、レーンから見れば消えて現れるため。
+   */
+  readonly vanished?: readonly number[];
+  readonly born?: readonly number[];
 }
 
 /**
@@ -58,6 +66,9 @@ export interface MotionContext {
  * **飛ばすのは常に見た目だけの分身**で、レーンに並ぶカード自身は枠に居るまま伏せて待つ（send）。
  * 分身は最前面の層に置く——レーンからはみ出したカードは隣接エリアの背景板に隠れる設計
  * （CardLane参照）のため、レーンの中に置いたままでは境界をまたげない。
+ *
+ * 世界の出入り（MotionContext.vanished / born）には砂埃が立つ（DustPuff）。消えた札はその場で、
+ * 生まれた札は飛んで着いた場所で立つ。
  */
 export class CardMotion {
   private readonly scene: Phaser.Scene;
@@ -70,6 +81,9 @@ export class CardMotion {
   /** 今飛んでいる分身（send参照）。着く前に次の差し替えが来たらsettleが始末する。 */
   private readonly flights: Flight[] = [];
 
+  /** 生まれた・壊れた札の居場所へ立てる砂埃。 */
+  private readonly dust: DustPuff;
+
   /**
    * 動いている分身は常に最前面へ出す。探索の子ウィンドウを開いたまま探索したときに、見つけたものが
    * ウィンドウの覆いに隠れてしまわないようにするため（他はすべて既定のdepth 0で描画順に従う）。
@@ -78,6 +92,7 @@ export class CardMotion {
     this.scene = scene;
     this.metrics = metrics;
     this.layer = scene.add.container(0, 0).setDepth(1);
+    this.dust = new DustPuff(scene);
   }
 
   /**
@@ -157,15 +172,19 @@ export class CardMotion {
       origins: context.origins,
       released: releasedIdsOf(context.released),
       heldId: landing?.id,
+      vanished: context.vanished,
+      born: context.born,
     });
 
     for (const card of plan.hidden) card.setVisible(false);
+    for (const rect of plan.puffs) this.dust.burst(rect);
     for (const flight of plan.flights) {
       this.send(
         this.standAt(flight.face.content, flight.from),
         flight.to,
         flight.reveals,
         flight.delaySteps * GAP_MS,
+        flight.puffs,
       );
     }
     for (const card of plan.fadeIns) this.fadeIn(card);
@@ -218,11 +237,13 @@ export class CardMotion {
    *
    * delayを渡すと、その間は出発点に置いたまま待つ。複数生まれたぶんは出どころに積まれて見え、
    * 順に飛び立っていく。
+   *
+   * puffsを立てると、着いた場所で砂埃が立つ（生まれたものを運ぶ便）。
    */
-  private send(stand: Card, to: Rect, covered?: Card, delay = 0): void {
+  private send(stand: Card, to: Rect, covered?: Card, delay = 0, puffs = false): void {
     this.layer.add(stand);
 
-    const flight: Flight = { stand, covered };
+    const flight: Flight = { stand, covered, puffs: puffs ? to : undefined };
     this.flights.push(flight);
     this.scene.tweens.add({
       targets: stand,
@@ -242,6 +263,7 @@ export class CardMotion {
 
     this.flights.splice(index, 1);
     flight.stand.destroy();
+    if (flight.puffs !== undefined) this.dust.burst(flight.puffs);
     if (flight.covered !== undefined) reveal(flight.covered);
   }
 
@@ -258,6 +280,8 @@ export class CardMotion {
 interface Flight {
   readonly stand: Card;
   readonly covered: Card | undefined;
+  /** 着いた時点で砂埃を立てる枠（立てないならundefined）。 */
+  readonly puffs: Rect | undefined;
 }
 
 /** レーンに並んでいるカードを、位置とインスタンスのID付きで挙げる（計画の入力）。 */
