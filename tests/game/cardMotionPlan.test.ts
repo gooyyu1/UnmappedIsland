@@ -17,6 +17,11 @@ function input(partial: Partial<MotionInput<string>>): MotionInput<string> {
   return { before: [], arriving: [], staying: [], left: [], ...partial };
 }
 
+/** 挙げたインスタンス全部が、同じ場所から飛び立つ場合の出どころ。 */
+function origins(ids: readonly number[], x: number): ReadonlyMap<number, Rect> {
+  return new Map(ids.map((id) => [id, rect(x)]));
+}
+
 describe('planMotion（ScreenLayout.md カードの移動アニメーション節）', () => {
   it('何も動いていなければ、何も起きない', () => {
     const plan = planMotion(input({ before: [placed('石', [1, 2], 0)], staying: [placed('石', [1, 2], 0)] }));
@@ -27,7 +32,9 @@ describe('planMotion（ScreenLayout.md カードの移動アニメーション�
   });
 
   it('3個まとめて生まれた束は、1枚に見えても3枚が順に飛ぶ', () => {
-    const plan = planMotion(input({ arriving: [placed('実', [1, 2, 3], 500)], origin: rect(0) }));
+    const plan = planMotion(
+      input({ arriving: [placed('実', [1, 2, 3], 500)], origins: origins([1, 2, 3], 0) }),
+    );
 
     expect(plan.hidden).toEqual(['実']);
     expect(plan.flights).toHaveLength(3);
@@ -44,7 +51,7 @@ describe('planMotion（ScreenLayout.md カードの移動アニメーション�
     const plan = planMotion(
       input({
         arriving: [placed('実', [1], 500), placed('枝', [2], 600)],
-        origin: rect(0),
+        origins: origins([1, 2], 0),
       }),
     );
     expect(plan.flights.map((flight) => flight.delaySteps)).toEqual([0, 1]);
@@ -202,9 +209,38 @@ describe('planMotion（ScreenLayout.md カードの移動アニメーション�
     expect(plan.hidden).toEqual([]);
   });
 
-  it('identityを持たないカードは、1枚として出どころから飛ぶ', () => {
-    const plan = planMotion(input({ arriving: [placed('見つけた物', [], 500)], origin: rect(0) }));
+  it('同じ差し替えで生まれても、出どころが違えばそれぞれの出どころから飛ぶ', () => {
+    // 出どころは呼び出し側が1つ渡すのではなく、世界に起きた変化が個体ごとに答える
+    // （HuntingSystem.md 6.2節）。同じtickに2匹が別々の物を落としても取り違えない。
+    const plan = planMotion(
+      input({
+        arriving: [placed('実', [1], 500), placed('枝', [2], 600)],
+        origins: new Map([
+          [1, rect(0)],
+          [2, rect(100)],
+        ]),
+      }),
+    );
+
+    expect(plan.flights.map((flight) => flight.from.x)).toEqual([0, 100]);
+  });
+
+  it('出どころを持たないインスタンスだけが、その場で浮かび上がる', () => {
+    const plan = planMotion(
+      input({
+        arriving: [placed('実', [1], 500), placed('枝', [2], 600)],
+        origins: origins([1], 0),
+      }),
+    );
+
+    expect(plan.fadeIns).toEqual(['枝']);
     expect(plan.flights).toHaveLength(1);
-    expect(plan.flights[0]).toMatchObject({ from: rect(0), to: rect(500), reveals: '見つけた物' });
+    expect(plan.flights[0]).toMatchObject({ face: '実', from: rect(0), to: rect(500) });
+  });
+
+  it('identityを持たないカードは、出どころを引く手がかりが無いので浮かび上がる', () => {
+    const plan = planMotion(input({ arriving: [placed('見つけた物', [], 500)], origins: origins([1], 0) }));
+    expect(plan.fadeIns).toEqual(['見つけた物']);
+    expect(plan.flights).toEqual([]);
   });
 });

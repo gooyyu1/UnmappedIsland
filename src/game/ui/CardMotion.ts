@@ -22,8 +22,17 @@ const GAP_MS = REPEAT_MIN_MS;
  * 差し替えのきっかけ。どちらも「そのカードがどこから動き出すか」を決めるための情報。
  */
 export interface MotionContext {
-  /** 差し替え前に画面に無かったカード（探索・クラフトで生まれたもの）の出発点。 */
-  readonly origin?: Rect;
+  /**
+   * 差し替え前に画面に無かったインスタンスの出発点を、そのインスタンスごとに持ったもの。
+   *
+   * **世界に起きた変化のログから引く**（motionOrigins、HuntingSystem.md 6.2節）。ログが「この個体は
+   * この札から来た」と言うので、UIはその札の矩形を引くだけになり、同じ差し替えで出どころの違う物が
+   * 生まれてもそれぞれの出どころから飛べる。
+   *
+   * 一覧から作り始めた製作中オブジェクトだけは、出どころが世界ではなく画面の事実（閉じた一覧の中で
+   * 選んだ札の位置）なので、UIが直に入れる。
+   */
+  readonly origins?: ReadonlyMap<number, Rect>;
   /**
    * 手から放したもの——掴んでいた1つ・待ってついてきたぶん・手を離した時点の矩形。いずれの
    * インスタンスも元の枠ではなく指の下に居たので、そこから動き出す。grabbedにとっては、
@@ -145,7 +154,7 @@ export class CardMotion {
       arriving,
       staying,
       left,
-      origin: context.origin,
+      origins: context.origins,
       released: releasedIdsOf(context.released),
       heldId: landing?.id,
     });
