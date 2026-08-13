@@ -44,7 +44,7 @@ import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from './ui/informationArt';
 import { addNineSlice } from './ui/nineSlice';
-import { HAND_LANE_TEXTURE, laneTexture } from './ui/backgroundArt';
+import { laneTexture } from './ui/backgroundArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
 import type { MotionContext } from './ui/CardMotion';
 import { CardMotion } from './ui/CardMotion';
@@ -537,8 +537,6 @@ export class PlayScene extends ResponsiveScene {
     this.fieldPanel = addPanel(this, layout.fieldArea, COLOR.fieldArea).setDepth(FIELD_DEPTH);
     const [fixtures, items, hand] = layout.lanes;
 
-    const art = this.view.locationArt;
-
     this.fixtureLane = new CardLane(
       this,
       this.metrics,
@@ -551,16 +549,16 @@ export class PlayScene extends ResponsiveScene {
           ...this.view.currentLocation,
           onTap: this.whileIdle(() => this.openExplorationWindow()),
         },
-        art: laneTexture('fixture', art),
+        art: this.laneArt('fixtures'),
         depth: FIELD_DEPTH,
       },
     );
     this.itemLane = new CardLane(this, this.metrics, items, COLOR.itemLane, this.itemCells(), {
-      art: laneTexture('item', art),
+      art: this.laneArt('items'),
       depth: FIELD_DEPTH,
     });
     this.handLane = new CardLane(this, this.metrics, hand, COLOR.handLane, this.plainCells(this.view.hand), {
-      art: HAND_LANE_TEXTURE,
+      art: this.laneArt('hand'),
       depth: FIELD_DEPTH,
     });
 
@@ -632,6 +630,15 @@ export class PlayScene extends ResponsiveScene {
    * 受け皿の空枠を持たないレーンの枠（設置物・手持ち）。設置物レーンは前詰めだが末尾に受け皿を
    * 出さず、手持ちは固定枠なので空き枠そのものが常に見えている。
    */
+  /**
+   * レーンの全面に敷く絵（用意されていなければundefinedで、レーンは単色になる）。
+   * どのスロットにどの絵を敷くかは画面側では決めず、絵のファイル名が名乗る（backgroundArt参照）。
+   */
+  private laneArt(place: CardPlace): string | undefined {
+    const slot = this.view.laneSlot(place);
+    return slot === undefined ? undefined : laneTexture(slot);
+  }
+
   private plainCells(cards: readonly (ObjectCardStack | undefined)[]): readonly LaneCell[] {
     return this.laneCards(cards).map((card) => ({ card }));
   }

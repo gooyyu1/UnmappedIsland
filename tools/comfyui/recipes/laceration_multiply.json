@@ -11,7 +11,7 @@
     "作り直しになる。"
   ],
   "output": "src/assets/objects/laceration_multiply.png",
-  "ground": "src/assets/backgrounds/medic_card_background.png",
+  "ground": "src/assets/backgrounds/medic_injuries_card.png",
   "stain": {
     "_comment": [
       "Qwenへ渡す下絵。位置・角度・長さ・太さはここで決まる（描き直しは形をほぼ動かさない）。",

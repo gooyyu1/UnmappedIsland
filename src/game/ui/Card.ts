@@ -11,6 +11,7 @@ import {
   durabilityColorFor,
 } from './theme';
 import { drawBox } from './shapes';
+import type { SlotRef } from './backgroundArt';
 import { cardBackgroundTexture } from './backgroundArt';
 import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from './objectArt';
 import { ProgressBar } from './ProgressBar';
@@ -192,11 +193,10 @@ export interface CardContent {
    */
   readonly art?: string;
   /**
-   * 地に敷く背景を引くためのobject_defの識別子（backgroundArt参照）。**そのカードが何の上に
-   * 在るか**——設置物なら土地、怪我なら負った本人の身体——を、絵の下に敷いて示す。絵が無ければ
-   * 紙のまま。
+   * このカードが今在るスロット（backgroundArt参照）。**そのカードが何の上に在るか**——設置物なら
+   * 土地の`fixtures`、怪我なら負った本人の`injuries`——を、地として絵の下に敷く。絵が無ければ紙のまま。
    */
-  readonly background?: string;
+  readonly background?: SlotRef;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
   readonly onTap?: () => void;
   /**

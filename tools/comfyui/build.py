@@ -3,7 +3,7 @@
 同じ絵をもう一度得るために必要な値は、すべて recipes/*.json に入っている。作り直したいときは
 このスクリプトを走らせるだけでよく、手順を覚えている必要はない。
 
-    python build.py recipes/rocky_field_fixture.json
+    python build.py recipes/rocky_field_fixtures_lane.json
 
 後処理はレシピが postprocess を持つならレーンの背景として（postprocess.py）、cardArt を持つなら
 カードの絵として（card_art.py）扱う。mark があれば、その後に絵文字の形を色替えして重ね

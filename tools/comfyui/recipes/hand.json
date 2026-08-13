@@ -1,13 +1,13 @@
 {
   "_comment": [
-    "src/assets/backgrounds/hand.png を作り直すためのレシピ。build.py が読む。",
+    "src/assets/backgrounds/hand_lane.png を作り直すためのレシピ。build.py が読む。",
     "",
     "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
     "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
     "",
     "ハンドレーンは土地によらないので、ファイル名にも土地が付かない（backgroundArt.ts 参照）。"
   ],
-  "output": "src/assets/backgrounds/hand.png",
+  "output": "src/assets/backgrounds/hand_lane.png",
   "prompt": "hand",
   "workflow": "lane_background_sdxl_tiling.api.json",
   "lora": "watercolor_sdxl.safetensors",

@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/farmer_injuries_card.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "怪我のカードの地に敷く、トマスの肌（docs/ui/CardView.md 7 節）。**キャラクタ4人は同じ絵**——",
+    "同じプロンプト・同じseed・同じ窓。そう決めた理由と選び方は medic_injuries_card.json にある。",
+    "この人だけ変えたくなったら、まずseedを変える（肌のトーンが変わる）。"
+  ],
+  "output": "src/assets/backgrounds/farmer_injuries_card.png",
+  "prompts": "card_backgrounds.json",
+  "prompt": "human_skin",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 61006,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none",
+    "crop": [240, 216, 515, 803],
+    "oilify": [6, 12]
+  }
+}

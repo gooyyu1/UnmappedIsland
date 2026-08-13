@@ -244,22 +244,37 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(lifted.items[0].moveTo?.('hand'), 'そのまま手にも持てる').toBeTypeOf('function');
   });
 
-  it('設置物レーンのカードだけが、今いる土地を背景として持つ', () => {
+  it('カードは、自分が今在るスロットを地の引き先として持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
     expect(tree.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    const coconut = game.session.spawn(codex.objectNames.getId('coconut'));
+    expect(coconut.moveToSlot(game.player.instance, game.player.handSlotId)).toBeUndefined();
     exploreToFull(game);
 
     const view = fromGameSession(game, codex, locale);
+    const land = view.locationArt;
 
     expect(
       view.fixtures.map((card) => card.background),
-      '道も含め、このレーンのカードはすべて土地の識別子を持つ',
-    ).toEqual(view.fixtures.map(() => view.locationArt));
+      '道も含め、このレーンのカードはすべて土地のfixturesに在る',
+    ).toEqual(view.fixtures.map(() => ({ owner: land, slot: 'fixtures' })));
     expect(
-      view.items.every((card) => card.background === undefined),
-      '同じ土地に在っても、アイテムのレーンのカードは背景を持たない',
-    ).toBe(true);
+      view.items.map((card) => card.background),
+      '同じ土地でもスロットが違えば別の地を引く（絵が在るかはファイル側の話）',
+    ).toEqual(view.items.map(() => ({ owner: land, slot: 'items' })));
+    expect(view.hand.find((card) => card !== undefined)?.background).toEqual({
+      owner: view.characterArt,
+      slot: 'hand',
+    });
+  });
+
+  it('レーンが映しているスロットを答える', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.laneSlot('fixtures')).toEqual({ owner: view.locationArt, slot: 'fixtures' });
+    expect(view.laneSlot('hand')).toEqual({ owner: view.characterArt, slot: 'hand' });
   });
 
   it('現在地のカードは、その土地の絵を持つ', () => {

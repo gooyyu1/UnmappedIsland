@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/mountain_peak_items_lane.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "真上から見た裸岩。丸い玉石に寄った絵を避けている。",
+    "",
+    "noTrigger の意味と oilifyRadius の使い分けは rocky_field_fixtures_lane.json / rocky_field_items_lane.json を参照。"
+  ],
+  "output": "src/assets/backgrounds/mountain_peak_items_lane.png",
+  "prompt": "mountain_peak_items_lane",
+  "workflow": "lane_background_sdxl_tiling.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 7003,
+  "postprocess": {
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 2,
+    "oilifyLevels": 12
+  }
+}

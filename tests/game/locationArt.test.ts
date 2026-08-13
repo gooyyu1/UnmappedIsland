@@ -36,9 +36,9 @@ describe('土地の絵の単位分け', () => {
     const files = locationArtFiles('sandy_beach');
     const keys = files.map((file) => file.key);
     expect(keys).toContain('object:sandy_beach');
-    expect(keys).toContain('background:sandy_beach_fixture');
-    expect(keys).toContain('background:sandy_beach_item');
-    expect(keys).toContain('background:sandy_beach_card_background');
+    expect(keys).toContain('background:sandy_beach_fixtures_lane');
+    expect(keys).toContain('background:sandy_beach_items_lane');
+    expect(keys).toContain('background:sandy_beach_fixtures_card');
     expect(keys).toHaveLength(4);
   });
 
@@ -74,6 +74,6 @@ describe('土地の絵の単位分け', () => {
   it('キャラクターと手持ちレーンの背景は起動時に読まれる', () => {
     const common = commonArtFiles(locations).map((file) => file.key);
     expect(common).toContain('object:medic');
-    expect(common).toContain('background:hand');
+    expect(common).toContain('background:hand_lane');
   });
 });

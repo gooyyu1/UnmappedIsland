@@ -2,7 +2,7 @@
   "_comment": [
     "src/assets/objects/sprained_ankle_multiply.png（足首の捻挫）を作り直すためのレシピ。build.py が読む。",
     "",
-    "**傷の絵は傷だけを描く。** 身体はカードの地（<身体>_card_background.png）が出すので、この層には",
+    "**傷の絵は傷だけを描く。** 身体はカードの地（<身体>_injuries_card.png）が出すので、この層には",
     "肌も足も描かない（docs/ui/CardView.md 5 節・7 節）。人にも動物にも同じ層が載る。",
     "",
     "**痣は生成でも編集でも出せない。** 面の色だけが変わるものを Qwen に頼むと、形と陰影まで",

@@ -1,6 +1,6 @@
 # ComfyUI でレーンの背景画像を作る
 
-`src/assets/backgrounds/<土地>_fixture.png` / `<土地>_item.png`（仕様は
+`src/assets/backgrounds/<持ち主>_<スロット名>_<用途>.png`（仕様は
 [docs/ui/CardView.md](../../docs/ui/CardView.md) 7 節）を、ComfyUI の HTTP API
 経由で作るための一式です。**画面を操作せず、ワークフローを JSON として投げます。**
 
@@ -9,7 +9,7 @@
 レシピ 1 つで、生成から仕上げまで通ります。
 
 ```bash
-python build.py recipes/rocky_field_fixture.json
+python build.py recipes/rocky_field_fixtures_lane.json
 ```
 
 新しい土地を足すときは、`prompts/lane_backgrounds.json` にプロンプトを、`recipes/` にレシピを
@@ -427,7 +427,7 @@ deepcopy するため**連続生成でプロセスごと落ち**、しかもパ�
 `prompts/lane_backgrounds.json` の `sharedNegative` に `path, trail, road, corridor, vanishing point,
 central subject, symmetry` などを入れて抑えています。
 
-アイテムレーン（`_item`）では、それでも「岩が上下を縁取って中央が道になる」構図が出ました。
+アイテムレーン（`_items_lane`）では、それでも「岩が上下を縁取って中央が道になる」構図が出ました。
 **構図のあるシーンではなく一様なテクスチャを狙う**ようプロンプトを書き換える（`extreme close-up
 macro texture` / `the same density everywhere` / `no composition`）と収まります。
 

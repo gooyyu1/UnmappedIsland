@@ -13,7 +13,7 @@
   ],
   "output": "src/assets/objects/laceration.png",
   "underlay": {
-    "ground": "src/assets/backgrounds/medic_card_background.png",
+    "ground": "src/assets/backgrounds/medic_injuries_card.png",
     "layer": "src/assets/objects/laceration_multiply.png"
   }
 }

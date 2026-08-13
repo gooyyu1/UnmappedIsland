@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/jungle_items_lane.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "noTrigger は、LoRAのトリガーワード（watercolorsdxl style）を足さないという指定。背景は",
+    "「くっきりさせない」ためにLoRAを使うだけで、水彩画にしたいわけではない。",
+    "",
+    "4枚に1枚ほど、真上からではなく俯瞰の風景に流れる。そのseedは避ける。"
+  ],
+  "output": "src/assets/backgrounds/jungle_items_lane.png",
+  "prompt": "jungle_items_lane",
+  "workflow": "lane_background_sdxl_tiling.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "width": 2048,
+  "height": 640,
+  "seed": 6002,
+  "postprocess": {
+    "_comment": "oilifyは生成時の解像度でかかるので、画面上での半径は0.55倍（保持で0.5倍、レーン高352uへの表示で1.1倍）になる。実寸で判断すること。4まで上げると明るい粒が平坦に潰れて斑点として目立つ。",
+    "width": 1024,
+    "height": 320,
+    "oilifyRadius": 2,
+    "oilifyLevels": 12
+  }
+}

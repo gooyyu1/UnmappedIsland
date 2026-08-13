@@ -6,7 +6,7 @@ ComfyUIの画面を操作せず、API形式のワークフロー（workflows/*.a
 生成物と一緒に、実際に使われた値（seedを含む）を .json として書き出す。これがあれば同じ絵を
 作り直せる。
 
-    python generate.py rocky_field_fixture --out ../../src/assets/backgrounds/_raw
+    python generate.py rocky_field_fixtures_lane --out ../../src/assets/backgrounds/_raw
 
 使い方の全体は README.md を参照。
 """
