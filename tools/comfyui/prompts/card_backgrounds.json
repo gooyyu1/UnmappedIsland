@@ -1,7 +1,9 @@
 {
   "_comment": [
     "カードの地に敷く背景のプロンプト（src/game/ui/backgroundArt.ts）。キーは出力するファイル名",
-    "（<対象のobject_defの識別子>_card_background）と一致させる。",
+    "（<対象のobject_defの識別子>_card_background）と一致させる。ただし**複数の対象が同じ絵柄を",
+    "共有するときは、描くものの名前をキーにする**（human_skin_card_background をキャラクタ4人が",
+    "使う）。同じプロンプトを人数ぶん並べると、直すときに全部を直すことになる。",
     "",
     "土地の絵は、レーンの背景（lane_backgrounds.json の _fixture）と同じ「その土地の眺め」を、",
     "縦長のカード1枚に収まる構図で描く。カードの上には物の絵と名前が載るので、レーンよりさらに",
@@ -14,14 +16,18 @@
     "叩き台は _baseNegative にある（生成には使わない）。"
   ],
   "_baseNegative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts",
-  "medic_card_background": {
-    "description": "マルコの肌。怪我のカードの地。部位は描かず、肌そのものを枠いっぱいに。",
+  "human_skin_card_background": {
+    "description": "人の肌。怪我のカードの地。キャラクタ4人が共有し、seedと切り出しだけを変える。",
     "_note": [
       "**部位の少ない場所を描かせ、その中の平らな所を切り出す**（レシピの cardArt.crop）。",
       "「肌だけ」と頼むと砂丘や胴体が出て、「前腕」と部位を言うと背景の上に腕が1本立った絵になる",
       "（輪郭が出ると、その上へ載る傷の層を身体ごとに位置合わせすることになる）。背中は目に見える",
       "部品が少なく、広い平らな面が取れる。背骨・肩・背景はnegativeで抑えつつ、切り出しで外す。",
-      "照りも禁じる——つやが乗ると3D風になり、他のカードから浮くうえ痣の乗算が読めなくなる。"
+      "照りも禁じる——つやが乗ると3D風になり、他のカードから浮くうえ痣の乗算が読めなくなる。",
+      "",
+      "**この文面はレシピのseedと対になっている。** 直すと、記録してあるseedが別の絵を出すように",
+      "なるので、直したら選び直す。振り直すときによく出る外れは、砂丘・脇・腕の縁の3つ",
+      "（negativeに sand, dune, desert, armpit, side of the body を足すと減る）。"
     ],
     "positive": "extreme close up of the bare skin of a human back completely filling the frame from edge to edge, a broad flat expanse of sun weathered skin seen straight on, uniform warm tan olive skin tone across the whole frame, fine skin texture with faint pores and a few soft body hairs, soft even diffuse daylight, matte skin, muted natural colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
     "negative": "spine, backbone, shoulder blades, ribs, neck, nape, waist, buttocks, hips, arm, forearm, limb, leg, thigh, curved surface, rounded form, silhouette, outline, edge of the body, body against a background, whole figure, person seen from behind, portrait, face, head, hair, eyes, nose, mouth, ear, hand, fingers, thumb, palm, foot, toes, ankle, knee, elbow, shoulder, chest, nipple, navel, background, wall, floor, table, cloth, clothing, sleeve, fabric, jewellery, tattoo, wound, bruise, blood, scar, rash, veins, wrinkles, goosebumps, sweat, water drops, glossy, shiny, specular highlight, oiled skin, wet skin, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"

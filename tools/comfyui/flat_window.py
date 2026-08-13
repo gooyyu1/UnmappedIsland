@@ -2,8 +2,14 @@
 
 身体の絵は部位を描かせない（docs/ui/CardView.md 7 節）。ところが「肌だけ」と頼むと砂丘や胴体が
 出るので、**背中のような目に見える部品の少ない場所を描かせ、その中の平らな所を切り出す**。どこを
-切るかは目で選ばず、2つの数字で決める——肌でない画素の割合（背景・髪・服が入っていないか）と、
-明るさの起伏（背骨・肩甲骨・輪郭のような構造が入っていないか）。
+切るかは目で選ばず、3つの数字で決める。
+
+- 肌でない画素の割合——背景・髪・服が入っていないか
+- 明るさの起伏——背骨・肩甲骨・輪郭のような構造が入っていないか
+- 暗い点の割合——ほくろ・乳首・毛のような、小さいのに目を引くものが入っていないか
+
+3つ目が要る。**起伏だけで選ぶと、平らな胸に乳首が1つ乗った窓が上位に来る**（小さいので起伏の平均は
+上がらない）。地に敷く絵に目印が1つでもあると、その上へ載る傷より先にそちらが読まれてしまう。
 
     python flat_window.py 生成物/*.png
 
@@ -32,6 +38,11 @@ STEP = 24
 # 入った窓は、どれだけ平らでも地にはできない（平らな絵の起伏は2〜5程度）。
 NON_SKIN_PENALTY = 100
 
+# 暗い点と見なす暗さ（絵全体の中央値からの差）と、それが全部を占めたときの罰。
+# 割合そのものは小さい（乳首1つで1%に満たない）ので、罰は肌でない画素より重くする。
+DARK_SPOT_DEPTH = 28
+DARK_SPOT_PENALTY = 400
+
 
 def skin_mask(rgb: np.ndarray) -> np.ndarray:
     """肌・毛皮らしい画素か。赤 > 緑 > 青で、赤と青の差がはっきりある画素だけを採る。"""
@@ -48,7 +59,10 @@ def roughness(gray: np.ndarray) -> np.ndarray:
 
 def best_window(image: Image.Image) -> tuple[float, int, int, int, int]:
     rgb = np.asarray(image.convert("RGB"), dtype=np.float64)
-    skin, rough = skin_mask(rgb), roughness(rgb.mean(axis=2))
+    gray = rgb.mean(axis=2)
+    skin, rough = skin_mask(rgb), roughness(gray)
+    # 暗さの基準は絵全体の中央値。肌が大半を占める前提なので、これが素の肌の明るさになる。
+    dark = gray < np.median(gray) - DARK_SPOT_DEPTH
 
     best: tuple[float, int, int, int, int] | None = None
     for scale in SCALES:
@@ -59,7 +73,11 @@ def best_window(image: Image.Image) -> tuple[float, int, int, int, int]:
         for top in range(0, image.height - height + 1, STEP):
             for left in range(0, image.width - width + 1, STEP):
                 window = (slice(top, top + height), slice(left, left + width))
-                score = (1 - skin[window].mean()) * NON_SKIN_PENALTY + rough[window].mean()
+                score = (
+                    (1 - skin[window].mean()) * NON_SKIN_PENALTY
+                    + dark[window].mean() * DARK_SPOT_PENALTY
+                    + rough[window].mean()
+                )
                 if best is None or score < best[0]:
                     best = (score, left, top, width, height)
     if best is None:

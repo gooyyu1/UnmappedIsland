@@ -12,7 +12,7 @@
   ],
   "output": "src/assets/backgrounds/medic_card_background.png",
   "prompts": "card_backgrounds.json",
-  "prompt": "medic_card_background",
+  "prompt": "human_skin_card_background",
   "workflow": "lane_background_sdxl.api.json",
   "lora": "watercolor_sdxl.safetensors",
   "loraStrength": 0.8,
@@ -22,8 +22,12 @@
     "背中なら目に見える部品が少なく、広い面が取れる——ただし絵の全体には背骨・肩・背景が入るので、",
     "そのままではカードの地にならない。",
     "",
-    "seedと切り出し位置は、生成9枚から「肌でない画素が無く、明るさの起伏が最も小さい」窓を数値で",
-    "選んだもの（61006が2.13で最小。次点は61007の3.98で、そちらは広い陰影が残る）。"
+    "seedと切り出し位置は、生成39枚をflat_window.pyに掛けて選んだもの（61006が2.55で最小。",
+    "次点は4.22で、そちらは縁の線が残る）。**数字だけでは決められない**——砂は肌と同じ色相なので",
+    "肌の判定を通り、平らな胸に乳首が1つ乗った窓も上位に来る。上位数枚は必ず目で見て捨てる。",
+    "",
+    "**この絵はキャラクタ4人で共通**（captain / engineer / farmer も同じseed・同じ窓）。怪我を",
+    "並べて見比べる画面は無いので、人ごとの微妙な差に意味が無い。変えるなら肌のトーンから変える。"
   ],
   "seed": 61006,
   "width": 832,
@@ -32,7 +36,7 @@
     "_comment": "oilifyで写実味を落とす。肌だけ写真のようだと他のカードから浮く。",
     "size": "card",
     "mode": "none",
-    "crop": [240, 384, 515, 803],
+    "crop": [240, 216, 515, 803],
     "oilify": [6, 12]
   }
 }
