@@ -49,11 +49,19 @@ export class PropertyStage {
   /** この段にいる間、値がどの域にあると見なすか（6.4節のalert）。 */
   readonly alert: AlertLevel;
 
-  constructor(name: string, min: number | undefined, eq?: number, alert: AlertLevel = 'safe') {
+  /**
+   * この段にいる間、カードに出す絵（`src/assets/objects/<名前>.png`）。宣言しない段はundefinedで、
+   * その型の絵のまま。**状態で姿が変わるもの——気を失った動物——を、型を差し替えずに表すためのもの**
+   * （CardView.md 9.1節）。
+   */
+  readonly art: string | undefined;
+
+  constructor(name: string, min: number | undefined, eq?: number, alert: AlertLevel = 'safe', art?: string) {
     this.name = name;
     this.min = min;
     this.eq = eq;
     this.alert = alert;
+    this.art = art;
   }
 
   /** この段を書き表す（Description参照）。propertyGlobalIdは、eqの値をシンボル名へ戻すために要る。 */
@@ -67,6 +75,7 @@ export class PropertyStage {
     else tokens.push(text(': どの段にも該当しないとき'));
 
     if (this.alert !== 'safe') tokens.push(text(`（alert: ${this.alert}）`));
+    if (this.art !== undefined) tokens.push(text(`（絵: ${this.art}）`));
     return tokens;
   }
 }
@@ -349,6 +358,11 @@ export class PropertyDef {
    */
   alertLevelOf(effectiveValue: number): AlertLevel {
     return this.resolveStage(effectiveValue)?.alert ?? 'safe';
+  }
+
+  /** 実効値effectiveValueのとき、今いる段が宣言している絵（PropertyStage.art）。宣言が無ければundefined。 */
+  artNameOf(effectiveValue: number): string | undefined {
+    return this.resolveStage(effectiveValue)?.art;
   }
 
   /** 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。 */

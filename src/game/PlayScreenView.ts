@@ -12,6 +12,7 @@ import type { Localization } from '../locale/Localization';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
 import type { CardAlertBar, CardContent, CardFill } from './ui/Card';
+import { artNameFor } from './ui/objectArt';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
 import type { StatusContent } from './ui/StatusBar';
@@ -595,6 +596,8 @@ export function fromGameSession(
    * 自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
    */
   const artOf = (def: ObjectDef): string => (codex.productOf(def) ?? def).name;
+  /** 個体の絵。今の状態が別の姿を宣言していれば（VitalsSystem.md 2.1節の気絶など）そちらになる。 */
+  const instanceArtOf = (object: WorldObject): string => artNameFor(artOf(object.def), object.artName());
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。
@@ -633,7 +636,7 @@ export function fromGameSession(
     inProgress: codex.productOf(instances[0].def) !== undefined,
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
-    art: artOf(instances[0].def),
+    art: instanceArtOf(instances[0]),
     background: slotOfObject(instances[0]),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。

@@ -50,6 +50,13 @@ export interface ProgressBarOptions {
    * 外すために使う（statusRows・PlayScene.showStatuses）。
    */
   readonly onCaughtUp?: () => void;
+
+  /**
+   * 危険域・致命的域で枠を明滅させないか（既定は明滅する）。**明滅は「手を止めろ」という催促**
+   * なので、催促する立場にないバーが渡す——カードの状態バーは「今どうなっているか」を色と長さで
+   * 言うだけで、催促は札の縁とステータスエリアの役目（CardView.md 8節）。
+   */
+  readonly steady?: boolean;
 }
 
 /**
@@ -98,6 +105,9 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   /** 塗りの色の引き方（ProgressBarOptions.fillColor）。 */
   private readonly fillColor: ((ratio: number) => number) | undefined;
 
+  /** 危険域でも明滅させないか（ProgressBarOptions.steady）。 */
+  private readonly steady: boolean;
+
   /** トラックの枠線を描かないか（ProgressBarOptions.borderless）。 */
   private readonly borderless: boolean;
 
@@ -117,6 +127,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     super(scene, x, y);
     this.worsensUpward = options.worsensUpward === true;
     this.fillColor = options.fillColor;
+    this.steady = options.steady === true;
     this.borderless = options.borderless === true;
     this.onCaughtUp = options.onCaughtUp;
 
@@ -230,7 +241,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.alert = alert;
     this.draw();
 
-    const color = alertBorderColor(alert);
+    const color = this.steady ? undefined : alertBorderColor(alert);
     if (color === undefined) {
       this.blinkTween?.stop();
       this.blinkTween = undefined;

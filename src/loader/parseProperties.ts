@@ -217,6 +217,8 @@ function parseStage(
 ): PropertyStage {
   const stageName = requireScalar(stageMap, 'name', context);
   const alert = parseAlertLevel(context, stageMap);
+  // 段が宣言する絵（6.4節）。ファイルの有無は表示側が見る——絵を用意する前に宣言しても壊れない。
+  const art = tryGetScalar(stageMap, 'art', context);
   let stage: PropertyStage;
 
   if (isSymbolProperty) {
@@ -224,10 +226,10 @@ function parseStage(
       throw new YamlLoadError(
         `${context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。`,
       );
-    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert);
+    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert, art);
   } else {
     const min = tryGetNumber(stageMap, 'min', context);
-    stage = new PropertyStage(stageName, min, undefined, alert);
+    stage = new PropertyStage(stageName, min, undefined, alert, art);
   }
 
   // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。

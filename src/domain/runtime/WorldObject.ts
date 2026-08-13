@@ -187,6 +187,21 @@ export class WorldObject {
     return readings;
   }
 
+  /**
+   * 今の状態が宣言している絵（`stages`の`art`、6.4節）。**姿が変わったことを、型を差し替えずに表す**
+   * ためのもの——気を失った動物は同じ個体のまま絵だけが変わる（CardView.md 9.1節）。
+   *
+   * 走査はpropsの宣言順で、最初に見つかった1つを採る。複数の状態が同時に絵を宣言しうるので、
+   * 優先したい状態を上に書く、という規約を著者へ渡す。どの段も宣言していなければundefined。
+   */
+  artName(): string | undefined {
+    for (const property of this.properties) {
+      const art = property.stageArtName();
+      if (art !== undefined) return art;
+    }
+    return undefined;
+  }
+
   /** modifyのみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。プロパティを持たなければ0。 */
   getEffectiveValue(propertyGlobalId: number): number {
     const value = this.tryGetProperty(propertyGlobalId);

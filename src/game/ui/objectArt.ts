@@ -28,6 +28,17 @@ export const OBJECT_ART: ReadonlyMap<string, string> = new Map(
  */
 export const CARD_ART_WIDTH = 410;
 
+/**
+ * カードに出す絵の名前。**状態が絵を宣言していれば（`stages`の`art`、6.4節）それを、まだその絵を
+ * 用意していなければ型の絵へ落とす。**
+ *
+ * 落とすのは、絵を描くのと宣言するのを別々の時に行えるようにするため——先に宣言しても、絵が入る
+ * までは今まで通りの姿で出る。
+ */
+export function artNameFor(objectName: string, stageArt: string | undefined): string {
+  return stageArt !== undefined && OBJECT_ART.has(stageArt) ? stageArt : objectName;
+}
+
 /** object_defの識別子に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。 */
 export function objectTexture(objectName: string): string {
   return `object:${objectName}`;
