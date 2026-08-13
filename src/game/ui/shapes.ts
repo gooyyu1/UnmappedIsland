@@ -10,6 +10,11 @@ export interface BoxStyle {
   readonly radius?: number;
   /** 空きスロットのような「まだ中身が無い」枠は破線で描く（StartScreen_Mock.htmlのborder-style: dashed）。 */
   readonly dashed?: boolean;
+  /**
+   * 下地から浮いて見せる落ち影の、ずらし幅（px）。**紙として置かれる物**（スロットボタン）が持つ。
+   * 濃さと広がりはdrawBoxが決める。
+   */
+  readonly shadow?: number;
 }
 
 /**
@@ -85,9 +90,25 @@ export function addTiledPanel(
   return addTiledImage(scene, rect, texture).setInteractive();
 }
 
+/** 落ち影の2枚の濃さ（ずらし幅の何倍の位置に、どの不透明度で置くか）。 */
+const SHADOW_LAYERS = [
+  [1, 0.3],
+  [2, 0.12],
+] as const;
+
 /** 角丸矩形を描く。座標はgraphicsのローカル座標。 */
 export function drawBox(graphics: Phaser.GameObjects.Graphics, rect: Rect, style: BoxStyle): void {
   const radius = style.radius ?? 0;
+  // 影は塗りより先に敷き、塗りで覆う。**ぼかせないので2枚重ねる**——1枚だと輪郭がそのまま出て
+  // 貼り絵に見える。色は黒に固定する。Buttonの押下の覆いと同じ理由で、下地の明るさによらず
+  // 「暗い側へ倒す」ほうが沈んで見えるため。
+  if (style.shadow !== undefined) {
+    for (const [distance, alpha] of SHADOW_LAYERS) {
+      graphics.fillStyle(0x000000, alpha);
+      const offset = style.shadow * distance;
+      graphics.fillRoundedRect(rect.x + offset, rect.y + offset, rect.width, rect.height, radius);
+    }
+  }
   if (style.fill !== undefined) {
     graphics.fillStyle(style.fill, style.fillAlpha ?? 1);
     graphics.fillRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
