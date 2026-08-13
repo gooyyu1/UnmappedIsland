@@ -178,6 +178,11 @@ export class CodexView {
     return this.label(name, this.locale.propertyTag(name).displayName);
   }
 
+  /** 告げる出来事（9.8節のsignal）の文言。札の上に出るのと同じ言葉。 */
+  signalLabel(name: string): string {
+    return this.label(name, this.locale.signal(name));
+  }
+
   /** object_defのタグ（4.1節）は表示文字列を持たない（画面に出ない、データ側だけの語彙）。 */
   tagLabel(name: string): string {
     return name;
@@ -297,6 +302,8 @@ export class CodexView {
       case 'reason':
         // 理由は識別子ではなく文言そのものが読みたい情報（Localization.md reason_texts節）。
         return this.refHtml('reason', token.name, this.locale.reason(token.name) ?? token.name, undefined);
+      case 'signal':
+        return this.refHtml('signal', token.name, this.signalLabel(token.name), undefined);
     }
   }
 

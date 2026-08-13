@@ -27,12 +27,14 @@ import {
 import type { ActiveEffect, SpawnTargetRoot } from '../domain/defs/ActiveEffect';
 import type { MoveDestination } from '../domain/defs/MoveEffect';
 import { MoveEffect } from '../domain/defs/MoveEffect';
+import { SignalEffect } from '../domain/defs/SignalEffect';
 
 /**
  * active内容（9節）を読む。文法は「操作(set/add)が上位、対象(self/parent/actor/dragged)が下位」
  * （例: `add: {self: {hour: 1}}`）。bodyNodeにはactive以外の兄弟キーも同居しうるため、
  * reservedKeysに「呼び出し側がすでに読み終えている兄弟キー」を渡して未知キー判定から除外する。
- * spawnは常にselfが実行するものとみなすため対象キーを持たない。
+ * spawnは常にselfが実行するものとみなすため対象キーを持たない。signalは対象を省ける
+ * （`signal: missed`＝selfへ告げる、9.8節）。
  */
 export function parseActiveEffectBody(
   loader: WorldCodexYamlLoader,
@@ -42,9 +44,9 @@ export function parseActiveEffectBody(
   selfOnly: boolean,
   reservedKeys?: ReadonlyArray<string>,
 ): ActiveEffects {
-  // 適用順はset→add→transfer→move→destroy→spawnで固定（set後add、destroyで空いた位置への
-  // spawn(same_slot)、moveはdestroyで対象が消える前、という依存関係のため。
-  // ActiveEffects.applyはこのリスト順にそのまま適用する）。
+  // 適用順はset→add→transfer→move→destroy→spawn→signalで固定（set後add、destroyで空いた位置への
+  // spawn(same_slot)、moveはdestroyで対象が消える前、という依存関係のため。signalは世界を変えないので
+  // 依存を持たず、起きたことの告知として末尾に置く。ActiveEffects.applyはこのリスト順にそのまま適用する）。
   const operations: ActiveEffect[] = [];
 
   const setMap = tryGetMap(bodyNode, 'set', context);
@@ -69,6 +71,10 @@ export function parseActiveEffectBody(
 
   const spawnNode = tryGetNode(bodyNode, 'spawn');
   if (spawnNode !== undefined) operations.push(...parseSpawns(loader, `${context}.spawn`, spawnNode));
+
+  const signalNode = tryGetNode(bodyNode, 'signal');
+  if (signalNode !== undefined)
+    operations.push(...parseSignals(`${context}.signal`, signalNode, allowDragged, selfOnly));
 
   const knownKeys = new Set<string>(ACTIVE_VERB_KEYS);
   if (reservedKeys !== undefined) for (const key of reservedKeys) knownKeys.add(key);
@@ -359,6 +365,30 @@ function parseActiveTargetKey(
   }
 }
 
+/**
+ * signal（9.8節）を読む。対象を省いた `signal: missed`（selfへ告げる）と、他の命令と同じ
+ * 「操作が上位、対象が下位」の `signal: {dragged: missed}` の2つの形を許容する。
+ *
+ * 省略形を持つのは、告げる相手が効果を宣言した側そのものである場合が大半だから（動物のカードへ
+ * 武器を重ねる、9.8節）。対象を書くのは、宣言した側と起きた側が違うときだけになる。
+ */
+function parseSignals(
+  context: string,
+  node: YamlNode,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): SignalEffect[] {
+  if (isSeq(node))
+    throw new YamlLoadError(`${context}: 出来事の識別子か、対象ごとの識別子である必要があります。`);
+
+  if (!isMap(node)) return [new SignalEffect(asScalarText(node, context), 'self')];
+
+  return entriesInOrder(node).map(([targetName, nameNode]) => {
+    const target = parseObjectTargetKey(context, targetName, allowDragged, selfOnly);
+    return new SignalEffect(asScalarText(nameNode, `${context}.'${targetName}'`), target);
+  });
+}
+
 /** destroy（削除対象の直接指定）を読む。単一の対象名か対象名のリストを許容する。
  * ancestorはプロパティ名が無いと解決できないため、destroyの対象としては未対応。 */
 function parseDestroyTargets(
@@ -372,13 +402,17 @@ function parseDestroyTargets(
 
   if (isSeq(node))
     return (node.items as YamlNode[]).map((n) =>
-      parseDestroyTargetKey(context, asScalarText(n, context), allowDragged, selfOnly),
+      parseObjectTargetKey(context, asScalarText(n, context), allowDragged, selfOnly),
     );
 
-  return [parseDestroyTargetKey(context, asScalarText(node, context), allowDragged, selfOnly)];
+  return [parseObjectTargetKey(context, asScalarText(node, context), allowDragged, selfOnly)];
 }
 
-function parseDestroyTargetKey(
+/**
+ * オブジェクトそのものを指す対象（destroy・signal）。ancestorはプロパティ名が無いと解決先が
+ * 決まらないため、ここでは使えない。
+ */
+function parseObjectTargetKey(
   context: string,
   key: string,
   allowDragged: boolean,
@@ -387,7 +421,7 @@ function parseDestroyTargetKey(
   const root = parseActiveTargetKey(context, key, allowDragged, selfOnly);
   if (root === 'ancestor')
     throw new YamlLoadError(
-      `${context}: destroyの対象'ancestor'は未対応です（destroyはプロパティではなくオブジェクトそのものを指すため）。`,
+      `${context}: 対象'ancestor'は未対応です（プロパティではなくオブジェクトそのものを指すため）。`,
     );
   return root;
 }

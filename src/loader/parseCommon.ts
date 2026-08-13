@@ -16,9 +16,9 @@ export function tryGetNode(map: YAMLMap, key: string): YamlNode | undefined {
 }
 
 /** active内容（9節）を構成するキー。actions/combinations/pickの各エントリが兄弟キーとして直接持つ。 */
-export const ACTIVE_VERB_KEYS = ['set', 'add', 'destroy', 'spawn', 'transfer', 'move'] as const;
+export const ACTIVE_VERB_KEYS = ['set', 'add', 'destroy', 'spawn', 'transfer', 'move', 'signal'] as const;
 
-/** mapがactive内容（set/add/destroy/spawn/transfer/move）のいずれかを持つか。 */
+/** mapがactive内容（set/add/destroy/spawn/transfer/move/signal）のいずれかを持つか。 */
 export function hasActiveContent(map: YAMLMap): boolean {
   return ACTIVE_VERB_KEYS.some((key) => map.get(key, true) !== undefined);
 }

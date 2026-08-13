@@ -26,7 +26,9 @@ export type DescriptionToken =
   /** ドラッグ型の操作（12節）。 */
   | { readonly kind: 'combination'; readonly name: string }
   /** 要件が満たされない理由（14.6節）の識別子。 */
-  | { readonly kind: 'reason'; readonly name: string };
+  | { readonly kind: 'reason'; readonly name: string }
+  /** 告げる出来事（9.8節のsignal）の識別子。 */
+  | { readonly kind: 'signal'; readonly name: string };
 
 export function text(value: string): DescriptionToken {
   return { kind: 'text', text: value };
@@ -70,6 +72,10 @@ export function combinationRef(name: string): DescriptionToken {
 
 export function reasonRef(name: string): DescriptionToken {
   return { kind: 'reason', name };
+}
+
+export function signalRef(name: string): DescriptionToken {
+  return { kind: 'signal', name };
 }
 
 /** 増減量の書き表し方。正の値にも符号を付けて、絶対値ではなく増減であることを見て取れるようにする。 */

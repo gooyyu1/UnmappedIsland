@@ -930,8 +930,8 @@ object_defs:
 概念です。持続する条件を表す `conditions`/ゲートは持たず、`modify`/`accumulate` のような登録の仕組みにも乗りません。
 
 `active` という語自体は、YAML 上の専用キーとしては書きません。この節で説明する `set`・`add`・`destroy`・
-`spawn`・`transfer`・`move` を、それが書ける場所（9.7 節）の中に、`showMenu`/`conditions`/`with`/`weight`/`pick` と
-対等な兄弟キーとして直接書きます。動詞が `pick` と並列に並ぶことで、「実行結果は直接書くか、`pick` で確率分岐
+`spawn`・`transfer`・`move`・`signal` を、それが書ける場所（9.7 節）の中に、
+`showMenu`/`conditions`/`with`/`weight`/`pick` と対等な兄弟キーとして直接書きます。動詞が `pick` と並列に並ぶことで、「実行結果は直接書くか、`pick` で確率分岐
 するかのどちらか」という構造がそのまま YAML の見た目に表れます。
 
 ### 9.1 文法: 操作が上位、対象が下位
@@ -1143,7 +1143,7 @@ traits:
 （6.3 節、`self` のみが有効な対象）では使えません（`actor` が存在しないため、
 ロード時エラー）。
 
-### 9.7 set/add/destroy/spawn/transfer/move が書ける場所
+### 9.7 この節の操作が書ける場所
 
 この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `conditions`/ゲートを
 持つ `passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
@@ -1152,6 +1152,47 @@ traits:
   対等な兄弟キー
 - `pick` の各候補（10 節）— `weight`/`pick` と対等な兄弟キー
 - `props` の `on_overflow`/`on_shortfall`（6.3 節）— これらは専用のキーの直下にそのまま書きます
+
+### 9.8 signal（起きたことを告げる）
+
+**世界の形を何も変えず、出来事が起きたことだけを観測する側へ渡します。** 値は出来事の識別子です。
+
+```yaml
+combinations:
+  strike:
+    with: weapon
+    pick:
+      - weight: 70
+        spawn: {object: laceration, into: self}
+        signal: hit
+      - weight: 30
+        signal: missed          # 世界は何も変わらないが、外したことは起きている
+```
+
+**誰の身に起きたかは、他の操作と同じ対象キー（9.1 節）で指せます。** 対象を省いた `signal: missed` は
+`self` に起きたこととして告げます（宣言した型そのものに起きる場合が大半のため）。
+
+```yaml
+combinations:
+  strike:
+    with: weapon
+    signal: {dragged: chipped}   # 殴った側（重ねた武器）に起きたこととして告げる
+```
+
+対象は `self`/`parent`/`actor`（`combinations` では `dragged` も）で、`destroy` と同じくオブジェクト
+そのものを指すため `ancestor` は使えません（未対応、ロード時エラー）。対象が解決できない実行文脈
+（`actor` を持たない `actions`）では、その告知だけが起きません。
+
+外した回に何も書かないと、その一手は「起きなかった手」と見分けが付きません。観測する側が読むのは
+世界に起きた物の出入り（[`ActionSystem.md`](./ActionSystem.md) 7 節）なので、**出入りを伴わない出来事は、
+起こした側が告げなければ誰にも届きません**。
+
+- **プロパティのカウンタで代用しません。** 値は効果の入力であって通知路ではなく、増やせば後始末
+  （0 へ戻す）が要り、増分は実効値の前後比較にしか現れません。
+- **告げるのは出来事であって、見せ方ではありません。** どう見せるか（札の上の文字・音）は受け取った
+  側が決めます（[`CardView.md`](../ui/CardView.md) 14 節）。
+- 表示文言は locale の `signal_texts`（[`Localization.md`](./Localization.md) signal_texts節）が持ちます。
+  要件の `reason`（14.6 節）と同じく、識別子は表示のためだけに使います。
 
 ## 10. pick（重み付き確率分岐）
 
@@ -1258,10 +1299,10 @@ actions:
 あります。その場合はその操作を**成立しなかったものとして打ち切り**、効果を適用しません（時間は経過した
 ままです）。詳細は[`ActionSystem.md`](./ActionSystem.md) 6.1節。
 
-### 11.4 set/add/destroy/spawn/transfer/move（active） / pick
+### 11.4 active / pick
 
-このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`/`transfer`/`move`（9 節、`active` の実体）が
-1回だけ適用されるか、`pick`（10 節）で候補が1つ選ばれて適用されます。`showMenu`/`conditions`/`duration`と
+このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`/`transfer`/`move`/`signal`（9 節、`active` の
+実体）が1回だけ適用されるか、`pick`（10 節）で候補が1つ選ばれて適用されます。`showMenu`/`conditions`/`duration`と
 対等な兄弟キーとして直接書き、専用の `active:` ラップは挟みません。どちらも指定しなければ、条件成立時に
 何も起きないアクションになります。
 

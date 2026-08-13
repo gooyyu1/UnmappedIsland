@@ -468,7 +468,7 @@
       "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/transfer/move)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持ち、activeの代わりにpick（10節、排他）も書ける。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持ち、activeの代わりにpick（10節、排他）も書ける。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "set": {
@@ -491,6 +491,9 @@
         "move": {
           "$ref": "#/$defs/move_spec"
         },
+        "signal": {
+          "$ref": "#/$defs/signal_spec"
+        },
         "pick": {
           "$ref": "#/$defs/pick_list"
         }
@@ -499,6 +502,34 @@
       "allOf": [
         {
           "$ref": "#/$defs/not_active_verbs_with_pick"
+        }
+      ]
+    },
+    "signal_spec": {
+      "description": "起きたことを告げる（GameElementDefinition.md 9.8節）。世界の形は何も変えず、出来事が起きたことだけを観測する側へ渡す。値は出来事の識別子で、表示文言はlocaleのsignal_textsが持つ。誰の身に起きたかは対象キー（self/parent/actor、combinations内はdraggedも）で指し、省略時はself。オブジェクトそのものを指すためancestorは使えない（destroyと同じ、ロード時エラー）。",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/identifier"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "self": {
+              "$ref": "#/$defs/identifier"
+            },
+            "parent": {
+              "$ref": "#/$defs/identifier"
+            },
+            "actor": {
+              "$ref": "#/$defs/identifier"
+            },
+            "dragged": {
+              "$ref": "#/$defs/identifier",
+              "description": "combinationsの中でのみ意味を持つ（12.2節）。"
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
         }
       ]
     },
@@ -514,7 +545,7 @@
       ]
     },
     "not_active_verbs_with_pick": {
-      "description": "pickと、set/add/destroy/spawn/transfer/move(activeの実体)のいずれかとの同時指定を禁止する共通の制約。actions/combinations/pick/rangeイベントのいずれでも使う。",
+      "description": "pickと、set/add/destroy/spawn/transfer/move/signal(activeの実体)のいずれかとの同時指定を禁止する共通の制約。actions/combinations/pick/rangeイベントのいずれでも使う。",
       "not": {
         "allOf": [
           {
@@ -552,6 +583,11 @@
               {
                 "required": [
                   "move"
+                ]
+              },
+              {
+                "required": [
+                  "signal"
                 ]
               }
             ]
@@ -591,6 +627,9 @@
         "move": {
           "$ref": "#/$defs/move_spec"
         },
+        "signal": {
+          "$ref": "#/$defs/signal_spec"
+        },
         "pick": {
           "$ref": "#/$defs/pick_list"
         }
@@ -609,7 +648,7 @@
       "minItems": 1
     },
     "action_def": {
-      "description": "メニュー型の宣言的操作（11節）。conditionsと実行結果(set/add/destroy/spawn/transfer/move、またはpick)を1つの定義としてまとめて持つ。専用の`active:`ラップは挟まず、showMenu/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
+      "description": "メニュー型の宣言的操作（11節）。conditionsと実行結果(set/add/destroy/spawn/transfer/move/signal、またはpick)を1つの定義としてまとめて持つ。専用の`active:`ラップは挟まず、showMenu/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
       "allOf": [
         {
           "$ref": "#/$defs/not_active_verbs_with_pick"
@@ -649,6 +688,9 @@
         },
         "move": {
           "$ref": "#/$defs/move_spec"
+        },
+        "signal": {
+          "$ref": "#/$defs/signal_spec"
         },
         "pick": {
           "$ref": "#/$defs/pick_list"
@@ -695,6 +737,9 @@
         },
         "move": {
           "$ref": "#/$defs/move_spec"
+        },
+        "signal": {
+          "$ref": "#/$defs/signal_spec"
         },
         "pick": {
           "$ref": "#/$defs/pick_list"

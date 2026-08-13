@@ -254,6 +254,7 @@ export class Localization {
   private readonly reasons: ReadonlyMap<string, string>;
   private readonly ordinalSuffix: string;
   private readonly slots: ReadonlyMap<string, SlotTextsEntry>;
+  private readonly signals: ReadonlyMap<string, string>;
 
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
@@ -263,6 +264,7 @@ export class Localization {
     reasons: ReadonlyMap<string, string> = new Map(),
     ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
     slots: ReadonlyMap<string, SlotTextsEntry> = new Map(),
+    signals: ReadonlyMap<string, string> = new Map(),
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
@@ -271,6 +273,7 @@ export class Localization {
     this.reasons = reasons;
     this.ordinalSuffix = ordinalSuffix;
     this.slots = slots;
+    this.signals = signals;
   }
 
   /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */
@@ -294,6 +297,16 @@ export class Localization {
    */
   reason(reasonName: string): string | undefined {
     return this.reasons.get(reasonName);
+  }
+
+  /**
+   * 告げられた出来事（GameElementDefinition.md 9.8節のsignal）の文言。未登録なら識別子そのもの。
+   *
+   * 理由（reason）と違って「出さない」選択が無い——出来事が起きたことは既に世界の側で決まっていて、
+   * 文言の欠けを黙って握り潰すと、空振りが再び「何も起きない」に戻る。
+   */
+  signal(signalName: string): string {
+    return this.signals.get(signalName) ?? signalName;
   }
 
   /**
@@ -428,7 +441,13 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(reasonSection))
       reasons.set(name, asScalarText(node, `${label}.reason_texts.'${name}'`));
 
-  return new Localization(objects, propertyTags, symbols, locations, reasons, ordinalSuffix, slots);
+  const signals = new Map<string, string>();
+  const signalSection = tryGetMap(root, 'signal_texts', label);
+  if (signalSection !== undefined)
+    for (const [name, node] of entriesInOrder(signalSection))
+      signals.set(name, asScalarText(node, `${label}.signal_texts.'${name}'`));
+
+  return new Localization(objects, propertyTags, symbols, locations, reasons, ordinalSuffix, slots, signals);
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

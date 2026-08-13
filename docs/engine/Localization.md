@@ -168,6 +168,20 @@ reason_texts:
 歩けない」は道以外の操作でも起こりえます）。未登録の識別子は理由を出さない扱いになるため、綴り間違いは
 自動テスト（`tests/locale/localization.test.ts`）が捕まえます。
 
+## signal_texts: 告げられた出来事の文言
+
+`signal`（[GameElementDefinition.md](./GameElementDefinition.md) 9.8節）が告げる出来事の識別子も、
+どのオブジェクトにも属さないので独立した節に書きます。`reason_texts` と同じく**1行の文字列そのもの**です。
+
+```yaml
+signal_texts:
+  missed: 空振り
+```
+
+出るのはカードの上に一瞬だけなので（[CardView.md](../ui/CardView.md) 14節）、**離れて見ても読める短い語**を
+選びます。長さの上限も、未登録の識別子も、自動テスト（`tests/locale/localization.test.ts`）が捕まえます——
+理由（`reason`）と違い、未登録でも識別子がそのまま札に出ます。
+
 ## location_texts: 土地の名前
 
 土地の名前は、生成のたびに**型と亜種の識別子の組み合わせ**として決まります

@@ -73,6 +73,13 @@ describe('animals.yamlの動物', () => {
     for (let i = 0; i < count; i++) monkey.tick(session);
   }
 
+  /** bodyの実行中に告げられた出来事（signal、9.8節）を「誰の身に・何が」の形で並べる。 */
+  function signalsOf(body: () => void): string[] {
+    const seen: string[] = [];
+    session.observeSignals((signal) => seen.push(`${signal.object.def.name}: ${signal.name}`), body);
+    return seen;
+  }
+
   it('サルはアイテムでもある動物として、土地のアイテムスロットに並ぶ', () => {
     // 動物を分けるのは「持ち運べるか」ではなく「動かせるか」（HuntingSystem.md 1.1節）。
     const def = codex.objects.get(codex.objectNames.getId('monkey'));
@@ -122,6 +129,16 @@ describe('animals.yamlの動物', () => {
     expect(injuriesOf(monkey), '外れれば傷は付かない').toEqual([]);
     expect(monkey.getNumber(warinessId) - before, '殴られたこと自体で気は立つ').toBe(25 - 1);
     expect(stone.readProperty(codex.propertyNames.getId('durability'))?.value).toBe(960 - 20);
+  });
+
+  it('当たった回も外した回も、殴られた側の札の上で起きたことを告げる', () => {
+    // 当たった傷は押して開くinjuriesスロットへ入り、外した回は世界の形が何も変わらないため、
+    // どちらもレーンを見ているだけでは分からない（HuntingSystem.md 6.3節）。
+    expect(signalsOf(strikeWithSharpStone)).toEqual(['monkey: hit']);
+
+    open(MISSES);
+
+    expect(signalsOf(strikeWithSharpStone)).toEqual(['monkey: missed']);
   });
 
   it('殴り続ければ危険域まで気が立つ', () => {
