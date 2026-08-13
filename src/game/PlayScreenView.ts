@@ -189,6 +189,11 @@ export interface PlayScreenView {
   readonly characterName: string;
   /** キャラクターのobject_defの識別子（表示名ではない）。ポートレートカードの絵を選ぶ（objectArt参照）。 */
   readonly characterArt: string;
+  /**
+   * ポートレートカードに出す印。動物のカードと同じ規約で、血が流れている傷を負っていれば出る
+   * （CardView.md 9節）。負っていなければundefined。
+   */
+  readonly characterMark: string | undefined;
   /** 条件アイコン。複数同時に付き得るので件数は可変。 */
   readonly conditions: readonly string[];
   readonly equipmentIcon: string;
@@ -356,6 +361,9 @@ const TREATED_MARK = '🩹';
  * 血が流れていることを言う印と、それを決めるプロパティの名前
  * （injuries.yaml・VitalsSystem.md 9節）。
  *
+ * **負っている本人にも出す。** 傷のカードは開かないと見えないので、そこだけに出していると、
+ * レーンを流し見しているあいだに失血が進む。手当てが要ることは、傷を開く前に分かる必要がある。
+ *
  * 手当て済みの印より優先する。手当てをしてもまだ流れているなら、伝えるべきは「当ててある」ではなく
  * 「まだ止まっていない」のほう。
  */
@@ -472,10 +480,18 @@ export function fromGameSession(
 
   const treatmentSlotId = codex.slotNames.tryGetId(TREATMENT_SLOT);
   const bleedingPropertyId = codex.propertyNames.tryGetId(BLEEDING_PROPERTY);
-  /** カードに出す印。血が流れていれば🩸、そうでなく治療具が当たっていれば🩹、どちらでもなければundefined。 */
+  /** その物自身から血が流れているか。持たない物・止まった物はfalse。 */
+  const isBleeding = (object: WorldObject): boolean =>
+    bleedingPropertyId !== undefined && (object.readProperty(bleedingPropertyId)?.value ?? 0) >= 1;
+
+  /**
+   * カードに出す印。血が流れていれば🩸、そうでなく治療具が当たっていれば🩹、どちらでもなければundefined。
+   *
+   * 出血は**負っている本人まで届く**——傷そのものと、血が流れている傷を抱えている物の両方に出る。
+   * UI側は怪我がどのスロットに入るかを知らず、「中に流れている物がいるか」だけを見る。
+   */
   const markOf = (object: WorldObject): string | undefined => {
-    if (bleedingPropertyId !== undefined && (object.readProperty(bleedingPropertyId)?.value ?? 0) >= 1)
-      return BLEEDING_MARK;
+    if (isBleeding(object) || [...object.children()].some(isBleeding)) return BLEEDING_MARK;
     return treatmentSlotId !== undefined && (object.tryGetSlot(treatmentSlotId)?.contents.length ?? 0) > 0
       ? TREATED_MARK
       : undefined;
@@ -904,6 +920,7 @@ export function fromGameSession(
   return {
     characterName: characterTexts.displayName,
     characterArt: game.player.instance.def.name,
+    characterMark: markOf(game.player.instance),
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '👕',
     injuryIcon: '🩹',

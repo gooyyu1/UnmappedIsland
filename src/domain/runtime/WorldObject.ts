@@ -82,6 +82,15 @@ export class WorldObject {
     return this.slots[localId];
   }
 
+  /**
+   * 今この物の中に入っている物すべて（スロットの区別なく、直下の1段だけ）。**どのスロットに
+   * 入っているかを問わない見方**なので、スロット名を知らない側——「中に何かこういう物があるか」
+   * だけを見たい側——が使う。
+   */
+  *children(): IterableIterator<WorldObject> {
+    for (const slot of this.slots) for (const child of slot.contents) yield child;
+  }
+
   setParent(parent: WorldObject | undefined, parentSlotLocalId: number): void {
     this._parent = parent;
     this._parentSlotLocalId = parentSlotLocalId;
