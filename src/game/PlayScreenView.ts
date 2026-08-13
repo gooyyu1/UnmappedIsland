@@ -353,6 +353,16 @@ const TREATMENT_SLOT = 'treatment';
 const TREATED_MARK = '🩹';
 
 /**
+ * 血が流れていることを言う印と、それを決めるプロパティの名前
+ * （injuries.yaml・VitalsSystem.md 9節）。
+ *
+ * 手当て済みの印より優先する。手当てをしてもまだ流れているなら、伝えるべきは「当ててある」ではなく
+ * 「まだ止まっていない」のほう。
+ */
+const BLEEDING_PROPERTY = 'bleeding';
+const BLEEDING_MARK = '🩸';
+
+/**
  * 気を失っていることを言う覆いと、それを決める段の名前（VitalsSystem.md 6節）。
  *
  * UI側は「意識がこの名前の段に居たら覆いを出す」とだけ知っていて、何がどれだけ意識を奪ったかは
@@ -461,11 +471,15 @@ export function fromGameSession(
     warinessPropertyId === undefined ? undefined : object.readProperty(warinessPropertyId)?.alert;
 
   const treatmentSlotId = codex.slotNames.tryGetId(TREATMENT_SLOT);
-  /** 治療具が当たっているカードに出す印。当たっていなければundefined（印そのものを出さない）。 */
-  const markOf = (object: WorldObject): string | undefined =>
-    treatmentSlotId !== undefined && (object.tryGetSlot(treatmentSlotId)?.contents.length ?? 0) > 0
+  const bleedingPropertyId = codex.propertyNames.tryGetId(BLEEDING_PROPERTY);
+  /** カードに出す印。血が流れていれば🩸、そうでなく治療具が当たっていれば🩹、どちらでもなければundefined。 */
+  const markOf = (object: WorldObject): string | undefined => {
+    if (bleedingPropertyId !== undefined && (object.readProperty(bleedingPropertyId)?.value ?? 0) >= 1)
+      return BLEEDING_MARK;
+    return treatmentSlotId !== undefined && (object.tryGetSlot(treatmentSlotId)?.contents.length ?? 0) > 0
       ? TREATED_MARK
       : undefined;
+  };
 
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
   /**

@@ -53,8 +53,12 @@ object_defs:
           parent:
             pain: 40
 
-  # 切り傷。刃物で切られた傷。キャラクタと動物が同じ物を負う（docs/engine/HuntingSystem.md 3節）
-  # ので、負わせる側（animals.yamlのstrike）は相手がどちらかを知らない。
+  # 裂傷。**鈍い刃で裂かれた傷**——尖った石のように切れ味の悪い物で殴ると、皮膚は切られるのではなく
+  # 潰されて裂ける。打撲の成分は傷ではなくshockが持つ（docs/engine/VitalsSystem.md 2.1節）ので、
+  # 一撃で2つの怪我を作る必要はない。切れる刃で作る切創は、その刃が実装されたときに別の型を足す。
+  #
+  # キャラクタと動物が同じ物を負う（docs/engine/HuntingSystem.md 3節）ので、負わせる側
+  # （animals.yamlのstrike）は相手がどちらかを知らない。
   laceration:
     tags: [injury]
     traits: [treatable]
@@ -75,9 +79,33 @@ object_defs:
                 severity: -1
         on_shortfall:
           destroy: self
+      # 今この傷から流れている血の勢い（docs/engine/VitalsSystem.md 4節）。
+      #
+      # **傷の重さとは別の時間で動く。** 血は放っておいても固まって止まるので、傷が塞がるより
+      # ずっと早く——4 tick（1時間）で——0になる。severityの段で出血を表すと、傷が治るまで
+      # 何日も流れ続けることになり、掠り傷でも必ず死ぬ。
+      bleeding:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - accumulate:
+              self:
+                bleeding: -25
     passives:
       # 痛みを宣言していない相手に刺さった場合、この寄与は宛先が無いので効かない。怪我の側は
       # 相手を選ばず、同じ1つの定義でキャラクタにも動物にも刺さる。
       - modify:
           parent:
             pain: 50
+      # 流れている間だけ、負った本人の血が減る（VitalsSystem.md 4節）。-15は毎時60mL——
+      # **潰れた血管は縮んで塞がるので、切創ほどは出ない**。固まるまでの合計は60mLで、ヒトの
+      # 5,000mLには響かないが、サル（400mL）には1割半に当たる。**同じ傷が、体格で意味を変える。**
+      #
+      # 止血できる治療具（hemostatic）を当てている間はここが閉じる。包帯はそのタグを持たず、
+      # 代わりに固まるのを早める（treatments.yaml、InjurySystem.md 3.1節）。
+      - conditions:
+          - {prop: bleeding, gte: 1}
+          - not: {slot: treatment, tag: hemostatic}
+        accumulate:
+          parent:
+            blood: -15

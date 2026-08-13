@@ -64,6 +64,12 @@ object_texts:
       severity:
         display_name: 傷の重さ
         description: 残っている傷。時間とともに引いていき、尽きれば治る。
+      bleeding:
+        display_name: 出血
+        description: この傷から流れている血の勢い。押さえれば早く、放っておいてもいずれ固まって止まる。
+      blood:
+        display_name: 血液量
+        description: 体に残っている血。傷から流れ出た分は戻らず、失いすぎれば意識が薄れ、尽きれば死ぬ。
       vulnerability:
         display_name: 無防備さ
         description: 狙って急所を打てる度合い。気を失っている相手ほど大きい。
@@ -72,7 +78,7 @@ object_texts:
         description: この動物がどれだけ気を立てているか。傷を負わされれば上がり、放っておけば下がる。
       consciousness:
         display_name: 意識
-        description: 起きていて動けるかどうか。痛みと衝撃で薄れ、どちらも引けば戻る。
+        description: 起きていて動けるかどうか。痛み・衝撃・失血で薄れ、原因が引けば戻る。
       shock:
         display_name: 衝撃
         description: 殴られた身体の揺れ。当たった瞬間に跳ね上がり、時間とともに引いていく。
@@ -203,8 +209,8 @@ object_texts:
     display_name: 足首の捻挫
     description: 踏み外した足首の腫れ。体重をかけるたびに痛みが走る。
   laceration:
-    display_name: 切り傷
-    description: 刃物で切られた傷。浅いので捻挫より早く塞がる。
+    display_name: 裂傷
+    description: 鈍い刃で裂かれた傷。潰れた縁が血を早く止めるが、しばらくは流れ続ける。
 
   # 動物（animals.yaml）。
   monkey:
