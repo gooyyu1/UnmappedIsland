@@ -6,7 +6,6 @@
 
 object_defs:
   # 包帯。清潔に保ちやすく、長く当てておける。捻挫や骨折にも多少効く。
-  # 出血を抑える力は限られるが、出血そのものがまだ無いので、今は書けることが無い。
   bandage:
     tags: [item, treatment]
     props:
@@ -20,6 +19,10 @@ object_defs:
           - {in_slot: treatment}
         accumulate:
           parent:
+            # 押さえていれば血は早く固まる。ただし**止めるのではなく早めるだけ**——止血帯
+            # （hemostatic、未実装）と違って出血のゲートは閉じないので、当てても失血はゼロに
+            # ならない（injuries.yamlのbleeding、InjurySystem.md 3.1節）。
+            bleeding: -25
             severity: -0.4
         modify:
           ancestor:

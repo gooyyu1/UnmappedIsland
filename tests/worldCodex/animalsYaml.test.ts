@@ -127,7 +127,7 @@ describe('animals.yamlの動物', () => {
     expect(monkey.readProperty(warinessId)?.alert, '待てば落ち着く').toBe('safe');
   });
 
-  it('尖った石をサルへ重ねると殴れて、切り傷が1つ刺さる', () => {
+  it('尖った石をサルへ重ねると殴れて、裂傷が1つ刺さる', () => {
     const stone = strikeWithSharpStone();
 
     expect(injuriesOf(monkey), '傷は動物のinjuriesスロットへ入る').toEqual(['laceration']);
@@ -206,6 +206,88 @@ describe('animals.yamlの動物', () => {
     expect(consciousness(), '痛みが最も深くても朦朧に留まる（dazedの段）').toEqual({
       value: 100 - 45,
       alert: 'caution',
+    });
+  });
+
+  describe('出血', () => {
+    /** 傷1つが固まるまでに失う血（-15/tick × 4 tick、injuries.yaml）。 */
+    const LOST_PER_WOUND = 60;
+
+    let bloodId: number;
+    let bleedingId: number;
+
+    beforeAll(() => {
+      bloodId = codex.propertyNames.getId('blood');
+      bleedingId = codex.propertyNames.getId('bleeding');
+    });
+
+    /** 今サルに刺さっている傷のうち最初の1つ。 */
+    function firstWound(): WorldObject {
+      return monkey.tryGetSlot(codex.slotNames.getId('injuries'))!.contents[0];
+    }
+
+    it('傷は血を流し、放っておいても固まって止まる', () => {
+      // 出血は傷の重さとは別の時間で動く（VitalsSystem.md 4節）。severityの段で表すと、傷が治る
+      // まで何日も流れ続けることになる。
+      strikeWithSharpStone();
+      expect(monkey.getNumber(bloodId), '殴った時点ではまだ失っていない').toBe(400);
+      expect(firstWound().getNumber(bleedingId)).toBe(100);
+
+      tick(4);
+
+      expect(firstWound().getNumber(bleedingId), '1時間で固まる').toBe(0);
+      expect(monkey.getNumber(bloodId)).toBe(400 - LOST_PER_WOUND);
+
+      tick(100);
+
+      expect(monkey.getNumber(bloodId), '固まった後はもう減らない').toBe(400 - LOST_PER_WOUND);
+      expect(injuriesOf(monkey), '血が止まっても傷そのものは残る').toEqual(['laceration']);
+    });
+
+    it('同じ傷でも、体格が小さいほどよく効く', () => {
+      // 出血のレートは傷の側が持ち、相手の大きさを知らない（injuries.yaml）。ヒトの5,000mLには
+      // 響かない60mLが、サルの400mLには1割半に当たる。
+      strikeWithSharpStone();
+      tick(4);
+
+      expect(monkey.readProperty(bloodId)!.ratio, '1回の裂傷で1割半を失う').toBeCloseTo(0.85, 2);
+    });
+
+    it('衝撃が引いても、失った血が意識を奪い続ける', () => {
+      // 気絶させるのは衝撃だが、そちらは自分で引く（2.1節）。失った血は戻らないので、
+      // **目覚めるはずの時刻を過ぎても倒れたまま**になる。
+      strikeWithSharpStone();
+      strikeWithSharpStone();
+      strikeWithSharpStone();
+      tick(24);
+
+      expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(4);
+      expect(monkey.getNumber(bloodId), '3つぶん失った').toBe(400 - 3 * LOST_PER_WOUND);
+      expect(monkey.readProperty(bloodId)?.alert, '危険域').toBe('danger');
+      expect(monkey.isInStage(consciousnessId, 'unconscious'), '目覚めない').toBe(true);
+    });
+
+    it('血が尽きれば、その枠のまま死体になる', () => {
+      // 仕留めの一撃（HuntingSystem.md 1.4節）と同じ置き換えだが、こちらは**逃げられた個体が後で倒れる道**。
+      for (let i = 0; i < 8; i++) strikeWithSharpStone();
+      expect(itemsInJungle(), '殴っただけではまだ生きている').toEqual(['monkey']);
+
+      tick(2);
+
+      expect(itemsInJungle()).toEqual(['monkey_carcass']);
+      expect(monkey.parent, '失血死した個体は世界から出る').toBeUndefined();
+    });
+
+    it('包帯を当てれば失う血は減るが、ゼロにはならない', () => {
+      // 包帯はhemostaticタグを持たないので出血のゲートは閉じない。固まるのを早めるだけで、
+      // 止血帯（未実装）との差がここに出る（InjurySystem.md 3.1節）。
+      strikeWithSharpStone();
+      const bandage = spawnInto('bandage', player, 'hand');
+      expect(bandage.moveToSlot(firstWound(), codex.slotNames.getId('treatment'))).toBeUndefined();
+
+      tick(4);
+
+      expect(monkey.getNumber(bloodId), '固まるのが倍速なので失うのは半分').toBe(400 - LOST_PER_WOUND / 2);
     });
   });
 

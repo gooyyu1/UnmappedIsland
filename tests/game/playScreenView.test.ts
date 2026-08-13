@@ -372,6 +372,25 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBe('🩹');
   });
 
+  it('血が流れている傷は、手当て済みより先に出血の印を出す', () => {
+    // 当ててあってもまだ流れているなら、伝えるべきは「当ててある」ではなく「止まっていない」
+    // （VitalsSystem.md 9節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const wound = game.session.spawn(codex.objectNames.getId('laceration'));
+    expect(wound.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'))).toBeUndefined();
+    const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
+    expect(bandage.moveToSlot(wound, codex.slotNames.getId('treatment'))).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBe('🩸');
+
+    wound.setNumber(codex.propertyNames.getId('bleeding'), 0, game.session);
+
+    expect(
+      fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark,
+      '固まれば手当て済みの印へ戻る',
+    ).toBe('🩹');
+  });
+
   it('中身を持つカードは、それを映す場所と、空けておく枠の数の元になる容量を持つ', () => {
     // 中身を見せるかはタグではなくスロットで決める（Windows.md 1節 子ウィンドウ）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));

@@ -77,11 +77,44 @@ object_defs:
           - accumulate:
               self:
                 shock: -4
+      # 体に残っている血（VitalsSystem.md 3節）。**maxが体格**で、5kgのサルは体重のおよそ1/13＝
+      # 400mL——ヒトの1/12しかないので、同じ傷でもよく効く。段のしきい値は失った割合（出血性
+      # ショックの分類）から引くので、ヒトの5,000mLと同じ比率になる。
+      #
+      # 戻す仕組みは持たない。血は水と食事から作られる（VitalsSystem.md 3節）が、動物は satiety も
+      # hydration も持たないため条件を書けない。手負いのまま逃げた個体は弱ったまま残る。
+      blood:
+        value: 400
+        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
+        range: {min: 1, max: 400}
+        stages:
+          # 助からない域。ここまで失えば意識は無い——最も深い段が最も強く奪う。
+          - name: exsanguinated
+            alert: fatal
+            passives:
+              - modify: {self: {consciousness: -100}}
+          - name: hemorrhaging
+            min: 160
+            alert: danger
+            passives:
+              - modify: {self: {consciousness: -70}}
+          - name: bled
+            min: 240
+            alert: caution
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - {name: low, min: 280, alert: watch}
+          - {name: replete, min: 340}
+        # 失血死。仕留めの一撃（HuntingSystem.md 1.4節）と同じく、自分が居た枠がそのまま死体に変わる
+        # （destroyがspawnより先に走る、9.4節）。こちらは**逃げられた個体が後で倒れる道**。
+        on_shortfall:
+          destroy: self
+          spawn: {object: monkey_carcass}
       # 無防備さ（HuntingSystem.md 1.4節）。仕留めの候補の重みそのもので、自分では動かず、状態が
       # 押し上げる。起きている間も0にはしない——暴れる相手でも、まれに急所へ入る。
       vulnerability:
         value: 5
-      # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃の段が押し下げる。安全域を外れると
+      # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃・失血の段が押し下げる。安全域を外れると
       # カードにバーが出る（CardView.md 8節）。unconsciousの段の名前は固定（同6節）。
       consciousness:
         value: 100
@@ -112,6 +145,10 @@ object_defs:
       # 当たれば衝撃で気を失う（VitalsSystem.md 5節）。狩りの決着は死ではなく気絶で付くので、
       # 当たった瞬間に効かなければならない——addは実体値への即時の書き込みで、そこから意識への
       # 寄与（shockの段）が同じ瞬間に立つ。
+      #
+      # **打撲の成分はこのshockが持ち、怪我としては表さない。** 尖った石は切れ味が悪いぶん打撲が
+      # 強く出るが、一撃で「裂傷」と「打撲」の2枚を刺すと怪我スロットが溢れる。裂けた皮膚が
+      # 傷（injuries.yamlのlaceration）、殴られた揺れがshock、という分け方で足りる。
       strike:
         with: weapon
         duration: 15
