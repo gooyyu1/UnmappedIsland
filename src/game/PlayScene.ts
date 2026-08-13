@@ -257,12 +257,12 @@ export class PlayScene extends ResponsiveScene {
   private skyTint!: ScreenSkyTint;
 
   /** アイテムレーンに立てる陽炎。掛ける対象はフィールドエリアの作り直しで入れ替わる。 */
-  private haze: LaneHaze | undefined;
+  private haze!: LaneHaze;
 
   /** 各エリアの位置・大きさ。画面寸法から決まるので、buildのたびに作り直される。 */
   private layout!: PlayScreenLayout;
 
-  private drag: CardDragController | undefined;
+  private drag!: CardDragController;
 
   private selectedFilter = 0;
   private filterButtons: Button[] = [];
@@ -391,6 +391,7 @@ export class PlayScene extends ResponsiveScene {
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.artLoader = new LocationArtLoader(this);
     this.requestLocationArt();
+    this.startVisit();
 
     // エラー報告に載せる状態を、このシーンが居る間だけ答える（errorReport参照）。
     const from =
@@ -400,6 +401,37 @@ export class PlayScene extends ResponsiveScene {
     noteOperation(`プレイ画面を開いた: ${from} / シード ${data.save.seed}`);
     setStateReporter(() => this.stateLines());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => setStateReporter(undefined));
+  }
+
+  /**
+   * 画面の作り直し（build）をまたいで持つものを、このプレイのぶんとして構え直す。
+   *
+   * Phaserはシーンのインスタンスを使い回すが、シーンを出るときにinput・eventsの購読をすべて外す
+   * （InputPlugin.shutdown）。作り直しのたびに作らないもの——購読を持つ受け口も、開いている
+   * ウィンドウや演出の途中も——は、ここで作り直さない限り前のプレイのものが居座る。
+   */
+  private startVisit(): void {
+    this.drag = new CardDragController(this, () => this.metrics, {
+      describeDrop: (drop) => this.describeDrop(drop),
+      onDrop: (drop, released) => this.applyDrop(drop, released),
+    });
+    this.haze = new LaneHaze(this);
+
+    // 開いていたウィンドウは前のプレイの世界を映している。入り直したら何も開いていない状態から始める。
+    this.explorationWindow = undefined;
+    this.childWindow = undefined;
+    this.childWindowCard = undefined;
+    this.childWindowPlace = undefined;
+    this.propertyWindow = undefined;
+    this.mapWindow = undefined;
+    this.recipeWindow = undefined;
+
+    // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
+    this.passingTime = false;
+    this.searching = false;
+    this.found = [];
+    this.statusChanges = new Map();
+    this.selectedFilter = 0;
   }
 
   /** エラー報告に載せる、今の画面の状態（errorReport.setStateReporter）。 */
@@ -563,7 +595,6 @@ export class PlayScene extends ResponsiveScene {
     });
 
     // 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。
-    this.haze ??= new LaneHaze(this);
     this.haze.setSurfaces([
       this.fixtureLane.hazeSurface,
       this.itemLane.hazeSurface,
@@ -571,11 +602,6 @@ export class PlayScene extends ResponsiveScene {
     ]);
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
 
-    // ドラッグの受け口はシーンに1つだけ置く（作り直しのたびに増やさない、CardDragController参照）。
-    this.drag ??= new CardDragController(this, () => this.metrics, {
-      describeDrop: (drop) => this.describeDrop(drop),
-      onDrop: (drop, released) => this.applyDrop(drop, released),
-    });
     this.setDragLanes();
   }
 
@@ -600,7 +626,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** ドラッグの対象になるレーン。設置物レーンも含める——持ち出せはしないが、同じレーンの中でなら並び替えられるため。 */
   private setDragLanes(): void {
-    this.drag?.setLanes(this.lanesFrontFirst);
+    this.drag.setLanes(this.lanesFrontFirst);
   }
 
   /**
@@ -1501,7 +1527,7 @@ export class PlayScene extends ResponsiveScene {
       if (wait !== this.artWait) return;
       this.rebuildFieldArea();
       this.showSky();
-      this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
+      this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
       this.showInformation();
       curtain.brighten(BRIGHTEN_MS, () => {
         this.transiting = false;
@@ -1527,7 +1553,7 @@ export class PlayScene extends ResponsiveScene {
     this.motion.update(this.openLanes, cells, context);
     this.showChildWindowActions();
     this.showSky();
-    this.haze?.setHaze(heatHazeFor(this.view.ambientTemperature));
+    this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
     this.showInformation();
     if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
