@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/fire_drill.png を作り直すためのレシピ。build.py が読む。",
+    "きりもみ式の火起こし具。板と心棒の2つで1組（public/world-codex/fire.yaml）。",
+    "",
+    "**板だけを生成し、穴・切り欠き・心棒は編集で足す。** 一度に頼むと道具そのものが出てこない",
+    "（prompts/objects.json の fire_drill 参照）。**足す物は編集のほうが強い**——生成で言うと",
+    "文全体の解釈が変わってしまうが、編集は今ある絵を保ったまま描き足せる。",
+    "",
+    "枠は横長（1152x896）。板の隣に心棒を寝かせる場所が要る。",
+    "",
+    "段は400。板が長いので、太い枝と同じ幅まで使う（1200ml）。"
+  ],
+  "output": "src/assets/objects/fire_drill.png",
+  "prompts": "objects.json",
+  "prompt": "fire_drill",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 5400,
+  "width": 1152,
+  "height": 896,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same flat wooden board in the same place at the same angle, but make it a rough piece of dry bare wood instead of polished furniture: paint it with soft brush strokes, visible grain and slightly ragged edges. Burn one small round black hole into the face of the board near its front edge, and cut a narrow V shaped notch into that edge leading into the hole. Lay one plain straight round wooden stick, as thick as a finger and about as long as the board, on the page in front of the board, resting on the page and not touching the board. Change the wood to a warm mid brown, clearly darker than the white page. Remove the background completely and replace it with a plain empty white page, leaving the board and the stick alone in the middle with a wide white margin all around them and one soft grey shadow beneath each of them. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

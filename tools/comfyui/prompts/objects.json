@@ -396,5 +396,32 @@
     ],
     "positive": "exactly one coil of hand made rope alone on an empty white page, a single rope as thick as a thumb made of three strands twisted together so that the three strands wind visibly along its whole length, coiled flat into a few loose open turns with both frayed cut ends free, warm tan and light brown tones, dry matte surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "chain, cable, wire, steel rope, leather strap, belt, hose, knot, noose, lasso, hangman, tangle, snake, worm, wreath, anchor, boat, ship, sail, mooring post, bollard, hook, pulley, bucket, well, two coils, three coils, several coils, pair, pile, stack, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "fire_drill": {
+    "description": [
+      "きりもみ式の火起こし具。板と心棒の2つで1組（public/world-codex/fire.yaml）。",
+      "",
+      "**板だけを出す。** 板・穴・切り欠き・心棒を一度に頼むと、まな板か旋盤で挽いた道具か電動ドリルに",
+      "なる（言い方を変えて4周、当たり0）。穴と切り欠きと心棒は編集で足す（recipes/fire_drill.json）。",
+      "",
+      "**pale / bleached を否定する。** 「pale dry wood」と書くと白い紙の束として描かれ、白地に溶ける。"
+    ],
+    "positive": "exactly one flat wooden board alone on an empty white page, a short thick slab of brown wood with straight edges lying flat on the page, dry bare wood with visible grain, warm mid brown tones, matte dry surface, it is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "wooden table, tabletop, wood grain background, food, bread, cheese, knife, chopping board handle, drill, drilling, hand drill, machine, lathe, turned wood, spindle turning, handle, knob, awl, chisel, mallet, hammer, screwdriver, pen, pencil, paintbrush, sheet of paper, sheet of white paper, page, paper stack, folded paper, book, open book, white board, white plank, pale wood, bleached wood, wand, magic wand, spoon, ladle, spatula, pestle, walking stick, bow drill, bow, curved bow, cord, string, twine, rope, leather strap, thong, power drill, electric drill, drill bit, drill press, machine, metal, steel, screw, screwdriver, saw, knife, axe, blade, fire, flames, embers, glowing, smoke, sparks, leaves, foliage, tree, trunk, growing, rooted, lumber pile, scattered objects, repeated objects, pattern, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "dry_grass": {
+    "description": [
+      "枯れ草。乾いた土地で拾える火口（public/world-codex/fire.yaml）。ふわりと束ねた嵩のある塊。",
+      "",
+      "**頭の名詞で全部決まる。** hay と言うとロール状のベールになり、armful of dry grass だと生えた",
+      "草むらになる。handful of hay と言ったうえで「低く崩れた山」と続けたときだけ藁の山になる。",
+      "",
+      "**pale を否定しない。** 枯れ草の色そのものなので、共通のNGワードから外している。",
+      "",
+      "**牧草地になる。** 画面いっぱいの草原に崩れるので、数歩下がった距離と四辺の余白を本文で言い、",
+      "lawn / meadow / field / macro を止める（植物繊維・小枝と同じ）。"
+    ],
+    "positive": "exactly one loose handful of hay alone on an empty white page, seen from a few steps back so that the whole heap is well inside the page with a wide empty white margin on all four sides, dry grass stems and blades gathered up and dropped in one low untidy heap lying on its side, the stems lying every which way with wispy ends sticking out at the sides, soft and airy, not packed and not tied, warm straw yellow and light tan tones, dry matte surface, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "growing grass, tuft of grass, clump of grass, standing grass, blades standing upright, blowing in the wind, rooted in the ground, hay bale, round bale, square bale, baled hay, ball, sphere, wrapped, bound, cocoon, potato, egg, loaf, pampas grass, feather, feather duster, plume, fan shape, spray of stems, long stalks, wispy strands, flyaway strands, dried flower arrangement, bouquet, vase, green grass, fresh grass, growing grass, lawn, meadow, field, turf, sod, wheat ears, grain heads, seed heads, flowers, wheat sheaf, hay bale, straw bale, broom, besom, birds nest, nest, twigs, sticks, branches, wood, rope, string, twine, tied with cord, ribbon, basket, fire, flames, embers, smoke, burning, extreme close-up, macro, zoomed in, edge to edge, filling the frame, close-up, cropped, cut off, out of frame, scattered objects, repeated objects, pattern, scenery, landscape, background scenery, ground, floor, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, overexposed"
   }
 }

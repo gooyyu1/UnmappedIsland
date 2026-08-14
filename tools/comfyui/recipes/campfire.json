@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "src/assets/objects/campfire.png を作り直すためのレシピ。build.py が読む。",
+    "枝を積んだだけの炉（public/world-codex/fire.yaml）。",
+    "",
+    "**組み方は描いて渡す（fireLay）。** 焚き火らしさは枝の組み方そのもので決まるのに、SDXLは",
+    "その配置を言葉から作れない。teepee と言えば幕の張られた住居に、cone of sticks なら枝の束や箒に、",
+    "stake of firewood なら薪棚になった（言い方を変えて5周、8〜12枚ずつ、当たり0）。",
+    "形だけを fire_lay.py で描き、質感と塗りはQwenに任せる。",
+    "",
+    "**枝は太くする。** 細い小枝を積むと、火を焚く前の焚き付けにしか見えない。",
+    "",
+    "**火は描かない。** 火力の段で絵を差し替える仕組みがまだ無く、火が点いていない状態も同じ絵を",
+    "使うため。生成に頼っていた頃は、unlit / no fire of any kind と本文に書くほど火が点いた",
+    "（8枚中6枚が炎かロウソク）。編集の指示では効く。",
+    "",
+    "**木口に年輪を描かせない。** この世界に鋸は無く、枝は折って採るもの。折れ口にする",
+    "（docs/world/SurvivalItems.md 0節）。",
+    "",
+    "段は400の切り抜き。設置物だが、カード全面（縦長）へ敷こうとすると、低く広い炉が縦に伸びて",
+    "住居の骨組みに見える。"
+  ],
+  "output": "src/assets/objects/campfire.png",
+  "fireLay": "fan",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: five thick dry branches lying on the ground in a fan, all of them meeting and piled over each other at the back, their near ends pointing towards the viewer and spread apart, with thin twigs and dry kindling tucked underneath in the middle. Paint them as real branches with rough brown bark, knots and snapped broken ends, in warm mid brown tones with soft brush strokes and gentle natural shading, clearly darker than the white page. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow under the pile. Dry matte surface, flat even lighting. There is no fire, no flame, no smoke and no glow anywhere in the picture. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

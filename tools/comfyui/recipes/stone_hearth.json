@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "src/assets/objects/stone_hearth.png を作り直すためのレシピ。build.py が読む。",
+    "石で囲って種火が翌朝まで生きる、常設の炉（public/world-codex/fire.yaml）。",
+    "",
+    "作り方は recipes/three_stone_hearth.json と同じで、足す石を輪にしただけ。",
+    "三石のかまどとの違いは石の数と、囲いになっていること。",
+    "",
+    "SDXLへ直接頼むと、砂利を貼った壁掛けのリースになる（8枚で全滅。薪も灰も無い）。"
+  ],
+  "output": "src/assets/objects/stone_hearth.png",
+  "edit": {
+    "source": "campfire.json",
+    "prompt": "Keep the same pile of brown branches in the same place, painted in the same soft hand painted style on the same plain empty white page, and build a low wall of stones around it: about twelve rounded grey stones, each the size of a fist, set on the page close together in a circle that encloses the pile of branches, the near stones in front of it and the far stones behind it. The stones are mottled grey with soft brush strokes and gentle shading. Keep the branches and the kindling exactly as they are, keep the wide white margin all around and the plain empty white page, with one soft grey shadow under the whole hearth. There is no fire, no flame, no smoke and no glow anywhere in the picture. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

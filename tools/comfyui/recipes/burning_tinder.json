@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "src/assets/objects/burning_tinder.png を作り直すためのレシピ。build.py が読む。",
+    "火のついた火口。炉へ運ぶためだけに在る物（public/world-codex/fire.yaml）。",
+    "",
+    "**枯れ草（dry_grass）の絵に火を入れて作る。** 同じ草が燻っているものなので、絵も同じ山から",
+    "派生させる。SDXLへ直接頼むと、墨と炎の抽象画になる（8枚で全滅）。",
+    "",
+    "**炎は上げない。** 摩擦で得られるのは米粒ほどの熾（docs/engine/FireSystem.md 3.2節）なので、",
+    "焦げた窪みと熾の赤み、細い煙だけにする。",
+    "",
+    "段は320。枯れ草の一部を持ち出したものなので、枯れ草（400）より小さく載る。"
+  ],
+  "output": "src/assets/objects/burning_tinder.png",
+  "edit": {
+    "source": "dry_grass.json",
+    "prompt": "Keep the same heap of dry grass in the same place, painted in the same soft hand painted style on the same plain empty white page, but set its middle smouldering: burn a dark charred hollow into the centre of the heap, blacken the grass around that hollow, and show a few small embers glowing deep orange red deep inside it. Let one faint thin wisp of pale grey smoke curl up from the hollow. There is no open flame. Keep the rest of the heap warm straw yellow, keep the wide white margin all around it and the soft grey shadow beneath it. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
