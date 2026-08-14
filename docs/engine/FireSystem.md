@@ -81,8 +81,8 @@ combinations:
     with: fuel
     duration: 1
     conditions:
-      # 満杯の炉はくべさせない（無駄をここで止める）。上限はこの炉のrange.maxと同じ値。
-      - {reason: hearth_full, prop: fuel, lt: 30}
+      # 満杯の炉はくべさせない（無駄をここで止める）。上限は炉ごとに違うのでプロパティで持つ。
+      - {reason: hearth_full, prop: fuel, lt: {object: self, prop: fuel_capacity}}
     transfer:
       amount: 999            # 入るだけ入れる
       from_object: dragged
@@ -164,6 +164,8 @@ props:
 **育ちと衰えは同時に効かせません。** `accumulate` は登録順に値を書き換えながら適用されるため、同じ
 tick に正負が混ざると、段の境目で「育って次の段へ入り、その段の冷めを即座に払って戻る」が起きて、
 火がそこから育たなくなります。育ちは薪がある間、衰えは薪が尽きている間だけにして、打ち消しを断ちます。
+この打ち消しは段を細かく刻めば**狙った高さの平衡点**にもできますが、火には平衡が要りません
+（[`DesignNotes.md`](./DesignNotes.md) accumulateの平衡点節）。
 
 **火の大きさを決めるのは、上限と時間の競争です。** 薪があるかぎり火力はその炉の上限（`heat` の
 `range.max`、6 節）まで上がりますが、**上がるより先に薪が尽きれば、そこまでしか大きくなりません**。
@@ -220,14 +222,14 @@ tick に正負が混ざると、段の境目で「育って次の段へ入り、
 炉の差そのものだからです（6 節）。
 
 ```yaml
-# 焚き火のheatのstagesが宣言する
-- name: ember
-  min: 1
-  passives:
-    - accumulate:
-        self:
-          fuel: -0.1
-          heat: -2      # 1〜4を2 tick(30分)で通り抜けて死ぬ。石囲いの炉は-0.125（8時間）
+# 焚き火の側が宣言する。段のpassivesではなく炉のpassivesに置くのは、traitが配るstagesを
+# 炉ごとに部分的に差し替えられないため。
+passives:
+  - conditions:
+      - {prop: heat, in_stage: ember}
+      - {prop: fuel, in_stage: none}   # 薪が載っていれば、火は衰える側ではなく育つ側
+    accumulate:
+      self: {heat: -2}   # 1〜4を2 tick(30分)で通り抜けて死ぬ。石囲いの炉は-0.125（8時間）
 ```
 
 **種火が残っているあいだに薪を足せば、道具なしで火が戻ります。** 火起こし具を使わずに済むことが、
@@ -554,8 +556,8 @@ passives:
 - 炉そのものの劣化。雨で崩れるか、放置しても残り続けるか
 - `fuel` のバーと `heat` のシンボルを、カードのどこに出すか（[`CardView.md`](../ui/CardView.md) のバーは
   量的オブジェクトの中身に紐づくため、そのままは使えない）
-- 満杯の炉を拒む条件（2 節）が、その炉の `range.max` と同じ値を 2 度書くこと。炉ごとに違う値なので
-  trait へは括り出せない
+- 満杯の炉を拒む条件（2 節）のために、`fuel_capacity` が `fuel` の `range.max` と同じ値を 2 度
+  持つこと。炉ごとに違う値なので trait へは括り出せず、`range` は `{object, prop}` 参照を取れない
 - 器の枠（1.1 節）に「ここは器を置く枠」と見せるかどうか。空き枠へ受け入れる型を薄く敷く仕組み
   （`EmptyCard`）は既にあるが、枠ごとの受け入れ型を画面へ渡しているのは製作中オブジェクトの材料欄
   だけで、普通の入れ物は `SlotDef` の枠ごとの `accept` を見ていない。受け入れがタグの場合に何の絵を
