@@ -108,6 +108,41 @@ object_defs:
     expect(valuesOf(instance, codex)).toEqual([9, 0, 1]);
   });
 
+  it('段ごとに速度を変えられる（多いほど速く出ていく）', () => {
+    // 消化の胃はこの形（DigestionSystem.md 3節）。比例した排出を段の階段で近似し、
+    // 溜まるほど速く出るので、絞りすぎて溜まり続けることがない。
+    const codex = load(`
+object_defs:
+  body:
+    props:
+      stomach:
+        value: 30
+        range: {min: 0, max: 32}
+        stages:
+          - {name: light}
+          - name: filled
+            min: 12
+            passives: [{transfer: {from_prop: stomach, to_prop: digesting, amount: 3}}]
+          - name: full
+            min: 24
+            passives: [{transfer: {from_prop: stomach, to_prop: digesting, amount: 4}}]
+      digesting: {value: 0, range: {min: 0, max: 64}}
+`);
+    const instance = spawn(codex, 'body');
+    const stomachId = codex.propertyNames.getId('stomach');
+
+    instance.tick(session);
+    expect(instance.getNumber(stomachId), '満杯の段では4ずつ').toBe(26);
+
+    instance.tick(session);
+    instance.tick(session);
+    expect(instance.getNumber(stomachId), '24を割ると3ずつへ落ちる').toBe(19);
+
+    // 最下段は輸送を宣言していないので、そこまで減れば止まる。
+    for (let i = 0; i < 5; i++) instance.tick(session);
+    expect(instance.getNumber(stomachId)).toBe(10);
+  });
+
   it('同じ値から出す輸送が並んでも、在庫を二重には動かさない', () => {
     const codex = load(`
 object_defs:
