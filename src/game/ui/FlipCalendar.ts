@@ -30,7 +30,7 @@ const COLON_WIDTH = 10;
 /**
  * 日時のぶら下げ式フリップカード（ScreenLayout.md 1節）。
  * 各桁は上部の留具（リング）だけで吊り下げられ、台紙のような外枠は持たない。
- * タップで時間経過アクションを選ぶ入口になる想定のため、押しボタンとして振る舞う。
+ * タップは休息（Windows.md 4節）を選ぶ入口なので、押しボタンとして振る舞う。
  */
 export class FlipCalendar extends Phaser.GameObjects.Container {
   /** 最も背の高い日数の桁が、この表示全体の高さになる。 */

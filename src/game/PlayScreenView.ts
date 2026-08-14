@@ -199,6 +199,13 @@ export interface PlayScreenView {
    * （CardView.md 9節）。負っていなければundefined。
    */
   readonly characterMark: string | undefined;
+  /** キャラクタ自身の説明文（人物像）。localeに書かれていなければundefined。 */
+  readonly characterDescription: string | undefined;
+  /**
+   * キャラクタ自身が持つアクション（休息、Characters.md 休息節）。日時から開く子ウィンドウに
+   * 並ぶ（Windows.md 4節）。他のカードのアクションと同じ形で、実行の経路も同じ。
+   */
+  readonly characterActions: readonly CardAction[];
   /** 条件アイコン。複数同時に付き得るので件数は可変。 */
   readonly conditions: readonly string[];
   readonly equipmentIcon: string;
@@ -999,6 +1006,8 @@ export function fromGameSession(
     characterName: characterTexts.displayName,
     characterArt: game.player.instance.def.name,
     characterMark: markOf(game.player.instance),
+    characterDescription: characterTexts.description,
+    characterActions: actionsOf(game.player.instance),
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '👕',
     injuryIcon: '🩹',

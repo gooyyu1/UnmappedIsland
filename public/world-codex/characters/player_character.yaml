@@ -7,6 +7,32 @@ traits:
     # 土地のcharactersスロットの枠が受け入れる型（core.yaml）。プレイヤーが操作するキャラクタだけが
     # 持つタグで、操作できない生物は持ち運べるならitem・持ち運べないならfixtureで表す。
     tags: [character]
+    # 休息（docs/world/Characters.md 休息節）。4つの違いは長さと回復量だけで、眠るものだけが
+    # 眠気（wakefulness）も戻す。1時間あたりの回復量を長いものほど大きくしてあるので、
+    # 同じ6時間でも仮眠2回より睡眠1回のほうが多く戻る。
+    #
+    # 眠っている間も覚醒度は減り続ける（-1/tick）ため、実質の回復は経過ぶんを引いた値になる
+    # ——睡眠は+96-24で18時間ぶん、仮眠は+36-12で6時間ぶん。睡眠1回では満タンに届かない。
+    #
+    # 身体の仕組みなので個体差を持たせず、この trait が配る（痛み・血と同じ扱い）。回復量は
+    # 一律なので、体力のmaxが大きいキャラクタほど1回の休息で戻る割合は小さい。
+    actions:
+      wait:
+        showMenu: always
+        duration: 15
+        add: {self: {stamina: 2}}
+      rest:
+        showMenu: always
+        duration: 60
+        add: {self: {stamina: 10}}
+      nap:
+        showMenu: always
+        duration: 180
+        add: {self: {stamina: 36, wakefulness: 36}}
+      sleep:
+        showMenu: always
+        duration: 360
+        add: {self: {stamina: 90, wakefulness: 96}}
     slots:
       # 手持ち。枠数はキャラクタごとに決める（cell_count）。数を決めると持ち替えても枠の位置が
       # 動かない（ScreenLayout.md 7.3節・SlotSystem.md 3節）。

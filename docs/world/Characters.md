@@ -31,6 +31,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
 | プロパティ | `pain` / `blood` / `satiety` / `stomach` / `intestine` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
+| アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節。`player_character` trait が配る） |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterArt.ts`。絵が入るまでの繋ぎ） |
 
 `status` タグが付くのは `pain` / `blood` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の7つで、
@@ -79,7 +80,8 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身�
   （[`DigestionSystem.md`](../engine/DigestionSystem.md) 4 節）。`status` タグを持たないため
   ステータスエリアには出ない——画面に見える飢えの兆しは空腹感が受け持つ。
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る想定（未実装。致死性は無い）。`-1/tick`。
-- **`stamina`（体力）**: 疲労の逆で、tickでは減らない。
+  戻すのは眠る休息（仮眠・睡眠）だけ（[休息](#休息)節）。
+- **`stamina`（体力）**: 疲労の逆で、tickでは減らない。戻すのは休息だけ（同節）。
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
   動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
@@ -120,6 +122,33 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身�
   割合で刻む: 1/4 で `watch`、1/2 で `caution`、5/6 で `danger`。0 から始まって荷造り・怪我の最中に
   現れるよう、最初の境目は低めに置く。`load` の危険域の段の名前は **`too_heavy`** で固定する——道の
   `travel` がこの名前で移動可否を見る（[`ContainerSystem.md`](../engine/ContainerSystem.md) 5節）。
+
+## 休息
+
+**時間を進める操作は、キャラクタ自身のアクションです。** 4つとも同じ形（`duration` と `add` だけ）で
+`player_character` trait に並び、[`ActionSystem.md`](../engine/ActionSystem.md) 2 節の実行パイプラインを
+そのまま通ります。**違うのは長さと回復量だけ**で、眠るものだけが `wakefulness` も戻します。
+時間を進める専用の仕組みは持ちません。
+
+入口は日時のフリップカードで、押すとキャラクタ自身の子ウィンドウが開きます
+（[`Windows.md`](../ui/Windows.md) 4 節）。
+
+| | 長さ | `stamina` | 1時間あたり | `wakefulness` | 1時間あたり | 眠気の実質 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `wait`（待機） | 15分 | +2 | 8 | — | — | −1 |
+| `rest`（休憩） | 60分 | +10 | 10 | — | — | −4 |
+| `nap`（仮眠） | 180分 | +36 | 12 | +36 | 12 | **+24**（6時間ぶん） |
+| `sleep`（睡眠） | 360分 | +90 | 15 | +96 | 16 | **+72**（18時間ぶん） |
+
+- **まとめて休むほど1時間あたりの回復が大きい。** 同じ6時間でも、仮眠2回（体力72・眠気の実質48）より
+  睡眠1回（90・72）のほうが多く戻ります。細切れに休むより通しで休むほうが得、が数値だけで出ます。
+- **眠っている間も覚醒度は減り続けます**（`-1/tick`）。上の表の「実質」は経過ぶんを引いた値で、
+  **睡眠1回では満タンに届きません**——6時間眠って18時間ぶんなので、1日を回すだけでほぼ使い切ります。
+  溜まった眠気を返すには仮眠を挟むか、翌晩まで待つことになります。
+- **回復量は個体差を持ちません**（痛み・血と同じく trait が配ります）。`stamina` の `max` が大きい
+  キャラクタほど1回で戻る割合は小さく、休息の重みは体格の側に出ます。
+- **休んでいる間も水分と体脂肪は減ります。** 睡眠1回で水分がおよそ1日ぶんの1/4——眠ること自体に
+  値段があり、渇いたまま眠れば眠っている間に死にます（[`VitalsSystem.md`](../engine/VitalsSystem.md) 6 節）。
 
 ## 選択とセーブ
 
