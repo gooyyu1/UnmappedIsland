@@ -127,18 +127,16 @@
     "negative": "path, trail, road, walkway, footpath, dirt track, opening, clearing, gap in the middle, corridor, vanishing point, central subject, focal point, symmetry, text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, pile of rocks, rubble, heap, stacked rocks, jumbled blocks, scree, talus, boulder field, tall rock spires, jagged pinnacles, blue sky, vivid blue, cyan, saturated colours, fog, mist, haze, low cloud, cloud bank, whiteout, smoke, blowing spray, rain, vertical streaks, storm, dramatic clouds, sea of clouds spectacle, sunburst, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, distant mountain range, jagged peaks, whole mountain, aerial view, valley below, island seen from above, snow, ice, glacier, cairn, flag, cross, trees, grass, meadow, flowers, one pointed rock in the center, low horizon, large sky, sky filling the frame, clouds dominating, vertical rock face, cliff, wall of rock, boulder, jagged rock, rock formation, eroded rock, weathered rock pillar, mushroom rock, hoodoo, pedestal rock, stacked slabs, overhang, ledge, chasm, crevasse, ravine, rock spire, pinnacle, ridge, close-up, macro, top-down view, overhead view, looking down at the ground, flat lay, seamless texture, no horizon, no sky"
   },
   "junglefowl_injuries_card": {
-    "description": "ヤケイの羽。怪我のカードの地。カードの絵のヤケイ（objects.jsonのjunglefowl）と色を揃える。",
+    "description": "ヤケイ。怪我のカードの地に敷く羽を、この鳥の肩から切り出す（recipes/junglefowl_injuries_card.json）。",
     "_note": [
-      "色は junglefowl.json のedit（golden orange hackles / dark blue black body）のうち、",
-      "**明るいほうの金褐色を採る**。地が暗いと、上に載る傷（赤）が沈んで読めない。",
+      "**羽を素材として頼んではいけない。** 「小さな羽が重なった面」と頼むと、翼の風切羽を並べた絵に",
+      "なり、胴の羽の並びにならない（言い方を変えて2周、16枚とも）。ここでは鳥を1羽出させ、",
+      "切り出しはレシピが持つ。",
       "",
-      "**鳥を名指ししない。** 毛皮（monkey_injuries_card）と同じで、頼むのは羽という素材までで、",
-      "誰の羽かはファイル名が言う。",
-      "",
-      "**1枚の羽にしない。** feather と言うと大きな風切羽1本や飾り羽になる。小さな羽が瓦のように",
-      "重なった面だと言い、羽1枚・翼・尾を否定する。"
+      "**胴に寄れとだけ言えばよい。** 頭も脚も否定しているが、それでも全身が出る。切り出す前提なので、",
+      "胴が大きく写っていて羽の1枚1枚が見えるseedを選べば足りる。"
     ],
-    "positive": "extreme close up of the small body feathers on a bird's breast completely filling the frame from edge to edge, a flat even patch of plumage seen straight on, hundreds of tiny rounded body feathers each one no bigger than a fingernail, lying flat and overlapping each other in even rows, warm golden brown and tan with slightly darker feather edges, uniform across the whole frame, soft even diffuse daylight, matte feathers, muted earthy colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
+    "positive": "close view of the side of a red junglefowl's body completely filling the frame from edge to edge, the shoulder and flank of the living bird seen straight on, small rounded body feathers lying flat and overlapping one another in even rows the way they grow on a bird, warm golden brown and tan feathers with slightly darker edges, uniform across the whole frame, soft even diffuse daylight, matte feathers, muted earthy colours, very soft low contrast, calm even surface with no single subject, hand painted illustration, game background art",
     "negative": "long feathers, large feathers, big feathers, single feather, one large feather, flight feather, wing feather, quill, plume, feather boa, feather duster, headdress, fan of feathers, spread wing, wing, tail feathers, whole bird, head, beak, eye, comb, wattles, claw, foot, peacock, eye spot, iridescent, white feathers, cream feathers, pale feathers, pillow, cushion, fabric, scales, fish scales, reptile skin, brickwork, silhouette, outline, edge of the body, bird against a background, background, branch, leaves, sky, ground, nest, egg, wound, bruise, blood, scar, bare skin, glossy, shiny, specular highlight, 3d render, cgi, photograph, text, letters, numbers, watermark, logo, signature, artist signature, high contrast, harsh shadows, vignette, dark shadow, blurry, low quality, jpeg artifacts"
   }
 }

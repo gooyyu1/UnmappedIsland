@@ -2,14 +2,17 @@
   "_comment": [
     "src/assets/backgrounds/junglefowl_injuries_card.png を作り直すためのレシピ。build.py が読む。",
     "",
-    "怪我のカードの地に敷くヤケイの羽（docs/ui/CardView.md 7 節）。作り方はサルの毛皮",
-    "（recipes/monkey_injuries_card.json）と同じで、素材が毛から羽に変わっただけ。",
+    "怪我のカードの地に敷くヤケイの羽（docs/ui/CardView.md 7 節）。役割はサルの毛皮",
+    "（recipes/monkey_injuries_card.json）と同じだが、作り方が1段違う。",
     "",
-    "**羽を小さく揃えるのがすべて。** 生成は翼の風切羽の束を描くので、羽1枚が上に載る傷と同じ",
-    "くらいの大きさになり、縮尺が合わない（毛皮のうねりとまったく同じ失敗）。爪ほどの胸羽だと",
-    "本文で言い、残った流れと濃い影の隙間をeditで均す。",
+    "**羽は素材として頼まず、鳥から切り出す。** 「羽の面」を頼むと翼の風切羽を並べた絵になり、",
+    "胴の羽の並びにならない（言い方を変えて2周、16枚とも）。鳥を1羽描かせて肩の羽だけを切り出せば、",
+    "並びは実物のままになる。",
     "",
-    "**色は明るいほうを採る。** ヤケイの胴は黒に近いが、地が暗いと上に載る傷が沈む。"
+    "**狭く採って大きく引き伸ばす。** 元の解像度は問題にならない——ぼけた分はQwenが羽軸と羽枝を",
+    "描き戻す。**Qwenへ渡すのは並びだけ**なので、頭も背景も混じらない小さな範囲を選べる。",
+    "",
+    "**濃さは毛皮に合わせる。** 生成のままだと生成りに近く、上に載る傷（淡い線）が沈む。"
   ],
   "output": "src/assets/backgrounds/junglefowl_injuries_card.png",
   "prompts": "card_backgrounds.json",
@@ -18,11 +21,16 @@
   "lora": "watercolor_sdxl.safetensors",
   "loraStrength": 0.8,
   "noTrigger": true,
-  "seed": 6707,
+  "seed": 6803,
   "width": 832,
   "height": 1280,
+  "crop": {
+    "_comment": "肩の鱗状の羽だけ。頭も背景も入らない範囲を、カードの縦横比で採る。",
+    "box": [300, 900, 150, 235],
+    "size": [832, 1280]
+  },
   "edit": {
-    "prompt": "Repaint this plumage so that it becomes a flat even patch of small body feathers, like the feathers on a bird's breast. Make the feathers the same small size everywhere and lay them in even overlapping rows across the whole picture, removing the large sweeping diagonal flow, the deep dark gaps and the pale streaks completely, but keep it clearly feathers and not fabric: the shaft and the fine barbs of each little feather are still visible, with gentle natural variation in tone so that some patches are a little darker and some a little lighter. Keep the same warm golden brown and tan colours as the original picture, the same warmth and the same soft even lighting. Matte feathers, no shine, no highlights. No bird, no head, no wing, no outline, no background, no text.",
+    "prompt": "Repaint this patch of a bird's plumage as a soft hand painted illustration, keeping the feathers exactly where they are: the same overlapping rounded feathers in the same rows, with the shaft and the fine barbs of each feather painted back in with gentle brush strokes. The whole picture is feathers from edge to edge: there is no background, no sky and no outline anywhere, and any smooth blurred area is filled with more of the same feathers. Even the picture out: remove the deep dark gaps and the bright streaks, and let the tone vary only gently so that some patches are a little darker and some a little lighter. Make the plumage a warm mid brown, two shades deeper than it is now, the colour of a hen's back, with slightly darker feather edges: it is brown, not pale cream and not yellow. Soft even lighting, matte feathers, no shine, no highlights. No bird, no head, no beak, no eye, no legs, no text.",
     "seed": 1
   },
   "cardArt": {
