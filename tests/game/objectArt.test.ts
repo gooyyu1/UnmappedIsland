@@ -65,6 +65,31 @@ describe('object_defごとの絵', () => {
   it('ファイル名は識別子の命名規則（3.2節）に従う', () => {
     for (const name of artNames()) expect(name).toMatch(/^[a-z][a-z0-9_]*$/);
   });
+
+  /**
+   * 気を失った動物は、死体の絵をそのまま借りる（CardView.md 5.1節）。借りられるのは死体の型が
+   * `<動物>_carcass` と名付けられているからで、この規約が崩れても絵は黙って生きた姿のままになる
+   * ——ロードは通り、画面も出るので、ここで検査しないと気付けない。
+   */
+  it('気を失った動物の絵は、その動物の死体の絵になる', () => {
+    const animals = codex.objectDefNamesWithTag('animal');
+    expect(animals.length, '検査対象が無い（animalタグが変わっていないか）').toBeGreaterThan(0);
+
+    for (const animal of animals) {
+      const objectDef = codex.objects.get(codex.objectNames.getId(animal));
+      const suffix = objectDef
+        .getPropertyDef(codex.propertyNames.getId('consciousness'))
+        ?.artSuffixOf(0 /* 気を失っている */);
+      expect(suffix, `'${animal}' の気絶した段が絵を宣言していない`).toBeDefined();
+
+      const carcass = `${animal}_${suffix}`;
+      expect(
+        codex.objectNames.tryGetId(carcass),
+        `'${animal}' の気絶した絵が指す '${carcass}' という型が無い`,
+      ).toBeDefined();
+      expect(artNameFor(animal, suffix), `'${carcass}.png' が無いので生きた姿のまま出る`).toBe(carcass);
+    }
+  });
 });
 
 /**
