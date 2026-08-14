@@ -14,9 +14,12 @@ type Point = { x: number; y: number };
 
 describe('地形生成パイプライン(TerrainGenerator)', () => {
   let codex: WorldCodex;
+  /** SEEDSの島。不変条件の検証はどれも同じ島の集合を見るので、生成は一度だけにする。 */
+  let islands: ReadonlyMap<number, IslandMap>;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    islands = new Map(SEEDS.map((seed) => [seed, generate(seed)]));
   });
 
   function generate(seed: number): IslandMap {
@@ -38,25 +41,22 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   it('土地数は10〜20の範囲に収まる', () => {
-    for (const seed of SEEDS) {
-      const count = generate(seed).sites.length;
+    for (const [seed, map] of islands) {
+      const count = map.sites.length;
       expect(count, `シード${seed}`).toBeGreaterThanOrEqual(10);
       expect(count, `シード${seed}`).toBeLessThanOrEqual(20);
     }
   });
 
   it('島には必ず山(mountain_peak)が1つ以上ある', () => {
-    for (const seed of SEEDS) {
-      const map = generate(seed);
+    for (const [seed, map] of islands) {
       const mountainCount = map.sites.filter((s) => s.type!.name === 'mountain_peak').length;
       expect(mountainCount, `シード${seed}: 島には必ず山がある（guarantees）`).toBeGreaterThanOrEqual(1);
     }
   });
 
   it('島は海岸に囲まれ、海岸過多にはならない', () => {
-    for (const seed of SEEDS) {
-      const map = generate(seed);
-
+    for (const [seed, map] of islands) {
       for (const site of map.sites) {
         if (site.onCoastRing)
           expect(
@@ -81,7 +81,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     // 乾燥度(湿り気)軸が実際に配置を分けていることの粗い検証: 複数シードを合算すれば、
     // 草原・密林・(荒野または森林)のような湿度帯の異なる内陸型がそれぞれ出現する。
     const seen = new Set<string>();
-    for (const seed of SEEDS) for (const site of generate(seed).sites) seen.add(site.type!.name);
+    for (const map of islands.values()) for (const site of map.sites) seen.add(site.type!.name);
 
     expect(seen).toContain('grassland');
     expect(seen).toContain('jungle');
@@ -89,8 +89,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   it('すべての土地が道で連結する（MST保証）', () => {
-    for (const seed of SEEDS) {
-      const map = generate(seed);
+    for (const [seed, map] of islands) {
       const adjacency: number[][] = Array.from({ length: map.sites.length }, () => []);
       for (const edge of map.edges) {
         adjacency[edge.a].push(edge.b);
@@ -117,8 +116,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   it('道同士は交差しない（Delaunay部分集合）', () => {
-    for (const seed of SEEDS) {
-      const map = generate(seed);
+    for (const [seed, map] of islands) {
       for (let i = 0; i < map.edges.length; i++)
         for (let j = i + 1; j < map.edges.length; j++)
           expect(
@@ -129,8 +127,8 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   it('移動時間は15分刻みの正の値になる', () => {
-    for (const seed of SEEDS)
-      for (const edge of generate(seed).edges) {
+    for (const [seed, map] of islands)
+      for (const edge of map.edges) {
         expect(edge.travelMinutes, `シード${seed}`).toBeGreaterThanOrEqual(15);
         expect(edge.travelMinutes % 15, `シード${seed}: 移動時間は15分刻み`).toBe(0);
       }
@@ -140,10 +138,9 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     const max = codex.generation!.scopes.get('island')!.maxSitesPerType;
     expect(max, '上限を設けたスコープで確かめる').toBeGreaterThan(0);
 
-    for (const seed of SEEDS) {
+    for (const [seed, map] of islands) {
       const counts = new Map<string, number>();
-      for (const site of generate(seed).sites)
-        counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
+      for (const site of map.sites) counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
 
       for (const [name, count] of counts) expect(count, `シード${seed}: ${name}`).toBeLessThanOrEqual(max);
     }
@@ -153,8 +150,8 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     // 上限が無いと、軸空間の中央付近に理想点を持つ型が大半のサイトを取り、端に寄った型が
     // ほとんど出ない（TerrainGeneration.md 3.4節）。実測値はTerrainStats.md。
     const seen = new Map<string, number>();
-    for (const seed of SEEDS) {
-      const types = new Set(generate(seed).sites.map((s) => s.type!.name));
+    for (const map of islands.values()) {
+      const types = new Set(map.sites.map((s) => s.type!.name));
       for (const name of types) seen.set(name, (seen.get(name) ?? 0) + 1);
     }
 
@@ -162,8 +159,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   it('土地の名前は割り当てられ、重複しない', () => {
-    for (const seed of SEEDS) {
-      const map = generate(seed);
+    for (const [seed, map] of islands) {
       const names = map.sites.map((s) => s.name);
       expect(
         names.every((n) => n !== undefined),
@@ -176,8 +172,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   it('土地の名前は、その型が1つだけなら型そのもの、複数なら亜種から配られる', () => {
-    for (const seed of SEEDS) {
-      const map = generate(seed);
+    for (const [seed, map] of islands) {
       const counts = new Map<string, number>();
       for (const site of map.sites) counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
 

@@ -29,6 +29,7 @@ Card Survivalの影響を受けた、無人島を舞台にしたサバイバル�
 npm install            # 依存パッケージのインストール
 npm run dev            # 開発サーバー起動
 npm test               # テスト実行（Vitest）
+npm run test:climate   # 気候システムの検証（core.yamlの気候の設定値を変えたときに実行）
 npm run lint           # ESLint
 npm run typecheck      # 型チェック（tsc --noEmit）
 npm run build          # 型チェック + プロダクションビルド

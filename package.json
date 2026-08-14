@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:climate": "RUN_CLIMATE_TESTS=1 vitest run tests/worldCodex/climateSystem.test.ts",
     "docs:reference": "typedoc && node scripts/fixReferenceNavigationLinks.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
