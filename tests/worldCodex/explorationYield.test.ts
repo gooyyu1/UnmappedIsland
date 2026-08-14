@@ -13,10 +13,10 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  *
  * 重みの合計と候補ごとの個数から期待値は手計算できるが、YAMLを読み直すテストは重みの解釈をローダーと
  * 二重に持つことになるため、実行して数える。試行回数は、期待値の推定誤差が許容幅より十分小さくなる数
- * （1回あたりの標準偏差は高々1個程度なので、1000回なら標準誤差は0.03個ほど）。
+ * （1回あたりの標準偏差は高々1個程度なので、300回なら標準誤差は0.06個ほどで、許容幅の±0.15より小さい）。
  */
 
-const TRIALS = 1000;
+const TRIALS = 300;
 
 /** 土地ごとに期待する平均個数の範囲。実りの多い土地は約2個、乏しい土地は約1.6個。 */
 const EXPECTED_MEAN: ReadonlyMap<string, readonly [number, number]> = new Map([

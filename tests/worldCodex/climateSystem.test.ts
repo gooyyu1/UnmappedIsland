@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
@@ -34,8 +35,13 @@ interface Trace {
  * シミュレーションはworld.instance.tick()を直接呼ぶ（1tick=15分、1日=96tick）。minute/hourは
  * tick駆動ではない（WorldSessionの担当）ため進まないが、気候システムはhourに依存しないため
  * 検証には影響しない（sunlightが夜間相当で固定される分は気温比較の両辺に等しく効く）。
+ *
+ * 通常のテストスイート（`npm test`）には含めない: 30シード×170日のシミュレーションはスイートの中で
+ * 突出して重い（単独で約4秒、他の全ファイルの合計に匹敵する）一方、検査対象はcore.yamlの気候の設定値
+ * というバランスの領域で、コードの変更で日々壊れるものではない。設定値を触ったら明示的に実行する:
+ * `npm run test:climate`
  */
-describe('気候システム(ClimateSystem.md)', () => {
+describe.runIf(process.env.RUN_CLIMATE_TESTS === '1')('気候システム(ClimateSystem.md)', () => {
   let calmId: number, wetId: number, dryId: number;
   let sunnyId: number, cloudyId: number, clearId: number, lightRainId: number;
   let heavyRainId: number, stormId: number, scorchingId: number;
