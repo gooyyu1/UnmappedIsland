@@ -46,12 +46,13 @@
 - **減り方が自然治癒の速さ**で、これを基準レートに置きます（`-1/tick`）。`max` はそのまま「その速さで
   何 tick かかるか」を表します（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.0節の
   時間を数えるクラス。捻挫は 960 tick = 10日）。
-- **`stages` は怪我カードのバーの色になります**（[`CardView.md`](../ui/CardView.md) 8 節）。怪我ごとに
-  絶対値で刻むので、軽い怪我は負った直後でも危険域に入りません。危険域は骨折のような重い怪我のために
-  空けておきます。
+- **`stages` は傷の重さの段に名前を与えます**（`mending`・`sore`・`acute`）。怪我ごとに絶対値で刻むので、
+  軽い怪我は負った直後でも危険域に入りません。危険域は骨折のような重い怪我のために空けておきます。
+  **カードのバーの色は `stages` ではなく `gauge` の宣言から決まります**
+  （[`CardView.md`](../ui/CardView.md) 8.1 節。傷は `{min: good, max: bad}` で、引くほど緑へ寄ります）。
 - **`pain` の量**は、`player_character` の `max`（100）に対する割合で決めます。同じ怪我を2つ負えば
-  2つぶんの `modify` が単純加算される（同 8.3節）ので、1つで危険域に届く量は重い怪我のために取って
-  おきます。
+  2つぶんの `modify` が単純加算される（[`GameElementDefinition.md`](./GameElementDefinition.md) 8.3節）
+  ので、1つで危険域に届く量は重い怪我のために取っておきます。
 - **出血は `severity` とは別の時間で動きます。** 血が固まるのは数分、傷が塞がるのは数日なので、
   流れている勢いは `bleeding` という別のプロパティが持ちます。刻み方は
   [`VitalsSystem.md`](./VitalsSystem.md) 4 節です。

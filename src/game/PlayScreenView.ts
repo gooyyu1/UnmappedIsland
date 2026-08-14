@@ -5,19 +5,14 @@ import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
-import type { PropertyReading } from '../domain/runtime/PropertyValue';
 import { putIntoSlot } from '../domain/runtime/slotEntry';
 import { currentStep, stepSupplyRatio } from '../domain/runtime/crafting';
-import {
-  IN_PROGRESS_TAG,
-  MATERIALS_SLOT,
-  PROGRESS_GAUGE_TAG,
-  PROGRESS_PROPERTY,
-} from '../loader/inProgressObjects';
+import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
-import type { CardAlertBar, CardContent, CardFill } from './ui/Card';
+import type { CardContent, CardGauge } from './ui/Card';
+import { COLOR } from './ui/theme';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
 import type { StatusContent } from './ui/StatusBar';
@@ -342,37 +337,29 @@ const UNNAMED_LOCATION = '名もなき土地';
 const STATUS_TAG = 'status';
 
 /**
- * カードの下端に汎用の値バー（緑から赤へ寄る、CardView.md 8.1節）として出すプロパティに付けるタグ
- * （GameElementDefinition.md 6.7節）。耐久度・炉の残り薪など、意味は物ごとに違うが見せ方は同じ量に付ける。
- *
- * UI側は「gaugeタグを持つ物がこのバーを出す」とだけ知っていて、どの名前のプロパティかは知らない。
- * 後から足された物も、既存のプロパティ（例えば独自の耐久度）にこのタグを付けるだけで同じバーに出せる。
- */
-const GAUGE_TAG = 'gauge';
-
-/**
- * カードの下端に、域（alert）から色を引くバー（CardView.md 8.2節）として出すプロパティに付けるタグ
- * （GameElementDefinition.md 6.7節）。残っている傷・意識のように、**塗りの長さだけでは良し悪しが
- * 読めない量**——増えるほど悪い物と減るほど悪い物が混ざる——に付ける。gaugeタグ（値そのものから
- * 色を引く）とは色の引き方が異なるため別のタグにする。
- *
- * UI側は「alert_gaugeタグを持つ物がこのバーを出す」とだけ知っていて、色の向き（worsensUpward）は
- * タグ付けされたプロパティ自身のstagesから自動的に決まる（PropertyDef.alertDirection）。
- */
-const ALERT_GAUGE_TAG = 'alert_gauge';
-
-/**
- * 中身のバー（液体の残量、CardView.md 8.3節）の塗り色を宣言するプロパティに付けるタグ
+ * 中身のバー（液体の残量、CardView.md 8.2節）の塗り色を宣言するプロパティに付けるタグ
  * （GameElementDefinition.md 6.7節、LiquidContainerSystem.md 2節・4.1節）。
  *
  * UI側は「fill_colorタグを持つプロパティの値が塗りの色」とだけ知っていて、液体の種類も
  * プロパティの名前も知らない。宣言していない液体は灰色で出る。
+ *
+ * **これだけがタグで、バーを出すかどうかはプロパティの`gauge`宣言（6.8節）が持つ。** こちらは
+ * 「バーを出すか」ではなく「この値が色そのもの」という別のことを言うため、宣言の場所も別になる。
  */
 const FILL_COLOR_TAG = 'fill_color';
 
 /**
+ * 入れ物と中身の関係から出るバー（CardView.md 8節）の鍵。プロパティが宣言したゲージはプロパティ名
+ * そのものを鍵にするので、**YAMLの識別子には現れない`@`で始めて**衝突しないようにする。
+ */
+const BUILTIN_GAUGE_KEYS = { fill: '@fill', capacity: '@capacity', material: '@material' } as const;
+
+/** 良し悪しを言わない両端（中身のバーのように、色を別に渡すバーが使う）。 */
+const NEUTRAL_ENDS = { atMin: 'neutral', atMax: 'neutral', worsensUpward: false } as const;
+
+/**
  * 気を失っていることを言う覆い（overlayOf、CardView.md 9.1節・VitalsSystem.md 6節）を判定するために
- * 読むプロパティの名前。意識のバー自体はalert_gaugeタグ経由で汎用に出すが、覆いを出すかどうかは
+ * 読むプロパティの名前。意識のバー自体は`gauge`宣言経由で汎用に出るが、覆いを出すかどうかは
  * `unconscious`という段の名前（UNCONSCIOUS_STAGE）と対で決まる仕組みなので、こちらは名前を直読みする。
  */
 const CONSCIOUSNESS_PROPERTY = 'consciousness';
@@ -478,37 +465,26 @@ export function fromGameSession(
   }
 
   /**
-   * タグの付いた最初のプロパティの読み取り（propsの宣言順で最初の1つ、WorldObject.exhaustedStageと
-   * 同じ規約）。tagIdがundefined（そのタグを宣言したプロパティが1つも無い）か、objectがそのタグを
-   * 持たなければundefined。カードの状態バー系のタグ（gauge・alert_gauge・progress_gauge・
-   * fill_color、CardView.md 8節）は、いずれも「このタグの付いたプロパティを1つ読む」という同じ
-   * 手順なので、この関数へ集約する。1つの物に2つ以上付くと片方が静かに出なくなる前提は
-   * `tests/worldCodex/cardBarTags.test.ts` が検査する。
+   * カードの下端に積むゲージ（プロパティの`gauge`宣言、CardView.md 8節）。耐久度・炉の残り薪・
+   * 残っている傷・意識・工程の進捗はすべてこの1つの経路を通る——**UI側はプロパティの名前を1つも
+   * 知らず**、「ゲージとして出す」と宣言されたものを宣言順に並べるだけ。
+   *
+   * 何本出るかも、どちらの端が良いかも、宣言の側が決める。1つも宣言していない物では空配列。
    */
-  const firstTaggedReading = (object: WorldObject, tagId: number | undefined): PropertyReading | undefined =>
-    tagId === undefined ? undefined : object.readPropertiesWithTag(tagId).at(0);
-
-  // gauge・progress_gaugeはどちらも「割合をそのままバーに出す」だけの同じ形なので、タグ名の配列を
-  // ループしてまとめて作る（CardView.md 8.1節・10.1節）。
-  const [gaugeOf, progressGaugeOf] = [GAUGE_TAG, PROGRESS_GAUGE_TAG].map((tag) => {
-    const tagId = codex.propertyTagNames.tryGetId(tag);
-    return (object: WorldObject): number | undefined => firstTaggedReading(object, tagId)?.ratio;
-  });
-
-  const alertGaugeTagId = codex.propertyTagNames.tryGetId(ALERT_GAUGE_TAG);
-  /**
-   * カードの下端に出す、域から色を引くバー（怪我の残っている傷・動物や意識のバーなど、
-   * docs/engine/InjurySystem.md・VitalsSystem.md 9節）。gaugeと違って割合だけでなく域
-   * （alert・worsensUpward）も渡すので、共通のratio抽出には乗らずここだけ個別に組み立てる。
-   * **バーはこれ1本だけ**——痛み・衝撃・失血はいずれも意識へ合流するので、あと何手で倒れるかは
-   * ここが答える（意識の場合）。
-   */
-  const alertGaugeOf = (object: WorldObject): CardAlertBar | undefined => {
-    const reading = firstTaggedReading(object, alertGaugeTagId);
-    return reading?.ratio === undefined
-      ? undefined
-      : { ratio: reading.ratio, alert: reading.alert, worsensUpward: reading.worsensUpward };
-  };
+  const gaugesOf = (object: WorldObject): readonly CardGauge[] =>
+    object.readGauges().flatMap((reading) => {
+      // readGaugesはrangeを持つものだけを返す（ロード時に保証）ので、ここは実質always trueの絞り込み。
+      if (reading.ratio === undefined || reading.gauge === undefined) return [];
+      return [
+        {
+          key: reading.name,
+          ratio: reading.ratio,
+          atMin: reading.gauge.atMin,
+          atMax: reading.gauge.atMax,
+          worsensUpward: reading.gauge.worsensUpward,
+        },
+      ];
+    });
 
   const consciousnessPropertyId = codex.propertyNames.tryGetId(CONSCIOUSNESS_PROPERTY);
   /** 気を失っているカードへ出す覆い（CardView.md 9.1節）。意識を持たない物・起きている物はundefined。 */
@@ -543,54 +519,73 @@ export function fromGameSession(
 
   const fillColorTagId = codex.propertyTagNames.tryGetId(FILL_COLOR_TAG);
   /**
-   * 量として存在する中身（水・茶・油）の割合と、その中身が宣言している色
-   * （LiquidContainerSystem.md 2節・4.1節）。
+   * 量として存在する中身（水・茶・油）のバー（LiquidContainerSystem.md 2節・4.1節）。
    *
-   * バーの割合は中身自身の状態なので、代表（represented_by、7.6節）が量的オブジェクトかどうかだけで
+   * 割合は中身自身の状態なので、代表（represented_by、7.6節）が量的オブジェクトかどうかだけで
    * 決まる。空の容器は代表が自分自身になるため、バーは出ない——映す中身がいない。UI側は容器の
-   * スロット名を知らない。色はfill_colorタグを持つプロパティの値で、複数付いていれば最初の1つ
-   * （gaugeタグと同じ規約、tests/worldCodex/cardBarTags.test.ts参照）。
+   * スロット名を知らない。**色は良し悪しではなく中身そのものの色**なので、両端の見せ方ではなく
+   * fill_colorタグを持つプロパティの値をそのまま渡す（宣言していない液体は灰色）。
    */
-  const fillOf = (object: WorldObject): CardFill | undefined => {
+  const fillGaugeOf = (object: WorldObject): CardGauge | undefined => {
     const content = object.tryGetRepresentative();
     if (content === undefined || !content.def.isQuantitative) return undefined;
 
     const ratio = content.fillRatioInParentSlot();
     if (ratio === undefined) return undefined;
 
-    const color = firstTaggedReading(content, fillColorTagId)?.value;
-    return { ratio, color };
+    const color =
+      fillColorTagId === undefined ? undefined : content.readPropertiesWithTag(fillColorTagId).at(0)?.value;
+    return { ...NEUTRAL_ENDS, key: BUILTIN_GAUGE_KEYS.fill, ratio, color: color ?? COLOR.cardFillUnknown };
   };
 
   /**
    * 入れ物のカードに出す、中身が容量をどれだけ占めているか（ContainerSystem.md 1節）。上限
    * （capacity）を持たない入れ物と、そもそも中身を持たない物ではundefined——あとどれだけ入るかが
-   * 決まっていないものに、満たされ具合は無い。
+   * 決まっていないものに、満たされ具合は無い。**満杯へ近づくほど物が入らなくなる**ので、空いている
+   * 側がgood・満杯側がbad。
    *
    * 液体の容器はこのバーを持たない。上限は同じcapacityでも、量を持つのは中身の液体自身なので、
-   * 中身のバー（fillOf）が中身の色で映す側になる（LiquidContainerSystem.md 2節）。
+   * 中身のバー（fillGaugeOf）が中身の色で映す側になる（LiquidContainerSystem.md 2節）。
    */
-  const capacityRatioOf = (object: WorldObject): number | undefined => object.mainSlotFillRatio();
+  const capacityGaugeOf = (object: WorldObject): CardGauge | undefined => {
+    const ratio = object.mainSlotFillRatio();
+    if (ratio === undefined) return undefined;
+    return { key: BUILTIN_GAUGE_KEYS.capacity, ratio, atMin: 'good', atMax: 'bad', worsensUpward: true };
+  };
 
   const progressPropertyId = codex.propertyNames.tryGetId(PROGRESS_PROPERTY);
   const materialsSlotId = codex.slotNames.tryGetId(MATERIALS_SLOT);
   /**
-   * 製作中オブジェクトのカードに出す材料の充足率（RecipeSystem.md、CardView.md 10.1節）。
+   * 製作中オブジェクトのカードに出す材料の充足バー（RecipeSystem.md、CardView.md 10.1節）。
    * 製作中でない物、今の工程が無い物ではundefined。
    *
    * **今の工程が要求する分だけを数える。**「作業する」が押せるかと一致させるため、残りの工程まで
    * 数えない（残りを数えると、揃っているのに満たないバーが出る）。素材スロットの中身と今の工程の
-   * 要求を突き合わせて出す値なので、`gauge`系のタグには乗らない（単一のプロパティの割合ではない）。
-   * もう1本の工程の進捗（progressGauge）は`progress_gauge`タグ経由で上のループがすでに作っている。
+   * 要求を突き合わせて出す値なので、プロパティの`gauge`宣言には乗らない（単一のプロパティの割合では
+   * ないため）。**満ちた＝作業できる**を緑で言い切れるよう、満ちる側がgood。
    */
-  const materialRatioOf = (object: WorldObject): number | undefined => {
+  const materialGaugeOf = (object: WorldObject): CardGauge | undefined => {
     if (progressPropertyId === undefined || materialsSlotId === undefined) return undefined;
     const recipe = recipeOf(object, codex);
     if (recipe === undefined) return undefined;
 
     const step = currentStep(recipe, object.getNumber(progressPropertyId));
-    return step === undefined ? undefined : stepSupplyRatio(object, materialsSlotId, step);
+    if (step === undefined) return undefined;
+    const ratio = stepSupplyRatio(object, materialsSlotId, step);
+    return { key: BUILTIN_GAUGE_KEYS.material, ratio, atMin: 'bad', atMax: 'good', worsensUpward: false };
   };
+
+  /**
+   * カードが出すバーを、桟へ積む順に並べる（CardView.md 8節）。**プロパティが自分で宣言したゲージも、
+   * 入れ物と中身の関係から出るバーも、ここで1本の並びに合流する**——カード側はどれが何かを知らない。
+   *
+   * 順は「材料 → プロパティの宣言順 → 中身 → 容量」。作りかけのカードでは材料が上、工程の進捗が下に
+   * なる（同10.1節）。
+   */
+  const gaugesOfCard = (object: WorldObject): readonly CardGauge[] =>
+    [materialGaugeOf(object), ...gaugesOf(object), fillGaugeOf(object), capacityGaugeOf(object)].filter(
+      (gauge): gauge is CardGauge => gauge !== undefined,
+    );
 
   /**
    * カードを押したときに開く、そのオブジェクトの主要なスロット（持たなければundefined）。
@@ -739,14 +734,9 @@ export function fromGameSession(
     background: slotOfObject(instances[0]),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
-    gauge: gaugeOf(instances[0]),
-    fill: fillOf(instances[0]),
-    capacityRatio: capacityRatioOf(instances[0]),
-    alertGauge: alertGaugeOf(instances[0]),
+    gauges: gaugesOfCard(instances[0]),
     overlay: overlayOf(instances[0]),
     alert: alertOf(instances[0]),
-    materialRatio: materialRatioOf(instances[0]),
-    progressGauge: progressGaugeOf(instances[0]),
     mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],

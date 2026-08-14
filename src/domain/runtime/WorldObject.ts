@@ -199,6 +199,22 @@ export class WorldObject {
   }
 
   /**
+   * ゲージとして見せると宣言している（6.8節）プロパティの現在の状態を、propsの宣言順で読み取る。
+   * 1つも宣言していないオブジェクトでは空配列。
+   *
+   * **上下限（range）を持たないプロパティは宣言できない**（ロード時に弾く）ので、返る読み取りの
+   * `ratio`は常に定義されている。並ぶ順と本数がそのままカードのバーになる（docs/ui/CardView.md 8節）。
+   */
+  readGauges(): readonly PropertyReading[] {
+    const readings: PropertyReading[] = [];
+    for (const property of this.properties) {
+      const reading = property.readIfGauge();
+      if (reading !== undefined) readings.push(reading);
+    }
+    return readings;
+  }
+
+  /**
    * 指定したタグ（6.7節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
    * タグを1つも持たないオブジェクトでは空配列。
    */

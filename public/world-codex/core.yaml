@@ -10,16 +10,8 @@ property_tags:
   status:
   health:
   nutrition:
-  # カードの下端に、緑から赤へ寄る値バーとして出すもの（耐久度・炉の残り薪など。CardView.md 8.1節）。
-  # statusと同じく、どのカテゴリかではなく「カードにバーで出すか」だけを表す。
-  gauge:
-  # カードの下端に、域（alert）から色を引くバーとして出すもの（残っている傷・意識など。
-  # CardView.md 8.2節）。gaugeと違い、増減の向き（worsensUpward）によって塗りの向きが変わる。
-  alert_gauge:
-  # 製作中オブジェクトのカードに出す、終えた工程の進捗バーとして出すもの（CardView.md 10.1節）。
-  # 良し悪しではなく「ここまで終えた」量なので、値によらず1色で塗る。
-  progress_gauge:
-  # 中身のバー（液体の残量）の塗り色を宣言するもの（CardView.md 8.3節、LiquidContainerSystem.md 2節）。
+  # 中身のバー（液体の残量）の塗り色を宣言するもの（CardView.md 8.2節、LiquidContainerSystem.md 2節）。
+  # カードにバーとして出すかどうかはタグではなくprops側の`gauge`が宣言する（6.8節）。
   fill_color:
 
 traits:

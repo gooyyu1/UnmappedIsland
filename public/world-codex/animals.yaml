@@ -68,9 +68,10 @@ traits:
       # 押し上げる。起きている間も0にはしない——暴れる相手でも、まれに急所へ入る。
       vulnerability: {value: 5}
       # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃・失血の段が押し下げる。常にカードに
-      # バーが出る（CardView.md 8.2節のalert_gaugeタグ）。unconsciousの段の名前は固定（同6節）。
+      # バーが出る（CardView.md 8節のgauge宣言）。unconsciousの段の名前は固定（同6節）。
       consciousness:
-        tags: [alert_gauge]
+        # 尽きると倒れるので、満タン側がgood。
+        gauge: {min: bad, max: good}
         value: 100
         range: {min: 0, max: 100}
         stages:

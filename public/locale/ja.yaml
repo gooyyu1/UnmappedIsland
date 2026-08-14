@@ -487,12 +487,6 @@ property_tag_texts:
     display_name: 健康
   nutrition:
     display_name: 栄養
-  gauge:
-    display_name: 値
-  alert_gauge:
-    display_name: 状態バー
-  progress_gauge:
-    display_name: 進捗
   fill_color:
     display_name: 中身の色
 

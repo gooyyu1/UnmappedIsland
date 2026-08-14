@@ -142,7 +142,7 @@ object_defs:
   });
 
   it('終えた工程の数はfinished_stepsに現れ、割合は終えた工程の数÷全工程数になる', () => {
-    // CardView.md 10.1節の進捗バー（progress_gaugeタグ）が読む値。progressと違い所要時間ではなく
+    // CardView.md 10.1節の進捗バー（gauge宣言）が読む値。progressと違い所要時間ではなく
     // 純粋な回数なので、工程の長さが不揃いでも「2工程中1工程＝0.5」がそのまま割合になる。
     const finishedStepsId = codex.propertyNames.getId('finished_steps');
     expect(wip.readProperty(finishedStepsId)?.ratio, '着手前は0').toBe(0);

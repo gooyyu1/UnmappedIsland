@@ -15,11 +15,7 @@ describe('recipes', () => {
     codex.objects.get(codex.objectNames.getId(objectName)).recipes;
 
   it('steps/requires/duration/iconを読める', () => {
-    // 2工程のレシピは進捗バー用のfinished_stepsを生成し、progress_gaugeタグを付ける
-    // （inProgressObjects.ts）ため、このタグを宣言しておく必要がある。
     const codex = load(`
-property_tags:
-  progress_gauge:
 object_defs:
   wood: {}
   stone_knife: {}

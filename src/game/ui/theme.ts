@@ -1,5 +1,6 @@
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import { ALERT_LEVELS } from '../../domain/defs/AlertLevel';
+import type { GaugeEnd } from '../../domain/defs/PropertyDef';
 
 /**
  * docs/ui のモック（ScreenLayout_Mock.html・StartScreen_Mock.html）のCSSに対応する
@@ -172,10 +173,12 @@ export const COLOR = {
   /** 減った分の帯（ProgressBar。増えた分はfadedFillが塗りから引く）。 */
   statusBarLag: 0xd93025,
 
-  // 耐久度バーの塗り（durabilityColorFor）。満タンの緑から尽きる直前の赤へ、琥珀を経て寄せる。
+  // ゲージの塗り（gaugeColorFor）。満ち足りた端の緑から尽きた端の赤へ、琥珀を経て寄せる。
+  // neutralは良し悪しを言わない端（工程の進捗）の1色。
   durabilityFull: 0x4caf50,
   durabilityHalf: 0xf2b01e,
   durabilityEmpty: 0xd93025,
+  gaugeNeutral: 0x4caf50,
   /**
    * 色（colorプロパティ）を宣言していない液体の、中身のバーの塗り。何色か分からなくても、
    * 中身があること自体は見えるようにする。
@@ -242,36 +245,34 @@ export function fadedFill(fill: number): number {
   return mixColor(fill, COLOR.statusBarTrack, BAND_FADE);
 }
 
-/**
- * 入れ物の詰まり具合（0〜1）に応じたバーの塗りの色（CardView.md 8節 カードの状態バー）。
- *
- * 色域はステータスバーと同じ（安全域の緑から致命的域の茶）だが、辿るのは域ではなく値そのもの。
- * 入れ物は満杯へ近づくほど物が入らなくなるので、値の位置がそのまま深刻さになる
- * （durabilityColorForと同じ理由で、段を分けても同じ順序にしかならない）。
- */
-export function capacityColorFor(ratio: number): number {
-  const clamped = Math.min(1, Math.max(0, ratio));
-  return mixColor(COLOR.statusBarFillSafe, COLOR.statusBarFillFatal, clamped);
+/** 琥珀へ寄せ切る位置。ここを境に、端の色→琥珀と琥珀→もう一方の端の2区間へ分ける。 */
+const GAUGE_HALF_RATIO = 0.5;
+
+/** ゲージの端の見せ方（GaugeEnd）に対応する色。 */
+function gaugeEndColor(end: GaugeEnd): number {
+  if (end === 'good') return COLOR.durabilityFull;
+  return end === 'bad' ? COLOR.durabilityEmpty : COLOR.gaugeNeutral;
 }
 
-/** durabilityHalfへ寄せ切る耐久度。ここを境に、緑→琥珀と琥珀→赤の2区間へ分ける。 */
-const DURABILITY_HALF_RATIO = 0.5;
-
 /**
- * 耐久度（0〜1）に応じたバーの塗りの色（CardView.md 8節 カードの状態バー）。
+ * ゲージ（CardView.md 8節）の塗りの色。**両端の見せ方（GaugeEnd）と今の割合だけで決まる**ので、
+ * 耐久度・炉の残り薪・残っている傷・意識・工程の進捗が1つの関数で塗れる。
  *
- * ステータスバーと違って域（alert）ではなく値そのものから引く。耐久度は「どれだけ残っているか」が
- * そのまま深刻さで、段を分けても同じ順序にしかならないため。
+ * ステータスバーと違って域（alert）ではなく値そのものから引く。ゲージが映すのは「どちらの端へ
+ * どれだけ寄っているか」で、段を分けても同じ順序にしかならないため。
+ *
+ * **両端が同じ見せ方なら1色**（工程の進捗のように良し悪しを言わない量）。違うときは中間に琥珀を
+ * 通す——両端を直接混ぜると中間が濁った茶になり、致命的域のステータスバーと見分けが付かなくなる。
  */
-export function durabilityColorFor(ratio: number): number {
+export function gaugeColorFor(ratio: number, atMin: GaugeEnd, atMax: GaugeEnd): number {
+  const from = gaugeEndColor(atMin);
+  const to = gaugeEndColor(atMax);
+  if (from === to) return from;
+
   const clamped = Math.min(1, Math.max(0, ratio));
-  return clamped < DURABILITY_HALF_RATIO
-    ? mixColor(COLOR.durabilityEmpty, COLOR.durabilityHalf, clamped / DURABILITY_HALF_RATIO)
-    : mixColor(
-        COLOR.durabilityHalf,
-        COLOR.durabilityFull,
-        (clamped - DURABILITY_HALF_RATIO) / (1 - DURABILITY_HALF_RATIO),
-      );
+  return clamped < GAUGE_HALF_RATIO
+    ? mixColor(from, COLOR.durabilityHalf, clamped / GAUGE_HALF_RATIO)
+    : mixColor(COLOR.durabilityHalf, to, (clamped - GAUGE_HALF_RATIO) / (1 - GAUGE_HALF_RATIO));
 }
 
 /** 2色の間をtの割合で混ぜる（成分ごとの線形補間）。 */

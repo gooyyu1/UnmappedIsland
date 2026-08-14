@@ -101,8 +101,8 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
   /**
    * 増えるほど悪い値か（PropertyDef.worsensUpward）。帯をどちら向きに出すかが変わる。
-   * 同じバーの枠（ProgressBar）を差し替えのたびに使い回す側（Card.alertGaugeBar）は、映す
-   * プロパティが変わるたびにこれも渡し直す（setWorsensUpward）ため、readonlyにはしない。
+   * 同じバーの枠（ProgressBar）を差し替えのたびに使い回す側（Card.gaugeBars）は、映すものが
+   * 変わるたびにこれも渡し直す（setWorsensUpward）ため、readonlyにはしない。
    */
   private worsensUpward: boolean;
 
@@ -181,7 +181,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   /**
    * 増えるほど悪い値かを変える。**次に`setRatio`で変化を見せるときの帯の向きにだけ効く**——
    * 今の見た目（draw）はこれ単独では変わらないので、呼び直しは要らない。同じバーの枠を差し替えの
-   * たびに使い回す側（Card.alertGaugeBar）が、映すプロパティが変わるたびに渡し直す。
+   * たびに使い回す側（Card.gaugeBars）が、映すものが変わるたびに渡し直す。
    */
   setWorsensUpward(worsensUpward: boolean): void {
     this.worsensUpward = worsensUpward;

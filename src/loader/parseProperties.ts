@@ -22,7 +22,8 @@ import { ActiveEffects, SetEffect } from '../domain/defs/ActiveEffect';
 import type { AlertLevel } from '../domain/defs/AlertLevel';
 import { ALERT_LEVELS } from '../domain/defs/AlertLevel';
 import type { ActiveEffect } from '../domain/defs/ActiveEffect';
-import { PropertyDef, PropertyRange, PropertyStage } from '../domain/defs/PropertyDef';
+import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/defs/PropertyDef';
+import type { GaugeEnd } from '../domain/defs/PropertyDef';
 import type { PassiveEffect } from '../domain/defs/PassiveEffect';
 
 /** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
@@ -37,6 +38,7 @@ const KNOWN_PROP_KEYS = new Set<string>([
   'passives',
   'inherit',
   'tags',
+  'gauge',
 ]);
 
 /** props.'propName'エントリを1つ読む（GameElementDefinition.md 6節）。
@@ -130,6 +132,7 @@ export function parseProp(
 
   const inherit = tryGetBool(node, 'inherit', context, false);
   const tags = parsePropertyTags(loader, context, node);
+  const gauge = parseGauge(context, node, range);
 
   const def = new PropertyDef(
     propertyGlobalId,
@@ -143,7 +146,19 @@ export function parseProp(
     inherit,
     tags,
     isSymbolProperty,
+    gauge,
   );
+
+  // ゲージの向きとstagesのalertの向きは、同じ「どちらが危ないか」を二度言うことになる。食い違って
+  // いると片方だけが正しく見えて原因が分からなくなるので、ここで一致を確かめる（6.8節）。
+  if (gauge !== undefined && gauge.hasDirection && def.alertDirection !== 'mixed') {
+    const stagesWorsenUpward = def.alertDirection === 'up';
+    if (stages.length > 0 && stagesWorsenUpward !== gauge.worsensUpward)
+      throw new YamlLoadError(
+        `${context}: gaugeの向き（max: ${gauge.atMax}）とstagesのalertの向きが食い違っています。` +
+          'どちらの端が危ないかは1つに揃えてください。',
+      );
+  }
 
   // rangeを持つプロパティはバーとして描かれる（6.4節）。上下どちらの端も悪い並びでは、塗りの向きが
   // 「良い方へ伸びる」とも「悪い方へ伸びる」とも決められない。両側が悪い量（体温など）は、値そのもの
@@ -155,6 +170,40 @@ export function parseProp(
     );
 
   return def;
+}
+
+/**
+ * props.'name'.gauge（6.8節）を読む。カードにバーとして出すかと、両端の見せ方を宣言する。
+ *
+ * rangeを必須にするのは、割合が定義できなければバーとして描きようがないため（同6.4節のratioOf）。
+ */
+function parseGauge(context: string, node: YAMLMap, range: PropertyRange | undefined): GaugeDef | undefined {
+  const gaugeNode = tryGetMap(node, 'gauge', context);
+  if (gaugeNode === undefined) return undefined;
+
+  if (range === undefined)
+    throw new YamlLoadError(
+      `${context}: gaugeを使うには'range'が必須です（割合が定義できないとバーにできません）。`,
+    );
+
+  const unknownKeys = entriesInOrder(gaugeNode)
+    .map(([key]) => key)
+    .filter((key) => key !== 'min' && key !== 'max');
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}.gauge: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  return new GaugeDef(gaugeEnd(context, gaugeNode, 'min'), gaugeEnd(context, gaugeNode, 'max'));
+}
+
+/** gaugeの片端の見せ方。綴り間違いをロード時に捕まえるため一覧と突き合わせる。 */
+function gaugeEnd(context: string, gaugeNode: YAMLMap, key: 'min' | 'max'): GaugeEnd {
+  const text = requireScalar(gaugeNode, key, `${context}.gauge`);
+  const end = GAUGE_ENDS.find((candidate) => candidate === text);
+  if (end === undefined)
+    throw new YamlLoadError(
+      `${context}.gauge.${key}: 未知の見せ方 '${text}' です（${GAUGE_ENDS.join(' / ')} のいずれかを指定してください）。`,
+    );
+  return end;
 }
 
 /**

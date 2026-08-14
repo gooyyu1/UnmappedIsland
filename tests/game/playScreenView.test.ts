@@ -5,6 +5,7 @@ import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { Path } from '../../src/domain/runtime/views/Path';
 import { fromGameSession, withFrozenCards } from '../../src/game/PlayScreenView';
+import type { CardGauge } from '../../src/game/ui/Card';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
@@ -26,6 +27,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const injury = game.session.spawn(codex.objectNames.getId('sprained_ankle'));
     expect(injury.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'))).toBeUndefined();
     return injury;
+  }
+
+  /**
+   * そのカードが出しているバーのうち、鍵が一致する1本（無ければundefined）。
+   * プロパティのゲージは名前が鍵で、入れ物と中身から出るバーは`@`で始まる（PlayScreenView）。
+   */
+  function gaugeOf(card: { readonly gauges?: readonly CardGauge[] } | undefined, key: string) {
+    return card?.gauges?.find((gauge) => gauge.key === key);
   }
 
   /** 開始地点にサル（animals.yaml）を1匹置き、そのインスタンスを返す。 */
@@ -298,12 +307,24 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
     }
 
-    expect(fromGameSession(game, codex, locale).hand[0]?.gauge, '作りたては満タン').toBe(1);
-    expect(fromGameSession(game, codex, locale).hand[1]?.gauge, '石は耐久度を持たない').toBeUndefined();
+    expect(gaugeOf(fromGameSession(game, codex, locale).hand[0], 'durability'), '作りたては満タン').toEqual({
+      key: 'durability',
+      ratio: 1,
+      atMin: 'bad',
+      atMax: 'good',
+      worsensUpward: false,
+    });
+    expect(
+      gaugeOf(fromGameSession(game, codex, locale).hand[1], 'durability'),
+      '石は耐久度を持たない',
+    ).toBeUndefined();
 
     sharpStone.addNumber(durabilityId, -sharpStone.getNumber(durabilityId) / 4, game.session);
 
-    expect(fromGameSession(game, codex, locale).hand[0]?.gauge, '減った分だけ割合が下がる').toBe(0.75);
+    expect(
+      gaugeOf(fromGameSession(game, codex, locale).hand[0], 'durability')?.ratio,
+      '減った分だけ割合が下がる',
+    ).toBe(0.75);
   });
 
   it('竈は残っている薪の割合を値バーとして持つ', () => {
@@ -314,51 +335,55 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       campfire.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures')),
     ).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).fixtures[0]?.gauge, '薪が無ければ0').toBe(0);
+    expect(gaugeOf(fromGameSession(game, codex, locale).fixtures[0], 'fuel')?.ratio, '薪が無ければ0').toBe(0);
 
     campfire.setNumber(fuelId, campfire.getNumber(fuelId) + 15, game.session);
 
-    expect(fromGameSession(game, codex, locale).fixtures[0]?.gauge, 'くべた分だけ割合が上がる').toBeCloseTo(
-      0.5,
-      2,
-    );
+    expect(
+      gaugeOf(fromGameSession(game, codex, locale).fixtures[0], 'fuel')?.ratio,
+      'くべた分だけ割合が上がる',
+    ).toBeCloseTo(0.5, 2);
   });
 
-  it('怪我のカードは値バーではなく、域から色を引くバーで残っている傷を持つ', () => {
-    // 値バーは道具の控えめな細線で、あとどれだけで治るかはそれとは別の見せ方をする
-    // （CardView.md 8節 カードの状態バー）。
+  it('怪我のカードのゲージは、耐久度とは両端が逆になる（減るほど良い）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
 
-    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].gauge).toBeUndefined();
-    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].alertGauge).toEqual({
+    expect(gaugeOf(fromGameSession(game, codex, locale).cardsIn('injuries')[0], 'severity')).toEqual({
+      key: 'severity',
       ratio: 1,
-      alert: 'caution',
+      // 残っている傷は増えるほど悪いので、耐久度（min: bad）と両端が入れ替わる。
+      atMin: 'good',
+      atMax: 'bad',
       worsensUpward: true,
     });
 
     const severityId = codex.propertyNames.getId('severity');
     injury.addNumber(severityId, -injury.getNumber(severityId) / 2, game.session);
 
-    const healing = fromGameSession(game, codex, locale).cardsIn('injuries')[0].alertGauge;
+    const healing = gaugeOf(fromGameSession(game, codex, locale).cardsIn('injuries')[0], 'severity');
     // 傷の下限は0ではなく1（injuries.yaml）なので、割合はぴったり半分にはならない。
     expect(healing?.ratio, '半分治れば半分まで縮む').toBeCloseTo(0.5, 2);
-    expect(healing?.alert, '治るほど軽い域へ移る').toBe('watch');
   });
 
-  it('動物のカードは、域から色を引くバーで今の意識を持つ', () => {
+  it('動物のカードは、今の意識をゲージとして持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const monkey = placeMonkey(game);
     const consciousnessId = codex.propertyNames.getId('consciousness');
 
-    const fresh = fromGameSession(game, codex, locale).cardsIn('items')[0].alertGauge;
-    expect(fresh, '起きていれば意識は満タン').toEqual({ ratio: 1, alert: 'safe', worsensUpward: false });
+    const fresh = gaugeOf(fromGameSession(game, codex, locale).cardsIn('items')[0], 'consciousness');
+    expect(fresh, '起きていれば意識は満タン').toEqual({
+      key: 'consciousness',
+      ratio: 1,
+      atMin: 'bad',
+      atMax: 'good',
+      worsensUpward: false,
+    });
 
     monkey.setNumber(consciousnessId, 10, game.session);
 
-    const reduced = fromGameSession(game, codex, locale).cardsIn('items')[0].alertGauge;
+    const reduced = gaugeOf(fromGameSession(game, codex, locale).cardsIn('items')[0], 'consciousness');
     expect(reduced?.ratio, '削られた分だけ割合が下がる').toBe(0.1);
-    expect(reduced?.alert, '意識は減るほど危ない域へ移る').toBe('danger');
   });
 
   it('動物のカードは、アイテムではなく動物として枠の色が決まる', () => {
@@ -497,7 +522,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const card = fromGameSession(game, codex, locale).hand.find((held) => held?.objects[0] === bowl)!;
 
     expect(card.contents, '中身の並びは開かない').toBeUndefined();
-    expect(card.fill?.ratio, '入っていることはバーで見せる').toBeGreaterThan(0);
+    expect(gaugeOf(card, '@fill')?.ratio, '入っていることはバーで見せる').toBeGreaterThan(0);
   });
 
   it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
@@ -506,7 +531,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
 
     expect(
-      fromGameSession(game, codex, locale).hand[0]?.fill,
+      gaugeOf(fromGameSession(game, codex, locale).hand[0], '@fill'),
       '空の容器は映す中身がいないのでバーを出さない',
     ).toBeUndefined();
 
@@ -515,15 +540,23 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     water.setNumber(codex.wellKnown.volumeId, 100, game.session);
     expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).hand[0]?.fill, '色は中身の液体が宣言したもの').toEqual({
+    expect(
+      gaugeOf(fromGameSession(game, codex, locale).hand[0], '@fill'),
+      '色は中身の液体が宣言したもの',
+    ).toEqual({
+      key: '@fill',
       ratio: 0.4,
       color: water.getNumber(codex.propertyNames.getId('color')),
+      // 良し悪しではなく中身そのものの色を映すバーなので、両端は色を決めない。
+      atMin: 'neutral',
+      atMax: 'neutral',
+      worsensUpward: false,
     });
 
     water.destroy();
 
     expect(
-      fromGameSession(game, codex, locale).hand[0]?.fill,
+      gaugeOf(fromGameSession(game, codex, locale).hand[0], '@fill'),
       '飲み干して空へ戻ればバーも消える',
     ).toBeUndefined();
   });
@@ -535,7 +568,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const [card] = fromGameSession(game, codex, locale).hand;
     expect(card?.contents, '固形物の入れ物なので中身は子ウィンドウで見せる').toBeDefined();
-    expect(card?.fill, '量で満たされるものではないのでバーは出さない').toBeUndefined();
+    expect(gaugeOf(card, '@fill'), '量で満たされるものではないのでバーは出さない').toBeUndefined();
   });
 
   it('上限を持つ入れ物のカードだけが、容量の詰まり具合を持つ', () => {
@@ -551,11 +584,24 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     expect(
-      view.hand.find((card) => card?.objects[0] === basket)?.capacityRatio,
+      gaugeOf(
+        view.hand.find((card) => card?.objects[0] === basket),
+        '@capacity',
+      ),
       '編み籠のcontentsは容量を宣言している（containers.yaml）',
-    ).toBe(0);
+    ).toEqual({
+      key: '@capacity',
+      ratio: 0,
+      // 満杯へ近づくほど物が入らなくなるので、空いている側がgood。
+      atMin: 'good',
+      atMax: 'bad',
+      worsensUpward: true,
+    });
     expect(
-      view.hand.find((card) => card?.objects[0] === stone)?.capacityRatio,
+      gaugeOf(
+        view.hand.find((card) => card?.objects[0] === stone),
+        '@capacity',
+      ),
       '中身を持たない物に詰まり具合は無い',
     ).toBeUndefined();
   });
@@ -571,8 +617,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const [card] = fromGameSession(game, codex, locale).hand;
 
-    expect(card?.capacityRatio).toBeUndefined();
-    expect(card?.fill?.ratio, '入っていることは中身のバーが見せる').toBeGreaterThan(0);
+    expect(gaugeOf(card, '@capacity')).toBeUndefined();
+    expect(gaugeOf(card, '@fill')?.ratio, '入っていることは中身のバーが見せる').toBeGreaterThan(0);
   });
 
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {
