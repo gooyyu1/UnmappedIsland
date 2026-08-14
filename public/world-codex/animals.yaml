@@ -7,12 +7,18 @@
 #
 # 死体と、それを解体して得られる素材（同1.5節）も、獲物から続く一続きの連鎖なのでこのファイルが持つ。
 
-object_defs:
-  # サル。物を持ち去る中型（Animals.md 4.1節）。危険は低いが、放っておくと足元の物を持っていく。
-  monkey:
+traits:
+  # 獣が共通して持つもの。**体格に依らない値だけ**をここへ置く（VitalsSystem.md 7節）。体格が
+  # 決めるもの——weight・volume・blood（maxが体格）・shock（maxが体格）——と、仕留めたときに
+  # 何になるかは、動物ごとに宣言する。
+  beast:
     # animalは枠の色を決める種別（CardView.md 2節 枠の色は種別で変える）。itemと兼ねるのは、
     # 動物が「持ち運べるか」ではなく「動かせるか」でitemsに並ぶため（HuntingSystem.md 1.1節）。
-    tags: [item, animal]
+    #
+    # quarryは「狩りの成果として数える物」——生きた獲物と死体の両方が持つ。罠の枠がこれを受け、
+    # タイマーのゲートがこれで「何か入っているか」を問う（docs/engine/TrapSystem.md 1.1節）。
+    # 掛かった獲物がその場で死んでも、死体は罠の中に残る。
+    tags: [item, animal, quarry]
     # 押すと刺さっている怪我が並ぶ（7.8節）。キャラクタの怪我と同じ見え方になる（同3節）。
     main_item_slot: injuries
     slots:
@@ -21,8 +27,6 @@ object_defs:
       injuries:
         cell: {accept: {tag: injury}}
     props:
-      weight: {value: 5000}
-      volume: {value: 12000}
       # 警戒（HuntingSystem.md 3.1節）。攻撃してくるか逃げるかを乱数の分岐にせず、この1つの
       # 連続量で駆動する。安全域を外れている間はカードの輪郭が明滅する
       # （CardView.md 3節 警戒している動物は輪郭を明滅させる）。
@@ -60,6 +64,36 @@ object_defs:
             alert: danger
             passives:
               - modify: {self: {consciousness: -45}}
+      # 無防備さ（HuntingSystem.md 1.4節）。仕留めの候補の重みそのもので、自分では動かず、状態が
+      # 押し上げる。起きている間も0にはしない——暴れる相手でも、まれに急所へ入る。
+      vulnerability: {value: 5}
+      # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃・失血の段が押し下げる。安全域を外れると
+      # カードにバーが出る（CardView.md 8節）。unconsciousの段の名前は固定（同6節）。
+      consciousness:
+        value: 100
+        range: {min: 0, max: 100}
+        stages:
+          # 気を失っている間はカードに覆いが出る（CardView.md 9.1節）。出すかどうかを決めるのは
+          # この段の名前で、絵そのものは差し替えない。
+          #
+          # 警戒はここで打ち消す。気を失った動物は警戒しておらず、放っておいてよい相手なので、
+          # 縁の明滅（CardView.md 3節）も止まる。実効値への寄与なので、目覚めれば元の警戒へ戻る。
+          - name: unconscious
+            alert: danger
+            passives:
+              # 気を失った相手は狙って急所を打てる。仕留めの重みが跳ね上がり、警戒は消える。
+              - modify: {self: {wariness: -100, vulnerability: 200}}
+          - {name: dazed, min: 25, alert: caution}
+          - {name: foggy, min: 60, alert: watch}
+          - {name: clear, min: 80}
+
+object_defs:
+  # サル。物を持ち去る中型（Animals.md 4.1節）。危険は低いが、放っておくと足元の物を持っていく。
+  monkey:
+    traits: [beast]
+    props:
+      weight: {value: 5000}
+      volume: {value: 12000}
       # 殴られた衝撃（VitalsSystem.md 2.1節）。攻撃がaddで即座に上げ、自分で引いていく。
       # maxが体格で、サルは小さいので石1つでも一撃で気を失う。
       shock:
@@ -116,29 +150,6 @@ object_defs:
           - accumulate:
               self:
                 blood: 0.16
-      # 無防備さ（HuntingSystem.md 1.4節）。仕留めの候補の重みそのもので、自分では動かず、状態が
-      # 押し上げる。起きている間も0にはしない——暴れる相手でも、まれに急所へ入る。
-      vulnerability:
-        value: 5
-      # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃・失血の段が押し下げる。安全域を外れると
-      # カードにバーが出る（CardView.md 8節）。unconsciousの段の名前は固定（同6節）。
-      consciousness:
-        value: 100
-        range: {min: 0, max: 100}
-        stages:
-          # 気を失っている間はカードに覆いが出る（CardView.md 9.1節）。出すかどうかを決めるのは
-          # この段の名前で、絵そのものは差し替えない。
-          #
-          # 警戒はここで打ち消す。気を失った動物は警戒しておらず、放っておいてよい相手なので、
-          # 縁の明滅（CardView.md 3節）も止まる。実効値への寄与なので、目覚めれば元の警戒へ戻る。
-          - name: unconscious
-            alert: danger
-            passives:
-              # 気を失った相手は狙って急所を打てる。仕留めの重みが跳ね上がり、警戒は消える。
-              - modify: {self: {wariness: -100, vulnerability: 200}}
-          - {name: dazed, min: 25, alert: caution}
-          - {name: foggy, min: 60, alert: watch}
-          - {name: clear, min: 80}
     combinations:
       # 武器を重ねて殴る（HuntingSystem.md 1.2節）。当たれば怪我が1つ刺さる。
       #
@@ -186,7 +197,7 @@ object_defs:
   #
   # 腐敗はまだ無いので、置いたままでも傷まない（HuntingSystem.md 8節）。
   monkey_carcass:
-    tags: [item]
+    tags: [item, quarry]
     props:
       weight: {value: 5000}
       volume: {value: 12000}
@@ -204,6 +215,188 @@ object_defs:
           - {object: animal_bone}
           - {object: rawhide}
 
+  # ヤケイ。くくり罠で捕れる中型（Animals.md 3節）。危険が低く、飼いならしの学習台になる。
+  # 草の実をついばむので、罠では草食の卓に載る（TrapSystem.md 4節）。
+  junglefowl:
+    traits: [beast]
+    props:
+      weight: {value: 1000}
+      volume: {value: 2400}
+      # maxが体格（サル5kgの100に対して1kg）。石1つ（shock 80）で必ず気を失う大きさ。
+      shock:
+        value: 0
+        range: {min: 0, max: 20}
+        stages:
+          - {name: steady}
+          - name: rattled
+            min: 6
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - name: reeling
+            min: 14
+            passives:
+              - modify: {self: {consciousness: -80}}
+        passives:
+          - accumulate:
+              self:
+                shock: -4
+      # maxが体格（体重のおよそ1/13＝80mL）。段のしきい値も戻る速さも、サルと同じ割合で刻む。
+      #
+      # **くくり罠の傷（injuries.yamlのsnare_laceration）が奪うのは30〜60mL**なので、浅く掛かれば
+      # 生き延び、深く食い込めば死ぬ。ロールが分かれ目になる唯一の大きさ（TrapSystem.md 5.1節）。
+      blood:
+        value: 80
+        range: {min: 1, max: 80}
+        stages:
+          - name: exsanguinated
+            alert: fatal
+            passives:
+              - modify: {self: {consciousness: -100}}
+          - name: hemorrhaging
+            min: 32
+            alert: danger
+            passives:
+              - modify: {self: {consciousness: -70}}
+          - name: bled
+            min: 48
+            alert: caution
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - {name: low, min: 56, alert: watch}
+          - {name: replete, min: 64}
+        on_shortfall:
+          destroy: self
+          spawn: {object: junglefowl_carcass}
+        passives:
+          - accumulate:
+              self:
+                blood: 0.032
+    combinations:
+      strike:
+        with: weapon
+        duration: 15
+        pick:
+          - weight: 70
+            add:
+              self: {wariness: 25, shock: 80}
+              dragged: {durability: -20}
+            spawn: {object: laceration, into: self}
+            signal: hit
+          - weight: 30
+            add:
+              self: {wariness: 25}
+              dragged: {durability: -20}
+            signal: missed
+          - weight: {prop: vulnerability}
+            add:
+              dragged: {durability: -20}
+            destroy: self
+            spawn: {object: junglefowl_carcass}
+            signal: killed
+
+  # ネズミ。罠の最小単位（Animals.md 3節）。何でも齧るので、罠では草食・肉食どちらの卓にも載る
+  # （TrapSystem.md 4.1節の雑食）。血が6mLしかないので、罠に掛かればまず死ぬ。
+  rat:
+    traits: [beast]
+    props:
+      weight: {value: 80}
+      volume: {value: 200}
+      shock:
+        value: 0
+        range: {min: 0, max: 2}
+        stages:
+          - {name: steady}
+          - name: rattled
+            min: 0.6
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - name: reeling
+            min: 1.4
+            passives:
+              - modify: {self: {consciousness: -80}}
+        passives:
+          - accumulate:
+              self:
+                shock: -4
+      blood:
+        value: 6
+        range: {min: 1, max: 6}
+        stages:
+          - name: exsanguinated
+            alert: fatal
+            passives:
+              - modify: {self: {consciousness: -100}}
+          - name: hemorrhaging
+            min: 2.4
+            alert: danger
+            passives:
+              - modify: {self: {consciousness: -70}}
+          - name: bled
+            min: 3.6
+            alert: caution
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - {name: low, min: 4.2, alert: watch}
+          - {name: replete, min: 4.8}
+        on_shortfall:
+          destroy: self
+          spawn: {object: rat_carcass}
+        passives:
+          - accumulate:
+              self:
+                blood: 0.0024
+    combinations:
+      strike:
+        with: weapon
+        duration: 15
+        pick:
+          - weight: 70
+            add:
+              self: {wariness: 25, shock: 80}
+              dragged: {durability: -20}
+            spawn: {object: laceration, into: self}
+            signal: hit
+          - weight: 30
+            add:
+              self: {wariness: 25}
+              dragged: {durability: -20}
+            signal: missed
+          - weight: {prop: vulnerability}
+            add:
+              dragged: {durability: -20}
+            destroy: self
+            spawn: {object: rat_carcass}
+            signal: killed
+
+  # ヤケイの死体。1000gの内訳: 生肉500g + 小さな生肉50g×2 = 600g。羽と骨は使い道がまだ無いので
+  # カードにしない。値を変えるときはこの内訳を崩さないこと（monkey_carcassと同じ規約）。
+  junglefowl_carcass:
+    tags: [item, quarry]
+    props:
+      weight: {value: 1000}
+      volume: {value: 2400}
+    combinations:
+      butcher:
+        with: cutting_tool
+        duration: 20
+        destroy: self
+        spawn:
+          - {object: raw_meat}
+          - {object: small_raw_meat, count: 2}
+
+  # ネズミの死体。80gの内訳: 小さな生肉50g。毛皮は使い道がまだ無いのでカードにしない。
+  rat_carcass:
+    tags: [item, quarry]
+    props:
+      weight: {value: 80}
+      volume: {value: 200}
+    combinations:
+      butcher:
+        with: cutting_tool
+        duration: 5
+        destroy: self
+        spawn: {object: small_raw_meat}
+
   # 解体して得られる素材。獲物の種類によらず同じ物が出て、獲物の大きさは個数で表す
   # （HuntingSystem.md 1.5節）。骨と皮の使い道は docs/world/SurvivalItems.md 参照。
 
@@ -213,9 +406,11 @@ object_defs:
   # 炉の火にかけると焼ける（docs/engine/FireSystem.md 7節）。**炉のことは何も知らない**——
   # 加熱の進み（cooking_progress）を持つだけで、進めるのは炉の側。
   raw_meat:
-    tags: [item, food]
+    tags: [item, food, meat_bait]
     props:
       weight: {value: 500}
+      # 罠へ仕掛けると肉食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
+      meat_bait: {value: 12}
       volume: {value: 500}
       # 炎（3/tick）なら8tick＝2時間で焼き上がる。火から出せば止まり、戻せば続きから進む。
       cooking_progress:
@@ -232,8 +427,52 @@ object_defs:
             meat_nutrition: 200
         destroy: self
 
+  # 小さな生肉。罠で捕れる小動物（ネズミ・ヤケイ）から取れる1切れで、生肉の1/10。**小さい獲物の
+  # 取り分を個数で表せるようにするための刻み**で、生肉500gでは80gのネズミの内訳が作れない。
+  #
+  # 焼く仕組みは生肉と同じだが、小さいぶん早く焼け、早く焦げる。
+  small_raw_meat:
+    tags: [item, food, meat_bait]
+    props:
+      weight: {value: 50}
+      meat_bait: {value: 4}
+      volume: {value: 50}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 8}
+        on_overflow:
+          spawn: {object: roasted_small_meat}
+          destroy: self
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 1.6
+            meat_nutrition: 20
+        destroy: self
+
+  # 焼けた小さな肉。生肉と焼けた肉の関係を、そのまま1/10で写している。
+  roasted_small_meat:
+    tags: [item, food]
+    props:
+      weight: {value: 40}
+      volume: {value: 45}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 4}
+        on_overflow:
+          spawn: {object: charred_lump}
+          destroy: self
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 2
+            meat_nutrition: 26
+        destroy: self
+
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
-  # 放っておくと焦げる（同7.2節）。
+  # 放っておくと焦げる（docs/engine/FireSystem.md 7.2節）。
   roasted_meat:
     tags: [item, food]
     props:

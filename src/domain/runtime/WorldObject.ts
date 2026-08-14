@@ -862,7 +862,7 @@ export class WorldObject {
 
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
-   * （EffectSite.placeReplacementへ委ねる）。self/actorなら対象のスロットを宣言順に走査し、最初に配置できた
+   * （EffectSite.placeReplacementへ委ねる）。self/actor/childなら対象のスロットを宣言順に走査し、最初に配置できた
    * スロットへ入れる。配置に失敗した場合は起点自身の親へ伝播し、枠の要件・capacityを無視して強制配置する。
    * 伝播先の親も無ければ何もしない。
    */
@@ -880,6 +880,10 @@ export class WorldObject {
       if (site === undefined) return;
       primaryTarget = site.parent;
       placed = site.placeReplacement(spawned);
+    } else if (into === 'child') {
+      // 受け取れる子が居なければselfの親へ伝播させる（＝持ちきれない物は地面に落ちる、と同じ扱い）。
+      primaryTarget = this; // eslint-disable-line @typescript-eslint/no-this-alias -- 伝播先の起点として使うだけ
+      placed = this.tryFirstAcceptingChild(spawned, session);
     } else {
       const target = into === 'self' ? this : actor;
       if (target === undefined) return;
@@ -891,6 +895,17 @@ export class WorldObject {
     if (primaryTarget.parent === undefined) return;
 
     WorldObject.tryFirstAcceptingSlot(spawned, primaryTarget.parent, session, true);
+  }
+
+  /**
+   * 自分の子を順に走査し、最初に受け取れた子のスロットへ入れる（into: child、9.4節）。子のどのスロットが
+   * 受け取るかは通常の走査に委ねるため、著者は「どの子か」も「どのスロットか」も書かない。
+   */
+  private tryFirstAcceptingChild(spawned: WorldObject, session: WorldSession): boolean {
+    for (const child of this.children()) {
+      if (WorldObject.tryFirstAcceptingSlot(spawned, child, session, false)) return true;
+    }
+    return false;
   }
 
   /** targetのスロットを宣言順に走査し、最初に配置できたスロットへ入れる（moveIntoFirstAcceptingSlot参照）。 */

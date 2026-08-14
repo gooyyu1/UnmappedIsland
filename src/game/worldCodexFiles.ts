@@ -23,6 +23,7 @@ export const WORLD_CODEX_FILES = [
   'locations.yaml',
   'terrain_generation.yaml',
   'tools.yaml',
+  'traps.yaml',
   'treatments.yaml',
   'weaving.yaml',
 ];

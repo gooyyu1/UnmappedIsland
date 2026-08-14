@@ -237,11 +237,40 @@ object_texts:
   laceration:
     display_name: 裂傷
     description: 鈍い刃で裂かれた傷。潰れた縁が血を早く止めるが、しばらくは流れ続ける。
+  snare_laceration:
+    display_name: 縄の傷
+    description: 締まった縄が食い込んで裂けた傷。浅く掛かれば血はすぐ止まり、深ければそうもいかない。
 
   # 動物（animals.yaml）。
   monkey:
     display_name: サル
     description: 群れで暮らす小柄なサル。目を離すと、足元に置いたものを持っていく。
+  junglefowl:
+    display_name: ヤケイ
+    description: 藪をつつく野生の鶏。飛ぶのは下手で、地面に降りているところを狙える。
+  junglefowl_carcass:
+    display_name: ヤケイの死体
+    description: 仕留めたヤケイ。刃物を当てれば肉が取れる。
+    combinations:
+      butcher:
+        display_name: 解体する
+        description: 羽をむしり、肉を外す。
+  rat:
+    display_name: ネズミ
+    description: どこにでも湧く小さな齧歯類。貯めた食料を狙って寄ってくる。
+  rat_carcass:
+    display_name: ネズミの死体
+    description: 仕留めたネズミ。取れる肉はひと口ぶんしかない。
+    combinations:
+      butcher:
+        display_name: 解体する
+        description: 皮を剥ぎ、ひと口ぶんの肉を外す。
+  small_raw_meat:
+    display_name: 小さな生肉
+    description: 小動物から取れたひと口ぶんの肉。火が無ければ生のまま食べるしかない。
+  roasted_small_meat:
+    display_name: 焼けた小さな肉
+    description: 火が通ったひと口ぶんの肉。すぐ焼けるが、すぐ焦げる。
   monkey_carcass:
     display_name: サルの死体
     description: 仕留めたサル。丸ごとでは重いが、刃物を当てれば肉と骨と皮に分けられる。
@@ -264,6 +293,25 @@ object_texts:
   rawhide:
     display_name: 生皮
     description: 剥いだままの皮。乾けば板のように固まり、濡らせば傷む。
+
+  # 罠（traps.yaml）。
+  snare:
+    display_name: くくり罠
+    description: 繊維で編んだ輪。地面に仕掛けて待つと、そのうち何かが掛かる。開けるまで中は分からない。
+    props:
+      catch_remaining:
+        display_name: 次の見込み
+      plant_bait:
+        display_name: 草の餌
+      meat_bait:
+        display_name: 肉の餌
+    combinations:
+      add_plant_bait:
+        display_name: 草の餌を仕掛ける
+        description: 草食の獲物を寄せる。仕掛けてある間だけ効き、時間で傷んで切れる。
+      add_meat_bait:
+        display_name: 肉の餌を仕掛ける
+        description: 肉食の獲物を寄せる。自分が食べられる肉を先に賭けることになる。
 
   # 治療具（treatments.yaml）。
   bandage:
@@ -583,6 +631,7 @@ location_texts:
 # 操作を実行できない理由（GameElementDefinition.md 14.6節のreason）。実行できないアクションのボタンを
 # 押している間、吹き出しに出る。
 reason_texts:
+  trap_baited: 罠にはもう餌が仕掛けてある。これ以上は入らない。
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
   not_raining: 雨は降っていない。溜められる雨がない。
