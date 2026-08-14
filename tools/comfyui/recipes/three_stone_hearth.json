@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/three_stone_hearth.png を作り直すためのレシピ。build.py が読む。",
+    "石が支点になって器を火にかけられる炉（public/world-codex/fire.yaml）。",
+    "",
+    "**焚き火とは組み方が違うので、下絵も別に持つ（fireLay: three_stone）。** 焚き火の枝組みに石を",
+    "3つ置いても、焚き火の周りに石が転がっているようにしか見えない。三石のかまどは石が主役で、",
+    "枝は立てずに、石の隙間から中央へ寝かせて差し込む。",
+    "",
+    "**枝の太さは焚き火と揃える。** 物としては同じ枝で、切り抜きの拡大率もほぼ同じ（物の幅は772対",
+    "806）なので、差が出るのは下絵の太さそのもの。ただしQwenは指示より細く描くので、下絵では",
+    "焚き火より太くしておく（74に対して110）。**logs / firewood とは呼ばない**——太さは出るが、",
+    "木口が製材の切り口になってつるりとした丸太になる。",
+    "",
+    "**器は描かない。** 「器を載せる支点」と編集の指示に書くと、真ん中に鍋が出る。何を火にかけるかは",
+    "スロットが持つ。",
+    "",
+    "SDXLへ直接頼むと、三角形の額縁やピラミッドになる（8枚で全滅）。**図形の名前は図形として",
+    "描かれる**ので、下絵でも指示でも「三角形に置く」とは言わない。"
+  ],
+  "output": "src/assets/objects/three_stone_hearth.png",
+  "fireLay": "three_stone",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same thicknesses: three big rounded stones set on the ground around a small open space, one behind and two in front, and four thick dry branches lying flat on the ground and meeting in the middle of that open space, reaching in through the gaps between the stones with their far ends spread outwards, and a little heap of thin twigs and dry kindling where they meet. Paint the stones as real weathered rocks, big and heavy, mottled grey with soft brush strokes and gentle shading, their tops standing at the same height. Paint the branches as real branches, each as thick as an arm, covered in rough brown bark with knots and short broken side twigs, their ends snapped off and splintered, warm mid brown. Everything is clearly darker than the white page. There is no pot, no pan, no bowl and no bucket, and nothing is sawn or cut smooth. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow under each stone. Dry matte surface, flat even lighting. There is no fire, no flame, no smoke and no glow anywhere in the picture. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
