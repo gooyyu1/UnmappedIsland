@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
@@ -9,8 +10,7 @@ import { describe, expect, it } from 'vitest';
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
  *
- * アンカーはGitHubのslug生成（gfm_auto_identifiers。公開サイトのpandocも同方式に揃えてある、
- * .github/workflows/pages.yml）で照合する。
+ * アンカーの照合には、公開サイトが実際にIDを振るのと同じ {@link githubSlugs} を使う。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -71,23 +71,8 @@ function headingsOf(markdown: string): string[] {
   return headings;
 }
 
-/** GitHubのアンカーID（gfm_auto_identifiers）。重複見出しの連番もGitHubと同じ。 */
 function slugsOf(headings: readonly string[]): Set<string> {
-  const seen = new Map<string, number>();
-  const slugs = new Set<string>();
-  for (const heading of headings) {
-    const text = heading
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // リンクは表示名だけが残る
-      .replace(/[`*]/g, '');
-    const base = text
-      .toLowerCase()
-      .replace(/[^\p{L}\p{M}\p{N}\p{Pc}\s-]/gu, '')
-      .replace(/ /g, '-');
-    const count = seen.get(base) ?? 0;
-    seen.set(base, count + 1);
-    slugs.add(count === 0 ? base : `${base}-${count}`);
-  }
-  return slugs;
+  return new Set(githubSlugs(headings));
 }
 
 const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));

@@ -16,11 +16,14 @@ const WEBP_QUALITY = 80;
  * （`src/assets/` にPNGを置くだけ、objectArt/backgroundArt参照）は変わらず、変換は出力ファイル名の
  * 拡張子とチャンク内のURL文字列の書き換えで完結する。テクスチャキーはソースのパスから作られる
  * ため影響しない。開発サーバー（vite dev）は変換せずPNGをそのまま配る。
+ *
+ * 走るのは公開するビルド（`--mode publish`、pages.yml）だけ。Phaserはどちらの形式でも動き、この変換は
+ * 配信量を減らすためだけのものなので、バンドルが壊れていないかを見るだけのビルドでは要らない。
  */
 export function pngToWebp(): Plugin {
   return {
     name: 'png-to-webp',
-    apply: 'build',
+    apply: (_config, env) => env.command === 'build' && env.mode === 'publish',
     async generateBundle(_options, bundle) {
       const pngs = new Map<string, Buffer>();
       for (const [fileName, output] of Object.entries(bundle))
