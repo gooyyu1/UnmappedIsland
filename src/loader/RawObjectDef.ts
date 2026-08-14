@@ -45,6 +45,9 @@ export class RawObjectDef {
   /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
   mainItemSlot: string | undefined;
 
+  /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
+  artByStage: string | undefined;
+
   /** quantitative（7.6節）。個数ではなく量で存在する型か。traitのどれか1つでも宣言していれば真。 */
   quantitative = false;
 
@@ -75,8 +78,8 @@ export class RawObjectDef {
    * - props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
-   * - stack_order/represented_by/main_item_slot: 自分自身の指定を優先。無ければちょうど1つのtraitが
-   *   指定している必要がある（複数ならエラー）。
+   * - stack_order/represented_by/main_item_slot/art_by_stage: 自分自身の指定を優先。無ければちょうど1つの
+   *   traitが指定している必要がある（複数ならエラー）。
    * - recipes: 成果物ごとの内容なので合成せず、自分自身の宣言だけを読む。
    * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: covers/layer。
    */
@@ -89,6 +92,7 @@ export class RawObjectDef {
     const stackOrderCandidates: Array<[string, YAMLMap]> = [];
     const representedByCandidates: Array<[string, string]> = [];
     const mainItemSlotCandidates: Array<[string, string]> = [];
+    const artByStageCandidates: Array<[string, string]> = [];
     const tags: string[] = [];
     let quantitative = this.quantitative;
     let boundToOwner = this.boundToOwner;
@@ -109,6 +113,7 @@ export class RawObjectDef {
       if (trait.stackOrder !== undefined) stackOrderCandidates.push([traitName, trait.stackOrder]);
       if (trait.representedBy !== undefined) representedByCandidates.push([traitName, trait.representedBy]);
       if (trait.mainItemSlot !== undefined) mainItemSlotCandidates.push([traitName, trait.mainItemSlot]);
+      if (trait.artByStage !== undefined) artByStageCandidates.push([traitName, trait.artByStage]);
       // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
       if (trait.quantitative) quantitative = true;
       if (trait.boundToOwner) boundToOwner = true;
@@ -209,6 +214,38 @@ export class RawObjectDef {
     const mainItemSlotGlobalId =
       mainItemSlotName !== undefined ? loader.slotNames.intern(mainItemSlotName) : undefined;
 
+    let artByStageName = this.artByStage;
+    if (artByStageName === undefined) {
+      if (artByStageCandidates.length > 1)
+        throw new YamlLoadError(
+          `'${this.name}': art_by_stage が複数のtrait（'${artByStageCandidates[0][0]}' と '${artByStageCandidates[1][0]}'）で重複して宣言されています。`,
+        );
+      if (artByStageCandidates.length === 1) artByStageName = artByStageCandidates[0][1];
+    }
+    const artByStagePropertyGlobalId =
+      artByStageName !== undefined ? loader.propertyNames.intern(artByStageName) : undefined;
+
+    if (artByStagePropertyGlobalId !== undefined) {
+      const target = propertyDefs.find((propertyDef) => propertyDef.globalId === artByStagePropertyGlobalId);
+      if (target === undefined)
+        throw new YamlLoadError(
+          `'${this.name}': art_by_stage が指すプロパティ '${artByStageName}' を持ちません。`,
+        );
+      if (!target.hasStages)
+        throw new YamlLoadError(
+          `'${this.name}': art_by_stage が指すプロパティ '${artByStageName}' はstagesを持ちません。`,
+        );
+    }
+    // 段のartを宣言できるのはart_by_stageが指すプロパティだけ（1オブジェクト1絵の原則、6.4節）。
+    // 他のプロパティの段が黙って無視されるのを避けるため、ロード時に弾く。
+    for (const propertyDef of propertyDefs)
+      if (propertyDef.hasStageArt && propertyDef.globalId !== artByStagePropertyGlobalId)
+        throw new YamlLoadError(
+          `'${this.name}': プロパティ '${propertyDef.name}' の段がartを宣言していますが、` +
+            `art_by_stage は${artByStageName !== undefined ? `'${artByStageName}'` : '未指定'}です。` +
+            `段にartを書けるのはart_by_stageが指すプロパティだけです。`,
+        );
+
     // 量的オブジェクトは注ぐたびにインスタンスが生まれ直すため、生成時ロール（6.2節）を持てない
     // （移すたびに振り直されてしまう、7.6節）。
     if (quantitative)
@@ -237,6 +274,7 @@ export class RawObjectDef {
       boundToOwner,
       !notStackable,
       parseRecipes(loader, this.name, this.recipes),
+      artByStagePropertyGlobalId,
     );
   }
 }

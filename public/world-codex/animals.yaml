@@ -21,6 +21,8 @@ traits:
     tags: [item, animal, quarry]
     # 押すと刺さっている怪我が並ぶ（7.8節）。キャラクタの怪我と同じ見え方になる（同3節）。
     main_item_slot: injuries
+    # 気を失っている間は、絵が倒れた姿へ変わる（consciousnessのunconscious段、CardView.md 5.1節）。
+    art_by_stage: consciousness
     slots:
       # 負っている怪我。プレイヤーは出し入れできず、付けるのは攻撃・外すのは怪我自身
       # （characters/player_character.yamlのinjuriesと同じ扱い）。
@@ -73,13 +75,14 @@ traits:
         value: 100
         range: {min: 0, max: 100}
         stages:
-          # 気を失っている間はカードに覆いが出る（CardView.md 9.1節）。出すかどうかを決めるのは
-          # この段の名前で、絵そのものは差し替えない。
+          # 気を失っている間はカードに覆いが出て（CardView.md 9.1節）、絵も倒れた姿へ差し替わる
+          # （art_by_stage、beast trait・GameElementDefinition.md 6.4節）。
           #
           # 警戒はここで打ち消す。気を失った動物は警戒しておらず、放っておいてよい相手なので、
           # 縁の明滅（CardView.md 3節）も止まる。実効値への寄与なので、目覚めれば元の警戒へ戻る。
           - name: unconscious
             alert: danger
+            art: unconscious
             passives:
               # 気を失った相手は狙って急所を打てる。仕留めの重みが跳ね上がり、警戒は消える。
               - modify: {self: {wariness: -100, vulnerability: 200}}

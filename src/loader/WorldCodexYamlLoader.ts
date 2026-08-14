@@ -202,6 +202,7 @@ export class WorldCodexYamlLoader {
     raw.stackOrder = tryGetMap(node, 'stack_order', context);
     raw.representedBy = tryGetScalar(node, 'represented_by', context);
     raw.mainItemSlot = tryGetScalar(node, 'main_item_slot', context);
+    raw.artByStage = tryGetScalar(node, 'art_by_stage', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
     raw.notStackable = !tryGetBool(node, 'stackable', context, true);
@@ -231,6 +232,7 @@ export class WorldCodexYamlLoader {
     raw.stackOrder = tryGetMap(node, 'stack_order', context);
     raw.representedBy = tryGetScalar(node, 'represented_by', context);
     raw.mainItemSlot = tryGetScalar(node, 'main_item_slot', context);
+    raw.artByStage = tryGetScalar(node, 'art_by_stage', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
     raw.notStackable = !tryGetBool(node, 'stackable', context, true);

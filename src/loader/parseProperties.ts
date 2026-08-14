@@ -200,6 +200,9 @@ function parseStage(
 ): PropertyStage {
   const stageName = requireScalar(stageMap, 'name', context);
   const alert = parseAlertLevel(context, stageMap);
+  // 段が宣言するart接尾辞（6.4節）。art_by_stageが指すプロパティの段だけがこれを持てるが、
+  // その検証は object_def 全体を見渡せる RawObjectDef.resolve が行う（ここでは持たない）。
+  const art = tryGetScalar(stageMap, 'art', context);
   let stage: PropertyStage;
 
   if (isSymbolProperty) {
@@ -207,10 +210,10 @@ function parseStage(
       throw new YamlLoadError(
         `${context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。`,
       );
-    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert);
+    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert, art);
   } else {
     const min = tryGetNumber(stageMap, 'min', context);
-    stage = new PropertyStage(stageName, min, undefined, alert);
+    stage = new PropertyStage(stageName, min, undefined, alert, art);
   }
 
   // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。

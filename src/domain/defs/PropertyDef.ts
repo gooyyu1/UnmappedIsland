@@ -49,11 +49,18 @@ export class PropertyStage {
   /** この段にいる間、値がどの域にあると見なすか（6.4節のalert）。 */
   readonly alert: AlertLevel;
 
-  constructor(name: string, min: number | undefined, eq?: number, alert: AlertLevel = 'safe') {
+  /**
+   * この段にいる間カードに出す絵の接尾辞（`art_by_stage`、6.4節）。`src/assets/objects/
+   * <object_defの識別子>_<この値>.png` を指す。宣言しない段はundefinedで、その型の絵のまま。
+   */
+  readonly art: string | undefined;
+
+  constructor(name: string, min: number | undefined, eq?: number, alert: AlertLevel = 'safe', art?: string) {
     this.name = name;
     this.min = min;
     this.eq = eq;
     this.alert = alert;
+    this.art = art;
   }
 
   /** この段を書き表す（Description参照）。propertyGlobalIdは、eqの値をシンボル名へ戻すために要る。 */
@@ -67,6 +74,7 @@ export class PropertyStage {
     else tokens.push(text(': どの段にも該当しないとき'));
 
     if (this.alert !== 'safe') tokens.push(text(`（alert: ${this.alert}）`));
+    if (this.art !== undefined) tokens.push(text(`（art: ${this.art}）`));
     return tokens;
   }
 }
@@ -115,6 +123,14 @@ export class PropertyDef {
 
   /** stages中のフォールバック段（min:undefined・eq:undefined）。stagesは不変のため一度だけ求める。該当が無ければundefined。 */
   private readonly fallbackStage: PropertyStage | undefined;
+
+  /** stagesを1つでも持つか（art_by_stageの検証、6.4節）。 */
+  get hasStages(): boolean {
+    return this.stages.length > 0;
+  }
+
+  /** いずれかの段がart（6.4節）を宣言しているか（art_by_stageの検証）。 */
+  readonly hasStageArt: boolean;
 
   /**
    * 値がどちらへ動くと悪いか。**専用の宣言は持たず、`stages`のalertから導く**——「どちらが危ないか」は
@@ -177,6 +193,7 @@ export class PropertyDef {
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages);
+    this.hasStageArt = stages.some((stage) => stage.art !== undefined);
   }
 
   /**
@@ -360,6 +377,18 @@ export class PropertyDef {
   /** 実効値effectiveValueのときに該当する段（6.4節）の名前。該当する段が無ければundefined。 */
   stageNameOf(effectiveValue: number): string | undefined {
     return this.resolveStage(effectiveValue)?.name;
+  }
+
+  /** 実効値effectiveValueのとき、今いる段が宣言しているart接尾辞（PropertyStage.art、6.4節）。宣言が無ければundefined。 */
+  artSuffixOf(effectiveValue: number): string | undefined {
+    return this.resolveStage(effectiveValue)?.art;
+  }
+
+  /** stagesが宣言しているart接尾辞の一覧（重複なし、宣言順）。絵のファイル名検査（objectArt.test.ts）に使う。 */
+  artSuffixes(): readonly string[] {
+    return [
+      ...new Set(this.stages.map((stage) => stage.art).filter((art): art is string => art !== undefined)),
+    ];
   }
 
   /** 実体値numberがrangeの下限を割っているか（rangeを持たないプロパティでは常に偽）。 */

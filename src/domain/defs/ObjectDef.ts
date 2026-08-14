@@ -73,6 +73,15 @@ export class ObjectDef {
   readonly mainItemSlotGlobalId: number | undefined;
 
   /**
+   * **カードに出す絵を段で切り替えるプロパティ**のグローバルID（`art_by_stage`、6.4節）。undefinedなら
+   * 持たず、常にこの型自身の絵（`object_defの識別子.png`）を出す。
+   *
+   * 1つの型につき高々1つ——複数のプロパティが同時に絵を主張する曖昧さを構造で禁じる。`art`（段の
+   * 兄弟キー）を宣言できるのは、ここが指すプロパティの段だけ（ロード時に検証、RawObjectDef.resolve）。
+   */
+  readonly artByStagePropertyGlobalId: number | undefined;
+
+  /**
    * **単独では存在できない型か**（7.9節、既定false）。trueなら、入っていた親が消えるとき一緒に消える。
    *
    * 身体から離れた「捻挫」も、器の無い水も、繋がる土地の無い道も存在しない。falseの物（包帯・石）は
@@ -120,6 +129,7 @@ export class ObjectDef {
     boundToOwner = false,
     stackable = true,
     recipes: readonly RecipeDef[] = [],
+    artByStagePropertyGlobalId?: number,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -140,6 +150,7 @@ export class ObjectDef {
     this.stackable = stackable;
     this.isQuantitative = isQuantitative;
     this.recipes = recipes;
+    this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;
   }
 
   /**
@@ -167,6 +178,19 @@ export class ObjectDef {
       );
 
     if (this.stackOrder !== undefined) out.write(text('stack_order: '), ...this.stackOrder.describe(names));
+
+    if (this.artByStagePropertyGlobalId !== undefined)
+      out.write(
+        text('art_by_stage: '),
+        propertyRef(names.propertyName(this.artByStagePropertyGlobalId)),
+        text('の段が絵を切り替える'),
+      );
+  }
+
+  /** art_by_stage（6.4節）が指すプロパティの、stagesが宣言しているart接尾辞の一覧。art_by_stageが無ければ空。 */
+  artSuffixes(): readonly string[] {
+    if (this.artByStagePropertyGlobalId === undefined) return [];
+    return this.getPropertyDef(this.artByStagePropertyGlobalId)?.artSuffixes() ?? [];
   }
 
   /**

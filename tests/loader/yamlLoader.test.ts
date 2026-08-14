@@ -279,6 +279,125 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/deadly/);
   });
 
+  // ------------------------------------------------------------------
+  // art_by_stage（段による絵の差し替え、GameElementDefinition.md 6.4節）
+  // ------------------------------------------------------------------
+
+  it('art_by_stageが指すプロパティの段が宣言したartを、artSuffixesとして読み出せる', () => {
+    const yaml = `
+object_defs:
+  campfire:
+    art_by_stage: heat
+    props:
+      heat:
+        value: 0
+        stages:
+          - {name: out}
+          - {name: ember, min: 1, art: lit}
+          - {name: blaze, min: 60, art: lit}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const def = codex.objects.get(codex.objectNames.getId('campfire'));
+
+    expect(def.artByStagePropertyGlobalId).toBe(codex.propertyNames.getId('heat'));
+    // 複数の段が同じart値を宣言しても、artSuffixesは重複を持たない。
+    expect(def.artSuffixes()).toEqual(['lit']);
+  });
+
+  it('art_by_stageが指すプロパティを持たないとエラーになる', () => {
+    const yaml = `
+object_defs:
+  campfire:
+    art_by_stage: heat
+    props:
+      fuel:
+        value: 0
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/heat/);
+  });
+
+  it('art_by_stageが指すプロパティがstagesを持たないとエラーになる', () => {
+    const yaml = `
+object_defs:
+  campfire:
+    art_by_stage: heat
+    props:
+      heat:
+        value: 0
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/stages/);
+  });
+
+  it('art_by_stageが指す以外のプロパティの段にartを書くとエラーになる（1オブジェクト1絵の原則）', () => {
+    const yaml = `
+object_defs:
+  monkey:
+    art_by_stage: consciousness
+    props:
+      consciousness:
+        value: 100
+        stages:
+          - {name: unconscious, art: fainted}
+      wariness:
+        value: 0
+        stages:
+          - {name: calm, art: sleepy}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/wariness/);
+  });
+
+  it('art_by_stageを持たないobject_defの段にartを書くとエラーになる', () => {
+    const yaml = `
+object_defs:
+  monkey:
+    props:
+      consciousness:
+        value: 100
+        stages:
+          - {name: unconscious, art: fainted}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/consciousness/);
+  });
+
+  it('art_by_stageは、main_item_slotと同じくtrait側の宣言も参照できる', () => {
+    const yaml = `
+traits:
+  hearth:
+    art_by_stage: heat
+    props:
+      heat:
+        value: 0
+        stages:
+          - {name: out}
+          - {name: lit, min: 1, art: lit}
+object_defs:
+  campfire:
+    traits: [hearth]
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const def = codex.objects.get(codex.objectNames.getId('campfire'));
+
+    expect(def.artByStagePropertyGlobalId).toBe(codex.propertyNames.getId('heat'));
+  });
+
+  it('art_by_stageが複数のtraitで重複して宣言されるとエラーになる', () => {
+    const yaml = `
+traits:
+  trait_a:
+    props:
+      heat: {value: 0, stages: [{name: out}]}
+    art_by_stage: heat
+  trait_b:
+    props:
+      fuel: {value: 0, stages: [{name: none}]}
+    art_by_stage: fuel
+object_defs:
+  campfire:
+    traits: [trait_a, trait_b]
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/art_by_stage/);
+  });
+
   it('廃止したスロットのキーは、書き換え先を示して落とす', () => {
     // 黙って無視すると、制約が効いているつもりの宣言が通ってしまう（SlotSystem.md 2節）。
     const retired: readonly (readonly [string, RegExp])[] = [

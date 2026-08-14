@@ -153,6 +153,17 @@ export class WorldObject {
     return property !== undefined && property.isInStage(stageName);
   }
 
+  /**
+   * `art_by_stage`（6.4節）が指すプロパティの、今の段が宣言しているart接尾辞。`art_by_stage`を
+   * 持たない型、対象プロパティを持たないインスタンス、宣言の無い段では、いずれもundefined
+   * （呼び出し側はその型自身の絵をそのまま使う）。
+   */
+  artSuffix(): string | undefined {
+    const propertyGlobalId = this.def.artByStagePropertyGlobalId;
+    if (propertyGlobalId === undefined) return undefined;
+    return this.tryGetProperty(propertyGlobalId)?.artSuffix();
+  }
+
   /** 名指しした1つのプロパティの現在の状態。持たないオブジェクトではundefined。 */
   readProperty(globalPropertyId: number): PropertyReading | undefined {
     return this.tryGetProperty(globalPropertyId)?.read();

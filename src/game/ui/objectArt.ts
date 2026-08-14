@@ -28,6 +28,19 @@ export const OBJECT_ART: ReadonlyMap<string, string> = new Map(
  */
 export const CARD_ART_WIDTH = 410;
 
+/**
+ * カードに出す絵の名前。`art_by_stage`（GameElementDefinition.md 6.4節）の段が接尾辞を宣言していれば
+ * `<objectName>_<接尾辞>` を、そのファイルがまだ無ければ型自身の絵（objectName）を返す。
+ *
+ * ファイルの有無を見るのは、絵を描くのと文法を宣言するのを別々の時に行えるようにするため——先に
+ * 宣言しても、絵が入るまでは今まで通りの姿で出る（`_multiply` と同じ既定動作）。
+ */
+export function artNameFor(objectName: string, stageArtSuffix: string | undefined): string {
+  if (stageArtSuffix === undefined) return objectName;
+  const stageArtName = `${objectName}_${stageArtSuffix}`;
+  return OBJECT_ART.has(stageArtName) ? stageArtName : objectName;
+}
+
 /** object_defの識別子に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。 */
 export function objectTexture(objectName: string): string {
   return `object:${objectName}`;

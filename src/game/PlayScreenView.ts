@@ -9,6 +9,7 @@ import { putIntoSlot } from '../domain/runtime/slotEntry';
 import { currentStep, finishedStepRatio, stepSupplyRatio } from '../domain/runtime/crafting';
 import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
+import { artNameFor } from './ui/objectArt';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
 import type { CardAlertBar, CardContent, CardFill } from './ui/Card';
@@ -659,8 +660,12 @@ export function fromGameSession(
    * カードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の覆いが
    * 示すので、絵は何が出来つつあるのかを出せばよい（CardView.md 10節 製作中オブジェクトのカード）。
    * 自動生成される型（RecipeSystem.md）に絵を用意する道は無いため、これが唯一の出所でもある。
+   *
+   * instanceを渡すと、`art_by_stage`（GameElementDefinition.md 6.4節）が指す段の絵へ差し替える
+   * （CardView.md 5.1節）。型だけのカード（instance無し）は個体の状態を持たないので常に型自身の絵。
    */
-  const artOf = (def: ObjectDef): string => (codex.productOf(def) ?? def).name;
+  const artOf = (def: ObjectDef, instance?: WorldObject): string =>
+    artNameFor((codex.productOf(def) ?? def).name, instance?.artSuffix());
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。
@@ -699,7 +704,7 @@ export function fromGameSession(
     inProgress: inProgressDef(instances[0].def),
     identity: instances.map((instance) => instance.instanceId),
     count: instances.length,
-    art: artOf(instances[0].def),
+    art: artOf(instances[0].def, instances[0]),
     background: slotOfObject(instances[0]),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
