@@ -53,9 +53,12 @@ object_defs:
       volume: {value: 500}
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 5
+            stomach: 5
             grain_tuber_nutrition: 60
         destroy: self
 

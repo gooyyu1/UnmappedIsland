@@ -32,28 +32,28 @@ describe('foods.yamlの食料定義', () => {
   }
 
   it.each([
-    // satietyは「1食で何tick分の腹持ちか」（6.0節）。
+    // stomachは「1食で何tick分の腹持ちか」（6.0節）。胃へ入り、腸を経てから体脂肪になる。
     ['water_spinach', 'vegetable_nutrition', 4],
     ['coconut_crab', 'meat_nutrition', 16],
     ['taro', 'grain_tuber_nutrition', 20],
   ])(
-    '%sを食べるとsatietyと%sが加算され、食料自身は消滅する',
+    '%sを食べると胃の中身と%sが加算され、食料自身は消滅する',
     (foodObjectName, nutritionPropertyName, expectedSatietyGain) => {
       const session = new WorldSession(codex);
       const character = spawn(SAMPLE_CHARACTER, 1);
       const food = spawn(foodObjectName, 2);
 
-      const satietyId = codex.propertyNames.getId('satiety');
+      const stomachId = codex.propertyNames.getId('stomach');
       const nutritionId = codex.propertyNames.getId(nutritionPropertyName);
 
       // 栄養カテゴリはtickごとに減衰する（characters/参照）ため、加算量だけを検証したい。
       // 一旦0まで下げてから食べさせ、増分だけを見る。
-      character.setProperty(satietyId, 0);
+      character.setProperty(stomachId, 0);
       character.setProperty(nutritionId, 0);
 
       expect(food.tryExecuteAction('eat', character, session)).toBe(true);
 
-      expect(character.getNumber(satietyId)).toBe(expectedSatietyGain);
+      expect(character.getNumber(stomachId)).toBe(expectedSatietyGain);
       expect(character.getNumber(nutritionId)).toBe(200);
     },
   );

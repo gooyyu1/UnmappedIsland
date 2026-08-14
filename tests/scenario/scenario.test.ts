@@ -178,12 +178,12 @@ describe('テスト用シナリオ', () => {
   });
 
   it('propsはキャラクターのプロパティを上書きする', () => {
-    const scenario = parseScenario('props.yaml', 'seed: 1\nplayer:\n  props:\n    satiety: 12\n');
+    const scenario = parseScenario('props.yaml', 'seed: 1\nplayer:\n  props:\n    hydration: 12\n');
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
 
     applyScenario(game, scenario, codex);
 
-    expect(game.player.satiety).toBe(12);
+    expect(game.player.instance.getNumber(codex.propertyNames.getId('hydration'))).toBe(12);
   });
 
   it('world.propsはシンボル型のプロパティも上書きできる（天候はシードで選べない）', () => {

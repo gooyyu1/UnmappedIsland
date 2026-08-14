@@ -105,6 +105,8 @@ describe('プレイヤーキャラクタの定義', () => {
       ['pain', ['status', 'health']],
       ['blood', ['status', 'health']],
       ['satiety', ['status', 'nutrition']],
+      ['stomach', ['nutrition']],
+      ['intestine', ['nutrition']],
       ['hydration', ['status', 'nutrition']],
       ['body_fat', ['nutrition']],
       ['wakefulness', ['status', 'health']],
@@ -137,17 +139,23 @@ describe('プレイヤーキャラクタの定義', () => {
       ]);
     });
 
-    it.each(['pain', 'blood', 'satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
-      '%sは0を下限とするrangeを持つ',
-      (propertyName) => {
-        expect(propOf(def(character), propertyName).range?.min).toBe(0);
-      },
-    );
+    it.each([
+      'pain',
+      'blood',
+      'satiety',
+      'stomach',
+      'intestine',
+      'hydration',
+      'body_fat',
+      'wakefulness',
+      'stamina',
+      'load',
+    ])('%sは0を下限とするrangeを持つ', (propertyName) => {
+      expect(propOf(def(character), propertyName).range?.min).toBe(0);
+    });
 
     it.each([
       // 時間を数えるクラスは基準レートが1/tickで、maxが「何tick保つか」を直接表す（6.0節）。
-      ['satiety', 1],
-      ['body_fat', 1],
       ['wakefulness', 1],
       ['vegetable_nutrition', 1],
       ['meat_nutrition', 1],
@@ -161,19 +169,21 @@ describe('プレイヤーキャラクタの定義', () => {
       ['pain', 0],
       // 血は自分で戻る唯一のステータスだが、満タンで始まるので上限で頭打ちになる（次のテスト）。
       ['blood', 0],
+      // 満腹感は胃と腸が押し上げる実効値なので、自分では動かない（DigestionSystem.md 2節）。
+      // 胃と腸の中身はtickで動くが、減るのではなく輸送で行き来する（tests/worldCodex/digestion.test.ts）。
+      ['satiety', 0],
     ])('%sはtickごとに%iずつ減る', (propertyName, expectedDecay) => {
       expect(decayPerTick(character, propertyName)).toBe(expectedDecay);
     });
 
-    it('満腹度と水分は安全域のやや下、覚醒度と体力は満タン、体脂肪は最大値の1/4から始まる', () => {
+    it('水分は安全域のやや下、覚醒度と体力は満タン、体脂肪は最大値の1/4から始まる', () => {
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
 
       // 開始直後からステータスバーに出るよう、安全域の境目（80%）のやや下の75%から始める（Characters.md）。
-      for (const propertyName of ['satiety', 'hydration'])
-        expect(
-          instance.getNumber(codex.propertyNames.getId(propertyName)),
-          `${propertyName} は最大値の3/4で始まる`,
-        ).toBe((maxOf(character, propertyName) * 3) / 4);
+      expect(
+        instance.getNumber(codex.propertyNames.getId('hydration')),
+        'hydration は最大値の3/4で始まる',
+      ).toBe((maxOf(character, 'hydration') * 3) / 4);
 
       for (const propertyName of ['wakefulness', 'stamina'])
         expect(
@@ -187,7 +197,9 @@ describe('プレイヤーキャラクタの定義', () => {
       );
     });
 
-    it.each(['satiety', 'hydration', 'wakefulness', 'stamina', 'blood'])(
+    // 満腹感はここに含めない。maxが容量ではなく感じ方の頂点で、実際に取る値の分布から刻むため
+    // （DigestionSystem.md 3.3節）。
+    it.each(['hydration', 'wakefulness', 'stamina', 'blood'])(
       '%sは最大値の80%%を下回ると安全域から外れる',
       (propertyName) => {
         // 最大値だけ変えてstagesを直し忘れると、ステータスエリアに出始める位置がずれる。
@@ -236,7 +248,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。1時間 = 4 tick。
-    it.each(['satiety', 'wakefulness'])('%sの域は残り時間で切られる', (propertyName) => {
+    it.each(['wakefulness'])('%sの域は残り時間で切られる', (propertyName) => {
       const prop = propOf(def(character), propertyName);
       const perHour = decayPerTick(character, propertyName) * 4;
 

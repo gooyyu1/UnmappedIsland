@@ -422,9 +422,12 @@ object_defs:
           destroy: self
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 2
+            stomach: 2
             meat_nutrition: 25
         # 食べ終わって残る骨。actorの手が塞がっていれば足元へ落ちる（9.4節のフォールバック）。
         spawn: {object: small_bone, into: actor}
@@ -474,9 +477,12 @@ object_defs:
           destroy: self
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 16
+            stomach: 16
             meat_nutrition: 200
         destroy: self
 
@@ -497,9 +503,12 @@ object_defs:
           destroy: self
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 20
+            stomach: 20
             meat_nutrition: 260
         destroy: self
 
@@ -511,9 +520,12 @@ object_defs:
       volume: {value: 300}
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 4
+            stomach: 4
             meat_nutrition: 20
         destroy: self
 

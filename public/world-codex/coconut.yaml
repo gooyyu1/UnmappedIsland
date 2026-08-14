@@ -73,7 +73,7 @@ object_defs:
         duration: 15
         add:
           actor:
-            satiety: 1
+            stomach: 1
             hydration: 20
             vegetable_nutrition: 3
         destroy: self
@@ -102,9 +102,12 @@ object_defs:
       volume: {value: 250}
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 2
+            stomach: 2
             hydration: 5.2
             vegetable_nutrition: 8
         destroy: self
@@ -185,9 +188,12 @@ object_defs:
       volume: {value: 400}
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 6
+            stomach: 6
             hydration: 6
             vegetable_nutrition: 25
         destroy: self

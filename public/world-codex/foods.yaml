@@ -1,6 +1,7 @@
 # 食料のサンプル定義（GameElementDefinition.md参照）。栄養バランス（characters.yaml参照）の
 # 3カテゴリそれぞれに、南国の無人島で採取しやすい食材を1種類ずつ用意する。
-# satietyは「1食で何tick分の腹持ちか」（6.0節）。値はいずれも仮のもの。
+# stomachは「1食で何tick分の腹持ちか」（6.0節）。胃へ入り、腸を経てから体脂肪になる
+# （docs/engine/DigestionSystem.md）。値はいずれも仮のもの。
 #
 # foodタグは「そのカード自身を口に入れると体の値が動く物」に付ける（CardView.md 2.1節）。eatで食べる
 # 物だけでなく、青いヤシの実（coconut.yaml）のようにcombinationで飲む物にも付く。加工すれば食べられる
@@ -18,9 +19,12 @@ object_defs:
       volume: {value: 3000}
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 4
+            stomach: 4
             vegetable_nutrition: 200
         destroy: self
 
@@ -33,9 +37,12 @@ object_defs:
       volume: {value: 1900}
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 16
+            stomach: 16
             meat_nutrition: 200
         destroy: self
 
@@ -48,8 +55,11 @@ object_defs:
       volume: {value: 800}
     actions:
       eat:
+        conditions:
+          - reason: too_full
+            not: {object: actor, prop: stomach, in_stage: full}
         add:
           actor:
-            satiety: 20
+            stomach: 20
             grain_tuber_nutrition: 200
         destroy: self

@@ -70,6 +70,9 @@ traits:
                 blood: 2
       # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。食の好みではなく身体の仕組みを表すため、
       # 満腹度などと違って個体差を持たせず全キャラクタで共通にする。
+      #
+      # エネルギーの配管（胃→腸→体脂肪）には載せない。載せるとカテゴリの数だけ腸が要る
+      # （docs/engine/DigestionSystem.md 6節）。
       vegetable_nutrition:
         tags: [nutrition]
         value: 672
@@ -94,3 +97,51 @@ traits:
           - add:
               self:
                 grain_tuber_nutrition: -1
+      # 空腹感（docs/engine/DigestionSystem.md 2節）。**自分では動かない**——胃の伸展（胃の段）と
+      # 血糖（腸の段）が modify で押し上げる合流点で、痛みや意識と同じ実効値。だから食べた直後だけで
+      # なく、胃が空になっても腸が残っている間は保たれる。
+      #
+      # maxは容量ではなく感じ方の頂点なので、段は「maxの80%で安全域を外れる」規約ではなく
+      # 実際に取る値の分布から刻む（同3.3節）。感じ方に個体差は持たせず、この trait が配る。
+      satiety:
+        tags: [status, nutrition]
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: starving, alert: danger}
+          - {name: hungry, min: 15, alert: caution}
+          - {name: peckish, min: 30, alert: watch}
+          - {name: fed, min: 65}
+      # 腸の中身（同3.2節）。胃から届いた分がここで初めて体脂肪になる。
+      #
+      # **胃より遅く出す。** その差がそのまま在庫になり、「食後しばらく空腹が戻らない」と
+      # 「下痢で失える量」の両方をこの在庫が持つ（8.4.1節）。吸収率（to_amount）は書かない
+      # ——健康なら食べた分がそのまま身になり、下がるのは下痢・感染のときだけにする。
+      intestine:
+        tags: [nutrition]
+        value: 16
+        range: {min: 0, max: 64}
+        stages:
+          - name: fasting
+            passives:
+              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 0.5}
+          - name: trickle
+            min: 2
+            passives:
+              - modify: {self: {satiety: 10}}
+              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 0.5}
+          - name: absorbing
+            min: 8
+            passives:
+              - modify: {self: {satiety: 20}}
+              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 1}
+          - name: loaded
+            min: 16
+            passives:
+              - modify: {self: {satiety: 30}}
+              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 1}
+          - name: heavy
+            min: 32
+            passives:
+              - modify: {self: {satiety: 40}}
+              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 2}

@@ -8,20 +8,41 @@ object_defs:
     slots:
       hand: {cell_count: 6}
     props:
-      # 胃が大きく、満腹から1日3時間（120 tick）保つ。そのぶん満たすのに要る食料も多い。
-      satiety:
-        tags: [status, nutrition]
-        value: 90
-        range: {min: 0, max: 120}
+      # 胃の中身（docs/engine/DigestionSystem.md 3.1節）。食べた物はまずここへ入り、腸へ送られてから
+      # 体脂肪になる。胃が大きく、8時間ぶん（40）を一度に詰め込める。
+      #
+      # **溜まっているほど速く出す。** 現実の胃排出が残量におよそ比例するのを段の階段で近似したもので、
+      # 絞りすぎて溜まり続けることが起きない。段は満腹感（player_character trait）も押し上げる。
+      #
+      # 満杯の段fullはmaxちょうどではなく3/4に置く——残りは最後の一口があふれる余地で、
+      # eatはこの段の名前で「もう食べられない」を見る（同2節）。初期値は最後の食事から数時間の位置で、
+      # 腸（trait側）と合わせて満腹感が留意域から始まる（Characters.md 域の区分節）。
+      stomach:
+        tags: [nutrition]
+        value: 10
+        range: {min: 0, max: 40}
         stages:
-          - {name: starving, alert: danger}
-          - {name: hungry, min: 12, alert: caution}
-          - {name: peckish, min: 48, alert: watch}
-          - {name: fed, min: 96}
-        passives:
-          - add:
-              self:
-                satiety: -1
+          - {name: empty}
+          - name: trace
+            min: 1
+            passives:
+              - modify: {self: {satiety: 10}}
+              - transfer: {from_prop: stomach, to_prop: intestine, amount: 1}
+          - name: light
+            min: 5
+            passives:
+              - modify: {self: {satiety: 25}}
+              - transfer: {from_prop: stomach, to_prop: intestine, amount: 2}
+          - name: filled
+            min: 15
+            passives:
+              - modify: {self: {satiety: 45}}
+              - transfer: {from_prop: stomach, to_prop: intestine, amount: 3}
+          - name: full
+            min: 30
+            passives:
+              - modify: {self: {satiety: 60}}
+              - transfer: {from_prop: stomach, to_prop: intestine, amount: 4}
       # 満水から3日（288 tick）。
       # 尽きれば渇きで死ぬ。on_shortfallが既定のクランプを置き換えるので、0を割った値はそのまま残り、
       # 死因（どの段で尽きたか）を後から読める（VitalsSystem.md 6節）。
@@ -42,8 +63,11 @@ object_defs:
           - add:
               self:
                 hydration: -1
-      # よく食べる体は蓄えも厚い。最大限に肥えた状態から67日半（6480 tick）。
-      # 尽きれば飢えで死ぬ（水分と同じ形）。
+      # 体脂肪（docs/engine/DigestionSystem.md 4節）。腸から届いた分が積み上がり、基礎代謝で減る。
+      # 尽きれば飢えで死ぬ（VitalsSystem.md 8節）。maxは最大限に肥えた状態から絶食で保つtick数。
+      #
+      # **減る速さを体格の段で変える。** 太っているほど基礎代謝が大きいので、食べ過ぎても際限なく
+      # 太らない平衡点になる。1日に要る量の個体差（標準体格で120単位）はここに出る。
       body_fat:
         tags: [nutrition]
         value: 1620
@@ -51,13 +75,27 @@ object_defs:
         on_shortfall:
           destroy: self
         stages:
-          # 蓄えが尽きる域。残り1日（96 tick）を割ったらここへ入り、この段の名前が死因になる。
-          - {name: starved, alert: fatal}
-          - {name: nourished, min: 96}
-        passives:
-          - add:
-              self:
-                body_fat: -1
+          # 蓄えが尽きる域（残り1日ぶんを割った位置）。この段の名前が餓死の死因になる。
+          - name: starved
+            alert: fatal
+            passives:
+              - add: {self: {body_fat: -0.6}}
+          - name: gaunt
+            min: 108
+            passives:
+              - add: {self: {body_fat: -0.9}}
+          - name: nourished
+            min: 540
+            passives:
+              - add: {self: {body_fat: -1.25}}
+          - name: stout
+            min: 3240
+            passives:
+              - add: {self: {body_fat: -1.6}}
+          - name: obese
+            min: 4860
+            passives:
+              - add: {self: {body_fat: -2}}
       # 日の出とともに働く暮らしのまま、眠らずにいられるのは24時間（96 tick）。
       wakefulness:
         tags: [status, health]

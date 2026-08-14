@@ -1,5 +1,5 @@
 # ステータスの域ごとの見せ方（StatusArea.md 2節）を試すための開始状態。
-# 水分が致命的域、満腹度が危険域、覚醒度が要注意域、体力が留意域と、出る域を一通り並べる。
+# 水分が致命的域、満腹度が危険域（胃も腸も空）、覚醒度が要注意域、体力が留意域と、出る域を一通り並べる。
 #
 # 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
 
@@ -10,6 +10,7 @@ seed: 3
 player:
   props:
     hydration: 16
-    satiety: 8
+    stomach: 0
+    intestine: 0
     wakefulness: 30
     stamina: 70
