@@ -423,5 +423,38 @@
     ],
     "positive": "exactly one loose handful of hay alone on an empty white page, seen from a few steps back so that the whole heap is well inside the page with a wide empty white margin on all four sides, dry grass stems and blades gathered up and dropped in one low untidy heap lying on its side, the stems lying every which way with wispy ends sticking out at the sides, soft and airy, not packed and not tied, warm straw yellow and light tan tones, dry matte surface, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "growing grass, tuft of grass, clump of grass, standing grass, blades standing upright, blowing in the wind, rooted in the ground, hay bale, round bale, square bale, baled hay, ball, sphere, wrapped, bound, cocoon, potato, egg, loaf, pampas grass, feather, feather duster, plume, fan shape, spray of stems, long stalks, wispy strands, flyaway strands, dried flower arrangement, bouquet, vase, green grass, fresh grass, growing grass, lawn, meadow, field, turf, sod, wheat ears, grain heads, seed heads, flowers, wheat sheaf, hay bale, straw bale, broom, besom, birds nest, nest, twigs, sticks, branches, wood, rope, string, twine, tied with cord, ribbon, basket, fire, flames, embers, smoke, burning, extreme close-up, macro, zoomed in, edge to edge, filling the frame, close-up, cropped, cut off, out of frame, scattered objects, repeated objects, pattern, scenery, landscape, background scenery, ground, floor, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, overexposed"
+  },
+  "junglefowl": {
+    "description": [
+      "ヤケイ（animals.yaml の junglefowl）。実体はセキショクヤケイ（docs/world/Animals.md 3節。",
+      "ゲーム内では『ヤケイ』としか呼ばない）。",
+      "",
+      "**chicken / hen / poultry と書かない。** 白い家禽か、焼き上がった鶏肉になる。",
+      "**雄で描く。** 雌は茶色一色で、家禽の雌鶏と見分けが付かない。"
+    ],
+    "positive": "exactly one red junglefowl alone on an empty white page, a slender wild jungle rooster standing on the ground seen from the side, seen from a few steps back so that the whole bird from its comb to the tip of its tail is well inside the page with a wide empty white margin on all four sides, long glossy golden orange hackle feathers falling over its neck and shoulders, a dark blue black breast and belly, long arched blackish green sickle feathers in its tail, a single upright red comb and red wattles, slate grey legs and feet, a small bright orange eye, matte feathers, it stands in the middle, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "chicken, hen, poultry, farm bird, domestic fowl, white feathers, leghorn, broiler, roast chicken, cooked, plucked, carcass, egg, chick, coop, barn, farmyard, fence, perch, weather vane, cockfight, spurs raised, peacock, pheasant tail fan, turkey, duck, goose, parrot, two birds, three birds, several birds, pair, group, flock, collection, scattered objects, repeated objects, tail cut off, tail touching the edge, filling the frame, edge to edge, close-up, portrait crop, head only, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "rat": {
+    "description": [
+      "ネズミ（animals.yaml の rat）。罠の最小単位で、80gの野生のクマネズミ。",
+      "",
+      "**mouse と書かない。** 耳が大きく丸い愛玩用のハツカネズミになる。尾の長さと尖った鼻面を本文で言う。",
+      "**白いネズミ・ペットの語を否定する。** 実験用の白ネズミか、手に乗った愛玩動物になる。"
+    ],
+    "positive": "exactly one wild brown rat alone on an empty white page, a lean wild rat standing on all fours on the ground seen from the side, seen from a few steps back so that the whole animal from its nose to the tip of its long bare tail is well inside the page with a wide empty white margin on all four sides, coarse grey brown fur with a paler grey belly, a long pointed muzzle with fine whiskers, small rounded ears, a small dark bead of an eye, a long thin scaly hairless tail curving out behind it well clear of the edges, small pink clawed feet, matte fur, it is small and stands in the middle, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "mouse, house mouse, hamster, gerbil, guinea pig, chinchilla, squirrel, chipmunk, rabbit, white rat, albino, pet rat, fancy rat, held in hand, human hand, cage, wheel, cheese, food in its mouth, sewer, drain, city street, rubbish, cute cartoon rat, mickey mouse, big round ears, short tail, no tail, tail cut off, tail touching the edge, two rats, three rats, several rats, pair, group, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, portrait crop, head only, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "snare": {
+    "description": [
+      "くくり罠（traps.yaml の snare）。植物繊維の紐で作る、輪と杭だけの罠。",
+      "",
+      "**trap の語は鉄の罠を連れてくる。** bear trap / leg hold trap の顎と歯とばねになるので、",
+      "本文では trap と言わず「紐の輪と木の杭」として頼み、金属を否定する。",
+      "",
+      "**縄跳びや投げ縄にならないよう、地面に置いた形だと言う。**"
+    ],
+    "positive": "exactly one loop of brown cord lying on an empty white page, a running noose tied in a length of twisted plant fibre cord, the loop lying open and flat on the page in a wide circle, its long free end running out to one side and lashed to a short pointed wooden peg lying beside it, rough twisted cord of warm tan and mid brown fibre, dry matte surface, the whole thing is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "steel wire, metal, chain, cable, spring, jaws, teeth, bear trap, leg hold trap, gin trap, cage trap, net, mesh, hook, carabiner, buckle, knot tying diagram, lasso, cowboy, skipping rope, jump rope, noose hanging from above, gallows, coiled rope only, ball of yarn, knitting, macrame, bracelet, necklace, animal, bird, rabbit, hands, tying hands, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   }
 }
