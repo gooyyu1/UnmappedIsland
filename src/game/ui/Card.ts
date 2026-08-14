@@ -272,10 +272,11 @@ export interface CardContent {
   readonly materialRatio?: number;
 
   /**
-   * 終えた工程の割合（0〜1）。**工程が2つ以上のレシピの製作中オブジェクトだけが持つ**——工程が
-   * 1つしか無いレシピでは、値が動く前に完成してカードが入れ替わる。
+   * 終えた工程の割合（0〜1、`progress_gauge`プロパティタグ）。**工程が2つ以上のレシピの
+   * 製作中オブジェクトだけが持つ**——工程が1つしか無いレシピでは、値が動く前に完成してカードが
+   * 入れ替わる。
    */
-  readonly stepRatio?: number;
+  readonly progressGauge?: number;
 
   /**
    * そのカードが映しているものの状態を表す絵文字の印（手当て済みの怪我の🩹など）。紙の左下へ小さく
@@ -309,7 +310,7 @@ export interface CardContent {
  */
 export function cardFace(content: CardContent): CardContent {
   const { icon, name, art, background, kind, alert, road, gauge, fill, alertGauge, mark, overlay } = content;
-  const { capacityRatio, materialRatio, stepRatio, inProgress } = content;
+  const { capacityRatio, materialRatio, progressGauge, inProgress } = content;
   return {
     icon,
     name,
@@ -323,7 +324,7 @@ export function cardFace(content: CardContent): CardContent {
     capacityRatio,
     alertGauge,
     materialRatio,
-    stepRatio,
+    progressGauge,
     mark,
     overlay,
     inProgress,
@@ -404,7 +405,7 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly capacityBar: ProgressBar;
   private readonly alertGaugeBar: ProgressBar;
   private readonly materialBar: ProgressBar;
-  private readonly stepBar: ProgressBar;
+  private readonly progressGaugeBar: ProgressBar;
 
   /** 中身を入れ直すときに要る採寸。 */
   private readonly metrics: ScreenMetrics;
@@ -476,8 +477,8 @@ export class Card extends Phaser.GameObjects.Container {
     this.alertGaugeBar = this.addRailBar(scene, metrics, {});
     // 材料の充足は耐久度と同じ色域（満ちるほど緑）。**満ちた＝作業できる**を緑で言い切れる。
     this.materialBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
-    // 工程の進捗は良し悪しではなく「ここまで終えた」量なので、値によらず1色。
-    this.stepBar = this.addRailBar(scene, metrics, { fillColor: () => COLOR.statusBarFillSafe });
+    // 工程の進捗（progress_gaugeタグ）は良し悪しではなく「ここまで終えた」量なので、値によらず1色。
+    this.progressGaugeBar = this.addRailBar(scene, metrics, { fillColor: () => COLOR.statusBarFillSafe });
     this.edgeLayer = scene.add.container(0, 0);
     this.add(this.edgeLayer);
 
@@ -691,7 +692,7 @@ export class Card extends Phaser.GameObjects.Container {
       // 製作中の2本を先に積む。作りかけのカードではこの2本だけが出るので、順は互いの上下だけを
       // 決めている（材料が上、工程が下。CardView.md 10節 製作中オブジェクトのカード）。
       { bar: this.materialBar, ratio: content.materialRatio },
-      { bar: this.stepBar, ratio: content.stepRatio },
+      { bar: this.progressGaugeBar, ratio: content.progressGauge },
       { bar: this.gaugeBar, ratio: content.gauge },
       { bar: this.fillBar, ratio: content.fill?.ratio },
       { bar: this.capacityBar, ratio: content.capacityRatio },

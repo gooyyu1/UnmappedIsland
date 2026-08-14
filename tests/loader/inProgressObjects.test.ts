@@ -9,7 +9,11 @@ import { WorldSession } from '../../src/domain/runtime/WorldSession';
  * レシピから自動生成される製作中オブジェクト（RecipeSystem.md 1節）の検証。
  */
 describe('製作中オブジェクトの自動生成', () => {
+  // 2工程以上のレシピは、進捗バー用のfinished_stepsにprogress_gaugeタグを付けて生成する
+  // （inProgressObjects.ts）ため、このタグを宣言しておく必要がある。
   const AXE = `
+property_tags:
+  progress_gauge:
 object_defs:
   ground:
     slots:

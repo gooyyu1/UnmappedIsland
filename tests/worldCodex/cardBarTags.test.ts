@@ -5,8 +5,8 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * カードの状態バーを駆動するプロパティタグ（`gauge`・`alert_gauge`・`fill_color`、CardView.md 8節）が、
- * 物ごとに高々1つであることの自動テスト。
+ * カードの状態バーを駆動するプロパティタグ（`gauge`・`alert_gauge`・`progress_gauge`・`fill_color`、
+ * CardView.md 8節）が、物ごとに高々1つであることの自動テスト。
  *
  * PlayScreenViewはこれらのタグが付いたプロパティをprops宣言順で最初の1つしか読まない
  * （WorldObject.exhaustedStageと同じ規約）。2つ以上付けても片方が静かに出なくなるだけでエラーには
@@ -17,11 +17,13 @@ describe('カードの状態バーのタグ', () => {
   let defs: readonly ObjectDef[];
 
   beforeAll(() => {
+    // progress_gaugeは製作中オブジェクトの自動生成（inProgressObjects.ts）にしか付かないため、
+    // 生成込みで検査するにはbuild()を通す必要がある（loadYamlDirectory().build()）。
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
     defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
   });
 
-  it.each(['gauge', 'alert_gauge', 'fill_color'])(
+  it.each(['gauge', 'alert_gauge', 'progress_gauge', 'fill_color'])(
     '1つのobject_defに%sタグの付いたプロパティは高々1つ',
     (tag) => {
       const tagId = codex.propertyTagNames.getId(tag);

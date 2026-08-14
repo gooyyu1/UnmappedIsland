@@ -5,9 +5,15 @@ import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
 import type { WorldObject } from '../domain/runtime/WorldObject';
+import type { PropertyReading } from '../domain/runtime/PropertyValue';
 import { putIntoSlot } from '../domain/runtime/slotEntry';
-import { currentStep, finishedStepRatio, stepSupplyRatio } from '../domain/runtime/crafting';
-import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
+import { currentStep, stepSupplyRatio } from '../domain/runtime/crafting';
+import {
+  IN_PROGRESS_TAG,
+  MATERIALS_SLOT,
+  PROGRESS_GAUGE_TAG,
+  PROGRESS_PROPERTY,
+} from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
@@ -471,32 +477,34 @@ export function fromGameSession(
       });
   }
 
-  const gaugeTagId = codex.propertyTagNames.tryGetId(GAUGE_TAG);
   /**
-   * カードの下端に出す値バー（0〜1、耐久度・炉の残り薪など）。gaugeタグを持つプロパティが無い物、
-   * 持っていても上下限（range）が無く割合を定義できない物はundefined。
-   *
-   * 複数付いていれば、propsの宣言順で最初の1つ（WorldObject.exhaustedStageと同じ規約）。
-   * 1つの物には1つしか付けない前提で、2つ以上付くと片方が静かに出なくなる
-   * （`tests/worldCodex/cardBarTags.test.ts` がこの前提を検査する）。
+   * タグの付いた最初のプロパティの読み取り（propsの宣言順で最初の1つ、WorldObject.exhaustedStageと
+   * 同じ規約）。tagIdがundefined（そのタグを宣言したプロパティが1つも無い）か、objectがそのタグを
+   * 持たなければundefined。カードの状態バー系のタグ（gauge・alert_gauge・progress_gauge・
+   * fill_color、CardView.md 8節）は、いずれも「このタグの付いたプロパティを1つ読む」という同じ
+   * 手順なので、この関数へ集約する。1つの物に2つ以上付くと片方が静かに出なくなる前提は
+   * `tests/worldCodex/cardBarTags.test.ts` が検査する。
    */
-  const gaugeOf = (object: WorldObject): number | undefined =>
-    gaugeTagId === undefined ? undefined : object.readPropertiesWithTag(gaugeTagId).at(0)?.ratio;
+  const firstTaggedReading = (object: WorldObject, tagId: number | undefined): PropertyReading | undefined =>
+    tagId === undefined ? undefined : object.readPropertiesWithTag(tagId).at(0);
+
+  // gauge・progress_gaugeはどちらも「割合をそのままバーに出す」だけの同じ形なので、タグ名の配列を
+  // ループしてまとめて作る（CardView.md 8.1節・10.1節）。
+  const [gaugeOf, progressGaugeOf] = [GAUGE_TAG, PROGRESS_GAUGE_TAG].map((tag) => {
+    const tagId = codex.propertyTagNames.tryGetId(tag);
+    return (object: WorldObject): number | undefined => firstTaggedReading(object, tagId)?.ratio;
+  });
 
   const alertGaugeTagId = codex.propertyTagNames.tryGetId(ALERT_GAUGE_TAG);
   /**
    * カードの下端に出す、域から色を引くバー（怪我の残っている傷・動物や意識のバーなど、
-   * docs/engine/InjurySystem.md・VitalsSystem.md 9節）。alert_gaugeタグを持つプロパティが無い物、
-   * 持っていても上下限（range）が無く割合を定義できない物はundefined。**バーはこれ1本だけ**——
-   * 痛み・衝撃・失血はいずれも意識へ合流するので、あと何手で倒れるかはここが答える（意識の場合）。
-   *
-   * 複数付いていれば、propsの宣言順で最初の1つ（WorldObject.exhaustedStageと同じ規約）。
-   * 1つの物には1つしか付けない前提で、2つ以上付くと片方が静かに出なくなる
-   * （`tests/worldCodex/cardBarTags.test.ts` がこの前提を検査する）。
+   * docs/engine/InjurySystem.md・VitalsSystem.md 9節）。gaugeと違って割合だけでなく域
+   * （alert・worsensUpward）も渡すので、共通のratio抽出には乗らずここだけ個別に組み立てる。
+   * **バーはこれ1本だけ**——痛み・衝撃・失血はいずれも意識へ合流するので、あと何手で倒れるかは
+   * ここが答える（意識の場合）。
    */
   const alertGaugeOf = (object: WorldObject): CardAlertBar | undefined => {
-    if (alertGaugeTagId === undefined) return undefined;
-    const reading = object.readPropertiesWithTag(alertGaugeTagId).at(0);
+    const reading = firstTaggedReading(object, alertGaugeTagId);
     return reading?.ratio === undefined
       ? undefined
       : { ratio: reading.ratio, alert: reading.alert, worsensUpward: reading.worsensUpward };
@@ -550,8 +558,7 @@ export function fromGameSession(
     const ratio = content.fillRatioInParentSlot();
     if (ratio === undefined) return undefined;
 
-    const color =
-      fillColorTagId === undefined ? undefined : content.readPropertiesWithTag(fillColorTagId).at(0)?.value;
+    const color = firstTaggedReading(content, fillColorTagId)?.value;
     return { ratio, color };
   };
 
@@ -568,24 +575,21 @@ export function fromGameSession(
   const progressPropertyId = codex.propertyNames.tryGetId(PROGRESS_PROPERTY);
   const materialsSlotId = codex.slotNames.tryGetId(MATERIALS_SLOT);
   /**
-   * 製作中オブジェクトのカードに出す2本（RecipeSystem.md、CardView.md 10.1節）。製作中でない物ではどちらもundefined。
+   * 製作中オブジェクトのカードに出す材料の充足率（RecipeSystem.md、CardView.md 10.1節）。
+   * 製作中でない物、今の工程が無い物ではundefined。
    *
-   * - 材料の充足率は**今の工程が要求する分**。「作業する」が押せるかと一致させるため、残りの工程まで
-   *   数えない（残りを数えると、揃っているのに満たないバーが出る）。
-   * - 工程の進捗は**工程が2つ以上のレシピにだけ**出す。1つしか無いレシピでは、最初の作業でそのまま
-   *   完成してカードが入れ替わるので、この値は常に0のままになる（finishedStepRatio参照）。
+   * **今の工程が要求する分だけを数える。**「作業する」が押せるかと一致させるため、残りの工程まで
+   * 数えない（残りを数えると、揃っているのに満たないバーが出る）。素材スロットの中身と今の工程の
+   * 要求を突き合わせて出す値なので、`gauge`系のタグには乗らない（単一のプロパティの割合ではない）。
+   * もう1本の工程の進捗（progressGauge）は`progress_gauge`タグ経由で上のループがすでに作っている。
    */
-  const craftingOf = (object: WorldObject): { materialRatio?: number; stepRatio?: number } | undefined => {
+  const materialRatioOf = (object: WorldObject): number | undefined => {
     if (progressPropertyId === undefined || materialsSlotId === undefined) return undefined;
     const recipe = recipeOf(object, codex);
     if (recipe === undefined) return undefined;
 
-    const progress = object.getNumber(progressPropertyId);
-    const step = currentStep(recipe, progress);
-    return {
-      materialRatio: step === undefined ? undefined : stepSupplyRatio(object, materialsSlotId, step),
-      stepRatio: recipe.steps.length < 2 ? undefined : finishedStepRatio(recipe, progress),
-    };
+    const step = currentStep(recipe, object.getNumber(progressPropertyId));
+    return step === undefined ? undefined : stepSupplyRatio(object, materialsSlotId, step);
   };
 
   /**
@@ -741,7 +745,8 @@ export function fromGameSession(
     alertGauge: alertGaugeOf(instances[0]),
     overlay: overlayOf(instances[0]),
     alert: alertOf(instances[0]),
-    ...craftingOf(instances[0]),
+    materialRatio: materialRatioOf(instances[0]),
+    progressGauge: progressGaugeOf(instances[0]),
     mark: markOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
