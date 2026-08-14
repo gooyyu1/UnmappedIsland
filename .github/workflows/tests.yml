@@ -37,13 +37,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ランナー画像がツールキャッシュに持つNodeは稼働中のLTS系列だけ（ubuntu-24.04では22系と24系）で、
       # 系列を指定すればそのキャッシュがそのまま使われる。26系はまだLTSではないためどの画像にも無く、
       # 指定すると毎回ダウンロードと展開に約5秒かかっていた。26系がLTS化して画像へ載ったら26へ上げてよい。
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
