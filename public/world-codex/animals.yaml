@@ -475,7 +475,7 @@ object_defs:
     props:
       weight: {value: 80}
       volume: {value: 200}
-      # 小さいので早く焼ける。炎（3/tick）なら2tick＝30分。
+      # 小さいので早く焼ける。炎（3/tick）なら3tick＝45分。
       cooking_progress:
         value: 0
         range: {min: 0, max: 6}
@@ -544,7 +544,8 @@ object_defs:
       # 罠へ仕掛けると肉食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
       meat_bait: {value: 12}
       volume: {value: 500}
-      # 炎（3/tick）なら8tick＝2時間で焼き上がる。火から出せば止まり、戻せば続きから進む。
+      # 炎（3/tick）なら9tick＝2時間15分で焼き上がる。maxちょうどに乗る8tick目ではまだ溢れない
+      # （溢れは`> max`、6.3節）ので、割り算より1tick長い。火から出せば止まり、戻せば続きから進む。
       cooking_progress:
         value: 0
         range: {min: 0, max: 24}
@@ -570,7 +571,7 @@ object_defs:
       # 水が飛んだぶん軽くなる。
       weight: {value: 400}
       volume: {value: 450}
-      # 焦げるまでの猶予は生から焼きより短い。炎なら4tick＝1時間。
+      # 焦げるまでの猶予は生から焼きより短い。炎なら5tick＝1時間15分。
       cooking_progress:
         value: 0
         range: {min: 0, max: 12}

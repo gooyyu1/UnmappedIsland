@@ -12,7 +12,7 @@ import type { Localization } from '../locale/Localization';
 import { artNameFor } from './ui/objectArt';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
-import type { CardContent, CardGauge } from './ui/Card';
+import type { CardContent, CardCooking, CardGauge } from './ui/Card';
 import { COLOR } from './ui/theme';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
@@ -379,6 +379,16 @@ const CONSCIOUSNESS_PROPERTY = 'consciousness';
 const WARINESS_PROPERTY = 'wariness';
 
 /**
+ * 加熱の進みを持つプロパティの名前（animals.yaml・FireSystem.md 7節）。進んでいる間だけ、カードに
+ * 覆いと残り時間が出る（CardView.md 15節）。
+ *
+ * **`gauge`宣言に乗せない唯一の理由は、常時出したくないこと。** 火にかかっているのは料理の間だけで、
+ * 桟のバーは腐敗のように常に意味を持つ値のためのもの。名前を直読みするのは、意識の覆い
+ * （CONSCIOUSNESS_PROPERTY）と同じく「出す/出さないの規則が宣言の外にある」場合に限る。
+ */
+const COOKING_PROPERTY = 'cooking_progress';
+
+/**
  * 治療具を当てておくスロットの名前と、当たっているカードへ出す印
  * （injuries.yaml・CardView.md 9節 カードの印）。
  *
@@ -580,6 +590,44 @@ export function fromGameSession(
     return { key: BUILTIN_GAUGE_KEYS.material, ratio, atMin: 'bad', atMax: 'good', worsensUpward: false };
   };
 
+  const cookingPropertyId = codex.propertyNames.tryGetId(COOKING_PROPERTY);
+  /**
+   * その物自身の加熱の進み（CardView.md 15節）。`cooking_progress`を持たない物と、今は進んでいない物
+   * ——火から出した肉、火の消えた炉の中身——ではundefined。
+   *
+   * **「火にかかっているか」を場所で判定しない。** 加熱を進めているのは炉の`heat`の段が宣言した
+   * 寄与（FireSystem.md 7節）なので、その寄与が今効いているかどうかがそのまま答えになる。炉から
+   * 出せば寄与が外れ、火が消えても外れる。UI側は炉のスロット名も火力の段も知らない。
+   */
+  const ownCookingOf = (object: WorldObject): CardCooking | undefined => {
+    if (cookingPropertyId === undefined) return undefined;
+    const ticks = object.ticksUntilOverflow(cookingPropertyId);
+    if (ticks === undefined) return undefined;
+
+    const ratio = object.readProperty(cookingPropertyId)?.ratio;
+    return ratio === undefined ? undefined : { ratio, minutes: ticks * game.world.minutesPerTick };
+  };
+
+  /**
+   * カードに出す加熱の進み。**自分が焼かれていればそれ、そうでなければ中で一番早く変わるもの**を出す。
+   *
+   * 火にかけた肉は炉のスロットの中に居るので、炉を押して開くまで見えない。放っておくと焦げる
+   * （FireSystem.md 7.2節）ものを、開かずに気付けるようにする——出血の印が負っている本人まで
+   * 上がるのと同じ理由（CardView.md 9.0節）で、辿るのは直下の子まで。
+   */
+  const cookingOf = (object: WorldObject): CardCooking | undefined => {
+    const own = ownCookingOf(object);
+    if (own !== undefined) return own;
+
+    let soonest: CardCooking | undefined;
+    for (const child of object.children()) {
+      const cooking = ownCookingOf(child);
+      if (cooking !== undefined && (soonest === undefined || cooking.minutes < soonest.minutes))
+        soonest = cooking;
+    }
+    return soonest;
+  };
+
   /**
    * カードが出すバーを、桟へ積む順に並べる（CardView.md 8節）。**プロパティが自分で宣言したゲージも、
    * 入れ物と中身の関係から出るバーも、ここで1本の並びに合流する**——カード側はどれが何かを知らない。
@@ -747,6 +795,7 @@ export function fromGameSession(
     overlay: overlayOf(instances[0]),
     alert: alertOf(instances[0]),
     mark: markOf(instances[0]),
+    cooking: cookingOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
     movedIds: (count) => carriedOf(instances, count).map((instance) => instance.instanceId),

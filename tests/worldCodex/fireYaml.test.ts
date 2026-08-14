@@ -245,6 +245,26 @@ describe('fire.yamlの火の連鎖', () => {
     expect(childNames(hearth), '出し忘れると焦げる').toEqual(['charred_lump']);
   });
 
+  it('火にかけた肉は、今の火力のまま何tickで焼き上がるかを答える', () => {
+    const hearth = litCampfire();
+    session.advanceWorldTime(60);
+    expect(heatIs(hearth, 'flame'), '炎（3/tick）で焼く').toBe(true);
+
+    const cookingId = codex.propertyNames.getId('cooking_progress');
+    const meat = spawnInto('raw_meat', land, 'items');
+    expect(meat.ticksUntilOverflow(cookingId), '火の外では進まない').toBeUndefined();
+
+    expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
+    // 24 ÷ 3 = 8tickでmaxちょうどに乗るが、溢れは`> max`で起きるのでその次のtickまで焼ける。
+    expect(meat.ticksUntilOverflow(cookingId)).toBe(9);
+
+    session.advanceWorldTime(15 * 8);
+    expect(childNames(hearth), '8tickではまだ焼き上がらない').toEqual(['raw_meat']);
+
+    session.advanceWorldTime(15);
+    expect(childNames(hearth), '9tick目に焼き上がる').toEqual(['roasted_meat']);
+  });
+
   /** 炉のfireスロットに入っている物の型名。 */
   function childNames(hearth: WorldObject): string[] {
     const slot = hearth.tryGetSlot(codex.slotNames.getId('fire'));
