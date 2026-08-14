@@ -1,8 +1,7 @@
-import type { PropertyValue } from '../runtime/PropertyValue';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionWriter } from './Description';
-import type { PassiveEffect, PlannedTransfer, TransferPassiveEffect } from './PassiveEffect';
+import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -25,31 +24,12 @@ export class PassiveEffects {
   /**
    * このオブジェクトが宣言する輸送（8.4節の `transfer`）を1 tick分走らせる。
    *
-   * **全件を決めてから、まとめて動かす。** 決める段では互いの到着が見えないので、同じ物を運ぶ輸送を
-   * 並べても1 tickで連鎖しない（胃→腸→蓄えは、1 tickにつき1段ずつ進む）。一方で**出した量は帳簿に
-   * 残す**ので、同じ値から出す輸送が複数あっても二重には動かない。
+   * **宣言順にそのまま適用し、互いの結果を見る**（activeの命令と同じ、9節）。だから同じ値から出す
+   * 輸送を並べても在庫が二重に動くことはなく、直列に繋いだ輸送の緩衝は**速度の差**が作る
+   * （上流を速くすれば、その差が中間に溜まる。8.4.1節）。
    */
   applyTickTransfers(owner: WorldObject, session: WorldSession): void {
-    if (this.transfers.length === 0) return;
-
-    const takenOut = new Map<PropertyValue, number>();
-    const putIn = new Map<PropertyValue, number>();
-    const planned: PlannedTransfer[] = [];
-    for (const transfer of this.transfers) {
-      const plan = transfer.planTick(
-        owner,
-        (value) => takenOut.get(value) ?? 0,
-        (value) => putIn.get(value) ?? 0,
-      );
-      if (plan === undefined) continue;
-
-      takenOut.set(plan.ends.fromValue, (takenOut.get(plan.ends.fromValue) ?? 0) + plan.taken);
-      putIn.set(plan.ends.toValue, (putIn.get(plan.ends.toValue) ?? 0) + plan.given);
-      planned.push(plan);
-    }
-
-    for (const plan of planned)
-      plan.effect.applyTake(plan.ends, plan.taken, owner, session, undefined, undefined);
+    for (const transfer of this.transfers) transfer.applyTick(owner, session);
   }
 
   /** owner自身から辿れる関係（self/parent/ancestor）が変わった契機を全effectへ伝える

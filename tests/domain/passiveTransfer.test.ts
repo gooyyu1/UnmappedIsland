@@ -9,8 +9,9 @@ import { WorldSession } from '../../src/domain/runtime/WorldSession';
  * passivesの中のtransfer（GameElementDefinition.md 8.4節）。activeと同じ1つの動詞が、置き場所だけで
  * 「一度きり」から「tick毎」に変わる。
  *
- * 寄与として登録できない（2つのプロパティを同時に動かすため）ので、宣言元のtickで走る。ここで見るのは
- * その走り方——在庫の分だけ動くこと、同じtickで連鎖しないこと、二重に動かないこと。
+ * 寄与として登録できない（2つのプロパティを同時に動かすため）ので、宣言元のtickで走る。走らせ方はactiveの
+ * 輸送と同じ——宣言順に適用し、互いの結果を見る。ここで見るのはその帰結——在庫の分だけ動くこと、
+ * 直列に繋いだときの緩衝は速度の差が作ること。
  */
 describe('passivesのtransfer', () => {
   let nextInstanceId: number;
@@ -30,8 +31,8 @@ describe('passivesのtransfer', () => {
     return new WorldObject(nextInstanceId++, def, session);
   }
 
-  /** 胃→腸→蓄えの3段（消化の骨格）。段ごとのレートと換算率だけを変えて使い回す。 */
-  const DIGESTION = `
+  /** 胃→腸→蓄えの3段（消化の骨格）。段ごとの速度だけを変えて使い回す。 */
+  const digestion = (stomachRate: number, digestingRate: number): string => `
 object_defs:
   body:
     props:
@@ -45,8 +46,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 1000}
     passives:
-      - transfer: {from_prop: stomach, to_prop: digesting, amount: 1}
-      - transfer: {from_prop: digesting, to_prop: body_fat, amount: 1}
+      - transfer: {from_prop: stomach, to_prop: digesting, amount: ${stomachRate}}
+      - transfer: {from_prop: digesting, to_prop: body_fat, amount: ${digestingRate}}
 `;
 
   function valuesOf(instance: WorldObject, codex: WorldCodex): readonly number[] {
@@ -80,19 +81,31 @@ object_defs:
     expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([0, 2]);
   });
 
-  it('並べた輸送は同じtickで連鎖せず、1 tickにつき1段ずつ進む', () => {
-    // 連鎖すると、食べた物がその場で蓄えになってしまい、途中の段（腸）が常に空になる。
-    const codex = load(DIGESTION);
+  it('直列に繋いだ輸送は、上流を速くした差が中間に溜まる', () => {
+    // 中間（腸）に在庫を作るのは engine ではなく速度の差。ここが「食べたのに身にならない」
+    // （下痢）が奪える量そのものになる。
+    const codex = load(digestion(2, 1));
     const instance = spawn(codex, 'body');
 
     instance.tick(session);
-    expect(valuesOf(instance, codex), '1 tick目は胃から腸へ動くだけ').toEqual([9, 1, 0]);
+    expect(valuesOf(instance, codex), '入った2のうち1が抜け、1が残る').toEqual([8, 1, 1]);
 
     instance.tick(session);
-    expect(valuesOf(instance, codex), '腸から蓄えへ動くのは次のtick').toEqual([8, 1, 1]);
+    expect(valuesOf(instance, codex)).toEqual([6, 2, 2]);
 
     instance.tick(session);
-    expect(valuesOf(instance, codex)).toEqual([7, 1, 2]);
+    expect(valuesOf(instance, codex), '毎tick 1ずつ溜まっていく').toEqual([4, 3, 3]);
+  });
+
+  it('同じ速度で並べると中間には溜まらない（宣言順にそのまま流れる）', () => {
+    // 輸送は宣言順に互いの結果を見るので、上流から届いた分は同じtickのうちに下流へ抜ける。
+    // 中間に在庫を持たせたければ速度差を付ける（上のテスト）。
+    const codex = load(digestion(1, 1));
+    const instance = spawn(codex, 'body');
+
+    instance.tick(session);
+
+    expect(valuesOf(instance, codex)).toEqual([9, 0, 1]);
   });
 
   it('同じ値から出す輸送が並んでも、在庫を二重には動かさない', () => {

@@ -1,7 +1,8 @@
 import type { PropertyValue } from '../runtime/PropertyValue';
-import type { TransferEffect, TransferEnds } from './ActiveEffect';
+import type { TransferEffect } from './ActiveEffect';
 import { RegisteredPassiveEffect } from '../runtime/RegisteredPassiveEffect';
 import type { WorldObject } from '../runtime/WorldObject';
+import type { WorldSession } from '../runtime/WorldSession';
 import type { ConditionNode } from './ConditionNode';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyRef, signedNumber, stageRef, text } from './Description';
@@ -287,7 +288,7 @@ export class AccumulateEffect extends PropertyPassiveEffect {
  *
  * **寄与としては登録しない。** 2つのプロパティを同時に動かす操作は、どちらか一方への寄与としては
  * 表せないため、宣言したオブジェクトのtickでそのまま走る（PassiveEffects.applyTickTransfers）。
- * from/toの解決はactiveの輸送と同じで、宣言元をselfとして毎tick辿り直す。
+ * 走らせ方はactiveの輸送と全く同じで、違いは「毎tick呼ばれること」だけ。
  */
 export class TransferPassiveEffect extends PassiveEffect {
   private readonly transfer: TransferEffect;
@@ -303,26 +304,10 @@ export class TransferPassiveEffect extends PassiveEffect {
     return this;
   }
 
-  /**
-   * このtickで動かす両端と量（ゲートが閉じている・動かす量が無いならundefined）。
-   *
-   * alreadyOut/alreadyInは、同じtickで先に決まった輸送が既に動かした量（PassiveEffects側の帳簿）。
-   * 同じ値を二重に動かさないためだけに引くので、**到着した量は次の輸送から見えない**——見えると
-   * 胃→腸→蓄えのような連鎖が1 tickで走り抜けてしまう。
-   */
-  planTick(
-    owner: WorldObject,
-    alreadyOut: (value: PropertyValue) => number,
-    alreadyIn: (value: PropertyValue) => number,
-  ): PlannedTransfer | undefined {
-    if (!this.gate.isSatisfied(owner, owner)) return undefined;
-
-    const ends = this.transfer.resolveEnds(owner, undefined, undefined);
-    if (ends === undefined) return undefined;
-
-    const taken = this.transfer.plannedTake(ends, alreadyOut(ends.fromValue), alreadyIn(ends.toValue));
-    if (taken <= 0) return undefined;
-    return { effect: this.transfer, ends, taken, given: this.transfer.givenFor(taken) };
+  /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
+  applyTick(owner: WorldObject, session: WorldSession): void {
+    if (!this.gate.isSatisfied(owner, owner)) return;
+    this.transfer.apply(owner, session, undefined, undefined);
   }
 
   override describe(names: DefNames, out: DescriptionWriter): void {
@@ -334,12 +319,4 @@ export class TransferPassiveEffect extends PassiveEffect {
   override affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
     return this.transfer.affects(propertyGlobalId, ownedByDeclarer);
   }
-}
-
-/** 決まったが、まだ動かしていない輸送1件（TransferPassiveEffect.planTick）。 */
-export interface PlannedTransfer {
-  readonly effect: TransferEffect;
-  readonly ends: TransferEnds;
-  readonly taken: number;
-  readonly given: number;
 }

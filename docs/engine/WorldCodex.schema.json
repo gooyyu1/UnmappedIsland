@@ -407,7 +407,7 @@
           "$ref": "#/$defs/passive_operation_map"
         },
         "transfer": {
-          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象からactorだけが外れる。同じtickの輸送どうしは互いの到着を見ないため、並べても1 tickにつき1段ずつ進む。",
+          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象からactorだけが外れる。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
           "$ref": "#/$defs/transfer_spec"
         }
       },
