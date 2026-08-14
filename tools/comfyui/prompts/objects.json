@@ -35,7 +35,7 @@
   "_baseNegative": "two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, pattern, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed",
   "thick_branch": {
     "description": [
-      "加工して斧の柄などにできる、頑丈で太い枝。細長い枝（branch）は別アイテム。",
+      "加工して斧の柄などにできる、頑丈で太い枝。焚き付けの小枝（twig）は別アイテム。",
       "",
       "**頭の名詞だけでは太い枝にならない。** bough / limb / branch はいずれも細い小枝の枝分かれに",
       "なる（limb は人の手や腕まで描く）。club / cudgel は細い棒。log は太さが出るが、木口が製材の",
@@ -64,22 +64,25 @@
     "positive": "exactly one thick fallen branch alone on an empty white page, a stout piece of branch with an old knot where a side twig broke off, tapering slightly from one end to the other as thick as a wrist and about five times as long as it is thick, rough brown bark all over it, snapped and splintered at both ends, no leaves and no side twigs, straight and strong, dark brown weathered wood, rich warm brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, firewood round, leaves, foliage, blossom, flowers, twigs sticking out, thin twig, slender stick, long thin pole, wand, thin sliver, splinter of wood, wood shaving, bark shard, plank, board, feather, white wood, grey wood, bleached driftwood, glossy, varnished, wet, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, twisted branch, tangled branches, forked branch, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
-  "branch": {
+  "twig": {
     "description": [
-      "木から落ちた細い枝。太い枝（thick_branch）は別アイテム。NGワードは太い枝のものから",
-      "slender stick だけを外したもので、それ以外は同じ。",
+      "小枝。焚き付けにする細い枝をひとまとめにした1枚。太い枝（thick_branch）は別アイテム。",
       "",
-      "**細さを抑えるNGワードを外しすぎてはいけない。** 狙いが逆だからと thin twig / long thin pole /",
-      "wand / thin sliver まで外すと、髪の毛のように細い小枝か、葉の付いた植物標本になる",
-      "（24枚中で棒に見えるのは1枚）。欲しいのは「小枝」ではなく「棒」なので、頭の名詞も",
-      "bare wooden stick にする。",
+      "**「1つの物」を強いる否定語は外してある**（獣骨（animal_bone）と同じ）。この物は束そのもの",
+      "なので、two objects / pile / stack を否定すると小枝1本になる。散らばりだけを scattered で止める。",
+      "",
+      "**細さを否定しない。** 太い枝と狙いが逆なので、thin twig / long thin pole / wand / thin sliver は",
+      "入れない。代わりに、1本の棒へ寄るのを single stick / staff / walking stick で止める",
+      "（太い枝と見分けが付かなくなる）。",
+      "",
+      "**紐で括らせない。** 植物繊維は後から作る別アイテムなので、拾い集めたまま重ねた形で頼む。",
       "",
       "**植物標本を名指しで落とすのは逆効果。** dried plant specimen / herbarium / pressed plant を",
       "足すと、墨絵のような枯れ枝や立木へ崩れる（8枚で全滅）。NGワードを増やすと壊れるのは",
       "太い枝と同じ。"
     ],
-    "positive": "exactly one bare wooden stick alone on an empty white page, a straight length of branch about as thick as two fingers and about six times as long as it is thick, a single shaft with no forks, rough brown bark along it, snapped at both ends, one short twig stub broken off flush, no leaves, dark brown weathered wood, rich warm brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
-    "negative": "sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, firewood round, leaves, foliage, blossom, flowers, twigs sticking out, thin twig, long thin pole, wand, thin sliver, splinter of wood, wood shaving, bark shard, plank, board, feather, white wood, grey wood, bleached driftwood, glossy, varnished, wet, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, twisted branch, tangled branches, forked branch, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+    "positive": "exactly one small bundle of dry twigs alone on an empty white page, a loose handful of thin bare twigs about as thick as a pencil, laid together against each other in an untidy heap as if just gathered up by hand and set down, nothing tying them, their snapped ends at slightly different heights, a few short side twigs still on them, no leaves, rough brown bark, dark brown weathered wood, rich warm brown tones, matte dry surface, the bundle is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "one single stick, single branch, one thick branch, staff, walking stick, cane, log, firewood round, sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, leaves, foliage, blossom, flowers, splinter of wood, wood shaving, bark shard, plank, board, feather, matchsticks, chopsticks, broom, besom, smudge stick, bundle of herbs, bouquet, dried flowers, twine, string, rope, ribbon, tied with cord, basket, fire, flames, campfire, bonfire, embers, burning, smoke, white wood, grey wood, bleached driftwood, glossy, varnished, wet, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, tangled branches, brush pile, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
   "palm_tree": {
     "description": "ヤシの木。設置物なので、他のアイテムより大きくカードに載る。",

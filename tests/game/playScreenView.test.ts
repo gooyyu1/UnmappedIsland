@@ -544,7 +544,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     // 同種はスタックにまとまり1枠しか使わないため、別種のアイテムで6枠を埋める。
     const handSlotId = codex.slotNames.getId('hand');
-    for (const name of ['stone', 'branch', 'thick_branch', 'coconut', 'taro', 'water_spinach']) {
+    for (const name of ['stone', 'twig', 'thick_branch', 'coconut', 'taro', 'water_spinach']) {
       const item = game.session.spawn(codex.objectNames.getId(name));
       expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
     }

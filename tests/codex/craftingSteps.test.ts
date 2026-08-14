@@ -20,7 +20,7 @@ object_defs:
           - weight: 1
             spawn:
               - {object: coconut, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
       rest: {}
 
   coconut:
@@ -35,7 +35,7 @@ object_defs:
 
   husked_coconut: {tags: [item]}
   husk: {tags: [item]}
-  branch: {tags: [item]}
+  twig: {tags: [item]}
   knife: {tags: [item, cutting_tool]}
 
   basket:
@@ -66,10 +66,10 @@ object_defs:
 
     // 土地は探索で消えない＝消費されない入力。
     expect(explore.inputs).toEqual([{ kind: 'object', objectGlobalId: id('beach'), consumed: false }]);
-    // coconutは候補ごとに×2と×1で出る。branchは×1のみ。
+    // coconutは候補ごとに×2と×1で出る。twigは×1のみ。
     expect(explore.outputs).toEqual([
       { objectGlobalId: id('coconut'), counts: [2, 1] },
-      { objectGlobalId: id('branch'), counts: [1] },
+      { objectGlobalId: id('twig'), counts: [1] },
     ]);
   });
 

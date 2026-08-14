@@ -93,7 +93,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
   it('手持ちが埋まっていると、採った実は装備欄ではなく足元へ落ちる', () => {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
     // 手持ち6枠を別々の型で埋める（同種は1枠にまとまるため、6種類必要）。
-    for (const name of ['stone', 'sharp_stone', 'branch', 'thick_branch', 'taro', 'water_spinach'])
+    for (const name of ['stone', 'sharp_stone', 'twig', 'thick_branch', 'taro', 'water_spinach'])
       spawnInto(name, player, 'hand');
 
     expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
@@ -198,14 +198,14 @@ describe('coconut.yamlのヤシの実の加工', () => {
   it('手持ちが埋まっていると、はいだ皮だけが足元へ落ちる', () => {
     const coconut = spawnInto('coconut', player, 'hand');
     // 実と道具を除く残り4枠を別々の型で埋める（同種は1枠にまとまるため、4種類必要）。
-    for (const name of ['stone', 'branch', 'thick_branch', 'taro']) spawnInto(name, player, 'hand');
+    for (const name of ['stone', 'twig', 'thick_branch', 'taro']) spawnInto(name, player, 'hand');
 
     combine(coconut, 'sharp_stone', 'husk');
 
     expect(handOf(player), '実は元の実の枠を引き継ぎ、皮の入る枠は残っていない').toEqual([
       'husked_coconut',
       'stone',
-      'branch',
+      'twig',
       'thick_branch',
       'taro',
       'sharp_stone',

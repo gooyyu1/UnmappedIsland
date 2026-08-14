@@ -170,7 +170,7 @@ describe('テスト用シナリオ', () => {
   });
 
   it('受け入れられない置き方はエラーになる（手持ちの枠を超える）', () => {
-    const names = ['stone', 'branch', 'thick_branch', 'coconut', 'taro', 'water_spinach', 'woven_basket'];
+    const names = ['stone', 'twig', 'thick_branch', 'coconut', 'taro', 'water_spinach', 'woven_basket'];
     const scenario = parseScenario('over.yaml', `seed: 1\nplayer:\n  hand: [${names.join(', ')}]\n`);
     const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
 

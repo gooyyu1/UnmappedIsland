@@ -89,7 +89,7 @@ describe('固形物のかさと入れ物の容量', () => {
     const kinds = [
       'stone',
       'sharp_stone',
-      'branch',
+      'twig',
       'bandage',
       'coconut_jelly',
       'coconut_meat',
