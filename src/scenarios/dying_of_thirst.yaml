@@ -1,0 +1,16 @@
+# 死（VitalsSystem.md 6節）の見せ方を試すための開始状態。水分は残り1 tickぶんしかないので、
+# 探索のように時間を使えば渇きで死に、死亡ダイアログが出る。青い実に穴を開けて水を飲めば助かる。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 渇きの淵
+
+seed: 3
+
+player:
+  hand: [sharp_stone]
+  props:
+    hydration: 1
+
+location:
+  items: [green_coconut]

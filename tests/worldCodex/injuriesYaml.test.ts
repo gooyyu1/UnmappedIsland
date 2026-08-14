@@ -76,8 +76,18 @@ describe('injuries.yamlの怪我', () => {
     expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
   }
 
+  /**
+   * count tickぶん時間を進める。怪我が治りきるには10日かかるので、その間に渇きと飢えで死んで
+   * しまわないよう（VitalsSystem.md 8節）、命を絶つ値だけは減った分を戻しておく。ここで見たいのは
+   * 傷の治りだけで、生き延びる手立ては別のテストが持つ。
+   */
   function tick(count: number): void {
-    for (let i = 0; i < count; i++) player.tick(session);
+    const vital = ['hydration', 'body_fat'].map((name) => codex.propertyNames.getId(name));
+    const held = vital.map((id) => player.getNumber(id));
+    for (let i = 0; i < count; i++) {
+      player.tick(session);
+      vital.forEach((id, index) => player.setProperty(id, held[index]));
+    }
   }
 
   it('実採りに失敗すると、実は採れず足首を捻挫する', () => {

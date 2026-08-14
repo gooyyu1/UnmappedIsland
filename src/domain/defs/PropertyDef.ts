@@ -357,6 +357,16 @@ export class PropertyDef {
     return stage !== undefined && stage.name === stageName;
   }
 
+  /** 実効値effectiveValueのときに該当する段（6.4節）の名前。該当する段が無ければundefined。 */
+  stageNameOf(effectiveValue: number): string | undefined {
+    return this.resolveStage(effectiveValue)?.name;
+  }
+
+  /** 実体値numberがrangeの下限を割っているか（rangeを持たないプロパティでは常に偽）。 */
+  isBelowRange(number: number): boolean {
+    return this.range !== undefined && number < this.range.min;
+  }
+
   /** inherit（6節）による、祖先からownerの実効値へ加える寄与。inheritが無効、または該当する祖先が見つからない場合は0。 */
   inheritedContribution(owner: WorldObject): number {
     if (!this.inherit) return 0;

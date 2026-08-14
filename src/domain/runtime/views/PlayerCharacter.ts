@@ -120,6 +120,24 @@ export class PlayerCharacter {
     return this.location?.receiveItem(item, session, gapIndex) ?? false;
   }
 
+  /**
+   * 死んでいるか（VitalsSystem.md 6節）。命を絶つ値は尽きた瞬間に自分を消す
+   * （`on_shortfall`の`destroy`）ので、**世界の中に居ないことがそのまま死んでいること**になる。
+   * 死んだかどうかを覚えておく旗は要らない。
+   */
+  get isDead(): boolean {
+    return this.instance.parent === undefined;
+  }
+
+  /**
+   * 命を奪った値が居る段の名前（生きていればundefined）。渇き・飢え・失血のどれで死んだかは、
+   * 尽きた値のまま残っている段が答える（WorldObject.exhaustedStage）。表示文言は段の名前から引く
+   * （Localization.stage）ので、死因を名乗るのはワールドの側だけになる。
+   */
+  get causeOfDeath(): string | undefined {
+    return this.isDead ? this.instance.exhaustedStage() : undefined;
+  }
+
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */
   get location(): Location | undefined {
     const parent = this.instance.parent;

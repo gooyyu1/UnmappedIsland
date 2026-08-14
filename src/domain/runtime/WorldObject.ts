@@ -184,6 +184,21 @@ export class WorldObject {
   }
 
   /**
+   * 尽きたまま残っている値が今居る段（6.4節）の名前。尽きた値が無ければundefinedで、複数あれば
+   * propsの宣言順で最初の1つ。
+   *
+   * 尽きた瞬間に自分を消すプロパティ（on_shortfallのdestroy、6.3節）は尽きた値のまま静止するので、
+   * **世界から出たあとでも「何が尽きて消えたのか」を答えられる**（VitalsSystem.md 6節の死因）。
+   */
+  exhaustedStage(): string | undefined {
+    for (const property of this.properties) {
+      const stage = property.exhaustedStage();
+      if (stage !== undefined) return stage;
+    }
+    return undefined;
+  }
+
+  /**
    * 指定したタグ（6.7節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
    * タグを1つも持たないオブジェクトでは空配列。
    */

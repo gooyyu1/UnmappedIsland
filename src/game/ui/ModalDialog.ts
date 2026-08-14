@@ -2,6 +2,8 @@ import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { Button } from './Button';
 import { addTextButton } from './Button';
+import type { CardContent } from './Card';
+import { Card, cardFace } from './Card';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
@@ -13,6 +15,12 @@ const CARD_PADDING = 32;
 const CARD_GAP = 24;
 const ACTION_HEIGHT = 72;
 const ACTION_GAP = 16;
+
+/**
+ * 見出しの上に置く札の高さ（u単位）。原寸（SIZE.cardHeight）では台紙の半分以上を占めてしまうので、
+ * 縦横同率で縮めて載せる。
+ */
+const PORTRAIT_HEIGHT = 200;
 
 /** ボタンの見た目。取り消せない操作の確定側は警告色（danger）にする。 */
 export type DialogActionStyle = 'default' | 'primary' | 'danger';
@@ -28,6 +36,11 @@ export interface ModalDialogOptions {
   readonly title: string;
   readonly body: string;
   readonly actions: readonly DialogAction[];
+  /**
+   * 見出しの上に置く札（誰の話かを絵で示す。死亡ダイアログのポートレイト）。押せる札にはならない
+   * ——モーダルの中で行き先を持つのはボタンだけ。
+   */
+  readonly card?: CardContent;
 }
 
 /**
@@ -47,9 +60,12 @@ export class ModalDialog {
     const actionHeight = metrics.px(ACTION_HEIGHT);
     const contentWidth = cardWidth - padding * 2;
 
-    // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
-    const card = scene.add.graphics();
-    this.objects.push(card);
+    // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る札・文字より先に置く必要がある。
+    const plate = scene.add.graphics();
+    this.objects.push(plate);
+
+    const portrait = options.card === undefined ? undefined : this.addPortrait(scene, metrics, options.card);
+    const portraitHeight = portrait === undefined ? 0 : metrics.px(PORTRAIT_HEIGHT) + gap;
 
     const title = addLabel(scene, metrics, 0, 0, options.title, { size: 28, bold: true })
       .setOrigin(0.5, 0)
@@ -60,18 +76,20 @@ export class ModalDialog {
       .setAlign('center');
     body.setWordWrapCallback(wrapByCharacter(contentWidth));
 
-    const cardHeight = padding * 2 + title.height + gap + body.height + gap + actionHeight;
+    const cardHeight = padding * 2 + portraitHeight + title.height + gap + body.height + gap + actionHeight;
     const cardX = (width - cardWidth) / 2;
     const cardY = (height - cardHeight) / 2;
 
     drawBox(
-      card,
+      plate,
       { x: cardX, y: cardY, width: cardWidth, height: cardHeight },
       { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
     );
 
-    title.setPosition(width / 2, cardY + padding);
-    body.setPosition(width / 2, cardY + padding + title.height + gap);
+    const portraitWidth = metrics.px((SIZE.cardWidth * PORTRAIT_HEIGHT) / SIZE.cardHeight);
+    portrait?.setPosition((width - portraitWidth) / 2, cardY + padding);
+    title.setPosition(width / 2, cardY + padding + portraitHeight);
+    body.setPosition(width / 2, cardY + padding + portraitHeight + title.height + gap);
     this.objects.push(title, body);
 
     const actionGap = metrics.px(ACTION_GAP);
@@ -91,6 +109,15 @@ export class ModalDialog {
   close(): void {
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
+  }
+
+  /** 見出しの上の札。位置は台紙の高さが決まってから与えるので、ここでは大きさだけを決める。 */
+  private addPortrait(scene: Phaser.Scene, metrics: ScreenMetrics, content: CardContent): Card {
+    const card = new Card(scene, metrics, 0, 0, cardFace(content)).setScale(
+      PORTRAIT_HEIGHT / SIZE.cardHeight,
+    );
+    this.objects.push(card);
+    return card;
   }
 
   private addAction(scene: Phaser.Scene, metrics: ScreenMetrics, action: DialogAction, rect: Rect): Button {

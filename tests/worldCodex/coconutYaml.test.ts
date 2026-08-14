@@ -106,7 +106,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   it('青い実に穴を開けると、その場で水を飲み、水の抜けた実が残る', () => {
     const green = spawnInto('green_coconut', beach, 'items');
-    player.setProperty(hydrationId, 0);
+    // 空になる寸前から。0にすると、穴を開ける15分の間に水分が尽きて渇きで死ぬ（VitalsSystem.md 8節）。
+    player.setProperty(hydrationId, 1);
 
     combine(green, 'sharp_stone', 'bore');
 

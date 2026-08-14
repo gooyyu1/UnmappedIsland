@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
 import type { PropertyDef } from '../../src/domain/defs/PropertyDef';
 import { characterDefNames, resolveCharacterDefName } from '../../src/domain/generation/NewGame';
+import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter';
+import { World } from '../../src/domain/runtime/views/World';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { characterIcon } from '../../src/game/ui/characterArt';
@@ -38,6 +40,20 @@ function decayPerTick(character: string, propertyName: string): number {
   instance.tick(session);
 
   return before - instance.getNumber(propertyId);
+}
+
+/**
+ * 砂浜に立たせたキャラクタ。死ぬと世界から外れる（VitalsSystem.md 6節）ので、それを見るには
+ * 居場所を持たせて始める必要がある。
+ */
+function stand(character: string): { player: PlayerCharacter; session: WorldSession } {
+  const worldInstance = new WorldObject(0, def('world'), new WorldSession(codex));
+  const session = new WorldSession(codex, new World(worldInstance, codex.propertyNames, codex.symbolNames));
+  const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
+  expect(beach.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+  const instance = session.spawn(codex.objectNames.getId(character));
+  expect(instance.moveToSlot(beach, codex.slotNames.getId('characters'))).toBeUndefined();
+  return { player: new PlayerCharacter(instance, codex), session };
 }
 
 /**
@@ -271,7 +287,9 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(instance.getNumber(bloodId), '満タンを超えては溜まらない').toBe(max);
     });
 
-    it('致命的域を持つのは、放置すると死に至る水分と血だけ', () => {
+    it('ステータスエリアに出るもののうち、致命的域を持つのは水分と血だけ', () => {
+      // 3つ目の死に方（飢え）はbody_fatが持つが、statusタグが無いのでここには現れない
+      // （画面に出る飢えの兆しは満腹度、docs/world/Characters.md）。
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
 
       const fatal = instance
@@ -279,6 +297,27 @@ describe('プレイヤーキャラクタの定義', () => {
         .filter((reading) => propOf(def(character), reading.name).alertLevelOf(0) === 'fatal');
 
       expect(fatal.map((reading) => reading.name)).toEqual(['blood', 'hydration']);
+    });
+
+    // 死に方は3つだけ（VitalsSystem.md 8節）。どれも「尽きたら世界から出る」という同じ形で、
+    // 死因の名前を持つのは、尽きた値が居る段（画面はその段の文言を出すだけ）。
+    it.each([
+      ['hydration', 'dehydrated'],
+      ['body_fat', 'starved'],
+      ['blood', 'exsanguinated'],
+    ])('%sを使い切ると死に、死因は段「%s」になる', (propertyName, stageName) => {
+      const { player, session } = stand(character);
+      const propertyId = codex.propertyNames.getId(propertyName);
+
+      player.instance.addNumber(propertyId, -player.instance.getNumber(propertyId), session);
+
+      expect(player.isDead, '0ちょうどはrangeの中なのでまだ生きている').toBe(false);
+      expect(player.causeOfDeath).toBeUndefined();
+
+      player.instance.addNumber(propertyId, -1, session);
+
+      expect(player.isDead, '下限を割った時点で世界から外れる').toBe(true);
+      expect(player.causeOfDeath).toBe(stageName);
     });
 
     it('絵ができるまでの代替アイコンを持つ', () => {
