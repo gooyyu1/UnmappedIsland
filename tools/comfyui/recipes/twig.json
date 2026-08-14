@@ -8,9 +8,16 @@
     "**diagonalは付けない。** 対角線へ倒して√2倍まで伸ばすのは長い向きが見せ場の物のためで",
     "（card_art.py の align_to_diagonal）、束には長い向きが無い。",
     "",
-    "太い枝（thick_branch）ほど色は薄くない（彩度33.5、太い枝は20.3）ので、saturationは控えめ。",
+    "**枠は横長（1152x896）。** 縦長だと1本の棒へ寄る。",
     "",
-    "seedはこの文面で選び直す（入っている値はこの文面で確かめていない）。"
+    "**生成は写真になり、色も灰色に寄る。** 束の並びだけをSDXLで採り、塗りと色は編集で作る",
+    "（アバカ〜縄の連鎖と同じ2段構え）。編集を通すので saturation/gamma は要らない。",
+    "",
+    "**影が長く伸びたseedは採らない。** 枝が浮いて見えて、組み上げた立体作品になる（交差させた",
+    "並びだと特に顕著）。真下に薄く1つだけ落ちているものを選ぶ。",
+    "",
+    "**生成には署名が描き込まれる。** NGワードに signature を入れても出る（絵らしさの一部として",
+    "学習されているため）。紙のテクスチャと縁ごと、編集の指示で落とす。"
   ],
   "output": "src/assets/objects/twig.png",
   "prompts": "objects.json",
@@ -18,17 +25,19 @@
   "workflow": "lane_background_sdxl.api.json",
   "loraStrength": 0,
   "noTrigger": true,
-  "seed": 33030,
-  "width": 832,
-  "height": 1280,
+  "seed": 4608,
+  "width": 1152,
+  "height": 896,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same loose bundle of gathered dry twigs exactly as it is: the same twigs, the same directions, the same overlaps and the same layout, but paint it with soft brush strokes and gentle natural shading instead of photographic detail. Change the colour of the twigs to a warm mid brown wood with rough brown bark, clearly darker than the white page. Remove the background completely and replace it with a plain empty white page, leaving the bundle alone in the middle with a wide white margin all around it and one soft grey shadow directly beneath it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
   "cardArt": {
     "size": "320",
     "mode": "background",
-    "tolerance": 60,
+    "tolerance": 24,
     "edge": 4,
     "shadow": 1,
-    "reach": 24,
-    "saturation": 2.5,
-    "gamma": 1.15
+    "reach": 24
   }
 }
