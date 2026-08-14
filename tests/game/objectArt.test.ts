@@ -74,8 +74,12 @@ describe('object_defごとの絵', () => {
   it('気を失った動物の絵は、その動物の死体の絵になる', () => {
     const animals = codex.objectDefNamesWithTag('animal');
     expect(animals.length, '検査対象が無い（animalタグが変わっていないか）').toBeGreaterThan(0);
+    // **まだ絵の無い動物は見ない。** 生きた姿すら描かれていない相手には借りる元が無く、宣言と絵を
+    // 別々の時に用意できるのは artNameFor の既定動作そのもの（objectArt.ts）。描いた瞬間から、
+    // 死体の絵が揃っているかを下の検査が見る。
+    const drawn = new Set(artNames());
 
-    for (const animal of animals) {
+    for (const animal of animals.filter((animal) => drawn.has(animal))) {
       const objectDef = codex.objects.get(codex.objectNames.getId(animal));
       const suffix = objectDef
         .getPropertyDef(codex.propertyNames.getId('consciousness'))

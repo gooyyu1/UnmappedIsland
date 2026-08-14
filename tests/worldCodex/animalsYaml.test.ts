@@ -12,12 +12,13 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * docs/world/Animals.md）。武器で殴る→怪我が刺さる→警戒が上がる→時間で引く、の一巡を通す。
  */
 describe('animals.yamlの動物', () => {
-  // strikeの候補は宣言順に「当たり70・外れ30・仕留め（無防備さ）」。無防備さは起きていれば5、
-  // 気を失っていれば205なので、同じ引きでも状態によって当たる候補が変わる。
-  /** 起きていても気を失っていても当たる引き。 */
-  const HITS = 0.2;
+  // strikeの候補は宣言順に「強打・浅打・刺突・外し・仕留め」（animals.yamlのbeast trait）で、
+  // どれを引くかは武器が宣言する重み配分（tools.yaml）が決める。だから同じ引きでも、掴んだ札に
+  // よって当たる候補が変わる。無防備さ（仕留めの重み）は起きていれば5、気を失っていれば205。
+  /** 当てる引き。尖った石なら浅打、石斧なら強打、槍なら刺突になる。 */
+  const LANDS = 0.2;
   /** 起きている相手を外す引き。 */
-  const MISSES = 0.8;
+  const WHIFFS = 0.8;
   /** 気を失っている相手なら仕留め、起きていれば当たるだけの引き。 */
   const KILLS_IF_HELPLESS = 0.5;
   /** 起きている相手でも仕留めてしまう、稀な引き。 */
@@ -32,6 +33,7 @@ describe('animals.yamlの動物', () => {
   let painId: number;
   let shockId: number;
   let consciousnessId: number;
+  let bloodId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
@@ -39,10 +41,11 @@ describe('animals.yamlの動物', () => {
     painId = codex.propertyNames.getId('pain');
     shockId = codex.propertyNames.getId('shock');
     consciousnessId = codex.propertyNames.getId('consciousness');
+    bloodId = codex.propertyNames.getId('blood');
   });
 
   beforeEach(() => {
-    open(HITS);
+    open(LANDS);
   });
 
   /** 密林に立つプレイヤーと、その足元のサルから始める。rollはpickがどの候補を引くかを決める。 */
@@ -79,15 +82,20 @@ describe('animals.yamlの動物', () => {
     return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
   }
 
-  /** 尖った石を手に持たせ、それをサルへ重ねて殴る。 */
-  function strikeWithSharpStone(): WorldObject {
-    const stone = spawnInto('sharp_stone', player, 'hand');
-    expect(monkey.tryExecuteCombination(stone, undefined, 'strike', session)).toBe(true);
-    return stone;
+  /** 武器を手に持たせ、それを相手のカードへ重ねて殴る。返すのは使った武器。 */
+  function strikeWith(weaponName: string, target: WorldObject = monkey): WorldObject {
+    const weapon = spawnInto(weaponName, player, 'hand');
+    expect(target.tryExecuteCombination(weapon, undefined, 'strike', session)).toBe(true);
+    return weapon;
   }
 
-  function tick(count: number): void {
-    for (let i = 0; i < count; i++) monkey.tick(session);
+  /** 尖った石をサルへ重ねて殴る。 */
+  function strikeWithSharpStone(): WorldObject {
+    return strikeWith('sharp_stone');
+  }
+
+  function tick(count: number, animal: WorldObject = monkey): void {
+    for (let i = 0; i < count; i++) animal.tick(session);
   }
 
   /** 今の実効値（modifyの寄与を加味した、画面に出るのと同じ値）。 */
@@ -148,7 +156,7 @@ describe('animals.yamlの動物', () => {
   it('外した回は傷が付かないが、警戒と摩耗はそのまま起きる', () => {
     // 当たり外れによらない分（警戒・摩耗）を各候補が持つ（animals.yaml）ので、外れた側でも
     // 抜けていないことを確かめる。
-    open(MISSES);
+    open(WHIFFS);
     const before = monkey.getNumber(warinessId);
 
     const stone = strikeWithSharpStone();
@@ -158,34 +166,137 @@ describe('animals.yamlの動物', () => {
     expect(stone.readProperty(codex.propertyNames.getId('durability'))?.value).toBe(960 - 20);
   });
 
-  it('当たった回も外した回も、殴られた側の札の上で起きたことを告げる', () => {
+  it('どんな一撃が入ったかを、殴られた側の札の上で告げる', () => {
     // 当たった傷は押して開くinjuriesスロットへ入り、外した回は世界の形が何も変わらないため、
-    // どちらもレーンを見ているだけでは分からない（HuntingSystem.md 6.3節）。
-    expect(signalsOf(strikeWithSharpStone)).toEqual(['monkey: hit']);
+    // どちらもレーンを見ているだけでは分からない（HuntingSystem.md 6.3節）。**武器ごとに違う語を
+    // 告げる**ので、なぜ倒れないのかが札の上で読める。
+    expect(signalsOf(() => strikeWith('sharp_stone'))).toEqual(['monkey: grazed']);
 
-    open(MISSES);
+    open(LANDS);
+    expect(signalsOf(() => strikeWith('stone_axe'))).toEqual(['monkey: hit']);
 
-    expect(signalsOf(strikeWithSharpStone)).toEqual(['monkey: missed']);
+    open(LANDS);
+    expect(signalsOf(() => strikeWith('spear'))).toEqual(['monkey: pierced']);
+
+    open(WHIFFS);
+    expect(signalsOf(() => strikeWith('sharp_stone'))).toEqual(['monkey: missed']);
   });
 
-  it('一撃で気を失い、時間をかけて戻る', () => {
+  describe('体格と武器', () => {
+    /** その動物を密林へ置いて返す。 */
+    function spawnAnimal(name: string): WorldObject {
+      return spawnInto(name, jungle, 'items');
+    }
+
+    /** 気を失っているか（VitalsSystem.md 6節の段）。 */
+    function isDown(animal: WorldObject): boolean {
+      return animal.isInStage(consciousnessId, 'unconscious');
+    }
+
+    it('小動物は、尖った石でも一撃で沈む', () => {
+      // 衝撃のmaxが体格（体重の1/50）なので、浅い一撃（30）でも80gのネズミ・1kgのヤケイでは
+      // 振り切れる。**武器の側は相手の大きさを知らない**——同じ30が体格で意味を変える。
+      const rat = spawnAnimal('rat');
+      const junglefowl = spawnAnimal('junglefowl');
+
+      strikeWith('sharp_stone', rat);
+      strikeWith('sharp_stone', junglefowl);
+
+      expect(isDown(rat), 'ネズミは一撃').toBe(true);
+      expect(isDown(junglefowl), 'ヤケイも一撃').toBe(true);
+    });
+
+    it('中型は、尖った石では3撃かかり、石斧なら一撃で沈む', () => {
+      // 上位の武器の存在価値がここに出る。石は浅打（30）しか持たないので、5kgのサル（気絶は70）
+      // には溜めて3撃。石斧の強打（250）は一撃で振り切る。
+      strikeWithSharpStone();
+      expect(isDown(monkey), '1撃目では沈まない').toBe(false);
+      strikeWithSharpStone();
+      expect(isDown(monkey), '2撃目でも沈まない').toBe(false);
+
+      strikeWithSharpStone();
+
+      expect(monkey.getNumber(shockId), '30ずつ足し、1tickごとに4引く').toBe(30 * 3 - 4 * 2);
+      expect(isDown(monkey), '3撃目で沈む').toBe(true);
+
+      open(LANDS);
+
+      strikeWith('stone_axe');
+
+      expect(isDown(monkey), '石斧なら一撃').toBe(true);
+    });
+
+    it('大型は石斧でも4撃かかり、尖った石では衝撃が溜まらない', () => {
+      // 60kgのイノシシは衝撃のmaxがサルの12倍（1200、気絶は840）。**引く速さも体格に比例する**
+      // ので、浅打（30）は溜まる前に引いてしまう——弱い武器で殴り続けても倒せない。
+      const boar = spawnAnimal('wild_boar');
+
+      for (let i = 0; i < 3; i++) strikeWith('stone_axe', boar);
+      expect(isDown(boar), '3撃目までは立っている').toBe(false);
+
+      strikeWith('stone_axe', boar);
+
+      expect(isDown(boar), '4撃目で沈む').toBe(true);
+
+      open(LANDS);
+      const untouched = spawnAnimal('wild_boar');
+
+      for (let i = 0; i < 10; i++) strikeWith('sharp_stone', untouched);
+
+      expect(untouched.getNumber(shockId), '足す30より引く48のほうが大きい').toBe(30);
+      expect(isDown(untouched), '尖った石では何撃当てても沈まない').toBe(false);
+    });
+
+    it('槍は沈められないが、刺し傷から血が抜けて倒れる', () => {
+      // 槍の一撃は衝撃をほとんど生まないので、その場では倒れない（HuntingSystem.md 1.2節の
+      // 「急所寄り」）。代わりに刺し傷が-200/tickで血を奪い、400mLのサルは2tickで尽きる。
+      strikeWith('spear');
+
+      expect(injuriesOf(monkey), '裂傷ではなく刺し傷が刺さる').toEqual(['puncture_wound']);
+      expect(isDown(monkey), '突かれてもその場では倒れない').toBe(false);
+
+      tick(1);
+      expect(itemsInJungle(), '1tickではまだ生きている').toEqual(['monkey']);
+
+      tick(1);
+
+      expect(itemsInJungle(), '2tick（30分）で血が尽きて死体になる').toEqual(['monkey_carcass']);
+    });
+
+    it('大型に槍で届くのは、深手を重ねて血を奪うから', () => {
+      // 4,600mLのイノシシに裂傷1つ（60mL）は響かないが、刺し傷は1つで800mL——4突きで危機域へ落ち、
+      // 失った血が意識を奪う（VitalsSystem.md 3節）。**衝撃ではなく血で決着する道**。
+      const boar = spawnAnimal('wild_boar');
+
+      for (let i = 0; i < 4; i++) strikeWith('spear', boar);
+      tick(4, boar);
+
+      expect(boar.readProperty(bloodId)?.alert, '致命的域まで失う').toBe('fatal');
+      expect(isDown(boar), '血を失って倒れる').toBe(true);
+    });
+  });
+
+  it('一撃で気を失った相手は、時間をかけて戻る', () => {
     // 狩りの決着は死ではなく気絶で付く（VitalsSystem.md 5節）ので、殴った瞬間に効く必要がある。
-    // 石1つでもサルの体格（shockのmax=100）には一撃。
     expect(consciousness(), '殴る前ははっきりしている').toEqual({ value: 100, alert: 'safe' });
 
-    strikeWithSharpStone();
+    strikeWith('stone_axe');
 
     // 効果は時間が経ち切ってから適用される（ActionSystem.md 2節）ので、殴ったぶんはtickで引かれない。
-    expect(monkey.getNumber(shockId), '衝撃はaddで即座に立つ').toBe(80);
+    // 250はサルの体格（max 100）を越えるので、そこで頭打ちになる。
+    expect(monkey.getNumber(shockId), '衝撃はaddで即座に立ち、体格で頭打ちになる').toBe(100);
     expect(consciousness(), 'reelingの-80と痛みの-20で底を打つ（unconsciousの段）').toEqual({
       value: 0,
       alert: 'danger',
     });
 
-    // -4/tickで引く。60まで下がるとreeling（-80）を抜け、rattled（-30）と痛み（-20）だけが残る。
-    tick(5);
+    // -4/tickで引く。60まで下がるとreeling（-80）を抜け、rattled（-30）と痛みの-20だけが残る。
+    tick(10);
 
-    expect(consciousness(), '気絶からは45分で覚める（dazedの段）').toEqual({ value: 50, alert: 'caution' });
+    expect(consciousness(), '気絶からは2時間半で覚める（dazedの段）').toEqual({
+      value: 50,
+      alert: 'caution',
+    });
 
     // 28まで引けばsteadyへ。残るのは痛みの-20だけで、意識ははっきりした域へ戻る。
     tick(8);
@@ -201,7 +312,7 @@ describe('animals.yamlの動物', () => {
     strikeWithSharpStone();
     tick(20); // 衝撃だけを引かせる（傷はまだ残る）。
 
-    expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(20);
+    expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(0);
     expect(effective(painId), '裂傷2つで50+50').toBe(100);
     expect(consciousness(), '痛みが最も深くても朦朧に留まる（dazedの段）').toEqual({
       value: 100 - 45,
@@ -215,11 +326,9 @@ describe('animals.yamlの動物', () => {
     /** 自然回復（animals.yaml）。出血と同時に走るので、失う量からわずかに差し引かれる。 */
     const RECOVERED_PER_TICK = 0.16;
 
-    let bloodId: number;
     let bleedingId: number;
 
     beforeAll(() => {
-      bloodId = codex.propertyNames.getId('blood');
       bleedingId = codex.propertyNames.getId('bleeding');
     });
 
@@ -268,14 +377,15 @@ describe('animals.yamlの動物', () => {
       strikeWithSharpStone();
       tick(24);
 
-      expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(4);
+      expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(0);
       expect(monkey.getNumber(bloodId), '3つぶん失った').toBeLessThan(400 - 3 * LOST_PER_WOUND + 5);
       expect(monkey.readProperty(bloodId)?.alert, '危険域').toBe('danger');
       expect(monkey.isInStage(consciousnessId, 'unconscious'), '目覚めない').toBe(true);
     });
 
     it('血が尽きれば、その枠のまま死体になる', () => {
-      // 仕留めの一撃（HuntingSystem.md 1.4節）と同じ置き換えだが、こちらは**逃げられた個体が後で倒れる道**。
+      // 仕留めの一撃（HuntingSystem.md 1.4節）と同じ置き換えで、**同じon_shortfallが受ける**。
+      // こちらは殴り続けて失血させる道。
       for (let i = 0; i < 8; i++) strikeWithSharpStone();
       expect(itemsInJungle(), '殴っただけではまだ生きている').toEqual(['monkey']);
 
@@ -302,15 +412,15 @@ describe('animals.yamlの動物', () => {
   });
 
   it('気を失っている相手は仕留められる', () => {
-    // 仕留めは怪我にしない（残らないものだから、InjurySystem.md 4節）。pickの候補が直接、
-    // 死体へ置き換える（HuntingSystem.md 1.4節）。
+    // 仕留めは怪我にしない（残らないものだから、InjurySystem.md 4節）。pickの候補が血を空にし、
+    // bloodのon_shortfallが死体へ置き換える（HuntingSystem.md 1.4節）。
     open(KILLS_IF_HELPLESS);
-    strikeWithSharpStone();
+    strikeWith('stone_axe');
 
     expect(itemsInJungle(), '1発目は当たるだけ').toEqual(['monkey']);
     expect(monkey.isInStage(consciousnessId, 'unconscious'), '気を失っている').toBe(true);
 
-    const killed = signalsOf(strikeWithSharpStone);
+    const killed = signalsOf(() => strikeWith('stone_axe'));
 
     expect(itemsInJungle(), 'その枠のまま死体へ置き換わる').toEqual(['monkey_carcass']);
     expect(killed).toEqual(['monkey: killed']);
@@ -330,8 +440,8 @@ describe('animals.yamlの動物', () => {
     /** 気を失わせてから仕留めて、その場に残った死体を返す。 */
     function kill(): WorldObject {
       open(KILLS_IF_HELPLESS);
-      strikeWithSharpStone();
-      strikeWithSharpStone();
+      strikeWith('stone_axe');
+      strikeWith('stone_axe');
       return jungle.tryGetSlot(codex.slotNames.getId('items'))!.contents[0];
     }
 
@@ -382,11 +492,34 @@ describe('animals.yamlの動物', () => {
       ).toBe(3100);
     });
 
+    it('獲物が大きいほど、同じ物が多く取れる', () => {
+      // 得られる素材は獲物の種類によらず同じで、大きさは個数が表す（HuntingSystem.md 1.5節）。
+      // 12倍の体格から、12倍の枚数が出る。
+      const boarCarcass = spawnInto('wild_boar_carcass', jungle, 'items');
+
+      butcher(boarCarcass);
+
+      const counts = new Map<string, number>();
+      // 足元には生きたサルも居るので、解体で出た物だけを数える。
+      for (const name of itemsInJungle().filter((name) => name !== 'monkey'))
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      expect(Object.fromEntries(counts)).toEqual({ raw_meat: 40, animal_bone: 6, rawhide: 6 });
+    });
+
     it('刃物でない物を重ねても解体できない', () => {
       const carcass = kill();
       const stone = spawnInto('stone', player, 'hand');
 
       expect(carcass.findMatchingCombinations(stone), '素手の石はcutting_toolタグを持たない').toEqual([]);
+    });
+
+    it('槍では解体できない', () => {
+      // 穂先は柄の先に固定されていて皮を剥ぐ手つきにならない（tools.yaml）。狩れても捌けないので、
+      // 刃物を別に持つ理由が残る。
+      const carcass = kill();
+      const spear = spawnInto('spear', player, 'hand');
+
+      expect(carcass.findMatchingCombinations(spear), '槍はcutting_toolタグを持たない').toEqual([]);
     });
 
     it('生肉は食べられる', () => {
@@ -407,7 +540,7 @@ describe('animals.yamlの動物', () => {
   it('殴られ続ければ危険域まで気が立つ', () => {
     // 段はワールド側の宣言なので、しきい値を刻み直したらここで落ちる。**外した回で確かめる**——
     // 当たると気を失い、その間は警戒が打ち消される（次のテスト）ため。
-    open(MISSES);
+    open(WHIFFS);
 
     strikeWithSharpStone();
     expect(monkey.readProperty(warinessId)?.alert, '1発では警戒のまま').toBe('caution');
@@ -420,7 +553,7 @@ describe('animals.yamlの動物', () => {
   it('気を失っている間は警戒が消え、目覚めれば戻る', () => {
     // 気絶した動物は放っておいてよい相手なので、縁の明滅（CardView.md 3節）を止める。気絶そのものは
     // カードの覆いが言う（同 9.1節）——UIはunconsciousの段の名前だけを読む。
-    strikeWithSharpStone();
+    strikeWith('stone_axe');
 
     expect(monkey.getNumber(warinessId), '警戒そのものは上がっている').toBe(40 + 25 - 1);
     expect(monkey.readProperty(warinessId)?.value, '気絶が打ち消すので実効値は0').toBe(0);
@@ -428,7 +561,7 @@ describe('animals.yamlの動物', () => {
     expect(monkey.isInStage(consciousnessId, 'unconscious'), '覆いを出す段に居る').toBe(true);
     expect(injuriesOf(monkey), '同じ個体なので傷は残る').toEqual(['laceration']);
 
-    tick(13);
+    tick(18);
 
     expect(monkey.isInStage(consciousnessId, 'unconscious'), '目覚めれば覆いは消える').toBe(false);
     expect(monkey.readProperty(warinessId)?.alert, '警戒も戻る').toBe('caution');

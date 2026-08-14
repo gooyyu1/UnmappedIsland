@@ -40,6 +40,40 @@ describe('tools.yamlの道具定義', () => {
     expect(durability?.value, '上限は種類によらず統一（DurabilitySystem.md 1節）').toBe(960);
   });
 
+  it('武器は、一撃がどこへ入るかの重み配分を宣言する', () => {
+    // 武器が持つのは威力ではなく配分（HuntingSystem.md 1.2節）。合計を100に揃えるのは、
+    // 仕留めの重み（無防備さ）と並ぶ目盛りを武器ごとに変えないため。**書き忘れは0と区別が
+    // 付かない**ので、ここで合計を数えて捕まえる。
+    const session = new WorldSession(codex);
+    const shares = ['heavy_blow', 'light_blow', 'thrust', 'whiff'].map((name) =>
+      codex.propertyNames.getId(name),
+    );
+    const weapons = codex.objectDefNamesWithTag('weapon');
+
+    expect(weapons.length, '検査対象が無い（weaponタグが変わっていないか）').toBeGreaterThan(0);
+    for (const name of weapons) {
+      const weapon = session.spawn(codex.objectNames.getId(name));
+      const total = shares.reduce((sum, id) => sum + weapon.getNumber(id), 0);
+      expect(total, `'${name}' の配分の合計`).toBe(100);
+    }
+  });
+
+  it('石斧は打ち砕き、槍は突き通す', () => {
+    // 上位の武器2つは、同じ配分の目盛りの上で性格が分かれる（tools.yaml）。石斧は解体にも使えるが、
+    // 槍は穂先が柄に固定されているので刃物にならない。
+    const session = new WorldSession(codex);
+    const axe = session.spawn(codex.objectNames.getId('stone_axe'));
+    const spear = session.spawn(codex.objectNames.getId('spear'));
+
+    expect(axe.getNumber(codex.propertyNames.getId('heavy_blow')), '斧だけが強打を持つ').toBeGreaterThan(0);
+    expect(spear.getNumber(codex.propertyNames.getId('heavy_blow'))).toBe(0);
+    expect(spear.getNumber(codex.propertyNames.getId('thrust')), '槍だけが刺突を持つ').toBeGreaterThan(0);
+    expect(axe.getNumber(codex.propertyNames.getId('thrust'))).toBe(0);
+
+    expect(axe.def.tags).toContain(codex.tagNames.getId('cutting_tool'));
+    expect(spear.def.tags, '槍では解体できない').not.toContain(codex.tagNames.getId('cutting_tool'));
+  });
+
   it('石へ石をドラッグすると、割られた側が尖った石になり、1時間が経つ', () => {
     const worldInstance = new WorldObject(
       0,

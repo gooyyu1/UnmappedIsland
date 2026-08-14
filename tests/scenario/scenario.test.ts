@@ -203,24 +203,35 @@ describe('テスト用シナリオ', () => {
     expect(() => applyScenario(game, scenario, codex)).toThrow(/rainy/);
   });
 
-  it('monkey_raidは、警戒したサルと盗めるアイテムがある土地から始める', () => {
-    // 狩猟（HuntingSystem.md）を目で確かめるためのシナリオなので、始めた時点で殴れて、
-    // 輪郭が明滅している（＝警戒が安全域を外れている）必要がある。
-    const scenario = load('monkey_raid');
+  it('hunting_groundは、体格の違う獲物と3つの武器を並べる', () => {
+    // 狩りの釣り合い（HuntingSystem.md 1.2節）を目で確かめるためのシナリオなので、**体格の違う
+    // 獲物と、配分の違う武器が同時に手元にある**ことがこのファイルの中身の意味。始めた時点で
+    // どれでも殴れて、輪郭が明滅している（＝警戒が安全域を外れている）必要がある。
+    const scenario = load('hunting_ground');
     const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
-    const [monkey, ...loot] = game.startLocation.items;
-    expect(monkey.def.name).toBe('monkey');
+    const [rat, junglefowl, monkey, boar, ...loot] = game.startLocation.items;
+    expect(
+      [rat, junglefowl, monkey, boar].map((animal) => animal.def.name),
+      '体格の小さい順',
+    ).toEqual(['rat', 'junglefowl', 'monkey', 'wild_boar']);
     expect(
       loot.map((item) => item.def.name),
       '持ち去られる候補が足元にある',
     ).toEqual(['coconut', 'woven_basket', 'thick_branch']);
 
-    const weapon = game.player.hand[0];
-    expect(weapon?.def.name, '手元の武器で殴れる').toBe('sharp_stone');
-    expect(monkey.findMatchingCombinations(weapon!).map((c) => c.name)).toEqual(['strike']);
+    const weapons = game.player.hand.filter((item) => item !== undefined);
+    expect(
+      weapons.map((weapon) => weapon.def.name),
+      '3つの武器が手元にある',
+    ).toEqual(['sharp_stone', 'stone_axe', 'spear']);
+    for (const weapon of weapons)
+      expect(
+        boar.findMatchingCombinations(weapon).map((c) => c.name),
+        `${weapon.def.name}で殴れる`,
+      ).toEqual(['strike']);
     expect(
       monkey.readProperty(codex.propertyNames.getId('wariness'))?.alert,
       '始めた時点で警戒している',
