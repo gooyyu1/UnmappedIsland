@@ -368,8 +368,11 @@ object_defs:
             spawn: {object: rat_carcass}
             signal: killed
 
-  # ヤケイの死体。1000gの内訳: 生肉500g + 小さな生肉50g×2 = 600g。羽と骨は使い道がまだ無いので
-  # カードにしない。値を変えるときはこの内訳を崩さないこと（monkey_carcassと同じ規約）。
+  # ヤケイの死体。1000gの内訳: 生肉500g。羽と骨は使い道がまだ無いのでカードにしない。値を変える
+  # ときはこの内訳を崩さないこと（monkey_carcassと同じ規約）。
+  #
+  # **鶏肉も獣肉も同じ生肉になる**（HuntingSystem.md 1.5節）。栄養と味の違いが実際に効くように
+  # なるまでは、獲物の種類で肉を分けない——分けると、それを使う側（料理）が獲物の数だけ分岐する。
   junglefowl_carcass:
     tags: [item, quarry]
     props:
@@ -380,22 +383,57 @@ object_defs:
         with: cutting_tool
         duration: 20
         destroy: self
-        spawn:
-          - {object: raw_meat}
-          - {object: small_raw_meat, count: 2}
+        spawn: {object: raw_meat}
 
-  # ネズミの死体。80gの内訳: 小さな生肉50g。毛皮は使い道がまだ無いのでカードにしない。
+  # ネズミの死体。**解体しない**——80gの体から肉の塊は取れないので、丸ごと火にかけて、骨から
+  # こそぎ落とすように食べる（roasted_rat）。
+  #
+  # 小さすぎる肉を1枚のカードにすると、料理で生肉と競合する。同じ「肉」でありながら大きさが違うと、
+  # レシピは「どちらでもよい」と書けない（HuntingSystem.md 1.5節が獲物の大きさを個数で表すのと同じ理由で、
+  # 刻みを増やさない）。
   rat_carcass:
     tags: [item, quarry]
     props:
       weight: {value: 80}
       volume: {value: 200}
-    combinations:
-      butcher:
-        with: cutting_tool
-        duration: 5
+      # 小さいので早く焼ける。炎（3/tick）なら2tick＝30分。
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 6}
+        on_overflow:
+          spawn: {object: roasted_rat}
+          destroy: self
+
+  # 丸焼きのネズミ。食べると小さな骨が残る（骨針の材料、docs/world/SurvivalItems.md 1.2節の
+  # 繊維 → 罠 → 小動物 → 小骨 → 骨針）。**罠だけを起点に、刃物を1つも経由せず縫製へ届く。**
+  roasted_rat:
+    tags: [item, food]
+    props:
+      weight: {value: 60}
+      volume: {value: 160}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 4}
+        on_overflow:
+          spawn: {object: charred_lump}
+          destroy: self
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 2
+            meat_nutrition: 25
+        # 食べ終わって残る骨。actorの手が塞がっていれば足元へ落ちる（9.4節のフォールバック）。
+        spawn: {object: small_bone, into: actor}
         destroy: self
-        spawn: {object: small_raw_meat}
+
+  # 小さな骨。小動物1匹ぶんの骨で、獣骨（animal_bone）のように道具の頭部にはできないが、
+  # 削れば針になる。
+  small_bone:
+    tags: [item]
+    props:
+      weight: {value: 10}
+      volume: {value: 15}
 
   # 解体して得られる素材。獲物の種類によらず同じ物が出て、獲物の大きさは個数で表す
   # （HuntingSystem.md 1.5節）。骨と皮の使い道は docs/world/SurvivalItems.md 参照。
@@ -425,50 +463,6 @@ object_defs:
           actor:
             satiety: 16
             meat_nutrition: 200
-        destroy: self
-
-  # 小さな生肉。罠で捕れる小動物（ネズミ・ヤケイ）から取れる1切れで、生肉の1/10。**小さい獲物の
-  # 取り分を個数で表せるようにするための刻み**で、生肉500gでは80gのネズミの内訳が作れない。
-  #
-  # 焼く仕組みは生肉と同じだが、小さいぶん早く焼け、早く焦げる。
-  small_raw_meat:
-    tags: [item, food, meat_bait]
-    props:
-      weight: {value: 50}
-      meat_bait: {value: 4}
-      volume: {value: 50}
-      cooking_progress:
-        value: 0
-        range: {min: 0, max: 8}
-        on_overflow:
-          spawn: {object: roasted_small_meat}
-          destroy: self
-    actions:
-      eat:
-        add:
-          actor:
-            satiety: 1.6
-            meat_nutrition: 20
-        destroy: self
-
-  # 焼けた小さな肉。生肉と焼けた肉の関係を、そのまま1/10で写している。
-  roasted_small_meat:
-    tags: [item, food]
-    props:
-      weight: {value: 40}
-      volume: {value: 45}
-      cooking_progress:
-        value: 0
-        range: {min: 0, max: 4}
-        on_overflow:
-          spawn: {object: charred_lump}
-          destroy: self
-    actions:
-      eat:
-        add:
-          actor:
-            satiety: 2
-            meat_nutrition: 26
         destroy: self
 
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
