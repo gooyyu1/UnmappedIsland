@@ -56,10 +56,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y pandoc
 
+      # 系列で指定する理由はtests.ymlのコメントを参照。2つのワークフローで揃えること。
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 26.5.0
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
