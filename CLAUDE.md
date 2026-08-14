@@ -79,6 +79,6 @@ TypeScriptのコーディング規約は [`docs/engine/CodingConventions.md`](do
   そのセッションの中で見終えて報告する。
 - PR作成時の購読は、こちらが呼ばなくてもハーネスがサーバ側で入れてくる。購読された旨のイベントが
   来たら `unsubscribe_pr_activity` で解除して、そのままターンを終える。
-- 上記ツールの可否は `.claude/hooks/pr-watch-policy.sh`（PreToolUseフック）が決めており、予約と購読は
-  拒否、解除は自動で許可される。`permissions.allow` に並べてもプロンプトが出続けたため、
-  フックの `permissionDecision` で決めている。
+- 上記ツールは `.claude/hooks/pr-watch-policy.sh`（PreToolUseフック）が確認を求めずに許可する。
+  `permissions.allow` に並べてもプロンプトが出続けるため、フックの `permissionDecision` で許可している。
+  許可されていることと使ってよいことは別で、使う・使わないは上の2項が決める。
