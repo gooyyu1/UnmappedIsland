@@ -405,6 +405,10 @@
         "add": {
           "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する（activeのaddと同じ動詞。一度きりかtick毎かは置き場所が決める、8.4節）。",
           "$ref": "#/$defs/passive_operation_map"
+        },
+        "transfer": {
+          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象からactorだけが外れる。同じtickの輸送どうしは互いの到着を見ないため、並べても1 tickにつき1段ずつ進む。",
+          "$ref": "#/$defs/transfer_spec"
         }
       },
       "additionalProperties": false

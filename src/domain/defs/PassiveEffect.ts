@@ -1,4 +1,5 @@
 import type { PropertyValue } from '../runtime/PropertyValue';
+import type { TransferEffect, TransferEnds } from './ActiveEffect';
 import { RegisteredPassiveEffect } from '../runtime/RegisteredPassiveEffect';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { ConditionNode } from './ConditionNode';
@@ -73,13 +74,46 @@ export class PassiveEffectGate {
 /**
  * 1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.passives の要素。
  *
- * modify（条件が真の間だけ実効値へ寄与＝可逆）と`add`（条件が真の間tick毎に実体値へ加減算＝不可逆）は
- * 別クラスで表し、判別用のkindは持たない。唯一の差は「PropertyValueのどちらのincomingへ登録されるか」で、
- * registerIntoの実装で表現する。
+ * **動詞が名乗るのは可逆性だけで、一度きりかtick毎かは置き場所（active／passives）が決める**（8.4節）。
+ * そのため passives に書ける動詞は3つ——可逆な `modify`、不可逆な `add`、そして輸送の `transfer`——で、
+ * 後の2つは active と同じ語のまま、tick毎に効く側になる。
  *
- * **動詞が名乗るのは可逆性だけで、一度きりかtick毎かは置き場所（active／passives）が決める**
- * （8.4節）。そのため不可逆な加減算はどちらの置き場所でも `add` と書き、クラス名だけが
- * 「毎tick実体値へ積分する」という中身（AccumulateEffect）を名乗る。
+ * 効き方は2通りに分かれる。`modify`/`add` は**対象プロパティへ寄与として登録**され（PropertyPassiveEffect）、
+ * `transfer` は登録を持たず**宣言したオブジェクトのtickで走る**（TransferPassiveEffect）——2つのプロパティを
+ * 同時に動かす操作は、どちらか一方への寄与としては表せないため。
+ */
+export abstract class PassiveEffect {
+  /** この効果を1行で書き表す（Description参照）。 */
+  abstract describe(names: DefNames, out: DescriptionWriter): void;
+
+  /**
+   * この効果がpropertyGlobalIdのプロパティを書き換えうるか（プロパティ側からの逆引き用）。
+   *
+   * ownedByDeclarerは、そのプロパティが宣言元のobject_def自身のものか。target=selfの効果は
+   * 宣言元自身のプロパティしか書き換えないため、他の型の同名プロパティは書き換え対象にならない。
+   */
+  abstract affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean;
+
+  /** 関係（self/parent/ancestor）が変わった契機。登録を持たない効果は何もしない。 */
+  registerRelation(_owner: WorldObject, _relation: ReferenceRoot, _register: boolean): void {}
+
+  /** 子が付く/離れる契機。登録を持たない効果は何もしない。 */
+  registerChild(_owner: WorldObject, _child: WorldObject, _register: boolean): void {}
+
+  /**
+   * tick毎に走る輸送（8.4節）ならそれ自身。寄与として登録される効果（modify/add）ではundefined。
+   * 走らせる側（PassiveEffects）が種別で振り分けずに済むよう、効果自身が名乗る。
+   */
+  get tickTransfer(): TransferPassiveEffect | undefined {
+    return undefined;
+  }
+}
+
+/**
+ * 対象プロパティへ寄与として登録される持続効果（`modify`/`add`）。
+ *
+ * 2つは別クラスで表し、判別用のkindは持たない。唯一の差は「PropertyValueのどちらのincomingへ
+ * 登録されるか」で、registerIntoの実装で表現する。
  *
  * 登録先の解決と登録/解除はtargetの種別に応じて自分で行い、呼び出し側（WorldObject）はライフサイクルの
  * 契機で登録/解除を依頼するだけで、どのtargetがどこへ紐付くかは知らない。
@@ -87,7 +121,7 @@ export class PassiveEffectGate {
  * アクション/combination/pickの一時的な `add`（実行の瞬間に1回だけ効く）は、持続するゲート判定が不要な
  * ため、この登録の仕組みには乗らない。
  */
-export abstract class PassiveEffect {
+export abstract class PropertyPassiveEffect extends PassiveEffect {
   private readonly target: ReferenceRoot;
   private readonly targetPropertyGlobalId: number;
   private readonly amount: number;
@@ -99,6 +133,7 @@ export abstract class PassiveEffect {
     amount: number,
     gate: PassiveEffectGate,
   ) {
+    super();
     this.target = target;
     this.targetPropertyGlobalId = targetPropertyGlobalId;
     this.amount = amount;
@@ -112,19 +147,12 @@ export abstract class PassiveEffect {
   /** YAMLでの書き方の名前（modify/add）。describeが対象の前に置く。 */
   protected abstract get kindLabel(): string;
 
-  /**
-   * この効果がpropertyGlobalIdのプロパティを書き換えうるか（プロパティ側からの逆引き用）。
-   *
-   * ownedByDeclarerは、そのプロパティが宣言元のobject_def自身のものか。target=selfの効果は
-   * 宣言元自身のプロパティしか書き換えないため、他の型の同名プロパティは書き換え対象にならない。
-   */
-  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+  override affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
     if (this.targetPropertyGlobalId !== propertyGlobalId) return false;
     return ownedByDeclarer || this.target !== 'self';
   }
 
-  /** この効果を1行で書き表す（Description参照）。 */
-  describe(names: DefNames, out: DescriptionWriter): void {
+  override describe(names: DefNames, out: DescriptionWriter): void {
     const tokens: DescriptionToken[] = [
       text(`${this.kindLabel} `),
       propertyRef(names.propertyName(this.targetPropertyGlobalId), this.target),
@@ -152,7 +180,7 @@ export abstract class PassiveEffect {
    *
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずregisterChildを使う。
    */
-  registerRelation(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
+  override registerRelation(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     const related =
       relation === 'self'
         ? owner
@@ -168,7 +196,7 @@ export abstract class PassiveEffect {
    * childがparentに付く/離れる際に、parent（owner）側のtarget=child効果を、その付いた/離れた子(child)へ
    * 登録/解除する。childは相手がownerから一意に辿れない唯一の関係のため、childを明示的に受け取る。
    */
-  registerChild(owner: WorldObject, child: WorldObject, register: boolean): void {
+  override registerChild(owner: WorldObject, child: WorldObject, register: boolean): void {
     this.registerResolvedRelation(owner, 'child', child, register);
   }
 
@@ -212,7 +240,7 @@ export abstract class PassiveEffect {
  * 条件が真の間だけ、都度導出される実効値に寄与する持続効果（可逆、8.3節）。実体値そのものは
  * 書き換えない。PropertyValueのmodify用incomingへ登録され、WorldObject.getEffectiveValueが走査する。
  */
-export class ModifyEffect extends PassiveEffect {
+export class ModifyEffect extends PropertyPassiveEffect {
   constructor(
     target: ReferenceRoot,
     targetPropertyGlobalId: number,
@@ -235,7 +263,7 @@ export class ModifyEffect extends PassiveEffect {
  * 条件が真の間、tick毎に実体値そのものへ加減算し続ける持続効果（YAMLでは `add`、不可逆、8.4節）。
  * PropertyValueの積分用incomingへ登録され、WorldObject.tickが走査する。
  */
-export class AccumulateEffect extends PassiveEffect {
+export class AccumulateEffect extends PropertyPassiveEffect {
   constructor(
     target: ReferenceRoot,
     targetPropertyGlobalId: number,
@@ -252,4 +280,66 @@ export class AccumulateEffect extends PassiveEffect {
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
     target.registerAccumulate(registration);
   }
+}
+
+/**
+ * 条件が真の間、tick毎に走る輸送（YAMLでは `transfer`、8.4節・9.5節）。
+ *
+ * **寄与としては登録しない。** 2つのプロパティを同時に動かす操作は、どちらか一方への寄与としては
+ * 表せないため、宣言したオブジェクトのtickでそのまま走る（PassiveEffects.applyTickTransfers）。
+ * from/toの解決はactiveの輸送と同じで、宣言元をselfとして毎tick辿り直す。
+ */
+export class TransferPassiveEffect extends PassiveEffect {
+  private readonly transfer: TransferEffect;
+  private readonly gate: PassiveEffectGate;
+
+  constructor(transfer: TransferEffect, gate: PassiveEffectGate) {
+    super();
+    this.transfer = transfer;
+    this.gate = gate;
+  }
+
+  override get tickTransfer(): TransferPassiveEffect {
+    return this;
+  }
+
+  /**
+   * このtickで動かす両端と量（ゲートが閉じている・動かす量が無いならundefined）。
+   *
+   * alreadyOut/alreadyInは、同じtickで先に決まった輸送が既に動かした量（PassiveEffects側の帳簿）。
+   * 同じ値を二重に動かさないためだけに引くので、**到着した量は次の輸送から見えない**——見えると
+   * 胃→腸→蓄えのような連鎖が1 tickで走り抜けてしまう。
+   */
+  planTick(
+    owner: WorldObject,
+    alreadyOut: (value: PropertyValue) => number,
+    alreadyIn: (value: PropertyValue) => number,
+  ): PlannedTransfer | undefined {
+    if (!this.gate.isSatisfied(owner, owner)) return undefined;
+
+    const ends = this.transfer.resolveEnds(owner, undefined, undefined);
+    if (ends === undefined) return undefined;
+
+    const taken = this.transfer.plannedTake(ends, alreadyOut(ends.fromValue), alreadyIn(ends.toValue));
+    if (taken <= 0) return undefined;
+    return { effect: this.transfer, ends, taken, given: this.transfer.givenFor(taken) };
+  }
+
+  override describe(names: DefNames, out: DescriptionWriter): void {
+    const gate = this.gate.describe(names);
+    const suffix = gate.length > 0 ? [text('（'), ...gate, text('間、tick毎）')] : [text('（tick毎）')];
+    this.transfer.describe(names, out, suffix);
+  }
+
+  override affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
+    return this.transfer.affects(propertyGlobalId, ownedByDeclarer);
+  }
+}
+
+/** 決まったが、まだ動かしていない輸送1件（TransferPassiveEffect.planTick）。 */
+export interface PlannedTransfer {
+  readonly effect: TransferEffect;
+  readonly ends: TransferEnds;
+  readonly taken: number;
+  readonly given: number;
 }

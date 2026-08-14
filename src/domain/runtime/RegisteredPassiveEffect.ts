@@ -1,4 +1,4 @@
-import type { PassiveEffect } from '../defs/PassiveEffect';
+import type { PropertyPassiveEffect } from '../defs/PassiveEffect';
 import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
 
@@ -20,9 +20,9 @@ export class RegisteredPassiveEffect {
   readonly declarer: WorldObject;
 
   private readonly slotBearer: WorldObject;
-  private readonly def: PassiveEffect;
+  private readonly def: PropertyPassiveEffect;
 
-  constructor(declarer: WorldObject, slotBearer: WorldObject, def: PassiveEffect) {
+  constructor(declarer: WorldObject, slotBearer: WorldObject, def: PropertyPassiveEffect) {
     this.declarer = declarer;
     this.slotBearer = slotBearer;
     this.def = def;

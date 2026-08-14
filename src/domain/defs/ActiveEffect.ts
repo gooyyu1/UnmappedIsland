@@ -314,6 +314,14 @@ export class SpawnEffect extends ActiveEffect {
   }
 }
 
+/** 解決済みの移送の両端（TransferEffect.resolveEnds）。 */
+export interface TransferEnds {
+  readonly from: WorldObject;
+  readonly fromValue: PropertyValue;
+  readonly to: WorldObject;
+  readonly toValue: PropertyValue;
+}
+
 /**
  * transfer（9.5節）の1命令。fromプロパティの実体値から、実際に出せる量とAmountの小さい方だけを
  * toプロパティへ移す（「在庫に応じて実際に動く量が変わる」移送）。YAMLはフラットな
@@ -354,12 +362,11 @@ export class TransferEffect extends ActiveEffect {
   }
 
   /**
-   * 出す量は「出せる量」（PropertyValue.availableToTransferOut）とAmountの小さい方。allow_overflowが
-   * falseならさらに「受け取れる量」（remainingTransferCapacity）でも制限するが、単位が違えば
-   * 受け取れる量は移送先の単位なので、**出す側の単位へ割り戻してから**比べる。
-   *
-   * linked_add（9.5節）は実際に出した量に比例（amount * actual_moved / Amount）してスケール適用する。
    * from/toが解決できない・対象がそのプロパティを持たない場合は何もしない。
+   *
+   * 決めることと動かすことを分けてあるのは、tick毎の輸送（8.4節）が**全件を決めてからまとめて動かす**
+   * ため（PassiveEffects.applyTickTransfers）。一度きりの命令はその場で決めて動かすので、
+   * 同じtickに何度実行しても互いの結果を見る（宣言順に適用される、9節）。
    */
   apply(
     owner: WorldObject,
@@ -367,6 +374,20 @@ export class TransferEffect extends ActiveEffect {
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
   ): void {
+    const ends = this.resolveEnds(owner, actor, dragged);
+    if (ends === undefined) return;
+
+    const taken = this.plannedTake(ends);
+    if (taken <= 0) return;
+    this.applyTake(ends, taken, owner, session, actor, dragged);
+  }
+
+  /** 移送の両端。どちらかが解決できない・そのプロパティを持たないならundefined。 */
+  resolveEnds(
+    owner: WorldObject,
+    actor: WorldObject | undefined,
+    dragged: WorldObject | undefined,
+  ): TransferEnds | undefined {
     const from = owner.resolveEffectTargetOrAncestor(
       this.fromObject,
       this.fromPropertyGlobalId,
@@ -374,26 +395,54 @@ export class TransferEffect extends ActiveEffect {
       dragged,
     );
     const to = owner.resolveEffectTargetOrAncestor(this.toObject, this.toPropertyGlobalId, actor, dragged);
-    if (from === undefined || to === undefined) return;
+    if (from === undefined || to === undefined) return undefined;
+
     const fromValue: PropertyValue | undefined = from.tryGetProperty(this.fromPropertyGlobalId);
     const toValue: PropertyValue | undefined = to.tryGetProperty(this.toPropertyGlobalId);
-    if (fromValue === undefined || toValue === undefined) return;
+    if (fromValue === undefined || toValue === undefined) return undefined;
+    return { from, fromValue, to, toValue };
+  }
 
-    let taken = Math.min(this.amount, fromValue.availableToTransferOut());
+  /**
+   * 出す量は「出せる量」（PropertyValue.availableToTransferOut）とAmountの小さい方。allow_overflowが
+   * falseならさらに「受け取れる量」（remainingTransferCapacity）でも制限するが、単位が違えば
+   * 受け取れる量は移送先の単位なので、**出す側の単位へ割り戻してから**比べる。
+   *
+   * alreadyOut/alreadyInは、同じtickの中で他の輸送が既にその値から出した量・その値へ入れた量。
+   * 同じ値を二重に動かさないためだけに引き、**到着した量は見ない**（見ると同じtickで連鎖する）。
+   */
+  plannedTake(ends: TransferEnds, alreadyOut = 0, alreadyIn = 0): number {
+    let taken = Math.min(this.amount, ends.fromValue.availableToTransferOut() - alreadyOut);
     if (!this.allowOverflow) {
-      const room = (toValue.remainingTransferCapacity() * this.amount) / this.toAmount;
+      const room = ((ends.toValue.remainingTransferCapacity() - alreadyIn) * this.amount) / this.toAmount;
       taken = Math.min(taken, room);
     }
-    if (taken <= 0) return;
+    return Math.max(0, taken);
+  }
 
-    from.addNumber(this.fromPropertyGlobalId, -taken, session);
-    to.addNumber(this.toPropertyGlobalId, (taken * this.toAmount) / this.amount, session);
+  /** takenを出したときに、受け取る側が増える量（単位が違えばto_amountで換算する）。 */
+  givenFor(taken: number): number {
+    return (taken * this.toAmount) / this.amount;
+  }
+
+  /** 決まった量を実際に動かす。linked_add（9.5節）は実際に出した量に比例して効く。 */
+  applyTake(
+    ends: TransferEnds,
+    taken: number,
+    owner: WorldObject,
+    session: WorldSession,
+    actor: WorldObject | undefined,
+    dragged: WorldObject | undefined,
+  ): void {
+    ends.from.addNumber(this.fromPropertyGlobalId, -taken, session);
+    ends.to.addNumber(this.toPropertyGlobalId, this.givenFor(taken), session);
 
     for (const linked of this.linkedAdd)
       linked.applyScaled(owner, session, actor, dragged, taken, this.amount);
   }
 
-  describe(names: DefNames, out: DescriptionWriter): void {
+  /** suffixは1行目の末尾へ足す断片（tick毎の輸送が、自分のゲートを同じ行に書き足す）。 */
+  describe(names: DefNames, out: DescriptionWriter, suffix: readonly DescriptionToken[] = []): void {
     const tokens: DescriptionToken[] = [
       text('transfer '),
       propertyRef(names.propertyName(this.fromPropertyGlobalId), this.fromObject),
@@ -405,7 +454,7 @@ export class TransferEffect extends ActiveEffect {
     if (this.toAmount !== this.amount) tokens.push(text(` → ${this.toAmount}`));
     if (this.allowOverflow) tokens.push(text('、あふれても移す'));
     tokens.push(text('）'));
-    out.write(...tokens);
+    out.write(...tokens, ...suffix);
 
     if (this.linkedAdd.length === 0) return;
     out.indented(() => {

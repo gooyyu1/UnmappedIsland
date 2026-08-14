@@ -1,0 +1,243 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { YamlLoadError } from '../../src/loader/YamlLoadError';
+import { WorldObject } from '../../src/domain/runtime/WorldObject';
+import { WorldSession } from '../../src/domain/runtime/WorldSession';
+
+/**
+ * passivesの中のtransfer（GameElementDefinition.md 8.4節）。activeと同じ1つの動詞が、置き場所だけで
+ * 「一度きり」から「tick毎」に変わる。
+ *
+ * 寄与として登録できない（2つのプロパティを同時に動かすため）ので、宣言元のtickで走る。ここで見るのは
+ * その走り方——在庫の分だけ動くこと、同じtickで連鎖しないこと、二重に動かないこと。
+ */
+describe('passivesのtransfer', () => {
+  let nextInstanceId: number;
+  let session: WorldSession;
+
+  beforeEach(() => {
+    nextInstanceId = 1;
+  });
+
+  function load(yaml: string): WorldCodex {
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+  }
+
+  function spawn(codex: WorldCodex, objectName: string): WorldObject {
+    session = new WorldSession(codex);
+    const def = codex.objects.get(codex.objectNames.getId(objectName));
+    return new WorldObject(nextInstanceId++, def, session);
+  }
+
+  /** 胃→腸→蓄えの3段（消化の骨格）。段ごとのレートと換算率だけを変えて使い回す。 */
+  const DIGESTION = `
+object_defs:
+  body:
+    props:
+      stomach:
+        value: 10
+        range: {min: 0, max: 32}
+      digesting:
+        value: 0
+        range: {min: 0, max: 64}
+      body_fat:
+        value: 0
+        range: {min: 0, max: 1000}
+    passives:
+      - transfer: {from_prop: stomach, to_prop: digesting, amount: 1}
+      - transfer: {from_prop: digesting, to_prop: body_fat, amount: 1}
+`;
+
+  function valuesOf(instance: WorldObject, codex: WorldCodex): readonly number[] {
+    return ['stomach', 'digesting', 'body_fat'].map((name) =>
+      instance.getNumber(codex.propertyNames.getId(name)),
+    );
+  }
+
+  it('tick毎に、在庫の分だけ移す', () => {
+    const codex = load(`
+object_defs:
+  body:
+    props:
+      stomach: {value: 2, range: {min: 0, max: 32}}
+      digesting: {value: 0, range: {min: 0, max: 64}}
+    passives:
+      - transfer: {from_prop: stomach, to_prop: digesting, amount: 1}
+`);
+    const instance = spawn(codex, 'body');
+    const stomachId = codex.propertyNames.getId('stomach');
+    const digestingId = codex.propertyNames.getId('digesting');
+
+    instance.tick(session);
+    expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([1, 1]);
+
+    instance.tick(session);
+    expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([0, 2]);
+
+    // 出せる量が無くなれば止まる（出す側がrange.minを割ることはない）。
+    instance.tick(session);
+    expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([0, 2]);
+  });
+
+  it('並べた輸送は同じtickで連鎖せず、1 tickにつき1段ずつ進む', () => {
+    // 連鎖すると、食べた物がその場で蓄えになってしまい、途中の段（腸）が常に空になる。
+    const codex = load(DIGESTION);
+    const instance = spawn(codex, 'body');
+
+    instance.tick(session);
+    expect(valuesOf(instance, codex), '1 tick目は胃から腸へ動くだけ').toEqual([9, 1, 0]);
+
+    instance.tick(session);
+    expect(valuesOf(instance, codex), '腸から蓄えへ動くのは次のtick').toEqual([8, 1, 1]);
+
+    instance.tick(session);
+    expect(valuesOf(instance, codex)).toEqual([7, 1, 2]);
+  });
+
+  it('同じ値から出す輸送が並んでも、在庫を二重には動かさない', () => {
+    const codex = load(`
+object_defs:
+  body:
+    props:
+      stomach: {value: 1, range: {min: 0, max: 32}}
+      digesting: {value: 0, range: {min: 0, max: 64}}
+      body_fat: {value: 0, range: {min: 0, max: 1000}}
+    passives:
+      - transfer: {from_prop: stomach, to_prop: digesting, amount: 1}
+      - transfer: {from_prop: stomach, to_prop: body_fat, amount: 1}
+`);
+    const instance = spawn(codex, 'body');
+
+    instance.tick(session);
+
+    expect(valuesOf(instance, codex), '残り1は先に宣言した輸送が持っていく').toEqual([0, 1, 0]);
+  });
+
+  it('to_amountが吸収率になる（出した量と受け取る量が違ってよい）', () => {
+    const codex = load(`
+object_defs:
+  body:
+    props:
+      digesting: {value: 10, range: {min: 0, max: 64}}
+      body_fat: {value: 0, range: {min: 0, max: 1000}}
+    passives:
+      - transfer: {from_prop: digesting, to_prop: body_fat, amount: 2, to_amount: 3}
+`);
+    const instance = spawn(codex, 'body');
+
+    instance.tick(session);
+
+    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(8);
+    expect(instance.getNumber(codex.propertyNames.getId('body_fat'))).toBe(3);
+  });
+
+  it('受け取る側が満杯なら、出す側に残る', () => {
+    const codex = load(`
+object_defs:
+  body:
+    props:
+      stomach: {value: 10, range: {min: 0, max: 32}}
+      digesting: {value: 4, range: {min: 0, max: 5}}
+    passives:
+      - transfer: {from_prop: stomach, to_prop: digesting, amount: 3}
+`);
+    const instance = spawn(codex, 'body');
+
+    instance.tick(session);
+
+    expect(instance.getNumber(codex.propertyNames.getId('stomach')), '入る1だけが動く').toBe(9);
+    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(5);
+  });
+
+  it('conditionsのゲートが閉じている間は動かない', () => {
+    const codex = load(`
+object_defs:
+  body:
+    props:
+      stomach: {value: 10, range: {min: 0, max: 32}}
+      digesting: {value: 0, range: {min: 0, max: 64}}
+      nausea: {value: 1, range: {min: 0, max: 1}}
+    passives:
+      - conditions: [{prop: nausea, lte: 0}]
+        transfer: {from_prop: stomach, to_prop: digesting, amount: 1}
+`);
+    const instance = spawn(codex, 'body');
+    const nauseaId = codex.propertyNames.getId('nausea');
+
+    instance.tick(session);
+    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(0);
+
+    instance.setNumber(nauseaId, 0, session);
+    instance.tick(session);
+    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(1);
+  });
+
+  it('linked_addは、実際に動いた量に比例して効く', () => {
+    const codex = load(`
+object_defs:
+  body:
+    props:
+      stomach: {value: 1, range: {min: 0, max: 32}}
+      digesting: {value: 0, range: {min: 0, max: 64}}
+      warmth: {value: 0, range: {min: 0, max: 100}}
+    passives:
+      - transfer:
+          from_prop: stomach
+          to_prop: digesting
+          amount: 2
+          linked_add:
+            self:
+              warmth: 4
+`);
+    const instance = spawn(codex, 'body');
+
+    instance.tick(session);
+
+    expect(instance.getNumber(codex.propertyNames.getId('stomach'))).toBe(0);
+    expect(instance.getNumber(codex.propertyNames.getId('warmth')), '2のうち1しか動かないので半分').toBe(2);
+  });
+
+  it('親のプロパティへも運べる', () => {
+    const codex = load(`
+object_defs:
+  vessel:
+    props:
+      water: {value: 0, range: {min: 0, max: 100}}
+    slots:
+      contents:
+        cell: {accept: {tag: leaky}}
+  drip:
+    tags: [leaky]
+    props:
+      water: {value: 5, range: {min: 0, max: 100}}
+    passives:
+      - transfer: {from_prop: water, to_object: parent, to_prop: water, amount: 2}
+`);
+    const vessel = spawn(codex, 'vessel');
+    const drip = new WorldObject(
+      nextInstanceId++,
+      codex.objects.get(codex.objectNames.getId('drip')),
+      session,
+    );
+    expect(drip.moveToSlot(vessel, codex.slotNames.getId('contents'))).toBeUndefined();
+
+    vessel.tick(session);
+
+    const waterId = codex.propertyNames.getId('water');
+    expect([drip.getNumber(waterId), vessel.getNumber(waterId)]).toEqual([3, 2]);
+  });
+
+  it('対象にactorは書けない（持続的な関係に紐づかないため）', () => {
+    expect(() =>
+      load(`
+object_defs:
+  body:
+    props:
+      stomach: {value: 1, range: {min: 0, max: 32}}
+    passives:
+      - transfer: {from_prop: stomach, to_object: actor, to_prop: satiety, amount: 1}
+`),
+    ).toThrow(YamlLoadError);
+  });
+});

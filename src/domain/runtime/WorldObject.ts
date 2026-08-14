@@ -764,6 +764,8 @@ export class WorldObject {
    */
   tick(session: WorldSession): void {
     for (const property of this.properties) property.tick(session);
+    // 輸送は、この物のプロパティが積分され切ってから走らせる（8.4節）。
+    this.def.passives.applyTickTransfers(this, session);
 
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) child.tick(session);
