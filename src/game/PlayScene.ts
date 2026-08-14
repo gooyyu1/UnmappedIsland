@@ -18,6 +18,7 @@ import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type {
+  CardAction,
   CardCombination,
   CardPlace,
   CardPutIn,
@@ -107,6 +108,21 @@ const ICON_BUTTON_GLYPH = 58;
  * この速さで時間が経ち切るまで結果を見せない。
  */
 const REAL_MS_PER_GAME_MINUTE = 500 / 15;
+
+/**
+ * 1回の経過に使う実時間の上限（CardInteraction.md 7節）。**これを超える長さの行動は、この時間に
+ * 収まるよう早送りする**——半日眠るのを等速で見せると十数秒待たされ、待つこと自体が休息の値段に
+ * なってしまう。刻み方（tick境界で一拍置く）は変わらず、目盛りの間隔だけが詰まる。
+ *
+ * 上限はこれまでで最も長い行動（90分の「編む」）の実時間に合わせてあるので、そこまでの行動の
+ * 見え方は変わらない。
+ */
+const REAL_MS_MAX = 90 * REAL_MS_PER_GAME_MINUTE;
+
+/** minutes 分のゲーム内時間を見せるのにかける実時間。 */
+function realMsFor(minutes: number): number {
+  return Math.min(minutes * REAL_MS_PER_GAME_MINUTE, REAL_MS_MAX);
+}
 
 /** 経過分から日付・時刻を組み立てるための1日の長さ。 */
 const MINUTES_PER_DAY = 24 * 60;
@@ -1008,6 +1024,23 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
+   * 日時を押すと開く、キャラクタ自身の子ウィンドウ（Windows.md 4節）。休息のアクション
+   * （Characters.md 休息節）が並ぶ。**カードのウィンドウと同じ経路**——映しているのは自分の札で、
+   * ボタンはそのオブジェクトが宣言しているアクションそのもの。
+   *
+   * 中身のスロットは渡さない。キャラクタのどのスロットも「キャラクタと言えばこれ」ではないため
+   * （装備・怪我はそれぞれのボタンから開く、Windows.md 3節）。
+   */
+  private openCharacterWindow(): void {
+    this.childWindowCard = undefined;
+    this.openChildWindow(
+      { card: this.portraitCard(), description: this.view.characterDescription },
+      this.actionButtons(this.view.characterActions, this.view.characterName),
+      undefined,
+    );
+  }
+
+  /**
    * キャラクタ本人を映す札の中身。ポートレイトと、装備・怪我の子ウィンドウの見出しが同じ姿になる
    * ようにここへ寄せる（名乗っている名前で見せる点だけが、選択画面の札と違う）。
    */
@@ -1183,7 +1216,15 @@ export class PlayScene extends ResponsiveScene {
 
   /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */
   private windowActions(card: ObjectCardStack): ObjectWindowAction[] {
-    return card.actions.map((action) => ({
+    return this.actionButtons(card.actions, card.name);
+  }
+
+  /**
+   * アクションを子ウィンドウのボタンの形へ直す。ownerは、エラー報告に残す「誰のアクションか」
+   * （errorReport参照）。カードのものもキャラクタ自身のものも同じ経路を通る。
+   */
+  private actionButtons(actions: readonly CardAction[], owner: string): ObjectWindowAction[] {
+    return actions.map((action) => ({
       label: action.name,
       description: action.description,
       minutes: action.minutes,
@@ -1191,7 +1232,7 @@ export class PlayScene extends ResponsiveScene {
       reason: action.reason,
       onTap: () => {
         this.closeChildWindow();
-        this.applyToWorld(`アクション: ${action.name}（${card.name}）`, action.execute);
+        this.applyToWorld(`アクション: ${action.name}（${owner}）`, action.execute);
       },
     }));
   }
@@ -1355,8 +1396,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * fromMinutesからtoMinutesまで、ゲーム内時間の経過をREAL_MS_PER_GAME_MINUTEの速さで時計と
-   * ドーナツグラフへ映し、経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
+   * fromMinutesからtoMinutesまで、ゲーム内時間の経過を実時間（realMsFor）で時計とドーナツグラフへ
+   * 映し、経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
    *
    * 時計もドーナツグラフもtick境界で刻む（TickProgress参照）。時計はグラフが目盛りへ届いた瞬間に
    * その時刻へ飛ぶので、両者が食い違って見えない。recordedの控えも同じ刻みで見せる——控えた時刻は
@@ -1396,7 +1437,7 @@ export class PlayScene extends ResponsiveScene {
     this.tweens.add({
       targets: clock,
       minutes: toMinutes,
-      duration: minutes * REAL_MS_PER_GAME_MINUTE,
+      duration: realMsFor(minutes),
       ease: 'Linear',
       onUpdate: () => {
         const elapsed = clock.minutes - fromMinutes;
@@ -1521,7 +1562,7 @@ export class PlayScene extends ResponsiveScene {
     const moved = this.gameSession.player.location?.instance !== locationBefore;
     // 移動先・見つかった道の行き先の絵のロードを、経過を見せている間（暗転中）に始める。
     this.requestLocationArt();
-    const elapsedMs = (this.gameSession.world.totalMinutes - startedAt) * REAL_MS_PER_GAME_MINUTE;
+    const elapsedMs = realMsFor(this.gameSession.world.totalMinutes - startedAt);
     const curtain = moved ? new Curtain(this, this.layout.fieldArea) : undefined;
     // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
     curtain?.darken(Math.min(DARKEN_MS, elapsedMs));
@@ -2157,6 +2198,7 @@ export class PlayScene extends ResponsiveScene {
       elapsedDays: this.view.elapsedDays,
       hour: this.view.hour,
       minute: this.view.minute,
+      onTapTime: this.whileIdle(() => this.openCharacterWindow()),
     });
   }
 

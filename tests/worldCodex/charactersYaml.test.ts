@@ -56,6 +56,43 @@ function stand(character: string): { player: PlayerCharacter; session: WorldSess
   return { player: new PlayerCharacter(instance, codex), session };
 }
 
+/** 休息（docs/world/Characters.md 休息節）の4つ。長さの短い順。 */
+const RESTS = [
+  ['wait', 15],
+  ['rest', 60],
+  ['nap', 180],
+  ['sleep', 360],
+] as const;
+
+/**
+ * 休息を1回取ったときの、実際に戻った量。眠っている間も覚醒度は減り続けるので、覚醒度のほうは
+ * 経過ぶんを差し引いた実質の回復になる。
+ *
+ * 頭打ちに掛かると回復量そのものを測れないため、体力は空から、覚醒度は経過ぶん（1/tick）だけ
+ * 残した位置から始める。この位置なら下限でも上限でも切られない。
+ */
+function takeRest(
+  character: string,
+  actionName: string,
+): { minutes: number; stamina: number; wakefulness: number } {
+  const { player, session } = stand(character);
+  const staminaId = codex.propertyNames.getId('stamina');
+  const wakefulnessId = codex.propertyNames.getId('wakefulness');
+  const minutes = player.instance.actionMinutes(actionName, player.instance);
+  const spent = minutes / 15;
+
+  player.instance.setNumber(staminaId, 0, session);
+  player.instance.setNumber(wakefulnessId, spent, session);
+
+  expect(player.instance.tryExecuteAction(actionName, player.instance, session)).toBe(true);
+
+  return {
+    minutes,
+    stamina: player.instance.getNumber(staminaId),
+    wakefulness: player.instance.getNumber(wakefulnessId) - spent,
+  };
+}
+
 /**
  * characters/ の全キャラクタが満たすべき契約（docs/world/Characters.md）。数値はキャラクタごとに
  * 違ってよいが、定義の欠落と、最大値としきい値の食い違いは許さない。検査対象はcharacterタグで引くので、
@@ -330,6 +367,45 @@ describe('プレイヤーキャラクタの定義', () => {
 
       expect(player.isDead, '下限を割った時点で世界から外れる').toBe(true);
       expect(player.causeOfDeath).toBe(stageName);
+    });
+
+    it.each(RESTS)('休息「%s」を持ち、%i分かかる', (actionName, minutes) => {
+      const { player } = stand(character);
+
+      expect(player.instance.actionMinutes(actionName, player.instance)).toBe(minutes);
+    });
+
+    it('眠る休息だけが眠気を戻す', () => {
+      // 待機・休憩は起きたままなので、その間ぶんだけ覚醒度は減る（回復させるのは体力だけ）。
+      expect(takeRest(character, 'wait').wakefulness).toBe(-1);
+      expect(takeRest(character, 'rest').wakefulness).toBe(-4);
+      expect(takeRest(character, 'nap').wakefulness).toBeGreaterThan(0);
+      expect(takeRest(character, 'sleep').wakefulness).toBeGreaterThan(0);
+    });
+
+    it('長い休息ほど、1時間あたりに戻る体力が多い', () => {
+      // 長さの差を効率の差として持たせている（Characters.md 休息節）。ここが単調でなくなると、
+      // 細切れに休むほうが得になり、まとめて休む意味が消える。
+      const perHour = RESTS.map(([actionName]) => {
+        const rest = takeRest(character, actionName);
+        return rest.stamina / (rest.minutes / 60);
+      });
+
+      for (let i = 1; i < perHour.length; i++) expect(perHour[i]).toBeGreaterThan(perHour[i - 1]);
+    });
+
+    it('同じ6時間なら、仮眠2回より睡眠1回のほうが多く戻る', () => {
+      const nap = takeRest(character, 'nap');
+      const sleep = takeRest(character, 'sleep');
+
+      expect(nap.minutes * 2).toBe(sleep.minutes);
+      expect(nap.stamina * 2, '体力').toBeLessThan(sleep.stamina);
+      expect(nap.wakefulness * 2, '眠気').toBeLessThan(sleep.wakefulness);
+    });
+
+    it('睡眠1回では、覚醒度は満タンに届かない', () => {
+      // 6時間眠って18時間ぶん。1日を回すだけでほぼ使い切るので、溜まった眠気は一晩では返らない。
+      expect(takeRest(character, 'sleep').wakefulness).toBeLessThan(maxOf(character, 'wakefulness'));
     });
 
     it('絵ができるまでの代替アイコンを持つ', () => {

@@ -151,6 +151,18 @@ object_texts:
       collect_rain:
         display_name: 雨を貯める
         description: 空のまま置いて、降っている雨を受ける。降り続くかぎり、雨の強さのぶんだけ溜まっていく。
+      wait:
+        display_name: 待機
+        description: 手を止めて時が過ぎるのを待つ。息が整うぶんだけ体力が戻る。
+      rest:
+        display_name: 休憩
+        description: 腰を下ろして休む。まとめて休むほど、同じ時間でも体力の戻りは大きい。
+      nap:
+        display_name: 仮眠
+        description: 短く眠る。体力に加えて眠気も引くが、通しで眠るほどには戻らない。
+      sleep:
+        display_name: 睡眠
+        description: 通しで眠る。最も効率よく体力と眠気が戻るが、それでも一晩では眠気は戻り切らない。
     combinations:
       pour_in:
         display_name: 注ぎ移す

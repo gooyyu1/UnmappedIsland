@@ -18,6 +18,8 @@ export interface WeatherPanelContent {
   readonly elapsedDays: number;
   readonly hour: number;
   readonly minute: number;
+  /** 日時を押したときに開くもの（Windows.md 4節の、キャラクタ自身の子ウィンドウ）。 */
+  readonly onTapTime?: () => void;
 }
 
 /**
@@ -53,6 +55,7 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
       content.elapsedDays,
       content.hour,
       content.minute,
+      content.onTapTime,
     );
     // 横型は日時が窓の幅をほぼ使い切るので、左右の余りを分けて中央へ寄せる。
     if (metrics.isLandscape) this.calendar.x = panel.x + (panel.width - this.calendar.contentWidth) / 2;
