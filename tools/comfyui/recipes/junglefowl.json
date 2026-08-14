@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/junglefowl.png を作り直すためのレシピ。build.py が読む。",
+    "くくり罠で捕れるヤケイ（public/world-codex/animals.yaml）。",
+    "",
+    "2段構えの理由と作り方は recipes/monkey.json と同じ。",
+    "",
+    "枠は正方形（1024x1024）。尾が体の後ろへ長く伸びるので、縦長の枠だと尾が右端から出る。",
+    "",
+    "**真横ではなく、顔をこちらへ向けた角度を採る。** 真横の立ち姿は図鑑の標本のようになる。",
+    "",
+    "1kgの鳥だが、尾まで入れると場所を取るので400。サルと同じ段。"
+  ],
+  "output": "src/assets/objects/junglefowl.png",
+  "prompts": "objects.json",
+  "prompt": "junglefowl",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 1024,
+  "height": 1024,
+  "seed": 6100,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same wild rooster in the same standing pose at the same angle with its head turned towards the viewer, the same size and the same place, with its whole tail complete to the very tip, and paint it with soft brush strokes and gentle natural shading instead of photographic feather detail. Golden orange hackle feathers over the neck and shoulders, a dark blue black body, blackish green sickle tail feathers, a bright red comb and red wattles, slate grey legs, matte feathers, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the bird in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Remove any writing, marks or smudges on the bird and on the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

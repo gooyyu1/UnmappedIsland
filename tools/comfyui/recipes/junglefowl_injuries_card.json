@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "src/assets/backgrounds/junglefowl_injuries_card.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "怪我のカードの地に敷くヤケイの羽（docs/ui/CardView.md 7 節）。作り方はサルの毛皮",
+    "（recipes/monkey_injuries_card.json）と同じで、素材が毛から羽に変わっただけ。",
+    "",
+    "**羽を小さく揃えるのがすべて。** 生成は翼の風切羽の束を描くので、羽1枚が上に載る傷と同じ",
+    "くらいの大きさになり、縮尺が合わない（毛皮のうねりとまったく同じ失敗）。爪ほどの胸羽だと",
+    "本文で言い、残った流れと濃い影の隙間をeditで均す。",
+    "",
+    "**色は明るいほうを採る。** ヤケイの胴は黒に近いが、地が暗いと上に載る傷が沈む。"
+  ],
+  "output": "src/assets/backgrounds/junglefowl_injuries_card.png",
+  "prompts": "card_backgrounds.json",
+  "prompt": "junglefowl_injuries_card",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 6707,
+  "width": 832,
+  "height": 1280,
+  "edit": {
+    "prompt": "Repaint this plumage so that it becomes a flat even patch of small body feathers, like the feathers on a bird's breast. Make the feathers the same small size everywhere and lay them in even overlapping rows across the whole picture, removing the large sweeping diagonal flow, the deep dark gaps and the pale streaks completely, but keep it clearly feathers and not fabric: the shaft and the fine barbs of each little feather are still visible, with gentle natural variation in tone so that some patches are a little darker and some a little lighter. Keep the same warm golden brown and tan colours as the original picture, the same warmth and the same soft even lighting. Matte feathers, no shine, no highlights. No bird, no head, no wing, no outline, no background, no text.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "card",
+    "mode": "none"
+  }
+}

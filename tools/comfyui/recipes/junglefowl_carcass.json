@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "src/assets/objects/junglefowl_carcass.png を作り直すためのレシピ。build.py が読む。",
+    "罠に掛かって死んだヤケイ（public/world-codex/animals.yaml）。",
+    "",
+    "作り方と、傷も血も描かせない理由は recipes/monkey_carcass.json と同じ。",
+    "",
+    "**姿勢を変える編集はseedで通ったり通らなかったりする。** seed 1 では立ったままの雄の足元へ",
+    "もう1羽の頭が生えたキメラになった。「立っていない」「体を四半回転させて横倒しにする」と",
+    "本文で言ったうえで、通るseedを選ぶ。",
+    "",
+    "大きさは junglefowl.json と同じ400。"
+  ],
+  "output": "src/assets/objects/junglefowl_carcass.png",
+  "edit": {
+    "source": "junglefowl.json",
+    "prompt": "The bird is dead and is not standing any more. Show the same wild rooster lying on its side on the ground, its whole body turned a quarter turn over so that one flank rests flat on the ground: the head lies on the ground with the beak pointing forwards and the eye closed, the neck is slack and stretched out, one wing is folded against the body and the other is loose, both legs stick out sideways from the body, and the long tail feathers trail across the ground behind it. There is only one bird in the picture. Keep the same golden orange hackles, dark blue black body, blackish green tail feathers, red comb and slate grey legs, the same soft hand painted illustration style with gentle natural shading, the same flat even lighting, and the same plain empty white page with a wide white margin all around it and one soft grey shadow on the ground beneath it. No blood, no wounds, nothing else in the image. No text, no letters, no numbers, no signature.",
+    "seed": 2
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

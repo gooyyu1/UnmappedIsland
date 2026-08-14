@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "src/assets/objects/snare.png を作り直すためのレシピ。build.py が読む。",
+    "植物繊維の紐で作るくくり罠（public/world-codex/traps.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: snare）。** 生成に頼むと紐の輪だけが出て、杭が付かない",
+    "（8枚とも）。輪だけでは紐（cord）・縄（rope）のカードと見分けが付かないので、",
+    "輪・結び目・杭までを layout_sketch.py で置いてからQwenに描かせる。",
+    "",
+    "**輪の内側は埋めない（keepHoles）。** 囲まれているのは物の内側ではなく紙で、埋めると不透明な",
+    "白い塊が輪に嵌まる。紐・縄と同じ扱い（card_art.py の separate 参照）。",
+    "",
+    "段は400。輪を開いて置くので場所を取る（1200ml）。"
+  ],
+  "output": "src/assets/objects/snare.png",
+  "sketch": "snare",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a snare of twisted plant fibre cord lying on the ground, an open noose loop of cord lying flat and round, a knot where the loop is formed, and the free end of the cord running out from that knot to a short pointed wooden peg lying beside it, the cord lashed round the peg in three turns. Paint the cord as rough twisted plant fibre, warm tan and mid brown, its strands visible. Paint the peg as a short piece of dry branch with rough brown bark and a whittled point. Everything is clearly darker than the white page. There is no metal, no wire, no chain and no animal. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow beneath the cord and the peg. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "keepHoles": true,
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
