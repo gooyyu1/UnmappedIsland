@@ -368,8 +368,8 @@ object_defs:
             spawn: {object: rat_carcass}
             signal: killed
 
-  # ヤケイの死体。1000gの内訳: 生肉500g。羽と骨は使い道がまだ無いのでカードにしない。値を変える
-  # ときはこの内訳を崩さないこと（monkey_carcassと同じ規約）。
+  # ヤケイの死体。1000gの内訳: 生肉500g + 羽40g = 540g。残る460gは骨と内臓・血で、使い道が無いので
+  # カードにしない。値を変えるときはこの内訳を崩さないこと（monkey_carcassと同じ規約）。
   #
   # **鶏肉も獣肉も同じ生肉になる**（HuntingSystem.md 1.5節）。栄養と味の違いが実際に効くように
   # なるまでは、獲物の種類で肉を分けない——分けると、それを使う側（料理）が獲物の数だけ分岐する。
@@ -383,7 +383,9 @@ object_defs:
         with: cutting_tool
         duration: 20
         destroy: self
-        spawn: {object: raw_meat}
+        spawn:
+          - {object: raw_meat}
+          - {object: feather}
 
   # ネズミの死体。**解体しない**——80gの体から肉の塊は取れないので、丸ごと火にかけて、骨から
   # こそぎ落とすように食べる（roasted_rat）。
@@ -426,6 +428,15 @@ object_defs:
         # 食べ終わって残る骨。actorの手が塞がっていれば足元へ落ちる（9.4節のフォールバック）。
         spawn: {object: small_bone, into: actor}
         destroy: self
+
+  # 羽。鳥1羽ぶんをまとめた1枚。**使い道はまだ無い**が、獣骨（animal_bone）と同じく素材として
+  # 溜まる——飾り・矢羽・火口・詰め物のいずれへ延ばすかは docs/world/Animals.md 10節。
+  feather:
+    tags: [item]
+    props:
+      weight: {value: 40}
+      # ばらけた羽は詰めても縮まないので、嵩そのままで見る（plant_fiberと同じ扱い）。
+      volume: {value: 1200}
 
   # 小さな骨。小動物1匹ぶんの骨で、獣骨（animal_bone）のように道具の頭部にはできないが、
   # 削れば針になる。

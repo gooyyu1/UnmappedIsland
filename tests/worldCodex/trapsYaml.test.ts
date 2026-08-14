@@ -226,6 +226,21 @@ describe('traps.yamlのくくり罠', () => {
     expect(prey.parent, '中身は道連れにならず土地へこぼれる').toBe(grassland);
   });
 
+  it('ヤケイを解体すると、肉と羽に分かれる', () => {
+    // 鶏肉も獣肉も同じ生肉になる（HuntingSystem.md 1.5節）。羽は使い道がまだ無いが、素材として
+    // 溜まる（docs/world/Animals.md 10節）。
+    open(CATCHES_FOWL);
+    const prey = tickUntilCaught();
+    const carcass = session.spawn(codex.objectNames.getId('junglefowl_carcass'));
+    expect(carcass.moveToSlot(grassland, codex.slotNames.getId('items'))).toBeUndefined();
+    prey.destroy();
+
+    const knife = spawnInto('sharp_stone', player, 'hand');
+    expect(carcass.tryExecuteCombination(knife, player, 'butcher', session)).toBe(true);
+
+    expect(itemsOnGround()).toEqual(['snare', 'raw_meat', 'feather']);
+  });
+
   it('ネズミは解体せず、丸焼きにして食べると小さな骨が残る', () => {
     // 80gの体から肉の塊は取れないので、生肉を刻まずに丸ごと焼く（docs/world/Animals.md 3節）。
     // 小さすぎる肉のカードを作ると、料理で生肉と競合する（HuntingSystem.md 1.5節）。

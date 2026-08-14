@@ -254,7 +254,7 @@ object_texts:
     combinations:
       butcher:
         display_name: 解体する
-        description: 羽をむしり、肉を外す。獣の肉と同じ1枚になる。
+        description: 羽をむしり、肉を外す。肉は獣のものと同じ1枚になる。
   rat:
     display_name: ネズミ
     description: どこにでも湧く小さな齧歯類。貯めた食料を狙って寄ってくる。
@@ -264,6 +264,9 @@ object_texts:
   roasted_rat:
     display_name: 丸焼きのネズミ
     description: 串に刺して火にかけたネズミ。骨からこそぎ落とすように食べる。ひと口で終わる。
+  feather:
+    display_name: 羽
+    description: 鳥1羽ぶんの羽をまとめた1枚。軽くて嵩ばる。
   small_bone:
     display_name: 小さな骨
     description: 小動物1匹ぶんの骨。道具の頭部にはならないが、削れば針になる。
