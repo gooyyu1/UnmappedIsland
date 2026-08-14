@@ -254,23 +254,22 @@ object_texts:
     combinations:
       butcher:
         display_name: 解体する
-        description: 羽をむしり、肉を外す。
+        description: 羽をむしり、肉を外し、細い骨を抜く。肉は獣のものと同じ1枚になる。
   rat:
     display_name: ネズミ
     description: どこにでも湧く小さな齧歯類。貯めた食料を狙って寄ってくる。
   rat_carcass:
     display_name: ネズミの死体
-    description: 仕留めたネズミ。取れる肉はひと口ぶんしかない。
-    combinations:
-      butcher:
-        display_name: 解体する
-        description: 皮を剥ぎ、ひと口ぶんの肉を外す。
-  small_raw_meat:
-    display_name: 小さな生肉
-    description: 小動物から取れたひと口ぶんの肉。火が無ければ生のまま食べるしかない。
-  roasted_small_meat:
-    display_name: 焼けた小さな肉
-    description: 火が通ったひと口ぶんの肉。すぐ焼けるが、すぐ焦げる。
+    description: 仕留めたネズミ。肉を外すには小さすぎるので、丸ごと火にかける。
+  roasted_rat:
+    display_name: 丸焼きのネズミ
+    description: 串に刺して火にかけたネズミ。骨からこそぎ落とすように食べる。ひと口で終わる。
+  feather:
+    display_name: 羽
+    description: 鳥1羽ぶんの羽をまとめた1枚。軽くて嵩ばる。
+  small_bone:
+    display_name: 小さな骨
+    description: 小動物から取れた細い骨。道具の頭部を支える太さはないが、割って削れば針になる。
   monkey_carcass:
     display_name: サルの死体
     description: 仕留めたサル。丸ごとでは重いが、刃物を当てれば肉と骨と皮に分けられる。

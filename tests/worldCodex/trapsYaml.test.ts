@@ -226,10 +226,45 @@ describe('traps.yamlのくくり罠', () => {
     expect(prey.parent, '中身は道連れにならず土地へこぼれる').toBe(grassland);
   });
 
+  it('ヤケイを解体すると、肉と羽に分かれる', () => {
+    // 鶏肉も獣肉も同じ生肉になり、骨も獲物の種類によらず出る（HuntingSystem.md 1.5節）。羽は
+    // 使い道がまだ無いが、素材として溜まる（docs/world/Animals.md 10節）。
+    open(CATCHES_FOWL);
+    const prey = tickUntilCaught();
+    const carcass = session.spawn(codex.objectNames.getId('junglefowl_carcass'));
+    expect(carcass.moveToSlot(grassland, codex.slotNames.getId('items'))).toBeUndefined();
+    prey.destroy();
+
+    const knife = spawnInto('sharp_stone', player, 'hand');
+    expect(carcass.tryExecuteCombination(knife, player, 'butcher', session)).toBe(true);
+
+    expect(itemsOnGround()).toEqual(['snare', 'raw_meat', 'feather', 'small_bone']);
+  });
+
+  it('ネズミは解体せず、丸焼きにして食べると小さな骨が残る', () => {
+    // 80gの体から肉の塊は取れないので、生肉を刻まずに丸ごと焼く（docs/world/Animals.md 3節）。
+    // 小さすぎる肉のカードを作ると、料理で生肉と競合する（HuntingSystem.md 1.5節）。
+    open(CATCHES_RAT);
+    const carcass = tickUntilCaught();
+    expect(carcass.def.name).toBe('rat_carcass');
+    expect(
+      carcass.def.combinations.map((combination) => combination.name),
+      '解体はできない',
+    ).toEqual([]);
+
+    // 罠だけを起点に、刃物を1つも経由せず縫製の材料へ届く
+    // （docs/world/SurvivalItems.md 1.2節の 繊維 → 罠 → 小動物 → 小骨 → 骨針）。
+    const roasted = spawnInto('roasted_rat', player, 'hand');
+    expect(roasted.tryExecuteAction('eat', player, session)).toBe(true);
+
+    const inHand = player.tryGetSlot(codex.slotNames.getId('hand'))!.contents.map((o) => o.def.name);
+    expect(inHand, '食べ終われば骨が残る').toContain('small_bone');
+  });
+
   it('取り出せば暴れるが、閉じ込め続ければ落ち着く', () => {
     // 拘束はmodify（実効値への可逆な寄与）なので、罠から出せば消える。ただし警戒の実体値は
     // 罠の中でも-1/tickで引き続けるので、**長く閉じ込めた個体は出しても暴れない**——これが
-    // 生かす罠から飼いならしへ続く道になる（5.2節）。
+    // 生かす罠から飼いならしへ続く道になる（TrapSystem.md 5.2節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
