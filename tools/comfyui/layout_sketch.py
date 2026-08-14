@@ -1,10 +1,11 @@
-"""炉の組み方の下絵を1枚描く。Qwen Image Edit へ渡して絵にしてもらうための構図の指示。
+"""物の配置だけを描いた下絵を1枚出す。Qwen Image Edit へ渡して絵にしてもらうための構図の指示。
 
-    python fire_lay.py --out lay.png --lay fan
+    python layout_sketch.py --out lay.png --lay fan
 
-**組み方は生成では作れない。** 炉らしさは枝と石の組み方そのもの（枝を放射状に広げ、手前へ折れ口を
-見せる／石の隙間から枝を差し込む）で決まるが、SDXLはこの配置を言葉から作れず、住居のティピー・
-薪棚・三角形の額縁にしかならなかった（recipes/campfire.json、recipes/three_stone_hearth.json）。
+**組み方そのものが物の正体である物は、生成では作れない。** 焚き火らしさは枝の組み方（放射状に広げ、
+手前へ折れ口を見せる）、三石のかまどは石の据え方、くくり罠は輪と杭の関係で決まるが、SDXLはこれらの
+配置を言葉から作れず、住居のティピー・薪棚・三角形の額縁・ただの紐の輪にしかならなかった
+（recipes/campfire.json、recipes/three_stone_hearth.json、recipes/snare.json）。
 形だけをここで描き、質感と塗りはQwenに任せる。
 
 見た目の作り込みは要らない——**Qwenへ渡るのは配置だけ**なので、丸みも岩肌も下絵では省く。
@@ -24,6 +25,8 @@ FACE_LINE = (120, 84, 50)
 OUTLINE = (48, 30, 18)
 STONE = (146, 146, 146)
 STONE_DARK = (104, 104, 104)
+CORD = (163, 124, 78)
+CORD_DARK = (120, 88, 52)
 
 
 def draw_branch(
@@ -113,7 +116,30 @@ def draw_three_stone(draw: ImageDraw.ImageDraw) -> None:
     draw_stone(draw, (800, 600), (330, 240))
 
 
-LAYS = {"fan": draw_fan, "three_stone": draw_three_stone}
+def draw_snare(draw: ImageDraw.ImageDraw) -> None:
+    """くくり罠。開いた輪と、紐の端を留める杭。
+
+    **輪と杭が離れていないと、ただの紐の輪になる。** 紐だけを頼むと coil（cord/rope の絵）と
+    見分けが付かない。地面に開いた輪と、そこから引かれた紐、その先の杭までを1枚に置く。
+    """
+    loop = (300, 470)
+    radius_x, radius_y = 250, 165
+    draw.ellipse(
+        [loop[0] - radius_x, loop[1] - radius_y, loop[0] + radius_x, loop[1] + radius_y],
+        outline=CORD,
+        width=26,
+    )
+    # 輪から杭へ引かれた紐。結び目のこぶを途中に置く。
+    draw.line([(loop[0] + radius_x - 10, loop[1] + 40), (880, 620)], fill=CORD, width=26)
+    draw.ellipse([520, 520, 580, 580], fill=CORD_DARK, outline=CORD_DARK)
+    # 杭。地面へ打ち込むので、先を尖らせて手前を太くする。
+    draw.line([(880, 620), (960, 300)], fill=BARK, width=54)
+    draw.polygon([(866, 630), (894, 640), (880, 700)], fill=BARK_DARK)
+    for offset in (-30, 0, 30):
+        draw.line([(866, 560 + offset), (940, 580 + offset)], fill=CORD, width=12)
+
+
+LAYS = {"fan": draw_fan, "snare": draw_snare, "three_stone": draw_three_stone}
 
 
 def main() -> None:

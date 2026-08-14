@@ -9,8 +9,8 @@
 カードの絵として（card_art.py）扱う。mark があれば、その後に絵文字の形を色替えして重ね
 （icon_mark.py）、tint があれば陰影を残したまま一部の色を寄せる（skin_tint.py）。
 edit を持つレシピは、生成の代わりに別レシピの生データを
-基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。fireLay を持つレシピは
-焚き火の組み方の下絵を描く（fire_lay.py）。stain を持つレシピは
+基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。sketch を持つレシピは
+物の配置だけを描いた下絵を出す（layout_sketch.py）。stain を持つレシピは
 生成も後処理もせず、乗算で載る染みの層を描くだけ（skin_tint.py --layer）。puff も同じく描くだけで、
 砂埃の粒を1枚出す（dust_puff.py）。
 
@@ -97,7 +97,7 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
     source を持たない edit は同じレシピの edit を外したもの——つまり自分の paint / 生成——を指す。
 
     paint を持つレシピは、生成の代わりに sky_art.py で下地を描く。glyph を持つレシピは絵文字を
-    白い紙へ描く（emoji_page.py）。fireLay を持つレシピは焚き火の組み方を描く（fire_lay.py）。
+    白い紙へ描く（emoji_page.py）。sketch を持つレシピは物の配置を描く（layout_sketch.py）。
     いずれも edit と組み合わせると、描いたものが Qwen の下絵になる。
     """
     edit = recipe.get("edit")
@@ -188,10 +188,10 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
         )
         return drawn
 
-    lay = recipe.get("fireLay")
-    if lay is not None:
-        drawn = raw_dir / f"{Path(recipe['output']).stem}_lay.png"
-        run("fire_lay.py", ["--out", str(drawn), "--lay", lay])
+    sketch = recipe.get("sketch")
+    if sketch is not None:
+        drawn = raw_dir / f"{Path(recipe['output']).stem}_sketch.png"
+        run("layout_sketch.py", ["--out", str(drawn), "--lay", sketch])
         return drawn
 
     paint = recipe.get("paint")

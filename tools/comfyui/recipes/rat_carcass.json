@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "src/assets/objects/rat_carcass.png を作り直すためのレシピ。build.py が読む。",
+    "罠に掛かって死んだネズミ（public/world-codex/animals.yaml）。",
+    "",
+    "作り方と、姿勢を変える編集の注意は recipes/junglefowl_carcass.json と同じ。",
+    "seed 1 では生きたまま描き直されただけだった。",
+    "",
+    "大きさは rat.json と同じ256。"
+  ],
+  "output": "src/assets/objects/rat_carcass.png",
+  "edit": {
+    "source": "rat.json",
+    "prompt": "The rat is dead and is not standing any more. Show the same rat lying on its side on the ground, its whole body turned a quarter turn over so that one flank rests flat on the ground: the head lies on the ground with the eye closed, all four legs stick out loosely sideways from the body, and the long bare tail trails across the ground behind it, complete to the very tip. There is only one rat in the picture. Keep the same coarse grey brown fur, paler belly and pale pink scaly tail, the same soft hand painted illustration style with gentle natural shading, the same flat even lighting, and the same plain empty white page with a wide white margin all around it and one soft grey shadow on the ground beneath it. No blood, no wounds, nothing else in the image. No text, no letters, no numbers, no signature.",
+    "seed": 2
+  },
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
