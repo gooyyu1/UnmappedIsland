@@ -170,6 +170,14 @@ export class WorldObject {
   }
 
   /**
+   * 名指しした1つのプロパティが、今の進み方であと何tickでrangeを超える（on_overflowが起きる）か。
+   * そのプロパティを持たない・今は進んでいない場合はundefined。
+   */
+  ticksUntilOverflow(globalPropertyId: number): number | undefined {
+    return this.tryGetProperty(globalPropertyId)?.ticksUntilOverflow();
+  }
+
+  /**
    * 自分が入っているスロットを、自分のかさ（7.3節のvolume）がどれだけ満たしているか（0〜1）。
    * どこにも入っていない、あるいはスロットが上限（capacity）を持たず割合を定義できない場合はundefined。
    *

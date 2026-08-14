@@ -161,6 +161,34 @@ export class PropertyValue {
   }
 
   /**
+   * 今tickこの値へ入る`add`の合計（8.4節）。0なら、この値は今のところ動かない。
+   *
+   * tickが足すのと同じ寄与を、足さずに数えたもの。**この場で結果を見に行かずに、これから何が
+   * 起きるかを言える唯一の手掛かり**で、値の出入り（WorldChange）には現れない。
+   */
+  changePerTick(): number {
+    let sum = 0;
+    for (const c of this.accumulateEffects) sum += c.activeAmount();
+    return sum;
+  }
+
+  /**
+   * 今の進み方が続いたとき、あと何tickでrange.maxを超える（on_overflowが起きる、6.3節）か。
+   * 進んでいない（合計が0以下）・rangeを持たない場合はundefined。
+   *
+   * 溢れは`> max`で起きるので、maxちょうどに乗ったtickではまだ起きない——**maxへ届く回ではなく、
+   * その次の回**が答えになる。
+   */
+  ticksUntilOverflow(): number | undefined {
+    const range = this.def.range;
+    if (range === undefined) return undefined;
+
+    const perTick = this.changePerTick();
+    if (perTick <= 0) return undefined;
+    return Math.max(1, Math.floor((range.max - this._number) / perTick) + 1);
+  }
+
+  /**
    * 今まさに指定した名前のstage（6.4節）に該当しているか（WhenOwnStageゲート専用、8節）。生の値ではなく
    * 実効値で判定する（modifyだけで決まる派生プロパティ自身のstagesも判定できるようにするため）。
    */

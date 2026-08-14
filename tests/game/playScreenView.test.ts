@@ -44,6 +44,19 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     return monkey;
   }
 
+  /** 現在地に炎を上げている焚き火を据え、その火の中へ生肉を1切れ入れる。 */
+  function placeCookingHearth(game: NewGameSession) {
+    const hearth = game.session.spawn(codex.objectNames.getId('campfire'));
+    expect(hearth.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    hearth.setNumber(codex.propertyNames.getId('fuel'), 20, game.session);
+    // 炎の段（20〜）。火の中の物のcooking_progressが3/tickで進む（FireSystem.md 2.3節）。
+    hearth.setNumber(codex.propertyNames.getId('heat'), 30, game.session);
+
+    const meat = game.session.spawn(codex.objectNames.getId('raw_meat'));
+    expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
+    return { hearth, meat };
+  }
+
   /** 現在地を探索率100%まで探索する。100%到達後も探索は続けられるため、回数で止める。 */
   function exploreToFull(game: NewGameSession): void {
     const location = game.player.location ?? game.startLocation;
@@ -480,6 +493,48 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(wound.moveToSlot(monkey, codex.slotNames.getId('injuries'))).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).cardsIn('items')[0].mark).toBe('🩸');
+  });
+
+  it('火にかけた物のカードは、変わるまでの残り時間と進み具合を出す', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const { hearth } = placeCookingHearth(game);
+
+    // 24 ÷ 3 = 8tickでmaxちょうどに乗り、溢れる（`> max`）のはその次のtick → 9tick × 15分。
+    expect(fromGameSession(game, codex, locale).cardsIn({ container: hearth })[0].cooking).toEqual({
+      ratio: 0,
+      minutes: 135,
+    });
+  });
+
+  it('火から出した物のカードには、加熱の覆いが出ない', () => {
+    // 出すかどうかは場所ではなく「今その値が進んでいるか」で決まる（CardView.md 15節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const { meat } = placeCookingHearth(game);
+    expect(meat.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).items[0].cooking).toBeUndefined();
+  });
+
+  it('火が消えれば、火にかけたままの物からも覆いが消える', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const { hearth } = placeCookingHearth(game);
+
+    hearth.setNumber(codex.propertyNames.getId('heat'), 0, game.session);
+
+    expect(fromGameSession(game, codex, locale).cardsIn({ container: hearth })[0].cooking).toBeUndefined();
+  });
+
+  it('炉のカードは、中で一番早く変わるものの残り時間を上げる', () => {
+    // 火にかけた物は炉を開くまで見えないので、開かずに焦げへ気付けるようにする（CardView.md 15節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const { hearth } = placeCookingHearth(game);
+    const rat = game.session.spawn(codex.objectNames.getId('rat_carcass'));
+    expect(rat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
+
+    const card = fromGameSession(game, codex, locale).fixtures.find((c) => c.objects[0] === hearth);
+
+    // ネズミは6 ÷ 3 = 2tick＋1で45分。生肉の135分より先に変わるので、こちらが上がる。
+    expect(card?.cooking?.minutes).toBe(45);
   });
 
   it('手当て済みの印は、負っている本人までは上がらない', () => {

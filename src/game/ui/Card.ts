@@ -11,6 +11,7 @@ import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import type { GaugeEnd } from '../../domain/defs/PropertyDef';
 import { noteOperation } from '../errorReport';
+import { minutesText } from './durationText';
 import { HoldRepeat } from './holdRepeat';
 import { onPressRelease } from './tap';
 
@@ -137,6 +138,23 @@ const CELL_OVERLAY_PLATE_ALPHA = 0.72;
 const IN_PROGRESS_VEIL_ALPHA = 0.42;
 
 /**
+ * 加熱されているカードにかぶせる覆いの色の濃さと、その上に出す残り時間の文字の大きさ・ふちの太さ、
+ * 進み具合のバーの寸法と間隔（u単位。CardView.md 15節）。
+ *
+ * **絵は隠れてよい。** 火にかかっている物は炉の中で見えないもので、そこで読むべきは姿ではなく
+ * 「あと何分で変わるか」だから。覆いはその数字を絵の濃淡から浮かせるためにも要る。
+ *
+ * 文字は名前（16u）よりずっと大きく取る。焦げるまでを測る数字なので、開かず流し見して読めなければ
+ * 意味がない。バーは桟のバー（12u）より太い——絵の上に1本だけ出るので、細さで格を下げる相手がいない。
+ */
+const COOKING_VEIL_ALPHA = 0.62;
+const COOKING_TEXT_SIZE = 30;
+const COOKING_TEXT_STROKE = 5;
+const COOKING_BAR_HEIGHT = 15;
+const COOKING_BAR_MARGIN = 18;
+const COOKING_BAR_GAP = 8;
+
+/**
  * 桟に積む状態バーの高さ・間隔と、絵とバーの間の余白（u単位）。
  *
  * どの種類も同じ寸法にする。**どれが主要情報かはカードごとに違う**——道具にとっての耐久度と
@@ -195,6 +213,18 @@ export interface CardGauge {
 
   /** 増えるほど悪い値か（GaugeDef.worsensUpward）。増えた分の帯をどちら向きに出すかが変わる。 */
   readonly worsensUpward: boolean;
+}
+
+/**
+ * 加熱が進んでいること（CardView.md 15節）。**進んでいる間だけ渡す**ので、持たないカードには
+ * 覆いも数字も出ない——火から出せば消え、火が消えても消える。
+ */
+export interface CardCooking {
+  /** 変わる（焼き上がる・焦げる）までの進み具合（0〜1）。 */
+  readonly ratio: number;
+
+  /** 変わるまでの残りのゲーム内時間（分）。 */
+  readonly minutes: number;
 }
 
 /** カード1枚の表示内容と操作。 */
@@ -275,6 +305,12 @@ export interface CardContent {
    * （CardView.md 10節 製作中オブジェクトのカード）。
    */
   readonly inProgress?: boolean;
+
+  /**
+   * 加熱が進んでいるか（CardView.md 15節）。**その札が映しているものの中で進んでいれば出す**ので、
+   * 焼かれている肉にも、それを抱えている炉にも同じ覆いが出る。
+   */
+  readonly cooking?: CardCooking;
 }
 
 /**
@@ -282,8 +318,9 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress } = content;
-  return { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress };
+  const { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress, cooking } =
+    content;
+  return { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress, cooking };
 }
 
 /**
@@ -345,6 +382,14 @@ export class Card extends Phaser.GameObjects.Container {
   /** 製作中オブジェクトにかぶせる青（CardContent.inProgress）。それ以外のカードでは隠れる。 */
   private readonly inProgressVeil: Phaser.GameObjects.Graphics;
 
+  /**
+   * 加熱されているカードにかぶせる覆いと、その上の残り時間・進み具合（CardContent.cooking）。
+   * 3つは常に揃って現れ、揃って消える（showCooking）。
+   */
+  private readonly cookingVeil: Phaser.GameObjects.Graphics;
+  private readonly cookingText: Phaser.GameObjects.Text;
+  private readonly cookingBar: ProgressBar;
+
   /** 今その器に出しているもの。同じなら作り直さないための控え（showArt・showEdge参照）。 */
   private shownArt: string | undefined;
   private shownIcon: string | undefined;
@@ -404,6 +449,8 @@ export class Card extends Phaser.GameObjects.Container {
     // 青は絵までを覆い、名前と状態のバーには掛けない。何が出来つつあるのかと、それが今どういう
     // 状態なのかは、覆いの下へ沈めずに読めるままにする。枠より先に置くので、覆いは窓の中だけに残る。
     this.inProgressVeil = createInProgressVeil(scene, metrics, width, height);
+    // 加熱の覆いも同じ層。窓からはみ出した分は、青と同じく枠が隠す。
+    this.cookingVeil = createCookingVeil(scene, metrics, width, height);
     // 枠は絵より後。**絵の上に枠が乗る**のがトレーディングカードの構造で、窓からはみ出した絵は
     // 枠が隠す（CardView.md 1節 カードの枠）。
     this.frame = scene.add.graphics();
@@ -415,6 +462,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.backgroundLayer,
       this.artLayer,
       this.multiplyLayer,
+      this.cookingVeil,
       this.inProgressVeil,
       this.frame,
       this.alertOutline,
@@ -475,6 +523,36 @@ export class Card extends Phaser.GameObjects.Container {
       .setStroke(cssColor(COLOR.cardFace), metrics.px(OVERLAY_STROKE));
     this.add(this.overlay);
 
+    // 加熱の残り時間と進み具合。覆いは絵の層に置くが、この2つは印・覆いと同じく最前面に置いて、
+    // 端の操作エリアやスタック数の下へ沈まないようにする。バーの左右は変わらないので、
+    // 縦の位置だけを差し替えのたびに決め直す（showCooking）。
+    const cookingSpan = windowSpan(metrics, width, height);
+    const cookingMargin = metrics.px(COOKING_BAR_MARGIN);
+    this.cookingBar = new ProgressBar(
+      scene,
+      metrics,
+      cookingSpan.x + cookingMargin,
+      0,
+      cookingSpan.width - cookingMargin * 2,
+      metrics.px(COOKING_BAR_HEIGHT),
+      0,
+      // 良し悪しを言わない1色（CardView.md 8.1節の両端がneutralなゲージと同じ）。焼き上がりへ
+      // 進んでいるのか焦げへ進んでいるのかは、進む先の型を見ないと決まらず、画面からは分からない。
+      { fillColor: () => COLOR.gaugeNeutral, steady: true },
+    );
+    this.add(this.cookingBar);
+    this.cookingText = scene.add
+      .text(0, 0, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(COOKING_TEXT_SIZE)}px`,
+        fontStyle: 'bold',
+        color: cssColor(COLOR.textOnDark),
+      })
+      .setOrigin(0.5)
+      // 覆いが暗いので、他の重ね文字とは白黒が逆になる（暗い縁で字形を残す）。
+      .setStroke(cssColor(COLOR.cardBorder), metrics.px(COOKING_TEXT_STROKE));
+    this.add(this.cookingText);
+
     this.applyContent(content, false);
     scene.add.existing(this);
   }
@@ -526,7 +604,46 @@ export class Card extends Phaser.GameObjects.Container {
     this.showEdge(content);
     this.showStackCount();
     this.showMark(content, rail);
+    this.showCooking(content.cooking, rail, showChange, content.midAction === true);
     this.inProgressVeil.setVisible(content.inProgress === true);
+  }
+
+  /**
+   * 加熱が進んでいることを、絵の上の覆いと、残り時間・進み具合で言う（CardView.md 15節）。
+   * 進んでいないカードでは3つとも消える。
+   *
+   * 残り時間とバーは窓の中央へ縦に積む。**桟の高さで窓の下端が動く**ので、置き場所は印（showMark）と
+   * 同じく差し替えのたびに決め直す。入り切らない文字は幅に合わせて縮める（showOverlayと同じ）。
+   */
+  private showCooking(
+    cooking: CardCooking | undefined,
+    rail: RailMetrics,
+    showChange: boolean,
+    hold: boolean,
+  ): void {
+    this.cookingVeil.setVisible(cooking !== undefined);
+    this.cookingText.setVisible(cooking !== undefined);
+    const wasVisible = this.cookingBar.visible;
+    this.cookingBar.setVisible(cooking !== undefined);
+    if (cooking === undefined) return;
+
+    const metrics = this.metrics;
+    const inner = windowRect(metrics, this.cardWidth, this.cardHeight, rail.height);
+    const gap = metrics.px(COOKING_BAR_GAP);
+    const barHeight = metrics.px(COOKING_BAR_HEIGHT);
+
+    this.cookingText.setText(minutesText(cooking.minutes)).setScale(1);
+    const room = inner.width - metrics.px(COOKING_BAR_MARGIN) * 2;
+    const scale = Math.min(1, room / Math.max(1, this.cookingText.width));
+    this.cookingText.setScale(scale);
+
+    const textHeight = this.cookingText.height * scale;
+    const top = inner.y + (inner.height - (textHeight + gap + barHeight)) / 2;
+    this.cookingText.setPosition(inner.x + inner.width / 2, top + textHeight / 2);
+    this.cookingBar.setY(top + textHeight + gap);
+    // 現れたばかりのバーに変化の帯を出すと、見えていなかった間の進みが今の変化として出てしまう。
+    if (showChange && wasVisible) this.cookingBar.setRatio(cooking.ratio, hold);
+    else this.cookingBar.resetRatio(cooking.ratio);
   }
 
   /**
@@ -1291,6 +1408,25 @@ function createInProgressVeil(
   drawBox(veil, paperRect(metrics, width, height), {
     fill: COLOR.cardInProgress,
     fillAlpha: IN_PROGRESS_VEIL_ALPHA,
+    radius: metrics.px(FRAME_RADIUS),
+  });
+  return veil.setVisible(false);
+}
+
+/**
+ * 加熱されているカードにかぶせる熾の色（COOKING_VEIL_ALPHA参照）。青写真の覆いと同じく紙いっぱいに
+ * 引き、窓からはみ出す分は枠が隠す。
+ */
+function createCookingVeil(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  width: number,
+  height: number,
+): Phaser.GameObjects.Graphics {
+  const veil = scene.add.graphics();
+  drawBox(veil, paperRect(metrics, width, height), {
+    fill: COLOR.cardCooking,
+    fillAlpha: COOKING_VEIL_ALPHA,
     radius: metrics.px(FRAME_RADIUS),
   });
   return veil.setVisible(false);
