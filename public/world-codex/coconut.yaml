@@ -125,10 +125,16 @@ object_defs:
           - {object: husked_coconut}
           - {object: coconut_husk}
 
-  # ヤシの実の皮。はぎ取った繊維の塊（縄・火口などへの利用は今後の課題）。
+  # ヤシの実の皮。はぎ取った繊維の塊。ほぐせば火口になり、塊のままなら燃料になる
+  # （docs/engine/FireSystem.md 3.2節）。縄（コイア）への利用は今後の課題。
   coconut_husk:
     tags: [item]
+    traits: [burnable, ignitable]
     props:
+      # よく燃える繊維で、火口としては最良の部類。
+      ignition_chance: {value: 100}
+      # 塊のままくべると、熾火を1時間ほど保てる。
+      fuel: {value: 2}
       # 実の各部で一番重いのは皮（丸ごとの4割強）。
       weight: {value: 600}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。

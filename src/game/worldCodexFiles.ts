@@ -16,6 +16,7 @@ export const WORLD_CODEX_FILES = [
   'containers.yaml',
   'core.yaml',
   'fiber.yaml',
+  'fire.yaml',
   'foods.yaml',
   'injuries.yaml',
   'liquid_containers.yaml',

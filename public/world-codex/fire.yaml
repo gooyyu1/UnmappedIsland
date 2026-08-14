@@ -1,0 +1,297 @@
+# 火を起こし、保ち、その熱を他の物へ渡す仕組み（docs/engine/FireSystem.md）。
+#
+# 炉は薪（fuel）と火力（heat）の2つの数を持つ。薪をくべれば火力が育ち、火力が高いほど薪を速く食って
+# 速く冷める。この2つが釣り合ったところで火力が落ち着くので、「薪の量が火の大きさを決める」は上限を
+# どこかへ書いた結果ではない（同2.2節）。
+#
+# 火が生きているかを表すフラグは持たない。火力が0より大きいことがそれで、一番下の段（ember）が
+# 種火——料理には使えないが、薪をくべれば育つ火力（同3節）。
+#
+# 着火は2段構え。火起こし具を火口へ重ねて火種を作り、火種を炉へ重ねて種火を立てる。火種は1tickで
+# 燃え尽きるので、火のある場所へ持ち歩くことはできない（同3.1節）。
+#
+# 焼く物・焼く石・火にかけた器はfireスロットへ入るが、薪は入らない。くべた薪は物として残らず、
+# 炉のfuelへ溶けて消える（同2.1節）。
+#
+# 加熱は炉が子のcooking_progressを進めるだけで、何分で何になるかは料理側の型が持つ（同7節）。
+# 生肉→焼けた肉→焦げた塊の鎖はanimals.yamlにある。
+
+traits:
+  # 炉へくべられる物。fuelは「くべると炉のfuelへ移る量」で、値は物ごとに違う。
+  burnable:
+    tags: [fuel]
+    props:
+      fuel: {}
+
+  # 火起こし具で火が付けられる物。摩擦で得られるのは米粒ほどの熾なので、受け止められるのは
+  # ほぐした繊維・綿状のものだけ（docs/engine/FireSystem.md 3.2節）。
+  ignitable:
+    tags: [tinder]
+    props:
+      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。
+      # 天気とスキルの段で動かすのは今後の課題（同3.1節）。
+      ignition_chance: {}
+    combinations:
+      # 火起こし具を重ねて火を移す。外した回も火口は失われる。
+      light:
+        with: fire_starter
+        duration: 30
+        pick:
+          - weight: {prop: ignition_chance}
+            destroy: self
+            spawn: {object: burning_tinder}
+          - weight: 40
+            destroy: self
+
+  # 炉。薪と火力を持ち、火にかけた物を子として加熱する。
+  #
+  # fuel/heatのrangeとfireスロットの枠は炉ごとに違うので、ここでは宣言しない。fuel_capacityは
+  # 満杯の炉へくべさせないための上限で、fuelのrange.maxと同じ値をその炉が2度書く（同11節の未決事項）。
+  hearth:
+    tags: [fixture, hearth]
+    # 火にかけている物のスロット（同1.1節）。押せば開き、重ねれば入る。
+    main_item_slot: fire
+    props:
+      fuel_capacity: {}
+      # くべた薪。バーで見せる想定の量（同3節）。段は火力の育ちを決める——薪が多いほど火は速く育ち、
+      # その炉の上限（heatのrange.max）まで上がる。薪が少なければ、上がりきる前に燃え尽きる。
+      fuel:
+        stages:
+          - {name: none}
+          # 薪が火を育てる。火が消えている炉は、薪を積んでも育たない。
+          - name: few
+            min: 1
+            passives:
+              - conditions: [{prop: heat, gt: 0}]
+                accumulate: {self: {heat: 2}}
+          - name: some
+            min: 10
+            passives:
+              - conditions: [{prop: heat, gt: 0}]
+                accumulate: {self: {heat: 6}}
+          - name: many
+            min: 40
+            passives:
+              - conditions: [{prop: heat, gt: 0}]
+                accumulate: {self: {heat: 16}}
+      # 火力。0が消えている状態で、段が加熱の速さ・薪の減り・薪が尽きた後の衰えを決める。
+      #
+      # **育ちと衰えは同時に効かない。** 育ちは薪がある間（fuelの段）、衰えは薪が尽きている間
+      # （fuelがnone）だけで、accumulateは登録順に値を書き換えながら適用されるため、同じtickで
+      # 正負が混ざると段の境目で打ち消し合って火が育たなくなる。
+      heat:
+        value: 0
+        stages:
+          - {name: out}
+          # 種火。料理はできない。衰える速さは炉ごとに違うので、各炉のpassivesが持つ。
+          - name: ember
+            min: 1
+            passives:
+              - accumulate: {self: {fuel: -0.1}}
+          - name: coals
+            min: 5
+            passives:
+              - accumulate:
+                  self: {fuel: -0.5}
+                  child: {cooking_progress: 1}
+              - conditions: [{prop: fuel, in_stage: none}]
+                accumulate: {self: {heat: -2}}
+          - name: flame
+            min: 20
+            passives:
+              - accumulate:
+                  self: {fuel: -1.5}
+                  child: {cooking_progress: 3}
+              - conditions: [{prop: fuel, in_stage: none}]
+                accumulate: {self: {heat: -6}}
+          - name: blaze
+            min: 60
+            passives:
+              - accumulate:
+                  self: {fuel: -4}
+                  child: {cooking_progress: 5}
+              - conditions: [{prop: fuel, in_stage: none}]
+                accumulate: {self: {heat: -6}}
+    passives:
+      # 雨。野ざらしの炉は火力を余分に削られる。屋根の下（sheltered）なら効かない
+      # （docs/engine/ContainerSystem.md 6節）。sheltered未実装の間はancestorが解決せず、
+      # 否定形の演算子（neq）で「分からないときは効かせる」側に倒している。
+      - conditions:
+          - {object: ancestor, prop: sheltered, neq: 1}
+          - {object: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+        accumulate: {self: {heat: -4}}
+    combinations:
+      # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
+      # transferの後にdestroyが走るので、移した分が失われることはない。
+      add_fuel:
+        with: fuel
+        duration: 1
+        conditions:
+          - {reason: hearth_full, prop: fuel, lt: {object: self, prop: fuel_capacity}}
+        transfer:
+          amount: 999
+          from_object: dragged
+          from_prop: fuel
+          to_prop: fuel
+        destroy: dragged
+      # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
+      ignite:
+        with: burning_tinder
+        conditions:
+          - {reason: no_fuel, prop: fuel, gt: 0}
+        destroy: dragged
+        set: {self: {heat: 1}}
+
+object_defs:
+  # きりもみ式の火起こし具。拾った木だけで作れるので、道具も紐も要らない
+  # （docs/world/SurvivalItems.md 1.1節）。使っても無くならないのでtoolタグを持つ。
+  fire_drill:
+    tags: [item, tool, fire_starter]
+    props:
+      weight: {value: 900}
+      volume: {value: 1200}
+    recipes:
+      # 解放条件はまだ置かない。火スキルのプロパティと、それを伸ばす経路が未実装のため
+      # （containers.yamlの編み籠と同じ）。
+      carved:
+        steps:
+          - requires:
+              - {object: twig, count: 1, consume: true}
+              - {object: thick_branch, count: 1, consume: true}
+            duration: 60
+
+  # 枯れ草。乾いた土地で拾える、道具の要らない唯一の火口。これが無いと火が石器の後ろへ回り、
+  # きりもみ式が道具を要求しないことで保証されている火スキルの立ち上がりが崩れる
+  # （docs/engine/FireSystem.md 3.2節）。
+  dry_grass:
+    tags: [item]
+    traits: [ignitable]
+    props:
+      weight: {value: 100}
+      # ふわりと束ねた枯れ草。詰めても縮まないので嵩そのままで見る。
+      volume: {value: 2000}
+      ignition_chance: {value: 60}
+
+  # 火のついた火口。炉へ運ぶためだけに在る（docs/engine/FireSystem.md 3.1節）。
+  # 炉に残る種火とは別のもので、こちらは持ち運べる物。
+  burning_tinder:
+    # 炉のigniteがwithで探す（withはタグでしか照合しない、12.1節）。
+    tags: [item, burning_tinder]
+    # 個体ごとに残り時間が違うので束ねない。
+    stackable: false
+    props:
+      weight: {value: 50}
+      volume: {value: 500}
+      # 1tickで燃え尽きる。火のある場所まで持ち歩くことはできない。
+      life:
+        value: 1
+        range: {min: 1, max: 1}
+        passives:
+          - accumulate: {self: {life: -1}}
+        on_shortfall:
+          destroy: self
+
+  # 焚き火。枝を積んだだけの炉。器を載せる枠を持たず、種火は30分で死ぬ。
+  campfire:
+    traits: [hearth]
+    recipes:
+      # 小枝を組むだけ。道具も解放条件も要らない。
+      stacked:
+        steps:
+          - requires:
+              - {object: twig, count: 3, consume: true}
+            duration: 15
+    props:
+      fuel_capacity: {value: 30}
+      fuel:
+        value: 0
+        range: {min: 0, max: 30}
+      # 火力の上限。開いた焚き火はこれ以上大きくならないので、薪を積んでも高温には届かない。
+      heat:
+        range: {min: 0, max: 30}
+      # 石を積んだ数。3つ目を置いた瞬間に三石のかまどへ置き換わる（同5節）。
+      stones:
+        value: 0
+        range: {min: 0, max: 2}
+        on_overflow:
+          spawn: {object: three_stone_hearth}
+          destroy: self
+    slots:
+      fire:
+        cells:
+          - {accept: {tag: item}}
+          - {accept: {tag: item}}
+    passives:
+      # 種火が冷める速さ。薪が尽きている間だけ効く——薪が載っていれば火は育つ側になる。
+      - conditions:
+          - {prop: heat, in_stage: ember}
+          - {prop: fuel, in_stage: none}
+        accumulate: {self: {heat: -2}}
+    combinations:
+      add_stone:
+        with: stone
+        duration: 5
+        destroy: dragged
+        add: {self: {stones: 1}}
+
+  # 三石のかまど。石が支点になって、初めて器を火にかけられる。
+  three_stone_hearth:
+    traits: [hearth]
+    props:
+      fuel_capacity: {value: 30}
+      fuel:
+        value: 0
+        range: {min: 0, max: 30}
+      # 火力の上限。開いた焚き火はこれ以上大きくならないので、薪を積んでも高温には届かない。
+      heat:
+        range: {min: 0, max: 30}
+      # 石を8つ足すと石囲いの炉になる。
+      stones:
+        value: 0
+        range: {min: 0, max: 7}
+        on_overflow:
+          spawn: {object: stone_hearth}
+          destroy: self
+    slots:
+      fire:
+        cells:
+          - {accept: {tag: item}}
+          - {accept: {tag: item}}
+          - {accept: {tag: cookware}}
+    passives:
+      - conditions:
+          - {prop: heat, in_stage: ember}
+          - {prop: fuel, in_stage: none}
+        accumulate: {self: {heat: -1}}
+    combinations:
+      add_stone:
+        with: stone
+        duration: 5
+        destroy: dragged
+        add: {self: {stones: 1}}
+
+  # 石囲いの炉。種火が翌朝まで生き、薪を多く積めるので土器の本焼きに要る高温へ届く。
+  stone_hearth:
+    traits: [hearth]
+    props:
+      fuel_capacity: {value: 120}
+      fuel:
+        value: 0
+        range: {min: 0, max: 120}
+      # 石で囲うと高温まで上がる。土器の本焼きに届くのはこの炉だけ。
+      heat:
+        range: {min: 0, max: 100}
+    slots:
+      fire:
+        cells:
+          - {accept: {tag: item}}
+          - {accept: {tag: item}}
+          - {accept: {tag: item}}
+          - {accept: {tag: cookware}}
+          - {accept: {tag: cookware}}
+    passives:
+      # 灰をかぶって空気を絞られた種火は8時間もつ。これが炉を常設する唯一にして最大の利得。
+      - conditions:
+          - {prop: heat, in_stage: ember}
+          - {prop: fuel, in_stage: none}
+        accumulate: {self: {heat: -0.125}}

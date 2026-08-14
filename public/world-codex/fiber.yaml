@@ -77,7 +77,10 @@ object_defs:
   # 掻き取って干した繊維のひと束。1本ずつを物として扱うことはしないので、束で1つと数える。
   plant_fiber:
     tags: [item, plant_fiber]
+    # ほぐした繊維は火口になる（docs/engine/FireSystem.md 3.2節）。
+    traits: [ignitable]
     props:
+      ignition_chance: {value: 80}
       weight: {value: 60}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 800}
