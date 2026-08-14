@@ -230,5 +230,47 @@
     ],
     "positive": "exactly one small empty woven basket alone on an empty white page, plaited from broad flat green palm leaf strips crossing over and under each other, a round open top with a rolled rim, straight sides tapering to a flat bottom, nothing inside it, seen from the side and slightly above so the empty inside shows, fresh green fading to straw yellow, matte dry surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "fruit, vegetables, bread, eggs, flowers, plants, laundry, cloth inside, full basket, lid, cover, handle, hamper, picnic basket, wicker furniture, birdcage, bowl, plate, pot, vase, two baskets, three baskets, several baskets, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "raw_meat": {
+    "description": [
+      "生肉。獲物から外したままの、骨の付いていない一切れ。",
+      "",
+      "**調理された肉を全力で否定する。** meat の語は焼き色・網目・皿・付け合わせを連れてくる。",
+      "生であることは raw / uncooked だけでは足りず、赤い筋肉と脂の縁を本文で言う。",
+      "",
+      "**血だまりは描かせない。** 死体の絵で血を描かなかったのと同じ理由（recipes/monkey_carcass.json）。"
+    ],
+    "positive": "exactly one raw cut of meat alone on an empty white page, a single thick boneless piece of dark red game meat freshly cut from an animal, deep red muscle with pale sinew running through it and a thin edge of creamy fat along one side, roughly trimmed uneven edges, moist matte surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "cooked, grilled, roasted, seared, browned, grill marks, charred, smoked, bacon, ham, sausage, steak on a grill, bone, rib bone, skewer, plate, dish, bowl, cutting board, chopping block, knife, herbs, garnish, parsley, vegetables, sauce, blood pool, puddle of blood, gore, entrails, packaging, plastic wrap, tray, price tag, label, butcher shop, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "animal_bone": {
+    "description": [
+      "獣骨。1頭ぶんの長い骨をまとめた1枚。",
+      "",
+      "**頭骨は描かせない。** 頭は解体の取り分に入らない（public/world-codex/animals.yaml）。",
+      "髑髏が入ると素材ではなく戦利品に見える。",
+      "",
+      "**「1つの物」を強いる否定語は外してある**（pile / stack / two objects など）。この物は",
+      "束そのものなので、それらを否定すると骨1本になる。散らばりだけを scattered で止める。"
+    ],
+    "positive": "exactly one small bundle of clean animal bones alone on an empty white page, a few dry long leg bones with knobbly ends and two curved rib bones laid together in a neat bundle, pale ivory and bone white with faint brown staining, dry matte porous surface, no skull and no teeth, the bundle is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "skull, cranium, skeleton, whole skeleton, spine, vertebrae, jaw, teeth, horns, antlers, tusks, ribcage, animal, dog, live animal, meat on the bone, flesh, blood, fossil, dinosaur bone, bone weapon, carved bone, driftwood, branch, stick, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "rawhide": {
+    "description": [
+      "生皮。剥いだままの、なめしていない皮。",
+      "",
+      "**なめした革を否定する。** hide / skin の語は鞄や上着や敷物へ寄る。毛の付いた外側と",
+      "生成りの内側の両方を見せると、加工前だと読める。",
+      "",
+      "**平らに広げさせない。** 四角く広げると敷物か羊皮紙になる（実測で4枚とも矩形になった）。",
+      "folded over on itself into a soft heap と頼み、flat rectangle / spread out flat を否定する。",
+      "",
+      "**白い毛を否定する。** 何も言わないと生成りの毛皮になり、白い紙から切り出せない（編み籠と同じ制約）。",
+      "",
+      "**枠に張った状態にしない。** 乾かす枠を描くと、まだ無い工程（なめし）を絵だけが言うことになる。"
+    ],
+    "positive": "exactly one raw untanned animal hide alone on an empty white page, a single piece of freshly skinned hide loosely folded over on itself into a soft heap so that both sides show, short coarse greyish brown fur on the outer side and a pale cream inner surface visible where it folds back, uneven roughly trimmed edges, limp soft and heavy, matte damp surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "flat rectangle, spread out flat, stretched flat, laid out square, rug, hide rug, sheepskin rug, white fur, cream fur, pale fur, bleached, tanned leather, finished leather, suede, leather bag, satchel, jacket, clothing, boots, rug, carpet, fur coat, taxidermy, animal head, whole animal, live animal, fox, wolf, bear, cow, stretched on a frame, drying rack, wooden frame, nails, pegs, rope, blood, gore, meat, flesh, parchment, paper, scroll, cloth, towel, blanket, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   }
 }

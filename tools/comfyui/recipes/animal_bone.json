@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "src/assets/objects/animal_bone.png を作り直すためのレシピ。build.py が読む。",
+    "サルの死体を解体して得られる獣骨（docs/engine/HuntingSystem.md 1.5節）。",
+    "",
+    "**2段構え**（recipes/woven_basket.json と同じ）。",
+    "",
+    "**toleranceを16まで下げる。** 骨は生成りで、紙との明度差が中央値で32しかない。既定の60でも",
+    "40でも芯に入らず、骨の大半が透けて消える（実測）。背景は無地なので下げても紙のムラは拾わない。",
+    "",
+    "段は320。細長い骨を束ねた1枚なので、長辺で見ると石より大きい。"
+  ],
+  "output": "src/assets/objects/animal_bone.png",
+  "prompts": "objects.json",
+  "prompt": "animal_bone",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 9201,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the bones exactly as they are in shape and layout, but paint them with soft brush strokes and gentle natural shading instead of photographic detail, and calm the colour down to a warm pale ivory with faint brown staining. Remove the background completely and replace it with a plain empty white page, leaving the bones alone in the middle with a wide white margin all around them and a soft grey shadow directly beneath them. Dry matte surface, flat even lighting. No skull, no text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 16,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
