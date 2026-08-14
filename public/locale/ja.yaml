@@ -659,4 +659,6 @@ stage_texts:
 signal_texts:
   hit: 手応え
   killed: 仕留めた
+  lit: 点いた
   missed: 空振り
+  not_lit: 点かず

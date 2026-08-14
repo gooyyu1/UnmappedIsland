@@ -260,9 +260,15 @@ combinations:
       - weight: {prop: ignition_chance}
         destroy: self
         spawn: {object: burning_tinder}
+        signal: lit
       - weight: 40           # 外した回は火口だけが無駄になる
         destroy: self
+        signal: not_lit
 ```
+
+**成否は `signal`（`GameElementDefinition.md` 9.8 節）が告げます。** 火口はどちらの回も同じように
+消えるので、レーンの上では 30 分かけて札が 1 枚減っただけに見え、外した回が「何も起きなかった」と
+区別できません。火種が生まれたかどうかを札の増減から読ませず、起きたことを火口の札の上へ出します。
 
 ```yaml
 # 炉の側が宣言する

@@ -15,6 +15,13 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * 火の育ちと衰えはtick駆動（docs/engine/FireSystem.md 2.2節）なので、時間を進めて観測する。
  */
 describe('fire.yamlの火の連鎖', () => {
+  // lightの候補は宣言順に「成功（火口のignition_chance）・失敗（40）」。枯れ草は60:40なので、
+  // 0.8を引けば外れる。
+  /** 火起こしに成功する引き。 */
+  const LIGHTS = 0;
+  /** 火起こしを外す引き。 */
+  const FAILS = 0.8;
+
   let codex: WorldCodex;
   let session: WorldSession;
   let worldView: World;
@@ -28,18 +35,23 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   beforeEach(() => {
+    // 火起こしは確率で外す。連鎖を見るテストは必ず成功する側を引く。
+    open(LIGHTS);
+  });
+
+  /** 草地に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める。 */
+  function open(roll: number): void {
     const worldInstance = new WorldObject(
       0,
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
     worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
-    // 火起こしは確率で外す。ここは連鎖を見るテストなので、必ず成功する側を引く。
-    session = new WorldSession(codex, worldView, fixedRng(0));
+    session = new WorldSession(codex, worldView, fixedRng(roll));
 
     land = spawnInto('grassland', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
-  });
+  }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
@@ -64,10 +76,7 @@ describe('fire.yamlの火の連鎖', () => {
   function litCampfire(): WorldObject {
     const hearth = spawnInto('campfire', land, 'fixtures');
     stoke(hearth, 'thick_branch');
-
-    const grass = spawnInto('dry_grass', land, 'items');
-    const drill = spawnInto('fire_drill', player, 'hand');
-    expect(grass.tryExecuteCombination(drill, player, 'light', session)).toBe(true);
+    lightDryGrass();
 
     const tinder = new Location(land, codex).items.find((o) => o.def.name === 'burning_tinder');
     expect(tinder, '火起こしに成功している').toBeDefined();
@@ -103,6 +112,31 @@ describe('fire.yamlの火の連鎖', () => {
     expect(itemsOn(land)).toEqual(['burning_tinder']);
     expect(drill.parent, '火起こし具は消費されない').toBe(player);
   });
+
+  it('火が付いた回も外した回も、火口の札の上で起きたことを告げる', () => {
+    // 火口はどちらの回も同じように消えるので、レーンを見ているだけでは成否が付かない
+    // （docs/engine/FireSystem.md 3.1節）。
+    expect(signalsOf(lightDryGrass)).toEqual(['dry_grass: lit']);
+
+    open(FAILS);
+
+    expect(signalsOf(lightDryGrass)).toEqual(['dry_grass: not_lit']);
+    expect(itemsOn(land), '外した回は火口だけが無駄になる').toEqual([]);
+  });
+
+  /** 枯れ草へ火起こし具を重ねる。引き（open）によって火種ができるか、枯れ草だけが失われる。 */
+  function lightDryGrass(): void {
+    const grass = spawnInto('dry_grass', land, 'items');
+    const drill = spawnInto('fire_drill', player, 'hand');
+    expect(grass.tryExecuteCombination(drill, player, 'light', session)).toBe(true);
+  }
+
+  /** bodyの実行中に告げられた出来事（signal、9.8節）を「誰の身に・何が」の形で並べる。 */
+  function signalsOf(body: () => void): string[] {
+    const seen: string[] = [];
+    session.observeSignals((signal) => seen.push(`${signal.object.def.name}: ${signal.name}`), body);
+    return seen;
+  }
 
   it('枝は火口にならない（繊維状のものだけが火を受け止める）', () => {
     const twig = spawnInto('twig', land, 'items');
