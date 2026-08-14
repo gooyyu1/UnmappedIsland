@@ -9,7 +9,7 @@ import type { ReferenceRoot } from './ReferenceRoot';
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
  * 具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffects）、
  * weightで1候補を選ぶpick（PickEffect、10節。候補もActiveEffectなので再帰しうる）の3種。
- * activeとpickの排他は「ActiveEffect型の変数が1つ」というだけで表せる（判別子不要）。
+ * pickは9節の命令と対等な1つの効果なので、合成の中に他の命令と並べて置ける。
  *
  * effectSiteは、適用の入口（WorldObject.applyActiveEffect）で捕捉した「selfが今占めている位置」の
  * スナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を
@@ -59,15 +59,13 @@ export abstract class ActiveEffect {
 }
 
 /**
- * 一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`、9節）を宣言順にまとめた合成効果。
- * on_overflow・on_shortfall（6節）、actions/combinations/pickのactive（11・12・10節）が共用する。
- * on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。
+ * 一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`、9節）と`pick`（10節）を、書かれた順に
+ * まとめた合成効果。on_overflow・on_shortfall（6節）、actions/combinations/pickの中身（11・12・10節）が
+ * 共用する。on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。
+ * 空（命令が1つも無い）なら、適用しても何も起きない。
  */
 export class ActiveEffects extends ActiveEffect {
-  /**
-   * 単一命令の宣言順リスト。適用順はリスト順（パーサがset→add→transfer→destroy→spawnの順で並べる。
-   * 同一プロパティへのset後add、destroyで空いた位置へのspawn（same_slot）という依存関係のため）。
-   */
+  /** 効果の宣言順リスト。適用順はリスト順で、パーサはYAMLに書かれた順のまま渡す（9.7節）。 */
   private readonly operations: readonly ActiveEffect[];
 
   constructor(operations: readonly ActiveEffect[]) {

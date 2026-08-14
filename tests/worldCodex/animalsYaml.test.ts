@@ -146,7 +146,7 @@ describe('animals.yamlの動物', () => {
   });
 
   it('外した回は傷が付かないが、警戒と摩耗はそのまま起きる', () => {
-    // 当たり外れによらない分を各候補へ複製している（animals.yaml、issue #415）ので、外れた側でも
+    // 当たり外れによらない分（警戒・摩耗）を各候補が持つ（animals.yaml）ので、外れた側でも
     // 抜けていないことを確かめる。
     open(MISSES);
     const before = monkey.getNumber(warinessId);

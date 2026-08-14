@@ -139,7 +139,7 @@ object_defs:
   # - exploration_progress.range.max = 探索率100%に達するまでの探索回数（10〜20）。100%に達しても
   #   探索は続けられ（進捗はrangeの上限に張り付く）、生成時に仕込まれた道がそれ以上見つからなくなるだけ。
   # - exploreのpickは「その土地で何が見つかるか」の確率テーブル。進捗+1（add self）は
-  #   addとpickが排他という文法上、全候補に含める（10節）。
+  #   どの候補が選ばれても起こるので、pickの外に1つだけ置く（9.7節）。
   # - どの候補も1個以上を必ず見つける（ハズレの候補は置かない）。1回で見つかる数は候補ごとに1〜3個で、
   #   実りの多い土地は平均2個、荒野・山頂・岸壁のような乏しい土地は平均1.6個になるよう重みを配る
   #   （tests/worldCodex/explorationYield.test.tsが検証する）。設置物（木・茂み・洞窟の入口など）は
@@ -175,39 +175,32 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: palm_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: palm_tree, into: self}
           - weight: 5
-            add: {self: {exploration_progress: 1}}
             spawn: {object: woven_basket, into: self}
           - weight: {prop: crab_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: coconut_crab, into: self}
           # 2個
           - weight: 20
-            add: {self: {exploration_progress: 1}}
             spawn: {object: coconut, count: 2, into: self}
           - weight: 15
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: coconut, into: self}
               - {object: thick_branch, into: self}
           - weight: 10
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: thick_branch, into: self}
               - {object: coconut_crab, into: self}
           # 3個
           - weight: 18
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: coconut, count: 2, into: self}
               - {object: thick_branch, into: self}
           - weight: {prop: driftwood_find}
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: thick_branch, count: 2, into: self}
               - {object: coconut_crab, into: self}
@@ -232,36 +225,30 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: cave_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: {prop: crab_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: coconut_crab, into: self}
           # 2個
           - weight: 20
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 2, into: self}
           - weight: 15
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
               - {object: coconut_crab, into: self}
           - weight: 10
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
               - {object: thick_branch, into: self}
           # 3個
           - weight: 18
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: thick_branch, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: coconut_crab, into: self}
@@ -283,26 +270,22 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: cave_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: 30
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, into: self}
           # 2個
           - weight: 25
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 2, into: self}
           - weight: 17
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
               - {object: thick_branch, into: self}
           # 3個
           - weight: 8
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: thick_branch, into: self}
@@ -328,39 +311,32 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: berry_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
           - weight: {prop: spring_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: spring, into: self}
           # 2個
           - weight: 18
-            add: {self: {exploration_progress: 1}}
             spawn: {object: water_spinach, count: 2, into: self}
           - weight: 17
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: water_spinach, into: self}
               - {object: taro, into: self}
           - weight: 10
-            add: {self: {exploration_progress: 1}}
             spawn: {object: taro, count: 2, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: dry_grass, into: self}
               - {object: water_spinach, into: self}
           # 3個
           - weight: 18
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: water_spinach, count: 2, into: self}
               - {object: taro, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: taro, count: 2, into: self}
               - {object: water_spinach, into: self}
@@ -385,41 +361,34 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: berry_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
           - weight: {prop: spring_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: spring, into: self}
           # 2個
           - weight: 20
-            add: {self: {exploration_progress: 1}}
             spawn: {object: twig, count: 2, into: self}
           - weight: 15
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: twig, into: self}
               - {object: taro, into: self}
           - weight: 10
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: twig, into: self}
               - {object: berry_bush, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: banana_plant, into: self}
               - {object: twig, into: self}
           # 3個
           - weight: 18
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: twig, count: 2, into: self}
               - {object: taro, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn: {object: twig, count: 3, into: self}
 
   # 密林。湿って鬱蒼としており、探索し切るまでが最も長いが、食料は最も豊か。
@@ -443,47 +412,39 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: palm_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: palm_tree, into: self}
           - weight: {prop: taro_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: taro, into: self}
           # 2個
           - weight: 17
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: twig, into: self}
               - {object: coconut, into: self}
           - weight: 15
-            add: {self: {exploration_progress: 1}}
             spawn: {object: coconut, count: 2, into: self}
           - weight: 13
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: twig, into: self}
               - {object: water_spinach, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: abaca, into: self}
               - {object: twig, into: self}
           - weight: 10
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: banana_plant, into: self}
               - {object: twig, into: self}
           # 3個
           - weight: 18
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: twig, into: self}
               - {object: coconut, into: self}
               - {object: water_spinach, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: coconut, count: 2, into: self}
               - {object: taro, into: self}
@@ -505,34 +466,28 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: cave_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: 7
-            add: {self: {exploration_progress: 1}}
             spawn: {object: twig, into: self}
           # 2個
           - weight: 22
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 2, into: self}
           - weight: 15
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
           - weight: 8
-            add: {self: {exploration_progress: 1}}
             spawn: {object: twig, count: 2, into: self}
           # 3個
           - weight: 20
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: twig, into: self}
           - weight: 10
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 3, into: self}
 
   # 荒野。乾いてひび割れた不毛の土地。得られるものは少ない。
@@ -555,31 +510,26 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: stone_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, into: self}
           - weight: {prop: wood_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: twig, into: self}
           # 2個
           - weight: 25
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 2, into: self}
           - weight: 17
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: dry_grass, into: self}
               - {object: twig, into: self}
           # 3個
           - weight: 8
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: twig, into: self}
@@ -604,34 +554,28 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: {prop: cave_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: {prop: berry_find}
-            add: {self: {exploration_progress: 1}}
             spawn: {object: berry_bush, into: self}
           # 2個
           - weight: 20
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 2, into: self}
           - weight: 15
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
           - weight: 10
-            add: {self: {exploration_progress: 1}}
             spawn: {object: twig, count: 2, into: self}
           # 3個
           - weight: 18
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
               - {object: twig, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
               - {object: twig, into: self}
@@ -651,24 +595,20 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}
         pick:
           # 1個
           - weight: 25
-            add: {self: {exploration_progress: 1}}
             spawn: {object: cave_entrance, into: self}
           - weight: 25
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, into: self}
           # 2個
           - weight: 30
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 2, into: self}
           - weight: 12
-            add: {self: {exploration_progress: 1}}
             spawn:
               - {object: cave_entrance, into: self}
               - {object: stone, into: self}
           # 3個
           - weight: 8
-            add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 3, into: self}

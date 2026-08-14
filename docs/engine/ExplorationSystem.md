@@ -98,11 +98,10 @@ object_defs:
       explore:
         showMenu: always
         duration: 15
+        add: {self: {exploration_progress: 1}}   # 何が見つかっても進捗は1つ進む
         pick:
           - weight: 25
-            add: {self: {exploration_progress: 1}}
           - weight: 25
-            add: {self: {exploration_progress: 1}}
             spawn: {object: water_spinach, into: self}
           # ...
 ```
@@ -116,8 +115,7 @@ object_defs:
   見つかります**。候補ごとに見つかる数は 1〜3 個で、実りの多い土地は平均 2 個、荒野・山頂・岸壁のような
   乏しい土地は平均 1.6 個になるよう重みを配っています（`tests/worldCodex/explorationYield.test.ts` が
   検証）。設置物（木・茂み・洞窟の入口など）は 1 回に 1 つまでとし、数で増えるのはアイテムだけです。
-  `add`/`pick` は排他な兄弟キーのため、進捗+1（`add`）は `pick` の各候補に個別に含めています（`add` と
-  `spawn` は同じ候補内に共存でき、`spawn` は配列で複数書けます、10.1 節・9.4 節）。
+  進捗+1（`add`）はどの候補が選ばれても起こるので、`pick` の外に1つだけ置いています（9.7 節）。
 - **発見量のつまみ**: 一部の候補は `weight` をリテラルではなくプロパティ参照（`{prop: berry_find}`）で
   持ちます。素の重みは土地の `props` が持ち、**亜種**が土地ごとに上書きします
   （[TerrainGeneration.md](./TerrainGeneration.md) 3.6 節）。「少しだけ木苺の多い森」の類を、地形の

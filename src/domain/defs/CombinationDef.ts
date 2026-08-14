@@ -21,7 +21,7 @@ export class CombinationDef extends InteractionDef {
     name: string,
     withTagGlobalId: number,
     requirements: Requirements | undefined,
-    effect: ActiveEffect | undefined,
+    effect: ActiveEffect,
     duration?: WeightSpec,
   ) {
     super(name, requirements, effect, duration);

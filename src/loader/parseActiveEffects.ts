@@ -1,8 +1,9 @@
-import type { YAMLMap } from 'yaml';
-import { isMap, isSeq } from 'yaml';
+import type { YAMLMap, YAMLSeq } from 'yaml';
+import { isMap, isScalar, isSeq } from 'yaml';
 import {
   asMap,
   asScalarText,
+  asSeq,
   entriesInOrder,
   requireNumber,
   requireScalar,
@@ -13,9 +14,11 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { ACTIVE_VERB_KEYS, parseNumberLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
+import { parseNumberLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
+import { ACTION_CONDITION_ROOTS, COMBINATION_CONDITION_ROOTS, parseConditionObject } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
+import { PropertyPath } from '../domain/defs/ReferenceRoot';
 import {
   ActiveEffects,
   AddEffect,
@@ -27,14 +30,17 @@ import {
 import type { ActiveEffect, SpawnTargetRoot } from '../domain/defs/ActiveEffect';
 import type { MoveDestination } from '../domain/defs/MoveEffect';
 import { MoveEffect } from '../domain/defs/MoveEffect';
+import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/defs/PickEffect';
 import { SignalEffect } from '../domain/defs/SignalEffect';
 
 /**
- * active内容（9節）を読む。文法は「操作(set/add)が上位、対象(self/parent/actor/dragged)が下位」
- * （例: `add: {self: {hour: 1}}`）。bodyNodeにはactive以外の兄弟キーも同居しうるため、
- * reservedKeysに「呼び出し側がすでに読み終えている兄弟キー」を渡して未知キー判定から除外する。
- * spawnは常にselfが実行するものとみなすため対象キーを持たない。signalは対象を省ける
- * （`signal: missed`＝selfへ告げる、9.8節）。
+ * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、
+ * 対象(self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。spawnは常にselfが実行する
+ * ものとみなすため対象キーを持たない。signalは対象を省ける（`signal: missed`＝selfへ告げる、9.8節）。
+ *
+ * **適用順はYAMLに書かれた順**で、動詞ごとの優先順位は無い（9.7節）。bodyNodeには効果以外の兄弟キーも
+ * 同居しうるため、reservedKeysに「呼び出し側がすでに読み終えている兄弟キー」を渡して未知キー判定から
+ * 除外する。
  */
 export function parseActiveEffectBody(
   loader: WorldCodexYamlLoader,
@@ -44,48 +50,131 @@ export function parseActiveEffectBody(
   selfOnly: boolean,
   reservedKeys?: ReadonlyArray<string>,
 ): ActiveEffects {
-  // 適用順はset→add→transfer→move→destroy→spawn→signalで固定（set後add、destroyで空いた位置への
-  // spawn(same_slot)、moveはdestroyで対象が消える前、という依存関係のため。signalは世界を変えないので
-  // 依存を持たず、起きたことの告知として末尾に置く。ActiveEffects.applyはこのリスト順にそのまま適用する）。
   const operations: ActiveEffect[] = [];
+  const unknownKeys: string[] = [];
 
-  const setMap = tryGetMap(bodyNode, 'set', context);
-  if (setMap !== undefined)
-    operations.push(...parseSets(loader, `${context}.set`, setMap, allowDragged, selfOnly));
+  for (const [key, valueNode] of entriesInOrder(bodyNode)) {
+    const keyContext = `${context}.${key}`;
+    switch (key) {
+      case 'set':
+        operations.push(
+          ...parseSets(loader, keyContext, asMap(valueNode, keyContext), allowDragged, selfOnly),
+        );
+        break;
+      case 'add':
+        operations.push(
+          ...parseAdds(loader, keyContext, asMap(valueNode, keyContext), allowDragged, selfOnly),
+        );
+        break;
+      case 'transfer':
+        operations.push(...parseTransfers(loader, keyContext, valueNode, allowDragged, selfOnly));
+        break;
+      case 'move':
+        operations.push(parseMove(loader, keyContext, asMap(valueNode, keyContext), selfOnly));
+        break;
+      case 'destroy':
+        for (const target of parseDestroyTargets(keyContext, valueNode, allowDragged, selfOnly))
+          operations.push(new DestroyEffect(target));
+        break;
+      case 'spawn':
+        operations.push(...parseSpawns(loader, keyContext, valueNode));
+        break;
+      case 'signal':
+        operations.push(...parseSignals(keyContext, valueNode, allowDragged, selfOnly));
+        break;
+      case 'pick':
+        operations.push(
+          new PickEffect(
+            parsePickList(loader, context, asSeq(valueNode, keyContext), allowDragged, selfOnly),
+          ),
+        );
+        break;
+      default:
+        if (reservedKeys === undefined || !reservedKeys.includes(key)) unknownKeys.push(key);
+    }
+  }
 
-  const addMap = tryGetMap(bodyNode, 'add', context);
-  if (addMap !== undefined)
-    operations.push(...parseAdds(loader, `${context}.add`, addMap, allowDragged, selfOnly));
-
-  const transferNode = tryGetNode(bodyNode, 'transfer');
-  if (transferNode !== undefined)
-    operations.push(...parseTransfers(loader, `${context}.transfer`, transferNode, allowDragged, selfOnly));
-
-  const moveNode = tryGetMap(bodyNode, 'move', context);
-  if (moveNode !== undefined) operations.push(parseMove(loader, `${context}.move`, moveNode, selfOnly));
-
-  const destroyNode = tryGetNode(bodyNode, 'destroy');
-  if (destroyNode !== undefined)
-    for (const target of parseDestroyTargets(`${context}.destroy`, destroyNode, allowDragged, selfOnly))
-      operations.push(new DestroyEffect(target));
-
-  const spawnNode = tryGetNode(bodyNode, 'spawn');
-  if (spawnNode !== undefined) operations.push(...parseSpawns(loader, `${context}.spawn`, spawnNode));
-
-  const signalNode = tryGetNode(bodyNode, 'signal');
-  if (signalNode !== undefined)
-    operations.push(...parseSignals(`${context}.signal`, signalNode, allowDragged, selfOnly));
-
-  const knownKeys = new Set<string>(ACTIVE_VERB_KEYS);
-  if (reservedKeys !== undefined) for (const key of reservedKeys) knownKeys.add(key);
-
-  const unknownKeys = entriesInOrder(bodyNode)
-    .map(([key]) => key)
-    .filter((key) => !knownKeys.has(key));
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
   return new ActiveEffects(operations);
+}
+
+/** pick候補が持つ、効果以外の兄弟キー。 */
+const PICK_CANDIDATE_RESERVED_KEYS = ['weight'] as const;
+
+/** pick（10節）の候補リストを読む。候補の中身は9節の命令と同じで、さらにpickを入れ子にできる。 */
+export function parsePickList(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  pickNode: YAMLSeq,
+  allowDragged: boolean,
+  // selfOnly（on_shortfall等のrangeイベント内のpick）は、ネストした候補にもそのまま引き継ぐ。
+  selfOnly = false,
+): PickCandidateDef[] {
+  const result: PickCandidateDef[] = [];
+
+  for (const node of pickNode.items as YamlNode[]) {
+    const map = asMap(node, context);
+    const candidateContext = `${context}.pick[${result.length}]`;
+
+    const weightNode = tryGetNode(map, 'weight');
+    if (weightNode === undefined) throw new YamlLoadError(`${candidateContext}: 'weight'は必須です。`);
+    const weight = parseWeight(loader, candidateContext, weightNode, allowDragged);
+
+    // weightだけの候補は「選ばれても何も起きない回」（外した回・寄って来なかった回）を表す。
+    const effect = parseActiveEffectBody(
+      loader,
+      candidateContext,
+      map,
+      allowDragged,
+      selfOnly,
+      PICK_CANDIDATE_RESERVED_KEYS,
+    );
+
+    result.push(new PickCandidateDef(weight, effect));
+  }
+
+  return result;
+}
+
+/**
+ * リテラル数値か`{object, prop}`参照（GameElementDefinition.md 10.2節）を読む。durationもこの形で、
+ * 「今の状態から見ていくらか」を書けるようにするため（切れ味の悪い刃物ほど時間がかかる）。
+ */
+export function parseWeight(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+  allowDragged: boolean,
+  fieldName = 'weight',
+): WeightSpec {
+  if (isScalar(node)) {
+    const raw = asScalarText(node, context);
+    const literal = Number(raw);
+    if (raw.trim() === '' || Number.isNaN(literal))
+      throw new YamlLoadError(`${context}: ${fieldName}は数値である必要があります（値: '${raw}'）。`);
+    return WeightSpec.fromLiteral(literal);
+  }
+
+  if (isMap(node)) {
+    const allowedRoots = allowDragged ? COMBINATION_CONDITION_ROOTS : ACTION_CONDITION_ROOTS;
+    const objectName = tryGetScalar(node, 'object', context);
+    const root = objectName !== undefined ? parseConditionObject(context, objectName, allowedRoots) : 'self';
+    const propName = requireScalar(node, 'prop', context);
+
+    const unknownKeys = entriesInOrder(node)
+      .map(([key]) => key)
+      .filter((key) => key !== 'object' && key !== 'prop');
+    if (unknownKeys.length > 0)
+      throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+    return WeightSpec.fromPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
+  }
+
+  throw new YamlLoadError(
+    `${context}: ${fieldName}はリテラル数値か{object, prop}のいずれかである必要があります。`,
+  );
 }
 
 /** setの1エントリの値。リテラル（数値・真偽値・シンボル名）のみ（9.2節）。 */

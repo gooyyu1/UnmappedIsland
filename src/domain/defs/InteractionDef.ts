@@ -23,8 +23,8 @@ export abstract class InteractionDef {
   /** 実行するために満たすべき要件（14節）。undefinedなら常に真（conditions省略）。 */
   private readonly requirements: Requirements | undefined;
 
-  /** 条件成立時に適用する効果。undefinedなら何も起きない。 */
-  private readonly effect: ActiveEffect | undefined;
+  /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffects）で、適用しても何も起きない。 */
+  private readonly effect: ActiveEffect;
 
   /**
    * 実行にかかるゲーム内時間（分）。リテラルか{object, prop}参照（weightの10.2節と同じ二択）。
@@ -36,7 +36,7 @@ export abstract class InteractionDef {
   protected constructor(
     name: string,
     requirements: Requirements | undefined,
-    effect: ActiveEffect | undefined,
+    effect: ActiveEffect,
     duration: WeightSpec | undefined,
   ) {
     this.name = name;
@@ -70,7 +70,7 @@ export abstract class InteractionDef {
     if (this.duration !== undefined)
       out.write(text('所要時間: '), ...this.duration.describe(names), text('分'));
 
-    this.effect?.describe(names, out);
+    this.effect.describe(names, out);
   }
 
   /** 何がこの操作のきっかけになるか（具象ごとに違う）。describeが先頭に書く。 */
@@ -81,7 +81,7 @@ export abstract class InteractionDef {
    * 何を尋ねるか（どのプロパティを書き換えるか・どの型を生むか）は呼び出し側が決める。
    */
   hasEffectMatching(matches: (effect: ActiveEffect) => boolean): boolean {
-    return this.effect !== undefined && matches(this.effect);
+    return matches(this.effect);
   }
 
   /**
@@ -92,7 +92,6 @@ export abstract class InteractionDef {
    * ドラッグ型の相手（withタグ）は具象（CombinationDef）が足す。
    */
   craftingStep(selfObjectGlobalId: number): CraftingStep | undefined {
-    if (this.effect === undefined) return undefined;
     const outputs = new CraftingOutputCollector();
     this.effect.collectSpawns(outputs.add);
     if (outputs.toOutputs().length === 0) return undefined;
@@ -145,7 +144,7 @@ export abstract class InteractionDef {
 
     if (!spendDuration(this.minutesFor(self, dragged, actor), session, [self, dragged, actor])) return false;
 
-    if (this.effect !== undefined) self.applyActiveEffect(this.effect, session, actor, dragged);
+    self.applyActiveEffect(this.effect, session, actor, dragged);
     return true;
   }
 }

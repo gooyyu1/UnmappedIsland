@@ -111,6 +111,12 @@ export function asMap(node: unknown, context: string): YAMLMap {
   throw new YamlLoadError(`${context}: マッピングである必要があります。`);
 }
 
+/** ノードを配列として扱う（配列要素など、キー経由でないノードの型検証用）。 */
+export function asSeq(node: unknown, context: string): YAMLSeq {
+  if (isSeq(node)) return node;
+  throw new YamlLoadError(`${context}: 配列である必要があります。`);
+}
+
 /** ノードをスカラーの文字列として扱う（配列要素など、キー経由でないノードの型検証用）。 */
 export function asScalarText(node: unknown, context: string): string {
   if (isScalar(node)) return scalarText(node);

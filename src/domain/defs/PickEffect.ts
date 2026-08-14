@@ -123,10 +123,10 @@ export class PickCandidateDef {
   /** 抽選の重み（10.2節）。 */
   private readonly weight: WeightSpec;
 
-  /** この候補が選ばれたときに適用する効果。undefinedなら何も起きない。 */
-  private readonly effect: ActiveEffect | undefined;
+  /** この候補が選ばれたときに適用する効果。 */
+  private readonly effect: ActiveEffect;
 
-  constructor(weight: WeightSpec, effect: ActiveEffect | undefined) {
+  constructor(weight: WeightSpec, effect: ActiveEffect) {
     this.weight = weight;
     this.effect = effect;
   }
@@ -144,29 +144,28 @@ export class PickCandidateDef {
     dragged: WorldObject | undefined,
     effectSite: EffectSite | undefined,
   ): void {
-    this.effect?.apply(owner, session, actor, dragged, effectSite);
+    this.effect.apply(owner, session, actor, dragged, effectSite);
   }
 
   /** この候補を「重み」の行と、その下の効果として書き出す（Description参照）。 */
   describe(names: DefNames, out: DescriptionWriter): void {
     out.write(text('weight = '), ...this.weight.describe(names));
-    if (this.effect === undefined) return;
-    out.indented(() => this.effect!.describe(names, out));
+    out.indented(() => this.effect.describe(names, out));
   }
 
   affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    return this.effect?.affects(propertyGlobalId, ownedByDeclarer) ?? false;
+    return this.effect.affects(propertyGlobalId, ownedByDeclarer);
   }
 
   spawns(objectGlobalId: number): boolean {
-    return this.effect?.spawns(objectGlobalId) ?? false;
+    return this.effect.spawns(objectGlobalId);
   }
 
   collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
-    this.effect?.collectSpawns(add);
+    this.effect.collectSpawns(add);
   }
 
   destroys(target: ReferenceRoot): boolean {
-    return this.effect?.destroys(target) ?? false;
+    return this.effect.destroys(target);
   }
 }

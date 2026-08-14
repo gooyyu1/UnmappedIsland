@@ -140,41 +140,35 @@ props:
     on_shortfall:
       # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
       # （土地が決める、3節）。
+      add: {self: {catch_remaining: 16}}
       pick:
         # 何も寄って来なかった回。先頭に置く（3節）。
         - weight: {prop: miss_weight}
-          add: {self: {catch_remaining: 16}}
         - weight: {prop: herbivore_weight}
           pick:
             # 寄ってはきたが掛からなかった回。その食性の相手が居ない土地では必ずここになる。
             - weight: 8
-              add: {self: {catch_remaining: 16}}
             # 掛かった候補は、獲物とその罠の怪我を順に生む（5.1節）。
             - weight: {prop: junglefowl_catch}
-              add: {self: {catch_remaining: 16}}
               spawn:
                 - {object: junglefowl, into: self}
                 - {object: snare_laceration, into: child}
             - weight: {prop: rat_catch}
-              add: {self: {catch_remaining: 16}}
               spawn:
                 - {object: rat, into: self}
                 - {object: snare_laceration, into: child}
         - weight: {prop: carnivore_weight}
           pick:
             - weight: 8
-              add: {self: {catch_remaining: 16}}
             # ネズミは雑食なので、両方の卓に同じつまみで載る（4.1節）。
             - weight: {prop: rat_catch}
-              add: {self: {catch_remaining: 16}}
               spawn:
                 - {object: rat, into: self}
                 - {object: snare_laceration, into: child}
 ```
 
-- **周期の置き直しを全候補へ書くのは、`add` と `pick` が排他な兄弟キーだからです**（10 節）。
-  探索の進捗 +1 が `explore` の全候補に書かれている（`ExplorationSystem.md` 2 節）のと同じ形です。
-  外側の候補には書けません——中身が `pick` なので、置き直しは葉にあたる内側の候補が持ちます。
+- **周期の置き直しは、どの候補が選ばれても起こるので、`pick` の外へ1つだけ置きます**（9.7 節）。
+  探索の進捗 +1 が `explore` で同じ形になっている（`ExplorationSystem.md` 2 節）のと揃えています。
 - **`set` ではなく `add` で戻します**（6.3 節）。1 tick で複数回分飛び越えた場合でも超過分を失いません。
 - **`spawn` の `into: self` は罠の `catch` 枠へ入ります**（9.4 節。スロットは 1 つしか無いので、著者は
   スロット名を書きません）。枠が埋まっていれば土地へ強制配置されてしまいますが、埋まっている間は
@@ -376,7 +370,6 @@ passives:
 ```yaml
 # 掛かった候補（2節）が、獲物と怪我を順に生む。
 - weight: {prop: junglefowl_catch}
-  add: {self: {catch_remaining: 16}}
   spawn:
     - {object: junglefowl, into: self}
     - {object: snare_laceration, into: child}   # 直前に生んだ獲物のinjuriesスロットへ

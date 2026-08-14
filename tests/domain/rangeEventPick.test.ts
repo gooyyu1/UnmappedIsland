@@ -91,23 +91,38 @@ object_defs:
     expect(() => load(yaml)).toThrow(YamlLoadError);
   });
 
-  it('on_shortfallにactiveとpickを同時に書くとロードエラーになる', () => {
+  it('on_shortfallに9節の命令とpickを並べると、書かれた順に適用される', () => {
+    // 分岐しない共通の処理（set）と、分岐する処理（pick）を並べて書ける。
     const yaml = `
 object_defs:
-  broken:
+  mixer:
     props:
+      chosen:
+        value: 0
       counter:
         value: 3
         range: {min: 1, max: 999}
+        passives:
+          - add:
+              self:
+                counter: -1
         on_shortfall:
           set:
-            self: {counter: 10}
+            self: {counter: 10, chosen: 1}
           pick:
             - weight: 1
-              set:
-                self: {counter: 20}
+              add:
+                self: {chosen: 10}
 `;
-    expect(() => load(yaml)).toThrow(YamlLoadError);
+    const codex = load(yaml);
+    const session = new WorldSession(codex, undefined, new StubRng({ doubles: [0.5] }));
+    const mixer = instantiate(codex, 'mixer', session);
+
+    for (let i = 0; i < 3; i++) mixer.tick(session);
+
+    expect(mixer.getNumber(codex.propertyNames.getId('counter'))).toBe(10);
+    // setが先に走ってから候補のaddが乗る（逆順ならsetが上書きして1になる）
+    expect(mixer.getNumber(codex.propertyNames.getId('chosen'))).toBe(11);
   });
 
   it('on_shortfall: {} という空宣言は、既定の下限クランプをエラーなく打ち消す', () => {

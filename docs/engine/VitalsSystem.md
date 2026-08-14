@@ -217,7 +217,7 @@ blood:
   すれば「渇きと飢えを断ち切ってから初めて血が戻る」が書けますが、**動物に餌をやる仕組みがまだ無い**
   ため、人と獣で別々の条件を持つことになります。同じ形のまま両方へ配れるほうを今は選んでいます。
 - 動物に配るときは `on_shortfall` へ `spawn` を並べ、**同じ枠での置き換え**として死体を出します
-  （`destroy` が `spawn` より先に走る、[`GameElementDefinition.md`](./GameElementDefinition.md) 9.4節）。
+  （`destroy` を `spawn` より先に書く、[`GameElementDefinition.md`](./GameElementDefinition.md) 9.4節）。
   ただし**狩りの決着で死体になる道は、血が尽きるより先に仕留めの一撃**が持ちます
   （[`HuntingSystem.md`](./HuntingSystem.md) 1.4 節）。失血死は、逃げられた個体が後で倒れる道です。
 
