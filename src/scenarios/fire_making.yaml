@@ -1,0 +1,21 @@
+# 火のテスト用（docs/engine/FireSystem.md）。火起こしから焼き上がりまでを一通り試せる開始状態。
+#
+# 手順: 火起こし具を枯れ草へ重ねる → できた火種を焚き火へ重ねる → 太い枝をくべる →
+# 火力が育ったら生肉を焚き火のカードへ入れる。石を3つ積めば三石のかまどになる。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 火起こし
+
+# 3は開始地点が砂浜になるシード。
+seed: 3
+
+player:
+  # 火起こしは4割外すので、枯れ草は何度か試せる数を持たせる。
+  hand: [fire_drill, dry_grass, dry_grass, dry_grass]
+
+location:
+  type: sandy_beach
+  # 焚き火は小枝3本のレシピでも作れるが、着火から試せるよう最初から据えておく。
+  fixtures: [campfire]
+  items: [thick_branch, thick_branch, twig, raw_meat, stone, stone, stone]

@@ -72,7 +72,7 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 探索で見つかる発見物（アイテム）。itemタグによって土地のitemsスロットへ振り分けられる。
-  # thick_branch/stone/twigは工作・燃料などの素材の想定（レシピは今後の課題）。
+  # thick_branch/stone/twigは工作・燃料などの素材。枯れ草（dry_grass）はfire.yamlが定義する。
   # exploreが湧かせるヤシの実（coconut）はcoconut.yamlが定義する。
   # ------------------------------------------------------------------
 
@@ -80,9 +80,13 @@ object_defs:
   # 建材の丸太はこれとは別の物として後から入るので、ここを丸太まで大きくしない。
   thick_branch:
     tags: [item]
+    # 燃料としての量はfire.yamlのburnable traitが持つ。
+    traits: [burnable]
     props:
       weight: {value: 1000}
       volume: {value: 1300}
+      # 太い枝1本で、炎を100分ほど保てる（docs/engine/FireSystem.md 2.3節）。
+      fuel: {value: 20}
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
   # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
@@ -98,14 +102,19 @@ object_defs:
         destroy: self
         spawn: {object: sharp_stone}
 
-  # 小枝。指の太さの細い枝を拾い集めたもので、火口・焚き付け・結びに使う想定。柄にすると折れる。
+  # 小枝。指の太さの細い枝を拾い集めたもので、焚き付け・結びに使う。柄にすると折れる。
   # 槍や銛の柄になる2mほどの長い棒は、拾う物ではなく若木を刃物で切って採る別の物として後から入る
   # （docs/world/SurvivalItems.md 0節）。ここを長くして兼ねさせない。
   twig:
     tags: [item]
+    # 火口にも燃料にもなる（docs/engine/FireSystem.md 3.2節）。火起こし具へ重ねれば焚き付けとして
+    # 燃え、炉へ重ねれば燃料。摩擦の熾を受け止めるには太すぎるので、火口タグは持たない。
+    traits: [burnable]
     props:
       weight: {value: 300}
       volume: {value: 500}
+      # 小枝1本で、熾火を1時間半ほど保てる。
+      fuel: {value: 3}
 
   # ------------------------------------------------------------------
   # 探索で見つかる設置物。fixtureタグによって土地のfixturesスロットへ振り分けられる。
@@ -326,6 +335,11 @@ object_defs:
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: taro, count: 2, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: dry_grass, into: self}
+              - {object: water_spinach, into: self}
           # 3個
           - weight: 18
             add: {self: {exploration_progress: 1}}
@@ -531,6 +545,11 @@ object_defs:
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
+              - {object: twig, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: dry_grass, into: self}
               - {object: twig, into: self}
           # 3個
           - weight: 8

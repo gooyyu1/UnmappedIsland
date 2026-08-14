@@ -207,19 +207,66 @@ object_defs:
   # 解体して得られる素材。獲物の種類によらず同じ物が出て、獲物の大きさは個数で表す
   # （HuntingSystem.md 1.5節）。骨と皮の使い道は docs/world/SurvivalItems.md 参照。
 
-  # 生肉。火も燻製もまだ無いので、生のまま食べるしかない。1切れで4時間の腹持ちと、ヤシガニ1匹分の
-  # 肉の栄養——ヤシガニ2kgのうち食べられるのがおよそこの1切れぶん、という対応で揃えている。
+  # 生肉。1切れで4時間の腹持ちと、ヤシガニ1匹分の肉の栄養——ヤシガニ2kgのうち食べられるのが
+  # およそこの1切れぶん、という対応で揃えている。
+  #
+  # 炉の火にかけると焼ける（docs/engine/FireSystem.md 7節）。**炉のことは何も知らない**——
+  # 加熱の進み（cooking_progress）を持つだけで、進めるのは炉の側。
   raw_meat:
     tags: [item, food]
     props:
       weight: {value: 500}
       volume: {value: 500}
+      # 炎（3/tick）なら8tick＝2時間で焼き上がる。火から出せば止まり、戻せば続きから進む。
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_overflow:
+          spawn: {object: roasted_meat}
+          destroy: self
     actions:
       eat:
         add:
           actor:
             satiety: 16
             meat_nutrition: 200
+        destroy: self
+
+  # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
+  # 放っておくと焦げる（同7.2節）。
+  roasted_meat:
+    tags: [item, food]
+    props:
+      # 水が飛んだぶん軽くなる。
+      weight: {value: 400}
+      volume: {value: 450}
+      # 焦げるまでの猶予は生から焼きより短い。炎なら4tick＝1時間。
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 12}
+        on_overflow:
+          spawn: {object: charred_lump}
+          destroy: self
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 20
+            meat_nutrition: 260
+        destroy: self
+
+  # 焦げた塊。加熱の進みを持たないので、ここで鎖が終わる。食べられはするが、ほとんど何も残らない。
+  charred_lump:
+    tags: [item, food]
+    props:
+      weight: {value: 250}
+      volume: {value: 300}
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 4
+            meat_nutrition: 20
         destroy: self
 
   # 獣骨。1頭ぶんの骨をまとめた1枚。

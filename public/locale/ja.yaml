@@ -98,6 +98,23 @@ object_texts:
         display_name: 肉の栄養
       grain_tuber_nutrition:
         display_name: 穀物・イモの栄養
+      fuel:
+        display_name: 薪
+        description: 炉に載っている燃えるもの。尽きれば火は弱っていく。
+      heat:
+        display_name: 火力
+        description: 今どれだけ燃えているか。一番下は種火で、料理はできないが薪を足せば育つ。
+      fuel_capacity:
+        display_name: 積める薪
+      stones:
+        display_name: 積んだ石
+      cooking_progress:
+        display_name: 加熱の進み
+        description: 火にかけられている度合い。火から出せば止まり、戻せば続きから進む。
+      ignition_chance:
+        display_name: 火の付きやすさ
+      life:
+        display_name: 残り
     actions:
       explore:
         display_name: 探索する
@@ -121,6 +138,15 @@ object_texts:
       knap:
         display_name: 打ち割る
         description: 石を打ち合わせて割り、鋭い縁を作る。
+      add_fuel:
+        display_name: くべる
+        description: 火にくべる。燃える物は炉の薪へ溶けて、そのぶん火が長くもつ。
+      ignite:
+        display_name: 火をつける
+        description: 火種を落として種火を立てる。そこから先は、くべた薪が火を育てる。
+      add_stone:
+        display_name: 石を積む
+        description: 炉のまわりへ石を据える。必要な数が揃うと、炉が組み直される。
       strike:
         display_name: 殴る
         description: 手にした武器で打ちかかる。当たれば傷を負わせられるが、外しても相手は気を立てる。
@@ -226,6 +252,12 @@ object_texts:
   raw_meat:
     display_name: 生肉
     description: 獲物から外した肉。火が無いので、生のまま食べるしかない。
+  roasted_meat:
+    display_name: 焼けた肉
+    description: 火が通って締まった肉。生より腹に残る。出し忘れると焦げる。
+  charred_lump:
+    display_name: 焦げた塊
+    description: 焼きすぎて炭になった肉。腹の足しにはならない。
   animal_bone:
     display_name: 獣骨
     description: 1頭ぶんの骨。硬く、削れば針にも道具の頭にもなる。
@@ -324,6 +356,30 @@ object_texts:
   rope:
     display_name: ロープ
     description: 紐3本を逆撚りに組んだ縄。太く、体重を預けても切れない。
+
+  # 火の連鎖（fire.yaml）。
+  fire_drill:
+    display_name: 火起こし具
+    description: きりもみ式の火起こし具。両手で錐を揉んで、火口へ移す熾を作る。
+  dry_grass:
+    display_name: 枯れ草
+    description: よく乾いた草の束。細くほぐれていて、摩擦の熾を受け止められる数少ない素材。
+    combinations:
+      light:
+        display_name: 火をつける
+        description: 錐を揉んで熾を落とし、息を吹き込んで炎に育てる。外せば火口だけが無駄になる。
+  burning_tinder:
+    display_name: 火種
+    description: 炎を上げている火口。すぐ燃え尽きるので、炉まで運ぶ以外にできることはない。
+  campfire:
+    display_name: 焚き火
+    description: 小枝を組んだだけの火。器を載せる場所は無く、放っておけば種火もすぐ死ぬ。
+  three_stone_hearth:
+    display_name: 三石のかまど
+    description: 石を三つ据えた炉。石が支点になって、器を火にかけられる。
+  stone_hearth:
+    display_name: 石囲いの炉
+    description: 石で囲った炉。風を防ぎ、灰をかぶった種火が翌朝まで生きる。
 
   # 入れ物（containers.yaml）。
   woven_basket:
