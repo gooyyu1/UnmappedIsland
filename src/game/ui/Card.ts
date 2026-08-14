@@ -567,14 +567,16 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 手に在るぶんを引いた姿にする（CardInteraction.md 2節・5節）。呼ぶ側は残りの数を言うだけで、
-   * 数字を書き換えるのか薄くするのかはここが決める。
+   * この枠に今いくつ在るかを言う（CardInteraction.md 2節・5節）。手に在るぶんも運ばれている最中の
+   * ぶんもまだここには居ないので、呼ぶ側はそれを引いた数を渡す。数字を書き換えるのか、札そのものを
+   * 出さないのかはここが決める。
    *
-   * 0になった枠に残るのは札ではなく、帰ってくる場所を示す印——薄く、数字のバッジも出ない。掴んで
-   * 運んでいる間も、離した場所へ置いたままにしている間も、元の枠にはこの姿が残る。
+   * 0枚の枠に札は出ない。**emptiedの枠だけは薄い印を残す**——そこに在るのは札ではなく、持ち出した
+   * 1枚が帰ってくる場所を示す印なので、数字のバッジも出ない。
    */
-  setRemaining(remaining: number): void {
+  setRemaining(remaining: number, emptied: boolean): void {
     if ((this._content.count ?? 1) !== remaining) this.setContent({ ...this._content, count: remaining });
+    this.setVisible(remaining > 0 || emptied);
     this.setAlpha(remaining === 0 ? EMPTIED_ALPHA : 1);
   }
 

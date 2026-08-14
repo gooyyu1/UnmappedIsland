@@ -203,8 +203,10 @@ export class CarriedCards {
     // 画面を作り直していれば、元のカードはもう無い。
     if (this.source.scene === undefined) return;
 
-    // 手に在る札（掴んだ1枚を含む）も帰り道の空中の札も、まだ束には居ない。
-    this.source.setRemaining(this.sourceCount - (this.grabbed ? 1 : 0) - this.followers - this.flyingHome);
+    // 手に在る札（掴んだ1枚を含む）も帰り道の空中の札も、まだ束には居ない。全部持ち出して0に
+    // なっても、そこは持ち出した札が帰ってくる枠なので印を残す（emptied）。
+    const carried = (this.grabbed ? 1 : 0) + this.followers + this.flyingHome;
+    this.source.setRemaining(this.sourceCount - carried, true);
   }
 }
 
