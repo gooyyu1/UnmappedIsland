@@ -337,16 +337,14 @@ const UNNAMED_LOCATION = '名もなき土地';
 const STATUS_TAG = 'status';
 
 /**
- * 中身のバー（液体の残量、CardView.md 8.2節）の塗り色を宣言するプロパティに付けるタグ
- * （GameElementDefinition.md 6.7節、LiquidContainerSystem.md 2節・4.1節）。
+ * 中身のバー（液体の残量、CardView.md 8.2節）の塗り色を持つプロパティの名前
+ * （LiquidContainerSystem.md 2節・4.1節）。
  *
- * UI側は「fill_colorタグを持つプロパティの値が塗りの色」とだけ知っていて、液体の種類も
- * プロパティの名前も知らない。宣言していない液体は灰色で出る。
- *
- * **これだけがタグで、バーを出すかどうかはプロパティの`gauge`宣言（6.8節）が持つ。** こちらは
- * 「バーを出すか」ではなく「この値が色そのもの」という別のことを言うため、宣言の場所も別になる。
+ * UI側は「液体が`color`という名前で自分の色を宣言する」とだけ知っていて、液体の種類は知らない。
+ * 宣言していない液体は灰色で出る。中身のバーはこの1本しか無く、1つの物が2つの`color`を持つことも
+ * ありえない（プロパティ名は物ごとに一意）ので、タグにして数を数えられるようにする意味は無い。
  */
-const FILL_COLOR_TAG = 'fill_color';
+const COLOR_PROPERTY = 'color';
 
 /**
  * 入れ物と中身の関係から出るバー（CardView.md 8節）の鍵。プロパティが宣言したゲージはプロパティ名
@@ -517,14 +515,14 @@ export function fromGameSession(
       : undefined;
   };
 
-  const fillColorTagId = codex.propertyTagNames.tryGetId(FILL_COLOR_TAG);
+  const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
   /**
    * 量として存在する中身（水・茶・油）のバー（LiquidContainerSystem.md 2節・4.1節）。
    *
    * 割合は中身自身の状態なので、代表（represented_by、7.6節）が量的オブジェクトかどうかだけで
    * 決まる。空の容器は代表が自分自身になるため、バーは出ない——映す中身がいない。UI側は容器の
    * スロット名を知らない。**色は良し悪しではなく中身そのものの色**なので、両端の見せ方ではなく
-   * fill_colorタグを持つプロパティの値をそのまま渡す（宣言していない液体は灰色）。
+   * 中身が`color`として宣言した値をそのまま渡す（宣言していない液体は灰色）。
    */
   const fillGaugeOf = (object: WorldObject): CardGauge | undefined => {
     const content = object.tryGetRepresentative();
@@ -533,8 +531,7 @@ export function fromGameSession(
     const ratio = content.fillRatioInParentSlot();
     if (ratio === undefined) return undefined;
 
-    const color =
-      fillColorTagId === undefined ? undefined : content.readPropertiesWithTag(fillColorTagId).at(0)?.value;
+    const color = colorPropertyId === undefined ? undefined : content.readProperty(colorPropertyId)?.value;
     return { ...NEUTRAL_ENDS, key: BUILTIN_GAUGE_KEYS.fill, ratio, color: color ?? COLOR.cardFillUnknown };
   };
 

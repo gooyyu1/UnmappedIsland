@@ -10,9 +10,6 @@ property_tags:
   status:
   health:
   nutrition:
-  # 中身のバー（液体の残量）の塗り色を宣言するもの（CardView.md 8.2節、LiquidContainerSystem.md 2節）。
-  # カードにバーとして出すかどうかはタグではなくprops側の`gauge`が宣言する（6.8節）。
-  fill_color:
 
 traits:
   # あらゆる「場所」が探索の可否によらず共通して持つ構造（ExplorationSystem.md参照）。
