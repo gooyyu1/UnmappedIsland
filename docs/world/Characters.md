@@ -30,13 +30,15 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `pain` / `blood` / `satiety` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
+| プロパティ | `pain` / `blood` / `satiety` / `stomach` / `intestine` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterArt.ts`。絵が入るまでの繋ぎ） |
 
 `status` タグが付くのは `pain` / `blood` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の7つで、
 宣言順もこの順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
-[`StatusArea.md`](../ui/StatusArea.md)）。`pain` と `blood` が先頭なのは trait 由来の props が
-キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。
+[`StatusArea.md`](../ui/StatusArea.md)）。先頭の3つが trait 由来なのは、trait の props がキャラクタ自身の
+props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身（`stomach` / `intestine`）は `status` を
+持たない**——画面に出るのは合流点の空腹感だけで、配管は開いて見るもの
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。
 
 気絶を決める `consciousness` は、`pain` と同じくキャラクタ間で共通の値としてここへ加わる予定である
 （押し下げる側は [`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節。気を失った手番の飛ばし方が
@@ -53,8 +55,15 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 （`WorldObject.exhaustedStage`）。**死因の名前になるのは、その値が居る段**（`dehydrated` / `starved` /
 `exsanguinated`）で、画面はその段の文言を出すだけ。
 
-- **`satiety`（満腹度）**: 満腹から空になるまでの時間を `-1/tick` で表す（`max` = tick数）。
-  0でも即死せず体調不良につながる想定（未実装。餓死は `body_fat` が受け持つため致命的域は持たない）。
+- **`satiety`（空腹感）**: **自分では動かない実効値**で、胃と腸の段が `modify` で押し上げる
+  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。`max` は容量ではなく感じ方の頂点なので、
+  下の「安全域を外れるのは `max` の80%」も「初期値は75%」も当てはまらない。餓死は `body_fat` が
+  受け持つため致命的域は持たない。感じ方に個体差は無く、`player_character` trait が配る。
+- **`stomach`（胃の中身）**: 食べた物が最初に入る量（tick数）。`max` が胃の大きさで、**1日に食べられる
+  量の上限**（3食ぶん）を決める。溜まっているほど速く腸へ送り、`max` の3/4に置いた段 **`full`** を
+  `eat` が読んで「もう食べられない」を見る（同 3.1 節）。
+- **`intestine`（腸の中身）**: 吸収されつつある量（tick数）。胃より遅く出すので、その差が在庫になる。
+  個体差は持たず trait が配る（同 3.2 節）。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
@@ -63,10 +72,12 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   **`dehydrated`**。
   `min: max` の段 **`full`**（満水ちょうど）を持ち、名前を固定する——液体の `drink` がこの名前で
   「もう飲めない」を見る（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
-- **`body_fat`（体脂肪）**: 尽きると餓死する。`-1/tick` で、`max` は「最大限に肥満した状態」から絶食で
-  保つ tick 数、初期値はその1/4（標準体格）。段は残り1日（96 tick）で切るだけで、尽きる域の名前が
-  **`starved`**。`status` タグを持たないためステータスエリアには出ない——画面に見える飢えの兆しは
-  満腹度が受け持つ。
+- **`body_fat`（体脂肪）**: 腸から吸収した分が積み上がり、尽きると餓死する。`max` は「最大限に肥満した
+  状態」から絶食で保つ tick 数、初期値はその1/4（標準体格）。**減る速さは自分の段で決まり**（太っている
+  ほど速い）、これが食べ過ぎても際限なく太らない平衡点になる。尽きる域の名前が **`starved`**。
+  1日に要る量の個体差（標準体格で `nourished` 段のレート）はここに出る
+  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 4 節）。`status` タグを持たないため
+  ステータスエリアには出ない——画面に見える飢えの兆しは空腹感が受け持つ。
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る想定（未実装。致死性は無い）。`-1/tick`。
 - **`stamina`（体力）**: 疲労の逆で、tickでは減らない。
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
@@ -91,11 +102,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **安全域から外れるのは `max` の80%**（＝ステータスエリアに出始める位置）。この境界だけは
   全ステータス・全キャラクタで共通でなければ「まだ大丈夫」の感覚が崩れる。端数は丸める——段のしきい値は
   人が読む数字なので、小数が書けても整数に留める。
-- **`satiety` / `hydration` の初期値は `max` の75%**（安全域のやや下）。満タンで始めると alert が
+- **`hydration` の初期値は `max` の75%**（安全域のやや下）。空腹感は自分では動かないので、同じ狙いを
+  **胃と腸の初期値**で満たす——全キャラクタが留意域（55）から始まる
+  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3.3 節）。満タンで始めると alert が
   `safe` でステータスバーに出ず（[`StatusArea.md`](../ui/StatusArea.md)）、
   飲食の操作も最初は試せないため。tickで減らない `stamina` と、序盤に眠らせたくない `wakefulness` は
   満タンで始める。
-- tickで減るもの（`satiety` / `wakefulness`）は、80%より下を**残り時間**で切る:
+- tickで減るもの（`wakefulness`）は、80%より下を**残り時間**で切る:
   残り12時間未満で `caution`、残り3時間未満で `danger`。
 - `hydration` も残り時間で切る: 残り2日未満で `caution`、残り1日未満で `danger`、
   残り6時間未満で `fatal`。

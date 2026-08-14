@@ -1,0 +1,16 @@
+# 消化（DigestionSystem.md）の見え方を試すための開始状態。胃も腸も空で、満腹感が危険域から始まる。
+# 足元の食料を食べると、満腹感がすぐ上がり、しばらくしてから体脂肪が増えていく。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 空きっ腹
+
+seed: 3
+
+player:
+  props:
+    stomach: 0
+    intestine: 0
+
+location:
+  items: [taro x3, coconut_crab x2, water_spinach x4]

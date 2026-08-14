@@ -84,10 +84,18 @@ object_texts:
         description: 殴られた身体の揺れ。当たった瞬間に跳ね上がり、時間とともに引いていく。
       satiety:
         display_name: 満腹度
+        description: 今どれだけ腹が満ちているか。胃に入っている分と、腸で吸収されている分の両方で決まる。
+      stomach:
+        display_name: 胃の中身
+        description: 食べた物が最初に入る所。ここが満杯だともう食べられず、少しずつ腸へ送られていく。
+      intestine:
+        display_name: 腸の中身
+        description: 吸収されつつある分。ここを通って初めて蓄えになるので、食べてから身になるまでには時が要る。
       hydration:
         display_name: 水分
       body_fat:
         display_name: 体脂肪
+        description: 体に蓄えた脂肪。腸から吸収した分が積み上がり、何もしなくても少しずつ減る。尽きれば飢えで死ぬ。
       wakefulness:
         display_name: 覚醒度
       stamina:
@@ -635,6 +643,7 @@ reason_texts:
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
   not_raining: 雨は降っていない。溜められる雨がない。
+  too_full: 腹がいっぱいで、これ以上は入らない。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出す（VitalsSystem.md 6節）ので、

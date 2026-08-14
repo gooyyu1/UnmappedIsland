@@ -142,13 +142,13 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   it('ゼリー状の果肉を食べると、水分は入るが腹には残らない', () => {
     const jelly = spawnInto('coconut_jelly', player, 'hand');
-    const satietyId = codex.propertyNames.getId('satiety');
-    for (const id of [satietyId, hydrationId]) player.setProperty(id, 0);
+    const stomachId = codex.propertyNames.getId('stomach');
+    for (const id of [stomachId, hydrationId]) player.setProperty(id, 0);
 
     expect(jelly.tryExecuteAction('eat', player, session)).toBe(true);
 
     expect(player.getNumber(hydrationId)).toBeCloseTo(5.2, 10);
-    expect(player.getNumber(satietyId), '熟した果肉（6）より少ない').toBe(2);
+    expect(player.getNumber(stomachId), '熟した果肉（6）より少ない').toBe(2);
     expect(jelly.parent, '食べた果肉は消える').toBeUndefined();
   });
 
@@ -265,13 +265,13 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   it('果肉を食べると満腹度・水分・栄養が増え、果肉は無くなる', () => {
     const meat = spawnInto('coconut_meat', player, 'hand');
-    const satietyId = codex.propertyNames.getId('satiety');
+    const stomachId = codex.propertyNames.getId('stomach');
     const nutritionId = codex.propertyNames.getId('vegetable_nutrition');
-    for (const id of [satietyId, hydrationId, nutritionId]) player.setProperty(id, 0);
+    for (const id of [stomachId, hydrationId, nutritionId]) player.setProperty(id, 0);
 
     expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
 
-    expect(player.getNumber(satietyId)).toBe(6);
+    expect(player.getNumber(stomachId)).toBe(6);
     expect(player.getNumber(hydrationId)).toBe(6);
     expect(player.getNumber(nutritionId)).toBe(25);
     expect(meat.parent, '食べた果肉は消える').toBeUndefined();
