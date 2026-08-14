@@ -71,7 +71,7 @@ jobs:
       - name: Prepare shared page header
         run: |
           # 変換したページと索引ページで同じ見た目にするため、追加のスタイルはここだけに書く
-          # （後続のpandocの--include-in-headerと、索引ページの生成が同じファイルを読む）。
+          # （変換スクリプトと、後続の索引ページの生成が同じファイルを読む）。
           cat > /tmp/docs-header.html <<'EOF'
           <style>
             /*
@@ -120,17 +120,17 @@ jobs:
       - name: Build game into site/game
         # baseを相対パスにすると、リポジトリ名・サブフォルダ名を成果物へ埋め込まずに済む
         # （https://<user>.github.io/<repo>/game/ でそのまま動く）。
-        run: npx vite build --base=./ --outDir=site/game --emptyOutDir
+        run: npx vite build --mode publish --base=./ --outDir=site/game --emptyOutDir
 
       - name: Build WorldCodex viewer into site/codex
         # 出力先（site/codex）はvite.codex.config.tsに書いてある。ゲームと同じソース・同じYAMLを読む
         # 別ページなので、ビルドだけを分ける。
-        run: npx vite build --config vite.codex.config.ts --base=./
+        run: npx vite build --config vite.codex.config.ts --mode publish --base=./
 
       - name: Generate missing index.html files
         run: |
           # site/ 配下の全ディレクトリを走査し、index.html が存在しないフォルダにのみ生成する。
-          # すでにindex.htmlがあるフォルダ（Pandoc変換済みを含む）は上書きしない。
+          # すでにindex.htmlがあるフォルダ（Markdownから変換済みのものを含む）は上書きしない。
           generate_index() {
             local dir="$1"
             # サイトルート自身はrelが空になる（前置きを外すだけでは"site"のまま残るため2段で削る）。
