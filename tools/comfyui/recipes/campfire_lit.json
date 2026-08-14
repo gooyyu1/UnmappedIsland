@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "src/assets/objects/campfire_lit.png を作り直すためのレシピ。build.py が読む。",
+    "火が付いていて料理にも使える焚き火（heatのcoals〜blaze段、public/world-codex/fire.yaml）。",
+    "",
+    "**炉そのものは campfire.json の絵をそのまま使う。** 別々に生成すると枝の組み方も色も個体も",
+    "揃わないので、火の付いていない絵の生データをQwenに描き足させ、切り出しの大きさと位置は",
+    "align で同じ絵から決める（README「火の付いた炉」節）。",
+    "",
+    "**炎は枝の高さの半分まで。** headroom 110 は生データの241px（枝の山の高さの49%）にあたり、",
+    "これを越えたぶんは切り落とされる。",
+    "",
+    "**紙の上に光を滲ませない。** 炎の周りの淡い光は紙より少し暗いだけなので、card_art.py の",
+    "separate が「影」として拾い、カードの上では灰色の靄になる。"
+  ],
+  "output": "src/assets/objects/campfire_lit.png",
+  "edit": {
+    "source": "campfire.json",
+    "prompt": "Keep this picture exactly as it is: the same pile of brown branches, in the same place, at the same size, painted in the same soft hand painted style on the same plain empty white page with the same wide white margin, and the same soft grey shadow under the pile. Now set it burning. Paint flames rising from the middle of the pile where the branches meet: warm orange and yellow tongues of fire with deep red at their base, licking up between the branches and reaching no higher than half the height of the pile above it, with a few small flames running along the branches. The bark closest to the flames is charred black, and glowing orange embers sit in the kindling underneath. Do not move, resize, redraw or add branches. The white page stays plain white right up to the edge of the flames: there is no glow, no haze, no smoke and no coloured light spilling onto the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "campfire.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "src/assets/objects/stone_hearth_ember.png を作り直すためのレシピ。build.py が読む。",
+    "種火だけが残った石囲いの炉（heatのember段、public/world-codex/fire.yaml）。この炉の種火は",
+    "翌朝まで生きるので、遊ぶ側がいちばん長く見るのはこの絵。",
+    "",
+    "作り方と勘所は recipes/campfire_ember.json と同じ。ただし**同じ文面では効かない**——焚き火では",
+    "枝が焦げて熾が覗いたのに、この炉では絵がほとんど変わらずに返った。熾の大きさと煙の高さを",
+    "数で言い、焚き付けが燃え尽きて置き換わったことまで書く（three_stone_hearth_ember.json と同じ）。"
+  ],
+  "output": "src/assets/objects/stone_hearth_ember.png",
+  "edit": {
+    "source": "stone_hearth.json",
+    "prompt": "Keep this picture exactly as it is: the same pile of brown branches and the same ring of grey stones around it, in the same places, at the same sizes, painted in the same soft hand painted style on the same plain empty white page with the same wide white margin, and the same soft grey shadow under the hearth. Now show the fire in it burnt down to embers. The dry kindling under the pile has burnt away, and in its place, showing through the gaps between the branches, lies a heap of embers as wide as one of the branches is long: dark red and glowing orange coals with pale grey ash lying over them. Every branch is charred black over the lower half of its length, worst where they meet in the middle, and the bark there is cracked and grey with ash. There is no flame anywhere in the picture, not one. A single thin wisp of pale grey smoke rises straight up out of the top of the pile, reaching about a third of the width of the hearth above it, and fades away. The stones keep their plain mottled grey colour: do not tint them orange and do not blacken them. Do not move, resize, redraw or add stones or branches. The white page stays plain white: there is no glow, no haze and no coloured light spilling onto the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "stone_hearth.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
