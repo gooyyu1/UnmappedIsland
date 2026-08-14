@@ -10,10 +10,9 @@
     "段は320。ばらけた繊維は詰めても縮まないので嵩がある（800ml）。撚ると1/10へ落ちるため、",
     "糸（256）より一段大きい。",
     "",
-    "**まっすぐな束は板に見える。** 一直線の束（9475）はカードの上では木の板と区別が付かなかった。",
-    "折り返して両端が同じ側へ出た束を採ると、繊維の束として読める。",
     "",
-    "**穴埋めを止める（keepHoles）。** 折り返した束の内側は紙なので、埋めると白い塊が嵌まる。"
+    "**まっすぐな束は板に見える。** 一直線の束（9475）はカードの上では木の板と区別が付かなかった。",
+    "折り返して輪にすると今度は糸や紐と区別が付かない。片端で束ねて反対側が開いた形を採る。"
   ],
   "output": "src/assets/objects/plant_fiber.png",
   "prompts": "objects.json",
@@ -21,7 +20,7 @@
   "workflow": "lane_background_sdxl.api.json",
   "loraStrength": 0,
   "noTrigger": true,
-  "seed": 9477,
+  "seed": 9473,
   "width": 1152,
   "height": 896,
   "edit": {
@@ -31,7 +30,6 @@
   "cardArt": {
     "size": "320",
     "mode": "background",
-    "keepHoles": true,
     "tolerance": 24,
     "edge": 4,
     "shadow": 1,

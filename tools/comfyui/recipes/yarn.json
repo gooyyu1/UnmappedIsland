@@ -11,7 +11,10 @@
     "",
     "段は256。撚ると嵩が繊維の1/10へ落ちる（800ml → 150ml）ので、束より小さく見せる。",
     "",
-    "**穴埋めを止める（keepHoles）。** 輪の内側は紙なので、埋めると白い塊が輪に嵌まる。"
+    "**輪に巻かない。** 繊維・糸・紐・縄がどれも丸い輪になると、札が並んだときに見分けが付かない。",
+    "糸は畳んで束ねた綛（かせ）にする。撚りが見えるので、まっすぐな繊維の束とも分かれる。",
+    "",
+    "**穴埋めを止める（keepHoles）。** 畳んだ折り返しが囲む隙間は紙なので、埋めると白い塊が残る。"
   ],
   "output": "src/assets/objects/yarn.png",
   "prompts": "objects.json",
@@ -19,11 +22,11 @@
   "workflow": "lane_background_sdxl.api.json",
   "loraStrength": 0,
   "noTrigger": true,
-  "width": 832,
-  "height": 1280,
-  "seed": 9352,
+  "width": 1152,
+  "height": 896,
+  "seed": 9484,
   "edit": {
-    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the single coil of hand spun thread exactly as it is in shape and layout, with the spiral of the twist running along its whole length and the frayed end lying free, but paint it with soft brush strokes and gentle natural shading instead of photographic detail. Change its colour to a warm mid brown, clearly darker than the white page. Remove the background completely and replace it with a plain empty white page, leaving the coil alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Dry matte surface, flat even lighting. No text, no letters, no numbers.",
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same twisted skein of hand spun yarn exactly as it is in shape and layout, folded on itself into one compact bundle with the strands running along it, but paint it with soft brush strokes and gentle natural shading instead of photographic detail. Change its colour to a warm mid brown, clearly darker than the white page. Remove the background completely and replace it with a plain empty white page, leaving the skein alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Dry matte surface, flat even lighting. No text, no letters, no numbers.",
     "seed": 1
   },
   "cardArt": {
