@@ -152,14 +152,31 @@ const BRIGHTEN_MS = 320;
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
 
+/** バーのアイコンボタン1つ。絵があればそれを、無ければ絵文字を置く（iconArt参照）。 */
+interface BarIcon {
+  readonly art?: IconName;
+  readonly icon: string;
+}
+
 /** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
-const MENU_ICON = '☰';
+const MENU_ICON: BarIcon = { icon: '☰' };
 
 /** 地図ボタンのアイコン。ドメイン側に表示できる形が無い固定値（装備・怪我のアイコンと同じ扱い）。 */
 const MAP_ICON = '🗺️';
 
-const OPTION_ICONS = ['⚙️', '📖', '📓', MENU_ICON];
-const FILTER_ICONS = ['🗂️', '🍳', '💧', '🔨', '🎲'];
+const OPTION_ICONS: readonly BarIcon[] = [
+  { art: 'settings', icon: '⚙️' },
+  { art: 'codex', icon: '📖' },
+  { art: 'diary', icon: '📓' },
+  MENU_ICON,
+];
+const FILTER_ICONS: readonly BarIcon[] = [
+  { art: 'filter_all', icon: '🗂️' },
+  { art: 'filter_cook', icon: '🍖' },
+  { art: 'filter_water', icon: '💧' },
+  { art: 'filter_craft', icon: '🔨' },
+  { art: 'filter_fun', icon: '🎵' },
+];
 
 /**
  * ワールドを変えている途中の、あるtick境界での表示内容（PlayScene.record）。
@@ -2143,7 +2160,7 @@ export class PlayScene extends ResponsiveScene {
     const gap = this.metrics.px(SIZE.barGap);
     const span = OPTION_ICONS.length * size + (OPTION_ICONS.length - 1) * gap;
 
-    OPTION_ICONS.forEach((icon, index) => {
+    OPTION_ICONS.forEach((spec, index) => {
       const rect = this.metrics.isLandscape
         ? {
             x: area.x + (area.width - size) / 2,
@@ -2157,8 +2174,8 @@ export class PlayScene extends ResponsiveScene {
             width: size,
             height: size,
           };
-      const button = this.addIconButton(rect, icon, false, COLOR.paperButtonBorder);
-      if (icon === MENU_ICON) button.on('pointerup', () => this.confirmReturnToTitle());
+      const button = this.addIconButton(rect, spec, false, COLOR.paperButtonBorder);
+      if (spec === MENU_ICON) button.on('pointerup', () => this.confirmReturnToTitle());
     });
   }
 
@@ -2170,7 +2187,7 @@ export class PlayScene extends ResponsiveScene {
     const gap = this.metrics.px(SIZE.barGap);
     const padding = this.metrics.px(BAR_PADDING);
 
-    this.filterButtons = FILTER_ICONS.map((icon, index) => {
+    this.filterButtons = FILTER_ICONS.map((spec, index) => {
       const rect = this.metrics.isLandscape
         ? {
             x: area.x + (area.width - size) / 2,
@@ -2184,7 +2201,7 @@ export class PlayScene extends ResponsiveScene {
             width: size,
             height: size,
           };
-      const button = this.addIconButton(rect, icon, index === this.selectedFilter, COLOR.filterButtonBorder);
+      const button = this.addIconButton(rect, spec, index === this.selectedFilter, COLOR.filterButtonBorder);
       button.on('pointerup', () => this.selectFilter(index));
       return button;
     });
@@ -2202,14 +2219,26 @@ export class PlayScene extends ResponsiveScene {
    *
    * スロットボタンと同じく紙として置かれるので、同じ影を落とす（addSlotButton参照）。
    */
-  private addIconButton(rect: Rect, icon: string, active: boolean, border: number): Button {
+  private addIconButton(rect: Rect, spec: BarIcon, active: boolean, border: number): Button {
     const button = new Button(this, rect, this.iconButtonStyle(active, border));
-    button.addContent(
-      addLabel(this, this.metrics, rect.width / 2, rect.height / 2, icon, {
-        size: ICON_BUTTON_GLYPH,
-      }).setOrigin(0.5),
-    );
+    button.addContent(this.barIcon(spec, rect));
     return button;
+  }
+
+  /**
+   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ置く（slotButtonIconと同じ扱い）。
+   *
+   * **どの絵も同じ大きさで敷く。** 4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
+   */
+  private barIcon(spec: BarIcon, rect: Rect): Phaser.GameObjects.GameObject {
+    const x = rect.width / 2;
+    const y = rect.height / 2;
+    const texture = spec.art === undefined ? undefined : iconTexture(spec.art);
+    if (texture !== undefined && this.textures.exists(texture)) {
+      const size = this.metrics.px(SIZE.iconButtonArt);
+      return this.add.image(x, y, texture).setOrigin(0.5).setDisplaySize(size, size);
+    }
+    return addLabel(this, this.metrics, x, y, spec.icon, { size: ICON_BUTTON_GLYPH }).setOrigin(0.5);
   }
 
   private iconButtonStyle(active: boolean, border: number): BoxStyle {

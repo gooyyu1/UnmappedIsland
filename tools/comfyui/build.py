@@ -95,7 +95,8 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
     （実 → 皮を剥いだ実 → … のような連鎖はここの再帰で解決される）。基準は source が指す別レシピで、
     source を持たない edit は同じレシピの edit を外したもの——つまり自分の paint / 生成——を指す。
 
-    paint を持つレシピは、生成の代わりに sky_art.py で下地を描く。
+    paint を持つレシピは、生成の代わりに sky_art.py で下地を描く。glyph を持つレシピは絵文字を
+    白い紙へ描く（emoji_page.py）。どちらも edit と組み合わせると、描いたものが Qwen の下絵になる。
     """
     edit = recipe.get("edit")
     if edit is not None:
@@ -170,6 +171,20 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
             ],
         )
         return grain
+
+    glyph = recipe.get("glyph")
+    if glyph is not None:
+        drawn = raw_dir / f"{Path(recipe['output']).stem}_glyph.png"
+        run(
+            "emoji_page.py",
+            [
+                "--out", str(drawn),
+                "--emoji", glyph["emoji"],
+                "--page", str(glyph["page"]),
+                "--size", str(glyph["size"]),
+            ],
+        )
+        return drawn
 
     paint = recipe.get("paint")
     if paint is not None:

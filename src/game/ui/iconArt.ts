@@ -18,7 +18,20 @@ const FILES = import.meta.glob('../../assets/icons/*.png', {
  * 絵を置けるアイコンの識別子。ここに無い名前のファイルは黙って使われないままになるので、
  * 実在するかどうかは自動テスト（tests/game/iconArt.test.ts）が検査する。
  */
-export const ICON_NAMES = ['map', 'equipment', 'injury', 'recipe'] as const;
+export const ICON_NAMES = [
+  'map',
+  'equipment',
+  'injury',
+  'recipe',
+  'settings',
+  'codex',
+  'diary',
+  'filter_all',
+  'filter_cook',
+  'filter_water',
+  'filter_craft',
+  'filter_fun',
+] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
 

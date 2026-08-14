@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/icons/filter_craft.png を作り直すためのレシピ。build.py が読む。",
+    "フィルターバーの「クラフティング」ボタンの絵（docs/ui/ScreenLayout.md 6節）。",
+    "",
+    "**絵文字が下絵。** 役割を表す絵は生成では毎回ちがう物が出て、押す前に何のボタンか読めない。",
+    "形と配置は絵文字から借り、質感だけをQwenで描き直す（emoji_page.py、READMEの",
+    "「バーのアイコン」節）。"
+  ],
+  "output": "src/assets/icons/filter_craft.png",
+  "glyph": {
+    "emoji": "🔨",
+    "page": 1024,
+    "size": 560
+  },
+  "edit": {
+    "prompt": "Repaint this hammer as a hand painted illustration of a real hammer with a wooden handle and an iron head. Keep the same shape, position, angle and colours. Paint it with soft brush strokes, real material texture and gentle natural shading instead of flat glossy cartoon shapes with hard outlines. Muted natural colours, soft even lighting from the upper left. Leave it alone in the middle of a plain empty white page with a wide white margin all around it, and put a soft grey shadow directly beneath it. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "164",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "canvas": [160, 160]
+  }
+}
