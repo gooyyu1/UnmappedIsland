@@ -20,13 +20,13 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 - **実データ全ファイルの受理**: `public/world-codex/` の全YAMLファイル（`core.yaml`・`locations.yaml`・
   `liquid_containers.yaml`・`containers.yaml`・`foods.yaml`・`characters/`・`terrain_generation.yaml`）が、実際にゲームがロードしている
   ままの内容でスキーマを満たすことを確認（ローダーで読み込めるファイルはスキーマも通る、が維持基準）
-- **不正な記述の拒否**: `set`/`add`/`destroy`/`spawn`/`transfer`/`move` と `pick` を同時に指定する、identifier の
+- **不正な記述の拒否**: identifier の
   命名規則に反するキーを使う、未定義の比較演算子を使う、`set`/`add` に未対応の対象キー（`sibling`/`child` など)を
   使う、`destroy` の対象に `ancestor` を使う、枠の `accept` に `tag` と `object` を同時指定する（またはどちらも省略する）、
   `combinations` に `with` を書き忘れる、廃止済みの `active:` 入れ子を使う、`passives` を配列でなく単一マッピングで
   書く、`conditions` の葉に `slot` と `prop` を同時指定する、`conditions` の `value` に未対応の `max`/`min` を使う、
-  `in`/`not_in` に配列でない `value` を渡す、`move` の `object` に `actor` 以外を使う、pick候補が active動詞と
-  `pick` を同時に持つ、といった誤った記述が拒否されることを確認
+  `in`/`not_in` に配列でない `value` を渡す、`move` の `object` に `actor` 以外を使う、といった誤った記述が
+  拒否されることを確認
 
 ## 2. スキーマの範囲
 

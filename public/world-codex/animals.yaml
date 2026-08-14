@@ -142,7 +142,7 @@ object_defs:
           - {name: low, min: 280, alert: watch}
           - {name: replete, min: 320}
         # 失血死。仕留めの一撃（HuntingSystem.md 1.4節）と同じく、自分が居た枠がそのまま死体に変わる
-        # （destroyがspawnより先に走る、9.4節）。こちらは**逃げられた個体が後で倒れる道**。
+        # （destroyをspawnより先に書く、9.4節）。こちらは**逃げられた個体が後で倒れる道**。
         on_shortfall:
           destroy: self
           spawn: {object: monkey_carcass}
@@ -192,7 +192,7 @@ object_defs:
             spawn: {object: monkey_carcass}
             signal: killed
 
-  # サルの死体。仕留めた個体が、その枠のまま置き換わる（destroyがspawnより先に走る、9.4節）。
+  # サルの死体。仕留めた個体が、その枠のまま置き換わる（destroyをspawnより先に書く、9.4節）。
   # 刺さっていた傷は持ち主から離れられないので道連れに消え、当てていた治療具だけが地面へ落ちる。
   #
   # 腐敗はまだ無いので、置いたままでも傷まない（HuntingSystem.md 8節）。
@@ -404,8 +404,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 6}
         on_overflow:
-          spawn: {object: roasted_rat}
           destroy: self
+          spawn: {object: roasted_rat}
 
   # 丸焼きのネズミ。食べると小さな骨が残る（骨針の材料、docs/world/SurvivalItems.md 1.2節の
   # 繊維 → 罠 → 小動物 → 小骨 → 骨針）。**罠だけを起点に、刃物を1つも経由せず縫製へ届く。**
@@ -418,8 +418,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 4}
         on_overflow:
-          spawn: {object: charred_lump}
           destroy: self
+          spawn: {object: charred_lump}
     actions:
       eat:
         conditions:
@@ -473,8 +473,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 24}
         on_overflow:
-          spawn: {object: roasted_meat}
           destroy: self
+          spawn: {object: roasted_meat}
     actions:
       eat:
         conditions:
@@ -499,8 +499,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 12}
         on_overflow:
-          spawn: {object: charred_lump}
           destroy: self
+          spawn: {object: charred_lump}
     actions:
       eat:
         conditions:

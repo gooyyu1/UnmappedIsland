@@ -14,16 +14,14 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { hasActiveContent, parseScalarNumber, tryGetNode } from './parseCommon';
+import { parseScalarNumber, tryGetNode } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
-import { parsePickList } from './parseActionsAndCombinations';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ActiveEffects, SetEffect } from '../domain/defs/ActiveEffect';
 import type { AlertLevel } from '../domain/defs/AlertLevel';
 import { ALERT_LEVELS } from '../domain/defs/AlertLevel';
 import type { ActiveEffect } from '../domain/defs/ActiveEffect';
-import { PickEffect } from '../domain/defs/PickEffect';
 import { PropertyDef, PropertyRange, PropertyStage } from '../domain/defs/PropertyDef';
 import type { PassiveEffect } from '../domain/defs/PassiveEffect';
 
@@ -181,27 +179,12 @@ function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: 
 }
 
 /**
- * rangeイベント（on_overflow・on_shortfall、6.3節）の中身を読む。activeとpickは排他
- * （9.7節・10節）。対象はselfのみで、pick候補の中の効果にも引き継ぐ。
- * 空のmapping（`on_shortfall: {}`）は「宣言だけして何もしない」（既定のクランプを打ち消す）を
- * 意味し、空のActiveEffectsになる。
+ * rangeイベント（on_overflow・on_shortfall、6.3節）の中身を読む。対象はselfのみで、
+ * pick候補の中の効果にも引き継ぐ。空のmapping（`on_shortfall: {}`）は「宣言だけして何もしない」
+ * （既定のクランプを打ち消す）を意味し、空のActiveEffectsになる。
  */
 function parseRangeEventEffect(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): ActiveEffect {
-  const hasActive = hasActiveContent(node);
-  const pickList = tryGetSeq(node, 'pick', context);
-  if (hasActive && pickList !== undefined)
-    throw new YamlLoadError(`${context}: set/add/destroy/spawnとpickは同時に指定できません。`);
-
-  if (pickList !== undefined) {
-    const unknownKeys = entriesInOrder(node)
-      .map(([key]) => key)
-      .filter((key) => key !== 'pick');
-    if (unknownKeys.length > 0)
-      throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
-    return new PickEffect(parsePickList(loader, context, pickList, false, true));
-  }
-
-  return parseActiveEffectBody(loader, context, node, false, true, ['pick']);
+  return parseActiveEffectBody(loader, context, node, false, true);
 }
 
 /** 1つのstagesエントリを解釈する（6.4節）。数値型はmin（半開区間）、シンボル型はeq

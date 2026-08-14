@@ -21,7 +21,7 @@ export class ActionDef extends InteractionDef {
     name: string,
     showMenu: ShowMenuMode,
     requirements: Requirements | undefined,
-    effect: ActiveEffect | undefined,
+    effect: ActiveEffect,
     duration?: WeightSpec,
   ) {
     super(name, requirements, effect, duration);

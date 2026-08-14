@@ -12,7 +12,7 @@ import {
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { tryGetNode } from './parseCommon';
-import { parseWeight } from './parseActionsAndCombinations';
+import { parseWeight } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellAcceptRule, CellDef, SlotDef } from '../domain/defs/SlotDef';
 import type { SlotAcceptTargetKind } from '../domain/defs/SlotDef';

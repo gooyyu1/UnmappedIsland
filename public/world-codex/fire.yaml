@@ -214,8 +214,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 2}
         on_overflow:
-          spawn: {object: three_stone_hearth}
           destroy: self
+          spawn: {object: three_stone_hearth}
     slots:
       fire:
         cells:
@@ -250,8 +250,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 7}
         on_overflow:
-          spawn: {object: stone_hearth}
           destroy: self
+          spawn: {object: stone_hearth}
     slots:
       fire:
         cells:

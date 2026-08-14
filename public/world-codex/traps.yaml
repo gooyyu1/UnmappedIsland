@@ -52,37 +52,31 @@ object_defs:
               self:
                 catch_remaining: -1
         # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
-        # （土地が決める、3節）。周期の置き直しはaddとpickが排他な兄弟キーのため、葉にあたる
-        # 内側の候補すべてに複製する（10節。explore（locations.yaml）と同じ形）。
+        # （土地が決める、3節）。周期の置き直しは分岐に関わらず起こるので、pickの外に1つだけ置く。
         on_shortfall:
+          add: {self: {catch_remaining: 16}}
           pick:
             # 何も寄って来なかった回。先頭に置く（3節）。
             - weight: {prop: miss_weight}
-              add: {self: {catch_remaining: 16}}
             - weight: {prop: herbivore_weight}
               pick:
                 # 寄ってはきたが掛からなかった回。その食性の相手が1種も居ない土地では、必ずここへ
                 # 落ちる（全候補0だと先頭が選ばれるため、先頭に置く）。
                 - weight: 8
-                  add: {self: {catch_remaining: 16}}
                 - weight: {prop: junglefowl_catch}
-                  add: {self: {catch_remaining: 16}}
                   spawn:
                     - {object: junglefowl, into: self}
                     # 直前に生んだ獲物のinjuriesスロットへ（into: child、9.4節・TrapSystem.md 5.3節）。
                     - {object: snare_laceration, into: child}
                 - weight: {prop: rat_catch}
-                  add: {self: {catch_remaining: 16}}
                   spawn:
                     - {object: rat, into: self}
                     - {object: snare_laceration, into: child}
             - weight: {prop: carnivore_weight}
               pick:
                 - weight: 8
-                  add: {self: {catch_remaining: 16}}
                 # ネズミは雑食なので、同じつまみで両方の卓に載る（4.1節）。
                 - weight: {prop: rat_catch}
-                  add: {self: {catch_remaining: 16}}
                   spawn:
                     - {object: rat, into: self}
                     - {object: snare_laceration, into: child}

@@ -473,7 +473,7 @@
       "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持ち、activeの代わりにpick（10節、排他）も書ける。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "set": {
@@ -503,12 +503,7 @@
           "$ref": "#/$defs/pick_list"
         }
       },
-      "additionalProperties": false,
-      "allOf": [
-        {
-          "$ref": "#/$defs/not_active_verbs_with_pick"
-        }
-      ]
+      "additionalProperties": false
     },
     "signal_spec": {
       "description": "起きたことを告げる（GameElementDefinition.md 9.8節）。世界の形は何も変えず、出来事が起きたことだけを観測する側へ渡す。値は出来事の識別子で、表示文言はlocaleのsignal_textsが持つ。誰の身に起きたかは対象キー（self/parent/actor、combinations内はdraggedも）で指し、省略時はself。オブジェクトそのものを指すためancestorは使えない（destroyと同じ、ロード時エラー）。",
@@ -549,64 +544,8 @@
         }
       ]
     },
-    "not_active_verbs_with_pick": {
-      "description": "pickと、set/add/destroy/spawn/transfer/move/signal(activeの実体)のいずれかとの同時指定を禁止する共通の制約。actions/combinations/pick/rangeイベントのいずれでも使う。",
-      "not": {
-        "allOf": [
-          {
-            "required": [
-              "pick"
-            ]
-          },
-          {
-            "anyOf": [
-              {
-                "required": [
-                  "set"
-                ]
-              },
-              {
-                "required": [
-                  "add"
-                ]
-              },
-              {
-                "required": [
-                  "destroy"
-                ]
-              },
-              {
-                "required": [
-                  "spawn"
-                ]
-              },
-              {
-                "required": [
-                  "transfer"
-                ]
-              },
-              {
-                "required": [
-                  "move"
-                ]
-              },
-              {
-                "required": [
-                  "signal"
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    },
     "pick_candidate": {
       "description": "pickの1候補（GameElementDefinition.md 10.1節）。専用の`active:`ラップを挟まず、set/add/destroy/spawnをweight/pickと対等な兄弟キーとして直接持つ。候補自身がさらにpickを持つ再帰も構造上排除しない。",
-      "allOf": [
-        {
-          "$ref": "#/$defs/not_active_verbs_with_pick"
-        }
-      ],
       "type": "object",
       "properties": {
         "weight": {
@@ -645,7 +584,7 @@
       "additionalProperties": false
     },
     "pick_list": {
-      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。set/add/destroy/spawnを書く場所であれば、その代わりに書ける。候補が1つなら重みに関わらず必ず選ばれる。",
+      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。set/add/destroy/spawnを書く場所であれば、それらと並べて書ける。候補が1つなら重みに関わらず必ず選ばれる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/pick_candidate"
@@ -653,12 +592,7 @@
       "minItems": 1
     },
     "action_def": {
-      "description": "メニュー型の宣言的操作（11節）。conditionsと実行結果(set/add/destroy/spawn/transfer/move/signal、またはpick)を1つの定義としてまとめて持つ。専用の`active:`ラップは挟まず、showMenu/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
-      "allOf": [
-        {
-          "$ref": "#/$defs/not_active_verbs_with_pick"
-        }
-      ],
+      "description": "メニュー型の宣言的操作（11節）。conditionsと実行結果(set/add/destroy/spawn/transfer/move/signal・pick)を1つの定義としてまとめて持つ。専用の`active:`ラップは挟まず、showMenu/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
       "type": "object",
       "properties": {
         "showMenu": {
@@ -705,11 +639,6 @@
     },
     "combination_def": {
       "description": "ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。キーはUIラベル用の名前であり、マッチング対象はwithで別途指定する。専用の`active:`ラップは挟まず、with/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
-      "allOf": [
-        {
-          "$ref": "#/$defs/not_active_verbs_with_pick"
-        }
-      ],
       "type": "object",
       "properties": {
         "with": {

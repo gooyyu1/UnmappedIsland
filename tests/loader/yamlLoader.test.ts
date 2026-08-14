@@ -1012,18 +1012,57 @@ object_defs:
     expect(logInstance.getEffectiveValue(warmthId)).toBe(0); // litステージのままでもfuel_slotから外れるとボーナスが消える
   });
 
-  it('activeとpickを同時に指定するとエラーになる', () => {
+  it('9節の命令は、動詞ごとの優先順位ではなく書かれた順に適用される', () => {
+    // 同じ2つの命令を書く順だけ入れ替えると、結果も入れ替わる（GameElementDefinition.md 9.7節）。
     const yaml = `
 object_defs:
-  thing:
+  tally:
+    props:
+      n: {value: 0}
     actions:
-      use:
-        destroy: self
+      add_then_set:
+        add: {self: {n: 1}}
+        set: {self: {n: 5}}
+      set_then_add:
+        set: {self: {n: 5}}
+        add: {self: {n: 1}}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const session = new WorldSession(codex);
+    const nId = codex.propertyNames.getId('n');
+    const tallyDef = codex.objects.get(codex.objectNames.getId('tally'));
+
+    const addThenSet = new WorldObject(1, tallyDef, session);
+    expect(addThenSet.tryExecuteAction('add_then_set', undefined, session)).toBe(true);
+    expect(addThenSet.getNumber(nId)).toBe(5);
+
+    const setThenAdd = new WorldObject(2, tallyDef, session);
+    expect(setThenAdd.tryExecuteAction('set_then_add', undefined, session)).toBe(true);
+    expect(setThenAdd.getNumber(nId)).toBe(6);
+  });
+
+  it('9節の命令とpickは同じ場所に並べて書ける', () => {
+    // 分岐に関わらず必ず起こること（add）と、分岐する部分（pick）を、共通処理を候補へ複製せずに書ける。
+    const yaml = `
+object_defs:
+  worker:
+    props:
+      fatigue: {value: 0}
+      mark: {value: 0}
+    actions:
+      turn:
+        add: {self: {fatigue: 1}}
         pick:
           - weight: 1
-            destroy: self
+            set: {self: {mark: 7}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/pick/);
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const session = new WorldSession(codex);
+    const worker = new WorldObject(1, codex.objects.get(codex.objectNames.getId('worker')), session);
+
+    expect(worker.tryExecuteAction('turn', undefined, session)).toBe(true);
+    expect(worker.getNumber(codex.propertyNames.getId('fatigue'))).toBe(1);
+    expect(worker.getNumber(codex.propertyNames.getId('mark'))).toBe(7);
   });
 
   // ------------------------------------------------------------------

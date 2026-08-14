@@ -15,14 +15,6 @@ export function tryGetNode(map: YAMLMap, key: string): YamlNode | undefined {
   return map.get(key, true) as YamlNode | undefined;
 }
 
-/** active内容（9節）を構成するキー。actions/combinations/pickの各エントリが兄弟キーとして直接持つ。 */
-export const ACTIVE_VERB_KEYS = ['set', 'add', 'destroy', 'spawn', 'transfer', 'move', 'signal'] as const;
-
-/** mapがactive内容（set/add/destroy/spawn/transfer/move/signal）のいずれかを持つか。 */
-export function hasActiveContent(map: YAMLMap): boolean {
-  return ACTIVE_VERB_KEYS.some((key) => map.get(key, true) !== undefined);
-}
-
 /**
  * 数値リテラルの形。小数を許すのはプロパティの値だけで（GameElementDefinition.md 6節）、枠数や
  * 分数のような「数えるもの」はrequireIntのまま整数を要求する。指数形を許すのは、YAMLが数値として
