@@ -33,6 +33,9 @@ traits:
       ignition_chance: {}
     combinations:
       # 火起こし具を重ねて火を移す。外した回も火口は失われる。
+      #
+      # どちらの回もsignal（9.8節）で結果を告げる。火口はどちらの回も同じように消えるので、
+      # レーンの上では30分かけて札が1枚減っただけに見え、成否が付かない。
       light:
         with: fire_starter
         duration: 30
@@ -40,8 +43,10 @@ traits:
           - weight: {prop: ignition_chance}
             destroy: self
             spawn: {object: burning_tinder}
+            signal: lit
           - weight: 40
             destroy: self
+            signal: not_lit
 
   # 炉。薪と火力を持ち、火にかけた物を子として加熱する。
   #
