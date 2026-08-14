@@ -92,7 +92,7 @@ export class ObjectDef {
   /** このObjectDefが持つメニュー型操作（11節）。 */
   readonly actions: readonly ActionDef[];
 
-  /** このObjectDefが（受け側として）持つドラッグ型操作（12節）。 */
+  /** このObjectDefが（selfとして）持つドラッグ型操作（12節）。 */
   readonly combinations: readonly CombinationDef[];
 
   /**

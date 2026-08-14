@@ -714,7 +714,7 @@
       "properties": {
         "with": {
           "$ref": "#/$defs/identifier",
-          "description": "ドラッグされてきたカードとのマッチング条件。object_defのid、またはtraitの名前。"
+          "description": "組み合わせる相手のカード（dragged）とのマッチング条件。object_defのid、またはtraitの名前。"
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list"

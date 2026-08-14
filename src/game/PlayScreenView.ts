@@ -141,10 +141,13 @@ export interface CardCombination {
   /** 実行にかかるゲーム内時間（分）。時間を消費しない組み合わせは0。 */
   readonly minutes: number;
   /**
-   * ドラッグされた側として使われるインスタンス。同じ束へ重ねたときは束の2つ目になるため、束の代表とは
-   * 限らない。画面側は「掴んでいたカード」の行方を追う（CardMotion.MotionContext.released）のに使う。
+   * 指が掴んでいたインスタンス。同じ束へ重ねたときは束の2つ目になるため、束の代表とは限らない。
+   * 画面側は「掴んでいたカード」の行方を追う（CardMotion.MotionContext.released）のに使う。
+   *
+   * combinationを宣言している側（`self`）とは限らない——逆向きに成立した組み合わせでは、掴んだ札の
+   * ほうが宣言している側になる（combinationOf参照）。
    */
-  readonly source: WorldObject;
+  readonly held: WorldObject;
   /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
   readonly execute: () => void;
 }
@@ -285,8 +288,8 @@ export interface PlayScreenView {
    * 実行できる組み合わせが無ければundefined。draggedとtargetが同じ束（その束の上の1枚を元の位置へ
    * 重ねた）なら、束の中の2つを組み合わせる。
    *
-   * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
-   * （ActionSystem.md 1節）ため、ここでは宣言順の先頭を採る。マッチはwithタグだけで判定するので、
+   * **落とされた側が受け入れる組み合わせを先に、無ければ掴んだ側が受け入れる組み合わせを探す**
+   * （CardInteraction.md 2節）。どちらも宣言順の先頭を採る。マッチはwithタグだけで判定するので、
    * conditionsを満たさず実行が空振りすることはある。
    */
   readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
@@ -920,6 +923,33 @@ export function fromGameSession(
     };
   };
 
+  /**
+   * selfが宣言しているcombinationsのうち、draggedにマッチする先頭を実行する手段（無ければundefined）。
+   * heldは指が掴んでいたインスタンスで、self・draggedのどちらの役でもありうる（CardCombination.held参照）。
+   *
+   * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
+   * （ActionSystem.md 1節）ため、宣言順の先頭を採る。
+   */
+  const combinationWith = (
+    self: WorldObject,
+    dragged: WorldObject,
+    held: WorldObject,
+  ): CardCombination | undefined => {
+    const [combination] = self.findMatchingCombinations(dragged);
+    if (combination === undefined) return undefined;
+
+    const texts = locale.object(self.def.name).combination(combination.name);
+    return {
+      name: texts.displayName,
+      description: texts.description,
+      minutes: self.combinationMinutes(dragged, game.player.instance, combination.name),
+      held,
+      execute: () => {
+        self.tryExecuteCombination(dragged, game.player.instance, combination.name, game.session);
+      },
+    };
+  };
+
   /** itemを同じ場所の中で動かす操作（動かせない位置ならundefined）。今いるスロットの中だけで完結する。 */
   const reorderIn =
     (item: WorldObject) =>
@@ -1016,22 +1046,12 @@ export function fromGameSession(
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
       const [first, second] = target.objects;
-      const source = dragged === target ? second : dragged.objects[0];
-      if (source === undefined) return undefined;
+      const held = dragged === target ? second : dragged.objects[0];
+      if (held === undefined) return undefined;
 
-      const [combination] = first.findMatchingCombinations(source);
-      if (combination === undefined) return undefined;
-
-      const texts = locale.object(first.def.name).combination(combination.name);
-      return {
-        name: texts.displayName,
-        description: texts.description,
-        minutes: first.combinationMinutes(source, game.player.instance, combination.name),
-        source,
-        execute: () => {
-          first.tryExecuteCombination(source, game.player.instance, combination.name, game.session);
-        },
-      };
+      // 落とされた側を先に、次に掴んだ側を見る（CardInteraction.md 2節）。素材側に1つ書けば、
+      // 道具を素材へ運んでも素材を道具へ運んでも同じ組み合わせが成立する。
+      return combinationWith(first, held, held) ?? combinationWith(held, first, held);
     },
   };
 }

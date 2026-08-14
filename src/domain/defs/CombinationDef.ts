@@ -10,8 +10,9 @@ import type { WeightSpec } from './PickEffect';
 import type { Requirements } from './Requirement';
 
 /**
- * ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。ドロップされた側（受け側）の
- * object_defに定義する。withは、ドラッグされてきたカードとのマッチング条件（タグのグローバルID、12.1節）。
+ * ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。素材側のobject_defに1つだけ定義し、
+ * 宣言している側がself・相手がdraggedになる（どちらの札を掴んでも同じ宣言が実行される、12.3節）。
+ * withは、相手とのマッチング条件（タグのグローバルID、12.1節）。
  */
 export class CombinationDef extends InteractionDef {
   private readonly with: number;
