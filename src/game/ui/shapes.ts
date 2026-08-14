@@ -96,9 +96,18 @@ const SHADOW_LAYERS = [
   [2, 0.12],
 ] as const;
 
+/**
+ * 角の丸みが辺に収まる大きさへ丸める。**丸みは辺の半分を超えられない**——Phaserのfill/strokeRoundedRectは
+ * 右側の角の弧を `x + width - radius` を中心に描くので、幅が丸みの2倍より狭いと弧が矩形の左外へ膨らみ、
+ * `)` が左へ貫通して見える（値がごく小さいときのProgressBarの塗り）。
+ */
+function fittingRadius(rect: Rect, radius: number): number {
+  return Math.max(0, Math.min(radius, rect.width / 2, rect.height / 2));
+}
+
 /** 角丸矩形を描く。座標はgraphicsのローカル座標。 */
 export function drawBox(graphics: Phaser.GameObjects.Graphics, rect: Rect, style: BoxStyle): void {
-  const radius = style.radius ?? 0;
+  const radius = fittingRadius(rect, style.radius ?? 0);
   // 影は塗りより先に敷き、塗りで覆う。**ぼかせないので2枚重ねる**——1枚だと輪郭がそのまま出て
   // 貼り絵に見える。色は黒に固定する。Buttonの押下の覆いと同じ理由で、下地の明るさによらず
   // 「暗い側へ倒す」ほうが沈んで見えるため。
