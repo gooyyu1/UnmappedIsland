@@ -83,9 +83,16 @@ const EDGE_RATIO = 1 / 6;
 const EDGE_OVERLAY_ALPHA = 0.55;
 const EDGE_ARROW_SIZE = 44;
 
-/** スタック数を囲む丸の直径・絵の右上の角から外へはみ出させる量・中の数字の大きさ（u単位）。 */
-const STACK_BADGE_SIZE = 28;
-const STACK_BADGE_OVERHANG = 6;
+/**
+ * スタック数を囲む丸の直径・縁の太さ・絵の右上の角から外へはみ出させる量（u単位）。
+ * 中の数字の大きさはSTACK_COUNT_SIZE。
+ *
+ * **はみ出す量はカード間ギャップの半分**（SIZE.gap / 2）で固定する。丸を大きくするときも増やさない
+ * ——増やすと隣のカードの側へ食い込む。丸が大きくなるぶんは内側（名前の板の上）へ伸びる。
+ */
+const STACK_BADGE_SIZE = 42;
+const STACK_BADGE_BORDER = 4.5;
+const STACK_BADGE_OVERHANG = SIZE.gap / 2;
 
 /**
  * 状態を表す印（手当て済みの怪我など）の大きさと、窓の左下からの余白（u単位）。
@@ -110,7 +117,12 @@ const OVERLAY_STROKE = 5;
 const OVERLAY_BURST_SCALE = 2.8;
 const OVERLAY_HOLD_MS = 900;
 const OVERLAY_SETTLE_MS = 280;
-const STACK_COUNT_SIZE = 16;
+
+/**
+ * スタック数の数字の大きさ（u単位）。**名前（16u）にかぶってでも読める大きさを採る**——枚数は
+ * カードを開かずに読む値で、小さい画面では名前より先に要る（CardView.md 6節）。
+ */
+const STACK_COUNT_SIZE = 24;
 
 /**
  * 枠の強調（CellHighlight）の太さ（u単位）。カードの矩形のすぐ外側にある余白——カード間ギャップの
@@ -967,7 +979,7 @@ export class Card extends Phaser.GameObjects.Container {
     const circle = scene.add.graphics();
     circle.fillStyle(COLOR.cardFace, 1);
     circle.fillCircle(0, 0, radius);
-    circle.lineStyle(Math.max(1, metrics.px(3)), COLOR.cardBorder, 1);
+    circle.lineStyle(Math.max(1, metrics.px(STACK_BADGE_BORDER)), COLOR.cardBorder, 1);
     circle.strokeCircle(0, 0, radius);
 
     return scene.add.container(paper.x + paper.width - offset, paper.y + offset, [circle, this.stackCount]);
