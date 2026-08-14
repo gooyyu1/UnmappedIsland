@@ -42,7 +42,7 @@ traits:
           - {name: wary, min: 20, alert: caution}
           - {name: enraged, min: 70, alert: danger}
         passives:
-          - accumulate:
+          - add:
               self:
                 wariness: -1
       # 今感じている痛み（VitalsSystem.md 2節）。自分では動かず、刺さっている怪我がmodifyで
@@ -110,7 +110,7 @@ object_defs:
             passives:
               - modify: {self: {consciousness: -80}}
         passives:
-          - accumulate:
+          - add:
               self:
                 shock: -4
       # 体に残っている血（VitalsSystem.md 3節）。**maxが体格**で、5kgのサルは体重のおよそ1/13＝
@@ -147,7 +147,7 @@ object_defs:
           destroy: self
           spawn: {object: monkey_carcass}
         passives:
-          - accumulate:
+          - add:
               self:
                 blood: 0.16
     combinations:
@@ -237,7 +237,7 @@ object_defs:
             passives:
               - modify: {self: {consciousness: -80}}
         passives:
-          - accumulate:
+          - add:
               self:
                 shock: -4
       # maxが体格（体重のおよそ1/13＝80mL）。段のしきい値も戻る速さも、サルと同じ割合で刻む。
@@ -268,7 +268,7 @@ object_defs:
           destroy: self
           spawn: {object: junglefowl_carcass}
         passives:
-          - accumulate:
+          - add:
               self:
                 blood: 0.032
     combinations:
@@ -315,7 +315,7 @@ object_defs:
             passives:
               - modify: {self: {consciousness: -80}}
         passives:
-          - accumulate:
+          - add:
               self:
                 shock: -4
       blood:
@@ -342,7 +342,7 @@ object_defs:
           destroy: self
           spawn: {object: rat_carcass}
         passives:
-          - accumulate:
+          - add:
               self:
                 blood: 0.0024
     combinations:

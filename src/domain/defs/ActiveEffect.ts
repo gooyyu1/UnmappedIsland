@@ -393,7 +393,8 @@ export class TransferEffect extends ActiveEffect {
       linked.applyScaled(owner, session, actor, dragged, taken, this.amount);
   }
 
-  describe(names: DefNames, out: DescriptionWriter): void {
+  /** suffixは1行目の末尾へ足す断片（tick毎の輸送が、自分のゲートを同じ行に書き足す）。 */
+  describe(names: DefNames, out: DescriptionWriter, suffix: readonly DescriptionToken[] = []): void {
     const tokens: DescriptionToken[] = [
       text('transfer '),
       propertyRef(names.propertyName(this.fromPropertyGlobalId), this.fromObject),
@@ -405,7 +406,7 @@ export class TransferEffect extends ActiveEffect {
     if (this.toAmount !== this.amount) tokens.push(text(` → ${this.toAmount}`));
     if (this.allowOverflow) tokens.push(text('、あふれても移す'));
     tokens.push(text('）'));
-    out.write(...tokens);
+    out.write(...tokens, ...suffix);
 
     if (this.linkedAdd.length === 0) return;
     out.indented(() => {

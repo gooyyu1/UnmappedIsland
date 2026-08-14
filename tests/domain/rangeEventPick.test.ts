@@ -39,7 +39,7 @@ object_defs:
         value: 3
         range: {min: 1, max: 999}
         passives:
-          - accumulate:
+          - add:
               self:
                 counter: -1
         on_shortfall:
@@ -122,7 +122,7 @@ object_defs:
         range: {min: 0, max: 10}
         on_shortfall: {}
         passives:
-          - accumulate:
+          - add:
               self:
                 level: -2
 `;

@@ -129,7 +129,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
   （`MinutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 - `AdvanceWorldTime` は分を進めながら、tick 境界（world の `minutes_per_tick` プロパティ、
   現状15分）を跨ぐたびに world ツリー全体の `Tick()` を1回実行する。長い `duration` の action は、
-  その間の accumulate・rangeイベントをすべて経験する。
+  その間の `add`・rangeイベントをすべて経験する。
 - `World` を持たないセッション（時間の概念が無い単体テスト等）では時間進行をスキップする。
 
 ### 6.1 経過中に関与オブジェクトが失われた場合

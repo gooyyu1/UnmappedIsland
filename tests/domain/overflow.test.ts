@@ -121,7 +121,7 @@ object_defs:
       hour:
         value: 0
     passives:
-      - accumulate:
+      - add:
           self:
             minute: 15
 `;
@@ -140,7 +140,7 @@ object_defs:
 
   it('on_overflowでsetとaddを併用すると、setで自身が絶対値に戻りaddで繰り上げ先へ伝播する', () => {
     // set: {self: {minute: 0}} + add: {self: {hour: 1}} という、core.yamlが実際に使っている文法
-    // （accumulateの"-60"のような差分指定ではなく、setで絶対値へ戻す）を検証する。
+    // （passivesのaddの"-60"のような差分指定ではなく、setで絶対値へ戻す）を検証する。
     const yaml = `
 object_defs:
   clock_set:
@@ -154,7 +154,7 @@ object_defs:
       hour:
         value: 0
     passives:
-      - accumulate:
+      - add:
           self:
             minute: 15
 `;
@@ -184,7 +184,7 @@ object_defs:
       hour:
         value: 0
     passives:
-      - accumulate:
+      - add:
           self:
             minute: 15
 `;
@@ -254,7 +254,7 @@ object_defs:
       day:
         value: 1
     passives:
-      - accumulate:
+      - add:
           self:
             minute: 15
 `;
@@ -298,7 +298,7 @@ object_defs:
         on_overflow:
           add: {self: {minute: -60, hour: 1}}
     passives:
-      - accumulate:
+      - add:
           self:
             minute: 15
 `;
@@ -334,7 +334,7 @@ object_defs:
         on_overflow:
           add: {self: {minute: -60, hour: 1}}
     passives:
-      - accumulate:
+      - add:
           self:
             minute: 15
   b_something2:
@@ -370,7 +370,7 @@ object_defs:
       alarm_count:
         value: 0
     passives:
-      - accumulate:
+      - add:
           self:
             gauge: 250
 `;

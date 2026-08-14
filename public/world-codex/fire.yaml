@@ -63,21 +63,21 @@ traits:
             min: 1
             passives:
               - conditions: [{prop: heat, gt: 0}]
-                accumulate: {self: {heat: 2}}
+                add: {self: {heat: 2}}
           - name: some
             min: 10
             passives:
               - conditions: [{prop: heat, gt: 0}]
-                accumulate: {self: {heat: 6}}
+                add: {self: {heat: 6}}
           - name: many
             min: 40
             passives:
               - conditions: [{prop: heat, gt: 0}]
-                accumulate: {self: {heat: 16}}
+                add: {self: {heat: 16}}
       # 火力。0が消えている状態で、段が加熱の速さ・薪の減り・薪が尽きた後の衰えを決める。
       #
       # **育ちと衰えは同時に効かない。** 育ちは薪がある間（fuelの段）、衰えは薪が尽きている間
-      # （fuelがnone）だけで、accumulateは登録順に値を書き換えながら適用されるため、同じtickで
+      # （fuelがnone）だけで、passivesのaddは登録順に値を書き換えながら適用されるため、同じtickで
       # 正負が混ざると段の境目で打ち消し合って火が育たなくなる。
       heat:
         value: 0
@@ -87,31 +87,31 @@ traits:
           - name: ember
             min: 1
             passives:
-              - accumulate: {self: {fuel: -0.1}}
+              - add: {self: {fuel: -0.1}}
           - name: coals
             min: 5
             passives:
-              - accumulate:
+              - add:
                   self: {fuel: -0.5}
                   child: {cooking_progress: 1}
               - conditions: [{prop: fuel, in_stage: none}]
-                accumulate: {self: {heat: -2}}
+                add: {self: {heat: -2}}
           - name: flame
             min: 20
             passives:
-              - accumulate:
+              - add:
                   self: {fuel: -1.5}
                   child: {cooking_progress: 3}
               - conditions: [{prop: fuel, in_stage: none}]
-                accumulate: {self: {heat: -6}}
+                add: {self: {heat: -6}}
           - name: blaze
             min: 60
             passives:
-              - accumulate:
+              - add:
                   self: {fuel: -4}
                   child: {cooking_progress: 5}
               - conditions: [{prop: fuel, in_stage: none}]
-                accumulate: {self: {heat: -6}}
+                add: {self: {heat: -6}}
     passives:
       # 雨。野ざらしの炉は火力を余分に削られる。屋根の下（sheltered）なら効かない
       # （docs/engine/ContainerSystem.md 6節）。sheltered未実装の間はancestorが解決せず、
@@ -119,7 +119,7 @@ traits:
       - conditions:
           - {object: ancestor, prop: sheltered, neq: 1}
           - {object: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
-        accumulate: {self: {heat: -4}}
+        add: {self: {heat: -4}}
     combinations:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
       # transferの後にdestroyが走るので、移した分が失われることはない。
@@ -187,7 +187,7 @@ object_defs:
         value: 1
         range: {min: 1, max: 1}
         passives:
-          - accumulate: {self: {life: -1}}
+          - add: {self: {life: -1}}
         on_shortfall:
           destroy: self
 
@@ -226,7 +226,7 @@ object_defs:
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, in_stage: none}
-        accumulate: {self: {heat: -2}}
+        add: {self: {heat: -2}}
     combinations:
       add_stone:
         with: stone
@@ -262,7 +262,7 @@ object_defs:
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, in_stage: none}
-        accumulate: {self: {heat: -1}}
+        add: {self: {heat: -1}}
     combinations:
       add_stone:
         with: stone
@@ -294,4 +294,4 @@ object_defs:
       - conditions:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, in_stage: none}
-        accumulate: {self: {heat: -0.125}}
+        add: {self: {heat: -0.125}}

@@ -1,16 +1,22 @@
 import type { YAMLMap } from 'yaml';
 import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseNumberLiteral } from './parseCommon';
+import { parseNumberLiteral, tryGetNode } from './parseCommon';
 import { parseConditionsField, PASSIVE_CONDITION_ROOTS } from './parseConditions';
+import { parsePassiveTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
 import type { ConditionNode } from '../domain/defs/ConditionNode';
-import { AccumulateEffect, ModifyEffect, PassiveEffectGate } from '../domain/defs/PassiveEffect';
+import {
+  AccumulateEffect,
+  ModifyEffect,
+  PassiveEffectGate,
+  TransferPassiveEffect,
+} from '../domain/defs/PassiveEffect';
 import type { PassiveEffect } from '../domain/defs/PassiveEffect';
 
 /**
- * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/accumulateのみを持つ）を読み、
+ * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/add/transferのみを持つ）を読み、
  * PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非undefinedならstage内）と
  * "conditions"は独立に併用できる（例:「装備している間、かつ耐久値がintactステージの間だけ」）。
  * conditionsはブロック全体で1つ（対象ごとには持たない。RegisteredPassiveEffect参照）。
@@ -44,12 +50,19 @@ export function parsePassive(
     output,
     context,
     passiveMap,
-    'accumulate',
+    'add',
     (target, propId, amount, g) => new AccumulateEffect(target, propId, amount, g),
     gate,
   );
 
-  const knownKeys = new Set<string>(['conditions', 'modify', 'accumulate']);
+  // 輸送は寄与として登録できない（2つのプロパティを同時に動かすため）ので、宣言元のtickで走る
+  // TransferPassiveEffectとして持つ。文法はactiveのtransferと同一（8.4節）。
+  const transferNode = tryGetNode(passiveMap, 'transfer');
+  if (transferNode !== undefined)
+    for (const transfer of parsePassiveTransfers(loader, `${context}.transfer`, transferNode))
+      output.push(new TransferPassiveEffect(transfer, gate));
+
+  const knownKeys = new Set<string>(['conditions', 'modify', 'add', 'transfer']);
 
   const unknownKeys = entriesInOrder(passiveMap)
     .map(([key]) => key)
@@ -76,7 +89,7 @@ function buildGate(
 }
 
 /**
- * passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
+ * passiveの1操作(modify/add)を読み、対象(self/parent/child/ancestor、actorは未対応のため
  * スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。具象型はmakeEffectファクトリで受け取り、
  * 同じpassiveブロック内のgateを全効果で共有する。
  */

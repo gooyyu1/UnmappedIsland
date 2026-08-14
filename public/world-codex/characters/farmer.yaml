@@ -19,7 +19,7 @@ object_defs:
           - {name: peckish, min: 48, alert: watch}
           - {name: fed, min: 96}
         passives:
-          - accumulate:
+          - add:
               self:
                 satiety: -1
       # 満水から3日（288 tick）。
@@ -39,7 +39,7 @@ object_defs:
           - {name: hydrated, min: 230}
           - {name: full, min: 288}
         passives:
-          - accumulate:
+          - add:
               self:
                 hydration: -1
       # よく食べる体は蓄えも厚い。最大限に肥えた状態から67日半（6480 tick）。
@@ -55,7 +55,7 @@ object_defs:
           - {name: starved, alert: fatal}
           - {name: nourished, min: 96}
         passives:
-          - accumulate:
+          - add:
               self:
                 body_fat: -1
       # 日の出とともに働く暮らしのまま、眠らずにいられるのは24時間（96 tick）。
@@ -69,7 +69,7 @@ object_defs:
           - {name: yawning, min: 48, alert: watch}
           - {name: rested, min: 77}
         passives:
-          - accumulate:
+          - add:
               self:
                 wakefulness: -1
       # 重い物を担ぎ慣れた、基準より2割高い体力。

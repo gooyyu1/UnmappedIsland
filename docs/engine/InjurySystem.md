@@ -13,7 +13,7 @@
 
 **新設した文法はありません。** 怪我は普通のオブジェクトで、キャラクタの `injuries` スロットに入り、
 `severity` 1本と `range`/`on_shortfall`（自然治癒と消滅）・`passives` の `modify`（宿主の痛み）・
-`accumulate`（宿主の血）・`treatment` スロット（治療具を1つ当てる枠）だけで成り立ちます。
+`add`（宿主の血）・`treatment` スロット（治療具を1つ当てる枠）だけで成り立ちます。
 
 定義は `public/world-codex/injuries.yaml`（傷）と `treatments.yaml`（治療具）、検証は
 `tests/worldCodex/injuriesYaml.test.ts` で、**本書は実装済みです**（裂傷・捻挫と包帯）。未決事項は
@@ -83,7 +83,7 @@
 
 ### 3.1 治療具の性格
 
-治療具が動かせるのは、治りの速さ（`severity` への `accumulate`）・痛み（`pain` への `modify`）・
+治療具が動かせるのは、治りの速さ（`severity` への `add`）・痛み（`pain` への `modify`）・
 出血（[`VitalsSystem.md`](./VitalsSystem.md) 4 節。当てている間だけ、傷が血を削るブロックのゲートを
 閉じる）・感染（`infection`、4.1 節）の4つです。それぞれの得意・不得意は次のように置きます。
 

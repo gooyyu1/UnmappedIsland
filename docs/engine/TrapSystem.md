@@ -23,7 +23,7 @@
 
 | 決めたいこと | 載せた既存機能 |
 |---|---|
-| 結果が出るまでの時間（2 節） | `range` + `accumulate` + `on_shortfall`（6.3 節） |
+| 結果が出るまでの時間（2 節） | `range` + `add` + `on_shortfall`（6.3 節） |
 | 待ち時間のばらつき（2.1 節） | 生成時に 1 回ロールする初期値（6.2 節）と、当たるまでの回数 |
 | 土地ごとの成否（3 節） | `inherit`（6.5 節）と `pick` の `weight`（10.2 節） |
 | 罠のサイズ（1.1 節） | 内側の `pick` に並べた候補の一覧 |
@@ -136,7 +136,7 @@ props:
           - {in_slot: items}                  # 地面に置かれている間だけ（1節）
           # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
           - not: {slot: catch, tag: quarry}
-        accumulate: {self: {catch_remaining: -1}}
+        add: {self: {catch_remaining: -1}}
     on_shortfall:
       # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
       # （土地が決める、3節）。
@@ -289,13 +289,13 @@ props:
     range: {min: 0, max: 24}
     passives:
       - conditions: [{in_slot: items}]
-        accumulate: {self: {plant_bait: -1}}
+        add: {self: {plant_bait: -1}}
   meat_bait:
     value: 0
     range: {min: 0, max: 24}
     passives:
       - conditions: [{in_slot: items}]
-        accumulate: {self: {meat_bait: -1}}
+        add: {self: {meat_bait: -1}}
 passives:
   - conditions: [{prop: plant_bait, gte: 1}]
     modify: {self: {herbivore_weight: 25, miss_weight: -25}}
@@ -399,19 +399,19 @@ snare_laceration:
     severity:
       value: {min: 240, max: 480}
       range: {min: 1, max: 480}
-      passives: [{accumulate: {self: {severity: -1}}}]
+      passives: [{add: {self: {severity: -1}}}]
       on_shortfall: {destroy: self}
     # 掛かり方の深さ。2〜4 tickで固まり、その間に30〜60mLを奪う。
     bleeding:
       value: {min: 40, max: 100}
       range: {min: 0, max: 100}
-      passives: [{accumulate: {self: {bleeding: -25}}}]
+      passives: [{add: {self: {bleeding: -25}}}]
   passives:
     - modify: {parent: {pain: 50}}
     - conditions:
         - {prop: bleeding, gte: 1}
         - not: {slot: treatment, tag: hemostatic}
-      accumulate: {parent: {blood: -15}}
+      add: {parent: {blood: -15}}
 ```
 
 **死ぬかどうかは、怪我が奪う量と獲物の体格の比が決めます。** `blood` の `range.max` は体格そのもの
@@ -430,7 +430,7 @@ snare_laceration:
 - **同じ罠でも死んだり死ななかったりします。** 海鳥はロールが分かれ目で、これが罠の運の 2 つ目です
   （1 つ目は 2.1 節の「いつ掛かるか」）。
 - **見回りが早ければ助けられます。** 出血は 2〜4 tick（30 分〜1 時間）で固まり、その間に止血の治療具を
-  当てれば `accumulate` のゲートが閉じます（`InjurySystem.md` 3.1 節）。**生かして持ち帰りたいなら、
+  当てれば `add` のゲートが閉じます（`InjurySystem.md` 3.1 節）。**生かして持ち帰りたいなら、
   罠を見に行く速さがそのまま手段になります。**
 - **大型を殺す罠は、固まらない傷を刺します。** 杭を打った落とし穴の刺し傷は `bleeding` の引きが遅く
   （-1/tick で 100 tick）、その間 `blood` を -60/tick 奪います。イノシシの 4,800 mL でも 80 tick
@@ -513,9 +513,9 @@ props:
     range: {min: 1, max: 960}
     passives:
       - conditions: [{in_slot: items}]
-        accumulate: {self: {durability: -1}}       # 屋外での劣化（10日）
+        add: {self: {durability: -1}}       # 屋外での劣化（10日）
       - conditions: [{slot: catch, tag: quarry}]
-        accumulate: {self: {durability: -10}}      # もがかれている間（新品でも1日弱）
+        add: {self: {durability: -10}}      # もがかれている間（新品でも1日弱）
     on_shortfall:
       destroy: self
 ```
@@ -564,7 +564,7 @@ props:
   土地の `items` 全体に効いてしまうので使えず、罠の側の `actions` で課すと「置いただけの罠」と
   「仕掛けた罠」を区別する状態が 1 つ増えます
 - **渇きと飢えを人と獣へ配るか**（`VitalsSystem.md` 7 節）。配れば「閉じ込めた相手は水を得られない」を
-  罠が `accumulate: {child: {hydration: -1}}` で宣言でき、6.1 節の耐久より正直な罰になります。ただし
+  罠が `add: {child: {hydration: -1}}` で宣言でき、6.1 節の耐久より正直な罰になります。ただし
   **先に決めるのは「渇きが死へつながるか」**で、それは人と獣に同時に効く 1 回の決定です。動物が自分で
   減らす形は採れません——水を飲む仕組みが無いため、島中の動物が 3 日で死にます。飢え（`body_fat` は
   67 日）は罠の時間の桁から外れているので、この判断には関わりません
@@ -596,4 +596,4 @@ props:
 - **怪我にできない削られ方が要るか。** 締めつけによる窒息のように、**手当てできず 1 つずつ数えられない**
   ものは怪我にしない、という線が既にあります（`InjurySystem.md` 4 節）。今の罠はすべて刺す傷で
   表せていますが、そこへ収まらない罠が出たら、罠の `passives` が `child` の `blood` を直接削る形に
-  なります——`accumulate` の対象に `child` は既にあるので、そのときも新しい文法は要りません
+  なります——`add` の対象に `child` は既にあるので、そのときも新しい文法は要りません

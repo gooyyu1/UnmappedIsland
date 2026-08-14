@@ -1,6 +1,7 @@
 import type { WorldObject } from '../runtime/WorldObject';
+import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionWriter } from './Description';
-import type { PassiveEffect } from './PassiveEffect';
+import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -10,8 +11,25 @@ import type { ReferenceRoot } from './ReferenceRoot';
 export class PassiveEffects {
   private readonly effects: readonly PassiveEffect[];
 
+  /** そのうちtick毎に走る輸送（登録では効かないので、走らせる側が別に持つ）。 */
+  private readonly transfers: readonly TransferPassiveEffect[];
+
   constructor(effects: readonly PassiveEffect[]) {
     this.effects = effects;
+    this.transfers = effects.flatMap((effect) =>
+      effect.tickTransfer === undefined ? [] : [effect.tickTransfer],
+    );
+  }
+
+  /**
+   * このオブジェクトが宣言する輸送（8.4節の `transfer`）を1 tick分走らせる。
+   *
+   * **宣言順にそのまま適用し、互いの結果を見る**（activeの命令と同じ、9節）。だから同じ値から出す
+   * 輸送を並べても在庫が二重に動くことはなく、直列に繋いだ輸送の緩衝は**速度の差**が作る
+   * （上流を速くすれば、その差が中間に溜まる。8.4.1節）。
+   */
+  applyTickTransfers(owner: WorldObject, session: WorldSession): void {
+    for (const transfer of this.transfers) transfer.applyTick(owner, session);
   }
 
   /** owner自身から辿れる関係（self/parent/ancestor）が変わった契機を全effectへ伝える

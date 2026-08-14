@@ -4,7 +4,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 
-// modify/accumulate（GameElementDefinition.md 8節）の実行時集計と、on_overflow/on_shortfall
+// modify/add（GameElementDefinition.md 8節）の実行時集計と、on_overflow/on_shortfall
 // （6.3節、値がRangeの外へ出た際にselfへ適用されるactive内容）に対する自動テスト。
 describe('PassiveEffect', () => {
   let nextInstanceId: number;
@@ -56,7 +56,7 @@ object_defs:
       brightness:
         value: 1
     passives:
-      - accumulate:
+      - add:
           self:
             brightness: 5
 `;
@@ -70,7 +70,7 @@ object_defs:
       first.addNumber(brightnessId, 10);
       first.tick(session);
 
-      expect(first.getNumber(brightnessId)).toBe(16); // 1体目: 1(初期値) + 10(add) + 5(accumulate)
+      expect(first.getNumber(brightnessId)).toBe(16); // 1体目: 1(初期値) + 10(add) + 5(passivesのadd)
       expect(second.getNumber(brightnessId)).toBe(1); // 2体目は未タッチのまま初期値のはず
     });
 
@@ -318,10 +318,10 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // accumulate: tick毎に実体値そのものへ加減算する（不可逆）。getEffectiveValueには現れない。
+  // add: tick毎に実体値そのものへ加減算する（不可逆）。getEffectiveValueには現れない。
   // ------------------------------------------------------------------
-  describe('accumulate: tick毎に実体値そのものへ加減算する（不可逆）。getEffectiveValueには現れない。', () => {
-    it('selfへのaccumulateはtick時にのみ実体値へ反映される', () => {
+  describe('add: tick毎に実体値そのものへ加減算する（不可逆）。getEffectiveValueには現れない。', () => {
+    it('selfへのpassivesのaddはtick時にのみ実体値へ反映される', () => {
       const yaml = `
 object_defs:
   candle:
@@ -329,7 +329,7 @@ object_defs:
       wax:
         value: 100
     passives:
-      - accumulate:
+      - add:
           self:
             wax: -1
 `;
@@ -348,7 +348,7 @@ object_defs:
       expect(instance.getEffectiveValue(waxId)).toBe(98); // tick毎に加算され続ける
     });
 
-    it('in_slot条件付きのparentへのaccumulateは、装着している間だけtick毎に効く', () => {
+    it('in_slot条件付きのparentへのpassivesのaddは、装着している間だけtick毎に効く', () => {
       const yaml = `
 object_defs:
   character:
@@ -364,7 +364,7 @@ object_defs:
     passives:
       - conditions:
           - {in_slot: conditions}
-        accumulate:
+        add:
           parent:
             hydration: -5
 `;
@@ -390,7 +390,7 @@ object_defs:
       expect(characterInstance.getEffectiveValue(hydrationId)).toBe(95); // 取り除いた後はtickしても変化しない
     });
 
-    it('parentへのaccumulateは、宣言側own_stageの遷移を再登録なしで追跡する', () => {
+    it('parentへのpassivesのaddは、宣言側own_stageの遷移を再登録なしで追跡する', () => {
       const yaml = `
 object_defs:
   character:
@@ -409,7 +409,7 @@ object_defs:
           - name: mild
             min: 20
             passives:
-              - accumulate:
+              - add:
                   parent:
                     temperature: 1
 `;
@@ -432,7 +432,7 @@ object_defs:
       expect(characterInstance.getEffectiveValue(temperatureId)).toBe(37); // mildへ遷移した後は毎tick上がる（再登録なし）
     });
 
-    it('modifyとaccumulateは互いの評価経路に漏れ出さない', () => {
+    it('modifyとpassivesのaddは互いの評価経路に漏れ出さない', () => {
       const yaml = `
 object_defs:
   character:
@@ -452,7 +452,7 @@ object_defs:
     passives:
       - conditions:
           - {in_slot: equip}
-        accumulate:
+        add:
           parent:
             stamina: -1
 `;
@@ -471,10 +471,10 @@ object_defs:
       expect(characterInstance.getEffectiveValue(staminaId)).toBe(60); // modifyだけが都度加味される（実体値は50のまま）
 
       characterInstance.tick(session);
-      expect(characterInstance.getEffectiveValue(staminaId)).toBe(59); // tickでaccumulateだけが実体値へ入る(50-1+10=59)
+      expect(characterInstance.getEffectiveValue(staminaId)).toBe(59); // tickでpassivesのaddだけが実体値へ入る(50-1+10=59)
     });
 
-    it('getIncomingPassiveEffectsはmodify/accumulateの種別を問わず全件を返す', () => {
+    it('getIncomingPassiveEffectsはmodify/addの種別を問わず全件を返す', () => {
       const yaml = `
 object_defs:
   character:
@@ -494,7 +494,7 @@ object_defs:
     passives:
       - conditions:
           - {in_slot: equip}
-        accumulate:
+        add:
           parent:
             stamina: -1
 `;
@@ -511,8 +511,8 @@ object_defs:
 
       const incoming = characterInstance.getIncomingPassiveEffects(staminaId);
 
-      // 種別（modify/accumulate）はPassiveEffectの内部事情で外から見えないため、declarerで両方の
-      // 効果が種別を問わず1つの一覧に載ることを確認する（bootsはmodify、exhaustionはaccumulate）。
+      // 種別（modify/add）はPassiveEffectの内部事情で外から見えないため、declarerで両方の
+      // 効果が種別を問わず1つの一覧に載ることを確認する（bootsはmodify、exhaustionはpassivesのadd）。
       expect(incoming.length).toBe(2);
       expect(incoming.some((c) => c.declarer === bootsInstance)).toBe(true);
       expect(incoming.some((c) => c.declarer === exhaustionInstance)).toBe(true);
@@ -590,7 +590,7 @@ object_defs:
       charge:
         value: 10
     passives:
-      - accumulate:
+      - add:
           self:
             charge: -1
 `;
@@ -966,7 +966,7 @@ object_defs:
       charge:
         value: 10
     passives:
-      - accumulate:
+      - add:
           self:
             charge: -1
 `;
@@ -1135,10 +1135,10 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // modify/accumulateのancestorターゲット: 自分の直接の親から遡り、対象プロパティを定義している
+  // modify/addのancestorターゲット: 自分の直接の親から遡り、対象プロパティを定義している
   // 最初の祖先へ効果を及ぼす。
   // ------------------------------------------------------------------
-  describe('modify/accumulateのancestorターゲット: 自分の直接の親から遡り、対象プロパティを定義している最初の祖先へ効果を及ぼす。', () => {
+  describe('modify/addのancestorターゲット: 自分の直接の親から遡り、対象プロパティを定義している最初の祖先へ効果を及ぼす。', () => {
     it('ancestorへのmodifyは、対象プロパティを定義している最も近い祖先に効く', () => {
       const yaml = `
 object_defs:
@@ -1245,7 +1245,7 @@ object_defs:
       expect(room2Instance.getEffectiveValue(temperatureId)).toBe(25);
     });
 
-    it('ancestorへのaccumulateは、対象プロパティを定義している最も近い祖先へtick毎に積み上がる', () => {
+    it('ancestorへのpassivesのaddは、対象プロパティを定義している最も近い祖先へtick毎に積み上がる', () => {
       const yaml = `
 object_defs:
   room:
@@ -1256,7 +1256,7 @@ object_defs:
       contents: {}
   fireplace:
     passives:
-      - accumulate:
+      - add:
           ancestor:
             soot: 1
 `;
@@ -1273,7 +1273,7 @@ object_defs:
       roomInstance.tick(session);
       roomInstance.tick(session);
 
-      expect(roomInstance.getNumber(sootId)).toBe(2); // accumulateのancestorターゲットもtick毎に部屋のsootへ積み上がる
+      expect(roomInstance.getNumber(sootId)).toBe(2); // passivesのaddのancestorターゲットもtick毎に部屋のsootへ積み上がる
     });
   });
 });

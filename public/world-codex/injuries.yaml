@@ -42,7 +42,7 @@ object_defs:
           - {name: sore, min: 320, alert: watch}
           - {name: acute, min: 640, alert: caution}
         passives:
-          - accumulate:
+          - add:
               self:
                 severity: -1
         on_shortfall:
@@ -74,7 +74,7 @@ object_defs:
           - {name: sore, min: 160, alert: watch}
           - {name: acute, min: 320, alert: caution}
         passives:
-          - accumulate:
+          - add:
               self:
                 severity: -1
         on_shortfall:
@@ -88,7 +88,7 @@ object_defs:
         value: 100
         range: {min: 0, max: 100}
         passives:
-          - accumulate:
+          - add:
               self:
                 bleeding: -25
     passives:
@@ -106,7 +106,7 @@ object_defs:
       - conditions:
           - {prop: bleeding, gte: 1}
           - not: {slot: treatment, tag: hemostatic}
-        accumulate:
+        add:
           parent:
             blood: -15
 
@@ -130,7 +130,7 @@ object_defs:
           - {name: sore, min: 160, alert: watch}
           - {name: acute, min: 320, alert: caution}
         passives:
-          - accumulate:
+          - add:
               self:
                 severity: -1
         on_shortfall:
@@ -141,7 +141,7 @@ object_defs:
         value: {min: 40, max: 100}
         range: {min: 0, max: 100}
         passives:
-          - accumulate:
+          - add:
               self:
                 bleeding: -25
     passives:
@@ -151,6 +151,6 @@ object_defs:
       - conditions:
           - {prop: bleeding, gte: 1}
           - not: {slot: treatment, tag: hemostatic}
-        accumulate:
+        add:
           parent:
             blood: -15

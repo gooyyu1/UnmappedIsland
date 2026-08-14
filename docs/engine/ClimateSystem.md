@@ -95,7 +95,7 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
   プレイヤーの体感と一致させる意図的な設計で、暑さの長さの揺らぎは季節の持続日数のランダム性
   （2.3 節）だけが表現する。
 - 降雨中の自己減算: 天気（4 節）が `light_rain`/`heavy_rain`/`storm` のいずれかである間、その `weather` の
-  `stages` 自身が持つ `passive` の `accumulate` として、毎 tick `atmospheric_moisture` を減算する
+  `stages` 自身が持つ `passive` の `add` として、毎 tick `atmospheric_moisture` を減算する
   （-1.1 / -1.3 / -2。激しい雨ほど速く消費する。`GameElementDefinition.md` 6.4 節の `progress`/`feverish`
   例と同じ、ステージ自身が値を変化させるパターン）。どの減算量も `wet` の季節レート（+1/tick）をやや上回る
   （正味 -0.1 / -0.3 / -1）ため、降り続けた雨はいずれ水分を減らして晴れ間を呼び込みます。`light_rain` の
@@ -163,17 +163,17 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 
 ### 3.3 固定レートによる天気の単調さについて
 
-3 節・3.1 節のレートは `accumulate`（`GameElementDefinition.md` 8.4 節）のリテラル定数であり、他のプロパティの
+3 節・3.1 節のレートは `add`（`GameElementDefinition.md` 8.4 節）のリテラル定数であり、他のプロパティの
 現在値を参照して動的に変えることはできません。そのため「同じ季節に入るたびに、大気水分量が毎回ほぼ同じ軌跡を
 たどる」という単調さが生じえます。現時点の実装は、天気遷移そのもののランダム性だけでこの単調さを崩しており、
 統計テストでも雨の間隔・回数に十分な分散が出ています（3.2 節）。将来単調さが気になった場合の追加手段を、
 既存の語彙の範囲で 2 つ挙げておきます（採否は 7 節の未決事項）。
 
 - **レートへのノイズ**: `layered_noise`（`TerrainGeneration.md` 3.1 節）を時間軸に適用し、毎 tick の加算量へ
-  小さなランダム変動を加える。エンジンへの新機能追加（ノイズ駆動の `accumulate`）が必要になる。
+  小さなランダム変動を加える。エンジンへの新機能追加（ノイズ駆動の `add`）が必要になる。
 - **季節開始ごとのレート選び直し**: 季節の遷移（2.3 節の `on_shortfall`）で「今回のレート区分」を表す専用プロパティを
   `pick` で `set` し、`calm`/`wet`/`dry` それぞれの `stages` に、その区分ごとの `conditions` で切り替わる複数の
-  `accumulate` ブロックを用意する。新しいエンジン機能は不要。
+  `add` ブロックを用意する。新しいエンジン機能は不要。
 
 ## 4. 天気: worldプロパティとしての短期変動
 
@@ -212,7 +212,7 @@ weather_remaining:
   value: 20                        # 初期値5時間: day1の最初の遷移までの猶予
   range: {min: 1, max: 999999}     # 0に達した（1を下回った）瞬間にon_shortfallが発火する
   passives:
-    - accumulate:
+    - add:
         self:
           weather_remaining: -1
   on_shortfall:
@@ -351,7 +351,7 @@ GameElementDefinition.md 6.4 節）で表現します。
 early_rain_calibration:
   value: 0
   passives:
-    - accumulate:
+    - add:
         self:
           early_rain_calibration: 1
   stages:
@@ -359,7 +359,7 @@ early_rain_calibration:
     - name: boosting
       min: 96     # 2日目の開始（1日 = 96 tick）
       passives:
-        - accumulate:
+        - add:
             self:
               atmospheric_moisture: 60
     - name: done
@@ -381,7 +381,7 @@ early_rain_calibration:
 first_dry_rain_calibration:
   value: 0
   passives:
-    - accumulate:
+    - add:
         self:
           first_dry_rain_calibration: 1
   stages:
@@ -389,7 +389,7 @@ first_dry_rain_calibration:
     - name: boosting
       min: 6720   # 71日目の開始（最初の乾季開始=61日目 + 10日）
       passives:
-        - accumulate:
+        - add:
             self:
               atmospheric_moisture: 200
     - name: done

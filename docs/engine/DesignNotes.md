@@ -231,9 +231,9 @@
   「同じ物を指しているから引き継ぐべき」か「両方が偶然宣言しているだけ」かをエンジンは区別できないので、
   一律の複写は必ず後者を巻き込む。完成品の値はその型の宣言だけで決まる、が唯一検証できる規約。
 
-## accumulateの平衡点（[GameElementDefinition.md](./GameElementDefinition.md) 8.4節）
+## tick毎のaddの平衡点（[GameElementDefinition.md](./GameElementDefinition.md) 8.4節）
 
-- **`accumulate` は登録順に値を書き換えながら適用されるため、同じ tick に正負が混ざると、値は
+- **`add` は登録順に値を書き換えながら適用されるため、同じ tick に正負が混ざると、値は
   「冷めの速さが育ちを初めて上回る段」の1つ下の段の上端に張り付く。** 段のゲートは1つ1つの適用の
   たびに評価し直されるので、育ちで次の段へ踏み込んだ瞬間にその段の冷めを同じ tick で払い、押し戻される。
   火力を「くべた薪が育て、火力自身が冷ます」で書いたとき、`some`（+6）と `coals`（-2）で炎（20〜）へ
@@ -246,9 +246,9 @@
 
   ```yaml
   # 育ちが+6のとき、平衡は flame_low の上端（39）に来る。表示はどちらも「炎」。
-  - {name: coals,      min: 5,  passives: [{accumulate: {self: {heat: -2}}}]}
-  - {name: flame_low,  min: 20, passives: [{accumulate: {self: {heat: -4}}}]}
-  - {name: flame_high, min: 40, passives: [{accumulate: {self: {heat: -8}}}]}
+  - {name: coals,      min: 5,  passives: [{add: {self: {heat: -2}}}]}
+  - {name: flame_low,  min: 20, passives: [{add: {self: {heat: -4}}}]}
+  - {name: flame_high, min: 40, passives: [{add: {self: {heat: -8}}}]}
   ```
 
 - **火（[FireSystem.md](./FireSystem.md) 2.2節）がこれを採らなかったのは、平衡が要らなかったから。**

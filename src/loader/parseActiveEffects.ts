@@ -256,6 +256,26 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
   );
 }
 
+/**
+ * passivesの中の transfer（8.4節）。文法はactiveのものと同一で、対象から `actor` だけを外す
+ * ——持続的な関係に紐づかないため（modify/addのpassiveが `actor` を持たないのと同じ理由）。
+ */
+export function parsePassiveTransfers(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+): TransferEffect[] {
+  for (const map of isSeq(node) ? (node.items as YamlNode[]) : [node]) {
+    if (!isMap(map)) continue;
+    for (const key of ['from_object', 'to_object'])
+      if (tryGetScalar(map, key, context) === 'actor')
+        throw new YamlLoadError(
+          `${context}.${key}: passivesの対象に'actor'は使えません（持続的な関係に紐づかないため）。`,
+        );
+  }
+  return parseTransfers(loader, context, node, false, false);
+}
+
 function parseTransfers(
   loader: WorldCodexYamlLoader,
   context: string,

@@ -20,7 +20,7 @@ import type { WorldSession } from './WorldSession';
  * 解決とグローバルAPIの提供に専念する（プロパティの読み書き）。represented_byによる代表・同種スタック判定では、
  * 自分の代表チェーンのスナップショット化・突き合わせと、中身が入れ替わったときの再スタック伝播を担う。
  * move_to_slotによる所属先の差し替え（旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録・
- * represented_by再判定）にも専念し、枠の要件・capacityの検証は対象Slot自身へ委ねる。持続効果（modify/accumulate）の
+ * represented_by再判定）にも専念し、枠の要件・capacityの検証は対象Slot自身へ委ねる。持続効果（modify/add）の
  * 登録・解除は、生成・エッジ形成/解消・トポロジ変化の契機で、Defが宣言する効果一式（PassiveEffects）へ
  * 「登録/解除してほしい」と依頼するだけで、どのtargetがどこへ紐付くかは効果自身が知る。能動効果
  * （set/add/destroy/spawn/transfer・actions/combinations・tick）は、適用の入口（applyActiveEffect）と対象解決、
@@ -102,7 +102,7 @@ export class WorldObject {
     return this.properties[local];
   }
 
-  /** 登録済みのincoming（modify/accumulate）はそのまま、値の中身だけを差し替える。 */
+  /** 登録済みのincoming（modify/add）はそのまま、値の中身だけを差し替える。 */
   setProperty(globalPropertyId: number, value: number): void {
     const property = this.tryGetProperty(globalPropertyId);
     if (property === undefined) {
@@ -679,7 +679,7 @@ export class WorldObject {
   }
 
   /**
-   * 親子のエッジが形成/解消された契機を、双方の効果（modify/accumulate、8節）へ伝える（register=trueで登録、
+   * 親子のエッジが形成/解消された契機を、双方の効果（modify/add、8節）へ伝える（register=trueで登録、
    * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
    * コンストラクタで登録済みのため、ここでは扱わない。
    */
@@ -713,7 +713,7 @@ export class WorldObject {
     property?.unregisterPassiveEffectsFrom(declarer);
   }
 
-  /** 現在このプロパティに登録されている全寄与（modify/accumulate両方）。UI表示用。各効果が現在いくら効いているかはRegisteredPassiveEffect.activeAmountで得られる。 */
+  /** 現在このプロパティに登録されている全寄与（modify/add両方）。UI表示用。各効果が現在いくら効いているかはRegisteredPassiveEffect.activeAmountで得られる。 */
   getIncomingPassiveEffects(propertyGlobalId: number): readonly RegisteredPassiveEffect[] {
     const property = this.tryGetProperty(propertyGlobalId);
     return property !== undefined ? property.incoming : [];
@@ -755,7 +755,7 @@ export class WorldObject {
   }
 
   /**
-   * 全プロパティのtick処理（accumulateの反映とrangeイベント判定、PropertyValue.tick参照）を行った後、子
+   * 全プロパティのtick処理（passivesのaddの反映とrangeイベント判定、PropertyValue.tick参照）を行った後、子
    * （すべてのスロットの中身）へ再帰する。すべてのオブジェクトはworldの下にぶら下がるため、worldへ1回呼ぶだけで
    * ツリー全体が処理される。
    *
@@ -764,6 +764,8 @@ export class WorldObject {
    */
   tick(session: WorldSession): void {
     for (const property of this.properties) property.tick(session);
+    // 輸送は、この物のプロパティが積分され切ってから走らせる（8.4節）。
+    this.def.passives.applyTickTransfers(this, session);
 
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) child.tick(session);
@@ -773,7 +775,7 @@ export class WorldObject {
   }
 
   /**
-   * 量的オブジェクト（7.6節）の量を、accumulateが動かしたあとの不変条件へ戻す。どちらもスロットの
+   * 量的オブジェクト（7.6節）の量を、passivesのaddが動かしたあとの不変条件へ戻す。どちらもスロットの
    * 上限・量の下限という、YAMLの著者ではなくエンジンが持つ約束事なので、各液体に宣言を書かせない。
    *
    * - 「volumeが正であること」と「インスタンスが存在すること」が同値: 量が尽きたら消える（蒸発）。

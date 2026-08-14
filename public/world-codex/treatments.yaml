@@ -17,7 +17,7 @@ object_defs:
       # parentは当てている怪我、痛みを持つのはその上のキャラクタなのでancestorで辿る（8.6節）。
       - conditions:
           - {in_slot: treatment}
-        accumulate:
+        add:
           parent:
             # 押さえていれば血は早く固まる。ただし**止めるのではなく早めるだけ**——止血帯
             # （hemostatic、未実装）と違って出血のゲートは閉じないので、当てても失血はゼロに

@@ -65,7 +65,7 @@ traits:
         on_shortfall:
           destroy: self
         passives:
-          - accumulate:
+          - add:
               self:
                 blood: 2
       # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。食の好みではなく身体の仕組みを表すため、
@@ -75,7 +75,7 @@ traits:
         value: 672
         range: {min: 0, max: 672}
         passives:
-          - accumulate:
+          - add:
               self:
                 vegetable_nutrition: -1
       meat_nutrition:
@@ -83,7 +83,7 @@ traits:
         value: 672
         range: {min: 0, max: 672}
         passives:
-          - accumulate:
+          - add:
               self:
                 meat_nutrition: -1
       grain_tuber_nutrition:
@@ -91,6 +91,6 @@ traits:
         value: 672
         range: {min: 0, max: 672}
         passives:
-          - accumulate:
+          - add:
               self:
                 grain_tuber_nutrition: -1

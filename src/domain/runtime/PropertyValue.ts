@@ -40,7 +40,7 @@ export class PropertyValue {
   private readonly owner: WorldObject;
 
   /**
-   * modify効果（実効値へ寄与、getEffectiveValueが走査）とaccumulate効果（tick毎に実体値へ加減算、tickが走査）
+   * modify効果（実効値へ寄与、getEffectiveValueが走査）と積分効果（YAMLでは`add`。tick毎に実体値へ加減算、tickが走査）
    * は消費されるタイミングが異なるため別リストで持つ。
    */
   private readonly modifyEffects: RegisteredPassiveEffect[] = [];
@@ -87,7 +87,7 @@ export class PropertyValue {
   }
 
   /**
-   * 効果を登録する。modify用/accumulate用のどちらのリストへ入るかは効果自身が決めてregisterModify/
+   * 効果を登録する。modify用/積分用のどちらのリストへ入るかは効果自身が決めてregisterModify/
    * registerAccumulateを呼び分ける。
    */
   registerPassiveEffect(effect: RegisteredPassiveEffect): void {
@@ -99,7 +99,7 @@ export class PropertyValue {
     this.modifyEffects.push(effect);
   }
 
-  /** accumulate効果としての登録先（RegisteredPassiveEffect.registerInto経由でのみ呼ばれる想定）。 */
+  /** 積分効果（YAMLでは`add`）としての登録先（RegisteredPassiveEffect.registerInto経由でのみ呼ばれる想定）。 */
   registerAccumulate(effect: RegisteredPassiveEffect): void {
     this.accumulateEffects.push(effect);
   }
@@ -109,7 +109,7 @@ export class PropertyValue {
     removeWhere(this.accumulateEffects, (c) => c.declarer === declarer);
   }
 
-  /** 現在登録されている全寄与（modify/accumulate両方）。UI表示用。 */
+  /** 現在登録されている全寄与（modify/add両方）。UI表示用。 */
   get incoming(): readonly RegisteredPassiveEffect[] {
     return [...this.modifyEffects, ...this.accumulateEffects];
   }
@@ -145,7 +145,7 @@ export class PropertyValue {
   }
 
   /**
-   * accumulateを実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節）を判定する。
+   * passivesの`add`を実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節）を判定する。
    * 1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
    */
   tick(session: WorldSession): void {

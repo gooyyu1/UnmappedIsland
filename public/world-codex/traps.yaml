@@ -48,7 +48,7 @@ object_defs:
               - {in_slot: items}
               # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
               - not: {slot: catch, tag: quarry}
-            accumulate:
+            add:
               self:
                 catch_remaining: -1
         # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
@@ -105,7 +105,7 @@ object_defs:
         passives:
           - conditions:
               - {in_slot: items}
-            accumulate:
+            add:
               self:
                 plant_bait: -1
       meat_bait:
@@ -114,7 +114,7 @@ object_defs:
         passives:
           - conditions:
               - {in_slot: items}
-            accumulate:
+            add:
               self:
                 meat_bait: -1
       # 繊維の罠は短命な素材（DurabilitySystem.md 2節の-1/tick＝10日）。獲物が入っている間は
@@ -128,12 +128,12 @@ object_defs:
         passives:
           - conditions:
               - {in_slot: items}
-            accumulate:
+            add:
               self:
                 durability: -1
           - conditions:
               - {slot: catch, tag: quarry}
-            accumulate:
+            add:
               self:
                 durability: -10
         on_shortfall:

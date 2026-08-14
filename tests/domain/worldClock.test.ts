@@ -8,7 +8,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
  * WorldSession.advanceWorldTime（tick=15分の時間モデルに対する時間進行ロジック）に対する自動テスト。
- * minuteはtick駆動のaccumulateを持たない（YAML側の自動加算とWorldSessionの加算が二重にならないように
+ * minuteはtick毎のaddを持たない（YAML側の自動加算とWorldSessionの加算が二重にならないように
  * するため）。minuteへの加算はすべてWorldSessionが、常にminutes_per_tick以下の小さな量ずつ行う。
  */
 describe('WorldSession.advanceWorldTimeによる時間進行', () => {
@@ -25,7 +25,7 @@ object_defs:
       tick:
         value: 0
         passives:
-          - accumulate:
+          - add:
               self:
                 tick: 1
       minutes_per_tick:

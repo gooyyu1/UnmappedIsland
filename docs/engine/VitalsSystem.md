@@ -12,7 +12,7 @@
 
 **新設する文法はありません。** 導入する語彙は次の4つのプロパティと2つの段の名前だけで、
 残りは既存の仕組み——`stages` の中の `passives`（段ごとの寄与）・`modify`（可逆な寄与）・
-`accumulate`（不可逆な削り）・`on_shortfall`（下限を割った瞬間の効果）——にそのまま載ります。
+`add`（不可逆な削り）・`on_shortfall`（下限を割った瞬間の効果）——にそのまま載ります。
 
 | 語彙 | 何を表すか |
 | --- | --- |
@@ -48,7 +48,7 @@
 | | `consciousness`（意識） | `blood`（血液量） |
 | --- | --- | --- |
 | 値の性質 | **実効値**（自分では動かない。`pain`・`load` の仲間） | **実体値**（削られて残る。`severity` の仲間） |
-| 動かすもの | 痛み・失血・衝撃の**段**が `modify` で押し下げる | 出血する傷が `accumulate` で削る |
+| 動かすもの | 痛み・失血・衝撃の**段**が `modify` で押し下げる | 出血する傷が `add` で削る |
 | 元に戻るか | **原因が消えれば自動で戻る**（気絶からの回復に後始末が要らない） | 自分で戻るが、削られる速さとは桁が違う |
 | 底に着いたら | 段 `unconscious` を**読む側**が手番を飛ばす（6 節） | `on_shortfall` が **死**を起こす（3 節） |
 
@@ -133,7 +133,7 @@ shock:
   value: 0
   range: {min: 0, max: 100}          # maxが体格。イノシシは大きく、同じ一撃では倒れない
   passives:
-    - accumulate: {self: {shock: -4}}      # 1時間で16引く
+    - add: {self: {shock: -4}}      # 1時間で16引く
   stages:
     - {name: steady}
     - name: rattled
@@ -157,7 +157,7 @@ shock:
 
 - **一撃で気絶し、階段状に覚めます。** 80で `reeling`（-80）、`-4/tick` で引いて70を割れば `rattled`
   （-30）、30を割れば戻り切ります。当たり所が頭でなくても同じように効きます
-- **`shock` は `accumulate` だけを受け、`consciousness` は `modify` だけを受けます。** 1つの量に
+- **`shock` は `add` だけを受け、`consciousness` は `modify` だけを受けます。** 1つの量に
   両方を掛けると、どちらが今の値を決めているのか読めなくなります
 - **画面には出しません**（`status` タグを付けない）。意識への入力であり、低ければ意識のバーがそう
   言っています（9 節）
@@ -166,15 +166,17 @@ shock:
 
 ## 3. 血は失われ、尽きれば死ぬ
 
-**`blood`（血液量、mL）は失われたら戻りにくい実体値**で、下限を割った瞬間に死にます。形は怪我の
-`severity` と同じ——`range.min` を 1 に置き、`on_shortfall` で自分を消します
-（[`InjurySystem.md`](./InjurySystem.md) 1 節）。
+**`blood`（血液量、mL）は失われたら戻りにくい実体値**で、下限を割った瞬間に死にます。`on_shortfall` で
+自分を消す形は怪我の `severity` と同じ（[`InjurySystem.md`](./InjurySystem.md) 1 節）ですが、`range.min`
+は 0 のままにします——**空になったバーを1 tick 見せてから死ぬ**ほうが、尽きたことが画面に出ないまま死ぬより
+読めるためです。`on_shortfall` は既定のクランプを置き換えるので、0 を割った値はそのまま残り、死因を
+後から読めます（6 節）。
 
 ```yaml
 blood:
   tags: [status, health]
   value: 5000                       # 体重のおよそ1/13。maxがそのまま体格
-  range: {min: 1, max: 5000}
+  range: {min: 0, max: 5000}
   stages:
     - name: exsanguinated                             # 6割を失えば助からない
       alert: fatal
@@ -196,7 +198,7 @@ blood:
     destroy: self
   passives:
     # 血は自分で作り直される。1日およそ200mL。
-    - accumulate: {self: {blood: 2}}
+    - add: {self: {blood: 2}}
 ```
 
 - **`max` は体格です。** ヒトは体重のおよそ1/13（70kgで5,000mL）で、動物の体重比もほぼ同じ。専用の
@@ -232,14 +234,14 @@ laceration:
       value: 100
       range: {min: 0, max: 100}
       passives:
-        - accumulate: {self: {bleeding: -25}}
+        - add: {self: {bleeding: -25}}
   passives:
     - modify: {parent: {pain: 50}}
     # 流れている間だけ、宿主の血が失われていく。これが出血そのもの。
     - conditions:
         - {prop: bleeding, gte: 1}
         - not: {slot: treatment, tag: hemostatic}
-      accumulate: {parent: {blood: -15}}
+      add: {parent: {blood: -15}}
 ```
 
 - **止まる仕組みを傷の側に持たせないと、掠り傷でも必ず死にます。** `severity` の段をゲートにすると、
@@ -371,10 +373,10 @@ laceration:
   passives:
     # 熱で水が余計に要る。飲めば追いつくので、ここだけなら水で凌げる。
     - conditions: [{prop: infection, in_stage: festering}]
-      accumulate: {parent: {hydration: -1}}
+      add: {parent: {hydration: -1}}
     # 膿が回ると血が血管から漏れ出す。飲んでも循環へは戻らない。
     - conditions: [{prop: infection, in_stage: septic}]
-      accumulate: {parent: {hydration: -2, blood: -40}}
+      add: {parent: {hydration: -2, blood: -40}}
 ```
 
 **敗血症が血を削るのは、辻褄合わせではありません。** 敗血症性ショックでは血管が漏れ、血漿が循環の外へ
@@ -426,7 +428,7 @@ laceration:
 ## 未決事項・今後の検討課題
 
 - **値に比例した効き**が書けない。「`severity` が重いほど意識が下がる・速く出血する」は `modify` /
-  `accumulate` の量がリテラルのため、段ごとのブロックで階段状に刻むしかない。傷の種類が増えて刻みが
+  `add` の量がリテラルのため、段ごとのブロックで階段状に刻むしかない。傷の種類が増えて刻みが
   増えたら、`transfer` の `linked_add`（[`GameElementDefinition.md`](./GameElementDefinition.md) 9.5節）に
   相当する「比例する寄与」を検討する
 - 傷ごとの出血レート（4 節）。今あるのは裂傷の `-15` だけで、**桁の違う傷（刺し傷・大血管）が並んで
