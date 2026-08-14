@@ -162,6 +162,11 @@ export class PropertyValue {
     return this.def.isInStage(this.getEffectiveValue(), stageName);
   }
 
+  /** 今の実効値が該当する段（6.4節）が宣言しているart接尾辞（`art_by_stage`専用）。宣言が無ければundefined。 */
+  artSuffix(): string | undefined {
+    return this.def.artSuffixOf(this.getEffectiveValue());
+  }
+
   /**
    * 値がrangeの下限を割ったまま残っているなら、今居る段（6.4節）の名前。範囲の中にあるか、
    * 該当する段が無ければundefined。
