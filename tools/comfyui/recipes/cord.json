@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "src/assets/objects/cord.png を作り直すためのレシピ。build.py が読む。",
+    "糸2本を撚り合わせた紐（public/world-codex/fiber.yaml）。",
+    "",
+    "2段構えの理由と色を足す段は recipes/yarn.json と同じ。",
+    "",
+    "段は256。糸（150ml）と紐（250ml）は同じ段に入るので、**太さと撚りの本数だけが見分けになる**。",
+    "",
+    "**穴埋めを止める（keepHoles）。** 理由は recipes/yarn.json と同じ。"
+  ],
+  "output": "src/assets/objects/cord.png",
+  "prompts": "objects.json",
+  "prompt": "cord",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 9361,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the single loop of hand made cord exactly as it is in shape and layout, with the two strands winding visibly around each other along its whole length and the frayed ends lying free, but paint it with soft brush strokes and gentle natural shading instead of photographic detail. Change its colour to a warm mid brown, clearly darker than the white page. Remove the background completely and replace it with a plain empty white page, leaving the cord alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Dry matte surface, flat even lighting. No text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "keepHoles": true,
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

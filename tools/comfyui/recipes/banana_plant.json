@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/banana_plant.png を作り直すためのレシピ。build.py が読む。",
+    "実の付いたバナナの株（public/world-codex/fiber.yaml）。",
+    "",
+    "設置物なので絵をカード全面へ敷く（size: card）。作り方は recipes/palm_tree.json と同じ。",
+    "",
+    "**房は1つに絞れない。** 「1房だけ」と頼んでも冠の全体に房が下がった絵になる。アバカとの",
+    "見分けは付くので、そのまま採っている。",
+    "",
+    "**穴埋めを止める（keepHoles）。** 理由は recipes/abaca.json と同じ。"
+  ],
+  "output": "src/assets/objects/banana_plant.png",
+  "prompts": "objects.json",
+  "prompt": "banana_plant",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 9446,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "background",
+    "keepHoles": true,
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

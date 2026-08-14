@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "src/assets/objects/abaca.png を作り直すためのレシピ。build.py が読む。",
+    "アバカ（マニラ麻）の株（public/world-codex/fiber.yaml）。",
+    "",
+    "設置物なので、物だけを切り出すのではなく絵をカード全面へ敷く（size: card）。作り方は",
+    "recipes/palm_tree.json と同じで、背景は mode: background で抜く。",
+    "",
+    "**バナナの株（banana_plant）と同じプロンプトの、実を外しただけのもの。** 実際に同じ属の草なので、",
+    "見分けは実の有無と、株立ちで何本も生えていることに寄せてある。",
+    "",
+    "**穴埋めを止める（keepHoles）。** 葉が重なって囲む隙間は物の内側ではなく紙なので、埋めると不透明な白い塊としてカードに乗る。"
+  ],
+  "output": "src/assets/objects/abaca.png",
+  "prompts": "objects.json",
+  "prompt": "abaca",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 9437,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "background",
+    "keepHoles": true,
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

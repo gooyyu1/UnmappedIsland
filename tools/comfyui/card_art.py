@@ -140,7 +140,8 @@ def bounds(mask: np.ndarray) -> tuple[int, int, int, int]:
 
 
 def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, shadow: float,
-               reach: float, reserve: float = 0, neutral: float = 0) -> np.ndarray:
+               reach: float, reserve: float = 0, neutral: float = 0,
+               keep_holes: bool = False) -> np.ndarray:
     """物だけを切り出し、正方形のキャンバスの中央へ、長辺がキャンバスに収まる大きさで置く。
 
     中央に合わせるのも、大きさを決めるのも、影ではなく物そのもの。影は片側にしか出ないので、影ごと
@@ -154,14 +155,16 @@ def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, sha
     reserveは、後から足すもの（drop_shadow）のために四辺へ余分に空けておく幅。
     neutralは影を芯から外すための彩度のしきい値（separate参照）。**濃い影を持つ絵ではこれが要る**
     ——影が芯に入ると、上の「影ではなく物そのもの」が成り立たなくなる。
+    keep_holesは囲まれた紙を埋めないための指定（separate参照）。
     """
     rgb = np.asarray(image, dtype=np.float64)
     margin = max(edge, reach, OBJECT_SLACK, reserve)
-    core, _ = separate(rgb, tolerance, 0, 0, 1, neutral)
+    core, _ = separate(rgb, tolerance, 0, 0, 1, neutral, keep_holes)
     left, top, right, bottom = bounds(core)
     scale = (size - margin * 2) / max(right - left, bottom - top)
 
-    alpha, premultiplied = separate(rgb, tolerance, edge / scale, shadow, reach / scale, neutral)
+    alpha, premultiplied = separate(rgb, tolerance, edge / scale, shadow, reach / scale, neutral,
+                                    keep_holes)
     pad = int(np.ceil(margin / scale))
     box = (max(left - pad, 0), max(top - pad, 0),
            min(right + pad, image.width), min(bottom + pad, image.height))
@@ -224,7 +227,7 @@ def alpha_from_luma(rgb: np.ndarray, white: float, opaque: float) -> np.ndarray:
 
 
 def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reach: float,
-             neutral: float = 0) -> tuple[np.ndarray, np.ndarray]:
+             neutral: float = 0, keep_holes: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """絵を紙・物・影に分け、不透明度と、乗算済みの前景色を返す。
 
     **返すのは観測された色ではなく、紙を取り除いた前景の色。** 輪郭の画素は生成時の紙と物が混ざった
@@ -249,6 +252,11 @@ def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reac
     色のある物とは彩度で分かれる（実測で籠46に対し影1）。物の内側の無彩色な場所は穴埋めで残るので、
     影響を受けるのは輪郭の外に続く影だけ。**無彩色の物（石）には使えない**ので既定は0（外さない）。
 
+    **輪が閉じた物では穴埋めが害になる。** 輪に巻いた紐や、葉が重なって隙間を囲む草では、囲まれて
+    いるのは物の内側ではなく紙なので、埋めると不透明な白い塊としてカードに乗る。keep_holesを渡すと
+    埋めない。**物の形を見て決めることなので自動では判定できない**——穴の画素は定義上どれも
+    「紙よりtoleranceだけ暗くはない」ので、明度でも色でも紙と区別が付かない。
+
     **必ず原寸の絵に対して呼ぶこと。** 物の周りだけを切り出した絵に渡すと、紙の明るさを測る外周に
     物や影が入って狂う。
     """
@@ -259,7 +267,7 @@ def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reac
     dark = luma <= paper - tolerance
     if neutral > 0:
         dark &= rgb.max(axis=2) - rgb.min(axis=2) >= neutral
-    core = binary_fill_holes(dark)
+    core = dark if keep_holes else binary_fill_holes(dark)
     regions, count = label(core)
     if count:
         # 小さな塊は落とす。文字の消し残りや、2つ目に描かれてしまった物を持ち込まないため。
@@ -360,6 +368,8 @@ def main() -> None:
     parser.add_argument("--edge", type=float, default=4, help="background: 物の輪郭が滲む幅（px）")
     parser.add_argument("--shadow", type=float, default=1.0, help="background: 影の濃さ。0で影を捨てる")
     parser.add_argument("--reach", type=float, default=24, help="background: 影が届く範囲（物からのpx）")
+    parser.add_argument("--keep-holes", action="store_true",
+                        help="background: 物に囲まれた紙を埋めない。輪に巻いた紐や、葉が隙間を囲む草に使う")
     parser.add_argument("--neutral-shadow", type=float, default=0,
                         help="background: 彩度がこれ未満の暗い画素を影と見なして芯から外す。"
                         "無彩色の物には使えない")
@@ -410,7 +420,8 @@ def main() -> None:
             rgb = below_plate(rgb)
         mask = paper_mask(CARD_WIDTH, CARD_HEIGHT, args.feather)
         if args.mode == "background":
-            alpha, premultiplied = separate(rgb, args.tolerance, args.edge, args.shadow, args.reach)
+            alpha, premultiplied = separate(rgb, args.tolerance, args.edge, args.shadow,
+                                            args.reach, keep_holes=args.keep_holes)
             rgb = np.divide(premultiplied, alpha[:, :, None],
                             out=np.zeros_like(rgb), where=alpha[:, :, None] > 0)
         elif args.mode == "luma":
@@ -422,7 +433,7 @@ def main() -> None:
         # ぼかした影は輪郭から offset + blur*2 ほど広がる。そのぶんを四辺へ空けておく。
         reserve = args.drop_offset + args.drop_blur * 2 if args.drop_shadow else 0
         rgba = fit_object(image, int(args.size), args.tolerance, args.edge, args.shadow,
-                          args.reach, reserve, args.neutral_shadow)
+                          args.reach, reserve, args.neutral_shadow, args.keep_holes)
         if args.drop_shadow:
             rgba = drop_shadow(rgba, args.drop_shadow, args.drop_offset, args.drop_blur)
 
@@ -450,6 +461,7 @@ def main() -> None:
            if args.size == "card" and args.mode == "luma" else {}),
         **({"dropShadow": args.drop_shadow, "dropOffset": args.drop_offset,
             "dropBlur": args.drop_blur} if args.drop_shadow else {}),
+        **({"keepHoles": True} if args.keep_holes else {}),
         **({"neutralShadow": args.neutral_shadow} if args.neutral_shadow else {}),
         **({"saturation": args.saturation} if args.saturation != 1.0 else {}),
         **({"gamma": args.gamma} if args.gamma != 1.0 else {}),
