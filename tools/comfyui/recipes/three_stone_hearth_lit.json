@@ -1,0 +1,40 @@
+{
+  "_comment": [
+    "src/assets/objects/three_stone_hearth_lit.png を作り直すためのレシピ。build.py が読む。",
+    "火が付いていて料理にも使える三石のかまど（heatのcoals〜blaze段、public/world-codex/fire.yaml）。",
+    "",
+    "作り方と勘所は recipes/campfire_lit.json と同じ。炎が立つのは石に囲まれた中央の空きで、",
+    "**石は焦がさない**——石まで黒くすると、火が消えた後の絵（無印）と地続きに見えなくなる。",
+    "",
+    "**炎は「足すもの」ではなく絵の主役として頼む。** この炉は枝を寝かせた構図で、中央の焚き付けが",
+    "放射状の房になっている。Qwenは構造を保つので、「石の間の隙間に炎を足せ」と頼む限り、その房を",
+    "光らせた閃光しか返らない（4周した。石の高さ基準→炉の幅基準→炎の輪郭を describe、すべて閃光）。",
+    "**A big campfire is burning ... the fire is the largest thing in the picture** と、炎を主語にして",
+    "他を「それ以外」へ回した4周目で初めて炎になった。",
+    "",
+    "**炎の高さは炉の幅で言う。** 焚き火に倣って「石の高さの半分まで」と書くと、平たい石が基準に",
+    "なって炎が極端に低くなる。炉の幅の1/3（生データで257px）なら headroom の241pxとほぼ同じで、",
+    "しかも平たい炉でも意味が変わらない。",
+    "",
+    "**橙に染めるなという否定は、石と枝の両方に名指しで要る。** 「石は素の灰色、枝は素の茶色のまま」",
+    "まで書いて、ようやく石への色移りが止まった（_ember.json も同じ）。",
+    "",
+    "炎が立つ代わりに枝が焦げて白っぽく塗り直されるが、燃えている炉としては読めるので受け入れる。"
+  ],
+  "output": "src/assets/objects/three_stone_hearth_lit.png",
+  "edit": {
+    "source": "three_stone_hearth.json",
+    "prompt": "A big campfire is burning in this stone hearth, and the fire is the largest thing in the picture. Paint a tall bonfire flame standing in the middle of the hearth, taller than the stones are wide, wide and rounded at its foot where it sits on the branches and breaking into three or four sharp curling tongues at the top. It stands in front of the far stone and hides the top half of that stone behind it. Paint it deep red at the foot, orange through the body, pale yellow at the tongues, with the white page showing between the separate tongues. Everything else in the picture stays exactly as it is: the same three grey stones and the same brown branches, in the same places, at the same sizes, in the same soft hand painted style, on the same plain empty white page with the same wide white margin and the same soft grey shadows. The stones keep their plain mottled grey colour and the branches keep their plain brown bark: no orange lights on them away from the fire. Do not move, resize, redraw or add stones or branches. The page stays plain white right up to the edge of the fire: no glow, no starburst, no rays of light, no haze, no smoke and no coloured light on the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 3
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "three_stone_hearth.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

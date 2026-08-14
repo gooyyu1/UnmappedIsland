@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/three_stone_hearth_ember.png を作り直すためのレシピ。build.py が読む。",
+    "種火だけが残った三石のかまど（heatのember段、public/world-codex/fire.yaml）。",
+    "",
+    "作り方と勘所は recipes/campfire_ember.json と同じ。熾が溜まるのは石に囲まれた中央の空き。",
+    "",
+    "**熾は大きさで言う。** 「小さな熾の山」と頼むと焚き付けが元のまま残り、煙だけが立った絵が",
+    "返った（実寸では火の消えた絵と区別が付かない）。「石1つぶんの幅」と大きさを言い、焚き付けが",
+    "燃え尽きて置き換わったことまで書く。煙の高さは炉の幅で言う（_lit.json と同じ理由）。",
+    "",
+    "**熾を主語にして、他を「それ以外」へ回す。** 「この絵をそのままに、熾を足せ」と頼むと変化が",
+    "出ず、逆に熾を強く頼むと石まで橙に染まった。_lit.json と同じ書き分けで両方が収まる。"
+  ],
+  "output": "src/assets/objects/three_stone_hearth_ember.png",
+  "edit": {
+    "source": "three_stone_hearth.json",
+    "prompt": "The fire in this stone hearth has burnt down to embers. In the open space between the stones the dry kindling has burnt away, and in its place lies a heap of embers as wide as one of the stones, seen from above: dark red and glowing orange coals with pale grey ash lying over them. The ends of the branches reaching into that space are burnt through and charred black. There is no flame anywhere in the picture, not one. A single thin wisp of pale grey smoke rises straight up from the embers, reaching about a third of the width of the hearth above it, and fades away. Everything else in the picture stays exactly as it is: the same three grey stones and the same brown branches, in the same places, at the same sizes, in the same soft hand painted style, on the same plain empty white page with the same wide white margin and the same soft grey shadows. The stones keep their plain mottled grey colour and the outer parts of the branches keep their plain brown bark: no orange lights on them away from the embers. Do not move, resize, redraw or add stones or branches. The page stays plain white: no glow, no haze and no coloured light on the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 3
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "three_stone_hearth.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

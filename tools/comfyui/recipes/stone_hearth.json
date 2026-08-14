@@ -6,7 +6,10 @@
     "作り方は recipes/three_stone_hearth.json と同じで、足す石を輪にしただけ。",
     "三石のかまどとの違いは石の数と、囲いになっていること。",
     "",
-    "SDXLへ直接頼むと、砂利を貼った壁掛けのリースになる（8枚で全滅。薪も灰も無い）。"
+    "SDXLへ直接頼むと、砂利を貼った壁掛けのリースになる（8枚で全滅。薪も灰も無い）。",
+    "",
+    "**火は描かない。** 種火と炎は別の絵が持つ（stone_hearth_ember.json / _lit.json）。",
+    "上に空ける余白（headroom）はその2枚と共通（README「火の付いた炉」節）。"
   ],
   "output": "src/assets/objects/stone_hearth.png",
   "edit": {
@@ -16,6 +19,7 @@
   },
   "cardArt": {
     "size": "400",
+    "headroom": 110,
     "mode": "background",
     "tolerance": 24,
     "edge": 4,

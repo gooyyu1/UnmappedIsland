@@ -51,7 +51,7 @@ traits:
     tags: [fixture, hearth]
     # 火にかけている物のスロット（同1.1節）。押せば開き、重ねれば入る。
     main_item_slot: fire
-    # 燃えている間は絵がついた炉へ差し替わる（heatのember〜blaze段、CardView.md 5.1節）。
+    # 火力で絵が差し替わる（CardView.md 5.1節）。絵は消えている・種火・ついているの3つ（heat参照）。
     art_by_stage: heat
     props:
       fuel_capacity: {}
@@ -87,11 +87,12 @@ traits:
           - {name: out}
           # 種火。料理はできない。衰える速さは炉ごとに違うので、各炉のpassivesが持つ。
           #
-          # ember〜blazeは同じ「ついている」絵（art: lit）を指す。段を割った意味の粒度と絵を割る
-          # 粒度は一致させなくてよい（GameElementDefinition.md 6.4節）。
+          # **絵は3つ、段は4つ。** 見た目で知りたいのは「料理に使えるか」と「まだ火が生きているか」の
+          # 2つなので、種火だけを分け、coals〜blazeは同じ「ついている」絵を指す。段を割った意味の
+          # 粒度と絵を割る粒度は一致させなくてよい（GameElementDefinition.md 6.4節）。
           - name: ember
             min: 1
-            art: lit
+            art: ember
             passives:
               - add: {self: {fuel: -0.1}}
           - name: coals

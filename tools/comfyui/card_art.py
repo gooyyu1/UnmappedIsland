@@ -28,6 +28,10 @@
 正方形のキャンバスに fit_object の余白を残したままだと、物の形によって余白の量が変わるので、
 平たい物ほど小さく見えてしまう。
 
+--headroom は、物の上へ伸びるもの（炉の炎）のためにキャンバスを上へ広げる（fit_object 参照）。
+--align は大きさと位置を別の絵から決める。**同じ物の、状態だけが違う絵を揃えるためのもの**で、
+火の付いた炉は炎のぶん外接矩形が変わるので、自分の形から決めさせると炉そのものが動いてしまう。
+
 --below-plate は、カード全面の絵を名前の板の下まで下げる。主題が絵の上端の近くに来るポートレート
 向け（below_plate参照）。
 
@@ -142,7 +146,8 @@ def bounds(mask: np.ndarray) -> tuple[int, int, int, int]:
 def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, shadow: float,
                reach: float, reserve: float = 0, neutral: float = 0,
                keep_holes: bool = False,
-               holes: list[tuple[int, int]] | None = None) -> np.ndarray:
+               holes: list[tuple[int, int]] | None = None,
+               headroom: int = 0, reference: Image.Image | None = None) -> np.ndarray:
     """物だけを切り出し、正方形のキャンバスの中央へ、長辺がキャンバスに収まる大きさで置く。
 
     中央に合わせるのも、大きさを決めるのも、影ではなく物そのもの。影は片側にしか出ないので、影ごと
@@ -157,17 +162,26 @@ def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, sha
     neutralは影を芯から外すための彩度のしきい値（separate参照）。**濃い影を持つ絵ではこれが要る**
     ——影が芯に入ると、上の「影ではなく物そのもの」が成り立たなくなる。
     keep_holes / holes は囲まれた紙を埋めないための指定（separate参照）。
+
+    headroomは、正方形の**上**へ足す高さ。炉の炎のように、物の上へ伸びるものを入れる場所で、
+    出来上がりは size x (size + headroom) になる。物は下の正方形の中央に来るので、カードの上では
+    そのぶん下へ下がる。
+
+    referenceは、大きさと位置を決める相手（既定は自分自身）。**同じ物の、状態だけが違う絵を揃える**
+    ために使う——火の付いた炉は炎のぶん外接矩形が広がるので、自分の形から決めると炉そのものの
+    位置と大きさが状態ごとに変わってしまう。同じ寸法の絵しか渡せない。
     """
     rgb = np.asarray(image, dtype=np.float64)
     margin = max(edge, reach, OBJECT_SLACK, reserve)
-    core, _ = separate(rgb, tolerance, 0, 0, 1, neutral, keep_holes, holes)
+    core, _ = separate(np.asarray(image if reference is None else reference, dtype=np.float64),
+                       tolerance, 0, 0, 1, neutral, keep_holes, holes)
     left, top, right, bottom = bounds(core)
     scale = (size - margin * 2) / max(right - left, bottom - top)
 
     alpha, premultiplied = separate(rgb, tolerance, edge / scale, shadow, reach / scale, neutral,
                                     keep_holes, holes)
     pad = int(np.ceil(margin / scale))
-    box = (max(left - pad, 0), max(top - pad, 0),
+    box = (max(left - pad, 0), max(top - pad - int(np.ceil(headroom / scale)), 0),
            min(right + pad, image.width), min(bottom + pad, image.height))
     cropped = Image.fromarray(
         np.clip(np.dstack([premultiplied, alpha * 255]), 0, 255).astype(np.uint8), "RGBA"
@@ -176,14 +190,15 @@ def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, sha
     height = max(round(cropped.height * scale), 1)
     small = np.asarray(cropped.resize((width, height), Image.LANCZOS), dtype=np.float64)
 
-    # 物の中心がキャンバスの中心へ来るように置く。はみ出した影は切り落とす。
+    # 物の中心が下の正方形の中心へ来るように置く。はみ出した影は切り落とす。
+    canvas_height = size + headroom
     x = round(size / 2 - ((left + right) / 2 - box[0]) * scale)
-    y = round(size / 2 - ((top + bottom) / 2 - box[1]) * scale)
-    source = (slice(max(-y, 0), min(size - y, height)), slice(max(-x, 0), min(size - x, width)))
+    y = round(headroom + size / 2 - ((top + bottom) / 2 - box[1]) * scale)
+    source = (slice(max(-y, 0), min(canvas_height - y, height)), slice(max(-x, 0), min(size - x, width)))
     target = (slice(max(y, 0), max(y, 0) + source[0].stop - source[0].start),
               slice(max(x, 0), max(x, 0) + source[1].stop - source[1].start))
 
-    canvas = np.zeros((size, size, 4))
+    canvas = np.zeros((canvas_height, size, 4))
     piece = small[source]
     opacity = piece[:, :, 3:] / 255
     canvas[target[0], target[1], :3] = np.divide(
@@ -423,6 +438,10 @@ def main() -> None:
         help="仕上げに、透明な余白を切り落としてからこの大きさの透明キャンバスの中央へ置く。"
         "画像の寸法を揃えたまま、--sizeで物の大きさだけを変えたいとき用（ボタンのアイコン）",
     )
+    parser.add_argument("--headroom", type=int, default=0,
+                        help="物の上へ足す高さ（px）。炉の炎のように、物の上へ伸びるものを入れる場所")
+    parser.add_argument("--align", metavar="PNG",
+                        help="大きさと位置をこの絵から決める。同じ物の、状態だけが違う絵を揃えるため")
     parser.add_argument("--crop", type=int, nargs=4, metavar=("X", "Y", "W", "H"),
                         help="使う範囲を先に切り出す（1枚に複数写ったときに1つだけ採る）")
     parser.add_argument("--diagonal", action="store_true",
@@ -465,8 +484,17 @@ def main() -> None:
     else:
         # ぼかした影は輪郭から offset + blur*2 ほど広がる。そのぶんを四辺へ空けておく。
         reserve = args.drop_offset + args.drop_blur * 2 if args.drop_shadow else 0
+        reference = None
+        if args.align:
+            reference = Image.open(args.align).convert("RGB")
+            if reference.size != image.size:
+                raise SystemExit(
+                    f"--align の絵の寸法が違う: {reference.size} と {image.size}。"
+                    "同じ下絵から派生した絵しか揃えられません"
+                )
         rgba = fit_object(image, int(args.size), args.tolerance, args.edge, args.shadow,
-                          args.reach, reserve, args.neutral_shadow, args.keep_holes, holes)
+                          args.reach, reserve, args.neutral_shadow, args.keep_holes, holes,
+                          args.headroom, reference)
         if args.drop_shadow:
             rgba = drop_shadow(rgba, args.drop_shadow, args.drop_offset, args.drop_blur)
 
@@ -484,6 +512,8 @@ def main() -> None:
         "size": args.size,
         **({"crop": args.crop} if args.crop else {}),
         **({"canvas": args.canvas} if args.canvas else {}),
+        **({"headroom": args.headroom} if args.headroom else {}),
+        **({"align": Path(args.align).name} if args.align else {}),
         **({"diagonal": True} if args.diagonal else {}),
         **({"belowPlate": True} if args.below_plate else {}),
         **({"oilify": args.oilify} if args.oilify else {}),

@@ -90,7 +90,8 @@ def base_workflow(recipe: dict, recipes_dir: Path) -> str | None:
     return recipe.get("workflow")
 
 
-def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> Path:
+def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
+                done: dict[str, Path] | None = None) -> Path:
     """レシピの生データ（後処理前の絵）を作り、そのパスを返す。
 
     edit を持つレシピは基準の生データを先に作り、それを Qwen Image Edit で派生させる
@@ -100,7 +101,21 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
     paint を持つレシピは、生成の代わりに sky_art.py で下地を描く。glyph を持つレシピは絵文字を
     白い紙へ描く（emoji_page.py）。sketch を持つレシピは物の配置を描く（layout_sketch.py）。
     いずれも edit と組み合わせると、描いたものが Qwen の下絵になる。
+
+    doneは、この実行で既に作った生データ。**同じレシピを2度作らないため**で、cardArt.align が
+    edit.source と同じレシピを指す（火の付いた炉）と、Qwenの90秒が二重に掛かる。生データは
+    レシピから決まるので、内容が同じなら結果も同じ。
     """
+    done = {} if done is None else done
+    key = json.dumps(recipe, sort_keys=True, ensure_ascii=False)
+    if key not in done:
+        done[key] = build_raw(recipe, recipes_dir, raw_dir, server, done)
+    return done[key]
+
+
+def build_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
+              done: dict[str, Path]) -> Path:
+    """produce_rawの中身（生データを実際に作る）。呼ぶのはproduce_rawだけ。"""
     edit = recipe.get("edit")
     if edit is not None:
         source = (
@@ -108,7 +123,7 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
             if edit.get("source")
             else {k: v for k, v in recipe.items() if k != "edit"}
         )
-        source_raw = produce_raw(source, recipes_dir, raw_dir, server)
+        source_raw = produce_raw(source, recipes_dir, raw_dir, server, done)
         edited = raw_dir / f"{Path(recipe['output']).stem}_edit_{edit['seed']}.png"
         run(
             "qwen_edit.py",
@@ -287,18 +302,30 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         raw_dir = Path(args.keep_raw) if args.keep_raw else Path(tmp)
         raw_dir.mkdir(parents=True, exist_ok=True)
-        raw = produce_raw(recipe, recipes_dir, raw_dir, args.server)
+        done: dict[str, Path] = {}
+        raw = produce_raw(recipe, recipes_dir, raw_dir, args.server, done)
 
         # 後処理の設定は絵の隣ではなくレシピ側が持つので、書き出された .json は捨ててよい。
         processed = raw_dir / f"{raw.stem}_processed.png"
         if "cardArt" in recipe:
             card = recipe["cardArt"]
+            # 大きさと位置を別のレシピから決めるなら、その生データも作る（card_art.py の --align）。
+            align = (
+                produce_raw(
+                    json.loads((recipes_dir / card["align"]).read_text("utf-8")),
+                    recipes_dir, raw_dir, args.server, done,
+                )
+                if card.get("align")
+                else None
+            )
             run(
                 "card_art.py",
                 [
                     str(raw),
                     "--out", str(processed),
                     "--size", str(card["size"]),
+                    *(["--align", str(align)] if align else []),
+                    *(["--headroom", str(card["headroom"])] if card.get("headroom") else []),
                     *(["--mode", card["mode"]] if card.get("mode") else []),
                     *(["--canvas", *map(str, card["canvas"])] if card.get("canvas") else []),
                     *(["--crop", *map(str, card["crop"])] if card.get("crop") else []),

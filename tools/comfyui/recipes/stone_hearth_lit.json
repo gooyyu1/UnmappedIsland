@@ -1,0 +1,25 @@
+{
+  "_comment": [
+    "src/assets/objects/stone_hearth_lit.png を作り直すためのレシピ。build.py が読む。",
+    "火が付いていて料理にも使える石囲いの炉（heatのcoals〜blaze段、public/world-codex/fire.yaml）。",
+    "",
+    "作り方と勘所は recipes/campfire_lit.json と同じ。基準は stone_hearth.json（そちらが",
+    "campfire.json から派生しているので、生データは焚き火→石囲い→火の3段で作られる）。"
+  ],
+  "output": "src/assets/objects/stone_hearth_lit.png",
+  "edit": {
+    "source": "stone_hearth.json",
+    "prompt": "Keep this picture exactly as it is: the same pile of brown branches and the same ring of grey stones around it, in the same places, at the same sizes, painted in the same soft hand painted style on the same plain empty white page with the same wide white margin, and the same soft grey shadow under the hearth. Now set it burning. Paint flames rising from the middle of the pile where the branches meet: warm orange and yellow tongues of fire with deep red at their base, licking up between the branches and reaching no higher than half the height of the pile above it, with a few small flames running along the branches. The bark closest to the flames is charred black, and glowing orange embers sit in the kindling underneath. The stones keep their mottled grey colour and are not blackened. Do not move, resize, redraw or add stones or branches. The white page stays plain white right up to the edge of the flames: there is no glow, no haze, no smoke and no coloured light spilling onto the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "stone_hearth.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

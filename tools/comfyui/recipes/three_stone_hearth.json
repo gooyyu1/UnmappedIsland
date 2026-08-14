@@ -16,7 +16,10 @@
     "スロットが持つ。",
     "",
     "SDXLへ直接頼むと、三角形の額縁やピラミッドになる（8枚で全滅）。**図形の名前は図形として",
-    "描かれる**ので、下絵でも指示でも「三角形に置く」とは言わない。"
+    "描かれる**ので、下絵でも指示でも「三角形に置く」とは言わない。",
+    "",
+    "**火は描かない。** 種火と炎は別の絵が持つ（three_stone_hearth_ember.json / _lit.json）。",
+    "上に空ける余白（headroom）はその2枚と共通（README「火の付いた炉」節）。"
   ],
   "output": "src/assets/objects/three_stone_hearth.png",
   "sketch": "three_stone",
@@ -26,6 +29,7 @@
   },
   "cardArt": {
     "size": "400",
+    "headroom": 110,
     "mode": "background",
     "tolerance": 24,
     "edge": 4,
