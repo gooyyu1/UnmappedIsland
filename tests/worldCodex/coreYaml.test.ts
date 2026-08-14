@@ -37,7 +37,7 @@ describe('core.yamlのworld定義', () => {
       codex.propertyTagNames.getName(id),
     );
 
-    expect(declared).toEqual(['status', 'health', 'nutrition', 'gauge']);
+    expect(declared).toEqual(['status', 'health', 'nutrition', 'gauge', 'alert_gauge', 'fill_color']);
   });
 
   it('worldはシングルトンで、期待されるデフォルトプロパティ値を持つ', () => {

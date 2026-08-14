@@ -181,8 +181,8 @@ export interface CardFill {
 }
 
 /**
- * 域から色を引くバーの内容（CardView.md 8節 カードの状態バー）。**塗りの長さだけでは良し悪しが
- * 読めない量**——残っている傷は減るほど良く、意識は減るほど悪い——は、色を値そのものではなく
+ * 域から色を引くバーの内容（`alert_gauge`プロパティタグ、CardView.md 8.2節）。**塗りの長さだけでは
+ * 良し悪しが読めない量**——残っている傷は減るほど良く、意識は減るほど悪い——は、色を値そのものではなく
  * 域（alert）から引く。
  */
 export interface CardAlertBar {
@@ -191,6 +191,9 @@ export interface CardAlertBar {
 
   /** 今その値が居る域。塗りの色になる。 */
   readonly alert: AlertLevel;
+
+  /** 増えるほど悪い値か（PropertyDef.worsensUpward）。増えた分の帯をどちら向きに出すかが変わる。 */
+  readonly worsensUpward: boolean;
 }
 
 /** カード1枚の表示内容と操作。 */
@@ -255,14 +258,12 @@ export interface CardContent {
    */
   readonly capacityRatio?: number;
 
-  /** 残っている傷（怪我のカードだけが持つ）。 */
-  readonly severity?: CardAlertBar;
-
   /**
-   * 今の意識（意識を持つカード——動物・キャラクタ——だけが持つ）。**あと何手で倒れるかを1本で言う**
-   * 統合指標で、痛み・衝撃がここへ合流する（VitalsSystem.md 9節）。
+   * カード下端の、域から色を引くバー（`alert_gauge`プロパティタグ、CardView.md 8.2節）。
+   * 残っている傷（怪我のカード）・今の意識（動物・キャラクタのカード。**あと何手で倒れるかを1本で言う**
+   * 統合指標で、痛み・衝撃がここへ合流する、VitalsSystem.md 9節）などが持つ。持たないカードはundefined。
    */
-  readonly consciousness?: CardAlertBar;
+  readonly alertGauge?: CardAlertBar;
 
   /**
    * 今の工程が要求する素材と道具が、どれだけ揃っているか（0〜1）。製作中オブジェクトだけが持つ。
@@ -307,7 +308,7 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, alert, road, gauge, fill, severity, mark, overlay } = content;
+  const { icon, name, art, background, kind, alert, road, gauge, fill, alertGauge, mark, overlay } = content;
   const { capacityRatio, materialRatio, stepRatio, inProgress } = content;
   return {
     icon,
@@ -320,7 +321,7 @@ export function cardFace(content: CardContent): CardContent {
     gauge,
     fill,
     capacityRatio,
-    severity,
+    alertGauge,
     materialRatio,
     stepRatio,
     mark,
@@ -401,8 +402,7 @@ export class Card extends Phaser.GameObjects.Container {
   private readonly gaugeBar: ProgressBar;
   private readonly fillBar: ProgressBar;
   private readonly capacityBar: ProgressBar;
-  private readonly severityBar: ProgressBar;
-  private readonly consciousnessBar: ProgressBar;
+  private readonly alertGaugeBar: ProgressBar;
   private readonly materialBar: ProgressBar;
   private readonly stepBar: ProgressBar;
 
@@ -471,11 +471,9 @@ export class Card extends Phaser.GameObjects.Container {
     });
     // 満杯へ近づくほど物が入らなくなるので、色は域ではなく値そのものから引く（capacityColorFor）。
     this.capacityBar = this.addRailBar(scene, metrics, { fillColor: capacityColorFor });
-    // 傷は減るほど良い量なので、増えた分の帯が赤くなるようにする（worsensUpward）。色は域から引く
-    // （fillColorを渡さない）ので、傷が引くほど緑へ寄る。
-    this.severityBar = this.addRailBar(scene, metrics, { worsensUpward: true });
-    // 意識は減るほど悪い（既定のworsensUpward=false）。色は域から引くので塗りの色は渡さない。
-    this.consciousnessBar = this.addRailBar(scene, metrics, {});
+    // 域から色を引く（fillColorを渡さない、alert_gaugeタグ）。傷は減るほど良く意識は減るほど悪いなど
+    // 物ごとに増減の向きが違うので、worsensUpwardは固定せず差し替えのたびに渡す（showBars参照）。
+    this.alertGaugeBar = this.addRailBar(scene, metrics, {});
     // 材料の充足は耐久度と同じ色域（満ちるほど緑）。**満ちた＝作業できる**を緑で言い切れる。
     this.materialBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
     // 工程の進捗は良し悪しではなく「ここまで終えた」量なので、値によらず1色。
@@ -682,9 +680,12 @@ export class Card extends Phaser.GameObjects.Container {
    * 桟の高さも積む位置も「今いくつ出ているか」だけで決まる。
    */
   private barsFor(content: CardContent): readonly RailBar[] {
-    // 域が色を決めるバーは、割合より先に域を伝える（塗り直しを1回で済ませる）。
-    if (content.severity !== undefined) this.severityBar.setAlert(content.severity.alert);
-    if (content.consciousness !== undefined) this.consciousnessBar.setAlert(content.consciousness.alert);
+    // 域が色を決めるバーは、割合より先に域と増減の向きを伝える（塗り直しを1回で済ませる）。
+    // 向きは物によって違う（傷は増えるほど悪い・意識は減るほど悪い）ので、差し替えのたびに渡し直す。
+    if (content.alertGauge !== undefined) {
+      this.alertGaugeBar.setAlert(content.alertGauge.alert);
+      this.alertGaugeBar.setWorsensUpward(content.alertGauge.worsensUpward);
+    }
 
     const all = [
       // 製作中の2本を先に積む。作りかけのカードではこの2本だけが出るので、順は互いの上下だけを
@@ -694,8 +695,7 @@ export class Card extends Phaser.GameObjects.Container {
       { bar: this.gaugeBar, ratio: content.gauge },
       { bar: this.fillBar, ratio: content.fill?.ratio },
       { bar: this.capacityBar, ratio: content.capacityRatio },
-      { bar: this.severityBar, ratio: content.severity?.ratio },
-      { bar: this.consciousnessBar, ratio: content.consciousness?.ratio },
+      { bar: this.alertGaugeBar, ratio: content.alertGauge?.ratio },
     ];
     for (const { bar, ratio } of all) {
       if (ratio === undefined) bar.setVisible(false);

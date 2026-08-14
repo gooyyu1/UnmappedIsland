@@ -345,14 +345,31 @@ const STATUS_TAG = 'status';
 const GAUGE_TAG = 'gauge';
 
 /**
- * カードの状態バーが映すプロパティの名前（CardView.md 8節 カードの状態バー）。
- * いずれもGameElementDefinition.md・LiquidContainerSystem.mdが名前ごと決めている語彙で、UI側は
- * 「その名前を持つ物が状態バーを出す」「バーの色はその名前のプロパティが決める」とだけ知っている。
- * 後から足された物——MODの液体——も、同じ名前で宣言するだけで同じように出る。
+ * カードの下端に、域（alert）から色を引くバー（CardView.md 8.2節）として出すプロパティに付けるタグ
+ * （GameElementDefinition.md 6.7節）。残っている傷・意識のように、**塗りの長さだけでは良し悪しが
+ * 読めない量**——増えるほど悪い物と減るほど悪い物が混ざる——に付ける。gaugeタグ（値そのものから
+ * 色を引く）とは色の引き方が異なるため別のタグにする。
+ *
+ * UI側は「alert_gaugeタグを持つ物がこのバーを出す」とだけ知っていて、色の向き（worsensUpward）は
+ * タグ付けされたプロパティ自身のstagesから自動的に決まる（PropertyDef.alertDirection）。
  */
-const SEVERITY_PROPERTY = 'severity';
+const ALERT_GAUGE_TAG = 'alert_gauge';
+
+/**
+ * 中身のバー（液体の残量、CardView.md 8.3節）の塗り色を宣言するプロパティに付けるタグ
+ * （GameElementDefinition.md 6.7節、LiquidContainerSystem.md 2節・4.1節）。
+ *
+ * UI側は「fill_colorタグを持つプロパティの値が塗りの色」とだけ知っていて、液体の種類も
+ * プロパティの名前も知らない。宣言していない液体は灰色で出る。
+ */
+const FILL_COLOR_TAG = 'fill_color';
+
+/**
+ * 気を失っていることを言う覆い（overlayOf、CardView.md 9.1節・VitalsSystem.md 6節）を判定するために
+ * 読むプロパティの名前。意識のバー自体はalert_gaugeタグ経由で汎用に出すが、覆いを出すかどうかは
+ * `unconscious`という段の名前（UNCONSCIOUS_STAGE）と対で決まる仕組みなので、こちらは名前を直読みする。
+ */
 const CONSCIOUSNESS_PROPERTY = 'consciousness';
-const COLOR_PROPERTY = 'color';
 
 /**
  * カードの輪郭を明滅させるかを決めるプロパティの名前（animals.yaml・CardView.md 3節）。安全域を外れている間だけ明滅する。
@@ -461,30 +478,31 @@ export function fromGameSession(
    *
    * 複数付いていれば、propsの宣言順で最初の1つ（WorldObject.exhaustedStageと同じ規約）。
    * 1つの物には1つしか付けない前提で、2つ以上付くと片方が静かに出なくなる
-   * （`tests/worldCodex/gaugeYaml.test.ts` がこの前提を検査する）。
+   * （`tests/worldCodex/cardBarTags.test.ts` がこの前提を検査する）。
    */
   const gaugeOf = (object: WorldObject): number | undefined =>
     gaugeTagId === undefined ? undefined : object.readPropertiesWithTag(gaugeTagId).at(0)?.ratio;
 
-  const severityPropertyId = codex.propertyNames.tryGetId(SEVERITY_PROPERTY);
-  /** 怪我のカードに出す、残っている傷（docs/engine/InjurySystem.md）。severityを持たない物はundefined。 */
-  const severityOf = (object: WorldObject): CardAlertBar | undefined => {
-    if (severityPropertyId === undefined) return undefined;
-    const reading = object.readProperty(severityPropertyId);
-    return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
+  const alertGaugeTagId = codex.propertyTagNames.tryGetId(ALERT_GAUGE_TAG);
+  /**
+   * カードの下端に出す、域から色を引くバー（怪我の残っている傷・動物や意識のバーなど、
+   * docs/engine/InjurySystem.md・VitalsSystem.md 9節）。alert_gaugeタグを持つプロパティが無い物、
+   * 持っていても上下限（range）が無く割合を定義できない物はundefined。**バーはこれ1本だけ**——
+   * 痛み・衝撃・失血はいずれも意識へ合流するので、あと何手で倒れるかはここが答える（意識の場合）。
+   *
+   * 複数付いていれば、propsの宣言順で最初の1つ（WorldObject.exhaustedStageと同じ規約）。
+   * 1つの物には1つしか付けない前提で、2つ以上付くと片方が静かに出なくなる
+   * （`tests/worldCodex/cardBarTags.test.ts` がこの前提を検査する）。
+   */
+  const alertGaugeOf = (object: WorldObject): CardAlertBar | undefined => {
+    if (alertGaugeTagId === undefined) return undefined;
+    const reading = object.readPropertiesWithTag(alertGaugeTagId).at(0);
+    return reading?.ratio === undefined
+      ? undefined
+      : { ratio: reading.ratio, alert: reading.alert, worsensUpward: reading.worsensUpward };
   };
 
   const consciousnessPropertyId = codex.propertyNames.tryGetId(CONSCIOUSNESS_PROPERTY);
-  /**
-   * 動物のカードに出す意識（docs/engine/VitalsSystem.md 9節）。**バーはこれ1本だけ**——痛み・衝撃・
-   * 失血はいずれも意識へ合流するので、あと何手で倒れるかはここが答える。持たない物はundefined。
-   */
-  const consciousnessOf = (object: WorldObject): CardAlertBar | undefined => {
-    if (consciousnessPropertyId === undefined) return undefined;
-    const reading = object.readProperty(consciousnessPropertyId);
-    return reading?.ratio === undefined ? undefined : { ratio: reading.ratio, alert: reading.alert };
-  };
-
   /** 気を失っているカードへ出す覆い（CardView.md 9.1節）。意識を持たない物・起きている物はundefined。 */
   const overlayOf = (object: WorldObject): string | undefined =>
     consciousnessPropertyId !== undefined && object.isInStage(consciousnessPropertyId, UNCONSCIOUS_STAGE)
@@ -515,14 +533,15 @@ export function fromGameSession(
       : undefined;
   };
 
-  const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
+  const fillColorTagId = codex.propertyTagNames.tryGetId(FILL_COLOR_TAG);
   /**
    * 量として存在する中身（水・茶・油）の割合と、その中身が宣言している色
    * （LiquidContainerSystem.md 2節・4.1節）。
    *
-   * バーは中身自身の状態なので、代表（represented_by、7.6節）が量的オブジェクトかどうかだけで決まる。
-   * 空の容器は代表が自分自身になるため、バーは出ない——映す中身がいない。UI側は容器のスロット名を
-   * 知らない。
+   * バーの割合は中身自身の状態なので、代表（represented_by、7.6節）が量的オブジェクトかどうかだけで
+   * 決まる。空の容器は代表が自分自身になるため、バーは出ない——映す中身がいない。UI側は容器の
+   * スロット名を知らない。色はfill_colorタグを持つプロパティの値で、複数付いていれば最初の1つ
+   * （gaugeタグと同じ規約、tests/worldCodex/cardBarTags.test.ts参照）。
    */
   const fillOf = (object: WorldObject): CardFill | undefined => {
     const content = object.tryGetRepresentative();
@@ -531,7 +550,8 @@ export function fromGameSession(
     const ratio = content.fillRatioInParentSlot();
     if (ratio === undefined) return undefined;
 
-    const color = colorPropertyId === undefined ? undefined : content.readProperty(colorPropertyId)?.value;
+    const color =
+      fillColorTagId === undefined ? undefined : content.readPropertiesWithTag(fillColorTagId).at(0)?.value;
     return { ratio, color };
   };
 
@@ -718,8 +738,7 @@ export function fromGameSession(
     gauge: gaugeOf(instances[0]),
     fill: fillOf(instances[0]),
     capacityRatio: capacityRatioOf(instances[0]),
-    severity: severityOf(instances[0]),
-    consciousness: consciousnessOf(instances[0]),
+    alertGauge: alertGaugeOf(instances[0]),
     overlay: overlayOf(instances[0]),
     alert: alertOf(instances[0]),
     ...craftingOf(instances[0]),

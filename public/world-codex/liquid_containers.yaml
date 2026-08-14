@@ -70,7 +70,7 @@ traits:
   water_liquid:
     tags: [water_liquid]
     props:
-      color: {value: 0x2f86d8}
+      color: {value: 0x2f86d8, tags: [fill_color]}
     actions:
       # 1回の飲用 = 250mL。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
       # 満水では何も移らない操作になるため、実行自体をさせない。境目はキャラクターのhydrationの
@@ -92,7 +92,7 @@ traits:
   tea_liquid:
     tags: [tea_liquid]
     props:
-      color: {value: 0x6f8f3c}
+      color: {value: 0x6f8f3c, tags: [fill_color]}
     actions:
       drink:
         conditions:
@@ -112,7 +112,7 @@ traits:
   oil_liquid:
     tags: [oil_liquid]
     props:
-      color: {value: 0xe0b422}
+      color: {value: 0xe0b422, tags: [fill_color]}
 
   # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、sunlightのしきい値で決まる上乗せの和
   # （LiquidContainerSystem.md 6節）。密閉容器はどちらのゲートも成立しないため蒸発しない。

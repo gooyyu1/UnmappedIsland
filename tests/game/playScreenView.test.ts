@@ -324,25 +324,41 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     );
   });
 
-  it('怪我のカードは値バーではなく、残っている傷とその域を持つ', () => {
+  it('怪我のカードは値バーではなく、域から色を引くバーで残っている傷を持つ', () => {
     // 値バーは道具の控えめな細線で、あとどれだけで治るかはそれとは別の見せ方をする
     // （CardView.md 8節 カードの状態バー）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
 
     expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].gauge).toBeUndefined();
-    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].severity).toEqual({
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].alertGauge).toEqual({
       ratio: 1,
       alert: 'caution',
+      worsensUpward: true,
     });
 
     const severityId = codex.propertyNames.getId('severity');
     injury.addNumber(severityId, -injury.getNumber(severityId) / 2, game.session);
 
-    const healing = fromGameSession(game, codex, locale).cardsIn('injuries')[0].severity;
+    const healing = fromGameSession(game, codex, locale).cardsIn('injuries')[0].alertGauge;
     // 傷の下限は0ではなく1（injuries.yaml）なので、割合はぴったり半分にはならない。
     expect(healing?.ratio, '半分治れば半分まで縮む').toBeCloseTo(0.5, 2);
     expect(healing?.alert, '治るほど軽い域へ移る').toBe('watch');
+  });
+
+  it('動物のカードは、域から色を引くバーで今の意識を持つ', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const monkey = placeMonkey(game);
+    const consciousnessId = codex.propertyNames.getId('consciousness');
+
+    const fresh = fromGameSession(game, codex, locale).cardsIn('items')[0].alertGauge;
+    expect(fresh, '起きていれば意識は満タン').toEqual({ ratio: 1, alert: 'safe', worsensUpward: false });
+
+    monkey.setNumber(consciousnessId, 10, game.session);
+
+    const reduced = fromGameSession(game, codex, locale).cardsIn('items')[0].alertGauge;
+    expect(reduced?.ratio, '削られた分だけ割合が下がる').toBe(0.1);
+    expect(reduced?.alert, '意識は減るほど危ない域へ移る').toBe('danger');
   });
 
   it('動物のカードは、アイテムではなく動物として枠の色が決まる', () => {
