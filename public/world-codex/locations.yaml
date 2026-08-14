@@ -377,6 +377,11 @@ object_defs:
             spawn:
               - {object: branch, into: self}
               - {object: berry_bush, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: banana_plant, into: self}
+              - {object: branch, into: self}
           # 3個
           - weight: 18
             add: {self: {exploration_progress: 1}}
@@ -426,6 +431,16 @@ object_defs:
             spawn:
               - {object: branch, into: self}
               - {object: water_spinach, into: self}
+          - weight: 12
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: abaca, into: self}
+              - {object: branch, into: self}
+          - weight: 10
+            add: {self: {exploration_progress: 1}}
+            spawn:
+              - {object: banana_plant, into: self}
+              - {object: branch, into: self}
           # 3個
           - weight: 18
             add: {self: {exploration_progress: 1}}

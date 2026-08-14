@@ -100,7 +100,7 @@ describe('WorldCodexビューアのページ', () => {
     const html = renderTagListPage(view);
 
     expect(html).toContain('#/by-tag/item');
-    expect(html).toContain('item <span class="muted">(25)</span>');
+    expect(html).toContain('item <span class="muted">(31)</span>');
     // 製作中オブジェクトだけが持つタグは、行き先が空になるので出さない。
     expect(html).not.toContain('#/by-tag/wip');
     // 絵は、そのタグを持つ型のうち絵が用意されている最初のものを借りる。

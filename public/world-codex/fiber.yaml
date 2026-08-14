@@ -1,0 +1,126 @@
+# 繊維を採って撚る連鎖（docs/world/Skills.md「繊維・編み」）。バショウ属の草を切り倒し、茎から繊維を
+# 掻き取り、撚って糸・紐・ロープにするまでを1ファイルにまとめる。
+#
+# バナナもアバカもバショウ属の草で、木ではない。幹に見えるものは葉鞘が巻き重なった偽茎で、木部を持たず
+# 水を含んでいる。刃物1本で切り倒せて斧が要らないのはこのため。繊維があるのは葉身ではなく葉鞘の側で、
+# 葉を編むヤシ（weaving.yaml）とは採る場所が違う。
+#
+# 2種は同じ茎（banana_stem）を出し、実の有無と採れる本数だけが違う。
+#
+#   - アバカ（abaca）: 実は種ばかりで食べられず、採れるのは繊維だけ。株立ちで何本も生えるので茎が多い。
+#   - バナナ（banana_plant）: 一度実を付けた偽茎は二度と実らない。房を採るには切り倒すことになるので、
+#     実と茎が同時に手に入る。
+#
+# 撚る工程は道具を要求しない（手のひらで転がして撚る）。数を要する下位ほど手軽にし、箱を開くレシピは
+# ロープだけにしてある。
+#
+# 重さが大きく落ちるのは掻き取りのところだけで、茎の大半を占める水と髄はその場に捨てる。撚るのは
+# 束ねるだけなので、そこから先は保存する: 繊維60g×2 = 糸100g（＋撚りきれない屑20g）、
+# 糸100g×2 = 紐200g、紐200g×3 = ロープ600g。値を変えるときはこの内訳を崩さないこと。
+#
+# 今後の課題: 切り株から吸芽が育つ再生（今はどちらも切り倒すと消える）。ヤシの実の皮（coconut.yaml）
+# から採るコイアは、水に漬けて叩く別の工程になるので、掻き取りとは別の入口からplant_fiberへ合流させる。
+
+object_defs:
+  # アバカ（マニラ麻）。バナナによく似た草だが、実は種ばかりで食べられない。
+  abaca:
+    tags: [fixture]
+    combinations:
+      # 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので1株から何本も採れる。
+      fell:
+        with: cutting_tool
+        duration: 20
+        destroy: self
+        spawn: {object: banana_stem, count: 5, into: actor}
+
+  # バナナの株。実った房を採るには切り倒すしかないので、実と茎が一度に手に入る。
+  banana_plant:
+    tags: [fixture]
+    combinations:
+      fell:
+        with: cutting_tool
+        duration: 20
+        destroy: self
+        spawn:
+          - {object: banana, count: 2, into: actor}
+          - {object: banana_stem, count: 2, into: actor}
+
+  # 野生のバナナ。栽培種と違って硬い種が多く、果肉は少ない。
+  banana:
+    tags: [item, food]
+    props:
+      weight: {value: 400}
+      volume: {value: 500}
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 5
+            grain_tuber_nutrition: 60
+        destroy: self
+
+  # バナナの茎。運べる長さに切った偽茎の一節で、繊維はこれを構成する葉鞘の中にある。
+  banana_stem:
+    tags: [item]
+    props:
+      # 重さのほとんどは水。この重さのまま拠点へ運ぶより、その場で掻き取ったほうが軽い。
+      weight: {value: 3000}
+      volume: {value: 6000}
+    combinations:
+      # 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。残る髄と水はその場に捨てる。
+      strip:
+        with: cutting_tool
+        duration: 30
+        destroy: self
+        spawn: {object: plant_fiber, count: 2}
+
+  # 掻き取って干した繊維のひと束。1本ずつを物として扱うことはしないので、束で1つと数える。
+  plant_fiber:
+    tags: [item, plant_fiber]
+    props:
+      weight: {value: 60}
+      # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
+      volume: {value: 800}
+    combinations:
+      # 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
+      spin:
+        with: plant_fiber
+        duration: 20
+        destroy: [self, dragged]
+        spawn: {object: yarn}
+
+  # 撚った糸。細いが長い。縫うにも縛るにも使え、撚り合わせれば紐になる。
+  yarn:
+    tags: [item, yarn]
+    props:
+      weight: {value: 100}
+      volume: {value: 150}
+    combinations:
+      # 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなり、太さと強さが出る。
+      ply:
+        with: yarn
+        duration: 20
+        destroy: [self, dragged]
+        spawn: {object: cord}
+
+  # 紐。道具の柄を軸へ固定するのに使う（docs/world/Skills.md 3節の柄付け）。
+  cord:
+    tags: [item]
+    props:
+      weight: {value: 200}
+      volume: {value: 250}
+
+  # ロープ。紐3本を逆撚りに組んだ3本撚りの縄。
+  rope:
+    tags: [item]
+    props:
+      weight: {value: 600}
+      volume: {value: 800}
+    # 解放条件（conditions）はまだ置かない。繊維・編みスキルのプロパティと、それを伸ばす経路が
+    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    recipes:
+      twisted:
+        steps:
+          - requires:
+              - {object: cord, count: 3, consume: true}
+            duration: 60
