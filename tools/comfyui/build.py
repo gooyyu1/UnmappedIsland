@@ -286,6 +286,8 @@ def main() -> None:
                     *(["--edge", str(card["edge"])] if "edge" in card else []),
                     *(["--shadow", str(card["shadow"])] if "shadow" in card else []),
                     *(["--reach", str(card["reach"])] if "reach" in card else []),
+                    *(["--keep-holes"] if card.get("keepHoles") else []),
+                    *[str(v) for hole in card.get("holes", []) for v in ("--hole", *map(str, hole))],
                     *(["--neutral-shadow", str(card["neutralShadow"])] if "neutralShadow" in card else []),
                     *(["--white", str(card["white"])] if "white" in card else []),
                     *(["--opaque", str(card["opaque"])] if "opaque" in card else []),

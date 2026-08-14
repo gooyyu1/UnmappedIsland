@@ -30,7 +30,9 @@
     "**photorealistic photo / 3d render も否定しない。** これがあると筆致の見える絵になり、丸石だけが",
     "滑らかで浮く。同じseedで比べると、この2語を外すだけで面が滑らかに塗られ、輪郭のかすれと墨の",
     "ような影が消える。cartoon / cel shading / flat vector art まで外すと効果は頭打ちで、形が崩れる",
-    "seedが増えるだけだった。"
+    "seedが増えるだけだった。",
+    "これは**物の絵の話**。生きた植物（abaca / banana_plant）では逆で、3d render を否定しないとCGの",
+    "観葉植物になる。"
   ],
   "_baseNegative": "two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, pattern, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed",
   "thick_branch": {
@@ -279,5 +281,113 @@
     ],
     "positive": "exactly one raw untanned animal hide alone on an empty white page, a single piece of freshly skinned hide loosely folded over on itself into a soft heap so that both sides show, short coarse greyish brown fur on the outer side and a pale cream inner surface visible where it folds back, uneven roughly trimmed edges, limp soft and heavy, matte damp surface, it is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "flat rectangle, spread out flat, stretched flat, laid out square, rug, hide rug, sheepskin rug, white fur, cream fur, pale fur, bleached, tanned leather, finished leather, suede, leather bag, satchel, jacket, clothing, boots, rug, carpet, fur coat, taxidermy, animal head, whole animal, live animal, fox, wolf, bear, cow, stretched on a frame, drying rack, wooden frame, nails, pegs, rope, blood, gore, meat, flesh, parchment, paper, scroll, cloth, towel, blanket, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "abaca": {
+    "description": [
+      "アバカ（マニラ麻）の株。設置物なので、他のアイテムより大きくカードに載る。",
+      "",
+      "**abaca という語は通じない。** 頭の名詞に置くと、8枚とも丸い葉の草の植物図譜になった。",
+      "バショウ属の草なので **banana tree と書いて実だけを外す**のが通る唯一の形で、株立ちは",
+      "several thick green trunks growing together from one base で出す。",
+      "",
+      "**植物は放っておくと植物図譜になる。** hand painted illustration と白い紙の組み合わせが、",
+      "19世紀の彩色図版（クリーム色の紙・署名・切った茎）を強く引く。botanical plate / herbarium /",
+      "engraving / handwriting を名指しで落とす。",
+      "",
+      "**3d render を否定する。** 図譜を落とすと今度はCGの観葉植物になった（8枚とも）。",
+      "アイテムでは足さない語だが（このファイルの _comment 参照）、植物ではこれが要る。"
+    ],
+    "positive": "exactly one banana tree without any fruit alone on an empty white page, several thick green trunks growing together from one base in a clump, each trunk carrying a crown of very long broad leaves arching out from its top and drooping at the tips, the whole plant from root to leaf tips, no fruit and no flower anywhere on it, deep green leaves over pale green trunks, matte surface, the plant is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "3d render, cgi, computer graphics, plastic, glossy plastic, artificial plant, fake plant, video game asset, clay model, sculpture, purple, violet, magenta, bananas, bunch of bananas, hand of bananas, yellow fruit, green fruit, hanging fruit, flower, blossom, purple flower bud, inflorescence, botanical illustration, botanical plate, herbarium sheet, pressed plant, scientific illustration, field guide, engraving, etching, antique print, book plate, cream paper, aged paper, handwriting, caption, cut stem, single stem, sprig, twig, seedling, houseplant, grove, plantation, row of plants, field of crops, jungle, forest, undergrowth, potted plant, plant pot, planter, palm tree, coconut palm, feathery frond, bamboo, canna, bird of paradise, agave, corn plant, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, cropped, cut off, out of frame, filling the frame, close-up, only leaves, single leaf, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "banana_plant": {
+    "description": [
+      "バナナの株。設置物。アバカと同じ草なので、**実の有無だけが見分け**になる。",
+      "",
+      "外し方はアバカと同じ（植物図譜・CG）。加えて2つ。",
+      "",
+      "**紫の花芽を頼んではいけない。** 房の下に垂れる苞を dark purple flower bud と足すと、紫が幹まで",
+      "回り込んで紫色のCGの木になった（8枚とも）。房だけを頼み、purple / violet を否定に入れる。",
+      "",
+      "**房は1つに絞れない。** one heavy bunch と書いても冠じゅうに房が下がる。バナナだとは読めるので",
+      "そのまま採っている。"
+    ],
+    "positive": "exactly one banana tree alone on an empty white page, a single thick green trunk with a crown of very long broad leaves arching out from the top and drooping at the tips, one heavy bunch of green bananas hanging from the crown, the whole plant from root to leaf tips, deep green leaves over a pale green trunk, matte surface, the tree is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "3d render, cgi, computer graphics, plastic, glossy plastic, artificial plant, fake plant, video game asset, clay model, sculpture, purple, violet, magenta, botanical illustration, botanical plate, herbarium sheet, pressed plant, scientific illustration, field guide, engraving, etching, antique print, book plate, cream paper, aged paper, handwriting, caption, cut stem, single stem, sprig, twig, seedling, houseplant, two plants, three plants, several plants, grove, plantation, row of plants, field of crops, jungle, forest, undergrowth, potted plant, plant pot, planter, palm tree, coconut palm, feathery frond, bamboo, ripe yellow bananas, single banana, loose bananas, fruit basket, market stall, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, cropped, cut off, out of frame, filling the frame, close-up, only leaves, single leaf, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "banana": {
+    "description": [
+      "野生のバナナの房。切り倒した株から実と茎が一度に手に入る。",
+      "",
+      "**バナナらしい形をNGワードで否定すると、バナナが消える。** 栽培種と分けようとして",
+      "long slender banana / cavendish banana / supermarket banana を足したら、8枚とも種子の莢か",
+      "腐った果実になった。太い枝と同じで、この被写体はNGワードを増やすと壊れる。",
+      "実の形は普通のバナナのまま、房で1つと数えることだけを本文で言う。",
+      "",
+      "**枠は横長（1152x896）。** 縦長の枠だと1本ずつ立った絵になる。"
+    ],
+    "positive": "exactly one hand of bananas alone on an empty white page, a single cluster of five short bananas still joined together at one thick stalk, ripe golden yellow skin with a few small brown spots and green at the tips, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "peeled banana, opened banana, banana skin, sliced banana, cut fruit, cross section, white flesh, rotten, mouldy, blackened, shrivelled, dried fruit, seed pod, pods, seeds, buds, flower, whole bunch, huge bunch, banana tree, plant, leaves, hanging fruit, fruit bowl, plate, basket, market stall, price tag, label, sticker, packaging, other fruit, apple, orange, pencil sketch, graphite drawing, charcoal, monochrome, greyscale, black and white, botanical plate, two bunches, three bunches, several bunches, scattered fruit, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "banana_stem": {
+    "description": [
+      "バナナの偽茎を運べる長さに切った一節。繊維はこれを構成する葉鞘の中にある。",
+      "",
+      "**banana と書くと必ず実になる。** pseudostem / the trunk of a banana plant と説明を尽くしても、",
+      "8枚とも実そのものか葉だった。語を全部外して「短く太い緑の丸太」として頼むと形は出る。",
+      "",
+      "**層をプロンプトで描かせようとしない。** concentric rings / like the layers of a leek と足すと、",
+      "折り重なった紙のマクロ写真という抽象画になった（正方形の枠では8枚とも）。",
+      "形だけを生成で出し、**葉鞘の層はレシピの edit（Qwen Image Edit）に描かせる**。"
+    ],
+    "positive": "exactly one short thick green log alone on an empty white page, seen from a few steps back so that the whole log is well inside the page with a wide empty white margin on all four sides, a heavy cylinder of juicy plant stem as thick as a thigh and twice as long as it is thick, lying on its side, cut clean through at both ends, its smooth skin pale green with fine straight lines running the length of it and dry brown edges where the outer layers overlap, the flat cut end pale and wet, matte surface elsewhere, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "extreme close-up, macro, zoomed in, edge to edge, filling the frame, cropped, cut off, out of frame, abstract, folded paper, sheets of paper, silk, cloth, fabric, ribbon, banana, bananas, yellow fruit, fruit, peel, tree trunk, bark, wood grain, tree rings, growth rings, firewood, timber, plank, bamboo, bamboo node, sugar cane, cabbage, onion, garlic, palm trunk, whole plant, leaves, roots, standing upright, pencil sketch, graphite drawing, charcoal, monochrome, greyscale, botanical plate, two pieces, three pieces, several pieces, pair, pile, stack, scattered objects, repeated objects, scenery, landscape, ground, floor, grass, water, sky, table, desk, cutting board, knife, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, fingers, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "plant_fiber": {
+    "description": [
+      "掻き取って干した繊維のひと束。1本ずつではなく束で1つと数える。",
+      "",
+      "**繊維は物にならず、画面いっぱいの素材写真になる**（編んだ葉と同じ）。",
+      "**数歩下がった距離・四辺の余白**を本文で言い、枠を横長にして、ようやく物として出る。",
+      "",
+      "**「中央で縛って両端が開く」と頼んではいけない。** 8枚とも蝶結びか、毛が飛び散った塊になった。",
+      "逆に combed smooth / clear solid outline / cut level と締めると、今度は紙の巻物や絵の具の帯",
+      "になる（8枚とも）。**a sheaf of long straight dry fibres**——藁束の言い方——が唯一通る形。",
+      "straw / hay / sheaf をNGワードに入れていると、この言い方ごと潰れるので入れない。"
+    ],
+    "positive": "exactly one bundle of long dried plant fibres alone on an empty white page, seen from a few steps back so that the whole bundle is well inside the page with a wide empty white margin on all four sides, a sheaf of long straight dry fibres laid side by side and bound around its middle with a band of the same fibre, lying on its side, the fibres spreading a little at both cut ends, warm tan and mid brown tones with darker streaks, dry matte surface, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "wheat ears, grain heads, seed heads, flowers, leaves, book, open book, page, sheet of paper, roll of paper, paper roll, torn paper, parchment, papyrus, cone, funnel, paint stripe, swatch, banner, scroll, hanging cloth, curtain, textile swatch, fabric, cloth, rag, wispy, fluffy, flyaway strands, scattered strands, fur, feathers, dust, smoke, splatter, explosion, extreme close-up, macro, zoomed in, edge to edge, filling the frame, cropped, cut off, out of frame, rope, cord, string, twine, yarn, thread, spun, twisted, coil, ball of yarn, skein, wool, fleece, hair, wig, ponytail, broom, brush, paintbrush, noodles, spaghetti, pasta, two bundles, three bundles, several bundles, pair, pile, stack, scattered objects, repeated objects, scenery, landscape, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "yarn": {
+    "description": [
+      "繊維2束を手で撚った糸。細いが長いので、輪に巻いて置く。",
+      "",
+      "撚った物（糸・紐・ロープ）は素直に出る。**外れるのは寄りすぎ**で、8枚のうち2枚ほどが",
+      "枠いっぱいのマクロになる。",
+      "",
+      "**色は生成では決まらない。** warm tan と書いても生成りの淡い色にしかならず、白い紙から",
+      "切り出せない。レシピの edit で足す。"
+    ],
+    "positive": "exactly one hank of hand spun plant fibre yarn alone on an empty white page, a long thin yarn folded back and forth on itself many times into one compact bundle and bound with a short tie of the same yarn around its middle, the folded loops showing at both ends of the bundle, the spiral of the twist clearly visible along its length, hairy where the fibres are joined, warm tan and light brown tones, dry matte surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "ring, circle, wound into a circle, coiled into a ring, spiral, wreath, loop, ball of yarn, ball of wool, wound ball, knitting, knitting needles, crochet, spool, bobbin, reel, cotton reel, spindle, loom, sewing, needle, thick rope, cable, chain, wire, snake, worm, bracelet, necklace, knot, noose, tangle, two bundles, three bundles, several bundles, pair, pile, stack, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "cord": {
+    "description": [
+      "糸2本を逆撚りに撚り合わせた紐。糸より太く、ロープより細い。",
+      "",
+      "外し方は糸と同じ。2本撚りは three strands と書かない限り素直に出る。"
+    ],
+    "positive": "exactly one length of hand made cord alone on an empty white page, a single cord as thick as a pencil made of two strands of plant fibre yarn twisted around each other so that the two strands wind visibly along its whole length, laid down in a few loose open turns with both frayed ends free, warm tan and light brown tones, dry matte surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "thick rope, hawser, mooring line, cable, chain, wire, leather strap, belt, shoelace with aglets, ball of yarn, ball of wool, knitting, spool, bobbin, reel, spindle, knot, noose, lasso, tangle, snake, worm, bracelet, necklace, anchor, boat, ship, post, hook, two cords, three cords, several cords, pair, pile, stack, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "rope": {
+    "description": [
+      "紐3本を逆撚りに組んだ3本撚りの縄。輪に巻いて置く。",
+      "",
+      "**縄はとくに白い。** 生成が出すのは生成りの木綿のマクラメ紐で、pale / whitish を否定しても",
+      "変わらない。色はレシピの edit で足す。"
+    ],
+    "positive": "exactly one coil of hand made rope alone on an empty white page, a single rope as thick as a thumb made of three strands twisted together so that the three strands wind visibly along its whole length, coiled flat into a few loose open turns with both frayed cut ends free, warm tan and light brown tones, dry matte surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "chain, cable, wire, steel rope, leather strap, belt, hose, knot, noose, lasso, hangman, tangle, snake, worm, wreath, anchor, boat, ship, sail, mooring post, bollard, hook, pulley, bucket, well, two coils, three coils, several coils, pair, pile, stack, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
   }
 }

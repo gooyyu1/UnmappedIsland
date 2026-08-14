@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "src/assets/objects/banana_stem.png を作り直すためのレシピ。build.py が読む。",
+    "切り倒したバナナの偽茎を、運べる長さに切った一節（public/world-codex/fiber.yaml）。",
+    "",
+    "**この題材は生成では作れない。** プロンプトに banana と書くと、どの seed でも実そのものか葉に",
+    "なる（8枚で全滅）。語を外して「緑の丸太」として頼むと形だけは出るが、木口が木の年輪になり、",
+    "皮も樹皮として塗られる。そこで**形は生成、中身は Qwen Image Edit** に描かせている——",
+    "Qwen は banana trunk を知っているので、姿勢と光を保ったまま葉鞘の層へ描き替えられる。",
+    "",
+    "段は400。連鎖の中でいちばん嵩がある（6000ml）。"
+  ],
+  "output": "src/assets/objects/banana_stem.png",
+  "prompts": "objects.json",
+  "prompt": "banana_stem",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 9450,
+  "width": 1152,
+  "height": 896,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same short thick cylinder lying on its side, in exactly the same position and at the same angle, but turn it into a section cut from the trunk of a banana plant. Its flat cut end shows many concentric rings of tightly wrapped pale layers packed one inside the next, wet and pale cream. Its outer skin is smooth pale green with fine straight lines running the length of it and dry papery brown edges where the layers overlap. It is not wood: no bark, no tree rings, no grain, no brown wooden end. Paint it with soft brush strokes and gentle natural shading instead of photographic detail. Remove the background completely and replace it with a plain empty white page, leaving the piece alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Matte surface, flat even lighting. No text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
