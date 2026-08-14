@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { Path } from '../../src/domain/runtime/views/Path';
 import { fromGameSession, withFrozenCards } from '../../src/game/PlayScreenView';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
@@ -730,7 +731,60 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const water = cardOf('water_liquid');
 
     expect(view.combinationOf(water, cardOf('water_liquid'))?.execute).toBeTypeOf('function');
-    expect(view.combinationOf(water, cardOf('stone')), '受け側にマッチする組み合わせが無い').toBeUndefined();
+    expect(
+      view.combinationOf(water, cardOf('stone')),
+      'どちらにもマッチする組み合わせが無い',
+    ).toBeUndefined();
+  });
+
+  it('combinationOfは、落とされた側に組み合わせが無ければ掴んだ側の組み合わせを返す', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    // アバカはwith: cutting_toolのfellを持ち、sharp_stoneは何も持たない（fiber.yaml・tools.yaml）。
+    const abaca = game.session.spawn(codex.objectNames.getId('abaca'));
+    expect(abaca.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    const knife = game.session.spawn(codex.objectNames.getId('sharp_stone'));
+    expect(knife.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const abacaCard = view.fixtures.find((card) => card.objects[0] === abaca)!;
+    const knifeCard = view.hand.find((card) => card?.objects[0] === knife)!;
+
+    const dropped = view.combinationOf(knifeCard, abacaCard);
+    const reversed = view.combinationOf(abacaCard, knifeCard);
+
+    expect(dropped?.execute, '刃物をアバカへ重ねる').toBeTypeOf('function');
+    expect(reversed?.execute, 'アバカを刃物へ重ねても同じ組み合わせが成立する').toBeTypeOf('function');
+    expect(reversed?.name, '実行するのはアバカが宣言しているfell').toBe(dropped?.name);
+    // 掴んでいたのはアバカのほうなので、手を離した場所から動き出すのもアバカ（CardCombination.held）。
+    expect(reversed?.held).toBe(abaca);
+    expect(dropped?.held).toBe(knife);
+
+    reversed?.execute();
+    expect(abaca.parent, '逆向きでも切り倒される').toBeUndefined();
+  });
+
+  it('空の器を水入りの器へ重ねると、注ぎ移しが逆向きに成立する', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const handId = codex.slotNames.getId('hand');
+    const contentId = codex.slotNames.getId('content');
+    const bowlId = codex.objectNames.getId('coconut_bowl');
+    const filled = game.session.spawn(bowlId);
+    expect(filled.moveToSlot(game.player.instance, handId)).toBeUndefined();
+    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
+    expect(water.moveToSlot(filled, contentId)).toBeUndefined();
+    const empty = game.session.spawn(bowlId);
+    expect(empty.moveToSlot(game.player.instance, handId)).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const cardOf = (bowl: WorldObject) => view.hand.find((card) => card?.objects[0] === bowl)!;
+
+    // 空の器はliquid_containerとしてpour_inを宣言し、水入りの器は代表（中身の水）がliquidタグを持つ。
+    view.combinationOf(cardOf(empty), cardOf(filled))?.execute();
+
+    const contentNames = (bowl: WorldObject) =>
+      bowl.tryGetSlot(contentId)?.contents.map((content) => content.def.name);
+    expect(contentNames(empty), '掴んだ空の器のほうへ注がれる').toEqual(['water_liquid']);
+    expect(contentNames(filled), '注ぎ元は空になる').toEqual([]);
   });
 
   it('同じカードへ重ねたときは、スタックの中の2つを組み合わせる', () => {

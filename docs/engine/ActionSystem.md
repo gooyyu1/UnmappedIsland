@@ -27,9 +27,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   カード選択時にボタンとして表示され、クリックで実行される。`actor`（プレイヤーキャラクター）は
   常に暗黙的に参加する。
 - **`combinations`（ドラッグ型、`Domain.Defs.CombinationDef`）**: カードを別のカードへ
-  ドラッグ＆ドロップする操作。**ドロップされた側（受け側）** の `object_def` に定義され、
-  `with`（タグのグローバルID）がドラッグされてきたカードとのマッチング条件になる。
-  対称的な組み合わせは両側のカードに定義する（12.3節）。
+  ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `dragged` で、
+  `with`（タグのグローバルID）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
+  （12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
+  UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
 2種が違うのは**入口（どう選ばれるか）だけ**なので、どちらも `Domain.Defs.InteractionDef` を継承し、
 選ばれた後の実行（2節）と所要時間の解決はその基底クラスが1箇所で持つ。派生が足すのは、
@@ -41,7 +42,9 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 - `TryExecuteAction(actionName, actor, session)`
 - `TryExecuteCombination(dragged, actor, combinationName, session)`
 - `FindMatchingCombinations(dragged)` — ドラッグ中のハイライト等のために、`with` にマッチする
-  `combinations` を宣言順に列挙する。複数マッチした場合にどれを実行するかの解決はUI層に委ねる（5節）。
+  `combinations` を宣言順に列挙する。**どちらの札を `self` として引くか**（落とされた側が先、次に掴んだ側）と、
+  複数マッチした場合にどれを実行するかの解決はUI層に委ねる
+  （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`PlayScreenView.combinationOf`）。
 
 いずれも実行前に `ResolveInteractionTarget()` で **代表（`represented_by`）** を解決する:
 代表スロットを持つカード（液体容器など）への操作は、そのスロットの中身（代表チェーンの末端）へ
@@ -87,7 +90,7 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 | `self` | 操作対象のカード自身 | すべて |
 | `parent` | self の直接の親 | すべて |
 | `actor` | プレイヤーキャラクター | actions / combinations（rangeイベントには存在しない） |
-| `dragged` | ドラッグされてきたカード | combinations のみ |
+| `dragged` | 組み合わせる相手のカード | combinations のみ |
 | `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | プロパティ参照のみ（位置判定では不可） |
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、
@@ -210,6 +213,5 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 - `combinations` を、`actor` の装備スロットを経由したパス参照（例: `actor.equip.tool`）を使う
   `actions` の条件・効果として書き換えられないか
 - `with` で複数タグのAND条件を指定する必要があるか
-- 対称的な組み合わせ（12.3節）で両側に同じ内容を書く冗長さの軽減
 - `showMenu` の値が `always` 以外に増える場合の用途・記法
 - ドラッグ中のハイライトで全カードの `conditions` を評価するコストの抑制

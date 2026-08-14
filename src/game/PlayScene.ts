@@ -958,8 +958,8 @@ export class PlayScene extends ResponsiveScene {
   /**
    * ドロップで手から放したもの（releasedBy）は手を離した場所に居るので、そこから動き出す。
    *
-   * combinationの成果物がどこから出るかは渡さない。重ねた相手が効果を宣言している側なので、
-   * 世界の変化がその札を出どころとして答える（originRectsOf）。
+   * combinationの成果物がどこから出るかは渡さない。効果を宣言している側の札（重ねた相手か、
+   * 逆向きに成立したなら掴んだ札）を、世界の変化が出どころとして答える（originRectsOf）。
    */
   private applyDrop(drop: CardDrop, released: Rect): void {
     const action = this.dropAction(drop);
@@ -984,13 +984,13 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * そのドロップで手から放したもの（MotionContext.released）。どの個体が動くのかはビューが答える
-   * （movedIds）。重ねて実行するcombinationの素材は掴んでいた1つだけで、それは束の代表とは
-   * 限らない（CardCombination.source参照）。
+   * （movedIds）。重ねて実行するcombinationに加わるのは掴んでいた1つだけで、それは束の代表とは
+   * 限らない（CardCombination.held参照）。
    */
   private releasedBy(drop: CardDrop, rect: Rect): MotionContext['released'] {
     const combination = this.combinationAt(drop);
     if (combination !== undefined) {
-      return { grabbed: combination.source.instanceId, followers: [], rect };
+      return { grabbed: combination.held.instanceId, followers: [], rect };
     }
 
     const [grabbed, ...followers] = this.cardsOf(drop.from)[drop.fromIndex]?.movedIds(drop.count) ?? [];
