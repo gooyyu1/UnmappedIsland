@@ -108,12 +108,25 @@ export class CardMotion {
     const card = placedCards(lanes).find(({ ids }) => ids.includes(id))?.card;
     if (card === undefined) return;
 
-    // 置きに行くのは1つだけなので、スタックは残りがそこに居る。枠から居なくなるのは1つしか
-    // 映していないカードだけ。
-    if ((card.content.count ?? 1) < 2) card.setVisible(false);
     const stand = this.standAt(card.content, released.rect);
     this.layer.add(stand);
     this.held = { id, card, stand };
+    this.showHeldOut(lanes);
+  }
+
+  /**
+   * 置いたままにしている1つは、もう束には居ない——元の札にそう言う（Card.setRemaining）。掴んで
+   * 運んでいる間の見え方（CarriedCards）がそのまま続くので、離した瞬間に枚数は変わらない。
+   *
+   * **差し替えのたびに言い直す。** 枚数は世界の側の値で貼り直される（setCells）ためで、映している
+   * カードも差し替えで変わりうるのでインスタンスのIDから引く。
+   */
+  private showHeldOut(lanes: readonly CardLane[]): void {
+    const held = this.held;
+    if (held === undefined) return;
+
+    const card = placedCards(lanes).find(({ ids }) => ids.includes(held.id))?.card;
+    card?.setRemaining((card.content.count ?? 1) - 1);
   }
 
   /**
@@ -193,6 +206,7 @@ export class CardMotion {
     if (landing !== undefined) this.landHeld(landing, plan.landing);
     // 置いている途中でそのカードが失われたら（経過中に壊れた道具等）、立てていた分身も片付ける。
     if (this.held !== undefined && this.held.card.scene === undefined) this.releaseHeld();
+    this.showHeldOut(lanes);
   }
 
   /** 置いたままにしていたものを、片付けずに取り出す（運び先が決まってから始末するため）。 */
@@ -323,9 +337,15 @@ function releasedIdsOf(
     : { ids: [released.grabbed, ...released.followers], rect: released.rect };
 }
 
-/** 伏せていたカードを表に戻す（画面を作り直していれば既に破棄されている＝sceneがundefined）。 */
+/**
+ * 分身の役目が終わったカードを、本物の姿へ戻す。伏せて待っていたなら表に返し、手に在った1つが
+ * 帰ってきたのだから、今映している数はそのまま束に在る（Card.setRemaining）。
+ * 画面を作り直していれば既に破棄されている（sceneがundefined）。
+ */
 function reveal(card: Card): void {
-  if (card.scene !== undefined) card.setVisible(true);
+  if (card.scene === undefined) return;
+  card.setVisible(true);
+  card.setRemaining(card.content.count ?? 1);
 }
 
 function idsOf(card: Card): readonly number[] {

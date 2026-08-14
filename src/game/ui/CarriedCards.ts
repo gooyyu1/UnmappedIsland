@@ -12,12 +12,6 @@ const FAN_MAX = 4;
 const FAN_OFFSET = 14;
 
 /**
- * 束を丸ごと持ち出して場所が空いた、元のカードの濃さ。掴んでいるカード自身も、まだ束が残っている
- * 元のカードも不透明のまま——札が透けるのはカードゲームらしくないため。
- */
-const EMPTIED_ALPHA = 0.3;
-
-/**
  * 指が運んでいる札——ポインタに追従する分身と、その後ろへ重ねてついてきた札
  * （CardInteraction.md 2節 カードのドラッグ＆ドロップ）。
  *
@@ -25,9 +19,9 @@ const EMPTIED_ALPHA = 0.3;
  * 元の枠へ飛んで帰る（keepAtMost）。落とさずに離せば全部が帰る（disband）。**手から離れた札は
  * 指について行かない**——帰る札は静止した層へ移し、元の枠まで真っ直ぐ飛ぶ。
  *
- * 元の束の見え方（残って見える枚数・場所が空いたときの薄さ）もここが持つ。手に在る札も帰り道の
- * 空中の札もまだ束には居ないので、そのぶん数字が減る。全部持ち出して0になったときだけ、元のカードは
- * 薄い姿で残る——それは札ではなく、帰ってくる場所を示す印（CardInteraction.md 2節 ドラッグ＆ドロップ）。
+ * 元の束に何枚残っているかもここが数える。手に在る札も帰り道の空中の札もまだ束には居ないので、
+ * そのぶん減る。残りをどう見せるか（数字・持ち出されて0になった枠の姿）は元のカード自身が決める
+ * （Card.setRemaining）。
  */
 export class CarriedCards {
   private readonly scene: Phaser.Scene;
@@ -210,14 +204,7 @@ export class CarriedCards {
     if (this.source.scene === undefined) return;
 
     // 手に在る札（掴んだ1枚を含む）も帰り道の空中の札も、まだ束には居ない。
-    const remaining = this.sourceCount - (this.grabbed ? 1 : 0) - this.followers - this.flyingHome;
-    if ((this.source.content.count ?? 1) !== remaining) {
-      this.source.setContent({ ...this.source.content, count: remaining });
-    }
-
-    // 全部持ち出して0のときだけ薄くする。束が残っているうちは、そこに在るのはまだ本物の札なので
-    // そのままの濃さで残す。0のとき残るのは札ではなく、帰ってくる場所を示す姿（数字のバッジも出ない）。
-    this.source.setAlpha(remaining === 0 ? EMPTIED_ALPHA : 1);
+    this.source.setRemaining(this.sourceCount - (this.grabbed ? 1 : 0) - this.followers - this.flyingHome);
   }
 }
 

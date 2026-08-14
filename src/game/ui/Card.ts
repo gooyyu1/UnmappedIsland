@@ -23,6 +23,9 @@ export const CARD_FRAME_TEXTURE = 'card-frame';
 /** 空き枠は同じ枠の画像を薄く敷いて表す。 */
 const EMPTY_FRAME_ALPHA = 0.35;
 
+/** 中身を持ち出されて、帰ってくる場所を示すだけになった姿の濃さ（CardInteraction.md 2節）。 */
+const EMPTIED_ALPHA = 0.3;
+
 /**
  * カードの絵の中で紙そのものが占める範囲（u単位）。絵は410x640pxで、紙は周囲に5pxの余白を空け、
  * 角の半径は20px。カードの実寸は絵の半分なので、u単位へは1/2で直せる
@@ -483,6 +486,18 @@ export class Card extends Phaser.GameObjects.Container {
    */
   setContent(content: CardContent): void {
     this.applyContent(content, true);
+  }
+
+  /**
+   * 手に在るぶんを引いた姿にする（CardInteraction.md 2節・5節）。呼ぶ側は残りの数を言うだけで、
+   * 数字を書き換えるのか薄くするのかはここが決める。
+   *
+   * 0になった枠に残るのは札ではなく、帰ってくる場所を示す印——薄く、数字のバッジも出ない。掴んで
+   * 運んでいる間も、離した場所へ置いたままにしている間も、元の枠にはこの姿が残る。
+   */
+  setRemaining(remaining: number): void {
+    if ((this._content.count ?? 1) !== remaining) this.setContent({ ...this._content, count: remaining });
+    this.setAlpha(remaining === 0 ? EMPTIED_ALPHA : 1);
   }
 
   /**
