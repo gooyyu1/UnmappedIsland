@@ -227,8 +227,8 @@ describe('traps.yamlのくくり罠', () => {
   });
 
   it('ヤケイを解体すると、肉と羽に分かれる', () => {
-    // 鶏肉も獣肉も同じ生肉になる（HuntingSystem.md 1.5節）。羽は使い道がまだ無いが、素材として
-    // 溜まる（docs/world/Animals.md 10節）。
+    // 鶏肉も獣肉も同じ生肉になり、骨も獲物の種類によらず出る（HuntingSystem.md 1.5節）。羽は
+    // 使い道がまだ無いが、素材として溜まる（docs/world/Animals.md 10節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
     const carcass = session.spawn(codex.objectNames.getId('junglefowl_carcass'));
@@ -238,7 +238,7 @@ describe('traps.yamlのくくり罠', () => {
     const knife = spawnInto('sharp_stone', player, 'hand');
     expect(carcass.tryExecuteCombination(knife, player, 'butcher', session)).toBe(true);
 
-    expect(itemsOnGround()).toEqual(['snare', 'raw_meat', 'feather']);
+    expect(itemsOnGround()).toEqual(['snare', 'raw_meat', 'feather', 'small_bone']);
   });
 
   it('ネズミは解体せず、丸焼きにして食べると小さな骨が残る', () => {

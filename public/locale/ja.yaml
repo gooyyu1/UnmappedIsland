@@ -254,7 +254,7 @@ object_texts:
     combinations:
       butcher:
         display_name: 解体する
-        description: 羽をむしり、肉を外す。肉は獣のものと同じ1枚になる。
+        description: 羽をむしり、肉を外し、細い骨を抜く。肉は獣のものと同じ1枚になる。
   rat:
     display_name: ネズミ
     description: どこにでも湧く小さな齧歯類。貯めた食料を狙って寄ってくる。
@@ -269,7 +269,7 @@ object_texts:
     description: 鳥1羽ぶんの羽をまとめた1枚。軽くて嵩ばる。
   small_bone:
     display_name: 小さな骨
-    description: 小動物1匹ぶんの骨。道具の頭部にはならないが、削れば針になる。
+    description: 小動物から取れた細い骨。道具の頭部を支える太さはないが、割って削れば針になる。
   monkey_carcass:
     display_name: サルの死体
     description: 仕留めたサル。丸ごとでは重いが、刃物を当てれば肉と骨と皮に分けられる。
