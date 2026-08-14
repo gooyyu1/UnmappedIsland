@@ -13,17 +13,6 @@
         ]
       }
     ],
-    "PreToolUse": [
-      {
-        "matcher": "mcp__.*(send_later|_trigger|subscribe_pr_activity)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/pr-watch-policy.sh"
-          }
-        ]
-      }
-    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
